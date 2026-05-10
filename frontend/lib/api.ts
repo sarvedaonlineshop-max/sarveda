@@ -2,14 +2,25 @@ import type { CategoryNode, ProductDetail, ProductListItem, ProductListResponse 
 
 /**
  * API base for `fetch`.
- * - **Browser:** empty string → same origin (`/api/...`), proxied by Next to Express (see `next.config.js` rewrites)
- *   so `Set-Cookie` from login applies to the storefront host (fixes :3000 vs :5000 cookie issues).
- * - **Server (RSC, build):** direct backend URL (rewrites are not used for outgoing Node `fetch` the same way).
+ * - **Browser:** empty string → same origin (`/api/...`), proxied by Next rewrites to Express (cookies stay on the site host).
+ * - **Server (dev):** direct Express URL (`INTERNAL_API_URL` / localhost) — rewrites are not applied to Node `fetch` the same way.
+ * - **Server (production on Vercel):** deployment origin only (`NEXT_PUBLIC_SITE_URL` or `VERCEL_URL`) so requests go to `/api` on
+ *   the same host and Next proxies to EC2 — avoid pointing `NEXT_PUBLIC_API_URL` at the raw backend URL in prod.
  */
 export function getApiBase(): string {
   if (typeof window !== "undefined") {
     return "";
   }
+
+  if (process.env.NODE_ENV === "production") {
+    const site =
+      process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
+    if (site) {
+      return site;
+    }
+  }
+
   const url =
     process.env.INTERNAL_API_URL ??
     process.env.BACKEND_PROXY_URL ??
