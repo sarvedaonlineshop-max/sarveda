@@ -1,0 +1,1045 @@
+# SARVEDA — Cursor Project Memory File
+# Read this FULLY before every single response.
+# This is the complete source of truth for the entire project.
+# Last updated: May 2026
+
+---
+
+## 1. PROJECT OVERVIEW
+
+**Client:** Sarveda (sarveda.com) — Arjun (Owner)
+**Developer:** Shivakumar M
+**Type:** Full custom eCommerce platform replacing WordPress/WooCommerce
+**Business:** Yoga, Meditation, Sound Healing, Ayurveda products + courses
+**Revenue:** ₹3,07,975 on record single day — serious production business
+**International:** Sells to India, US, UK, and worldwide
+**Timeline:** Phase 1 live June 15, 2026. Full launch July 20, 2026.
+**10-Day Demo Target:** May 20, 2026 — staging URL with products + cart + Razorpay
+
+---
+
+## 2. TECH STACK — COMPLETELY FIXED
+
+```
+Frontend:   Next.js 14 (App Router) + Tailwind CSS → Vercel
+Backend:    Node.js + Express + TypeScript → Railway (dev) → AWS EC2 Mumbai (prod)
+Database:   PostgreSQL via Prisma ORM → Railway (dev) → AWS RDS Mumbai (prod)
+Cache:      Redis → Railway (dev) → AWS ElastiCache Mumbai (prod)
+Jobs:       BullMQ (Redis-backed)
+Auth:       JWT (HTTP-only cookies) + Google OAuth + Phone OTP
+Payments:   Razorpay (India) + Stripe (International) + PayPal Standard
+Shipping:   Shiprocket API + Delhivery API + Bluedart API
+Media:      AWS S3 + CloudFront CDN (from Day 1)
+Email:      SendGrid
+WhatsApp:   WATI API
+```
+
+**HARD RULES — NEVER SUGGEST ALTERNATIVES:**
+- NO NestJS → Express + TypeScript only
+- NO MongoDB → PostgreSQL + Prisma only
+- NO GraphQL → REST API only
+- NO Cloudinary → AWS S3 + CloudFront only
+
+---
+
+## 3. DEPLOYMENT — 3 STAGES
+
+### Stage 1 — Local Development (Days 1–70)
+```
+Frontend:  http://localhost:3000  (Next.js dev server)
+Backend:   http://localhost:5000  (Express + ts-node-dev)
+Database:  localhost:5432         (Docker PostgreSQL)
+Redis:     localhost:6379         (Docker Redis)
+Media:     AWS S3 bucket: sarveda-dev
+```
+
+### Stage 2 — Railway Staging (Days 30–100)
+```
+Frontend:  Vercel preview URL (auto on git push)
+Backend:   https://sarveda-api.up.railway.app
+Database:  Railway PostgreSQL
+Redis:     Railway Redis
+Media:     Same AWS S3 (sarveda-dev)
+```
+
+### Stage 3 — AWS Production (Week 15, before launch)
+```
+Frontend:  https://sarveda.com (Vercel + custom domain)
+Backend:   AWS EC2 t3.medium, Mumbai (ap-south-1)
+Database:  AWS RDS PostgreSQL db.t3.medium, Mumbai, Multi-AZ
+Redis:     AWS ElastiCache cache.t3.micro, Mumbai
+CDN:       AWS CloudFront, global edge
+DNS:       AWS Route 53
+```
+
+WHY: Mumbai = 20-30ms latency for Indian users vs 200ms+ from Railway US.
+Indian customers on checkout feel instant vs sluggish. Direct conversion impact.
+
+---
+
+## 4. FOLDER STRUCTURE
+
+```
+sarveda/
+├── CLAUDE.md                         ← THIS FILE
+├── docker-compose.yml                ← Local PostgreSQL + Redis
+├── .env.example
+├── .gitignore
+├── README.md
+│
+├── backend/
+│   ├── src/
+│   │   ├── app.ts                    ← Express app
+│   │   ├── server.ts                 ← Entry point
+│   │   ├── config/
+│   │   │   ├── db.ts                 ← Prisma client
+│   │   │   ├── redis.ts              ← Redis (ioredis)
+│   │   │   ├── s3.ts                 ← AWS S3 client
+│   │   │   ├── logger.ts             ← Winston
+│   │   │   └── env.ts                ← Zod env validation
+│   │   ├── middleware/
+│   │   │   ├── auth.ts               ← JWT verify
+│   │   │   ├── admin.ts              ← Role check
+│   │   │   ├── rateLimiter.ts        ← Rate limits
+│   │   │   ├── validate.ts           ← Zod middleware
+│   │   │   ├── redirects.ts          ← 301 SEO redirects
+│   │   │   └── errorHandler.ts       ← Global errors
+│   │   ├── modules/
+│   │   │   ├── auth/
+│   │   │   ├── users/
+│   │   │   ├── products/
+│   │   │   ├── categories/
+│   │   │   ├── cart/
+│   │   │   ├── checkout/
+│   │   │   ├── orders/
+│   │   │   ├── payments/
+│   │   │   │   ├── razorpay.ts
+│   │   │   │   ├── stripe.ts
+│   │   │   │   ├── paypal.ts
+│   │   │   │   ├── cod.ts
+│   │   │   │   ├── webhooks.ts       ← Idempotent handlers
+│   │   │   │   └── reconciliation.ts ← Settlement dashboard
+│   │   │   ├── shipping/
+│   │   │   │   ├── shiprocket.ts
+│   │   │   │   ├── delhivery.ts
+│   │   │   │   ├── bluedart.ts
+│   │   │   │   └── router.ts         ← Auto-courier selection
+│   │   │   ├── coupons/
+│   │   │   ├── courses/
+│   │   │   ├── events/
+│   │   │   ├── vaidyas/
+│   │   │   ├── mentors/
+│   │   │   ├── retreats/
+│   │   │   ├── blog/
+│   │   │   ├── reviews/
+│   │   │   ├── wishlist/
+│   │   │   ├── notifications/
+│   │   │   │   ├── email.ts          ← SendGrid
+│   │   │   │   └── whatsapp.ts       ← WATI
+│   │   │   ├── admin/
+│   │   │   └── seo/
+│   │   │       ├── sitemap.ts
+│   │   │       └── schema.ts         ← JSON-LD
+│   │   ├── jobs/
+│   │   │   ├── emailQueue.ts
+│   │   │   ├── whatsappQueue.ts
+│   │   │   ├── invoiceQueue.ts
+│   │   │   └── reconciliationJob.ts
+│   │   └── utils/
+│   │       ├── jwt.ts                ← From ISKCON (95% reuse)
+│   │       ├── hash.ts               ← From ISKCON (100% reuse)
+│   │       ├── otp.ts                ← From ISKCON (70% reuse)
+│   │       ├── money.ts              ← toPaise/toRupees/formatINR
+│   │       ├── invoice.ts            ← GST PDF generation
+│   │       ├── slugify.ts
+│   │       └── orderNumber.ts        ← SRV-{YEAR}{MONTH}{SEQ}
+│   ├── prisma/
+│   │   ├── schema.prisma
+│   │   ├── migrations/
+│   │   └── seed.ts                   ← Import from WooCommerce CSV
+│   ├── package.json
+│   └── tsconfig.json
+│
+└── frontend/
+    ├── app/
+    │   ├── layout.tsx
+    │   ├── page.tsx                  ← Homepage
+    │   ├── shop/page.tsx             ← /shop (WC URL preserved)
+    │   ├── product/[slug]/page.tsx   ← /product/[slug] (preserved)
+    │   ├── product-category/[slug]/page.tsx
+    │   ├── cart/page.tsx
+    │   ├── checkout/page.tsx
+    │   ├── my-account/page.tsx
+    │   ├── course/[slug]/page.tsx
+    │   ├── event/[slug]/page.tsx
+    │   ├── vaidya/[slug]/page.tsx
+    │   ├── mentor/[slug]/page.tsx
+    │   ├── retreat/[slug]/page.tsx
+    │   ├── [slug]/page.tsx           ← Blog posts
+    │   ├── offers/[slug]/page.tsx
+    │   ├── sitemap.xml/route.ts      ← Auto-generated
+    │   ├── robots.txt/route.ts
+    │   └── admin/                    ← Protected admin
+    ├── components/
+    │   ├── ui/
+    │   ├── product/
+    │   │   ├── ProductCard.tsx
+    │   │   ├── ProductGallery.tsx
+    │   │   ├── AudioPlayer.tsx       ← HTML5 audio (38 products)
+    │   │   ├── VariantSelector.tsx
+    │   │   ├── PriceDisplay.tsx      ← INR/USD/GBP by zone
+    │   │   └── AccordionDescription.tsx ← All 169 products
+    │   ├── cart/
+    │   │   ├── CartDrawer.tsx        ← Slide-in, no page reload
+    │   │   └── CartItem.tsx
+    │   ├── checkout/
+    │   │   ├── AddressForm.tsx
+    │   │   ├── ShippingSelector.tsx
+    │   │   ├── CouponInput.tsx
+    │   │   └── PaymentSelector.tsx   ← Razorpay/Stripe/PayPal/COD
+    │   ├── layout/
+    │   │   ├── Header.tsx
+    │   │   ├── Footer.tsx
+    │   │   └── MobileNav.tsx
+    │   └── seo/
+    │       ├── JsonLD.tsx
+    │       └── BreadcrumbSchema.tsx
+    ├── lib/
+    │   ├── api.ts
+    │   ├── auth.ts
+    │   ├── cart.ts                   ← Zustand store
+    │   ├── currency.ts               ← Zone detection + pricing
+    │   └── utils.ts
+    ├── package.json
+    └── next.config.js
+```
+
+---
+
+## 5. COMPLETE PRISMA SCHEMA
+
+```prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String   @unique
+  phone        String?  @unique
+  name         String?
+  passwordHash String?
+  googleId     String?  @unique
+  role         Role     @default(CUSTOMER)
+  isVerified   Boolean  @default(false)
+  deletedAt    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  orders       Order[]
+  cart         Cart?
+  addresses    Address[]
+  wishlist     Wishlist[]
+  reviews      Review[]
+  enrollments  Enrollment[]
+  bookings     Booking[]
+}
+
+enum Role { CUSTOMER ADMIN SUPER_ADMIN }
+
+model Address {
+  id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String  @db.Uuid
+  label      String?
+  fullName   String
+  phone      String
+  line1      String
+  line2      String?
+  city       String
+  state      String
+  postalCode String
+  country    String  @default("IN")
+  isDefault  Boolean @default(false)
+  user       User    @relation(fields: [userId], references: [id])
+}
+
+model Product {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug             String         @unique
+  name             String
+  description      String?
+  shortDescription String?
+  productType      ProductType    @default(SIMPLE)
+  status           ProductStatus  @default(DRAFT)
+  taxClass         String?        @default("standard")
+  hasAudio         Boolean        @default(false)
+  audioUrl         String?
+  seoTitle         String?
+  seoDescription   String?
+  seoKeyword       String?
+  wooCommerceId    Int?           @unique
+  deletedAt        DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  variants         ProductVariant[]
+  images           ProductImage[]
+  categories       ProductCategory[]
+  accordionItems   AccordionItem[]
+  reviews          Review[]
+  wishlist         Wishlist[]
+}
+
+enum ProductType   { SIMPLE VARIABLE DIGITAL }
+enum ProductStatus { DRAFT ACTIVE ARCHIVED }
+
+model ProductVariant {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId      String        @db.Uuid
+  sku            String        @unique
+  mrpInPaise     Int
+  saleInPaise    Int
+  mrpUsdCents    Int?
+  saleUsdCents   Int?
+  mrpGbpPence    Int?
+  saleGbpPence   Int?
+  weightGrams    Int?
+  isDefault      Boolean       @default(false)
+  status         VariantStatus @default(ACTIVE)
+  product        ProductVariant[] @ignore
+  productRel     Product       @relation(fields: [productId], references: [id])
+  inventory      Inventory?
+  attributeValues VariantAttributeValue[]
+  shippingRates  VariantShippingRate[]
+  cartItems      CartItem[]
+  orderItems     OrderItem[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+enum VariantStatus { ACTIVE INACTIVE }
+
+model Inventory {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  variantId         String         @unique @db.Uuid
+  onHand            Int            @default(0)
+  reserved          Int            @default(0)
+  lowStockThreshold Int            @default(5)
+  variant           ProductVariant @relation(fields: [variantId], references: [id])
+}
+
+model ProductImage {
+  id        String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId String  @db.Uuid
+  url       String
+  altText   String?
+  position  Int     @default(0)
+  isPrimary Boolean @default(false)
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model AccordionItem {
+  id        String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId String  @db.Uuid
+  title     String
+  content   String
+  position  Int     @default(0)
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model Category {
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug           String           @unique
+  name           String
+  description    String?
+  imageUrl       String?
+  parentId       String?          @db.Uuid
+  position       Int              @default(0)
+  seoTitle       String?
+  seoDescription String?
+  parent         Category?        @relation("CategoryTree", fields: [parentId], references: [id])
+  children       Category[]       @relation("CategoryTree")
+  products       ProductCategory[]
+}
+
+model ProductCategory {
+  productId  String  @db.Uuid
+  categoryId String  @db.Uuid
+  product    Product  @relation(fields: [productId], references: [id])
+  category   Category @relation(fields: [categoryId], references: [id])
+  @@id([productId, categoryId])
+}
+
+model ProductAttribute {
+  id     String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name   String
+  slug   String           @unique
+  values AttributeValue[]
+}
+
+model AttributeValue {
+  id          String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  attributeId String                 @db.Uuid
+  value       String
+  slug        String
+  attribute   ProductAttribute       @relation(fields: [attributeId], references: [id])
+  variants    VariantAttributeValue[]
+}
+
+model VariantAttributeValue {
+  variantId        String         @db.Uuid
+  attributeValueId String         @db.Uuid
+  variant          ProductVariant @relation(fields: [variantId], references: [id])
+  attributeValue   AttributeValue @relation(fields: [attributeValueId], references: [id])
+  @@id([variantId, attributeValueId])
+}
+
+model VariantShippingRate {
+  id                  String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  variantId           String         @db.Uuid
+  country             String
+  standardPerProduct  Int
+  standardAdditional  Int            @default(0)
+  expeditedPerProduct Int
+  expeditedAdditional Int            @default(0)
+  codPerProduct       Int?
+  codAdditional       Int?
+  estimatedDays       String?
+  variant             ProductVariant @relation(fields: [variantId], references: [id])
+  @@unique([variantId, country])
+}
+
+model Cart {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String?    @unique @db.Uuid
+  sessionId  String?    @unique
+  couponCode String?
+  user       User?      @relation(fields: [userId], references: [id])
+  items      CartItem[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+model CartItem {
+  id        String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cartId    String         @db.Uuid
+  variantId String         @db.Uuid
+  quantity  Int            @default(1)
+  cart      Cart           @relation(fields: [cartId], references: [id])
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+  @@unique([cartId, variantId])
+}
+
+model Order {
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderNumber       String            @unique
+  customerId        String?           @db.Uuid
+  email             String
+  phone             String
+  status            OrderStatus       @default(PENDING_PAYMENT)
+  paymentStatus     PaymentStatus     @default(PENDING)
+  fulfillmentStatus FulfillmentStatus @default(UNFULFILLED)
+  currency          String            @default("INR")
+  subtotalInPaise   Int
+  discountInPaise   Int               @default(0)
+  shippingInPaise   Int               @default(0)
+  taxInPaise        Int               @default(0)
+  grandTotalInPaise Int
+  couponCode        String?
+  notes             String?
+  ipCountry         String?
+  placedAt          DateTime?
+  deletedAt         DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  customer          User?             @relation(fields: [customerId], references: [id])
+  items             OrderItem[]
+  addresses         OrderAddress[]
+  payments          Payment[]
+  statusHistory     OrderStatusHistory[]
+  shipments         Shipment[]
+  invoice           Invoice?
+}
+
+enum OrderStatus       { PENDING_PAYMENT PAID PROCESSING PACKED SHIPPED DELIVERED CANCELLED REFUNDED }
+enum PaymentStatus     { PENDING AUTHORIZED CAPTURED FAILED REFUNDED PARTIALLY_REFUNDED }
+enum FulfillmentStatus { UNFULFILLED PARTIAL FULFILLED RETURNED }
+
+model OrderItem {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId         String         @db.Uuid
+  variantId       String         @db.Uuid
+  skuSnapshot     String
+  nameSnapshot    String
+  qtyOrdered      Int
+  unitPriceInPaise Int
+  discountInPaise  Int           @default(0)
+  taxInPaise       Int           @default(0)
+  lineTotalInPaise Int
+  order           Order          @relation(fields: [orderId], references: [id])
+  variant         ProductVariant @relation(fields: [variantId], references: [id])
+}
+
+model OrderAddress {
+  id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId    String      @db.Uuid
+  type       AddressType
+  fullName   String
+  phone      String
+  line1      String
+  line2      String?
+  city       String
+  state      String
+  postalCode String
+  country    String
+  order      Order       @relation(fields: [orderId], references: [id])
+}
+
+enum AddressType { BILLING SHIPPING }
+
+model OrderStatusHistory {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId    String   @db.Uuid
+  fromStatus String?
+  toStatus   String
+  reason     String?
+  changedBy  String?  @db.Uuid
+  createdAt  DateTime @default(now())
+  order      Order    @relation(fields: [orderId], references: [id])
+}
+
+model Payment {
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId           String          @db.Uuid
+  provider          PaymentProvider
+  providerOrderId   String?
+  providerPaymentId String?
+  amountInPaise     Int
+  currency          String          @default("INR")
+  status            PaymentStatus   @default(PENDING)
+  gatewayFeeInPaise Int             @default(0)
+  settledInPaise    Int             @default(0)
+  settlementDate    DateTime?
+  refundedInPaise   Int             @default(0)
+  rawPayload        Json?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  order             Order           @relation(fields: [orderId], references: [id])
+  refunds           Refund[]
+}
+
+enum PaymentProvider { RAZORPAY STRIPE PAYPAL COD }
+
+model Refund {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paymentId        String   @db.Uuid
+  amountInPaise    Int
+  reason           String?
+  providerRefundId String?
+  status           String   @default("pending")
+  createdAt        DateTime @default(now())
+  payment          Payment  @relation(fields: [paymentId], references: [id])
+}
+
+model Invoice {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId   String   @unique @db.Uuid
+  invoiceNo String   @unique
+  pdfUrl    String?
+  issuedAt  DateTime @default(now())
+  order     Order    @relation(fields: [orderId], references: [id])
+}
+
+model Shipment {
+  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId     String         @db.Uuid
+  courier     String
+  awb         String?
+  trackingUrl String?
+  status      ShipmentStatus @default(CREATED)
+  deliveredAt DateTime?
+  rtoAt       DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  order       Order          @relation(fields: [orderId], references: [id])
+}
+
+enum ShipmentStatus { CREATED PICKED INTRANSIT OUT_FOR_DELIVERY DELIVERED RTO }
+
+model Coupon {
+  id              String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code            String     @unique
+  type            CouponType
+  value           Int
+  minOrderInPaise Int        @default(0)
+  maxUsageTotal   Int?
+  maxUsagePerUser Int        @default(1)
+  usageCount      Int        @default(0)
+  validFrom       DateTime?
+  validUntil      DateTime?
+  isActive        Boolean    @default(true)
+  createdAt       DateTime   @default(now())
+}
+
+enum CouponType { PERCENTAGE FIXED }
+
+model Review {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId  String   @db.Uuid
+  userId     String   @db.Uuid
+  rating     Int
+  title      String?
+  body       String?
+  isVerified Boolean  @default(false)
+  isApproved Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  product    Product  @relation(fields: [productId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model Wishlist {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @db.Uuid
+  productId String   @db.Uuid
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+  @@unique([userId, productId])
+}
+
+model Course {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug           String       @unique
+  title          String
+  description    String?
+  priceInPaise   Int          @default(0)
+  isFree         Boolean      @default(false)
+  imageUrl       String?
+  status         CourseStatus @default(DRAFT)
+  seoTitle       String?
+  seoDescription String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  lessons        Lesson[]
+  enrollments    Enrollment[]
+}
+
+enum CourseStatus { DRAFT PUBLISHED ARCHIVED }
+
+model Lesson {
+  id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseId String  @db.Uuid
+  title    String
+  videoUrl String?
+  duration Int?
+  position Int     @default(0)
+  isFree   Boolean @default(false)
+  course   Course  @relation(fields: [courseId], references: [id])
+}
+
+model Enrollment {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String    @db.Uuid
+  courseId    String    @db.Uuid
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id])
+  course      Course    @relation(fields: [courseId], references: [id])
+  @@unique([userId, courseId])
+}
+
+model Event {
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug           String      @unique
+  title          String
+  description    String?
+  startDate      DateTime
+  endDate        DateTime?
+  venue          String?
+  isOnline       Boolean     @default(false)
+  zoomLink       String?
+  priceInPaise   Int         @default(0)
+  imageUrl       String?
+  status         EventStatus @default(DRAFT)
+  seoTitle       String?
+  seoDescription String?
+  createdAt      DateTime    @default(now())
+  bookings       Booking[]
+}
+
+enum EventStatus { DRAFT PUBLISHED CANCELLED }
+
+model Booking {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @db.Uuid
+  eventId   String   @db.Uuid
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  event     Event    @relation(fields: [eventId], references: [id])
+}
+
+model Vaidya {
+  id             String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug           String  @unique
+  name           String
+  bio            String?
+  photoUrl       String?
+  speciality     String?
+  seoTitle       String?
+  seoDescription String?
+  isActive       Boolean @default(true)
+  createdAt      DateTime @default(now())
+}
+
+model Mentor {
+  id             String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug           String  @unique
+  name           String
+  bio            String?
+  photoUrl       String?
+  expertise      String?
+  seoTitle       String?
+  seoDescription String?
+  isActive       Boolean @default(true)
+  createdAt      DateTime @default(now())
+}
+
+model Retreat {
+  id             String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug           String  @unique
+  title          String
+  description    String?
+  imageUrl       String?
+  location       String?
+  duration       String?
+  priceInPaise   Int?
+  seoTitle       String?
+  seoDescription String?
+  isActive       Boolean @default(true)
+  createdAt      DateTime @default(now())
+}
+
+model BlogPost {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug           String     @unique
+  title          String
+  content        String
+  excerpt        String?
+  imageUrl       String?
+  status         PostStatus @default(DRAFT)
+  publishedAt    DateTime?
+  seoTitle       String?
+  seoDescription String?
+  seoKeyword     String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+}
+
+enum PostStatus { DRAFT PUBLISHED ARCHIVED }
+
+model OtpCode {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  target    String
+  code      String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+```
+
+---
+
+## 6. WOOCOMMERCE PRODUCT DATA (Already Analysed)
+
+```
+Total products:       169 (137 variable + 32 simple)
+Total variants:       1037
+Products with audio:  38 (singing bowls, instruments)
+Products with accordion: 169 (every product)
+Products with custom shipping: 160
+GST classes:          standard, gst-5, gst12, gst-zero-rate, gst18
+
+Categories:
+- Sound & Musical Instruments
+- Eco-Living & Sustainable
+- Yoga & Meditation
+- Ayurveda & Herbs
+- Personal Care
+
+Pricing zones per product (from CSV columns):
+- India:  _india_regular_price + _india_sale_price (INR)
+- US:     _dollars-zone_regular_price + _dollars-zone_sale_price (USD)
+- GB:     separate GBP pricing
+- Other:  falls back to USD
+
+Per-product shipping per country (IN, US, GB, OTHER):
+- shipping_prices_{n}_standard_shipping_per_product
+- shipping_prices_{n}_standard_shipping_additional_product
+- shipping_prices_{n}_expedited_shipping_per_product
+- shipping_prices_{n}_cod_for_india_shipping_per_product
+
+Active payment gateways on current site:
+- Razorpay (Active) — India
+- Stripe (Active) — International
+- PayPal Standard (Active) — International
+- UPI QR Code (Inactive)
+
+Current WordPress errors (selling points for migration):
+- Apple Pay domain registration failed
+- Tax configuration incomplete (GST not configured)
+- Zoom API disconnected
+- Theme has outdated WooCommerce files (security risk)
+```
+
+---
+
+## 7. SEO — NEVER BREAK THESE RULES
+
+### URL Preservation (Must match WooCommerce exactly)
+```
+/product/[slug]              NEVER → /products/[slug]
+/product-category/[slug]     NEVER change
+/shop                        NEVER → /store
+/course/[slug]               NEVER change
+/event/[slug]                NEVER change
+/vaidya/[slug]               NEVER change
+/mentor/[slug]               NEVER change
+/retreat/[slug]              NEVER change
+/cart                        NEVER change
+/checkout                    NEVER change
+/my-account                  NEVER change
+/[blog-slug]                 NEVER change
+/offers/[slug]               NEVER change
+```
+
+### 22 Sitemaps to Recreate at Launch
+```
+post, page, product, product_cat, product_tag,
+course, event, vaidya, mentor, retreat, blog,
+testimonial, asp-products, zoom-meetings,
+variables_post, offers_post, category, post_tag,
+specialities, product_shipping_class,
+special_tags-category, author
+```
+
+### Every Page Must Have (generateMetadata in Next.js)
+```typescript
+export async function generateMetadata({ params }) {
+  return {
+    title: `${item.seoTitle || item.name} | Sarveda`,
+    description: item.seoDescription,
+    keywords: item.seoKeyword,
+    alternates: { canonical: `https://sarveda.com/${type}/${params.slug}` },
+    openGraph: {
+      title: item.seoTitle || item.name,
+      description: item.seoDescription,
+      images: [item.imageUrl],
+      siteName: 'Sarveda',
+    },
+  };
+}
+```
+
+### JSON-LD Per Page Type
+```
+Product:   Product schema + AggregateRating + BreadcrumbList
+Course:    Course schema + BreadcrumbList
+Event:     Event schema + BreadcrumbList
+Blog:      Article schema + BreadcrumbList
+Homepage:  Organization + WebSite
+Vaidya:    Person + BreadcrumbList
+```
+
+---
+
+## 8. BUSINESS RULES
+
+### Money (CRITICAL)
+```typescript
+// ALL money stored as INTEGER paise. NEVER float.
+const toPaise   = (rupees: number) => Math.round(rupees * 100);
+const toRupees  = (paise: number)  => paise / 100;
+const formatINR = (paise: number)  => `₹${(paise/100).toLocaleString('en-IN')}`;
+```
+
+### GST (Prices in DB are GST-inclusive)
+```typescript
+const GST_RATES: Record<string, number> = {
+  'standard': 18, 'gst18': 18,
+  'gst12': 12, 'gst-5': 5, 'gst-zero-rate': 0,
+};
+```
+
+### Currency Zone
+```typescript
+type Zone = 'IN' | 'US' | 'GB' | 'OTHER';
+// Detect from IP → cookie
+// IN  → show INR, Razorpay + COD
+// US  → show USD, Stripe + PayPal
+// GB  → show GBP, Stripe + PayPal
+// OTHER → show USD, Stripe + PayPal
+```
+
+### Order Number
+```
+Format: SRV-{YEAR}{MONTH}{5-digit-seq}
+Example: SRV-2026060001
+```
+
+### Payment Rules
+```
+India:         Razorpay (primary) + COD
+International: Stripe (primary) + PayPal Standard
+COD:           India only, check per-product availability
+Webhooks:      Must be idempotent (check if already processed)
+```
+
+### Shipping Auto-Router
+```
+weight > 5kg + Zone A          → Delhivery
+orderValue > ₹3000 + metro     → Bluedart
+COD + non-metro                → DTDC
+default                        → Shiprocket
+```
+
+### WhatsApp Triggers (WATI)
+```
+Order confirmed   → immediate
+AWB generated     → immediate
+Out for delivery  → immediate
+Delivered         → immediate
+Refund initiated  → immediate
+Abandoned cart    → 2 hour delay
+```
+
+---
+
+## 9. CODE CONVENTIONS
+
+```typescript
+// API Response
+{ success: true, data: any, message?: string }
+{ success: false, error: string, code: string }
+
+// Never console.log — use logger
+import { logger } from '../config/logger';
+logger.info('event', { context });
+
+// Async routes
+router.get('/:id', async (req, res, next) => {
+  try {
+    const data = await service.find(req.params.id);
+    res.json({ success: true, data });
+  } catch (err) { next(err); }
+});
+
+// JWT: 7d expiry, HTTP-only cookie, SameSite=strict
+// Passwords: bcrypt 12 rounds
+// All inputs: Zod validation
+```
+
+---
+
+## 10. ISKCON CODEBASE REUSE
+
+```
+utils/jwt.ts          → 95% — copy directly
+utils/hash.ts         → 100% — copy directly
+utils/otp.ts          → 70% — adapt provider
+middleware/auth.ts    → 85% — update User type
+middleware/rateLimiter → 100% — copy directly
+modules/auth/         → 80% — adapt schema
+modules/payments/     → 78% — rename + add Stripe
+modules/cart/         → 72% — redesign for products
+app.ts security       → 70% — helmet, cors, limits
+```
+
+---
+
+## 11. ENVIRONMENT VARIABLES
+
+```env
+DATABASE_URL=postgresql://sarveda:password@localhost:5432/sarveda_db
+REDIS_URL=redis://localhost:6379
+JWT_SECRET=min-32-chars-secret
+JWT_EXPIRES_IN=7d
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+STRIPE_SECRET_KEY=
+STRIPE_PUBLISHABLE_KEY=
+STRIPE_WEBHOOK_SECRET=
+PAYPAL_CLIENT_ID=
+PAYPAL_CLIENT_SECRET=
+PAYPAL_MODE=sandbox
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_REGION=ap-south-1
+AWS_S3_BUCKET_NAME=sarveda-media
+AWS_CLOUDFRONT_URL=
+SENDGRID_API_KEY=
+SENDGRID_FROM_EMAIL=hello@sarveda.com
+WATI_API_KEY=
+WATI_BASE_URL=https://live-mt-server.wati.io
+SHIPROCKET_EMAIL=
+SHIPROCKET_PASSWORD=
+DELHIVERY_API_KEY=
+MSG91_AUTH_KEY=
+MSG91_TEMPLATE_ID=
+PORT=5000
+NODE_ENV=development
+FRONTEND_URL=http://localhost:3000
+NEXT_PUBLIC_API_URL=http://localhost:5000
+NEXT_PUBLIC_RAZORPAY_KEY_ID=
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+NEXT_PUBLIC_PAYPAL_CLIENT_ID=
+SENTRY_DSN=
+```
+
+---
+
+## 12. 10-DAY DEMO SPRINT (Target: May 20)
+
+```
+Day 1:  docker-compose + Prisma schema + migrate + Express boilerplate
+Day 2:  Auth (register, login, OTP, JWT, Google OAuth)
+Day 3:  Products API + CSV seed (169 products imported)
+Day 4:  Next.js setup + /shop product listing page
+Day 5:  /product/[slug] — gallery + audio player + variants + accordion
+Day 6:  Cart API + CartDrawer (slide-in, no reload)
+Day 7:  Checkout page (address + shipping + coupon)
+Day 8:  Razorpay test payment → order created → confirmation
+Day 9:  Admin — product list + order list + deploy Railway
+Day 10: 🎯 Staging URL ready → send to Arjun
+```
+
+---
+
+## 13. BUILD STATUS (Update as you go)
+
+- [x] docker-compose.yml running (Redis via Docker)
+- [x] Prisma schema created + migrated
+- [x] Express backend running on :5000
+- [ ] Auth module complete
+- [ ] Products API complete
+- [ ] 169 products seeded from CSV
+- [x] Next.js frontend running on :3000
+- [ ] /shop listing page done
+- [ ] /product/[slug] detail page done
+- [ ] Audio player working
+- [ ] Cart working
+- [ ] Checkout working
+- [ ] Razorpay test payment working
+- [ ] Order confirmation working
+- [ ] Admin basic panel done
+- [ ] Deployed to Railway staging
+- [ ] Demo sent to Arjun ← TARGET: May 20
+
+---
+
+*Sarveda | Developer: Shivakumar M | Client: Arjun | May 2026*
+*AI Advisor: Claude (Anthropic) via Cursor*

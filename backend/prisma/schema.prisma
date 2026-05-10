@@ -1,0 +1,603 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String   @unique
+  phone        String?  @unique
+  name         String?
+  passwordHash String?
+  googleId     String?  @unique
+  role         Role     @default(CUSTOMER)
+  isVerified   Boolean  @default(false)
+  deletedAt    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  orders       Order[]
+  cart         Cart?
+  addresses    Address[]
+  wishlist     Wishlist[]
+  reviews      Review[]
+  enrollments  Enrollment[]
+  bookings     Booking[]
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+  SUPER_ADMIN
+}
+
+model Address {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @db.Uuid
+  label      String?
+  fullName   String
+  phone      String
+  line1      String
+  line2      String?
+  city       String
+  state      String
+  postalCode String
+  country    String   @default("IN")
+  isDefault  Boolean  @default(false)
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model Product {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug             String           @unique
+  name             String
+  description      String?
+  shortDescription String?
+  productType      ProductType      @default(SIMPLE)
+  status           ProductStatus    @default(DRAFT)
+  taxClass         String?          @default("standard")
+  hasAudio         Boolean          @default(false)
+  audioUrl         String?
+  seoTitle         String?
+  seoDescription   String?
+  seoKeyword       String?
+  wooCommerceId    Int?             @unique
+  deletedAt        DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  variants         ProductVariant[]
+  images           ProductImage[]
+  categories       ProductCategory[]
+  accordionItems   AccordionItem[]
+  reviews          Review[]
+  wishlist         Wishlist[]
+}
+
+enum ProductType {
+  SIMPLE
+  VARIABLE
+  DIGITAL
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+model ProductVariant {
+  id              String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId       String                  @db.Uuid
+  sku             String                  @unique
+  mrpInPaise      Int
+  saleInPaise     Int
+  mrpUsdCents     Int?
+  saleUsdCents    Int?
+  mrpGbpPence     Int?
+  saleGbpPence    Int?
+  weightGrams     Int?
+  isDefault       Boolean                 @default(false)
+  status          VariantStatus           @default(ACTIVE)
+  productRel      Product                 @relation(fields: [productId], references: [id])
+  inventory       Inventory?
+  attributeValues VariantAttributeValue[]
+  shippingRates   VariantShippingRate[]
+  cartItems       CartItem[]
+  orderItems      OrderItem[]
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+}
+
+enum VariantStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Inventory {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  variantId         String         @unique @db.Uuid
+  onHand            Int            @default(0)
+  reserved          Int            @default(0)
+  lowStockThreshold Int            @default(5)
+  variant           ProductVariant @relation(fields: [variantId], references: [id])
+}
+
+model ProductImage {
+  id        String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId String  @db.Uuid
+  url       String
+  altText   String?
+  position  Int     @default(0)
+  isPrimary Boolean @default(false)
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model AccordionItem {
+  id        String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId String  @db.Uuid
+  title     String
+  content   String
+  position  Int     @default(0)
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model Category {
+  id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug           String            @unique
+  name           String
+  description    String?
+  imageUrl       String?
+  parentId       String?           @db.Uuid
+  position       Int               @default(0)
+  seoTitle       String?
+  seoDescription String?
+  parent         Category?         @relation("CategoryTree", fields: [parentId], references: [id])
+  children       Category[]        @relation("CategoryTree")
+  products       ProductCategory[]
+}
+
+model ProductCategory {
+  productId  String   @db.Uuid
+  categoryId String   @db.Uuid
+  product    Product  @relation(fields: [productId], references: [id])
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  @@id([productId, categoryId])
+}
+
+model ProductAttribute {
+  id     String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name   String
+  slug   String           @unique
+  values AttributeValue[]
+}
+
+model AttributeValue {
+  id          String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  attributeId String                 @db.Uuid
+  value       String
+  slug        String
+  attribute   ProductAttribute       @relation(fields: [attributeId], references: [id])
+  variants    VariantAttributeValue[]
+}
+
+model VariantAttributeValue {
+  variantId        String         @db.Uuid
+  attributeValueId String         @db.Uuid
+  variant          ProductVariant @relation(fields: [variantId], references: [id])
+  attributeValue   AttributeValue @relation(fields: [attributeValueId], references: [id])
+
+  @@id([variantId, attributeValueId])
+}
+
+model VariantShippingRate {
+  id                  String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  variantId           String         @db.Uuid
+  country             String
+  standardPerProduct  Int
+  standardAdditional  Int            @default(0)
+  expeditedPerProduct Int
+  expeditedAdditional Int            @default(0)
+  codPerProduct       Int?
+  codAdditional       Int?
+  estimatedDays       String?
+  variant             ProductVariant @relation(fields: [variantId], references: [id])
+
+  @@unique([variantId, country])
+}
+
+model Cart {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String?    @unique @db.Uuid
+  sessionId  String?    @unique
+  couponCode String?
+  user       User?      @relation(fields: [userId], references: [id])
+  items      CartItem[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+model CartItem {
+  id        String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cartId    String         @db.Uuid
+  variantId String         @db.Uuid
+  quantity  Int            @default(1)
+  cart      Cart           @relation(fields: [cartId], references: [id])
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+
+  @@unique([cartId, variantId])
+}
+
+model Order {
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderNumber       String            @unique
+  customerId        String?           @db.Uuid
+  email             String
+  phone             String
+  status            OrderStatus       @default(PENDING_PAYMENT)
+  paymentStatus     PaymentStatus     @default(PENDING)
+  fulfillmentStatus FulfillmentStatus @default(UNFULFILLED)
+  currency          String            @default("INR")
+  subtotalInPaise   Int
+  discountInPaise   Int               @default(0)
+  shippingInPaise   Int               @default(0)
+  taxInPaise        Int               @default(0)
+  grandTotalInPaise Int
+  couponCode        String?
+  notes             String?
+  ipCountry         String?
+  placedAt          DateTime?
+  deletedAt         DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  customer          User?             @relation(fields: [customerId], references: [id])
+  items             OrderItem[]
+  addresses         OrderAddress[]
+  payments          Payment[]
+  statusHistory     OrderStatusHistory[]
+  shipments         Shipment[]
+  invoice           Invoice?
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  PROCESSING
+  PACKED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum FulfillmentStatus {
+  UNFULFILLED
+  PARTIAL
+  FULFILLED
+  RETURNED
+}
+
+model OrderItem {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId          String         @db.Uuid
+  variantId        String         @db.Uuid
+  skuSnapshot      String
+  nameSnapshot     String
+  qtyOrdered       Int
+  unitPriceInPaise Int
+  discountInPaise  Int            @default(0)
+  taxInPaise       Int            @default(0)
+  lineTotalInPaise Int
+  order            Order          @relation(fields: [orderId], references: [id])
+  variant          ProductVariant @relation(fields: [variantId], references: [id])
+}
+
+model OrderAddress {
+  id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId    String      @db.Uuid
+  type       AddressType
+  fullName   String
+  phone      String
+  line1      String
+  line2      String?
+  city       String
+  state      String
+  postalCode String
+  country    String
+  order      Order       @relation(fields: [orderId], references: [id])
+}
+
+enum AddressType {
+  BILLING
+  SHIPPING
+}
+
+model OrderStatusHistory {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId    String   @db.Uuid
+  fromStatus String?
+  toStatus   String
+  reason     String?
+  changedBy  String?  @db.Uuid
+  createdAt  DateTime @default(now())
+  order      Order    @relation(fields: [orderId], references: [id])
+}
+
+model Payment {
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId           String          @db.Uuid
+  provider          PaymentProvider
+  providerOrderId   String?
+  providerPaymentId String?
+  amountInPaise     Int
+  currency          String          @default("INR")
+  status            PaymentStatus   @default(PENDING)
+  gatewayFeeInPaise Int             @default(0)
+  settledInPaise    Int             @default(0)
+  settlementDate    DateTime?
+  refundedInPaise   Int             @default(0)
+  rawPayload        Json?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  order             Order           @relation(fields: [orderId], references: [id])
+  refunds           Refund[]
+}
+
+enum PaymentProvider {
+  RAZORPAY
+  STRIPE
+  PAYPAL
+  COD
+}
+
+model Refund {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paymentId        String   @db.Uuid
+  amountInPaise    Int
+  reason           String?
+  providerRefundId String?
+  status           String   @default("pending")
+  createdAt        DateTime @default(now())
+  payment          Payment  @relation(fields: [paymentId], references: [id])
+}
+
+model Invoice {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId   String   @unique @db.Uuid
+  invoiceNo String   @unique
+  pdfUrl    String?
+  issuedAt  DateTime @default(now())
+  order     Order    @relation(fields: [orderId], references: [id])
+}
+
+model Shipment {
+  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId     String         @db.Uuid
+  courier     String
+  awb         String?
+  trackingUrl String?
+  status      ShipmentStatus @default(CREATED)
+  deliveredAt DateTime?
+  rtoAt       DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  order       Order          @relation(fields: [orderId], references: [id])
+}
+
+enum ShipmentStatus {
+  CREATED
+  PICKED
+  INTRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  RTO
+}
+
+model Coupon {
+  id              String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code            String     @unique
+  type            CouponType
+  value           Int
+  minOrderInPaise Int        @default(0)
+  maxUsageTotal   Int?
+  maxUsagePerUser Int        @default(1)
+  usageCount      Int        @default(0)
+  validFrom       DateTime?
+  validUntil      DateTime?
+  isActive        Boolean    @default(true)
+  createdAt       DateTime   @default(now())
+}
+
+enum CouponType {
+  PERCENTAGE
+  FIXED
+}
+
+model Review {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId  String   @db.Uuid
+  userId     String   @db.Uuid
+  rating     Int
+  title      String?
+  body       String?
+  isVerified Boolean  @default(false)
+  isApproved Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  product    Product  @relation(fields: [productId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model Wishlist {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @db.Uuid
+  productId String   @db.Uuid
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+
+  @@unique([userId, productId])
+}
+
+model Course {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug           String       @unique
+  title          String
+  description    String?
+  priceInPaise   Int          @default(0)
+  isFree         Boolean      @default(false)
+  imageUrl       String?
+  status         CourseStatus @default(DRAFT)
+  seoTitle       String?
+  seoDescription String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  lessons        Lesson[]
+  enrollments    Enrollment[]
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Lesson {
+  id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  courseId String  @db.Uuid
+  title    String
+  videoUrl String?
+  duration Int?
+  position Int     @default(0)
+  isFree   Boolean @default(false)
+  course   Course  @relation(fields: [courseId], references: [id])
+}
+
+model Enrollment {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String    @db.Uuid
+  courseId    String    @db.Uuid
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id])
+  course      Course    @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+}
+
+model Event {
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug           String      @unique
+  title          String
+  description    String?
+  startDate      DateTime
+  endDate        DateTime?
+  venue          String?
+  isOnline       Boolean     @default(false)
+  zoomLink       String?
+  priceInPaise   Int         @default(0)
+  imageUrl       String?
+  status         EventStatus @default(DRAFT)
+  seoTitle       String?
+  seoDescription String?
+  createdAt      DateTime    @default(now())
+  bookings       Booking[]
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+}
+
+model Booking {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @db.Uuid
+  eventId   String   @db.Uuid
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  event     Event    @relation(fields: [eventId], references: [id])
+}
+
+model Vaidya {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug           String   @unique
+  name           String
+  bio            String?
+  photoUrl       String?
+  speciality     String?
+  seoTitle       String?
+  seoDescription String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+}
+
+model Mentor {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug           String   @unique
+  name           String
+  bio            String?
+  photoUrl       String?
+  expertise      String?
+  seoTitle       String?
+  seoDescription String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+}
+
+model Retreat {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug           String   @unique
+  title          String
+  description    String?
+  imageUrl       String?
+  location       String?
+  duration       String?
+  priceInPaise   Int?
+  seoTitle       String?
+  seoDescription String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+}
+
+model BlogPost {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug           String     @unique
+  title          String
+  content        String
+  excerpt        String?
+  imageUrl       String?
+  status         PostStatus @default(DRAFT)
+  publishedAt    DateTime?
+  seoTitle       String?
+  seoDescription String?
+  seoKeyword     String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model OtpCode {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  target    String
+  code      String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+}
