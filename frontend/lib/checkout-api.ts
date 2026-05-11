@@ -23,20 +23,38 @@ export type CreateOrderResponse = {
   paymentId: string;
 };
 
-export async function createOrder(body: CreateOrderBody): Promise<CreateOrderResponse> {
+export class CheckoutApiError extends Error {
+  constructor(
+    message: string,
+    public readonly code: string,
+    public readonly status: number
+  ) {
+    super(message);
+    this.name = "CheckoutApiError";
+  }
+}
+
+export async function createOrder(
+  body: CreateOrderBody,
+  idempotencyKey: string
+): Promise<CreateOrderResponse> {
   const res = await fetch(`${getApiBase()}/api/checkout/create-order`, {
     method: "POST",
     credentials: "include",
-    headers: buildHeaders(true),
+    headers: {
+      ...buildHeaders(true),
+      "Idempotency-Key": idempotencyKey
+    },
     body: JSON.stringify({ ...body, country: body.country ?? "IN" })
   });
   const json = (await res.json()) as {
     success?: boolean;
     data?: CreateOrderResponse;
     error?: string;
+    code?: string;
   };
   if (!res.ok || !json.success || !json.data) {
-    throw new Error(json.error || "Could not create order");
+    throw new CheckoutApiError(json.error || "Could not create order", json.code ?? "CHECKOUT_ERROR", res.status);
   }
   return json.data;
 }
@@ -59,9 +77,59 @@ export async function verifyRazorpayPayment(payload: {
     success?: boolean;
     data?: { orderNumber: string };
     error?: string;
+    code?: string;
   };
   if (!res.ok || !json.success || !json.data) {
-    throw new Error(json.error || "Payment verification failed");
+    throw new CheckoutApiError(
+      json.error || "Payment verification failed",
+      json.code ?? "VERIFY_FAILED",
+      res.status
+    );
   }
   return json.data;
+}
+
+export type PublicOrderSummary = {
+  orderNumber: string;
+  status: string;
+  paymentStatus: string;
+  grandTotalInPaise: number;
+  currency: string;
+  email: string;
+};
+
+export async function fetchPublicOrder(
+  orderNumber: string,
+  email: string
+): Promise<PublicOrderSummary | null> {
+  const q = new URLSearchParams({ email: email.trim().toLowerCase() });
+  const res = await fetch(
+    `${getApiBase()}/api/orders/public/${encodeURIComponent(orderNumber)}?${q.toString()}`,
+    { credentials: "include", headers: { Accept: "application/json" } }
+  );
+  const json = (await res.json()) as {
+    success?: boolean;
+    data?: { order: PublicOrderSummary };
+  };
+  if (!res.ok || !json.success || !json.data?.order) {
+    return null;
+  }
+  return json.data.order;
+}
+
+/** Poll every 3s up to maxMs while order is still pending payment (webhook may be slow). */
+export async function pollUntilPaidOrTerminal(
+  orderNumber: string,
+  email: string,
+  maxMs = 30_000
+): Promise<"PAID" | "CANCELLED" | "STILL_PENDING"> {
+  const deadline = Date.now() + maxMs;
+  while (Date.now() < deadline) {
+    const o = await fetchPublicOrder(orderNumber, email);
+    if (!o) return "STILL_PENDING";
+    if (o.status === "PAID" || o.paymentStatus === "CAPTURED") return "PAID";
+    if (o.status === "CANCELLED" || o.paymentStatus === "FAILED") return "CANCELLED";
+    await new Promise((r) => setTimeout(r, 3000));
+  }
+  return "STILL_PENDING";
 }

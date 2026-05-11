@@ -1,33 +1,22 @@
-import crypto from "crypto";
-
 import type { Prisma } from "@prisma/client";
 
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
+import { confirmStockTx } from "../orders/orders.service";
 
-function getKeySecret(): string {
-  const s = process.env.RAZORPAY_KEY_SECRET;
-  if (!s) {
-    throw Object.assign(new Error("Razorpay is not configured"), {
-      statusCode: 503,
-      code: "RAZORPAY_NOT_CONFIGURED"
-    });
-  }
-  return s;
-}
+import { verifyPayment } from "./razorpay";
 
-/**
- * Standard checkout signature: HMAC_SHA256(order_id + "|" + payment_id, key_secret)
- */
+export { verifyPayment };
+
+/** @deprecated Prefer `verifyPayment` (throws with userMessage). Kept for tests. */
 export function verifyPaymentSignature(
   orderId: string,
   paymentId: string,
   signature: string
 ): boolean {
-  const body = `${orderId}|${paymentId}`;
-  const expected = crypto.createHmac("sha256", getKeySecret()).update(body).digest("hex");
   try {
-    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+    verifyPayment(orderId, paymentId, signature);
+    return true;
   } catch {
     return false;
   }
@@ -37,6 +26,18 @@ export async function completePaidOrder(
   razorpayOrderId: string,
   razorpayPaymentId: string
 ): Promise<{ orderNumber: string }> {
+  const already = await prisma.payment.findFirst({
+    where: {
+      provider: "RAZORPAY",
+      providerPaymentId: razorpayPaymentId,
+      status: "CAPTURED"
+    },
+    include: { order: true }
+  });
+  if (already) {
+    return { orderNumber: already.order.orderNumber };
+  }
+
   const payment = await prisma.payment.findFirst({
     where: { provider: "RAZORPAY", providerOrderId: razorpayOrderId },
     include: {
@@ -55,11 +56,26 @@ export async function completePaidOrder(
     throw e;
   }
 
+  if (
+    payment.providerPaymentId === razorpayPaymentId &&
+    payment.status === "CAPTURED" &&
+    payment.order.status === "PAID"
+  ) {
+    return { orderNumber: payment.order.orderNumber };
+  }
+
   if (payment.order.status === "PAID" && payment.status === "CAPTURED") {
     return { orderNumber: payment.order.orderNumber };
   }
 
   await prisma.$transaction(async (tx) => {
+    const fresh = await tx.payment.findFirst({
+      where: { id: payment.id },
+      include: { order: true }
+    });
+    if (!fresh) return;
+    if (fresh.status === "CAPTURED" && fresh.order.status === "PAID") return;
+
     await tx.payment.update({
       where: { id: payment.id },
       data: {
@@ -82,17 +98,7 @@ export async function completePaidOrder(
       }
     });
 
-    for (const item of payment.order.items) {
-      const inv = item.variant.inventory;
-      if (inv) {
-        await tx.inventory.update({
-          where: { id: inv.id },
-          data: {
-            onHand: { decrement: item.qtyOrdered }
-          }
-        });
-      }
-    }
+    await confirmStockTx(tx, payment.orderId);
 
     await tx.orderStatusHistory.create({
       data: {

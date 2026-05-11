@@ -1,7 +1,7 @@
 # SARVEDA — Cursor Project Memory File
 # Read this FULLY before every single response.
 # This is the complete source of truth for the entire project.
-# Last updated: May 2026
+# Last updated: May 11, 2026
 
 ---
 
@@ -917,6 +917,110 @@ Abandoned cart    → 2 hour delay
 
 ---
 
+## PRODUCTION STANDARDS — NON NEGOTIABLE
+
+### Payment Handling (Bulletproof)
+- Every payment failure shows specific user-friendly message
+- Card declined: "Your card was declined. Please try another card"
+- Insufficient funds: "Insufficient funds. Please try another payment method"
+- Network timeout: "Connection timeout. Your money is safe, please retry"
+- Bank timeout: "Bank is taking longer than usual. Check orders in 10 minutes"
+- NEVER create duplicate orders on retry
+- Payment pending timeout: 15 minutes then auto-cancel + release stock
+- Webhook idempotency: check providerPaymentId before processing
+- Always verify Razorpay signature on every webhook
+- Store raw webhook payload in DB for reconciliation
+- Retry mechanism: 3 attempts with exponential backoff
+
+### Order Lifecycle (Complete)
+```
+PENDING_PAYMENT → PAID → PROCESSING → PACKED → SHIPPED → DELIVERED
+                       → CANCELLED (payment failed/timeout)
+                       → REFUNDED (after delivery)
+```
+
+### Notifications (Every Event)
+Trigger email + WhatsApp for:
+- Order confirmed (immediate)
+- Payment failed (immediate + retry link)
+- Order processing (same day)
+- Order shipped (with AWB + tracking URL)
+- Out for delivery (morning of delivery)
+- Order delivered (with review request)
+- Refund initiated (with timeline)
+- Abandoned cart (2 hours after adding, not purchased)
+
+WhatsApp: WATI API  
+Email: SendGrid  
+Both must fire for every event  
+Templates must be warm, professional, in English
+
+### Shipping (Automated)
+- Shiprocket as primary hub (connects all couriers)
+- Auto-select courier based on: weight + zone + price
+- Auto-generate AWB on order PROCESSING status
+- Tracking page at /track/[awb]
+- Pincode serviceability check before checkout
+- Estimated delivery date on product page + checkout
+- RTO handling: auto-update order status
+
+### GST Invoice (Mandatory)
+- Auto-generate PDF on order PAID
+- Show: seller details, buyer details, items, HSN codes, CGST/SGST/IGST breakdown, total
+- Downloadable from order page
+- Emailed automatically with order confirmation
+
+### Stock Management
+- Reserve stock on checkout initiated
+- Release if payment not completed in 15 min
+- Decrement on payment confirmed
+- Increment on cancellation/refund
+- Low stock alert to admin at threshold (5 units)
+- Out of stock: disable Add to Cart, show "Notify me"
+- Overselling prevention: check stock before payment
+
+### Search
+- Search bar in header (all pages)
+- Real-time suggestions as user types (debounced 300ms)
+- Search by: product name, category, description
+- Show product image + price in suggestions
+- Full search results page at /search?q=
+
+### UX Standards (World Class)
+- Page load: under 2 seconds on mobile
+- No layout shift (CLS score < 0.1)
+- Skeleton loaders on all data fetching
+- Smooth transitions between pages
+- Sticky Add to Cart on product page (mobile)
+- Image zoom on product page (click/pinch)
+- Recently viewed products (localStorage)
+- Trust badges on checkout: Secure | Encrypted | Safe
+- Progress indicator on checkout steps
+- Mobile checkout: maximum 3 taps to payment
+
+### Error Handling (User Friendly)
+- Never show technical errors to users
+- Every error has: clear message + action button
+- 404 page: branded with search + popular products
+- 500 page: branded with contact support option
+- Network error: "Check your connection and retry"
+
+### Security (Production Grade)
+- Rate limiting: 5 login attempts per 15 minutes
+- JWT rotation on suspicious activity
+- All inputs sanitized and validated (Zod)
+- SQL injection prevention (Prisma handles)
+- XSS prevention (React handles + CSP headers)
+- CORS: only allow sarveda-demo.com + vercel URLs
+
+### Performance Targets
+- Lighthouse score: 90+ on mobile
+- First Contentful Paint: < 1.5s
+- Time to Interactive: < 3s
+- API response time: < 200ms for product listing
+
+---
+
 ## 9. CODE CONVENTIONS
 
 ```typescript
@@ -1019,27 +1123,73 @@ Day 10: 🎯 Staging URL ready → send to Arjun
 
 ---
 
-## 13. BUILD STATUS (Update as you go)
+## 13. CURRENT BUILD STATUS (Updated May 11, 2026)
 
-- [x] docker-compose.yml running (Redis via Docker)
-- [x] Prisma schema created + migrated
-- [x] Express backend running on :5000
-- [ ] Auth module complete
-- [ ] Products API complete
-- [ ] 169 products seeded from CSV
-- [x] Next.js frontend running on :3000
-- [ ] /shop listing page done
-- [ ] /product/[slug] detail page done
-- [ ] Audio player working
-- [ ] Cart working
-- [ ] Checkout working
-- [ ] Razorpay test payment working
-- [ ] Order confirmation working
-- [ ] Admin basic panel done
-- [ ] Deployed to Railway staging
-- [ ] Demo sent to Arjun ← TARGET: May 20
+✅ Auth system (register/login/OTP/JWT)  
+✅ 169 products + 1069 variants on AWS RDS  
+✅ Shop + product detail pages  
+✅ Cart + checkout flow  
+✅ Razorpay + Stripe + PayPal integrated  
+✅ Order confirmation page  
+✅ Admin panel (products/orders/inventory)  
+✅ AWS EC2 Mumbai backend (13.206.192.106:5000)  
+✅ AWS RDS PostgreSQL Mumbai  
+✅ Vercel frontend (sarveda-frontend.vercel.app)  
+✅ Redis running on EC2  
+
+⬜ Payment failure handling (CRITICAL - Day 1)  
+⬜ Webhook idempotency (CRITICAL - Day 1)  
+⬜ Email notifications via SendGrid (Day 2)  
+⬜ WhatsApp notifications via WATI (Day 2)  
+⬜ GST invoice PDF generation (Day 2)  
+⬜ Shiprocket shipping integration (Day 3)  
+⬜ AWB auto-generation (Day 3)  
+⬜ Order tracking page /track/[awb] (Day 3)  
+⬜ Pincode serviceability check (Day 3)  
+⬜ User account + order history (Day 4)  
+⬜ Search with suggestions (Day 4)  
+⬜ Stock reserve/release system (Day 4)  
+⬜ Mobile UX polish (Day 4)  
+⬜ Coupon system end-to-end testing (Day 4)  
+⬜ Skeleton loaders everywhere (Day 4)  
+⬜ Image zoom on product page (Day 4)  
+⬜ sarveda-demo.com domain setup (Day 5)  
+⬜ Full end-to-end testing (Day 5)  
+⬜ Performance optimization (Day 5)  
 
 ---
 
-*Sarveda | Developer: Shivakumar M | Client: Arjun | May 2026*
+## 14. DEPLOYMENT FLOW (How to update production)
+
+**Frontend changes:**
+```
+git add . && git commit -m "message" && git push
+→ Vercel auto-deploys in ~2 minutes
+```
+
+**Backend changes:**
+```
+git push (local)
+Then SSH to EC2:
+ssh -i ~/.ssh/sarveda-key.pem ubuntu@13.206.192.106
+cd ~/sarveda && git pull origin main
+cd backend && npm install && npm run build
+pm2 restart sarveda-backend
+```
+
+---
+
+## 15. AWS INFRASTRUCTURE
+
+| Resource | Value |
+|----------|--------|
+| EC2 | 13.206.192.106 (Mumbai ap-south-1) |
+| RDS | sarveda-db.ct2kuyqkyegn.ap-south-1.rds.amazonaws.com |
+| Redis | localhost:6379 (on EC2) |
+| Frontend | Vercel (auto-deploy from GitHub `main`) |
+| GitHub | github.com/sarvedaonlineshop-max/sarveda |
+
+---
+
+*Sarveda | Developer: Shivakumar M | Client: Arjun | May 11, 2026*
 *AI Advisor: Claude (Anthropic) via Cursor*

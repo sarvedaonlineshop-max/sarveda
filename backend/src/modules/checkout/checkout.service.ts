@@ -1,11 +1,26 @@
 import type { Request } from "express";
 
+import { getRedisConnection } from "../../config/redisConnection";
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
+import { schedulePaymentTimeout } from "../../jobs/paymentTimeoutJob";
 import { generateOrderNumber } from "../../utils/orderNumber";
-import { createRazorpayOrder, getRazorpayKeyId } from "../payments/razorpay.client";
+import { createOrder, getRazorpayKeyId } from "../payments/razorpay";
+import { reserveStockTx } from "../orders/orders.service";
 import { getCartPayload, resolveCartContext } from "../cart/cart.service";
 import type { CreateOrderBody } from "./schemas";
+
+const IDEM_TTL_SEC = 30 * 60;
+
+export type CreateCheckoutResult = {
+  orderId: string;
+  orderNumber: string;
+  amountInPaise: number;
+  currency: string;
+  razorpayKeyId: string;
+  rzpOrderId: string;
+  paymentId: string;
+};
 
 function labelFromVariant(
   rows: Array<{ attributeValue: { value: string; attribute: { name: string } } }>
@@ -14,7 +29,36 @@ function labelFromVariant(
   return rows.map((r) => `${r.attributeValue.attribute.name}: ${r.attributeValue.value}`).join(" · ");
 }
 
-export async function createCheckoutOrder(req: Request, body: CreateOrderBody) {
+async function getIdempotentCheckout(idemKey: string): Promise<CreateCheckoutResult | null> {
+  const redis = getRedisConnection();
+  if (!redis) return null;
+  const v = await redis.get(`checkout:idem:${idemKey}`);
+  if (!v) return null;
+  try {
+    return JSON.parse(v) as CreateCheckoutResult;
+  } catch {
+    return null;
+  }
+}
+
+async function setIdempotentCheckout(idemKey: string, payload: CreateCheckoutResult): Promise<void> {
+  const redis = getRedisConnection();
+  if (!redis) return;
+  await redis.set(`checkout:idem:${idemKey}`, JSON.stringify(payload), "EX", IDEM_TTL_SEC);
+}
+
+export async function createCheckoutOrder(req: Request, body: CreateOrderBody): Promise<CreateCheckoutResult> {
+  const idemHeader =
+    typeof req.headers["idempotency-key"] === "string" ? req.headers["idempotency-key"].trim() : "";
+
+  if (idemHeader) {
+    const cached = await getIdempotentCheckout(idemHeader);
+    if (cached) {
+      logger.info("checkout_idempotent_hit", { idempotencyKey: idemHeader, orderId: cached.orderId });
+      return cached;
+    }
+  }
+
   const { cartId, userId } = await resolveCartContext(req, "read");
   if (!cartId) {
     const e = new Error("Cart is empty") as Error & { statusCode: number; code: string };
@@ -146,13 +190,17 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody) {
       }
     });
 
-    const rzp = await createRazorpayOrder({
+    await reserveStockTx(tx, order.id);
+
+    const rzpIdempotencyKey = `${order.id}:${Date.now()}`;
+    const rzp = await createOrder({
       amountInPaise: grandTotalInPaise,
       receipt,
       notes: {
         order_id: order.id,
         order_number: orderNumber
-      }
+      },
+      idempotencyKey: rzpIdempotencyKey
     });
 
     const payment = await tx.payment.create({
@@ -163,7 +211,7 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody) {
         amountInPaise: grandTotalInPaise,
         currency: "INR",
         status: "PENDING",
-        rawPayload: { created: true } as object
+        rawPayload: { created: true, idempotencyKey: rzpIdempotencyKey } as object
       }
     });
 
@@ -183,12 +231,14 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody) {
     logger.warn("cart_clear_after_order_failed", { err });
   });
 
+  await schedulePaymentTimeout(result.order.id);
+
   logger.info("checkout_order_created", {
     orderId: result.order.id,
     orderNumber: result.order.orderNumber
   });
 
-  return {
+  const payload: CreateCheckoutResult = {
     orderId: result.order.id,
     orderNumber: result.order.orderNumber,
     amountInPaise: grandTotalInPaise,
@@ -197,4 +247,10 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody) {
     rzpOrderId: result.rzpOrderId,
     paymentId: result.payment.id
   };
+
+  if (idemHeader) {
+    await setIdempotentCheckout(idemHeader, payload);
+  }
+
+  return payload;
 }

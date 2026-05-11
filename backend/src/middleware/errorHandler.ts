@@ -3,6 +3,7 @@ import type { NextFunction, Request, Response } from "express";
 type ApiError = Error & {
   statusCode?: number;
   code?: string;
+  userMessage?: string;
 };
 
 export const errorHandler = (
@@ -12,12 +13,15 @@ export const errorHandler = (
   _next: NextFunction
 ) => {
   const statusCode = err.statusCode ?? 500;
-  const message = statusCode === 500 ? "Internal Server Error" : err.message;
+  const clientMessage =
+    statusCode === 500
+      ? "Internal Server Error"
+      : err.userMessage ?? err.message;
   const code = err.code ?? (statusCode === 500 ? "INTERNAL_ERROR" : "REQUEST_ERROR");
 
   res.status(statusCode).json({
     success: false,
-    error: message,
+    error: clientMessage,
     code
   });
 };
