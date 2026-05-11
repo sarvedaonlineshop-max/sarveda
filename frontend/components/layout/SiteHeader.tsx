@@ -56,7 +56,8 @@ export function SiteHeader() {
     if (
       !pathname ||
       pathname.startsWith("/admin") ||
-      pathname.startsWith("/login")
+      pathname.startsWith("/login") ||
+      pathname.startsWith("/signup")
     ) {
       setSessionUser(null);
       return;
@@ -76,7 +77,11 @@ export function SiteHeader() {
     setMenuOpen(false);
   }
 
-  if (pathname?.startsWith("/admin") || pathname?.startsWith("/login")) {
+  if (
+    pathname?.startsWith("/admin") ||
+    pathname?.startsWith("/login") ||
+    pathname?.startsWith("/signup")
+  ) {
     return null;
   }
 
@@ -128,9 +133,17 @@ export function SiteHeader() {
                 Sign out
               </button>
             ) : (
-              <Link href="/login" className={sessionLinkClass}>
-                Sign in
-              </Link>
+              <>
+                <Link href="/login" className={sessionLinkClass}>
+                  Sign in
+                </Link>
+                <Link
+                  href="/signup"
+                  className="rounded-full border border-amber-500/40 px-4 py-2 text-sm font-semibold text-amber-300 transition-colors hover:border-amber-400 hover:bg-amber-500/10"
+                >
+                  Sign up
+                </Link>
+              </>
             )}
           </div>
 
@@ -205,13 +218,22 @@ export function SiteHeader() {
                 Sign out
               </button>
             ) : (
-              <Link
-                href="/login"
-                className="min-h-[48px] rounded-lg px-3 py-3 text-lg font-medium tracking-wide text-stone-400 hover:bg-stone-800 hover:text-amber-400"
-                onClick={() => setMenuOpen(false)}
-              >
-                Sign in
-              </Link>
+              <>
+                <Link
+                  href="/login"
+                  className="min-h-[48px] rounded-lg px-3 py-3 text-lg font-medium tracking-wide text-stone-400 hover:bg-stone-800 hover:text-amber-400"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href="/signup"
+                  className="min-h-[48px] rounded-lg px-3 py-3 text-lg font-medium tracking-wide text-amber-400 hover:bg-stone-800"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Sign up
+                </Link>
+              </>
             )}
             <button
               type="button"

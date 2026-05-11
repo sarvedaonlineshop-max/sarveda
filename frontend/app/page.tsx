@@ -34,6 +34,21 @@ export default async function HomePage() {
             Thoughtfully curated instruments, botanicals, and ritual goods — honoring tradition while reaching hearts
             everywhere.
           </p>
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+            {[
+              { label: "169+ products", detail: "Curated for practice" },
+              { label: "38 with audio", detail: "Hear before you buy" },
+              { label: "Ships worldwide", detail: "India · US · UK" }
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-left backdrop-blur-sm"
+              >
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">{item.label}</p>
+                <p className="text-[11px] text-stone-400">{item.detail}</p>
+              </div>
+            ))}
+          </div>
           <div className="mt-10 flex flex-col items-stretch justify-center gap-4 sm:flex-row sm:items-center">
             <Link
               href="/shop"

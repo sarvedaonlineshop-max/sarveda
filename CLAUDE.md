@@ -1,7 +1,7 @@
 # SARVEDA — Cursor Project Memory File
 # Read this FULLY before every single response.
 # This is the complete source of truth for the entire project.
-# Last updated: May 11, 2026
+# Last updated: May 11, 2026 (evening — payment + checkout + admin)
 
 ---
 
@@ -117,7 +117,7 @@ sarveda/
 │   │   │   │   ├── stripe.ts
 │   │   │   │   ├── paypal.ts
 │   │   │   │   ├── cod.ts
-│   │   │   │   ├── webhooks.ts       ← Idempotent handlers
+│   │   │   │   ├── razorpay.webhook.ts ← Idempotent webhook handler
 │   │   │   │   └── reconciliation.ts ← Settlement dashboard
 │   │   │   ├── shipping/
 │   │   │   │   ├── shiprocket.ts
@@ -141,6 +141,7 @@ sarveda/
 │   │   │       ├── sitemap.ts
 │   │   │       └── schema.ts         ← JSON-LD
 │   │   ├── jobs/
+│   │   │   ├── paymentTimeoutJob.ts  ← BullMQ 15 min unpaid cancel
 │   │   │   ├── emailQueue.ts
 │   │   │   ├── whatsappQueue.ts
 │   │   │   ├── invoiceQueue.ts
@@ -1011,7 +1012,7 @@ Templates must be warm, professional, in English
 - All inputs sanitized and validated (Zod)
 - SQL injection prevention (Prisma handles)
 - XSS prevention (React handles + CSP headers)
-- CORS: only allow sarveda-demo.com + vercel URLs
+- CORS: allow listed origins (`FRONTEND_URL` comma-separated + optional `CORS_ORIGINS`) — staging `https://sarveda-demo.xyz`, Vercel preview/production hosts
 
 ### Performance Targets
 - Lighthouse score: 90+ on mobile
@@ -1067,6 +1068,7 @@ app.ts security       → 70% — helmet, cors, limits
 
 ```env
 DATABASE_URL=postgresql://sarveda:password@localhost:5432/sarveda_db
+# BullMQ payment-timeout + checkout Idempotency-Key cache (required on EC2 for 15 min cancel)
 REDIS_URL=redis://localhost:6379
 JWT_SECRET=min-32-chars-secret
 JWT_EXPIRES_IN=7d
@@ -1074,6 +1076,7 @@ GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 RAZORPAY_KEY_ID=
 RAZORPAY_KEY_SECRET=
+RAZORPAY_WEBHOOK_SECRET=
 STRIPE_SECRET_KEY=
 STRIPE_PUBLISHABLE_KEY=
 STRIPE_WEBHOOK_SECRET=
@@ -1097,7 +1100,13 @@ MSG91_TEMPLATE_ID=
 PORT=5000
 NODE_ENV=development
 FRONTEND_URL=http://localhost:3000
+# Staging primary origin (comma-separated): https://sarveda-demo.xyz
+# Optional extra browser origins: CORS_ORIGINS=https://sarveda-frontend.vercel.app
+GOOGLE_CALLBACK_URL=https://sarveda-demo.xyz/api/auth/google/callback
 NEXT_PUBLIC_API_URL=http://localhost:5000
+# Production: public site URL for server-side /api fetches (else Vercel sets VERCEL_URL)
+# NEXT_PUBLIC_SITE_URL=https://sarveda.com
+# Staging demo: NEXT_PUBLIC_SITE_URL=https://sarveda-demo.xyz
 NEXT_PUBLIC_RAZORPAY_KEY_ID=
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
 NEXT_PUBLIC_PAYPAL_CLIENT_ID=
@@ -1131,24 +1140,69 @@ Day 10: 🎯 Staging URL ready → send to Arjun
 ✅ Cart + checkout flow  
 ✅ Razorpay + Stripe + PayPal integrated  
 ✅ Order confirmation page  
-✅ Admin panel (products/orders/inventory)  
+✅ Admin panel (products/orders/inventory) — dashboard KPIs, pagination, workspace light/dark toggle, full-width layout  
 ✅ AWS EC2 Mumbai backend (13.206.192.106:5000)  
 ✅ AWS RDS PostgreSQL Mumbai  
 ✅ Vercel frontend (sarveda-frontend.vercel.app)  
+✅ Staging custom domain: https://sarveda-demo.xyz (Vercel; `/api` proxied to EC2)  
+✅ Storefront `/login` + `/signup` with Google OAuth + email/password  
 ✅ Redis running on EC2  
-✅ Day 1: Payment hardening deployed  
-✅ Razorpay webhook configured  
-✅ Stock reserve/release system  
-✅ Payment timeout job (BullMQ)  
-✅ Payment failed page  
-✅ Idempotency keys  
+✅ Vercel `/api/*` rewrite → EC2 Express (`next.config.js`; browser uses same-origin `/api`)  
+✅ Day 1: Payment hardening (Razorpay India)  
+✅ Razorpay webhook endpoint + signature verify + idempotent `providerPaymentId`  
+✅ Stock reserve on checkout / release on fail or timeout / confirm on paid  
+✅ Payment timeout job (BullMQ, 15 min `PENDING_PAYMENT` → cancel + release stock)  
+✅ Checkout idempotency (`Idempotency-Key` header + Redis; Razorpay order notes `idempotency_key`)  
+✅ Client verify path `POST /api/payments/razorpay/verify` + 30s order poll if webhook slow  
+✅ `/payment-failed` page + resume unpaid order (`GET /api/checkout/resume`)  
+✅ Cart kept until payment succeeds; dismiss/back navigation does not wipe cart  
+✅ Pending checkout in `sessionStorage` (`sarveda_pending_checkout`)  
 
+⬜ **Next:** Confirm Razorpay + Google OAuth env on EC2/Vercel for `sarveda-demo.xyz` (webhook + OAuth redirect URIs)  
 ⬜ Day 2: Email + WhatsApp + GST Invoice  
 ⬜ Day 3: Shipping (Shiprocket)  
 ⬜ Day 4: UX + Search + Account  
-⬜ Day 5: Testing + Domain + Demo Friday  
+⬜ Day 5: Full E2E testing + demo Friday  
 
 ---
+
+## 16. PAYMENT, CHECKOUT & API ROUTING (Implemented May 11, 2026)
+
+### How the browser talks to the API
+- **Local:** Next dev rewrites `/api/*` → `http://127.0.0.1:5000/api/*` (override with `BACKEND_PROXY_URL`).
+- **Vercel:** rewrites `/api/*` → `http://13.206.192.106:5000/api/*` when `VERCEL` is set.
+- **`frontend/lib/api.ts` `getApiBase()`:** browser returns `""` (same-origin `/api/...`); production server uses `NEXT_PUBLIC_SITE_URL` or `https://${VERCEL_URL}` so RSC fetches hit the deployment host, not raw EC2.
+- **No** Next.js Route Handler at `frontend/app/api/payments/webhook/razorpay/route.ts` — webhooks hit Express only (Vercel proxies the path).
+
+### Razorpay — two paths (both intentional)
+1. **Primary (shopper):** Checkout opens Razorpay → success handler → **`POST /api/payments/razorpay/verify`** (HMAC signature) → order **PAID**, cart cleared, stock confirmed.
+2. **Backup (server):** **`POST /api/payments/razorpay/webhook`** (HMAC with `RAZORPAY_WEBHOOK_SECRET`, raw JSON body in `app.ts` before `express.json()`). Handles **`payment.captured`**, **`payment.failed`**, **`refund.created`**, **`refund.processed`**. Duplicate `providerPaymentId` → **200** idempotent. Payload merged into `Payment.rawPayload`.
+
+**Razorpay Dashboard webhook URL (path must match):** `https://sarveda-demo.xyz/api/payments/razorpay/webhook` (staging) or production host at launch. Subscribe at least **`payment.captured`** and **`payment.failed`**. Test-mode keys and test-mode webhook must match.
+
+**Google OAuth (staging):** Authorized redirect URI `https://sarveda-demo.xyz/api/auth/google/callback`; backend `FRONTEND_URL` primary origin `https://sarveda-demo.xyz`.
+
+**Key backend files:** `modules/payments/razorpay.ts`, `razorpay.verify.ts`, `razorpay.webhook.ts`, `modules/orders/orders.service.ts`, `jobs/paymentTimeoutJob.ts`, `modules/checkout/checkout.service.ts`.
+
+### Checkout navigation & cart (failure / back button)
+- **`create-order` does not delete cart lines** — cart clears only after successful verify (`clearCartForRequest` on verify; logged-in cart also cleared in `completePaidOrder`).
+- **`GET /api/checkout/resume?orderNumber=&email=`** reopens the same unpaid Razorpay order (no duplicate Sarveda order on retry).
+- **`frontend/lib/pending-checkout.ts`** stores pending order in **`sessionStorage`**; Razorpay modal dismiss → **`/payment-failed`** with order context; retry links to **`/checkout?orderNumber=&email=`**.
+- Checkout **`pageshow`** refreshes cart when user returns via back/forward cache.
+
+### Admin (same sprint)
+- Dashboard load fixed (no `AbortController` abort under React Strict Mode).
+- Shared **`AdminPagination`** on orders, products, inventory; inventory API paginated.
+- **`AdminShell`** full-width content; workspace light/dark toggle (`darkMode: 'class'`, `sarveda-admin-theme` in `localStorage`).
+
+### Still not built (payment-adjacent)
+- SendGrid / WATI on pay success or fail (Day 2).
+- Settlement **reconciliation** UI (payloads stored only).
+- COD checkout path (payment-failed page links back to checkout only).
+- Stripe / PayPal webhook parity with Razorpay hardening.
+
+---
+
 
 ## 14. DEPLOYMENT FLOW (How to update production)
 

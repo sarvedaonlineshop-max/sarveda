@@ -8,47 +8,44 @@ import { AuthShell } from "@/components/auth/AuthShell";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import {
   loginWithPassword,
-  logoutSession,
+  registerAccount,
   resolvePostLoginPath
 } from "@/lib/auth-client";
 
 const inputClass =
   "w-full rounded-xl border border-stone-600 bg-stone-950/70 px-3 py-2.5 text-stone-100 placeholder:text-stone-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500";
 
-function LoginForm() {
+function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next");
-  const err = searchParams.get("error");
-  const reason = searchParams.get("reason");
-  const adminOnly = useMemo(
-    () => Boolean(next?.startsWith("/admin") || searchParams.get("admin") === "1"),
-    [next, searchParams]
-  );
-  const postLoginNext = next ?? (adminOnly ? "/admin" : "/");
+  const postLoginNext = next ?? "/";
 
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState(() => {
-    if (err === "google") return "Google sign-in was cancelled or failed. Please try again.";
-    if (err === "google_profile") return "We could not read your Google profile. Try another account.";
-    if (err) return `Sign-in error: ${err}`;
-    if (reason === "reauth") return "Please sign in again — your session needs to be refreshed for admin access.";
-    return "";
-  });
+  const [message, setMessage] = useState("");
+
+  const loginHref = useMemo(() => {
+    const params = new URLSearchParams();
+    if (next) params.set("next", next);
+    const q = params.toString();
+    return q ? `/login?${q}` : "/login";
+  }, [next]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     setMessage("");
     try {
+      await registerAccount({ name, email, password });
       const user = await loginWithPassword(email, password);
-      const destination = resolvePostLoginPath(user, postLoginNext, { adminOnly });
+      const destination = resolvePostLoginPath(user, postLoginNext);
       router.replace(destination);
       router.refresh();
     } catch (ex) {
-      setMessage(ex instanceof Error ? ex.message : "Login failed");
+      setMessage(ex instanceof Error ? ex.message : "Sign up failed");
     } finally {
       setSubmitting(false);
     }
@@ -56,40 +53,18 @@ function LoginForm() {
 
   return (
     <AuthShell
-      title={adminOnly ? "Admin sign-in" : "Welcome back"}
-      subtitle={
-        adminOnly
-          ? "Use your Sarveda admin account, or continue with Google."
-          : "Sign in with email or Google to continue shopping."
-      }
+      title="Create your account"
+      subtitle="Join Sarveda with email or Google. Password must be at least 8 characters."
       footer={
-        <div className="space-y-3 text-center text-sm text-stone-400">
-          {!adminOnly ? (
-            <p>
-              New here?{" "}
-              <Link href={`/signup${next ? `?next=${encodeURIComponent(next)}` : ""}`} className="text-amber-400 hover:text-amber-300">
-                Create an account
-              </Link>
-            </p>
-          ) : null}
-          <Link href="/" className="block text-amber-500 hover:text-amber-400">
-            Back to storefront
+        <p className="text-center text-sm text-stone-400">
+          Already have an account?{" "}
+          <Link href={loginHref} className="text-amber-400 hover:text-amber-300">
+            Sign in
           </Link>
-          <button
-            type="button"
-            className="text-stone-500 underline decoration-stone-700 hover:text-amber-400"
-            onClick={() => {
-              void logoutSession().then(() => {
-                setMessage("Signed out. You can sign in again.");
-              });
-            }}
-          >
-            Sign out (clear session cookie)
-          </button>
-        </div>
+        </p>
       }
     >
-      <GoogleSignInButton nextPath={postLoginNext} />
+      <GoogleSignInButton nextPath={postLoginNext} label="Sign up with Google" />
 
       <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-stone-500">
         <span className="h-px flex-1 bg-stone-700" />
@@ -98,6 +73,21 @@ function LoginForm() {
       </div>
 
       <form className="space-y-4" onSubmit={handleSubmit}>
+        <div>
+          <label htmlFor="name" className="sr-only">
+            Full name
+          </label>
+          <input
+            id="name"
+            type="text"
+            autoComplete="name"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Full name"
+            className={inputClass}
+          />
+        </div>
         <div>
           <label htmlFor="email" className="sr-only">
             Email
@@ -120,11 +110,12 @@ function LoginForm() {
           <input
             id="password"
             type="password"
-            autoComplete="current-password"
+            autoComplete="new-password"
             required
+            minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
+            placeholder="Password (8+ characters)"
             className={inputClass}
           />
         </div>
@@ -138,14 +129,14 @@ function LoginForm() {
           disabled={submitting}
           className="w-full rounded-xl bg-amber-500 py-3 text-sm font-semibold text-stone-900 transition-colors hover:bg-amber-400 disabled:opacity-60"
         >
-          {submitting ? "Signing in…" : "Sign in"}
+          {submitting ? "Creating account…" : "Create account"}
         </button>
       </form>
     </AuthShell>
   );
 }
 
-export default function LoginPage() {
+export default function SignupPage() {
   return (
     <Suspense
       fallback={
@@ -154,7 +145,7 @@ export default function LoginPage() {
         </div>
       }
     >
-      <LoginForm />
+      <SignupForm />
     </Suspense>
   );
 }

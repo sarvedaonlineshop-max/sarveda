@@ -4,6 +4,11 @@
 
 :root {
   color-scheme: light;
+  --sarveda-ink: #1c1917;
+  --sarveda-night: #0c0a09;
+  --sarveda-gold: #f59e0b;
+  --sarveda-gold-soft: #fbbf24;
+  --sarveda-mist: #fafaf9;
 }
 
 html {

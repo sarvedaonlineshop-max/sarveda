@@ -7,6 +7,7 @@ import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import passport from "passport";
 
+import { getCorsOrigins } from "./config/corsOrigins";
 import { errorHandler } from "./middleware/errorHandler";
 import { authRouter, configurePassport } from "./modules/auth";
 import { cartRoutes } from "./modules/cart/cart.routes";
@@ -24,9 +25,16 @@ const app = express();
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL ?? "http://localhost:3000",
+    origin(origin, callback) {
+      const allowed = getCorsOrigins();
+      if (!origin || allowed.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization", "X-Sarveda-Cart-Session"]
+    allowedHeaders: ["Content-Type", "Authorization", "X-Sarveda-Cart-Session", "Idempotency-Key"]
   })
 );
 app.use(helmet());

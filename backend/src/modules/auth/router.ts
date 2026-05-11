@@ -8,6 +8,11 @@ import { validateBody } from "../../middleware/validate";
 import { setAuthCookie } from "../../utils/jwt";
 import { googleOAuthConfigured } from "./passport";
 import {
+  getPrimaryFrontendBase,
+  OAUTH_NEXT_COOKIE,
+  safeRelativeRedirect
+} from "./redirect";
+import {
   getMe,
   loginUser,
   logoutUser,
@@ -17,9 +22,6 @@ import {
   verifyOtpAndLogin
 } from "./service";
 import { loginSchema, registerSchema, sendOtpSchema, verifyOtpSchema } from "./schemas";
-
-const frontendBase =
-  process.env.FRONTEND_URL?.replace(/\/$/, "") ?? "http://localhost:3000";
 
 function asyncHandler(
   fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
@@ -90,6 +92,16 @@ authRouter.get("/google", (req, res, next) => {
     });
     return;
   }
+  const nextPath =
+    typeof req.query.next === "string" ? req.query.next : "/";
+  const secure = process.env.NODE_ENV === "production";
+  res.cookie(OAUTH_NEXT_COOKIE, safeRelativeRedirect(nextPath, "/"), {
+    httpOnly: true,
+    secure,
+    sameSite: "lax",
+    maxAge: 10 * 60 * 1000,
+    path: "/"
+  });
   passport.authenticate("google", {
     scope: ["email", "profile"],
     session: false,
@@ -101,10 +113,11 @@ authRouter.get(
   "/google/callback",
   passport.authenticate("google", {
     session: false,
-    failureRedirect: `${frontendBase}/login?error=google`
+    failureRedirect: `${getPrimaryFrontendBase()}/login?error=google`
   }),
   asyncHandler(async (req, res) => {
     const profile = req.user as Profile | undefined;
+    const frontendBase = getPrimaryFrontendBase();
     if (!profile?.id) {
       res.redirect(`${frontendBase}/login?error=google_profile`);
       return;
@@ -115,6 +128,9 @@ authRouter.get(
       displayName: profile.displayName ?? undefined
     });
     setAuthCookie(res, { sub: user.id, email: user.email, role: user.role });
-    res.redirect(`${frontendBase}/`);
+    const rawNext = req.cookies?.[OAUTH_NEXT_COOKIE] as string | undefined;
+    res.clearCookie(OAUTH_NEXT_COOKIE, { path: "/" });
+    const destination = safeRelativeRedirect(rawNext, "/");
+    res.redirect(`${frontendBase}${destination}`);
   })
 );
