@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import { optionalAuth } from "../../middleware/optionalAuth";
 import { validateBody } from "../../middleware/validate";
 
 import * as controller from "./payments.controller";
@@ -12,6 +13,8 @@ export type RazorpayVerifyBody = {
 };
 
 const router = Router();
+
+router.use(optionalAuth);
 
 router.post("/razorpay/verify", validateBody(razorpayVerifySchema), controller.verifyRazorpay);
 

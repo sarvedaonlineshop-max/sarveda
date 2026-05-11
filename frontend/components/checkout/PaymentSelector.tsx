@@ -7,12 +7,18 @@ import {
   CheckoutApiError,
   createOrder,
   pollUntilPaidOrTerminal,
+  resumePendingOrder,
   verifyRazorpayPayment,
   type CreateOrderBody,
   type CreateOrderResponse
 } from "@/lib/checkout-api";
 import { clearSession } from "@/lib/cart-api";
 import { formatINRFromPaise } from "@/lib/money";
+import {
+  clearPendingCheckout,
+  loadPendingCheckout,
+  savePendingCheckout
+} from "@/lib/pending-checkout";
 
 declare global {
   interface Window {
@@ -44,7 +50,7 @@ function mapRazorpayClientError(err?: { error?: { description?: string; code?: s
   if (code === "SERVER_ERROR") {
     return "Something went wrong. Please retry in a moment.";
   }
-  return err?.error?.description || "Payment could not be completed. You can retry without placing a new order.";
+  return err?.error?.description || "Payment could not be completed. Your cart is still saved — you can try again.";
 }
 
 type Props = {
@@ -54,6 +60,7 @@ type Props = {
   subtotalInPaise: number;
   itemCount: number;
   onRefreshCart: () => Promise<void>;
+  resumeOrderNumber?: string | null;
 };
 
 export function PaymentSelector({
@@ -62,7 +69,8 @@ export function PaymentSelector({
   form,
   subtotalInPaise,
   itemCount,
-  onRefreshCart
+  onRefreshCart,
+  resumeOrderNumber
 }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -71,14 +79,17 @@ export function PaymentSelector({
   const payStarted = useRef(false);
 
   const goSuccess = useCallback(
-    (orderNumber: string) => {
+    async (orderNumber: string) => {
+      clearPendingCheckout();
+      clearSession();
+      await onRefreshCart();
       const q = new URLSearchParams({
         orderNumber,
         email: form.email.trim().toLowerCase()
       });
       router.push(`/order/confirmed?${q.toString()}`);
     },
-    [form.email, router]
+    [form.email, onRefreshCart, router]
   );
 
   const goFailure = useCallback(
@@ -95,6 +106,8 @@ export function PaymentSelector({
 
   const openRazorpay = useCallback(
     (order: CreateOrderResponse) => {
+      savePendingCheckout(order, form.email);
+
       if (!window.Razorpay) {
         setErr("Payment script not loaded. Please refresh the page.");
         setBusy(false);
@@ -128,16 +141,16 @@ export function PaymentSelector({
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature
               });
-              goSuccess(orderNumber);
+              await goSuccess(orderNumber);
             } catch {
               const polled = await pollUntilPaidOrTerminal(order.orderNumber, form.email, 30_000);
               if (polled === "PAID") {
-                goSuccess(order.orderNumber);
+                await goSuccess(order.orderNumber);
               } else if (polled === "CANCELLED") {
                 goFailure(order.orderNumber, "Payment was not completed");
               } else {
                 setErr(
-                  "We could not confirm payment immediately. If money was debited, your order will appear as paid within a few minutes — or contact support."
+                  "We could not confirm payment immediately. Your cart is unchanged. If money was debited, your order will update within a few minutes — or contact support."
                 );
               }
             }
@@ -160,6 +173,7 @@ export function PaymentSelector({
             setBusy(false);
             setProcessing(false);
             payStarted.current = false;
+            goFailure(order.orderNumber, "Payment was cancelled. Your cart is still saved.");
           }
         }
       });
@@ -179,30 +193,56 @@ export function PaymentSelector({
     [form.email, form.phone, goFailure, goSuccess]
   );
 
+  const resolvePayableOrder = useCallback(async (): Promise<CreateOrderResponse> => {
+    const email = form.email.trim().toLowerCase();
+    const pending = loadPendingCheckout();
+    const resumeTarget = resumeOrderNumber?.trim() || pending?.orderNumber;
+
+    if (resumeTarget && (!pending || pending.email === email)) {
+      try {
+        return await resumePendingOrder(resumeTarget, email);
+      } catch (e) {
+        if (!(e instanceof CheckoutApiError) || e.code !== "NOT_FOUND") {
+          if (e instanceof CheckoutApiError && e.code === "ORDER_NOT_PAYABLE") {
+            clearPendingCheckout();
+          } else if (!(e instanceof CheckoutApiError)) {
+            throw e;
+          }
+        }
+      }
+    }
+
+    if (pending && pending.email === email) {
+      try {
+        return await resumePendingOrder(pending.orderNumber, email);
+      } catch {
+        clearPendingCheckout();
+      }
+    }
+
+    return createOrder(
+      {
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        shippingFullName: form.shippingFullName.trim(),
+        line1: form.line1.trim(),
+        line2: form.line2?.trim() || undefined,
+        city: form.city.trim(),
+        state: form.state.trim(),
+        postalCode: form.postalCode.trim(),
+        country: form.country ?? "IN"
+      },
+      idempotencyKey
+    );
+  }, [form, idempotencyKey, resumeOrderNumber]);
+
   const onPay = useCallback(async () => {
     if (busy || payStarted.current || processing) return;
     setErr(null);
     setBusy(true);
     payStarted.current = true;
     try {
-      const order = await createOrder(
-        {
-          email: form.email.trim(),
-          phone: form.phone.trim(),
-          shippingFullName: form.shippingFullName.trim(),
-          line1: form.line1.trim(),
-          line2: form.line2?.trim() || undefined,
-          city: form.city.trim(),
-          state: form.state.trim(),
-          postalCode: form.postalCode.trim(),
-          country: form.country ?? "IN"
-        },
-        idempotencyKey
-      );
-
-      await onRefreshCart();
-      clearSession();
-
+      const order = await resolvePayableOrder();
       openRazorpay(order);
     } catch (e) {
       payStarted.current = false;
@@ -215,7 +255,7 @@ export function PaymentSelector({
       setErr(msg);
       setBusy(false);
     }
-  }, [busy, form, idempotencyKey, onRefreshCart, openRazorpay, processing]);
+  }, [busy, openRazorpay, processing, resolvePayableOrder]);
 
   return (
     <div className="rounded-2xl border border-stone-100 bg-white p-6 shadow-sm">
@@ -223,7 +263,9 @@ export function PaymentSelector({
       <p className="mt-1 text-sm text-stone-500">
         {itemCount} items · {formatINRFromPaise(subtotalInPaise)}
       </p>
-      <p className="mt-2 text-xs text-stone-500">GST included · Secure payment via Razorpay</p>
+      <p className="mt-2 text-xs text-stone-500">
+        GST included · Your cart stays saved until payment succeeds
+      </p>
 
       {err ? (
         <div className="mt-4 rounded-xl border border-red-100 bg-red-50/80 p-3 text-sm text-red-800" role="alert">

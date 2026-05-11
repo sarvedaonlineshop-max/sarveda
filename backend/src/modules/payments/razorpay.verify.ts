@@ -110,6 +110,13 @@ export async function completePaidOrder(
     });
   });
 
+  if (payment.order.customerId) {
+    const cart = await prisma.cart.findUnique({ where: { userId: payment.order.customerId } });
+    if (cart) {
+      await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
+    }
+  }
+
   logger.info("order_paid", { orderNumber: payment.order.orderNumber, razorpayPaymentId });
   return { orderNumber: payment.order.orderNumber };
 }

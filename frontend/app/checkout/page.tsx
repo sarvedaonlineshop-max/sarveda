@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { CheckoutClient } from "@/components/checkout/CheckoutClient";
 
@@ -22,7 +23,9 @@ export default function CheckoutPage() {
           order for up to 30 seconds after you pay. You will never get a duplicate order from double-clicking Pay.
         </p>
         <div className="mt-10">
-          <CheckoutClient />
+          <Suspense fallback={<p className="text-stone-500">Loading checkout…</p>}>
+            <CheckoutClient />
+          </Suspense>
         </div>
       </div>
     </main>

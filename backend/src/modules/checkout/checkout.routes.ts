@@ -11,5 +11,6 @@ const router = Router();
 router.use(optionalAuth);
 
 router.post("/create-order", validateBody(createOrderSchema), controller.createOrder);
+router.get("/resume", controller.resumeOrder);
 
 export { router as checkoutRoutes };

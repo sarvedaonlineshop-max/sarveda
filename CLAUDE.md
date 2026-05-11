@@ -1136,26 +1136,17 @@ Day 10: 🎯 Staging URL ready → send to Arjun
 ✅ AWS RDS PostgreSQL Mumbai  
 ✅ Vercel frontend (sarveda-frontend.vercel.app)  
 ✅ Redis running on EC2  
+✅ Day 1: Payment hardening deployed  
+✅ Razorpay webhook configured  
+✅ Stock reserve/release system  
+✅ Payment timeout job (BullMQ)  
+✅ Payment failed page  
+✅ Idempotency keys  
 
-⬜ Payment failure handling (CRITICAL - Day 1)  
-⬜ Webhook idempotency (CRITICAL - Day 1)  
-⬜ Email notifications via SendGrid (Day 2)  
-⬜ WhatsApp notifications via WATI (Day 2)  
-⬜ GST invoice PDF generation (Day 2)  
-⬜ Shiprocket shipping integration (Day 3)  
-⬜ AWB auto-generation (Day 3)  
-⬜ Order tracking page /track/[awb] (Day 3)  
-⬜ Pincode serviceability check (Day 3)  
-⬜ User account + order history (Day 4)  
-⬜ Search with suggestions (Day 4)  
-⬜ Stock reserve/release system (Day 4)  
-⬜ Mobile UX polish (Day 4)  
-⬜ Coupon system end-to-end testing (Day 4)  
-⬜ Skeleton loaders everywhere (Day 4)  
-⬜ Image zoom on product page (Day 4)  
-⬜ sarveda-demo.com domain setup (Day 5)  
-⬜ Full end-to-end testing (Day 5)  
-⬜ Performance optimization (Day 5)  
+⬜ Day 2: Email + WhatsApp + GST Invoice  
+⬜ Day 3: Shipping (Shiprocket)  
+⬜ Day 4: UX + Search + Account  
+⬜ Day 5: Testing + Domain + Demo Friday  
 
 ---
 

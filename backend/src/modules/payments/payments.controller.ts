@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 
+import { clearCartForRequest } from "../cart/cart.service";
 import { verifyPayment } from "./razorpay";
 import { completePaidOrder } from "./razorpay.verify";
 import type { RazorpayVerifyBody } from "./payments.routes";
@@ -22,6 +23,7 @@ export async function verifyRazorpay(req: Request, res: Response, next: NextFunc
     }
 
     const { orderNumber } = await completePaidOrder(body.razorpay_order_id, body.razorpay_payment_id);
+    await clearCartForRequest(req);
 
     res.json({
       success: true,

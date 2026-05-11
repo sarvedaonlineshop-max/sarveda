@@ -2,13 +2,18 @@
 
 import Link from "next/link";
 import Script from "next/script";
-import { useCallback, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { PaymentSelector } from "@/components/checkout/PaymentSelector";
 import { useCartData } from "@/components/cart/CartProvider";
 import type { CreateOrderBody } from "@/lib/checkout-api";
 
 export function CheckoutClient() {
+  const searchParams = useSearchParams();
+  const resumeOrderNumber = searchParams.get("orderNumber");
+  const resumeEmail = searchParams.get("email");
+
   const { items, subtotalInPaise, itemCount, loading, refreshCart } = useCartData();
   const [rzpReady, setRzpReady] = useState(false);
 
@@ -48,11 +53,25 @@ export function CheckoutClient() {
     await refreshCart();
   }, [refreshCart]);
 
+  useEffect(() => {
+    if (resumeEmail) {
+      setForm((f) => ({ ...f, email: resumeEmail }));
+    }
+  }, [resumeEmail]);
+
+  useEffect(() => {
+    const onPageShow = () => {
+      void refreshCart();
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, [refreshCart]);
+
   if (loading) {
     return <p className="text-center text-stone-500">Loading cart…</p>;
   }
 
-  if (items.length === 0) {
+  if (items.length === 0 && !resumeOrderNumber) {
     return (
       <div className="rounded-2xl border border-stone-100 bg-white p-8 text-center shadow-sm">
         <p className="text-stone-600">Your cart is empty.</p>
@@ -185,6 +204,12 @@ export function CheckoutClient() {
         </div>
 
         <div className="lg:sticky lg:top-24">
+          {resumeOrderNumber ? (
+            <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+              Resume payment for order <span className="font-mono font-medium">{resumeOrderNumber}</span>. Your
+              cart is unchanged if you left checkout earlier.
+            </p>
+          ) : null}
           <PaymentSelector
             rzpReady={rzpReady}
             idempotencyKey={idempotencyKey}
@@ -192,6 +217,7 @@ export function CheckoutClient() {
             subtotalInPaise={subtotalInPaise}
             itemCount={itemCount}
             onRefreshCart={onRefreshCart}
+            resumeOrderNumber={resumeOrderNumber}
           />
         </div>
       </div>

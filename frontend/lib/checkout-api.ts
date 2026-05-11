@@ -59,6 +59,27 @@ export async function createOrder(
   return json.data;
 }
 
+export async function resumePendingOrder(orderNumber: string, email: string): Promise<CreateOrderResponse> {
+  const q = new URLSearchParams({
+    orderNumber,
+    email: email.trim().toLowerCase()
+  });
+  const res = await fetch(`${getApiBase()}/api/checkout/resume?${q.toString()}`, {
+    credentials: "include",
+    headers: buildHeaders(false)
+  });
+  const json = (await res.json()) as {
+    success?: boolean;
+    data?: CreateOrderResponse;
+    error?: string;
+    code?: string;
+  };
+  if (!res.ok || !json.success || !json.data) {
+    throw new CheckoutApiError(json.error || "Could not resume payment", json.code ?? "RESUME_FAILED", res.status);
+  }
+  return json.data;
+}
+
 export async function verifyRazorpayPayment(payload: {
   razorpay_order_id: string;
   razorpay_payment_id: string;
@@ -67,10 +88,7 @@ export async function verifyRazorpayPayment(payload: {
   const res = await fetch(`${getApiBase()}/api/payments/razorpay/verify`, {
     method: "POST",
     credentials: "include",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json"
-    },
+    headers: buildHeaders(true),
     body: JSON.stringify(payload)
   });
   const json = (await res.json()) as {

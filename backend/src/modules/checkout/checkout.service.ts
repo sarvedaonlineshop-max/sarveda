@@ -227,10 +227,6 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
     return { order, payment, rzpOrderId: rzp.id };
   });
 
-  await prisma.cartItem.deleteMany({ where: { cartId } }).catch((err) => {
-    logger.warn("cart_clear_after_order_failed", { err });
-  });
-
   await schedulePaymentTimeout(result.order.id);
 
   logger.info("checkout_order_created", {
@@ -253,4 +249,57 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
   }
 
   return payload;
+}
+
+/** Resume Razorpay checkout for an unpaid order (same order, no duplicate cart clear). */
+export async function resumePendingCheckout(orderNumber: string, email: string): Promise<CreateCheckoutResult> {
+  const normalizedEmail = email.trim().toLowerCase();
+  const order = await prisma.order.findFirst({
+    where: { orderNumber, deletedAt: null },
+    include: {
+      payments: {
+        where: { provider: "RAZORPAY" },
+        orderBy: { createdAt: "desc" },
+        take: 1
+      }
+    }
+  });
+
+  if (!order || order.email !== normalizedEmail) {
+    const e = new Error("Order not found") as Error & { statusCode: number; code: string };
+    e.statusCode = 404;
+    e.code = "NOT_FOUND";
+    throw e;
+  }
+
+  if (order.status !== "PENDING_PAYMENT") {
+    const e = new Error("This order is no longer awaiting payment") as Error & {
+      statusCode: number;
+      code: string;
+    };
+    e.statusCode = 400;
+    e.code = "ORDER_NOT_PAYABLE";
+    throw e;
+  }
+
+  const payment = order.payments[0];
+  if (!payment?.providerOrderId) {
+    const e = new Error("Payment session not found for this order") as Error & {
+      statusCode: number;
+      code: string;
+    };
+    e.statusCode = 400;
+    e.code = "PAYMENT_NOT_FOUND";
+    throw e;
+  }
+
+  return {
+    orderId: order.id,
+    orderNumber: order.orderNumber,
+    amountInPaise: order.grandTotalInPaise,
+    currency: order.currency,
+    razorpayKeyId: getRazorpayKeyId(),
+    rzpOrderId: payment.providerOrderId,
+    paymentId: payment.id
+  };
 }

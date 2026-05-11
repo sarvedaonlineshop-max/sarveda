@@ -70,13 +70,13 @@ function PaymentFailedContent() {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <Link
-          href="/checkout"
+          href={`/checkout?${new URLSearchParams({ orderNumber, email }).toString()}`}
           className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-xl bg-stone-900 px-4 text-center text-sm font-semibold text-amber-400 hover:bg-amber-800"
         >
           Retry payment
         </Link>
         <Link
-          href="/checkout"
+          href={`/checkout?${new URLSearchParams({ orderNumber, email }).toString()}`}
           className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-xl border border-stone-300 bg-white px-4 text-center text-sm font-semibold text-stone-800 hover:border-amber-600"
         >
           Pay via COD instead

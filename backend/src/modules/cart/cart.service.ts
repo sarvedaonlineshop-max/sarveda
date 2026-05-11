@@ -301,3 +301,10 @@ export async function removeCartItem(cartId: string, variantId: string): Promise
     where: { cartId, variantId }
   });
 }
+
+/** Empty the shopper cart after a successful payment (guest session or logged-in cart). */
+export async function clearCartForRequest(req: Request): Promise<void> {
+  const { cartId } = await resolveCartContext(req, "read");
+  if (!cartId) return;
+  await prisma.cartItem.deleteMany({ where: { cartId } });
+}
