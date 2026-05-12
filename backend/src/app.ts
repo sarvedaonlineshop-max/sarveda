@@ -7,7 +7,7 @@ import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import passport from "passport";
 
-import { getCorsOrigins } from "./config/corsOrigins";
+import { getCorsOrigins, isAllowedCorsOrigin } from "./config/corsOrigins";
 import { errorHandler } from "./middleware/errorHandler";
 import { authRouter, configurePassport } from "./modules/auth";
 import { cartRoutes } from "./modules/cart/cart.routes";
@@ -30,11 +30,11 @@ app.use(
   cors({
     origin(origin, callback) {
       const allowed = getCorsOrigins();
-      if (!origin || allowed.includes(origin)) {
+      if (isAllowedCorsOrigin(origin, allowed)) {
         callback(null, true);
         return;
       }
-      callback(new Error(`CORS blocked for origin: ${origin}`));
+      callback(null, false);
     },
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization", "X-Sarveda-Cart-Session", "Idempotency-Key"]
