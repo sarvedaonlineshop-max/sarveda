@@ -79,13 +79,14 @@ export async function cartAdd(variantId: string, quantity: number): Promise<Cart
     headers: buildHeaders(true),
     body: JSON.stringify({ variantId, quantity })
   });
-  const json = (await res.json()) as {
+  const json = (await res.json().catch(() => ({}))) as {
     success?: boolean;
     data?: CartApiResponse;
     error?: string;
+    code?: string;
   };
   if (!res.ok || !json.success) {
-    throw new Error(json.error || "Could not add to cart");
+    throw new Error(json.error || `Could not add to cart (${res.status})`);
   }
   if (json.data?.sessionId) {
     writeSession(json.data.sessionId);

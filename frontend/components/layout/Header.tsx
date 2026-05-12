@@ -9,6 +9,8 @@ import { isAdminRole, logoutSession } from "@/lib/auth-client";
 
 import { useStorefrontSession } from "./useStorefrontSession";
 
+const immersiveMobileRoutes = new Set(["/cart", "/profile", "/chat"]);
+
 function CartIcon({ count }: { count: number }) {
   return (
     <span className="relative inline-flex h-10 w-10 items-center justify-center rounded-lg text-amber-400 transition-colors hover:bg-stone-800 hover:text-amber-300">
@@ -48,6 +50,9 @@ export function Header() {
     return null;
   }
 
+  const hideOnMobile = pathname ? immersiveMobileRoutes.has(pathname) : false;
+  const displayName = sessionUser?.name?.trim() || sessionUser?.email?.split("@")[0];
+
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmed = query.trim();
@@ -60,7 +65,11 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-stone-800 bg-stone-900/95 shadow-md backdrop-blur-md">
+    <header
+      className={`sticky top-0 z-50 border-b border-stone-800 bg-stone-900/95 shadow-md backdrop-blur-md ${
+        hideOnMobile ? "hidden md:block" : ""
+      }`}
+    >
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
         <Link href="/" className="min-w-0 shrink-0">
           <span className="block font-serif text-xl italic leading-tight text-amber-400 md:text-2xl">
@@ -103,34 +112,32 @@ export function Header() {
 
         <div className="flex shrink-0 items-center gap-1 md:gap-3">
           <Link
-            href="/login"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-stone-300 transition-colors hover:bg-stone-800 hover:text-amber-400 md:hidden"
-            aria-label={sessionUser ? "Account" : "Sign in"}
+            href="/profile"
+            className="inline-flex h-11 max-w-[8rem] items-center justify-center rounded-lg px-2 text-stone-300 transition-colors hover:bg-stone-800 hover:text-amber-400 md:hidden"
+            aria-label={displayName ? `Profile, ${displayName}` : "Profile"}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-6 w-6" aria-hidden="true">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.75}
-                d="M15.75 7.5a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM5.25 19.5a7.5 7.5 0 0113.5 0"
-              />
-            </svg>
+            <span className="truncate text-xs font-medium">{displayName ? `Hi, ${displayName}` : "Profile"}</span>
           </Link>
 
           <div className="hidden items-center gap-4 md:flex" aria-label="Account">
-            {isAdminRole(sessionUser?.role) ? (
-              <Link href="/admin" className="text-sm font-medium text-stone-400 transition-colors hover:text-amber-400">
-                Admin
-              </Link>
-            ) : null}
             {sessionUser ? (
-              <button
-                type="button"
-                onClick={() => void handleSignOut()}
-                className="text-sm font-medium text-stone-400 transition-colors hover:text-amber-400"
-              >
-                Sign out
-              </button>
+              <>
+                <Link href="/profile" className="max-w-[12rem] truncate text-sm font-medium text-stone-200 hover:text-amber-400">
+                  Hello, {displayName}
+                </Link>
+                {isAdminRole(sessionUser.role) ? (
+                  <Link href="/admin" className="text-sm font-medium text-stone-400 transition-colors hover:text-amber-400">
+                    Admin
+                  </Link>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => void handleSignOut()}
+                  className="text-sm font-medium text-stone-400 transition-colors hover:text-amber-400"
+                >
+                  Sign out
+                </button>
+              </>
             ) : (
               <>
                 <Link href="/login" className="text-sm font-medium text-stone-400 transition-colors hover:text-amber-400">
@@ -146,10 +153,13 @@ export function Header() {
             )}
           </div>
 
+          <Link href="/cart" className="flex items-center rounded-lg md:hidden" aria-label={`Cart, ${cartCount} items`}>
+            <CartIcon count={cartCount} />
+          </Link>
           <button
             type="button"
             onClick={openDrawer}
-            className="flex items-center rounded-lg"
+            className="hidden items-center rounded-lg md:flex"
             aria-label={`Open shopping cart, ${cartCount} items`}
           >
             <CartIcon count={cartCount} />

@@ -169,7 +169,10 @@ export async function getCartPayload(cartId: string | null) {
 
   for (const row of cart.items) {
     const v = row.variant;
-    const p = v.productRel;
+    const p = v?.productRel;
+    if (!v || !p) {
+      continue;
+    }
     const img = p.images[0]?.url ?? null;
     const price = v.saleInPaise;
     const line = price * row.quantity;

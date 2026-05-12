@@ -1,7 +1,7 @@
 import Link from "next/link";
 
+import { HomePromoCarousel } from "@/components/home/HomePromoCarousel";
 import { NewsletterForm } from "@/components/home/NewsletterForm";
-import { HorizontalSnapItem, HorizontalSnapRow } from "@/components/ui/HorizontalSnapRow";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { categoryEmoji } from "@/lib/category-emojis";
 import { fetchCategoryTree, fetchProductList } from "@/lib/api";
@@ -68,47 +68,34 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <div className="border-b border-emerald-100 bg-emerald-50 px-4 py-3 text-center text-sm font-medium text-emerald-700 sm:text-base">
-        Use code <span className="font-semibold">WELCOME10</span> for 10% off your first order
-      </div>
+      <HomePromoCarousel />
 
       <section className="border-b border-stone-200 bg-white py-6 md:border-stone-100 md:bg-stone-50 md:py-8">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <h2 className="font-serif text-xl font-semibold text-stone-900 sm:text-2xl">Shop by intention</h2>
-          <HorizontalSnapRow className="mt-5 md:mt-6" ariaLabel="Product categories">
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:mt-6 md:flex md:flex-wrap">
             {topCategories.map((category) => (
-              <HorizontalSnapItem key={category.id}>
-                <Link
-                  href={`/shop?category=${encodeURIComponent(category.slug)}`}
-                  className="flex min-h-[48px] items-center gap-2 rounded-full border border-stone-200 bg-white px-5 py-2.5 text-sm font-medium text-stone-800 shadow-sm transition-colors hover:border-amber-700 hover:text-amber-800"
-                >
-                  <span aria-hidden="true">{categoryEmoji(category.slug)}</span>
-                  <span className="whitespace-nowrap">{category.name}</span>
-                </Link>
-              </HorizontalSnapItem>
+              <Link
+                key={category.id}
+                href={`/shop?category=${encodeURIComponent(category.slug)}`}
+                className="flex min-h-[48px] items-center gap-2 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm font-medium text-stone-800 shadow-sm transition-colors hover:border-amber-700 hover:text-amber-800 md:rounded-full md:px-5 md:py-2.5"
+              >
+                <span aria-hidden="true">{categoryEmoji(category.slug)}</span>
+                <span className="line-clamp-2 md:line-clamp-1">{category.name}</span>
+              </Link>
             ))}
-          </HorizontalSnapRow>
+          </div>
         </div>
       </section>
 
       <section className="bg-stone-50 py-10 md:px-4 md:py-14 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col gap-2 px-4 text-left md:px-0 md:text-left">
+          <div className="flex flex-col gap-2 px-4 text-left md:px-0">
             <h2 className="font-serif text-2xl font-semibold text-stone-900 sm:text-3xl">Featured offerings</h2>
             <p className="text-stone-500">Handpicked pieces our community loves.</p>
           </div>
 
-          <div className="mt-6 md:hidden">
-            <HorizontalSnapRow className="px-4" ariaLabel="Featured products">
-              {featured.items.map((product) => (
-                <HorizontalSnapItem key={product.id}>
-                  <ProductCard product={product} layout="rail" />
-                </HorizontalSnapItem>
-              ))}
-            </HorizontalSnapRow>
-          </div>
-
-          <ul className="mt-10 hidden gap-8 md:grid md:grid-cols-2 lg:grid-cols-3">
+          <ul className="mt-6 grid grid-cols-2 gap-0 md:mt-10 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
             {featured.items.map((product) => (
               <li key={product.id}>
                 <ProductCard product={product} />

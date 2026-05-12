@@ -3,25 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { useCartData, useCartUi } from "@/components/cart/CartProvider";
+import { useCartData } from "@/components/cart/CartProvider";
 
 type NavItem = {
   key: string;
   label: string;
-  href?: string;
-  onClick?: () => void;
+  href: string;
   isActive: boolean;
   icon: React.ReactNode;
   badge?: number;
 };
 
-function NavIcon({
-  children,
-  active
-}: {
-  children: React.ReactNode;
-  active: boolean;
-}) {
+function NavIcon({ children, active }: { children: React.ReactNode; active: boolean }) {
   return (
     <span
       className={`flex h-6 w-6 items-center justify-center transition-colors ${
@@ -35,7 +28,6 @@ function NavIcon({
 
 export function BottomNav() {
   const pathname = usePathname();
-  const { openDrawer, drawerOpen } = useCartUi();
   const { itemCount } = useCartData();
 
   const items: NavItem[] = [
@@ -47,12 +39,7 @@ export function BottomNav() {
       icon: (
         <NavIcon active={pathname === "/"}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-6 w-6" aria-hidden="true">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.75}
-              d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z" />
           </svg>
         </NavIcon>
       )
@@ -65,12 +52,7 @@ export function BottomNav() {
       icon: (
         <NavIcon active={pathname?.startsWith("/search") ?? false}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-6 w-6" aria-hidden="true">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.75}
-              d="M10.5 18a7.5 7.5 0 117.5-7.5 7.5 7.5 0 01-7.5 7.5zM16.5 16.5L21 21"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M10.5 18a7.5 7.5 0 117.5-7.5 7.5 7.5 0 01-7.5 7.5zM16.5 16.5L21 21" />
           </svg>
         </NavIcon>
       )
@@ -78,40 +60,39 @@ export function BottomNav() {
     {
       key: "cart",
       label: "Cart",
-      onClick: openDrawer,
-      isActive: drawerOpen || pathname === "/cart",
+      href: "/cart",
+      isActive: pathname === "/cart",
       badge: itemCount,
       icon: (
-        <NavIcon active={drawerOpen || pathname === "/cart"}>
+        <NavIcon active={pathname === "/cart"}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-6 w-6" aria-hidden="true">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.75}
-              d="M6 6h15l-1.5 9h-12L6 6zm0 0L5 3H2M9 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm9 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M6 6h15l-1.5 9h-12L6 6zm0 0L5 3H2M9 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm9 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
           </svg>
         </NavIcon>
       )
     },
     {
-      key: "account",
-      label: "Account",
-      href: "/login",
-      isActive: pathname?.startsWith("/login") || pathname?.startsWith("/signup") || false,
+      key: "profile",
+      label: "Profile",
+      href: "/profile",
+      isActive: pathname?.startsWith("/profile") ?? false,
       icon: (
-        <NavIcon
-          active={
-            pathname?.startsWith("/login") || pathname?.startsWith("/signup") || false
-          }
-        >
+        <NavIcon active={pathname?.startsWith("/profile") ?? false}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-6 w-6" aria-hidden="true">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.75}
-              d="M15.75 7.5a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM5.25 19.5a7.5 7.5 0 0113.5 0"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M15.75 7.5a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM5.25 19.5a7.5 7.5 0 0113.5 0" />
+          </svg>
+        </NavIcon>
+      )
+    },
+    {
+      key: "chat",
+      label: "Chat",
+      href: "/chat",
+      isActive: pathname?.startsWith("/chat") ?? false,
+      icon: (
+        <NavIcon active={pathname?.startsWith("/chat") ?? false}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-6 w-6" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M8 10h8M8 14h5M5 19l1.5-3H19a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v7a2 2 0 002 2z" />
           </svg>
         </NavIcon>
       )
@@ -123,11 +104,16 @@ export function BottomNav() {
       className="fixed inset-x-0 bottom-0 z-50 border-t border-stone-800 bg-stone-950/95 backdrop-blur-md md:hidden safe-area-pb"
       aria-label="Primary"
     >
-      <div className="mx-auto grid h-[4.5rem] max-w-lg grid-cols-4 items-stretch">
+      <div className="mx-auto grid h-[4.5rem] max-w-lg grid-cols-5 items-stretch">
         {items.map((item) => {
           const labelClass = item.isActive ? "text-amber-400" : "text-stone-500";
-          const content = (
-            <>
+          return (
+            <Link
+              key={item.key}
+              href={item.href}
+              className="flex flex-col items-center justify-center gap-1"
+              aria-current={item.isActive ? "page" : undefined}
+            >
               <span className="relative">
                 {item.icon}
                 {item.badge && item.badge > 0 ? (
@@ -136,32 +122,7 @@ export function BottomNav() {
                   </span>
                 ) : null}
               </span>
-              <span className={`text-[11px] font-medium tracking-wide ${labelClass}`}>{item.label}</span>
-            </>
-          );
-
-          if (item.onClick) {
-            return (
-              <button
-                key={item.key}
-                type="button"
-                onClick={item.onClick}
-                className="flex flex-col items-center justify-center gap-1"
-                aria-label={`${item.label}${item.badge ? `, ${item.badge} items` : ""}`}
-              >
-                {content}
-              </button>
-            );
-          }
-
-          return (
-            <Link
-              key={item.key}
-              href={item.href ?? "/"}
-              className="flex flex-col items-center justify-center gap-1"
-              aria-current={item.isActive ? "page" : undefined}
-            >
-              {content}
+              <span className={`text-[10px] font-medium tracking-wide ${labelClass}`}>{item.label}</span>
             </Link>
           );
         })}

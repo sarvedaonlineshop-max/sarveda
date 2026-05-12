@@ -8,7 +8,9 @@ import {
   useMemo,
   useState
 } from "react";
+import { useRouter } from "next/navigation";
 
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { type CartApiItem, cartGet } from "@/lib/cart-api";
 
 import { CartDrawer } from "./CartDrawer";
@@ -48,6 +50,8 @@ export function useCartData(): CartDataState {
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const isMobile = useIsMobile();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [items, setItems] = useState<CartApiItem[]>([]);
   const [subtotalInPaise, setSubtotalInPaise] = useState(0);
@@ -86,17 +90,30 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     };
   }, [refreshCart]);
 
-  const openDrawer = useCallback(() => setDrawerOpen(true), []);
+  const openDrawer = useCallback(() => {
+    if (isMobile) {
+      router.push("/cart");
+      return;
+    }
+    setDrawerOpen(true);
+  }, [isMobile, router]);
+
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
   useEffect(() => {
-    const onOpen = () => setDrawerOpen(true);
+    const onOpen = () => {
+      if (isMobile) {
+        router.push("/cart");
+        return;
+      }
+      setDrawerOpen(true);
+    };
     window.addEventListener("sarveda-open-cart", onOpen);
     return () => window.removeEventListener("sarveda-open-cart", onOpen);
-  }, []);
+  }, [isMobile, router]);
 
   useEffect(() => {
-    if (drawerOpen) {
+    if (drawerOpen && !isMobile) {
       void refreshCart();
       document.body.style.overflow = "hidden";
     } else {
@@ -105,7 +122,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return () => {
       document.body.style.overflow = "";
     };
-  }, [drawerOpen, refreshCart]);
+  }, [drawerOpen, isMobile, refreshCart]);
 
   const uiValue = useMemo(
     () => ({
@@ -132,7 +149,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     <CartUiContext.Provider value={uiValue}>
       <CartDataContext.Provider value={dataValue}>
         {children}
-        <CartDrawer open={drawerOpen} onClose={closeDrawer} />
+        {!isMobile ? <CartDrawer open={drawerOpen} onClose={closeDrawer} /> : null}
       </CartDataContext.Provider>
     </CartUiContext.Provider>
   );

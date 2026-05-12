@@ -43,7 +43,7 @@ export function CartPageClient() {
 
   if (items.length === 0) {
     return (
-      <div className="mt-10 rounded-2xl border border-stone-100 bg-white p-10 text-center shadow-sm">
+      <div className="mt-6 rounded-none border-y border-stone-200 bg-white p-8 text-center md:mt-10 md:rounded-2xl md:border md:shadow-sm">
         <p className="text-stone-500">Your cart is empty.</p>
         <Link
           href="/shop"
@@ -56,12 +56,12 @@ export function CartPageClient() {
   }
 
   return (
-    <div className="mt-8 space-y-6">
-      <ul className="space-y-4">
+    <div className="mt-4 space-y-0 md:mt-8 md:space-y-6">
+      <ul className="divide-y divide-stone-200 border-y border-stone-200 bg-white md:space-y-4 md:divide-none md:border-0 md:bg-transparent">
         {items.map((line) => (
           <li
             key={line.variantId}
-            className="flex flex-col gap-4 rounded-2xl border border-stone-100 bg-white p-4 shadow-sm sm:flex-row sm:items-start"
+            className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start md:rounded-2xl md:border md:border-stone-100 md:bg-white md:p-4 md:shadow-sm"
           >
             <Link
               href={`/product/${line.productSlug}`}

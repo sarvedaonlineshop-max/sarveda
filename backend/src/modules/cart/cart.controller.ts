@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 
+import { logger } from "../../config/logger";
 import {
   addCartItem,
   getCartPayload,
@@ -27,6 +28,7 @@ export async function add(req: Request, res: Response, next: NextFunction) {
       }
     });
   } catch (err) {
+    logger.error("cart_add_failed", { err });
     next(err);
   }
 }
