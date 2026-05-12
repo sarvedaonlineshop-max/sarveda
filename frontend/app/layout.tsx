@@ -1,9 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 
 import { CartProvider } from "@/components/cart/CartProvider";
-import { MobileCartBar } from "@/components/layout/MobileCartBar";
-import { SiteHeader } from "@/components/layout/SiteHeader";
+import { Layout } from "@/components/layout/Layout";
 
 import "./globals.css";
 
@@ -25,7 +24,20 @@ export const metadata: Metadata = {
     template: "%s | Sarveda"
   },
   description:
-    "Yoga, meditation, Ayurveda, and sound healing — authentic, sustainable products rooted in Indian wellness."
+    "Yoga, meditation, Ayurveda, and sound healing — authentic, sustainable products rooted in Indian wellness.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Sarveda"
+  }
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0c0a09",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover"
 };
 
 export default function RootLayout({
@@ -37,9 +49,7 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
       <body className={`${inter.className} min-h-screen bg-stone-50 font-sans tracking-wide text-stone-900 antialiased`}>
         <CartProvider>
-          <SiteHeader />
-          <div className="pb-24 md:pb-0">{children}</div>
-          <MobileCartBar />
+          <Layout>{children}</Layout>
         </CartProvider>
       </body>
     </html>
