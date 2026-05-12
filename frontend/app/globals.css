@@ -19,6 +19,19 @@ html {
 body {
   margin: 0;
   overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:focus-within {
+    scroll-behavior: auto;
+  }
+}
+
+@supports (padding: max(0px)) {
+  .safe-area-pb {
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px);
+  }
 }
 
 /* Safe area for notched phones + sticky bottom cart bar */

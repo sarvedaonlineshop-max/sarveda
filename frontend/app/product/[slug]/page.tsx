@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description,
-    keywords: product.seoKeyword ? product.seoKeyword.split(",").map((k) => k.trim()) : undefined,
+    keywords: product.seoKeyword ? product.seoKeyword.split(",").map((keyword) => keyword.trim()) : undefined,
     openGraph: {
       title,
       description,
@@ -54,7 +54,7 @@ export default async function ProductDetailPage({ params }: Props) {
 
   return (
     <>
-      <div className="border-b border-stone-100 bg-stone-50">
+      <div className="hidden border-b border-stone-100 bg-stone-50 md:block">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <Breadcrumbs
             items={[
@@ -74,17 +74,17 @@ export default async function ProductDetailPage({ params }: Props) {
         </div>
       </div>
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
-        <div className="grid gap-10 lg:grid-cols-2 lg:gap-x-12 lg:gap-y-12">
+      <main className="mx-auto max-w-7xl md:px-4 md:py-8 lg:px-8">
+        <div className="grid gap-0 md:gap-10 lg:grid-cols-2 lg:gap-x-12 lg:gap-y-12">
           <ProductGallery images={product.images} productName={product.name} />
 
-          <div className="flex flex-col gap-8">
+          <div className="flex flex-col gap-6 px-4 py-6 md:gap-8 md:px-0 md:py-0">
             <div>
-              <h1 className="font-serif text-3xl font-semibold tracking-tight text-stone-900 sm:text-4xl">
+              <h1 className="font-serif text-2xl font-semibold tracking-tight text-stone-900 sm:text-4xl">
                 {product.name}
               </h1>
               {product.shortDescription ? (
-                <p className="mt-4 text-lg leading-relaxed text-stone-500">{product.shortDescription}</p>
+                <p className="mt-3 text-base leading-relaxed text-stone-500 md:text-lg">{product.shortDescription}</p>
               ) : null}
             </div>
 
@@ -100,13 +100,13 @@ export default async function ProductDetailPage({ params }: Props) {
             />
 
             {product.description ? (
-              <section className="rounded-2xl border border-stone-100 bg-white p-6 shadow-sm">
+              <section className="rounded-none border-y border-stone-200 bg-white p-4 md:rounded-2xl md:border md:border-stone-100 md:p-6 md:shadow-sm">
                 <h2 className="font-serif text-xl font-semibold text-stone-900">About</h2>
                 <RichProductBody html={product.description} />
               </section>
             ) : null}
 
-            <section>
+            <section className="px-0 md:px-0">
               <h2 className="mb-4 font-serif text-xl font-semibold text-stone-900">Details</h2>
               <AccordionDescription items={product.accordionItems} />
             </section>

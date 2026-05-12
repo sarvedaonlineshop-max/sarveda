@@ -3,6 +3,8 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { usePathname } from "next/navigation";
 
+import { pageTransition, pageVariants } from "@/lib/motion";
+
 export function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
@@ -11,10 +13,12 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
     <AnimatePresence mode="wait" initial={false}>
       <motion.div
         key={pathname}
-        initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
-        transition={{ duration: 0.22, ease: "easeOut" }}
+        initial={reduceMotion ? false : "initial"}
+        animate="animate"
+        exit={reduceMotion ? undefined : "exit"}
+        variants={pageVariants}
+        transition={reduceMotion ? { duration: 0 } : pageTransition}
+        className="motion-safe:will-change-transform"
       >
         {children}
       </motion.div>

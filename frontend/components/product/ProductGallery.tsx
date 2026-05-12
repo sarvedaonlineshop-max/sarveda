@@ -28,7 +28,7 @@ export function ProductGallery({ images, productName }: Props) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-stone-100 bg-stone-100 shadow-sm">
+      <div className="relative aspect-square w-full overflow-hidden rounded-none border-y border-stone-200 bg-stone-100 md:rounded-2xl md:border md:border-stone-100 md:shadow-sm">
         <Image
           src={main.url}
           alt={main.altText || productName}

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { SlideDrawer } from "@/components/ui/SlideDrawer";
 import { cartRemove, cartUpdate } from "@/lib/cart-api";
 import { formatINRFromPaise } from "@/lib/money";
 
@@ -19,8 +20,8 @@ export function CartDrawer({ open, onClose }: Props) {
   const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
     };
     if (open) {
       window.addEventListener("keydown", onKey);
@@ -28,17 +29,13 @@ export function CartDrawer({ open, onClose }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  if (!open) return null;
-
-  const subtotal = subtotalInPaise;
-
   const setQty = async (variantId: string, quantity: number) => {
     setBusy(variantId);
     try {
       await cartUpdate(variantId, quantity);
       await refreshCart();
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error(error);
       await refreshCart();
     } finally {
       setBusy(null);
@@ -50,8 +47,8 @@ export function CartDrawer({ open, onClose }: Props) {
     try {
       await cartRemove(variantId);
       await refreshCart();
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error(error);
       await refreshCart();
     } finally {
       setBusy(null);
@@ -59,141 +56,20 @@ export function CartDrawer({ open, onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex justify-end">
-      <button
-        type="button"
-        className="absolute inset-0 bg-stone-900/50 backdrop-blur-[2px]"
-        aria-label="Close cart overlay"
-        onClick={onClose}
-      />
-      <aside
-        className="relative flex h-full w-full max-w-md flex-col border-l border-stone-200 bg-stone-50 shadow-2xl transition-transform duration-300 ease-out"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="cart-drawer-title"
-      >
-        <div className="flex items-center justify-between border-b border-stone-100 bg-white px-4 py-4">
-          <div>
-            <h2 id="cart-drawer-title" className="font-serif text-xl font-semibold text-stone-900">
-              Your cart
-            </h2>
-            <p className="text-xs text-stone-500">
-              {itemCount} {itemCount === 1 ? "item" : "items"} · Synced with Sarveda
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-11 min-w-[44px] items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-900"
-            aria-label="Close cart"
-          >
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-          {items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <p className="text-stone-500">Your cart is empty.</p>
-              <Link
-                href="/shop"
-                onClick={onClose}
-                className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-xl bg-stone-900 px-8 font-semibold text-amber-400 transition-colors hover:bg-amber-700 hover:text-white"
-              >
-                Continue shopping
-              </Link>
-            </div>
-          ) : (
-            <ul className="space-y-4">
-              {items.map((line) => (
-                <li
-                  key={line.variantId}
-                  className="flex gap-3 rounded-2xl border border-stone-100 bg-white p-3 shadow-sm"
-                >
-                  <Link
-                    href={`/product/${line.productSlug}`}
-                    onClick={onClose}
-                    className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl bg-stone-100"
-                  >
-                    {line.primaryImageUrl ? (
-                      <Image
-                        src={line.primaryImageUrl}
-                        alt=""
-                        fill
-                        className="object-cover"
-                        sizes="96px"
-                        unoptimized
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-xs text-stone-400">No image</div>
-                    )}
-                  </Link>
-                  <div className="min-w-0 flex-1">
-                    <Link
-                      href={`/product/${line.productSlug}`}
-                      onClick={onClose}
-                      className="font-medium leading-snug text-stone-900 hover:text-amber-800"
-                    >
-                      {line.productName}
-                    </Link>
-                    {line.variantLabel ? (
-                      <p className="mt-0.5 text-xs text-stone-500">{line.variantLabel}</p>
-                    ) : null}
-                    <p className="mt-1 text-sm font-semibold text-amber-800">
-                      {formatINRFromPaise(line.unitPriceInPaise)}
-                      <span className="font-normal text-stone-400"> / unit</span>
-                    </p>
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <div className="flex items-center rounded-xl border border-stone-200 bg-stone-50">
-                        <button
-                          type="button"
-                          disabled={!!busy}
-                          className="flex h-11 min-w-[44px] items-center justify-center text-lg text-stone-700 hover:bg-stone-100 disabled:opacity-50"
-                          aria-label="Decrease quantity"
-                          onClick={() => void setQty(line.variantId, line.quantity - 1)}
-                        >
-                          −
-                        </button>
-                        <span className="min-w-[2rem] text-center text-sm font-medium tabular-nums text-stone-900">
-                          {line.quantity}
-                        </span>
-                        <button
-                          type="button"
-                          disabled={
-                            !!busy ||
-                            (line.maxQuantity != null && line.quantity >= line.maxQuantity)
-                          }
-                          className="flex h-11 min-w-[44px] items-center justify-center text-lg text-stone-700 hover:bg-stone-100 disabled:opacity-50"
-                          aria-label="Increase quantity"
-                          onClick={() => void setQty(line.variantId, line.quantity + 1)}
-                        >
-                          +
-                        </button>
-                      </div>
-                      <button
-                        type="button"
-                        disabled={!!busy}
-                        onClick={() => void remove(line.variantId)}
-                        className="min-h-[44px] px-2 text-sm font-medium text-stone-500 underline-offset-2 hover:text-stone-900 hover:underline disabled:opacity-50"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        {items.length > 0 ? (
-          <div className="border-t border-stone-100 bg-white px-4 py-5 safe-area-pb">
+    <SlideDrawer
+      open={open}
+      onClose={onClose}
+      side="right"
+      title="Your cart"
+      subtitle={`${itemCount} ${itemCount === 1 ? "item" : "items"} · Synced with Sarveda`}
+      ariaLabel="Shopping cart"
+      footer={
+        items.length > 0 ? (
+          <div className="px-4 py-5">
             <div className="flex items-center justify-between text-sm text-stone-600">
               <span>Subtotal</span>
               <span className="font-serif text-xl font-semibold text-amber-800">
-                {formatINRFromPaise(subtotal)}
+                {formatINRFromPaise(subtotalInPaise)}
               </span>
             </div>
             <p className="mt-1 text-xs text-stone-500">GST included · Shipping calculated at checkout</p>
@@ -212,8 +88,98 @@ export function CartDrawer({ open, onClose }: Props) {
               View full cart
             </Link>
           </div>
-        ) : null}
-      </aside>
-    </div>
+        ) : undefined
+      }
+    >
+      <div className="px-4 py-4">
+        {items.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <p className="text-stone-500">Your cart is empty.</p>
+            <Link
+              href="/shop"
+              onClick={onClose}
+              className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-xl bg-stone-900 px-8 font-semibold text-amber-400 transition-colors hover:bg-amber-700 hover:text-white"
+            >
+              Continue shopping
+            </Link>
+          </div>
+        ) : (
+          <ul className="space-y-3 md:space-y-4">
+            {items.map((line) => (
+              <li
+                key={line.variantId}
+                className="flex gap-3 rounded-none border-b border-stone-200 bg-white p-3 md:rounded-2xl md:border md:border-stone-100 md:shadow-sm"
+              >
+                <Link
+                  href={`/product/${line.productSlug}`}
+                  onClick={onClose}
+                  className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl bg-stone-100"
+                >
+                  {line.primaryImageUrl ? (
+                    <Image
+                      src={line.primaryImageUrl}
+                      alt=""
+                      fill
+                      className="object-cover"
+                      sizes="96px"
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-xs text-stone-400">No image</div>
+                  )}
+                </Link>
+                <div className="min-w-0 flex-1">
+                  <Link
+                    href={`/product/${line.productSlug}`}
+                    onClick={onClose}
+                    className="font-medium leading-snug text-stone-900 hover:text-amber-800"
+                  >
+                    {line.productName}
+                  </Link>
+                  {line.variantLabel ? <p className="mt-0.5 text-xs text-stone-500">{line.variantLabel}</p> : null}
+                  <p className="mt-1 text-sm font-semibold text-amber-800">
+                    {formatINRFromPaise(line.unitPriceInPaise)}
+                    <span className="font-normal text-stone-400"> / unit</span>
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <div className="flex items-center rounded-xl border border-stone-200 bg-stone-50">
+                      <button
+                        type="button"
+                        disabled={!!busy}
+                        className="flex h-11 min-w-[44px] items-center justify-center text-lg text-stone-700 hover:bg-stone-100 disabled:opacity-50"
+                        aria-label="Decrease quantity"
+                        onClick={() => void setQty(line.variantId, line.quantity - 1)}
+                      >
+                        −
+                      </button>
+                      <span className="min-w-[2rem] text-center text-sm font-medium tabular-nums text-stone-900">
+                        {line.quantity}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={!!busy || (line.maxQuantity != null && line.quantity >= line.maxQuantity)}
+                        className="flex h-11 min-w-[44px] items-center justify-center text-lg text-stone-700 hover:bg-stone-100 disabled:opacity-50"
+                        aria-label="Increase quantity"
+                        onClick={() => void setQty(line.variantId, line.quantity + 1)}
+                      >
+                        +
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={!!busy}
+                      onClick={() => void remove(line.variantId)}
+                      className="min-h-[44px] px-2 text-sm font-medium text-stone-500 underline-offset-2 hover:text-stone-900 hover:underline disabled:opacity-50"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </SlideDrawer>
   );
 }
