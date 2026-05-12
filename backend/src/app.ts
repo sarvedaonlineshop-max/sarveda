@@ -23,6 +23,9 @@ configurePassport();
 
 const app = express();
 
+// Vercel and other reverse proxies send X-Forwarded-For; rate limiting needs this.
+app.set("trust proxy", 1);
+
 app.use(
   cors({
     origin(origin, callback) {
