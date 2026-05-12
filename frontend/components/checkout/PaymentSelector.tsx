@@ -14,8 +14,9 @@ import {
 } from "@/lib/checkout-api";
 import { clearSession } from "@/lib/cart-api";
 import type { CheckoutAddressForm } from "@/components/checkout/AddressFields";
-import { validateCheckoutForm } from "@/lib/checkout-validation";
+import { validateCheckoutFormDetailed } from "@/lib/checkout-validation";
 import { formatINRFromPaise } from "@/lib/money";
+import { loadRazorpayScript } from "@/lib/load-razorpay";
 import {
   clearPendingCheckout,
   loadPendingCheckout,
@@ -64,6 +65,7 @@ type Props = {
   itemCount: number;
   onRefreshCart: () => Promise<void>;
   onCheckoutCompleting: () => void;
+  onFieldErrors: (errors: Partial<Record<keyof CheckoutAddressForm, string>>) => void;
   resumeOrderNumber?: string | null;
 };
 
@@ -76,6 +78,7 @@ export function PaymentSelector({
   itemCount,
   onRefreshCart,
   onCheckoutCompleting,
+  onFieldErrors,
   resumeOrderNumber
 }: Props) {
   const router = useRouter();
@@ -246,15 +249,21 @@ export function PaymentSelector({
 
   const onPay = useCallback(async () => {
     if (busy || payStarted.current || processing) return;
-    const validationError = validateCheckoutForm(addressForm);
-    if (validationError) {
-      setErr(validationError);
+    const validation = validateCheckoutFormDetailed(addressForm);
+    if (validation.message) {
+      onFieldErrors(validation.fieldErrors);
+      setErr(validation.message);
       return;
     }
+    onFieldErrors({});
     setErr(null);
     setBusy(true);
     payStarted.current = true;
     try {
+      const ready = rzpReady || (await loadRazorpayScript());
+      if (!ready) {
+        throw new Error("Payment gateway did not load. Check your connection and try again.");
+      }
       const order = await resolvePayableOrder();
       openRazorpay(order);
     } catch (e) {
@@ -268,7 +277,7 @@ export function PaymentSelector({
       setErr(msg);
       setBusy(false);
     }
-  }, [addressForm, busy, openRazorpay, processing, resolvePayableOrder]);
+  }, [addressForm, busy, onFieldErrors, openRazorpay, processing, resolvePayableOrder, rzpReady]);
 
   return (
     <div className="rounded-2xl border border-stone-100 bg-white p-6 shadow-sm">
@@ -306,11 +315,11 @@ export function PaymentSelector({
 
       <button
         type="button"
-        disabled={busy || processing || !rzpReady}
+        disabled={busy || processing}
         onClick={() => void onPay()}
         className="mt-6 flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-stone-900 py-3.5 text-base font-semibold tracking-wide text-amber-400 shadow-lg transition-colors hover:bg-amber-700 hover:text-white disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600"
       >
-        {!rzpReady ? "Loading payment…" : busy || processing ? "Processing…" : "Pay with Razorpay"}
+        {!rzpReady && !busy && !processing ? "Loading payment…" : busy || processing ? "Processing…" : "Pay with Razorpay"}
       </button>
     </div>
   );

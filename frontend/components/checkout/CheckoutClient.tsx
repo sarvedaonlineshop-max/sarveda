@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Script from "next/script";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -9,10 +8,11 @@ import { AddressFields, type CheckoutAddressForm } from "@/components/checkout/A
 import { PaymentSelector } from "@/components/checkout/PaymentSelector";
 import { useCartData } from "@/components/cart/CartProvider";
 import { loadSavedCheckoutShipping, saveCheckoutShipping } from "@/lib/checkout-prefill";
-import { toCheckoutApiPhone } from "@/lib/checkout-validation";
+import { toCheckoutApiPhone, type CheckoutFieldErrors } from "@/lib/checkout-validation";
 import type { CreateOrderBody } from "@/lib/checkout-api";
 import { countryByCode } from "@/lib/countries";
 import { fetchMe } from "@/lib/auth-client";
+import { loadRazorpayScript } from "@/lib/load-razorpay";
 
 export function CheckoutClient() {
   const searchParams = useSearchParams();
@@ -21,7 +21,9 @@ export function CheckoutClient() {
 
   const { items, subtotalInPaise, itemCount, loading, refreshCart } = useCartData();
   const [rzpReady, setRzpReady] = useState(false);
+  const [rzpLoadError, setRzpLoadError] = useState<string | null>(null);
   const [completingCheckout, setCompletingCheckout] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<CheckoutFieldErrors>({});
 
   const idempotencyKey = useMemo(
     () =>
@@ -95,18 +97,17 @@ export function CheckoutClient() {
   }, [refreshCart]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.Razorpay) {
-      setRzpReady(true);
-      return;
-    }
-    const timer = window.setInterval(() => {
-      if (window.Razorpay) {
-        setRzpReady(true);
-        window.clearInterval(timer);
+    let cancelled = false;
+    void loadRazorpayScript().then((ready) => {
+      if (cancelled) return;
+      setRzpReady(ready);
+      if (!ready) {
+        setRzpLoadError("Payment gateway is taking longer than usual. You can still try Pay after checking your connection.");
       }
-    }, 300);
-    return () => window.clearInterval(timer);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (loading) {
@@ -137,15 +138,22 @@ export function CheckoutClient() {
 
   return (
     <>
-      <Script
-        src="https://checkout.razorpay.com/v1/checkout.js"
-        strategy="afterInteractive"
-        onLoad={() => setRzpReady(true)}
-      />
+      {rzpLoadError ? (
+        <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950" role="status">
+          {rzpLoadError}
+        </p>
+      ) : null}
       <div className="grid gap-10 lg:grid-cols-2">
         <div className="space-y-5">
           <h2 className="text-xl font-semibold text-stone-900">Shipping details</h2>
-          <AddressFields form={form} onChange={setForm} />
+          <AddressFields
+            form={form}
+            fieldErrors={fieldErrors}
+            onChange={(next) => {
+              setForm(next);
+              setFieldErrors({});
+            }}
+          />
           <div className="rounded-xl border border-stone-100 bg-stone-50/80 p-4">
             <h3 className="text-sm font-semibold text-stone-800">Cart</h3>
             <ul className="mt-2 max-h-48 space-y-2 overflow-y-auto text-sm text-stone-600">
@@ -179,6 +187,7 @@ export function CheckoutClient() {
               saveCheckoutShipping(form);
               setCompletingCheckout(true);
             }}
+            onFieldErrors={setFieldErrors}
             resumeOrderNumber={resumeOrderNumber}
           />
         </div>

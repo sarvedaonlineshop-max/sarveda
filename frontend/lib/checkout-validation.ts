@@ -13,59 +13,70 @@ export type CheckoutFormInput = {
   country: string;
 };
 
+export type CheckoutFieldErrors = Partial<Record<keyof CheckoutFormInput, string>>;
+
 export function validateCheckoutForm(form: CheckoutFormInput): string | null {
+  return validateCheckoutFormDetailed(form).message;
+}
+
+export function validateCheckoutFormDetailed(form: CheckoutFormInput): {
+  message: string | null;
+  fieldErrors: CheckoutFieldErrors;
+} {
+  const fieldErrors: CheckoutFieldErrors = {};
+
   const email = form.email.trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return "Enter a valid email address.";
+    fieldErrors.email = "Enter a valid email address.";
   }
 
   const name = form.shippingFullName.trim();
   if (name.length < 2) {
-    return "Enter the recipient name.";
+    fieldErrors.shippingFullName = "Enter the recipient name.";
   }
 
   const line1 = form.line1.trim();
   if (line1.length < 4) {
-    return "Enter a complete street address.";
+    fieldErrors.line1 = "Enter a complete street address.";
   }
 
   const city = form.city.trim();
   if (city.length < 2) {
-    return "Enter your city.";
+    fieldErrors.city = "Enter your city.";
   }
 
   const country = form.country.trim().toUpperCase();
   if (country.length !== 2) {
-    return "Choose a valid country.";
+    fieldErrors.country = "Choose a valid country.";
   }
 
   const state = form.state.trim();
   if (country === "IN") {
     if (!state) {
-      return "Choose your state.";
-    }
-    if (!INDIAN_STATES.includes(state as (typeof INDIAN_STATES)[number])) {
-      return "Choose a valid Indian state.";
+      fieldErrors.state = "Choose your state.";
+    } else if (!INDIAN_STATES.includes(state as (typeof INDIAN_STATES)[number])) {
+      fieldErrors.state = "Choose a valid Indian state.";
     }
     const pin = form.postalCode.replace(/\D/g, "");
     if (pin.length !== 6) {
-      return "Enter a valid 6-digit PIN code.";
+      fieldErrors.postalCode = "Enter a valid 6-digit PIN code.";
     }
   } else if (!state) {
-    return "Enter your state or province.";
+    fieldErrors.state = "Enter your state or province.";
   }
 
   const digits = form.phone.replace(/\D/g, "");
   if (country === "IN") {
     const national = digits.startsWith("91") ? digits.slice(2) : digits;
     if (national.length !== 10) {
-      return "Enter a valid 10-digit mobile number.";
+      fieldErrors.phone = "Enter a valid 10-digit mobile number.";
     }
   } else if (digits.length < 8) {
-    return "Enter a valid phone number with country code.";
+    fieldErrors.phone = "Enter a valid phone number with country code.";
   }
 
-  return null;
+  const firstError = Object.values(fieldErrors).find(Boolean) ?? null;
+  return { message: firstError, fieldErrors };
 }
 
 export function toCheckoutApiPhone(form: CheckoutFormInput): string {

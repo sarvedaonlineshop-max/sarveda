@@ -9,10 +9,20 @@ import { fetchCategoryTree, fetchProductList } from "@/lib/api";
 export const revalidate = 120;
 
 export default async function HomePage() {
-  const [categories, featured] = await Promise.all([
-    fetchCategoryTree({ next: { revalidate: 600 } }),
-    fetchProductList({}, { next: { revalidate: 120 } }, { limit: 8 })
-  ]);
+  let categories: Awaited<ReturnType<typeof fetchCategoryTree>> = [];
+  let featured: Awaited<ReturnType<typeof fetchProductList>> = {
+    items: [],
+    pagination: { page: 1, limit: 8, total: 0, totalPages: 0 }
+  };
+
+  try {
+    [categories, featured] = await Promise.all([
+      fetchCategoryTree({ next: { revalidate: 600 } }),
+      fetchProductList({}, { next: { revalidate: 120 } }, { limit: 8 })
+    ]);
+  } catch {
+    // Keep the homepage buildable when the API is unreachable during CI or local builds.
+  }
 
   const topCategories = categories.slice(0, 12);
 
