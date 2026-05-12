@@ -9,3 +9,12 @@ export function formatINRFromPaise(paise: number | null | undefined): string {
     maximumFractionDigits: 2
   })}`;
 }
+
+export function discountPercentOff(mrpInPaise: number, saleInPaise: number): number | null {
+  if (mrpInPaise <= saleInPaise || mrpInPaise <= 0) return null;
+  return Math.round(((mrpInPaise - saleInPaise) / mrpInPaise) * 100);
+}
+
+export function savingsInPaise(mrpInPaise: number, saleInPaise: number): number {
+  return Math.max(0, mrpInPaise - saleInPaise);
+}

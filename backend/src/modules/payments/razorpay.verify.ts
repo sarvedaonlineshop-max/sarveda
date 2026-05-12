@@ -3,6 +3,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { confirmStockTx } from "../orders/orders.service";
+import { invoiceNumberForOrder } from "../../utils/invoice";
 
 import { verifyPayment } from "./razorpay";
 
@@ -116,6 +117,15 @@ export async function completePaidOrder(
       await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
     }
   }
+
+  await prisma.invoice.upsert({
+    where: { orderId: payment.orderId },
+    create: {
+      orderId: payment.orderId,
+      invoiceNo: invoiceNumberForOrder(payment.order.orderNumber)
+    },
+    update: {}
+  });
 
   logger.info("order_paid", { orderNumber: payment.order.orderNumber, razorpayPaymentId });
   return { orderNumber: payment.order.orderNumber };

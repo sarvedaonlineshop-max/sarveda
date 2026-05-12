@@ -20,6 +20,7 @@ export type ProductListItem = {
   hasAudio: boolean;
   primaryImageUrl: string | null;
   fromPriceInPaise: number | null;
+  fromMrpInPaise?: number | null;
   /** Lowest-priced or default active variant — used for quick add from listing */
   defaultVariantId?: string | null;
   categories: { slug: string; name: string }[];

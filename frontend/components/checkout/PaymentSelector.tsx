@@ -13,6 +13,8 @@ import {
   type CreateOrderResponse
 } from "@/lib/checkout-api";
 import { clearSession } from "@/lib/cart-api";
+import type { CheckoutAddressForm } from "@/components/checkout/AddressFields";
+import { validateCheckoutForm } from "@/lib/checkout-validation";
 import { formatINRFromPaise } from "@/lib/money";
 import {
   clearPendingCheckout,
@@ -57,9 +59,11 @@ type Props = {
   rzpReady: boolean;
   idempotencyKey: string;
   form: CreateOrderBody;
+  addressForm: CheckoutAddressForm;
   subtotalInPaise: number;
   itemCount: number;
   onRefreshCart: () => Promise<void>;
+  onCheckoutCompleting: () => void;
   resumeOrderNumber?: string | null;
 };
 
@@ -67,9 +71,11 @@ export function PaymentSelector({
   rzpReady,
   idempotencyKey,
   form,
+  addressForm,
   subtotalInPaise,
   itemCount,
   onRefreshCart,
+  onCheckoutCompleting,
   resumeOrderNumber
 }: Props) {
   const router = useRouter();
@@ -79,17 +85,18 @@ export function PaymentSelector({
   const payStarted = useRef(false);
 
   const goSuccess = useCallback(
-    async (orderNumber: string) => {
+    (orderNumber: string) => {
       clearPendingCheckout();
       clearSession();
-      await onRefreshCart();
+      onCheckoutCompleting();
       const q = new URLSearchParams({
         orderNumber,
         email: form.email.trim().toLowerCase()
       });
       router.push(`/order/confirmed?${q.toString()}`);
+      void onRefreshCart();
     },
-    [form.email, onRefreshCart, router]
+    [form.email, onCheckoutCompleting, onRefreshCart, router]
   );
 
   const goFailure = useCallback(
@@ -145,7 +152,7 @@ export function PaymentSelector({
             } catch {
               const polled = await pollUntilPaidOrTerminal(order.orderNumber, form.email, 30_000);
               if (polled === "PAID") {
-                await goSuccess(order.orderNumber);
+                goSuccess(order.orderNumber);
               } else if (polled === "CANCELLED") {
                 goFailure(order.orderNumber, "Payment was not completed");
               } else {
@@ -189,6 +196,7 @@ export function PaymentSelector({
       });
 
       rzp.open();
+      setBusy(false);
     },
     [form.email, form.phone, goFailure, goSuccess]
   );
@@ -238,6 +246,11 @@ export function PaymentSelector({
 
   const onPay = useCallback(async () => {
     if (busy || payStarted.current || processing) return;
+    const validationError = validateCheckoutForm(addressForm);
+    if (validationError) {
+      setErr(validationError);
+      return;
+    }
     setErr(null);
     setBusy(true);
     payStarted.current = true;
@@ -255,11 +268,11 @@ export function PaymentSelector({
       setErr(msg);
       setBusy(false);
     }
-  }, [busy, openRazorpay, processing, resolvePayableOrder]);
+  }, [addressForm, busy, openRazorpay, processing, resolvePayableOrder]);
 
   return (
     <div className="rounded-2xl border border-stone-100 bg-white p-6 shadow-sm">
-      <h2 className="font-serif text-xl font-semibold text-stone-900">Order summary</h2>
+      <h2 className="text-xl font-semibold text-stone-900">Order summary</h2>
       <p className="mt-1 text-sm text-stone-500">
         {itemCount} items · {formatINRFromPaise(subtotalInPaise)}
       </p>

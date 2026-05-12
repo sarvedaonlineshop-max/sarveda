@@ -197,6 +197,7 @@ export async function listProducts(query: ListProductsQuery) {
       hasAudio: p.hasAudio,
       primaryImageUrl: img,
       fromPriceInPaise: v?.saleInPaise ?? null,
+      fromMrpInPaise: v?.mrpInPaise ?? null,
       defaultVariantId: v?.id ?? null,
       categories: p.categories.map((pc) => ({
         slug: pc.category.slug,

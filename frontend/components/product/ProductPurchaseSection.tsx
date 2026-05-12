@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 
 import { PincodeCheck } from "@/components/product/PincodeCheck";
 import { cartAdd } from "@/lib/cart-api";
-import { formatINRFromPaise } from "@/lib/money";
+import { discountPercentOff, formatINRFromPaise, savingsInPaise } from "@/lib/money";
 import type { ProductVariantDetail } from "@/lib/types";
 
 function variantLabel(variant: ProductVariantDetail): string {
@@ -67,20 +67,30 @@ export function ProductPurchaseSection({ productName, variants }: Props) {
   };
 
   const addDisabled = available === 0;
+  const discountPercent = discountPercentOff(variant.mrpInPaise, variant.saleInPaise);
+  const savings = savingsInPaise(variant.mrpInPaise, variant.saleInPaise);
 
   return (
     <>
       <div className="space-y-6 px-4 pb-28 md:space-y-8 md:px-0 md:pb-0">
-        <div className="space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Price</p>
-          <p className="mt-1 text-3xl font-bold tracking-tight text-stone-900 sm:text-4xl">
+        <div className="space-y-2">
+          {discountPercent ? (
+            <span className="inline-flex rounded-md bg-red-600 px-2 py-1 text-xs font-semibold text-white">
+              {discountPercent}% off
+            </span>
+          ) : null}
+          <p className="text-3xl font-semibold tracking-tight text-stone-900 sm:text-4xl">
             {formatINRFromPaise(variant.saleInPaise)}
           </p>
           {variant.mrpInPaise > variant.saleInPaise ? (
-            <p className="mt-2 text-sm text-stone-500 line-through">
-              MRP {formatINRFromPaise(variant.mrpInPaise)}
-            </p>
+            <div className="flex flex-wrap items-center gap-2 text-sm text-stone-500">
+              <span className="line-through">M.R.P. {formatINRFromPaise(variant.mrpInPaise)}</span>
+              {savings > 0 ? (
+                <span className="font-medium text-emerald-700">Save {formatINRFromPaise(savings)}</span>
+              ) : null}
+            </div>
           ) : null}
+          <p className="text-xs text-stone-500">Inclusive of all taxes</p>
         </div>
 
         <PincodeCheck />

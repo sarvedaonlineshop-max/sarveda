@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
+import { YourOrders } from "@/components/profile/YourOrders";
 import type { PublicUser } from "@/lib/auth-client";
 import { fetchMe, isAdminRole, logoutSession, updateProfile } from "@/lib/auth-client";
 
@@ -74,7 +75,7 @@ export function ProfileClient() {
     return (
       <div className="px-4 md:px-0">
         <div className="rounded-2xl border border-stone-200 bg-white p-6 text-center shadow-sm">
-          <p className="font-serif text-xl font-semibold text-stone-900">Sign in to view your profile</p>
+          <p className="text-xl font-semibold text-stone-900">Sign in to view your account</p>
           <p className="mt-2 text-sm text-stone-500">
             Orders, saved details, and checkout preferences appear here after you sign in.
           </p>
@@ -103,7 +104,7 @@ export function ProfileClient() {
     <div className="space-y-6 px-4 md:px-0">
       <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
         <p className="text-sm text-stone-500">Hello,</p>
-        <h2 className="font-serif text-2xl font-semibold text-stone-900">{displayName}</h2>
+        <h2 className="text-2xl font-semibold text-stone-900">{displayName}</h2>
         <p className="mt-1 text-sm text-stone-500">{user.email}</p>
         <div className="mt-5 flex flex-wrap gap-3">
           <button
@@ -122,6 +123,13 @@ export function ProfileClient() {
             </Link>
           ) : null}
         </div>
+      </section>
+
+      <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h3 className="text-lg font-semibold text-stone-900">Your orders</h3>
+        </div>
+        <YourOrders email={user.email} />
       </section>
 
       <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
@@ -173,10 +181,6 @@ export function ProfileClient() {
             {saving ? "Saving…" : "Save changes"}
           </button>
         </form>
-      </section>
-
-      <section className="rounded-2xl border border-dashed border-stone-200 bg-stone-50 p-5 text-sm text-stone-600">
-        Order history and saved addresses will appear here as your account area expands.
       </section>
     </div>
   );

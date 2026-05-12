@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { formatINRFromPaise } from "@/lib/money";
+import { discountPercentOff, formatINRFromPaise } from "@/lib/money";
 import { productListBadges } from "@/lib/product-badges";
 import type { ProductListItem } from "@/lib/types";
 
@@ -14,6 +14,10 @@ type Props = {
 
 export function ProductCard({ product, layout = "grid" }: Props) {
   const priceLabel = formatINRFromPaise(product.fromPriceInPaise);
+  const discountPercent =
+    product.fromMrpInPaise && product.fromPriceInPaise
+      ? discountPercentOff(product.fromMrpInPaise, product.fromPriceInPaise)
+      : null;
   const href = `/product/${product.slug}`;
   const badges = productListBadges(product);
   const primaryCat = product.categories[0];
@@ -81,7 +85,19 @@ export function ProductCard({ product, layout = "grid" }: Props) {
         </Link>
 
         <div className="mt-auto flex flex-col gap-3 pt-1">
-          <p className="text-base font-semibold text-amber-800 md:text-lg">{priceLabel}</p>
+          {discountPercent ? (
+            <span className="inline-flex w-fit rounded-md bg-red-600 px-2 py-0.5 text-[11px] font-semibold text-white">
+              {discountPercent}% off
+            </span>
+          ) : null}
+          <div className="flex flex-wrap items-baseline gap-2">
+            <p className="text-base font-semibold text-stone-900 md:text-lg">{priceLabel}</p>
+            {product.fromMrpInPaise && product.fromPriceInPaise && product.fromMrpInPaise > product.fromPriceInPaise ? (
+              <p className="text-xs text-stone-500 line-through md:text-sm">
+                {formatINRFromPaise(product.fromMrpInPaise)}
+              </p>
+            ) : null}
+          </div>
           <ProductCardAddButton product={product} />
         </div>
       </div>

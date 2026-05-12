@@ -73,7 +73,7 @@ export function BottomNav() {
     },
     {
       key: "profile",
-      label: "Profile",
+      label: "You",
       href: "/profile",
       isActive: pathname?.startsWith("/profile") ?? false,
       icon: (

@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
 import type { OrderPublic } from "@/lib/orders-api";
-import { fetchOrderPublic } from "@/lib/orders-api";
+import { fetchOrderPublic, orderInvoiceDownloadUrl } from "@/lib/orders-api";
 import { formatINRFromPaise } from "@/lib/money";
 
 function ConfirmedInner() {
@@ -76,6 +76,14 @@ function ConfirmedInner() {
       >
         Continue shopping
       </Link>
+      {order.paymentStatus === "CAPTURED" || order.status === "PAID" ? (
+        <a
+          href={orderInvoiceDownloadUrl(order.orderNumber, email)}
+          className="mt-3 flex min-h-[48px] w-full items-center justify-center rounded-xl border border-stone-300 font-semibold text-stone-800"
+        >
+          Download GST invoice
+        </a>
+      ) : null}
     </div>
   );
 }
