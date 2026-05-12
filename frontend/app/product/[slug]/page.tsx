@@ -6,6 +6,7 @@ import { Breadcrumbs } from "@/components/product/Breadcrumbs";
 import { ProductAudio } from "@/components/product/ProductAudio";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductPurchaseSection } from "@/components/product/ProductPurchaseSection";
+import { ProductRichText } from "@/components/product/ProductRichText";
 import { RelatedProducts } from "@/components/product/RelatedProducts";
 import { fetchAllProductSlugs, fetchProductBySlug } from "@/lib/api";
 
@@ -84,7 +85,7 @@ export default async function ProductDetailPage({ params }: Props) {
                 {product.name}
               </h1>
               {product.shortDescription ? (
-                <p className="mt-3 text-base leading-relaxed text-stone-500 md:text-lg">{product.shortDescription}</p>
+                <ProductRichText html={product.shortDescription} className="mt-3 text-stone-600 md:text-lg" />
               ) : null}
             </div>
 
@@ -92,17 +93,12 @@ export default async function ProductDetailPage({ params }: Props) {
               <ProductAudio audioUrl={product.audioUrl} title={product.name} />
             ) : null}
 
-            <ProductPurchaseSection
-              productSlug={product.slug}
-              productName={product.name}
-              variants={product.variants}
-              primaryImageUrl={product.images[0]?.url ?? null}
-            />
+            <ProductPurchaseSection productName={product.name} variants={product.variants} />
 
             {product.description ? (
               <section className="rounded-none border-y border-stone-200 bg-white p-4 md:rounded-2xl md:border md:border-stone-100 md:p-6 md:shadow-sm">
                 <h2 className="font-serif text-xl font-semibold text-stone-900">About</h2>
-                <RichProductBody html={product.description} />
+                <ProductRichText html={product.description} className="mt-4" />
               </section>
             ) : null}
 
@@ -117,17 +113,4 @@ export default async function ProductDetailPage({ params }: Props) {
       <RelatedProducts excludeSlug={product.slug} categorySlug={primaryCategory?.slug} />
     </>
   );
-}
-
-function RichProductBody({ html }: { html: string }) {
-  const looksHtml = /<[a-z][\s\S]*>/i.test(html.trim());
-  if (looksHtml) {
-    return (
-      <div
-        className="mt-4 prose prose-stone max-w-none prose-p:text-stone-600 prose-headings:font-serif prose-headings:text-stone-900"
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
-    );
-  }
-  return <p className="mt-4 whitespace-pre-wrap leading-relaxed text-stone-600">{html}</p>;
 }

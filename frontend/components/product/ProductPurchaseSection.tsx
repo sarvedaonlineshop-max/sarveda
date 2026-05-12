@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 
+import { PincodeCheck } from "@/components/product/PincodeCheck";
 import { cartAdd } from "@/lib/cart-api";
 import { formatINRFromPaise } from "@/lib/money";
 import type { ProductVariantDetail } from "@/lib/types";
@@ -22,18 +23,11 @@ function pickInitialVariant(variants: ProductVariantDetail[]): ProductVariantDet
 }
 
 type Props = {
-  productSlug: string;
   productName: string;
   variants: ProductVariantDetail[];
-  primaryImageUrl?: string | null;
 };
 
-export function ProductPurchaseSection({
-  productSlug,
-  productName,
-  variants,
-  primaryImageUrl
-}: Props) {
+export function ProductPurchaseSection({ productName, variants }: Props) {
   const initial = useMemo(() => pickInitialVariant(variants), [variants]);
   const [variantId, setVariantId] = useState<string | null>(initial?.id ?? null);
   const [qty, setQty] = useState(1);
@@ -49,6 +43,13 @@ export function ProductPurchaseSection({
     variant.inventory != null
       ? Math.max(0, variant.inventory.onHand - variant.inventory.reserved)
       : null;
+
+  const showVariantPicker =
+    variants.length > 1 &&
+    variants.some((item) => {
+      const label = variantLabel(item);
+      return label !== "Standard";
+    });
 
   const add = () => {
     if (qty < 1) return;
@@ -69,9 +70,10 @@ export function ProductPurchaseSection({
 
   return (
     <>
-      <div className="space-y-8 px-4 pb-28 md:px-0 md:pb-0">
-        <div>
-          <p className="font-serif text-2xl font-semibold text-amber-800 sm:text-3xl">
+      <div className="space-y-6 px-4 pb-28 md:space-y-8 md:px-0 md:pb-0">
+        <div className="space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Price</p>
+          <p className="mt-1 text-3xl font-bold tracking-tight text-stone-900 sm:text-4xl">
             {formatINRFromPaise(variant.saleInPaise)}
           </p>
           {variant.mrpInPaise > variant.saleInPaise ? (
@@ -81,9 +83,11 @@ export function ProductPurchaseSection({
           ) : null}
         </div>
 
-        {variants.length > 1 ? (
+        <PincodeCheck />
+
+        {showVariantPicker ? (
           <div>
-            <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-stone-500">Choose option</p>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-stone-500">Select option</p>
             <div className="flex flex-wrap gap-2">
               {variants.map((item) => {
                 const selected = item.id === variant.id;
@@ -143,17 +147,9 @@ export function ProductPurchaseSection({
           </button>
         </div>
 
-        <div className="rounded-xl border border-stone-100 bg-stone-50/80 px-4 py-3 text-xs leading-relaxed text-stone-500">
-          <p className="font-medium text-stone-600">Shipping &amp; duty</p>
-          <p className="mt-1">
-            Ships from India · Prices are GST-inclusive · Tracking details shared after dispatch · International customs may
-            apply outside India
-          </p>
-        </div>
-
         {addedFlash ? (
           <p className="text-sm font-medium text-emerald-600" role="status">
-            Added to cart — saved on this device until checkout goes live.
+            Added to cart.
           </p>
         ) : null}
       </div>
@@ -162,7 +158,7 @@ export function ProductPurchaseSection({
         <div className="mx-auto flex max-w-lg items-center gap-3">
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs text-stone-500">{productName}</p>
-            <p className="font-serif text-lg font-semibold text-amber-800">
+            <p className="text-lg font-bold tracking-tight text-stone-900">
               {formatINRFromPaise(variant.saleInPaise)}
             </p>
           </div>

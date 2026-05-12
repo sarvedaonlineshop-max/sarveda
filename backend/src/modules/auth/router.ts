@@ -19,9 +19,10 @@ import {
   registerUser,
   sendOtp,
   upsertGoogleUser,
+  updateProfile,
   verifyOtpAndLogin
 } from "./service";
-import { loginSchema, registerSchema, sendOtpSchema, verifyOtpSchema } from "./schemas";
+import { loginSchema, registerSchema, sendOtpSchema, updateProfileSchema, verifyOtpSchema } from "./schemas";
 
 function asyncHandler(
   fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
@@ -79,6 +80,16 @@ authRouter.get(
   requireAuth,
   asyncHandler(async (req, res) => {
     const user = await getMe(req.authUser!.id);
+    res.json({ success: true, data: { user } });
+  })
+);
+
+authRouter.patch(
+  "/me",
+  requireAuth,
+  validateBody(updateProfileSchema),
+  asyncHandler(async (req, res) => {
+    const user = await updateProfile(req.authUser!.id, req.body);
     res.json({ success: true, data: { user } });
   })
 );

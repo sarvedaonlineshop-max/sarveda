@@ -249,6 +249,17 @@ export async function getMe(userId: string) {
   return publicUser(user);
 }
 
+export async function updateProfile(userId: string, body: { name: string; phone?: string | null }) {
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      name: body.name,
+      phone: body.phone ?? null
+    }
+  });
+  return publicUser(user);
+}
+
 type GoogleLikeProfile = {
   id: string;
   emails?: { value: string }[];

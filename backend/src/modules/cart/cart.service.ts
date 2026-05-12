@@ -110,11 +110,19 @@ export async function resolveCartContext(
 
 function variantLabel(
   rows: Array<{
-    attributeValue: { value: string; attribute: { name: string } };
+    attributeValue?: { value: string; attribute?: { name: string } | null } | null;
   }>
 ): string | null {
   if (!rows.length) return null;
-  return rows.map((r) => `${r.attributeValue.attribute.name}: ${r.attributeValue.value}`).join(" · ");
+  const parts = rows
+    .map((row) => {
+      const value = row.attributeValue?.value;
+      const name = row.attributeValue?.attribute?.name;
+      if (!value) return null;
+      return name ? `${name}: ${value}` : value;
+    })
+    .filter(Boolean);
+  return parts.length ? parts.join(" · ") : null;
 }
 
 export async function getCartPayload(cartId: string | null) {
@@ -189,7 +197,7 @@ export async function getCartPayload(cartId: string | null) {
       productName: p.name,
       quantity: row.quantity,
       unitPriceInPaise: price,
-      variantLabel: variantLabel(v.attributeValues),
+      variantLabel: variantLabel(v.attributeValues) ?? "Standard",
       primaryImageUrl: img,
       maxQuantity: maxQty
     });

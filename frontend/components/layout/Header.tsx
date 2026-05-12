@@ -111,11 +111,7 @@ export function Header() {
         </form>
 
         <div className="flex shrink-0 items-center gap-1 md:gap-3">
-          <Link
-            href="/profile"
-            className="inline-flex h-11 max-w-[8rem] items-center justify-center rounded-lg px-2 text-stone-300 transition-colors hover:bg-stone-800 hover:text-amber-400 md:hidden"
-            aria-label={displayName ? `Profile, ${displayName}` : "Profile"}
-          >
+          <Link href="/profile" className="inline-flex h-11 max-w-[8rem] items-center justify-center rounded-lg px-2 text-stone-300 transition-colors hover:bg-stone-800 hover:text-amber-400 md:hidden" aria-label={displayName ? `Profile, ${displayName}` : "Profile"}>
             <span className="truncate text-xs font-medium">{displayName ? `Hi, ${displayName}` : "Profile"}</span>
           </Link>
 
@@ -153,9 +149,6 @@ export function Header() {
             )}
           </div>
 
-          <Link href="/cart" className="flex items-center rounded-lg md:hidden" aria-label={`Cart, ${cartCount} items`}>
-            <CartIcon count={cartCount} />
-          </Link>
           <button
             type="button"
             onClick={openDrawer}

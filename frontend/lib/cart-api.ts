@@ -77,14 +77,22 @@ export async function cartAdd(variantId: string, quantity: number): Promise<Cart
     method: "POST",
     credentials: "include",
     headers: buildHeaders(true),
-    body: JSON.stringify({ variantId, quantity })
+    body: JSON.stringify({ variantId, quantity: Number(quantity) || 1 })
   });
-  const json = (await res.json().catch(() => ({}))) as {
+  const raw = await res.text();
+  let json: {
     success?: boolean;
     data?: CartApiResponse;
     error?: string;
     code?: string;
-  };
+  } = {};
+  try {
+    json = JSON.parse(raw) as typeof json;
+  } catch {
+    if (raw.trim()) {
+      json = { error: raw.trim() };
+    }
+  }
   if (!res.ok || !json.success) {
     throw new Error(json.error || `Could not add to cart (${res.status})`);
   }

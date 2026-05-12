@@ -1,3 +1,5 @@
+import { sanitizeProductHtml } from "@/lib/sanitize-html";
+
 type Item = {
   id: string;
   title: string;
@@ -9,18 +11,19 @@ type Props = {
 };
 
 function RichContent({ html }: { html: string }) {
-  const looksHtml = /<[a-z][\s\S]*>/i.test(html.trim());
+  const cleaned = sanitizeProductHtml(html);
+  const looksHtml = /<[a-z][\s\S]*>/i.test(cleaned.trim());
   if (looksHtml) {
     return (
       <div
-        className="border-t border-stone-100 px-4 pb-4 pt-3 text-sm leading-relaxed text-stone-600 prose prose-stone max-w-none prose-p:my-2 prose-ul:my-2 prose-headings:text-stone-900"
-        dangerouslySetInnerHTML={{ __html: html }}
+        className="border-t border-stone-100 px-4 pb-4 pt-3 text-sm leading-relaxed text-stone-600 prose prose-stone max-w-none prose-p:my-2 prose-ul:my-2 prose-ul:list-disc prose-ul:pl-5 prose-li:my-1 prose-headings:text-stone-900"
+        dangerouslySetInnerHTML={{ __html: cleaned }}
       />
     );
   }
   return (
     <div className="border-t border-stone-100 px-4 pb-4 pt-3 text-sm leading-relaxed whitespace-pre-wrap text-stone-600">
-      {html}
+      {cleaned}
     </div>
   );
 }

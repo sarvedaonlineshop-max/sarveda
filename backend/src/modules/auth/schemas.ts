@@ -20,7 +20,19 @@ export const verifyOtpSchema = z.object({
   code: z.string().regex(/^\d{6}$/, "Must be a 6-digit code")
 });
 
+export const updateProfileSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  phone: z
+    .string()
+    .trim()
+    .max(20)
+    .optional()
+    .nullable()
+    .transform((value) => (value === "" ? null : value))
+});
+
 export type RegisterBody = z.infer<typeof registerSchema>;
 export type LoginBody = z.infer<typeof loginSchema>;
 export type SendOtpBody = z.infer<typeof sendOtpSchema>;
 export type VerifyOtpBody = z.infer<typeof verifyOtpSchema>;
+export type UpdateProfileBody = z.infer<typeof updateProfileSchema>;

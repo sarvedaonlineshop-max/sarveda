@@ -89,6 +89,30 @@ export function isAdminRole(role: string | undefined | null): boolean {
   return typeof role === "string" && ADMIN_ROLES.has(role);
 }
 
+export type UpdateProfileInput = {
+  name: string;
+  phone?: string | null;
+};
+
+export async function updateProfile(input: UpdateProfileInput): Promise<PublicUser> {
+  const res = await fetch(`${getApiBase()}/api/auth/me`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({
+      name: input.name.trim(),
+      phone: input.phone?.trim() ? input.phone.trim() : null
+    })
+  });
+  const json = (await res.json()) as
+    | { success: true; data: { user: PublicUser } }
+    | { success: false; error?: string };
+  if (!res.ok || !json.success || !("data" in json)) {
+    throw new Error("error" in json ? String(json.error) : `Profile update failed (${res.status})`);
+  }
+  return json.data.user;
+}
+
 /** Current session user, or null if not logged in. */
 export async function fetchMe(): Promise<PublicUser | null> {
   try {
