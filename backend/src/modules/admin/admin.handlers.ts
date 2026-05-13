@@ -2,6 +2,7 @@ import { OrderStatus } from "@prisma/client";
 import type { NextFunction, Request, Response } from "express";
 
 import { prisma } from "../../config/db";
+import { onOrderEnteredProcessing } from "../shipping/orderLifecycle";
 
 const revenueStatuses: OrderStatus[] = [
   "PAID",
@@ -288,6 +289,8 @@ export async function patchOrderStatus(req: Request, res: Response, next: NextFu
       return;
     }
 
+    const prevStatus = exists.status;
+
     const order = await prisma.order.update({
       where: { id },
       data: { status },
@@ -297,6 +300,11 @@ export async function patchOrderStatus(req: Request, res: Response, next: NextFu
         invoice: true
       }
     });
+
+    if (status === "PROCESSING" && prevStatus !== "PROCESSING") {
+      void onOrderEnteredProcessing(order.id);
+    }
+
     res.json({ success: true, data: { order } });
   } catch (err) {
     next(err);

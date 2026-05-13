@@ -9,7 +9,9 @@ export const createOrderSchema = z.object({
   city: z.string().min(1).max(120),
   state: z.string().min(1).max(120),
   postalCode: z.string().min(3).max(20),
-  country: z.string().min(2).max(2).default("IN")
+  country: z.string().min(2).max(2).default("IN"),
+  /** India COD logistics surcharge from VariantShippingRate (payment remains online via Razorpay unless you add pure COD later). */
+  codDelivery: z.boolean().optional().default(false)
 });
 
 export type CreateOrderBody = z.infer<typeof createOrderSchema>;

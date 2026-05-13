@@ -1,3 +1,4 @@
+import type { ProductVariant } from "@prisma/client";
 import type { Request } from "express";
 
 import { getRedisConnection } from "../../config/redisConnection";
@@ -8,7 +9,27 @@ import { generateOrderNumber } from "../../utils/orderNumber";
 import { createOrder, getRazorpayKeyId } from "../payments/razorpay";
 import { reserveStockTx } from "../orders/orders.service";
 import { getCartPayload, resolveCartContext } from "../cart/cart.service";
+import {
+  computeVariantShippingTotal,
+  currencyForZone,
+  zoneFromCountry
+} from "../shipping/shippingRates.service";
+import type { ZoneKey } from "../shipping/types";
 import type { CreateOrderBody } from "./schemas";
+
+function unitMinor(variant: ProductVariant, zone: ZoneKey): number {
+  switch (zone) {
+    case "IN":
+      return variant.saleInPaise;
+    case "GB":
+      return variant.saleGbpPence ?? variant.saleInPaise;
+    case "US":
+    case "OTHER":
+      return variant.saleUsdCents ?? variant.saleInPaise;
+    default:
+      return variant.saleInPaise;
+  }
+}
 
 const IDEM_TTL_SEC = 30 * 60;
 
@@ -68,10 +89,21 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
   }
 
   const cartData = await getCartPayload(cartId);
-  if (!cartData.items.length || cartData.subtotalInPaise <= 0) {
+  if (!cartData.items.length) {
     const e = new Error("Cart is empty") as Error & { statusCode: number; code: string };
     e.statusCode = 400;
     e.code = "EMPTY_CART";
+    throw e;
+  }
+
+  const zone = zoneFromCountry(body.country ?? "IN");
+  if (body.codDelivery && zone !== "IN") {
+    const e = new Error("COD delivery surcharge applies to India only") as Error & {
+      statusCode: number;
+      code: string;
+    };
+    e.statusCode = 400;
+    e.code = "COD_NOT_ALLOWED";
     throw e;
   }
 
@@ -103,10 +135,24 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
     }
   }
 
-  const shippingInPaise = 0;
+  let subtotalMinor = 0;
+  for (const row of lines) {
+    const u = unitMinor(row.variant, zone);
+    subtotalMinor += u * row.quantity;
+  }
+
+  const shippingLines = lines.map((row) => ({
+    variantId: row.variantId,
+    quantity: row.quantity
+  }));
+  const shippingInPaise = await computeVariantShippingTotal(prisma, shippingLines, body.country ?? "IN", {
+    cod: Boolean(body.codDelivery) && zone === "IN"
+  });
+
   const discountInPaise = 0;
   const taxInPaise = 0;
-  const grandTotalInPaise = cartData.subtotalInPaise - discountInPaise + shippingInPaise + taxInPaise;
+  const grandTotalInPaise = subtotalMinor - discountInPaise + shippingInPaise + taxInPaise;
+  const orderCurrency = currencyForZone(zone);
 
   if (grandTotalInPaise < 1) {
     const e = new Error("Invalid order total") as Error & { statusCode: number; code: string };
@@ -127,19 +173,19 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
         phone: body.phone.trim(),
         status: "PENDING_PAYMENT",
         paymentStatus: "PENDING",
-        subtotalInPaise: cartData.subtotalInPaise,
+        subtotalInPaise: subtotalMinor,
         discountInPaise,
         shippingInPaise,
         taxInPaise,
         grandTotalInPaise,
-        currency: "INR"
+        currency: orderCurrency
       }
     });
 
     for (const row of lines) {
       const v = row.variant;
       const p = v.productRel;
-      const unit = v.saleInPaise;
+      const unit = unitMinor(v, zone);
       const lineTotal = unit * row.quantity;
       const nameSnap = labelFromVariant(v.attributeValues)
         ? `${p.name} (${labelFromVariant(v.attributeValues)})`
@@ -194,7 +240,8 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
 
     const rzpIdempotencyKey = `${order.id}:${Date.now()}`;
     const rzp = await createOrder({
-      amountInPaise: grandTotalInPaise,
+      amountInMinorUnits: grandTotalInPaise,
+      currency: orderCurrency,
       receipt,
       notes: {
         order_id: order.id,
@@ -209,7 +256,7 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
         provider: "RAZORPAY",
         providerOrderId: rzp.id,
         amountInPaise: grandTotalInPaise,
-        currency: "INR",
+        currency: orderCurrency,
         status: "PENDING",
         rawPayload: { created: true, idempotencyKey: rzpIdempotencyKey } as object
       }
@@ -238,7 +285,7 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
     orderId: result.order.id,
     orderNumber: result.order.orderNumber,
     amountInPaise: grandTotalInPaise,
-    currency: "INR",
+    currency: orderCurrency,
     razorpayKeyId: getRazorpayKeyId(),
     rzpOrderId: result.rzpOrderId,
     paymentId: result.payment.id

@@ -109,15 +109,19 @@ export function mapRazorpayCreateError(err: unknown): Error & {
  * Create Razorpay order with idempotency key in notes (orderId + timestamp from checkout).
  */
 export async function createOrder(params: {
-  amountInPaise: number;
+  /** Minor units: paise (INR), cents (USD), pence (GBP). */
+  amountInMinorUnits: number;
+  /** ISO 4217; defaults to INR. */
+  currency?: string;
   receipt: string;
   notes: Record<string, string>;
   idempotencyKey: string;
 }): Promise<{ id: string; amount: number; currency: string }> {
   const rzp = getClient();
+  const currency = params.currency ?? "INR";
   const body = {
-    amount: params.amountInPaise,
-    currency: "INR",
+    amount: params.amountInMinorUnits,
+    currency,
     receipt: params.receipt.slice(0, 40),
     notes: {
       ...params.notes,

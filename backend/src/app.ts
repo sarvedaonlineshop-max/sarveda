@@ -18,6 +18,7 @@ import { paymentsJsonRoutes } from "./modules/payments/payments.routes";
 import { razorpayWebhookHandler } from "./modules/payments/razorpay.webhook";
 import { adminRoutes } from "./modules/admin";
 import { productsRoutes } from "./modules/products/products.routes";
+import { shippingRoutes } from "./modules/shipping";
 
 configurePassport();
 
@@ -79,6 +80,7 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/checkout", checkoutRoutes);
 app.use("/api/payments", paymentsJsonRoutes);
 app.use("/api/orders", ordersRoutes);
+app.use("/api/shipping", shippingRoutes);
 app.use("/api/admin", adminRoutes);
 
 app.use((_req: Request, _res: Response, next: NextFunction) => {
