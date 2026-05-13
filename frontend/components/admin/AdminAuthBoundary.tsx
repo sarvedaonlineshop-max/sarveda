@@ -10,8 +10,7 @@ type Props = {
 };
 
 /**
- * Client guard for /admin (middleware is primary). Handles stale sessions and
- * JWT_SECRET mismatch on edge vs API.
+ * Client guard for /admin (middleware is primary). Handles stale sessions after DB role changes.
  */
 export function AdminAuthBoundary({ children }: Props) {
   const router = useRouter();

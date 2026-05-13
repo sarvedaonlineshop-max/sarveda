@@ -1,69 +1,67 @@
-import { jwtVerify } from "jose";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 const ADMIN_ROLES = new Set(["ADMIN", "SUPER_ADMIN"]);
 
-function readRole(payload: unknown): string | undefined {
-  if (!payload || typeof payload !== "object") return undefined;
-  const r = (payload as { role?: unknown }).role;
-  return typeof r === "string" ? r : undefined;
+function isAdminRoleString(role: string | undefined | null): boolean {
+  if (!role || typeof role !== "string") return false;
+  return ADMIN_ROLES.has(role.trim().toUpperCase());
 }
 
-function isJwtAdminRole(role: string | undefined): boolean {
-  if (!role) return false;
-  return ADMIN_ROLES.has(role.trim().toUpperCase());
+/**
+ * Authoritative session + role from Express (Prisma), not the JWT payload on the edge.
+ * Avoids: stale `role` in the cookie after a DB UPDATE, and JWT_SECRET drift between Vercel and EC2.
+ */
+async function fetchSessionRole(request: NextRequest): Promise<string | null> {
+  try {
+    const res = await fetch(new URL("/api/auth/me", request.url), {
+      headers: {
+        cookie: request.headers.get("cookie") ?? "",
+        accept: "application/json"
+      },
+      cache: "no-store"
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as {
+      success?: boolean;
+      data?: { user?: { role?: string } };
+    };
+    if (!json.success) return null;
+    const role = json.data?.user?.role;
+    return typeof role === "string" ? role : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const token = request.cookies.get("sarveda_auth")?.value;
-  const secret = process.env.JWT_SECRET;
 
   if (pathname.startsWith("/admin")) {
+    const token = request.cookies.get("sarveda_auth")?.value;
     if (!token) {
       const login = new URL("/login", request.url);
       login.searchParams.set("next", pathname);
       return NextResponse.redirect(login);
     }
 
-    if (!secret || secret.length < 32) {
-      return NextResponse.redirect(new URL("/", request.url));
-    }
-
-    try {
-      const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
-      const role = readRole(payload);
-      if (!role) {
-        const login = new URL("/login", request.url);
-        login.searchParams.set("next", pathname);
-        login.searchParams.set("reason", "reauth");
-        return NextResponse.redirect(login);
-      }
-      if (!isJwtAdminRole(role)) {
-        return NextResponse.redirect(new URL("/", request.url));
-      }
-    } catch {
+    const role = await fetchSessionRole(request);
+    if (!role) {
       const login = new URL("/login", request.url);
       login.searchParams.set("next", pathname);
+      login.searchParams.set("reason", "reauth");
       return NextResponse.redirect(login);
     }
-
+    if (!isAdminRoleString(role)) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
     return NextResponse.next();
   }
 
   if (pathname === "/my-account" || pathname.startsWith("/my-account/")) {
-    if (!token || !secret || secret.length < 32) {
-      return NextResponse.next();
-    }
-    try {
-      const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
-      const role = readRole(payload);
-      if (isJwtAdminRole(role)) {
-        return NextResponse.redirect(new URL("/admin", request.url));
-      }
-    } catch {
-      return NextResponse.next();
+    const role = await fetchSessionRole(request);
+    if (role && isAdminRoleString(role)) {
+      return NextResponse.redirect(new URL("/admin", request.url));
     }
     return NextResponse.next();
   }
