@@ -10,6 +10,35 @@ const SHIPROCKET_API = "https://apiv2.shiprocket.in/v1/external";
 type TokenState = { token: string; expiresAtMs: number };
 let cachedToken: TokenState | null = null;
 
+function extractShiprocketLoginToken(data: unknown): string {
+  if (!data || typeof data !== "object") return "";
+  const d = data as Record<string, unknown>;
+  if (typeof d.token === "string" && d.token.length > 0) return d.token;
+  const inner = d.data;
+  if (inner && typeof inner === "object") {
+    const t = (inner as Record<string, unknown>).token;
+    if (typeof t === "string" && t.length > 0) return t;
+  }
+  return "";
+}
+
+function extractShiprocketErrorMessage(data: unknown, status: number): string {
+  if (!data || typeof data !== "object") {
+    return `Shiprocket returned HTTP ${status}`;
+  }
+  const d = data as Record<string, unknown>;
+  if (typeof d.message === "string" && d.message.trim()) return d.message.trim();
+  if (Array.isArray(d.errors) && d.errors.length) {
+    const first = d.errors[0];
+    if (typeof first === "string") return first;
+    if (first && typeof first === "object" && "message" in first) {
+      return String((first as { message?: string }).message ?? "Validation error");
+    }
+  }
+  if (d.error && typeof d.error === "string") return d.error;
+  return `Shiprocket returned HTTP ${status}`;
+}
+
 async function getToken(): Promise<ApiOk<{ token: string }> | ApiErr> {
   const email = shippingEnv.SHIPROCKET_EMAIL.trim();
   const password = shippingEnv.SHIPROCKET_PASSWORD.trim();
@@ -25,16 +54,21 @@ async function getToken(): Promise<ApiOk<{ token: string }> | ApiErr> {
       timeout: 20_000,
       validateStatus: () => true
     });
-    if (res.status >= 400 || !res.data) {
-      return mapShiprocketErr(res, "SHIPROCKET_AUTH");
+    const token = extractShiprocketLoginToken(res.data);
+    if (token) {
+      cachedToken = { token, expiresAtMs: now + 23 * 60 * 60 * 1000 };
+      return { success: true, data: { token } };
     }
-    const token =
-      (res.data as { token?: string }).token ?? (res.data as { data?: { token?: string } }).data?.token ?? "";
-    if (!token) {
-      return { success: false, error: "Shiprocket login did not return a token", code: "SHIPROCKET_AUTH" };
-    }
-    cachedToken = { token, expiresAtMs: now + 23 * 60 * 60 * 1000 };
-    return { success: true, data: { token } };
+    const msg = extractShiprocketErrorMessage(res.data, res.status);
+    logger.warn("shiprocket_auth_failed", { status: res.status, emailUsed: email.replace(/@.*/, "@***") });
+    return {
+      success: false,
+      error:
+        res.status === 401 || res.status === 422 || res.status === 400
+          ? `${msg} Use an API user created under Shiprocket → Settings → API (not your dashboard password unless it is the API user password).`
+          : msg,
+      code: "SHIPROCKET_AUTH"
+    };
   } catch (err) {
     return mapAxiosErr(err, "SHIPROCKET_AUTH");
   }
@@ -45,11 +79,6 @@ function mapAxiosErr(err: unknown, code: string): ApiErr {
   const msg = ax.response?.data?.message ?? ax.message ?? "Shiprocket request failed";
   logger.warn("shiprocket_http_error", { code, status: ax.response?.status, msg });
   return { success: false, error: String(msg), code };
-}
-
-function mapShiprocketErr(res: { status: number; data?: unknown }, code: string): ApiErr {
-  logger.warn("shiprocket_bad_response", { status: res.status, data: res.data });
-  return { success: false, error: "Shiprocket authentication failed", code };
 }
 
 export async function createInternationalShipment(

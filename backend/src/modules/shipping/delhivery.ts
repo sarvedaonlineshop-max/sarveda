@@ -6,15 +6,33 @@ import { logger } from "../../config/logger";
 
 import type { ApiErr, ApiOk } from "./types";
 
-const HEADER_TOKEN = "Authorization";
+/**
+ * Paths aligned with Delhivery One B2C docs:
+ * - Pincode: GET /c/api/pin-codes/json/?filter_codes=
+ * - Create: POST /api/cmu/create.json (format=json&data=...)
+ * - Track: GET /api/v1/packages/json/?waybill=
+ * - Cancel: POST /api/p/edit { waybill, cancellation: "true" }
+ *
+ * Base URL: staging https://staging-express.delhivery.com — production https://track.delhivery.com
+ */
 
-function authHeaders(): Record<string, string> | null {
+function authHeadersJson(): Record<string, string> | null {
   const token = shippingEnv.DELHIVERY_API_KEY.trim();
   if (!token) return null;
   return {
-    [HEADER_TOKEN]: `Token ${token}`,
+    Authorization: `Token ${token}`,
     Accept: "application/json",
     "Content-Type": "application/json"
+  };
+}
+
+function authHeadersForm(): Record<string, string> | null {
+  const token = shippingEnv.DELHIVERY_API_KEY.trim();
+  if (!token) return null;
+  return {
+    Authorization: `Token ${token}`,
+    Accept: "application/json",
+    "Content-Type": "application/x-www-form-urlencoded"
   };
 }
 
@@ -35,7 +53,7 @@ function mapAxiosError(err: unknown, code: string): ApiErr {
 export async function checkPincodeServiceability(
   pincode: string
 ): Promise<ApiOk<{ serviceable: boolean; estimatedDays: number }> | ApiErr> {
-  const headers = authHeaders();
+  const headers = authHeadersJson();
   if (!headers) {
     return { success: false, error: "Delhivery is not configured", code: "DELHIVERY_NOT_CONFIGURED" };
   }
@@ -44,32 +62,39 @@ export async function checkPincodeServiceability(
     return { success: false, error: "Invalid pincode", code: "INVALID_PINCODE" };
   }
   try {
-    const url = `${baseUrl()}/api/backend/client/serviceability/`;
+    const url = `${baseUrl()}/c/api/pin-codes/json/`;
     const res = await axios.get(url, {
       headers,
-      params: { pincode: pc },
+      params: { filter_codes: pc },
       timeout: 15_000,
       validateStatus: () => true
     });
     if (res.status >= 400) {
       return mapAxiosError({ response: res, message: "serviceability failed" }, "DELHIVERY_SERVICEABILITY");
     }
-    const body = res.data as Record<string, unknown>;
-    const deliveryCodes = body?.delivery_codes ?? body?.deliveryCodes ?? body?.data;
-    let serviceable = false;
-    let estimatedDays = 5;
-    if (Array.isArray(deliveryCodes) && deliveryCodes.length > 0) {
-      serviceable = true;
-      const first = deliveryCodes[0] as Record<string, unknown>;
-      const est =
-        first?.estimated_delivery_days ??
-        first?.estimated_days ??
-        first?.edd ??
-        first?.delivery_estimate;
-      if (typeof est === "number" && Number.isFinite(est)) estimatedDays = Math.max(1, Math.round(est));
-      else if (typeof est === "string" && /^\d+$/.test(est)) estimatedDays = Math.max(1, parseInt(est, 10));
+    const raw = res.data as Record<string, unknown>;
+    const rows = (raw?.delivery_codes ??
+      raw?.deliveryCodes ??
+      raw?.data ??
+      raw?.pin_codes) as unknown;
+    const list = Array.isArray(rows) ? rows : [];
+    if (list.length === 0) {
+      return { success: true, data: { serviceable: false, estimatedDays: 0 } };
     }
-    if (typeof body?.serviceable === "boolean") serviceable = body.serviceable;
+    const first = list[0] as Record<string, unknown>;
+    const remark = String(first?.remark ?? first?.Remark ?? "").trim();
+    const embargo = remark.toLowerCase().includes("embargo");
+    const serviceable = !embargo && remark.toLowerCase() !== "nsz";
+    let estimatedDays = 5;
+    const est =
+      first?.estimated_delivery_days ??
+      first?.estimated_days ??
+      first?.edd ??
+      first?.delivery_estimate ??
+      first?.tat;
+    if (typeof est === "number" && Number.isFinite(est)) estimatedDays = Math.max(1, Math.round(est));
+    else if (typeof est === "string" && /^\d+$/.test(est)) estimatedDays = Math.max(1, parseInt(est, 10));
+
     return { success: true, data: { serviceable, estimatedDays } };
   } catch (err) {
     return mapAxiosError(err, "DELHIVERY_SERVICEABILITY");
@@ -94,55 +119,63 @@ export type DelhiveryShipmentInput = {
 export async function createShipment(
   input: DelhiveryShipmentInput
 ): Promise<ApiOk<{ waybill: string; trackingUrl: string }> | ApiErr> {
-  const headers = authHeaders();
+  const headers = authHeadersForm();
   if (!headers) {
     return { success: false, error: "Delhivery is not configured", code: "DELHIVERY_NOT_CONFIGURED" };
   }
   try {
-    const shipments = [
-      {
-        name: input.consigneeName,
-        phone: input.consigneePhone,
-        order: input.orderNumber,
-        payment_mode: input.paymentMode,
-        cod_amount:
-          input.paymentMode === "COD" && input.codAmountRupees != null
-            ? Number(input.codAmountRupees.toFixed(2))
-            : undefined,
-        weight: input.weightKg,
-        shipment_width: 10,
-        shipment_height: 10,
-        shipment_length: 10,
-        address: input.address,
-        city: input.city,
-        state: input.state,
-        pin: input.pincode.replace(/\D/g, "").slice(0, 6),
-        country: "India"
-      }
-    ];
+    const pin = input.pincode.replace(/\D/g, "").slice(0, 6);
+    const weightG = Math.max(1, Math.round(input.weightKg * 1000));
+    const paymentMode = input.paymentMode === "COD" ? "COD" : "Prepaid";
+
+    const shipment: Record<string, unknown> = {
+      name: input.consigneeName,
+      phone: input.consigneePhone,
+      order: input.orderNumber,
+      add: input.address,
+      pin,
+      city: input.city,
+      state: input.state,
+      country: "India",
+      payment_mode: paymentMode,
+      weight: weightG,
+      shipment_width: 10,
+      shipment_height: 10,
+      shipment_length: 10
+    };
+    if (paymentMode === "COD" && input.codAmountRupees != null) {
+      shipment.cod_amount = Number(input.codAmountRupees.toFixed(2));
+    }
+
+    const payload: Record<string, unknown> = {
+      shipments: [shipment]
+    };
+    if (input.pickupLocation) {
+      payload.pickups = [{ pickup_location: input.pickupLocation }];
+    }
+
     const form = new URLSearchParams();
     form.append("format", "json");
-    form.append(
-      "data",
-      JSON.stringify({
-        pickups: input.pickupLocation ? [{ pickup_location: input.pickupLocation }] : undefined,
-        shipments
-      })
-    );
-    const url = `${baseUrl()}/api/backend/client/json/`;
+    form.append("data", JSON.stringify(payload));
+
+    const url = `${baseUrl()}/api/cmu/create.json`;
     const res = await axios.post(url, form.toString(), {
-      headers: { ...headers, "Content-Type": "application/x-www-form-urlencoded" },
-      timeout: 30_000,
+      headers,
+      timeout: 45_000,
       validateStatus: () => true
     });
     if (res.status >= 400) {
       return mapAxiosError({ response: res, message: "create shipment failed" }, "DELHIVERY_CREATE");
     }
     const body = res.data as Record<string, unknown>;
-    const pkgs = (body?.packages ?? body?.success ?? body?.data) as Record<string, unknown>[] | undefined;
+    const pkgs = (body?.packages ??
+      body?.success ??
+      body?.Package ??
+      body?.data) as Record<string, unknown>[] | Record<string, unknown> | undefined;
     let waybill = "";
-    if (Array.isArray(pkgs) && pkgs[0]) {
-      waybill = String(pkgs[0].waybill ?? pkgs[0].AWB ?? pkgs[0].wb ?? "");
+    const arr = Array.isArray(pkgs) ? pkgs : pkgs && typeof pkgs === "object" ? [pkgs as Record<string, unknown>] : [];
+    if (arr[0]) {
+      waybill = String(arr[0].waybill ?? arr[0].AWB ?? arr[0].wb ?? arr[0].Waybill ?? "");
     }
     if (!waybill && typeof body?.waybill === "string") waybill = body.waybill;
     if (!waybill) {
@@ -161,18 +194,18 @@ export async function createShipment(
 }
 
 export async function trackShipment(waybill: string): Promise<ApiOk<{ status: string; raw: unknown }> | ApiErr> {
-  const headers = authHeaders();
+  const headers = authHeadersJson();
   if (!headers) {
     return { success: false, error: "Delhivery is not configured", code: "DELHIVERY_NOT_CONFIGURED" };
   }
   const wb = waybill.trim();
   if (!wb) return { success: false, error: "Waybill required", code: "BAD_REQUEST" };
   try {
-    const url = `${baseUrl()}/api/backend/client/track`;
+    const url = `${baseUrl()}/api/v1/packages/json/`;
     const res = await axios.get(url, {
       headers,
       params: { waybill: wb },
-      timeout: 15_000,
+      timeout: 20_000,
       validateStatus: () => true
     });
     if (res.status >= 400) {
@@ -186,6 +219,9 @@ export async function trackShipment(waybill: string): Promise<ApiOk<{ status: st
     else if (Array.isArray(o?.ShipmentData) && (o.ShipmentData as unknown[])[0]) {
       const row = (o.ShipmentData as Record<string, unknown>[])[0];
       status = String(row?.Status ?? row?.status ?? "UNKNOWN");
+    } else if (Array.isArray(o?.packages) && (o.packages as unknown[])[0]) {
+      const row = (o.packages as Record<string, unknown>[])[0];
+      status = String(row?.status ?? row?.Status ?? "UNKNOWN");
     }
     return { success: true, data: { status, raw } };
   } catch (err) {
@@ -194,20 +230,20 @@ export async function trackShipment(waybill: string): Promise<ApiOk<{ status: st
 }
 
 export async function cancelShipment(waybill: string): Promise<ApiOk<{ cancelled: boolean }> | ApiErr> {
-  const headers = authHeaders();
+  const headers = authHeadersJson();
   if (!headers) {
     return { success: false, error: "Delhivery is not configured", code: "DELHIVERY_NOT_CONFIGURED" };
   }
   const wb = waybill.trim();
   if (!wb) return { success: false, error: "Waybill required", code: "BAD_REQUEST" };
   try {
-    const url = `${baseUrl()}/api/backend/client/json/cancel`;
+    const url = `${baseUrl()}/api/p/edit`;
     const res = await axios.post(
       url,
-      { waybill: wb },
+      { waybill: wb, cancellation: "true" },
       {
         headers,
-        timeout: 20_000,
+        timeout: 25_000,
         validateStatus: () => true
       }
     );
