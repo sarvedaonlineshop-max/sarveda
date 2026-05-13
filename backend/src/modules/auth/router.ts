@@ -10,6 +10,7 @@ import { googleOAuthConfigured } from "./passport";
 import {
   getPrimaryFrontendBase,
   OAUTH_NEXT_COOKIE,
+  postOAuthFrontendPath,
   safeRelativeRedirect
 } from "./redirect";
 import {
@@ -104,9 +105,9 @@ authRouter.get("/google", (req, res, next) => {
     return;
   }
   const nextPath =
-    typeof req.query.next === "string" ? req.query.next : "/";
+    typeof req.query.next === "string" ? req.query.next : "/my-account";
   const secure = process.env.NODE_ENV === "production";
-  res.cookie(OAUTH_NEXT_COOKIE, safeRelativeRedirect(nextPath, "/"), {
+  res.cookie(OAUTH_NEXT_COOKIE, safeRelativeRedirect(nextPath, "/my-account"), {
     httpOnly: true,
     secure,
     sameSite: "lax",
@@ -141,7 +142,7 @@ authRouter.get(
     setAuthCookie(res, { sub: user.id, email: user.email, role: user.role });
     const rawNext = req.cookies?.[OAUTH_NEXT_COOKIE] as string | undefined;
     res.clearCookie(OAUTH_NEXT_COOKIE, { path: "/" });
-    const destination = safeRelativeRedirect(rawNext, "/");
+    const destination = postOAuthFrontendPath(user.role, rawNext);
     res.redirect(`${frontendBase}${destination}`);
   })
 );

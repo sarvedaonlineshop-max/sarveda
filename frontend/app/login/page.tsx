@@ -25,7 +25,8 @@ function LoginForm() {
     () => Boolean(next?.startsWith("/admin") || searchParams.get("admin") === "1"),
     [next, searchParams]
   );
-  const postLoginNext = next ?? (adminOnly ? "/admin" : "/");
+  /** Stored in OAuth cookie — backend also applies role-based landing. */
+  const googleNextPath = next ?? (adminOnly ? "/admin" : "/my-account");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -44,7 +45,7 @@ function LoginForm() {
     setMessage("");
     try {
       const user = await loginWithPassword(email, password);
-      const destination = resolvePostLoginPath(user, postLoginNext, { adminOnly });
+      const destination = resolvePostLoginPath(user, next, { adminOnly });
       router.replace(destination);
       router.refresh();
     } catch (ex) {
@@ -89,7 +90,7 @@ function LoginForm() {
         </div>
       }
     >
-      <GoogleSignInButton nextPath={postLoginNext} />
+      <GoogleSignInButton nextPath={googleNextPath} />
 
       <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-stone-500">
         <span className="h-px flex-1 bg-stone-700" />

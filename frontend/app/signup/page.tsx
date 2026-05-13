@@ -19,7 +19,7 @@ function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next");
-  const postLoginNext = next ?? "/";
+  const googleNextPath = next ?? "/my-account";
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -41,7 +41,7 @@ function SignupForm() {
     try {
       await registerAccount({ name, email, password });
       const user = await loginWithPassword(email, password);
-      const destination = resolvePostLoginPath(user, postLoginNext);
+      const destination = resolvePostLoginPath(user, next);
       router.replace(destination);
       router.refresh();
     } catch (ex) {
@@ -64,7 +64,7 @@ function SignupForm() {
         </p>
       }
     >
-      <GoogleSignInButton nextPath={postLoginNext} label="Sign up with Google" />
+      <GoogleSignInButton nextPath={googleNextPath} label="Sign up with Google" />
 
       <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-stone-500">
         <span className="h-px flex-1 bg-stone-700" />

@@ -373,7 +373,7 @@ export default function AdminOrderDetailPage() {
                             type="button"
                             className="text-xs font-semibold text-stone-700 underline dark:text-stone-300"
                             disabled={!!shipBusy}
-                            onClick={() => void handleTrackOne(s.awb)}
+                            onClick={() => void handleTrackOne(s.awb!)}
                           >
                             {shipBusy === s.awb ? "…" : "Sync"}
                           </button>
@@ -383,7 +383,7 @@ export default function AdminOrderDetailPage() {
                             type="button"
                             className="text-xs font-semibold text-red-700 underline dark:text-red-400"
                             disabled={!!shipBusy}
-                            onClick={() => void handleCancelWaybill(s.awb)}
+                            onClick={() => void handleCancelWaybill(s.awb!)}
                           >
                             {shipBusy === `cancel-${s.awb}` ? "…" : "Cancel label"}
                           </button>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { AdminAuthBoundary } from "@/components/admin/AdminAuthBoundary";
 import { AdminShell } from "@/components/admin/AdminShell";
 
 export const metadata: Metadata = {
@@ -12,5 +13,9 @@ export default function AdminLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return <AdminShell>{children}</AdminShell>;
+  return (
+    <AdminAuthBoundary>
+      <AdminShell>{children}</AdminShell>
+    </AdminAuthBoundary>
+  );
 }

@@ -123,15 +123,21 @@ export function SiteHeader() {
           </nav>
 
           <div className="hidden shrink-0 items-center gap-4 md:flex" aria-label="Account">
-            {isAdminRole(sessionUser?.role) ? (
-              <Link href="/admin" className={sessionLinkClass}>
-                Admin
-              </Link>
-            ) : null}
             {sessionUser ? (
-              <button type="button" onClick={() => void handleSignOut()} className={sessionLinkClass}>
-                Sign out
-              </button>
+              <>
+                {isAdminRole(sessionUser.role) ? (
+                  <Link href="/admin" className={sessionLinkClass}>
+                    Admin panel
+                  </Link>
+                ) : (
+                  <Link href="/my-account" className={sessionLinkClass}>
+                    My account
+                  </Link>
+                )}
+                <button type="button" onClick={() => void handleSignOut()} className={sessionLinkClass}>
+                  Sign out
+                </button>
+              </>
             ) : (
               <>
                 <Link href="/login" className={sessionLinkClass}>
@@ -207,6 +213,14 @@ export function SiteHeader() {
                 onClick={() => setMenuOpen(false)}
               >
                 Admin panel
+              </Link>
+            ) : sessionUser ? (
+              <Link
+                href="/my-account"
+                className="min-h-[48px] rounded-lg px-3 py-3 text-lg font-medium tracking-wide text-amber-400 hover:bg-stone-800"
+                onClick={() => setMenuOpen(false)}
+              >
+                My account
               </Link>
             ) : null}
             {sessionUser ? (

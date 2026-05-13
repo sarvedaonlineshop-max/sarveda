@@ -39,21 +39,30 @@ export function googleSignInUrl(nextPath: string): string {
   return `${getApiBase()}/api/auth/google?next=${encodeURIComponent(next)}`;
 }
 
+/**
+ * Where to send the user after a successful credential login or sign-up.
+ * - Admins → `/admin` (or a deeper `/admin/...` if `next` is under `/admin`).
+ * - Customers → `next` when safe, otherwise `/my-account`.
+ * - Customers must not land on `/admin` (throws).
+ */
 export function resolvePostLoginPath(
   user: PublicUser,
   next: string | null,
   options?: { adminOnly?: boolean }
 ): string {
-  const fallback = options?.adminOnly ? "/admin" : "/";
-  const target = next && next.startsWith("/") && !next.startsWith("//") ? next : fallback;
-  const wantsAdmin = target.startsWith("/admin");
-  if (wantsAdmin && !isAdminRole(user.role)) {
+  const target = next && next.startsWith("/") && !next.startsWith("//") ? next : null;
+
+  if (isAdminRole(user.role)) {
+    if (target?.startsWith("/admin")) return target;
+    return "/admin";
+  }
+
+  if (options?.adminOnly || target?.startsWith("/admin")) {
     throw new Error("This account does not have admin access.");
   }
-  if (options?.adminOnly && !isAdminRole(user.role)) {
-    throw new Error("This account does not have admin access.");
-  }
-  return target;
+
+  if (target) return target;
+  return "/my-account";
 }
 
 export async function loginWithPassword(
