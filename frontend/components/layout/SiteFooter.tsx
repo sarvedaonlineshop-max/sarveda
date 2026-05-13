@@ -1,61 +1,153 @@
 import Link from "next/link";
 
+const footerLinks = {
+  explore: [
+    { label: "Shop All",     href: "/shop"      },
+    { label: "Courses",      href: "/#courses"  },
+    { label: "Sound Healing",href: "/shop?category=sound-musical-instruments" },
+    { label: "Ayurveda",     href: "/shop?category=ayurveda-herbs" },
+    { label: "Yoga & Meditation", href: "/shop?category=yoga-meditation" },
+  ],
+  support: [
+    { label: "Track Order",  href: "/my-account" },
+    { label: "My Account",   href: "/my-account" },
+    { label: "Search",       href: "/search"     },
+    { label: "Contact Us",   href: "mailto:hello@sarveda.com" },
+  ],
+  legal: [
+    { label: "Privacy Policy",    href: "/privacy"  },
+    { label: "Terms of Service",  href: "/terms"    },
+    { label: "Refund Policy",     href: "/refunds"  },
+    { label: "Shipping Policy",   href: "/shipping" },
+  ],
+};
+
+const trustBadges = [
+  { icon: "🔒", text: "Secure Checkout"   },
+  { icon: "✅", text: "100% Authentic"    },
+  { icon: "↩️", text: "Easy Returns"      },
+  { icon: "🚚", text: "Pan India Shipping" },
+];
+
 export function SiteFooter() {
   return (
-    <footer className="hidden border-t border-stone-200 bg-stone-100 md:block">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-4 lg:px-8">
+    <footer className="hidden md:block" style={{ background: "#0f1a14" }}>
+
+      {/* Trust Bar */}
+      <div className="border-b border-white/8">
+        <div className="mx-auto grid max-w-7xl grid-cols-4 divide-x divide-white/8 px-4 sm:px-6 lg:px-8">
+          {trustBadges.map((b) => (
+            <div key={b.text} className="flex items-center justify-center gap-2.5 py-4">
+              <span className="text-xl">{b.icon}</span>
+              <span className="text-sm font-medium text-stone-300">{b.text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Main Footer */}
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-5 lg:px-8">
+
+        {/* Brand col */}
         <div className="lg:col-span-2">
-          <p className="font-serif text-2xl italic text-amber-700">☸ Sarveda</p>
-          <p className="mt-3 max-w-md text-sm leading-relaxed text-stone-600">
-            Authentic yoga, Ayurveda, and sound healing products — curated with care for practitioners worldwide.
+          <Link href="/">
+            <p className="font-serif text-3xl italic text-brand-gold">☸ Sarveda</p>
+            <p className="mt-0.5 text-xs tracking-[0.22em] text-brand-sage">YOGA · AYURVEDA · SOUND</p>
+          </Link>
+          <p className="mt-5 max-w-sm text-sm leading-relaxed text-stone-400">
+            Authentic yoga, Ayurveda, and sound healing products — curated with care for practitioners
+            across India and worldwide. Every piece chosen for depth of practice.
           </p>
+
+          {/* Social Links */}
+          <div className="mt-6 flex gap-3">
+            {[
+              { label:"Instagram", href:"https://instagram.com/sarveda", icon: (
+                <path d="M7.75 2h8.5A5.75 5.75 0 0122 7.75v8.5A5.75 5.75 0 0116.25 22h-8.5A5.75 5.75 0 012 16.25v-8.5A5.75 5.75 0 017.75 2zm0 1.5A4.25 4.25 0 003.5 7.75v8.5A4.25 4.25 0 007.75 20.5h8.5a4.25 4.25 0 004.25-4.25v-8.5A4.25 4.25 0 0016.25 3.5h-8.5zM12 7a5 5 0 110 10A5 5 0 0112 7zm0 1.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm5.25-.75a.875.875 0 110 1.75.875.875 0 010-1.75z"/>
+              )},
+              { label:"YouTube", href:"https://youtube.com/@sarveda", icon: (
+                <path d="M21.8 8s-.2-1.4-.8-2c-.8-.8-1.7-.8-2.1-.9C16.1 5 12 5 12 5s-4.1 0-6.9.1c-.4 0-1.3.1-2.1.9-.6.6-.8 2-.8 2S2 9.6 2 11.2v1.5c0 1.6.2 3.2.2 3.2s.2 1.4.8 2c.8.8 1.8.8 2.3.9C6.8 19 12 19 12 19s4.1 0 6.9-.2c.4 0 1.3-.1 2.1-.9.6-.6.8-2 .8-2s.2-1.6.2-3.2v-1.5C22 9.6 21.8 8 21.8 8zM9.8 14.5v-5.1l5.7 2.6-5.7 2.5z"/>
+              )},
+              { label:"WhatsApp", href:"https://wa.me/919999999999", icon: (
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>,
+                <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.957 9.957 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.946 7.946 0 01-4.053-1.107l-.291-.173-3.018.898.898-3.018-.173-.291A7.946 7.946 0 014 12c0-4.418 3.582-8 8-8s8 3.582 8 8-3.582 8-8 8z"/>
+              )},
+            ].map((s) => (
+              <a
+                key={s.label}
+                href={s.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={s.label}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-stone-400 transition-colors hover:border-brand-gold/40 hover:text-brand-gold"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                  {Array.isArray(s.icon) ? s.icon.map((p,i)=><path key={i} d={typeof p === 'string' ? p : ''}/>) : s.icon}
+                </svg>
+              </a>
+            ))}
+          </div>
         </div>
 
+        {/* Explore */}
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Explore</p>
-          <ul className="mt-4 space-y-2 text-sm text-stone-700">
-            <li>
-              <Link href="/shop" className="transition-colors hover:text-amber-700">
-                Shop
-              </Link>
-            </li>
-            <li>
-              <Link href="/#courses" className="transition-colors hover:text-amber-700">
-                Courses
-              </Link>
-            </li>
-            <li>
-              <Link href="/search" className="transition-colors hover:text-amber-700">
-                Search
-              </Link>
-            </li>
+          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500">Explore</p>
+          <ul className="space-y-2.5">
+            {footerLinks.explore.map((l) => (
+              <li key={l.label}>
+                <Link href={l.href} className="text-sm text-stone-400 transition-colors hover:text-brand-gold">
+                  {l.label}
+                </Link>
+              </li>
+            ))}
           </ul>
         </div>
 
+        {/* Support */}
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Account</p>
-          <ul className="mt-4 space-y-2 text-sm text-stone-700">
-            <li>
-              <Link href="/login" className="transition-colors hover:text-amber-700">
-                Sign in
-              </Link>
-            </li>
-            <li>
-              <Link href="/signup" className="transition-colors hover:text-amber-700">
-                Create account
-              </Link>
-            </li>
-            <li>
-              <Link href="/cart" className="transition-colors hover:text-amber-700">
-                Cart
-              </Link>
-            </li>
+          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500">Support</p>
+          <ul className="space-y-2.5">
+            {footerLinks.support.map((l) => (
+              <li key={l.label}>
+                <Link href={l.href} className="text-sm text-stone-400 transition-colors hover:text-brand-gold">
+                  {l.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Legal */}
+        <div>
+          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500">Legal</p>
+          <ul className="space-y-2.5">
+            {footerLinks.legal.map((l) => (
+              <li key={l.label}>
+                <Link href={l.href} className="text-sm text-stone-400 transition-colors hover:text-brand-gold">
+                  {l.label}
+                </Link>
+              </li>
+            ))}
           </ul>
         </div>
       </div>
 
-      <div className="border-t border-stone-200 px-4 py-4 text-center text-xs text-stone-500 sm:px-6 lg:px-8">
-        © {new Date().getFullYear()} Sarveda. All rights reserved.
+      {/* Bottom strip */}
+      <div className="border-t border-white/8">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-5 sm:flex-row sm:px-6 lg:px-8">
+          <p className="text-xs text-stone-500">
+            © {new Date().getFullYear()} Sarveda. All rights reserved. Made with 🙏 in India.
+          </p>
+          {/* Payment methods */}
+          <div className="flex items-center gap-2 text-stone-500">
+            <span className="text-xs tracking-wide">We accept</span>
+            {["Razorpay","UPI","Visa","Mastercard","Stripe","PayPal"].map((p) => (
+              <span key={p} className="rounded border border-white/10 px-1.5 py-0.5 text-[10px] font-medium text-stone-400">
+                {p}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
     </footer>
   );

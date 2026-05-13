@@ -1,61 +1,164 @@
 import Link from "next/link";
 
 import { HomeProductShowcase } from "@/components/home/HomeProductShowcase";
-import { NewsletterForm } from "@/components/home/NewsletterForm";
-import { ProductCard } from "@/components/shop/ProductCard";
-import { categoryEmoji } from "@/lib/category-emojis";
+import { NewsletterForm }      from "@/components/home/NewsletterForm";
+import { ProductCard }         from "@/components/shop/ProductCard";
+import { categoryEmoji }       from "@/lib/category-emojis";
 import { fetchCategoryTree, fetchProductList } from "@/lib/api";
 
 export const revalidate = 120;
 
+/* ── Static trust pillars ──────────────────────────────────────── */
+const TRUST = [
+  {
+    icon: "🌿",
+    title: "100% Authentic",
+    body: "Every product sourced directly from verified practitioners and artisans."
+  },
+  {
+    icon: "🙏",
+    title: "Expert Curated",
+    body: "Chosen by yoga teachers, Vaidyas, and sound healers — not algorithms."
+  },
+  {
+    icon: "🚚",
+    title: "Free Shipping ₹999+",
+    body: "Pan-India delivery. International shipping to US, UK and worldwide."
+  },
+  {
+    icon: "↩️",
+    title: "Easy Returns",
+    body: "Not what you expected? We make returns simple and stress-free."
+  },
+];
+
+/* ── Testimonials ──────────────────────────────────────────────── */
+const TESTIMONIALS = [
+  {
+    quote: "The singing bowl I ordered has become the anchor of my morning practice. The sound is extraordinary — I've tried many over the years and this is the finest.",
+    author: "Priya S.",
+    location: "Bengaluru",
+    stars: 5,
+  },
+  {
+    quote: "Finally found an Indian wellness brand I can trust from the UK. Fast delivery, beautifully packaged, and genuinely authentic Ayurvedic products.",
+    author: "Meera K.",
+    location: "London, UK",
+    stars: 5,
+  },
+  {
+    quote: "The Ashwagandha from Sarveda is unlike any supplement I've tried. I've recommended it to every student in my yoga classes.",
+    author: "Anand R.",
+    location: "Mumbai",
+    stars: 5,
+  },
+];
+
+function StarRow({ count }: { count: number }) {
+  return (
+    <div className="flex gap-0.5">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <svg key={i} className={`h-4 w-4 ${i < count ? "text-brand-gold-mid" : "text-stone-300"}`}
+          fill="currentColor" viewBox="0 0 20 20">
+          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+        </svg>
+      ))}
+    </div>
+  );
+}
+
 export default async function HomePage() {
   let categories: Awaited<ReturnType<typeof fetchCategoryTree>> = [];
-  let featured: Awaited<ReturnType<typeof fetchProductList>> = {
+  let featured:   Awaited<ReturnType<typeof fetchProductList>> = {
     items: [],
-    pagination: { page: 1, limit: 8, total: 0, totalPages: 0 }
+    pagination: { page:1, limit:8, total:0, totalPages:0 }
   };
 
   try {
     [categories, featured] = await Promise.all([
-      fetchCategoryTree({ next: { revalidate: 600 } }),
-      fetchProductList({}, { next: { revalidate: 120 } }, { limit: 8 })
+      fetchCategoryTree({ next:{ revalidate:600 } }),
+      fetchProductList({},  { next:{ revalidate:120 } }, { limit:8 }),
     ]);
   } catch {
-    // Keep the homepage buildable when the API is unreachable during CI or local builds.
+    /* Keep buildable when API is unreachable */
   }
 
   const topCategories = categories.slice(0, 12);
 
   return (
     <div className="overflow-x-hidden">
+
+      {/* ── Hero ───────────────────────────────────────────────────── */}
       <HomeProductShowcase products={featured.items} />
 
-      <section className="border-b border-stone-200 bg-white py-6 md:border-stone-100 md:bg-stone-50 md:py-8">
+      {/* ── Category Pills ─────────────────────────────────────────── */}
+      <section className="border-b border-stone-100 bg-white py-7 md:py-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <h2 className="font-serif text-xl font-semibold text-stone-900 sm:text-2xl">Shop by intention</h2>
-          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:mt-6 md:flex md:flex-wrap">
-            {topCategories.map((category) => (
+          <div className="flex items-baseline justify-between">
+            <h2 className="font-serif text-xl font-semibold text-brand-ink sm:text-2xl">
+              Shop by intention
+            </h2>
+            <Link href="/shop"
+              className="hidden text-sm font-medium text-brand-sage hover:text-brand-forest transition-colors md:block"
+            >
+              View all →
+            </Link>
+          </div>
+
+          <div className="mt-5 flex flex-wrap gap-2.5 md:mt-6">
+            {topCategories.map((cat) => (
               <Link
-                key={category.id}
-                href={`/shop?category=${encodeURIComponent(category.slug)}`}
-                className="flex min-h-[48px] items-center gap-2 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm font-medium text-stone-800 shadow-sm transition-colors hover:border-amber-700 hover:text-amber-800 md:rounded-full md:px-5 md:py-2.5"
+                key={cat.id}
+                href={`/shop?category=${encodeURIComponent(cat.slug)}`}
+                className="flex min-h-[44px] items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200 hover:shadow-sm"
+                style={{
+                  borderColor: "rgba(74,124,89,0.3)",
+                  color: "#2c2420",
+                  background: "#fffbf5"
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor = "#4a7c59";
+                  (e.currentTarget as HTMLElement).style.color = "#1e3a2f";
+                  (e.currentTarget as HTMLElement).style.background = "#f0ece6";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(74,124,89,0.3)";
+                  (e.currentTarget as HTMLElement).style.color = "#2c2420";
+                  (e.currentTarget as HTMLElement).style.background = "#fffbf5";
+                }}
               >
-                <span aria-hidden="true">{categoryEmoji(category.slug)}</span>
-                <span className="line-clamp-2 md:line-clamp-1">{category.name}</span>
+                <span aria-hidden="true">{categoryEmoji(cat.slug)}</span>
+                <span className="line-clamp-1">{cat.name}</span>
               </Link>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="bg-stone-50 py-10 md:px-4 md:py-14 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col gap-2 px-4 text-left md:px-0">
-            <h2 className="font-serif text-2xl font-semibold text-stone-900 sm:text-3xl">Featured offerings</h2>
-            <p className="text-stone-500">Handpicked pieces our community loves.</p>
+      {/* ── Featured Products ───────────────────────────────────────── */}
+      <section className="py-12 md:py-16" style={{ background: "#fdf6ed" }}>
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-1.5 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-sage">
+                Handpicked for you
+              </p>
+              <h2 className="mt-1 font-serif text-2xl font-semibold text-brand-ink sm:text-3xl">
+                Featured offerings
+              </h2>
+            </div>
+            <Link
+              href="/shop"
+              className="hidden text-sm font-medium text-brand-muted underline-offset-4 hover:text-brand-ink hover:underline transition-colors md:block"
+            >
+              Browse all {featured.pagination.total > 0 ? `${featured.pagination.total} ` : ""}products →
+            </Link>
           </div>
 
-          <ul className="mt-6 grid grid-cols-2 gap-3 px-4 md:mt-10 md:grid-cols-2 md:gap-6 md:px-0 lg:grid-cols-3 lg:gap-8">
+          {/* Divider */}
+          <div className="divider-gold my-6" />
+
+          <ul className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-6 lg:grid-cols-4 lg:gap-8">
             {featured.items.map((product) => (
               <li key={product.id}>
                 <ProductCard product={product} />
@@ -63,53 +166,139 @@ export default async function HomePage() {
             ))}
           </ul>
 
-          <div className="mt-10 px-4 text-center md:px-0">
+          <div className="mt-10 text-center">
             <Link
               href="/shop"
-              className="inline-flex min-h-[48px] min-w-[200px] items-center justify-center rounded-xl bg-stone-900 px-8 py-3 text-sm font-semibold tracking-wide text-amber-400 transition-colors hover:bg-amber-700 hover:text-white"
+              className="inline-flex min-h-[52px] min-w-[220px] items-center justify-center gap-2 rounded-full text-sm font-bold tracking-wide text-brand-night shadow-gold transition-all hover:shadow-gold-lg hover:opacity-95"
+              style={{ background:"linear-gradient(135deg,#e8b012 0%,#f5d88a 50%,#c8960a 100%)" }}
             >
               View all products
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
+              </svg>
             </Link>
           </div>
         </div>
       </section>
 
-      <section className="border-y border-stone-100 bg-white px-4 py-10 sm:px-6 md:py-12 lg:px-8">
-        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-5 md:grid-cols-4 md:gap-10">
-          {[
-            { t: "Returning customers", d: "Thousands shop with us again" },
-            { t: "Authentic", d: "Rooted in tradition" },
-            { t: "Expert curated", d: "Chosen by practitioners" },
-            { t: "Free shipping ₹999+", d: "Across India" }
-          ].map((item) => (
-            <div key={item.t} className="text-center">
-              <p className="font-serif text-base font-semibold text-stone-900 md:text-lg">{item.t}</p>
-              <p className="mt-1 text-xs text-stone-500 md:text-sm">{item.d}</p>
-            </div>
-          ))}
+      {/* ── Why Sarveda ────────────────────────────────────────────── */}
+      <section className="border-y border-stone-100 bg-white py-14 md:py-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-10 text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-sage">
+              Our promise
+            </p>
+            <h2 className="mt-2 font-serif text-2xl font-semibold text-brand-ink sm:text-3xl">
+              Why practitioners choose Sarveda
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6 md:grid-cols-4 md:gap-8">
+            {TRUST.map((item) => (
+              <div
+                key={item.title}
+                className="flex flex-col items-center rounded-2xl p-5 text-center transition-shadow hover:shadow-card"
+                style={{ background:"#fdf6ed" }}
+              >
+                <span className="mb-3 text-3xl">{item.icon}</span>
+                <p className="font-serif text-base font-semibold text-brand-ink md:text-lg">
+                  {item.title}
+                </p>
+                <p className="mt-2 text-xs leading-relaxed text-brand-muted md:text-sm">
+                  {item.body}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      <section id="courses" className="scroll-mt-24 bg-stone-50 px-4 py-14 sm:px-6 md:py-16 lg:px-8">
-        <div className="mx-auto max-w-3xl text-center">
-          <h2 className="font-serif text-2xl font-semibold text-stone-900 sm:text-3xl">Courses & guided practice</h2>
-          <p className="mt-4 text-sm text-stone-500 md:text-base">
-            Deepen pranayama, mantra, and Ayurvedic living with teachers who carry these lineages with care. Full catalogue
-            launches soon — leave your email below to hear first.
+      {/* ── Testimonials ───────────────────────────────────────────── */}
+      <section className="py-14 md:py-16" style={{ background:"#fdf6ed" }}>
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-10 text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-sage">
+              From the community
+            </p>
+            <h2 className="mt-2 font-serif text-2xl font-semibold text-brand-ink sm:text-3xl">
+              What practitioners say
+            </h2>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-3 md:gap-8">
+            {TESTIMONIALS.map((t) => (
+              <blockquote
+                key={t.author}
+                className="flex flex-col gap-4 rounded-2xl border border-stone-100 bg-white p-6 shadow-card"
+              >
+                <StarRow count={t.stars} />
+                <p className="text-sm leading-relaxed text-brand-ink">
+                  &ldquo;{t.quote}&rdquo;
+                </p>
+                <footer className="mt-auto">
+                  <p className="font-semibold text-brand-ink text-sm">{t.author}</p>
+                  <p className="text-xs text-brand-muted">{t.location}</p>
+                </footer>
+              </blockquote>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Courses teaser ─────────────────────────────────────────── */}
+      <section
+        id="courses"
+        className="scroll-mt-24 border-y border-white/8 py-16"
+        style={{ background: "linear-gradient(160deg,#0f1a14 0%,#1e3a2f 100%)" }}
+      >
+        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
+          <span className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.2em]"
+            style={{ background:"rgba(200,150,10,0.18)", border:"1px solid rgba(200,150,10,0.45)", color:"#f5d88a" }}
+          >
+            ✦ Coming soon
+          </span>
+          <h2 className="mt-5 font-serif text-2xl font-semibold text-white sm:text-3xl md:text-4xl">
+            Courses & guided practice
+          </h2>
+          <p className="mt-4 text-sm leading-relaxed text-stone-300 md:text-base">
+            Deepen pranayama, mantra, and Ayurvedic living with teachers who carry
+            these lineages with care. Full catalogue launching June 2026.
+          </p>
+          <Link
+            href="#newsletter"
+            className="mt-8 inline-flex min-h-[48px] items-center gap-2 rounded-full border border-brand-gold/50 px-8 text-sm font-semibold text-brand-gold transition-all hover:bg-brand-gold/10"
+          >
+            Get notified first
+          </Link>
+        </div>
+      </section>
+
+      {/* ── Newsletter ─────────────────────────────────────────────── */}
+      <section
+        id="newsletter"
+        className="scroll-mt-24 py-14 md:py-16"
+        style={{ background:"#0f1a14" }}
+      >
+        <div className="mx-auto max-w-2xl px-4 text-center sm:px-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-sage">
+            Stay close
+          </p>
+          <h2 className="mt-3 font-serif text-2xl font-semibold text-brand-gold sm:text-3xl">
+            Stay close to the practice
+          </h2>
+          <p className="mt-3 text-sm leading-relaxed text-stone-400 sm:text-base">
+            Occasional notes on new arrivals, seasonal rituals, and wisdom from our teachers.
+            No clutter — only what nourishes.
+          </p>
+          <div className="mt-8">
+            <NewsletterForm />
+          </div>
+          <p className="mt-4 text-xs text-stone-600">
+            Join 4,200+ practitioners. Unsubscribe anytime.
           </p>
         </div>
       </section>
 
-      <section className="bg-stone-900 px-4 py-12 sm:px-6 md:py-14 lg:px-8">
-        <div className="mx-auto flex max-w-2xl flex-col gap-6 text-center">
-          <h2 className="font-serif text-2xl font-semibold text-amber-400 sm:text-3xl">Stay close to the practice</h2>
-          <p className="text-sm leading-relaxed text-stone-400 sm:text-base">
-            Occasional notes on new arrivals, seasonal rituals, and wisdom from our teachers. No clutter — only what
-            nourishes.
-          </p>
-          <NewsletterForm />
-        </div>
-      </section>
     </div>
   );
 }
