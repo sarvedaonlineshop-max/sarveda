@@ -10,6 +10,11 @@ const SHIPROCKET_API = "https://apiv2.shiprocket.in/v1/external";
 type TokenState = { token: string; expiresAtMs: number };
 let cachedToken: TokenState | null = null;
 
+/** Drop cached token (e.g. after Shiprocket password change or 401 on create). */
+export function clearShiprocketTokenCache(): void {
+  cachedToken = null;
+}
+
 function extractShiprocketLoginToken(data: unknown): string {
   if (!data || typeof data !== "object") return "";
   const d = data as Record<string, unknown>;
@@ -60,6 +65,7 @@ async function getToken(): Promise<ApiOk<{ token: string }> | ApiErr> {
       return { success: true, data: { token } };
     }
     const msg = extractShiprocketErrorMessage(res.data, res.status);
+    clearShiprocketTokenCache();
     logger.warn("shiprocket_auth_failed", { status: res.status, emailUsed: email.replace(/@.*/, "@***") });
     return {
       success: false,
@@ -97,10 +103,11 @@ export async function createInternationalShipment(
     }, 0) || 0.5;
 
   try {
+    const pickupLocation = shippingEnv.SHIPROCKET_PICKUP_LOCATION;
     const payload = {
       order_id: order.orderNumber,
       order_date: new Date().toISOString().slice(0, 19).replace("T", " "),
-      pickup_location: "Primary",
+      pickup_location: pickupLocation,
       billing_customer_name: ship.fullName,
       billing_last_name: "",
       billing_address: ship.line1,
@@ -126,7 +133,7 @@ export async function createInternationalShipment(
       weight: weightKg
     };
 
-    const res = await axios.post(`${SHIPROCKET_API}/orders/create/adhoc`, payload, {
+    let res = await axios.post(`${SHIPROCKET_API}/orders/create/adhoc`, payload, {
       headers: {
         Authorization: `Bearer ${auth.data.token}`,
         "Content-Type": "application/json"
@@ -134,6 +141,19 @@ export async function createInternationalShipment(
       timeout: 45_000,
       validateStatus: () => true
     });
+    if (res.status === 401) {
+      clearShiprocketTokenCache();
+      const auth2 = await getToken();
+      if (!auth2.success) return auth2;
+      res = await axios.post(`${SHIPROCKET_API}/orders/create/adhoc`, payload, {
+        headers: {
+          Authorization: `Bearer ${auth2.data.token}`,
+          "Content-Type": "application/json"
+        },
+        timeout: 45_000,
+        validateStatus: () => true
+      });
+    }
     if (res.status >= 400) {
       return mapAxiosErr({ response: res, message: "create order" }, "SHIPROCKET_CREATE");
     }

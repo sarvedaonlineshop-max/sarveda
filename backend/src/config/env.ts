@@ -25,6 +25,11 @@ const shippingEnvSchema = z.object({
     .default("")
     .transform((s) => s.trim()),
   SHIPROCKET_PASSWORD: z.string().default("").transform((s) => s.trim()),
+  /** Must match a pickup location name in Shiprocket → Settings → Pickup locations (default "Primary"). */
+  SHIPROCKET_PICKUP_LOCATION: z
+    .string()
+    .default("Primary")
+    .transform((s) => s.trim() || "Primary"),
   /** Warehouse / pickup pincode for Shiprocket domestic quotes */
   SHIPPING_ORIGIN_PINCODE: z
     .string()
@@ -40,5 +45,6 @@ export const shippingEnv: ShippingEnv = shippingEnvSchema.parse({
   DELHIVERY_BASE_URL: process.env.DELHIVERY_BASE_URL,
   SHIPROCKET_EMAIL: process.env.SHIPROCKET_EMAIL,
   SHIPROCKET_PASSWORD: process.env.SHIPROCKET_PASSWORD,
+  SHIPROCKET_PICKUP_LOCATION: process.env.SHIPROCKET_PICKUP_LOCATION,
   SHIPPING_ORIGIN_PINCODE: process.env.SHIPPING_ORIGIN_PINCODE
 });
