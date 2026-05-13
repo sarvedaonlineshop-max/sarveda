@@ -30,6 +30,7 @@ export function HomeProductShowcase({ products }: Props) {
     if (slides.length <= 1) return;
     startTimer();
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slides.length]);
 
   const goTo = (i: number) => {
