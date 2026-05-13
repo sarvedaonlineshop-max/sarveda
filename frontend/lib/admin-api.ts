@@ -93,6 +93,42 @@ export function patchAdminOrderStatus(id: string, status: string) {
   }).then((d) => d.order);
 }
 
+export function adminSyncOrderShipments(orderId: string) {
+  return adminFetch<{
+    results: Array<{ awb: string; ok: boolean; error?: string; code?: string; data?: unknown }>;
+    shipments: unknown[];
+    orderStatus: string;
+    fulfillmentStatus: string;
+  }>(`/api/shipping/admin/orders/${encodeURIComponent(orderId)}/sync-tracking`, {
+    method: "POST",
+    body: "{}"
+  });
+}
+
+export function adminCreateShipmentForOrder(orderId: string) {
+  return adminFetch<{ courier: string; waybill: string; trackingUrl: string }>(
+    `/api/shipping/create-shipment/${encodeURIComponent(orderId)}`,
+    { method: "POST", body: "{}" }
+  );
+}
+
+export function adminCancelWaybill(waybill: string) {
+  return adminFetch<{ cancelled: boolean; waybill: string; orderId: string }>(
+    `/api/shipping/admin/cancel-waybill`,
+    { method: "POST", body: JSON.stringify({ waybill }) }
+  );
+}
+
+export function adminTrackShipmentByWaybill(waybill: string) {
+  return adminFetch<{
+    waybill: string;
+    courier: string;
+    shipmentStatus: string;
+    orderStatus: string;
+    fulfillmentStatus: string;
+  }>(`/api/shipping/track/${encodeURIComponent(waybill)}`);
+}
+
 export function fetchAdminOrderInvoice(id: string, signal?: AbortSignal) {
   return adminFetch<{ pdfUrl: string | null; invoiceNo: string | null }>(
     `/api/admin/orders/${id}/invoice`,

@@ -251,6 +251,9 @@ model Order {
   ipCountry         String?
   placedAt          DateTime?
   deletedAt         DateTime?
+  /// Last courier/shipment integration failure (e.g. Delhivery create); cleared on success.
+  shippingLastError   String?   @db.Text
+  shippingLastErrorAt DateTime?
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
   customer          User?             @relation(fields: [customerId], references: [id])

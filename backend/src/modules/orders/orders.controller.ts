@@ -2,6 +2,81 @@ import type { NextFunction, Request, Response } from "express";
 
 import { prisma } from "../../config/db";
 import { buildGstInvoicePdf, invoiceNumberForOrder } from "../../utils/invoice";
+import { orderBlocksCarrierSync, syncTrackingByWaybill } from "../shipping/orderLifecycle";
+
+function serializePublicOrderView(order: {
+  orderNumber: string;
+  status: string;
+  paymentStatus: string;
+  grandTotalInPaise: number;
+  currency: string;
+  email: string;
+  createdAt: Date;
+  placedAt: Date | null;
+  shippingLastError: string | null;
+  shippingLastErrorAt: Date | null;
+  invoice: { invoiceNo: string } | null;
+  items: Array<{
+    nameSnapshot: string;
+    skuSnapshot: string;
+    qtyOrdered: number;
+    unitPriceInPaise: number;
+    lineTotalInPaise: number;
+  }>;
+  addresses: Array<{
+    type: string;
+    fullName: string;
+    phone: string;
+    line1: string;
+    line2: string | null;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  }>;
+  shipments: Array<{
+    id: string;
+    courier: string;
+    awb: string | null;
+    trackingUrl: string | null;
+    status: string;
+    deliveredAt: Date | null;
+    rtoAt: Date | null;
+    updatedAt: Date;
+  }>;
+}) {
+  return {
+    orderNumber: order.orderNumber,
+    status: order.status,
+    paymentStatus: order.paymentStatus,
+    grandTotalInPaise: order.grandTotalInPaise,
+    currency: order.currency,
+    email: order.email,
+    createdAt: order.createdAt,
+    placedAt: order.placedAt,
+    invoiceNo: order.invoice?.invoiceNo ?? invoiceNumberForOrder(order.orderNumber),
+    items: order.items.map((i) => ({
+      nameSnapshot: i.nameSnapshot,
+      skuSnapshot: i.skuSnapshot,
+      qtyOrdered: i.qtyOrdered,
+      unitPriceInPaise: i.unitPriceInPaise,
+      lineTotalInPaise: i.lineTotalInPaise
+    })),
+    shippingAddress: order.addresses.find((a) => a.type === "SHIPPING"),
+    shipments: order.shipments.map((s) => ({
+      id: s.id,
+      courier: s.courier,
+      awb: s.awb,
+      trackingUrl: s.trackingUrl,
+      status: s.status,
+      deliveredAt: s.deliveredAt,
+      rtoAt: s.rtoAt,
+      updatedAt: s.updatedAt
+    })),
+    shippingLastError: order.shippingLastError,
+    shippingLastErrorAt: order.shippingLastErrorAt
+  };
+}
 
 function serializeOrderSummary(order: {
   orderNumber: string;
@@ -78,7 +153,8 @@ export async function getByOrderNumber(req: Request, res: Response, next: NextFu
         items: true,
         addresses: true,
         payments: true,
-        invoice: true
+        invoice: true,
+        shipments: { orderBy: { createdAt: "desc" } }
       }
     });
 
@@ -95,25 +171,7 @@ export async function getByOrderNumber(req: Request, res: Response, next: NextFu
     res.json({
       success: true,
       data: {
-        order: {
-          orderNumber: order.orderNumber,
-          status: order.status,
-          paymentStatus: order.paymentStatus,
-          grandTotalInPaise: order.grandTotalInPaise,
-          currency: order.currency,
-          email: order.email,
-          createdAt: order.createdAt,
-          placedAt: order.placedAt,
-          invoiceNo: order.invoice?.invoiceNo ?? invoiceNumberForOrder(order.orderNumber),
-          items: order.items.map((i) => ({
-            nameSnapshot: i.nameSnapshot,
-            skuSnapshot: i.skuSnapshot,
-            qtyOrdered: i.qtyOrdered,
-            unitPriceInPaise: i.unitPriceInPaise,
-            lineTotalInPaise: i.lineTotalInPaise
-          })),
-          shippingAddress: order.addresses.find((a) => a.type === "SHIPPING")
-        }
+        order: serializePublicOrderView(order)
       }
     });
   } catch (err) {
@@ -200,6 +258,90 @@ export async function downloadInvoice(req: Request, res: Response, next: NextFun
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${invoiceNo}.pdf"`);
     res.send(pdf);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function refreshShippingPublic(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { orderNumber } = req.params;
+    const { email: rawEmail } = req.body as { email: string };
+    const email = rawEmail.trim().toLowerCase();
+    if (!orderNumber || !email) {
+      res.status(400).json({
+        success: false,
+        error: "orderNumber and email are required",
+        code: "BAD_REQUEST"
+      });
+      return;
+    }
+
+    const order = await prisma.order.findUnique({
+      where: { orderNumber },
+      include: {
+        items: true,
+        addresses: true,
+        payments: true,
+        invoice: true,
+        shipments: { orderBy: { createdAt: "desc" } }
+      }
+    });
+
+    if (!order || order.deletedAt) {
+      res.status(404).json({ success: false, error: "Order not found", code: "NOT_FOUND" });
+      return;
+    }
+    if (order.email !== email) {
+      res.status(403).json({ success: false, error: "Forbidden", code: "FORBIDDEN" });
+      return;
+    }
+    if (orderBlocksCarrierSync(order.status)) {
+      res.status(400).json({
+        success: false,
+        error: "Tracking cannot be refreshed for this order.",
+        code: "ORDER_STATE"
+      });
+      return;
+    }
+
+    type Row = { awb: string; ok: boolean; error?: string; code?: string; data?: unknown };
+    const syncResults: Row[] = [];
+    for (const sh of order.shipments) {
+      if (!sh.awb) {
+        syncResults.push({ awb: "", ok: false, error: "No AWB yet", code: "MISSING_AWB" });
+        continue;
+      }
+      const r = await syncTrackingByWaybill(sh.awb);
+      syncResults.push(
+        r.success
+          ? { awb: sh.awb, ok: true, data: r.data }
+          : { awb: sh.awb, ok: false, error: r.error, code: r.code }
+      );
+    }
+
+    const fresh = await prisma.order.findUnique({
+      where: { orderNumber },
+      include: {
+        items: true,
+        addresses: true,
+        payments: true,
+        invoice: true,
+        shipments: { orderBy: { createdAt: "desc" } }
+      }
+    });
+    if (!fresh) {
+      res.status(404).json({ success: false, error: "Order not found", code: "NOT_FOUND" });
+      return;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        syncResults,
+        order: serializePublicOrderView(fresh)
+      }
+    });
   } catch (err) {
     next(err);
   }

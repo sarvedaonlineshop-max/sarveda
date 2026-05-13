@@ -91,6 +91,14 @@ export async function autoSelectAndCreate(orderId: string): Promise<
     orderBy: { createdAt: "desc" }
   });
   if (existingShip?.awb) {
+    try {
+      await prisma.order.update({
+        where: { id: orderId },
+        data: { shippingLastError: null, shippingLastErrorAt: null }
+      });
+    } catch {
+      /* ignore */
+    }
     return {
       success: true,
       data: {
@@ -214,7 +222,11 @@ async function persistShipment(
     });
     await tx.order.update({
       where: { id: orderId },
-      data: { fulfillmentStatus: "PARTIAL" }
+      data: {
+        fulfillmentStatus: "PARTIAL",
+        shippingLastError: null,
+        shippingLastErrorAt: null
+      }
     });
   });
 }

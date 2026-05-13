@@ -239,6 +239,7 @@ export async function orderDetail(req: Request, res: Response, next: NextFunctio
         addresses: true,
         payments: true,
         invoice: true,
+        shipments: { orderBy: { createdAt: "desc" } },
         customer: { select: { id: true, email: true, name: true } }
       }
     });

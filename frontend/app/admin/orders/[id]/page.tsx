@@ -5,6 +5,10 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import {
+  adminCancelWaybill,
+  adminCreateShipmentForOrder,
+  adminSyncOrderShipments,
+  adminTrackShipmentByWaybill,
   fetchAdminOrderDetail,
   fetchAdminOrderInvoice,
   patchAdminOrderStatus
@@ -42,6 +46,17 @@ type AddressRow = {
   country: string;
 };
 
+type ShipmentRow = {
+  id: string;
+  courier: string;
+  awb: string | null;
+  trackingUrl: string | null;
+  status: string;
+  deliveredAt?: string | null;
+  rtoAt?: string | null;
+  updatedAt?: string;
+};
+
 type OrderLoaded = {
   id: string;
   orderNumber: string;
@@ -49,6 +64,7 @@ type OrderLoaded = {
   phone: string;
   status: string;
   paymentStatus: string;
+  fulfillmentStatus: string;
   grandTotalInPaise: number;
   subtotalInPaise: number;
   shippingInPaise: number;
@@ -57,11 +73,15 @@ type OrderLoaded = {
   createdAt: string;
   items: OrderItemRow[];
   addresses: AddressRow[];
+  shipments: ShipmentRow[];
+  shippingLastError: string | null;
+  shippingLastErrorAt: string | null;
 };
 
 function asOrder(raw: Record<string, unknown>): OrderLoaded {
   const items = (raw.items as OrderItemRow[]) ?? [];
   const addresses = (raw.addresses as AddressRow[]) ?? [];
+  const shipments = (raw.shipments as ShipmentRow[]) ?? [];
   return {
     id: String(raw.id),
     orderNumber: String(raw.orderNumber),
@@ -69,6 +89,7 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
     phone: String(raw.phone),
     status: String(raw.status),
     paymentStatus: String(raw.paymentStatus),
+    fulfillmentStatus: String(raw.fulfillmentStatus ?? "UNFULFILLED"),
     grandTotalInPaise: Number(raw.grandTotalInPaise),
     subtotalInPaise: Number(raw.subtotalInPaise),
     shippingInPaise: Number(raw.shippingInPaise),
@@ -76,7 +97,10 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
     discountInPaise: Number(raw.discountInPaise ?? 0),
     createdAt: String(raw.createdAt),
     items,
-    addresses
+    addresses,
+    shipments,
+    shippingLastError: raw.shippingLastError != null ? String(raw.shippingLastError) : null,
+    shippingLastErrorAt: raw.shippingLastErrorAt != null ? String(raw.shippingLastErrorAt) : null
   };
 }
 
@@ -88,6 +112,7 @@ export default function AdminOrderDetailPage() {
   const [statusSaving, setStatusSaving] = useState(false);
   const [invoice, setInvoice] = useState<{ pdfUrl: string | null; invoiceNo: string | null } | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [shipBusy, setShipBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -120,6 +145,61 @@ export default function AdminOrderDetailPage() {
     }
   }
 
+  async function handleSyncAllTracking() {
+    if (!id) return;
+    setShipBusy("sync-all");
+    setErr(null);
+    try {
+      await adminSyncOrderShipments(id);
+      await load();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Sync failed");
+    } finally {
+      setShipBusy(null);
+    }
+  }
+
+  async function handleRetryShipment() {
+    if (!id) return;
+    setShipBusy("create");
+    setErr(null);
+    try {
+      await adminCreateShipmentForOrder(id);
+      await load();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Shipment create failed");
+    } finally {
+      setShipBusy(null);
+    }
+  }
+
+  async function handleTrackOne(awb: string) {
+    setShipBusy(awb);
+    setErr(null);
+    try {
+      await adminTrackShipmentByWaybill(awb);
+      await load();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Track failed");
+    } finally {
+      setShipBusy(null);
+    }
+  }
+
+  async function handleCancelWaybill(awb: string) {
+    if (!window.confirm(`Cancel carrier label for AWB ${awb}?`)) return;
+    setShipBusy(`cancel-${awb}`);
+    setErr(null);
+    try {
+      await adminCancelWaybill(awb);
+      await load();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Cancel failed");
+    } finally {
+      setShipBusy(null);
+    }
+  }
+
   if (err && !order) {
     return (
       <div>
@@ -146,6 +226,11 @@ export default function AdminOrderDetailPage() {
 
   return (
     <div className="space-y-8">
+      {err ? (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200" role="alert">
+          {err}
+        </p>
+      ) : null}
       <div>
         <Link href="/admin/orders" className="text-sm text-amber-700 hover:underline dark:text-amber-400">
           ← Orders
@@ -200,6 +285,118 @@ export default function AdminOrderDetailPage() {
           </div>
         </div>
       ) : null}
+
+      {order.shippingLastError ? (
+        <div
+          className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-200"
+          role="alert"
+        >
+          <p className="font-semibold">Shipment API error (last attempt)</p>
+          <p className="mt-2 whitespace-pre-wrap">{order.shippingLastError}</p>
+          {order.shippingLastErrorAt ? (
+            <p className="mt-2 text-xs opacity-90">{new Date(order.shippingLastErrorAt).toLocaleString("en-IN")}</p>
+          ) : null}
+          <p className="mt-3 text-xs">
+            Set status to Processing to auto-retry, or use &quot;Create / retry shipment&quot; below.
+          </p>
+        </div>
+      ) : null}
+
+      <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700 dark:bg-stone-900">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Shipping &amp; tracking</h2>
+            <p className="text-xs text-stone-500 dark:text-stone-400">
+              Fulfillment:{" "}
+              <span className="font-medium text-stone-700 dark:text-stone-200">{order.fulfillmentStatus}</span>
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={
+                !!shipBusy || ["CANCELLED", "REFUNDED", "PENDING_PAYMENT"].includes(order.status)
+              }
+              onClick={() => void handleSyncAllTracking()}
+              className="rounded-lg bg-stone-800 px-3 py-2 text-xs font-semibold text-amber-100 hover:bg-stone-700 disabled:opacity-50 dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-stone-100"
+            >
+              {shipBusy === "sync-all" ? "Syncing…" : "Refresh all tracking"}
+            </button>
+            <button
+              type="button"
+              disabled={
+                !!shipBusy || ["CANCELLED", "REFUNDED", "PENDING_PAYMENT"].includes(order.status)
+              }
+              onClick={() => void handleRetryShipment()}
+              className="rounded-lg border border-amber-600 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-500/20 disabled:opacity-50 dark:border-amber-500 dark:text-amber-200"
+            >
+              {shipBusy === "create" ? "Working…" : "Create / retry shipment"}
+            </button>
+          </div>
+        </div>
+
+        {order.shipments.length === 0 ? (
+          <p className="mt-4 text-sm text-stone-500 dark:text-stone-400">
+            No carrier label yet — set status to Processing (auto) or use retry above.
+          </p>
+        ) : (
+          <div className="mt-4 overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="border-b border-stone-100 dark:border-stone-700">
+                <tr>
+                  <th className="py-2 pr-4 font-semibold text-stone-600 dark:text-stone-300">Courier</th>
+                  <th className="py-2 pr-4 font-semibold text-stone-600 dark:text-stone-300">AWB</th>
+                  <th className="py-2 pr-4 font-semibold text-stone-600 dark:text-stone-300">Status</th>
+                  <th className="py-2 pr-4 font-semibold text-stone-600 dark:text-stone-300">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-100 dark:divide-stone-700">
+                {order.shipments.map((s) => (
+                  <tr key={s.id}>
+                    <td className="py-2 pr-4">{s.courier}</td>
+                    <td className="py-2 pr-4 font-mono text-xs">{s.awb ?? "—"}</td>
+                    <td className="py-2 pr-4">{s.status.replace(/_/g, " ")}</td>
+                    <td className="py-2 pr-4">
+                      <div className="flex flex-wrap gap-2">
+                        {s.trackingUrl ? (
+                          <a
+                            href={s.trackingUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-amber-800 underline dark:text-amber-400"
+                          >
+                            Open
+                          </a>
+                        ) : null}
+                        {s.awb ? (
+                          <button
+                            type="button"
+                            className="text-xs font-semibold text-stone-700 underline dark:text-stone-300"
+                            disabled={!!shipBusy}
+                            onClick={() => void handleTrackOne(s.awb)}
+                          >
+                            {shipBusy === s.awb ? "…" : "Sync"}
+                          </button>
+                        ) : null}
+                        {s.awb ? (
+                          <button
+                            type="button"
+                            className="text-xs font-semibold text-red-700 underline dark:text-red-400"
+                            disabled={!!shipBusy}
+                            onClick={() => void handleCancelWaybill(s.awb)}
+                          >
+                            {shipBusy === `cancel-${s.awb}` ? "…" : "Cancel label"}
+                          </button>
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700 dark:bg-stone-900">

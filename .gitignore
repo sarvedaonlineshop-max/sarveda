@@ -9,5 +9,6 @@ public/sw.js.map
 public/workbox-*.js
 public/workbox-*.js.map
 *.log
+*.zip
 .DS_Store
 .pem

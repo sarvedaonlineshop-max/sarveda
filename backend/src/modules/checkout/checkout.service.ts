@@ -14,6 +14,9 @@ import {
   currencyForZone,
   zoneFromCountry
 } from "../shipping/shippingRates.service";
+import { isZoneAPincode } from "../shipping/router";
+import * as delhivery from "../shipping/delhivery";
+import { shippingEnv } from "../../config/env";
 import type { ZoneKey } from "../shipping/types";
 import type { CreateOrderBody } from "./schemas";
 
@@ -28,6 +31,47 @@ function unitMinor(variant: ProductVariant, zone: ZoneKey): number {
       return variant.saleUsdCents ?? variant.saleInPaise;
     default:
       return variant.saleInPaise;
+  }
+}
+
+/** India + zone-A pin + cart > 5 kg → Delhivery-heavy lane; block checkout if NSZ. */
+async function assertDelhiveryHeavyIndiaServiceable(
+  country: string | undefined,
+  postalCode: string,
+  lines: Array<{ quantity: number; variant: ProductVariant }>
+): Promise<void> {
+  const cc = (country ?? "IN").toUpperCase();
+  if (cc !== "IN") return;
+  if (!shippingEnv.DELHIVERY_API_KEY.trim()) return;
+  const pin = postalCode.replace(/\D/g, "").slice(0, 6);
+  if (pin.length !== 6 || !isZoneAPincode(pin)) return;
+  let grams = 0;
+  for (const row of lines) {
+    grams += (row.variant.weightGrams ?? 500) * row.quantity;
+  }
+  grams = Math.max(grams, 1);
+  if (grams <= 5000) return;
+  const r = await delhivery.checkPincodeServiceability(pin);
+  if (!r.success) {
+    if (r.code === "DELHIVERY_NOT_CONFIGURED") return;
+    const e = new Error(r.error) as Error & {
+      statusCode?: number;
+      code?: string;
+      userMessage?: string;
+    };
+    e.statusCode = 502;
+    e.code = r.code ?? "DELHIVERY_SERVICEABILITY";
+    e.userMessage =
+      "We could not verify delivery to this pincode. Please try again shortly or contact support if it continues.";
+    throw e;
+  }
+  if (!r.data.serviceable) {
+    const e = new Error(
+      "This address is not serviceable for heavy shipments on our network. Try another pincode or reduce cart weight."
+    ) as Error & { statusCode?: number; code?: string };
+    e.statusCode = 400;
+    e.code = "PINCODE_NOT_SERVICEABLE_HEAVY";
+    throw e;
   }
 }
 
@@ -160,6 +204,8 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
     e.code = "INVALID_TOTAL";
     throw e;
   }
+
+  await assertDelhiveryHeavyIndiaServiceable(body.country, body.postalCode, lines);
 
   const orderNumber = await generateOrderNumber();
   const receipt = orderNumber.replace(/[^a-zA-Z0-9]/g, "").slice(0, 40);
