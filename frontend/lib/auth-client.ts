@@ -95,7 +95,9 @@ export async function logoutSession(): Promise<void> {
 const ADMIN_ROLES = new Set(["ADMIN", "SUPER_ADMIN"]);
 
 export function isAdminRole(role: string | undefined | null): boolean {
-  return typeof role === "string" && ADMIN_ROLES.has(role);
+  if (typeof role !== "string") return false;
+  const normalized = role.trim().toUpperCase();
+  return ADMIN_ROLES.has(normalized);
 }
 
 export type UpdateProfileInput = {

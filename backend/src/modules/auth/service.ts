@@ -1,4 +1,5 @@
 import type { Response } from "express";
+import type { User } from "@prisma/client";
 import sgMail from "@sendgrid/mail";
 import { z } from "zod";
 
@@ -16,6 +17,32 @@ function httpError(status: number, message: string, code: string): Error {
 }
 
 const emailCheck = z.string().email();
+
+/**
+ * Comma-separated admin emails (lowercased at compare). If the DB row is still CUSTOMER
+ * (e.g. first Google sign-up defaulted role), promote to ADMIN on successful login.
+ * Set only on the backend host (EC2); never expose on the public Next bundle.
+ */
+function adminBootstrapEmailSet(): Set<string> {
+  const raw = process.env.ADMIN_BOOTSTRAP_EMAILS ?? "";
+  return new Set(
+    raw
+      .split(",")
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean)
+  );
+}
+
+async function applyAdminBootstrapIfNeeded(user: User): Promise<User> {
+  const allow = adminBootstrapEmailSet();
+  if (allow.size === 0) return user;
+  if (!allow.has(user.email.toLowerCase())) return user;
+  if (user.role !== "CUSTOMER") return user;
+  return prisma.user.update({
+    where: { id: user.id },
+    data: { role: "ADMIN" }
+  });
+}
 
 function looksLikeEmail(target: string): boolean {
   return emailCheck.safeParse(target.trim()).success;
@@ -147,8 +174,9 @@ export async function loginUser(res: Response, body: LoginBody) {
   if (!ok) {
     throw httpError(401, "Invalid email or password", "INVALID_CREDENTIALS");
   }
-  setAuthCookie(res, { sub: user.id, email: user.email, role: user.role });
-  return publicUser(user);
+  const effective = await applyAdminBootstrapIfNeeded(user);
+  setAuthCookie(res, { sub: effective.id, email: effective.email, role: effective.role });
+  return publicUser(effective);
 }
 
 export function logoutUser(res: Response) {
@@ -236,9 +264,10 @@ export async function verifyOtpAndLogin(res: Response, body: VerifyOtpBody) {
     });
   }
 
-  setAuthCookie(res, { sub: user.id, email: user.email, role: user.role });
+  const effective = await applyAdminBootstrapIfNeeded(user);
+  setAuthCookie(res, { sub: effective.id, email: effective.email, role: effective.role });
 
-  return publicUser(user);
+  return publicUser(effective);
 }
 
 export async function getMe(userId: string) {
@@ -287,7 +316,8 @@ export async function upsertGoogleUser(profile: GoogleLikeProfile) {
         isVerified: true
       }
     });
-    return publicUser(user);
+    const effective = await applyAdminBootstrapIfNeeded(user);
+    return publicUser(effective);
   }
 
   if (user.deletedAt) {
@@ -303,5 +333,6 @@ export async function upsertGoogleUser(profile: GoogleLikeProfile) {
     }
   });
 
-  return publicUser(user);
+  const effective = await applyAdminBootstrapIfNeeded(user);
+  return publicUser(effective);
 }

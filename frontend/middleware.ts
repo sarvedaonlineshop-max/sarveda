@@ -10,6 +10,11 @@ function readRole(payload: unknown): string | undefined {
   return typeof r === "string" ? r : undefined;
 }
 
+function isJwtAdminRole(role: string | undefined): boolean {
+  if (!role) return false;
+  return ADMIN_ROLES.has(role.trim().toUpperCase());
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get("sarveda_auth")?.value;
@@ -35,7 +40,7 @@ export async function middleware(request: NextRequest) {
         login.searchParams.set("reason", "reauth");
         return NextResponse.redirect(login);
       }
-      if (!ADMIN_ROLES.has(role)) {
+      if (!isJwtAdminRole(role)) {
         return NextResponse.redirect(new URL("/", request.url));
       }
     } catch {
@@ -54,7 +59,7 @@ export async function middleware(request: NextRequest) {
     try {
       const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
       const role = readRole(payload);
-      if (role && ADMIN_ROLES.has(role)) {
+      if (isJwtAdminRole(role)) {
         return NextResponse.redirect(new URL("/admin", request.url));
       }
     } catch {

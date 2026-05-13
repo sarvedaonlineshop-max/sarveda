@@ -19,7 +19,8 @@ export function safeRelativeRedirect(next: string | undefined, fallback: string)
 export function postOAuthFrontendPath(role: string, rawNext: string | undefined): string {
   const nextPath =
     rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : null;
-  if (ADMIN_ROLES.has(role)) {
+  const normalizedRole = role.trim().toUpperCase();
+  if (ADMIN_ROLES.has(normalizedRole)) {
     return nextPath?.startsWith("/admin") ? nextPath : "/admin";
   }
   if (nextPath?.startsWith("/admin")) {

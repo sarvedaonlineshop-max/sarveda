@@ -80,7 +80,17 @@ authRouter.get(
   "/me",
   requireAuth,
   asyncHandler(async (req, res) => {
-    const user = await getMe(req.authUser!.id);
+    const auth = req.authUser;
+    if (!auth?.id) {
+      res.status(401).json({ success: false, error: "Not authenticated", code: "UNAUTHORIZED" });
+      return;
+    }
+    const user = await getMe(auth.id);
+    const jwtRole = (auth.role ?? "").trim().toUpperCase();
+    const dbRole = user.role.trim().toUpperCase();
+    if (jwtRole !== dbRole) {
+      setAuthCookie(res, { sub: user.id, email: user.email, role: user.role });
+    }
     res.json({ success: true, data: { user } });
   })
 );
