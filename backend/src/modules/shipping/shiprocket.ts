@@ -44,6 +44,24 @@ function extractShiprocketErrorMessage(data: unknown, status: number): string {
   return `Shiprocket returned HTTP ${status}`;
 }
 
+/** Laravel-style `errors` map + top-level message (422 "Invalid Data"). */
+function formatShiprocketApiMessage(data: unknown, status: number): string {
+  const base = extractShiprocketErrorMessage(data, status);
+  if (!data || typeof data !== "object") return base;
+  const d = data as Record<string, unknown>;
+  const errors = d.errors;
+  if (errors && typeof errors === "object" && !Array.isArray(errors)) {
+    const parts: string[] = [];
+    for (const [k, v] of Object.entries(errors as Record<string, unknown>)) {
+      if (Array.isArray(v)) parts.push(`${k}: ${v.map(String).join(", ")}`);
+      else if (v && typeof v === "object") parts.push(`${k}: ${JSON.stringify(v)}`);
+      else parts.push(`${k}: ${String(v)}`);
+    }
+    if (parts.length) return `${base} — ${parts.join("; ")}`;
+  }
+  return base;
+}
+
 async function getToken(): Promise<ApiOk<{ token: string }> | ApiErr> {
   const email = shippingEnv.SHIPROCKET_EMAIL.trim();
   const password = shippingEnv.SHIPROCKET_PASSWORD.trim();
@@ -96,6 +114,17 @@ function shiprocketDisplayCountry(country: string): string {
   return country.trim();
 }
 
+/** Digits only; India → last 10 (strip leading 91). */
+function normalizeShiprocketPhone(phone: string, country: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (shiprocketDisplayCountry(country) === "India") {
+    if (digits.length >= 12 && digits.startsWith("91")) return digits.slice(-10);
+    if (digits.length > 10) return digits.slice(-10);
+    return digits;
+  }
+  return digits.slice(0, 15);
+}
+
 /** Parse create/adhoc (or assign/awb) JSON for `awb_code` and `shipment_id` (nested under payload/data). */
 function extractAdhocCreateResult(raw: unknown): { awbCode?: string; shipmentId?: number } {
   if (!raw || typeof raw !== "object") return {};
@@ -139,7 +168,7 @@ async function assignAwbForShipment(token: string, shipmentId: number): Promise<
     }
   );
   if (res.status >= 400) {
-    const msg = extractShiprocketErrorMessage(res.data, res.status);
+    const msg = formatShiprocketApiMessage(res.data, res.status);
     logger.warn("shiprocket_assign_awb_failed", { status: res.status, shipmentId, msg });
     return { success: false, error: msg, code: "SHIPROCKET_ASSIGN" };
   }
@@ -167,31 +196,62 @@ export async function createInternationalShipment(
     }, 0) || 0.5;
 
   try {
+    const displayCountry = shiprocketDisplayCountry(ship.country);
+    const pinDigits = ship.postalCode.replace(/\D/g, "").slice(0, 6);
+    if (displayCountry === "India" && pinDigits.length !== 6) {
+      return {
+        success: false,
+        error: "Shipping pincode must be 6 digits for Shiprocket (India).",
+        code: "BAD_REQUEST"
+      };
+    }
+    const phoneDigits = normalizeShiprocketPhone(ship.phone, ship.country);
+    if (displayCountry === "India" && phoneDigits.length < 10) {
+      return {
+        success: false,
+        error: "Shipping phone must have at least 10 digits for Shiprocket (India).",
+        code: "BAD_REQUEST"
+      };
+    }
+
     const pickupLocation = shippingEnv.SHIPROCKET_PICKUP_LOCATION;
     const paymentMethod = order.payments?.[0]?.provider === "COD" ? "COD" : "Prepaid";
+
+    const orderItemsPayload = order.items.map((li) => {
+      const name = (li.nameSnapshot ?? "Item").trim().slice(0, 200) || "Item";
+      const sku = (li.skuSnapshot ?? "SKU").trim().slice(0, 100) || "SKU";
+      const selling_price = Math.max(1, Math.round(li.unitPriceInPaise / 100));
+      return { name, sku, units: li.qtyOrdered, selling_price };
+    });
+    const subTotalFromLines = Math.max(
+      1,
+      orderItemsPayload.reduce((s, it) => s + it.selling_price * it.units, 0)
+    );
+
+    const orderPlaced = order.placedAt ?? order.createdAt;
+    const orderDate =
+      orderPlaced instanceof Date && !Number.isNaN(orderPlaced.getTime())
+        ? orderPlaced.toISOString().slice(0, 19).replace("T", " ")
+        : new Date().toISOString().slice(0, 19).replace("T", " ");
+
     const payload = {
       order_id: order.orderNumber,
-      order_date: new Date().toISOString().slice(0, 19).replace("T", " "),
+      order_date: orderDate,
       pickup_location: pickupLocation,
-      billing_customer_name: ship.fullName,
+      billing_customer_name: ship.fullName.trim().slice(0, 100) || "Customer",
       billing_last_name: "",
-      billing_address: ship.line1,
-      billing_address_2: ship.line2 ?? "",
-      billing_city: ship.city,
-      billing_pincode: ship.postalCode,
-      billing_state: ship.state,
-      billing_country: shiprocketDisplayCountry(ship.country),
-      billing_email: order.email,
-      billing_phone: ship.phone,
-      shipping_is_billing: true,
-      order_items: order.items.map((li) => ({
-        name: li.nameSnapshot,
-        sku: li.skuSnapshot,
-        units: li.qtyOrdered,
-        selling_price: Math.max(1, Math.round(li.unitPriceInPaise / 100))
-      })),
+      billing_address: (ship.line1 ?? "").trim().slice(0, 190) || "Address",
+      billing_address_2: (ship.line2 ?? "").trim().slice(0, 190),
+      billing_city: ship.city.trim().slice(0, 30),
+      billing_pincode: displayCountry === "India" ? pinDigits : ship.postalCode.trim().slice(0, 12),
+      billing_state: ship.state.trim().slice(0, 50),
+      billing_country: displayCountry,
+      billing_email: order.email.trim(),
+      billing_phone: phoneDigits,
+      shipping_is_billing: 1,
+      order_items: orderItemsPayload,
       payment_method: paymentMethod,
-      sub_total: Math.max(1, Math.round(order.subtotalInPaise / 100)),
+      sub_total: subTotalFromLines,
       length: 10,
       breadth: 10,
       height: 10,
@@ -222,7 +282,14 @@ export async function createInternationalShipment(
       });
     }
     if (res.status >= 400) {
-      return mapAxiosErr({ response: res, message: "create order" }, "SHIPROCKET_CREATE");
+      const msg = formatShiprocketApiMessage(res.data, res.status);
+      logger.warn("shiprocket_http_error", {
+        code: "SHIPROCKET_CREATE",
+        status: res.status,
+        msg,
+        orderNumber: order.orderNumber
+      });
+      return { success: false, error: msg, code: "SHIPROCKET_CREATE" };
     }
 
     const created = extractAdhocCreateResult(res.data);
