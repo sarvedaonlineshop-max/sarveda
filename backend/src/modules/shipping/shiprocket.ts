@@ -87,6 +87,70 @@ function mapAxiosErr(err: unknown, code: string): ApiErr {
   return { success: false, error: String(msg), code };
 }
 
+/** Shiprocket docs expect full country name for many flows (e.g. India not IN). */
+function shiprocketDisplayCountry(country: string): string {
+  const c = country.trim().toUpperCase();
+  if (c === "IN" || c === "INDIA") return "India";
+  if (c === "US" || c === "USA" || c === "UNITED STATES") return "United States";
+  if (c === "GB" || c === "UK" || c === "UNITED KINGDOM") return "United Kingdom";
+  return country.trim();
+}
+
+/** Parse create/adhoc (or assign/awb) JSON for `awb_code` and `shipment_id` (nested under payload/data). */
+function extractAdhocCreateResult(raw: unknown): { awbCode?: string; shipmentId?: number } {
+  if (!raw || typeof raw !== "object") return {};
+  const pick = (obj: Record<string, unknown>): { awbCode?: string; shipmentId?: number } => {
+    let awbCode: string | undefined;
+    let shipmentId: number | undefined;
+    const awbRaw = obj.awb_code;
+    if (typeof awbRaw === "string" && awbRaw.trim()) awbCode = awbRaw.trim();
+    else if (typeof awbRaw === "number" && Number.isFinite(awbRaw)) awbCode = String(awbRaw);
+    const sidRaw = obj.shipment_id;
+    if (typeof sidRaw === "number" && Number.isFinite(sidRaw)) shipmentId = sidRaw;
+    else if (typeof sidRaw === "string" && /^\d+$/.test(sidRaw.trim())) shipmentId = parseInt(sidRaw.trim(), 10);
+    return { awbCode, shipmentId };
+  };
+
+  const r = raw as Record<string, unknown>;
+  let { awbCode, shipmentId } = pick(r);
+  for (const key of ["payload", "data", "response"]) {
+    const inner = r[key];
+    if (inner && typeof inner === "object" && !Array.isArray(inner)) {
+      const p = pick(inner as Record<string, unknown>);
+      if (!awbCode && p.awbCode) awbCode = p.awbCode;
+      if (shipmentId === undefined && p.shipmentId !== undefined) shipmentId = p.shipmentId;
+    }
+  }
+  return { awbCode, shipmentId };
+}
+
+/** Docs: AWB may require a separate call after create/adhoc. */
+async function assignAwbForShipment(token: string, shipmentId: number): Promise<ApiOk<{ awb: string }> | ApiErr> {
+  const res = await axios.post(
+    `${SHIPROCKET_API}/courier/assign/awb`,
+    { shipment_id: shipmentId },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      timeout: 45_000,
+      validateStatus: () => true
+    }
+  );
+  if (res.status >= 400) {
+    const msg = extractShiprocketErrorMessage(res.data, res.status);
+    logger.warn("shiprocket_assign_awb_failed", { status: res.status, shipmentId, msg });
+    return { success: false, error: msg, code: "SHIPROCKET_ASSIGN" };
+  }
+  const { awbCode } = extractAdhocCreateResult(res.data);
+  if (!awbCode) {
+    logger.warn("shiprocket_assign_awb_parse", { shipmentId, bodyKeys: res.data && typeof res.data === "object" ? Object.keys(res.data as object) : [] });
+    return { success: false, error: "Shiprocket assign AWB did not return awb_code", code: "SHIPROCKET_PARSE" };
+  }
+  return { success: true, data: { awb: awbCode } };
+}
+
 export async function createInternationalShipment(
   order: OrderWithShippingContext
 ): Promise<ApiOk<{ waybill: string; trackingUrl: string }> | ApiErr> {
@@ -104,6 +168,7 @@ export async function createInternationalShipment(
 
   try {
     const pickupLocation = shippingEnv.SHIPROCKET_PICKUP_LOCATION;
+    const paymentMethod = order.payments?.[0]?.provider === "COD" ? "COD" : "Prepaid";
     const payload = {
       order_id: order.orderNumber,
       order_date: new Date().toISOString().slice(0, 19).replace("T", " "),
@@ -115,7 +180,7 @@ export async function createInternationalShipment(
       billing_city: ship.city,
       billing_pincode: ship.postalCode,
       billing_state: ship.state,
-      billing_country: ship.country,
+      billing_country: shiprocketDisplayCountry(ship.country),
       billing_email: order.email,
       billing_phone: ship.phone,
       shipping_is_billing: true,
@@ -125,7 +190,7 @@ export async function createInternationalShipment(
         units: li.qtyOrdered,
         selling_price: Math.max(1, Math.round(li.unitPriceInPaise / 100))
       })),
-      payment_method: "Prepaid",
+      payment_method: paymentMethod,
       sub_total: Math.max(1, Math.round(order.subtotalInPaise / 100)),
       length: 10,
       breadth: 10,
@@ -133,9 +198,10 @@ export async function createInternationalShipment(
       weight: weightKg
     };
 
+    let bearerToken = auth.data.token;
     let res = await axios.post(`${SHIPROCKET_API}/orders/create/adhoc`, payload, {
       headers: {
-        Authorization: `Bearer ${auth.data.token}`,
+        Authorization: `Bearer ${bearerToken}`,
         "Content-Type": "application/json"
       },
       timeout: 45_000,
@@ -145,9 +211,10 @@ export async function createInternationalShipment(
       clearShiprocketTokenCache();
       const auth2 = await getToken();
       if (!auth2.success) return auth2;
+      bearerToken = auth2.data.token;
       res = await axios.post(`${SHIPROCKET_API}/orders/create/adhoc`, payload, {
         headers: {
-          Authorization: `Bearer ${auth2.data.token}`,
+          Authorization: `Bearer ${bearerToken}`,
           "Content-Type": "application/json"
         },
         timeout: 45_000,
@@ -157,14 +224,25 @@ export async function createInternationalShipment(
     if (res.status >= 400) {
       return mapAxiosErr({ response: res, message: "create order" }, "SHIPROCKET_CREATE");
     }
-    const data = res.data as {
-      shipment_id?: number;
-      awb_code?: string;
-      courier_name?: string;
-    };
-    const waybill = data.awb_code ?? String(data.shipment_id ?? "");
+
+    const created = extractAdhocCreateResult(res.data);
+    let waybill = created.awbCode;
+    if (!waybill && created.shipmentId !== undefined) {
+      const assigned = await assignAwbForShipment(bearerToken, created.shipmentId);
+      if (!assigned.success) return assigned;
+      waybill = assigned.data.awb;
+    }
     if (!waybill) {
-      return { success: false, error: "Shiprocket did not return AWB", code: "SHIPROCKET_PARSE" };
+      logger.warn("shiprocket_create_parse", {
+        orderNumber: order.orderNumber,
+        bodyKeys: res.data && typeof res.data === "object" ? Object.keys(res.data as object) : []
+      });
+      return {
+        success: false,
+        error:
+          "Shiprocket accepted the order but returned no AWB and no shipment_id. Check pickup name, KYC, wallet, and duplicate order_id in Shiprocket.",
+        code: "SHIPROCKET_PARSE"
+      };
     }
     const trackingUrl = `https://shiprocket.co/tracking/${waybill}`;
     return { success: true, data: { waybill, trackingUrl } };
