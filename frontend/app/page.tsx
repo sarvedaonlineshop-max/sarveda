@@ -110,22 +110,7 @@ export default async function HomePage() {
               <Link
                 key={cat.id}
                 href={`/shop?category=${encodeURIComponent(cat.slug)}`}
-                className="flex min-h-[44px] items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all duration-200 hover:shadow-sm"
-                style={{
-                  borderColor: "rgba(74,124,89,0.3)",
-                  color: "#2c2420",
-                  background: "#fffbf5"
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = "#4a7c59";
-                  (e.currentTarget as HTMLElement).style.color = "#1e3a2f";
-                  (e.currentTarget as HTMLElement).style.background = "#f0ece6";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(74,124,89,0.3)";
-                  (e.currentTarget as HTMLElement).style.color = "#2c2420";
-                  (e.currentTarget as HTMLElement).style.background = "#fffbf5";
-                }}
+                className="flex min-h-[44px] items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-800 transition-all duration-200 hover:border-green-800 hover:bg-stone-50 hover:text-green-900 hover:shadow-sm"
               >
                 <span aria-hidden="true">{categoryEmoji(cat.slug)}</span>
                 <span className="line-clamp-1">{cat.name}</span>
