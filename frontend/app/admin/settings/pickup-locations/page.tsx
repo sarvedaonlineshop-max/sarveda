@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
+import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
 import {
   deleteAdminPickupLocation,
   fetchAdminPickupLocations,
@@ -15,6 +16,7 @@ export default function AdminPickupLocationsPage() {
   const [items, setItems] = useState<AdminPickupLocationRow[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [deactivateId, setDeactivateId] = useState<string | null>(null);
 
   const [label, setLabel] = useState("");
   const [shiprocketPickupName, setShiprocketPickupName] = useState("");
@@ -84,12 +86,14 @@ export default function AdminPickupLocationsPage() {
     }
   }
 
-  async function deactivate(id: string) {
-    if (!window.confirm("Deactivate this warehouse? It will no longer appear for new shipments.")) return;
+  async function confirmDeactivate() {
+    const id = deactivateId;
+    if (!id) return;
     setBusy(true);
     setErr(null);
     try {
       await deleteAdminPickupLocation(id);
+      setDeactivateId(null);
       await load();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Deactivate failed");
@@ -100,6 +104,16 @@ export default function AdminPickupLocationsPage() {
 
   return (
     <div className="space-y-8">
+      <AdminConfirmModal
+        open={deactivateId !== null}
+        title="Deactivate warehouse?"
+        message="It will no longer appear for new shipments. Existing shipment records keep their label."
+        confirmLabel="Deactivate"
+        danger
+        busy={busy}
+        onClose={() => setDeactivateId(null)}
+        onConfirm={() => void confirmDeactivate()}
+      />
       <div>
         <Link href="/admin" className="text-sm text-amber-700 hover:underline dark:text-amber-400">
           ← Dashboard
@@ -244,7 +258,7 @@ export default function AdminPickupLocationsPage() {
                             type="button"
                             disabled={busy}
                             className="text-xs font-semibold text-red-700 underline dark:text-red-400"
-                            onClick={() => void deactivate(row.id)}
+                            onClick={() => setDeactivateId(row.id)}
                           >
                             Deactivate
                           </button>

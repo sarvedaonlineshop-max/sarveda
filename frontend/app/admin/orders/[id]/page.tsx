@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
 import {
   adminCancelWaybill,
   adminCreateShipmentForOrder,
@@ -12,10 +13,12 @@ import {
   fetchAdminOrderDetail,
   fetchAdminOrderInvoice,
   fetchAdminPickupLocations,
+  patchAdminOrderAddress,
   patchAdminOrderStatus,
+  reconcileAdminOrderRazorpay,
   type AdminPickupLocationRow
 } from "@/lib/admin-api";
-import { formatINRFromPaise } from "@/lib/money";
+import { formatMinorFromPaise } from "@/lib/money";
 
 const ORDER_STATUSES = [
   "PENDING_PAYMENT",
@@ -37,6 +40,7 @@ type OrderItemRow = {
 };
 
 type AddressRow = {
+  id?: string;
   type: string;
   fullName: string;
   phone: string;
@@ -60,6 +64,8 @@ type ShipmentRow = {
   pickupLocation?: { id: string; label: string; shiprocketPickupName: string } | null;
 };
 
+type PaymentRow = { provider: string };
+
 type OrderLoaded = {
   id: string;
   orderNumber: string;
@@ -68,6 +74,7 @@ type OrderLoaded = {
   status: string;
   paymentStatus: string;
   fulfillmentStatus: string;
+  currency: string;
   grandTotalInPaise: number;
   subtotalInPaise: number;
   shippingInPaise: number;
@@ -77,6 +84,7 @@ type OrderLoaded = {
   items: OrderItemRow[];
   addresses: AddressRow[];
   shipments: ShipmentRow[];
+  payments?: PaymentRow[];
   shippingLastError: string | null;
   shippingLastErrorAt: string | null;
 };
@@ -85,6 +93,7 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
   const items = (raw.items as OrderItemRow[]) ?? [];
   const addresses = (raw.addresses as AddressRow[]) ?? [];
   const shipments = (raw.shipments as ShipmentRow[]) ?? [];
+  const payments = (raw.payments as PaymentRow[]) ?? [];
   return {
     id: String(raw.id),
     orderNumber: String(raw.orderNumber),
@@ -93,6 +102,7 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
     status: String(raw.status),
     paymentStatus: String(raw.paymentStatus),
     fulfillmentStatus: String(raw.fulfillmentStatus ?? "UNFULFILLED"),
+    currency: String(raw.currency ?? "INR"),
     grandTotalInPaise: Number(raw.grandTotalInPaise),
     subtotalInPaise: Number(raw.subtotalInPaise),
     shippingInPaise: Number(raw.shippingInPaise),
@@ -102,6 +112,7 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
     items,
     addresses,
     shipments,
+    payments,
     shippingLastError: raw.shippingLastError != null ? String(raw.shippingLastError) : null,
     shippingLastErrorAt: raw.shippingLastErrorAt != null ? String(raw.shippingLastErrorAt) : null
   };
@@ -118,6 +129,32 @@ export default function AdminOrderDetailPage() {
   const [shipBusy, setShipBusy] = useState<string | null>(null);
   const [pickupOptions, setPickupOptions] = useState<AdminPickupLocationRow[]>([]);
   const [selectedPickupId, setSelectedPickupId] = useState<string>("");
+  const [toast, setToast] = useState<{ message: string; error?: boolean } | null>(null);
+  const [statusConfirm, setStatusConfirm] = useState<string | null>(null);
+  const [cancelAwbConfirm, setCancelAwbConfirm] = useState<string | null>(null);
+  const [reconcileBusy, setReconcileBusy] = useState(false);
+  const [addressModal, setAddressModal] = useState<AddressRow | null>(null);
+  const [addrSaving, setAddrSaving] = useState(false);
+  const [addrDraft, setAddrDraft] = useState({
+    fullName: "",
+    phone: "",
+    line1: "",
+    line2: "",
+    city: "",
+    state: "",
+    postalCode: "",
+    country: "IN"
+  });
+
+  const pushToast = useCallback((message: string, error = false) => {
+    setToast({ message, error });
+  }, []);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 5200);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -128,7 +165,8 @@ export default function AdminOrderDetailPage() {
       const inv = await fetchAdminOrderInvoice(id);
       setInvoice(inv);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Failed to load order");
+      const msg = e instanceof Error ? e.message : "Failed to load order";
+      setErr(msg);
       setOrder(null);
     }
   }, [id]);
@@ -154,14 +192,34 @@ export default function AdminOrderDetailPage() {
       });
   }, [id]);
 
-  async function handleStatusChange(nextStatus: string) {
-    if (!id || !ORDER_STATUSES.includes(nextStatus as (typeof ORDER_STATUSES)[number])) return;
+  useEffect(() => {
+    if (!addressModal) return;
+    setAddrDraft({
+      fullName: addressModal.fullName,
+      phone: addressModal.phone,
+      line1: addressModal.line1,
+      line2: addressModal.line2 ?? "",
+      city: addressModal.city,
+      state: addressModal.state,
+      postalCode: addressModal.postalCode,
+      country: addressModal.country || "IN"
+    });
+  }, [addressModal]);
+
+  async function handleStatusConfirm() {
+    const nextStatus = statusConfirm;
+    if (!id || !nextStatus || !ORDER_STATUSES.includes(nextStatus as (typeof ORDER_STATUSES)[number])) {
+      setStatusConfirm(null);
+      return;
+    }
     setStatusSaving(true);
     try {
       await patchAdminOrderStatus(id, nextStatus);
+      setStatusConfirm(null);
       await load();
+      pushToast(`Order status updated to ${nextStatus.replace(/_/g, " ")}`);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Update failed");
+      pushToast(e instanceof Error ? e.message : "Update failed", true);
     } finally {
       setStatusSaving(false);
     }
@@ -170,12 +228,12 @@ export default function AdminOrderDetailPage() {
   async function handleSyncAllTracking() {
     if (!id) return;
     setShipBusy("sync-all");
-    setErr(null);
     try {
       await adminSyncOrderShipments(id);
       await load();
+      pushToast("Tracking refreshed from carriers.");
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Sync failed");
+      pushToast(e instanceof Error ? e.message : "Sync failed", true);
     } finally {
       setShipBusy(null);
     }
@@ -184,15 +242,15 @@ export default function AdminOrderDetailPage() {
   async function handleRetryShipment() {
     if (!id) return;
     setShipBusy("create");
-    setErr(null);
     try {
       await adminCreateShipmentForOrder(
         id,
         selectedPickupId ? { pickupLocationId: selectedPickupId } : undefined
       );
       await load();
+      pushToast("Shipment label created or refreshed.");
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Shipment create failed");
+      pushToast(e instanceof Error ? e.message : "Shipment create failed", true);
     } finally {
       setShipBusy(null);
     }
@@ -200,29 +258,80 @@ export default function AdminOrderDetailPage() {
 
   async function handleTrackOne(awb: string) {
     setShipBusy(awb);
-    setErr(null);
     try {
       await adminTrackShipmentByWaybill(awb);
       await load();
+      pushToast("Shipment status synced from carrier.");
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Track failed");
+      pushToast(e instanceof Error ? e.message : "Track failed", true);
     } finally {
       setShipBusy(null);
     }
   }
 
-  async function handleCancelWaybill(awb: string) {
-    if (!window.confirm(`Cancel carrier label for AWB ${awb}?`)) return;
+  async function confirmCancelWaybill() {
+    const awb = cancelAwbConfirm;
+    if (!awb) return;
     setShipBusy(`cancel-${awb}`);
-    setErr(null);
     try {
       await adminCancelWaybill(awb);
+      setCancelAwbConfirm(null);
       await load();
+      pushToast("Carrier label cancelled. Local shipment removed so you can retry.");
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Cancel failed");
+      pushToast(e instanceof Error ? e.message : "Cancel failed", true);
     } finally {
       setShipBusy(null);
     }
+  }
+
+  async function handleSaveAddress() {
+    if (!id || !addressModal) return;
+    setAddrSaving(true);
+    try {
+      await patchAdminOrderAddress(id, {
+        type: addressModal.type as "SHIPPING" | "BILLING",
+        fullName: addrDraft.fullName.trim(),
+        phone: addrDraft.phone.trim(),
+        line1: addrDraft.line1.trim(),
+        line2: addrDraft.line2.trim() || null,
+        city: addrDraft.city.trim(),
+        state: addrDraft.state.trim(),
+        postalCode: addrDraft.postalCode.trim(),
+        country: addrDraft.country.trim().toUpperCase()
+      });
+      setAddressModal(null);
+      await load();
+      pushToast("Address updated.");
+    } catch (e) {
+      pushToast(e instanceof Error ? e.message : "Save failed", true);
+    } finally {
+      setAddrSaving(false);
+    }
+  }
+
+  async function handleReconcileRazorpay() {
+    if (!id) return;
+    setReconcileBusy(true);
+    try {
+      const r = await reconcileAdminOrderRazorpay(id);
+      if (r.updated) {
+        await load();
+        pushToast(`Razorpay reconciled: payment captured (${r.razorpayPaymentId ?? ""}).`);
+      } else {
+        pushToast(r.reason ?? "No captured payment found on Razorpay yet.");
+      }
+    } catch (e) {
+      pushToast(e instanceof Error ? e.message : "Reconcile failed", true);
+    } finally {
+      setReconcileBusy(false);
+    }
+  }
+
+  function carrierUiEnabled(o: OrderLoaded): boolean {
+    if (["CANCELLED", "REFUNDED", "PENDING_PAYMENT"].includes(o.status)) return false;
+    if (o.paymentStatus !== "CAPTURED") return false;
+    return ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"].includes(o.status);
   }
 
   if (err && !order) {
@@ -249,8 +358,151 @@ export default function AdminOrderDetailPage() {
     );
   }
 
+  const hasRazorpay = (order.payments ?? []).some((p) => p.provider === "RAZORPAY");
+  const shipUi = carrierUiEnabled(order);
+
   return (
     <div className="space-y-8">
+      {toast ? (
+        <div
+          className={`fixed bottom-6 left-1/2 z-[110] max-w-md -translate-x-1/2 rounded-xl border px-4 py-3 text-sm shadow-lg ${
+            toast.error
+              ? "border-red-300 bg-red-950 text-red-50 dark:border-red-800"
+              : "border-stone-300 bg-stone-900 text-amber-50 dark:border-stone-600"
+          }`}
+          role="status"
+        >
+          {toast.message}
+        </div>
+      ) : null}
+
+      <AdminConfirmModal
+        open={statusConfirm !== null}
+        title="Update order status?"
+        message={
+          statusConfirm
+            ? `Change status to “${statusConfirm.replace(/_/g, " ")}”? This may trigger fulfilment actions (for example auto-shipment when moving to Processing).`
+            : ""
+        }
+        confirmLabel="Yes, update"
+        busy={statusSaving}
+        onClose={() => setStatusConfirm(null)}
+        onConfirm={() => void handleStatusConfirm()}
+      />
+
+      <AdminConfirmModal
+        open={cancelAwbConfirm !== null}
+        title="Cancel carrier label?"
+        message={
+          cancelAwbConfirm
+            ? `Cancel AWB ${cancelAwbConfirm} with the carrier and remove it from this order? You can create a new label afterward (for example from another warehouse).`
+            : ""
+        }
+        confirmLabel="Yes, cancel label"
+        danger
+        busy={!!shipBusy}
+        onClose={() => setCancelAwbConfirm(null)}
+        onConfirm={() => void confirmCancelWaybill()}
+      />
+
+      {addressModal ? (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl dark:border-stone-600 dark:bg-stone-900">
+            <h2 className="font-serif text-xl italic text-stone-900 dark:text-stone-50">
+              Edit {addressModal.type.toLowerCase()} address
+            </h2>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <label className="block text-sm sm:col-span-2">
+                <span className="text-stone-600 dark:text-stone-400">Full name</span>
+                <input
+                  value={addrDraft.fullName}
+                  onChange={(e) => setAddrDraft((d) => ({ ...d, fullName: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="text-stone-600 dark:text-stone-400">Phone</span>
+                <input
+                  value={addrDraft.phone}
+                  onChange={(e) => setAddrDraft((d) => ({ ...d, phone: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="text-stone-600 dark:text-stone-400">Country</span>
+                <input
+                  value={addrDraft.country}
+                  onChange={(e) => setAddrDraft((d) => ({ ...d, country: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+                />
+              </label>
+              <label className="block text-sm sm:col-span-2">
+                <span className="text-stone-600 dark:text-stone-400">Address line 1</span>
+                <input
+                  value={addrDraft.line1}
+                  onChange={(e) => setAddrDraft((d) => ({ ...d, line1: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+                />
+              </label>
+              <label className="block text-sm sm:col-span-2">
+                <span className="text-stone-600 dark:text-stone-400">Address line 2</span>
+                <input
+                  value={addrDraft.line2}
+                  onChange={(e) => setAddrDraft((d) => ({ ...d, line2: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="text-stone-600 dark:text-stone-400">City</span>
+                <input
+                  value={addrDraft.city}
+                  onChange={(e) => setAddrDraft((d) => ({ ...d, city: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+                />
+              </label>
+              <label className="block text-sm">
+                <span className="text-stone-600 dark:text-stone-400">State</span>
+                <input
+                  value={addrDraft.state}
+                  onChange={(e) => setAddrDraft((d) => ({ ...d, state: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+                />
+              </label>
+              <label className="block text-sm sm:col-span-2">
+                <span className="text-stone-600 dark:text-stone-400">Postal code</span>
+                <input
+                  value={addrDraft.postalCode}
+                  onChange={(e) => setAddrDraft((d) => ({ ...d, postalCode: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+                />
+              </label>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                disabled={addrSaving}
+                onClick={() => setAddressModal(null)}
+                className="rounded-xl border border-stone-300 px-4 py-2 text-sm dark:border-stone-600"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                disabled={addrSaving}
+                onClick={() => void handleSaveAddress()}
+                className="rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-stone-950 hover:bg-amber-500 disabled:opacity-50"
+              >
+                {addrSaving ? "Saving…" : "Save address"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {err ? (
         <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200" role="alert">
           {err}
@@ -271,7 +523,10 @@ export default function AdminOrderDetailPage() {
               <select
                 value={order.status}
                 disabled={statusSaving}
-                onChange={(e) => void handleStatusChange(e.target.value)}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v !== order.status) setStatusConfirm(v);
+                }}
                 className="rounded-lg border border-stone-300 bg-white px-2 py-1.5 font-medium text-stone-800 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-100"
               >
                 {ORDER_STATUSES.map((s) => (
@@ -282,8 +537,18 @@ export default function AdminOrderDetailPage() {
               </select>
             </label>
             <p className="text-xs text-stone-500 dark:text-stone-400">
-              Payment: {order.paymentStatus.replace(/_/g, " ")}
+              Payment: {order.paymentStatus.replace(/_/g, " ")} ({order.currency})
             </p>
+            {hasRazorpay ? (
+              <button
+                type="button"
+                disabled={reconcileBusy}
+                onClick={() => void handleReconcileRazorpay()}
+                className="rounded-lg border border-amber-700/40 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-900 hover:bg-amber-500/20 disabled:opacity-50 dark:border-amber-500/50 dark:text-amber-200"
+              >
+                {reconcileBusy ? "Checking Razorpay…" : "Sync payment (Razorpay)"}
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
@@ -339,9 +604,7 @@ export default function AdminOrderDetailPage() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              disabled={
-                !!shipBusy || ["CANCELLED", "REFUNDED", "PENDING_PAYMENT"].includes(order.status)
-              }
+              disabled={!!shipBusy || !shipUi}
               onClick={() => void handleSyncAllTracking()}
               className="rounded-lg bg-stone-800 px-3 py-2 text-xs font-semibold text-amber-100 hover:bg-stone-700 disabled:opacity-50 dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-stone-100"
             >
@@ -349,9 +612,7 @@ export default function AdminOrderDetailPage() {
             </button>
             <button
               type="button"
-              disabled={
-                !!shipBusy || ["CANCELLED", "REFUNDED", "PENDING_PAYMENT"].includes(order.status)
-              }
+              disabled={!!shipBusy || !shipUi}
               onClick={() => void handleRetryShipment()}
               className="rounded-lg border border-amber-600 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-500/20 disabled:opacity-50 dark:border-amber-500 dark:text-amber-200"
             >
@@ -359,6 +620,17 @@ export default function AdminOrderDetailPage() {
             </button>
           </div>
         </div>
+        {!shipUi ? (
+          <p className="mt-3 text-xs text-amber-900/90 dark:text-amber-200/90">
+            Carrier actions require a paid order with captured payment. Use &quot;Sync payment (Razorpay)&quot; if the
+            customer paid but status is still pending.
+          </p>
+        ) : null}
+        <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">
+          <strong className="font-medium text-stone-700 dark:text-stone-300">Open</strong> — carrier tracking page.{" "}
+          <strong className="font-medium text-stone-700 dark:text-stone-300">Sync</strong> — pull latest status from
+          Shiprocket/Delhivery into Sarveda.
+        </p>
 
         {pickupOptions.length > 0 ? (
           <label className="mt-4 flex max-w-md flex-col gap-1 text-sm text-stone-600 dark:text-stone-300">
@@ -366,7 +638,7 @@ export default function AdminOrderDetailPage() {
             <select
               value={selectedPickupId}
               onChange={(e) => setSelectedPickupId(e.target.value)}
-              disabled={!!shipBusy || ["CANCELLED", "REFUNDED", "PENDING_PAYMENT"].includes(order.status)}
+              disabled={!!shipBusy || !shipUi}
               className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
             >
               {pickupOptions.map((p) => (
@@ -390,6 +662,9 @@ export default function AdminOrderDetailPage() {
             </Link>
           </p>
         )}
+        <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">
+          To ship from a different warehouse than the one on an existing AWB, use <strong className="font-medium">Cancel label</strong> first, then create again with the new pickup.
+        </p>
 
         {order.shipments.length === 0 ? (
           <p className="mt-4 text-sm text-stone-500 dark:text-stone-400">
@@ -430,8 +705,7 @@ export default function AdminOrderDetailPage() {
                           <button
                             type="button"
                             className="text-xs font-semibold text-stone-700 underline dark:text-stone-300"
-                            disabled={!!shipBusy}
-                            onClick={() => void handleTrackOne(s.awb!)}
+                            disabled={!!shipBusy || !shipUi}
                           >
                             {shipBusy === s.awb ? "…" : "Sync"}
                           </button>
@@ -441,7 +715,7 @@ export default function AdminOrderDetailPage() {
                             type="button"
                             className="text-xs font-semibold text-red-700 underline dark:text-red-400"
                             disabled={!!shipBusy}
-                            onClick={() => void handleCancelWaybill(s.awb!)}
+                            onClick={() => setCancelAwbConfirm(s.awb!)}
                           >
                             {shipBusy === `cancel-${s.awb}` ? "…" : "Cancel label"}
                           </button>
@@ -462,25 +736,28 @@ export default function AdminOrderDetailPage() {
           <dl className="mt-3 space-y-1 text-sm">
             <div className="flex justify-between">
               <dt className="text-stone-500 dark:text-stone-400">Subtotal</dt>
-              <dd>{formatINRFromPaise(order.subtotalInPaise)}</dd>
+              <dd>{formatMinorFromPaise(order.subtotalInPaise, order.currency)}</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-stone-500 dark:text-stone-400">Shipping</dt>
-              <dd>{formatINRFromPaise(order.shippingInPaise)}</dd>
+              <dd>{formatMinorFromPaise(order.shippingInPaise, order.currency)}</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-stone-500 dark:text-stone-400">Tax</dt>
-              <dd>{formatINRFromPaise(order.taxInPaise)}</dd>
+              <dd>{formatMinorFromPaise(order.taxInPaise, order.currency)}</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-stone-500 dark:text-stone-400">Discount</dt>
-              <dd>{formatINRFromPaise(order.discountInPaise)}</dd>
+              <dd>{formatMinorFromPaise(order.discountInPaise, order.currency)}</dd>
             </div>
             <div className="flex justify-between border-t border-stone-100 pt-2 font-semibold dark:border-stone-700">
               <dt>Grand total</dt>
-              <dd>{formatINRFromPaise(order.grandTotalInPaise)}</dd>
+              <dd>{formatMinorFromPaise(order.grandTotalInPaise, order.currency)}</dd>
             </div>
           </dl>
+          <p className="mt-2 text-xs font-medium uppercase tracking-wide text-stone-500 dark:text-stone-400">
+            Currency: {order.currency}
+          </p>
           <p className="mt-4 text-xs text-stone-500 dark:text-stone-400">
             Created {new Date(order.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
           </p>
@@ -490,12 +767,21 @@ export default function AdminOrderDetailPage() {
           <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Addresses</h2>
           {order.addresses.map((a) => (
             <div
-              key={`${a.type}-${a.fullName}`}
+              key={a.id ?? `${a.type}-${a.line1}`}
               className="rounded-xl border border-stone-200 bg-white p-4 text-sm shadow-sm dark:border-stone-700 dark:bg-stone-900"
             >
-              <p className="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
-                {a.type}
-              </p>
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                  {a.type}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setAddressModal(a)}
+                  className="rounded-lg border border-stone-300 px-2 py-1 text-xs font-medium text-stone-700 hover:bg-stone-50 dark:border-stone-600 dark:text-stone-200 dark:hover:bg-stone-800"
+                >
+                  Edit
+                </button>
+              </div>
               <p className="mt-2 font-medium text-stone-800 dark:text-stone-100">{a.fullName}</p>
               <p className="text-stone-600 dark:text-stone-300">{a.phone}</p>
               <p className="mt-2 text-stone-600 dark:text-stone-300">
@@ -535,8 +821,8 @@ export default function AdminOrderDetailPage() {
                   <td className="px-4 py-3 font-medium text-stone-800 dark:text-stone-100">{item.nameSnapshot}</td>
                   <td className="px-4 py-3 font-mono text-xs text-stone-500 dark:text-stone-400">{item.skuSnapshot}</td>
                   <td className="px-4 py-3">{item.qtyOrdered}</td>
-                  <td className="px-4 py-3">{formatINRFromPaise(item.unitPriceInPaise)}</td>
-                  <td className="px-4 py-3">{formatINRFromPaise(item.lineTotalInPaise)}</td>
+                  <td className="px-4 py-3">{formatMinorFromPaise(item.unitPriceInPaise, order.currency)}</td>
+                  <td className="px-4 py-3">{formatMinorFromPaise(item.lineTotalInPaise, order.currency)}</td>
                 </tr>
               ))}
             </tbody>

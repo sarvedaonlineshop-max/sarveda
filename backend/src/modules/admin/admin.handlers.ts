@@ -1,7 +1,11 @@
-import { OrderStatus } from "@prisma/client";
+import { AddressType, OrderStatus } from "@prisma/client";
 import type { NextFunction, Request, Response } from "express";
+import { z } from "zod";
 
 import { prisma } from "../../config/db";
+import { logger } from "../../config/logger";
+import { fetchRazorpayOrderPayments } from "../payments/razorpay";
+import { completePaidOrder } from "../payments/razorpay.verify";
 import { onOrderEnteredProcessing } from "../shipping/orderLifecycle";
 
 const revenueStatuses: OrderStatus[] = [
@@ -438,6 +442,168 @@ export async function patchInventory(req: Request, res: Response, next: NextFunc
     });
 
     res.json({ success: true, data: { inventory: row } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export const orderAddressPatchSchema = z
+  .object({
+    type: z.nativeEnum(AddressType),
+    fullName: z.string().min(1).max(200).optional(),
+    phone: z.string().min(5).max(30).optional(),
+    line1: z.string().min(1).max(300).optional(),
+    line2: z.string().max(300).nullable().optional(),
+    city: z.string().min(1).max(100).optional(),
+    state: z.string().min(1).max(100).optional(),
+    postalCode: z.string().min(2).max(20).optional(),
+    country: z.string().min(2).max(4).optional()
+  })
+  .refine(
+    (d) =>
+      d.fullName !== undefined ||
+      d.phone !== undefined ||
+      d.line1 !== undefined ||
+      d.line2 !== undefined ||
+      d.city !== undefined ||
+      d.state !== undefined ||
+      d.postalCode !== undefined ||
+      d.country !== undefined,
+    { message: "Provide at least one address field to update" }
+  );
+
+export async function patchOrderAddress(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const body = req.body as z.infer<typeof orderAddressPatchSchema>;
+    const order = await prisma.order.findFirst({ where: { id, deletedAt: null } });
+    if (!order) {
+      res.status(404).json({
+        success: false,
+        error: "Order not found",
+        code: "NOT_FOUND"
+      });
+      return;
+    }
+    const addr = await prisma.orderAddress.findFirst({
+      where: { orderId: id, type: body.type }
+    });
+    if (!addr) {
+      res.status(404).json({
+        success: false,
+        error: "Address row not found for this order",
+        code: "NOT_FOUND"
+      });
+      return;
+    }
+    await prisma.orderAddress.update({
+      where: { id: addr.id },
+      data: {
+        ...(body.fullName !== undefined ? { fullName: body.fullName.trim() } : {}),
+        ...(body.phone !== undefined ? { phone: body.phone.trim() } : {}),
+        ...(body.line1 !== undefined ? { line1: body.line1.trim() } : {}),
+        ...(body.line2 !== undefined ? { line2: body.line2?.trim() || null } : {}),
+        ...(body.city !== undefined ? { city: body.city.trim() } : {}),
+        ...(body.state !== undefined ? { state: body.state.trim() } : {}),
+        ...(body.postalCode !== undefined ? { postalCode: body.postalCode.trim() } : {}),
+        ...(body.country !== undefined ? { country: body.country.trim().toUpperCase() } : {})
+      }
+    });
+    const orderFull = await prisma.order.findFirst({
+      where: { id, deletedAt: null },
+      include: {
+        items: { include: { variant: { select: { id: true, sku: true } } } },
+        addresses: true,
+        payments: true,
+        invoice: true,
+        shipments: {
+          orderBy: { createdAt: "desc" },
+          include: { pickupLocation: { select: { id: true, label: true, shiprocketPickupName: true } } }
+        },
+        customer: { select: { id: true, email: true, name: true } }
+      }
+    });
+    res.json({ success: true, data: { order: orderFull } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function reconcileRazorpayOrder(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const row = await prisma.order.findFirst({
+      where: { id, deletedAt: null },
+      include: { payments: { where: { provider: "RAZORPAY" }, orderBy: { createdAt: "desc" }, take: 1 } }
+    });
+    if (!row) {
+      res.status(404).json({
+        success: false,
+        error: "Order not found",
+        code: "NOT_FOUND"
+      });
+      return;
+    }
+    const pay = row.payments[0];
+    if (!pay?.providerOrderId) {
+      res.status(400).json({
+        success: false,
+        error: "No Razorpay order id on this payment",
+        code: "NO_RAZORPAY_ORDER"
+      });
+      return;
+    }
+    let items: Array<Record<string, unknown>>;
+    try {
+      items = await fetchRazorpayOrderPayments(pay.providerOrderId);
+    } catch (e) {
+      logger.warn("razorpay_reconcile_fetch_failed", { orderId: id, err: e });
+      const msg = e instanceof Error ? e.message : "Razorpay request failed";
+      res.status(502).json({
+        success: false,
+        error: msg,
+        code: "RAZORPAY_API"
+      });
+      return;
+    }
+    const captured = [...items].reverse().find((p) => String(p.status ?? "").toLowerCase() === "captured");
+    if (!captured || typeof captured.id !== "string") {
+      res.json({
+        success: true,
+        data: {
+          updated: false,
+          reason: "No captured Razorpay payment found for this order yet.",
+          paymentsChecked: items.length
+        }
+      });
+      return;
+    }
+    const pid = captured.id;
+    try {
+      await completePaidOrder(pay.providerOrderId, pid);
+    } catch (e) {
+      const err = e as Error & { statusCode?: number; code?: string };
+      res.status(err.statusCode ?? 400).json({
+        success: false,
+        error: err.message ?? "Reconcile failed",
+        code: err.code ?? "RECONCILE_FAILED"
+      });
+      return;
+    }
+    const fresh = await prisma.order.findFirst({
+      where: { id },
+      select: { status: true, paymentStatus: true, orderNumber: true }
+    });
+    res.json({
+      success: true,
+      data: {
+        updated: true,
+        orderStatus: fresh?.status,
+        paymentStatus: fresh?.paymentStatus,
+        orderNumber: fresh?.orderNumber,
+        razorpayPaymentId: pid
+      }
+    });
   } catch (err) {
     next(err);
   }

@@ -1,4 +1,4 @@
-import type { PaymentProvider } from "@prisma/client";
+import type { OrderStatus, PaymentProvider, PaymentStatus } from "@prisma/client";
 
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
@@ -44,6 +44,44 @@ export function totalWeightGrams(order: OrderWithShippingContext): number {
 function primaryPaymentProvider(order: OrderWithShippingContext): PaymentProvider | null {
   const pay = order.payments?.[0];
   return pay?.provider ?? null;
+}
+
+const LABEL_ORDER_STATUSES = new Set<OrderStatus>(["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"]);
+
+/** Shared rule: labels + tracking sync require paid/captured orders (not unpaid/cancelled/refunded). */
+export function assertOrderEligibleForCarrierLabels(order: {
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+}): { ok: true } | { ok: false; error: string; code: string } {
+  if (order.status === "CANCELLED" || order.status === "REFUNDED") {
+    return {
+      ok: false,
+      error: "Cancelled or refunded orders cannot be shipped.",
+      code: "ORDER_STATE"
+    };
+  }
+  if (order.status === "PENDING_PAYMENT") {
+    return {
+      ok: false,
+      error: "Unpaid orders cannot be shipped. Reconcile Razorpay payment or wait for capture.",
+      code: "ORDER_UNPAID"
+    };
+  }
+  if (!LABEL_ORDER_STATUSES.has(order.status)) {
+    return {
+      ok: false,
+      error: `Order status ${order.status} does not allow creating carrier labels.`,
+      code: "ORDER_STATE"
+    };
+  }
+  if (order.paymentStatus !== "CAPTURED") {
+    return {
+      ok: false,
+      error: `Payment must be captured before shipping (current: ${order.paymentStatus}). Use admin Sync payment (Razorpay) if the gateway shows paid.`,
+      code: "PAYMENT_NOT_CAPTURED"
+    };
+  }
+  return { ok: true };
 }
 
 export function selectCourier(order: OrderWithShippingContext): CourierChoice {
@@ -100,6 +138,18 @@ export async function autoSelectAndCreate(
     orderBy: { createdAt: "desc" }
   });
   if (existingShip?.awb) {
+    const requestedPickupId = options?.pickupLocationId;
+    if (
+      requestedPickupId &&
+      (existingShip.pickupLocationId ?? null) !== (requestedPickupId ?? null)
+    ) {
+      return {
+        success: false,
+        error:
+          "This order already has a carrier AWB. Use “Cancel label” to void it in Shiprocket and remove it here, then create a new shipment to use a different warehouse.",
+        code: "PICKUP_LOCKED"
+      };
+    }
     try {
       await prisma.order.update({
         where: { id: orderId },
@@ -129,6 +179,11 @@ export async function autoSelectAndCreate(
 
   if (!order) {
     return { success: false, error: "Order not found", code: "NOT_FOUND" };
+  }
+
+  const eligible = assertOrderEligibleForCarrierLabels(order);
+  if (!eligible.ok) {
+    return { success: false, error: eligible.error, code: eligible.code };
   }
 
   const choice = selectCourier(order as OrderWithShippingContext);

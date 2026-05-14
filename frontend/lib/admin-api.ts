@@ -93,6 +93,43 @@ export function patchAdminOrderStatus(id: string, status: string) {
   }).then((d) => d.order);
 }
 
+export function patchAdminOrderAddress(
+  orderId: string,
+  body: {
+    type: "SHIPPING" | "BILLING";
+    fullName?: string;
+    phone?: string;
+    line1?: string;
+    line2?: string | null;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+  }
+) {
+  return adminFetch<{ order: OrderDetail }>(`/api/admin/orders/${encodeURIComponent(orderId)}/addresses`, {
+    method: "PATCH",
+    body: JSON.stringify(body)
+  }).then((d) => d.order);
+}
+
+export type ReconcileRazorpayResult = {
+  updated: boolean;
+  reason?: string;
+  paymentsChecked?: number;
+  orderStatus?: string;
+  paymentStatus?: string;
+  orderNumber?: string;
+  razorpayPaymentId?: string;
+};
+
+export function reconcileAdminOrderRazorpay(orderId: string) {
+  return adminFetch<ReconcileRazorpayResult>(
+    `/api/admin/orders/${encodeURIComponent(orderId)}/reconcile-razorpay`,
+    { method: "POST", body: "{}" }
+  );
+}
+
 export function adminSyncOrderShipments(orderId: string) {
   return adminFetch<{
     results: Array<{ awb: string; ok: boolean; error?: string; code?: string; data?: unknown }>;

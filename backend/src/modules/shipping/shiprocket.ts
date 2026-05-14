@@ -201,6 +201,31 @@ async function fetchPickupLocationNames(token: string): Promise<string[]> {
   }
 }
 
+/** Shiprocket assign/awb nests AWB under `response`, `data`, or `awb_assign[]` depending on version. */
+function extractAssignAwbCode(raw: unknown): string | undefined {
+  const fromMain = extractAdhocCreateResult(raw);
+  if (fromMain.awbCode) return fromMain.awbCode;
+  if (!raw || typeof raw !== "object") return undefined;
+  const r = raw as Record<string, unknown>;
+  for (const key of ["response", "data", "payload", "result"] as const) {
+    const nested = r[key];
+    const fromNested = extractAdhocCreateResult(nested);
+    if (fromNested.awbCode) return fromNested.awbCode;
+  }
+  const assign = r.awb_assign ?? r.awbAssign;
+  if (Array.isArray(assign)) {
+    for (const row of assign) {
+      if (row && typeof row === "object") {
+        const o = row as Record<string, unknown>;
+        const code = o.awb_code ?? o.awb ?? o.airway_bill_number ?? o.airwaybill;
+        if (typeof code === "string" && code.trim()) return code.trim();
+        if (typeof code === "number" && Number.isFinite(code)) return String(code);
+      }
+    }
+  }
+  return undefined;
+}
+
 /** Docs: AWB may require a separate call after create/adhoc. */
 async function assignAwbForShipment(token: string, shipmentId: number): Promise<ApiOk<{ awb: string }> | ApiErr> {
   const res = await axios.post(
@@ -220,9 +245,12 @@ async function assignAwbForShipment(token: string, shipmentId: number): Promise<
     logger.warn("shiprocket_assign_awb_failed", { status: res.status, shipmentId, msg });
     return { success: false, error: msg, code: "SHIPROCKET_ASSIGN" };
   }
-  const { awbCode } = extractAdhocCreateResult(res.data);
+  const awbCode = extractAssignAwbCode(res.data);
   if (!awbCode) {
-    logger.warn("shiprocket_assign_awb_parse", { shipmentId, bodyKeys: res.data && typeof res.data === "object" ? Object.keys(res.data as object) : [] });
+    logger.warn("shiprocket_assign_awb_parse", {
+      shipmentId,
+      bodyKeys: res.data && typeof res.data === "object" ? Object.keys(res.data as object) : []
+    });
     return { success: false, error: "Shiprocket assign AWB did not return awb_code", code: "SHIPROCKET_PARSE" };
   }
   return { success: true, data: { awb: awbCode } };

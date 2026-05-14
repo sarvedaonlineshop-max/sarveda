@@ -4,7 +4,7 @@ import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 
 import * as delhivery from "./delhivery";
-import { autoSelectAndCreate } from "./router";
+import { assertOrderEligibleForCarrierLabels, autoSelectAndCreate } from "./router";
 import * as shiprocket from "./shiprocket";
 
 const BLOCKED_TRACK_ORDER: OrderStatus[] = ["CANCELLED", "REFUNDED", "PENDING_PAYMENT"];
@@ -93,6 +93,11 @@ export async function syncTrackingByWaybill(waybill: string): Promise<
       error: "Tracking cannot be updated for cancelled, unpaid, or refunded orders.",
       code: "ORDER_STATE"
     };
+  }
+
+  const payOk = assertOrderEligibleForCarrierLabels(shipment.order);
+  if (!payOk.ok) {
+    return { success: false, error: payOk.error, code: payOk.code };
   }
 
   const courierLower = shipment.courier.toLowerCase();

@@ -5,6 +5,7 @@ import { shippingEnv } from "../../config/env";
 import { prisma } from "../../config/db";
 
 import * as delhivery from "./delhivery";
+import { assertOrderEligibleForCarrierLabels } from "./router";
 import { orderBlocksCarrierSync, syncTrackingByWaybill } from "./orderLifecycle";
 import * as shiprocket from "./shiprocket";
 import { computeVariantShippingTotal, resolveRateCountryCode, zoneFromCountry } from "./shippingRates.service";
@@ -187,6 +188,11 @@ export async function syncOrderShipments(req: Request, res: Response, next: Next
       });
       return;
     }
+    const shipCheck = assertOrderEligibleForCarrierLabels(order);
+    if (!shipCheck.ok) {
+      res.status(400).json({ success: false, error: shipCheck.error, code: shipCheck.code });
+      return;
+    }
 
     type Row = { awb: string; ok: boolean; error?: string; code?: string; data?: unknown };
     const results: Row[] = [];
@@ -256,6 +262,16 @@ export async function cancelWaybillAdmin(req: Request, res: Response, next: Next
       res.status(400).json(cancelled);
       return;
     }
+    await prisma.$transaction(async (tx) => {
+      await tx.shipment.delete({ where: { id: row.id } });
+      const remaining = await tx.shipment.count({ where: { orderId: row.orderId } });
+      if (remaining === 0) {
+        await tx.order.update({
+          where: { id: row.orderId },
+          data: { fulfillmentStatus: "UNFULFILLED" }
+        });
+      }
+    });
     res.json({ success: true, data: { cancelled: true, waybill: wb, orderId: row.orderId } });
   } catch (err) {
     next(err);

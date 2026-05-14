@@ -77,6 +77,8 @@ export async function completePaidOrder(
     if (!fresh) return;
     if (fresh.status === "CAPTURED" && fresh.order.status === "PAID") return;
 
+    const fromStatusForHistory = fresh.order.status;
+
     await tx.payment.update({
       where: { id: payment.id },
       data: {
@@ -104,7 +106,7 @@ export async function completePaidOrder(
     await tx.orderStatusHistory.create({
       data: {
         orderId: payment.orderId,
-        fromStatus: "PENDING_PAYMENT",
+        fromStatus: fromStatusForHistory,
         toStatus: "PAID",
         reason: "Razorpay payment verified"
       }

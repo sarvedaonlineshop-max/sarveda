@@ -174,3 +174,22 @@ export function verifyPayment(razorpayOrderId: string, razorpayPaymentId: string
     throw e;
   }
 }
+
+type RazorpayOrderPaymentsResponse = { items?: Array<Record<string, unknown>> };
+
+/** List payments for a Razorpay order (callback-based SDK wrapped as Promise). */
+export async function fetchRazorpayOrderPayments(razorpayOrderId: string): Promise<Array<Record<string, unknown>>> {
+  const rzp = getClient();
+  return new Promise((resolve, reject) => {
+    type OrdersApi = { fetchPayments: (orderId: string, cb: (err: unknown, result?: unknown) => void) => void };
+    const ordersApi = rzp.orders as unknown as OrdersApi;
+    ordersApi.fetchPayments(razorpayOrderId, (err: unknown, result?: unknown) => {
+      if (err) {
+        reject(err instanceof Error ? err : new Error(String(err)));
+        return;
+      }
+      const col = result as RazorpayOrderPaymentsResponse;
+      resolve(Array.isArray(col?.items) ? col.items : []);
+    });
+  });
+}

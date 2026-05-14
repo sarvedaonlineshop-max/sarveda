@@ -8,11 +8,9 @@ import * as productsController from "../products/products.controller";
 import { createProductSchema, updateProductSchema } from "../products/schemas";
 
 import * as admin from "./admin.handlers";
+import { orderAddressPatchSchema } from "./admin.handlers";
 import * as pickupLocations from "./pickupLocations.handlers";
-import {
-  createPickupLocationSchema,
-  updatePickupLocationSchema
-} from "./pickupLocations.handlers";
+import { createPickupLocationSchema, updatePickupLocationSchema } from "./pickupLocations.handlers";
 
 const router = Router();
 router.use(requireAdmin);
@@ -34,6 +32,12 @@ router.get("/dashboard", admin.dashboard);
 router.get("/orders", admin.ordersList);
 router.get("/orders/:id/invoice", admin.orderInvoice);
 router.get("/orders/:id", admin.orderDetail);
+router.patch(
+  "/orders/:id/addresses",
+  validateBody(orderAddressPatchSchema),
+  admin.patchOrderAddress
+);
+router.post("/orders/:id/reconcile-razorpay", admin.reconcileRazorpayOrder);
 router.patch(
   "/orders/:id/status",
   validateBody(z.object({ status: z.nativeEnum(OrderStatus) })),
