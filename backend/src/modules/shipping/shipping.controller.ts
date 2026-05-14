@@ -95,7 +95,28 @@ export async function createShipmentForOrder(req: Request, res: Response, next: 
       res.status(400).json({ success: false, error: "orderId required", code: "BAD_REQUEST" });
       return;
     }
-    const result = await autoSelectAndCreate(orderId);
+
+    const bodyParsed = z
+      .object({
+        pickupLocationId: z.string().uuid().optional(),
+        shiprocketPickupName: z.string().min(1).max(200).optional()
+      })
+      .safeParse(req.body && typeof req.body === "object" ? req.body : {});
+
+    if (!bodyParsed.success) {
+      res.status(400).json({
+        success: false,
+        error: bodyParsed.error.issues.map((i) => i.message).join("; "),
+        code: "VALIDATION_ERROR"
+      });
+      return;
+    }
+
+    const { pickupLocationId, shiprocketPickupName } = bodyParsed.data;
+    const result = await autoSelectAndCreate(orderId, {
+      ...(pickupLocationId ? { pickupLocationId } : {}),
+      ...(shiprocketPickupName ? { shiprocketPickupName } : {})
+    });
     if (!result.success) {
       try {
         await prisma.order.update({

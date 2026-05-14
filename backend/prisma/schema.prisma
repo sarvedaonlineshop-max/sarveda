@@ -385,18 +385,39 @@ model Invoice {
   order     Order    @relation(fields: [orderId], references: [id])
 }
 
+/// Admin-managed warehouse; `shiprocketPickupName` must match Shiprocket pickup_location exactly.
+model PickupLocation {
+  id                   String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  label                String
+  shiprocketPickupName String
+  line1                String?
+  line2                String?
+  city                 String?
+  state                String?
+  postalCode           String?
+  notes                String?
+  isPrimary            Boolean    @default(false)
+  sortOrder            Int        @default(0)
+  isActive             Boolean    @default(true)
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+  shipments            Shipment[]
+}
+
 model Shipment {
-  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  orderId     String         @db.Uuid
-  courier     String
-  awb         String?
-  trackingUrl String?
-  status      ShipmentStatus @default(CREATED)
-  deliveredAt DateTime?
-  rtoAt       DateTime?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  order       Order          @relation(fields: [orderId], references: [id])
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId          String          @db.Uuid
+  pickupLocationId String?         @db.Uuid
+  courier          String
+  awb              String?
+  trackingUrl      String?
+  status           ShipmentStatus  @default(CREATED)
+  deliveredAt      DateTime?
+  rtoAt            DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  order            Order           @relation(fields: [orderId], references: [id])
+  pickupLocation   PickupLocation? @relation(fields: [pickupLocationId], references: [id])
 }
 
 enum ShipmentStatus {

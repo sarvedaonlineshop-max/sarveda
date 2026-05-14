@@ -239,7 +239,12 @@ export async function orderDetail(req: Request, res: Response, next: NextFunctio
         addresses: true,
         payments: true,
         invoice: true,
-        shipments: { orderBy: { createdAt: "desc" } },
+        shipments: {
+          orderBy: { createdAt: "desc" },
+          include: {
+            pickupLocation: { select: { id: true, label: true, shiprocketPickupName: true } }
+          }
+        },
         customer: { select: { id: true, email: true, name: true } }
       }
     });

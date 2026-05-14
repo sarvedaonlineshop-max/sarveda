@@ -171,6 +171,36 @@ function extractAdhocCreateResult(raw: unknown): { awbCode?: string; shipmentId?
   return { awbCode, shipmentId };
 }
 
+/** GET …/settings/company/pickup — names must match `pickup_location` on create/adhoc. */
+async function fetchPickupLocationNames(token: string): Promise<string[]> {
+  const names = new Set<string>();
+  try {
+    const res = await axios.get(`${SHIPROCKET_API}/settings/company/pickup`, {
+      headers: { Authorization: `Bearer ${token}` },
+      timeout: 20_000,
+      validateStatus: () => true
+    });
+    if (res.status >= 400) return [];
+    function walk(o: unknown): void {
+      if (!o || typeof o !== "object") return;
+      if (Array.isArray(o)) {
+        for (const x of o) walk(x);
+        return;
+      }
+      const r = o as Record<string, unknown>;
+      for (const [k, v] of Object.entries(r)) {
+        if (k === "pickup_location" && typeof v === "string" && v.trim()) {
+          names.add(v.trim());
+        } else if (v && typeof v === "object") walk(v);
+      }
+    }
+    walk(res.data);
+    return [...names];
+  } catch {
+    return [];
+  }
+}
+
 /** Docs: AWB may require a separate call after create/adhoc. */
 async function assignAwbForShipment(token: string, shipmentId: number): Promise<ApiOk<{ awb: string }> | ApiErr> {
   const res = await axios.post(
@@ -199,7 +229,8 @@ async function assignAwbForShipment(token: string, shipmentId: number): Promise<
 }
 
 export async function createInternationalShipment(
-  order: OrderWithShippingContext
+  order: OrderWithShippingContext,
+  options?: { pickupLocationName?: string }
 ): Promise<ApiOk<{ waybill: string; trackingUrl: string }> | ApiErr> {
   const auth = await getToken();
   if (!auth.success) return auth;
@@ -232,8 +263,15 @@ export async function createInternationalShipment(
       };
     }
 
-    const pickupLocation = shippingEnv.SHIPROCKET_PICKUP_LOCATION;
-    const paymentMethod = order.payments?.[0]?.provider === "COD" ? "COD" : "Prepaid";
+    const pickupLocation = (options?.pickupLocationName ?? shippingEnv.SHIPROCKET_PICKUP_LOCATION ?? "").trim();
+    if (!pickupLocation) {
+      return {
+        success: false,
+        error: "Pickup location is not configured (admin warehouses or SHIPROCKET_PICKUP_LOCATION).",
+        code: "BAD_REQUEST"
+      };
+    }
+    const paymentMethod = order.payments?.[0]?.provider === "COD" ? "COD" : "Pre-paid";
 
     const orderItemsPayload = order.items.map((li) => {
       const name = (li.nameSnapshot ?? "Item").trim().slice(0, 200) || "Item";
@@ -321,13 +359,77 @@ export async function createInternationalShipment(
       }
     }
 
-    const created = extractAdhocCreateResult(res.data);
+    let created = extractAdhocCreateResult(res.data);
     let waybill = created.awbCode;
     if (!waybill && created.shipmentId !== undefined) {
       const assigned = await assignAwbForShipment(bearerToken, created.shipmentId);
       if (!assigned.success) return assigned;
       waybill = assigned.data.awb;
     }
+
+    const missingIds = !waybill && created.shipmentId === undefined;
+    if (missingIds) {
+      const altNames = await fetchPickupLocationNames(bearerToken);
+      let altPickup = altNames.find((n) => n !== pickupLocation);
+      if (altPickup === undefined && altNames.length > 0 && !altNames.includes(pickupLocation)) {
+        altPickup = altNames[0];
+      }
+      if (altPickup) {
+        logger.warn("shiprocket_pickup_retry", {
+          configured: pickupLocation,
+          usingPickup: altPickup,
+          available: altNames
+        });
+        const payload2 = { ...payload, pickup_location: altPickup };
+        res = await axios.post(`${SHIPROCKET_API}/orders/create/adhoc`, payload2, {
+          headers: {
+            Authorization: `Bearer ${bearerToken}`,
+            "Content-Type": "application/json"
+          },
+          timeout: 45_000,
+          validateStatus: () => true
+        });
+        if (res.status === 401) {
+          clearShiprocketTokenCache();
+          const auth3 = await getToken();
+          if (!auth3.success) return auth3;
+          bearerToken = auth3.data.token;
+          res = await axios.post(`${SHIPROCKET_API}/orders/create/adhoc`, payload2, {
+            headers: {
+              Authorization: `Bearer ${bearerToken}`,
+              "Content-Type": "application/json"
+            },
+            timeout: 45_000,
+            validateStatus: () => true
+          });
+        }
+        if (res.status >= 400) {
+          const msg = formatShiprocketApiMessage(res.data, res.status);
+          logger.warn("shiprocket_http_error", {
+            code: "SHIPROCKET_CREATE",
+            status: res.status,
+            msg,
+            orderNumber: order.orderNumber
+          });
+          return { success: false, error: msg, code: "SHIPROCKET_CREATE" };
+        }
+        if (res.data && typeof res.data === "object") {
+          const rd2 = res.data as Record<string, unknown>;
+          if (rd2.success === false || rd2.success === 0) {
+            const msg = formatShiprocketApiMessage(res.data, res.status);
+            return { success: false, error: msg || "Shiprocket declined order creation", code: "SHIPROCKET_CREATE" };
+          }
+        }
+        created = extractAdhocCreateResult(res.data);
+        waybill = created.awbCode;
+        if (!waybill && created.shipmentId !== undefined) {
+          const assigned2 = await assignAwbForShipment(bearerToken, created.shipmentId);
+          if (!assigned2.success) return assigned2;
+          waybill = assigned2.data.awb;
+        }
+      }
+    }
+
     if (!waybill) {
       const rootMsg =
         res.data && typeof res.data === "object" && typeof (res.data as Record<string, unknown>).message === "string"

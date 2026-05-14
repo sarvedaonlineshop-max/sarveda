@@ -105,10 +105,13 @@ export function adminSyncOrderShipments(orderId: string) {
   });
 }
 
-export function adminCreateShipmentForOrder(orderId: string) {
+export function adminCreateShipmentForOrder(
+  orderId: string,
+  body?: { pickupLocationId?: string; shiprocketPickupName?: string }
+) {
   return adminFetch<{ courier: string; waybill: string; trackingUrl: string }>(
     `/api/shipping/create-shipment/${encodeURIComponent(orderId)}`,
-    { method: "POST", body: "{}" }
+    { method: "POST", body: JSON.stringify(body ?? {}) }
   );
 }
 
@@ -127,6 +130,78 @@ export function adminTrackShipmentByWaybill(waybill: string) {
     orderStatus: string;
     fulfillmentStatus: string;
   }>(`/api/shipping/track/${encodeURIComponent(waybill)}`);
+}
+
+export type AdminPickupLocationRow = {
+  id: string;
+  label: string;
+  shiprocketPickupName: string;
+  line1: string | null;
+  line2: string | null;
+  city: string | null;
+  state: string | null;
+  postalCode: string | null;
+  notes: string | null;
+  isPrimary: boolean;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export function fetchAdminPickupLocations(params?: { activeOnly?: boolean }) {
+  const q = new URLSearchParams();
+  if (params?.activeOnly) q.set("activeOnly", "true");
+  const qs = q.toString();
+  return adminFetch<{ items: AdminPickupLocationRow[] }>(
+    `/api/admin/pickup-locations${qs ? `?${qs}` : ""}`
+  ).then((d) => d.items);
+}
+
+export function postAdminPickupLocation(body: {
+  label: string;
+  shiprocketPickupName: string;
+  line1?: string;
+  line2?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  notes?: string;
+  isPrimary?: boolean;
+  sortOrder?: number;
+}) {
+  return adminFetch<{ item: AdminPickupLocationRow }>("/api/admin/pickup-locations", {
+    method: "POST",
+    body: JSON.stringify(body)
+  }).then((d) => d.item);
+}
+
+export function patchAdminPickupLocation(
+  id: string,
+  body: Partial<{
+    label: string;
+    shiprocketPickupName: string;
+    line1: string | null;
+    line2: string | null;
+    city: string | null;
+    state: string | null;
+    postalCode: string | null;
+    notes: string | null;
+    isPrimary: boolean;
+    sortOrder: number;
+    isActive: boolean;
+  }>
+) {
+  return adminFetch<{ item: AdminPickupLocationRow }>(`/api/admin/pickup-locations/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body)
+  }).then((d) => d.item);
+}
+
+export function deleteAdminPickupLocation(id: string) {
+  return adminFetch<{ item: AdminPickupLocationRow }>(`/api/admin/pickup-locations/${id}`, {
+    method: "DELETE"
+  }).then((d) => d.item);
 }
 
 export function fetchAdminOrderInvoice(id: string, signal?: AbortSignal) {

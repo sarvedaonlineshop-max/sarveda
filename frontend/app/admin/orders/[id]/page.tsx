@@ -11,7 +11,9 @@ import {
   adminTrackShipmentByWaybill,
   fetchAdminOrderDetail,
   fetchAdminOrderInvoice,
-  patchAdminOrderStatus
+  fetchAdminPickupLocations,
+  patchAdminOrderStatus,
+  type AdminPickupLocationRow
 } from "@/lib/admin-api";
 import { formatINRFromPaise } from "@/lib/money";
 
@@ -55,6 +57,7 @@ type ShipmentRow = {
   deliveredAt?: string | null;
   rtoAt?: string | null;
   updatedAt?: string;
+  pickupLocation?: { id: string; label: string; shiprocketPickupName: string } | null;
 };
 
 type OrderLoaded = {
@@ -113,6 +116,8 @@ export default function AdminOrderDetailPage() {
   const [invoice, setInvoice] = useState<{ pdfUrl: string | null; invoiceNo: string | null } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [shipBusy, setShipBusy] = useState<string | null>(null);
+  const [pickupOptions, setPickupOptions] = useState<AdminPickupLocationRow[]>([]);
+  const [selectedPickupId, setSelectedPickupId] = useState<string>("");
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -131,6 +136,23 @@ export default function AdminOrderDetailPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!id) return;
+    void fetchAdminPickupLocations({ activeOnly: true })
+      .then((list) => {
+        setPickupOptions(list);
+        setSelectedPickupId((prev) => {
+          if (prev && list.some((p) => p.id === prev)) return prev;
+          const primary = list.find((p) => p.isPrimary);
+          return primary?.id ?? list[0]?.id ?? "";
+        });
+      })
+      .catch(() => {
+        setPickupOptions([]);
+        setSelectedPickupId("");
+      });
+  }, [id]);
 
   async function handleStatusChange(nextStatus: string) {
     if (!id || !ORDER_STATUSES.includes(nextStatus as (typeof ORDER_STATUSES)[number])) return;
@@ -164,7 +186,10 @@ export default function AdminOrderDetailPage() {
     setShipBusy("create");
     setErr(null);
     try {
-      await adminCreateShipmentForOrder(id);
+      await adminCreateShipmentForOrder(
+        id,
+        selectedPickupId ? { pickupLocationId: selectedPickupId } : undefined
+      );
       await load();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Shipment create failed");
@@ -335,6 +360,37 @@ export default function AdminOrderDetailPage() {
           </div>
         </div>
 
+        {pickupOptions.length > 0 ? (
+          <label className="mt-4 flex max-w-md flex-col gap-1 text-sm text-stone-600 dark:text-stone-300">
+            <span className="font-medium text-stone-700 dark:text-stone-200">Pickup warehouse (Shiprocket)</span>
+            <select
+              value={selectedPickupId}
+              onChange={(e) => setSelectedPickupId(e.target.value)}
+              disabled={!!shipBusy || ["CANCELLED", "REFUNDED", "PENDING_PAYMENT"].includes(order.status)}
+              className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+            >
+              {pickupOptions.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                  {p.isPrimary ? " (primary)" : ""}
+                </option>
+              ))}
+            </select>
+            <span className="text-xs text-stone-500 dark:text-stone-400">
+              <Link href="/admin/settings/pickup-locations" className="text-amber-800 underline dark:text-amber-400">
+                Manage warehouses
+              </Link>
+            </span>
+          </label>
+        ) : (
+          <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">
+            No warehouses in admin — Shiprocket uses env default.{" "}
+            <Link href="/admin/settings/pickup-locations" className="text-amber-800 underline dark:text-amber-400">
+              Add warehouses
+            </Link>
+          </p>
+        )}
+
         {order.shipments.length === 0 ? (
           <p className="mt-4 text-sm text-stone-500 dark:text-stone-400">
             No carrier label yet — set status to Processing (auto) or use retry above.
@@ -345,6 +401,7 @@ export default function AdminOrderDetailPage() {
               <thead className="border-b border-stone-100 dark:border-stone-700">
                 <tr>
                   <th className="py-2 pr-4 font-semibold text-stone-600 dark:text-stone-300">Courier</th>
+                  <th className="py-2 pr-4 font-semibold text-stone-600 dark:text-stone-300">Pickup</th>
                   <th className="py-2 pr-4 font-semibold text-stone-600 dark:text-stone-300">AWB</th>
                   <th className="py-2 pr-4 font-semibold text-stone-600 dark:text-stone-300">Status</th>
                   <th className="py-2 pr-4 font-semibold text-stone-600 dark:text-stone-300">Actions</th>
@@ -354,6 +411,7 @@ export default function AdminOrderDetailPage() {
                 {order.shipments.map((s) => (
                   <tr key={s.id}>
                     <td className="py-2 pr-4">{s.courier}</td>
+                    <td className="py-2 pr-4 text-stone-600 dark:text-stone-300">{s.pickupLocation?.label ?? "—"}</td>
                     <td className="py-2 pr-4 font-mono text-xs">{s.awb ?? "—"}</td>
                     <td className="py-2 pr-4">{s.status.replace(/_/g, " ")}</td>
                     <td className="py-2 pr-4">

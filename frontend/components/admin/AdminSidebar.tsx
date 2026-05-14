@@ -9,7 +9,8 @@ const nav = [
   { href: "/admin", label: "Dashboard", icon: "◆" },
   { href: "/admin/orders", label: "Orders", icon: "◇" },
   { href: "/admin/products", label: "Products", icon: "○" },
-  { href: "/admin/inventory", label: "Inventory", icon: "▫" }
+  { href: "/admin/inventory", label: "Inventory", icon: "▫" },
+  { href: "/admin/settings/pickup-locations", label: "Warehouses", icon: "⌂" }
 ];
 
 export function AdminSidebar({

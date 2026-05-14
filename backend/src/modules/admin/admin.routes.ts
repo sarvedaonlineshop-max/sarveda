@@ -8,9 +8,27 @@ import * as productsController from "../products/products.controller";
 import { createProductSchema, updateProductSchema } from "../products/schemas";
 
 import * as admin from "./admin.handlers";
+import * as pickupLocations from "./pickupLocations.handlers";
+import {
+  createPickupLocationSchema,
+  updatePickupLocationSchema
+} from "./pickupLocations.handlers";
 
 const router = Router();
 router.use(requireAdmin);
+
+router.get("/pickup-locations", pickupLocations.listPickupLocations);
+router.post(
+  "/pickup-locations",
+  validateBody(createPickupLocationSchema),
+  pickupLocations.createPickupLocation
+);
+router.patch(
+  "/pickup-locations/:id",
+  validateBody(updatePickupLocationSchema),
+  pickupLocations.updatePickupLocation
+);
+router.delete("/pickup-locations/:id", pickupLocations.deletePickupLocation);
 
 router.get("/dashboard", admin.dashboard);
 router.get("/orders", admin.ordersList);

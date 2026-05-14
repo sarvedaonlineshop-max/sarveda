@@ -4,6 +4,7 @@ import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 
 import * as delhivery from "./delhivery";
+import { resolvePickupForShipment } from "./pickupLocation.resolve";
 import * as shiprocket from "./shiprocket";
 import type { CourierChoice, OrderWithShippingContext } from "./types";
 
@@ -82,7 +83,15 @@ function codAmountRupees(order: OrderWithShippingContext): number {
   return order.grandTotalInPaise / 100;
 }
 
-export async function autoSelectAndCreate(orderId: string): Promise<
+export type AutoShipmentCreateOptions = {
+  pickupLocationId?: string;
+  shiprocketPickupName?: string;
+};
+
+export async function autoSelectAndCreate(
+  orderId: string,
+  options?: AutoShipmentCreateOptions
+): Promise<
   | { success: true; data: { courier: string; waybill: string; trackingUrl: string } }
   | { success: false; error: string; code: string }
 > {
@@ -134,6 +143,23 @@ export async function autoSelectAndCreate(orderId: string): Promise<
 
   logger.info("shipping_router_choice", { orderId, choice, weightKg });
 
+  let shiprocketPickup:
+    | { pickupLocationName: string; pickupLocationId: string | null }
+    | undefined;
+  if (choice === "SHIPROCKET_INTERNATIONAL" || choice === "SHIPROCKET_DOMESTIC") {
+    const pr = await resolvePickupForShipment({
+      pickupLocationId: options?.pickupLocationId,
+      shiprocketPickupName: options?.shiprocketPickupName
+    });
+    if (!pr.ok) {
+      return { success: false, error: pr.error, code: pr.code };
+    }
+    shiprocketPickup = {
+      pickupLocationName: pr.shiprocketPickupName,
+      pickupLocationId: pr.pickupLocationId
+    };
+  }
+
   try {
     if (choice === "BLUEDART_STUB") {
       const { waybill, trackingUrl } = stubWaybill("STUB-BD", order.orderNumber);
@@ -170,9 +196,17 @@ export async function autoSelectAndCreate(orderId: string): Promise<
     }
 
     if (choice === "SHIPROCKET_INTERNATIONAL") {
-      const created = await shiprocket.createInternationalShipment(order as OrderWithShippingContext);
+      const created = await shiprocket.createInternationalShipment(order as OrderWithShippingContext, {
+        pickupLocationName: shiprocketPickup!.pickupLocationName
+      });
       if (!created.success) return created;
-      await persistShipment(order.id, "Shiprocket International", created.data.waybill, created.data.trackingUrl);
+      await persistShipment(
+        order.id,
+        "Shiprocket International",
+        created.data.waybill,
+        created.data.trackingUrl,
+        shiprocketPickup!.pickupLocationId
+      );
       return {
         success: true,
         data: {
@@ -183,9 +217,17 @@ export async function autoSelectAndCreate(orderId: string): Promise<
       };
     }
 
-    const srDomestic = await shiprocket.createInternationalShipment(order as OrderWithShippingContext);
+    const srDomestic = await shiprocket.createInternationalShipment(order as OrderWithShippingContext, {
+      pickupLocationName: shiprocketPickup!.pickupLocationName
+    });
     if (!srDomestic.success) return srDomestic;
-    await persistShipment(order.id, "Shiprocket", srDomestic.data.waybill, srDomestic.data.trackingUrl);
+    await persistShipment(
+      order.id,
+      "Shiprocket",
+      srDomestic.data.waybill,
+      srDomestic.data.trackingUrl,
+      shiprocketPickup!.pickupLocationId
+    );
     return {
       success: true,
       data: {
@@ -208,7 +250,8 @@ async function persistShipment(
   orderId: string,
   courier: string,
   waybill: string,
-  trackingUrl: string
+  trackingUrl: string,
+  pickupLocationId?: string | null
 ): Promise<void> {
   await prisma.$transaction(async (tx) => {
     await tx.shipment.create({
@@ -217,7 +260,8 @@ async function persistShipment(
         courier,
         awb: waybill,
         trackingUrl,
-        status: "CREATED"
+        status: "CREATED",
+        ...(pickupLocationId ? { pickupLocationId } : {})
       }
     });
     await tx.order.update({
