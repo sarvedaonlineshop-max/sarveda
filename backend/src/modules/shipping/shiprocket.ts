@@ -125,31 +125,49 @@ function normalizeShiprocketPhone(phone: string, country: string): string {
   return digits.slice(0, 15);
 }
 
-/** Parse create/adhoc (or assign/awb) JSON for `awb_code` and `shipment_id` (nested under payload/data). */
+/** Deep-scan JSON for `awb_code` / `shipment_id` (Shiprocket nests these unpredictably). */
 function extractAdhocCreateResult(raw: unknown): { awbCode?: string; shipmentId?: number } {
-  if (!raw || typeof raw !== "object") return {};
-  const pick = (obj: Record<string, unknown>): { awbCode?: string; shipmentId?: number } => {
-    let awbCode: string | undefined;
-    let shipmentId: number | undefined;
-    const awbRaw = obj.awb_code;
-    if (typeof awbRaw === "string" && awbRaw.trim()) awbCode = awbRaw.trim();
-    else if (typeof awbRaw === "number" && Number.isFinite(awbRaw)) awbCode = String(awbRaw);
-    const sidRaw = obj.shipment_id;
-    if (typeof sidRaw === "number" && Number.isFinite(sidRaw)) shipmentId = sidRaw;
-    else if (typeof sidRaw === "string" && /^\d+$/.test(sidRaw.trim())) shipmentId = parseInt(sidRaw.trim(), 10);
-    return { awbCode, shipmentId };
-  };
+  let awbCode: string | undefined;
+  let shipmentId: number | undefined;
+  const seen = new WeakSet<object>();
 
-  const r = raw as Record<string, unknown>;
-  let { awbCode, shipmentId } = pick(r);
-  for (const key of ["payload", "data", "response"]) {
-    const inner = r[key];
-    if (inner && typeof inner === "object" && !Array.isArray(inner)) {
-      const p = pick(inner as Record<string, unknown>);
-      if (!awbCode && p.awbCode) awbCode = p.awbCode;
-      if (shipmentId === undefined && p.shipmentId !== undefined) shipmentId = p.shipmentId;
+  function considerKey(key: string, val: unknown): void {
+    const k = key.toLowerCase().replace(/-/g, "_");
+    if (
+      !awbCode &&
+      (k === "awb_code" || k === "awb" || k === "awbcode" || k === "airwaybill_number")
+    ) {
+      if (typeof val === "string" && val.trim()) awbCode = val.trim();
+      else if (typeof val === "number" && Number.isFinite(val)) awbCode = String(val);
+    }
+    if (
+      shipmentId === undefined &&
+      (k === "shipment_id" || k === "shipmentid" || k === "sr_shipment_id" || k === "order_shipment_id")
+    ) {
+      if (typeof val === "number" && Number.isFinite(val)) shipmentId = val;
+      else if (typeof val === "string" && /^\d+$/.test(val.trim())) shipmentId = parseInt(val.trim(), 10);
     }
   }
+
+  function visit(node: unknown, depth: number): void {
+    if (depth > 12 || node === null || node === undefined) return;
+    if (typeof node !== "object") return;
+    if (seen.has(node as object)) return;
+    seen.add(node as object);
+    if (Array.isArray(node)) {
+      for (const el of node) visit(el, depth + 1);
+      return;
+    }
+    const obj = node as Record<string, unknown>;
+    for (const [key, val] of Object.entries(obj)) {
+      considerKey(key, val);
+    }
+    for (const val of Object.values(obj)) {
+      if (val && typeof val === "object") visit(val, depth + 1);
+    }
+  }
+
+  visit(raw, 0);
   return { awbCode, shipmentId };
 }
 
@@ -227,6 +245,7 @@ export async function createInternationalShipment(
       1,
       orderItemsPayload.reduce((s, it) => s + it.selling_price * it.units, 0)
     );
+    const shippingRupees = Math.max(0, Math.round((order.shippingInPaise ?? 0) / 100));
 
     const orderPlaced = order.placedAt ?? order.createdAt;
     const orderDate =
@@ -252,6 +271,7 @@ export async function createInternationalShipment(
       order_items: orderItemsPayload,
       payment_method: paymentMethod,
       sub_total: subTotalFromLines,
+      shipping_charges: shippingRupees,
       length: 10,
       breadth: 10,
       height: 10,
@@ -292,6 +312,15 @@ export async function createInternationalShipment(
       return { success: false, error: msg, code: "SHIPROCKET_CREATE" };
     }
 
+    if (res.data && typeof res.data === "object") {
+      const rd = res.data as Record<string, unknown>;
+      if (rd.success === false || rd.success === 0) {
+        const msg = formatShiprocketApiMessage(res.data, res.status);
+        logger.warn("shiprocket_create_declined", { orderNumber: order.orderNumber, msg });
+        return { success: false, error: msg || "Shiprocket declined order creation", code: "SHIPROCKET_CREATE" };
+      }
+    }
+
     const created = extractAdhocCreateResult(res.data);
     let waybill = created.awbCode;
     if (!waybill && created.shipmentId !== undefined) {
@@ -300,14 +329,19 @@ export async function createInternationalShipment(
       waybill = assigned.data.awb;
     }
     if (!waybill) {
+      const rootMsg =
+        res.data && typeof res.data === "object" && typeof (res.data as Record<string, unknown>).message === "string"
+          ? String((res.data as Record<string, unknown>).message)
+          : "";
       logger.warn("shiprocket_create_parse", {
         orderNumber: order.orderNumber,
-        bodyKeys: res.data && typeof res.data === "object" ? Object.keys(res.data as object) : []
+        bodyKeys: res.data && typeof res.data === "object" ? Object.keys(res.data as object) : [],
+        rootMsg: rootMsg.slice(0, 500)
       });
+      const hint = rootMsg ? ` Shiprocket said: ${rootMsg}` : "";
       return {
         success: false,
-        error:
-          "Shiprocket accepted the order but returned no AWB and no shipment_id. Check pickup name, KYC, wallet, and duplicate order_id in Shiprocket.",
+        error: `Shiprocket returned no AWB and no shipment_id in the API response.${hint} Check Shiprocket dashboard for this order id, pickup name (${pickupLocation}), KYC, wallet, and duplicate order_id.`,
         code: "SHIPROCKET_PARSE"
       };
     }
