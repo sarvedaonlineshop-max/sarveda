@@ -173,14 +173,52 @@ export async function createInternationalShipment(
   }
 }
 
+/** Shiprocket `shipment_status` / `track_status` numeric codes (API docs → Tracking). */
+const SHIPROCKET_TRACK_STATUS_NUM: Record<number, string> = {
+  6: "SHIPPED",
+  7: "DELIVERED",
+  8: "CANCELED",
+  9: "RTO INITIATED",
+  10: "RTO DELIVERED",
+  12: "LOST",
+  13: "PICKUP ERROR",
+  14: "RTO ACKNOWLEDGED",
+  15: "PICKUP RESCHEDULED",
+  16: "CANCELLATION REQUESTED",
+  17: "OUT FOR DELIVERY",
+  18: "IN TRANSIT",
+  19: "OUT FOR PICKUP"
+};
+
+function extractShiprocketTrackStatus(raw: unknown): string {
+  const r = raw as Record<string, unknown>;
+  const td = r.tracking_data as Record<string, unknown> | undefined;
+  const bucket = td && typeof td === "object" ? td : r;
+
+  const ss = bucket.shipment_status ?? bucket.track_status;
+  if (typeof ss === "number") {
+    return SHIPROCKET_TRACK_STATUS_NUM[ss] ?? String(ss);
+  }
+  if (typeof ss === "string" && ss.trim()) return ss.trim();
+
+  if (typeof r.tracking_status === "string" && r.tracking_status.trim()) return r.tracking_status.trim();
+  if (typeof r.shipment_status === "string" && r.shipment_status.trim()) return r.shipment_status.trim();
+
+  return "UNKNOWN";
+}
+
 export async function trackShipment(waybill: string): Promise<ApiOk<{ status: string; raw: unknown }> | ApiErr> {
   const auth = await getToken();
   if (!auth.success) return auth;
   const wb = waybill.trim();
   if (!wb) return { success: false, error: "Waybill required", code: "BAD_REQUEST" };
   try {
-    const res = await axios.get(`${SHIPROCKET_API}/courier/track/shipment/${encodeURIComponent(wb)}`, {
-      headers: { Authorization: `Bearer ${auth.data.token}` },
+    // Official: GET .../courier/track/awb/{awb_code} — we store AWB, not Shiprocket shipment_id.
+    const res = await axios.get(`${SHIPROCKET_API}/courier/track/awb/${encodeURIComponent(wb)}`, {
+      headers: {
+        Authorization: `Bearer ${auth.data.token}`,
+        "Content-Type": "application/json"
+      },
       timeout: 20_000,
       validateStatus: () => true
     });
@@ -188,12 +226,7 @@ export async function trackShipment(waybill: string): Promise<ApiOk<{ status: st
       return mapAxiosErr({ response: res, message: "track" }, "SHIPROCKET_TRACK");
     }
     const raw = res.data;
-    const status =
-      typeof (raw as { tracking_status?: string }).tracking_status === "string"
-        ? (raw as { tracking_status: string }).tracking_status
-        : typeof (raw as { shipment_status?: string }).shipment_status === "string"
-          ? (raw as { shipment_status: string }).shipment_status
-          : "UNKNOWN";
+    const status = extractShiprocketTrackStatus(raw);
     return { success: true, data: { status, raw } };
   } catch (err) {
     return mapAxiosErr(err, "SHIPROCKET_TRACK");
