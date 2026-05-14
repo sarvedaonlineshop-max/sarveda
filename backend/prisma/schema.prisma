@@ -414,6 +414,8 @@ model Shipment {
   status           ShipmentStatus  @default(CREATED)
   deliveredAt      DateTime?
   rtoAt            DateTime?
+  // Shiprocket / carrier ids from last successful create (for cancel).
+  carrierMeta      Json?
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
   order            Order           @relation(fields: [orderId], references: [id])

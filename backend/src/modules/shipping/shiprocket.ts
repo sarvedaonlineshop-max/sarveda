@@ -1,4 +1,5 @@
 import axios, { type AxiosError } from "axios";
+import type { Prisma } from "@prisma/client";
 
 import { shippingEnv } from "../../config/env";
 import { logger } from "../../config/logger";
@@ -201,6 +202,49 @@ async function fetchPickupLocationNames(token: string): Promise<string[]> {
   }
 }
 
+/** Best-effort Shiprocket ids from create/adhoc JSON (for cancel). */
+export function extractShiprocketCarrierMeta(raw: unknown): Prisma.JsonObject {
+  let shipmentId: number | undefined;
+  let orderId: number | undefined;
+  const seen = new WeakSet<object>();
+
+  function consider(key: string, val: unknown): void {
+    const k = key.toLowerCase().replace(/-/g, "_");
+    if (k === "shipment_id" || k === "shipmentid") {
+      if (typeof val === "number" && Number.isFinite(val)) shipmentId = val;
+      else if (typeof val === "string" && /^\d+$/.test(val.trim())) shipmentId = parseInt(val.trim(), 10);
+    }
+    if (k === "order_id" || k === "channel_order_id" || k === "channel_orderid") {
+      if (typeof val === "number" && Number.isFinite(val)) orderId = val;
+      else if (typeof val === "string" && /^\d+$/.test(val.trim())) orderId = parseInt(val.trim(), 10);
+    }
+  }
+
+  function visit(node: unknown, depth: number): void {
+    if (depth > 14 || node === null || node === undefined) return;
+    if (typeof node !== "object") return;
+    if (seen.has(node as object)) return;
+    seen.add(node as object);
+    if (Array.isArray(node)) {
+      for (const el of node) visit(el, depth + 1);
+      return;
+    }
+    const obj = node as Record<string, unknown>;
+    for (const [key, val] of Object.entries(obj)) {
+      consider(key, val);
+    }
+    for (const val of Object.values(obj)) {
+      if (val && typeof val === "object") visit(val, depth + 1);
+    }
+  }
+
+  visit(raw, 0);
+  const out: Prisma.JsonObject = {};
+  if (shipmentId !== undefined) out.shiprocketShipmentId = shipmentId;
+  if (orderId !== undefined) out.shiprocketOrderId = orderId;
+  return out;
+}
+
 /** Shiprocket assign/awb nests AWB under `response`, `data`, or `awb_assign[]` depending on version. */
 function extractAssignAwbCode(raw: unknown): string | undefined {
   const fromMain = extractAdhocCreateResult(raw);
@@ -259,7 +303,7 @@ async function assignAwbForShipment(token: string, shipmentId: number): Promise<
 export async function createInternationalShipment(
   order: OrderWithShippingContext,
   options?: { pickupLocationName?: string }
-): Promise<ApiOk<{ waybill: string; trackingUrl: string }> | ApiErr> {
+): Promise<ApiOk<{ waybill: string; trackingUrl: string; carrierMeta: Prisma.JsonObject | null }> | ApiErr> {
   const auth = await getToken();
   if (!auth.success) return auth;
   const ship = order.addresses.find((a) => a.type === "SHIPPING");
@@ -476,7 +520,12 @@ export async function createInternationalShipment(
       };
     }
     const trackingUrl = `https://shiprocket.co/tracking/${waybill}`;
-    return { success: true, data: { waybill, trackingUrl } };
+    const carrierMetaFromResponse = extractShiprocketCarrierMeta(res.data);
+    const carrierMeta: Prisma.JsonObject = { ...carrierMetaFromResponse };
+    if (created.shipmentId !== undefined) carrierMeta.shiprocketShipmentId = created.shipmentId;
+    carrierMeta.awbCode = waybill;
+    const carrierMetaOut = Object.keys(carrierMeta).length > 0 ? carrierMeta : null;
+    return { success: true, data: { waybill, trackingUrl, carrierMeta: carrierMetaOut } };
   } catch (err) {
     return mapAxiosErr(err, "SHIPROCKET_CREATE");
   }
@@ -542,28 +591,91 @@ export async function trackShipment(waybill: string): Promise<ApiOk<{ status: st
   }
 }
 
-export async function cancelShipment(waybill: string): Promise<ApiOk<{ cancelled: boolean }> | ApiErr> {
+function parseShiprocketMetaForCancel(carrierMeta: Prisma.JsonValue | null | undefined): { shipmentId?: number } {
+  if (carrierMeta === null || carrierMeta === undefined) return {};
+  if (typeof carrierMeta !== "object" || Array.isArray(carrierMeta)) return {};
+  const o = carrierMeta as Record<string, unknown>;
+  const sid = o.shiprocketShipmentId;
+  const shipmentId =
+    typeof sid === "number" && Number.isFinite(sid)
+      ? sid
+      : typeof sid === "string" && /^\d+$/.test(sid.trim())
+        ? parseInt(sid.trim(), 10)
+        : undefined;
+  return { shipmentId };
+}
+
+export async function cancelShipment(
+  waybill: string,
+  carrierMeta?: Prisma.JsonValue | null
+): Promise<ApiOk<{ cancelled: boolean }> | ApiErr> {
   const auth = await getToken();
   if (!auth.success) return auth;
   const wb = waybill.trim();
   if (!wb) return { success: false, error: "Waybill required", code: "BAD_REQUEST" };
+  const { shipmentId } = parseShiprocketMetaForCancel(carrierMeta);
+  const token = auth.data.token;
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json" as const
+  };
+
+  type Attempt = { label: string; url: string; body: unknown };
+  const attempts: Attempt[] = [];
+  if (shipmentId !== undefined) {
+    attempts.push({ label: "ids", url: `${SHIPROCKET_API}/orders/cancel`, body: { ids: [shipmentId] } });
+  }
+  attempts.push(
+    { label: "awb", url: `${SHIPROCKET_API}/orders/cancel/shipment/awb`, body: { awb: wb } },
+    { label: "awb_code", url: `${SHIPROCKET_API}/orders/cancel/shipment/awb`, body: { awb_code: wb } },
+    { label: "awb_alt", url: `${SHIPROCKET_API}/orders/cancel/awb`, body: { awb: wb } }
+  );
+
   try {
-    const res = await axios.post(
-      `${SHIPROCKET_API}/orders/cancel/shipment/awb`,
-      { awb: wb },
-      {
-        headers: {
-          Authorization: `Bearer ${auth.data.token}`,
-          "Content-Type": "application/json"
-        },
-        timeout: 20_000,
+    let lastStatus = 0;
+    let lastBody: unknown;
+    for (const a of attempts) {
+      const res = await axios.post(a.url, a.body, {
+        headers,
+        timeout: 25_000,
         validateStatus: () => true
+      });
+      lastStatus = res.status;
+      lastBody = res.data;
+      if (res.status < 400) {
+        const data = res.data;
+        if (data && typeof data === "object") {
+          const r = data as Record<string, unknown>;
+          if (r.success === false || r.success === 0) {
+            const msg = formatShiprocketApiMessage(data, res.status);
+            logger.warn("shiprocket_cancel_declined", { waybill, attempt: a.label, msg });
+            continue;
+          }
+        }
+        logger.info("shiprocket_cancel_ok", { waybill, attempt: a.label, shipmentId });
+        return { success: true, data: { cancelled: true } };
       }
-    );
-    if (res.status >= 400) {
-      return mapAxiosErr({ response: res, message: "cancel" }, "SHIPROCKET_CANCEL");
+      if (res.status !== 404) {
+        logger.warn("shiprocket_cancel_http", {
+          waybill,
+          attempt: a.label,
+          status: res.status,
+          msg: formatShiprocketApiMessage(res.data, res.status)
+        });
+      }
     }
-    return { success: true, data: { cancelled: true } };
+    logger.warn("shiprocket_cancel_exhausted", {
+      waybill,
+      lastStatus,
+      shipmentId,
+      msg: typeof lastBody === "object" ? formatShiprocketApiMessage(lastBody, lastStatus) : String(lastBody)
+    });
+    return {
+      success: false,
+      error:
+        "Shiprocket could not cancel this shipment (404 or declined). If the AWB was never created in Shiprocket, remove the label locally from admin.",
+      code: "SHIPROCKET_CANCEL"
+    };
   } catch (err) {
     return mapAxiosErr(err, "SHIPROCKET_CANCEL");
   }

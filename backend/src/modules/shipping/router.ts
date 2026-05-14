@@ -1,6 +1,7 @@
-import type { OrderStatus, PaymentProvider, PaymentStatus } from "@prisma/client";
+import type { OrderStatus, PaymentProvider, PaymentStatus, Prisma } from "@prisma/client";
 
 import { prisma } from "../../config/db";
+import { shippingEnv } from "../../config/env";
 import { logger } from "../../config/logger";
 
 import * as delhivery from "./delhivery";
@@ -46,17 +47,32 @@ function primaryPaymentProvider(order: OrderWithShippingContext): PaymentProvide
   return pay?.provider ?? null;
 }
 
-const LABEL_ORDER_STATUSES = new Set<OrderStatus>(["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"]);
+/** Creating a new carrier label (Shiprocket / Delhivery) — not once already shipped/delivered. */
+const CREATE_SHIPMENT_ORDER_STATUSES = new Set<OrderStatus>(["PAID", "PROCESSING", "PACKED"]);
 
-/** Shared rule: labels + tracking sync require paid/captured orders (not unpaid/cancelled/refunded). */
-export function assertOrderEligibleForCarrierLabels(order: {
+/** Pulling tracking updates from carrier APIs (includes shipped/delivered while still reconcilable). */
+const TRACK_SYNC_ORDER_STATUSES = new Set<OrderStatus>(["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"]);
+
+function assertPaymentCaptured(order: { paymentStatus: PaymentStatus }): { ok: true } | { ok: false; error: string; code: string } {
+  if (order.paymentStatus !== "CAPTURED") {
+    return {
+      ok: false,
+      error: `Payment must be captured before shipping (current: ${order.paymentStatus}). Use admin Sync payment (Razorpay) if the gateway shows paid.`,
+      code: "PAYMENT_NOT_CAPTURED"
+    };
+  }
+  return { ok: true };
+}
+
+/** New AWB / pickup booking — paid pipeline only, before ship-complete states. */
+export function assertOrderEligibleForCreatingShipment(order: {
   status: OrderStatus;
   paymentStatus: PaymentStatus;
 }): { ok: true } | { ok: false; error: string; code: string } {
   if (order.status === "CANCELLED" || order.status === "REFUNDED") {
     return {
       ok: false,
-      error: "Cancelled or refunded orders cannot be shipped.",
+      error: "Cancelled or refunded orders cannot create carrier labels.",
       code: "ORDER_STATE"
     };
   }
@@ -67,21 +83,43 @@ export function assertOrderEligibleForCarrierLabels(order: {
       code: "ORDER_UNPAID"
     };
   }
-  if (!LABEL_ORDER_STATUSES.has(order.status)) {
+  if (!CREATE_SHIPMENT_ORDER_STATUSES.has(order.status)) {
     return {
       ok: false,
-      error: `Order status ${order.status} does not allow creating carrier labels.`,
+      error: `New labels can only be created for Paid, Processing, or Packed orders (current: ${order.status}). For shipped or delivered orders, use tracking sync only.`,
       code: "ORDER_STATE"
     };
   }
-  if (order.paymentStatus !== "CAPTURED") {
+  return assertPaymentCaptured(order);
+}
+
+/** Tracking sync from carrier (Shiprocket / Delhivery) — broader than label creation. */
+export function assertOrderEligibleForTrackingSync(order: {
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+}): { ok: true } | { ok: false; error: string; code: string } {
+  if (order.status === "CANCELLED" || order.status === "REFUNDED") {
     return {
       ok: false,
-      error: `Payment must be captured before shipping (current: ${order.paymentStatus}). Use admin Sync payment (Razorpay) if the gateway shows paid.`,
-      code: "PAYMENT_NOT_CAPTURED"
+      error: "Cancelled or refunded orders cannot sync carrier tracking.",
+      code: "ORDER_STATE"
     };
   }
-  return { ok: true };
+  if (order.status === "PENDING_PAYMENT") {
+    return {
+      ok: false,
+      error: "Unpaid orders cannot sync carrier tracking.",
+      code: "ORDER_UNPAID"
+    };
+  }
+  if (!TRACK_SYNC_ORDER_STATUSES.has(order.status)) {
+    return {
+      ok: false,
+      error: `Order status ${order.status} does not allow carrier tracking sync.`,
+      code: "ORDER_STATE"
+    };
+  }
+  return assertPaymentCaptured(order);
 }
 
 export function selectCourier(order: OrderWithShippingContext): CourierChoice {
@@ -99,11 +137,13 @@ export function selectCourier(order: OrderWithShippingContext): CourierChoice {
   if (grams > 5000 && isZoneAPincode(pin)) {
     return "DELHIVERY";
   }
-  if (order.grandTotalInPaise > 300_000 && isMetroCity(city)) {
-    return "BLUEDART_STUB";
-  }
-  if (provider === "COD" && !isMetroCity(city)) {
-    return "DTDC_STUB";
+  if (!shippingEnv.SHIPPING_DISABLE_STUBS) {
+    if (order.grandTotalInPaise > 300_000 && isMetroCity(city)) {
+      return "BLUEDART_STUB";
+    }
+    if (provider === "COD" && !isMetroCity(city)) {
+      return "DTDC_STUB";
+    }
   }
   return "SHIPROCKET_DOMESTIC";
 }
@@ -181,7 +221,7 @@ export async function autoSelectAndCreate(
     return { success: false, error: "Order not found", code: "NOT_FOUND" };
   }
 
-  const eligible = assertOrderEligibleForCarrierLabels(order);
+  const eligible = assertOrderEligibleForCreatingShipment(order);
   if (!eligible.ok) {
     return { success: false, error: eligible.error, code: eligible.code };
   }
@@ -218,12 +258,18 @@ export async function autoSelectAndCreate(
   try {
     if (choice === "BLUEDART_STUB") {
       const { waybill, trackingUrl } = stubWaybill("STUB-BD", order.orderNumber);
-      await persistShipment(order.id, "Bluedart", waybill, trackingUrl);
+      await persistShipment(order.id, "Bluedart", waybill, trackingUrl, undefined, {
+        stub: true,
+        kind: "BLUEDART_ROUTING_PLACEHOLDER"
+      });
       return { success: true, data: { courier: "Bluedart", waybill, trackingUrl } };
     }
     if (choice === "DTDC_STUB") {
       const { waybill, trackingUrl } = stubWaybill("STUB-DTDC", order.orderNumber);
-      await persistShipment(order.id, "DTDC", waybill, trackingUrl);
+      await persistShipment(order.id, "DTDC", waybill, trackingUrl, undefined, {
+        stub: true,
+        kind: "DTDC_ROUTING_PLACEHOLDER"
+      });
       return { success: true, data: { courier: "DTDC", waybill, trackingUrl } };
     }
 
@@ -260,7 +306,8 @@ export async function autoSelectAndCreate(
         "Shiprocket International",
         created.data.waybill,
         created.data.trackingUrl,
-        shiprocketPickup!.pickupLocationId
+        shiprocketPickup!.pickupLocationId,
+        created.data.carrierMeta
       );
       return {
         success: true,
@@ -281,7 +328,8 @@ export async function autoSelectAndCreate(
       "Shiprocket",
       srDomestic.data.waybill,
       srDomestic.data.trackingUrl,
-      shiprocketPickup!.pickupLocationId
+      shiprocketPickup!.pickupLocationId,
+      srDomestic.data.carrierMeta
     );
     return {
       success: true,
@@ -306,7 +354,8 @@ async function persistShipment(
   courier: string,
   waybill: string,
   trackingUrl: string,
-  pickupLocationId?: string | null
+  pickupLocationId?: string | null,
+  carrierMeta?: Prisma.InputJsonValue | null
 ): Promise<void> {
   await prisma.$transaction(async (tx) => {
     await tx.shipment.create({
@@ -316,7 +365,8 @@ async function persistShipment(
         awb: waybill,
         trackingUrl,
         status: "CREATED",
-        ...(pickupLocationId ? { pickupLocationId } : {})
+        ...(pickupLocationId ? { pickupLocationId } : {}),
+        ...(carrierMeta ? { carrierMeta } : {})
       }
     });
     await tx.order.update({

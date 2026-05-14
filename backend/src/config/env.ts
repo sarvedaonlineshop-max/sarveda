@@ -30,12 +30,13 @@ const shippingEnvSchema = z.object({
     .string()
     .default("Primary")
     .transform((s) => s.trim() || "Primary"),
+  SHIPPING_ORIGIN_PINCODE: z.string().default("").transform((s) => s.trim()),
   /** Warehouse / pickup pincode for Shiprocket domestic quotes */
-  SHIPPING_ORIGIN_PINCODE: z
+  /** When true, metro/COD stub couriers are skipped; domestic uses Shiprocket (or real Delhivery when rules match). */
+  SHIPPING_DISABLE_STUBS: z
     .string()
-    .default("560001")
-    .transform((s) => s.trim())
-    .refine((s) => /^\d{6}$/.test(s), { message: "SHIPPING_ORIGIN_PINCODE must be 6 digits" })
+    .default("")
+    .transform((s) => ["1", "true", "yes"].includes(s.trim().toLowerCase()))
 });
 
 export type ShippingEnv = z.infer<typeof shippingEnvSchema>;
@@ -46,5 +47,6 @@ export const shippingEnv: ShippingEnv = shippingEnvSchema.parse({
   SHIPROCKET_EMAIL: process.env.SHIPROCKET_EMAIL,
   SHIPROCKET_PASSWORD: process.env.SHIPROCKET_PASSWORD,
   SHIPROCKET_PICKUP_LOCATION: process.env.SHIPROCKET_PICKUP_LOCATION,
-  SHIPPING_ORIGIN_PINCODE: process.env.SHIPPING_ORIGIN_PINCODE
+  SHIPPING_ORIGIN_PINCODE: process.env.SHIPPING_ORIGIN_PINCODE,
+  SHIPPING_DISABLE_STUBS: process.env.SHIPPING_DISABLE_STUBS
 });

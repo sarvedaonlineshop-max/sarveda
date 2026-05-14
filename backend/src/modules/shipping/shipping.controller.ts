@@ -5,7 +5,7 @@ import { shippingEnv } from "../../config/env";
 import { prisma } from "../../config/db";
 
 import * as delhivery from "./delhivery";
-import { assertOrderEligibleForCarrierLabels } from "./router";
+import { assertOrderEligibleForTrackingSync } from "./router";
 import { orderBlocksCarrierSync, syncTrackingByWaybill } from "./orderLifecycle";
 import * as shiprocket from "./shiprocket";
 import { computeVariantShippingTotal, resolveRateCountryCode, zoneFromCountry } from "./shippingRates.service";
@@ -188,7 +188,7 @@ export async function syncOrderShipments(req: Request, res: Response, next: Next
       });
       return;
     }
-    const shipCheck = assertOrderEligibleForCarrierLabels(order);
+    const shipCheck = assertOrderEligibleForTrackingSync(order);
     if (!shipCheck.ok) {
       res.status(400).json({ success: false, error: shipCheck.error, code: shipCheck.code });
       return;
@@ -249,15 +249,30 @@ export async function cancelWaybillAdmin(req: Request, res: Response, next: Next
       return;
     }
     const c = row.courier.toLowerCase();
-    if (c.includes("stub")) {
-      res.status(400).json({
-        success: false,
-        error: "Cannot cancel stub shipments",
-        code: "STUB_SHIPMENT"
+    const wbNorm = wb.trim();
+    const isStubWaybill = /^STUB-/i.test(wbNorm);
+
+    if (c.includes("stub") || isStubWaybill) {
+      await prisma.$transaction(async (tx) => {
+        await tx.shipment.delete({ where: { id: row.id } });
+        const remaining = await tx.shipment.count({ where: { orderId: row.orderId } });
+        if (remaining === 0) {
+          await tx.order.update({
+            where: { id: row.orderId },
+            data: { fulfillmentStatus: "UNFULFILLED" }
+          });
+        }
+      });
+      res.json({
+        success: true,
+        data: { cancelled: true, waybill: wb, orderId: row.orderId, localOnly: true, reason: "stub_or_placeholder_awb" }
       });
       return;
     }
-    const cancelled = c.includes("delhivery") ? await delhivery.cancelShipment(wb) : await shiprocket.cancelShipment(wb);
+
+    const cancelled = c.includes("delhivery")
+      ? await delhivery.cancelShipment(wb)
+      : await shiprocket.cancelShipment(wb, row.carrierMeta);
     if (!cancelled.success) {
       res.status(400).json(cancelled);
       return;

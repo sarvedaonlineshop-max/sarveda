@@ -29,6 +29,7 @@ router.patch(
 router.delete("/pickup-locations/:id", pickupLocations.deletePickupLocation);
 
 router.get("/dashboard", admin.dashboard);
+router.get("/orders/export/pdf", admin.ordersExportPdf);
 router.get("/orders", admin.ordersList);
 router.get("/orders/:id/invoice", admin.orderInvoice);
 router.get("/orders/:id", admin.orderDetail);

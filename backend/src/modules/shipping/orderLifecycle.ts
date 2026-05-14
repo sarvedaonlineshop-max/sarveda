@@ -4,7 +4,7 @@ import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 
 import * as delhivery from "./delhivery";
-import { assertOrderEligibleForCarrierLabels, autoSelectAndCreate } from "./router";
+import { assertOrderEligibleForTrackingSync, autoSelectAndCreate } from "./router";
 import * as shiprocket from "./shiprocket";
 
 const BLOCKED_TRACK_ORDER: OrderStatus[] = ["CANCELLED", "REFUNDED", "PENDING_PAYMENT"];
@@ -95,7 +95,7 @@ export async function syncTrackingByWaybill(waybill: string): Promise<
     };
   }
 
-  const payOk = assertOrderEligibleForCarrierLabels(shipment.order);
+  const payOk = assertOrderEligibleForTrackingSync(shipment.order);
   if (!payOk.ok) {
     return { success: false, error: payOk.error, code: payOk.code };
   }

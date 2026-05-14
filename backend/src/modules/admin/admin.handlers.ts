@@ -1,5 +1,6 @@
 import { AddressType, OrderStatus } from "@prisma/client";
 import type { NextFunction, Request, Response } from "express";
+import PDFDocument from "pdfkit";
 import { z } from "zod";
 
 import { prisma } from "../../config/db";
@@ -28,16 +29,98 @@ function addUtcDays(base: Date, days: number): Date {
   return x;
 }
 
+function addUtcMonths(base: Date, months: number): Date {
+  const x = new Date(base);
+  x.setUTCMonth(x.getUTCMonth() + months);
+  return x;
+}
+
+function buildDailySeries(
+  startDay: Date,
+  dayCount: number,
+  orders: { grandTotalInPaise: number; createdAt: Date }[]
+): Array<{ date: string; revenueInPaise: number }> {
+  const byDay = new Map<string, number>();
+  for (let i = 0; i < dayCount; i++) {
+    const k = addUtcDays(startDay, i).toISOString().slice(0, 10);
+    byDay.set(k, 0);
+  }
+  for (const o of orders) {
+    const key = o.createdAt.toISOString().slice(0, 10);
+    if (byDay.has(key)) {
+      byDay.set(key, (byDay.get(key) ?? 0) + o.grandTotalInPaise);
+    }
+  }
+  return [...byDay.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, revenueInPaise]) => ({ date, revenueInPaise }));
+}
+
+function buildMonthlySeries(
+  anchor: Date,
+  monthCount: number,
+  orders: { grandTotalInPaise: number; createdAt: Date }[]
+): Array<{ month: string; revenueInPaise: number }> {
+  const keys: string[] = [];
+  for (let i = monthCount - 1; i >= 0; i--) {
+    const d = addUtcMonths(new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth(), 1)), -i);
+    keys.push(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`);
+  }
+  const byMonth = new Map<string, number>();
+  for (const k of keys) byMonth.set(k, 0);
+  for (const o of orders) {
+    const d = o.createdAt;
+    const k = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    if (byMonth.has(k)) {
+      byMonth.set(k, (byMonth.get(k) ?? 0) + o.grandTotalInPaise);
+    }
+  }
+  return keys.map((month) => ({ month, revenueInPaise: byMonth.get(month) ?? 0 }));
+}
+
 export async function dashboard(_req: Request, res: Response, next: NextFunction) {
   try {
     const now = new Date();
     const today = startOfUtcDay(now);
+    const tomorrow = addUtcDays(today, 1);
     const weekStart = addUtcDays(today, -6);
     const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    const chart7Start = addUtcDays(today, -6);
+    const chart30Start = addUtcDays(today, -29);
+    const chart12mStart = addUtcMonths(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)), -11);
 
-    const [revenueAgg, countsToday, countsWeek, countsMonth, productCounts, recentOrders] = await Promise.all([
+    const revenueWhere = { deletedAt: null, status: { in: revenueStatuses } };
+
+    const [
+      revenueAgg,
+      revenueTodayAgg,
+      revenueWeekAgg,
+      revenueMonthAgg,
+      countsToday,
+      countsWeek,
+      countsMonth,
+      productCounts,
+      recentOrders,
+      ordersForChart7,
+      ordersForChart30,
+      ordersForChart12m,
+      velocityItems,
+      activeProductSample
+    ] = await Promise.all([
       prisma.order.aggregate({
-        where: { status: { in: revenueStatuses }, deletedAt: null },
+        where: revenueWhere,
+        _sum: { grandTotalInPaise: true }
+      }),
+      prisma.order.aggregate({
+        where: { ...revenueWhere, createdAt: { gte: today, lt: tomorrow } },
+        _sum: { grandTotalInPaise: true }
+      }),
+      prisma.order.aggregate({
+        where: { ...revenueWhere, createdAt: { gte: weekStart } },
+        _sum: { grandTotalInPaise: true }
+      }),
+      prisma.order.aggregate({
+        where: { ...revenueWhere, createdAt: { gte: monthStart } },
         _sum: { grandTotalInPaise: true }
       }),
       prisma.order.count({
@@ -66,6 +149,38 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
           grandTotalInPaise: true,
           createdAt: true
         }
+      }),
+      prisma.order.findMany({
+        where: { ...revenueWhere, createdAt: { gte: chart7Start } },
+        select: { grandTotalInPaise: true, createdAt: true }
+      }),
+      prisma.order.findMany({
+        where: { ...revenueWhere, createdAt: { gte: chart30Start } },
+        select: { grandTotalInPaise: true, createdAt: true }
+      }),
+      prisma.order.findMany({
+        where: { ...revenueWhere, createdAt: { gte: chart12mStart } },
+        select: { grandTotalInPaise: true, createdAt: true }
+      }),
+      prisma.orderItem.findMany({
+        where: {
+          order: {
+            deletedAt: null,
+            status: { in: revenueStatuses },
+            createdAt: { gte: addUtcDays(today, -30) }
+          },
+          variant: { productRel: { deletedAt: null } }
+        },
+        select: {
+          qtyOrdered: true,
+          variant: { select: { productRel: { select: { id: true, name: true } } } }
+        },
+        take: 12_000
+      }),
+      prisma.product.findMany({
+        where: { deletedAt: null, status: "ACTIVE" },
+        select: { id: true, name: true },
+        take: 400
       })
     ]);
 
@@ -88,29 +203,52 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
     });
     const lowStock = inventoryCandidates.filter((inv) => inv.onHand <= inv.lowStockThreshold).slice(0, 25);
 
-    const chartStart = addUtcDays(today, -6);
-    const byDay = new Map<string, number>();
-    for (let i = 0; i < 7; i++) {
-      const k = addUtcDays(chartStart, i).toISOString().slice(0, 10);
-      byDay.set(k, 0);
-    }
+    const revenueByDayLast7 = buildDailySeries(chart7Start, 7, ordersForChart7);
+    const revenueByDayLast30 = buildDailySeries(chart30Start, 30, ordersForChart30);
+    const revenueByMonthLast12 = buildMonthlySeries(now, 12, ordersForChart12m);
 
-    const ordersForChart = await prisma.order.findMany({
-      where: {
-        deletedAt: null,
-        status: { in: revenueStatuses },
-        createdAt: { gte: chartStart }
-      },
-      select: { grandTotalInPaise: true, createdAt: true }
-    });
-    for (const o of ordersForChart) {
-      const key = o.createdAt.toISOString().slice(0, 10);
-      byDay.set(key, (byDay.get(key) ?? 0) + o.grandTotalInPaise);
+    const byProduct = new Map<string, { name: string; units: number }>();
+    for (const it of velocityItems) {
+      const p = it.variant?.productRel;
+      if (!p) continue;
+      const cur = byProduct.get(p.id) ?? { name: p.name, units: 0 };
+      cur.units += it.qtyOrdered;
+      byProduct.set(p.id, cur);
     }
+    const ranked = [...byProduct.entries()].sort((a, b) => b[1].units - a[1].units);
+    const fastMovers = ranked.slice(0, 6).map(([productId, v]) => ({
+      productId,
+      name: v.name,
+      unitsSold: v.units
+    }));
+    const slowMovers = activeProductSample
+      .filter((p) => (byProduct.get(p.id)?.units ?? 0) < 2)
+      .slice(0, 6)
+      .map((p) => ({
+        productId: p.id,
+        name: p.name,
+        unitsSold: byProduct.get(p.id)?.units ?? 0
+      }));
 
-    const revenueByDayLast7 = [...byDay.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, revenueInPaise]) => ({ date, revenueInPaise }));
+    const insightTips: string[] = [];
+    if (lowStock.length) {
+      insightTips.push(
+        `${lowStock.length} active SKU${lowStock.length === 1 ? "" : "s"} ${lowStock.length === 1 ? "is" : "are"} at or below the low-stock threshold — prioritize replenishment.`
+      );
+    }
+    if (fastMovers[0]) {
+      insightTips.push(
+        `${fastMovers[0].name} led unit sales in the last 30 days — keep buffer stock and spotlight it on the homepage.`
+      );
+    }
+    if (slowMovers[0]) {
+      insightTips.push(
+        `${slowMovers[0].name} moved fewer than 2 units in the last 30 days — review pricing, merchandising, or bundle it with a fast mover.`
+      );
+    }
+    if (insightTips.length === 0) {
+      insightTips.push("Sales signals look balanced — continue monitoring weekly velocity and inventory coverage.");
+    }
 
     const productsByStatus = {
       active: 0,
@@ -127,6 +265,11 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
       success: true,
       data: {
         totalRevenueInPaise: revenueAgg._sum.grandTotalInPaise ?? 0,
+        revenueInPaise: {
+          today: revenueTodayAgg._sum.grandTotalInPaise ?? 0,
+          last7Days: revenueWeekAgg._sum.grandTotalInPaise ?? 0,
+          thisMonth: revenueMonthAgg._sum.grandTotalInPaise ?? 0
+        },
         ordersCount: {
           today: countsToday,
           thisWeek: countsWeek,
@@ -143,7 +286,14 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
           productName: inv.variant.productRel.name,
           productSlug: inv.variant.productRel.slug
         })),
-        revenueByDayLast7
+        revenueByDayLast7,
+        revenueByDayLast30,
+        revenueByMonthLast12,
+        insights: {
+          fastMovers,
+          slowMovers,
+          tips: insightTips
+        }
       }
     });
   } catch (err) {
@@ -151,18 +301,158 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
   }
 }
 
-type OrderBucket = "pending" | "paid" | "shipped" | "delivered" | "all";
+const ordersExportPdfQuery = z.object({
+  range: z.enum(["today", "week", "month", "year"])
+});
 
-function bucketWhere(bucket: OrderBucket): { status?: { in: OrderStatus[] } } {
+export async function ordersExportPdf(req: Request, res: Response, next: NextFunction) {
+  try {
+    const parsed = ordersExportPdfQuery.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({
+        success: false,
+        error: "range must be one of: today, week, month, year",
+        code: "VALIDATION_ERROR"
+      });
+      return;
+    }
+    const now = new Date();
+    const today = startOfUtcDay(now);
+    const range = parsed.data.range;
+    let from: Date;
+    let title: string;
+    switch (range) {
+      case "today":
+        from = today;
+        title = "Sarveda — Orders (today)";
+        break;
+      case "week":
+        from = addUtcDays(today, -6);
+        title = "Sarveda — Orders (last 7 days)";
+        break;
+      case "month":
+        from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+        title = "Sarveda — Orders (this calendar month)";
+        break;
+      case "year":
+        from = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+        title = `Sarveda — Orders (${now.getUTCFullYear()}, month-wise)`;
+        break;
+      default:
+        from = today;
+        title = "Sarveda — Orders";
+    }
+
+    const orders = await prisma.order.findMany({
+      where: { deletedAt: null, createdAt: { gte: from } },
+      orderBy: { createdAt: "desc" },
+      take: 4000,
+      select: {
+        orderNumber: true,
+        email: true,
+        status: true,
+        paymentStatus: true,
+        grandTotalInPaise: true,
+        createdAt: true,
+        items: {
+          select: { nameSnapshot: true, qtyOrdered: true, lineTotalInPaise: true }
+        }
+      }
+    });
+
+    const doc = new PDFDocument({ margin: 48, size: "A4" });
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="sarveda-orders-${range}.pdf"`);
+    doc.pipe(res);
+
+    doc.fontSize(16).text(title, { align: "left" });
+    doc.moveDown(0.5);
+    doc.fontSize(9).fillColor("#555").text(`Generated ${now.toISOString()} · ${orders.length} orders`, {
+      align: "left"
+    });
+    doc.fillColor("#000");
+    doc.moveDown();
+
+    if (range === "year") {
+      const buckets = new Map<string, typeof orders>();
+      for (const o of orders) {
+        const mk = `${o.createdAt.getUTCFullYear()}-${String(o.createdAt.getUTCMonth() + 1).padStart(2, "0")}`;
+        const list = buckets.get(mk) ?? [];
+        list.push(o);
+        buckets.set(mk, list);
+      }
+      const months = [...buckets.keys()].sort();
+      for (const mk of months) {
+        const list = buckets.get(mk) ?? [];
+        const subtotal = list.reduce((s, o) => s + o.grandTotalInPaise, 0);
+        doc.fontSize(12).text(`Month ${mk}`, { underline: true });
+        doc.fontSize(9).text(`${list.length} orders · ₹${(subtotal / 100).toLocaleString("en-IN")}`);
+        doc.moveDown(0.3);
+        for (const o of list) {
+          doc
+            .fontSize(8)
+            .text(
+              `${o.orderNumber}  ${o.status}  ${o.paymentStatus}  ₹${(o.grandTotalInPaise / 100).toLocaleString("en-IN")}  ${o.email}`
+            );
+        }
+        doc.moveDown();
+      }
+    } else {
+      for (const o of orders) {
+        const lines = o.items.map((i) => `${i.qtyOrdered}× ${i.nameSnapshot}`).join("; ");
+        doc
+          .fontSize(9)
+          .text(
+            `${o.orderNumber} · ${o.status} · ${o.paymentStatus} · ₹${(o.grandTotalInPaise / 100).toLocaleString("en-IN")} · ${o.createdAt.toISOString().slice(0, 10)}`
+          );
+        doc.fontSize(8).fillColor("#444").text(`${o.email} — ${lines}`, { width: 500 });
+        doc.fillColor("#000");
+        doc.moveDown(0.25);
+      }
+    }
+
+    doc.end();
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** Unpaid orders older than this are treated as abandoned checkout (separate from cancelled). */
+const ABANDON_CHECKOUT_MS = 48 * 60 * 60 * 1000;
+
+type OrderBucket =
+  | "all"
+  | "pending"
+  | "abandoned"
+  | "cancelled"
+  | "refunded"
+  | "paid"
+  | "shipped"
+  | "delivered";
+
+function bucketWhere(bucket: Exclude<OrderBucket, "all">, now: Date): Record<string, unknown> {
+  const abandonedCutoff = new Date(now.getTime() - ABANDON_CHECKOUT_MS);
   switch (bucket) {
     case "pending":
-      return { status: { in: ["PENDING_PAYMENT"] } };
+      return {
+        status: "PENDING_PAYMENT" as const,
+        createdAt: { gte: abandonedCutoff }
+      };
+    case "abandoned":
+      return {
+        status: "PENDING_PAYMENT" as const,
+        createdAt: { lt: abandonedCutoff }
+      };
+    case "cancelled":
+      return { status: "CANCELLED" as const };
+    case "refunded":
+      return { status: "REFUNDED" as const };
     case "paid":
       return { status: { in: ["PAID", "PROCESSING", "PACKED"] } };
     case "shipped":
-      return { status: { in: ["SHIPPED"] } };
+      return { status: "SHIPPED" as const };
     case "delivered":
-      return { status: { in: ["DELIVERED"] } };
+      return { status: "DELIVERED" as const };
     default:
       return {};
   }
@@ -173,14 +463,20 @@ export async function ordersList(req: Request, res: Response, next: NextFunction
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
     const skip = (page - 1) * limit;
-    const bucket = (req.query.bucket as OrderBucket) || "all";
-    const bWhere =
-      bucket === "pending" ||
-      bucket === "paid" ||
-      bucket === "shipped" ||
-      bucket === "delivered"
-        ? bucketWhere(bucket)
-        : {};
+    const now = new Date();
+    const rawBucket = String(req.query.bucket ?? "all");
+    const valid: OrderBucket[] = [
+      "all",
+      "pending",
+      "abandoned",
+      "cancelled",
+      "refunded",
+      "paid",
+      "shipped",
+      "delivered"
+    ];
+    const bucket: OrderBucket = valid.includes(rawBucket as OrderBucket) ? (rawBucket as OrderBucket) : "all";
+    const bWhere = bucket === "all" ? {} : bucketWhere(bucket, now);
 
     const where = { deletedAt: null as null, ...bWhere };
 
@@ -496,6 +792,49 @@ export async function patchOrderAddress(req: Request, res: Response, next: NextF
       });
       return;
     }
+    const mergedCountry = (body.country ?? addr.country).trim().toUpperCase();
+    const mergedPostal = (body.postalCode ?? addr.postalCode).trim();
+    const mergedPhone = (body.phone ?? addr.phone).trim();
+
+    if (mergedCountry === "IN") {
+      const pinDigits = mergedPostal.replace(/\D/g, "").slice(0, 6);
+      if (pinDigits.length !== 6) {
+        res.status(400).json({
+          success: false,
+          error: "Indian postal codes must be exactly 6 digits.",
+          code: "VALIDATION_ERROR"
+        });
+        return;
+      }
+      const phDigits = mergedPhone.replace(/\D/g, "");
+      if (phDigits.length < 10 || phDigits.length > 12) {
+        res.status(400).json({
+          success: false,
+          error: "Indian phone numbers should be 10–12 digits (including STD/series).",
+          code: "VALIDATION_ERROR"
+        });
+        return;
+      }
+    } else {
+      if (mergedPostal.length < 2 || mergedPostal.length > 20) {
+        res.status(400).json({
+          success: false,
+          error: "Postal code looks invalid for the selected country.",
+          code: "VALIDATION_ERROR"
+        });
+        return;
+      }
+      const phDigits = mergedPhone.replace(/\D/g, "");
+      if (phDigits.length < 8 || phDigits.length > 18) {
+        res.status(400).json({
+          success: false,
+          error: "Phone number looks too short or too long for the selected country.",
+          code: "VALIDATION_ERROR"
+        });
+        return;
+      }
+    }
+
     await prisma.orderAddress.update({
       where: { id: addr.id },
       data: {

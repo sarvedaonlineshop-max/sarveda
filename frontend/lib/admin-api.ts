@@ -26,6 +26,11 @@ async function adminFetch<T>(
 
 export type DashboardData = {
   totalRevenueInPaise: number;
+  revenueInPaise: {
+    today: number;
+    last7Days: number;
+    thisMonth: number;
+  };
   ordersCount: { today: number; thisWeek: number; thisMonth: number };
   productsByStatus: { active: number; draft: number; archived: number };
   recentOrders: Array<{
@@ -46,10 +51,39 @@ export type DashboardData = {
     productSlug: string;
   }>;
   revenueByDayLast7: Array<{ date: string; revenueInPaise: number }>;
+  revenueByDayLast30: Array<{ date: string; revenueInPaise: number }>;
+  revenueByMonthLast12: Array<{ month: string; revenueInPaise: number }>;
+  insights: {
+    fastMovers: Array<{ productId: string; name: string; unitsSold: number }>;
+    slowMovers: Array<{ productId: string; name: string; unitsSold: number }>;
+    tips: string[];
+  };
 };
 
 export function fetchAdminDashboard() {
   return adminFetch<DashboardData>("/api/admin/dashboard");
+}
+
+export async function downloadAdminOrdersPdf(range: "today" | "week" | "month" | "year") {
+  const url = `${getApiBase()}/api/admin/orders/export/pdf?range=${encodeURIComponent(range)}`;
+  const res = await fetch(url, { credentials: "include" });
+  if (!res.ok) {
+    let msg = `Export failed (${res.status})`;
+    try {
+      const j = (await res.json()) as { error?: string };
+      if (j.error) msg = j.error;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(msg);
+  }
+  const blob = await res.blob();
+  const href = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = href;
+  a.download = `sarveda-orders-${range}.pdf`;
+  a.click();
+  URL.revokeObjectURL(href);
 }
 
 export type OrdersListData = {
