@@ -680,6 +680,12 @@ function parseShiprocketMetaForCancel(carrierMeta: Prisma.JsonValue | null | und
   return { shipmentId };
 }
 
+/** True when Shiprocket/courier tracking reports voided / cancelled shipment. */
+export function isCarrierStatusCancelled(statusLabel: string): boolean {
+  const s = statusLabel.toUpperCase();
+  return s.includes("CANCEL") || s.includes("CANCELLATION");
+}
+
 export async function cancelShipment(
   waybill: string,
   carrierMeta?: Prisma.JsonValue | null

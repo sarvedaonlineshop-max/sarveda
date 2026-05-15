@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { shippingEnv } from "../../config/env";
 import { prisma } from "../../config/db";
+import { logger } from "../../config/logger";
 
 import * as delhivery from "./delhivery";
 import { assertOrderEligibleForTrackingSync } from "./router";
@@ -197,8 +198,23 @@ export async function track(req: Request, res: Response, next: NextFunction) {
 }
 
 const cancelWaybillBody = z.object({
-  waybill: z.string().min(4).max(64)
+  waybill: z.string().min(4).max(64),
+  /** Skip carrier API; remove Sarveda shipment row only (use when already cancelled in Shiprocket). */
+  localOnly: z.boolean().optional().default(false)
 });
+
+async function removeShipmentLabelLocally(orderId: string, shipmentId: string): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    await tx.shipment.delete({ where: { id: shipmentId } });
+    const remaining = await tx.shipment.count({ where: { orderId } });
+    if (remaining === 0) {
+      await tx.order.update({
+        where: { id: orderId },
+        data: { fulfillmentStatus: "UNFULFILLED", shippingLastError: null, shippingLastErrorAt: null }
+      });
+    }
+  });
+}
 
 export async function syncOrderShipments(req: Request, res: Response, next: NextFunction) {
   try {
@@ -275,6 +291,7 @@ export async function cancelWaybillAdmin(req: Request, res: Response, next: Next
       return;
     }
     const wb = parsed.data.waybill.trim();
+    const localOnly = parsed.data.localOnly === true;
     const row = await prisma.shipment.findFirst({
       where: { awb: wb },
       include: { order: true }
@@ -288,19 +305,25 @@ export async function cancelWaybillAdmin(req: Request, res: Response, next: Next
     const isStubWaybill = /^STUB-/i.test(wbNorm);
 
     if (c.includes("stub") || isStubWaybill) {
-      await prisma.$transaction(async (tx) => {
-        await tx.shipment.delete({ where: { id: row.id } });
-        const remaining = await tx.shipment.count({ where: { orderId: row.orderId } });
-        if (remaining === 0) {
-          await tx.order.update({
-            where: { id: row.orderId },
-            data: { fulfillmentStatus: "UNFULFILLED" }
-          });
-        }
-      });
+      await removeShipmentLabelLocally(row.orderId, row.id);
       res.json({
         success: true,
         data: { cancelled: true, waybill: wb, orderId: row.orderId, localOnly: true, reason: "stub_or_placeholder_awb" }
+      });
+      return;
+    }
+
+    if (localOnly) {
+      await removeShipmentLabelLocally(row.orderId, row.id);
+      res.json({
+        success: true,
+        data: {
+          cancelled: true,
+          waybill: wb,
+          orderId: row.orderId,
+          localOnly: true,
+          reason: "admin_local_only"
+        }
       });
       return;
     }
@@ -309,20 +332,33 @@ export async function cancelWaybillAdmin(req: Request, res: Response, next: Next
       ? await delhivery.cancelShipment(wb)
       : await shiprocket.cancelShipment(wb, row.carrierMeta);
     if (!cancelled.success) {
-      res.status(400).json(cancelled);
+      const isShiprocket = !c.includes("delhivery");
+      if (isShiprocket) {
+        const tracked = await shiprocket.trackShipment(wb);
+        if (tracked.success && shiprocket.isCarrierStatusCancelled(tracked.data.status)) {
+          logger.info("shiprocket_cancel_already_void_on_carrier", { waybill: wb, status: tracked.data.status });
+          await removeShipmentLabelLocally(row.orderId, row.id);
+          res.json({
+            success: true,
+            data: {
+              cancelled: true,
+              waybill: wb,
+              orderId: row.orderId,
+              carrierAlreadyCancelled: true,
+              carrierStatus: tracked.data.status
+            }
+          });
+          return;
+        }
+      }
+      res.status(400).json({
+        ...cancelled,
+        error: `${cancelled.error} Use “Remove label only” in admin if you already cancelled this AWB in Shiprocket.`
+      });
       return;
     }
-    await prisma.$transaction(async (tx) => {
-      await tx.shipment.delete({ where: { id: row.id } });
-      const remaining = await tx.shipment.count({ where: { orderId: row.orderId } });
-      if (remaining === 0) {
-        await tx.order.update({
-          where: { id: row.orderId },
-          data: { fulfillmentStatus: "UNFULFILLED" }
-        });
-      }
-    });
-    res.json({ success: true, data: { cancelled: true, waybill: wb, orderId: row.orderId } });
+    await removeShipmentLabelLocally(row.orderId, row.id);
+    res.json({ success: true, data: { cancelled: true, waybill: wb, orderId: row.orderId, carrierCancelled: true } });
   } catch (err) {
     next(err);
   }

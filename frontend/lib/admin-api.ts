@@ -186,11 +186,18 @@ export function adminCreateShipmentForOrder(
   );
 }
 
-export function adminCancelWaybill(waybill: string) {
-  return adminFetch<{ cancelled: boolean; waybill: string; orderId: string }>(
-    `/api/shipping/admin/cancel-waybill`,
-    { method: "POST", body: JSON.stringify({ waybill }) }
-  );
+export function adminCancelWaybill(waybill: string, options?: { localOnly?: boolean }) {
+  return adminFetch<{
+    cancelled: boolean;
+    waybill: string;
+    orderId: string;
+    localOnly?: boolean;
+    carrierAlreadyCancelled?: boolean;
+    carrierCancelled?: boolean;
+  }>(`/api/shipping/admin/cancel-waybill`, {
+    method: "POST",
+    body: JSON.stringify({ waybill, ...(options?.localOnly ? { localOnly: true } : {}) })
+  });
 }
 
 export function adminTrackShipmentByWaybill(waybill: string) {

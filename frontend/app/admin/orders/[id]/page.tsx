@@ -269,15 +269,19 @@ export default function AdminOrderDetailPage() {
     }
   }
 
-  async function confirmCancelWaybill() {
+  async function confirmCancelWaybill(localOnly = false) {
     const awb = cancelAwbConfirm;
     if (!awb) return;
     setShipBusy(`cancel-${awb}`);
     try {
-      await adminCancelWaybill(awb);
+      const r = await adminCancelWaybill(awb, { localOnly });
       setCancelAwbConfirm(null);
       await load();
-      pushToast("Carrier label cancelled. Local shipment removed so you can retry.");
+      if (r.carrierAlreadyCancelled || r.localOnly) {
+        pushToast("Label removed in Sarveda (already cancelled on Shiprocket). You can create a new label.");
+      } else {
+        pushToast("Carrier label cancelled. Local shipment removed so you can retry.");
+      }
     } catch (e) {
       pushToast(e instanceof Error ? e.message : "Cancel failed", true);
     } finally {
@@ -395,14 +399,16 @@ export default function AdminOrderDetailPage() {
         title="Cancel carrier label?"
         message={
           cancelAwbConfirm
-            ? `Cancel AWB ${cancelAwbConfirm} with the carrier and remove it from this order? You can create a new label afterward (for example from another warehouse).`
+            ? `Cancel AWB ${cancelAwbConfirm} on Shiprocket and remove it here — or, if you already cancelled in Shiprocket, use “Remove label only”. This is not the same as cancelling the order (use Order status → Cancelled for that).`
             : ""
         }
-        confirmLabel="Yes, cancel label"
+        confirmLabel="Cancel on Shiprocket"
+        secondaryConfirmLabel="Remove label only"
+        onSecondaryConfirm={() => void confirmCancelWaybill(true)}
         danger
         busy={!!shipBusy}
         onClose={() => setCancelAwbConfirm(null)}
-        onConfirm={() => void confirmCancelWaybill()}
+        onConfirm={() => void confirmCancelWaybill(false)}
       />
 
       {addressModal ? (

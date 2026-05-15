@@ -6,6 +6,9 @@ type AdminConfirmModalProps = {
   message: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  /** Optional second action (e.g. remove label locally when already cancelled in Shiprocket). */
+  secondaryConfirmLabel?: string;
+  onSecondaryConfirm?: () => void;
   danger?: boolean;
   busy?: boolean;
   onConfirm: () => void;
@@ -18,6 +21,8 @@ export function AdminConfirmModal({
   message,
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
+  secondaryConfirmLabel,
+  onSecondaryConfirm,
   danger,
   busy,
   onConfirm,
@@ -46,6 +51,16 @@ export function AdminConfirmModal({
           >
             {cancelLabel}
           </button>
+          {secondaryConfirmLabel && onSecondaryConfirm ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onSecondaryConfirm}
+              className="rounded-xl border border-amber-700/50 bg-amber-500/15 px-4 py-2.5 text-sm font-semibold text-amber-950 hover:bg-amber-500/25 disabled:opacity-50 dark:border-amber-500/40 dark:text-amber-100"
+            >
+              {secondaryConfirmLabel}
+            </button>
+          ) : null}
           <button
             type="button"
             disabled={busy}
