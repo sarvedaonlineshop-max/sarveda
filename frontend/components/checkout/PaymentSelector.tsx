@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   CheckoutApiError,
@@ -13,10 +13,12 @@ import {
   type CreateOrderResponse
 } from "@/lib/checkout-api";
 import { clearSession } from "@/lib/cart-api";
+import type { CartApiItem } from "@/lib/cart-api";
 import type { CheckoutAddressForm } from "@/components/checkout/AddressFields";
 import { validateCheckoutFormDetailed } from "@/lib/checkout-validation";
 import { formatINRFromPaise } from "@/lib/money";
 import { loadRazorpayScript } from "@/lib/load-razorpay";
+import { fetchShippingRatesEstimate } from "@/lib/shipping-rates-api";
 import {
   clearPendingCheckout,
   loadPendingCheckout,
@@ -56,14 +58,16 @@ function mapRazorpayClientError(err?: { error?: { description?: string; code?: s
   return err?.error?.description || "Payment could not be completed. Your cart is still saved — you can try again.";
 }
 
+type PaymentMode = "razorpay" | "cod";
+
 type Props = {
   rzpReady: boolean;
   idempotencyKey: string;
   form: CreateOrderBody;
   addressForm: CheckoutAddressForm;
+  cartItems: CartApiItem[];
   subtotalInPaise: number;
   itemCount: number;
-  codDelivery?: boolean;
   onRefreshCart: () => Promise<void>;
   onCheckoutCompleting: () => void;
   onFieldErrors: (errors: Partial<Record<keyof CheckoutAddressForm, string>>) => void;
@@ -75,24 +79,64 @@ export function PaymentSelector({
   idempotencyKey,
   form,
   addressForm,
+  cartItems,
   subtotalInPaise,
   itemCount,
   onRefreshCart,
   onCheckoutCompleting,
   onFieldErrors,
-  resumeOrderNumber,
-  codDelivery = false
+  resumeOrderNumber
 }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [processing, setProcessing] = useState(false);
-  const [payWithCod, setPayWithCod] = useState(false);
+  const [paymentMode, setPaymentMode] = useState<PaymentMode>("razorpay");
+  const [shippingInPaise, setShippingInPaise] = useState<number | null>(null);
+  const [shippingCodInPaise, setShippingCodInPaise] = useState<number | null>(null);
+  const [shippingLoading, setShippingLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const payStarted = useRef(false);
   const indiaOnly = (form.country ?? "IN").toUpperCase() === "IN";
 
+  const estimatedShipping =
+    paymentMode === "cod" && shippingCodInPaise != null ? shippingCodInPaise : shippingInPaise ?? 0;
+  const estimatedTotal = subtotalInPaise + (shippingInPaise != null ? estimatedShipping : 0);
+
+  useEffect(() => {
+    if (cartItems.length === 0) {
+      setShippingInPaise(null);
+      setShippingCodInPaise(null);
+      return;
+    }
+    const pin = form.postalCode.replace(/\D/g, "").slice(0, 6);
+    if (form.country === "IN" && pin.length !== 6) {
+      setShippingInPaise(null);
+      setShippingCodInPaise(null);
+      return;
+    }
+    const handle = window.setTimeout(() => {
+      setShippingLoading(true);
+      void fetchShippingRatesEstimate({
+        country: form.country ?? "IN",
+        pincode: form.postalCode,
+        variantIds: cartItems.map((i) => i.variantId),
+        quantities: cartItems.map((i) => i.quantity)
+      })
+        .then((r) => {
+          setShippingInPaise(r.standardShippingInMinorUnits);
+          setShippingCodInPaise(r.withCodInMinorUnits);
+        })
+        .catch(() => {
+          setShippingInPaise(null);
+          setShippingCodInPaise(null);
+        })
+        .finally(() => setShippingLoading(false));
+    }, 400);
+    return () => window.clearTimeout(handle);
+  }, [cartItems, form.country, form.postalCode]);
+
   const goSuccess = useCallback(
-    (orderNumber: string) => {
+    (orderNumber: string, cod: boolean) => {
       clearPendingCheckout();
       clearSession();
       onCheckoutCompleting();
@@ -100,6 +144,7 @@ export function PaymentSelector({
         orderNumber,
         email: form.email.trim().toLowerCase()
       });
+      if (cod) q.set("cod", "1");
       router.push(`/order/confirmed?${q.toString()}`);
       void onRefreshCart();
     },
@@ -119,7 +164,7 @@ export function PaymentSelector({
   );
 
   const openRazorpay = useCallback(
-    (order: CreateOrderResponse) => {
+    (order: CreateOrderResponse & { razorpayKeyId: string; rzpOrderId: string }) => {
       savePendingCheckout(order, form.email);
 
       if (!window.Razorpay) {
@@ -155,27 +200,21 @@ export function PaymentSelector({
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature
               });
-              await goSuccess(orderNumber);
+              goSuccess(orderNumber, false);
             } catch {
               const polled = await pollUntilPaidOrTerminal(order.orderNumber, form.email, 30_000);
               if (polled === "PAID") {
-                goSuccess(order.orderNumber);
+                goSuccess(order.orderNumber, false);
               } else if (polled === "CANCELLED") {
                 goFailure(order.orderNumber, "Payment was not completed");
               } else {
                 setErr(
-                  "We could not confirm payment immediately. Your cart is unchanged. If money was debited, your order will update within a few minutes — or contact support."
+                  "We could not confirm payment immediately. Your cart is unchanged. If money was debited, your order will update within a few minutes."
                 );
               }
             }
           } catch (e) {
-            const msg =
-              e instanceof CheckoutApiError
-                ? e.message
-                : e instanceof Error
-                  ? e.message
-                  : "Verification failed";
-            setErr(msg);
+            setErr(e instanceof Error ? e.message : "Verification failed");
           } finally {
             setProcessing(false);
             setBusy(false);
@@ -246,14 +285,14 @@ export function PaymentSelector({
         state: form.state.trim(),
         postalCode: form.postalCode.trim(),
         country: form.country ?? "IN",
-        codDelivery: codDelivery || payWithCod,
-        paymentMethod: payWithCod ? "cod" : "razorpay"
+        codDelivery: paymentMode === "cod",
+        paymentMethod: paymentMode
       },
       idempotencyKey
     );
-  }, [codDelivery, form, idempotencyKey, payWithCod, resumeOrderNumber]);
+  }, [form, idempotencyKey, paymentMode, resumeOrderNumber]);
 
-  const onPay = useCallback(async () => {
+  const onSubmit = useCallback(async () => {
     if (busy || payStarted.current || processing) return;
     const validation = validateCheckoutFormDetailed(addressForm);
     if (validation.message) {
@@ -265,23 +304,25 @@ export function PaymentSelector({
     setErr(null);
     setBusy(true);
     payStarted.current = true;
+
     try {
-      if (payWithCod && indiaOnly) {
+      if (paymentMode === "cod") {
         setProcessing(true);
         const order = await resolvePayableOrder();
         if (order.codConfirmed || order.paymentMethod === "cod") {
-          goSuccess(order.orderNumber);
+          goSuccess(order.orderNumber, true);
           return;
         }
         throw new Error("COD checkout is not available for this order.");
       }
+
       const ready = rzpReady || (await loadRazorpayScript());
       if (!ready) {
         throw new Error("Payment gateway did not load. Check your connection and try again.");
       }
       const order = await resolvePayableOrder();
       if (order.codConfirmed) {
-        goSuccess(order.orderNumber);
+        goSuccess(order.orderNumber, true);
         return;
       }
       if (!order.rzpOrderId || !order.razorpayKeyId) {
@@ -290,81 +331,126 @@ export function PaymentSelector({
       openRazorpay(order as CreateOrderResponse & { razorpayKeyId: string; rzpOrderId: string });
     } catch (e) {
       payStarted.current = false;
-      const msg =
-        e instanceof CheckoutApiError
-          ? e.message
-          : e instanceof Error
-            ? e.message
-            : "Checkout failed";
-      setErr(msg);
+      setErr(
+        e instanceof CheckoutApiError ? e.message : e instanceof Error ? e.message : "Checkout failed"
+      );
       setBusy(false);
+      setProcessing(false);
     }
-  }, [addressForm, busy, goSuccess, indiaOnly, onFieldErrors, openRazorpay, payWithCod, processing, resolvePayableOrder, rzpReady]);
+  }, [
+    addressForm,
+    busy,
+    goSuccess,
+    onFieldErrors,
+    openRazorpay,
+    paymentMode,
+    processing,
+    resolvePayableOrder,
+    rzpReady
+  ]);
 
   return (
-    <div className="rounded-2xl border border-stone-100 bg-white p-6 shadow-sm">
+    <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm md:p-6">
       <h2 className="text-xl font-semibold text-stone-900">Order summary</h2>
-      <p className="mt-1 text-sm text-stone-500">
-        {itemCount} items · {formatINRFromPaise(subtotalInPaise)}
-      </p>
-      <p className="mt-2 text-xs text-stone-500">
-        GST included · Your cart stays saved until payment succeeds
-      </p>
+
+      <dl className="mt-4 space-y-2 border-b border-stone-100 pb-4 text-sm">
+        <div className="flex justify-between gap-4">
+          <dt className="text-stone-600">Subtotal ({itemCount} items)</dt>
+          <dd className="font-medium text-stone-900">{formatINRFromPaise(subtotalInPaise)}</dd>
+        </div>
+        <div className="flex justify-between gap-4">
+          <dt className="text-stone-600">Shipping</dt>
+          <dd className="text-right font-medium text-stone-900">
+            {shippingLoading ? (
+              <span className="text-stone-400">Calculating…</span>
+            ) : shippingInPaise != null ? (
+              formatINRFromPaise(estimatedShipping)
+            ) : (
+              <span className="text-xs text-stone-500">Enter PIN to estimate</span>
+            )}
+          </dd>
+        </div>
+        {paymentMode === "cod" && shippingCodInPaise != null && shippingCodInPaise !== shippingInPaise ? (
+          <p className="text-xs text-amber-800">COD delivery rates applied to shipping.</p>
+        ) : null}
+        <div className="flex justify-between gap-4 pt-2 text-base">
+          <dt className="font-semibold text-stone-900">Estimated total</dt>
+          <dd className="font-serif font-semibold text-amber-800">
+            {shippingInPaise != null ? formatINRFromPaise(estimatedTotal) : formatINRFromPaise(subtotalInPaise)}
+            <span className="block text-xs font-sans font-normal text-stone-500">GST included</span>
+          </dd>
+        </div>
+      </dl>
+
+      {indiaOnly && !resumeOrderNumber ? (
+        <fieldset className="mt-4 space-y-2">
+          <legend className="text-sm font-semibold text-stone-800">Payment method</legend>
+          <label
+            className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${
+              paymentMode === "razorpay"
+                ? "border-stone-900 bg-stone-50 ring-1 ring-stone-900"
+                : "border-stone-200 hover:border-stone-300"
+            }`}
+          >
+            <input
+              type="radio"
+              name="paymentMode"
+              className="mt-1"
+              checked={paymentMode === "razorpay"}
+              onChange={() => setPaymentMode("razorpay")}
+            />
+            <span>
+              <span className="font-medium text-stone-900">Pay online now</span>
+              <span className="mt-0.5 block text-xs text-stone-600">UPI, cards, netbanking via Razorpay</span>
+            </span>
+          </label>
+          <label
+            className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${
+              paymentMode === "cod"
+                ? "border-stone-900 bg-stone-50 ring-1 ring-stone-900"
+                : "border-stone-200 hover:border-stone-300"
+            }`}
+          >
+            <input
+              type="radio"
+              name="paymentMode"
+              className="mt-1"
+              checked={paymentMode === "cod"}
+              onChange={() => setPaymentMode("cod")}
+            />
+            <span>
+              <span className="font-medium text-stone-900">Cash on delivery (COD)</span>
+              <span className="mt-0.5 block text-xs text-stone-600">Pay when the courier delivers your order</span>
+            </span>
+          </label>
+        </fieldset>
+      ) : null}
 
       {err ? (
         <div className="mt-4 rounded-xl border border-red-100 bg-red-50/80 p-3 text-sm text-red-800" role="alert">
           {err}
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-semibold text-amber-400"
-              onClick={() => {
-                setErr(null);
-                void onPay();
-              }}
-            >
-              Retry payment
-            </button>
-          </div>
         </div>
       ) : null}
 
       {processing ? (
         <p className="mt-4 text-sm font-medium text-amber-800" role="status">
-          Confirming payment with our server…
+          {paymentMode === "cod" ? "Placing your order…" : "Confirming payment…"}
         </p>
-      ) : null}
-
-      {indiaOnly ? (
-        <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-stone-200 bg-stone-50/80 p-3 text-sm">
-          <input
-            type="checkbox"
-            className="mt-1"
-            checked={payWithCod}
-            onChange={(e) => setPayWithCod(e.target.checked)}
-          />
-          <span>
-            <span className="font-semibold text-stone-900">Cash on delivery (COD)</span>
-            <span className="mt-0.5 block text-stone-600">
-              Pay when your order arrives. COD shipping rates apply.
-            </span>
-          </span>
-        </label>
       ) : null}
 
       <button
         type="button"
-        disabled={busy || processing}
-        onClick={() => void onPay()}
+        disabled={busy || processing || (paymentMode === "razorpay" && !rzpReady && !busy)}
+        onClick={() => void onSubmit()}
         className="mt-6 flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-stone-900 py-3.5 text-base font-semibold tracking-wide text-amber-400 shadow-lg transition-colors hover:bg-amber-700 hover:text-white disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600"
       >
-        {!rzpReady && !busy && !processing && !payWithCod
-          ? "Loading payment…"
-          : busy || processing
-            ? "Processing…"
-            : payWithCod
-              ? "Place COD order"
-              : "Pay with Razorpay"}
+        {busy || processing
+          ? "Please wait…"
+          : paymentMode === "cod"
+            ? "Place order (COD)"
+            : !rzpReady
+              ? "Loading payment…"
+              : "Pay now"}
       </button>
     </div>
   );

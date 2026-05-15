@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useCallback, useEffect, useState } from "react";
 
+import { SearchCategoryBrowse } from "@/components/search/SearchCategoryBrowse";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { fetchProductList, fetchProductSuggestions } from "@/lib/api";
 import type { ProductListItem } from "@/lib/types";
@@ -24,17 +25,12 @@ function SearchResults() {
     const trimmed = term.trim();
     if (!trimmed) {
       setItems([]);
-      setSuggestions([]);
       return;
     }
     setLoading(true);
     try {
-      const [list, suggest] = await Promise.all([
-        fetchProductList({ q: trimmed, page: "1" }, undefined, { limit: 24 }),
-        fetchProductSuggestions(trimmed)
-      ]);
+      const list = await fetchProductList({ q: trimmed, page: "1" }, undefined, { limit: 24 });
       setItems(list.items);
-      setSuggestions(suggest);
     } catch {
       setItems([]);
     } finally {
@@ -65,21 +61,20 @@ function SearchResults() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 md:px-6">
-      <h1 className="font-serif text-2xl font-semibold text-stone-900 md:text-3xl">Search</h1>
-      <form onSubmit={handleSubmit} className="mt-6 max-w-xl">
+    <div className="mx-auto max-w-7xl px-4 py-6 pb-24 md:px-6 md:py-8">
+      <h1 className="font-serif text-2xl font-semibold text-stone-900 md:text-3xl">Search & browse</h1>
+      <form onSubmit={handleSubmit} className="mt-5 max-w-xl">
         <input
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search products, categories…"
+          placeholder="Search by name, category…"
           className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3.5 text-base shadow-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
-          autoFocus
         />
       </form>
 
-      {suggestions.length > 0 && !q ? (
-        <ul className="mt-4 max-w-xl rounded-xl border border-stone-200 bg-white shadow-sm">
+      {suggestions.length > 0 && !q && query.trim().length >= 2 ? (
+        <ul className="mt-3 max-w-xl rounded-xl border border-stone-200 bg-white shadow-sm">
           {suggestions.map((s) => (
             <li key={s.slug}>
               <Link
@@ -102,21 +97,28 @@ function SearchResults() {
         </ul>
       ) : null}
 
-      {loading ? <p className="mt-8 text-stone-500">Searching…</p> : null}
-      {!loading && q && items.length === 0 ? (
-        <p className="mt-8 text-stone-600">No products found for &ldquo;{q}&rdquo;.</p>
+      {q ? (
+        <section className="mt-8">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-stone-500">
+            Search results
+          </h2>
+          {loading ? <p className="mt-4 text-stone-500">Searching…</p> : null}
+          {!loading && items.length === 0 ? (
+            <p className="mt-4 text-stone-600">No products found for &ldquo;{q}&rdquo;.</p>
+          ) : null}
+          {items.length > 0 ? (
+            <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-6 lg:grid-cols-4 lg:gap-8">
+              {items.map((p) => (
+                <li key={p.id}>
+                  <ProductCard product={p} />
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </section>
       ) : null}
 
-      {items.length > 0 ? (
-        <>
-          <p className="mt-6 text-sm text-stone-500">{items.length} results for &ldquo;{q}&rdquo;</p>
-          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {items.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
-        </>
-      ) : null}
+      <SearchCategoryBrowse />
     </div>
   );
 }

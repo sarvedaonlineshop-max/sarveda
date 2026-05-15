@@ -104,11 +104,11 @@ export function BottomNav() {
             >
               {/* Active bar indicator at top */}
               {active && (
-                <span className="absolute top-0 h-0.5 w-6 rounded-full bg-brand-gold" />
+                <span className="absolute top-0 h-0.5 w-8 rounded-full bg-amber-300" />
               )}
 
               {/* Icon */}
-              <span className={`transition-colors ${active ? "text-brand-gold" : "text-stone-500"}`}>
+              <span className={`transition-colors ${active ? "text-amber-300" : "text-stone-300"}`}>
                 {item.icon(active)}
               </span>
 
@@ -120,7 +120,7 @@ export function BottomNav() {
               ) : null}
 
               {/* Label */}
-              <span className={`text-[10px] font-medium tracking-wide transition-colors ${active ? "text-brand-gold" : "text-stone-500"}`}>
+              <span className={`text-[10px] font-semibold tracking-wide transition-colors ${active ? "text-amber-200" : "text-stone-300"}`}>
                 {item.label}
               </span>
             </Link>

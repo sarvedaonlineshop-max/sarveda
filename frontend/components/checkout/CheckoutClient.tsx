@@ -250,6 +250,7 @@ export function CheckoutClient() {
             idempotencyKey={idempotencyKey}
             form={formBody}
             addressForm={form}
+            cartItems={items}
             subtotalInPaise={subtotalInPaise}
             itemCount={itemCount}
             onRefreshCart={onRefreshCart}

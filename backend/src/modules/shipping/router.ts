@@ -53,22 +53,48 @@ const CREATE_SHIPMENT_ORDER_STATUSES = new Set<OrderStatus>(["PAID", "PROCESSING
 /** Pulling tracking updates from carrier APIs (includes shipped/delivered while still reconcilable). */
 const TRACK_SYNC_ORDER_STATUSES = new Set<OrderStatus>(["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"]);
 
-function assertPaymentCaptured(order: { paymentStatus: PaymentStatus }): { ok: true } | { ok: false; error: string; code: string } {
-  if (order.paymentStatus !== "CAPTURED") {
+type OrderPaymentCheck = {
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  payments?: Array<{ provider: string }>;
+};
+
+/** India COD: order is PAID but payment row stays PENDING until delivery collection. */
+export function isCodOrderReadyToShip(order: OrderPaymentCheck): boolean {
+  return (
+    order.status === "PAID" &&
+    order.paymentStatus === "PENDING" &&
+    (order.payments ?? []).some((p) => p.provider === "COD")
+  );
+}
+
+function assertPaymentEligibleForShipping(
+  order: OrderPaymentCheck
+): { ok: true } | { ok: false; error: string; code: string } {
+  if (order.paymentStatus === "CAPTURED") {
+    return { ok: true };
+  }
+  if (isCodOrderReadyToShip(order)) {
+    return { ok: true };
+  }
+  if (order.paymentStatus === "PENDING") {
     return {
       ok: false,
-      error: `Payment must be captured before shipping (current: ${order.paymentStatus}). Use admin Sync payment (Razorpay) if the gateway shows paid.`,
+      error: `Payment must be captured before shipping (current: ${order.paymentStatus}). COD orders are shippable once order status is Paid.`,
       code: "PAYMENT_NOT_CAPTURED"
     };
   }
-  return { ok: true };
+  return {
+    ok: false,
+    error: `Payment must be captured before shipping (current: ${order.paymentStatus}). Use admin Sync payment (Razorpay) if the gateway shows paid.`,
+    code: "PAYMENT_NOT_CAPTURED"
+  };
 }
 
 /** New AWB / pickup booking — paid pipeline only, before ship-complete states. */
-export function assertOrderEligibleForCreatingShipment(order: {
-  status: OrderStatus;
-  paymentStatus: PaymentStatus;
-}): { ok: true } | { ok: false; error: string; code: string } {
+export function assertOrderEligibleForCreatingShipment(order: OrderPaymentCheck): {
+  ok: true;
+} | { ok: false; error: string; code: string } {
   if (order.status === "CANCELLED" || order.status === "REFUNDED") {
     return {
       ok: false,
@@ -90,14 +116,13 @@ export function assertOrderEligibleForCreatingShipment(order: {
       code: "ORDER_STATE"
     };
   }
-  return assertPaymentCaptured(order);
+  return assertPaymentEligibleForShipping(order);
 }
 
 /** Tracking sync from carrier (Shiprocket / Delhivery) — broader than label creation. */
-export function assertOrderEligibleForTrackingSync(order: {
-  status: OrderStatus;
-  paymentStatus: PaymentStatus;
-}): { ok: true } | { ok: false; error: string; code: string } {
+export function assertOrderEligibleForTrackingSync(order: OrderPaymentCheck): {
+  ok: true;
+} | { ok: false; error: string; code: string } {
   if (order.status === "CANCELLED" || order.status === "REFUNDED") {
     return {
       ok: false,
@@ -119,7 +144,7 @@ export function assertOrderEligibleForTrackingSync(order: {
       code: "ORDER_STATE"
     };
   }
-  return assertPaymentCaptured(order);
+  return assertPaymentEligibleForShipping(order);
 }
 
 export function selectCourier(order: OrderWithShippingContext): CourierChoice {

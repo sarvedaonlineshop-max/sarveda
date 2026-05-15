@@ -8,6 +8,8 @@ function serializePublicOrderView(order: {
   orderNumber: string;
   status: string;
   paymentStatus: string;
+  subtotalInPaise: number;
+  shippingInPaise: number;
   grandTotalInPaise: number;
   currency: string;
   email: string;
@@ -44,11 +46,18 @@ function serializePublicOrderView(order: {
     rtoAt: Date | null;
     updatedAt: Date;
   }>;
+  payments?: Array<{ provider: string }>;
 }) {
+  const paymentProvider = order.payments?.[0]?.provider ?? null;
+  const isCod = paymentProvider === "COD";
   return {
     orderNumber: order.orderNumber,
     status: order.status,
     paymentStatus: order.paymentStatus,
+    paymentProvider,
+    isCod,
+    subtotalInPaise: order.subtotalInPaise,
+    shippingInPaise: order.shippingInPaise,
     grandTotalInPaise: order.grandTotalInPaise,
     currency: order.currency,
     email: order.email,

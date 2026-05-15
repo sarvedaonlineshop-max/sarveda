@@ -15,6 +15,10 @@ export type OrderPublic = {
   orderNumber: string;
   status: string;
   paymentStatus: string;
+  paymentProvider?: string | null;
+  isCod?: boolean;
+  subtotalInPaise: number;
+  shippingInPaise: number;
   grandTotalInPaise: number;
   currency: string;
   email: string;
