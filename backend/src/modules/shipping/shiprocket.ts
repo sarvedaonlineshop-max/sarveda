@@ -591,6 +591,81 @@ export async function trackShipment(waybill: string): Promise<ApiOk<{ status: st
   }
 }
 
+function extractServiceabilityCourierRows(raw: unknown): unknown[] {
+  if (Array.isArray(raw)) return raw;
+  if (!raw || typeof raw !== "object") return [];
+  const r = raw as Record<string, unknown>;
+  const d = r.data;
+  if (Array.isArray(d)) return d;
+  if (d && typeof d === "object") {
+    const dd = d as Record<string, unknown>;
+    const ac = dd.available_courier_companies ?? dd.available_couriers ?? dd.data;
+    if (Array.isArray(ac)) return ac;
+  }
+  const top = r.available_courier_companies ?? r.available_couriers ?? r.courier_company;
+  if (Array.isArray(top)) return top;
+  return [];
+}
+
+/**
+ * India domestic: Shiprocket must return at least one courier for pickup→delivery (+COD flag when used).
+ */
+export async function checkIndiaCourierServiceability(input: {
+  deliveryPincode: string;
+  weightKg: number;
+  cod: boolean;
+}): Promise<ApiOk<{ serviceable: boolean; courierCount: number }> | ApiErr> {
+  const auth = await getToken();
+  if (!auth.success) return auth;
+
+  const pickup = shippingEnv.SHIPPING_ORIGIN_PINCODE.replace(/\D/g, "").slice(0, 6);
+  if (pickup.length !== 6) {
+    return {
+      success: false,
+      error:
+        "Set SHIPPING_ORIGIN_PINCODE to your warehouse’s 6-digit pin (same region as Shiprocket pickup) for India delivery checks.",
+      code: "SHIPROCKET_ORIGIN_PIN"
+    };
+  }
+  const delivery = input.deliveryPincode.replace(/\D/g, "").slice(0, 6);
+  if (delivery.length !== 6) {
+    return { success: false, error: "Delivery PIN must be 6 digits", code: "BAD_REQUEST" };
+  }
+  const weight = Math.max(0.05, input.weightKg);
+
+  try {
+    const res = await axios.get(`${SHIPROCKET_API}/courier/serviceability/`, {
+      headers: {
+        Authorization: `Bearer ${auth.data.token}`,
+        Accept: "application/json"
+      },
+      params: {
+        pickup_postcode: pickup,
+        delivery_postcode: delivery,
+        weight: String(weight),
+        cod: input.cod ? 1 : 0
+      },
+      timeout: 20_000,
+      validateStatus: () => true
+    });
+    if (res.status >= 400) {
+      const msg = formatShiprocketApiMessage(res.data, res.status);
+      logger.warn("shiprocket_serviceability_http", { status: res.status, msg });
+      return {
+        success: false,
+        error: msg || "Shiprocket could not check delivery to this PIN. Try again or use another pincode.",
+        code: "SHIPROCKET_SERVICEABILITY"
+      };
+    }
+    const rows = extractServiceabilityCourierRows(res.data);
+    const courierCount = rows.filter((row) => row && typeof row === "object").length;
+    const serviceable = courierCount > 0;
+    return { success: true, data: { serviceable, courierCount } };
+  } catch (err) {
+    return mapAxiosErr(err, "SHIPROCKET_SERVICEABILITY");
+  }
+}
+
 function parseShiprocketMetaForCancel(carrierMeta: Prisma.JsonValue | null | undefined): { shipmentId?: number } {
   if (carrierMeta === null || carrierMeta === undefined) return {};
   if (typeof carrierMeta !== "object" || Array.isArray(carrierMeta)) return {};

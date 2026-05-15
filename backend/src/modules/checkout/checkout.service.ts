@@ -16,6 +16,7 @@ import {
 } from "../shipping/shippingRates.service";
 import { isZoneAPincode } from "../shipping/router";
 import * as delhivery from "../shipping/delhivery";
+import * as shiprocket from "../shipping/shiprocket";
 import { shippingEnv } from "../../config/env";
 import type { ZoneKey } from "../shipping/types";
 import type { CreateOrderBody } from "./schemas";
@@ -71,6 +72,57 @@ async function assertDelhiveryHeavyIndiaServiceable(
     ) as Error & { statusCode?: number; code?: string };
     e.statusCode = 400;
     e.code = "PINCODE_NOT_SERVICEABLE_HEAVY";
+    throw e;
+  }
+}
+
+/** Block unpaid checkout if Shiprocket has no courier for warehouse→PIN (when enabled in env). */
+async function assertIndiaShiprocketCheckoutServiceable(
+  country: string | undefined,
+  postalCode: string,
+  lines: Array<{ quantity: number; variant: ProductVariant }>,
+  codDelivery: boolean | undefined
+): Promise<void> {
+  if (!shippingEnv.INDIA_REQUIRE_SHIPROCKET_SERVICEABILITY) return;
+  if ((country ?? "IN").toUpperCase() !== "IN") return;
+
+  const pin = postalCode.replace(/\D/g, "").slice(0, 6);
+  if (pin.length !== 6) return;
+
+  let grams = 0;
+  for (const row of lines) {
+    grams += (row.variant.weightGrams ?? 500) * row.quantity;
+  }
+  grams = Math.max(grams, 1);
+  const weightKg = Math.max(0.05, grams / 1000);
+
+  const sr = await shiprocket.checkIndiaCourierServiceability({
+    deliveryPincode: pin,
+    weightKg,
+    cod: Boolean(codDelivery)
+  });
+  if (!sr.success) {
+    const e = new Error(sr.error) as Error & {
+      statusCode?: number;
+      code?: string;
+      userMessage?: string;
+    };
+    e.statusCode =
+      sr.code === "SHIPROCKET_ORIGIN_PIN" || sr.code === "SHIPROCKET_NOT_CONFIGURED" ? 503 : 502;
+    e.code = sr.code;
+    e.userMessage =
+      sr.code === "SHIPROCKET_ORIGIN_PIN"
+        ? "Shipping is not fully configured yet. Please contact Sarveda support."
+        : sr.error;
+    throw e;
+  }
+  if (!sr.data.serviceable) {
+    const e = new Error(
+      "Delivery is not available from our warehouse to this PIN for your cart size and options. Try another PIN or contact support."
+    ) as Error & { statusCode?: number; code?: string; userMessage?: string };
+    e.statusCode = 400;
+    e.code = "PIN_NOT_SERVICEABLE_SHIPROCKET";
+    e.userMessage = e.message;
     throw e;
   }
 }
@@ -206,6 +258,7 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
   }
 
   await assertDelhiveryHeavyIndiaServiceable(body.country, body.postalCode, lines);
+  await assertIndiaShiprocketCheckoutServiceable(body.country, body.postalCode, lines, body.codDelivery);
 
   const orderNumber = await generateOrderNumber();
   const receipt = orderNumber.replace(/[^a-zA-Z0-9]/g, "").slice(0, 40);

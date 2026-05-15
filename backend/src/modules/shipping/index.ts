@@ -7,6 +7,7 @@ import * as controller from "./shipping.controller";
 const router = Router();
 
 router.post("/check-pincode", controller.checkPincode);
+router.post("/check-india-shiprocket", controller.checkIndiaShiprocketServiceability);
 router.get("/rates", controller.getRates);
 router.post("/create-shipment/:orderId", requireAdmin, controller.createShipmentForOrder);
 router.post("/admin/orders/:orderId/sync-tracking", requireAdmin, controller.syncOrderShipments);

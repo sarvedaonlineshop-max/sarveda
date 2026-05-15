@@ -16,6 +16,7 @@ import { checkoutRoutes } from "./modules/checkout/checkout.routes";
 import { ordersRoutes } from "./modules/orders/orders.routes";
 import { paymentsJsonRoutes } from "./modules/payments/payments.routes";
 import { razorpayWebhookHandler } from "./modules/payments/razorpay.webhook";
+import { shiprocketWebhookHandler } from "./modules/shipping/shiprocket.webhook";
 import { adminRoutes } from "./modules/admin";
 import { productsRoutes } from "./modules/products/products.routes";
 import { shippingRoutes } from "./modules/shipping";
@@ -50,6 +51,18 @@ app.post(
     void razorpayWebhookHandler(req, res).catch(next);
   }
 );
+
+const shiprocketWebhookRaw = express.raw({ type: "application/json" });
+const shiprocketWebhookRoute = (req: Request, res: Response, next: NextFunction) => {
+  void shiprocketWebhookHandler(req, res).catch(next);
+};
+/** Primary path (code name). */
+app.post("/api/shipping/shiprocket/webhook", shiprocketWebhookRaw, shiprocketWebhookRoute);
+/**
+ * Shiprocket dashboard often rejects URLs containing "shiprocket" / "sr".
+ * Use this URL in Settings → Webhooks instead.
+ */
+app.post("/api/shipping/carrier-events/webhook", shiprocketWebhookRaw, shiprocketWebhookRoute);
 
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));

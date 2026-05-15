@@ -37,6 +37,41 @@ export async function checkPincode(req: Request, res: Response, next: NextFuncti
   }
 }
 
+const indiaShiprocketBody = z.object({
+  pincode: z.string().min(6).max(12),
+  weightKg: z.coerce.number().min(0.05).max(100).optional().default(0.5),
+  cod: z.coerce.boolean().optional().default(false)
+});
+
+/** Public: Shiprocket courier availability warehouse → delivery PIN (India). */
+export async function checkIndiaShiprocketServiceability(req: Request, res: Response, next: NextFunction) {
+  try {
+    const parsed = indiaShiprocketBody.safeParse(req.body && typeof req.body === "object" ? req.body : {});
+    if (!parsed.success) {
+      res.status(400).json({
+        success: false,
+        error: "pincode (6 digits), optional weightKg and cod",
+        code: "VALIDATION_ERROR"
+      });
+      return;
+    }
+    const result = await shiprocket.checkIndiaCourierServiceability({
+      deliveryPincode: parsed.data.pincode,
+      weightKg: parsed.data.weightKg,
+      cod: parsed.data.cod
+    });
+    if (!result.success) {
+      const status =
+        result.code === "SHIPROCKET_ORIGIN_PIN" || result.code === "SHIPROCKET_NOT_CONFIGURED" ? 503 : 400;
+      res.status(status).json(result);
+      return;
+    }
+    res.json({ success: true, data: result.data });
+  } catch (err) {
+    next(err);
+  }
+}
+
 const ratesQuery = z.object({
   country: z.string().min(2).max(2),
   pincode: z.string().optional(),

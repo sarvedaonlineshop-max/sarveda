@@ -2,10 +2,20 @@ import type { NextFunction, Request, Response } from "express";
 
 import { createCheckoutOrder, resumePendingCheckout } from "./checkout.service";
 import type { CreateOrderBody } from "./schemas";
+import { shippingEnv } from "../../config/env";
 
 export async function createOrder(req: Request, res: Response, next: NextFunction) {
   try {
-    const data = await createCheckoutOrder(req, req.body as CreateOrderBody);
+    const body = req.body as CreateOrderBody;
+    if (shippingEnv.INDIA_CHECKOUT_ONLY && (body.country ?? "IN").toUpperCase() !== "IN") {
+      res.status(400).json({
+        success: false,
+        error: "This deployment accepts India shipping addresses only. Set country to IN.",
+        code: "INDIA_CHECKOUT_ONLY"
+      });
+      return;
+    }
+    const data = await createCheckoutOrder(req, body);
     res.status(201).json({ success: true, data });
   } catch (err) {
     next(err);

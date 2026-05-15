@@ -6,6 +6,10 @@ import { logger } from "../../config/logger";
 import * as delhivery from "./delhivery";
 import { assertOrderEligibleForTrackingSync, autoSelectAndCreate } from "./router";
 import * as shiprocket from "./shiprocket";
+import {
+  mapCourierStatusToShipment,
+  persistShipmentTrackingFromCarrier
+} from "./shipmentTracking.persist";
 
 const BLOCKED_TRACK_ORDER: OrderStatus[] = ["CANCELLED", "REFUNDED", "PENDING_PAYMENT"];
 
@@ -45,20 +49,75 @@ export async function onOrderEnteredProcessing(orderId: string): Promise<void> {
   logger.info("shipping_processing_ok", { orderId, waybill: result.data.waybill });
 }
 
-function mapCourierStatusToShipment(rawStatus: string): ShipmentStatus {
-  const s = rawStatus.toUpperCase();
-  if (s.includes("DELIVER")) return "DELIVERED";
-  if (s.includes("RTO") || s.includes("RETURN TO ORIGIN") || s.includes("RETURNED TO")) return "RTO";
-  if (s.includes("OUT") || s.includes("OFD")) return "OUT_FOR_DELIVERY";
-  if (s.includes("TRANSIT") || s.includes("SHIPPED") || s.includes("MANIFEST") || s.includes("PICKUP")) {
-    return "INTRANSIT";
+/**
+ * Apply a carrier-reported status (e.g. Shiprocket webhook) without calling tracking APIs again.
+ */
+export async function applyCarrierWebhookTracking(
+  waybill: string,
+  statusLabel: string
+): Promise<
+  | {
+      success: true;
+      data: {
+        waybill: string;
+        courier: string;
+        shipmentStatus: ShipmentStatus;
+        orderStatus: OrderStatus;
+        fulfillmentStatus: string;
+      };
+    }
+  | { success: false; error: string; code: string }
+> {
+  const wb = waybill.trim();
+  if (!wb) {
+    return { success: false, error: "Waybill required", code: "BAD_REQUEST" };
   }
-  if (s.includes("PICK")) return "PICKED";
-  return "INTRANSIT";
-}
 
-function shouldMarkOrderDelivered(shipmentStatus: ShipmentStatus): boolean {
-  return shipmentStatus === "DELIVERED";
+  const shipment = await prisma.shipment.findFirst({
+    where: { awb: wb },
+    include: { order: true }
+  });
+  if (!shipment) {
+    return { success: false, error: "Shipment not found", code: "NOT_FOUND" };
+  }
+
+  const courierLower = shipment.courier.toLowerCase();
+  if (courierLower.includes("stub")) {
+    return { success: false, error: "Stub shipments ignore carrier webhooks", code: "STUB_SHIPMENT" };
+  }
+
+  if (orderBlocksCarrierSync(shipment.order.status)) {
+    return {
+      success: false,
+      error: "Tracking cannot be updated for cancelled, unpaid, or refunded orders.",
+      code: "ORDER_STATE"
+    };
+  }
+
+  const payOk = assertOrderEligibleForTrackingSync(shipment.order);
+  if (!payOk.ok) {
+    return { success: false, error: payOk.error, code: payOk.code };
+  }
+
+  const shipmentStatus = mapCourierStatusToShipment(statusLabel);
+  const out = await persistShipmentTrackingFromCarrier(shipment, shipmentStatus);
+
+  logger.info("shiprocket_webhook_tracking_applied", {
+    waybill: wb,
+    shipmentStatus,
+    orderStatus: out.orderStatus
+  });
+
+  return {
+    success: true,
+    data: {
+      waybill: wb,
+      courier: shipment.courier,
+      shipmentStatus,
+      orderStatus: out.orderStatus,
+      fulfillmentStatus: out.fulfillmentStatus
+    }
+  };
 }
 
 export async function syncTrackingByWaybill(waybill: string): Promise<
@@ -113,38 +172,7 @@ export async function syncTrackingByWaybill(waybill: string): Promise<
   }
 
   const shipmentStatus = mapCourierStatusToShipment(tracked.data.status);
-
-  await prisma.shipment.update({
-    where: { id: shipment.id },
-    data: {
-      status: shipmentStatus,
-      ...(shipmentStatus === "DELIVERED" ? { deliveredAt: new Date() } : {}),
-      ...(shipmentStatus === "RTO" ? { rtoAt: shipment.rtoAt ?? new Date() } : {})
-    }
-  });
-
-  let orderStatus: OrderStatus = shipment.order.status;
-  let fulfillmentStatus = shipment.order.fulfillmentStatus;
-
-  if (shipmentStatus === "RTO") {
-    await prisma.order.update({
-      where: { id: shipment.orderId },
-      data: { fulfillmentStatus: "RETURNED" }
-    });
-    fulfillmentStatus = "RETURNED";
-  }
-
-  if (shouldMarkOrderDelivered(shipmentStatus)) {
-    await prisma.order.update({
-      where: { id: shipment.orderId },
-      data: {
-        status: "DELIVERED",
-        fulfillmentStatus: "FULFILLED"
-      }
-    });
-    orderStatus = "DELIVERED";
-    fulfillmentStatus = "FULFILLED";
-  }
+  const out = await persistShipmentTrackingFromCarrier(shipment, shipmentStatus);
 
   return {
     success: true,
@@ -152,8 +180,8 @@ export async function syncTrackingByWaybill(waybill: string): Promise<
       waybill: wb,
       courier: shipment.courier,
       shipmentStatus,
-      orderStatus,
-      fulfillmentStatus
+      orderStatus: out.orderStatus,
+      fulfillmentStatus: out.fulfillmentStatus
     }
   };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { COUNTRIES, countryByCode } from "@/lib/countries";
 import { INDIAN_STATES } from "@/lib/indian-states";
@@ -22,11 +22,19 @@ type Props = {
   form: CheckoutAddressForm;
   onChange: (next: CheckoutAddressForm) => void;
   fieldErrors?: Partial<Record<keyof CheckoutAddressForm, string>>;
+  /** When true (e.g. NEXT_PUBLIC_INDIA_CHECKOUT_ONLY), country is locked to India. */
+  indiaCheckoutOnly?: boolean;
 };
 
-export function AddressFields({ form, onChange, fieldErrors }: Props) {
+export function AddressFields({ form, onChange, fieldErrors, indiaCheckoutOnly = false }: Props) {
   const [countryQuery, setCountryQuery] = useState("");
   const isIndia = form.country === "IN";
+
+  useEffect(() => {
+    if (indiaCheckoutOnly && form.country !== "IN") {
+      onChange({ ...form, country: "IN", phoneDial: "+91" });
+    }
+  }, [indiaCheckoutOnly, form, onChange]);
 
   const filteredCountries = useMemo(() => {
     const q = countryQuery.trim().toLowerCase();
@@ -174,29 +182,37 @@ export function AddressFields({ form, onChange, fieldErrors }: Props) {
 
       <label className="sm:col-span-2">
         <span className="mb-1 block text-sm font-medium text-stone-700">Country</span>
-        <input
-          type="search"
-          placeholder="Search country"
-          className="mb-2 min-h-[44px] w-full rounded-xl border border-stone-200 px-3 text-sm text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
-          value={countryQuery}
-          onChange={(event) => setCountryQuery(event.target.value)}
-        />
-        <select
-          required
-          className="min-h-[48px] w-full rounded-xl border border-stone-200 bg-white px-3 text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
-          value={form.country}
-          onChange={(event) => {
-            const country = event.target.value;
-            const dial = countryByCode(country)?.dial ?? form.phoneDial;
-            patch({ country, phoneDial: dial });
-          }}
-        >
-          {filteredCountries.map((row) => (
-            <option key={row.code} value={row.code}>
-              {row.name} ({row.code})
-            </option>
-          ))}
-        </select>
+        {indiaCheckoutOnly ? (
+          <div className="min-h-[48px] rounded-xl border border-stone-200 bg-stone-50 px-3 py-3 text-sm text-stone-800">
+            India — domestic delivery only on this site.
+          </div>
+        ) : (
+          <>
+            <input
+              type="search"
+              placeholder="Search country"
+              className="mb-2 min-h-[44px] w-full rounded-xl border border-stone-200 px-3 text-sm text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+              value={countryQuery}
+              onChange={(event) => setCountryQuery(event.target.value)}
+            />
+            <select
+              required
+              className="min-h-[48px] w-full rounded-xl border border-stone-200 bg-white px-3 text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+              value={form.country}
+              onChange={(event) => {
+                const country = event.target.value;
+                const dial = countryByCode(country)?.dial ?? form.phoneDial;
+                patch({ country, phoneDial: dial });
+              }}
+            >
+              {filteredCountries.map((row) => (
+                <option key={row.code} value={row.code}>
+                  {row.name} ({row.code})
+                </option>
+              ))}
+            </select>
+          </>
+        )}
         {fieldErrors?.country ? <p className="mt-1 text-xs text-red-600">{fieldErrors.country}</p> : null}
       </label>
     </div>
