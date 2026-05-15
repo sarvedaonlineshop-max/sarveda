@@ -80,8 +80,8 @@ async function callAnthropic(system: string, messages: ChatTurn[]): Promise<stri
     },
     body: JSON.stringify({
       model,
-      max_tokens: 768,
-      temperature: 0.55,
+      max_tokens: 900,
+      temperature: 0.65,
       system,
       messages: messages.map((m) => ({
         role: m.role,
@@ -124,8 +124,8 @@ async function callOpenAi(system: string, messages: ChatTurn[]): Promise<string>
     body: JSON.stringify({
       model,
       messages: [{ role: "system", content: system }, ...messages],
-      temperature: 0.55,
-      max_tokens: 768
+      temperature: 0.65,
+      max_tokens: 900
     })
   });
 

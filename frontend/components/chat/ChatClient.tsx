@@ -25,7 +25,7 @@ const starterMessages: ChatMessage[] = [
   {
     id: "welcome",
     role: "assistant",
-    text: "Namaste. I am your Sarveda guide. Ask about singing bowls, yoga essentials, Ayurveda, shipping, or what to choose for meditation — I can suggest products from our catalog."
+    text: "Hi, I'm here to help. Ask where your order is, when it will arrive, product prices, or what to buy — I'll answer based on your question."
   }
 ];
 
