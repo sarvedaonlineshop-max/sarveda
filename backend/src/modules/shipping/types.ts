@@ -7,7 +7,13 @@ export type OrderWithShippingContext = Order & {
 };
 
 export type ApiOk<T> = { success: true; data: T };
-export type ApiErr = { success: false; error: string; code: string };
+export type ApiErr = {
+  success: false;
+  error: string;
+  code: string;
+  httpStatus?: number;
+  carrierMessage?: string;
+};
 
 export type ZoneKey = "IN" | "US" | "GB" | "OTHER";
 

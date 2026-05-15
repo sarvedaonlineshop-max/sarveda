@@ -344,9 +344,22 @@ export async function cancelWaybillAdmin(req: Request, res: Response, next: Next
     if (!cancelled.success) {
       const isShiprocket = !c.includes("delhivery");
       if (isShiprocket) {
+        const carrierMsg = cancelled.carrierMessage ?? cancelled.error;
+        const absentOnCarrier = shiprocket.isShiprocketCancelUnavailable(
+          carrierMsg,
+          cancelled.httpStatus
+        );
         const tracked = await shiprocket.trackShipment(wb);
-        if (tracked.success && shiprocket.isCarrierStatusCancelled(tracked.data.status)) {
-          logger.info("shiprocket_cancel_already_void_on_carrier", { waybill: wb, status: tracked.data.status });
+        const trackCancelled =
+          tracked.success && shiprocket.isCarrierStatusCancelled(tracked.data.status);
+        const trackGone = !tracked.success && cancelled.httpStatus === 404;
+        if (trackCancelled || absentOnCarrier || trackGone) {
+          logger.info("shiprocket_cancel_already_void_on_carrier", {
+            waybill: wb,
+            status: tracked.success ? tracked.data.status : "unavailable",
+            absentOnCarrier,
+            trackGone
+          });
           await removeShipmentLabelLocally(row.orderId, row.id);
           res.json({
             success: true,
@@ -355,7 +368,12 @@ export async function cancelWaybillAdmin(req: Request, res: Response, next: Next
               waybill: wb,
               orderId: row.orderId,
               carrierAlreadyCancelled: true,
-              carrierStatus: tracked.data.status
+              carrierStatus: tracked.success ? tracked.data.status : undefined,
+              reason: trackCancelled
+                ? "tracking_cancelled"
+                : absentOnCarrier
+                  ? "carrier_not_found"
+                  : "tracking_unavailable"
             }
           });
           return;
@@ -363,7 +381,7 @@ export async function cancelWaybillAdmin(req: Request, res: Response, next: Next
       }
       res.status(400).json({
         ...cancelled,
-        error: `${cancelled.error} Use “Remove label only” in admin if you already cancelled this AWB in Shiprocket.`
+        error: `${cancelled.error} Use “Remove label only” if you already cancelled this AWB in Shiprocket.`
       });
       return;
     }

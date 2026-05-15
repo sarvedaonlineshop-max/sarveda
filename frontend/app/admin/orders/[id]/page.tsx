@@ -399,11 +399,11 @@ export default function AdminOrderDetailPage() {
         title="Cancel carrier label?"
         message={
           cancelAwbConfirm
-            ? `Cancel AWB ${cancelAwbConfirm} on Shiprocket and remove it here — or, if you already cancelled in Shiprocket, use “Remove label only”. This is not the same as cancelling the order (use Order status → Cancelled for that).`
+            ? `Cancel AWB ${cancelAwbConfirm} on Shiprocket (voids the AWB there) and remove it from Sarveda. If you already cancelled in the Shiprocket dashboard, use “Remove label only” — that only clears Sarveda; Shiprocket is already updated. This does not cancel the Sarveda order (use Order status → Cancelled for refunds/stock).`
             : ""
         }
         confirmLabel="Cancel on Shiprocket"
-        secondaryConfirmLabel="Remove label only"
+        secondaryConfirmLabel="Remove label only (Sarveda)"
         onSecondaryConfirm={() => void confirmCancelWaybill(true)}
         danger
         busy={!!shipBusy}
