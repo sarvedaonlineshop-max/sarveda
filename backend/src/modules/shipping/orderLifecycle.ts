@@ -6,10 +6,25 @@ import { logger } from "../../config/logger";
 import * as delhivery from "./delhivery";
 import { assertOrderEligibleForTrackingSync, autoSelectAndCreate } from "./router";
 import * as shiprocket from "./shiprocket";
+import { notifyOrderEmail } from "../notifications/email";
+
 import {
   mapCourierStatusToShipment,
   persistShipmentTrackingFromCarrier
 } from "./shipmentTracking.persist";
+
+function notifyShipmentMilestones(
+  orderId: string,
+  prevOrderStatus: OrderStatus,
+  nextOrderStatus: OrderStatus
+): void {
+  if (nextOrderStatus === "SHIPPED" && prevOrderStatus !== "SHIPPED" && prevOrderStatus !== "DELIVERED") {
+    notifyOrderEmail(orderId, "order_shipped");
+  }
+  if (nextOrderStatus === "DELIVERED" && prevOrderStatus !== "DELIVERED") {
+    notifyOrderEmail(orderId, "order_delivered");
+  }
+}
 
 const BLOCKED_TRACK_ORDER: OrderStatus[] = ["CANCELLED", "REFUNDED", "PENDING_PAYMENT"];
 
@@ -100,7 +115,9 @@ export async function applyCarrierWebhookTracking(
   }
 
   const shipmentStatus = mapCourierStatusToShipment(statusLabel);
+  const prevOrderStatus = shipment.order.status;
   const out = await persistShipmentTrackingFromCarrier(shipment, shipmentStatus);
+  notifyShipmentMilestones(shipment.orderId, prevOrderStatus, out.orderStatus);
 
   logger.info("shiprocket_webhook_tracking_applied", {
     waybill: wb,
@@ -172,7 +189,9 @@ export async function syncTrackingByWaybill(waybill: string): Promise<
   }
 
   const shipmentStatus = mapCourierStatusToShipment(tracked.data.status);
+  const prevOrderStatus = shipment.order.status;
   const out = await persistShipmentTrackingFromCarrier(shipment, shipmentStatus);
+  notifyShipmentMilestones(shipment.orderId, prevOrderStatus, out.orderStatus);
 
   return {
     success: true,

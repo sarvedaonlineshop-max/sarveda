@@ -92,7 +92,28 @@ export async function fetchProductList(
   q.set("page", page);
   q.set("limit", String(options?.limit ?? 24));
   if (category) q.set("category", category);
+  const searchQ =
+    typeof searchParams.q === "string"
+      ? searchParams.q
+      : typeof searchParams.search === "string"
+        ? searchParams.search
+        : undefined;
+  if (searchQ?.trim()) q.set("q", searchQ.trim());
   return fetchApi<ProductListResponse>(`/api/products?${q.toString()}`, init);
+}
+
+export type ProductSuggestion = {
+  slug: string;
+  name: string;
+  imageUrl: string | null;
+  priceInPaise: number | null;
+};
+
+export async function fetchProductSuggestions(term: string): Promise<ProductSuggestion[]> {
+  if (term.trim().length < 2) return [];
+  const q = new URLSearchParams({ q: term.trim() });
+  const data = await fetchApi<{ items: ProductSuggestion[] }>(`/api/products/suggest?${q.toString()}`);
+  return data.items;
 }
 
 /** Related picks: same category when possible, otherwise recent catalogue items. */

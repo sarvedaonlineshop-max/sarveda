@@ -2,6 +2,7 @@ import type { Prisma } from "@prisma/client";
 
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
+import { notifyOrderEmail } from "../notifications/email";
 import { confirmStockTx } from "../orders/orders.service";
 import { invoiceNumberForOrder } from "../../utils/invoice";
 
@@ -130,5 +131,6 @@ export async function completePaidOrder(
   });
 
   logger.info("order_paid", { orderNumber: payment.order.orderNumber, razorpayPaymentId });
+  notifyOrderEmail(payment.orderId, "order_confirmed");
   return { orderNumber: payment.order.orderNumber };
 }

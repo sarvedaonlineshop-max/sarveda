@@ -5,7 +5,8 @@ import type { Request, Response } from "express";
 
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
-import { cancelUnpaidOrderWithRelease } from "../orders/orders.service";
+import { notifyOrderEmail } from "../notifications/email";
+import { cancelUnpaidOrderWithRelease, handlePaidOrderStatusChange } from "../orders/orders.service";
 
 import { completePaidOrder } from "./razorpay.verify";
 
@@ -126,10 +127,13 @@ export async function razorpayWebhookHandler(req: Request, res: Response): Promi
         });
         if (payRow) {
           await mergePaymentRawPayload(payRow.id, event, (ent ?? {}) as Record<string, unknown>);
-          await cancelUnpaidOrderWithRelease(payRow.orderId, "Razorpay reported payment.failed", {
+          const cancelled = await cancelUnpaidOrderWithRelease(payRow.orderId, "Razorpay reported payment.failed", {
             razorpayError: ent?.error_code,
             razorpayErrorDescription: ent?.error_description
           });
+          if (cancelled) {
+            notifyOrderEmail(payRow.orderId, "payment_failed");
+          }
         }
       }
     } else if (event === "refund.created" || event === "refund.processed") {
@@ -164,6 +168,10 @@ export async function razorpayWebhookHandler(req: Request, res: Response): Promi
               where: { id: existing.id },
               data: { status: "processed" }
             });
+          }
+          if (event === "refund.processed") {
+            await handlePaidOrderStatusChange(payRow.orderId, "REFUNDED", "Razorpay refund.processed");
+            notifyOrderEmail(payRow.orderId, "refund_initiated");
           }
         }
       }

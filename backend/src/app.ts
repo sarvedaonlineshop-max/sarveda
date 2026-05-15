@@ -16,6 +16,8 @@ import { checkoutRoutes } from "./modules/checkout/checkout.routes";
 import { ordersRoutes } from "./modules/orders/orders.routes";
 import { paymentsJsonRoutes } from "./modules/payments/payments.routes";
 import { razorpayWebhookHandler } from "./modules/payments/razorpay.webhook";
+import { stripeWebhookHandler } from "./modules/payments/stripe.webhook";
+import { delhiveryWebhookHandler } from "./modules/shipping/delhivery.webhook";
 import { shiprocketWebhookHandler } from "./modules/shipping/shiprocket.webhook";
 import { adminRoutes } from "./modules/admin";
 import { productsRoutes } from "./modules/products/products.routes";
@@ -52,7 +54,16 @@ app.post(
   }
 );
 
+app.post(
+  "/api/payments/stripe/webhook",
+  express.raw({ type: "application/json" }),
+  (req: Request, res: Response, next: NextFunction) => {
+    void stripeWebhookHandler(req, res).catch(next);
+  }
+);
+
 const shiprocketWebhookRaw = express.raw({ type: "application/json" });
+const delhiveryWebhookRaw = express.raw({ type: "application/json" });
 const shiprocketWebhookRoute = (req: Request, res: Response, next: NextFunction) => {
   void shiprocketWebhookHandler(req, res).catch(next);
 };
@@ -63,6 +74,9 @@ app.post("/api/shipping/shiprocket/webhook", shiprocketWebhookRaw, shiprocketWeb
  * Use this URL in Settings → Webhooks instead.
  */
 app.post("/api/shipping/carrier-events/webhook", shiprocketWebhookRaw, shiprocketWebhookRoute);
+app.post("/api/shipping/delhivery/webhook", delhiveryWebhookRaw, (req, res, next) => {
+  void delhiveryWebhookHandler(req, res).catch(next);
+});
 
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));

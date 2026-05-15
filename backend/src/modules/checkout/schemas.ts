@@ -11,8 +11,19 @@ export const createOrderSchema = z
     state: z.string().min(1).max(120),
     postalCode: z.string().min(3).max(20),
     country: z.string().min(2).max(2).default("IN"),
-    /** India COD logistics surcharge from VariantShippingRate (payment remains online via Razorpay unless you add pure COD later). */
-    codDelivery: z.boolean().optional().default(false)
+    /** India COD shipping surcharge (VariantShippingRate). */
+    codDelivery: z.boolean().optional().default(false),
+    /** `cod` = cash on delivery (India only). Default online Razorpay. */
+    paymentMethod: z.enum(["razorpay", "cod"]).optional().default("razorpay")
+  })
+  .superRefine((data, ctx) => {
+    if (data.paymentMethod === "cod" && data.country.toUpperCase() !== "IN") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Cash on delivery is available for India only.",
+        path: ["paymentMethod"]
+      });
+    }
   })
   .superRefine((data, ctx) => {
     if (data.country.toUpperCase() === "IN") {

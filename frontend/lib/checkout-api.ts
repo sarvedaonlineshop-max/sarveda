@@ -11,6 +11,8 @@ export type CreateOrderBody = {
   state: string;
   postalCode: string;
   country?: string;
+  codDelivery?: boolean;
+  paymentMethod?: "razorpay" | "cod";
 };
 
 export type CreateOrderResponse = {
@@ -18,9 +20,11 @@ export type CreateOrderResponse = {
   orderNumber: string;
   amountInPaise: number;
   currency: string;
-  razorpayKeyId: string;
-  rzpOrderId: string;
+  paymentMethod: "razorpay" | "cod";
   paymentId: string;
+  razorpayKeyId?: string;
+  rzpOrderId?: string;
+  codConfirmed?: boolean;
 };
 
 export class CheckoutApiError extends Error {
@@ -45,7 +49,12 @@ export async function createOrder(
       ...buildHeaders(true),
       "Idempotency-Key": idempotencyKey
     },
-    body: JSON.stringify({ ...body, country: body.country ?? "IN" })
+    body: JSON.stringify({
+      ...body,
+      country: body.country ?? "IN",
+      codDelivery: body.codDelivery ?? false,
+      paymentMethod: body.paymentMethod ?? "razorpay"
+    })
   });
   const json = (await res.json()) as {
     success?: boolean;

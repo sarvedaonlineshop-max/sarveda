@@ -13,6 +13,10 @@ export function toGbpPence(pounds: number): number {
   return Math.round(pounds * 100);
 }
 
+export function formatINR(paise: number): string {
+  return `₹${(paise / 100).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+}
+
 export function parseDecimal(raw: string | undefined | null): number | null {
   if (raw == null || String(raw).trim() === "") return null;
   const n = parseFloat(String(raw).replace(/,/g, "").trim());

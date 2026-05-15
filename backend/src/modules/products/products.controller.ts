@@ -8,6 +8,7 @@ import {
   getProductBySlug,
   listProducts,
   listProductsAdmin,
+  suggestProducts,
   updateProduct
 } from "./products.service";
 import type { CreateProductBody, UpdateProductBody } from "./schemas";
@@ -45,6 +46,16 @@ export async function adminGetOne(req: Request, res: Response, next: NextFunctio
     const { id } = req.params;
     const product = await getProductAdminById(id);
     res.json({ success: true, data: { product } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function suggest(req: Request, res: Response, next: NextFunction) {
+  try {
+    const q = typeof req.query.q === "string" ? req.query.q : "";
+    const items = await suggestProducts(q);
+    res.json({ success: true, data: { items } });
   } catch (err) {
     next(err);
   }

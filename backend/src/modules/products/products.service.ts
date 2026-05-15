@@ -148,7 +148,13 @@ export async function listProducts(query: ListProductsQuery) {
   };
 
   if (query.q?.trim()) {
-    where.name = { contains: query.q.trim(), mode: "insensitive" };
+    const q = query.q.trim();
+    where.OR = [
+      { name: { contains: q, mode: "insensitive" } },
+      { description: { contains: q, mode: "insensitive" } },
+      { shortDescription: { contains: q, mode: "insensitive" } },
+      { categories: { some: { category: { name: { contains: q, mode: "insensitive" } } } } }
+    ];
   }
 
   if (query.categorySlug?.trim()) {
@@ -215,6 +221,39 @@ export async function listProducts(query: ListProductsQuery) {
       totalPages: Math.ceil(total / limit) || 1
     }
   };
+}
+
+export async function suggestProducts(q: string, limit = 8) {
+  const term = q.trim();
+  if (term.length < 2) {
+    return [];
+  }
+  const rows = await prisma.product.findMany({
+    where: {
+      deletedAt: null,
+      status: "ACTIVE",
+      OR: [
+        { name: { contains: term, mode: "insensitive" } },
+        { shortDescription: { contains: term, mode: "insensitive" } },
+        { categories: { some: { category: { name: { contains: term, mode: "insensitive" } } } } }
+      ]
+    },
+    take: Math.min(12, Math.max(1, limit)),
+    orderBy: { updatedAt: "desc" },
+    include: {
+      images: { where: { isPrimary: true }, take: 1 },
+      variants: {
+        where: { status: "ACTIVE", isDefault: true },
+        take: 1
+      }
+    }
+  });
+  return rows.map((p) => ({
+    slug: p.slug,
+    name: p.name,
+    imageUrl: p.images[0]?.url ?? null,
+    priceInPaise: p.variants[0]?.saleInPaise ?? null
+  }));
 }
 
 export async function getProductBySlug(slug: string) {

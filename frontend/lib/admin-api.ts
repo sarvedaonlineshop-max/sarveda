@@ -376,3 +376,22 @@ export function patchAdminInventoryVariant(variantId: string, onHand: number) {
     }
   );
 }
+
+export type ReconciliationRow = {
+  orderId: string;
+  orderNumber: string;
+  orderStatus: string;
+  paymentStatus: string;
+  provider: string | null;
+  mismatch: boolean;
+};
+
+export function fetchPaymentsReconciliation(days = 30) {
+  return adminFetch<{
+    days: number;
+    total: number;
+    mismatchCount: number;
+    mismatches: ReconciliationRow[];
+    recent: ReconciliationRow[];
+  }>(`/api/admin/payments/reconciliation?days=${days}`);
+}

@@ -63,6 +63,7 @@ type Props = {
   addressForm: CheckoutAddressForm;
   subtotalInPaise: number;
   itemCount: number;
+  codDelivery?: boolean;
   onRefreshCart: () => Promise<void>;
   onCheckoutCompleting: () => void;
   onFieldErrors: (errors: Partial<Record<keyof CheckoutAddressForm, string>>) => void;
@@ -79,13 +80,16 @@ export function PaymentSelector({
   onRefreshCart,
   onCheckoutCompleting,
   onFieldErrors,
-  resumeOrderNumber
+  resumeOrderNumber,
+  codDelivery = false
 }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [payWithCod, setPayWithCod] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const payStarted = useRef(false);
+  const indiaOnly = (form.country ?? "IN").toUpperCase() === "IN";
 
   const goSuccess = useCallback(
     (orderNumber: string) => {
@@ -241,11 +245,13 @@ export function PaymentSelector({
         city: form.city.trim(),
         state: form.state.trim(),
         postalCode: form.postalCode.trim(),
-        country: form.country ?? "IN"
+        country: form.country ?? "IN",
+        codDelivery: codDelivery || payWithCod,
+        paymentMethod: payWithCod ? "cod" : "razorpay"
       },
       idempotencyKey
     );
-  }, [form, idempotencyKey, resumeOrderNumber]);
+  }, [codDelivery, form, idempotencyKey, payWithCod, resumeOrderNumber]);
 
   const onPay = useCallback(async () => {
     if (busy || payStarted.current || processing) return;
@@ -260,12 +266,28 @@ export function PaymentSelector({
     setBusy(true);
     payStarted.current = true;
     try {
+      if (payWithCod && indiaOnly) {
+        setProcessing(true);
+        const order = await resolvePayableOrder();
+        if (order.codConfirmed || order.paymentMethod === "cod") {
+          goSuccess(order.orderNumber);
+          return;
+        }
+        throw new Error("COD checkout is not available for this order.");
+      }
       const ready = rzpReady || (await loadRazorpayScript());
       if (!ready) {
         throw new Error("Payment gateway did not load. Check your connection and try again.");
       }
       const order = await resolvePayableOrder();
-      openRazorpay(order);
+      if (order.codConfirmed) {
+        goSuccess(order.orderNumber);
+        return;
+      }
+      if (!order.rzpOrderId || !order.razorpayKeyId) {
+        throw new Error("Payment session missing. Please try again.");
+      }
+      openRazorpay(order as CreateOrderResponse & { razorpayKeyId: string; rzpOrderId: string });
     } catch (e) {
       payStarted.current = false;
       const msg =
@@ -277,7 +299,7 @@ export function PaymentSelector({
       setErr(msg);
       setBusy(false);
     }
-  }, [addressForm, busy, onFieldErrors, openRazorpay, processing, resolvePayableOrder, rzpReady]);
+  }, [addressForm, busy, goSuccess, indiaOnly, onFieldErrors, openRazorpay, payWithCod, processing, resolvePayableOrder, rzpReady]);
 
   return (
     <div className="rounded-2xl border border-stone-100 bg-white p-6 shadow-sm">
@@ -313,13 +335,36 @@ export function PaymentSelector({
         </p>
       ) : null}
 
+      {indiaOnly ? (
+        <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-stone-200 bg-stone-50/80 p-3 text-sm">
+          <input
+            type="checkbox"
+            className="mt-1"
+            checked={payWithCod}
+            onChange={(e) => setPayWithCod(e.target.checked)}
+          />
+          <span>
+            <span className="font-semibold text-stone-900">Cash on delivery (COD)</span>
+            <span className="mt-0.5 block text-stone-600">
+              Pay when your order arrives. COD shipping rates apply.
+            </span>
+          </span>
+        </label>
+      ) : null}
+
       <button
         type="button"
         disabled={busy || processing}
         onClick={() => void onPay()}
         className="mt-6 flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-stone-900 py-3.5 text-base font-semibold tracking-wide text-amber-400 shadow-lg transition-colors hover:bg-amber-700 hover:text-white disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600"
       >
-        {!rzpReady && !busy && !processing ? "Loading payment…" : busy || processing ? "Processing…" : "Pay with Razorpay"}
+        {!rzpReady && !busy && !processing && !payWithCod
+          ? "Loading payment…"
+          : busy || processing
+            ? "Processing…"
+            : payWithCod
+              ? "Place COD order"
+              : "Pay with Razorpay"}
       </button>
     </div>
   );

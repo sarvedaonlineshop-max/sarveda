@@ -596,6 +596,27 @@ export async function patchOrderStatus(req: Request, res: Response, next: NextFu
     }
 
     const prevStatus = exists.status;
+    const paidPipeline = ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"] as OrderStatus[];
+
+    if (
+      (status === "CANCELLED" || status === "REFUNDED") &&
+      paidPipeline.includes(prevStatus)
+    ) {
+      const { handlePaidOrderStatusChange } = await import("../orders/orders.service");
+      const { notifyOrderEmail } = await import("../notifications/email");
+      await handlePaidOrderStatusChange(
+        id,
+        status === "REFUNDED" ? "REFUNDED" : "CANCELLED",
+        "Admin status update"
+      );
+      notifyOrderEmail(id, status === "REFUNDED" ? "refund_initiated" : "order_cancelled");
+      const order = await prisma.order.findFirst({
+        where: { id },
+        include: { items: true, addresses: true, invoice: true }
+      });
+      res.json({ success: true, data: { order } });
+      return;
+    }
 
     const order = await prisma.order.update({
       where: { id },
@@ -941,6 +962,59 @@ export async function reconcileRazorpayOrder(req: Request, res: Response, next: 
         paymentStatus: fresh?.paymentStatus,
         orderNumber: fresh?.orderNumber,
         razorpayPaymentId: pid
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** Payment reconciliation summary for admin (order vs payment row mismatches). */
+export async function paymentsReconciliation(req: Request, res: Response, next: NextFunction) {
+  try {
+    const days = Math.min(90, Math.max(1, parseInt(String(req.query.days ?? "30"), 10) || 30));
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const orders = await prisma.order.findMany({
+      where: { deletedAt: null, createdAt: { gte: since } },
+      orderBy: { createdAt: "desc" },
+      take: 500,
+      include: {
+        payments: { orderBy: { createdAt: "desc" }, take: 1 }
+      }
+    });
+
+    const rows = orders.map((o) => {
+      const pay = o.payments[0];
+      const isCod = pay?.provider === "COD";
+      const mismatch =
+        (o.paymentStatus === "CAPTURED" && pay?.status !== "CAPTURED") ||
+        (o.status === "PAID" && o.paymentStatus === "PENDING" && !isCod) ||
+        (o.status === "PENDING_PAYMENT" && pay?.status === "CAPTURED");
+      return {
+        orderId: o.id,
+        orderNumber: o.orderNumber,
+        orderStatus: o.status,
+        paymentStatus: o.paymentStatus,
+        provider: pay?.provider ?? null,
+        providerOrderId: pay?.providerOrderId ?? null,
+        providerPaymentId: pay?.providerPaymentId ?? null,
+        amountInPaise: pay?.amountInPaise ?? o.grandTotalInPaise,
+        mismatch,
+        createdAt: o.createdAt
+      };
+    });
+
+    const mismatches = rows.filter((r) => r.mismatch);
+
+    res.json({
+      success: true,
+      data: {
+        days,
+        total: rows.length,
+        mismatchCount: mismatches.length,
+        mismatches: mismatches.slice(0, 100),
+        recent: rows.slice(0, 50)
       }
     });
   } catch (err) {

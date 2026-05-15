@@ -197,6 +197,58 @@ export async function track(req: Request, res: Response, next: NextFunction) {
   }
 }
 
+/** Public AWB tracking (optional ?email= must match order for privacy). */
+export async function publicTrack(req: Request, res: Response, next: NextFunction) {
+  try {
+    const waybill = String(req.params.waybill ?? "").trim();
+    const email =
+      typeof req.query.email === "string" ? req.query.email.trim().toLowerCase() : undefined;
+
+    const shipment = await prisma.shipment.findFirst({
+      where: { awb: waybill },
+      include: { order: { select: { email: true, orderNumber: true, status: true } } }
+    });
+    if (!shipment) {
+      res.status(404).json({ success: false, error: "Shipment not found", code: "NOT_FOUND" });
+      return;
+    }
+    if (email && shipment.order.email.toLowerCase() !== email) {
+      res.status(403).json({ success: false, error: "Email does not match this shipment", code: "FORBIDDEN" });
+      return;
+    }
+
+    const synced = await syncTrackingByWaybill(waybill);
+    const fresh = await prisma.shipment.findFirst({
+      where: { awb: waybill },
+      select: {
+        awb: true,
+        courier: true,
+        status: true,
+        trackingUrl: true,
+        deliveredAt: true,
+        updatedAt: true,
+        order: { select: { orderNumber: true, status: true } }
+      }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        waybill,
+        courier: fresh?.courier ?? shipment.courier,
+        shipmentStatus: fresh?.status ?? shipment.status,
+        trackingUrl: fresh?.trackingUrl ?? shipment.trackingUrl,
+        deliveredAt: fresh?.deliveredAt ?? shipment.deliveredAt,
+        orderNumber: fresh?.order.orderNumber ?? shipment.order.orderNumber,
+        orderStatus: fresh?.order.status ?? shipment.order.status,
+        carrierSync: synced.success ? synced.data : null
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 const cancelWaybillBody = z.object({
   waybill: z.string().min(4).max(64),
   /** Skip carrier API; remove Sarveda shipment row only (use when already cancelled in Shiprocket). */

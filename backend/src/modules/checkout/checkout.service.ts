@@ -7,7 +7,9 @@ import { logger } from "../../config/logger";
 import { schedulePaymentTimeout } from "../../jobs/paymentTimeoutJob";
 import { generateOrderNumber } from "../../utils/orderNumber";
 import { createOrder, getRazorpayKeyId } from "../payments/razorpay";
-import { reserveStockTx } from "../orders/orders.service";
+import { confirmStockTx, reserveStockTx } from "../orders/orders.service";
+import { notifyOrderEmail } from "../notifications/email";
+import { invoiceNumberForOrder } from "../../utils/invoice";
 import { getCartPayload, resolveCartContext } from "../cart/cart.service";
 import {
   computeVariantShippingTotal,
@@ -20,6 +22,13 @@ import * as shiprocket from "../shipping/shiprocket";
 import { shippingEnv } from "../../config/env";
 import type { ZoneKey } from "../shipping/types";
 import type { CreateOrderBody } from "./schemas";
+
+function triStateEnv(envVal: string | undefined, defaultWhenUnset: boolean): boolean {
+  const v = (envVal ?? "").trim().toLowerCase();
+  if (["1", "true", "yes"].includes(v)) return true;
+  if (["0", "false", "no"].includes(v)) return false;
+  return defaultWhenUnset;
+}
 
 function unitMinor(variant: ProductVariant, zone: ZoneKey): number {
   switch (zone) {
@@ -134,9 +143,12 @@ export type CreateCheckoutResult = {
   orderNumber: string;
   amountInPaise: number;
   currency: string;
-  razorpayKeyId: string;
-  rzpOrderId: string;
+  paymentMethod: "razorpay" | "cod";
   paymentId: string;
+  razorpayKeyId?: string;
+  rzpOrderId?: string;
+  /** COD orders are confirmed immediately (no Razorpay modal). */
+  codConfirmed?: boolean;
 };
 
 function labelFromVariant(
@@ -337,6 +349,55 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
 
     await reserveStockTx(tx, order.id);
 
+    const useCod =
+      body.paymentMethod === "cod" &&
+      zone === "IN" &&
+      triStateEnv(process.env.ENABLE_COD_CHECKOUT, true);
+
+    if (useCod) {
+      const payment = await tx.payment.create({
+        data: {
+          orderId: order.id,
+          provider: "COD",
+          amountInPaise: grandTotalInPaise,
+          currency: orderCurrency,
+          status: "PENDING",
+          rawPayload: { cod: true, placedAt: new Date().toISOString() } as object
+        }
+      });
+
+      await confirmStockTx(tx, order.id);
+
+      await tx.order.update({
+        where: { id: order.id },
+        data: {
+          status: "PAID",
+          paymentStatus: "PENDING",
+          placedAt: new Date()
+        }
+      });
+
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: order.id,
+          fromStatus: "PENDING_PAYMENT",
+          toStatus: "PAID",
+          reason: "COD order placed"
+        }
+      });
+
+      await tx.invoice.upsert({
+        where: { orderId: order.id },
+        create: {
+          orderId: order.id,
+          invoiceNo: invoiceNumberForOrder(orderNumber)
+        },
+        update: {}
+      });
+
+      return { order, payment, cod: true as const };
+    }
+
     const rzpIdempotencyKey = `${order.id}:${Date.now()}`;
     const rzp = await createOrder({
       amountInMinorUnits: grandTotalInPaise,
@@ -370,8 +431,35 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
       }
     });
 
-    return { order, payment, rzpOrderId: rzp.id };
+    return { order, payment, rzpOrderId: rzp.id, cod: false as const };
   });
+
+  if ("cod" in result && result.cod) {
+    if (userId) {
+      const cart = await prisma.cart.findUnique({ where: { userId } });
+      if (cart) {
+        await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
+      }
+    }
+    notifyOrderEmail(result.order.id, "order_confirmed");
+    logger.info("checkout_cod_order_created", {
+      orderId: result.order.id,
+      orderNumber: result.order.orderNumber
+    });
+    const codPayload: CreateCheckoutResult = {
+      orderId: result.order.id,
+      orderNumber: result.order.orderNumber,
+      amountInPaise: grandTotalInPaise,
+      currency: orderCurrency,
+      paymentMethod: "cod",
+      paymentId: result.payment.id,
+      codConfirmed: true
+    };
+    if (idemHeader) {
+      await setIdempotentCheckout(idemHeader, codPayload);
+    }
+    return codPayload;
+  }
 
   await schedulePaymentTimeout(result.order.id);
 
@@ -385,6 +473,7 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
     orderNumber: result.order.orderNumber,
     amountInPaise: grandTotalInPaise,
     currency: orderCurrency,
+    paymentMethod: "razorpay",
     razorpayKeyId: getRazorpayKeyId(),
     rzpOrderId: result.rzpOrderId,
     paymentId: result.payment.id
@@ -444,6 +533,7 @@ export async function resumePendingCheckout(orderNumber: string, email: string):
     orderNumber: order.orderNumber,
     amountInPaise: order.grandTotalInPaise,
     currency: order.currency,
+    paymentMethod: "razorpay",
     razorpayKeyId: getRazorpayKeyId(),
     rzpOrderId: payment.providerOrderId,
     paymentId: payment.id
