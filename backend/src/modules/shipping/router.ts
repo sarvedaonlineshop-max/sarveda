@@ -166,6 +166,17 @@ export type AutoShipmentCreateOptions = {
   shiprocketPickupName?: string;
 };
 
+/** Shiprocket/Delhivery channel order id — first label uses Sarveda order number; retries get -R2, -R3 after cancel. */
+export function nextCarrierChannelOrderId(
+  orderNumber: string,
+  shippingLabelSeq: number
+): { channelOrderId: string; nextSeq: number } {
+  const nextSeq = shippingLabelSeq + 1;
+  const channelOrderId =
+    nextSeq === 1 ? orderNumber : `${orderNumber}-R${nextSeq}`.slice(0, 50);
+  return { channelOrderId, nextSeq };
+}
+
 export async function autoSelectAndCreate(
   orderId: string,
   options?: AutoShipmentCreateOptions
@@ -226,6 +237,11 @@ export async function autoSelectAndCreate(
     return { success: false, error: eligible.error, code: eligible.code };
   }
 
+  const { channelOrderId, nextSeq } = nextCarrierChannelOrderId(
+    order.orderNumber,
+    order.shippingLabelSeq
+  );
+
   const choice = selectCourier(order as OrderWithShippingContext);
   const shipAddr = order.addresses.find((a) => a.type === "SHIPPING");
   if (!shipAddr) {
@@ -236,7 +252,7 @@ export async function autoSelectAndCreate(
   const paymentMode =
     primaryPaymentProvider(order as OrderWithShippingContext) === "COD" ? "COD" : "Pre-paid";
 
-  logger.info("shipping_router_choice", { orderId, choice, weightKg });
+  logger.info("shipping_router_choice", { orderId, choice, weightKg, channelOrderId, nextSeq });
 
   let shiprocketPickup:
     | { pickupLocationName: string; pickupLocationId: string | null }
@@ -275,7 +291,7 @@ export async function autoSelectAndCreate(
 
     if (choice === "DELHIVERY") {
       const created = await delhivery.createShipment({
-        orderNumber: order.orderNumber,
+        orderNumber: channelOrderId,
         paymentMode,
         codAmountRupees: paymentMode === "COD" ? codAmountRupees(order as OrderWithShippingContext) : undefined,
         weightKg,
@@ -289,7 +305,15 @@ export async function autoSelectAndCreate(
       if (!created.success) {
         return created;
       }
-      await persistShipment(order.id, "Delhivery", created.data.waybill, created.data.trackingUrl);
+      await persistShipment(
+        order.id,
+        "Delhivery",
+        created.data.waybill,
+        created.data.trackingUrl,
+        undefined,
+        { channelOrderId },
+        nextSeq
+      );
       return {
         success: true,
         data: { courier: "Delhivery", waybill: created.data.waybill, trackingUrl: created.data.trackingUrl }
@@ -298,7 +322,8 @@ export async function autoSelectAndCreate(
 
     if (choice === "SHIPROCKET_INTERNATIONAL") {
       const created = await shiprocket.createInternationalShipment(order as OrderWithShippingContext, {
-        pickupLocationName: shiprocketPickup!.pickupLocationName
+        pickupLocationName: shiprocketPickup!.pickupLocationName,
+        channelOrderId
       });
       if (!created.success) return created;
       await persistShipment(
@@ -307,7 +332,8 @@ export async function autoSelectAndCreate(
         created.data.waybill,
         created.data.trackingUrl,
         shiprocketPickup!.pickupLocationId,
-        created.data.carrierMeta
+        created.data.carrierMeta,
+        nextSeq
       );
       return {
         success: true,
@@ -320,7 +346,8 @@ export async function autoSelectAndCreate(
     }
 
     const srDomestic = await shiprocket.createInternationalShipment(order as OrderWithShippingContext, {
-      pickupLocationName: shiprocketPickup!.pickupLocationName
+      pickupLocationName: shiprocketPickup!.pickupLocationName,
+      channelOrderId
     });
     if (!srDomestic.success) return srDomestic;
     await persistShipment(
@@ -329,7 +356,8 @@ export async function autoSelectAndCreate(
       srDomestic.data.waybill,
       srDomestic.data.trackingUrl,
       shiprocketPickup!.pickupLocationId,
-      srDomestic.data.carrierMeta
+      srDomestic.data.carrierMeta,
+      nextSeq
     );
     return {
       success: true,
@@ -355,7 +383,8 @@ async function persistShipment(
   waybill: string,
   trackingUrl: string,
   pickupLocationId?: string | null,
-  carrierMeta?: Prisma.InputJsonValue | null
+  carrierMeta?: Prisma.InputJsonValue | null,
+  shippingLabelSeqAfter?: number
 ): Promise<void> {
   await prisma.$transaction(async (tx) => {
     await tx.shipment.create({
@@ -374,7 +403,10 @@ async function persistShipment(
       data: {
         fulfillmentStatus: "PARTIAL",
         shippingLastError: null,
-        shippingLastErrorAt: null
+        shippingLastErrorAt: null,
+        ...(shippingLabelSeqAfter !== undefined
+          ? { shippingLabelSeq: shippingLabelSeqAfter }
+          : {})
       }
     });
   });

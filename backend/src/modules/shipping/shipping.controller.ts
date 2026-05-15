@@ -208,9 +208,19 @@ async function removeShipmentLabelLocally(orderId: string, shipmentId: string): 
     await tx.shipment.delete({ where: { id: shipmentId } });
     const remaining = await tx.shipment.count({ where: { orderId } });
     if (remaining === 0) {
+      const orderRow = await tx.order.findUnique({
+        where: { id: orderId },
+        select: { shippingLabelSeq: true }
+      });
+      const seqFloor = Math.max(orderRow?.shippingLabelSeq ?? 0, 1);
       await tx.order.update({
         where: { id: orderId },
-        data: { fulfillmentStatus: "UNFULFILLED", shippingLastError: null, shippingLastErrorAt: null }
+        data: {
+          fulfillmentStatus: "UNFULFILLED",
+          shippingLastError: null,
+          shippingLastErrorAt: null,
+          shippingLabelSeq: seqFloor
+        }
       });
     }
   });

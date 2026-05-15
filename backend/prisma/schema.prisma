@@ -254,6 +254,8 @@ model Order {
   /// Last courier/shipment integration failure (e.g. Delhivery create); cleared on success.
   shippingLastError   String?   @db.Text
   shippingLastErrorAt DateTime?
+  /// Incremented each time a new carrier label is created (Shiprocket order_id suffix on retry).
+  shippingLabelSeq    Int       @default(0)
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
   customer          User?             @relation(fields: [customerId], references: [id])

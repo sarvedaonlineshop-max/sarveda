@@ -302,7 +302,7 @@ async function assignAwbForShipment(token: string, shipmentId: number): Promise<
 
 export async function createInternationalShipment(
   order: OrderWithShippingContext,
-  options?: { pickupLocationName?: string }
+  options?: { pickupLocationName?: string; channelOrderId?: string }
 ): Promise<ApiOk<{ waybill: string; trackingUrl: string; carrierMeta: Prisma.JsonObject | null }> | ApiErr> {
   const auth = await getToken();
   if (!auth.success) return auth;
@@ -363,8 +363,9 @@ export async function createInternationalShipment(
         ? orderPlaced.toISOString().slice(0, 19).replace("T", " ")
         : new Date().toISOString().slice(0, 19).replace("T", " ");
 
+    const channelOrderId = (options?.channelOrderId ?? order.orderNumber).trim().slice(0, 50);
     const payload = {
-      order_id: order.orderNumber,
+      order_id: channelOrderId,
       order_date: orderDate,
       pickup_location: pickupLocation,
       billing_customer_name: ship.fullName.trim().slice(0, 100) || "Customer",
@@ -524,6 +525,7 @@ export async function createInternationalShipment(
     const carrierMeta: Prisma.JsonObject = { ...carrierMetaFromResponse };
     if (created.shipmentId !== undefined) carrierMeta.shiprocketShipmentId = created.shipmentId;
     carrierMeta.awbCode = waybill;
+    carrierMeta.channelOrderId = channelOrderId;
     const carrierMetaOut = Object.keys(carrierMeta).length > 0 ? carrierMeta : null;
     return { success: true, data: { waybill, trackingUrl, carrierMeta: carrierMetaOut } };
   } catch (err) {
