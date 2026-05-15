@@ -22,6 +22,7 @@ import { shiprocketWebhookHandler } from "./modules/shipping/shiprocket.webhook"
 import { adminRoutes } from "./modules/admin";
 import { productsRoutes } from "./modules/products/products.routes";
 import { shippingRoutes } from "./modules/shipping";
+import { chatRoutes } from "./modules/chat/chat.routes";
 
 configurePassport();
 
@@ -108,6 +109,7 @@ app.use("/api/checkout", checkoutRoutes);
 app.use("/api/payments", paymentsJsonRoutes);
 app.use("/api/orders", ordersRoutes);
 app.use("/api/shipping", shippingRoutes);
+app.use("/api/chat", chatRoutes);
 app.use("/api/admin", adminRoutes);
 
 app.use((_req: Request, _res: Response, next: NextFunction) => {
