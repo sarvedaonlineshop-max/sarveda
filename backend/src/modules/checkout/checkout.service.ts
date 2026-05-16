@@ -640,14 +640,14 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
   return payload;
 }
 
-/** Resume Razorpay checkout for an unpaid order (same order, no duplicate cart clear). */
+/** Resume unpaid checkout for the same order (Razorpay / Stripe / PayPal). */
 export async function resumePendingCheckout(orderNumber: string, email: string): Promise<CreateCheckoutResult> {
   const normalizedEmail = email.trim().toLowerCase();
   const order = await prisma.order.findFirst({
     where: { orderNumber, deletedAt: null },
     include: {
       payments: {
-        where: { provider: "RAZORPAY" },
+        where: { status: "PENDING" },
         orderBy: { createdAt: "desc" },
         take: 1
       }
@@ -672,7 +672,70 @@ export async function resumePendingCheckout(orderNumber: string, email: string):
   }
 
   const payment = order.payments[0];
-  if (!payment?.providerOrderId) {
+  if (!payment) {
+    const e = new Error("Payment session not found for this order") as Error & {
+      statusCode: number;
+      code: string;
+    };
+    e.statusCode = 400;
+    e.code = "PAYMENT_NOT_FOUND";
+    throw e;
+  }
+
+  const base = {
+    orderId: order.id,
+    orderNumber: order.orderNumber,
+    amountInPaise: order.grandTotalInPaise,
+    currency: order.currency,
+    paymentId: payment.id
+  };
+
+  if (payment.provider === "STRIPE") {
+    if (!payment.providerOrderId) {
+      const e = new Error("Stripe session not found") as Error & { statusCode: number; code: string };
+      e.statusCode = 400;
+      e.code = "PAYMENT_NOT_FOUND";
+      throw e;
+    }
+    const session = await createStripeCheckoutSession({
+      paymentId: payment.id,
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      email: normalizedEmail,
+      amountMinor: order.grandTotalInPaise,
+      currency: order.currency
+    });
+    return {
+      ...base,
+      paymentMethod: "stripe",
+      paymentProvider: "STRIPE",
+      stripeCheckoutUrl: session.url
+    };
+  }
+
+  if (payment.provider === "PAYPAL") {
+    if (!payment.providerOrderId) {
+      const e = new Error("PayPal session not found") as Error & { statusCode: number; code: string };
+      e.statusCode = 400;
+      e.code = "PAYMENT_NOT_FOUND";
+      throw e;
+    }
+    const pp = await createPayPalOrder({
+      paymentId: payment.id,
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      amountMinor: order.grandTotalInPaise,
+      currency: order.currency
+    });
+    return {
+      ...base,
+      paymentMethod: "paypal",
+      paymentProvider: "PAYPAL",
+      paypalApprovalUrl: pp.approvalUrl
+    };
+  }
+
+  if (payment.provider !== "RAZORPAY" || !payment.providerOrderId) {
     const e = new Error("Payment session not found for this order") as Error & {
       statusCode: number;
       code: string;
@@ -683,13 +746,10 @@ export async function resumePendingCheckout(orderNumber: string, email: string):
   }
 
   return {
-    orderId: order.id,
-    orderNumber: order.orderNumber,
-    amountInPaise: order.grandTotalInPaise,
-    currency: order.currency,
+    ...base,
     paymentMethod: "razorpay",
+    paymentProvider: "RAZORPAY",
     razorpayKeyId: getRazorpayKeyId(),
-    rzpOrderId: payment.providerOrderId,
-    paymentId: payment.id
+    rzpOrderId: payment.providerOrderId
   };
 }
