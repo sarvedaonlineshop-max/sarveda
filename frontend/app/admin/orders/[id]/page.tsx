@@ -14,6 +14,8 @@ import {
   fetchAdminOrderInvoice,
   fetchAdminPickupLocations,
   patchAdminOrderAddress,
+  patchAdminOrderItemWarehouses,
+  patchAdminOrderPreferredCourier,
   patchAdminOrderStatus,
   reconcileAdminOrderRazorpay,
   type AdminPickupLocationRow
@@ -32,11 +34,14 @@ const ORDER_STATUSES = [
 ] as const;
 
 type OrderItemRow = {
+  id?: string;
   nameSnapshot: string;
   skuSnapshot: string;
   qtyOrdered: number;
   unitPriceInPaise: number;
   lineTotalInPaise: number;
+  pickupLocationId?: string | null;
+  pickupLocation?: { id: string; label: string } | null;
 };
 
 type AddressRow = {
@@ -87,10 +92,21 @@ type OrderLoaded = {
   payments?: PaymentRow[];
   shippingLastError: string | null;
   shippingLastErrorAt: string | null;
+  preferredCourier?: string | null;
+  shippingZone?: string | null;
 };
 
 function asOrder(raw: Record<string, unknown>): OrderLoaded {
-  const items = (raw.items as OrderItemRow[]) ?? [];
+  const items = ((raw.items as Array<Record<string, unknown>>) ?? []).map((row) => ({
+    id: row.id != null ? String(row.id) : undefined,
+    nameSnapshot: String(row.nameSnapshot),
+    skuSnapshot: String(row.skuSnapshot),
+    qtyOrdered: Number(row.qtyOrdered),
+    unitPriceInPaise: Number(row.unitPriceInPaise),
+    lineTotalInPaise: Number(row.lineTotalInPaise),
+    pickupLocationId: row.pickupLocationId != null ? String(row.pickupLocationId) : null,
+    pickupLocation: row.pickupLocation as OrderItemRow["pickupLocation"]
+  }));
   const addresses = (raw.addresses as AddressRow[]) ?? [];
   const shipments = (raw.shipments as ShipmentRow[]) ?? [];
   const payments = (raw.payments as PaymentRow[]) ?? [];
@@ -114,7 +130,9 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
     shipments,
     payments,
     shippingLastError: raw.shippingLastError != null ? String(raw.shippingLastError) : null,
-    shippingLastErrorAt: raw.shippingLastErrorAt != null ? String(raw.shippingLastErrorAt) : null
+    shippingLastErrorAt: raw.shippingLastErrorAt != null ? String(raw.shippingLastErrorAt) : null,
+    preferredCourier: raw.preferredCourier != null ? String(raw.preferredCourier) : null,
+    shippingZone: raw.shippingZone != null ? String(raw.shippingZone) : null
   };
 }
 
@@ -129,6 +147,8 @@ export default function AdminOrderDetailPage() {
   const [shipBusy, setShipBusy] = useState<string | null>(null);
   const [pickupOptions, setPickupOptions] = useState<AdminPickupLocationRow[]>([]);
   const [selectedPickupId, setSelectedPickupId] = useState<string>("");
+  const [selectedCourier, setSelectedCourier] = useState<string>("AUTO");
+  const [itemWarehouses, setItemWarehouses] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<{ message: string; error?: boolean } | null>(null);
   const [statusConfirm, setStatusConfirm] = useState<string | null>(null);
   const [cancelAwbConfirm, setCancelAwbConfirm] = useState<string | null>(null);
@@ -161,7 +181,14 @@ export default function AdminOrderDetailPage() {
     setErr(null);
     try {
       const raw = (await fetchAdminOrderDetail(id)) as Record<string, unknown>;
-      setOrder(asOrder(raw));
+      const o = asOrder(raw);
+      setOrder(o);
+      setSelectedCourier(o.preferredCourier ?? "AUTO");
+      const wh: Record<string, string> = {};
+      for (const it of o.items) {
+        if (it.id) wh[it.id] = it.pickupLocationId ?? "";
+      }
+      setItemWarehouses(wh);
       const inv = await fetchAdminOrderInvoice(id);
       setInvoice(inv);
     } catch (e) {
@@ -243,10 +270,25 @@ export default function AdminOrderDetailPage() {
     if (!id) return;
     setShipBusy("create");
     try {
-      await adminCreateShipmentForOrder(
-        id,
-        selectedPickupId ? { pickupLocationId: selectedPickupId } : undefined
-      );
+      if (selectedCourier !== (order?.preferredCourier ?? "AUTO")) {
+        await patchAdminOrderPreferredCourier(
+          id,
+          selectedCourier as "AUTO" | "DELHIVERY" | "SHIPROCKET" | "SHIPROCKET_INTERNATIONAL"
+        );
+      }
+      const warehouseRows = Object.entries(itemWarehouses)
+        .filter(([orderItemId]) => orderItemId)
+        .map(([orderItemId, pickupLocationId]) => ({
+          orderItemId,
+          pickupLocationId: pickupLocationId || null
+        }));
+      if (warehouseRows.length > 0) {
+        await patchAdminOrderItemWarehouses(id, warehouseRows);
+      }
+      await adminCreateShipmentForOrder(id, {
+        ...(selectedPickupId ? { pickupLocationId: selectedPickupId } : {}),
+        preferredCourier: selectedCourier as "AUTO" | "DELHIVERY" | "SHIPROCKET" | "SHIPROCKET_INTERNATIONAL"
+      });
       await load();
       pushToast("Shipment label created or refreshed.");
     } catch (e) {
@@ -334,7 +376,11 @@ export default function AdminOrderDetailPage() {
 
   function carrierUiEnabled(o: OrderLoaded): boolean {
     if (["CANCELLED", "REFUNDED", "PENDING_PAYMENT"].includes(o.status)) return false;
-    if (o.paymentStatus !== "CAPTURED") return false;
+    const isCodPaid =
+      o.status === "PAID" &&
+      o.paymentStatus === "PENDING" &&
+      (o.payments ?? []).some((p) => p.provider === "COD");
+    if (o.paymentStatus !== "CAPTURED" && !isCodPaid) return false;
     return ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"].includes(o.status);
   }
 
@@ -640,7 +686,7 @@ export default function AdminOrderDetailPage() {
 
         {pickupOptions.length > 0 ? (
           <label className="mt-4 flex max-w-md flex-col gap-1 text-sm text-stone-600 dark:text-stone-300">
-            <span className="font-medium text-stone-700 dark:text-stone-200">Pickup warehouse (Shiprocket)</span>
+            <span className="font-medium text-stone-700 dark:text-stone-200">Pickup warehouse</span>
             <select
               value={selectedPickupId}
               onChange={(e) => setSelectedPickupId(e.target.value)}
@@ -660,14 +706,29 @@ export default function AdminOrderDetailPage() {
               </Link>
             </span>
           </label>
-        ) : (
+        ) : null}
+        <label className="mt-4 flex max-w-md flex-col gap-1 text-sm text-stone-600 dark:text-stone-300">
+          <span className="font-medium text-stone-700 dark:text-stone-200">Courier for this order</span>
+          <select
+            value={selectedCourier}
+            onChange={(e) => setSelectedCourier(e.target.value)}
+            disabled={!!shipBusy || !shipUi}
+            className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+          >
+            <option value="AUTO">Auto (Delhivery default for India)</option>
+            <option value="DELHIVERY">Delhivery</option>
+            <option value="SHIPROCKET">Shiprocket (domestic)</option>
+            <option value="SHIPROCKET_INTERNATIONAL">Shiprocket International</option>
+          </select>
+        </label>
+        {pickupOptions.length === 0 ? (
           <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">
-            No warehouses in admin — Shiprocket uses env default.{" "}
+            No warehouses in admin — carrier uses env default.{" "}
             <Link href="/admin/settings/pickup-locations" className="text-amber-800 underline dark:text-amber-400">
               Add warehouses
             </Link>
           </p>
-        )}
+        ) : null}
         <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">
           To ship from a different warehouse than the one on an existing AWB, use <strong className="font-medium">Cancel label</strong> first, then create again with the new pickup.
         </p>
@@ -712,6 +773,7 @@ export default function AdminOrderDetailPage() {
                             type="button"
                             className="text-xs font-semibold text-stone-700 underline dark:text-stone-300"
                             disabled={!!shipBusy || !shipUi}
+                            onClick={() => void handleTrackOne(s.awb!)}
                           >
                             {shipBusy === s.awb ? "…" : "Sync"}
                           </button>
@@ -745,9 +807,25 @@ export default function AdminOrderDetailPage() {
               <dd>{formatMinorFromPaise(order.subtotalInPaise, order.currency)}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-stone-500 dark:text-stone-400">Shipping</dt>
+              <dt className="text-stone-500 dark:text-stone-400">
+                Shipping
+                {order.shippingZone ? (
+                  <span className="block text-xs font-normal">Zone {order.shippingZone}</span>
+                ) : null}
+              </dt>
               <dd>{formatMinorFromPaise(order.shippingInPaise, order.currency)}</dd>
             </div>
+            {(order.payments ?? []).length > 0 ? (
+              <div className="flex justify-between">
+                <dt className="text-stone-500 dark:text-stone-400">Payment method</dt>
+                <dd className="font-medium">
+                  {(order.payments ?? [])
+                    .map((p) => p.provider)
+                    .filter((v, i, a) => a.indexOf(v) === i)
+                    .join(", ")}
+                </dd>
+              </div>
+            ) : null}
             <div className="flex justify-between">
               <dt className="text-stone-500 dark:text-stone-400">Tax</dt>
               <dd>{formatMinorFromPaise(order.taxInPaise, order.currency)}</dd>
@@ -819,16 +897,39 @@ export default function AdminOrderDetailPage() {
                 <th className="px-4 py-3 font-semibold text-stone-600 dark:text-stone-300">Qty</th>
                 <th className="px-4 py-3 font-semibold text-stone-600 dark:text-stone-300">Unit</th>
                 <th className="px-4 py-3 font-semibold text-stone-600 dark:text-stone-300">Line total</th>
+                {pickupOptions.length > 0 ? (
+                  <th className="px-4 py-3 font-semibold text-stone-600 dark:text-stone-300">Warehouse</th>
+                ) : null}
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100 dark:divide-stone-700">
               {order.items.map((item, idx) => (
-                <tr key={`${item.skuSnapshot}-${idx}`}>
+                <tr key={item.id ?? `${item.skuSnapshot}-${idx}`}>
                   <td className="px-4 py-3 font-medium text-stone-800 dark:text-stone-100">{item.nameSnapshot}</td>
                   <td className="px-4 py-3 font-mono text-xs text-stone-500 dark:text-stone-400">{item.skuSnapshot}</td>
                   <td className="px-4 py-3">{item.qtyOrdered}</td>
                   <td className="px-4 py-3">{formatMinorFromPaise(item.unitPriceInPaise, order.currency)}</td>
                   <td className="px-4 py-3">{formatMinorFromPaise(item.lineTotalInPaise, order.currency)}</td>
+                  {pickupOptions.length > 0 && item.id ? (
+                    <td className="px-4 py-3">
+                      <select
+                        value={itemWarehouses[item.id] ?? ""}
+                        onChange={(e) =>
+                          setItemWarehouses((prev) => ({ ...prev, [item.id!]: e.target.value }))
+                        }
+                        className="max-w-[10rem] rounded border border-stone-300 bg-white px-2 py-1 text-xs dark:border-stone-600 dark:bg-stone-950"
+                      >
+                        <option value="">Default</option>
+                        {pickupOptions.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.label}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  ) : pickupOptions.length > 0 ? (
+                    <td className="px-4 py-3">—</td>
+                  ) : null}
                 </tr>
               ))}
             </tbody>

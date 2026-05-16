@@ -8,7 +8,11 @@ import * as productsController from "../products/products.controller";
 import { createProductSchema, updateProductSchema } from "../products/schemas";
 
 import * as admin from "./admin.handlers";
-import { orderAddressPatchSchema } from "./admin.handlers";
+import {
+  orderAddressPatchSchema,
+  orderItemWarehousesSchema,
+  orderPreferredCourierSchema
+} from "./admin.handlers";
 import * as pickupLocations from "./pickupLocations.handlers";
 import { createPickupLocationSchema, updatePickupLocationSchema } from "./pickupLocations.handlers";
 
@@ -34,6 +38,17 @@ router.get("/orders/export/pdf", admin.ordersExportPdf);
 router.get("/orders", admin.ordersList);
 router.get("/orders/:id/invoice", admin.orderInvoice);
 router.get("/orders/:id", admin.orderDetail);
+router.get("/orders/:id/shipping-breakdown", admin.orderShippingBreakdown);
+router.patch(
+  "/orders/:id/item-warehouses",
+  validateBody(orderItemWarehousesSchema),
+  admin.patchOrderItemWarehouses
+);
+router.patch(
+  "/orders/:id/preferred-courier",
+  validateBody(orderPreferredCourierSchema),
+  admin.patchOrderPreferredCourier
+);
 router.patch(
   "/orders/:id/addresses",
   validateBody(orderAddressPatchSchema),

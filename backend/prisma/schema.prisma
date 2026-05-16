@@ -256,6 +256,10 @@ model Order {
   shippingLastErrorAt DateTime?
   /// Incremented each time a new carrier label is created (Shiprocket order_id suffix on retry).
   shippingLabelSeq    Int       @default(0)
+  /// Admin override: AUTO | DELHIVERY | SHIPROCKET | SHIPROCKET_INTERNATIONAL
+  preferredCourier  String?
+  /// IN | US | GB | OTHER — set at checkout for rate zone display
+  shippingZone      String?
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
   customer          User?             @relation(fields: [customerId], references: [id])
@@ -295,18 +299,20 @@ enum FulfillmentStatus {
 }
 
 model OrderItem {
-  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  orderId          String         @db.Uuid
-  variantId        String         @db.Uuid
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId          String          @db.Uuid
+  variantId        String          @db.Uuid
   skuSnapshot      String
   nameSnapshot     String
   qtyOrdered       Int
   unitPriceInPaise Int
-  discountInPaise  Int            @default(0)
-  taxInPaise       Int            @default(0)
+  discountInPaise  Int             @default(0)
+  taxInPaise       Int             @default(0)
   lineTotalInPaise Int
-  order            Order          @relation(fields: [orderId], references: [id])
-  variant          ProductVariant @relation(fields: [variantId], references: [id])
+  pickupLocationId String?         @db.Uuid
+  order            Order           @relation(fields: [orderId], references: [id])
+  variant          ProductVariant  @relation(fields: [variantId], references: [id])
+  pickupLocation   PickupLocation? @relation(fields: [pickupLocationId], references: [id])
 }
 
 model OrderAddress {
@@ -404,6 +410,7 @@ model PickupLocation {
   createdAt            DateTime   @default(now())
   updatedAt            DateTime   @updatedAt
   shipments            Shipment[]
+  orderItems           OrderItem[]
 }
 
 model Shipment {

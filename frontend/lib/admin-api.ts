@@ -176,9 +176,51 @@ export function adminSyncOrderShipments(orderId: string) {
   });
 }
 
+export function patchAdminOrderPreferredCourier(
+  orderId: string,
+  preferredCourier: "AUTO" | "DELHIVERY" | "SHIPROCKET" | "SHIPROCKET_INTERNATIONAL"
+) {
+  return adminFetch<{ preferredCourier: string }>(
+    `/api/admin/orders/${encodeURIComponent(orderId)}/preferred-courier`,
+    { method: "PATCH", body: JSON.stringify({ preferredCourier }) }
+  );
+}
+
+export function patchAdminOrderItemWarehouses(
+  orderId: string,
+  items: Array<{ orderItemId: string; pickupLocationId: string | null }>
+) {
+  return adminFetch<{ updated: number }>(
+    `/api/admin/orders/${encodeURIComponent(orderId)}/item-warehouses`,
+    { method: "PATCH", body: JSON.stringify({ items }) }
+  );
+}
+
+export function fetchAdminOrderShippingBreakdown(orderId: string) {
+  return adminFetch<{
+    breakdown: {
+      zone: string;
+      lines: Array<{
+        productName: string;
+        quantity: number;
+        lineTotal: number;
+        codSurcharge: number;
+      }>;
+      subtotalShipping: number;
+      codExtra: number;
+      totalWithCod: number;
+    };
+    orderShippingCharged: number;
+  }>(`/api/admin/orders/${encodeURIComponent(orderId)}/shipping-breakdown`);
+}
+
 export function adminCreateShipmentForOrder(
   orderId: string,
-  body?: { pickupLocationId?: string; shiprocketPickupName?: string }
+  body?: {
+    pickupLocationId?: string;
+    shiprocketPickupName?: string;
+    preferredCourier?: "AUTO" | "DELHIVERY" | "SHIPROCKET" | "SHIPROCKET_INTERNATIONAL";
+  }
 ) {
   return adminFetch<{ courier: string; waybill: string; trackingUrl: string }>(
     `/api/shipping/create-shipment/${encodeURIComponent(orderId)}`,

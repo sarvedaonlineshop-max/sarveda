@@ -10,6 +10,7 @@ const router = Router();
 
 router.use(optionalAuth);
 
+router.get("/payment-options", controller.paymentOptions);
 router.post("/create-order", validateBody(createOrderSchema), controller.createOrder);
 router.get("/resume", controller.resumeOrder);
 

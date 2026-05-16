@@ -16,7 +16,8 @@ import { clearSession } from "@/lib/cart-api";
 import type { CartApiItem } from "@/lib/cart-api";
 import type { CheckoutAddressForm } from "@/components/checkout/AddressFields";
 import { validateCheckoutFormDetailed } from "@/lib/checkout-validation";
-import { formatINRFromPaise } from "@/lib/money";
+import { formatINRFromPaise, formatMinorFromPaise } from "@/lib/money";
+import type { ShippingBreakdown } from "@/lib/shipping-rates-api";
 import { loadRazorpayScript } from "@/lib/load-razorpay";
 import { fetchShippingRatesEstimate } from "@/lib/shipping-rates-api";
 import {
@@ -58,7 +59,7 @@ function mapRazorpayClientError(err?: { error?: { description?: string; code?: s
   return err?.error?.description || "Payment could not be completed. Your cart is still saved — you can try again.";
 }
 
-type PaymentMode = "razorpay" | "cod";
+type PaymentMode = "razorpay" | "cod" | "stripe" | "paypal";
 
 type Props = {
   rzpReady: boolean;
@@ -93,10 +94,19 @@ export function PaymentSelector({
   const [paymentMode, setPaymentMode] = useState<PaymentMode>("razorpay");
   const [shippingInPaise, setShippingInPaise] = useState<number | null>(null);
   const [shippingCodInPaise, setShippingCodInPaise] = useState<number | null>(null);
+  const [shippingCurrency, setShippingCurrency] = useState("INR");
+  const [shippingBreakdown, setShippingBreakdown] = useState<ShippingBreakdown | null>(null);
   const [shippingLoading, setShippingLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const payStarted = useRef(false);
-  const indiaOnly = (form.country ?? "IN").toUpperCase() === "IN";
+  const isIndia = (form.country ?? "IN").toUpperCase() === "IN";
+
+  useEffect(() => {
+    setPaymentMode(isIndia ? "razorpay" : "stripe");
+  }, [isIndia]);
+
+  const formatMoney = (minor: number) =>
+    isIndia ? formatINRFromPaise(minor) : formatMinorFromPaise(minor, shippingCurrency);
 
   const estimatedShipping =
     paymentMode === "cod" && shippingCodInPaise != null ? shippingCodInPaise : shippingInPaise ?? 0;
@@ -125,6 +135,12 @@ export function PaymentSelector({
         .then((r) => {
           setShippingInPaise(r.standardShippingInMinorUnits);
           setShippingCodInPaise(r.withCodInMinorUnits);
+          setShippingCurrency(r.currency);
+          setShippingBreakdown(
+            paymentMode === "cod" && r.breakdown?.withCod
+              ? r.breakdown.withCod
+              : r.breakdown?.standard ?? null
+          );
         })
         .catch(() => {
           setShippingInPaise(null);
@@ -133,7 +149,7 @@ export function PaymentSelector({
         .finally(() => setShippingLoading(false));
     }, 400);
     return () => window.clearTimeout(handle);
-  }, [cartItems, form.country, form.postalCode]);
+  }, [cartItems, form.country, form.postalCode, paymentMode]);
 
   const goSuccess = useCallback(
     (orderNumber: string, cod: boolean) => {
@@ -316,6 +332,28 @@ export function PaymentSelector({
         throw new Error("COD checkout is not available for this order.");
       }
 
+      if (paymentMode === "stripe") {
+        setProcessing(true);
+        const order = await resolvePayableOrder();
+        if (order.stripeCheckoutUrl) {
+          savePendingCheckout(order, form.email);
+          window.location.href = order.stripeCheckoutUrl;
+          return;
+        }
+        throw new Error("Stripe checkout could not be started.");
+      }
+
+      if (paymentMode === "paypal") {
+        setProcessing(true);
+        const order = await resolvePayableOrder();
+        if (order.paypalApprovalUrl) {
+          savePendingCheckout(order, form.email);
+          window.location.href = order.paypalApprovalUrl;
+          return;
+        }
+        throw new Error("PayPal checkout could not be started.");
+      }
+
       const ready = rzpReady || (await loadRazorpayScript());
       if (!ready) {
         throw new Error("Payment gateway did not load. Check your connection and try again.");
@@ -356,7 +394,7 @@ export function PaymentSelector({
       <dl className="mt-4 space-y-2 border-b border-stone-100 pb-4 text-sm">
         <div className="flex justify-between gap-4">
           <dt className="text-stone-600">Subtotal ({itemCount} items)</dt>
-          <dd className="font-medium text-stone-900">{formatINRFromPaise(subtotalInPaise)}</dd>
+          <dd className="font-medium text-stone-900">{formatMoney(subtotalInPaise)}</dd>
         </div>
         <div className="flex justify-between gap-4">
           <dt className="text-stone-600">Shipping</dt>
@@ -364,7 +402,7 @@ export function PaymentSelector({
             {shippingLoading ? (
               <span className="text-stone-400">Calculating…</span>
             ) : shippingInPaise != null ? (
-              formatINRFromPaise(estimatedShipping)
+              formatMoney(estimatedShipping)
             ) : (
               <span className="text-xs text-stone-500">Enter PIN to estimate</span>
             )}
@@ -376,13 +414,13 @@ export function PaymentSelector({
         <div className="flex justify-between gap-4 pt-2 text-base">
           <dt className="font-semibold text-stone-900">Estimated total</dt>
           <dd className="font-serif font-semibold text-amber-800">
-            {shippingInPaise != null ? formatINRFromPaise(estimatedTotal) : formatINRFromPaise(subtotalInPaise)}
+            {shippingInPaise != null ? formatMoney(estimatedTotal) : formatMoney(subtotalInPaise)}
             <span className="block text-xs font-sans font-normal text-stone-500">GST included</span>
           </dd>
         </div>
       </dl>
 
-      {indiaOnly && !resumeOrderNumber ? (
+      {isIndia && !resumeOrderNumber ? (
         <fieldset className="mt-4 space-y-2">
           <legend className="text-sm font-semibold text-stone-800">Payment method</legend>
           <label
@@ -424,6 +462,48 @@ export function PaymentSelector({
             </span>
           </label>
         </fieldset>
+      ) : !resumeOrderNumber ? (
+        <fieldset className="mt-4 space-y-2">
+          <legend className="text-sm font-semibold text-stone-800">Payment method</legend>
+          <label
+            className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${
+              paymentMode === "stripe"
+                ? "border-stone-900 bg-stone-50 ring-1 ring-stone-900"
+                : "border-stone-200 hover:border-stone-300"
+            }`}
+          >
+            <input
+              type="radio"
+              name="paymentMode"
+              className="mt-1"
+              checked={paymentMode === "stripe"}
+              onChange={() => setPaymentMode("stripe")}
+            />
+            <span>
+              <span className="font-medium text-stone-900">Card (Stripe)</span>
+              <span className="mt-0.5 block text-xs text-stone-600">Visa, Mastercard, Amex — secure checkout</span>
+            </span>
+          </label>
+          <label
+            className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${
+              paymentMode === "paypal"
+                ? "border-stone-900 bg-stone-50 ring-1 ring-stone-900"
+                : "border-stone-200 hover:border-stone-300"
+            }`}
+          >
+            <input
+              type="radio"
+              name="paymentMode"
+              className="mt-1"
+              checked={paymentMode === "paypal"}
+              onChange={() => setPaymentMode("paypal")}
+            />
+            <span>
+              <span className="font-medium text-stone-900">PayPal</span>
+              <span className="mt-0.5 block text-xs text-stone-600">Pay with your PayPal balance or linked card</span>
+            </span>
+          </label>
+        </fieldset>
       ) : null}
 
       {err ? (
@@ -440,7 +520,11 @@ export function PaymentSelector({
 
       <button
         type="button"
-        disabled={busy || processing || (paymentMode === "razorpay" && !rzpReady && !busy)}
+        disabled={
+          busy ||
+          processing ||
+          (paymentMode === "razorpay" && !rzpReady && !busy)
+        }
         onClick={() => void onSubmit()}
         className="mt-6 flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-stone-900 py-3.5 text-base font-semibold tracking-wide text-amber-400 shadow-lg transition-colors hover:bg-amber-700 hover:text-white disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600"
       >
@@ -448,9 +532,13 @@ export function PaymentSelector({
           ? "Please wait…"
           : paymentMode === "cod"
             ? "Place order (COD)"
-            : !rzpReady
-              ? "Loading payment…"
-              : "Pay now"}
+            : paymentMode === "stripe"
+              ? "Continue to Stripe"
+              : paymentMode === "paypal"
+                ? "Continue to PayPal"
+                : !rzpReady
+                  ? "Loading payment…"
+                  : "Pay now"}
       </button>
     </div>
   );

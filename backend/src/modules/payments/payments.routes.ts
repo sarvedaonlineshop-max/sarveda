@@ -17,5 +17,6 @@ const router = Router();
 router.use(optionalAuth);
 
 router.post("/razorpay/verify", validateBody(razorpayVerifySchema), controller.verifyRazorpay);
+router.post("/paypal/capture", controller.capturePayPal);
 
 export { router as paymentsJsonRoutes };

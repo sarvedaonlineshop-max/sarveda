@@ -9,7 +9,12 @@ import * as delhivery from "./delhivery";
 import { assertOrderEligibleForTrackingSync } from "./router";
 import { orderBlocksCarrierSync, syncTrackingByWaybill } from "./orderLifecycle";
 import * as shiprocket from "./shiprocket";
-import { computeVariantShippingTotal, resolveRateCountryCode, zoneFromCountry } from "./shippingRates.service";
+import {
+  computeVariantShippingBreakdown,
+  computeVariantShippingTotal,
+  resolveRateCountryCode,
+  zoneFromCountry
+} from "./shippingRates.service";
 import { autoSelectAndCreate } from "./router";
 
 const pincodeBody = z.object({
@@ -109,6 +114,13 @@ export async function getRates(req: Request, res: Response, next: NextFunction) 
       rateCountry === "IN"
         ? await computeVariantShippingTotal(prisma, lines, rateCountry, { cod: true })
         : standard;
+    const breakdownStandard = await computeVariantShippingBreakdown(prisma, lines, rateCountry, {
+      cod: false
+    });
+    const breakdownCod =
+      rateCountry === "IN"
+        ? await computeVariantShippingBreakdown(prisma, lines, rateCountry, { cod: true })
+        : null;
     res.json({
       success: true,
       data: {
@@ -117,7 +129,11 @@ export async function getRates(req: Request, res: Response, next: NextFunction) 
         currency: rateCountry === "IN" ? "INR" : rateCountry === "GB" ? "GBP" : "USD",
         standardShippingInMinorUnits: standard,
         withCodInMinorUnits: rateCountry === "IN" ? withCod : null,
-        pincode: parsed.data.pincode ?? null
+        pincode: parsed.data.pincode ?? null,
+        breakdown: {
+          standard: breakdownStandard,
+          withCod: breakdownCod
+        }
       }
     });
   } catch (err) {
@@ -136,7 +152,10 @@ export async function createShipmentForOrder(req: Request, res: Response, next: 
     const bodyParsed = z
       .object({
         pickupLocationId: z.string().uuid().optional(),
-        shiprocketPickupName: z.string().min(1).max(200).optional()
+        shiprocketPickupName: z.string().min(1).max(200).optional(),
+        preferredCourier: z
+          .enum(["AUTO", "DELHIVERY", "SHIPROCKET", "SHIPROCKET_INTERNATIONAL"])
+          .optional()
       })
       .safeParse(req.body && typeof req.body === "object" ? req.body : {});
 
@@ -149,7 +168,13 @@ export async function createShipmentForOrder(req: Request, res: Response, next: 
       return;
     }
 
-    const { pickupLocationId, shiprocketPickupName } = bodyParsed.data;
+    const { pickupLocationId, shiprocketPickupName, preferredCourier } = bodyParsed.data;
+    if (preferredCourier) {
+      await prisma.order.update({
+        where: { id: orderId },
+        data: { preferredCourier }
+      });
+    }
     const result = await autoSelectAndCreate(orderId, {
       ...(pickupLocationId ? { pickupLocationId } : {}),
       ...(shiprocketPickupName ? { shiprocketPickupName } : {})

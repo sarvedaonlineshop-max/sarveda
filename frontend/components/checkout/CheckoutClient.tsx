@@ -13,7 +13,7 @@ import type { CreateOrderBody } from "@/lib/checkout-api";
 import { countryByCode } from "@/lib/countries";
 import { fetchMe } from "@/lib/auth-client";
 import { loadRazorpayScript } from "@/lib/load-razorpay";
-import { checkIndiaShiprocketDelivery } from "@/lib/shipping-india-api";
+import { checkIndiaDelhiveryDelivery } from "@/lib/shipping-india-api";
 
 const indiaCheckoutOnly =
   typeof process.env.NEXT_PUBLIC_INDIA_CHECKOUT_ONLY === "string" &&
@@ -136,13 +136,13 @@ export function CheckoutClient() {
     const handle = window.setTimeout(() => {
       setPinHint({ kind: "loading", text: "Checking delivery to this PIN…" });
       const weightKg = Math.max(0.05, Math.min(30, Math.max(itemCount, 1) * 0.35));
-      void checkIndiaShiprocketDelivery({ pincode: pin, weightKg, cod: false })
+      void checkIndiaDelhiveryDelivery(pin)
         .then((r) => {
           if (cancelled) return;
           if (r.serviceable) {
             setPinHint({
               kind: "ok",
-              text: `Shippable from our warehouse (${r.courierCount} courier option${r.courierCount === 1 ? "" : "s"}).`
+              text: `Deliverable via Delhivery${r.estimatedDays ? ` (~${r.estimatedDays} days after dispatch)` : ""}.`
             });
           } else {
             setPinHint({

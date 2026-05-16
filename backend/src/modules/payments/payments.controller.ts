@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 
 import { clearCartForRequest } from "../cart/cart.service";
+import { capturePayPalOrder } from "./paypal";
 import { verifyPayment } from "./razorpay";
 import { completePaidOrder } from "./razorpay.verify";
 import type { RazorpayVerifyBody } from "./payments.routes";
@@ -29,6 +30,28 @@ export async function verifyRazorpay(req: Request, res: Response, next: NextFunc
       success: true,
       data: { orderNumber }
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function capturePayPal(req: Request, res: Response, next: NextFunction) {
+  try {
+    const paypalOrderId =
+      typeof req.body?.paypalOrderId === "string" ? req.body.paypalOrderId.trim() : "";
+    if (!paypalOrderId) {
+      res.status(400).json({
+        success: false,
+        error: "paypalOrderId is required",
+        code: "BAD_REQUEST"
+      });
+      return;
+    }
+    const result = await capturePayPalOrder(paypalOrderId);
+    if (result.captured) {
+      await clearCartForRequest(req);
+    }
+    res.json({ success: true, data: result });
   } catch (err) {
     next(err);
   }

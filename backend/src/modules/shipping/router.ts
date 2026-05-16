@@ -147,11 +147,36 @@ export function assertOrderEligibleForTrackingSync(order: OrderPaymentCheck): {
   return assertPaymentEligibleForShipping(order);
 }
 
-export function selectCourier(order: OrderWithShippingContext): CourierChoice {
+export type PreferredCourierSetting =
+  | "AUTO"
+  | "DELHIVERY"
+  | "SHIPROCKET"
+  | "SHIPROCKET_INTERNATIONAL";
+
+function domesticCourierDefault(): "DELHIVERY" | "SHIPROCKET_DOMESTIC" {
+  const pref = (process.env.DEFAULT_DOMESTIC_COURIER ?? "delhivery").trim().toLowerCase();
+  if (pref === "shiprocket") return "SHIPROCKET_DOMESTIC";
+  if (shippingEnv.DELHIVERY_API_KEY.trim()) return "DELHIVERY";
+  return "SHIPROCKET_DOMESTIC";
+}
+
+export function selectCourier(
+  order: OrderWithShippingContext & { preferredCourier?: string | null }
+): CourierChoice {
   const ship = order.addresses.find((a) => a.type === "SHIPPING");
   const country = (ship?.country ?? "IN").toUpperCase();
+  const override = (order.preferredCourier ?? "AUTO").toUpperCase() as PreferredCourierSetting;
+
   if (country !== "IN") {
+    if (override === "SHIPROCKET" || override === "SHIPROCKET_INTERNATIONAL") {
+      return "SHIPROCKET_INTERNATIONAL";
+    }
     return "SHIPROCKET_INTERNATIONAL";
+  }
+
+  if (override === "DELHIVERY") return "DELHIVERY";
+  if (override === "SHIPROCKET" || override === "SHIPROCKET_INTERNATIONAL") {
+    return "SHIPROCKET_DOMESTIC";
   }
 
   const pin = ship?.postalCode ?? "";
@@ -159,7 +184,12 @@ export function selectCourier(order: OrderWithShippingContext): CourierChoice {
   const grams = totalWeightGrams(order);
   const provider = primaryPaymentProvider(order);
 
-  if (grams > 5000 && isZoneAPincode(pin)) {
+  const domesticDefault = domesticCourierDefault();
+  if (domesticDefault === "DELHIVERY" && shippingEnv.DELHIVERY_API_KEY.trim()) {
+    return "DELHIVERY";
+  }
+
+  if (grams > 5000 && isZoneAPincode(pin) && shippingEnv.DELHIVERY_API_KEY.trim()) {
     return "DELHIVERY";
   }
   if (!shippingEnv.SHIPPING_DISABLE_STUBS) {
@@ -171,6 +201,31 @@ export function selectCourier(order: OrderWithShippingContext): CourierChoice {
     }
   }
   return "SHIPROCKET_DOMESTIC";
+}
+
+/** Resolve Delhivery pickup_location from order line warehouses or shipment options. */
+export async function resolveDelhiveryPickupName(
+  orderId: string,
+  options?: AutoShipmentCreateOptions
+): Promise<string | undefined> {
+  if (options?.pickupLocationId) {
+    const row = await prisma.pickupLocation.findFirst({
+      where: { id: options.pickupLocationId, isActive: true }
+    });
+    if (row) return row.shiprocketPickupName.trim() || row.label.trim();
+  }
+  const items = await prisma.orderItem.findMany({
+    where: { orderId, pickupLocationId: { not: null } },
+    include: { pickupLocation: true },
+    take: 1
+  });
+  const fromLine = items[0]?.pickupLocation;
+  if (fromLine) return fromLine.shiprocketPickupName.trim() || fromLine.label.trim();
+  const primary = await prisma.pickupLocation.findFirst({
+    where: { isActive: true, isPrimary: true }
+  });
+  if (primary) return primary.shiprocketPickupName.trim() || primary.label.trim();
+  return undefined;
 }
 
 function stubWaybill(prefix: string, orderNumber: string): { waybill: string; trackingUrl: string } {
@@ -247,7 +302,7 @@ export async function autoSelectAndCreate(
   const order = await prisma.order.findFirst({
     where: { id: orderId, deletedAt: null },
     include: {
-      items: { include: { variant: true } },
+      items: { include: { variant: true, pickupLocation: true } },
       addresses: true,
       payments: { orderBy: { createdAt: "desc" }, take: 1 }
     }
@@ -315,11 +370,13 @@ export async function autoSelectAndCreate(
     }
 
     if (choice === "DELHIVERY") {
+      const delhiveryPickup = await resolveDelhiveryPickupName(orderId, options);
       const created = await delhivery.createShipment({
         orderNumber: channelOrderId,
         paymentMode,
         codAmountRupees: paymentMode === "COD" ? codAmountRupees(order as OrderWithShippingContext) : undefined,
         weightKg,
+        pickupLocation: delhiveryPickup,
         consigneeName: shipAddr.fullName,
         consigneePhone: shipAddr.phone,
         address: [shipAddr.line1, shipAddr.line2].filter(Boolean).join(", "),
@@ -330,13 +387,17 @@ export async function autoSelectAndCreate(
       if (!created.success) {
         return created;
       }
+      const pickupId =
+        options?.pickupLocationId ??
+        order.items.find((i) => i.pickupLocationId)?.pickupLocationId ??
+        null;
       await persistShipment(
         order.id,
         "Delhivery",
         created.data.waybill,
         created.data.trackingUrl,
-        undefined,
-        { channelOrderId },
+        pickupId,
+        { channelOrderId, carrier: "DELHIVERY" },
         nextSeq
       );
       return {

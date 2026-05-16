@@ -12,7 +12,7 @@ export type CreateOrderBody = {
   postalCode: string;
   country?: string;
   codDelivery?: boolean;
-  paymentMethod?: "razorpay" | "cod";
+  paymentMethod?: "razorpay" | "cod" | "stripe" | "paypal";
 };
 
 export type CreateOrderResponse = {
@@ -20,10 +20,13 @@ export type CreateOrderResponse = {
   orderNumber: string;
   amountInPaise: number;
   currency: string;
-  paymentMethod: "razorpay" | "cod";
+  paymentMethod: "razorpay" | "cod" | "stripe" | "paypal";
+  paymentProvider?: "RAZORPAY" | "COD" | "STRIPE" | "PAYPAL";
   paymentId: string;
   razorpayKeyId?: string;
   rzpOrderId?: string;
+  stripeCheckoutUrl?: string;
+  paypalApprovalUrl?: string;
   codConfirmed?: boolean;
 };
 

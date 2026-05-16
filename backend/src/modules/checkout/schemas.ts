@@ -13,14 +13,32 @@ export const createOrderSchema = z
     country: z.string().min(2).max(2).default("IN"),
     /** India COD shipping surcharge (VariantShippingRate). */
     codDelivery: z.boolean().optional().default(false),
-    /** `cod` = cash on delivery (India only). Default online Razorpay. */
-    paymentMethod: z.enum(["razorpay", "cod"]).optional().default("razorpay")
+    /** India: razorpay | cod. International: stripe | paypal. */
+    paymentMethod: z
+      .enum(["razorpay", "cod", "stripe", "paypal"])
+      .optional()
+      .default("razorpay")
   })
   .superRefine((data, ctx) => {
-    if (data.paymentMethod === "cod" && data.country.toUpperCase() !== "IN") {
+    const cc = data.country.toUpperCase();
+    if (data.paymentMethod === "cod" && cc !== "IN") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Cash on delivery is available for India only.",
+        path: ["paymentMethod"]
+      });
+    }
+    if (cc === "IN" && (data.paymentMethod === "stripe" || data.paymentMethod === "paypal")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Use Razorpay or COD for India orders.",
+        path: ["paymentMethod"]
+      });
+    }
+    if (cc !== "IN" && (data.paymentMethod === "razorpay" || data.paymentMethod === "cod")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "International orders use Stripe or PayPal.",
         path: ["paymentMethod"]
       });
     }

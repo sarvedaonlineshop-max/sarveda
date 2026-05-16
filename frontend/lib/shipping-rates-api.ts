@@ -1,9 +1,35 @@
 import { getApiBase } from "./api";
 
+export type ShippingLineBreakdown = {
+  variantId: string;
+  productName: string;
+  quantity: number;
+  zone: string;
+  standardFirstUnit: number;
+  standardAdditional: number;
+  codSurcharge: number;
+  lineTotal: number;
+};
+
+export type ShippingBreakdown = {
+  zone: string;
+  rateCountry: string;
+  currency: string;
+  lines: ShippingLineBreakdown[];
+  subtotalShipping: number;
+  codExtra: number;
+  totalWithCod: number;
+};
+
 export type ShippingRatesEstimate = {
   standardShippingInMinorUnits: number;
   withCodInMinorUnits: number | null;
   currency: string;
+  zone?: string;
+  breakdown?: {
+    standard: ShippingBreakdown;
+    withCod: ShippingBreakdown | null;
+  };
 };
 
 export async function fetchShippingRatesEstimate(input: {

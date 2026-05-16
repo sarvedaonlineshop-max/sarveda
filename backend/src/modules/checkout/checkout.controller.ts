@@ -22,6 +22,35 @@ export async function createOrder(req: Request, res: Response, next: NextFunctio
   }
 }
 
+export async function paymentOptions(_req: Request, res: Response) {
+  const country =
+    typeof _req.query.country === "string" ? _req.query.country.trim().toUpperCase() : "IN";
+  const isIndia = country === "IN";
+  res.json({
+    success: true,
+    data: {
+      country,
+      zone: isIndia ? "IN" : country === "GB" ? "GB" : country === "US" ? "US" : "OTHER",
+      methods: isIndia
+        ? [
+            { id: "razorpay", label: "Pay online (UPI / Card / Netbanking)", enabled: Boolean(process.env.RAZORPAY_KEY_ID) },
+            {
+              id: "cod",
+              label: "Cash on delivery",
+              enabled: ["1", "true", "yes"].includes(
+                (process.env.ENABLE_COD_CHECKOUT ?? "1").toLowerCase()
+              )
+            }
+          ]
+        : [
+            { id: "stripe", label: "Card (Stripe)", enabled: Boolean(process.env.STRIPE_SECRET_KEY) },
+            { id: "paypal", label: "PayPal", enabled: Boolean(process.env.PAYPAL_CLIENT_ID) }
+          ],
+      defaultDomesticCourier: (process.env.DEFAULT_DOMESTIC_COURIER ?? "delhivery").toLowerCase()
+    }
+  });
+}
+
 export async function resumeOrder(req: Request, res: Response, next: NextFunction) {
   try {
     const orderNumber = typeof req.query.orderNumber === "string" ? req.query.orderNumber.trim() : "";

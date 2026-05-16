@@ -6,7 +6,9 @@ import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { schedulePaymentTimeout } from "../../jobs/paymentTimeoutJob";
 import { generateOrderNumber } from "../../utils/orderNumber";
+import { createPayPalOrder } from "../payments/paypal";
 import { createOrder, getRazorpayKeyId } from "../payments/razorpay";
+import { createStripeCheckoutSession } from "../payments/stripe.checkout";
 import { confirmStockTx, reserveStockTx } from "../orders/orders.service";
 import { notifyOrderEmail } from "../notifications/email";
 import { invoiceNumberForOrder } from "../../utils/invoice";
@@ -85,6 +87,55 @@ async function assertDelhiveryHeavyIndiaServiceable(
   }
 }
 
+/** India checkout PIN check — Delhivery when default domestic courier is Delhivery, else Shiprocket. */
+async function assertIndiaCheckoutServiceable(
+  country: string | undefined,
+  postalCode: string,
+  lines: Array<{ quantity: number; variant: ProductVariant }>,
+  codDelivery: boolean | undefined
+): Promise<void> {
+  if ((country ?? "IN").toUpperCase() !== "IN") return;
+
+  const pin = postalCode.replace(/\D/g, "").slice(0, 6);
+  if (pin.length !== 6) return;
+
+  const useDelhivery =
+    (process.env.DEFAULT_DOMESTIC_COURIER ?? "delhivery").trim().toLowerCase() !== "shiprocket" &&
+    Boolean(shippingEnv.DELHIVERY_API_KEY.trim());
+
+  if (useDelhivery) {
+    const r = await delhivery.checkPincodeServiceability(pin);
+    if (!r.success) {
+      if (r.code === "DELHIVERY_NOT_CONFIGURED") {
+        await assertIndiaShiprocketCheckoutServiceable(country, postalCode, lines, codDelivery);
+        return;
+      }
+      const e = new Error(r.error) as Error & {
+        statusCode?: number;
+        code?: string;
+        userMessage?: string;
+      };
+      e.statusCode = 502;
+      e.code = r.code ?? "DELHIVERY_SERVICEABILITY";
+      e.userMessage =
+        "We could not verify delivery to this PIN. Please try again shortly or contact support.";
+      throw e;
+    }
+    if (!r.data.serviceable) {
+      const e = new Error(
+        "Delivery is not available to this PIN on our courier network. Try another PIN or contact support."
+      ) as Error & { statusCode?: number; code?: string; userMessage?: string };
+      e.statusCode = 400;
+      e.code = "PIN_NOT_SERVICEABLE_DELHIVERY";
+      e.userMessage = e.message;
+      throw e;
+    }
+    return;
+  }
+
+  await assertIndiaShiprocketCheckoutServiceable(country, postalCode, lines, codDelivery);
+}
+
 /** Block unpaid checkout if Shiprocket has no courier for warehouse→PIN (when enabled in env). */
 async function assertIndiaShiprocketCheckoutServiceable(
   country: string | undefined,
@@ -143,10 +194,13 @@ export type CreateCheckoutResult = {
   orderNumber: string;
   amountInPaise: number;
   currency: string;
-  paymentMethod: "razorpay" | "cod";
+  paymentMethod: "razorpay" | "cod" | "stripe" | "paypal";
   paymentId: string;
+  paymentProvider: "RAZORPAY" | "COD" | "STRIPE" | "PAYPAL";
   razorpayKeyId?: string;
   rzpOrderId?: string;
+  stripeCheckoutUrl?: string;
+  paypalApprovalUrl?: string;
   /** COD orders are confirmed immediately (no Razorpay modal). */
   codConfirmed?: boolean;
 };
@@ -270,7 +324,7 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
   }
 
   await assertDelhiveryHeavyIndiaServiceable(body.country, body.postalCode, lines);
-  await assertIndiaShiprocketCheckoutServiceable(body.country, body.postalCode, lines, body.codDelivery);
+  await assertIndiaCheckoutServiceable(body.country, body.postalCode, lines, body.codDelivery);
 
   const orderNumber = await generateOrderNumber();
   const receipt = orderNumber.replace(/[^a-zA-Z0-9]/g, "").slice(0, 40);
@@ -289,7 +343,8 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
         shippingInPaise,
         taxInPaise,
         grandTotalInPaise,
-        currency: orderCurrency
+        currency: orderCurrency,
+        shippingZone: zone
       }
     });
 
@@ -349,10 +404,16 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
 
     await reserveStockTx(tx, order.id);
 
+    const paymentMethod =
+      body.paymentMethod ?? (zone === "IN" ? "razorpay" : "stripe");
+
     const useCod =
-      body.paymentMethod === "cod" &&
+      paymentMethod === "cod" &&
       zone === "IN" &&
       triStateEnv(process.env.ENABLE_COD_CHECKOUT, true);
+
+    const useStripe = paymentMethod === "stripe" && zone !== "IN";
+    const usePayPal = paymentMethod === "paypal" && zone !== "IN";
 
     if (useCod) {
       const payment = await tx.payment.create({
@@ -396,6 +457,50 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
       });
 
       return { order, payment, cod: true as const };
+    }
+
+    if (useStripe) {
+      const payment = await tx.payment.create({
+        data: {
+          orderId: order.id,
+          provider: "STRIPE",
+          amountInPaise: grandTotalInPaise,
+          currency: orderCurrency,
+          status: "PENDING",
+          rawPayload: { method: "stripe_checkout", createdAt: new Date().toISOString() } as object
+        }
+      });
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: order.id,
+          fromStatus: null,
+          toStatus: "PENDING_PAYMENT",
+          reason: "Order created — awaiting Stripe"
+        }
+      });
+      return { order, payment, stripe: true as const };
+    }
+
+    if (usePayPal) {
+      const payment = await tx.payment.create({
+        data: {
+          orderId: order.id,
+          provider: "PAYPAL",
+          amountInPaise: grandTotalInPaise,
+          currency: orderCurrency,
+          status: "PENDING",
+          rawPayload: { method: "paypal", createdAt: new Date().toISOString() } as object
+        }
+      });
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: order.id,
+          fromStatus: null,
+          toStatus: "PENDING_PAYMENT",
+          reason: "Order created — awaiting PayPal"
+        }
+      });
+      return { order, payment, paypal: true as const };
     }
 
     const rzpIdempotencyKey = `${order.id}:${Date.now()}`;
@@ -452,6 +557,7 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
       amountInPaise: grandTotalInPaise,
       currency: orderCurrency,
       paymentMethod: "cod",
+      paymentProvider: "COD",
       paymentId: result.payment.id,
       codConfirmed: true
     };
@@ -459,6 +565,53 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
       await setIdempotentCheckout(idemHeader, codPayload);
     }
     return codPayload;
+  }
+
+  if ("stripe" in result && result.stripe) {
+    const session = await createStripeCheckoutSession({
+      paymentId: result.payment.id,
+      orderId: result.order.id,
+      orderNumber: result.order.orderNumber,
+      email: body.email.trim().toLowerCase(),
+      amountMinor: grandTotalInPaise,
+      currency: orderCurrency
+    });
+    await schedulePaymentTimeout(result.order.id);
+    const stripePayload: CreateCheckoutResult = {
+      orderId: result.order.id,
+      orderNumber: result.order.orderNumber,
+      amountInPaise: grandTotalInPaise,
+      currency: orderCurrency,
+      paymentMethod: "stripe",
+      paymentProvider: "STRIPE",
+      paymentId: result.payment.id,
+      stripeCheckoutUrl: session.url
+    };
+    if (idemHeader) await setIdempotentCheckout(idemHeader, stripePayload);
+    return stripePayload;
+  }
+
+  if ("paypal" in result && result.paypal) {
+    const pp = await createPayPalOrder({
+      paymentId: result.payment.id,
+      orderId: result.order.id,
+      orderNumber: result.order.orderNumber,
+      amountMinor: grandTotalInPaise,
+      currency: orderCurrency
+    });
+    await schedulePaymentTimeout(result.order.id);
+    const paypalPayload: CreateCheckoutResult = {
+      orderId: result.order.id,
+      orderNumber: result.order.orderNumber,
+      amountInPaise: grandTotalInPaise,
+      currency: orderCurrency,
+      paymentMethod: "paypal",
+      paymentProvider: "PAYPAL",
+      paymentId: result.payment.id,
+      paypalApprovalUrl: pp.approvalUrl
+    };
+    if (idemHeader) await setIdempotentCheckout(idemHeader, paypalPayload);
+    return paypalPayload;
   }
 
   await schedulePaymentTimeout(result.order.id);
@@ -474,6 +627,7 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
     amountInPaise: grandTotalInPaise,
     currency: orderCurrency,
     paymentMethod: "razorpay",
+    paymentProvider: "RAZORPAY",
     razorpayKeyId: getRazorpayKeyId(),
     rzpOrderId: result.rzpOrderId,
     paymentId: result.payment.id

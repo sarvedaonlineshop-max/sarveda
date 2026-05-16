@@ -535,7 +535,12 @@ export async function orderDetail(req: Request, res: Response, next: NextFunctio
     const order = await prisma.order.findFirst({
       where: { id, deletedAt: null },
       include: {
-        items: { include: { variant: { select: { id: true, sku: true } } } },
+        items: {
+          include: {
+            variant: { select: { id: true, sku: true } },
+            pickupLocation: { select: { id: true, label: true, shiprocketPickupName: true } }
+          }
+        },
         addresses: true,
         payments: true,
         invoice: true,
@@ -1017,6 +1022,81 @@ export async function paymentsReconciliation(req: Request, res: Response, next: 
         recent: rows.slice(0, 50)
       }
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export const orderItemWarehousesSchema = z.object({
+  items: z.array(
+    z.object({
+      orderItemId: z.string().uuid(),
+      pickupLocationId: z.string().uuid().nullable()
+    })
+  )
+});
+
+export async function patchOrderItemWarehouses(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id: orderId } = req.params;
+    const body = req.body as z.infer<typeof orderItemWarehousesSchema>;
+    const order = await prisma.order.findFirst({ where: { id: orderId, deletedAt: null } });
+    if (!order) {
+      res.status(404).json({ success: false, error: "Order not found", code: "NOT_FOUND" });
+      return;
+    }
+    for (const row of body.items) {
+      await prisma.orderItem.updateMany({
+        where: { id: row.orderItemId, orderId },
+        data: { pickupLocationId: row.pickupLocationId }
+      });
+    }
+    res.json({ success: true, data: { updated: body.items.length } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export const orderPreferredCourierSchema = z.object({
+  preferredCourier: z.enum(["AUTO", "DELHIVERY", "SHIPROCKET", "SHIPROCKET_INTERNATIONAL"])
+});
+
+export async function patchOrderPreferredCourier(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const body = req.body as z.infer<typeof orderPreferredCourierSchema>;
+    const order = await prisma.order.update({
+      where: { id },
+      data: { preferredCourier: body.preferredCourier }
+    });
+    res.json({ success: true, data: { preferredCourier: order.preferredCourier } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function orderShippingBreakdown(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const order = await prisma.order.findFirst({
+      where: { id, deletedAt: null },
+      include: { items: true, addresses: true, payments: { take: 1 } }
+    });
+    if (!order) {
+      res.status(404).json({ success: false, error: "Order not found", code: "NOT_FOUND" });
+      return;
+    }
+    const ship = order.addresses.find((a) => a.type === "SHIPPING");
+    const country = ship?.country ?? "IN";
+    const isCod =
+      order.payments[0]?.provider === "COD" ||
+      (order.paymentStatus === "PENDING" && order.status === "PAID");
+    const { computeVariantShippingBreakdown } = await import("../shipping/shippingRates.service");
+    const lines = order.items.map((i) => ({ variantId: i.variantId, quantity: i.qtyOrdered }));
+    const breakdown = await computeVariantShippingBreakdown(prisma, lines, country, {
+      cod: isCod && country.toUpperCase() === "IN"
+    });
+    res.json({ success: true, data: { breakdown, orderShippingCharged: order.shippingInPaise } });
   } catch (err) {
     next(err);
   }
