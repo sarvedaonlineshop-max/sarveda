@@ -198,10 +198,19 @@ function labelFromVariant(
   return rows.map((r) => `${r.attributeValue.attribute.name}: ${r.attributeValue.value}`).join(" · ");
 }
 
-async function getIdempotentCheckout(idemKey: string): Promise<CreateCheckoutResult | null> {
+function idempotencyCacheKey(idemKey: string, body: CreateOrderBody): string {
+  const country = (body.country ?? "IN").toUpperCase();
+  const method = body.paymentMethod ?? (country === "IN" ? "razorpay" : "stripe");
+  return `checkout:idem:${idemKey}:${country}:${method}`;
+}
+
+async function getIdempotentCheckout(
+  idemKey: string,
+  body: CreateOrderBody
+): Promise<CreateCheckoutResult | null> {
   const redis = getRedisConnection();
   if (!redis) return null;
-  const v = await redis.get(`checkout:idem:${idemKey}`);
+  const v = await redis.get(idempotencyCacheKey(idemKey, body));
   if (!v) return null;
   try {
     return JSON.parse(v) as CreateCheckoutResult;
@@ -210,10 +219,14 @@ async function getIdempotentCheckout(idemKey: string): Promise<CreateCheckoutRes
   }
 }
 
-async function setIdempotentCheckout(idemKey: string, payload: CreateCheckoutResult): Promise<void> {
+async function setIdempotentCheckout(
+  idemKey: string,
+  body: CreateOrderBody,
+  payload: CreateCheckoutResult
+): Promise<void> {
   const redis = getRedisConnection();
   if (!redis) return;
-  await redis.set(`checkout:idem:${idemKey}`, JSON.stringify(payload), "EX", IDEM_TTL_SEC);
+  await redis.set(idempotencyCacheKey(idemKey, body), JSON.stringify(payload), "EX", IDEM_TTL_SEC);
 }
 
 export async function createCheckoutOrder(req: Request, body: CreateOrderBody): Promise<CreateCheckoutResult> {
@@ -221,9 +234,13 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
     typeof req.headers["idempotency-key"] === "string" ? req.headers["idempotency-key"].trim() : "";
 
   if (idemHeader) {
-    const cached = await getIdempotentCheckout(idemHeader);
+    const cached = await getIdempotentCheckout(idemHeader, body);
     if (cached) {
-      logger.info("checkout_idempotent_hit", { idempotencyKey: idemHeader, orderId: cached.orderId });
+      logger.info("checkout_idempotent_hit", {
+        idempotencyKey: idemHeader,
+        orderId: cached.orderId,
+        paymentMethod: cached.paymentMethod
+      });
       return cached;
     }
   }
@@ -548,7 +565,7 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
       codConfirmed: true
     };
     if (idemHeader) {
-      await setIdempotentCheckout(idemHeader, codPayload);
+      await setIdempotentCheckout(idemHeader, body, codPayload);
     }
     return codPayload;
   }
@@ -573,7 +590,7 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
       paymentId: result.payment.id,
       stripeCheckoutUrl: session.url
     };
-    if (idemHeader) await setIdempotentCheckout(idemHeader, stripePayload);
+    if (idemHeader) await setIdempotentCheckout(idemHeader, body, stripePayload);
     return stripePayload;
   }
 
@@ -597,7 +614,7 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
       paymentId: result.payment.id,
       paypalApprovalUrl: pp.approvalUrl
     };
-    if (idemHeader) await setIdempotentCheckout(idemHeader, paypalPayload);
+    if (idemHeader) await setIdempotentCheckout(idemHeader, body, paypalPayload);
     return paypalPayload;
   }
 
@@ -621,7 +638,7 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
   };
 
   if (idemHeader) {
-    await setIdempotentCheckout(idemHeader, payload);
+    await setIdempotentCheckout(idemHeader, body, payload);
   }
 
   return payload;
@@ -678,12 +695,6 @@ export async function resumePendingCheckout(orderNumber: string, email: string):
   };
 
   if (payment.provider === "STRIPE") {
-    if (!payment.providerOrderId) {
-      const e = new Error("Stripe session not found") as Error & { statusCode: number; code: string };
-      e.statusCode = 400;
-      e.code = "PAYMENT_NOT_FOUND";
-      throw e;
-    }
     const session = await createStripeCheckoutSession({
       paymentId: payment.id,
       orderId: order.id,
@@ -701,17 +712,11 @@ export async function resumePendingCheckout(orderNumber: string, email: string):
   }
 
   if (payment.provider === "PAYPAL") {
-    if (!payment.providerOrderId) {
-      const e = new Error("PayPal session not found") as Error & { statusCode: number; code: string };
-      e.statusCode = 400;
-      e.code = "PAYMENT_NOT_FOUND";
-      throw e;
-    }
     const pp = await createPayPalOrder({
       paymentId: payment.id,
       orderId: order.id,
       orderNumber: order.orderNumber,
-      email: order.email,
+      email: normalizedEmail,
       amountMinor: order.grandTotalInPaise,
       currency: order.currency
     });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   CheckoutApiError,
@@ -61,6 +61,21 @@ function mapRazorpayClientError(err?: { error?: { description?: string; code?: s
 
 type PaymentMode = "razorpay" | "cod" | "stripe" | "paypal";
 
+function resumeMatchesMode(order: CreateOrderResponse, mode: PaymentMode): boolean {
+  switch (mode) {
+    case "stripe":
+      return order.paymentMethod === "stripe" && Boolean(order.stripeCheckoutUrl);
+    case "paypal":
+      return order.paymentMethod === "paypal" && Boolean(order.paypalApprovalUrl);
+    case "cod":
+      return order.paymentMethod === "cod" || Boolean(order.codConfirmed);
+    case "razorpay":
+      return order.paymentMethod === "razorpay" && Boolean(order.rzpOrderId && order.razorpayKeyId);
+    default:
+      return false;
+  }
+}
+
 type Props = {
   rzpReady: boolean;
   idempotencyKey: string;
@@ -102,6 +117,10 @@ export function PaymentSelector({
   const [err, setErr] = useState<string | null>(null);
   const payStarted = useRef(false);
   const isIndia = (form.country ?? "IN").toUpperCase() === "IN";
+  const checkoutIdempotencyKey = useMemo(
+    () => `${idempotencyKey}:${paymentMode}:${form.country ?? "IN"}`,
+    [idempotencyKey, paymentMode, form.country]
+  );
 
   useEffect(() => {
     setPaymentMode(isIndia ? "razorpay" : "stripe");
@@ -271,26 +290,34 @@ export function PaymentSelector({
     const pending = loadPendingCheckout();
     const resumeTarget = resumeOrderNumber?.trim() || pending?.orderNumber;
 
-    if (resumeTarget && (!pending || pending.email === email)) {
+    const tryResume = async (orderNumber: string): Promise<CreateOrderResponse | null> => {
       try {
-        return await resumePendingOrder(resumeTarget, email);
-      } catch (e) {
-        if (!(e instanceof CheckoutApiError) || e.code !== "NOT_FOUND") {
-          if (e instanceof CheckoutApiError && e.code === "ORDER_NOT_PAYABLE") {
-            clearPendingCheckout();
-          } else if (!(e instanceof CheckoutApiError)) {
-            throw e;
-          }
+        const order = await resumePendingOrder(orderNumber, email);
+        if (resumeMatchesMode(order, paymentMode)) {
+          return order;
         }
+        clearPendingCheckout();
+        return null;
+      } catch (e) {
+        if (e instanceof CheckoutApiError && e.code === "ORDER_NOT_PAYABLE") {
+          clearPendingCheckout();
+        }
+        return null;
       }
+    };
+
+    if (resumeTarget && (!pending || pending.email === email)) {
+      const resumed = await tryResume(resumeTarget);
+      if (resumed) return resumed;
     }
 
-    if (pending && pending.email === email) {
-      try {
-        return await resumePendingOrder(pending.orderNumber, email);
-      } catch {
-        clearPendingCheckout();
-      }
+    if (pending && pending.email === email && pending.orderNumber !== resumeTarget) {
+      const resumed = await tryResume(pending.orderNumber);
+      if (resumed) return resumed;
+    }
+
+    if (pending && pending.email === email && !resumeMatchesMode(pending, paymentMode)) {
+      clearPendingCheckout();
     }
 
     return createOrder(
@@ -307,9 +334,9 @@ export function PaymentSelector({
         codDelivery: paymentMode === "cod",
         paymentMethod: paymentMode
       },
-      idempotencyKey
+      checkoutIdempotencyKey
     );
-  }, [form, idempotencyKey, paymentMode, resumeOrderNumber]);
+  }, [form, checkoutIdempotencyKey, paymentMode, resumeOrderNumber]);
 
   const onSubmit = useCallback(async () => {
     if (busy || payStarted.current || processing) return;
@@ -343,7 +370,11 @@ export function PaymentSelector({
           window.location.href = order.stripeCheckoutUrl;
           return;
         }
-        throw new Error("Stripe checkout could not be started.");
+        throw new Error(
+          order.paymentMethod === "stripe"
+            ? "Stripe checkout could not be started. Please try again."
+            : `This order is set up for ${order.paymentMethod}. Switch payment method or start checkout again.`
+        );
       }
 
       if (paymentMode === "paypal") {
@@ -354,7 +385,11 @@ export function PaymentSelector({
           window.location.href = order.paypalApprovalUrl;
           return;
         }
-        throw new Error("PayPal checkout could not be started.");
+        throw new Error(
+          order.paymentMethod === "paypal"
+            ? "PayPal checkout could not be started. Please try again."
+            : `This order is set up for ${order.paymentMethod}. Switch payment method or start checkout again.`
+        );
       }
 
       const ready = rzpReady || (await loadRazorpayScript());
