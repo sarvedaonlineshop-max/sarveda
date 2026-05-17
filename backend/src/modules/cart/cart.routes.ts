@@ -12,6 +12,7 @@ router.use(optionalAuth);
 
 router.post("/add", validateBody(cartAddSchema), controller.add);
 router.get("/", controller.get);
+router.delete("/", controller.clear);
 router.put("/update", validateBody(cartUpdateSchema), controller.update);
 router.delete("/remove/:variantId", controller.remove);
 

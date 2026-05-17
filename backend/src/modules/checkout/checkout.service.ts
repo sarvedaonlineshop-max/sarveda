@@ -596,6 +596,7 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
       paymentId: result.payment.id,
       orderId: result.order.id,
       orderNumber: result.order.orderNumber,
+      email: body.email.trim().toLowerCase(),
       amountMinor: grandTotalInPaise,
       currency: orderCurrency
     });
@@ -724,6 +725,7 @@ export async function resumePendingCheckout(orderNumber: string, email: string):
       paymentId: payment.id,
       orderId: order.id,
       orderNumber: order.orderNumber,
+      email: order.email,
       amountMinor: order.grandTotalInPaise,
       currency: order.currency
     });

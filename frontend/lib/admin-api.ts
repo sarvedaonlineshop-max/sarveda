@@ -95,6 +95,7 @@ export type OrdersListData = {
     status: string;
     paymentStatus: string;
     grandTotalInPaise: number;
+    currency: string;
     itemCount: number;
     linePreview: string[];
     createdAt: string;

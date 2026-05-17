@@ -44,6 +44,7 @@ export async function createPayPalOrder(input: {
   paymentId: string;
   orderId: string;
   orderNumber: string;
+  email: string;
   amountMinor: number;
   currency: string;
 }): Promise<{ approvalUrl: string; paypalOrderId: string }> {
@@ -71,8 +72,8 @@ export async function createPayPalOrder(input: {
       application_context: {
         brand_name: "Sarveda",
         user_action: "PAY_NOW",
-        return_url: `${siteUrl()}/checkout/paypal-return?orderNumber=${encodeURIComponent(input.orderNumber)}`,
-        cancel_url: `${siteUrl()}/checkout?orderNumber=${encodeURIComponent(input.orderNumber)}`
+        return_url: `${siteUrl()}/checkout/paypal-return?orderNumber=${encodeURIComponent(input.orderNumber)}&email=${encodeURIComponent(input.email)}`,
+        cancel_url: `${siteUrl()}/checkout?orderNumber=${encodeURIComponent(input.orderNumber)}&email=${encodeURIComponent(input.email)}`
       }
     })
   });

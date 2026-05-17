@@ -5,7 +5,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { fetchPublicOrder, type PublicOrderSummary } from "@/lib/checkout-api";
-import { formatINRFromPaise } from "@/lib/money";
+import { formatMinorFromPaise } from "@/lib/money";
 
 function PaymentFailedContent() {
   const sp = useSearchParams();
@@ -60,7 +60,8 @@ function PaymentFailedContent() {
             <span className="font-medium">Status:</span> {summary.status.replace(/_/g, " ")}
           </p>
           <p className="mt-1">
-            <span className="font-medium">Amount:</span> {formatINRFromPaise(summary.grandTotalInPaise)}
+            <span className="font-medium">Amount:</span>{" "}
+            {formatMinorFromPaise(summary.grandTotalInPaise, summary.currency)}
           </p>
           <p className="mt-1 text-xs text-stone-500">{summary.email}</p>
         </div>

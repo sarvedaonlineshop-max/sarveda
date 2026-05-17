@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 
 import { prisma } from "../../config/db";
+import { clearCartForOrder } from "../cart/cart.service";
 import { notifyOrderEmail } from "../notifications/email";
 import { confirmStockTx } from "../orders/orders.service";
 import { invoiceNumberForOrder } from "../../utils/invoice";
@@ -63,6 +64,7 @@ export async function completeStripePaidOrder(
     update: {}
   });
 
+  await clearCartForOrder(payment.orderId);
   notifyOrderEmail(payment.orderId, "order_confirmed");
   return { orderNumber: payment.order.orderNumber };
 }

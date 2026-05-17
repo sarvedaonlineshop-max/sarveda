@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AdminPagination } from "@/components/admin/AdminPagination";
 import type { OrdersListData } from "@/lib/admin-api";
 import { downloadAdminOrdersPdf, fetchAdminOrders } from "@/lib/admin-api";
-import { formatINRFromPaise } from "@/lib/money";
+import { formatMinorFromPaise } from "@/lib/money";
 
 const buckets = [
   { value: "all", label: "All" },
@@ -164,7 +164,9 @@ export default function AdminOrdersPage() {
                         <div className="truncate text-xs text-stone-500 dark:text-stone-400">{o.linePreview.join(" · ")}</div>
                       ) : null}
                     </td>
-                    <td className="px-4 py-3 font-medium">{formatINRFromPaise(o.grandTotalInPaise)}</td>
+                    <td className="px-4 py-3 font-medium">
+                      {formatMinorFromPaise(o.grandTotalInPaise, o.currency)}
+                    </td>
                     <td className="px-4 py-3">
                       <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-700 dark:bg-stone-800 dark:text-stone-200">
                         {o.status.replace(/_/g, " ")}

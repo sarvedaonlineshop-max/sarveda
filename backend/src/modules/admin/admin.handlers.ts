@@ -512,6 +512,7 @@ export async function ordersList(req: Request, res: Response, next: NextFunction
           status: o.status,
           paymentStatus: o.paymentStatus,
           grandTotalInPaise: o.grandTotalInPaise,
+          currency: o.currency,
           itemCount: o.items.reduce((s, i) => s + i.qtyOrdered, 0),
           linePreview: o.items.slice(0, 2).map((i) => i.nameSnapshot),
           createdAt: o.createdAt

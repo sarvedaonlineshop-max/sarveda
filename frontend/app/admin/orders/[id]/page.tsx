@@ -149,6 +149,10 @@ export default function AdminOrderDetailPage() {
   const [selectedPickupId, setSelectedPickupId] = useState<string>("");
   const [selectedCourier, setSelectedCourier] = useState<string>("AUTO");
   const [itemWarehouses, setItemWarehouses] = useState<Record<string, string>>({});
+  const [itemCouriers, setItemCouriers] = useState<Record<string, string>>({});
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
+  const [bulkWarehouse, setBulkWarehouse] = useState("");
+  const [bulkCourier, setBulkCourier] = useState("AUTO");
   const [toast, setToast] = useState<{ message: string; error?: boolean } | null>(null);
   const [statusConfirm, setStatusConfirm] = useState<string | null>(null);
   const [cancelAwbConfirm, setCancelAwbConfirm] = useState<string | null>(null);
@@ -185,10 +189,17 @@ export default function AdminOrderDetailPage() {
       setOrder(o);
       setSelectedCourier(o.preferredCourier ?? "AUTO");
       const wh: Record<string, string> = {};
+      const cr: Record<string, string> = {};
       for (const it of o.items) {
-        if (it.id) wh[it.id] = it.pickupLocationId ?? "";
+        if (it.id) {
+          wh[it.id] = it.pickupLocationId ?? "";
+          cr[it.id] = o.preferredCourier ?? "AUTO";
+        }
       }
       setItemWarehouses(wh);
+      setItemCouriers(cr);
+      setSelectedItemIds(new Set());
+      setBulkCourier(o.preferredCourier ?? "AUTO");
       const inv = await fetchAdminOrderInvoice(id);
       setInvoice(inv);
     } catch (e) {
@@ -266,28 +277,80 @@ export default function AdminOrderDetailPage() {
     }
   }
 
+  function applyBulkToSelected() {
+    if (!order) return;
+    const ids =
+      selectedItemIds.size > 0
+        ? Array.from(selectedItemIds)
+        : order.items.map((it) => it.id).filter(Boolean) as string[];
+    if (ids.length === 0) return;
+    if (bulkWarehouse) {
+      setItemWarehouses((prev) => {
+        const next = { ...prev };
+        for (const itemId of ids) next[itemId] = bulkWarehouse;
+        return next;
+      });
+    }
+    if (bulkCourier) {
+      setSelectedCourier(bulkCourier);
+      setItemCouriers((prev) => {
+        const next = { ...prev };
+        for (const itemId of ids) next[itemId] = bulkCourier;
+        return next;
+      });
+    }
+    pushToast(`Applied to ${ids.length} line item(s). Save by creating shipment.`);
+  }
+
+  function toggleSelectItem(itemId: string) {
+    setSelectedItemIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  }
+
+  function toggleSelectAllItems() {
+    if (!order) return;
+    const ids = order.items.map((it) => it.id).filter(Boolean) as string[];
+    setSelectedItemIds((prev) => (prev.size === ids.length ? new Set() : new Set(ids)));
+  }
+
+  async function persistLineShippingPrefs(): Promise<void> {
+    if (!id || !order) return;
+    const courier =
+      selectedCourier ||
+      order.items.map((it) => (it.id ? itemCouriers[it.id] : null)).find(Boolean) ||
+      "AUTO";
+    if (courier !== (order.preferredCourier ?? "AUTO")) {
+      await patchAdminOrderPreferredCourier(
+        id,
+        courier as "AUTO" | "DELHIVERY" | "SHIPROCKET" | "SHIPROCKET_INTERNATIONAL"
+      );
+    }
+    const warehouseRows = Object.entries(itemWarehouses)
+      .filter(([orderItemId]) => orderItemId)
+      .map(([orderItemId, pickupLocationId]) => ({
+        orderItemId,
+        pickupLocationId: pickupLocationId || null
+      }));
+    if (warehouseRows.length > 0) {
+      await patchAdminOrderItemWarehouses(id, warehouseRows);
+    }
+  }
+
   async function handleRetryShipment() {
     if (!id) return;
     setShipBusy("create");
     try {
-      if (selectedCourier !== (order?.preferredCourier ?? "AUTO")) {
-        await patchAdminOrderPreferredCourier(
-          id,
-          selectedCourier as "AUTO" | "DELHIVERY" | "SHIPROCKET" | "SHIPROCKET_INTERNATIONAL"
-        );
-      }
-      const warehouseRows = Object.entries(itemWarehouses)
-        .filter(([orderItemId]) => orderItemId)
-        .map(([orderItemId, pickupLocationId]) => ({
-          orderItemId,
-          pickupLocationId: pickupLocationId || null
-        }));
-      if (warehouseRows.length > 0) {
-        await patchAdminOrderItemWarehouses(id, warehouseRows);
-      }
+      await persistLineShippingPrefs();
+      const primaryPickup =
+        Object.values(itemWarehouses).find((v) => v) || selectedPickupId || undefined;
       await adminCreateShipmentForOrder(id, {
-        ...(selectedPickupId ? { pickupLocationId: selectedPickupId } : {}),
-        preferredCourier: selectedCourier as "AUTO" | "DELHIVERY" | "SHIPROCKET" | "SHIPROCKET_INTERNATIONAL"
+        ...(primaryPickup ? { pickupLocationId: primaryPickup } : {}),
+        preferredCourier: (selectedCourier ||
+          bulkCourier) as "AUTO" | "DELHIVERY" | "SHIPROCKET" | "SHIPROCKET_INTERNATIONAL"
       });
       await load();
       pushToast("Shipment label created or refreshed.");
@@ -644,13 +707,14 @@ export default function AdminOrderDetailPage() {
         </div>
       ) : null}
 
-      <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700 dark:bg-stone-900">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="rounded-xl border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-stone-900">
+        <div className="flex flex-col gap-3 border-b border-stone-100 p-4 dark:border-stone-700 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Shipping &amp; tracking</h2>
+            <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Line items &amp; fulfillment</h2>
             <p className="text-xs text-stone-500 dark:text-stone-400">
               Fulfillment:{" "}
               <span className="font-medium text-stone-700 dark:text-stone-200">{order.fulfillmentStatus}</span>
+              {order.shippingZone ? ` · Zone ${order.shippingZone}` : ""}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -658,7 +722,7 @@ export default function AdminOrderDetailPage() {
               type="button"
               disabled={!!shipBusy || !shipUi}
               onClick={() => void handleSyncAllTracking()}
-              className="rounded-lg bg-stone-800 px-3 py-2 text-xs font-semibold text-amber-100 hover:bg-stone-700 disabled:opacity-50 dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-stone-100"
+              className="rounded-lg bg-stone-800 px-3 py-2 text-xs font-semibold text-amber-100 hover:bg-stone-700 disabled:opacity-50 dark:bg-stone-200 dark:text-stone-900"
             >
               {shipBusy === "sync-all" ? "Syncing…" : "Refresh all tracking"}
             </button>
@@ -673,131 +737,254 @@ export default function AdminOrderDetailPage() {
           </div>
         </div>
         {!shipUi ? (
-          <p className="mt-3 text-xs text-amber-900/90 dark:text-amber-200/90">
-            Carrier actions require a paid order with captured payment. Use &quot;Sync payment (Razorpay)&quot; if the
-            customer paid but status is still pending.
+          <p className="border-b border-stone-100 px-4 py-2 text-xs text-amber-900/90 dark:border-stone-700 dark:text-amber-200/90">
+            Carrier actions need captured payment (or COD order marked paid).
           </p>
         ) : null}
-        <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">
-          <strong className="font-medium text-stone-700 dark:text-stone-300">Open</strong> — carrier tracking page.{" "}
-          <strong className="font-medium text-stone-700 dark:text-stone-300">Sync</strong> — pull latest status from
-          Shiprocket/Delhivery into Sarveda.
-        </p>
-
-        {pickupOptions.length > 0 ? (
-          <label className="mt-4 flex max-w-md flex-col gap-1 text-sm text-stone-600 dark:text-stone-300">
-            <span className="font-medium text-stone-700 dark:text-stone-200">Pickup warehouse</span>
+        <div className="flex flex-wrap items-end gap-3 border-b border-stone-100 bg-stone-50/80 px-4 py-3 dark:border-stone-700 dark:bg-stone-950/40">
+          <label className="flex flex-col gap-1 text-xs">
+            <span className="font-semibold text-stone-600 dark:text-stone-300">Bulk warehouse</span>
             <select
-              value={selectedPickupId}
-              onChange={(e) => setSelectedPickupId(e.target.value)}
-              disabled={!!shipBusy || !shipUi}
-              className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+              value={bulkWarehouse}
+              onChange={(e) => setBulkWarehouse(e.target.value)}
+              disabled={!pickupOptions.length}
+              className="min-w-[10rem] rounded border border-stone-300 bg-white px-2 py-1.5 dark:border-stone-600 dark:bg-stone-950"
             >
+              <option value="">—</option>
               {pickupOptions.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.label}
-                  {p.isPrimary ? " (primary)" : ""}
                 </option>
               ))}
             </select>
-            <span className="text-xs text-stone-500 dark:text-stone-400">
-              <Link href="/admin/settings/pickup-locations" className="text-amber-800 underline dark:text-amber-400">
-                Manage warehouses
-              </Link>
-            </span>
           </label>
-        ) : null}
-        <label className="mt-4 flex max-w-md flex-col gap-1 text-sm text-stone-600 dark:text-stone-300">
-          <span className="font-medium text-stone-700 dark:text-stone-200">Courier for this order</span>
-          <select
-            value={selectedCourier}
-            onChange={(e) => setSelectedCourier(e.target.value)}
-            disabled={!!shipBusy || !shipUi}
-            className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+          <label className="flex flex-col gap-1 text-xs">
+            <span className="font-semibold text-stone-600 dark:text-stone-300">Bulk courier</span>
+            <select
+              value={bulkCourier}
+              onChange={(e) => setBulkCourier(e.target.value)}
+              className="min-w-[10rem] rounded border border-stone-300 bg-white px-2 py-1.5 dark:border-stone-600 dark:bg-stone-950"
+            >
+              <option value="AUTO">Auto</option>
+              <option value="DELHIVERY">Delhivery</option>
+              <option value="SHIPROCKET">Shiprocket</option>
+              <option value="SHIPROCKET_INTERNATIONAL">Shiprocket Intl</option>
+            </select>
+          </label>
+          <button
+            type="button"
+            onClick={applyBulkToSelected}
+            className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-800 hover:border-amber-500 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-100"
           >
-            <option value="AUTO">Auto (Delhivery default for India)</option>
-            <option value="DELHIVERY">Delhivery</option>
-            <option value="SHIPROCKET">Shiprocket (domestic)</option>
-            <option value="SHIPROCKET_INTERNATIONAL">Shiprocket International</option>
-          </select>
-        </label>
-        {pickupOptions.length === 0 ? (
-          <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">
-            No warehouses in admin — carrier uses env default.{" "}
-            <Link href="/admin/settings/pickup-locations" className="text-amber-800 underline dark:text-amber-400">
+            Apply to {selectedItemIds.size > 0 ? `${selectedItemIds.size} selected` : "all items"}
+          </button>
+          {pickupOptions.length === 0 ? (
+            <Link href="/admin/settings/pickup-locations" className="text-xs text-amber-800 underline dark:text-amber-400">
               Add warehouses
             </Link>
-          </p>
-        ) : null}
-        <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">
-          To ship from a different warehouse than the one on an existing AWB, use <strong className="font-medium">Cancel label</strong> first, then create again with the new pickup.
-        </p>
-
-        {order.shipments.length === 0 ? (
-          <p className="mt-4 text-sm text-stone-500 dark:text-stone-400">
-            No carrier label yet — set status to Processing (auto) or use retry above.
-          </p>
-        ) : (
-          <div className="mt-4 overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="border-b border-stone-100 dark:border-stone-700">
-                <tr>
-                  <th className="py-2 pr-4 font-semibold text-stone-600 dark:text-stone-300">Courier</th>
-                  <th className="py-2 pr-4 font-semibold text-stone-600 dark:text-stone-300">Pickup</th>
-                  <th className="py-2 pr-4 font-semibold text-stone-600 dark:text-stone-300">AWB</th>
-                  <th className="py-2 pr-4 font-semibold text-stone-600 dark:text-stone-300">Status</th>
-                  <th className="py-2 pr-4 font-semibold text-stone-600 dark:text-stone-300">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100 dark:divide-stone-700">
-                {order.shipments.map((s) => (
-                  <tr key={s.id}>
-                    <td className="py-2 pr-4">{s.courier}</td>
-                    <td className="py-2 pr-4 text-stone-600 dark:text-stone-300">{s.pickupLocation?.label ?? "—"}</td>
-                    <td className="py-2 pr-4 font-mono text-xs">{s.awb ?? "—"}</td>
-                    <td className="py-2 pr-4">{s.status.replace(/_/g, " ")}</td>
-                    <td className="py-2 pr-4">
-                      <div className="flex flex-wrap gap-2">
-                        {s.trackingUrl ? (
-                          <a
-                            href={s.trackingUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-amber-800 underline dark:text-amber-400"
-                          >
-                            Open
-                          </a>
-                        ) : null}
-                        {s.awb ? (
-                          <button
-                            type="button"
-                            className="text-xs font-semibold text-stone-700 underline dark:text-stone-300"
-                            disabled={!!shipBusy || !shipUi}
-                            onClick={() => void handleTrackOne(s.awb!)}
-                          >
-                            {shipBusy === s.awb ? "…" : "Sync"}
-                          </button>
-                        ) : null}
-                        {s.awb ? (
-                          <button
-                            type="button"
-                            className="text-xs font-semibold text-red-700 underline dark:text-red-400"
-                            disabled={!!shipBusy}
-                            onClick={() => setCancelAwbConfirm(s.awb!)}
-                          >
-                            {shipBusy === `cancel-${s.awb}` ? "…" : "Cancel label"}
-                          </button>
-                        ) : null}
-                      </div>
+          ) : null}
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="border-b border-stone-100 bg-stone-50 dark:border-stone-700 dark:bg-stone-800/80">
+              <tr>
+                <th className="px-3 py-3">
+                  <input
+                    type="checkbox"
+                    aria-label="Select all line items"
+                    checked={
+                      order.items.filter((it) => it.id).length > 0 &&
+                      selectedItemIds.size === order.items.filter((it) => it.id).length
+                    }
+                    onChange={toggleSelectAllItems}
+                  />
+                </th>
+                <th className="px-3 py-3 font-semibold text-stone-600 dark:text-stone-300">Product</th>
+                <th className="px-3 py-3 font-semibold text-stone-600 dark:text-stone-300">SKU</th>
+                <th className="px-3 py-3 font-semibold text-stone-600 dark:text-stone-300">Qty</th>
+                <th className="px-3 py-3 font-semibold text-stone-600 dark:text-stone-300">Unit</th>
+                <th className="px-3 py-3 font-semibold text-stone-600 dark:text-stone-300">Line total</th>
+                <th className="px-3 py-3 font-semibold text-stone-600 dark:text-stone-300">Warehouse</th>
+                <th className="px-3 py-3 font-semibold text-stone-600 dark:text-stone-300">Courier</th>
+                <th className="px-3 py-3 font-semibold text-stone-600 dark:text-stone-300">Labels / tracking</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-stone-100 dark:divide-stone-700">
+              {order.items.map((item, idx) => {
+                const primaryShipment = order.shipments[0];
+                return (
+                  <tr key={item.id ?? `${item.skuSnapshot}-${idx}`}>
+                    <td className="px-3 py-3 align-top">
+                      {item.id ? (
+                        <input
+                          type="checkbox"
+                          checked={selectedItemIds.has(item.id)}
+                          onChange={() => toggleSelectItem(item.id!)}
+                          aria-label={`Select ${item.nameSnapshot}`}
+                        />
+                      ) : null}
+                    </td>
+                    <td className="px-3 py-3 align-top font-medium text-stone-800 dark:text-stone-100">
+                      {item.nameSnapshot}
+                    </td>
+                    <td className="px-3 py-3 align-top font-mono text-xs text-stone-500">{item.skuSnapshot}</td>
+                    <td className="px-3 py-3 align-top">{item.qtyOrdered}</td>
+                    <td className="px-3 py-3 align-top">{formatMinorFromPaise(item.unitPriceInPaise, order.currency)}</td>
+                    <td className="px-3 py-3 align-top">{formatMinorFromPaise(item.lineTotalInPaise, order.currency)}</td>
+                    <td className="px-3 py-3 align-top">
+                      {item.id && pickupOptions.length > 0 ? (
+                        <select
+                          value={itemWarehouses[item.id] ?? ""}
+                          onChange={(e) =>
+                            setItemWarehouses((prev) => ({ ...prev, [item.id!]: e.target.value }))
+                          }
+                          className="max-w-[9rem] rounded border border-stone-300 bg-white px-2 py-1 text-xs dark:border-stone-600 dark:bg-stone-950"
+                        >
+                          <option value="">Default</option>
+                          {pickupOptions.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className="text-xs text-stone-400">—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3 align-top">
+                      {item.id ? (
+                        <select
+                          value={itemCouriers[item.id] ?? selectedCourier}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setSelectedCourier(v);
+                            setItemCouriers((prev) => ({ ...prev, [item.id!]: v }));
+                          }}
+                          className="max-w-[9rem] rounded border border-stone-300 bg-white px-2 py-1 text-xs dark:border-stone-600 dark:bg-stone-950"
+                        >
+                          <option value="AUTO">Auto</option>
+                          <option value="DELHIVERY">Delhivery</option>
+                          <option value="SHIPROCKET">Shiprocket</option>
+                          <option value="SHIPROCKET_INTERNATIONAL">Intl</option>
+                        </select>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="px-3 py-3 align-top text-xs">
+                      {idx === 0 && primaryShipment ? (
+                        <div className="space-y-1">
+                          <p>
+                            <span className="font-medium">{primaryShipment.courier}</span>
+                            {primaryShipment.awb ? (
+                              <span className="ml-1 font-mono">{primaryShipment.awb}</span>
+                            ) : null}
+                          </p>
+                          <p className="text-stone-500">{primaryShipment.status.replace(/_/g, " ")}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {primaryShipment.trackingUrl ? (
+                              <a
+                                href={primaryShipment.trackingUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-semibold text-amber-800 underline dark:text-amber-400"
+                              >
+                                Open
+                              </a>
+                            ) : null}
+                            {primaryShipment.awb ? (
+                              <button
+                                type="button"
+                                className="font-semibold text-stone-700 underline dark:text-stone-300"
+                                disabled={!!shipBusy || !shipUi}
+                                onClick={() => void handleTrackOne(primaryShipment.awb!)}
+                              >
+                                {shipBusy === primaryShipment.awb ? "…" : "Sync"}
+                              </button>
+                            ) : null}
+                            {primaryShipment.awb ? (
+                              <button
+                                type="button"
+                                className="font-semibold text-red-700 underline dark:text-red-400"
+                                disabled={!!shipBusy}
+                                onClick={() => setCancelAwbConfirm(primaryShipment.awb!)}
+                              >
+                                {shipBusy === `cancel-${primaryShipment.awb}` ? "…" : "Cancel label"}
+                              </button>
+                            ) : null}
+                          </div>
+                          {order.shipments.length > 1 ? (
+                            <p className="text-stone-400">+{order.shipments.length - 1} more label(s) — use Refresh all</p>
+                          ) : null}
+                        </div>
+                      ) : idx === 0 ? (
+                        <span className="text-stone-400">No label yet</span>
+                      ) : (
+                        <span className="text-stone-300">—</span>
+                      )}
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {order.shipments.length > 1 ? (
+          <div className="border-t border-stone-100 px-4 py-3 dark:border-stone-700">
+            <p className="mb-2 text-xs font-semibold uppercase text-stone-500">All shipment labels</p>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-left text-xs">
+                <thead>
+                  <tr className="text-stone-500">
+                    <th className="py-1 pr-3">Courier</th>
+                    <th className="py-1 pr-3">AWB</th>
+                    <th className="py-1 pr-3">Status</th>
+                    <th className="py-1 pr-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {order.shipments.map((s) => (
+                    <tr key={s.id} className="border-t border-stone-50 dark:border-stone-800">
+                      <td className="py-2 pr-3">{s.courier}</td>
+                      <td className="py-2 pr-3 font-mono">{s.awb ?? "—"}</td>
+                      <td className="py-2 pr-3">{s.status.replace(/_/g, " ")}</td>
+                      <td className="py-2 pr-3">
+                        <div className="flex flex-wrap gap-2">
+                          {s.trackingUrl ? (
+                            <a href={s.trackingUrl} target="_blank" rel="noopener noreferrer" className="underline">
+                              Open
+                            </a>
+                          ) : null}
+                          {s.awb ? (
+                            <button
+                              type="button"
+                              className="underline"
+                              disabled={!!shipBusy || !shipUi}
+                              onClick={() => void handleTrackOne(s.awb!)}
+                            >
+                              Sync
+                            </button>
+                          ) : null}
+                          {s.awb ? (
+                            <button
+                              type="button"
+                              className="text-red-700 underline dark:text-red-400"
+                              disabled={!!shipBusy}
+                              onClick={() => setCancelAwbConfirm(s.awb!)}
+                            >
+                              Cancel
+                            </button>
+                          ) : null}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        )}
+        ) : null}
       </div>
-
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700 dark:bg-stone-900">
           <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Totals</h2>
@@ -883,57 +1070,6 @@ export default function AdminOrderDetailPage() {
               <p className="text-stone-600 dark:text-stone-300">{a.country}</p>
             </div>
           ))}
-        </div>
-      </div>
-
-      <div>
-        <h2 className="mb-3 text-lg font-semibold text-stone-800 dark:text-stone-100">Line items</h2>
-        <div className="overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-stone-900">
-          <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-stone-100 bg-stone-50 dark:border-stone-700 dark:bg-stone-800/80">
-              <tr>
-                <th className="px-4 py-3 font-semibold text-stone-600 dark:text-stone-300">Product</th>
-                <th className="px-4 py-3 font-semibold text-stone-600 dark:text-stone-300">SKU</th>
-                <th className="px-4 py-3 font-semibold text-stone-600 dark:text-stone-300">Qty</th>
-                <th className="px-4 py-3 font-semibold text-stone-600 dark:text-stone-300">Unit</th>
-                <th className="px-4 py-3 font-semibold text-stone-600 dark:text-stone-300">Line total</th>
-                {pickupOptions.length > 0 ? (
-                  <th className="px-4 py-3 font-semibold text-stone-600 dark:text-stone-300">Warehouse</th>
-                ) : null}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-100 dark:divide-stone-700">
-              {order.items.map((item, idx) => (
-                <tr key={item.id ?? `${item.skuSnapshot}-${idx}`}>
-                  <td className="px-4 py-3 font-medium text-stone-800 dark:text-stone-100">{item.nameSnapshot}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-stone-500 dark:text-stone-400">{item.skuSnapshot}</td>
-                  <td className="px-4 py-3">{item.qtyOrdered}</td>
-                  <td className="px-4 py-3">{formatMinorFromPaise(item.unitPriceInPaise, order.currency)}</td>
-                  <td className="px-4 py-3">{formatMinorFromPaise(item.lineTotalInPaise, order.currency)}</td>
-                  {pickupOptions.length > 0 && item.id ? (
-                    <td className="px-4 py-3">
-                      <select
-                        value={itemWarehouses[item.id] ?? ""}
-                        onChange={(e) =>
-                          setItemWarehouses((prev) => ({ ...prev, [item.id!]: e.target.value }))
-                        }
-                        className="max-w-[10rem] rounded border border-stone-300 bg-white px-2 py-1 text-xs dark:border-stone-600 dark:bg-stone-950"
-                      >
-                        <option value="">Default</option>
-                        {pickupOptions.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.label}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                  ) : pickupOptions.length > 0 ? (
-                    <td className="px-4 py-3">—</td>
-                  ) : null}
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>

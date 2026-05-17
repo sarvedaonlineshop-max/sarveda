@@ -319,3 +319,15 @@ export async function clearCartForRequest(req: Request): Promise<void> {
   if (!cartId) return;
   await prisma.cartItem.deleteMany({ where: { cartId } });
 }
+
+/** Clear persisted cart for the customer who placed this order (logged-in shoppers). */
+export async function clearCartForOrder(orderId: string): Promise<void> {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { customerId: true }
+  });
+  if (!order?.customerId) return;
+  const cart = await prisma.cart.findUnique({ where: { userId: order.customerId } });
+  if (!cart) return;
+  await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
+}

@@ -5,7 +5,8 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
 import { getApiBase } from "@/lib/api";
-import { clearPendingCheckout } from "@/lib/pending-checkout";
+import { clearCartAfterPayment } from "@/lib/clear-cart-after-payment";
+import { clearPendingCheckout, loadPendingCheckout } from "@/lib/pending-checkout";
 
 function PayPalReturnInner() {
   const search = useSearchParams();
@@ -33,10 +34,18 @@ function PayPalReturnInner() {
         if (!res.ok || !json.success || !json.data?.captured) {
           throw new Error(json.error ?? "PayPal capture failed");
         }
+        const pending = loadPendingCheckout();
+        const email =
+          search.get("email")?.trim() ||
+          pending?.email ||
+          "";
         clearPendingCheckout();
+        await clearCartAfterPayment();
         setStatus("ok");
-        const email = search.get("email") ?? "";
-        const q = new URLSearchParams({ orderNumber, email });
+        const q = new URLSearchParams({
+          orderNumber: orderNumber || pending?.orderNumber || "",
+          email
+        });
         router.replace(`/order/confirmed?${q.toString()}`);
       } catch (e) {
         setStatus("err");

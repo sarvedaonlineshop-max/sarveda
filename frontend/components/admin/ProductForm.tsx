@@ -277,6 +277,27 @@ export function ProductForm({ productId }: { productId?: string }) {
     });
   }
 
+  function removeImage(index: number) {
+    setImages((prev) => {
+      const removed = prev[index];
+      const next = prev.filter((_, i) => i !== index);
+      if (next.length === 0) {
+        return [{ url: "", altText: "", isPrimary: true }];
+      }
+      if (removed?.isPrimary) {
+        return next.map((im, i) => ({ ...im, isPrimary: i === 0 }));
+      }
+      return next;
+    });
+  }
+
+  function addImageRow() {
+    setImages((prev) => [
+      ...prev,
+      { url: "", altText: "", isPrimary: prev.length === 0 && !prev.some((im) => im.isPrimary) }
+    ]);
+  }
+
   function buildPayload() {
     return {
       slug: slug.trim(),
@@ -324,14 +345,17 @@ export function ProductForm({ productId }: { productId?: string }) {
           };
         })
       })),
-      images: images
-        .filter((im) => im.url.trim())
-        .map((im, i) => ({
+      images: (() => {
+        const filled = images.filter((im) => im.url.trim());
+        let primaryIdx = filled.findIndex((im) => im.isPrimary);
+        if (primaryIdx < 0 && filled.length > 0) primaryIdx = 0;
+        return filled.map((im, i) => ({
           url: im.url.trim(),
           altText: im.altText.trim() || null,
           position: i,
-          isPrimary: im.isPrimary
-        })),
+          isPrimary: i === primaryIdx
+        }));
+      })(),
       accordionItems: accordion
         .filter((a) => a.title.trim())
         .map((a, i) => ({
@@ -793,48 +817,107 @@ export function ProductForm({ productId }: { productId?: string }) {
         {tab === "media" ? (
           <div className="space-y-6">
             <div className="space-y-3">
-              <p className={labelCls}>Product images (CDN URLs)</p>
-              {images.map((im, ii) => (
-                <div key={ii} className="grid gap-2 sm:grid-cols-2">
-                  <input
-                    placeholder="Image URL"
-                    value={im.url}
-                    onChange={(e) =>
-                      setImages((prev) =>
-                        prev.map((x, i) => (i === ii ? { ...x, url: e.target.value } : x))
-                      )
-                    }
-                    className={inputCls}
-                  />
-                  <input
-                    placeholder="Alt text"
-                    value={im.altText}
-                    onChange={(e) =>
-                      setImages((prev) =>
-                        prev.map((x, i) => (i === ii ? { ...x, altText: e.target.value } : x))
-                      )
-                    }
-                    className={inputCls}
-                  />
-                  <label className="flex items-center gap-2 text-sm sm:col-span-2">
-                    <input
-                      type="radio"
-                      name="primaryImage"
-                      checked={im.isPrimary}
-                      onChange={() =>
-                        setImages((prev) => prev.map((x, i) => ({ ...x, isPrimary: i === ii })))
-                      }
-                    />
-                    Primary image
-                  </label>
-                </div>
-              ))}
+              <div>
+                <p className={labelCls}>Product images (CDN URLs)</p>
+                <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
+                  Choose <strong className="font-medium text-stone-800 dark:text-stone-200">one primary</strong>{" "}
+                  image — shop grid and main product photo. All other URLs are{" "}
+                  <strong className="font-medium text-stone-800 dark:text-stone-200">secondary</strong> gallery images.
+                </p>
+              </div>
+              {images.map((im, ii) => {
+                const role = im.isPrimary ? "primary" : "secondary";
+                const hasUrl = Boolean(im.url.trim());
+                return (
+                  <div
+                    key={ii}
+                    className="rounded-lg border border-stone-200 bg-stone-50/80 p-3 dark:border-stone-600 dark:bg-stone-950/40"
+                  >
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ${
+                            im.isPrimary
+                              ? "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200"
+                              : "bg-stone-200 text-stone-700 dark:bg-stone-700 dark:text-stone-200"
+                          }`}
+                        >
+                          {im.isPrimary ? "Primary" : "Secondary"}
+                        </span>
+                        {!im.isPrimary && hasUrl ? (
+                          <span className="text-xs text-stone-500">Gallery only</span>
+                        ) : null}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeImage(ii)}
+                        className="rounded-lg border border-red-200 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/50"
+                        aria-label={`Remove ${role} image`}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-[5rem_1fr_1fr]">
+                      <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-stone-200 bg-white dark:border-stone-600 dark:bg-stone-900">
+                        {hasUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={im.url.trim()}
+                            alt={im.altText || "Preview"}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span className="px-1 text-center text-[10px] text-stone-400">Preview</span>
+                        )}
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-semibold uppercase text-stone-500">Image URL</label>
+                        <input
+                          placeholder="https://…"
+                          value={im.url}
+                          onChange={(e) =>
+                            setImages((prev) =>
+                              prev.map((x, i) => (i === ii ? { ...x, url: e.target.value } : x))
+                            )
+                          }
+                          className={inputCls}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-semibold uppercase text-stone-500">Alt text</label>
+                        <input
+                          placeholder="Describe the image"
+                          value={im.altText}
+                          onChange={(e) =>
+                            setImages((prev) =>
+                              prev.map((x, i) => (i === ii ? { ...x, altText: e.target.value } : x))
+                            )
+                          }
+                          className={inputCls}
+                        />
+                      </div>
+                    </div>
+                    <label className="mt-2 flex cursor-pointer items-center gap-2 text-sm text-stone-700 dark:text-stone-300">
+                      <input
+                        type="radio"
+                        name="primaryImage"
+                        checked={im.isPrimary}
+                        onChange={() =>
+                          setImages((prev) => prev.map((x, i) => ({ ...x, isPrimary: i === ii })))
+                        }
+                        className="text-amber-600 focus:ring-amber-500"
+                      />
+                      Use as primary image
+                    </label>
+                  </div>
+                );
+              })}
               <button
                 type="button"
-                onClick={() => setImages((prev) => [...prev, { url: "", altText: "", isPrimary: false }])}
+                onClick={addImageRow}
                 className="text-sm text-amber-700 dark:text-amber-400"
               >
-                + Add image
+                + Add secondary image
               </button>
             </div>
             <div className="space-y-3">

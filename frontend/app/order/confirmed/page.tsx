@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
+import { clearCartAfterPayment } from "@/lib/clear-cart-after-payment";
+import { formatMinorFromPaise } from "@/lib/money";
 import type { OrderPublic } from "@/lib/orders-api";
 import { fetchOrderPublic, orderInvoiceDownloadUrl } from "@/lib/orders-api";
-import { formatINRFromPaise } from "@/lib/money";
 
 function formatAddress(addr: NonNullable<OrderPublic["shippingAddress"]>): string {
   const lines = [
@@ -19,6 +20,23 @@ function formatAddress(addr: NonNullable<OrderPublic["shippingAddress"]>): strin
   return lines.join("\n");
 }
 
+function formatPlacedDate(value: string | null | undefined): string {
+  if (!value) return "—";
+  return new Date(value).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  });
+}
+
+function statusTitle(order: OrderPublic, codFromUrl: boolean): string {
+  const isCod = order.isCod || codFromUrl || order.paymentProvider === "COD";
+  if (isCod) return "Order placed";
+  if (order.paymentStatus === "CAPTURED" || order.status === "PAID") return "Payment received";
+  if (order.status === "PENDING_PAYMENT") return "Payment pending";
+  return order.status.replaceAll("_", " ");
+}
+
 function ConfirmedInner() {
   const search = useSearchParams();
   const orderNumber = search.get("orderNumber") ?? "";
@@ -26,6 +44,7 @@ function ConfirmedInner() {
   const codFromUrl = search.get("cod") === "1";
   const [order, setOrder] = useState<OrderPublic | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [cartCleared, setCartCleared] = useState(false);
 
   useEffect(() => {
     if (!orderNumber || !email) return;
@@ -34,17 +53,24 @@ function ConfirmedInner() {
         setErr(null);
         const o = await fetchOrderPublic(orderNumber, email);
         setOrder(o);
+        if (
+          !cartCleared &&
+          (o.paymentStatus === "CAPTURED" || o.status === "PAID" || o.isCod)
+        ) {
+          setCartCleared(true);
+          await clearCartAfterPayment();
+        }
       } catch (e) {
         setErr(e instanceof Error ? e.message : "Could not load order");
       }
     })();
-  }, [orderNumber, email]);
+  }, [orderNumber, email, cartCleared]);
 
   if (!orderNumber || !email) {
     return (
-      <div className="mx-auto max-w-lg rounded-2xl border border-stone-100 bg-white p-8 text-center shadow-sm">
+      <div className="mx-auto max-w-3xl rounded-lg border border-stone-200 bg-white p-8 text-center">
         <p className="text-stone-600">Missing order details.</p>
-        <Link href="/shop" className="mt-6 inline-block font-medium text-amber-800 hover:underline">
+        <Link href="/shop" className="mt-6 inline-block font-medium text-sky-700 hover:underline">
           Continue shopping
         </Link>
       </div>
@@ -53,9 +79,9 @@ function ConfirmedInner() {
 
   if (!order && err) {
     return (
-      <div className="mx-auto max-w-lg rounded-2xl border border-stone-100 bg-white p-8 text-center shadow-sm">
+      <div className="mx-auto max-w-3xl rounded-lg border border-stone-200 bg-white p-8 text-center">
         <p className="text-stone-600">{err}</p>
-        <Link href="/shop" className="mt-6 inline-block font-medium text-amber-800 hover:underline">
+        <Link href="/shop" className="mt-6 inline-block font-medium text-sky-700 hover:underline">
           Continue shopping
         </Link>
       </div>
@@ -63,87 +89,100 @@ function ConfirmedInner() {
   }
 
   if (!order) {
-    return <p className="text-center text-stone-500">Loading your order…</p>;
+    return <p className="text-center text-stone-500">Loading order details…</p>;
   }
 
   const isCod = order.isCod || codFromUrl || order.paymentProvider === "COD";
   const addr = order.shippingAddress;
+  const fmt = (n: number) => formatMinorFromPaise(n, order.currency);
+  const paid = order.paymentStatus === "CAPTURED" || order.status === "PAID";
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <div className="rounded-2xl border border-emerald-200 bg-gradient-to-b from-emerald-50/80 to-white p-6 shadow-sm md:p-8">
-        <p className="text-center text-sm font-semibold uppercase tracking-widest text-emerald-700">
-          {isCod ? "Order placed" : "Payment received"}
-        </p>
-        <h1 className="mt-2 text-center font-serif text-2xl font-semibold text-stone-900 md:text-3xl">
-          Thank you for your order
-        </h1>
-        <p className="mt-3 text-center text-stone-600">
-          Order <span className="font-mono font-semibold text-stone-900">{order.orderNumber}</span>
-          {isCod
-            ? " — pay in cash when your package arrives."
-            : " — we have received your payment."}
-        </p>
+    <div className="mx-auto max-w-4xl">
+      <nav className="text-sm text-stone-500">
+        <Link href="/profile" className="hover:text-sky-700 hover:underline">
+          Your account
+        </Link>
+        <span className="mx-2">›</span>
+        <span className="text-stone-800">Order details</span>
+      </nav>
 
-        {isCod ? (
-          <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-            <p className="font-semibold">Cash on delivery</p>
-            <p className="mt-1 text-amber-900/90">
-              Estimated delivery: <strong>5–8 business days</strong> for most Indian pincodes after dispatch.
-              We will email you at {order.email} when your order ships.
-            </p>
+      <h1 className="mt-3 text-2xl font-semibold text-stone-900">Order details</h1>
+      <p className="mt-1 text-sm text-stone-600">
+        Order placed {formatPlacedDate(order.placedAt ?? order.createdAt)} · Order number{" "}
+        <span className="font-mono font-medium text-stone-900">{order.orderNumber}</span>
+      </p>
+
+      <div className="mt-6 grid gap-4 border border-stone-200 bg-stone-50 p-4 lg:grid-cols-3">
+        {addr ? (
+          <div>
+            <p className="text-xs font-semibold uppercase text-stone-500">Ship to</p>
+            <p className="mt-2 whitespace-pre-line text-sm text-stone-800">{formatAddress(addr)}</p>
+            <p className="mt-2 text-sm text-stone-600">Phone: {addr.phone}</p>
           </div>
-        ) : (
-          <p className="mt-4 text-center text-sm text-stone-500">
-            Confirmation sent to <span className="font-medium text-stone-700">{order.email}</span>
+        ) : null}
+        <div>
+          <p className="text-xs font-semibold uppercase text-stone-500">Payment method</p>
+          <p className="mt-2 text-sm font-medium text-stone-900">
+            {isCod ? "Cash on delivery" : order.paymentProvider ?? "Online payment"}
           </p>
-        )}
-      </div>
-
-      <div className="mt-6 grid gap-6 md:grid-cols-2">
-        <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">Order summary</h2>
-          <ul className="mt-4 space-y-2 text-sm text-stone-700">
-            {order.items.map((i) => (
-              <li key={`${i.skuSnapshot}-${i.nameSnapshot}`} className="flex justify-between gap-2">
-                <span className="line-clamp-2">
-                  {i.nameSnapshot} × {i.qtyOrdered}
-                </span>
-                <span className="shrink-0 font-medium">{formatINRFromPaise(i.lineTotalInPaise)}</span>
-              </li>
-            ))}
-          </ul>
-          <dl className="mt-4 space-y-1 border-t border-stone-100 pt-3 text-sm">
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase text-stone-500">Order summary</p>
+          <dl className="mt-2 space-y-1 text-sm">
             <div className="flex justify-between text-stone-600">
-              <dt>Subtotal</dt>
-              <dd>{formatINRFromPaise(order.subtotalInPaise)}</dd>
+              <dt>Item(s) subtotal</dt>
+              <dd>{fmt(order.subtotalInPaise)}</dd>
             </div>
             <div className="flex justify-between text-stone-600">
               <dt>Shipping</dt>
-              <dd>{formatINRFromPaise(order.shippingInPaise)}</dd>
+              <dd>{fmt(order.shippingInPaise)}</dd>
             </div>
-            <div className="flex justify-between pt-1 text-base font-semibold text-stone-900">
-              <dt>{isCod ? "Pay on delivery" : "Total paid"}</dt>
-              <dd className="text-amber-800">{formatINRFromPaise(order.grandTotalInPaise)}</dd>
+            <div className="flex justify-between border-t border-stone-200 pt-2 font-semibold text-stone-900">
+              <dt>{isCod ? "Grand total (COD)" : "Grand total"}</dt>
+              <dd>{fmt(order.grandTotalInPaise)}</dd>
             </div>
           </dl>
-        </section>
+        </div>
+      </div>
 
-        {addr ? (
-          <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">Deliver to</h2>
-            <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-stone-700">
-              {formatAddress(addr)}
+      <div className="mt-6 overflow-hidden rounded-lg border border-stone-200 bg-white">
+        <div className="border-b border-stone-200 px-4 py-3">
+          <p className="font-semibold text-stone-900">{statusTitle(order, codFromUrl)}</p>
+          {isCod ? (
+            <p className="mt-1 text-sm text-stone-600">
+              Pay in cash when your package arrives. Estimated delivery 5–8 business days after dispatch.
             </p>
-            <p className="mt-3 text-sm text-stone-600">Phone: {addr.phone}</p>
-          </section>
-        ) : null}
+          ) : paid ? (
+            <p className="mt-1 text-sm text-stone-600">
+              Confirmation sent to <span className="font-medium">{order.email}</span>
+            </p>
+          ) : (
+            <p className="mt-1 text-sm text-amber-800">We are confirming your payment. Refresh in a moment.</p>
+          )}
+        </div>
+
+        <ul className="divide-y divide-stone-100">
+          {order.items.map((i) => (
+            <li
+              key={`${i.skuSnapshot}-${i.nameSnapshot}`}
+              className="flex flex-wrap items-start justify-between gap-3 px-4 py-4"
+            >
+              <div className="min-w-0">
+                <p className="font-medium text-stone-900">{i.nameSnapshot}</p>
+                <p className="mt-1 text-xs text-stone-500">SKU {i.skuSnapshot}</p>
+                <p className="mt-1 text-sm text-stone-600">Qty {i.qtyOrdered}</p>
+              </div>
+              <p className="text-sm font-semibold text-stone-900">{fmt(i.lineTotalInPaise)}</p>
+            </li>
+          ))}
+        </ul>
       </div>
 
       {(order.shipments ?? []).length > 0 ? (
-        <section className="mt-6 rounded-2xl border border-stone-200 bg-white p-5 text-sm text-stone-600 shadow-sm">
-          <p className="font-semibold text-stone-800">Tracking</p>
-          <ul className="mt-2 space-y-2">
+        <section className="mt-6 rounded-lg border border-stone-200 bg-white p-4 text-sm">
+          <p className="font-semibold text-stone-900">Tracking</p>
+          <ul className="mt-2 space-y-2 text-stone-600">
             {order.shipments.map((s) => (
               <li key={s.id}>
                 {s.courier}
@@ -151,8 +190,8 @@ function ConfirmedInner() {
                   <>
                     {" "}
                     · AWB {s.awb}{" "}
-                    <Link href={`/track/${encodeURIComponent(s.awb)}`} className="font-semibold text-amber-800 underline">
-                      Track
+                    <Link href={`/track/${encodeURIComponent(s.awb)}`} className="font-medium text-sky-700 underline">
+                      Track package
                     </Link>
                   </>
                 ) : null}
@@ -162,21 +201,27 @@ function ConfirmedInner() {
         </section>
       ) : null}
 
-      <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+      <div className="mt-8 flex flex-wrap gap-3">
         <Link
           href="/shop"
-          className="flex min-h-[48px] flex-1 items-center justify-center rounded-xl bg-stone-900 font-semibold text-amber-400 transition-colors hover:bg-amber-700 hover:text-white"
+          className="inline-flex min-h-[40px] items-center justify-center rounded-full bg-amber-500 px-6 text-sm font-semibold text-stone-900 hover:bg-amber-400"
         >
           Continue shopping
         </Link>
-        {!isCod && (order.paymentStatus === "CAPTURED" || order.status === "PAID") ? (
+        {!isCod && paid ? (
           <a
             href={orderInvoiceDownloadUrl(order.orderNumber, email)}
-            className="flex min-h-[48px] flex-1 items-center justify-center rounded-xl border border-stone-300 font-semibold text-stone-800"
+            className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-stone-300 px-6 text-sm font-medium text-stone-800 hover:bg-stone-50"
           >
             Download invoice
           </a>
         ) : null}
+        <Link
+          href="/profile"
+          className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-stone-300 px-6 text-sm font-medium text-stone-800 hover:bg-stone-50"
+        >
+          Your orders
+        </Link>
       </div>
     </div>
   );
@@ -184,7 +229,7 @@ function ConfirmedInner() {
 
 export default function OrderConfirmedPage() {
   return (
-    <main className="min-h-screen bg-stone-50 px-4 py-10 sm:px-6 md:py-14">
+    <main className="min-h-screen bg-white px-4 py-8 sm:px-6">
       <Suspense fallback={<p className="text-center text-stone-500">Loading…</p>}>
         <ConfirmedInner />
       </Suspense>

@@ -122,6 +122,21 @@ export async function cartUpdate(variantId: string, quantity: number): Promise<C
   return json.data!;
 }
 
+/** Clear server cart after successful payment (guest session or logged-in). */
+export async function cartClearAll(): Promise<void> {
+  const res = await fetch(`${getApiBase()}/api/cart`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: buildHeaders(false)
+  });
+  if (!res.ok) {
+    const j = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(j.error || `Cart clear failed (${res.status})`);
+  }
+  clearSession();
+  notifyCartChanged();
+}
+
 export async function cartRemove(variantId: string): Promise<CartApiResponse> {
   const res = await fetch(`${getApiBase()}/api/cart/remove/${encodeURIComponent(variantId)}`, {
     method: "DELETE",

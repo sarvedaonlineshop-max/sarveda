@@ -3,6 +3,7 @@ import type { NextFunction, Request, Response } from "express";
 import { logger } from "../../config/logger";
 import {
   addCartItem,
+  clearCartForRequest,
   getCartPayload,
   removeCartItem,
   resolveCartContext,
@@ -64,6 +65,15 @@ export async function update(req: Request, res: Response, next: NextFunction) {
     await updateCartItemQuantity(cartId, body.variantId, body.quantity);
     const payload = await getCartPayload(cartId);
     res.json({ success: true, data: payload });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function clear(req: Request, res: Response, next: NextFunction) {
+  try {
+    await clearCartForRequest(req);
+    res.json({ success: true, data: { items: [], subtotalInPaise: 0, itemCount: 0 } });
   } catch (err) {
     next(err);
   }
