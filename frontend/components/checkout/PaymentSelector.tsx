@@ -68,6 +68,7 @@ type Props = {
   addressForm: CheckoutAddressForm;
   cartItems: CartApiItem[];
   subtotalInPaise: number;
+  cartCurrency: string;
   itemCount: number;
   onRefreshCart: () => Promise<void>;
   onCheckoutCompleting: () => void;
@@ -82,6 +83,7 @@ export function PaymentSelector({
   addressForm,
   cartItems,
   subtotalInPaise,
+  cartCurrency,
   itemCount,
   onRefreshCart,
   onCheckoutCompleting,
@@ -105,8 +107,9 @@ export function PaymentSelector({
     setPaymentMode(isIndia ? "razorpay" : "stripe");
   }, [isIndia]);
 
+  const displayCurrency = isIndia ? "INR" : cartCurrency || shippingCurrency;
   const formatMoney = (minor: number) =>
-    isIndia ? formatINRFromPaise(minor) : formatMinorFromPaise(minor, shippingCurrency);
+    isIndia ? formatINRFromPaise(minor) : formatMinorFromPaise(minor, displayCurrency);
 
   const estimatedShipping =
     paymentMode === "cod" && shippingCodInPaise != null ? shippingCodInPaise : shippingInPaise ?? 0;
@@ -404,7 +407,9 @@ export function PaymentSelector({
             ) : shippingInPaise != null ? (
               formatMoney(estimatedShipping)
             ) : (
-              <span className="text-xs text-stone-500">Enter PIN to estimate</span>
+              <span className="text-xs text-stone-500">
+                {isIndia ? "Enter PIN to estimate" : "Enter address to estimate"}
+              </span>
             )}
           </dd>
         </div>

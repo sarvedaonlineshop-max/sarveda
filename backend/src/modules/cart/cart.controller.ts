@@ -11,6 +11,11 @@ import {
 } from "./cart.service";
 import type { CartAddBody, CartUpdateBody } from "./schemas";
 
+function pricingCountry(req: Request): string | undefined {
+  const q = req.query.country;
+  return typeof q === "string" && q.trim() ? q.trim() : undefined;
+}
+
 export async function add(req: Request, res: Response, next: NextFunction) {
   try {
     const { cartId, newSessionId } = await resolveCartContext(req, "write");
@@ -20,7 +25,7 @@ export async function add(req: Request, res: Response, next: NextFunction) {
     }
     const body = req.body as CartAddBody;
     await addCartItem(cartId, body.variantId, body.quantity);
-    const payload = await getCartPayload(cartId);
+    const payload = await getCartPayload(cartId, pricingCountry(req));
     res.status(200).json({
       success: true,
       data: {
@@ -37,7 +42,7 @@ export async function add(req: Request, res: Response, next: NextFunction) {
 export async function get(req: Request, res: Response, next: NextFunction) {
   try {
     const { cartId, newSessionId } = await resolveCartContext(req, "read");
-    const payload = await getCartPayload(cartId);
+    const payload = await getCartPayload(cartId, pricingCountry(req));
     res.json({
       success: true,
       data: {
@@ -63,7 +68,7 @@ export async function update(req: Request, res: Response, next: NextFunction) {
     }
     const body = req.body as CartUpdateBody;
     await updateCartItemQuantity(cartId, body.variantId, body.quantity);
-    const payload = await getCartPayload(cartId);
+    const payload = await getCartPayload(cartId, pricingCountry(req));
     res.json({ success: true, data: payload });
   } catch (err) {
     next(err);
@@ -73,7 +78,10 @@ export async function update(req: Request, res: Response, next: NextFunction) {
 export async function clear(req: Request, res: Response, next: NextFunction) {
   try {
     await clearCartForRequest(req);
-    res.json({ success: true, data: { items: [], subtotalInPaise: 0, itemCount: 0 } });
+    res.json({
+      success: true,
+      data: { items: [], subtotalInPaise: 0, itemCount: 0, currency: "INR" }
+    });
   } catch (err) {
     next(err);
   }
@@ -96,7 +104,7 @@ export async function remove(req: Request, res: Response, next: NextFunction) {
       return;
     }
     await removeCartItem(cartId, variantId);
-    const payload = await getCartPayload(cartId);
+    const payload = await getCartPayload(cartId, pricingCountry(req));
     res.json({ success: true, data: payload });
   } catch (err) {
     next(err);

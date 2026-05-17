@@ -3,6 +3,8 @@ import { randomUUID } from "crypto";
 import type { Request } from "express";
 
 import { prisma } from "../../config/db";
+import { unitMinorForZone } from "../../utils/variantPricing";
+import { currencyForZone, zoneFromCountry } from "../shipping/shippingRates.service";
 
 const CART_HEADER = "x-sarveda-cart-session";
 
@@ -125,9 +127,12 @@ function variantLabel(
   return parts.length ? parts.join(" · ") : null;
 }
 
-export async function getCartPayload(cartId: string | null) {
+export async function getCartPayload(cartId: string | null, shippingCountry?: string) {
+  const zone = zoneFromCountry(shippingCountry ?? "IN");
+  const currency = currencyForZone(zone);
+
   if (!cartId) {
-    return { items: [], subtotalInPaise: 0, itemCount: 0 };
+    return { items: [], subtotalInPaise: 0, itemCount: 0, currency };
   }
 
   const cart = await prisma.cart.findUnique({
@@ -156,7 +161,7 @@ export async function getCartPayload(cartId: string | null) {
   });
 
   if (!cart) {
-    return { items: [], subtotalInPaise: 0, itemCount: 0 };
+    return { items: [], subtotalInPaise: 0, itemCount: 0, currency };
   }
 
   type ItemOut = {
@@ -182,7 +187,7 @@ export async function getCartPayload(cartId: string | null) {
       continue;
     }
     const img = p.images[0]?.url ?? null;
-    const price = v.saleInPaise;
+    const price = unitMinorForZone(v, zone);
     const line = price * row.quantity;
     subtotalInPaise += line;
     itemCount += row.quantity;
@@ -203,7 +208,7 @@ export async function getCartPayload(cartId: string | null) {
     });
   }
 
-  return { items, subtotalInPaise, itemCount };
+  return { items, subtotalInPaise, itemCount, currency };
 }
 
 export async function addCartItem(

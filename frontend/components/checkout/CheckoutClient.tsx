@@ -24,7 +24,7 @@ export function CheckoutClient() {
   const resumeOrderNumber = searchParams.get("orderNumber");
   const resumeEmail = searchParams.get("email");
 
-  const { items, subtotalInPaise, itemCount, loading, refreshCart } = useCartData();
+  const { items, subtotalInPaise, currency, itemCount, loading, refreshCart } = useCartData();
   const [rzpReady, setRzpReady] = useState(false);
   const [rzpLoadError, setRzpLoadError] = useState<string | null>(null);
   const [completingCheckout, setCompletingCheckout] = useState(false);
@@ -67,8 +67,12 @@ export function CheckoutClient() {
   };
 
   const onRefreshCart = useCallback(async () => {
-    await refreshCart();
-  }, [refreshCart]);
+    await refreshCart(form.country || "IN");
+  }, [refreshCart, form.country]);
+
+  useEffect(() => {
+    void refreshCart(form.country || "IN");
+  }, [form.country, refreshCart]);
 
   useEffect(() => {
     const saved = loadSavedCheckoutShipping();
@@ -252,6 +256,7 @@ export function CheckoutClient() {
             addressForm={form}
             cartItems={items}
             subtotalInPaise={subtotalInPaise}
+            cartCurrency={currency}
             itemCount={itemCount}
             onRefreshCart={onRefreshCart}
             onCheckoutCompleting={() => {

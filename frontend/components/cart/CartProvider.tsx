@@ -24,10 +24,11 @@ type CartUiState = {
 type CartDataState = {
   items: CartApiItem[];
   subtotalInPaise: number;
+  currency: string;
   itemCount: number;
   loading: boolean;
   error: string | null;
-  refreshCart: () => Promise<void>;
+  refreshCart: (shippingCountry?: string) => Promise<void>;
 };
 
 const CartUiContext = createContext<CartUiState | null>(null);
@@ -55,21 +56,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [items, setItems] = useState<CartApiItem[]>([]);
   const [subtotalInPaise, setSubtotalInPaise] = useState(0);
+  const [currency, setCurrency] = useState("INR");
   const [itemCount, setItemCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refreshCart = useCallback(async () => {
+  const refreshCart = useCallback(async (shippingCountry?: string) => {
     try {
       setError(null);
-      const data = await cartGet();
+      const data = await cartGet(shippingCountry);
       setItems(data.items);
       setSubtotalInPaise(data.subtotalInPaise);
+      setCurrency(data.currency ?? "INR");
       setItemCount(data.itemCount);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Cart failed to load");
       setItems([]);
       setSubtotalInPaise(0);
+      setCurrency("INR");
       setItemCount(0);
     } finally {
       setLoading(false);
@@ -137,12 +141,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     () => ({
       items,
       subtotalInPaise,
+      currency,
       itemCount,
       loading,
       error,
       refreshCart
     }),
-    [items, subtotalInPaise, itemCount, loading, error, refreshCart]
+    [items, subtotalInPaise, currency, itemCount, loading, error, refreshCart]
   );
 
   return (

@@ -22,8 +22,10 @@ export type CartApiItem = {
 
 export type CartApiResponse = {
   items: CartApiItem[];
+  /** Minor units for `currency` (paise, cents, or pence). */
   subtotalInPaise: number;
   itemCount: number;
+  currency: string;
   sessionId?: string;
 };
 
@@ -55,8 +57,10 @@ export function buildHeaders(includeJsonContentType: boolean): Record<string, st
   return h;
 }
 
-export async function cartGet(): Promise<CartApiResponse> {
-  const res = await fetch(`${getApiBase()}/api/cart`, {
+export async function cartGet(shippingCountry?: string): Promise<CartApiResponse> {
+  const country = shippingCountry?.trim();
+  const qs = country ? `?country=${encodeURIComponent(country)}` : "";
+  const res = await fetch(`${getApiBase()}/api/cart${qs}`, {
     method: "GET",
     credentials: "include",
     headers: buildHeaders(false)

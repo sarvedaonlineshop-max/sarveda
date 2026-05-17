@@ -22,7 +22,7 @@ import { isZoneAPincode } from "../shipping/router";
 import * as delhivery from "../shipping/delhivery";
 import * as shiprocket from "../shipping/shiprocket";
 import { shippingEnv } from "../../config/env";
-import type { ZoneKey } from "../shipping/types";
+import { unitMinorForZone } from "../../utils/variantPricing";
 import type { CreateOrderBody } from "./schemas";
 
 function triStateEnv(envVal: string | undefined, defaultWhenUnset: boolean): boolean {
@@ -30,20 +30,6 @@ function triStateEnv(envVal: string | undefined, defaultWhenUnset: boolean): boo
   if (["1", "true", "yes"].includes(v)) return true;
   if (["0", "false", "no"].includes(v)) return false;
   return defaultWhenUnset;
-}
-
-function unitMinor(variant: ProductVariant, zone: ZoneKey): number {
-  switch (zone) {
-    case "IN":
-      return variant.saleInPaise;
-    case "GB":
-      return variant.saleGbpPence ?? variant.saleInPaise;
-    case "US":
-    case "OTHER":
-      return variant.saleUsdCents ?? variant.saleInPaise;
-    default:
-      return variant.saleInPaise;
-  }
 }
 
 /** India + zone-A pin + cart > 5 kg → Delhivery-heavy lane; block checkout if NSZ. */
@@ -250,7 +236,7 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
     throw e;
   }
 
-  const cartData = await getCartPayload(cartId);
+  const cartData = await getCartPayload(cartId, body.country ?? "IN");
   if (!cartData.items.length) {
     const e = new Error("Cart is empty") as Error & { statusCode: number; code: string };
     e.statusCode = 400;
@@ -299,7 +285,7 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
 
   let subtotalMinor = 0;
   for (const row of lines) {
-    const u = unitMinor(row.variant, zone);
+    const u = unitMinorForZone(row.variant, zone);
     subtotalMinor += u * row.quantity;
   }
 
@@ -351,7 +337,7 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
     for (const row of lines) {
       const v = row.variant;
       const p = v.productRel;
-      const unit = unitMinor(v, zone);
+      const unit = unitMinorForZone(v, zone);
       const lineTotal = unit * row.quantity;
       const nameSnap = labelFromVariant(v.attributeValues)
         ? `${p.name} (${labelFromVariant(v.attributeValues)})`
