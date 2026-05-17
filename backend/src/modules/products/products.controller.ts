@@ -2,16 +2,17 @@ import type { NextFunction, Request, Response } from "express";
 
 import { ProductStatus } from "@prisma/client";
 
+import { buildCatalogGapsReport } from "../admin/catalogGaps.service";
+import { deleteProductAdmin, saveProductAdmin } from "./productAdmin.service";
 import {
-  createProduct,
   getProductAdminById,
   getProductBySlug,
   listProducts,
   listProductsAdmin,
-  suggestProducts,
-  updateProduct
+  suggestProducts
 } from "./products.service";
 import type { CreateProductBody, UpdateProductBody } from "./schemas";
+import type { ProductAdminSaveInput } from "./productAdmin.service";
 
 const productStatuses: ProductStatus[] = ["DRAFT", "ACTIVE", "ARCHIVED"];
 
@@ -97,15 +98,41 @@ export async function getOne(req: Request, res: Response, next: NextFunction) {
   }
 }
 
+function normalizeAdminBody(body: CreateProductBody | UpdateProductBody): ProductAdminSaveInput {
+  return {
+    slug: body.slug!,
+    name: body.name!,
+    description: body.description,
+    shortDescription: body.shortDescription,
+    productType: body.productType!,
+    status: body.status,
+    taxClass: body.taxClass,
+    hasAudio: body.hasAudio,
+    audioUrl: body.audioUrl === undefined ? undefined : body.audioUrl || null,
+    seoTitle: body.seoTitle,
+    seoDescription: body.seoDescription,
+    seoKeyword: body.seoKeyword,
+    categoryIds: body.categoryIds,
+    variants: body.variants,
+    images: body.images,
+    accordionItems: body.accordionItems
+  };
+}
+
+export async function catalogGaps(_req: Request, res: Response, next: NextFunction) {
+  try {
+    const report = await buildCatalogGapsReport();
+    res.json({ success: true, data: report });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function create(req: Request, res: Response, next: NextFunction) {
   try {
     const body = req.body as CreateProductBody;
-    const product = await createProduct({
-      ...body,
-      audioUrl: body.audioUrl || null,
-      categoryIds: body.categoryIds,
-      variants: body.variants
-    });
+    const { id } = await saveProductAdmin(null, normalizeAdminBody(body));
+    const product = await getProductAdminById(id);
     res.status(201).json({ success: true, data: { product } });
   } catch (err) {
     next(err);
@@ -116,12 +143,41 @@ export async function update(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
     const body = req.body as UpdateProductBody;
-    const product = await updateProduct(id, {
-      ...body,
-      audioUrl: body.audioUrl === undefined ? undefined : body.audioUrl || null,
-      categoryIds: body.categoryIds
-    });
+    const existing = await getProductAdminById(id);
+    const merged: ProductAdminSaveInput = {
+      slug: body.slug ?? existing.slug,
+      name: body.name ?? existing.name,
+      description: body.description !== undefined ? body.description : existing.description,
+      shortDescription:
+        body.shortDescription !== undefined ? body.shortDescription : existing.shortDescription,
+      productType: body.productType ?? existing.productType,
+      status: body.status ?? existing.status,
+      taxClass: body.taxClass !== undefined ? body.taxClass : existing.taxClass,
+      hasAudio: body.hasAudio ?? existing.hasAudio,
+      audioUrl: body.audioUrl === undefined ? existing.audioUrl : body.audioUrl || null,
+      seoTitle: body.seoTitle !== undefined ? body.seoTitle : existing.seoTitle,
+      seoDescription:
+        body.seoDescription !== undefined ? body.seoDescription : existing.seoDescription,
+      seoKeyword: body.seoKeyword !== undefined ? body.seoKeyword : existing.seoKeyword,
+      categoryIds:
+        body.categoryIds ??
+        existing.categories.map((c: { category: { id: string } }) => c.category.id),
+      variants: body.variants,
+      images: body.images,
+      accordionItems: body.accordionItems
+    };
+    await saveProductAdmin(id, merged);
+    const product = await getProductAdminById(id);
     res.json({ success: true, data: { product } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function adminDelete(req: Request, res: Response, next: NextFunction) {
+  try {
+    await deleteProductAdmin(req.params.id);
+    res.json({ success: true, message: "Product archived" });
   } catch (err) {
     next(err);
   }

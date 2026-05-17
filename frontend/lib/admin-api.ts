@@ -373,11 +373,63 @@ export function fetchAdminProduct(id: string, signal?: AbortSignal) {
   }).then((d) => d.product);
 }
 
+export function postAdminProduct(body: Record<string, unknown>) {
+  return adminFetch<{ product: Record<string, unknown> }>(`/api/admin/products`, {
+    method: "POST",
+    body: JSON.stringify(body)
+  }).then((d) => d.product);
+}
+
 export function putAdminProduct(id: string, body: Record<string, unknown>) {
   return adminFetch<{ product: Record<string, unknown> }>(`/api/admin/products/${id}`, {
     method: "PUT",
     body: JSON.stringify(body)
   }).then((d) => d.product);
+}
+
+export function deleteAdminProduct(id: string) {
+  return adminFetch<{ message: string }>(`/api/admin/products/${id}`, {
+    method: "DELETE"
+  });
+}
+
+export type CatalogGapsReport = {
+  summary: {
+    activeProducts: number;
+    activeVariants: number;
+    pricingGapCount: number;
+    shippingGapCount: number;
+    productsWithoutImage: number;
+    payment: {
+      razorpay: boolean;
+      cod: boolean;
+      stripe: boolean;
+      paypal: boolean;
+    };
+  };
+  pricingGaps: Array<{
+    productId: string;
+    productName: string;
+    productSlug: string;
+    variantId: string;
+    sku: string;
+    issue: string;
+    zone?: string;
+  }>;
+  shippingGaps: Array<{
+    productId: string;
+    productName: string;
+    productSlug: string;
+    variantId: string;
+    sku: string;
+    issue: string;
+    zone?: string;
+  }>;
+  productsWithoutPrimaryImage: Array<{ productId: string; name: string; slug: string }>;
+};
+
+export function fetchCatalogGaps(signal?: AbortSignal) {
+  return adminFetch<CatalogGapsReport>(`/api/admin/catalog/gaps`, { signal });
 }
 
 export type InventoryRow = {

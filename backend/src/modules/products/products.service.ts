@@ -122,7 +122,7 @@ export async function getProductAdminById(id: string) {
     include: {
       variants: {
         orderBy: [{ isDefault: "desc" }, { sku: "asc" }],
-        include: { inventory: true }
+        include: { inventory: true, shippingRates: true }
       },
       images: { orderBy: { position: "asc" } },
       categories: { include: { category: true } },

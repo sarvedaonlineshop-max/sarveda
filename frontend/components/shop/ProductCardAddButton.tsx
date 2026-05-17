@@ -22,7 +22,6 @@ export function ProductCardAddButton({ product }: Props) {
     void (async () => {
       try {
         await cartAdd(variantId, 1);
-        window.dispatchEvent(new CustomEvent("sarveda-open-cart"));
         setFlash(true);
         window.setTimeout(() => setFlash(false), 1600);
       } catch (err) {

@@ -61,6 +61,8 @@ router.patch(
   admin.patchOrderStatus
 );
 
+router.get("/catalog/gaps", productsController.catalogGaps);
+
 router.get("/inventory", admin.inventoryList);
 router.patch(
   "/inventory/:variantId",
@@ -73,6 +75,7 @@ productsAdmin.get("/", productsController.adminList);
 productsAdmin.get("/:id", productsController.adminGetOne);
 productsAdmin.post("/", validateBody(createProductSchema), productsController.create);
 productsAdmin.put("/:id", validateBody(updateProductSchema), productsController.update);
+productsAdmin.delete("/:id", productsController.adminDelete);
 
 router.use("/products", productsAdmin);
 

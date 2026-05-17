@@ -56,7 +56,6 @@ export function ProductPurchaseSection({ productName, variants }: Props) {
     void (async () => {
       try {
         await cartAdd(variant.id, qty);
-        window.dispatchEvent(new CustomEvent("sarveda-open-cart"));
         setAddedFlash(true);
         window.setTimeout(() => setAddedFlash(false), 2200);
       } catch (error) {

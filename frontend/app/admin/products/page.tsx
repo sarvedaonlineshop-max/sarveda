@@ -75,11 +75,27 @@ export default function AdminProductsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-serif text-3xl italic text-stone-800 dark:text-stone-100">Products</h1>
-        <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-          Search catalogue, filter by category, toggle draft vs active.
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-serif text-3xl italic text-stone-800 dark:text-stone-100">Products</h1>
+          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+            Search catalogue, add or edit products, fix pricing and shipping gaps.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/admin/catalog-gaps"
+            className="rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 hover:border-amber-400 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+          >
+            Catalog gaps
+          </Link>
+          <Link
+            href="/admin/products/new"
+            className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-stone-900 hover:bg-amber-400"
+          >
+            + Add product
+          </Link>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-end gap-3 rounded-xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900">
