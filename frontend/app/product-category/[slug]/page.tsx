@@ -10,7 +10,15 @@ import { ShopPagination } from "@/components/shop/Pagination";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { fetchCategoryBySlug, fetchCategorySlugs, fetchCategoryTree, fetchProductList } from "@/lib/api";
 import { breadcrumbJsonLd } from "@/lib/seo-product";
+import { htmlToPlainText } from "@/lib/sanitize-html";
 import { absoluteUrl, canonical, isProductionSite } from "@/lib/site";
+
+function categoryMetaDescription(raw: string | null | undefined, fallback: string): string {
+  if (!raw?.trim()) return fallback;
+  const plain = htmlToPlainText(raw);
+  if (!plain) return fallback;
+  return plain.length > 160 ? `${plain.slice(0, 157)}…` : plain;
+}
 
 export const dynamicParams = true;
 export const revalidate = 300;
@@ -31,8 +39,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: "Category" };
   }
   const title = category.seoTitle || category.name;
-  const description =
-    category.seoDescription || category.description || `Shop ${category.name} at Sarveda.`;
+  const description = categoryMetaDescription(
+    category.seoDescription || category.description,
+    `Shop ${category.name} at Sarveda.`
+  );
   return {
     title,
     description,

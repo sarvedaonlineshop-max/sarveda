@@ -1,6 +1,7 @@
 import type { Prisma, ProductStatus, ProductType } from "@prisma/client";
 
 import { prisma } from "../../config/db";
+import { getCategorySlugScope } from "../categories/categories.service";
 
 export type ListProductsQuery = {
   page?: number;
@@ -49,9 +50,10 @@ export async function listProductsAdmin(query: ListProductsAdminQuery) {
   }
 
   if (query.categorySlug?.trim()) {
+    const slugs = await getCategorySlugScope(query.categorySlug.trim());
     where.categories = {
       some: {
-        category: { slug: query.categorySlug.trim() }
+        category: { slug: { in: slugs } }
       }
     };
   }
@@ -158,9 +160,10 @@ export async function listProducts(query: ListProductsQuery) {
   }
 
   if (query.categorySlug?.trim()) {
+    const slugs = await getCategorySlugScope(query.categorySlug.trim());
     where.categories = {
       some: {
-        category: { slug: query.categorySlug.trim() }
+        category: { slug: { in: slugs } }
       }
     };
   }

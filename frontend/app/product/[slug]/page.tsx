@@ -11,7 +11,15 @@ import { RelatedProducts } from "@/components/product/RelatedProducts";
 import { fetchAllProductSlugs, fetchProductBySlug } from "@/lib/api";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { breadcrumbJsonLd, productJsonLd } from "@/lib/seo-product";
+import { htmlToPlainText } from "@/lib/sanitize-html";
 import { absoluteUrl, canonical, isProductionSite } from "@/lib/site";
+
+function productMetaDescription(raw: string | null | undefined): string | undefined {
+  if (!raw?.trim()) return undefined;
+  const plain = htmlToPlainText(raw);
+  if (!plain) return undefined;
+  return plain.length > 160 ? `${plain.slice(0, 157)}…` : plain;
+}
 
 export const dynamicParams = true;
 export const revalidate = 300;
@@ -31,7 +39,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: "Product" };
   }
   const title = product.seoTitle || product.name;
-  const description = product.seoDescription || product.shortDescription || undefined;
+  const description = productMetaDescription(
+    product.seoDescription || product.shortDescription || product.description
+  );
   return {
     title,
     description,

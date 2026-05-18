@@ -74,6 +74,33 @@ export async function getCategoryBySlug(slug: string): Promise<CategoryPublic | 
   };
 }
 
+/** Slug + all descendant slugs (parent PLPs include child-category products). */
+export async function getCategorySlugScope(rootSlug: string): Promise<string[]> {
+  const rows = await prisma.category.findMany({
+    select: { id: true, slug: true, parentId: true }
+  });
+  const root = rows.find((r) => r.slug === rootSlug);
+  if (!root) return [rootSlug];
+
+  const childrenByParent = new Map<string, string[]>();
+  for (const r of rows) {
+    if (!r.parentId) continue;
+    const list = childrenByParent.get(r.parentId) ?? [];
+    list.push(r.id);
+    childrenByParent.set(r.parentId, list);
+  }
+
+  const slugs: string[] = [];
+  const walk = (id: string) => {
+    const row = rows.find((r) => r.id === id);
+    if (!row) return;
+    slugs.push(row.slug);
+    for (const childId of childrenByParent.get(id) ?? []) walk(childId);
+  };
+  walk(root.id);
+  return slugs;
+}
+
 export function flattenCategorySlugs(nodes: CategoryNode[]): string[] {
   const out: string[] = [];
   const walk = (list: CategoryNode[]) => {
