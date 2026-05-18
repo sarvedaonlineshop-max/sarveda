@@ -1,13 +1,5 @@
 import PDFDocument from "pdfkit";
 
-type InvoiceLine = {
-  name: string;
-  sku: string;
-  qty: number;
-  unitPriceInPaise: number;
-  lineTotalInPaise: number;
-};
-
 type InvoiceAddress = {
   fullName: string;
   phone: string;
@@ -19,22 +11,46 @@ type InvoiceAddress = {
   country: string;
 };
 
+export type GstInvoiceLine = {
+  name: string;
+  sku: string;
+  qty: number;
+  unitPriceInPaise: number;
+  lineTotalInPaise: number;
+  taxClass: string;
+  hsn: string;
+  gstRatePercent: number;
+  taxableMinor: number;
+  taxMinor: number;
+};
+
 export type GstInvoiceInput = {
   invoiceNo: string;
   orderNumber: string;
+  currency: string;
   issuedAt: Date;
   buyerEmail: string;
   shippingAddress: InvoiceAddress;
-  items: InvoiceLine[];
+  items: GstInvoiceLine[];
   subtotalInPaise: number;
   discountInPaise: number;
   shippingInPaise: number;
   taxInPaise: number;
   grandTotalInPaise: number;
+  interState: boolean;
 };
 
-function formatInr(paise: number): string {
-  return `₹${(paise / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+function formatMoney(minor: number, currency: string): string {
+  const c = currency.toUpperCase();
+  const major = minor / 100;
+  if (c === "INR") {
+    return `₹${major.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  try {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: c }).format(major);
+  } catch {
+    return `${c} ${major.toFixed(2)}`;
+  }
 }
 
 export function buildGstInvoicePdf(input: GstInvoiceInput): Promise<Buffer> {
@@ -45,20 +61,24 @@ export function buildGstInvoicePdf(input: GstInvoiceInput): Promise<Buffer> {
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
-    const sellerGstin = process.env.SELLER_GSTIN ?? "GSTIN on request";
-    const sellerName = process.env.SELLER_LEGAL_NAME ?? "Sarveda";
-    const sellerAddress = process.env.SELLER_ADDRESS ?? "India";
+    const sellerGstin = process.env.SELLER_GSTIN?.trim() || "GSTIN on request";
+    const sellerName = process.env.SELLER_LEGAL_NAME?.trim() || "Sarveda";
+    const sellerAddress = process.env.SELLER_ADDRESS?.trim() || "India";
+    const sellerState = process.env.SELLER_STATE?.trim() || "Karnataka";
+    const fmt = (n: number) => formatMoney(n, input.currency);
 
     doc.fontSize(18).text("Tax Invoice", { align: "center" });
     doc.moveDown(0.5);
     doc.fontSize(10).text(`Invoice No: ${input.invoiceNo}`);
     doc.text(`Order No: ${input.orderNumber}`);
     doc.text(`Date: ${input.issuedAt.toLocaleDateString("en-IN")}`);
+    doc.text(`Currency: ${input.currency}`);
     doc.moveDown();
 
     doc.fontSize(11).text("Sold by", { underline: true });
     doc.fontSize(10).text(sellerName);
     doc.text(sellerAddress);
+    doc.text(`State: ${sellerState}`);
     doc.text(`GSTIN: ${sellerGstin}`);
     doc.moveDown();
 
@@ -74,38 +94,65 @@ export function buildGstInvoicePdf(input: GstInvoiceInput): Promise<Buffer> {
     doc.text(`Email: ${input.buyerEmail}`);
     doc.moveDown();
 
-    doc.fontSize(11).text("Items", { underline: true });
+    doc.fontSize(9);
+    doc.text("Item", 48, doc.y, { continued: false, width: 200 });
+    const tableTop = doc.y + 4;
+    doc.text("HSN", 250, tableTop - 14, { width: 40 });
+    doc.text("Qty", 295, tableTop - 14, { width: 30 });
+    doc.text("Rate", 330, tableTop - 14, { width: 55 });
+    doc.text("Taxable", 390, tableTop - 14, { width: 55 });
+    doc.text("GST", 450, tableTop - 14, { width: 45 });
+    doc.text("Total", 500, tableTop - 14, { width: 55 });
     doc.moveDown(0.5);
+
+    let taxableSum = 0;
+    let taxSum = 0;
+
     input.items.forEach((line) => {
-      doc
-        .fontSize(10)
-        .text(
-          `${line.name} (${line.sku}) x ${line.qty} — ${formatInr(line.lineTotalInPaise)}`,
-          { width: 500 }
-        );
+      const y = doc.y;
+      doc.fontSize(9).text(`${line.name} (${line.sku})`, 48, y, { width: 195 });
+      doc.text(line.hsn, 250, y, { width: 40 });
+      doc.text(String(line.qty), 295, y, { width: 30 });
+      doc.text(fmt(line.unitPriceInPaise), 330, y, { width: 55 });
+      doc.text(fmt(line.taxableMinor), 390, y, { width: 55 });
+      doc.text(`${line.gstRatePercent}%`, 450, y, { width: 45 });
+      doc.text(fmt(line.lineTotalInPaise), 500, y, { width: 55 });
+      taxableSum += line.taxableMinor;
+      taxSum += line.taxMinor;
+      doc.moveDown(0.8);
     });
+
     doc.moveDown();
-
-    const taxable = input.grandTotalInPaise;
-    const gst = input.taxInPaise > 0 ? input.taxInPaise : Math.round((taxable * 18) / 118);
-    const taxableValue = taxable - gst;
-    const halfGst = Math.round(gst / 2);
-
-    doc.fontSize(10).text(`Taxable value: ${formatInr(taxableValue)}`);
-    doc.text(`CGST (9%): ${formatInr(halfGst)}`);
-    doc.text(`SGST (9%): ${formatInr(halfGst)}`);
-    if (input.discountInPaise > 0) {
-      doc.text(`Discount: -${formatInr(input.discountInPaise)}`);
-    }
     if (input.shippingInPaise > 0) {
-      doc.text(`Shipping: ${formatInr(input.shippingInPaise)}`);
+      doc.fontSize(10).text(`Shipping: ${fmt(input.shippingInPaise)}`);
     }
+    if (input.discountInPaise > 0) {
+      doc.text(`Discount: -${fmt(input.discountInPaise)}`);
+    }
+
     doc.moveDown(0.5);
-    doc.fontSize(12).text(`Grand total (GST inclusive): ${formatInr(input.grandTotalInPaise)}`, {
+    doc.fontSize(10).text(`Taxable value: ${fmt(taxableSum)}`);
+
+    const totalGst = input.taxInPaise > 0 ? input.taxInPaise : taxSum;
+    if (input.interState) {
+      doc.text(`IGST: ${fmt(totalGst)}`);
+    } else {
+      const half = Math.round(totalGst / 2);
+      doc.text(`CGST: ${fmt(half)}`);
+      doc.text(`SGST: ${fmt(half)}`);
+    }
+
+    doc.moveDown(0.5);
+    doc.fontSize(12).text(`Grand total (tax inclusive): ${fmt(input.grandTotalInPaise)}`, {
       underline: true
     });
     doc.moveDown();
-    doc.fontSize(9).fillColor("#444444").text("Prices are inclusive of GST where applicable.");
+    doc
+      .fontSize(9)
+      .fillColor("#444444")
+      .text(
+        "Prices are inclusive of GST where applicable. This is a computer-generated invoice and does not require a physical signature."
+      );
     doc.end();
   });
 }

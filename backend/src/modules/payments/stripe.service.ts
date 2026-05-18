@@ -1,10 +1,8 @@
 import type { Prisma } from "@prisma/client";
 
 import { prisma } from "../../config/db";
-import { clearCartForOrder } from "../cart/cart.service";
-import { notifyOrderEmail } from "../notifications/email";
 import { confirmStockTx } from "../orders/orders.service";
-import { invoiceNumberForOrder } from "../../utils/invoice";
+import { afterOrderPaid } from "../orders/afterPaid";
 
 /** Mark order paid after Stripe checkout.session.completed (payment row id in session metadata). */
 export async function completeStripePaidOrder(
@@ -18,6 +16,18 @@ export async function completeStripePaidOrder(
   if (!payment) return null;
 
   if (payment.status === "CAPTURED" && payment.order.status === "PAID") {
+    return { orderNumber: payment.order.orderNumber };
+  }
+
+  const dup = await prisma.payment.findFirst({
+    where: {
+      provider: "STRIPE",
+      providerPaymentId: stripePaymentIntentId,
+      status: "CAPTURED",
+      id: { not: payment.id }
+    }
+  });
+  if (dup) {
     return { orderNumber: payment.order.orderNumber };
   }
 
@@ -55,16 +65,6 @@ export async function completeStripePaidOrder(
     });
   });
 
-  await prisma.invoice.upsert({
-    where: { orderId: payment.orderId },
-    create: {
-      orderId: payment.orderId,
-      invoiceNo: invoiceNumberForOrder(payment.order.orderNumber)
-    },
-    update: {}
-  });
-
-  await clearCartForOrder(payment.orderId);
-  notifyOrderEmail(payment.orderId, "order_confirmed");
+  await afterOrderPaid(payment.orderId);
   return { orderNumber: payment.order.orderNumber };
 }

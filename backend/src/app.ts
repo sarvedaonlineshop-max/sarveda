@@ -17,6 +17,7 @@ import { ordersRoutes } from "./modules/orders/orders.routes";
 import { paymentsJsonRoutes } from "./modules/payments/payments.routes";
 import { razorpayWebhookHandler } from "./modules/payments/razorpay.webhook";
 import { stripeWebhookHandler } from "./modules/payments/stripe.webhook";
+import { paypalWebhookHandler } from "./modules/payments/paypal.webhook";
 import { delhiveryWebhookHandler } from "./modules/shipping/delhivery.webhook";
 import { shiprocketWebhookHandler } from "./modules/shipping/shiprocket.webhook";
 import { adminRoutes } from "./modules/admin";
@@ -60,6 +61,14 @@ app.post(
   express.raw({ type: "application/json" }),
   (req: Request, res: Response, next: NextFunction) => {
     void stripeWebhookHandler(req, res).catch(next);
+  }
+);
+
+app.post(
+  "/api/payments/paypal/webhook",
+  express.raw({ type: "application/json" }),
+  (req: Request, res: Response, next: NextFunction) => {
+    void paypalWebhookHandler(req, res).catch(next);
   }
 );
 

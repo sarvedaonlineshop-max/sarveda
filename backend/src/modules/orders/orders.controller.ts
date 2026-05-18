@@ -1,7 +1,13 @@
 import type { NextFunction, Request, Response } from "express";
 
 import { prisma } from "../../config/db";
-import { buildGstInvoicePdf, invoiceNumberForOrder } from "../../utils/invoice";
+import { invoiceNumberForOrder } from "../../utils/invoice";
+import {
+  buildInvoiceInputFromOrder,
+  ensureOrderInvoicePdf,
+  loadOrderForInvoice
+} from "../invoices/invoice.service";
+import { buildGstInvoicePdf } from "../../utils/invoice";
 import { orderBlocksCarrierSync, syncTrackingByWaybill } from "../shipping/orderLifecycle";
 
 function serializePublicOrderView(order: {
@@ -201,16 +207,16 @@ export async function downloadInvoice(req: Request, res: Response, next: NextFun
       return;
     }
 
-    const order = await prisma.order.findUnique({
-      where: { orderNumber },
-      include: {
-        items: true,
-        addresses: true,
-        invoice: true
-      }
-    });
+    const order = await loadOrderForInvoice(
+      (
+        await prisma.order.findFirst({
+          where: { orderNumber, deletedAt: null, email },
+          select: { id: true }
+        })
+      )?.id ?? ""
+    );
 
-    if (!order || order.deletedAt || order.email !== email) {
+    if (!order || order.email !== email) {
       res.status(404).json({ success: false, error: "Order not found", code: "NOT_FOUND" });
       return;
     }
@@ -224,8 +230,15 @@ export async function downloadInvoice(req: Request, res: Response, next: NextFun
       return;
     }
 
-    const shippingAddress = order.addresses.find((row) => row.type === "SHIPPING");
-    if (!shippingAddress) {
+    if (order.invoice?.pdfUrl?.startsWith("http")) {
+      res.redirect(302, order.invoice.pdfUrl);
+      return;
+    }
+
+    await ensureOrderInvoicePdf(order.id);
+    const refreshed = await loadOrderForInvoice(order.id);
+    const input = refreshed ? buildInvoiceInputFromOrder(refreshed) : null;
+    if (!input) {
       res.status(400).json({
         success: false,
         error: "Shipping address missing for invoice",
@@ -234,38 +247,9 @@ export async function downloadInvoice(req: Request, res: Response, next: NextFun
       return;
     }
 
-    const invoiceNo = order.invoice?.invoiceNo ?? invoiceNumberForOrder(order.orderNumber);
-    if (!order.invoice) {
-      await prisma.invoice.create({
-        data: {
-          orderId: order.id,
-          invoiceNo
-        }
-      });
-    }
-
-    const pdf = await buildGstInvoicePdf({
-      invoiceNo,
-      orderNumber: order.orderNumber,
-      issuedAt: order.placedAt ?? order.createdAt,
-      buyerEmail: order.email,
-      shippingAddress,
-      items: order.items.map((row) => ({
-        name: row.nameSnapshot,
-        sku: row.skuSnapshot,
-        qty: row.qtyOrdered,
-        unitPriceInPaise: row.unitPriceInPaise,
-        lineTotalInPaise: row.lineTotalInPaise
-      })),
-      subtotalInPaise: order.subtotalInPaise,
-      discountInPaise: order.discountInPaise,
-      shippingInPaise: order.shippingInPaise,
-      taxInPaise: order.taxInPaise,
-      grandTotalInPaise: order.grandTotalInPaise
-    });
-
+    const pdf = await buildGstInvoicePdf(input);
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="${invoiceNo}.pdf"`);
+    res.setHeader("Content-Disposition", `attachment; filename="${input.invoiceNo}.pdf"`);
     res.send(pdf);
   } catch (err) {
     next(err);

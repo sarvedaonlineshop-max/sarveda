@@ -10,7 +10,7 @@ import { createPayPalOrder } from "../payments/paypal";
 import { createOrder, getRazorpayKeyId } from "../payments/razorpay";
 import { createStripeCheckoutSession } from "../payments/stripe.checkout";
 import { confirmStockTx, reserveStockTx } from "../orders/orders.service";
-import { notifyOrderEmail } from "../notifications/email";
+import { afterOrderPaid } from "../orders/afterPaid";
 import { invoiceNumberForOrder } from "../../utils/invoice";
 import { getCartPayload, resolveCartContext } from "../cart/cart.service";
 import {
@@ -543,13 +543,7 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
   });
 
   if ("cod" in result && result.cod) {
-    if (userId) {
-      const cart = await prisma.cart.findUnique({ where: { userId } });
-      if (cart) {
-        await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
-      }
-    }
-    notifyOrderEmail(result.order.id, "order_confirmed");
+    await afterOrderPaid(result.order.id);
     logger.info("checkout_cod_order_created", {
       orderId: result.order.id,
       orderNumber: result.order.orderNumber

@@ -2,11 +2,12 @@ import sgMail from "@sendgrid/mail";
 
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
-import { formatINR } from "../../utils/money";
 
 export type OrderEmailEvent =
   | "order_confirmed"
   | "payment_failed"
+  | "payment_reminder"
+  | "order_processing"
   | "order_shipped"
   | "order_delivered"
   | "refund_initiated"
@@ -15,6 +16,8 @@ export type OrderEmailEvent =
 const EVENT_SUBJECTS: Record<OrderEmailEvent, string> = {
   order_confirmed: "Your Sarveda order is confirmed",
   payment_failed: "Payment could not be completed — Sarveda",
+  payment_reminder: "Complete your Sarveda order",
+  order_processing: "Your Sarveda order is being prepared",
   order_shipped: "Your Sarveda order has shipped",
   order_delivered: "Your Sarveda order was delivered",
   refund_initiated: "Refund update for your Sarveda order",
@@ -27,6 +30,19 @@ function siteBaseUrl(): string {
     process.env.FRONTEND_URL?.split(",")[0]?.trim() ||
     "https://sarveda-demo.xyz";
   return raw.replace(/\/$/, "");
+}
+
+function formatOrderTotal(minor: number, currency: string): string {
+  const c = currency.toUpperCase();
+  const major = minor / 100;
+  if (c === "INR") {
+    return `₹${major.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  try {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: c }).format(major);
+  } catch {
+    return `${c} ${major.toFixed(2)}`;
+  }
 }
 
 function orderViewUrl(orderNumber: string, email: string): string {
@@ -44,7 +60,9 @@ function trackUrl(awb: string): string {
 }
 
 function buildHtml(title: string, lines: string[]): string {
-  const body = lines.map((l) => `<p style="margin:0 0 12px;font-size:15px;line-height:1.5;color:#44403c;">${l}</p>`).join("");
+  const body = lines
+    .map((l) => `<p style="margin:0 0 12px;font-size:15px;line-height:1.5;color:#44403c;">${l}</p>`)
+    .join("");
   return `<!DOCTYPE html><html><body style="font-family:Georgia,serif;background:#fafaf9;padding:24px;">
 <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;padding:28px;border:1px solid #e7e5e4;">
 <h1 style="margin:0 0 16px;font-size:22px;color:#1c1917;">${title}</h1>
@@ -63,21 +81,44 @@ async function loadOrderEmailContext(orderId: string) {
   });
 }
 
-export async function sendOrderEmail(orderId: string, event: OrderEmailEvent): Promise<void> {
+async function sendMail(to: string, subject: string, html: string, text: string): Promise<void> {
   const key = process.env.SENDGRID_API_KEY?.trim();
-  const from = process.env.SENDGRID_FROM_EMAIL?.trim() || "hello@sarveda.com";
+  const fromEmail = process.env.SENDGRID_FROM_EMAIL?.trim() || "hello@sarveda.com";
+  const fromName = process.env.SENDGRID_FROM_NAME?.trim() || "Sarveda";
+  const replyTo = process.env.SENDGRID_REPLY_TO?.trim() || fromEmail;
   if (!key) {
-    logger.warn("order_email_skipped_no_sendgrid", { orderId, event });
+    logger.warn("email_skipped_no_sendgrid", { to: to.replace(/@.*/, "@***") });
     return;
   }
+  sgMail.setApiKey(key);
+  await sgMail.send({
+    to,
+    from: { email: fromEmail, name: fromName },
+    replyTo: { email: replyTo, name: fromName },
+    subject,
+    html,
+    text,
+    categories: ["sarveda-transactional"],
+    mailSettings: {
+      bypassListManagement: { enable: true },
+      footer: { enable: false }
+    },
+    trackingSettings: {
+      clickTracking: { enable: false, enableText: false },
+      openTracking: { enable: false }
+    }
+  });
+}
 
+export async function sendOrderEmail(orderId: string, event: OrderEmailEvent): Promise<void> {
   const order = await loadOrderEmailContext(orderId);
   if (!order?.email) return;
 
-  const total = formatINR(order.grandTotalInPaise);
+  const total = formatOrderTotal(order.grandTotalInPaise, order.currency);
   const view = orderViewUrl(order.orderNumber, order.email);
   const awb = order.shipments[0]?.awb;
   const tracking = awb ? trackUrl(awb) : view;
+  const checkoutResume = `${siteBaseUrl()}/checkout?orderNumber=${encodeURIComponent(order.orderNumber)}&email=${encodeURIComponent(order.email)}`;
 
   let lines: string[] = [];
   switch (event) {
@@ -85,7 +126,7 @@ export async function sendOrderEmail(orderId: string, event: OrderEmailEvent): P
       lines = [
         `Thank you for your order <strong>${order.orderNumber}</strong>.`,
         `Total: <strong>${total}</strong>.`,
-        `We are preparing your items. You can view your order anytime:`,
+        `We are preparing your items. View your order:`,
         `<a href="${view}">${view}</a>`,
         `GST invoice: <a href="${invoiceUrl(order.orderNumber, order.email)}">Download invoice</a>`
       ];
@@ -94,7 +135,20 @@ export async function sendOrderEmail(orderId: string, event: OrderEmailEvent): P
       lines = [
         `We could not complete payment for order <strong>${order.orderNumber}</strong>.`,
         `Your cart is still saved. Retry checkout:`,
-        `<a href="${siteBaseUrl()}/checkout?orderNumber=${encodeURIComponent(order.orderNumber)}&email=${encodeURIComponent(order.email)}">Continue checkout</a>`
+        `<a href="${checkoutResume}">Continue checkout</a>`
+      ];
+      break;
+    case "payment_reminder":
+      lines = [
+        `Your order <strong>${order.orderNumber}</strong> (${total}) is waiting for payment.`,
+        `Complete checkout within a few minutes while stock is reserved:`,
+        `<a href="${checkoutResume}">Pay now</a>`
+      ];
+      break;
+    case "order_processing":
+      lines = [
+        `We have started preparing order <strong>${order.orderNumber}</strong>.`,
+        `You will receive tracking details when your package ships.`
       ];
       break;
     case "order_shipped":
@@ -107,13 +161,13 @@ export async function sendOrderEmail(orderId: string, event: OrderEmailEvent): P
     case "order_delivered":
       lines = [
         `Your order <strong>${order.orderNumber}</strong> has been delivered.`,
-        `We hope you love your purchase. Share your experience when you have a moment.`
+        `We hope you love your purchase.`
       ];
       break;
     case "refund_initiated":
       lines = [
         `A refund has been initiated for order <strong>${order.orderNumber}</strong> (${total}).`,
-        `It may take 5–10 business days to reflect in your account depending on your bank.`
+        `It may take 5–10 business days to reflect depending on your bank or card issuer.`
       ];
       break;
     case "order_cancelled":
@@ -126,23 +180,56 @@ export async function sendOrderEmail(orderId: string, event: OrderEmailEvent): P
 
   const subject = `${EVENT_SUBJECTS[event]} — ${order.orderNumber}`;
   const html = buildHtml(EVENT_SUBJECTS[event], lines);
+  const text = lines.map((l) => l.replace(/<[^>]+>/g, "")).join("\n\n");
 
   try {
-    sgMail.setApiKey(key);
-    await sgMail.send({
-      to: order.email,
-      from,
-      subject,
-      html,
-      text: lines.map((l) => l.replace(/<[^>]+>/g, "")).join("\n\n")
-    });
+    await sendMail(order.email, subject, html, text);
     logger.info("order_email_sent", { orderId, event, to: order.email.replace(/@.*/, "@***") });
   } catch (err) {
     logger.error("order_email_failed", { orderId, event, err });
   }
 }
 
-/** Fire-and-forget — never block checkout/webhooks on email. */
+/** Logged-in shopper left items in cart (2h+). */
+export async function sendAbandonedCartEmail(userId: string): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, name: true }
+  });
+  if (!user?.email) return;
+
+  const cart = await prisma.cart.findUnique({
+    where: { userId },
+    include: {
+      items: {
+        take: 3,
+        include: {
+          variant: { include: { productRel: { select: { name: true } } } }
+        }
+      }
+    }
+  });
+  if (!cart?.items.length) return;
+
+  const names = cart.items.map((i) => i.variant.productRel.name).join(", ");
+  const lines = [
+    user.name ? `Hi ${user.name},` : "Hi there,",
+    `You left items in your Sarveda cart: <strong>${names}</strong>${cart.items.length > 3 ? " and more" : ""}.`,
+    `Your cart is saved. Continue when you are ready:`,
+    `<a href="${siteBaseUrl()}/cart">View cart</a>`
+  ];
+  const subject = "You left something in your cart — Sarveda";
+  const html = buildHtml("Your cart is waiting", lines);
+  const text = lines.map((l) => l.replace(/<[^>]+>/g, "")).join("\n\n");
+
+  try {
+    await sendMail(user.email, subject, html, text);
+    logger.info("abandoned_cart_email_sent", { userId });
+  } catch (err) {
+    logger.error("abandoned_cart_email_failed", { userId, err });
+  }
+}
+
 export function notifyOrderEmail(orderId: string, event: OrderEmailEvent): void {
   void sendOrderEmail(orderId, event).catch((err) => {
     logger.error("order_email_async_failed", { orderId, event, err });

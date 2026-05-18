@@ -2,6 +2,7 @@ import { Queue, Worker, type Job } from "bullmq";
 
 import { getRedisConnection } from "../config/redisConnection";
 import { logger } from "../config/logger";
+import { notifyOrderEmail } from "../modules/notifications/email";
 import { cancelUnpaidOrderWithRelease } from "../modules/orders/orders.service";
 
 export const PAYMENT_TIMEOUT_QUEUE = "payment-timeout";
@@ -46,6 +47,7 @@ async function processTimeout(job: Job<{ orderId: string }>): Promise<void> {
     { source: "payment_timeout_job" }
   );
   if (changed) {
+    notifyOrderEmail(orderId, "payment_failed");
     logger.info("payment_timeout_cancelled_order", { orderId });
   }
 }

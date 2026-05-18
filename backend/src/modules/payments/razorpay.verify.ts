@@ -2,9 +2,8 @@ import type { Prisma } from "@prisma/client";
 
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
-import { notifyOrderEmail } from "../notifications/email";
 import { confirmStockTx } from "../orders/orders.service";
-import { invoiceNumberForOrder } from "../../utils/invoice";
+import { afterOrderPaid } from "../orders/afterPaid";
 
 import { verifyPayment } from "./razorpay";
 
@@ -114,23 +113,7 @@ export async function completePaidOrder(
     });
   });
 
-  if (payment.order.customerId) {
-    const cart = await prisma.cart.findUnique({ where: { userId: payment.order.customerId } });
-    if (cart) {
-      await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
-    }
-  }
-
-  await prisma.invoice.upsert({
-    where: { orderId: payment.orderId },
-    create: {
-      orderId: payment.orderId,
-      invoiceNo: invoiceNumberForOrder(payment.order.orderNumber)
-    },
-    update: {}
-  });
-
   logger.info("order_paid", { orderNumber: payment.order.orderNumber, razorpayPaymentId });
-  notifyOrderEmail(payment.orderId, "order_confirmed");
+  await afterOrderPaid(payment.orderId);
   return { orderNumber: payment.order.orderNumber };
 }

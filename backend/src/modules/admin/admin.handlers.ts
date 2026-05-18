@@ -635,6 +635,8 @@ export async function patchOrderStatus(req: Request, res: Response, next: NextFu
     });
 
     if (status === "PROCESSING" && prevStatus !== "PROCESSING") {
+      const { notifyOrderEmail } = await import("../notifications/email");
+      notifyOrderEmail(order.id, "order_processing");
       void onOrderEnteredProcessing(order.id);
     }
 
