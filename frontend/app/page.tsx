@@ -1,12 +1,33 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { HomeProductShowcase } from "@/components/home/HomeProductShowcase";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { NewsletterForm }      from "@/components/home/NewsletterForm";
 import { ProductCard }         from "@/components/shop/ProductCard";
 import { categoryEmoji }       from "@/lib/category-emojis";
 import { fetchCategoryTree, fetchProductList } from "@/lib/api";
+import { organizationJsonLd } from "@/lib/seo-product";
+import { absoluteUrl, canonical, isProductionSite } from "@/lib/site";
 
 export const revalidate = 120;
+
+export const metadata: Metadata = {
+  title: "Sarveda — Yoga, Meditation, Ayurveda & Sound Healing",
+  description:
+    "Authentic yoga, meditation, Ayurveda, and sound healing products — curated by practitioners. Shop instruments, herbs, and mindful living goods.",
+  robots: isProductionSite() ? { index: true, follow: true } : { index: false, follow: false },
+  alternates: { canonical: canonical("/") }
+};
+
+function websiteJsonLd() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Sarveda",
+    url: absoluteUrl("/")
+  };
+}
 
 /* ── Static trust pillars ──────────────────────────────────────── */
 const TRUST = [
@@ -87,6 +108,7 @@ export default async function HomePage() {
 
   return (
     <div className="overflow-x-hidden">
+      <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
 
       {/* ── Hero ───────────────────────────────────────────────────── */}
       <HomeProductShowcase products={featured.items} />
@@ -109,7 +131,7 @@ export default async function HomePage() {
             {topCategories.map((cat) => (
               <Link
                 key={cat.id}
-                href={`/shop?category=${encodeURIComponent(cat.slug)}`}
+                href={`/product-category/${cat.slug}`}
                 className="flex min-h-[44px] items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-800 transition-all duration-200 hover:border-green-800 hover:bg-stone-50 hover:text-green-900 hover:shadow-sm"
               >
                 <span aria-hidden="true">{categoryEmoji(cat.slug)}</span>

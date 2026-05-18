@@ -7,6 +7,7 @@ import { deleteProductAdmin, saveProductAdmin } from "./productAdmin.service";
 import {
   getProductAdminById,
   getProductBySlug,
+  listProductSitemapEntries,
   listProducts,
   listProductsAdmin,
   suggestProducts
@@ -83,6 +84,15 @@ export async function list(req: Request, res: Response, next: NextFunction) {
       status
     });
     res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function sitemapEntries(_req: Request, res: Response, next: NextFunction) {
+  try {
+    const entries = await listProductSitemapEntries();
+    res.json({ success: true, data: { entries } });
   } catch (err) {
     next(err);
   }

@@ -4,9 +4,9 @@ const footerLinks = {
   explore: [
     { label: "Shop All",     href: "/shop"      },
     { label: "Courses",      href: "/#courses"  },
-    { label: "Sound Healing",href: "/shop?category=sound-musical-instruments" },
-    { label: "Ayurveda",     href: "/shop?category=ayurveda-herbs" },
-    { label: "Yoga & Meditation", href: "/shop?category=yoga-meditation" },
+    { label: "Sound Healing", href: "/product-category/sound-musical-instruments" },
+    { label: "Ayurveda", href: "/product-category/ayurveda-herbs" },
+    { label: "Yoga & Meditation", href: "/product-category/yoga-meditation" },
   ],
   support: [
     { label: "Track Order",  href: "/my-account" },

@@ -3,6 +3,7 @@ import { Inter, Playfair_Display } from "next/font/google";
 
 import { CartProvider } from "@/components/cart/CartProvider";
 import { Layout } from "@/components/layout/Layout";
+import { isProductionSite } from "@/lib/site";
 
 import "./globals.css";
 
@@ -25,6 +26,7 @@ export const metadata: Metadata = {
   },
   description:
     "Yoga, meditation, Ayurveda, and sound healing — authentic, sustainable products rooted in Indian wellness.",
+  robots: isProductionSite() ? { index: true, follow: true } : { index: false, follow: false },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

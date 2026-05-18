@@ -1,6 +1,8 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Breadcrumbs } from "@/components/product/Breadcrumbs";
+import { canonical, isProductionSite } from "@/lib/site";
 import { ShopCategoryFilterSidebar } from "@/components/shop/ShopCategoryFilterSidebar";
 import { ShopMobileCategoryDrawer } from "@/components/shop/ShopMobileCategoryDrawer";
 import { ShopPagination } from "@/components/shop/Pagination";
@@ -8,6 +10,14 @@ import { ProductCard } from "@/components/shop/ProductCard";
 import { fetchCategoryTree, fetchProductList } from "@/lib/api";
 
 export const revalidate = 60;
+
+export const metadata: Metadata = {
+  title: "Shop",
+  description:
+    "Browse yoga, meditation, Ayurveda, and sound healing products — instruments, botanicals, and mindful goods at Sarveda.",
+  robots: isProductionSite() ? { index: true, follow: true } : { index: false, follow: false },
+  alternates: { canonical: canonical("/shop") }
+};
 
 type Props = {
   searchParams: Record<string, string | string[] | undefined>;

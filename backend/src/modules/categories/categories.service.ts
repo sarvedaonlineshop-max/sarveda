@@ -12,6 +12,17 @@ export type CategoryNode = {
   children: CategoryNode[];
 };
 
+export type CategoryPublic = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  imageUrl: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  parent: { slug: string; name: string } | null;
+};
+
 export async function getCategoryTree(): Promise<CategoryNode[]> {
   const rows = await prisma.category.findMany({
     orderBy: [{ position: "asc" }, { name: "asc" }]
@@ -41,4 +52,36 @@ export async function getCategoryTree(): Promise<CategoryNode[]> {
   }
 
   return build(null);
+}
+
+export async function getCategoryBySlug(slug: string): Promise<CategoryPublic | null> {
+  const row = await prisma.category.findUnique({
+    where: { slug },
+    include: {
+      parent: { select: { slug: true, name: true } }
+    }
+  });
+  if (!row) return null;
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    description: row.description,
+    imageUrl: row.imageUrl,
+    seoTitle: row.seoTitle,
+    seoDescription: row.seoDescription,
+    parent: row.parent ? { slug: row.parent.slug, name: row.parent.name } : null
+  };
+}
+
+export function flattenCategorySlugs(nodes: CategoryNode[]): string[] {
+  const out: string[] = [];
+  const walk = (list: CategoryNode[]) => {
+    for (const n of list) {
+      out.push(n.slug);
+      if (n.children.length) walk(n.children);
+    }
+  };
+  walk(nodes);
+  return out;
 }

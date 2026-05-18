@@ -31,7 +31,7 @@ export function CategoryNavTree({
         return (
           <li key={cat.id}>
             <Link
-              href={`/shop?category=${encodeURIComponent(cat.slug)}`}
+              href={`/product-category/${encodeURIComponent(cat.slug)}`}
               onClick={() => onNavigate?.()}
               className={`${linkBase} ${
                 active

@@ -425,3 +425,15 @@ export async function updateProduct(
 
   return product;
 }
+
+/** All active product URLs for sitemap.xml */
+export async function listProductSitemapEntries(): Promise<
+  Array<{ slug: string; updatedAt: Date }>
+> {
+  const rows = await prisma.product.findMany({
+    where: { deletedAt: null, status: "ACTIVE" },
+    select: { slug: true, updatedAt: true },
+    orderBy: { updatedAt: "desc" }
+  });
+  return rows;
+}

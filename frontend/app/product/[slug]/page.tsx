@@ -9,6 +9,9 @@ import { ProductPurchaseSection } from "@/components/product/ProductPurchaseSect
 import { ProductRichText } from "@/components/product/ProductRichText";
 import { RelatedProducts } from "@/components/product/RelatedProducts";
 import { fetchAllProductSlugs, fetchProductBySlug } from "@/lib/api";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { breadcrumbJsonLd, productJsonLd } from "@/lib/seo-product";
+import { absoluteUrl, canonical, isProductionSite } from "@/lib/site";
 
 export const dynamicParams = true;
 export const revalidate = 300;
@@ -39,8 +42,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: product.images[0]?.url ? [{ url: product.images[0].url }] : undefined,
       siteName: "Sarveda"
     },
+    robots: isProductionSite() ? { index: true, follow: true } : { index: false, follow: false },
     alternates: {
-      canonical: `https://sarveda.com/product/${params.slug}`
+      canonical: canonical(`/product/${params.slug}`)
     }
   };
 }
@@ -53,8 +57,23 @@ export default async function ProductDetailPage({ params }: Props) {
 
   const primaryCategory = product.categories[0]?.category;
 
+  const breadcrumbItems = [
+    { name: "Home", url: absoluteUrl("/") },
+    { name: "Shop", url: absoluteUrl("/shop") },
+    ...(primaryCategory
+      ? [
+          {
+            name: primaryCategory.name,
+            url: absoluteUrl(`/product-category/${primaryCategory.slug}`)
+          }
+        ]
+      : []),
+    { name: product.name, url: absoluteUrl(`/product/${product.slug}`) }
+  ];
+
   return (
     <>
+      <JsonLd data={[productJsonLd(product), breadcrumbJsonLd(breadcrumbItems)]} />
       <div className="hidden border-b border-stone-100 bg-stone-50 md:block">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <Breadcrumbs
@@ -65,7 +84,7 @@ export default async function ProductDetailPage({ params }: Props) {
                 ? [
                     {
                       label: primaryCategory.name,
-                      href: `/shop?category=${encodeURIComponent(primaryCategory.slug)}`
+                      href: `/product-category/${primaryCategory.slug}`
                     }
                   ]
                 : []),

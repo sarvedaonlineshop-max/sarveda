@@ -80,6 +80,65 @@ export async function fetchCategoryTree(init?: RequestInit): Promise<CategoryNod
   return data.categories;
 }
 
+export type CategoryPublic = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  imageUrl: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  parent: { slug: string; name: string } | null;
+};
+
+export async function fetchCategoryBySlug(
+  slug: string,
+  init?: RequestInit
+): Promise<CategoryPublic | null> {
+  try {
+    const data = await fetchApi<{ category: CategoryPublic }>(
+      `/api/categories/${encodeURIComponent(slug)}`,
+      init
+    );
+    return data.category;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchCategorySlugs(init?: RequestInit): Promise<string[]> {
+  try {
+    const data = await fetchApi<{ slugs: string[] }>("/api/categories/sitemap/slugs", init);
+    return data.slugs;
+  } catch {
+    const tree = await fetchCategoryTree(init);
+    const slugs: string[] = [];
+    const walk = (nodes: CategoryNode[]) => {
+      for (const n of nodes) {
+        slugs.push(n.slug);
+        if (n.children.length) walk(n.children);
+      }
+    };
+    walk(tree);
+    return slugs;
+  }
+}
+
+export async function fetchProductSitemapEntries(
+  init?: RequestInit
+): Promise<Array<{ slug: string; updatedAt: string }>> {
+  try {
+    const data = await fetchApi<{ entries: Array<{ slug: string; updatedAt: string }> }>(
+      "/api/products/sitemap/entries",
+      { ...init, next: { revalidate: 3600 } }
+    );
+    return data.entries;
+  } catch {
+    const slugs = await fetchAllProductSlugs();
+    return slugs.map((slug) => ({ slug, updatedAt: new Date().toISOString() }));
+  }
+}
+
 export async function fetchProductList(
   searchParams: Record<string, string | string[] | undefined>,
   init?: RequestInit,

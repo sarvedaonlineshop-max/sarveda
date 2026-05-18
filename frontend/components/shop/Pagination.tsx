@@ -3,18 +3,21 @@ import Link from "next/link";
 type Props = {
   page: number;
   totalPages: number;
+  /** @deprecated use basePath — kept for /shop legacy */
   categorySlug?: string;
+  basePath?: string;
 };
 
-function hrefForPage(p: number, categorySlug?: string): string {
+function hrefForPage(p: number, basePath: string): string {
   const q = new URLSearchParams();
-  if (categorySlug) q.set("category", categorySlug);
   if (p > 1) q.set("page", String(p));
   const s = q.toString();
-  return s ? `/shop?${s}` : "/shop";
+  return s ? `${basePath}?${s}` : basePath;
 }
 
-export function ShopPagination({ page, totalPages, categorySlug }: Props) {
+export function ShopPagination({ page, totalPages, categorySlug, basePath }: Props) {
+  const path =
+    basePath ?? (categorySlug ? `/product-category/${encodeURIComponent(categorySlug)}` : "/shop");
   if (totalPages <= 1) return null;
 
   const pages: number[] = [];
@@ -33,7 +36,7 @@ export function ShopPagination({ page, totalPages, categorySlug }: Props) {
     <nav className="flex flex-wrap items-center justify-center gap-2 pt-10" aria-label="Pagination">
       {page > 1 ? (
         <Link
-          href={hrefForPage(page - 1, categorySlug)}
+          href={hrefForPage(page - 1, path)}
           className={`${btnBase} border-stone-100 bg-white px-4 text-stone-700 shadow-sm hover:border-amber-300 hover:bg-amber-50`}
         >
           Previous
@@ -46,7 +49,7 @@ export function ShopPagination({ page, totalPages, categorySlug }: Props) {
         {pages.map((p) => (
           <Link
             key={p}
-            href={hrefForPage(p, categorySlug)}
+            href={hrefForPage(p, path)}
             className={`${btnBase} px-3 ${
               p === page
                 ? "border-stone-900 bg-stone-900 text-amber-400 shadow-md"
@@ -60,7 +63,7 @@ export function ShopPagination({ page, totalPages, categorySlug }: Props) {
 
       {page < totalPages ? (
         <Link
-          href={hrefForPage(page + 1, categorySlug)}
+          href={hrefForPage(page + 1, path)}
           className={`${btnBase} border-stone-100 bg-white px-4 text-stone-700 shadow-sm hover:border-amber-300 hover:bg-amber-50`}
         >
           Next
