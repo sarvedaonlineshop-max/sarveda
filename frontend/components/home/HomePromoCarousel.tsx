@@ -33,7 +33,7 @@ const slides = [
     eyebrow: "Why Sarveda",
     title: "Hear before you buy on 38+ instruments",
     body: "Rooted in Indian wellness — authentic sourcing, practitioner curation, and ritual goods you will not find in generic marketplaces.",
-    cta: { label: "Discover our story", href: "/#courses" },
+    cta: { label: "View courses", href: "/courses" },
     tone: "from-violet-950 via-stone-900 to-amber-950"
   }
 ] as const;

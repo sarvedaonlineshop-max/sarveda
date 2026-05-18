@@ -58,6 +58,7 @@ model Product {
   shortDescription String?
   productType      ProductType      @default(SIMPLE)
   status           ProductStatus    @default(DRAFT)
+  catalogHidden    Boolean          @default(false)
   taxClass         String?          @default("standard")
   hasAudio         Boolean          @default(false)
   audioUrl         String?
@@ -107,6 +108,7 @@ model ProductVariant {
   shippingRates   VariantShippingRate[]
   cartItems       CartItem[]
   orderItems      OrderItem[]
+  courseCheckout  Course?
   createdAt       DateTime                @default(now())
   updatedAt       DateTime                @updatedAt
 }
@@ -486,20 +488,34 @@ model Wishlist {
 }
 
 model Course {
-  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  slug           String       @unique
-  title          String
-  description    String?
-  priceInPaise   Int          @default(0)
-  isFree         Boolean      @default(false)
-  imageUrl       String?
-  status         CourseStatus @default(DRAFT)
-  seoTitle       String?
-  seoDescription String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  lessons        Lesson[]
-  enrollments    Enrollment[]
+  id                String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug              String               @unique
+  title             String
+  description       String?
+  shortDescription  String?
+  priceInPaise      Int                  @default(0)
+  priceUsdCents     Int?
+  isFree            Boolean              @default(false)
+  imageUrl          String?
+  videoUrl          String?
+  enrollmentMode    CourseEnrollmentMode @default(ENQUIRY)
+  checkoutVariantId String?              @unique @db.Uuid
+  wpPostId          Int?                 @unique
+  extra             Json?
+  status            CourseStatus         @default(DRAFT)
+  seoTitle          String?
+  seoDescription    String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  checkoutVariant   ProductVariant?      @relation(fields: [checkoutVariantId], references: [id])
+  lessons           Lesson[]
+  enrollments       Enrollment[]
+}
+
+enum CourseEnrollmentMode {
+  CHECKOUT
+  ENQUIRY
+  BOTH
 }
 
 enum CourseStatus {

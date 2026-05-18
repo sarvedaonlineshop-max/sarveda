@@ -1,3 +1,4 @@
+import type { CourseDetail, CourseListItem } from "./course-types";
 import type { CategoryNode, ProductDetail, ProductListItem, ProductListResponse } from "./types";
 
 /**
@@ -201,6 +202,39 @@ export async function fetchAllProductSlugs(): Promise<string[]> {
     } finally {
       clearTimeout(id);
     }
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchCourses(init?: RequestInit): Promise<CourseListItem[]> {
+  try {
+    const data = await fetchApi<{ courses: CourseListItem[] }>("/api/courses", init);
+    return data.courses;
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchCourseBySlug(
+  slug: string,
+  init?: RequestInit
+): Promise<CourseDetail | null> {
+  try {
+    const data = await fetchApi<{ course: CourseDetail }>(
+      `/api/courses/${encodeURIComponent(slug)}`,
+      init
+    );
+    return data.course;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchCourseSlugs(init?: RequestInit): Promise<string[]> {
+  try {
+    const data = await fetchApi<{ slugs: string[] }>("/api/courses/sitemap/slugs", init);
+    return data.slugs;
   } catch {
     return [];
   }

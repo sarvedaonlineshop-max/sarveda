@@ -38,6 +38,7 @@ export async function listProductsAdmin(query: ListProductsAdminQuery) {
 
   const where: Prisma.ProductWhereInput = {
     deletedAt: null,
+    catalogHidden: false,
     status: query.status
       ? query.status
       : {
@@ -146,7 +147,8 @@ export async function listProducts(query: ListProductsQuery) {
 
   const where: Prisma.ProductWhereInput = {
     deletedAt: null,
-    status
+    status,
+    catalogHidden: false
   };
 
   if (query.q?.trim()) {

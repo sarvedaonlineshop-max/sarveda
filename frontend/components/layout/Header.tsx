@@ -113,7 +113,7 @@ export function Header() {
           <nav className="hidden items-center gap-8 md:flex" aria-label="Main">
             <Link href="/"        className={navLinkClass}>Home</Link>
             <Link href="/shop"    className={navLinkClass}>Shop</Link>
-            <Link href="/#courses" className={navLinkClass}>Courses</Link>
+            <Link href="/courses" className={navLinkClass}>Courses</Link>
           </nav>
 
           {/* Search Bar — desktop */}

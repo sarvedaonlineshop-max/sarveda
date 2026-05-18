@@ -12,6 +12,7 @@ import { errorHandler } from "./middleware/errorHandler";
 import { authRouter, configurePassport } from "./modules/auth";
 import { cartRoutes } from "./modules/cart/cart.routes";
 import { categoriesRoutes } from "./modules/categories/categories.routes";
+import { coursesRoutes } from "./modules/courses/courses.routes";
 import { checkoutRoutes } from "./modules/checkout/checkout.routes";
 import { ordersRoutes } from "./modules/orders/orders.routes";
 import { paymentsJsonRoutes } from "./modules/payments/payments.routes";
@@ -113,6 +114,7 @@ app.get("/health", (_req: Request, res: Response) => {
 app.use("/api/auth", authRouter);
 app.use("/api/products", productsRoutes);
 app.use("/api/categories", categoriesRoutes);
+app.use("/api/courses", coursesRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/checkout", checkoutRoutes);
 app.use("/api/payments", paymentsJsonRoutes);

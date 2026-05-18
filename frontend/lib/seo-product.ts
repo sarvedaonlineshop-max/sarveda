@@ -42,6 +42,31 @@ export function breadcrumbJsonLd(items: Array<{ name: string; url?: string }>) {
   };
 }
 
+import type { CourseDetail } from "./course-types";
+
+export function courseJsonLd(course: CourseDetail) {
+  const offer =
+    course.priceInPaise > 0
+      ? {
+          "@type": "Offer",
+          priceCurrency: "INR",
+          price: (course.priceInPaise / 100).toFixed(2),
+          url: absoluteUrl(`/course/${course.slug}`),
+          availability: "https://schema.org/InStock"
+        }
+      : undefined;
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    name: course.title,
+    description: course.seoDescription || course.shortDescription || undefined,
+    image: course.imageUrl ? [course.imageUrl] : undefined,
+    provider: { "@type": "Organization", name: "Sarveda", url: absoluteUrl("/") },
+    offers: offer
+  };
+}
+
 export function organizationJsonLd() {
   return {
     "@context": "https://schema.org",
