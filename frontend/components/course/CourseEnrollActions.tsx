@@ -82,7 +82,7 @@ export function CourseEnrollActions({ course }: Props) {
             </a>
           </>
         ) : null}
-      </motion.div>
+      </div>
 
       {course.enrollmentMode === "BOTH" && showPay ? (
         <p className="mt-3 text-xs text-stone-500">
