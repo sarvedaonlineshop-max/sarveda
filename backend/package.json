@@ -28,6 +28,8 @@
     "import:coupons": "tsx scripts/import-coupons-wxr.ts",
     "import:variations": "tsx scripts/import-variant-attributes.ts",
     "import:variations:dry": "tsx scripts/import-variant-attributes.ts --dry-run",
+    "sync:galleries": "tsx scripts/sync-product-galleries.ts",
+    "sync:galleries:dry": "tsx scripts/sync-product-galleries.ts --dry-run",
     "import:full": "npm run import:all && npm run import:coupons && npm run seed:corporate",
     "check:s3": "tsx scripts/check-s3-bucket.ts",
     "migrate:media": "tsx scripts/check-s3-bucket.ts && tsx scripts/migrate-media-to-s3.ts",

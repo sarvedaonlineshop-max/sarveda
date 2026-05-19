@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 
 import { resolveMediaUrl } from "@/lib/media-cdn";
 
@@ -22,32 +22,24 @@ export function ProductGallery({ images, productName, activeIndex, onActiveChang
   const [internalActive, setInternalActive] = useState(0);
   const controlled = activeIndex !== undefined && onActiveChange !== undefined;
   const active = controlled ? activeIndex : internalActive;
-  const setActive = controlled ? onActiveChange : setInternalActive;
 
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  const thumbRef = useRef<HTMLDivElement>(null);
+  const setActive = useCallback(
+    (index: number) => {
+      if (controlled) onActiveChange(index);
+      else setInternalActive(index);
+    },
+    [controlled, onActiveChange]
+  );
 
   const resolved = images.map((img) => ({
     ...img,
     url: resolveMediaUrl(img.url) ?? img.url
   }));
 
-  useEffect(() => {
-    const node = scrollerRef.current;
-    if (!node) return;
-    const width = node.clientWidth;
-    node.scrollTo({ left: active * width, behavior: "smooth" });
-  }, [active]);
-
   const go = (delta: number) => {
     if (!resolved.length) return;
-    setActive((active + delta + resolved.length) % resolved.length);
-  };
-
-  const scrollThumbs = (dir: -1 | 1) => {
-    const el = thumbRef.current;
-    if (!el) return;
-    el.scrollBy({ left: dir * 120, behavior: "smooth" });
+    const next = (active + delta + resolved.length) % resolved.length;
+    setActive(next);
   };
 
   if (!resolved.length) {
@@ -58,34 +50,24 @@ export function ProductGallery({ images, productName, activeIndex, onActiveChang
     );
   }
 
+  const current = resolved[Math.min(active, resolved.length - 1)] ?? resolved[0];
+  const hasMultiple = resolved.length > 1;
+
   return (
     <div className="flex flex-col gap-3">
-      <div className="relative">
-        <div
-          ref={scrollerRef}
-          className="scrollbar-hide flex snap-x snap-mandatory overflow-x-auto rounded-lg bg-white"
-          onScroll={(event) => {
-            const width = event.currentTarget.clientWidth || 1;
-            const index = Math.round(event.currentTarget.scrollLeft / width);
-            if (index !== active) setActive(index);
-          }}
-        >
-          {resolved.map((image, index) => (
-            <div key={image.id} className="relative aspect-square w-full min-w-full flex-shrink-0 snap-center">
-              <Image
-                src={image.url}
-                alt={image.altText || productName}
-                fill
-                className="object-contain p-2"
-                sizes="(max-width: 1024px) 100vw, 48vw"
-                priority={index === 0}
-                unoptimized
-              />
-            </div>
-          ))}
-        </div>
+      <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-white">
+        <Image
+          key={current.id}
+          src={current.url}
+          alt={current.altText || productName}
+          fill
+          className="object-contain p-2 transition-opacity duration-200"
+          sizes="(max-width: 1024px) 100vw, 42vw"
+          priority
+          unoptimized
+        />
 
-        {resolved.length > 1 ? (
+        {hasMultiple ? (
           <>
             <button
               type="button"
@@ -111,58 +93,46 @@ export function ProductGallery({ images, productName, activeIndex, onActiveChang
         ) : null}
       </div>
 
-      {resolved.length > 1 ? (
-        <div className="relative flex items-center gap-1">
+      {/* Thumbnail strip — always visible when we have images */}
+      <div className="flex items-center gap-2">
+        {hasMultiple ? (
           <button
             type="button"
-            onClick={() => scrollThumbs(-1)}
-            className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-600 sm:flex"
-            aria-label="Scroll thumbnails left"
+            onClick={() => go(-1)}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-600 hover:border-[#108967]"
+            aria-label="Previous thumbnail"
           >
             ‹
           </button>
-          <div
-            ref={thumbRef}
-            className="scrollbar-hide flex flex-1 gap-2 overflow-x-auto py-1"
-          >
-            {resolved.map((image, index) => (
-              <button
-                key={image.id}
-                type="button"
-                onClick={() => setActive(index)}
-                className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-md border-2 bg-white transition-colors ${
-                  index === active ? "border-stone-900" : "border-stone-200 hover:border-[#108967]"
-                }`}
-                aria-label={`View image ${index + 1}`}
-                aria-current={index === active}
-              >
-                <Image src={image.url} alt="" fill className="object-cover" sizes="64px" unoptimized />
-              </button>
-            ))}
-          </div>
+        ) : null}
+
+        <div className="scrollbar-hide flex flex-1 gap-2 overflow-x-auto py-1">
+          {resolved.map((image, index) => (
+            <button
+              key={image.id}
+              type="button"
+              onClick={() => setActive(index)}
+              className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-md border-2 bg-white transition-colors ${
+                index === active ? "border-stone-900" : "border-stone-200 hover:border-[#108967]"
+              }`}
+              aria-label={`View image ${index + 1}`}
+              aria-current={index === active}
+            >
+              <Image src={image.url} alt="" fill className="object-cover" sizes="64px" unoptimized />
+            </button>
+          ))}
+        </div>
+
+        {hasMultiple ? (
           <button
             type="button"
-            onClick={() => scrollThumbs(1)}
-            className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-600 sm:flex"
-            aria-label="Scroll thumbnails right"
+            onClick={() => go(1)}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-600 hover:border-[#108967]"
+            aria-label="Next thumbnail"
           >
             ›
           </button>
-        </div>
-      ) : null}
-
-      <div className="flex justify-center gap-2 sm:hidden">
-        {resolved.map((image, index) => (
-          <button
-            key={`dot-${image.id}`}
-            type="button"
-            aria-label={`Show image ${index + 1}`}
-            onClick={() => setActive(index)}
-            className={`h-2 rounded-full transition-all ${
-              index === active ? "w-6 bg-[#108967]" : "w-2 bg-stone-300"
-            }`}
-          />
-        ))}
+        ) : null}
       </div>
     </div>
   );

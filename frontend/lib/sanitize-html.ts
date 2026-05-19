@@ -1,6 +1,8 @@
 /** Woo/CSV sometimes stores literal backslash-n instead of line breaks. */
 export function normalizeProductText(text: string): string {
   return text
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
     .replace(/\\r\\n/g, "\n")
     .replace(/\\n/g, "\n")
     .replace(/\\r/g, "\n");
