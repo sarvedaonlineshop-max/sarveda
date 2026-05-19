@@ -1,7 +1,56 @@
 # SARVEDA — Cursor Project Memory File
 # Read this FULLY before every single response.
 # This is the complete source of truth for the entire project.
-# Last updated: May 11, 2026 (evening — payment + checkout + admin)
+# Last updated: May 19, 2026 (migration sprint + PDP fine-tune)
+
+---
+
+## 0. CURRENT FOCUS & NEW MACHINE HANDOFF
+
+**Read this section first on every new machine or new Cursor chat.**
+
+### Active work (May 19, 2026)
+- **Product PDP fine-tune** — match live sarveda.com / Amazon-style layout:
+  - Left: sticky gallery + thumbnails + S3 audio (`ProductGallery`, `ProductAudio`)
+  - Center: title, variants, pair-with, **About + accordion inside same column** (page scroll)
+  - Right: sticky **buy box** (`ProductBuyBox`) — price, delivery timeline, qty, Add to cart
+  - **Removed:** pincode serviceability on PDP
+  - Key files: `frontend/components/product/ProductDetailExperience.tsx`, `ProductBuyBox.tsx`, `frontend/app/product/[slug]/page.tsx`
+- **Awaiting user feedback** on PDP after deploy to `https://sarveda-demo.xyz`
+- **Next after PDP:** variant attribute import from WooCommerce CSV (Size/Type pills), per-variant images if needed, reviews UI
+
+### Demo migration status (mostly done except SEO)
+- ✅ S3 media migration (`sarveda-media` bucket **us-east-1** — set `AWS_S3_REGION=us-east-1` on EC2; EC2 stays `ap-south-1`)
+- ✅ ~1,170 files uploaded; map at `data/media-migration-map.json`
+- ✅ Corporate wellness, vaidya/mentor/retreat/offers pages, testimonials API, coupons import
+- ✅ Category page 500 fix (no `force-dynamic` + `generateStaticParams` conflict on Vercel)
+- ⬜ Email/WhatsApp on all order events, Shiprocket E2E, GST invoice E2E, full SEO (22 sitemaps) — deferred
+- Details: `data/MIGRATION_STATUS.md`
+
+### New machine setup (clone — do NOT copy whole folder as primary sync)
+1. `git clone https://github.com/sarvedaonlineshop-max/sarveda.git && cd sarveda && git pull`
+2. Copy **securely** from old machine (not in git): `/.env`, `/frontend/.env.local`, `~/.ssh/sarveda-key.pem` if deploying
+3. `docker compose up -d` (local Postgres + Redis)
+4. `cd backend && npm install && npx prisma migrate deploy && npm run dev`
+5. `cd frontend && npm install && npm run dev` → http://localhost:3000
+6. Open repo in Cursor (same account optional for settings). **Start chat with the handoff prompt below.**
+
+### Cursor AI does not remember other machines
+- Chats are not the source of truth. Use **git + this file + commits**.
+- Always say: *"Read CLAUDE.md fully, especially section 0."*
+
+### Handoff prompt (paste on new machine)
+```
+You are working on the Sarveda eCommerce migration (WordPress → Next.js + Express + Prisma).
+
+1. Read CLAUDE.md FULLY before doing anything — especially section 0 (CURRENT FOCUS) and section 13 (build status).
+2. Read data/MIGRATION_STATUS.md for migration checklist.
+3. Stack is fixed: Next.js 14, Express+TS, PostgreSQL+Prisma, Redis, Razorpay — never suggest alternatives.
+4. Staging: https://sarveda-demo.xyz (Vercel frontend, /api proxied to EC2 13.206.192.106:5000).
+5. S3 bucket sarveda-media is us-east-1; EC2 uses AWS_S3_REGION=us-east-1 for uploads.
+6. Continue from: product PDP fine-tune (Amazon 3-column sticky layout). I will give feedback after testing — wait for my PDP notes unless I ask you to implement something specific.
+7. Do not commit unless I ask. Run commands yourself; do not give up on first error.
+```
 
 ---
 
@@ -1086,7 +1135,9 @@ PAYPAL_MODE=sandbox
 AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
 AWS_REGION=ap-south-1
+AWS_S3_REGION=us-east-1
 AWS_S3_BUCKET_NAME=sarveda-media
+# Public media base (staging often direct S3): https://sarveda-media.s3.amazonaws.com
 AWS_CLOUDFRONT_URL=
 SENDGRID_API_KEY=
 SENDGRID_FROM_EMAIL=hello@sarveda.com
@@ -1107,6 +1158,7 @@ NEXT_PUBLIC_API_URL=http://localhost:5000
 # Production: public site URL for server-side /api fetches (else Vercel sets VERCEL_URL)
 # NEXT_PUBLIC_SITE_URL=https://sarveda.com
 # Staging demo: NEXT_PUBLIC_SITE_URL=https://sarveda-demo.xyz
+NEXT_PUBLIC_MEDIA_CDN_URL=https://sarveda-media.s3.amazonaws.com
 NEXT_PUBLIC_RAZORPAY_KEY_ID=
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
 NEXT_PUBLIC_PAYPAL_CLIENT_ID=
@@ -1132,11 +1184,11 @@ Day 10: 🎯 Staging URL ready → send to Arjun
 
 ---
 
-## 13. CURRENT BUILD STATUS (Updated May 11, 2026)
+## 13. CURRENT BUILD STATUS (Updated May 19, 2026)
 
 ✅ Auth system (register/login/OTP/JWT)  
 ✅ 169 products + 1069 variants on AWS RDS  
-✅ Shop + product detail pages  
+✅ Shop + product detail pages (PDP redesign in progress — see section 0)  
 ✅ Cart + checkout flow  
 ✅ Razorpay + Stripe + PayPal integrated  
 ✅ Order confirmation page  
@@ -1157,12 +1209,15 @@ Day 10: 🎯 Staging URL ready → send to Arjun
 ✅ `/payment-failed` page + resume unpaid order (`GET /api/checkout/resume`)  
 ✅ Cart kept until payment succeeds; dismiss/back navigation does not wipe cart  
 ✅ Pending checkout in `sessionStorage` (`sarveda_pending_checkout`)  
+✅ S3 media migration script + `AWS_S3_REGION` fix (`backend/scripts/migrate-media-to-s3.ts`)  
+✅ Staging media via `NEXT_PUBLIC_MEDIA_CDN_URL` + `frontend/lib/media-cdn.ts`  
+✅ Corporate wellness CMS pages, list pages (vaidya/mentor/retreat/offers), testimonials API  
+✅ Product-category ISR fix (Vercel `DYNAMIC_SERVER_USAGE`)  
+🔄 PDP: Amazon-style 3-column (`ProductDetailExperience`, `ProductBuyBox`), pincode removed, S3 audio  
 
-⬜ **Next:** Confirm Razorpay + Google OAuth env on EC2/Vercel for `sarveda-demo.xyz` (webhook + OAuth redirect URIs)  
-⬜ Day 2: Email + WhatsApp + GST Invoice  
-⬜ Day 3: Shipping (Shiprocket)  
-⬜ Day 4: UX + Search + Account  
-⬜ Day 5: Full E2E testing + demo Friday  
+⬜ **Next:** PDP user feedback + variant attributes import + reviews on PDP  
+⬜ Confirm Razorpay + Google OAuth env on EC2/Vercel for `sarveda-demo.xyz`  
+⬜ Email + WhatsApp + GST Invoice, Shiprocket E2E, SEO sitemaps  
 
 ---
 
@@ -1236,5 +1291,5 @@ pm2 restart sarveda-backend
 
 ---
 
-*Sarveda | Developer: Shivakumar M | Client: Arjun | May 11, 2026*
+*Sarveda | Developer: Shivakumar M | Client: Arjun | May 19, 2026*
 *AI Advisor: Claude (Anthropic) via Cursor*
