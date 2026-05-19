@@ -1,34 +1,35 @@
-/** WordPress theme assets — same URLs as sarveda.com/corporate-wellness/ */
-const T = "https://sarveda.com/wp-content/themes/sarveda/assets/img";
+import { corporateThemeAsset } from "@/lib/media-cdn";
+
+const c = corporateThemeAsset;
 
 export const CORPORATE_IMG = {
   programs: {
-    sahyog: `${T}/corporate/prayog.jpg`,
-    sargam: `${T}/corporate/vibe.png`,
-    samatva: `${T}/corporate/fares.jpg`,
-    samsara: `${T}/corporate/earth.jpg`
+    sahyog: c("corporate/prayog.jpg"),
+    sargam: c("corporate/vibe.png"),
+    samatva: c("corporate/fares.jpg"),
+    samsara: c("corporate/earth.jpg")
   },
-  weeklyIcon: `${T}/corporate/weekly_icon.png`,
-  monthlyIcon: `${T}/corporate/monthly_icon.png`,
-  customizedIcon: `${T}/corporate/customized_icon.png`,
-  retreat: `${T}/corporate/retreat_1.jpg`,
-  holistic: `${T}/corporate/holistic_approach_to_wellness.jpg`,
-  pillarPhysical: `${T}/img-001.svg`,
-  pillarEmotional: `${T}/img-002.svg`,
-  pillarMental: `${T}/img-003.svg`,
+  weeklyIcon: c("corporate/weekly_icon.png"),
+  monthlyIcon: c("corporate/monthly_icon.png"),
+  customizedIcon: c("corporate/customized_icon.png"),
+  retreat: c("corporate/retreat_1.jpg"),
+  holistic: c("corporate/holistic_approach_to_wellness.jpg"),
+  pillarPhysical: c("img-001.svg"),
+  pillarEmotional: c("img-002.svg"),
+  pillarMental: c("img-003.svg"),
   gallery: [
-    `${T}/corporate/gallery/masnory-01.jpg`,
-    `${T}/corporate/gallery/masnory-02.jpg`,
-    `${T}/corporate/gallery/masnory-03.jpg`,
-    `${T}/corporate/gallery/masnory-04.jpg`,
-    `${T}/corporate/gallery/masnory-05.jpg`,
-    `${T}/corporate/gallery/masnory-06.jpg`
+    c("corporate/gallery/masnory-01.jpg"),
+    c("corporate/gallery/masnory-02.jpg"),
+    c("corporate/gallery/masnory-03.jpg"),
+    c("corporate/gallery/masnory-04.jpg"),
+    c("corporate/gallery/masnory-05.jpg"),
+    c("corporate/gallery/masnory-06.jpg")
   ],
-  star: `${T}/star.svg`,
-  mailIcon: `${T}/mail-icon.svg`,
-  phoneIcon: `${T}/phone-icon.svg`,
-  testimonialVaishali: `${T}/testimonial/Vaishali.jpeg`,
-  testimonialVinod: `${T}/testimonial/Vinod.jpeg`
+  star: c("star.svg"),
+  mailIcon: c("mail-icon.svg"),
+  phoneIcon: c("phone-icon.svg"),
+  testimonialVaishali: c("testimonial/Vaishali.jpeg"),
+  testimonialVinod: c("testimonial/Vinod.jpeg")
 } as const;
 
 export const CORPORATE_PROGRAMS = [
@@ -87,26 +88,26 @@ export const CORPORATE_SOLUTIONS = [
 ] as const;
 
 export const CORPORATE_FACILITATORS = [
-  { name: "Arjun", role: "Sound therapist and Multi-instrumentalist", image: `${T}/facilitatos/Arjun.jpg` },
-  { name: "Priya", role: "Yoganidra Expert", image: `${T}/facilitatos/Priya.jpg` },
-  { name: "Chetan", role: "Mudgar Swing", image: `${T}/facilitatos/Chetan.jpg` },
-  { name: "Tejal Rathod", role: "Sound and meditation therapist", image: `${T}/facilitatos/tejal_rathod.jpg` },
-  { name: "Saloni", role: "Terrarium workshop", image: `${T}/facilitatos/Saloni.jpg` },
-  { name: "Vivek", role: "Breathwork and Animal Flow", image: `${T}/facilitatos/Vivek.jpg` },
-  { name: "Saatvika", role: "EFT and Inner Child Healing", image: `${T}/facilitatos/Saatvika.jpg` },
-  { name: "Xenkat", role: "Drum Circle", image: `${T}/facilitatos/Xenkat.jpg` },
-  { name: "Riya", role: "Yoga", image: `${T}/facilitatos/Riya.jpg` }
+  { name: "Arjun", role: "Sound therapist and Multi-instrumentalist", image: c("facilitatos/Arjun.jpg") },
+  { name: "Priya", role: "Yoganidra Expert", image: c("facilitatos/Priya.jpg") },
+  { name: "Chetan", role: "Mudgar Swing", image: c("facilitatos/Chetan.jpg") },
+  { name: "Tejal Rathod", role: "Sound and meditation therapist", image: c("facilitatos/tejal_rathod.jpg") },
+  { name: "Saloni", role: "Terrarium workshop", image: c("facilitatos/Saloni.jpg") },
+  { name: "Vivek", role: "Breathwork and Animal Flow", image: c("facilitatos/Vivek.jpg") },
+  { name: "Saatvika", role: "EFT and Inner Child Healing", image: c("facilitatos/Saatvika.jpg") },
+  { name: "Xenkat", role: "Drum Circle", image: c("facilitatos/Xenkat.jpg") },
+  { name: "Riya", role: "Yoga", image: c("facilitatos/Riya.jpg") }
 ] as const;
 
 export const CORPORATE_PARTNER_LOGOS = [
-  { src: `${T}/t-logo-8.png`, alt: "Partner" },
-  { src: `${T}/t-logo-9.svg`, alt: "Publicis Groupe" },
-  { src: `${T}/t-logo-10.webp`, alt: "The Times Group" },
-  { src: `${T}/Veeam_logo.png`, alt: "Veeam" },
-  { src: `${T}/paypal_logo.png`, alt: "PayPal" },
-  { src: `${T}/t-logo-12.svg`, alt: "Rotary" },
-  { src: `${T}/t-logo-13.jpeg`, alt: "Partner" },
-  { src: `${T}/t-logo-14.png`, alt: "Partner" }
+  { src: c("t-logo-8.png"), alt: "Partner" },
+  { src: c("t-logo-9.svg"), alt: "Publicis Groupe" },
+  { src: c("t-logo-10.webp"), alt: "The Times Group" },
+  { src: c("Veeam_logo.png"), alt: "Veeam" },
+  { src: c("paypal_logo.png"), alt: "PayPal" },
+  { src: c("t-logo-12.svg"), alt: "Rotary" },
+  { src: c("t-logo-13.jpeg"), alt: "Partner" },
+  { src: c("t-logo-14.png"), alt: "Partner" }
 ] as const;
 
 export const CORPORATE_TESTIMONIALS = [

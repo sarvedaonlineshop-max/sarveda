@@ -32,6 +32,8 @@ import { adminRoutes } from "./modules/admin";
 import { productsRoutes } from "./modules/products/products.routes";
 import { shippingRoutes } from "./modules/shipping";
 import { chatRoutes } from "./modules/chat/chat.routes";
+import { contactRoutes } from "./modules/contact/contact.routes";
+import { testimonialsRoutes } from "./modules/testimonials/testimonials.routes";
 
 configurePassport();
 
@@ -136,6 +138,8 @@ app.use("/api/payments", paymentsJsonRoutes);
 app.use("/api/orders", ordersRoutes);
 app.use("/api/shipping", shippingRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/contact", contactRoutes);
+app.use("/api/testimonials", testimonialsRoutes);
 app.use("/api/admin", adminRoutes);
 
 app.use((_req: Request, _res: Response, next: NextFunction) => {

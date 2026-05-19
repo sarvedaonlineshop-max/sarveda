@@ -11,6 +11,7 @@
 | `retreats.xml` | Retreats | `npm run import:retreats` |
 | `testimonials.xml` | Testimonials | `npm run import:testimonials` |
 | `offers.xml` | Promo offers | `npm run import:offers` |
+| `coupons.xml` | WooCommerce coupons | `npm run import:coupons` |
 | `meetings and webinars.xml` | Zoom meetings | Not imported yet |
 | `sarveda-variants.xml` | Product variations | **Skip** — use `wc-products.csv` |
 
@@ -20,11 +21,14 @@
 cd ~/sarveda/backend
 npx prisma migrate deploy
 npx prisma generate
-npm run import:full    # all imports + corporate-wellness HTML seed
+npm run import:full    # all imports + coupons + corporate-wellness HTML seed
+npm run migrate:media  # mirror WP/theme images to S3 (set AWS_* first)
 npm run build && pm2 restart sarveda-backend --update-env
 ```
 
-`import:full` = `import:all` + `seed:corporate` (fills `/corporate-wellness` — WP export has empty body, ACF-only).
+`import:full` = `import:all` + `import:coupons` + `seed:corporate`.
+
+After `migrate:media`, set `AWS_CLOUDFRONT_URL` on EC2 and `NEXT_PUBLIC_MEDIA_CDN_URL` on Vercel to the same CDN base.
 
 ## Admin
 

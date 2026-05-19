@@ -25,7 +25,10 @@
     "seed:corporate": "tsx scripts/seed-corporate-wellness.ts",
     "import:content": "npm run import:courses && npm run import:events && npm run import:pages",
     "import:all": "npm run import:content && npm run import:vaidya && npm run import:mentors && npm run import:retreats && npm run import:testimonials && npm run import:offers && npm run import:posts",
-    "import:full": "npm run import:all && npm run seed:corporate"
+    "import:coupons": "tsx scripts/import-coupons-wxr.ts",
+    "import:full": "npm run import:all && npm run import:coupons && npm run seed:corporate",
+    "migrate:media": "tsx scripts/migrate-media-to-s3.ts",
+    "migrate:media:dry": "tsx scripts/migrate-media-to-s3.ts --dry-run"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

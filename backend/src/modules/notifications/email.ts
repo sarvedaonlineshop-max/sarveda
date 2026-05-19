@@ -81,11 +81,18 @@ async function loadOrderEmailContext(orderId: string) {
   });
 }
 
-async function sendMail(to: string, subject: string, html: string, text: string): Promise<void> {
+export async function sendMail(
+  to: string,
+  subject: string,
+  html: string,
+  text: string,
+  replyToEmail?: string
+): Promise<void> {
   const key = process.env.SENDGRID_API_KEY?.trim();
   const fromEmail = process.env.SENDGRID_FROM_EMAIL?.trim() || "hello@sarveda.com";
   const fromName = process.env.SENDGRID_FROM_NAME?.trim() || "Sarveda";
-  const replyTo = process.env.SENDGRID_REPLY_TO?.trim() || fromEmail;
+  const reply =
+    replyToEmail?.trim() || process.env.SENDGRID_REPLY_TO?.trim() || fromEmail;
   if (!key) {
     logger.warn("email_skipped_no_sendgrid", { to: to.replace(/@.*/, "@***") });
     return;
@@ -94,7 +101,7 @@ async function sendMail(to: string, subject: string, html: string, text: string)
   await sgMail.send({
     to,
     from: { email: fromEmail, name: fromName },
-    replyTo: { email: replyTo, name: fromName },
+    replyTo: { email: reply, name: fromName },
     subject,
     html,
     text,

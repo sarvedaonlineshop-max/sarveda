@@ -30,6 +30,59 @@ function publicUrlForKey(key: string): string {
   return `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
 }
 
+export function getPublicMediaUrl(key: string): string {
+  return publicUrlForKey(key);
+}
+
+function contentTypeForKey(key: string): string {
+  const lower = key.toLowerCase();
+  if (lower.endsWith(".svg")) return "image/svg+xml";
+  if (lower.endsWith(".webp")) return "image/webp";
+  if (lower.endsWith(".png")) return "image/png";
+  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+  if (lower.endsWith(".gif")) return "image/gif";
+  if (lower.endsWith(".mp3")) return "audio/mpeg";
+  if (lower.endsWith(".pdf")) return "application/pdf";
+  return "application/octet-stream";
+}
+
+/** Upload binary asset; returns public URL or null if S3 not configured. */
+export async function uploadAsset(
+  key: string,
+  body: Buffer,
+  contentType?: string
+): Promise<string | null> {
+  const c = s3Client();
+  const bucket = bucketName();
+  if (!c || !bucket) {
+    logger.warn("s3_upload_skipped", { key, reason: "AWS credentials or bucket missing" });
+    return null;
+  }
+  await c.send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: body,
+      ContentType: contentType ?? contentTypeForKey(key),
+      CacheControl: "public, max-age=31536000, immutable"
+    })
+  );
+  return publicUrlForKey(key);
+}
+
+/** Download remote URL and upload to S3. */
+export async function mirrorUrlToS3(sourceUrl: string, key: string): Promise<string | null> {
+  const res = await fetch(sourceUrl, {
+    headers: { "User-Agent": "SarvedaMediaMigrator/1.0" },
+    signal: AbortSignal.timeout(60_000)
+  });
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status} for ${sourceUrl}`);
+  }
+  const buf = Buffer.from(await res.arrayBuffer());
+  return uploadAsset(key, buf);
+}
+
 /** Upload PDF buffer; returns public URL or null if S3 not configured. */
 export async function uploadPdf(key: string, body: Buffer): Promise<string | null> {
   const c = s3Client();

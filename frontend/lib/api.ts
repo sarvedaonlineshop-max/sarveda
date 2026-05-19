@@ -358,6 +358,24 @@ export async function fetchOfferBySlug(slug: string, init?: RequestInit): Promis
   }
 }
 
+export type TestimonialListItem = {
+  id: string;
+  slug: string;
+  authorName: string;
+  role: string | null;
+  body: string | null;
+  imageUrl: string | null;
+};
+
+export async function fetchTestimonials(init?: RequestInit): Promise<TestimonialListItem[]> {
+  try {
+    const data = await fetchApi<{ testimonials: TestimonialListItem[] }>("/api/testimonials?limit=6", init);
+    return data.testimonials;
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchBlogPosts(init?: RequestInit): Promise<BlogListItem[]> {
   try {
     const data = await fetchApi<{ posts: BlogListItem[] }>("/api/blog", init);

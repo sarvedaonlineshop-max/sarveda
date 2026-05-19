@@ -123,7 +123,11 @@ export default async function ProductDetailPage({ params }: Props) {
               <ProductAudio audioUrl={product.audioUrl} title={product.name} />
             ) : null}
 
-            <ProductPurchaseSection productName={product.name} variants={product.variants} />
+            <ProductPurchaseSection
+              productName={product.name}
+              productType={product.productType}
+              variants={product.variants}
+            />
 
             {product.description ? (
               <section className="rounded-none border-y border-stone-200 bg-white p-4 md:rounded-2xl md:border md:border-stone-100 md:p-6 md:shadow-sm">

@@ -2,38 +2,55 @@
 
 import { FormEvent, useState } from "react";
 
-import { CORPORATE_CONTACT } from "@/lib/corporate-wellness-data";
+import { getApiBase } from "@/lib/api";
 
 export function CorporateContactForm() {
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function onSubmit(e: FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setError(null);
+    setLoading(true);
     const form = e.currentTarget;
     const data = new FormData(form);
-    const name = String(data.get("name") ?? "");
-    const email = String(data.get("email") ?? "");
-    const phone = String(data.get("phone") ?? "");
-    const message = String(data.get("query") ?? "");
 
-    const subject = encodeURIComponent(`Corporate Wellness enquiry from ${name}`);
-    const body = encodeURIComponent(
-      `Name: ${name}\nEmail: ${email}\nPhone: ${phone}\n\nMessage:\n${message}`
-    );
-    window.location.href = `mailto:${CORPORATE_CONTACT.emails[0]}?subject=${subject}&body=${body}`;
-    setSubmitted(true);
+    try {
+      const res = await fetch(`${getApiBase()}/api/contact/corporate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          name: String(data.get("name") ?? ""),
+          email: String(data.get("email") ?? ""),
+          phone: String(data.get("phone") ?? ""),
+          message: String(data.get("query") ?? "")
+        })
+      });
+      const json = (await res.json()) as { success?: boolean; message?: string; error?: string };
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Could not send your message. Please email care@sarveda.com.");
+      }
+      setSubmitted(true);
+      form.reset();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   if (submitted) {
     return (
       <p className="rounded-xl bg-[#f0f7f4] px-6 py-8 text-center text-stone-700">
-        Thank you. Your email app should open with your message — send it and our team will reply within 24 hours.
+        Thank you. Our corporate wellness team will reply within 24 hours.
       </p>
     );
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
+    <form onSubmit={(e) => void onSubmit(e)} className="space-y-6">
       <div>
         <label htmlFor="cw-name" className="mb-2 block text-sm font-medium text-stone-800">
           Name
@@ -70,26 +87,25 @@ export function CorporateContactForm() {
         />
       </div>
       <div>
-        <label htmlFor="cw-message" className="mb-2 block text-sm font-medium text-stone-800">
-          Message
+        <label htmlFor="cw-query" className="mb-2 block text-sm font-medium text-stone-800">
+          Your query
         </label>
         <textarea
-          id="cw-message"
+          id="cw-query"
           name="query"
-          rows={3}
+          rows={4}
           required
-          placeholder="Write your message..."
-          className="w-full resize-none border-0 border-b border-stone-300 bg-transparent py-2 text-stone-900 outline-none placeholder:text-stone-400 focus:border-[#108967]"
+          className="w-full resize-y border-0 border-b border-stone-300 bg-transparent py-2 text-stone-900 outline-none focus:border-[#108967]"
         />
       </div>
-      <div className="flex justify-end pt-2">
-        <button
-          type="submit"
-          className="rounded-full bg-[#108967] px-8 py-3 text-sm font-semibold text-white transition hover:bg-[#0d7354]"
-        >
-          Send Message
-        </button>
-      </div>
+      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full rounded-full bg-[#108967] px-8 py-3.5 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-[#0d7353] disabled:opacity-60"
+      >
+        {loading ? "Sending…" : "Submit"}
+      </button>
     </form>
   );
 }

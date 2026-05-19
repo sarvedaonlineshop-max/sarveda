@@ -6,7 +6,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { NewsletterForm }      from "@/components/home/NewsletterForm";
 import { ProductCard }         from "@/components/shop/ProductCard";
 import { categoryEmoji }       from "@/lib/category-emojis";
-import { fetchCategoryTree, fetchProductList } from "@/lib/api";
+import { fetchCategoryTree, fetchProductList, fetchTestimonials } from "@/lib/api";
 import { organizationJsonLd } from "@/lib/seo-product";
 import { absoluteUrl, canonical, isProductionSite } from "@/lib/site";
 
@@ -94,17 +94,28 @@ export default async function HomePage() {
     items: [],
     pagination: { page:1, limit:8, total:0, totalPages:0 }
   };
+  let dbTestimonials: Awaited<ReturnType<typeof fetchTestimonials>> = [];
 
   try {
-    [categories, featured] = await Promise.all([
-      fetchCategoryTree({ next:{ revalidate:600 } }),
-      fetchProductList({},  { next:{ revalidate:120 } }, { limit:8 }),
+    [categories, featured, dbTestimonials] = await Promise.all([
+      fetchCategoryTree({ next: { revalidate: 600 } }),
+      fetchProductList({}, { next: { revalidate: 120 } }, { limit: 8 }),
+      fetchTestimonials({ next: { revalidate: 300 } })
     ]);
   } catch {
     /* Keep buildable when API is unreachable */
   }
 
   const topCategories = categories.slice(0, 12);
+  const testimonialCards =
+    dbTestimonials.length > 0
+      ? dbTestimonials.slice(0, 6).map((t) => ({
+          quote: t.body || "",
+          author: t.authorName,
+          location: t.role || "Sarveda community",
+          stars: 5 as const
+        }))
+      : TESTIMONIALS;
 
   return (
     <div className="overflow-x-hidden">
@@ -233,7 +244,7 @@ export default async function HomePage() {
           </div>
 
           <div className="grid gap-5 md:grid-cols-3 md:gap-8">
-            {TESTIMONIALS.map((t) => (
+            {testimonialCards.map((t) => (
               <blockquote
                 key={t.author}
                 className="flex flex-col gap-4 rounded-2xl border border-stone-100 bg-white p-6 shadow-card"
@@ -259,23 +270,17 @@ export default async function HomePage() {
         style={{ background: "linear-gradient(160deg,#0f1a14 0%,#1e3a2f 100%)" }}
       >
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
-          <span className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.2em]"
-            style={{ background:"rgba(200,150,10,0.18)", border:"1px solid rgba(200,150,10,0.45)", color:"#f5d88a" }}
-          >
-            ✦ Coming soon
-          </span>
           <h2 className="mt-5 font-serif text-2xl font-semibold text-white sm:text-3xl md:text-4xl">
             Courses & guided practice
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-stone-300 md:text-base">
-            Deepen pranayama, mantra, and Ayurvedic living with teachers who carry
-            these lineages with care. Full catalogue launching June 2026.
+            Deepen pranayama, mantra, and Ayurvedic living with teachers who carry these lineages with care.
           </p>
           <Link
-            href="#newsletter"
+            href="/courses"
             className="mt-8 inline-flex min-h-[48px] items-center gap-2 rounded-full border border-brand-gold/50 px-8 text-sm font-semibold text-brand-gold transition-all hover:bg-brand-gold/10"
           >
-            Get notified first
+            Browse courses
           </Link>
         </div>
       </section>

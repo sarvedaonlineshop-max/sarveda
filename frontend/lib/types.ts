@@ -49,14 +49,31 @@ export type VariantAttributeRow = {
   };
 };
 
+export type VariantShippingRate = {
+  country: string;
+  standardPerProduct: number;
+  standardAdditional: number;
+  expeditedPerProduct: number;
+  expeditedAdditional: number;
+  codPerProduct: number | null;
+  codAdditional: number | null;
+  estimatedDays: string | null;
+};
+
 export type ProductVariantDetail = {
   id: string;
   sku: string;
   mrpInPaise: number;
   saleInPaise: number;
+  mrpUsdCents?: number | null;
+  saleUsdCents?: number | null;
+  mrpGbpPence?: number | null;
+  saleGbpPence?: number | null;
+  weightGrams?: number | null;
   isDefault: boolean;
   inventory: { onHand: number; reserved: number } | null;
   attributeValues: VariantAttributeRow[];
+  shippingRates?: VariantShippingRate[];
 };
 
 export type ProductDetail = {
