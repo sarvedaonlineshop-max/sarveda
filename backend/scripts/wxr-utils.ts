@@ -65,6 +65,27 @@ export function parseWpDate(raw: string | undefined, timeRaw?: string): Date | n
   return Number.isNaN(dt.getTime()) ? null : dt;
 }
 
+/** Prisma JSON must not contain `undefined`. */
+export function toPrismaJson(value: Record<string, unknown>): object | null {
+  const cleaned = JSON.parse(
+    JSON.stringify(value, (_key, v) => (v === undefined ? null : v))
+  ) as Record<string, unknown>;
+  if (!cleaned || typeof cleaned !== "object" || Array.isArray(cleaned)) return null;
+  const hasValue = Object.values(cleaned).some((v) => v !== null && v !== "");
+  return hasValue ? cleaned : null;
+}
+
+export function resolveMediaRef(
+  raw: string | undefined,
+  attachments: Map<string, string>
+): string | null {
+  if (!raw?.trim()) return null;
+  const t = raw.trim();
+  if (/^\d+$/.test(t)) return attachments.get(t) ?? null;
+  if (t.startsWith("http://") || t.startsWith("https://")) return t;
+  return null;
+}
+
 export function inferEnrollmentMode(priceInPaise: number, html: string): "CHECKOUT" | "ENQUIRY" | "BOTH" {
   const lower = html.toLowerCase();
   const hasEnquire =

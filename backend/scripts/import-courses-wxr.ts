@@ -16,7 +16,8 @@ const prisma = new PrismaClient();
 const dryRun = process.argv.includes("--dry-run");
 const xmlPath =
   process.argv.find((a) => a.endsWith(".xml")) ??
-  path.resolve(__dirname, "../../data/sarveda.WordPress.2026-05-18.xml");
+  process.argv.find((a) => a.endsWith(".xml")) ??
+  path.resolve(__dirname, "../../data/sarveda-courses.xml");
 
 type MetaMap = Record<string, string>;
 

@@ -15,7 +15,8 @@
     "stock:replenish": "tsx prisma/replenish-inventory.ts",
     "import:courses": "tsx scripts/import-courses-wxr.ts",
     "import:events": "tsx scripts/import-events-wxr.ts",
-    "import:pages": "tsx scripts/import-pages-wxr.ts"
+    "import:pages": "tsx scripts/import-pages-wxr.ts",
+    "import:content": "npm run import:courses && npm run import:events && npm run import:pages"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

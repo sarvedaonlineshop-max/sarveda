@@ -12,3 +12,7 @@ public/workbox-*.js.map
 *.zip
 .DS_Store
 .pem
+
+# WooCommerce exports — never commit orders (payment keys) or customer PII
+data/orders.xml
+data/users.csv
