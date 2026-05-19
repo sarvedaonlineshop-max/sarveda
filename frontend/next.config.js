@@ -25,10 +25,11 @@ const nextConfig = {
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "sarveda.com", pathname: "/**" },
-      { protocol: "https", hostname: "*.amazonaws.com", pathname: "/**" },
+      { protocol: "https", hostname: "sarveda-media.s3.amazonaws.com", pathname: "/**" },
+      { protocol: "https", hostname: "sarveda-media.s3.us-east-1.amazonaws.com", pathname: "/**" },
       { protocol: "https", hostname: "*.cloudfront.net", pathname: "/**" }
     ],
-    domains: ["sarveda.com"],
+    domains: ["sarveda.com", "sarveda-media.s3.amazonaws.com"],
   },
 };
 

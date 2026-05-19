@@ -8,13 +8,7 @@ import { ShopCategoryFilterSidebar } from "@/components/shop/ShopCategoryFilterS
 import { ShopMobileCategoryDrawer } from "@/components/shop/ShopMobileCategoryDrawer";
 import { ShopPagination } from "@/components/shop/Pagination";
 import { ProductCard } from "@/components/shop/ProductCard";
-import {
-  fetchCategoryBySlug,
-  fetchCategorySlugs,
-  fetchCategoryTree,
-  fetchProductList,
-  skipBuildTimeStaticParams
-} from "@/lib/api";
+import { fetchCategoryBySlug, fetchCategoryTree, fetchProductList } from "@/lib/api";
 import { breadcrumbJsonLd } from "@/lib/seo-product";
 import { htmlToPlainText } from "@/lib/sanitize-html";
 import { absoluteUrl, canonical, isProductionSite } from "@/lib/site";
@@ -26,14 +20,9 @@ function categoryMetaDescription(raw: string | null | undefined, fallback: strin
   return plain.length > 160 ? `${plain.slice(0, 157)}…` : plain;
 }
 
+/** ISR only — do not combine with generateStaticParams or cache: no-store (causes DYNAMIC_SERVER_USAGE on Vercel). */
+export const revalidate = 60;
 export const dynamicParams = true;
-export const revalidate = 300;
-
-export async function generateStaticParams() {
-  if (skipBuildTimeStaticParams()) return [];
-  const slugs = await fetchCategorySlugs({ next: { revalidate: 3600 } });
-  return slugs.map((slug) => ({ slug }));
-}
 
 type Props = {
   params: { slug: string };

@@ -30,6 +30,14 @@ export function getApiBase(): string {
     return "";
   }
 
+  /** Server-side: prefer direct Express URL (avoids Vercel self-proxy timeouts on PLPs). */
+  const direct =
+    process.env.INTERNAL_API_URL?.trim() ||
+    process.env.BACKEND_PROXY_URL?.trim();
+  if (direct) {
+    return direct.replace(/\/$/, "");
+  }
+
   if (process.env.NODE_ENV === "production") {
     const site =
       process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
@@ -39,11 +47,7 @@ export function getApiBase(): string {
     }
   }
 
-  const url =
-    process.env.INTERNAL_API_URL ??
-    process.env.BACKEND_PROXY_URL ??
-    process.env.NEXT_PUBLIC_API_URL ??
-    "http://127.0.0.1:5000";
+  const url = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:5000";
   return url.replace(/\/$/, "");
 }
 
