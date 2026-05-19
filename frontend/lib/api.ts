@@ -9,6 +9,7 @@ import type {
   RetreatDetail,
   RetreatListItem,
   VaidyaDetail,
+  OfferListItem,
   VaidyaListItem
 } from "./people-types";
 import { skipBuildTimeStaticParams } from "./build";
@@ -336,6 +337,15 @@ export async function fetchRetreatBySlug(slug: string, init?: RequestInit): Prom
     return data.retreat;
   } catch {
     return null;
+  }
+}
+
+export async function fetchOffers(init?: RequestInit): Promise<OfferListItem[]> {
+  try {
+    const data = await fetchApi<{ offers: OfferListItem[] }>("/api/offers", init);
+    return data.offers;
+  } catch {
+    return [];
   }
 }
 

@@ -4,7 +4,9 @@ import { notFound } from "next/navigation";
 
 import { Breadcrumbs } from "@/components/product/Breadcrumbs";
 import { ProductRichText } from "@/components/product/ProductRichText";
+import { CorporateProgramPage } from "@/components/cms/CorporateProgramPage";
 import { CorporateWellnessPage } from "@/components/cms/CorporateWellnessPage";
+import { getCorporateProgramPage, isCorporateProgramSlug } from "@/lib/corporate-program-pages-data";
 import { JsonLd } from "@/components/seo/JsonLd";
 import type { BlogDetail } from "@/lib/blog-types";
 import type { CmsPage } from "@/lib/cms-types";
@@ -97,7 +99,18 @@ async function resolveContent(slug: string): Promise<{ page: ContentPage; cmsPag
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const program = getCorporateProgramPage(params.slug);
   const resolved = await resolveContent(params.slug);
+  if (!resolved && program) {
+    const title = `${program.title} | Corporate Wellness`;
+    return {
+      title,
+      description: program.hero.subtitle,
+      openGraph: { title, description: program.hero.subtitle, siteName: "Sarveda" },
+      robots: isProductionSite() ? { index: true, follow: true } : { index: false, follow: false },
+      alternates: { canonical: canonical(`/${params.slug}`) }
+    };
+  }
   if (!resolved) return { title: "Page" };
   const content = resolved.page;
   const title = content.seoTitle || content.title;
@@ -129,28 +142,64 @@ function formatPublishedDate(iso: string): string {
 }
 
 export default async function SlugContentPage({ params }: Props) {
+  const programData = getCorporateProgramPage(params.slug);
   const resolved = await resolveContent(params.slug);
-  if (!resolved) notFound();
-  const { page: content, cmsPage } = resolved;
+  if (!resolved && !programData) notFound();
+
+  const content = resolved?.page;
+  const cmsPage = resolved?.cmsPage ?? null;
+
+  const isProgram = Boolean(programData && (cmsPage ? isCorporateProgramSlug(cmsPage.slug) : true));
 
   const breadcrumbItems = [
     { name: "Home", url: absoluteUrl("/") },
-    ...(content.kind === "blog"
+    ...(isProgram && programData
       ? [
-          { name: "Insights", url: absoluteUrl("/insights") },
-          { name: content.title, url: absoluteUrl(`/${content.slug}`) }
+          { name: "Corporate Wellness", url: absoluteUrl("/corporate-wellness") },
+          { name: programData.title, url: absoluteUrl(`/${params.slug}`) }
         ]
-      : [{ name: content.title, url: absoluteUrl(`/${content.slug}`) }])
+      : content?.kind === "blog"
+        ? [
+            { name: "Insights", url: absoluteUrl("/insights") },
+            { name: content.title, url: absoluteUrl(`/${content.slug}`) }
+          ]
+        : content
+          ? [{ name: content.title, url: absoluteUrl(`/${content.slug}`) }]
+          : [])
   ];
 
   const uiBreadcrumbs =
-    content.kind === "blog"
+    isProgram && programData
       ? [
           { label: "Home", href: "/" },
-          { label: "Insights", href: "/insights" },
-          { label: content.title }
+          { label: "Corporate Wellness", href: "/corporate-wellness" },
+          { label: programData.title }
         ]
-      : [{ label: "Home", href: "/" }, { label: content.title }];
+      : content?.kind === "blog"
+        ? [
+            { label: "Home", href: "/" },
+            { label: "Insights", href: "/insights" },
+            { label: content.title }
+          ]
+        : content
+          ? [{ label: "Home", href: "/" }, { label: content.title }]
+          : [{ label: "Home", href: "/" }];
+
+  if (programData && isProgram) {
+    return (
+      <>
+        <JsonLd data={breadcrumbJsonLd(breadcrumbItems)} />
+        <div className="border-b border-stone-100 bg-stone-50">
+          <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-6 lg:px-8">
+            <Breadcrumbs items={uiBreadcrumbs} />
+          </div>
+        </div>
+        <CorporateProgramPage data={programData} />
+      </>
+    );
+  }
+
+  if (!content) notFound();
 
   if (cmsPage && isCorporateWellnessPage(cmsPage)) {
     return (

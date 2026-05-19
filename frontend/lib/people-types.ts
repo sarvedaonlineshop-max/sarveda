@@ -42,12 +42,15 @@ export type RetreatDetail = RetreatListItem & {
   seoDescription: string | null;
 };
 
-export type OfferDetail = {
+export type OfferListItem = {
   id: string;
   slug: string;
   title: string;
   description: string | null;
   imageUrl: string | null;
+};
+
+export type OfferDetail = OfferListItem & {
   seoTitle: string | null;
   seoDescription: string | null;
 };

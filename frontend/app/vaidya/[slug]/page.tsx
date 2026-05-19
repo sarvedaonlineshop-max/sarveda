@@ -32,6 +32,7 @@ export default async function VaidyaPage({ params }: Props) {
 
   const breadcrumbItems = [
     { name: "Home", url: absoluteUrl("/") },
+    { name: "Vaidyas", url: absoluteUrl("/vaidya") },
     { name: vaidya.name, url: absoluteUrl(`/vaidya/${vaidya.slug}`) }
   ];
 
@@ -40,7 +41,13 @@ export default async function VaidyaPage({ params }: Props) {
       <JsonLd data={breadcrumbJsonLd(breadcrumbItems)} />
       <div className="border-b border-stone-100 bg-stone-50">
         <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
-          <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: vaidya.name }]} />
+          <Breadcrumbs
+            items={[
+              { label: "Home", href: "/" },
+              { label: "Vaidyas", href: "/vaidya" },
+              { label: vaidya.name }
+            ]}
+          />
         </div>
       </div>
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">

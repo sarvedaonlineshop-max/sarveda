@@ -36,12 +36,19 @@ export default async function RetreatPage({ params }: Props) {
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Home", url: absoluteUrl("/") },
+          { name: "Retreats", url: absoluteUrl("/retreat") },
           { name: retreat.title, url: absoluteUrl(`/retreat/${retreat.slug}`) }
         ])}
       />
       <div className="border-b border-stone-100 bg-stone-50">
         <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
-          <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: retreat.title }]} />
+          <Breadcrumbs
+            items={[
+              { label: "Home", href: "/" },
+              { label: "Retreats", href: "/retreat" },
+              { label: retreat.title }
+            ]}
+          />
         </div>
       </div>
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">

@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useCartData, useCartUi } from "@/components/cart/CartProvider";
 import type { PublicUser } from "@/lib/auth-client";
 import { fetchMe, isAdminRole, logoutSession } from "@/lib/auth-client";
+import { MAIN_NAV_LINKS } from "@/lib/main-nav";
 
 const ANNOUNCEMENTS = [
   "🌿  Free shipping on orders above ₹999",
@@ -102,10 +103,19 @@ export function SiteHeader() {
             </Link>
           </div>
 
-          <nav className="hidden items-center gap-8 md:flex" aria-label="Main">
-            <Link href="/"         className={navLinkClass}>Home</Link>
-            <Link href="/shop"     className={navLinkClass}>Shop</Link>
-            <Link href="/courses" className={navLinkClass}>Courses</Link>
+          <nav className="hidden items-center gap-6 lg:gap-8 md:flex" aria-label="Main">
+            {MAIN_NAV_LINKS.map((l) => (
+              <Link key={l.href} href={l.href} className={navLinkClass}>
+                {l.label === "Corporate Wellness" ? (
+                  <>
+                    <span className="hidden lg:inline">Corporate Wellness</span>
+                    <span className="lg:hidden">Corporate</span>
+                  </>
+                ) : (
+                  l.label
+                )}
+              </Link>
+            ))}
           </nav>
 
           <div className="hidden shrink-0 items-center gap-4 md:flex" aria-label="Account">
@@ -142,7 +152,7 @@ export function SiteHeader() {
             </button>
           </div>
           <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-4 py-6" aria-label="Mobile main">
-            {[{href:"/",label:"Home"},{href:"/shop",label:"Shop"},{href:"/courses",label:"Courses"}].map((l) => (
+            {MAIN_NAV_LINKS.map((l) => (
               <Link key={l.href} href={l.href} className="min-h-[52px] rounded-xl px-4 py-3 text-lg font-medium text-stone-200 hover:bg-white/6 hover:text-amber-400" onClick={() => setMenuOpen(false)}>{l.label}</Link>
             ))}
             <div className="my-2 h-px" style={{ background:"rgba(255,255,255,0.08)" }} />
