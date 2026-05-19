@@ -42,7 +42,7 @@ npm run build && pm2 restart sarveda-backend --update-env
 
 | Item | Action |
 |------|--------|
-| S3 + CloudFront | AWS console; then run `migrate:media` |
+| S3 + CloudFront | Bucket `sarveda-media` is **us-east-1** — set `AWS_S3_REGION=us-east-1` on EC2, run `npm run check:s3`, then `migrate:media` |
 | SendGrid | `SENDGRID_API_KEY` on EC2 for order + corporate emails |
 | WATI WhatsApp | Optional; email path already wired on orders |
 | Razorpay/Google OAuth URIs | Dashboard for `sarveda-demo.xyz` |

@@ -1,32 +1,78 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { GetBucketLocationCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 import { logger } from "./logger";
 
 let client: S3Client | null = null;
+let clientRegion: string | null = null;
 
-function s3Client(): S3Client | null {
-  const key = process.env.AWS_ACCESS_KEY_ID?.trim();
-  const secret = process.env.AWS_SECRET_ACCESS_KEY?.trim();
-  const region = process.env.AWS_REGION?.trim() || "ap-south-1";
-  if (!key || !secret) return null;
-  if (!client) {
-    client = new S3Client({
-      region,
-      credentials: { accessKeyId: key, secretAccessKey: secret }
-    });
-  }
-  return client;
+/** S3 bucket region — must match where the bucket was created (see `npm run check:s3`). */
+export function s3Region(): string {
+  return (
+    process.env.AWS_S3_REGION?.trim() ||
+    process.env.AWS_REGION?.trim() ||
+    "ap-south-1"
+  );
 }
 
-function bucketName(): string | null {
+function credentials() {
+  const key = process.env.AWS_ACCESS_KEY_ID?.trim();
+  const secret = process.env.AWS_SECRET_ACCESS_KEY?.trim();
+  if (!key || !secret) return null;
+  return { accessKeyId: key, secretAccessKey: secret };
+}
+
+export function bucketName(): string | null {
   return process.env.AWS_S3_BUCKET_NAME?.trim() || null;
+}
+
+/** Normalize GetBucketLocation response (null/""/US → us-east-1). */
+export function normalizeBucketRegion(location: string | null | undefined): string {
+  if (!location || location === "US") return "us-east-1";
+  return location;
+}
+
+/** Resolve actual bucket region from AWS (for startup checks / migrate script). */
+export async function resolveBucketRegion(bucket: string): Promise<string> {
+  const creds = credentials();
+  if (!creds) throw new Error("AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY missing");
+
+  // GetBucketLocation must be called against us-east-1 for legacy buckets.
+  const probe = new S3Client({ region: "us-east-1", credentials: creds });
+  const out = await probe.send(new GetBucketLocationCommand({ Bucket: bucket }));
+  return normalizeBucketRegion(out.LocationConstraint ?? undefined);
+}
+
+export function assertS3RegionMatchesBucket(actualRegion: string): void {
+  const configured = s3Region();
+  if (actualRegion !== configured) {
+    throw new Error(
+      `S3 region mismatch: bucket "${bucketName()}" is in ${actualRegion} but ` +
+        `AWS_S3_REGION/AWS_REGION is ${configured}. ` +
+        `On EC2 set AWS_S3_REGION=${actualRegion} in backend/.env and rerun migrate:media.`
+    );
+  }
+}
+
+function s3Client(): S3Client | null {
+  const creds = credentials();
+  const region = s3Region();
+  if (!creds) return null;
+  if (!client || clientRegion !== region) {
+    client = new S3Client({ region, credentials: creds });
+    clientRegion = region;
+  }
+  return client;
 }
 
 function publicUrlForKey(key: string): string {
   const cdn = process.env.AWS_CLOUDFRONT_URL?.trim()?.replace(/\/$/, "");
   if (cdn) return `${cdn}/${key}`;
   const bucket = bucketName();
-  const region = process.env.AWS_REGION?.trim() || "ap-south-1";
+  const region = s3Region();
+  if (!bucket) return key;
+  if (region === "us-east-1") {
+    return `https://${bucket}.s3.amazonaws.com/${key}`;
+  }
   return `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
 }
 

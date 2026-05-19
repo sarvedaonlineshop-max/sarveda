@@ -17,7 +17,14 @@ import path from "path";
 
 import { PrismaClient } from "@prisma/client";
 
-import { getPublicMediaUrl, mirrorUrlToS3 } from "../src/config/s3";
+import {
+  assertS3RegionMatchesBucket,
+  bucketName as getBucket,
+  getPublicMediaUrl,
+  mirrorUrlToS3,
+  resolveBucketRegion,
+  s3Region
+} from "../src/config/s3";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
@@ -297,6 +304,16 @@ function collectCorporateUrls(): string[] {
 }
 
 async function main(): Promise<void> {
+  const bucket = getBucket();
+  if (!bucket) {
+    console.error("Set AWS_S3_BUCKET_NAME in backend/.env");
+    process.exit(1);
+  }
+
+  const actualRegion = await resolveBucketRegion(bucket);
+  console.log(`S3 bucket ${bucket} is in ${actualRegion}; configured ${s3Region()}`);
+  assertS3RegionMatchesBucket(actualRegion);
+
   loadMap();
   console.log(dryRun ? "DRY RUN" : "LIVE migration to S3");
 

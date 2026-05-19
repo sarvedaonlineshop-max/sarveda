@@ -30,6 +30,10 @@ npm run build && pm2 restart sarveda-backend --update-env
 
 After `migrate:media`, set `AWS_CLOUDFRONT_URL` on EC2 and `NEXT_PUBLIC_MEDIA_CDN_URL` on Vercel to the same CDN base.
 
+**S3 region:** If uploads fail with *"must be addressed using the specified endpoint"*, your bucket region does not match `AWS_REGION`.  
+Example: bucket `sarveda-media` in **US East (N. Virginia)** → `AWS_S3_REGION=us-east-1` in `backend/.env`.  
+Run `npm run check:s3` before `migrate:media`.
+
 ## Admin
 
 After deploy: **https://sarveda-demo.xyz/admin/content** — edit pages, courses, events, blog, vaidyas, mentors, retreats, offers, testimonials.

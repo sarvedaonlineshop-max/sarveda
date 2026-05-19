@@ -27,7 +27,8 @@
     "import:all": "npm run import:content && npm run import:vaidya && npm run import:mentors && npm run import:retreats && npm run import:testimonials && npm run import:offers && npm run import:posts",
     "import:coupons": "tsx scripts/import-coupons-wxr.ts",
     "import:full": "npm run import:all && npm run import:coupons && npm run seed:corporate",
-    "migrate:media": "tsx scripts/migrate-media-to-s3.ts",
+    "check:s3": "tsx scripts/check-s3-bucket.ts",
+    "migrate:media": "tsx scripts/check-s3-bucket.ts && tsx scripts/migrate-media-to-s3.ts",
     "migrate:media:dry": "tsx scripts/migrate-media-to-s3.ts --dry-run"
   },
   "prisma": {
