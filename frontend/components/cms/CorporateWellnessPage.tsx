@@ -1,354 +1,308 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { ProductRichText } from "@/components/product/ProductRichText";
+import { CorporateContactForm } from "@/components/cms/CorporateContactForm";
+import { InfiniteMarquee } from "@/components/cms/InfiniteMarquee";
 import type { CmsPage } from "@/lib/cms-types";
+import {
+  CORPORATE_CONTACT,
+  CORPORATE_FACILITATORS,
+  CORPORATE_IMG,
+  CORPORATE_PARTNER_LOGOS,
+  CORPORATE_PROGRAMS,
+  CORPORATE_SOLUTIONS,
+  CORPORATE_TESTIMONIALS
+} from "@/lib/corporate-wellness-data";
 
-type Program = { name: string; subtitle: string; description: string; href?: string };
-type Solution = { title: string; description: string };
-type Pillar = { title: string; items: string };
-type Facilitator = { name: string; role: string };
-type Testimonial = { quote: string; author: string; role: string };
+type Props = { page: CmsPage };
 
-export type CorporateWellnessData = {
-  heroTitle: string;
-  heroSubtitle: string;
-  programs: Program[];
-  solutions: Solution[];
-  retreatsTitle: string;
-  retreatsBody: string;
-  holisticTitle: string;
-  holisticIntro: string;
-  pillars: Pillar[];
-  facilitators: Facilitator[];
-  partnersTitle: string;
-  partnersBody: string;
-  testimonialsTitle: string;
-  testimonials: Testimonial[];
-  ctaTitle: string;
-  ctaBody: string;
-  ctaEmail: string;
-  phones: string[];
-};
-
-const DEFAULT_DATA: CorporateWellnessData = {
-  heroTitle: "Corporate Wellness",
-  heroSubtitle:
-    "Transform your workplace with curated yoga, meditation, sound healing, and art therapy programs designed for modern teams.",
-  programs: [
-    {
-      name: "SAHYOG",
-      subtitle: "Yoga Asanas & Breathwork",
-      description:
-        "Programs to relieve back and neck pain from sedentary work through tailored yoga and breathwork.",
-      href: "/sahyog"
-    },
-    {
-      name: "SARGAM",
-      subtitle: "Sound Baths, Drum Circles & Music",
-      description:
-        "Sessions provide a relaxing auditory experience with therapeutic sound for stress relief and community connection.",
-      href: "/sargam"
-    },
-    {
-      name: "SAMATVA",
-      subtitle: "Mindfulness & Awareness",
-      description:
-        "Mindfulness Meditation sessions reduce stress and build team well-being through guided practices.",
-      href: "/samatva"
-    },
-    {
-      name: "SAMSARA",
-      subtitle: "Art & Expression Therapy",
-      description:
-        "Creative sessions like art, terrarium gardening, and clay modeling boost stress relief and teamwork.",
-      href: "/samsara"
-    }
-  ],
-  solutions: [
-    {
-      title: "Weekly Program",
-      description:
-        "Our practitioner visits weekly, offering rotating sessions in yoga, meditation, sound, and art therapy."
-    },
-    {
-      title: "Monthly Program",
-      description:
-        "Benefit from monthly sessions with a practitioner, keeping experiences fresh and engaging."
-    },
-    {
-      title: "Customized Sessions",
-      description: "Choose single or multiple sessions to suit your company's needs."
-    }
-  ],
-  retreatsTitle: "Immersive Wellness Retreats",
-  retreatsBody:
-    "Recharge with our wellness retreats just outside the city, featuring yoga, meditation, sound healing, and organic meals. Enjoy mindfulness activities, nature hikes, and educational sessions on holistic wellness.",
-  holisticTitle: "Our Holistic Approach to Wellness",
-  holisticIntro:
-    "Physical, Mental, and Emotional well-being are the pillars of a balanced, productive life.",
-  pillars: [
-    { title: "Physical Wellbeing", items: "Yoga, deskercise, physiotherapy" },
-    { title: "Emotional Wellbeing", items: "Art therapy, gratitude journals, laughter yoga" },
-    { title: "Mental Wellbeing", items: "Guided meditation, breathwork, counseling" }
-  ],
-  facilitators: [
-    { name: "Arjun", role: "Sound therapist and Multi-instrumentalist" },
-    { name: "Priya", role: "Yoganidra Expert" },
-    { name: "Chetan", role: "Mudgar Swing" },
-    { name: "Tejal Rathod", role: "Sound and meditation therapist" },
-    { name: "Saloni", role: "Terrarium workshop" },
-    { name: "Vivek", role: "Breathwork and Animal Flow" },
-    { name: "Saatvika", role: "EFT and Inner Child Healing" },
-    { name: "Xenkat", role: "Drum Circle" },
-    { name: "Riya", role: "Yoga" }
-  ],
-  partnersTitle: "Our Partners in Workplace Wellness",
-  partnersBody: "Trusted by leading organizations across India for holistic employee wellness.",
-  testimonialsTitle: "Our Wellness in Action",
-  testimonials: [
-    {
-      quote:
-        "The Corporate Wellness Program offered by Sarveda for Publicis Groupe was highly appreciated by all our colleagues. The uniqueness of sessions and qualified therapists and facilitators was such a hit that it still gets called out by everyone.",
-      author: "Vaishali Ramakrishan",
-      role: "Director - Talent and Culture, Publicis Groupe"
-    },
-    {
-      quote:
-        "Partnering with Sarveda for our wellness initiatives has been a truly transformative experience. Their holistic approach, rooted in Yoga, Ayurveda, and mindfulness, has brought a profound sense of balance and well-being to our team.",
-      author: "Vinod",
-      role: "Founder, Red Chariots"
-    }
-  ],
-  ctaTitle: "Get In Touch With Us",
-  ctaBody: "Fill up the form and our Team will get back to you within 24 hours.",
-  ctaEmail: "care@sarveda.com",
-  phones: ["+91 9535975075", "+91 6363608737", "+91 8861568960"]
-};
-
-function mergeData(page: CmsPage): CorporateWellnessData {
-  const extra = page.extra ?? {};
-  return {
-    ...DEFAULT_DATA,
-    heroTitle: page.title || DEFAULT_DATA.heroTitle,
-    ...(typeof extra === "object" && extra !== null ? (extra as Partial<CorporateWellnessData>) : {})
-  };
-}
-
-type Props = {
-  page: CmsPage;
-  /** When true, render DB HTML via ProductRichText instead of structured layout */
-  useRichContent?: boolean;
-};
-
-function SectionHeading({ children, className = "" }: { children: ReactNode; className?: string }) {
+function SectionTitle({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <h2
-      className={`font-serif text-2xl font-semibold tracking-tight text-stone-900 md:text-3xl ${className}`}
+      className={`text-center font-sans text-2xl font-semibold tracking-tight text-stone-900 md:text-3xl lg:text-4xl ${className}`}
     >
       {children}
     </h2>
   );
 }
 
-export function CorporateWellnessPage({ page, useRichContent = false }: Props) {
-  if (useRichContent && page.content?.trim()) {
-    return (
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="max-w-3xl">
-          <ProductRichText html={page.content} />
-        </div>
-      </div>
-    );
-  }
-
-  const data = mergeData(page);
-
+function ProgramCard({
+  name,
+  subtitle,
+  description,
+  href,
+  image
+}: (typeof CORPORATE_PROGRAMS)[number]) {
   return (
-    <>
-      {/* Hero */}
-      <section className="relative overflow-hidden border-b border-stone-200 bg-gradient-to-br from-stone-50 via-amber-50/40 to-stone-100">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-amber-100/30 via-transparent to-transparent" />
-        <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 md:py-24 lg:px-8">
-          <p className="text-sm font-semibold uppercase tracking-widest text-amber-800">Workplace Wellness</p>
-          <h1 className="mt-3 max-w-3xl font-serif text-4xl font-semibold tracking-tight text-stone-900 md:text-5xl lg:text-6xl">
-            {data.heroTitle}
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-stone-600">{data.heroSubtitle}</p>
-          <div className="mt-8 flex flex-wrap gap-4">
-            <a
-              href={`mailto:${data.ctaEmail}`}
-              className="inline-flex items-center rounded-full bg-amber-500 px-6 py-3 text-sm font-semibold text-stone-900 shadow-sm transition hover:bg-amber-400"
-            >
-              Enquire Now
-            </a>
-            <Link
-              href="/retreat"
-              className="inline-flex items-center rounded-full border border-stone-300 bg-white px-6 py-3 text-sm font-semibold text-stone-800 transition hover:border-amber-300 hover:bg-amber-50"
-            >
-              Explore Retreats
-            </Link>
+    <article
+      className="relative flex min-h-[320px] flex-col justify-end overflow-hidden rounded-sm bg-stone-900 md:min-h-[380px]"
+      style={{
+        backgroundImage: `linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.2) 100%), url(${image})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center"
+      }}
+    >
+      <div className="relative p-6 text-white md:p-8">
+        <h3 className="text-2xl font-bold uppercase tracking-wide md:text-3xl">{name}</h3>
+        <span className="mt-3 inline-block rounded-full bg-[#108967] px-4 py-1.5 text-xs font-medium text-white">
+          {subtitle}
+        </span>
+        <p className="mt-4 max-w-md text-sm leading-relaxed text-white/90 md:text-base">{description}</p>
+        <Link
+          href={href}
+          className="mt-6 inline-block rounded-full border border-white px-6 py-2 text-sm font-medium text-white transition hover:bg-white hover:text-stone-900"
+        >
+          Learn More
+        </Link>
+      </div>
+    </article>
+  );
+}
+
+export function CorporateWellnessPage({ page: _page }: Props) {
+  return (
+    <main className="corporate-wellness bg-white text-stone-900">
+      {/* Curated Wellness Programs */}
+      <section className="px-4 py-14 md:py-20 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <SectionTitle className="mb-10 md:mb-14">Curated Wellness Programs</SectionTitle>
+          <div className="grid gap-4 md:grid-cols-2 md:gap-5">
+            {CORPORATE_PROGRAMS.map((program) => (
+              <ProgramCard key={program.name} {...program} />
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Programs */}
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <SectionHeading>Curated Wellness Programs</SectionHeading>
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {data.programs.map((program) => (
-            <article
-              key={program.name}
-              className="group flex flex-col rounded-2xl border border-stone-200 bg-white p-6 shadow-sm transition hover:border-amber-200 hover:shadow-md"
-            >
-              <p className="text-xs font-bold uppercase tracking-widest text-amber-700">{program.name}</p>
-              <h3 className="mt-2 font-serif text-lg font-semibold text-stone-900">{program.subtitle}</h3>
-              <p className="mt-3 flex-1 text-sm leading-relaxed text-stone-600">{program.description}</p>
-              {program.href ? (
-                <Link
-                  href={program.href}
-                  className="mt-4 text-sm font-medium text-amber-800 hover:underline"
-                >
-                  Learn more →
-                </Link>
-              ) : null}
-            </article>
-          ))}
-        </div>
-      </section>
-
-      {/* Solutions */}
-      <section className="border-y border-stone-200 bg-stone-50">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-          <SectionHeading>Tailored Wellness Solutions for Every Need</SectionHeading>
-          <div className="mt-10 grid gap-6 md:grid-cols-3">
-            {data.solutions.map((solution) => (
+      {/* Tailored Solutions */}
+      <section className="bg-white px-4 py-14 md:py-20 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <SectionTitle className="mb-10 md:mb-14">Tailored Wellness Solutions for Every Need</SectionTitle>
+          <div className="grid gap-5 md:grid-cols-3">
+            {CORPORATE_SOLUTIONS.map((solution) => (
               <article
                 key={solution.title}
-                className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm"
+                className="flex min-h-[200px] flex-col justify-center rounded-2xl bg-[#fdf5f0] p-8"
               >
-                <h3 className="font-serif text-lg font-semibold text-stone-900">{solution.title}</h3>
-                <p className="mt-3 text-sm leading-relaxed text-stone-600">{solution.description}</p>
+                <h3 className="flex items-center gap-2 text-base font-bold text-stone-900">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={solution.icon} alt="" className="h-5 w-5 object-contain" />
+                  {solution.title}
+                </h3>
+                <p className="mt-4 text-sm leading-relaxed text-stone-600">{solution.description}</p>
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Retreats */}
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="overflow-hidden rounded-3xl border border-stone-200 bg-gradient-to-br from-amber-50 to-stone-50 p-8 md:p-12">
-          <SectionHeading>{data.retreatsTitle}</SectionHeading>
-          <p className="mt-4 max-w-3xl text-base leading-relaxed text-stone-600">{data.retreatsBody}</p>
+      {/* Immersive Retreats — split image / teal panel */}
+      <section className="grid md:grid-cols-2">
+        <div className="relative min-h-[280px] md:min-h-[420px]">
+          <Image
+            src={CORPORATE_IMG.retreat}
+            alt="Wellness retreat campfire"
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 50vw"
+          />
+        </div>
+        <div className="flex flex-col justify-center bg-[#108967] px-8 py-12 text-white md:px-14 md:py-16">
+          <h2 className="font-sans text-2xl font-semibold md:text-3xl lg:text-4xl">Immersive Wellness Retreats</h2>
+          <p className="mt-5 max-w-lg text-sm leading-relaxed text-white/95 md:text-base">
+            Recharge with our wellness retreats just outside the city, featuring yoga, meditation, sound healing, and
+            organic meals. Enjoy mindfulness activities, nature hikes, and educational sessions on holistic wellness.
+          </p>
           <Link
             href="/retreat"
-            className="mt-6 inline-flex items-center text-sm font-semibold text-amber-800 hover:underline"
+            className="mt-8 inline-flex w-fit rounded-full bg-white px-8 py-3 text-sm font-semibold text-[#108967] transition hover:bg-stone-100"
           >
-            Know More →
+            Know More
           </Link>
         </div>
       </section>
 
       {/* Holistic approach */}
-      <section className="border-t border-stone-200 bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-          <SectionHeading>{data.holisticTitle}</SectionHeading>
-          <p className="mt-4 max-w-2xl text-base text-stone-600">{data.holisticIntro}</p>
-          <div className="mt-10 grid gap-6 md:grid-cols-3">
-            {data.pillars.map((pillar) => (
-              <article
-                key={pillar.title}
-                className="rounded-2xl border border-stone-200 bg-stone-50 p-6"
-              >
-                <h3 className="font-serif text-lg font-semibold text-stone-900">{pillar.title}</h3>
-                <p className="mt-2 text-sm text-stone-600">{pillar.items}</p>
-              </article>
-            ))}
+      <section className="bg-[#f0f7f4] px-4 py-14 md:py-20 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="mx-auto max-w-2xl text-center">
+            <SectionTitle>Our Holistic Approach to Wellness</SectionTitle>
+            <p className="mt-4 text-sm text-stone-600 md:text-base">
+              Physical, Mental, and Emotional well-being are the pillars of a balanced, productive life.
+            </p>
+          </div>
+          <div className="mt-12 grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+            <div className="relative aspect-[4/3] overflow-hidden rounded-2xl">
+              <Image
+                src={CORPORATE_IMG.holistic}
+                alt="Holistic wellness yoga practice"
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 100vw, 50vw"
+              />
+            </div>
+            <div className="space-y-8">
+              {[
+                {
+                  icon: CORPORATE_IMG.pillarPhysical,
+                  title: "Physical Wellbeing",
+                  text: "Yoga, deskercise, physiotherapy"
+                },
+                {
+                  icon: CORPORATE_IMG.pillarEmotional,
+                  title: "Emotional Wellbeing",
+                  text: "Art therapy, gratitude journals, laughter yoga"
+                },
+                {
+                  icon: CORPORATE_IMG.pillarMental,
+                  title: "Mental Wellbeing",
+                  text: "Guided meditation, breathwork, counseling"
+                }
+              ].map((pillar) => (
+                <div key={pillar.title} className="flex gap-5">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={pillar.icon} alt="" className="h-14 w-14 shrink-0" />
+                  <div>
+                    <h4 className="text-lg font-bold text-stone-900">{pillar.title}</h4>
+                    <p className="mt-1 text-sm text-stone-600">{pillar.text}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Facilitators */}
-      <section className="border-t border-stone-200 bg-stone-50">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-          <SectionHeading>Our Facilitators</SectionHeading>
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {data.facilitators.map((f) => (
-              <div
-                key={f.name}
-                className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm"
-              >
-                <p className="font-semibold text-stone-900">{f.name}</p>
-                <p className="mt-1 text-sm text-stone-500">{f.role}</p>
+      {/* Facilitators — rolling carousel */}
+      <section className="bg-[#f0f7f4] py-14 md:py-20">
+        <SectionTitle className="mb-10 px-4">Our Facilitators</SectionTitle>
+        <InfiniteMarquee duration={55} trackClassName="gap-0">
+          {CORPORATE_FACILITATORS.map((f) => (
+            <div key={f.name} className="mx-8 w-36 shrink-0 text-center md:mx-12 md:w-40">
+              <div className="relative mx-auto h-32 w-32 overflow-hidden rounded-full md:h-36 md:w-36">
+                <Image src={f.image} alt={f.name} fill className="object-cover" sizes="144px" />
+              </div>
+              <h3 className="mt-4 text-sm font-bold text-stone-900">{f.name}</h3>
+              <p className="mt-1 text-xs leading-snug text-stone-500">{f.role}</p>
+            </div>
+          ))}
+        </InfiniteMarquee>
+      </section>
+
+      {/* Partners — rolling logos */}
+      <section className="bg-white py-14 md:py-20">
+        <SectionTitle className="mb-10 px-4">Our Partners in Workplace Wellness</SectionTitle>
+        <InfiniteMarquee duration={50}>
+          {CORPORATE_PARTNER_LOGOS.map((logo) => (
+            <div key={logo.src} className="mx-10 flex h-16 w-28 shrink-0 items-center justify-center md:mx-16 md:h-20 md:w-32">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={logo.src} alt={logo.alt} className="max-h-full max-w-full object-contain" />
+            </div>
+          ))}
+        </InfiniteMarquee>
+      </section>
+
+      {/* Wellness in Action — masonry-style gallery */}
+      <section className="px-4 py-14 md:py-20 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <h2 className="mb-8 font-sans text-2xl font-semibold text-stone-900 md:text-3xl">
+            Our Wellness in Action
+          </h2>
+          <div className="columns-1 gap-3 sm:columns-2 lg:columns-3">
+            {CORPORATE_IMG.gallery.map((src, i) => (
+              <div key={src} className="mb-3 break-inside-avoid">
+                <div className={`relative w-full overflow-hidden ${i === 2 ? "aspect-[3/5]" : "aspect-[4/3]"}`}>
+                  <Image
+                    src={src}
+                    alt={`Corporate wellness session ${i + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  />
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Partners */}
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <SectionHeading className="text-center">{data.partnersTitle}</SectionHeading>
-        <p className="mx-auto mt-4 max-w-xl text-center text-sm text-stone-600">{data.partnersBody}</p>
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-6">
-          {["Publicis Groupe", "Red Chariots"].map((partner) => (
-            <span
-              key={partner}
-              className="rounded-full border border-stone-200 bg-stone-50 px-6 py-2 text-sm font-medium text-stone-700"
-            >
-              {partner}
-            </span>
+      {/* Testimonials */}
+      <section className="bg-stone-50 px-4 py-14 md:py-20 lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-2">
+          {CORPORATE_TESTIMONIALS.map((t) => (
+            <blockquote key={t.author} className="rounded-2xl bg-white p-8 shadow-sm">
+              <div className="mb-4 flex gap-1">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={i} src={CORPORATE_IMG.star} alt="" className="h-4 w-4" />
+                ))}
+              </div>
+              <p className="text-sm leading-relaxed text-stone-700 md:text-base">&ldquo;{t.quote}&rdquo;</p>
+              <footer className="mt-6 flex items-center gap-4">
+                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full">
+                  <Image src={t.image} alt={t.author} fill className="object-cover" sizes="48px" />
+                </div>
+                <div>
+                  <p className="font-semibold text-stone-900">{t.author}</p>
+                  <p className="text-sm text-stone-500">{t.role}</p>
+                </div>
+              </footer>
+            </blockquote>
           ))}
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="border-t border-stone-200 bg-gradient-to-b from-stone-50 to-white">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-          <SectionHeading className="text-center">{data.testimonialsTitle}</SectionHeading>
-          <div className="mt-10 grid gap-8 md:grid-cols-2">
-            {data.testimonials.map((t) => (
-              <blockquote
-                key={t.author}
-                className="relative rounded-2xl border border-stone-200 bg-white p-8 shadow-sm"
-              >
-                <span className="absolute left-6 top-4 font-serif text-5xl leading-none text-amber-200">
-                  &ldquo;
-                </span>
-                <p className="relative text-base leading-relaxed text-stone-700">{t.quote}</p>
-                <footer className="mt-6 border-t border-stone-100 pt-4">
-                  <p className="font-semibold text-stone-900">{t.author}</p>
-                  <p className="text-sm text-stone-500">{t.role}</p>
-                </footer>
-              </blockquote>
-            ))}
+      {/* Contact */}
+      <section className="px-4 py-14 md:py-20 lg:px-8">
+        <div className="mx-auto max-w-6xl overflow-hidden rounded-3xl border border-stone-200 bg-stone-100 shadow-sm">
+          <div className="grid md:grid-cols-5">
+            <div className="bg-[#108967] p-8 text-white md:col-span-2 md:p-10">
+              <h2 className="text-2xl font-semibold md:text-3xl">Get In Touch With Us</h2>
+              <p className="mt-3 text-sm text-white/90">
+                Fill up the form and our Team will get back to you within 24 hours.
+              </p>
+              <div className="mt-8 space-y-6">
+                <div>
+                  <p className="flex items-center gap-2 text-sm font-medium">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={CORPORATE_IMG.mailIcon} alt="" className="h-4 w-4 brightness-0 invert" />
+                    Mail Us :
+                  </p>
+                  <div className="mt-2 space-y-1">
+                    {CORPORATE_CONTACT.emails.map((email) => (
+                      <a key={email} href={`mailto:${email}`} className="block text-sm text-white/95 hover:underline">
+                        {email}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="flex items-center gap-2 text-sm font-medium">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={CORPORATE_IMG.phoneIcon} alt="" className="h-4 w-4 brightness-0 invert" />
+                    Phone :
+                  </p>
+                  <div className="mt-2 space-y-1">
+                    {CORPORATE_CONTACT.phones.map((phone) => (
+                      <a
+                        key={phone}
+                        href={`tel:${phone.replace(/\s/g, "")}`}
+                        className="block text-sm text-white/95 hover:underline"
+                      >
+                        {phone}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white p-8 md:col-span-3 md:p-10">
+              <CorporateContactForm />
+            </div>
           </div>
         </div>
       </section>
-
-      {/* CTA */}
-      <section className="border-t border-stone-200 bg-stone-900">
-        <div className="mx-auto max-w-7xl px-4 py-16 text-center sm:px-6 lg:px-8">
-          <h2 className="font-serif text-2xl font-semibold text-white md:text-3xl">{data.ctaTitle}</h2>
-          <p className="mx-auto mt-4 max-w-lg text-stone-300">{data.ctaBody}</p>
-          <a
-            href={`mailto:${data.ctaEmail}`}
-            className="mt-8 inline-flex items-center rounded-full bg-amber-500 px-8 py-3 text-sm font-semibold text-stone-900 transition hover:bg-amber-400"
-          >
-            {data.ctaEmail}
-          </a>
-          <p className="mt-6 text-sm text-stone-400">
-            {data.phones.map((phone, i) => (
-              <span key={phone}>
-                {i > 0 ? " · " : "Phone: "}
-                <a href={`tel:${phone.replace(/\s/g, "")}`} className="hover:text-amber-400">
-                  {phone}
-                </a>
-              </span>
-            ))}
-          </p>
-        </div>
-      </section>
-    </>
+    </main>
   );
 }
