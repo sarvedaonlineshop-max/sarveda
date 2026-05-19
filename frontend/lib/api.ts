@@ -10,7 +10,11 @@ import type {
   VaidyaDetail,
   VaidyaListItem
 } from "./people-types";
+import { skipBuildTimeStaticParams } from "./build";
+import { type ApiErrorBody, type ApiSuccess, parseApiResponse } from "./parse-api-response";
 import type { CategoryNode, ProductDetail, ProductListItem, ProductListResponse } from "./types";
+
+export { skipBuildTimeStaticParams };
 
 /**
  * API base for `fetch`.
@@ -41,8 +45,7 @@ export function getApiBase(): string {
   return url.replace(/\/$/, "");
 }
 
-export type ApiSuccess<T> = { success: true; data: T };
-export type ApiErrorBody = { success: false; error: string; code?: string };
+export type { ApiErrorBody, ApiSuccess };
 
 export async function fetchApi<T>(
   path: string,
@@ -57,7 +60,7 @@ export async function fetchApi<T>(
     }
   });
 
-  const json = (await res.json()) as ApiSuccess<T> | ApiErrorBody;
+  const json = await parseApiResponse<T>(res);
 
   if (!res.ok || !("success" in json) || !json.success) {
     const err = json as ApiErrorBody;
@@ -80,7 +83,7 @@ export async function fetchProductBySlug(
       ...init?.headers
     }
   });
-  const json = (await res.json()) as ApiSuccess<{ product: ProductDetail }> | ApiErrorBody;
+  const json = await parseApiResponse<{ product: ProductDetail }>(res);
   if (!res.ok || !("success" in json) || !json.success) {
     return null;
   }

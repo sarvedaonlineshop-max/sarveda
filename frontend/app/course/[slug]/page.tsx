@@ -6,7 +6,7 @@ import { CourseEnrollActions } from "@/components/course/CourseEnrollActions";
 import { Breadcrumbs } from "@/components/product/Breadcrumbs";
 import { ProductRichText } from "@/components/product/ProductRichText";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { fetchCourseBySlug, fetchCourseSlugs } from "@/lib/api";
+import { fetchCourseBySlug, fetchCourseSlugs, skipBuildTimeStaticParams } from "@/lib/api";
 import { breadcrumbJsonLd, courseJsonLd } from "@/lib/seo-product";
 import { htmlToPlainText } from "@/lib/sanitize-html";
 import { absoluteUrl, canonical, isProductionSite } from "@/lib/site";
@@ -15,6 +15,7 @@ export const dynamicParams = true;
 export const revalidate = 300;
 
 export async function generateStaticParams() {
+  if (skipBuildTimeStaticParams()) return [];
   const slugs = await fetchCourseSlugs({ next: { revalidate: 3600 } });
   return slugs.map((slug) => ({ slug }));
 }

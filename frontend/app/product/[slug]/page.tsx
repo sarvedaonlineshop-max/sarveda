@@ -8,7 +8,7 @@ import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductPurchaseSection } from "@/components/product/ProductPurchaseSection";
 import { ProductRichText } from "@/components/product/ProductRichText";
 import { RelatedProducts } from "@/components/product/RelatedProducts";
-import { fetchAllProductSlugs, fetchProductBySlug } from "@/lib/api";
+import { fetchAllProductSlugs, fetchProductBySlug, skipBuildTimeStaticParams } from "@/lib/api";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { breadcrumbJsonLd, productJsonLd } from "@/lib/seo-product";
 import { htmlToPlainText } from "@/lib/sanitize-html";
@@ -25,6 +25,7 @@ export const dynamicParams = true;
 export const revalidate = 300;
 
 export async function generateStaticParams() {
+  if (skipBuildTimeStaticParams()) return [];
   const slugs = await fetchAllProductSlugs();
   return slugs.map((slug) => ({ slug }));
 }

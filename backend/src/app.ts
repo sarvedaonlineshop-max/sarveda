@@ -104,7 +104,8 @@ app.use(
   "/api",
   rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 200,
+    // Storefront + Vercel ISR can burst; 200/15min caused 429 plain-text during builds
+    max: process.env.NODE_ENV === "production" ? 800 : 2000,
     standardHeaders: true,
     legacyHeaders: false
   })

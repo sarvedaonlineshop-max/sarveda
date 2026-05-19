@@ -8,7 +8,13 @@ import { ShopCategoryFilterSidebar } from "@/components/shop/ShopCategoryFilterS
 import { ShopMobileCategoryDrawer } from "@/components/shop/ShopMobileCategoryDrawer";
 import { ShopPagination } from "@/components/shop/Pagination";
 import { ProductCard } from "@/components/shop/ProductCard";
-import { fetchCategoryBySlug, fetchCategorySlugs, fetchCategoryTree, fetchProductList } from "@/lib/api";
+import {
+  fetchCategoryBySlug,
+  fetchCategorySlugs,
+  fetchCategoryTree,
+  fetchProductList,
+  skipBuildTimeStaticParams
+} from "@/lib/api";
 import { breadcrumbJsonLd } from "@/lib/seo-product";
 import { htmlToPlainText } from "@/lib/sanitize-html";
 import { absoluteUrl, canonical, isProductionSite } from "@/lib/site";
@@ -24,6 +30,7 @@ export const dynamicParams = true;
 export const revalidate = 300;
 
 export async function generateStaticParams() {
+  if (skipBuildTimeStaticParams()) return [];
   const slugs = await fetchCategorySlugs({ next: { revalidate: 3600 } });
   return slugs.map((slug) => ({ slug }));
 }
