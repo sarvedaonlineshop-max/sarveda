@@ -1,6 +1,15 @@
 import type { CmsPage } from "./cms-types";
 import type { CourseDetail, CourseListItem } from "./course-types";
 import type { EventDetail, EventListItem } from "./event-types";
+import type {
+  MentorDetail,
+  MentorListItem,
+  OfferDetail,
+  RetreatDetail,
+  RetreatListItem,
+  VaidyaDetail,
+  VaidyaListItem
+} from "./people-types";
 import type { CategoryNode, ProductDetail, ProductListItem, ProductListResponse } from "./types";
 
 /**
@@ -266,6 +275,72 @@ export async function fetchEventSlugs(init?: RequestInit): Promise<string[]> {
     return data.slugs;
   } catch {
     return [];
+  }
+}
+
+export async function fetchVaidyas(init?: RequestInit): Promise<VaidyaListItem[]> {
+  try {
+    const data = await fetchApi<{ vaidyas: VaidyaListItem[] }>("/api/vaidyas", init);
+    return data.vaidyas;
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchVaidyaBySlug(slug: string, init?: RequestInit): Promise<VaidyaDetail | null> {
+  try {
+    const data = await fetchApi<{ vaidya: VaidyaDetail }>(`/api/vaidyas/${encodeURIComponent(slug)}`, init);
+    return data.vaidya;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchMentors(init?: RequestInit): Promise<MentorListItem[]> {
+  try {
+    const data = await fetchApi<{ mentors: MentorListItem[] }>("/api/mentors", init);
+    return data.mentors;
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchMentorBySlug(slug: string, init?: RequestInit): Promise<MentorDetail | null> {
+  try {
+    const data = await fetchApi<{ mentor: MentorDetail }>(`/api/mentors/${encodeURIComponent(slug)}`, init);
+    return data.mentor;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchRetreats(init?: RequestInit): Promise<RetreatListItem[]> {
+  try {
+    const data = await fetchApi<{ retreats: RetreatListItem[] }>("/api/retreats", init);
+    return data.retreats;
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchRetreatBySlug(slug: string, init?: RequestInit): Promise<RetreatDetail | null> {
+  try {
+    const data = await fetchApi<{ retreat: RetreatDetail }>(
+      `/api/retreats/${encodeURIComponent(slug)}`,
+      init
+    );
+    return data.retreat;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchOfferBySlug(slug: string, init?: RequestInit): Promise<OfferDetail | null> {
+  try {
+    const data = await fetchApi<{ offer: OfferDetail }>(`/api/offers/${encodeURIComponent(slug)}`, init);
+    return data.offer;
+  } catch {
+    return null;
   }
 }
 

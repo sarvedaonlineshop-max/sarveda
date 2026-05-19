@@ -5,7 +5,8 @@ import { fetchEvents } from "@/lib/api";
 import { formatINRFromPaise } from "@/lib/money";
 import { canonical, isProductionSite } from "@/lib/site";
 
-export const revalidate = 300;
+/** Always fetch live events after WP import (avoids empty ISR cache on demo). */
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Events",
@@ -27,7 +28,7 @@ function formatEventDate(iso: string): string {
 }
 
 export default async function EventsPage() {
-  const events = await fetchEvents({ next: { revalidate: 300 } });
+  const events = await fetchEvents({ cache: "no-store" });
 
   return (
     <>

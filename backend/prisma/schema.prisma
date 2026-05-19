@@ -611,10 +611,12 @@ model Vaidya {
   bio            String?
   photoUrl       String?
   speciality     String?
+  wpPostId       Int?     @unique
   seoTitle       String?
   seoDescription String?
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model Mentor {
@@ -624,10 +626,12 @@ model Mentor {
   bio            String?
   photoUrl       String?
   expertise      String?
+  wpPostId       Int?     @unique
   seoTitle       String?
   seoDescription String?
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model Retreat {
@@ -639,10 +643,39 @@ model Retreat {
   location       String?
   duration       String?
   priceInPaise   Int?
+  wpPostId       Int?     @unique
   seoTitle       String?
   seoDescription String?
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Testimonial {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug        String   @unique
+  authorName  String
+  role        String?
+  body        String?
+  imageUrl    String?
+  wpPostId    Int?     @unique
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Offer {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug           String   @unique
+  title          String
+  description    String?
+  imageUrl       String?
+  wpPostId       Int?     @unique
+  seoTitle       String?
+  seoDescription String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model BlogPost {
