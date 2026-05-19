@@ -1,4 +1,6 @@
+import type { CmsPage } from "./cms-types";
 import type { CourseDetail, CourseListItem } from "./course-types";
+import type { EventDetail, EventListItem } from "./event-types";
 import type { CategoryNode, ProductDetail, ProductListItem, ProductListResponse } from "./types";
 
 /**
@@ -234,6 +236,51 @@ export async function fetchCourseBySlug(
 export async function fetchCourseSlugs(init?: RequestInit): Promise<string[]> {
   try {
     const data = await fetchApi<{ slugs: string[] }>("/api/courses/sitemap/slugs", init);
+    return data.slugs;
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchEvents(init?: RequestInit): Promise<EventListItem[]> {
+  try {
+    const data = await fetchApi<{ events: EventListItem[] }>("/api/events", init);
+    return data.events;
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchEventBySlug(slug: string, init?: RequestInit): Promise<EventDetail | null> {
+  try {
+    const data = await fetchApi<{ event: EventDetail }>(`/api/events/${encodeURIComponent(slug)}`, init);
+    return data.event;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchEventSlugs(init?: RequestInit): Promise<string[]> {
+  try {
+    const data = await fetchApi<{ slugs: string[] }>("/api/events/sitemap/slugs", init);
+    return data.slugs;
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchCmsPageBySlug(slug: string, init?: RequestInit): Promise<CmsPage | null> {
+  try {
+    const data = await fetchApi<{ page: CmsPage }>(`/api/pages/${encodeURIComponent(slug)}`, init);
+    return data.page;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchCmsPageSlugs(init?: RequestInit): Promise<string[]> {
+  try {
+    const data = await fetchApi<{ slugs: string[] }>("/api/pages/sitemap/slugs", init);
     return data.slugs;
   } catch {
     return [];

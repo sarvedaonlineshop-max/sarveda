@@ -7,19 +7,26 @@ import { useState } from "react";
 import { cartAdd } from "@/lib/cart-api";
 import { buildEnquiryMailto, buildEnquiryWhatsAppUrl } from "@/lib/enquiry";
 import { formatINRFromPaise } from "@/lib/money";
-import type { CourseDetail } from "@/lib/course-types";
+import type { EnrollableItem } from "@/lib/enrollable";
 import { absoluteUrl } from "@/lib/site";
 
 type Props = {
-  course: CourseDetail;
+  item: EnrollableItem;
+  /** URL path segment: course or event */
+  pathPrefix: "course" | "event";
+  payLabel?: string;
 };
 
-export function CourseEnrollActions({ course }: Props) {
+export function CourseEnrollActions({
+  item: course,
+  pathPrefix,
+  payLabel = "Pay & enrol online"
+}: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const courseUrl = absoluteUrl(`/course/${course.slug}`);
+  const courseUrl = absoluteUrl(`/${pathPrefix}/${course.slug}`);
   const showPay =
     (course.enrollmentMode === "CHECKOUT" || course.enrollmentMode === "BOTH") &&
     course.checkoutVariantId &&
@@ -60,7 +67,7 @@ export function CourseEnrollActions({ course }: Props) {
             disabled={loading}
             className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-full bg-stone-900 px-6 text-sm font-semibold text-amber-50 transition hover:bg-stone-800 disabled:opacity-60"
           >
-            {loading ? "Please wait…" : "Pay & enrol online"}
+            {loading ? "Please wait…" : payLabel}
           </button>
         ) : null}
 

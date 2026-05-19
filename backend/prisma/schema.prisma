@@ -109,6 +109,7 @@ model ProductVariant {
   cartItems       CartItem[]
   orderItems      OrderItem[]
   courseCheckout  Course?
+  eventCheckout   Event?
   createdAt       DateTime                @default(now())
   updatedAt       DateTime                @updatedAt
 }
@@ -548,22 +549,44 @@ model Enrollment {
 }
 
 model Event {
-  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  slug           String      @unique
+  id                String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug              String               @unique
+  title             String
+  description       String?
+  shortDescription  String?
+  startDate         DateTime
+  endDate           DateTime?
+  venue             String?
+  isOnline          Boolean              @default(false)
+  zoomLink          String?
+  priceInPaise      Int                  @default(0)
+  imageUrl          String?
+  enrollmentMode    CourseEnrollmentMode @default(ENQUIRY)
+  checkoutVariantId String?              @unique @db.Uuid
+  wpPostId          Int?                 @unique
+  extra             Json?
+  status            EventStatus          @default(DRAFT)
+  seoTitle          String?
+  seoDescription    String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  checkoutVariant   ProductVariant?      @relation(fields: [checkoutVariantId], references: [id])
+  bookings          Booking[]
+}
+
+model CmsPage {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug           String     @unique
   title          String
-  description    String?
-  startDate      DateTime
-  endDate        DateTime?
-  venue          String?
-  isOnline       Boolean     @default(false)
-  zoomLink       String?
-  priceInPaise   Int         @default(0)
+  content        String?
+  template       String?
   imageUrl       String?
-  status         EventStatus @default(DRAFT)
+  wpPostId       Int?       @unique
+  status         PostStatus @default(DRAFT)
   seoTitle       String?
   seoDescription String?
-  createdAt      DateTime    @default(now())
-  bookings       Booking[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 }
 
 enum EventStatus {

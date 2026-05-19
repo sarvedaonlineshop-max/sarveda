@@ -136,7 +136,7 @@ export default async function CourseDetailPage({ params }: Props) {
           </div>
 
           <aside className="lg:sticky lg:top-24 lg:self-start">
-            <CourseEnrollActions course={course} />
+            <CourseEnrollActions item={course} pathPrefix="course" />
             <p className="mt-4 text-center text-sm text-stone-500">
               <Link href="/courses" className="text-amber-800 underline hover:text-amber-900">
                 ← All courses

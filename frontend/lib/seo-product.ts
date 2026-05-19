@@ -43,6 +43,7 @@ export function breadcrumbJsonLd(items: Array<{ name: string; url?: string }>) {
 }
 
 import type { CourseDetail } from "./course-types";
+import type { EventDetail } from "./event-types";
 
 export function courseJsonLd(course: CourseDetail) {
   const offer =
@@ -63,6 +64,38 @@ export function courseJsonLd(course: CourseDetail) {
     description: course.seoDescription || course.shortDescription || undefined,
     image: course.imageUrl ? [course.imageUrl] : undefined,
     provider: { "@type": "Organization", name: "Sarveda", url: absoluteUrl("/") },
+    offers: offer
+  };
+}
+
+export function eventJsonLd(event: EventDetail) {
+  const offer =
+    event.priceInPaise > 0
+      ? {
+          "@type": "Offer",
+          priceCurrency: "INR",
+          price: (event.priceInPaise / 100).toFixed(2),
+          url: absoluteUrl(`/event/${event.slug}`),
+          availability: "https://schema.org/InStock"
+        }
+      : undefined;
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: event.title,
+    description: event.seoDescription || event.shortDescription || undefined,
+    image: event.imageUrl ? [event.imageUrl] : undefined,
+    startDate: event.startDate,
+    endDate: event.endDate ?? undefined,
+    eventAttendanceMode: event.isOnline
+      ? "https://schema.org/OnlineEventAttendanceMode"
+      : "https://schema.org/OfflineEventAttendanceMode",
+    location: event.venue
+      ? { "@type": "Place", name: event.venue }
+      : event.isOnline
+        ? { "@type": "VirtualLocation", url: event.zoomLink || absoluteUrl(`/event/${event.slug}`) }
+        : undefined,
     offers: offer
   };
 }

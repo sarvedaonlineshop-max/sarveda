@@ -13,7 +13,9 @@
     "prisma:studio": "prisma studio",
     "db:seed": "prisma db seed",
     "stock:replenish": "tsx prisma/replenish-inventory.ts",
-    "import:courses": "tsx scripts/import-courses-wxr.ts"
+    "import:courses": "tsx scripts/import-courses-wxr.ts",
+    "import:events": "tsx scripts/import-events-wxr.ts",
+    "import:pages": "tsx scripts/import-pages-wxr.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
