@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { PincodeCheck } from "@/components/product/PincodeCheck";
 import { PriceDisplay } from "@/components/product/PriceDisplay";
 import { VariantSelector } from "@/components/product/VariantSelector";
 import { cartAdd } from "@/lib/cart-api";
@@ -63,8 +62,6 @@ export function ProductPurchaseSection({ productName, productType, variants }: P
     <>
       <div className="space-y-6 px-4 pb-28 md:space-y-8 md:px-0 md:pb-0">
         <PriceDisplay variant={variant} variants={variants} zone={zone} />
-
-        {!isDigital ? <PincodeCheck variantId={variant.id} country="IN" /> : null}
 
         <VariantSelector
           variants={variants}

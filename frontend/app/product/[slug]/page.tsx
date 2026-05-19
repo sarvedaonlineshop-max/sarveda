@@ -1,14 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { AccordionDescription } from "@/components/product/AccordionDescription";
 import { Breadcrumbs } from "@/components/product/Breadcrumbs";
-import { ProductAudio } from "@/components/product/ProductAudio";
-import { ProductGallery } from "@/components/product/ProductGallery";
-import { ProductPurchaseSection } from "@/components/product/ProductPurchaseSection";
-import { ProductRichText } from "@/components/product/ProductRichText";
+import { ProductDetailExperience } from "@/components/product/ProductDetailExperience";
 import { RelatedProducts } from "@/components/product/RelatedProducts";
-import { fetchAllProductSlugs, fetchProductBySlug, skipBuildTimeStaticParams } from "@/lib/api";
+import { fetchAllProductSlugs, fetchProductBySlug, fetchRelatedProducts, skipBuildTimeStaticParams } from "@/lib/api";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { breadcrumbJsonLd, productJsonLd } from "@/lib/seo-product";
 import { htmlToPlainText } from "@/lib/sanitize-html";
@@ -67,6 +63,9 @@ export default async function ProductDetailPage({ params }: Props) {
   }
 
   const primaryCategory = product.categories[0]?.category;
+  const pairWithItems = await fetchRelatedProducts(product.slug, primaryCategory?.slug, {
+    next: { revalidate: 120 }
+  });
 
   const breadcrumbItems = [
     { name: "Home", url: absoluteUrl("/") },
@@ -85,8 +84,8 @@ export default async function ProductDetailPage({ params }: Props) {
   return (
     <>
       <JsonLd data={[productJsonLd(product), breadcrumbJsonLd(breadcrumbItems)]} />
-      <div className="hidden border-b border-stone-100 bg-stone-50 md:block">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <div className="hidden border-b border-stone-100 bg-white md:block">
+        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <Breadcrumbs
             items={[
               { label: "Home", href: "/" },
@@ -105,43 +104,8 @@ export default async function ProductDetailPage({ params }: Props) {
         </div>
       </div>
 
-      <main className="mx-auto max-w-7xl md:px-4 md:py-8 lg:px-8">
-        <div className="grid gap-0 md:gap-10 lg:grid-cols-2 lg:gap-x-12 lg:gap-y-12">
-          <ProductGallery images={product.images} productName={product.name} />
-
-          <div className="flex flex-col gap-6 px-4 py-6 md:gap-8 md:px-0 md:py-0">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-stone-900 sm:text-3xl">
-                {product.name}
-              </h1>
-              {product.shortDescription ? (
-                <ProductRichText html={product.shortDescription} className="mt-3 text-stone-600 md:text-lg" />
-              ) : null}
-            </div>
-
-            {product.hasAudio && product.audioUrl ? (
-              <ProductAudio audioUrl={product.audioUrl} title={product.name} />
-            ) : null}
-
-            <ProductPurchaseSection
-              productName={product.name}
-              productType={product.productType}
-              variants={product.variants}
-            />
-
-            {product.description ? (
-              <section className="rounded-none border-y border-stone-200 bg-white p-4 md:rounded-2xl md:border md:border-stone-100 md:p-6 md:shadow-sm">
-                <h2 className="text-lg font-semibold text-stone-900">About</h2>
-                <ProductRichText html={product.description} className="mt-4" />
-              </section>
-            ) : null}
-
-            <section className="px-0 md:px-0">
-              <h2 className="mb-4 text-lg font-semibold text-stone-900">Product details</h2>
-              <AccordionDescription items={product.accordionItems} />
-            </section>
-          </div>
-        </div>
+      <main className="bg-white">
+        <ProductDetailExperience product={product} pairWithItems={pairWithItems} />
       </main>
 
       <RelatedProducts excludeSlug={product.slug} categorySlug={primaryCategory?.slug} />

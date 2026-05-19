@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import {
+  attributeDisplayName,
   buildAttributeAxes,
   findVariantBySelection,
   isValueAvailable,
@@ -16,13 +17,37 @@ type Props = {
   variants: ProductVariantDetail[];
   selectedVariantId: string;
   onVariantChange: (variantId: string) => void;
+  /** Teal bordered pills matching live sarveda.com storefront */
+  pillStyle?: "default" | "storefront";
 };
+
+function pillClasses(selected: boolean, available: boolean, style: "default" | "storefront"): string {
+  if (style === "storefront") {
+    if (!available) {
+      return "cursor-not-allowed border-stone-100 bg-stone-50 text-stone-300 line-through";
+    }
+    return selected
+      ? "border-[#108967] bg-[#108967] text-white shadow-sm"
+      : "border-[#108967] bg-white text-[#108967] hover:bg-[#108967]/5";
+  }
+  if (!available) {
+    return "cursor-not-allowed border-stone-100 bg-stone-50 text-stone-300 line-through";
+  }
+  return selected
+    ? "border-amber-700 bg-amber-50 text-amber-900 shadow-sm"
+    : "border-stone-200 bg-white text-stone-800 hover:border-amber-400";
+}
 
 function pickInitial(variants: ProductVariantDetail[]): ProductVariantDetail {
   return variants.find((v) => v.isDefault) ?? variants[0];
 }
 
-export function VariantSelector({ variants, selectedVariantId, onVariantChange }: Props) {
+export function VariantSelector({
+  variants,
+  selectedVariantId,
+  onVariantChange,
+  pillStyle = "default"
+}: Props) {
   const axes = useMemo(() => buildAttributeAxes(variants), [variants]);
   const hasAxes = axes.length > 0;
 
@@ -59,11 +84,7 @@ export function VariantSelector({ variants, selectedVariantId, onVariantChange }
                 role="option"
                 aria-selected={selected}
                 onClick={() => onVariantChange(item.id)}
-                className={`min-h-[48px] rounded-full border px-4 py-2.5 text-sm font-medium transition-colors ${
-                  selected
-                    ? "border-amber-700 bg-amber-50 text-amber-900 shadow-sm"
-                    : "border-stone-200 bg-white text-stone-800 hover:border-amber-400"
-                }`}
+                className={`min-h-[44px] rounded-md border px-4 py-2.5 text-sm font-medium transition-colors ${pillClasses(selected, true, pillStyle)}`}
               >
                 {variantDisplayLabel(item, index)}
               </button>
@@ -82,6 +103,7 @@ export function VariantSelector({ variants, selectedVariantId, onVariantChange }
           axis={axis}
           selection={selection}
           variants={variants}
+          pillStyle={pillStyle}
           onPick={(attrSlug, valueSlug) => {
             setSelection((prev) => ({ ...prev, [attrSlug]: valueSlug }));
           }}
@@ -95,16 +117,19 @@ function AttributeRow({
   axis,
   selection,
   variants,
+  pillStyle,
   onPick
 }: {
   axis: AttributeAxis;
   selection: Record<string, string>;
   variants: ProductVariantDetail[];
+  pillStyle: "default" | "storefront";
   onPick: (attrSlug: string, valueSlug: string) => void;
 }) {
+  const label = attributeDisplayName(axis.slug, axis.name);
   return (
     <div>
-      <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-stone-500">{axis.name}</p>
+      <p className="mb-3 text-sm font-semibold text-stone-800">{label}</p>
       <div className="flex flex-wrap gap-2" role="listbox" aria-label={axis.name}>
         {axis.values.map((val) => {
           const selected = selection[axis.slug] === val.slug;
@@ -117,13 +142,7 @@ function AttributeRow({
               aria-selected={selected}
               disabled={!available}
               onClick={() => onPick(axis.slug, val.slug)}
-              className={`min-h-[48px] rounded-full border px-4 py-2.5 text-sm font-medium transition-colors ${
-                selected
-                  ? "border-amber-700 bg-amber-50 text-amber-900 shadow-sm"
-                  : available
-                    ? "border-stone-200 bg-white text-stone-800 hover:border-amber-400"
-                    : "cursor-not-allowed border-stone-100 bg-stone-50 text-stone-300 line-through"
-              }`}
+              className={`min-h-[44px] rounded-md border px-4 py-2.5 text-sm font-medium transition-colors ${pillClasses(selected, available, pillStyle)}`}
             >
               {val.value}
             </button>

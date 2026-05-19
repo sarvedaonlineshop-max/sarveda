@@ -6,6 +6,19 @@ export type AttributeAxis = {
   values: { slug: string; value: string }[];
 };
 
+const ATTRIBUTE_LABELS: Record<string, string> = {
+  pa_size: "Size",
+  size: "Size",
+  pa_type: "Type",
+  type: "Type",
+  pa_finish: "Type",
+  finish: "Type"
+};
+
+export function attributeDisplayName(slug: string, fallback: string): string {
+  return ATTRIBUTE_LABELS[slug.toLowerCase()] ?? fallback;
+}
+
 export function buildAttributeAxes(variants: ProductVariantDetail[]): AttributeAxis[] {
   const map = new Map<string, { name: string; values: Map<string, string> }>();
 
