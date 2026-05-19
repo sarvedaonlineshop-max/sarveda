@@ -12,7 +12,11 @@ const ATTRIBUTE_LABELS: Record<string, string> = {
   pa_type: "Type",
   type: "Type",
   pa_finish: "Type",
-  finish: "Type"
+  finish: "Type",
+  "comb-type": "Comb Types",
+  comb_type: "Comb Types",
+  packs: "Packs",
+  "bottle-type": "Bottle Type"
 };
 
 export function attributeDisplayName(slug: string, fallback: string): string {
@@ -95,9 +99,36 @@ export function variantDisplayLabel(variant: ProductVariantDetail, index: number
   return variant.attributeValues.map((row) => row.attributeValue.value).join(" / ");
 }
 
+/** Matches seed/import when Woo does not track stock per variation. */
+export const UNTRACKED_STOCK_ON_HAND = 999;
+
 export function availableStock(variant: ProductVariantDetail): number | null {
   if (!variant.inventory) return null;
   return Math.max(0, variant.inventory.onHand - variant.inventory.reserved);
+}
+
+export function stockDisplay(variant: ProductVariantDetail): {
+  label: string;
+  inStock: boolean;
+  showCount: boolean;
+  count: number;
+} {
+  const avail = availableStock(variant);
+  if (avail === null) {
+    return { label: "In stock", inStock: true, showCount: false, count: 0 };
+  }
+  if (avail === 0) {
+    return { label: "Out of stock", inStock: false, showCount: false, count: 0 };
+  }
+  if (avail >= UNTRACKED_STOCK_ON_HAND) {
+    return { label: "In stock", inStock: true, showCount: false, count: avail };
+  }
+  return {
+    label: avail <= 5 ? `Only ${avail} left in stock` : "In stock",
+    inStock: true,
+    showCount: avail <= 5,
+    count: avail
+  };
 }
 
 export function salePriceRange(variants: ProductVariantDetail[], getSale: (v: ProductVariantDetail) => number): {

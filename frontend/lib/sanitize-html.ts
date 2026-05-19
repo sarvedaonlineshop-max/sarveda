@@ -1,6 +1,14 @@
+/** Woo/CSV sometimes stores literal backslash-n instead of line breaks. */
+export function normalizeProductText(text: string): string {
+  return text
+    .replace(/\\r\\n/g, "\n")
+    .replace(/\\n/g, "\n")
+    .replace(/\\r/g, "\n");
+}
+
 /** Strip editor metadata and render-safe HTML for product copy. */
 export function sanitizeProductHtml(html: string): string {
-  return html
+  return normalizeProductText(html)
     .replace(/\sdata-[a-z-]+="[^"]*"/gi, "")
     .replace(/\sdata-[a-z-]+='[^']*'/gi, "")
     .trim();

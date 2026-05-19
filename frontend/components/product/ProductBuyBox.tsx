@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 
-import { DeliveryTimeline } from "@/components/product/DeliveryTimeline";
+import { EstimatedDelivery } from "@/components/product/EstimatedDelivery";
 import { PriceDisplay } from "@/components/product/PriceDisplay";
 import type { Zone } from "@/lib/currency";
+import { stockDisplay } from "@/lib/variant-utils";
 import type { ProductVariantDetail } from "@/lib/types";
 
 type Props = {
@@ -21,6 +22,7 @@ type Props = {
   isDigital: boolean;
   shippingDays: string;
   available: number | null;
+  variantForStock: ProductVariantDetail | null;
 };
 
 export function ProductBuyBox({
@@ -36,30 +38,24 @@ export function ProductBuyBox({
   onAdd,
   isDigital,
   shippingDays,
-  available
+  available,
+  variantForStock
 }: Props) {
+  const stock = variantForStock ? stockDisplay(variantForStock) : null;
+
   return (
     <div className="rounded-xl border border-stone-200 bg-stone-50/80 p-5 shadow-sm">
       <PriceDisplay variant={variant} variants={variants} zone={zone} presentation="storefront" size="compact" />
 
       {!isDigital ? (
         <div className="mt-4">
-          <DeliveryTimeline shippingDays={shippingDays} />
+          <EstimatedDelivery shippingDays={shippingDays} />
         </div>
       ) : null}
 
-      {available !== null ? (
-        <p className="mt-3 text-sm text-stone-600">
-          {available > 0 ? (
-            <>
-              <span className="font-semibold text-[#108967]">In stock</span>
-              {available <= 5 ? (
-                <span className="text-amber-800"> — only {available} left</span>
-              ) : null}
-            </>
-          ) : (
-            <span className="font-semibold text-amber-800">Out of stock</span>
-          )}
+      {stock ? (
+        <p className={`mt-3 text-sm ${stock.inStock ? "text-stone-600" : "text-amber-800"}`}>
+          <span className={`font-semibold ${stock.inStock ? "text-[#108967]" : ""}`}>{stock.label}</span>
         </p>
       ) : null}
 

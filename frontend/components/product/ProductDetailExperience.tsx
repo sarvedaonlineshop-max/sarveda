@@ -14,7 +14,7 @@ import { readZoneFromCookie, unitSaleMinor, zoneToCurrency, type Zone } from "@/
 import { resolveMediaUrl } from "@/lib/media-cdn";
 import { formatMinorFromPaise } from "@/lib/money";
 import { imageIndexForVariant } from "@/lib/variant-image";
-import { availableStock, variantDisplayLabel } from "@/lib/variant-utils";
+import { availableStock, stockDisplay, variantDisplayLabel } from "@/lib/variant-utils";
 import type { ProductDetail, ProductListItem } from "@/lib/types";
 
 function pickInitialVariant(variants: ProductDetail["variants"]) {
@@ -69,9 +69,11 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
     zone === "IN" && !isDigital && (inRate?.codPerProduct != null || inRate?.codAdditional != null);
 
   const available = variant ? availableStock(variant) : null;
-  const addDisabled = !variant || available === 0;
+  const stockInfo = variant ? stockDisplay(variant) : null;
+  const addDisabled = !variant || !stockInfo?.inStock;
   const saleMinor = variant ? unitSaleMinor(variant, zone) : 0;
-  const maxQty = available != null && available > 0 ? Math.min(available, 10) : 10;
+  const maxQty =
+    available != null && available > 0 && available < 999 ? Math.min(available, 10) : 10;
 
   const add = () => {
     if (!variant || qty < 1) return;
@@ -177,6 +179,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
                   isDigital={isDigital}
                   shippingDays={shippingDays}
                   available={available}
+                  variantForStock={variant}
                 />
               </div>
 
@@ -219,6 +222,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
                 isDigital={isDigital}
                 shippingDays={shippingDays}
                 available={available}
+                variantForStock={variant}
               />
             </div>
           </aside>

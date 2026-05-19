@@ -17,7 +17,7 @@
   - **Removed:** pincode serviceability on PDP
   - Key files: `frontend/components/product/ProductDetailExperience.tsx`, `ProductBuyBox.tsx`, `frontend/app/product/[slug]/page.tsx`
 - **Awaiting user feedback** on PDP after deploy to `https://sarveda-demo.xyz`
-- **Next after PDP:** variant attribute import from WooCommerce CSV (Size/Type pills), per-variant images if needed, reviews UI
+- **Next after PDP:** run `npm run import:variations` on EC2/RDS (uses `data/variations.xml`), reviews UI, per-variant images if needed
 
 ### Demo migration status (mostly done except SEO)
 - ✅ S3 media migration (`sarveda-media` bucket **us-east-1** — set `AWS_S3_REGION=us-east-1` on EC2; EC2 stays `ap-south-1`)
