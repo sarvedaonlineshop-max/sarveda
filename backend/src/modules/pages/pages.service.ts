@@ -9,6 +9,7 @@ export type CmsPagePublic = {
   content: string | null;
   template: string | null;
   imageUrl: string | null;
+  extra: unknown;
   seoTitle: string | null;
   seoDescription: string | null;
 };
@@ -23,6 +24,7 @@ export async function getPageBySlug(slug: string): Promise<CmsPagePublic | null>
       content: true,
       template: true,
       imageUrl: true,
+      extra: true,
       seoTitle: true,
       seoDescription: true
     }

@@ -10,6 +10,7 @@ const nav = [
   { href: "/admin/orders", label: "Orders", icon: "◇" },
   { href: "/admin/reconciliation", label: "Reconciliation", icon: "₹" },
   { href: "/admin/products", label: "Products", icon: "○" },
+  { href: "/admin/content", label: "Content", icon: "✎" },
   { href: "/admin/catalog-gaps", label: "Catalog gaps", icon: "!" },
   { href: "/admin/inventory", label: "Inventory", icon: "▫" },
   { href: "/admin/settings/pickup-locations", label: "Warehouses", icon: "⌂" }

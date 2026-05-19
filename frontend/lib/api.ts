@@ -1,3 +1,4 @@
+import type { BlogDetail, BlogListItem } from "./blog-types";
 import type { CmsPage } from "./cms-types";
 import type { CourseDetail, CourseListItem } from "./course-types";
 import type { EventDetail, EventListItem } from "./event-types";
@@ -344,6 +345,33 @@ export async function fetchOfferBySlug(slug: string, init?: RequestInit): Promis
     return data.offer;
   } catch {
     return null;
+  }
+}
+
+export async function fetchBlogPosts(init?: RequestInit): Promise<BlogListItem[]> {
+  try {
+    const data = await fetchApi<{ posts: BlogListItem[] }>("/api/blog", init);
+    return data.posts;
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchBlogBySlug(slug: string, init?: RequestInit): Promise<BlogDetail | null> {
+  try {
+    const data = await fetchApi<{ post: BlogDetail }>(`/api/blog/${encodeURIComponent(slug)}`, init);
+    return data.post;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchBlogSlugs(init?: RequestInit): Promise<string[]> {
+  try {
+    const data = await fetchApi<{ slugs: string[] }>("/api/blog/sitemap/slugs", init);
+    return data.slugs;
+  } catch {
+    return [];
   }
 }
 

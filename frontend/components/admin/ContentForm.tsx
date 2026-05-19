@@ -1,0 +1,263 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+
+import {
+  ADMIN_CONTENT_LABELS,
+  type AdminContentType,
+  createAdminContent,
+  deleteAdminContent,
+  fetchAdminContent,
+  updateAdminContent
+} from "@/lib/admin-api";
+import {
+  contentBodyLabel,
+  contentStatusOptions,
+  contentTitleLabel,
+  formValuesToPayload,
+  itemToFormValues
+} from "@/lib/admin-content";
+
+type Props = {
+  type: AdminContentType;
+  itemId?: string;
+};
+
+const emptyForm = {
+  title: "",
+  slug: "",
+  status: "DRAFT",
+  body: "",
+  seoTitle: "",
+  seoDescription: "",
+  seoKeyword: "",
+  startDate: ""
+};
+
+const inputClass =
+  "mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100";
+
+export function ContentForm({ type, itemId }: Props) {
+  const router = useRouter();
+  const isNew = !itemId;
+  const label = ADMIN_CONTENT_LABELS[type];
+
+  const [values, setValues] = useState(emptyForm);
+  const [loading, setLoading] = useState(!isNew);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (!itemId) return;
+    setLoading(true);
+    setErr(null);
+    try {
+      const item = await fetchAdminContent(type, itemId);
+      setValues(itemToFormValues(type, item));
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Failed to load");
+    } finally {
+      setLoading(false);
+    }
+  }, [type, itemId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!values.title.trim()) {
+      setErr(`${contentTitleLabel(type)} is required`);
+      return;
+    }
+    setSaving(true);
+    setErr(null);
+    try {
+      const payload = formValuesToPayload(type, values);
+      if (isNew) {
+        const item = await createAdminContent(type, payload);
+        router.push(`/admin/content/${type}/${item.id as string}`);
+      } else {
+        await updateAdminContent(type, itemId!, payload);
+        await load();
+      }
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function onDelete() {
+    if (!itemId || !confirm(`Deactivate this ${label.slice(0, -1).toLowerCase()}?`)) return;
+    setSaving(true);
+    setErr(null);
+    try {
+      await deleteAdminContent(type, itemId);
+      router.push(`/admin/content?type=${type}`);
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : "Delete failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return <p className="text-sm text-stone-500 dark:text-stone-400">Loading…</p>;
+  }
+
+  return (
+    <form onSubmit={(e) => void onSubmit(e)} className="mx-auto max-w-3xl space-y-6">
+      <div>
+        <Link
+          href={`/admin/content?type=${type}`}
+          className="text-sm text-amber-700 hover:underline dark:text-amber-400"
+        >
+          ← {label}
+        </Link>
+        <h1 className="mt-2 font-serif text-3xl italic text-stone-800 dark:text-stone-100">
+          {isNew ? `New ${label.slice(0, -1)}` : `Edit ${label.slice(0, -1)}`}
+        </h1>
+      </div>
+
+      {err ? (
+        <p className="text-red-600 dark:text-red-400" role="alert">
+          {err}
+        </p>
+      ) : null}
+
+      <div className="space-y-4 rounded-xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-700 dark:bg-stone-900">
+        <Field label={contentTitleLabel(type)} required>
+          <input
+            value={values.title}
+            onChange={(e) => setValues((v) => ({ ...v, title: e.target.value }))}
+            className={inputClass}
+          />
+        </Field>
+
+        <Field label="Slug">
+          <input
+            value={values.slug}
+            onChange={(e) => setValues((v) => ({ ...v, slug: e.target.value }))}
+            placeholder="auto-generated if empty"
+            className={inputClass}
+          />
+        </Field>
+
+        <Field label="Status">
+          <select
+            value={values.status}
+            onChange={(e) => setValues((v) => ({ ...v, status: e.target.value }))}
+            className={inputClass}
+          >
+            {contentStatusOptions(type).map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        {type === "events" ? (
+          <Field label="Start date & time">
+            <input
+              type="datetime-local"
+              value={values.startDate}
+              onChange={(e) => setValues((v) => ({ ...v, startDate: e.target.value }))}
+              className={inputClass}
+            />
+          </Field>
+        ) : null}
+
+        <Field label={contentBodyLabel(type)}>
+          <textarea
+            value={values.body}
+            onChange={(e) => setValues((v) => ({ ...v, body: e.target.value }))}
+            rows={12}
+            className={`${inputClass} font-mono text-xs`}
+            placeholder="HTML or plain text"
+          />
+        </Field>
+      </div>
+
+      <div className="space-y-4 rounded-xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-700 dark:bg-stone-900">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
+          SEO
+        </h2>
+        <Field label="SEO title">
+          <input
+            value={values.seoTitle}
+            onChange={(e) => setValues((v) => ({ ...v, seoTitle: e.target.value }))}
+            className={inputClass}
+          />
+        </Field>
+        <Field label="SEO description">
+          <textarea
+            value={values.seoDescription}
+            onChange={(e) => setValues((v) => ({ ...v, seoDescription: e.target.value }))}
+            rows={3}
+            className={inputClass}
+          />
+        </Field>
+        {type === "blog" ? (
+          <Field label="SEO keyword">
+            <input
+              value={values.seoKeyword}
+              onChange={(e) => setValues((v) => ({ ...v, seoKeyword: e.target.value }))}
+              className={inputClass}
+            />
+          </Field>
+        ) : null}
+      </div>
+
+      <div className="flex flex-wrap gap-3">
+        <button
+          type="submit"
+          disabled={saving}
+          className="rounded-lg bg-amber-500 px-5 py-2 text-sm font-semibold text-stone-900 hover:bg-amber-400 disabled:opacity-50"
+        >
+          {saving ? "Saving…" : isNew ? "Create" : "Save changes"}
+        </button>
+        {!isNew ? (
+          <button
+            type="button"
+            disabled={saving}
+            onClick={() => void onDelete()}
+            className="rounded-lg border border-red-300 px-4 py-2 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/40"
+          >
+            Deactivate
+          </button>
+        ) : null}
+        <Link
+          href={`/admin/content?type=${type}`}
+          className="rounded-lg border border-stone-300 px-4 py-2 text-sm text-stone-700 dark:border-stone-600 dark:text-stone-200"
+        >
+          Cancel
+        </Link>
+      </div>
+    </form>
+  );
+}
+
+function Field({
+  label,
+  required,
+  children
+}: {
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold uppercase text-stone-500 dark:text-stone-400">
+        {label}
+        {required ? " *" : ""}
+      </label>
+      {children}
+    </div>
+  );
+}

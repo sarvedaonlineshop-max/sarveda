@@ -582,6 +582,7 @@ model CmsPage {
   template       String?
   imageUrl       String?
   wpPostId       Int?       @unique
+  extra          Json?
   status         PostStatus @default(DRAFT)
   seoTitle       String?
   seoDescription String?
@@ -685,6 +686,7 @@ model BlogPost {
   content        String
   excerpt        String?
   imageUrl       String?
+  wpPostId       Int?       @unique
   status         PostStatus @default(DRAFT)
   publishedAt    DateTime?
   seoTitle       String?

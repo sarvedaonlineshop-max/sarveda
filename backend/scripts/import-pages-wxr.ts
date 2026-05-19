@@ -12,7 +12,8 @@ import {
   parseIntSafe,
   parseItems,
   parseMeta,
-  readWxr
+  readWxr,
+  toPrismaJson
 } from "./wxr-utils";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
@@ -33,6 +34,16 @@ const SKIP_SLUGS = new Set([
   "reset-password",
   "serenity-strength-2"
 ]);
+
+function buildPageExtra(meta: Record<string, string>): object | null {
+  const acf: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(meta)) {
+    if (key.startsWith("_")) continue;
+    const trimmed = value?.trim();
+    if (trimmed) acf[key] = trimmed;
+  }
+  return toPrismaJson(acf);
+}
 
 async function main() {
   const xml = readWxr(xmlPath);
@@ -59,6 +70,7 @@ async function main() {
     const thumbId = meta._thumbnail_id;
     const imageUrl = thumbId ? attachments.get(thumbId) ?? null : null;
     const template = meta._wp_page_template || null;
+    const extra = buildPageExtra(meta);
 
     console.log(`→ page /${slug} — ${title.slice(0, 50)}`);
 
@@ -72,6 +84,7 @@ async function main() {
         content: content || null,
         template,
         imageUrl,
+        extra,
         wpPostId: wpPostId || null,
         status: "PUBLISHED",
         seoTitle: meta._yoast_wpseo_title || null,
@@ -82,6 +95,7 @@ async function main() {
         content: content || null,
         template,
         imageUrl,
+        extra,
         wpPostId: wpPostId || null,
         status: "PUBLISHED",
         seoTitle: meta._yoast_wpseo_title || null,

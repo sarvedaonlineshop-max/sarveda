@@ -1,10 +1,20 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Breadcrumbs } from "@/components/product/Breadcrumbs";
 import { ProductRichText } from "@/components/product/ProductRichText";
+import { CorporateWellnessPage } from "@/components/cms/CorporateWellnessPage";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { fetchCmsPageBySlug, fetchCmsPageSlugs, skipBuildTimeStaticParams } from "@/lib/api";
+import type { BlogDetail } from "@/lib/blog-types";
+import type { CmsPage } from "@/lib/cms-types";
+import {
+  fetchBlogBySlug,
+  fetchBlogSlugs,
+  fetchCmsPageBySlug,
+  fetchCmsPageSlugs,
+  skipBuildTimeStaticParams
+} from "@/lib/api";
 import { breadcrumbJsonLd } from "@/lib/seo-product";
 import { htmlToPlainText } from "@/lib/sanitize-html";
 import { absoluteUrl, canonical, isProductionSite } from "@/lib/site";
@@ -14,11 +24,28 @@ export const revalidate = 300;
 
 export async function generateStaticParams() {
   if (skipBuildTimeStaticParams()) return [];
-  const slugs = await fetchCmsPageSlugs({ next: { revalidate: 3600 } });
+  const [cmsSlugs, blogSlugs] = await Promise.all([
+    fetchCmsPageSlugs({ next: { revalidate: 3600 } }),
+    fetchBlogSlugs({ next: { revalidate: 3600 } })
+  ]);
+  const slugs = Array.from(new Set([...cmsSlugs, ...blogSlugs]));
   return slugs.map((slug) => ({ slug }));
 }
 
 type Props = { params: { slug: string } };
+
+type ContentPage = {
+  slug: string;
+  title: string;
+  content: string | null;
+  imageUrl: string | null;
+  template: string | null;
+  extra: Record<string, unknown> | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  kind: "cms" | "blog";
+  publishedAt: string | null;
+};
 
 function metaDescription(raw: string | null | undefined): string | undefined {
   if (!raw?.trim()) return undefined;
@@ -27,18 +54,61 @@ function metaDescription(raw: string | null | undefined): string | undefined {
   return plain.length > 160 ? `${plain.slice(0, 157)}…` : plain;
 }
 
+function fromCmsPage(page: CmsPage): ContentPage {
+  return {
+    slug: page.slug,
+    title: page.title,
+    content: page.content,
+    imageUrl: page.imageUrl,
+    template: page.template,
+    extra: page.extra,
+    seoTitle: page.seoTitle,
+    seoDescription: page.seoDescription,
+    kind: "cms",
+    publishedAt: null
+  };
+}
+
+function fromBlogPost(post: BlogDetail): ContentPage {
+  return {
+    slug: post.slug,
+    title: post.title,
+    content: post.content,
+    imageUrl: post.imageUrl,
+    template: null,
+    extra: null,
+    seoTitle: post.seoTitle,
+    seoDescription: post.seoDescription,
+    kind: "blog",
+    publishedAt: post.publishedAt
+  };
+}
+
+function isCorporateWellnessPage(page: CmsPage): boolean {
+  return page.slug === "corporate-wellness" || Boolean(page.template?.includes("corporate-wellness"));
+}
+
+async function resolveContent(slug: string): Promise<{ page: ContentPage; cmsPage: CmsPage | null } | null> {
+  const cmsPage = await fetchCmsPageBySlug(slug, { next: { revalidate: 300 } });
+  if (cmsPage) return { page: fromCmsPage(cmsPage), cmsPage };
+  const post = await fetchBlogBySlug(slug, { next: { revalidate: 300 } });
+  if (post) return { page: fromBlogPost(post), cmsPage: null };
+  return null;
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const page = await fetchCmsPageBySlug(params.slug, { next: { revalidate: 300 } });
-  if (!page) return { title: "Page" };
-  const title = page.seoTitle || page.title;
-  const description = metaDescription(page.seoDescription || page.content);
+  const resolved = await resolveContent(params.slug);
+  if (!resolved) return { title: "Page" };
+  const content = resolved.page;
+  const title = content.seoTitle || content.title;
+  const description = metaDescription(content.seoDescription || content.content);
   return {
     title,
     description,
     openGraph: {
       title,
       description,
-      images: page.imageUrl ? [{ url: page.imageUrl }] : undefined,
+      images: content.imageUrl ? [{ url: content.imageUrl }] : undefined,
       siteName: "Sarveda"
     },
     robots: isProductionSite() ? { index: true, follow: true } : { index: false, follow: false },
@@ -46,14 +116,55 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function CmsPageRoute({ params }: Props) {
-  const page = await fetchCmsPageBySlug(params.slug, { next: { revalidate: 300 } });
-  if (!page) notFound();
+function formatPublishedDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    });
+  } catch {
+    return iso;
+  }
+}
+
+export default async function SlugContentPage({ params }: Props) {
+  const resolved = await resolveContent(params.slug);
+  if (!resolved) notFound();
+  const { page: content, cmsPage } = resolved;
 
   const breadcrumbItems = [
     { name: "Home", url: absoluteUrl("/") },
-    { name: page.title, url: absoluteUrl(`/${page.slug}`) }
+    ...(content.kind === "blog"
+      ? [
+          { name: "Insights", url: absoluteUrl("/insights") },
+          { name: content.title, url: absoluteUrl(`/${content.slug}`) }
+        ]
+      : [{ name: content.title, url: absoluteUrl(`/${content.slug}`) }])
   ];
+
+  const uiBreadcrumbs =
+    content.kind === "blog"
+      ? [
+          { label: "Home", href: "/" },
+          { label: "Insights", href: "/insights" },
+          { label: content.title }
+        ]
+      : [{ label: "Home", href: "/" }, { label: content.title }];
+
+  if (cmsPage && isCorporateWellnessPage(cmsPage)) {
+    return (
+      <>
+        <JsonLd data={breadcrumbJsonLd(breadcrumbItems)} />
+        <div className="border-b border-stone-100 bg-stone-50">
+          <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-6 lg:px-8">
+            <Breadcrumbs items={uiBreadcrumbs} />
+          </div>
+        </div>
+        <CorporateWellnessPage page={cmsPage} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -61,23 +172,36 @@ export default async function CmsPageRoute({ params }: Props) {
 
       <div className="border-b border-stone-100 bg-stone-50">
         <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-6 lg:px-8">
-          <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: page.title }]} />
+          <Breadcrumbs items={uiBreadcrumbs} />
         </div>
       </div>
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {content.kind === "blog" ? (
+          <p className="text-sm font-medium uppercase tracking-wide text-amber-800">
+            <Link href="/insights" className="hover:underline">
+              Insights
+            </Link>
+            {content.publishedAt ? (
+              <>
+                {" "}
+                · {formatPublishedDate(content.publishedAt)}
+              </>
+            ) : null}
+          </p>
+        ) : null}
         <h1 className="font-serif text-3xl font-semibold tracking-tight text-stone-900 md:text-4xl">
-          {page.title}
+          {content.title}
         </h1>
-        {page.imageUrl ? (
+        {content.imageUrl ? (
           <div className="mt-8 overflow-hidden rounded-2xl border border-stone-200">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={page.imageUrl} alt="" className="w-full object-cover" />
+            <img src={content.imageUrl} alt="" className="w-full object-cover" />
           </div>
         ) : null}
-        {page.content ? (
+        {content.content ? (
           <div className="mt-10 max-w-3xl">
-            <ProductRichText html={page.content} />
+            <ProductRichText html={content.content} />
           </div>
         ) : null}
       </main>

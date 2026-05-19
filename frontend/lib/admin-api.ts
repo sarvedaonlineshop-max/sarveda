@@ -490,3 +490,93 @@ export function fetchPaymentsReconciliation(days = 30) {
     recent: ReconciliationRow[];
   }>(`/api/admin/payments/reconciliation?days=${days}`);
 }
+
+export const ADMIN_CONTENT_TYPES = [
+  "pages",
+  "courses",
+  "events",
+  "blog",
+  "vaidyas",
+  "mentors",
+  "retreats",
+  "offers",
+  "testimonials"
+] as const;
+
+export type AdminContentType = (typeof ADMIN_CONTENT_TYPES)[number];
+
+export const ADMIN_CONTENT_LABELS: Record<AdminContentType, string> = {
+  pages: "Pages",
+  courses: "Courses",
+  events: "Events",
+  blog: "Blog",
+  vaidyas: "Vaidyas",
+  mentors: "Mentors",
+  retreats: "Retreats",
+  offers: "Offers",
+  testimonials: "Testimonials"
+};
+
+export type AdminContentRow = {
+  id: string;
+  slug: string;
+  title: string;
+  status: string;
+  updatedAt: string;
+};
+
+export type AdminContentListData = {
+  items: AdminContentRow[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+};
+
+export function fetchAdminContentList(
+  type: AdminContentType,
+  params?: { page?: number; limit?: number; q?: string },
+  signal?: AbortSignal
+) {
+  const q = new URLSearchParams();
+  if (params?.page) q.set("page", String(params.page));
+  if (params?.limit) q.set("limit", String(params.limit));
+  if (params?.q) q.set("q", params.q);
+  const qs = q.toString();
+  return adminFetch<AdminContentListData>(
+    `/api/admin/content/${encodeURIComponent(type)}${qs ? `?${qs}` : ""}`,
+    { signal }
+  );
+}
+
+export function fetchAdminContent(type: AdminContentType, id: string, signal?: AbortSignal) {
+  return adminFetch<{ item: Record<string, unknown> }>(
+    `/api/admin/content/${encodeURIComponent(type)}/${encodeURIComponent(id)}`,
+    { signal }
+  ).then((d) => d.item);
+}
+
+/** Alias for fetchAdminContent (single item GET). */
+export const getAdminContent = fetchAdminContent;
+
+export function createAdminContent(type: AdminContentType, body: Record<string, unknown>) {
+  return adminFetch<{ item: Record<string, unknown> }>(
+    `/api/admin/content/${encodeURIComponent(type)}`,
+    { method: "POST", body: JSON.stringify(body) }
+  ).then((d) => d.item);
+}
+
+export function updateAdminContent(
+  type: AdminContentType,
+  id: string,
+  body: Record<string, unknown>
+) {
+  return adminFetch<{ item: Record<string, unknown> }>(
+    `/api/admin/content/${encodeURIComponent(type)}/${encodeURIComponent(id)}`,
+    { method: "PATCH", body: JSON.stringify(body) }
+  ).then((d) => d.item);
+}
+
+export function deleteAdminContent(type: AdminContentType, id: string) {
+  return adminFetch<{ message: string }>(
+    `/api/admin/content/${encodeURIComponent(type)}/${encodeURIComponent(id)}`,
+    { method: "DELETE" }
+  );
+}

@@ -21,8 +21,11 @@
     "import:retreats": "tsx scripts/import-retreats-wxr.ts",
     "import:testimonials": "tsx scripts/import-testimonials-wxr.ts",
     "import:offers": "tsx scripts/import-offers-wxr.ts",
+    "import:posts": "tsx scripts/import-posts-wxr.ts",
+    "seed:corporate": "tsx scripts/seed-corporate-wellness.ts",
     "import:content": "npm run import:courses && npm run import:events && npm run import:pages",
-    "import:all": "npm run import:content && npm run import:vaidya && npm run import:mentors && npm run import:retreats && npm run import:testimonials && npm run import:offers"
+    "import:all": "npm run import:content && npm run import:vaidya && npm run import:mentors && npm run import:retreats && npm run import:testimonials && npm run import:offers && npm run import:posts",
+    "import:full": "npm run import:all && npm run seed:corporate"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

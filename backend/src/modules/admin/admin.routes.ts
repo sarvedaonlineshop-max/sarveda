@@ -15,6 +15,7 @@ import {
 } from "./admin.handlers";
 import * as pickupLocations from "./pickupLocations.handlers";
 import { createPickupLocationSchema, updatePickupLocationSchema } from "./pickupLocations.handlers";
+import { contentRoutes } from "./content/content.routes";
 
 const router = Router();
 router.use(requireAdmin);
@@ -78,5 +79,7 @@ productsAdmin.put("/:id", validateBody(updateProductSchema), productsController.
 productsAdmin.delete("/:id", productsController.adminDelete);
 
 router.use("/products", productsAdmin);
+
+router.use("/content/:type", contentRoutes);
 
 export { router as adminRoutes };
