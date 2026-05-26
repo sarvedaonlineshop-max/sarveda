@@ -83,6 +83,7 @@ type Props = {
   addressForm: CheckoutAddressForm;
   cartItems: CartApiItem[];
   subtotalInPaise: number;
+  discountInPaise?: number;
   cartCurrency: string;
   itemCount: number;
   onRefreshCart: () => Promise<void>;
@@ -98,6 +99,7 @@ export function PaymentSelector({
   addressForm,
   cartItems,
   subtotalInPaise,
+  discountInPaise = 0,
   cartCurrency,
   itemCount,
   onRefreshCart,
@@ -132,7 +134,9 @@ export function PaymentSelector({
 
   const estimatedShipping =
     paymentMode === "cod" && shippingCodInPaise != null ? shippingCodInPaise : shippingInPaise ?? 0;
-  const estimatedTotal = subtotalInPaise + (shippingInPaise != null ? estimatedShipping : 0);
+  const merchandiseAfterDiscount = Math.max(0, subtotalInPaise - discountInPaise);
+  const estimatedTotal =
+    merchandiseAfterDiscount + (shippingInPaise != null ? estimatedShipping : 0);
 
   useEffect(() => {
     if (cartItems.length === 0) {
@@ -434,6 +438,12 @@ export function PaymentSelector({
           <dt className="text-stone-600">Subtotal ({itemCount} items)</dt>
           <dd className="font-medium text-stone-900">{formatMoney(subtotalInPaise)}</dd>
         </div>
+        {discountInPaise > 0 ? (
+          <div className="flex justify-between gap-4 text-emerald-800">
+            <dt>Coupon discount</dt>
+            <dd className="font-medium">−{formatMoney(discountInPaise)}</dd>
+          </div>
+        ) : null}
         <div className="flex justify-between gap-4">
           <dt className="text-stone-600">Shipping</dt>
           <dd className="text-right font-medium text-stone-900">
@@ -454,7 +464,9 @@ export function PaymentSelector({
         <div className="flex justify-between gap-4 pt-2 text-base">
           <dt className="font-semibold text-stone-900">Estimated total</dt>
           <dd className="font-serif font-semibold text-amber-800">
-            {shippingInPaise != null ? formatMoney(estimatedTotal) : formatMoney(subtotalInPaise)}
+            {shippingInPaise != null
+              ? formatMoney(estimatedTotal)
+              : formatMoney(merchandiseAfterDiscount)}
             <span className="block text-xs font-sans font-normal text-stone-500">GST included</span>
           </dd>
         </div>

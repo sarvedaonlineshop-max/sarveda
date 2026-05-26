@@ -4,6 +4,7 @@ import type { Request } from "express";
 
 import { prisma } from "../../config/db";
 import { unitMinorForZone } from "../../utils/variantPricing";
+import { resolveCartCouponDiscount } from "../coupons/coupon.service";
 import { currencyForZone, zoneFromCountry } from "../shipping/shippingRates.service";
 
 const CART_HEADER = "x-sarveda-cart-session";
@@ -127,12 +128,29 @@ function variantLabel(
   return parts.length ? parts.join(" · ") : null;
 }
 
-export async function getCartPayload(cartId: string | null, shippingCountry?: string) {
+export async function getCartPayload(
+  cartId: string | null,
+  shippingCountry?: string,
+  opts?: { userId?: string | null; email?: string | null }
+) {
   const zone = zoneFromCountry(shippingCountry ?? "IN");
   const currency = currencyForZone(zone);
 
   if (!cartId) {
-    return { items: [], subtotalInPaise: 0, itemCount: 0, currency };
+    return {
+      items: [],
+      subtotalInPaise: 0,
+      itemCount: 0,
+      currency,
+      discountInPaise: 0,
+      totalInPaise: 0,
+      coupon: null as null | {
+        code: string;
+        type: string;
+        value: number;
+        discountInPaise: number;
+      }
+    };
   }
 
   const cart = await prisma.cart.findUnique({
@@ -161,7 +179,15 @@ export async function getCartPayload(cartId: string | null, shippingCountry?: st
   });
 
   if (!cart) {
-    return { items: [], subtotalInPaise: 0, itemCount: 0, currency };
+    return {
+      items: [],
+      subtotalInPaise: 0,
+      itemCount: 0,
+      currency,
+      discountInPaise: 0,
+      totalInPaise: 0,
+      coupon: null
+    };
   }
 
   type ItemOut = {
@@ -208,7 +234,33 @@ export async function getCartPayload(cartId: string | null, shippingCountry?: st
     });
   }
 
-  return { items, subtotalInPaise, itemCount, currency };
+  let discountInPaise = 0;
+  let coupon: {
+    code: string;
+    type: string;
+    value: number;
+    discountInPaise: number;
+  } | null = null;
+
+  if (cart.couponCode) {
+    try {
+      const resolved = await resolveCartCouponDiscount(subtotalInPaise, cart.couponCode, {
+        userId: opts?.userId ?? null,
+        email: opts?.email ?? null
+      });
+      discountInPaise = resolved.discountInPaise;
+      coupon = resolved.coupon;
+    } catch {
+      await prisma.cart.update({
+        where: { id: cartId },
+        data: { couponCode: null }
+      });
+    }
+  }
+
+  const totalInPaise = Math.max(0, subtotalInPaise - discountInPaise);
+
+  return { items, subtotalInPaise, itemCount, currency, discountInPaise, totalInPaise, coupon };
 }
 
 export async function addCartItem(
@@ -323,6 +375,10 @@ export async function clearCartForRequest(req: Request): Promise<void> {
   const { cartId } = await resolveCartContext(req, "read");
   if (!cartId) return;
   await prisma.cartItem.deleteMany({ where: { cartId } });
+  await prisma.cart.update({
+    where: { id: cartId },
+    data: { couponCode: null }
+  });
 }
 
 /** Clear persisted cart for the customer who placed this order (logged-in shoppers). */
@@ -335,4 +391,8 @@ export async function clearCartForOrder(orderId: string): Promise<void> {
   const cart = await prisma.cart.findUnique({ where: { userId: order.customerId } });
   if (!cart) return;
   await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
+  await prisma.cart.update({
+    where: { id: cart.id },
+    data: { couponCode: null }
+  });
 }

@@ -1,5 +1,6 @@
 import { prisma } from "../../config/db";
 import { clearCartForOrder } from "../cart/cart.service";
+import { incrementCouponUsageForOrder } from "../coupons/coupon.service";
 import { ensureOrderInvoicePdf } from "../invoices/invoice.service";
 import { notifyOrderEmail } from "../notifications/email";
 import { onOrderEnteredProcessing } from "../shipping/orderLifecycle";
@@ -16,6 +17,7 @@ export async function afterOrderPaid(orderId: string): Promise<void> {
     logger.error("after_order_paid_invoice_failed", { orderId, err });
   });
   notifyOrderEmail(orderId, "order_confirmed");
+  await incrementCouponUsageForOrder(orderId);
   await clearCartForOrder(orderId);
 
   if (autoFulfillmentEnabled()) {

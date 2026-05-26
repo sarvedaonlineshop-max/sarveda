@@ -13,6 +13,7 @@ import { confirmStockTx, reserveStockTx } from "../orders/orders.service";
 import { afterOrderPaid } from "../orders/afterPaid";
 import { invoiceNumberForOrder } from "../../utils/invoice";
 import { getCartPayload, resolveCartContext } from "../cart/cart.service";
+import { resolveCartCouponDiscount } from "../coupons/coupon.service";
 import {
   computeVariantShippingTotal,
   currencyForZone,
@@ -314,7 +315,15 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
     cod: Boolean(body.codDelivery) && zone === "IN"
   });
 
-  const discountInPaise = 0;
+  const cartRow = await prisma.cart.findUnique({
+    where: { id: cartId },
+    select: { couponCode: true }
+  });
+  const { discountInPaise, coupon: appliedCoupon } = await resolveCartCouponDiscount(
+    subtotalMinor,
+    cartRow?.couponCode,
+    { userId: userId ?? null, email: body.email }
+  );
   const taxInPaise = 0;
   const grandTotalInPaise = subtotalMinor - discountInPaise + shippingInPaise + taxInPaise;
   const orderCurrency = currencyForZone(zone);
@@ -347,7 +356,8 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
         taxInPaise,
         grandTotalInPaise,
         currency: orderCurrency,
-        shippingZone: zone
+        shippingZone: zone,
+        couponCode: appliedCoupon?.code ?? null
       }
     });
 

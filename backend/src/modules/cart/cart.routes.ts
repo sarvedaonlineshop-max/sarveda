@@ -4,7 +4,8 @@ import { optionalAuth } from "../../middleware/optionalAuth";
 import { validateBody } from "../../middleware/validate";
 
 import * as controller from "./cart.controller";
-import { cartAddSchema, cartUpdateSchema } from "./schemas";
+import * as couponController from "./coupon.handlers";
+import { cartAddSchema, cartCouponSchema, cartUpdateSchema } from "./schemas";
 
 const router = Router();
 
@@ -15,5 +16,7 @@ router.get("/", controller.get);
 router.delete("/", controller.clear);
 router.put("/update", validateBody(cartUpdateSchema), controller.update);
 router.delete("/remove/:variantId", controller.remove);
+router.post("/coupon", validateBody(cartCouponSchema), couponController.applyCoupon);
+router.delete("/coupon", couponController.removeCoupon);
 
 export { router as cartRoutes };

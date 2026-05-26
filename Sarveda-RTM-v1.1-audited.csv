@@ -1,0 +1,131 @@
+REQ ID,Module,Description,Priority,Design,Dev,Test,Evidence,Sprint,Notes
+REQ-AUTH-001,Authentication,Customer can register with email and password,Must Have,Complete,Complete,Pass,auth routes / signup,Sprint 1,
+REQ-AUTH-002,Authentication,Customer can login with Google OAuth,Must Have,Complete,Complete,Pass,Google OAuth sarveda-demo.xyz,Sprint 1,
+REQ-AUTH-003,Authentication,Customer can reset password via email,Must Have,Complete,Not Started,Not Tested,,Sprint 1,Audit: no forgot-password API in repo.
+REQ-AUTH-004,Authentication,"JWT token issued on login, expires in 7 days",Must Have,Complete,Complete,Pass,auth middleware,Sprint 1,
+REQ-AUTH-005,Authentication,Admin panel protected — only admin roles can access,Must Have,Complete,Complete,Pass,AdminAuthBoundary,Sprint 1,
+REQ-AUTH-006,Authentication,"Multiple admin roles: Super Admin, Order Manager, Inventory, Marketing, Finance",Must Have,In Progress,Not Started,Not Tested,,Sprint 2,Schema: CUSTOMER / ADMIN / SUPER_ADMIN only
+REQ-AUTH-007,Authentication,Session auto-logout after inactivity,Should Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-PROD-001,Products,169 products migrated from WooCommerce,Must Have,Complete,Complete,Pass,CSV/RDS import,Sprint 1,
+REQ-PROD-002,Products,Products have multiple images,Must Have,Complete,Complete,Not Tested,ProductGallery,Sprint 1,Audit: multi-image needs sync:galleries on EC2/RDS.
+REQ-PROD-003,Products,"Products have variants (size, weight, note/tone)",Must Have,Complete,In Progress,Not Tested,VariantSelector,Sprint 1,Audit: run import:variations for Type/Size labels.
+REQ-PROD-004,Products,Audio samples on singing bowl products,Must Have,Complete,Complete,Pass,hasAudio + S3 CDN,Sprint 1,
+REQ-PROD-005,Products,Product categories with hierarchical structure,Must Have,Complete,Complete,Pass,CategoryTree API,Sprint 1,
+REQ-PROD-006,Products,Stock level shown on product page,Must Have,Complete,Complete,Pass,stockDisplay(),Sprint 1,
+REQ-PROD-007,Products,Low stock badge when stock ≤ 5 units,Should Have,Complete,Complete,Pass,productListBadges(),Sprint 1,
+REQ-PROD-008,Products,Out of stock badge — disable add to cart,Must Have,Complete,Complete,Pass,,Sprint 1,
+REQ-PROD-009,Products,Related products section on product page,Should Have,Not Started,Complete,Not Tested,,Sprint 3,Audit: RelatedProducts + PairWith on PDP.
+REQ-PROD-010,Products,Customer reviews and star ratings on product page,Should Have,Not Started,Not Started,Not Tested,,Sprint 3,Placeholder UI only
+REQ-PROD-011,Products,Pincode serviceability check before add to cart,Must Have,Complete,In Progress,Not Tested,check-pincode API,Sprint 2,Audit: removed from PDP; pincode at checkout/shipping API only.
+REQ-PROD-012,Products,Estimated delivery date shown on product page,Must Have,In Progress,Complete,Not Tested,,Sprint 2,Audit: EstimatedDelivery in ProductBuyBox.
+REQ-PROD-013,Products,"Product search with filters (category, price, weight)",Must Have,In Progress,In Progress,Not Tested,/search,Sprint 2,Search page exists; advanced filters partial
+REQ-PROD-014,Products,GST/HSN codes on products for invoicing,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-PROD-015,Products,Artisan/source story on product page,Nice to Have,Not Started,Not Started,Not Tested,,Sprint 4,
+REQ-PROD-016,Products,Product video embed support,Nice to Have,Not Started,Not Started,Not Tested,,Sprint 4,
+REQ-PROD-017,Products,Wishlist / Save for later,Nice to Have,Not Started,Not Started,Not Tested,,Sprint 4,
+REQ-PROD-018,Products,Bulk product import/export via CSV,Should Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-CART-001,Cart & Checkout,Add to cart with variant selection,Must Have,Complete,Complete,Pass,,Sprint 1,
+REQ-CART-002,Cart & Checkout,Cart persists across sessions (logged in user),Must Have,Complete,Complete,Pass,,Sprint 1,
+REQ-CART-003,Cart & Checkout,Stock reserved at checkout — released if not paid in 15 min,Must Have,Complete,Complete,Pass,BullMQ payment timeout,Sprint 1,Audit: reserve at checkout create-order (not on cart add). Corrected wording from add-to-cart
+REQ-CART-004,Cart & Checkout,Cart drawer slides in from right (mobile + desktop),Must Have,Complete,Complete,Pass,CartDrawer,Sprint 1,
+REQ-CART-005,Cart & Checkout,Free shipping threshold indicator in cart,Should Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-CART-006,Cart & Checkout,Coupon code application at checkout,Must Have,Not Started,Not Started,Not Tested,,Sprint 2,Coupons imported to DB; no checkout UI
+REQ-CART-007,Cart & Checkout,Guest checkout (without account),Should Have,Not Started,Complete,Not Tested,,Sprint 3,Audit: optionalAuth — guest email checkout supported.
+REQ-CART-008,Cart & Checkout,Address form with pincode auto-fill (city/state),Must Have,Complete,Complete,Pass,AddressFields,Sprint 1,
+REQ-CART-009,Cart & Checkout,Shipping cost calculated from VariantShippingRate table,Must Have,In Progress,Complete,Not Tested,checkout.service,Sprint 2,Audit: computeVariantShippingTotal in checkout.service.
+REQ-CART-010,Cart & Checkout,Order summary with GST breakdown at checkout,Must Have,In Progress,In Progress,Not Tested,,Sprint 2,Tax fields exist; full GST line breakdown TBD
+REQ-CART-011,Cart & Checkout,Abandoned cart recovery — WhatsApp/Email reminder,Should Have,Not Started,Not Started,Not Tested,,Sprint 3,payment_reminder email job partial
+REQ-PAY-001,Payments,"Razorpay integration — India payments (UPI, cards, netbanking)",Must Have,Complete,Complete,Pass,webhook + verify,Sprint 1,
+REQ-PAY-002,Payments,Stripe integration — international payments,Must Have,Complete,In Progress,Not Tested,stripe.ts,Sprint 2,Backend + frontend; staging E2E pending
+REQ-PAY-003,Payments,PayPal integration — international payments,Must Have,Complete,In Progress,Not Tested,paypal.ts,Sprint 2,
+REQ-PAY-004,Payments,COD (Cash on Delivery) — India only,Must Have,Not Started,Complete,Not Tested,,Sprint 2,Audit: COD checkout + PaymentSelector implemented.
+REQ-PAY-005,Payments,Payment webhook verification (signature check),Must Have,Complete,Complete,Pass,HMAC webhooks,Sprint 1,
+REQ-PAY-006,Payments,Payment failure page with retry option,Must Have,Complete,Complete,Pass,/payment-failed,Sprint 1,
+REQ-PAY-007,Payments,Idempotency keys — prevent double charging,Must Have,Complete,Complete,Pass,Redis + header,Sprint 1,
+REQ-PAY-008,Payments,Refund processing via payment gateway,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-PAY-009,Payments,"Multi-currency support — INR, USD, GBP",Must Have,Not Started,In Progress,Not Tested,,Sprint 3,Audit: zone INR/USD/GBP pricing; no manual switcher.
+REQ-PAY-010,Payments,Currency switcher on frontend,Should Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-PAY-011,Payments,EMI options via Razorpay,Nice to Have,Not Started,Not Started,Not Tested,,Sprint 4,
+REQ-ORD-001,Orders,Order confirmation page after payment,Must Have,Complete,Complete,Pass,order/confirmed,Sprint 1,
+REQ-ORD-002,Orders,Order status lifecycle: Pending → Paid → Processing → Shipped → Delivered,Must Have,Complete,Complete,Pass,OrderStatus enum,Sprint 1,
+REQ-ORD-003,Orders,Customer can view all past orders in My Account,Must Have,Complete,Complete,Not Tested,,Sprint 2,Audit: /profile + YourOrders.
+REQ-ORD-004,Orders,Customer can view single order detail,Must Have,Complete,Complete,Not Tested,,Sprint 2,Audit: order detail via orders API + profile.
+REQ-ORD-005,Orders,Customer can download GST invoice from order page,Must Have,Not Started,In Progress,Not Tested,,Sprint 3,Audit: invoice PDF service; needs paid-order + SendGrid test.
+REQ-ORD-006,Orders,Admin can view and filter all orders,Must Have,Complete,Complete,Pass,Admin orders,Sprint 1,
+REQ-ORD-007,Orders,Admin can update order status manually,Must Have,Complete,Complete,Pass,,Sprint 1,
+REQ-ORD-008,Orders,Admin can cancel order and trigger refund,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-ORD-009,Orders,Order auto-cancels if payment not received in 15 min,Must Have,Complete,Complete,Pass,paymentTimeoutJob,Sprint 1,
+REQ-ORD-010,Orders,Order tracking page with AWB (public URL),Should Have,In Progress,Complete,Not Tested,,Sprint 2,Audit: /track/[awb] page exists.
+REQ-ORD-011,Orders,RTO (Return to Origin) status handling,Should Have,Not Started,Not Started,Not Tested,,Sprint 3,ShipmentStatus.RTO in schema
+REQ-SHIP-001,Shipping,Delhivery API integration — domestic India,Must Have,Complete,In Progress,Not Tested,delhivery.ts,Sprint 2,Audit: delhivery module; E2E not verified on staging.
+REQ-SHIP-002,Shipping,Shiprocket integration — international orders,Must Have,Complete,In Progress,Not Tested,shiprocket.ts,Sprint 2,Audit: shiprocket module; E2E not verified.
+REQ-SHIP-003,Shipping,Auto courier selection router (weight + zone + COD logic),Must Have,Complete,In Progress,Not Tested,router.ts,Sprint 2,Audit: router.ts exists; courier E2E pending.
+REQ-SHIP-004,Shipping,AWB auto-generated when order moves to PROCESSING,Must Have,Complete,In Progress,Not Tested,orderLifecycle.ts,Sprint 2,
+REQ-SHIP-005,Shipping,Pincode serviceability check — India,Must Have,Complete,In Progress,Not Tested,checkout pincode,Sprint 2,Audit: checkout pincode check; not on PDP.
+REQ-SHIP-006,Shipping,Shipping cost from VariantShippingRate — India and International,Must Have,Complete,Complete,Not Tested,checkout.service,Sprint 2,Audit: VariantShippingRate in checkout.
+REQ-SHIP-007,Shipping,International shipping rates by country (US/GB/OTHER),Must Have,Complete,Complete,Not Tested,,Sprint 2,Audit: international rates in DB + checkout.
+REQ-SHIP-008,Shipping,No COD for international orders — enforced,Must Have,Complete,Complete,Not Tested,checkout schema,Sprint 2,
+REQ-NOT-001,Notifications,Email — Order confirmed,Must Have,Not Started,In Progress,Not Tested,,Sprint 3,Audit: sendOrderEmail on paid; needs SENDGRID on EC2. SendGrid
+REQ-NOT-002,Notifications,Email — Payment failed,Must Have,Not Started,In Progress,Not Tested,,Sprint 3,Audit: payment_failed email wired.
+REQ-NOT-003,Notifications,Email — Order shipped with tracking link,Must Have,Not Started,In Progress,Not Tested,,Sprint 3,Audit: order_shipped email wired.
+REQ-NOT-004,Notifications,Email — Order delivered,Must Have,Not Started,In Progress,Not Tested,,Sprint 3,Audit: order_delivered email wired.
+REQ-NOT-005,Notifications,Email — GST invoice attached,Must Have,Not Started,In Progress,Not Tested,,Sprint 3,Audit: invoice link in confirmation email.
+REQ-NOT-006,Notifications,WhatsApp — Order confirmed (WATI),Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-NOT-007,Notifications,WhatsApp — Shipment dispatched with AWB,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-NOT-008,Notifications,WhatsApp — Out for delivery,Should Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-NOT-009,Notifications,WhatsApp — Order delivered + review request,Should Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-NOT-010,Notifications,GST PDF invoice auto-generated on PAID status,Must Have,Not Started,In Progress,Not Tested,,Sprint 3,Audit: ensureOrderInvoicePdf on PAID.
+REQ-NOT-011,Notifications,BullMQ email queue — retry on failure,Must Have,Not Started,In Progress,Not Tested,,Sprint 3,Audit: sync email send; BullMQ email queue not yet.
+REQ-NOT-012,Notifications,BullMQ WhatsApp queue — retry on failure,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-ZOHO-001,Zoho,Order paid on Sarveda → auto create Sales Order in Zoho Inventory,Must Have,Complete,Not Started,Not Tested,Level 2 integration live,Sprint 1,Audit: no Zoho code in repo — document if external integration.
+REQ-ZOHO-002,Zoho,Stock updated in Zoho → reflect on Sarveda website,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-ZOHO-003,Zoho,Customer data sync to Zoho CRM,Should Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-ZOHO-004,Zoho,Shipment AWB synced back from Zoho to Sarveda,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-ZOHO-005,Zoho,Refund recorded in Zoho Books when processed,Should Have,Not Started,Not Started,Not Tested,,Sprint 4,
+REQ-ZOHO-006,Zoho,Nightly full stock sync (safety net),Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-ZOHO-007,Zoho,Sync failure alert to admin if Zoho order creation fails,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-ZOHO-008,Zoho,RTO return → stock added back in Zoho Inventory,Should Have,Not Started,Not Started,Not Tested,,Sprint 4,
+REQ-ADM-001,Admin Panel,"Dashboard: today's orders, revenue, pending, low stock",Must Have,Complete,Complete,Pass,Admin dashboard,Sprint 1,
+REQ-ADM-002,Admin Panel,"Product CRUD — add, edit, delete products",Must Have,Complete,Complete,Pass,Admin products,Sprint 1,
+REQ-ADM-003,Admin Panel,"Order management — filter by status, date, customer",Must Have,Complete,Complete,Pass,Admin orders,Sprint 1,
+REQ-ADM-004,Admin Panel,Inventory management — update stock levels,Must Have,In Progress,In Progress,Not Tested,admin inventory API,Sprint 2,
+REQ-ADM-005,Admin Panel,Customer management — view all customers,Should Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-ADM-006,Admin Panel,Coupon/discount management,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-ADM-007,Admin Panel,"Revenue reports — daily, weekly, monthly",Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-ADM-008,Admin Panel,GST report for CA/accounting,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-ADM-009,Admin Panel,Low stock alert system,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,Dashboard shows low stock count
+REQ-ADM-010,Admin Panel,Admin mobile responsive — works on phone,Should Have,In Progress,In Progress,Not Tested,,Sprint 2,
+REQ-ADM-011,Admin Panel,Role-based access control (RBAC),Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-UX-001,UI/UX,Mobile-first design — Android app feel,Must Have,Complete,Complete,Pass,BottomNav,Sprint 2,
+REQ-UX-002,UI/UX,Bottom navigation bar on mobile,Must Have,Complete,Complete,Pass,BottomNav.tsx,Sprint 2,
+REQ-UX-003,UI/UX,"Announcement bar (free shipping, offers)",Should Have,Complete,Complete,Not Tested,SiteHeader,Sprint 2,
+REQ-UX-004,UI/UX,"Premium homepage — hero, categories, testimonials",Must Have,Complete,Complete,Not Tested,app/page.tsx,Sprint 2,
+REQ-UX-005,UI/UX,Page transitions — smooth navigation,Should Have,Complete,Complete,Not Tested,PageTransition,Sprint 2,
+REQ-UX-006,UI/UX,PWA support — Add to Home Screen,Nice to Have,Not Started,Not Started,Not Tested,,Sprint 4,
+REQ-UX-007,UI/UX,Framer Motion scroll animations,Nice to Have,Not Started,Not Started,Not Tested,,Sprint 4,
+REQ-UX-008,UI/UX,Custom gold cursor effect on desktop,Nice to Have,Not Started,Not Started,Not Tested,,Sprint 4,
+REQ-UX-009,UI/UX,Skeleton loaders on all data-fetching pages,Should Have,Not Started,Not Started,Not Tested,,Sprint 3,Partial on some pages
+REQ-INF-001,Infrastructure,Frontend deployed on Vercel,Must Have,Complete,Complete,Pass,sarveda-demo.xyz,Sprint 1,
+REQ-INF-002,Infrastructure,Backend deployed on AWS EC2 Mumbai,Must Have,Complete,Complete,Pass,13.206.192.106,Sprint 1,
+REQ-INF-003,Infrastructure,PostgreSQL on AWS RDS,Must Have,Complete,Complete,Pass,RDS Mumbai,Sprint 1,
+REQ-INF-004,Infrastructure,Redis on EC2 for BullMQ,Must Have,Complete,Complete,Pass,localhost:6379,Sprint 1,
+REQ-INF-005,Infrastructure,sarveda-demo.xyz domain purchased and configured,Must Have,Complete,Complete,Pass,Vercel domain,Sprint 2,
+REQ-INF-006,Infrastructure,SSL/HTTPS on EC2 backend (nginx + certbot),Must Have,Not Started,Not Started,Not Tested,,Sprint 5,API via Vercel proxy today
+REQ-INF-007,Infrastructure,api.sarveda-demo.xyz subdomain for backend,Must Have,Not Started,Not Started,Not Tested,,Sprint 5,
+REQ-INF-008,Infrastructure,PM2 process manager for backend uptime,Must Have,Complete,Complete,Pass,pm2,Sprint 1,
+REQ-INF-009,Infrastructure,Razorpay webhook configured and verified,Must Have,Complete,Complete,Pass,webhook path,Sprint 2,Confirm dashboard URL on demo domain
+REQ-INF-010,Infrastructure,Google OAuth credentials for sarveda-demo.xyz,Must Have,Complete,Complete,Pass,GCP OAuth,Sprint 2,
+REQ-CRS-001,Courses,Course listing page,Must Have,Not Started,Complete,Not Tested,,Sprint 4,Audit: /courses listing page live in codebase.
+REQ-CRS-002,Courses,Course purchase flow with Stripe/PayPal,Must Have,Not Started,Not Started,Not Tested,,Sprint 4,
+REQ-CRS-003,Courses,Student portal — access purchased courses,Must Have,Not Started,Not Started,Not Tested,,Sprint 4,
+REQ-CRS-004,Courses,Live session Zoom link delivery after purchase,Must Have,Not Started,Not Started,Not Tested,,Sprint 4,
+REQ-CRS-005,Courses,Pre-recorded video course playback,Should Have,Not Started,Not Started,Not Tested,,Sprint 4,
+REQ-CRS-006,Courses,Course completion certificate,Nice to Have,Not Started,Not Started,Not Tested,,Sprint 5,
+REQ-CRS-007,Courses,Himalayan Retreat booking page with $900 pricing,Must Have,Not Started,Not Started,Not Tested,,Sprint 4,Retreat pages exist separately
+REQ-MKT-001,Marketing,Google Analytics 4 integration,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-MKT-002,Marketing,Meta/Facebook Pixel integration,Should Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-MKT-003,Marketing,Newsletter signup with email collection,Must Have,Complete,Complete,Pass,NewsletterForm,Sprint 2,
+REQ-MKT-004,Marketing,Coupon code system — % and flat discount,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-MKT-005,Marketing,"SEO — meta tags, OG tags, sitemap",Must Have,Not Started,In Progress,Not Tested,,Sprint 3,Audit: generateMetadata + sitemap.xml; 22 WP sitemaps deferred.
+REQ-MKT-006,Marketing,Referral / affiliate program,Nice to Have,Not Started,Not Started,Not Tested,,Sprint 5,
+REQ-MKT-007,Marketing,WELCOME10 — 10% first order coupon,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,Copy in announcement bar only

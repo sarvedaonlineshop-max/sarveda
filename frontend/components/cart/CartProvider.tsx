@@ -24,11 +24,14 @@ type CartUiState = {
 type CartDataState = {
   items: CartApiItem[];
   subtotalInPaise: number;
+  discountInPaise: number;
+  totalInPaise: number;
+  coupon: import("@/lib/cart-api").CartCouponInfo | null;
   currency: string;
   itemCount: number;
   loading: boolean;
   error: string | null;
-  refreshCart: (shippingCountry?: string) => Promise<void>;
+  refreshCart: (shippingCountry?: string, checkoutEmail?: string) => Promise<void>;
 };
 
 const CartUiContext = createContext<CartUiState | null>(null);
@@ -56,23 +59,32 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [items, setItems] = useState<CartApiItem[]>([]);
   const [subtotalInPaise, setSubtotalInPaise] = useState(0);
+  const [discountInPaise, setDiscountInPaise] = useState(0);
+  const [totalInPaise, setTotalInPaise] = useState(0);
+  const [coupon, setCoupon] = useState<import("@/lib/cart-api").CartCouponInfo | null>(null);
   const [currency, setCurrency] = useState("INR");
   const [itemCount, setItemCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refreshCart = useCallback(async (shippingCountry?: string) => {
+  const refreshCart = useCallback(async (shippingCountry?: string, checkoutEmail?: string) => {
     try {
       setError(null);
-      const data = await cartGet(shippingCountry);
+      const data = await cartGet(shippingCountry, checkoutEmail);
       setItems(data.items);
       setSubtotalInPaise(data.subtotalInPaise);
+      setDiscountInPaise(data.discountInPaise ?? 0);
+      setTotalInPaise(data.totalInPaise ?? data.subtotalInPaise);
+      setCoupon(data.coupon ?? null);
       setCurrency(data.currency ?? "INR");
       setItemCount(data.itemCount);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Cart failed to load");
       setItems([]);
       setSubtotalInPaise(0);
+      setDiscountInPaise(0);
+      setTotalInPaise(0);
+      setCoupon(null);
       setCurrency("INR");
       setItemCount(0);
     } finally {
@@ -141,13 +153,27 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     () => ({
       items,
       subtotalInPaise,
+      discountInPaise,
+      totalInPaise,
+      coupon,
       currency,
       itemCount,
       loading,
       error,
       refreshCart
     }),
-    [items, subtotalInPaise, currency, itemCount, loading, error, refreshCart]
+    [
+      items,
+      subtotalInPaise,
+      discountInPaise,
+      totalInPaise,
+      coupon,
+      currency,
+      itemCount,
+      loading,
+      error,
+      refreshCart
+    ]
   );
 
   return (

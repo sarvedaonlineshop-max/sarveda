@@ -20,10 +20,20 @@ export type CartApiItem = {
   maxQuantity: number | null;
 };
 
+export type CartCouponInfo = {
+  code: string;
+  type: string;
+  value: number;
+  discountInPaise: number;
+};
+
 export type CartApiResponse = {
   items: CartApiItem[];
   /** Minor units for `currency` (paise, cents, or pence). */
   subtotalInPaise: number;
+  discountInPaise?: number;
+  totalInPaise?: number;
+  coupon?: CartCouponInfo | null;
   itemCount: number;
   currency: string;
   sessionId?: string;
@@ -57,9 +67,16 @@ export function buildHeaders(includeJsonContentType: boolean): Record<string, st
   return h;
 }
 
-export async function cartGet(shippingCountry?: string): Promise<CartApiResponse> {
+export async function cartGet(
+  shippingCountry?: string,
+  checkoutEmail?: string
+): Promise<CartApiResponse> {
+  const params = new URLSearchParams();
   const country = shippingCountry?.trim();
-  const qs = country ? `?country=${encodeURIComponent(country)}` : "";
+  if (country) params.set("country", country);
+  const email = checkoutEmail?.trim();
+  if (email) params.set("email", email);
+  const qs = params.toString() ? `?${params.toString()}` : "";
   const res = await fetch(`${getApiBase()}/api/cart${qs}`, {
     method: "GET",
     credentials: "include",
@@ -154,6 +171,57 @@ export async function cartRemove(variantId: string): Promise<CartApiResponse> {
   };
   if (!res.ok || !json.success) {
     throw new Error(json.error || "Could not remove item");
+  }
+  notifyCartChanged();
+  return json.data!;
+}
+
+export async function applyCartCoupon(
+  code: string,
+  opts?: { country?: string; email?: string }
+): Promise<CartApiResponse> {
+  const params = new URLSearchParams();
+  if (opts?.country?.trim()) params.set("country", opts.country.trim());
+  const qs = params.toString() ? `?${params.toString()}` : "";
+  const res = await fetch(`${getApiBase()}/api/cart/coupon${qs}`, {
+    method: "POST",
+    credentials: "include",
+    headers: buildHeaders(true),
+    body: JSON.stringify({
+      code: code.trim(),
+      ...(opts?.email?.trim() ? { email: opts.email.trim() } : {})
+    })
+  });
+  const json = (await res.json()) as {
+    success?: boolean;
+    data?: CartApiResponse;
+    error?: string;
+  };
+  if (!res.ok || !json.success) {
+    throw new Error(json.error || "Could not apply coupon");
+  }
+  if (json.data?.sessionId) {
+    writeSession(json.data.sessionId);
+  }
+  notifyCartChanged();
+  return json.data!;
+}
+
+export async function removeCartCoupon(shippingCountry?: string): Promise<CartApiResponse> {
+  const country = shippingCountry?.trim();
+  const qs = country ? `?country=${encodeURIComponent(country)}` : "";
+  const res = await fetch(`${getApiBase()}/api/cart/coupon${qs}`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: buildHeaders(false)
+  });
+  const json = (await res.json()) as {
+    success?: boolean;
+    data?: CartApiResponse;
+    error?: string;
+  };
+  if (!res.ok || !json.success) {
+    throw new Error(json.error || "Could not remove coupon");
   }
   notifyCartChanged();
   return json.data!;

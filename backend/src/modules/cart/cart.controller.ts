@@ -16,16 +16,24 @@ function pricingCountry(req: Request): string | undefined {
   return typeof q === "string" && q.trim() ? q.trim() : undefined;
 }
 
+function checkoutEmail(req: Request): string | undefined {
+  const q = req.query.email;
+  return typeof q === "string" && q.includes("@") ? q.trim().toLowerCase() : undefined;
+}
+
 export async function add(req: Request, res: Response, next: NextFunction) {
   try {
-    const { cartId, newSessionId } = await resolveCartContext(req, "write");
+    const { cartId, newSessionId, userId } = await resolveCartContext(req, "write");
     if (!cartId) {
       res.status(500).json({ success: false, error: "Cart error", code: "CART_ERROR" });
       return;
     }
     const body = req.body as CartAddBody;
     await addCartItem(cartId, body.variantId, body.quantity);
-    const payload = await getCartPayload(cartId, pricingCountry(req));
+    const payload = await getCartPayload(cartId, pricingCountry(req), {
+      userId,
+      email: checkoutEmail(req)
+    });
     res.status(200).json({
       success: true,
       data: {
@@ -41,8 +49,11 @@ export async function add(req: Request, res: Response, next: NextFunction) {
 
 export async function get(req: Request, res: Response, next: NextFunction) {
   try {
-    const { cartId, newSessionId } = await resolveCartContext(req, "read");
-    const payload = await getCartPayload(cartId, pricingCountry(req));
+    const { cartId, newSessionId, userId } = await resolveCartContext(req, "read");
+    const payload = await getCartPayload(cartId, pricingCountry(req), {
+      userId,
+      email: checkoutEmail(req)
+    });
     res.json({
       success: true,
       data: {

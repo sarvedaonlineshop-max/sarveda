@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AddressFields, type CheckoutAddressForm } from "@/components/checkout/AddressFields";
+import { CouponInput } from "@/components/checkout/CouponInput";
 import { PaymentSelector } from "@/components/checkout/PaymentSelector";
 import { useCartData } from "@/components/cart/CartProvider";
 import { loadSavedCheckoutShipping, saveCheckoutShipping } from "@/lib/checkout-prefill";
@@ -24,7 +25,16 @@ export function CheckoutClient() {
   const resumeOrderNumber = searchParams.get("orderNumber");
   const resumeEmail = searchParams.get("email");
 
-  const { items, subtotalInPaise, currency, itemCount, loading, refreshCart } = useCartData();
+  const {
+    items,
+    subtotalInPaise,
+    discountInPaise,
+    coupon,
+    currency,
+    itemCount,
+    loading,
+    refreshCart
+  } = useCartData();
   const [rzpReady, setRzpReady] = useState(false);
   const [rzpLoadError, setRzpLoadError] = useState<string | null>(null);
   const [completingCheckout, setCompletingCheckout] = useState(false);
@@ -67,12 +77,12 @@ export function CheckoutClient() {
   };
 
   const onRefreshCart = useCallback(async () => {
-    await refreshCart(form.country || "IN");
-  }, [refreshCart, form.country]);
+    await refreshCart(form.country || "IN", form.email.trim() || undefined);
+  }, [refreshCart, form.country, form.email]);
 
   useEffect(() => {
-    void refreshCart(form.country || "IN");
-  }, [form.country, refreshCart]);
+    void refreshCart(form.country || "IN", form.email.trim() || undefined);
+  }, [form.country, form.email, refreshCart]);
 
   useEffect(() => {
     const saved = loadSavedCheckoutShipping();
@@ -242,7 +252,17 @@ export function CheckoutClient() {
           </div>
         </div>
 
-        <div className="lg:sticky lg:top-24">
+        <div className="lg:sticky lg:top-24 space-y-4">
+          {!resumeOrderNumber && items.length > 0 ? (
+            <CouponInput
+              shippingCountry={form.country}
+              checkoutEmail={form.email.trim() || undefined}
+              appliedCode={coupon?.code}
+              discountInPaise={discountInPaise}
+              currency={currency}
+              onUpdated={onRefreshCart}
+            />
+          ) : null}
           {resumeOrderNumber ? (
             <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
               Resume payment for order <span className="font-mono font-medium">{resumeOrderNumber}</span>. Your
@@ -256,6 +276,7 @@ export function CheckoutClient() {
             addressForm={form}
             cartItems={items}
             subtotalInPaise={subtotalInPaise}
+            discountInPaise={discountInPaise}
             cartCurrency={currency}
             itemCount={itemCount}
             onRefreshCart={onRefreshCart}
