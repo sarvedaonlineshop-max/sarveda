@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 
+import { listCheckoutCouponOffers } from "../coupons/coupon.service";
 import { getCartPayload, resolveCartContext } from "./cart.service";
 import { applyCouponToCart, removeCouponFromCart } from "./couponCart";
 import type { CartCouponBody } from "./schemas";
@@ -7,6 +8,29 @@ import type { CartCouponBody } from "./schemas";
 function pricingCountry(req: Request): string | undefined {
   const q = req.query.country;
   return typeof q === "string" && q.trim() ? q.trim() : undefined;
+}
+
+function checkoutEmail(req: Request): string | undefined {
+  const q = req.query.email;
+  return typeof q === "string" && q.includes("@") ? q.trim().toLowerCase() : undefined;
+}
+
+export async function listOffers(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { cartId, userId } = await resolveCartContext(req, "read");
+    const payload = await getCartPayload(cartId, pricingCountry(req), {
+      userId,
+      email: checkoutEmail(req)
+    });
+    const offers = await listCheckoutCouponOffers({
+      subtotalInPaise: payload.subtotalInPaise,
+      userId,
+      email: checkoutEmail(req)
+    });
+    res.json({ success: true, data: { offers, appliedCode: payload.coupon?.code ?? null } });
+  } catch (err) {
+    next(err);
+  }
 }
 
 export async function applyCoupon(req: Request, res: Response, next: NextFunction) {

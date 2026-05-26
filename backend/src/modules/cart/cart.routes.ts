@@ -16,6 +16,7 @@ router.get("/", controller.get);
 router.delete("/", controller.clear);
 router.put("/update", validateBody(cartUpdateSchema), controller.update);
 router.delete("/remove/:variantId", controller.remove);
+router.get("/coupon/offers", couponController.listOffers);
 router.post("/coupon", validateBody(cartCouponSchema), couponController.applyCoupon);
 router.delete("/coupon", couponController.removeCoupon);
 

@@ -134,6 +134,73 @@ async function assertCouponUsable(
   }
 }
 
+export function formatCouponOfferLabel(coupon: Coupon): string {
+  if (coupon.type === "PERCENTAGE") {
+    return `${coupon.value}% off`;
+  }
+  const rupees = (coupon.value / 100).toLocaleString("en-IN");
+  return `₹${rupees} off`;
+}
+
+function featuredCouponCodes(): string[] {
+  const raw = process.env.COUPON_CHECKOUT_FEATURED ?? "WELCOME10";
+  return raw
+    .split(",")
+    .map((c) => normalizeCode(c))
+    .filter(Boolean);
+}
+
+export type CheckoutCouponOffer = {
+  code: string;
+  label: string;
+  type: CouponType;
+  value: number;
+  /** False when this email/account already used the coupon (paid orders). */
+  eligible: boolean;
+  ineligibleReason?: string;
+};
+
+/** Quick-apply buttons on checkout — codes from COUPON_CHECKOUT_FEATURED env. */
+export async function listCheckoutCouponOffers(opts: {
+  subtotalInPaise: number;
+  userId?: string | null;
+  email?: string | null;
+}): Promise<CheckoutCouponOffer[]> {
+  const codes = featuredCouponCodes();
+  if (!codes.length) return [];
+
+  const coupons = await prisma.coupon.findMany({
+    where: { code: { in: codes }, isActive: true }
+  });
+  const byCode = new Map(coupons.map((c) => [c.code, c]));
+
+  const offers: CheckoutCouponOffer[] = [];
+  for (const code of codes) {
+    const coupon = byCode.get(code);
+    if (!coupon) continue;
+
+    let eligible = true;
+    let ineligibleReason: string | undefined;
+    try {
+      await assertCouponUsable(coupon, opts.subtotalInPaise, opts.userId ?? null, opts.email ?? null);
+    } catch (err) {
+      eligible = false;
+      ineligibleReason =
+        err instanceof Error ? err.message : "This offer is not available for your order.";
+    }
+
+    offers.push({
+      code: coupon.code,
+      label: formatCouponOfferLabel(coupon),
+      type: coupon.type,
+      value: coupon.value,
+      eligible,
+      ineligibleReason
+    });
+  }
+  return offers;
+}
+
 /** Increment global usage after order is paid. */
 export async function incrementCouponUsageForOrder(orderId: string): Promise<void> {
   const order = await prisma.order.findUnique({

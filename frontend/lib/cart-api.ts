@@ -27,6 +27,15 @@ export type CartCouponInfo = {
   discountInPaise: number;
 };
 
+export type CheckoutCouponOffer = {
+  code: string;
+  label: string;
+  type: string;
+  value: number;
+  eligible: boolean;
+  ineligibleReason?: string;
+};
+
 export type CartApiResponse = {
   items: CartApiItem[];
   /** Minor units for `currency` (paise, cents, or pence). */
@@ -174,6 +183,30 @@ export async function cartRemove(variantId: string): Promise<CartApiResponse> {
   }
   notifyCartChanged();
   return json.data!;
+}
+
+export async function fetchCheckoutCouponOffers(opts?: {
+  country?: string;
+  email?: string;
+}): Promise<{ offers: CheckoutCouponOffer[]; appliedCode: string | null }> {
+  const params = new URLSearchParams();
+  if (opts?.country?.trim()) params.set("country", opts.country.trim());
+  if (opts?.email?.trim()) params.set("email", opts.email.trim());
+  const qs = params.toString() ? `?${params.toString()}` : "";
+  const res = await fetch(`${getApiBase()}/api/cart/coupon/offers${qs}`, {
+    method: "GET",
+    credentials: "include",
+    headers: buildHeaders(false)
+  });
+  const json = (await res.json()) as {
+    success?: boolean;
+    data?: { offers: CheckoutCouponOffer[]; appliedCode: string | null };
+    error?: string;
+  };
+  if (!res.ok || !json.success || !json.data) {
+    throw new Error(json.error || "Could not load offers");
+  }
+  return json.data;
 }
 
 export async function applyCartCoupon(
