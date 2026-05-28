@@ -7,8 +7,8 @@ import { PairWithRow } from "@/components/product/PairWithRow";
 import { ProductAudio } from "@/components/product/ProductAudio";
 import { ProductBuyBox } from "@/components/product/ProductBuyBox";
 import { ProductGallery } from "@/components/product/ProductGallery";
+import { ProductReviewsSection } from "@/components/product/ProductReviewsSection";
 import { ProductRichText } from "@/components/product/ProductRichText";
-import { VariantSelector } from "@/components/product/VariantSelector";
 import { cartAdd } from "@/lib/cart-api";
 import { readZoneFromCookie, unitSaleMinor, zoneToCurrency, type Zone } from "@/lib/currency";
 import { resolveMediaUrl } from "@/lib/media-cdn";
@@ -155,19 +155,11 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
             ) : null}
 
             <div className="mt-6 space-y-6">
-              {variant ? (
-                <VariantSelector
-                  variants={product.variants}
-                  selectedVariantId={variant.id}
-                  onVariantChange={setVariantId}
-                  pillStyle="storefront"
-                />
-              ) : null}
-
               <div className="lg:hidden">
                 <ProductBuyBox
                   variant={variant}
                   variants={product.variants}
+                  onVariantChange={setVariantId}
                   zone={zone}
                   saleMinor={saleMinor}
                   qty={qty}
@@ -185,24 +177,6 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
 
               <PairWithRow items={pairWithItems.slice(0, 3)} />
             </div>
-
-            <div className="mt-10 space-y-10 border-t border-stone-200 pt-10">
-              {product.description ? (
-                <section>
-                  <h2 className="font-serif text-xl font-semibold text-stone-900">About this product</h2>
-                  <ProductRichText html={product.description} className="mt-4 max-w-none prose-stone" />
-                </section>
-              ) : null}
-
-              {product.accordionItems.length > 0 ? (
-                <section>
-                  <h2 className="font-serif text-xl font-semibold text-stone-900">Product details</h2>
-                  <div className="mt-4">
-                    <AccordionDescription items={product.accordionItems} />
-                  </div>
-                </section>
-              ) : null}
-            </div>
           </div>
 
           {/* —— Right: sticky buy box (desktop) —— */}
@@ -211,6 +185,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
               <ProductBuyBox
                 variant={variant}
                 variants={product.variants}
+                onVariantChange={setVariantId}
                 zone={zone}
                 saleMinor={saleMinor}
                 qty={qty}
@@ -226,6 +201,26 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
               />
             </div>
           </aside>
+        </div>
+
+        <div className="mt-10 space-y-10 border-t border-stone-200 pt-10">
+          {product.description ? (
+            <section>
+              <h2 className="font-serif text-xl font-semibold text-stone-900">About this product</h2>
+              <ProductRichText html={product.description} className="mt-4 max-w-none prose-stone" />
+            </section>
+          ) : null}
+
+          {product.accordionItems.length > 0 ? (
+            <section>
+              <h2 className="font-serif text-xl font-semibold text-stone-900">Product details</h2>
+              <div className="mt-4">
+                <AccordionDescription items={product.accordionItems} />
+              </div>
+            </section>
+          ) : null}
+
+          <ProductReviewsSection />
         </div>
       </div>
 

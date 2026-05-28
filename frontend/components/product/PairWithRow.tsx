@@ -39,7 +39,7 @@ export function PairWithRow({ items }: Props) {
           return (
             <li
               key={item.id}
-              className="flex gap-3 rounded-lg border border-stone-100 bg-white p-3 shadow-sm"
+              className="flex min-w-0 gap-3 rounded-lg border border-stone-100 bg-white p-3 shadow-sm"
             >
               <Link
                 href={`/product/${item.slug}`}
@@ -52,7 +52,7 @@ export function PairWithRow({ items }: Props) {
                 )}
               </Link>
               <div className="min-w-0 flex-1">
-                {price ? <p className="text-sm font-semibold text-[#b85c38]">+{price}</p> : null}
+                {price ? <p className="whitespace-nowrap text-sm font-semibold text-[#b85c38]">+ {price}</p> : null}
                 <Link
                   href={`/product/${item.slug}`}
                   className="mt-0.5 line-clamp-2 text-sm font-medium text-stone-800 hover:text-[#108967]"
@@ -71,7 +71,7 @@ export function PairWithRow({ items }: Props) {
                         })
                         .finally(() => setAddingId(null));
                     }}
-                    className="mt-2 text-xs font-semibold uppercase tracking-wide text-[#108967] hover:underline disabled:opacity-50"
+                    className="mt-2 inline-flex min-w-[72px] items-center justify-center rounded border border-[#108967] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#108967] hover:bg-[#108967] hover:text-white disabled:opacity-50"
                   >
                     {addingId === item.id ? "Adding…" : "Add"}
                   </button>

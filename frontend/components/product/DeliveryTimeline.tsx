@@ -74,24 +74,24 @@ export function DeliveryTimeline({
 
   return (
     <div className="rounded-lg border border-stone-200 bg-stone-50/80 px-3 py-4 sm:px-4">
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-2">
-        {steps.map((step, i) => (
-          <div key={step.label} className="relative text-center">
-            {i < steps.length - 1 ? (
-              <span
-                className="absolute left-[calc(50%+1.25rem)] top-5 hidden h-px w-[calc(100%-2.5rem)] bg-[#108967]/30 sm:block"
-                aria-hidden
-              />
-            ) : null}
-            <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[#108967]/10 text-[#108967]">
-              {step.icon}
+      <div className="relative overflow-x-auto pb-1">
+        <div className="relative flex min-w-[720px] items-start justify-between gap-2 sm:min-w-0 sm:gap-0">
+          <span
+            className="absolute left-12 right-12 top-5 h-px bg-[#1e3a2f]/20 sm:left-16 sm:right-16"
+            aria-hidden
+          />
+          {steps.map((step) => (
+            <div key={step.label} className="relative z-10 w-40 text-center sm:w-36">
+              <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[#1e3a2f]/10 text-[#1e3a2f]">
+                {step.icon}
+              </div>
+              <p className="mt-2 text-[10px] font-semibold uppercase tracking-wide text-stone-600 sm:text-xs">
+                {step.label}
+              </p>
+              <p className="mt-0.5 text-xs font-medium text-stone-900">{step.detail}</p>
             </div>
-            <p className="mt-2 text-[10px] font-semibold uppercase tracking-wide text-stone-600 sm:text-xs">
-              {step.label}
-            </p>
-            <p className="mt-0.5 text-xs font-medium text-stone-900">{step.detail}</p>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
