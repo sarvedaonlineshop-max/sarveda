@@ -26,6 +26,13 @@ function col(idx: Record<string, number>, row: Row, name: string): string {
   return (row[i] ?? "").trim();
 }
 
+function cleanMeta(raw: string): string {
+  const v = raw.trim();
+  if (!v) return "";
+  if (v === "[]" || v === "[\"\"]") return "";
+  return v;
+}
+
 function parseParentWooId(parentCell: string, skuToParentWooId: Map<string, number>): number | null {
   const raw = parentCell.trim();
   const m = raw.match(/id:(\d+)/i);
@@ -257,7 +264,7 @@ async function main() {
     throw new Error("CSV has no data rows");
   }
 
-  const header = rows[0];
+  const header = rows[0].map((h) => h.replace(/^\uFEFF/, "").trim());
   const idx: Record<string, number> = {};
   header.forEach((h, i) => {
     if (!(h in idx)) idx[h] = i;
@@ -270,7 +277,8 @@ async function main() {
 
   for (const row of dataRows) {
     if (!row.length) continue;
-    const wooId = parseInt(row[0], 10);
+    const wooIdRaw = col(idx, row, "ID") || row[0] || "";
+    const wooId = parseInt(wooIdRaw, 10);
     if (!Number.isFinite(wooId)) continue;
     const type = (row[idx["Type"]] ?? "").trim().toLowerCase();
     byWooId.set(wooId, row);
@@ -334,6 +342,12 @@ async function main() {
   }
 
   const skuToParentWooId = new Map<string, number>();
+  let yoastDebugPrinted = false;
+  let productsOnlyUpdated = 0;
+  let productsOnlyMatchedByWooId = 0;
+  let productsOnlyMatchedBySlug = 0;
+  let productsOnlyMissed = 0;
+
   for (const p of parents) {
     const sku = col(idx, p.row, "SKU").trim();
     if (sku) skuToParentWooId.set(sku, p.wooId);
@@ -363,25 +377,60 @@ async function main() {
     const shortDescription = col(idx, row, "Short description") || null;
     const audioUrl = firstAudioUrl(idx, row);
     const hasAudio = !!audioUrl;
-    const seoKeyword =
-      col(idx, row, "Meta: _yoast_wpseo_focuskw") ||
-      col(idx, row, "Meta: _yoast_wpseo_focuskeywords") ||
-      null;
-    const seoDescription = col(idx, row, "Meta: _yoast_wpseo_metadesc") || shortDescription || "";
+    const focusKw = cleanMeta(col(idx, row, "Meta: _yoast_wpseo_focuskw"));
+    const focusKeywords = cleanMeta(col(idx, row, "Meta: _yoast_wpseo_focuskeywords"));
+    const metaDesc = cleanMeta(col(idx, row, "Meta: _yoast_wpseo_metadesc"));
+    const seoKeyword = focusKw || focusKeywords || null;
+    const seoDescription = metaDesc || shortDescription || "";
     const seoTitle =
       col(idx, row, "Meta: _yoast_wpseo_title") ||
-      col(idx, row, "Meta: _yoast_wpseo_focuskw") ||
+      focusKw ||
       name;
 
+    if (!yoastDebugPrinted && (focusKw || focusKeywords || metaDesc)) {
+      const meta: Record<string, string> = {};
+      for (const [k, i] of Object.entries(idx)) {
+        if (k.toLowerCase().includes("yoast")) {
+          meta[k] = (row[i] ?? "").trim();
+        }
+      }
+      console.log("RAW META SAMPLE:", JSON.stringify(meta, null, 2));
+      console.log("focuskw:", focusKw || null);
+      console.log("metadesc:", metaDesc || null);
+      console.log("wooCommerceId:", col(idx, row, "ID") || row[0] || null);
+      yoastDebugPrinted = true;
+    }
+
     if (PRODUCTS_ONLY) {
-      await prisma.product.updateMany({
-        where: { slug },
+      const byWoo = await prisma.product.updateMany({
+        where: { wooCommerceId: wooId },
         data: {
           seoTitle: seoTitle || null,
           seoDescription: seoDescription || null,
           seoKeyword: seoKeyword || null
         }
       });
+      if (byWoo.count > 0) {
+        productsOnlyUpdated += byWoo.count;
+        productsOnlyMatchedByWooId += byWoo.count;
+        continue;
+      }
+
+      const bySlug = await prisma.product.updateMany({
+        where: { slug },
+        data: {
+          seoTitle: seoTitle || null,
+          seoDescription: seoDescription || null,
+          seoKeyword: seoKeyword || null,
+          wooCommerceId: wooId
+        }
+      });
+      if (bySlug.count > 0) {
+        productsOnlyUpdated += bySlug.count;
+        productsOnlyMatchedBySlug += bySlug.count;
+      } else {
+        productsOnlyMissed += 1;
+      }
       continue;
     }
 
@@ -593,8 +642,9 @@ async function main() {
       `Seed complete: ${pCount} products (${onlyVariableParents} variable parents), ${vCount} variants, ${cCount} categories`
     );
   } else {
-    const pCount = await prisma.product.count();
-    console.log(`Products-only SEO update complete for ${pCount} products.`);
+    console.log(
+      `Products-only SEO update complete: ${productsOnlyUpdated} rows updated (wooId match: ${productsOnlyMatchedByWooId}, slug match: ${productsOnlyMatchedBySlug}, missed: ${productsOnlyMissed}).`
+    );
   }
 }
 
