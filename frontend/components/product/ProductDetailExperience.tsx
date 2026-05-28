@@ -58,7 +58,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
   useEffect(() => {
     if (!variant || !sortedImages.length) return;
     setGalleryIndex(imageIndexForVariant(variant, sortedImages));
-  }, [variant?.id, sortedImages]);
+  }, [variant, sortedImages]);
 
   const audioUrl = resolveMediaUrl(product.audioUrl);
   const variantLabel = variant ? variantDisplayLabel(variant, 0) : product.name;

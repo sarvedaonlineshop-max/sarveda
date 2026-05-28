@@ -22,6 +22,80 @@ const nextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      // Trailing slash removal (WooCommerce uses trailing slashes)
+      {
+        source: "/product/:slug/",
+        destination: "/product/:slug",
+        permanent: true
+      },
+      {
+        source: "/product-category/:slug/",
+        destination: "/product-category/:slug",
+        permanent: true
+      },
+      {
+        source: "/shop/",
+        destination: "/shop",
+        permanent: true
+      },
+      // WooCommerce blog → new insights
+      {
+        source: "/blog/:slug",
+        destination: "/:slug",
+        permanent: true
+      },
+      // WP legacy paths
+      {
+        source: "/product-tag/:slug",
+        destination: "/shop?tag=:slug",
+        permanent: true
+      },
+      // Old WooCommerce my-account
+      {
+        source: "/my-account",
+        destination: "/profile",
+        permanent: true
+      },
+      {
+        source: "/my-account/",
+        destination: "/profile",
+        permanent: true
+      },
+      // Old WooCommerce cart
+      {
+        source: "/woocommerce-cart",
+        destination: "/cart",
+        permanent: true
+      },
+      {
+        source: "/privacy-policy",
+        destination: "/privacy",
+        permanent: true
+      },
+      {
+        source: "/privacy-policy/",
+        destination: "/privacy",
+        permanent: true
+      },
+      {
+        source: "/terms-conditions",
+        destination: "/terms",
+        permanent: true
+      },
+      {
+        source: "/shipping-policy",
+        destination: "/shipping",
+        permanent: true
+      },
+      {
+        source: "/refund-policy",
+        destination: "/refunds",
+        permanent: true
+      }
+    ];
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "sarveda.com", pathname: "/**" },

@@ -41,7 +41,6 @@ export function ProductCard({ product, layout = "grid" }: Props) {
             fill
             className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
             sizes={rail ? "72vw" : "(max-width:768px) 50vw,(max-width:1024px) 50vw,33vw"}
-            unoptimized
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-sm text-brand-muted">

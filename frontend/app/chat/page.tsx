@@ -2,7 +2,8 @@ import { ChatClient } from "@/components/chat/ChatClient";
 
 export const metadata = {
   title: "Chat",
-  description: "Chat with Sarveda"
+  description: "Chat with Sarveda",
+  robots: { index: false, follow: false }
 };
 
 export default function ChatPage() {

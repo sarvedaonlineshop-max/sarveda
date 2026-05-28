@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useCallback, useEffect, useState } from "react";
@@ -83,7 +84,13 @@ function SearchResults() {
               >
                 {s.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={s.imageUrl} alt="" className="h-10 w-10 rounded object-cover" />
+                  <Image
+                    src={s.imageUrl}
+                    alt={s.name}
+                    width={40}
+                    height={40}
+                    className="h-10 w-10 rounded object-cover"
+                  />
                 ) : (
                   <span className="h-10 w-10 rounded bg-stone-100" />
                 )}

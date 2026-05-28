@@ -1,13 +1,18 @@
 import type { MetadataRoute } from "next";
 
 import {
+  fetchBlogSlugs,
   fetchCategorySlugs,
   fetchCmsPageSlugs,
   fetchCourseSlugs,
   fetchEventSlugs,
-  fetchProductSitemapEntries
+  fetchMentors,
+  fetchOffers,
+  fetchProductSitemapEntries,
+  fetchRetreats,
+  fetchVaidyas
 } from "@/lib/api";
-import { absoluteUrl, isProductionSite } from "@/lib/site";
+import { absoluteUrl, canonical, isProductionSite } from "@/lib/site";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if (!isProductionSite()) {
@@ -19,15 +24,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: absoluteUrl("/"), lastModified: now, changeFrequency: "daily", priority: 1 },
     { url: absoluteUrl("/shop"), lastModified: now, changeFrequency: "daily", priority: 0.9 },
     { url: absoluteUrl("/courses"), lastModified: now, changeFrequency: "weekly", priority: 0.85 },
-    { url: absoluteUrl("/events"), lastModified: now, changeFrequency: "weekly", priority: 0.85 }
+    { url: absoluteUrl("/events"), lastModified: now, changeFrequency: "weekly", priority: 0.85 },
+    { url: canonical("/offers"), lastModified: new Date(), changeFrequency: "weekly" as const, priority: 0.7 },
+    { url: canonical("/insights"), lastModified: new Date(), changeFrequency: "weekly", priority: 0.7 },
+    { url: canonical("/vaidya"), lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
+    { url: canonical("/mentor"), lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
+    { url: canonical("/retreat"), lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
+    { url: canonical("/about"), lastModified: new Date(), changeFrequency: "yearly", priority: 0.5 },
+    { url: canonical("/contact"), lastModified: new Date(), changeFrequency: "yearly", priority: 0.5 }
   ];
 
-  const [products, categorySlugs, courseSlugs, eventSlugs, pageSlugs] = await Promise.all([
+  const [products, categorySlugs, courseSlugs, eventSlugs, pageSlugs, blogSlugs, vaidyas, mentors, retreats, offers] = await Promise.all([
     fetchProductSitemapEntries({ next: { revalidate: 3600 } }),
     fetchCategorySlugs({ next: { revalidate: 3600 } }),
     fetchCourseSlugs({ next: { revalidate: 3600 } }),
     fetchEventSlugs({ next: { revalidate: 3600 } }),
-    fetchCmsPageSlugs({ next: { revalidate: 3600 } })
+    fetchCmsPageSlugs({ next: { revalidate: 3600 } }),
+    fetchBlogSlugs({ next: { revalidate: 3600 } }),
+    fetchVaidyas({ next: { revalidate: 3600 } }),
+    fetchMentors({ next: { revalidate: 3600 } }),
+    fetchRetreats({ next: { revalidate: 3600 } }),
+    fetchOffers({ next: { revalidate: 3600 } })
   ]);
 
   const productRoutes: MetadataRoute.Sitemap = products.map((p) => ({
@@ -65,5 +82,52 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.65
   }));
 
-  return [...staticRoutes, ...categoryRoutes, ...courseRoutes, ...eventRoutes, ...cmsRoutes, ...productRoutes];
+  const blogRoutes: MetadataRoute.Sitemap = blogSlugs.map((slug) => ({
+    url: absoluteUrl(`/${slug}`),
+    lastModified: now,
+    changeFrequency: "weekly",
+    priority: 0.65
+  }));
+
+  const vaidyaRoutes: MetadataRoute.Sitemap = vaidyas.map((row) => ({
+    url: absoluteUrl(`/vaidya/${row.slug}`),
+    lastModified: now,
+    changeFrequency: "monthly",
+    priority: 0.6
+  }));
+
+  const mentorRoutes: MetadataRoute.Sitemap = mentors.map((row) => ({
+    url: absoluteUrl(`/mentor/${row.slug}`),
+    lastModified: now,
+    changeFrequency: "monthly",
+    priority: 0.6
+  }));
+
+  const retreatRoutes: MetadataRoute.Sitemap = retreats.map((row) => ({
+    url: absoluteUrl(`/retreat/${row.slug}`),
+    lastModified: now,
+    changeFrequency: "monthly",
+    priority: 0.7
+  }));
+
+  const offerRoutes: MetadataRoute.Sitemap = offers.map((row) => ({
+    url: absoluteUrl(`/offers/${row.slug}`),
+    lastModified: now,
+    changeFrequency: "weekly",
+    priority: 0.7
+  }));
+
+  return [
+    ...staticRoutes,
+    ...categoryRoutes,
+    ...courseRoutes,
+    ...eventRoutes,
+    ...cmsRoutes,
+    ...blogRoutes,
+    ...vaidyaRoutes,
+    ...mentorRoutes,
+    ...retreatRoutes,
+    ...offerRoutes,
+    ...productRoutes
+  ];
 }

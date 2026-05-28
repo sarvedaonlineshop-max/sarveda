@@ -3,7 +3,8 @@ import { ProfileClient } from "@/components/profile/ProfileClient";
 
 export const metadata = {
   title: "You",
-  description: "Your Sarveda account and orders"
+  description: "Your Sarveda account and orders",
+  robots: { index: false, follow: false }
 };
 
 export default function ProfilePage() {

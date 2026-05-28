@@ -1,6 +1,10 @@
 import type { ProductDetail } from "./types";
 import { absoluteUrl } from "./site";
 
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
 export function productJsonLd(product: ProductDetail) {
   const images = product.images.map((i) => i.url).filter(Boolean);
   const price = product.variants.find((v) => v.isDefault) ?? product.variants[0];
@@ -21,10 +25,15 @@ export function productJsonLd(product: ProductDetail) {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
-    description: product.seoDescription || product.shortDescription || product.description,
+    description: stripHtml(product.seoDescription || product.shortDescription || product.description || ""),
     image: images.length ? images : undefined,
     sku: price?.sku,
     brand: { "@type": "Brand", name: "Sarveda" },
+    inLanguage: "en-IN",
+    availableAtOrFrom: {
+      "@type": "Place",
+      name: "India"
+    },
     offers: offer
   };
 }

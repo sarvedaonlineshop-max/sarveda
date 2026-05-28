@@ -44,10 +44,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description,
     keywords: product.seoKeyword ? product.seoKeyword.split(",").map((keyword) => keyword.trim()) : undefined,
     openGraph: {
+      type: "product",
+      url: canonical(`/product/${params.slug}`),
       title,
       description,
       images: product.images[0]?.url ? [{ url: product.images[0].url }] : undefined,
       siteName: "Sarveda"
+    } as any,
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: product.images[0]?.url ? [product.images[0].url] : ["/og-default.jpg"]
     },
     robots: isProductionSite() ? { index: true, follow: true } : { index: false, follow: false },
     alternates: {

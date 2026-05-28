@@ -3,7 +3,8 @@ import { CartPageClient } from "@/components/cart/CartPageClient";
 
 export const metadata = {
   title: "Cart",
-  description: "Your Sarveda cart"
+  description: "Your Sarveda cart",
+  robots: { index: false, follow: false }
 };
 
 export default function CartPage() {

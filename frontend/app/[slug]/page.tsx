@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -244,8 +245,15 @@ export default async function SlugContentPage({ params }: Props) {
         </h1>
         {content.imageUrl ? (
           <div className="mt-8 overflow-hidden rounded-2xl border border-stone-200">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={content.imageUrl} alt="" className="w-full object-cover" />
+            <div className="relative aspect-[16/9] w-full">
+              <Image
+                src={content.imageUrl}
+                alt={`${content.title} cover image`}
+                fill
+                className="object-cover"
+                sizes="(min-width: 1024px) 896px, 100vw"
+              />
+            </div>
           </div>
         ) : null}
         {content.content ? (

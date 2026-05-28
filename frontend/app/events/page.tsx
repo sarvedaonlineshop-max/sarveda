@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
 import { fetchEvents } from "@/lib/api";
@@ -62,7 +63,13 @@ export default async function EventsPage() {
                   <div className="aspect-[16/10] overflow-hidden bg-stone-100">
                     {event.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={event.imageUrl} alt="" className="h-full w-full object-cover" />
+                      <Image
+                        src={event.imageUrl}
+                        alt={event.title}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      />
                     ) : (
                       <div className="flex h-full items-center justify-center text-stone-400">Sarveda</div>
                     )}

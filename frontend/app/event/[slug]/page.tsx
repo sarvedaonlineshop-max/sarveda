@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -116,7 +117,14 @@ export default async function EventDetailPage({ params }: Props) {
             {event.imageUrl ? (
               <div className="mt-8 overflow-hidden rounded-2xl border border-stone-200 bg-white">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={event.imageUrl} alt="" className="w-full object-cover" />
+                <Image
+                  src={event.imageUrl}
+                  alt={event.title}
+                  width={1200}
+                  height={750}
+                  className="h-auto w-full object-cover"
+                  sizes="(max-width: 1024px) 100vw, 66vw"
+                />
               </div>
             ) : null}
 

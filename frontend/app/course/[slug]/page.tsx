@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -94,7 +95,14 @@ export default async function CourseDetailPage({ params }: Props) {
 
             {course.imageUrl ? (
               <div className="mt-8 overflow-hidden rounded-2xl border border-stone-200 bg-white">
-                <img src={course.imageUrl} alt="" className="w-full object-cover" />
+                <Image
+                  src={course.imageUrl}
+                  alt={course.title}
+                  width={1200}
+                  height={750}
+                  className="h-auto w-full object-cover"
+                  sizes="(max-width: 1024px) 100vw, 66vw"
+                />
               </div>
             ) : null}
 

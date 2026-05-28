@@ -420,6 +420,7 @@ export function PaymentSelector({
   }, [
     addressForm,
     busy,
+    form.email,
     goSuccess,
     onFieldErrors,
     openRazorpay,
