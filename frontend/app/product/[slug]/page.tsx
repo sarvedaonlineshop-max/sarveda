@@ -44,13 +44,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description,
     keywords: product.seoKeyword ? product.seoKeyword.split(",").map((keyword) => keyword.trim()) : undefined,
     openGraph: {
-      type: "product",
+      // Next.js metadata validator only allows a fixed OpenGraph type set.
+      // Keep product semantics in JSON-LD; use a supported OG type to avoid runtime 500s.
+      type: "website",
       url: canonical(`/product/${params.slug}`),
       title,
       description,
       images: product.images[0]?.url ? [{ url: product.images[0].url }] : undefined,
       siteName: "Sarveda"
-    } as any,
+    },
     twitter: {
       card: "summary_large_image",
       title,
