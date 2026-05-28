@@ -33,6 +33,21 @@ function cleanMeta(raw: string): string {
   return v;
 }
 
+function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\r\n/g, " ")
+    .replace(/\r/g, " ")
+    .replace(/\n/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .substring(0, 160);
+}
+
 function parseParentWooId(parentCell: string, skuToParentWooId: Map<string, number>): number | null {
   const raw = parentCell.trim();
   const m = raw.match(/id:(\d+)/i);
@@ -381,11 +396,14 @@ async function main() {
     const focusKeywords = cleanMeta(col(idx, row, "Meta: _yoast_wpseo_focuskeywords"));
     const metaDesc = cleanMeta(col(idx, row, "Meta: _yoast_wpseo_metadesc"));
     const seoKeyword = focusKw || focusKeywords || null;
-    const seoDescription = metaDesc || shortDescription || "";
-    const seoTitle =
+    const seoDescription = stripHtml(metaDesc || shortDescription || description || "") || null;
+    const seoTitle = (
       col(idx, row, "Meta: _yoast_wpseo_title") ||
       focusKw ||
-      name;
+      name
+    )
+      .substring(0, 60)
+      .trim() || null;
 
     if (!yoastDebugPrinted && (focusKw || focusKeywords || metaDesc)) {
       const meta: Record<string, string> = {};
@@ -406,7 +424,7 @@ async function main() {
         where: { wooCommerceId: wooId },
         data: {
           seoTitle: seoTitle || null,
-          seoDescription: seoDescription || null,
+          seoDescription,
           seoKeyword: seoKeyword || null
         }
       });
@@ -420,7 +438,7 @@ async function main() {
         where: { slug },
         data: {
           seoTitle: seoTitle || null,
-          seoDescription: seoDescription || null,
+          seoDescription,
           seoKeyword: seoKeyword || null,
           wooCommerceId: wooId
         }
