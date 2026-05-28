@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 
-import { canonical } from "@/lib/site";
+import { canonical, isProductionSite } from "@/lib/site";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Privacy Policy",
     description: "Read Sarveda's privacy policy and how we handle your personal data.",
     alternates: { canonical: canonical("/privacy") },
-    robots: { index: true, follow: true }
+    robots: isProductionSite()
+      ? { index: true, follow: true }
+      : { index: false, follow: false }
   };
 }
 

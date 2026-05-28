@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 
-import { canonical } from "@/lib/site";
+import { canonical, isProductionSite } from "@/lib/site";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Refund Policy",
     description: "Sarveda refund and return policy details for eligible products and orders.",
     alternates: { canonical: canonical("/refunds") },
-    robots: { index: true, follow: true }
+    robots: isProductionSite()
+      ? { index: true, follow: true }
+      : { index: false, follow: false }
   };
 }
 

@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 
-import { canonical } from "@/lib/site";
+import { canonical, isProductionSite } from "@/lib/site";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Shipping Policy",
     description: "Shipping timelines, delivery zones, and shipping terms for Sarveda orders.",
     alternates: { canonical: canonical("/shipping") },
-    robots: { index: true, follow: true }
+    robots: isProductionSite()
+      ? { index: true, follow: true }
+      : { index: false, follow: false }
   };
 }
 

@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 
-import { canonical } from "@/lib/site";
+import { canonical, isProductionSite } from "@/lib/site";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Terms of Service",
     description: "Read the terms and conditions for using Sarveda's website and services.",
     alternates: { canonical: canonical("/terms") },
-    robots: { index: true, follow: true }
+    robots: isProductionSite()
+      ? { index: true, follow: true }
+      : { index: false, follow: false }
   };
 }
 

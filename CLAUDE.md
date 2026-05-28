@@ -19,13 +19,21 @@
 - **Awaiting user feedback** on PDP after deploy to `https://sarveda-demo.xyz`
 - **Next after PDP:** run `npm run import:variations` on EC2/RDS (uses `data/variations.xml`), reviews UI, per-variant images if needed
 
-### Demo migration status (mostly done except SEO)
+### Demo migration status (mostly done; final migration ops pending)
 - ✅ S3 media migration (`sarveda-media` bucket **us-east-1** — set `AWS_S3_REGION=us-east-1` on EC2; EC2 stays `ap-south-1`)
 - ✅ ~1,170 files uploaded; map at `data/media-migration-map.json`
 - ✅ Corporate wellness, vaidya/mentor/retreat/offers pages, testimonials API, coupons import
 - ✅ Category page 500 fix (no `force-dynamic` + `generateStaticParams` conflict on Vercel)
-- ⬜ Email/WhatsApp on all order events, Shiprocket E2E, GST invoice E2E, full SEO (22 sitemaps) — deferred
+- ⬜ Email/WhatsApp on all order events, Shiprocket E2E, GST invoice E2E, full SEO parity (22 sitemaps) — deferred
 - Details: `data/MIGRATION_STATUS.md`
+
+### Migration Readiness
+- SEO: ✅ Complete
+- Search Console data: ⬜ Pending (need from Arjun)
+- 301 redirect map: ⬜ Pending
+- Cloudflare setup: ⬜ Pending
+
+**Next step:** Get Google Search Console access from Arjun to finalise 301 redirect map before migration.
 
 ### New machine setup (clone — do NOT copy whole folder as primary sync)
 1. `git clone https://github.com/sarvedaonlineshop-max/sarveda.git && cd sarveda && git pull`
@@ -847,6 +855,17 @@ Current WordPress errors (selling points for migration):
 ---
 
 ## 7. SEO — NEVER BREAK THESE RULES
+
+### SEO Implementation Status (Completed)
+- ✅ All 7 SEO prompts implemented
+- ✅ `SeoAnalysisPanel` built (Yoast equivalent) in admin product form
+- ✅ 169 products SEO data migrated from Yoast
+- ✅ `seoTitle`, `seoDescription`, `seoKeyword` populated for migrated Woo products
+- ✅ `stripHtml` applied to seeded SEO descriptions
+- ✅ Sitemap extended with blog / vaidya / mentor / retreat / offers
+- ✅ 301 redirects added in `frontend/next.config.js`
+- ✅ Policy pages created (`/privacy`, `/terms`, `/shipping`, `/refunds`)
+- ✅ `noindex` applied on transactional pages
 
 ### URL Preservation (Must match WooCommerce exactly)
 ```
