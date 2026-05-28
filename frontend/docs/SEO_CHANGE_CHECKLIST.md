@@ -2,6 +2,25 @@
 
 Use this checklist for every new feature, page, or route change before merge.
 
+## ⚠️ MIGRATION DAY CHECKLIST
+
+### Atomic Switch Procedure (do in this exact order):
+1. Verify all 301 redirects working on staging
+2. Take WooCommerce full backup
+3. Change `NEXT_PUBLIC_SITE_URL` to `https://sarveda.com` on Vercel -> PRODUCTION environment ONLY
+4. Point `sarveda.com` DNS to Vercel (same minute)
+5. Put WooCommerce in maintenance mode immediately
+6. Verify `sarveda.com/robots.txt` shows allow
+7. Verify `sarveda.com/sitemap.xml` shows products
+8. Submit sitemap in Google Search Console
+9. Use GSC Change of Address tool
+
+### NEVER DO:
+- ❌ Set `NEXT_PUBLIC_SITE_URL=https://sarveda.com` on Vercel Preview environment
+- ❌ Leave WooCommerce publicly accessible after DNS switch
+- ❌ Change DNS without changing env var same minute
+- ❌ Skip WooCommerce maintenance mode
+
 ## 1) URL and Routing Safety
 
 - [ ] Keep existing SEO-critical URL patterns unchanged unless explicitly approved:
