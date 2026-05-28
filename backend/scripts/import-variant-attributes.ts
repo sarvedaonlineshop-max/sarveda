@@ -120,14 +120,27 @@ async function main(): Promise<void> {
     const wpPostId = parseIntSafe(cdata("wp:post_id", block));
     if (!wpPostId) continue;
 
-    const sku = `woo-var-${wpPostId}`;
-    const variant = await prisma.productVariant.findUnique({ where: { sku } });
+    const legacySku = `woo-var-${wpPostId}`;
+    const meta = parseMeta(block);
+    const xmlSku = (meta._sku ?? "").trim();
+    const candidateSkus = [legacySku, xmlSku].filter(Boolean);
+
+    let variant = null as Awaited<ReturnType<typeof prisma.productVariant.findUnique>>;
+    let matchedSku = "";
+    for (const candidate of candidateSkus) {
+      const row = await prisma.productVariant.findUnique({ where: { sku: candidate } });
+      if (row) {
+        variant = row;
+        matchedSku = candidate;
+        break;
+      }
+    }
+
     if (!variant) {
       missingVariant++;
       continue;
     }
 
-    const meta = parseMeta(block);
     const excerpt = cdata("excerpt:encoded", block);
     const attrs = extractAttributes(meta, excerpt);
     if (!attrs.length) {
@@ -161,7 +174,7 @@ async function main(): Promise<void> {
 
     linked++;
     if (linked <= 5 || linked % 500 === 0) {
-      console.log(`→ ${sku}: ${attrs.map((a) => `${a.name}=${a.value}`).join(", ")} (stock ${onHand})`);
+      console.log(`→ ${matchedSku}: ${attrs.map((a) => `${a.name}=${a.value}`).join(", ")} (stock ${onHand})`);
     }
   }
 
