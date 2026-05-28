@@ -10,6 +10,7 @@ import { slugify } from "../src/utils/slugify";
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
 const prisma = new PrismaClient();
+const PRODUCTS_ONLY = process.argv.includes("--products-only");
 
 type Row = string[];
 
@@ -284,7 +285,11 @@ async function main() {
     `Parsed CSV: ${parents.length} parent products, ${variations.length} variations`
   );
 
-  await clearCatalog();
+  if (!PRODUCTS_ONLY) {
+    await clearCatalog();
+  } else {
+    console.log("Products-only mode: preserving existing catalog data and updating SEO fields only.");
+  }
 
   const categoryPathToId = new Map<string, string>();
 
@@ -358,9 +363,27 @@ async function main() {
     const shortDescription = col(idx, row, "Short description") || null;
     const audioUrl = firstAudioUrl(idx, row);
     const hasAudio = !!audioUrl;
-    const seoKeyword = col(idx, row, "Meta: _yoast_wpseo_focuskw") || null;
-    const seoDescription = col(idx, row, "Meta: _yoast_wpseo_metadesc") || null;
-    const seoTitle = seoKeyword || name;
+    const seoKeyword =
+      col(idx, row, "Meta: _yoast_wpseo_focuskw") ||
+      col(idx, row, "Meta: _yoast_wpseo_focuskeywords") ||
+      null;
+    const seoDescription = col(idx, row, "Meta: _yoast_wpseo_metadesc") || shortDescription || "";
+    const seoTitle =
+      col(idx, row, "Meta: _yoast_wpseo_title") ||
+      col(idx, row, "Meta: _yoast_wpseo_focuskw") ||
+      name;
+
+    if (PRODUCTS_ONLY) {
+      await prisma.product.updateMany({
+        where: { slug },
+        data: {
+          seoTitle: seoTitle || null,
+          seoDescription: seoDescription || null,
+          seoKeyword: seoKeyword || null
+        }
+      });
+      continue;
+    }
 
     const catIds: string[] = [];
     const catsRaw = col(idx, row, "Categories");
@@ -477,7 +500,8 @@ async function main() {
     }
   }
 
-  for (const v of variations) {
+  if (!PRODUCTS_ONLY) {
+    for (const v of variations) {
     const { row, wooId } = v;
     const parentWoo = parseParentWooId(col(idx, row, "Parent"), skuToParentWooId);
     if (!parentWoo) {
@@ -530,45 +554,48 @@ async function main() {
         }
       });
     }
-  }
+    }
 
-  const onlyVariableParents = await prisma.product.count({
-    where: { productType: "VARIABLE" }
-  });
-
-  const variableProducts = await prisma.product.findMany({
-    where: { productType: "VARIABLE" },
-    select: { id: true }
-  });
-
-  const variableIds = variableProducts.map((p) => p.id);
-  if (variableIds.length > 0) {
-    await prisma.productVariant.updateMany({
-      where: { productId: { in: variableIds } },
-      data: { isDefault: false }
+    const onlyVariableParents = await prisma.product.count({
+      where: { productType: "VARIABLE" }
     });
-  }
 
-  for (const vp of variableProducts) {
-    const first = await prisma.productVariant.findFirst({
-      where: { productId: vp.id },
-      orderBy: { createdAt: "asc" }
+    const variableProducts = await prisma.product.findMany({
+      where: { productType: "VARIABLE" },
+      select: { id: true }
     });
-    if (first) {
-      await prisma.productVariant.update({
-        where: { id: first.id },
-        data: { isDefault: true }
+
+    const variableIds = variableProducts.map((p) => p.id);
+    if (variableIds.length > 0) {
+      await prisma.productVariant.updateMany({
+        where: { productId: { in: variableIds } },
+        data: { isDefault: false }
       });
     }
+
+    for (const vp of variableProducts) {
+      const first = await prisma.productVariant.findFirst({
+        where: { productId: vp.id },
+        orderBy: { createdAt: "asc" }
+      });
+      if (first) {
+        await prisma.productVariant.update({
+          where: { id: first.id },
+          data: { isDefault: true }
+        });
+      }
+    }
+    const pCount = await prisma.product.count();
+    const vCount = await prisma.productVariant.count();
+    const cCount = await prisma.category.count();
+
+    console.log(
+      `Seed complete: ${pCount} products (${onlyVariableParents} variable parents), ${vCount} variants, ${cCount} categories`
+    );
+  } else {
+    const pCount = await prisma.product.count();
+    console.log(`Products-only SEO update complete for ${pCount} products.`);
   }
-
-  const pCount = await prisma.product.count();
-  const vCount = await prisma.productVariant.count();
-  const cCount = await prisma.category.count();
-
-  console.log(
-    `Seed complete: ${pCount} products (${onlyVariableParents} variable parents), ${vCount} variants, ${cCount} categories`
-  );
 }
 
 main()

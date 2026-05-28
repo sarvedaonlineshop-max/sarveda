@@ -10,6 +10,7 @@ import {
   postAdminProduct,
   putAdminProduct
 } from "@/lib/admin-api";
+import { SeoAnalysisPanel } from "@/components/admin/SeoAnalysisPanel";
 import { fetchCategoryTree } from "@/lib/api";
 import type { CategoryNode } from "@/lib/types";
 
@@ -994,6 +995,14 @@ export function ProductForm({ productId }: { productId?: string }) {
                 className={inputCls}
               />
             </div>
+            <SeoAnalysisPanel
+              seoTitle={seoTitle}
+              seoDescription={seoDescription}
+              seoKeyword={seoKeyword}
+              productName={name}
+              productDescription={shortDescription || description}
+              slug={slug}
+            />
           </div>
         ) : null}
 
