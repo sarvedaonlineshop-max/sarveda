@@ -2,10 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { cartAdd } from "@/lib/cart-api";
-import { readZoneFromCookie, type Zone, zoneToCurrency } from "@/lib/currency";
+import { usePricingZone } from "@/hooks/usePricingZone";
+import { unitSaleMinor, zoneToCurrency } from "@/lib/currency";
 import { formatMinorFromPaise } from "@/lib/money";
 import { resolveMediaUrl } from "@/lib/media-cdn";
 import type { ProductListItem } from "@/lib/types";
@@ -15,12 +16,8 @@ type Props = {
 };
 
 export function PairWithRow({ items }: Props) {
-  const [zone, setZone] = useState<Zone>("IN");
+  const zone = usePricingZone();
   const [addingId, setAddingId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setZone(readZoneFromCookie());
-  }, []);
 
   if (items.length === 0) return null;
 
@@ -33,7 +30,20 @@ export function PairWithRow({ items }: Props) {
           const currency = zoneToCurrency(zone);
           const price =
             item.fromPriceInPaise != null
-              ? formatMinorFromPaise(item.fromPriceInPaise, currency)
+              ? formatMinorFromPaise(
+                  unitSaleMinor(
+                    {
+                      saleInPaise: item.fromPriceInPaise,
+                      mrpInPaise: item.fromMrpInPaise ?? item.fromPriceInPaise,
+                      saleUsdCents: item.fromSaleUsdCents,
+                      mrpUsdCents: item.fromMrpUsdCents,
+                      saleGbpPence: item.fromSaleGbpPence,
+                      mrpGbpPence: item.fromMrpGbpPence
+                    },
+                    zone
+                  ),
+                  currency
+                )
               : null;
 
           return (

@@ -21,6 +21,10 @@ export type ProductListItem = {
   primaryImageUrl: string | null;
   fromPriceInPaise: number | null;
   fromMrpInPaise?: number | null;
+  fromSaleUsdCents?: number | null;
+  fromMrpUsdCents?: number | null;
+  fromSaleGbpPence?: number | null;
+  fromMrpGbpPence?: number | null;
   /** Lowest-priced or default active variant — used for quick add from listing */
   defaultVariantId?: string | null;
   categories: { slug: string; name: string }[];

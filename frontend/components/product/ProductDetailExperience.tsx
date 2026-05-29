@@ -14,7 +14,8 @@ import { ProductReviewsSection } from "@/components/product/ProductReviewsSectio
 import { ProductRichText } from "@/components/product/ProductRichText";
 import { PriceDisplay } from "@/components/product/PriceDisplay";
 import { cartAdd } from "@/lib/cart-api";
-import { readZoneFromCookie, unitSaleMinor, zoneToCurrency, type Zone } from "@/lib/currency";
+import { usePricingZone } from "@/hooks/usePricingZone";
+import { unitSaleMinor, zoneToCurrency } from "@/lib/currency";
 import { resolveMediaUrl } from "@/lib/media-cdn";
 import { formatINRFromPaise, formatMinorFromPaise } from "@/lib/money";
 import { imageIndexForVariant } from "@/lib/variant-image";
@@ -49,12 +50,8 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
   const [variantId, setVariantId] = useState<string | null>(initial?.id ?? null);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [qty, setQty] = useState(1);
-  const [zone, setZone] = useState<Zone>("IN");
+  const zone = usePricingZone();
   const [addedFlash, setAddedFlash] = useState(false);
-
-  useEffect(() => {
-    setZone(readZoneFromCookie());
-  }, []);
 
   const variant = product.variants.find((v) => v.id === variantId) ?? initial;
   const isDigital = product.productType === "DIGITAL";

@@ -1,7 +1,17 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 
-import { discountPercentOff, formatINRFromPaise } from "@/lib/money";
+import { usePricingZone } from "@/hooks/usePricingZone";
+import {
+  unitMrpMinor,
+  unitSaleMinor,
+  zoneToCurrency,
+  type VariantPriceFields,
+  type Zone
+} from "@/lib/currency";
+import { discountPercentOff, formatMinorFromPaise } from "@/lib/money";
 import { productListBadges } from "@/lib/product-badges";
 import type { ProductListItem } from "@/lib/types";
 
@@ -10,17 +20,40 @@ type Props = {
   layout?: "grid" | "rail";
 };
 
+function listItemAsVariantPrice(product: ProductListItem): VariantPriceFields | null {
+  if (product.fromPriceInPaise == null) return null;
+  return {
+    saleInPaise: product.fromPriceInPaise,
+    mrpInPaise: product.fromMrpInPaise ?? product.fromPriceInPaise,
+    saleUsdCents: product.fromSaleUsdCents,
+    mrpUsdCents: product.fromMrpUsdCents,
+    saleGbpPence: product.fromSaleGbpPence,
+    mrpGbpPence: product.fromMrpGbpPence
+  };
+}
+
+function formatListPrice(product: ProductListItem, zone: Zone): string | null {
+  const fields = listItemAsVariantPrice(product);
+  if (!fields) return null;
+  const minor = unitSaleMinor(fields, zone);
+  return formatMinorFromPaise(minor, zoneToCurrency(zone));
+}
+
 export function ProductCard({ product, layout = "grid" }: Props) {
-  const priceLabel =
-    formatINRFromPaise(product.fromPriceInPaise);
+  const zone = usePricingZone();
+  const priceLabel = formatListPrice(product, zone);
+  const fields = listItemAsVariantPrice(product);
+  const saleMinor = fields ? unitSaleMinor(fields, zone) : null;
+  const mrpMinor = fields ? unitMrpMinor(fields, zone) : null;
   const discountPercent =
-    product.fromMrpInPaise && product.fromPriceInPaise
-      ? discountPercentOff(product.fromMrpInPaise, product.fromPriceInPaise)
+    saleMinor != null && mrpMinor != null && mrpMinor > saleMinor
+      ? discountPercentOff(mrpMinor, saleMinor)
       : null;
   const href = `/product/${product.slug}`;
   const badges = productListBadges(product);
   const primaryCat = product.categories[0];
   const rail = layout === "rail";
+  const currency = zoneToCurrency(zone);
 
   return (
     <article
@@ -94,14 +127,14 @@ export function ProductCard({ product, layout = "grid" }: Props) {
           </h2>
 
           <div className="mt-auto flex flex-wrap items-baseline gap-2 pt-2">
-            <p className="text-base font-bold text-brand-ink md:text-lg">{priceLabel}</p>
-            {product.fromMrpInPaise &&
-              product.fromPriceInPaise &&
-              product.fromMrpInPaise > product.fromPriceInPaise && (
-                <p className="text-xs text-brand-muted line-through md:text-sm">
-                  {formatINRFromPaise(product.fromMrpInPaise)}
-                </p>
-              )}
+            {priceLabel ? (
+              <p className="text-base font-bold text-brand-ink md:text-lg">{priceLabel}</p>
+            ) : null}
+            {mrpMinor != null && saleMinor != null && mrpMinor > saleMinor ? (
+              <p className="text-xs text-brand-muted line-through md:text-sm">
+                {formatMinorFromPaise(mrpMinor, currency)}
+              </p>
+            ) : null}
           </div>
 
           <span className="mt-3 inline-flex w-fit items-center gap-1 rounded-full border border-stone-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-stone-800 transition group-hover:border-[#108967] group-hover:text-[#108967]">

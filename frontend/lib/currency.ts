@@ -3,6 +3,15 @@ export type Zone = "IN" | "US" | "GB" | "OTHER";
 
 export const ZONE_COOKIE = "sarveda_zone";
 
+/** How long we remember auto-detected or chosen pricing zone (days). */
+export const ZONE_COOKIE_MAX_AGE_DAYS = 30;
+
+const VALID_ZONES: Zone[] = ["IN", "US", "GB", "OTHER"];
+
+export function isValidZone(value: string | undefined | null): value is Zone {
+  return VALID_ZONES.includes(value as Zone);
+}
+
 export function zoneToCurrency(zone: Zone): "INR" | "USD" | "GBP" {
   if (zone === "GB") return "GBP";
   if (zone === "IN") return "INR";
@@ -13,8 +22,16 @@ export function readZoneFromCookie(): Zone {
   if (typeof document === "undefined") return "IN";
   const match = document.cookie.match(new RegExp(`(?:^|; )${ZONE_COOKIE}=([^;]*)`));
   const raw = match?.[1];
-  if (raw === "US" || raw === "GB" || raw === "IN" || raw === "OTHER") return raw;
+  if (isValidZone(raw)) return raw;
   return "IN";
+}
+
+/** Persist shopper pricing zone (e.g. manual country picker in header). */
+export function writeZoneCookie(zone: Zone): void {
+  if (typeof document === "undefined") return;
+  const maxAge = ZONE_COOKIE_MAX_AGE_DAYS * 24 * 60 * 60;
+  const secure = typeof window !== "undefined" && window.location.protocol === "https:";
+  document.cookie = `${ZONE_COOKIE}=${zone}; path=/; max-age=${maxAge}; samesite=lax${secure ? "; secure" : ""}`;
 }
 
 export function countryToZone(country: string): Zone {

@@ -99,6 +99,11 @@ export async function listProductsAdmin(query: ListProductsAdminQuery) {
       productType: p.productType,
       primaryImageUrl: img,
       fromPriceInPaise: primaryVariant?.saleInPaise ?? null,
+      fromMrpInPaise: primaryVariant?.mrpInPaise ?? null,
+      fromSaleUsdCents: primaryVariant?.saleUsdCents ?? null,
+      fromMrpUsdCents: primaryVariant?.mrpUsdCents ?? null,
+      fromSaleGbpPence: primaryVariant?.saleGbpPence ?? null,
+      fromMrpGbpPence: primaryVariant?.mrpGbpPence ?? null,
       totalOnHand,
       categories: p.categories.map((pc) => ({
         id: pc.category.id,
