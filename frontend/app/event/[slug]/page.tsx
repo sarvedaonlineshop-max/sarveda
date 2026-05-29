@@ -83,7 +83,7 @@ export default async function EventDetailPage({ params }: Props) {
     <>
       <JsonLd data={[eventJsonLd(event), breadcrumbJsonLd(breadcrumbItems)]} />
 
-      <div className="border-b border-stone-100 bg-stone-50">
+      <div className="border-b border-[rgba(196,176,232,0.25)] bg-brand-bg">
         <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-6 lg:px-8">
           <Breadcrumbs
             items={[
@@ -98,24 +98,24 @@ export default async function EventDetailPage({ params }: Props) {
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="grid gap-10 lg:grid-cols-[1fr_340px] lg:gap-12">
           <div>
-            <p className="text-sm font-medium text-amber-800">{formatWhen(event.startDate, event.endDate)}</p>
-            <h1 className="mt-2 font-serif text-3xl font-semibold tracking-tight text-stone-900 md:text-4xl">
+            <p className="text-sm font-medium text-brand-violet">{formatWhen(event.startDate, event.endDate)}</p>
+            <h1 className="display-text mt-2 font-serif text-3xl font-semibold tracking-tight text-brand-ink md:text-4xl">
               {event.title}
             </h1>
             {event.shortDescription ? (
-              <p className="mt-4 text-lg text-stone-600">{event.shortDescription}</p>
+              <p className="mt-4 text-lg text-brand-mid">{event.shortDescription}</p>
             ) : null}
             {event.venue ? (
-              <p className="mt-2 text-stone-600">
-                <span className="font-medium text-stone-800">Location:</span> {event.venue}
+              <p className="mt-2 text-brand-mid">
+                <span className="font-medium text-brand-ink">Location:</span> {event.venue}
               </p>
             ) : null}
             {event.isOnline && event.zoomLink ? (
-              <p className="mt-2 text-sm text-stone-600">Online event — link shared after registration.</p>
+              <p className="mt-2 text-sm text-brand-mid">Online event — link shared after registration.</p>
             ) : null}
 
             {event.imageUrl ? (
-              <div className="mt-8 overflow-hidden rounded-2xl border border-stone-200 bg-white">
+              <div className="mt-8 overflow-hidden rounded-2xl border border-[rgba(196,176,232,0.25)] bg-white">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <Image
                   src={event.imageUrl}
@@ -141,8 +141,8 @@ export default async function EventDetailPage({ params }: Props) {
               pathPrefix="event"
               payLabel="Register & pay online"
             />
-            <p className="mt-4 text-center text-sm text-stone-500">
-              <Link href="/events" className="text-amber-800 underline hover:text-amber-900">
+            <p className="mt-4 text-center text-sm text-brand-muted">
+              <Link href="/events" className="text-brand-violet underline hover:text-brand-violet-mid">
                 ← All events
               </Link>
             </p>

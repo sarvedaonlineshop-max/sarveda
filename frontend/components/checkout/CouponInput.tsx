@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { checkoutFormBlockClass, checkoutInputClass } from "@/lib/checkout-ui";
 import {
   applyCartCoupon,
   fetchCheckoutCouponOffers,
@@ -95,27 +96,27 @@ export function CouponInput({
   }
 
   return (
-    <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-4">
-      <p className="text-sm font-semibold text-stone-800">Coupon code</p>
-      <p className="mt-1 text-xs text-stone-500">
+    <div className={checkoutFormBlockClass}>
+      <p className="text-[10px] font-normal uppercase tracking-[0.12em] text-brand-violet">Coupon code</p>
+      <p className="mt-2 text-xs font-light text-brand-mid">
         Most coupons are one-time per customer (email or account) after a successful order. You can remove
         a coupon before paying and try another.
       </p>
 
       {appliedCode ? (
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50/80 px-3 py-2">
-          <p className="text-sm text-stone-800">
-            <span className="font-mono font-semibold text-emerald-900">{appliedCode}</span>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-brand-sage-light bg-brand-sage-light/50 px-3 py-2">
+          <p className="text-sm text-brand-ink">
+            <span className="font-mono font-semibold text-brand-green">{appliedCode}</span>
             {discountInPaise > 0 ? (
-              <span className="ml-2 font-medium text-emerald-800">−{formatDiscount}</span>
+              <span className="price-text ml-2 font-medium text-brand-green">−{formatDiscount}</span>
             ) : null}
-            <span className="mt-0.5 block text-xs font-normal text-emerald-800/90">Applied to this order</span>
+            <span className="mt-0.5 block text-xs font-light text-brand-green">Applied to this order</span>
           </p>
           <button
             type="button"
             disabled={busy}
             onClick={() => void onRemove()}
-            className="shrink-0 rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-800 hover:bg-emerald-50 disabled:opacity-50"
+            className="shrink-0 rounded-lg border border-[rgba(196,176,232,0.3)] bg-brand-ivory px-3 py-1.5 text-xs font-medium text-brand-mid hover:bg-brand-bg disabled:opacity-50"
           >
             {busy ? "…" : "Remove"}
           </button>
@@ -124,7 +125,7 @@ export function CouponInput({
         <>
           {!offersLoading && offers.length > 0 ? (
             <div className="mt-3">
-              <p className="text-xs font-medium text-stone-600">Available offers</p>
+              <p className="text-xs font-medium text-brand-mid">Available offers</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {offers.map((offer) => (
                   <button
@@ -137,10 +138,10 @@ export function CouponInput({
                         : offer.ineligibleReason ?? "Not available"
                     }
                     onClick={() => void applyCode(offer.code)}
-                    className={`rounded-full border px-3 py-1.5 text-left text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
+                    className={`rounded-full border px-3 py-1.5 text-left text-[11px] font-medium uppercase tracking-[0.08em] transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
                       offer.eligible
-                        ? "border-amber-300 bg-amber-50 text-amber-950 hover:border-amber-500 hover:bg-amber-100"
-                        : "border-stone-200 bg-stone-100 text-stone-500"
+                        ? "border-[rgba(196,176,232,0.4)] bg-[rgba(91,62,155,0.08)] text-brand-violet hover:border-brand-lavender-mid"
+                        : "border-[rgba(196,176,232,0.22)] bg-transparent text-brand-muted"
                     }`}
                   >
                     <span className="font-mono">{offer.code}</span>
@@ -149,7 +150,7 @@ export function CouponInput({
                 ))}
               </div>
               {offers.some((o) => !o.eligible) && checkoutEmail ? (
-                <p className="mt-2 text-xs text-stone-500">
+                <p className="mt-2 text-xs font-light text-brand-muted">
                   Greyed-out offers may already be used on this email or do not apply to your cart total.
                 </p>
               ) : null}
@@ -162,14 +163,14 @@ export function CouponInput({
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
               placeholder="Or type a code"
-              className="min-h-[44px] flex-1 rounded-lg border border-stone-200 bg-white px-3 text-sm uppercase tracking-wide text-stone-900 placeholder:normal-case placeholder:tracking-normal"
+              className={`${checkoutInputClass} min-h-[44px] flex-1 text-sm uppercase tracking-wide placeholder:normal-case placeholder:tracking-normal`}
               aria-label="Coupon code"
             />
             <button
               type="button"
               disabled={busy}
               onClick={() => void onApply()}
-              className="min-h-[44px] rounded-lg border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-800 hover:bg-stone-100 disabled:opacity-50"
+              className="min-h-[44px] rounded-[10px] border border-[rgba(196,176,232,0.3)] bg-brand-violet px-4 text-sm font-semibold uppercase tracking-wide text-white hover:bg-brand-violet-mid disabled:opacity-50"
             >
               {busy ? "Applying…" : "Apply"}
             </button>

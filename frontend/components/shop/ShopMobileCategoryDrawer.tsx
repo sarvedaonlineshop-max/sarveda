@@ -13,6 +13,9 @@ type Props = {
   selectedSlug: string | undefined;
 };
 
+const filterChip =
+  "flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full border px-4 py-3 text-[11px] font-normal uppercase tracking-[0.08em] transition-all";
+
 export function ShopMobileCategoryDrawer({ categories, selectedSlug }: Props) {
   const [open, setOpen] = useState(false);
 
@@ -21,14 +24,22 @@ export function ShopMobileCategoryDrawer({ categories, selectedSlug }: Props) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-none border-y border-stone-200 bg-white px-4 py-3 text-sm font-medium tracking-wide text-stone-900 transition-colors hover:bg-stone-50"
+        className={`${filterChip} border-[rgba(196,176,232,0.22)] bg-brand-ivory text-[rgba(90,72,128,0.7)] hover:border-[rgba(196,176,232,0.4)] hover:bg-[rgba(91,62,155,0.08)] hover:text-brand-violet`}
       >
-        <svg className="h-5 w-5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <svg
+          className="h-5 w-5 text-brand-violet"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          aria-hidden
+        >
           <path strokeLinecap="round" strokeWidth={2} d="M3 4h18M3 12h18M3 20h18" />
         </svg>
         Filters & categories
         {selectedSlug ? (
-          <span className="truncate text-stone-500">· {selectedSlug.replace(/-/g, " ")}</span>
+          <span className="truncate normal-case tracking-normal text-brand-mid">
+            · {selectedSlug.replace(/-/g, " ")}
+          </span>
         ) : null}
       </button>
 
@@ -45,15 +56,15 @@ export function ShopMobileCategoryDrawer({ categories, selectedSlug }: Props) {
           <Link
             href="/shop"
             onClick={() => setOpen(false)}
-            className={`mb-3 flex min-h-[48px] items-center rounded-xl border px-4 py-3 text-sm font-medium ${
+            className={`${filterChip} mb-3 ${
               !selectedSlug
-                ? "border-amber-700 bg-amber-50 text-amber-700"
-                : "border-stone-100 bg-white text-stone-700 hover:border-amber-300"
+                ? "border-[#9B82CC] bg-[rgba(91,62,155,0.08)] text-brand-violet"
+                : "border-[rgba(196,176,232,0.22)] text-brand-mid hover:border-[rgba(196,176,232,0.4)] hover:bg-[rgba(91,62,155,0.08)] hover:text-brand-violet"
             }`}
           >
             All products
           </Link>
-          <div className="rounded-2xl border border-stone-100 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-[rgba(196,176,232,0.25)] bg-brand-ivory p-4">
             <CategoryNavTree
               nodes={categories}
               selectedSlug={selectedSlug}

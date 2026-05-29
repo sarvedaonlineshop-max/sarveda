@@ -49,14 +49,14 @@ export function CourseEnrollActions({
   };
 
   return (
-    <div className="rounded-2xl border border-stone-200 bg-stone-50 p-5 md:p-6">
+    <div className="rounded-2xl border border-[rgba(196,176,232,0.25)] bg-brand-bg p-5 md:p-6">
       {course.priceInPaise > 0 ? (
-        <p className="font-serif text-2xl font-semibold text-stone-900">
+        <p className="price-text font-serif text-2xl font-semibold text-brand-ink">
           {formatINRFromPaise(course.priceInPaise)}
-          <span className="ml-2 text-sm font-normal text-stone-500">GST inclusive</span>
+          <span className="ml-2 text-sm font-normal text-brand-muted">GST inclusive</span>
         </p>
       ) : (
-        <p className="font-serif text-xl font-semibold text-stone-900">Enquire for pricing</p>
+        <p className="font-serif text-xl font-semibold text-brand-ink">Enquire for pricing</p>
       )}
 
       <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -65,7 +65,7 @@ export function CourseEnrollActions({
             type="button"
             onClick={() => void pay()}
             disabled={loading}
-            className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-full bg-stone-900 px-6 text-sm font-semibold text-amber-50 transition hover:bg-stone-800 disabled:opacity-60"
+            className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-full bg-brand-violet px-6 text-sm font-semibold text-white shadow-violet-sm transition hover:-translate-y-px hover:bg-brand-violet-mid disabled:opacity-60 disabled:hover:translate-y-0"
           >
             {loading ? "Please wait…" : payLabel}
           </button>
@@ -77,13 +77,13 @@ export function CourseEnrollActions({
               href={buildEnquiryWhatsAppUrl(course.title, courseUrl)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-full border border-emerald-600 bg-emerald-50 px-6 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-100"
+              className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-full border border-brand-sage bg-brand-sage-light px-6 text-sm font-semibold text-brand-sage transition hover:bg-brand-sage-light/80"
             >
               WhatsApp enquiry
             </a>
             <a
               href={buildEnquiryMailto(course.title, courseUrl)}
-              className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-full border border-stone-300 bg-white px-6 text-sm font-semibold text-stone-800 transition hover:border-amber-400 hover:bg-amber-50"
+              className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-full border border-[rgba(196,176,232,0.35)] bg-white px-6 text-sm font-semibold text-brand-ink transition hover:border-brand-lavender-mid hover:bg-brand-violet-light"
             >
               Email enquiry
             </a>
@@ -92,16 +92,16 @@ export function CourseEnrollActions({
       </div>
 
       {course.enrollmentMode === "BOTH" && showPay ? (
-        <p className="mt-3 text-xs text-stone-500">
+        <p className="mt-3 text-xs text-brand-muted">
           Prefer to speak with us first? Use WhatsApp or email — we are happy to help before you pay.
         </p>
       ) : null}
 
       {error ? <p className="mt-3 text-sm text-red-700">{error}</p> : null}
 
-      <p className="mt-4 text-xs text-stone-500">
+      <p className="mt-4 text-xs text-brand-muted">
         Questions?{" "}
-        <Link href="/shop" className="font-medium text-amber-800 underline hover:text-amber-900">
+        <Link href="/shop" className="font-medium text-brand-violet underline hover:text-brand-violet-mid">
           Browse products
         </Link>
       </p>

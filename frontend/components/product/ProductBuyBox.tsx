@@ -127,14 +127,14 @@ export function ProductBuyBox({
   };
 
   return (
-    <div className="rounded-xl border border-stone-200 bg-stone-50/80 p-5 shadow-sm">
+    <div className="rounded-xl border border-[rgba(196,176,232,0.25)] bg-brand-bg/80 p-5 shadow-sm">
       {attributeGroups.length > 0 ? (
-        <div className="mb-4 space-y-4 border-b border-stone-200 pb-4">
+        <div className="mb-4 space-y-4 border-b border-[rgba(196,176,232,0.25)] pb-4">
           {attributeGroups.map((group) => {
             const selected = selectedAttrValues.get(group.name);
             return (
               <div key={group.name}>
-                <p className="mb-2 text-sm font-semibold text-stone-800">{group.name}:</p>
+                <p className="mb-2 text-sm font-semibold text-brand-ink">{group.name}:</p>
                 <div className="flex flex-wrap gap-2">
                   {group.values.map((value) => {
                     const active = selected === value;
@@ -145,8 +145,8 @@ export function ProductBuyBox({
                         onClick={() => pickVariantFor(group.name, value)}
                         className={`rounded-md border px-3 py-2 text-sm font-medium transition ${
                           active
-                            ? "border-[#1e3a2f] bg-[#1e3a2f] text-white"
-                            : "border-stone-300 bg-white text-stone-700 hover:border-[#1e3a2f]"
+                            ? "border-brand-violet bg-brand-violet text-white"
+                            : "border-[rgba(196,176,232,0.35)] bg-white text-brand-mid hover:border-brand-violet"
                         }`}
                       >
                         {value}
@@ -170,20 +170,20 @@ export function ProductBuyBox({
       ) : null}
 
       {stock ? (
-        <p className={`mt-3 text-sm ${stock.inStock ? "text-stone-600" : "text-amber-800"}`}>
-          <span className={`font-semibold ${stock.inStock ? "text-[#108967]" : ""}`}>{stock.label}</span>
+        <p className={`mt-3 text-sm ${stock.inStock ? "text-brand-mid" : "text-brand-coral"}`}>
+          <span className={`font-semibold ${stock.inStock ? "text-brand-sage" : ""}`}>{stock.label}</span>
         </p>
       ) : null}
 
       <div className="mt-4">
-        <label htmlFor="pdp-qty" className="mb-2 block text-sm font-medium text-stone-700">
+        <label htmlFor="pdp-qty" className="mb-2 block text-sm font-medium text-brand-mid">
           Quantity:
         </label>
         <select
           id="pdp-qty"
           value={qty}
           onChange={(e) => onQtyChange(Number(e.target.value))}
-          className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900 shadow-sm focus:border-[#108967] focus:outline-none focus:ring-1 focus:ring-[#108967]"
+          className="w-full rounded-lg border border-[rgba(196,176,232,0.35)] bg-white px-3 py-2.5 text-sm text-brand-ink shadow-sm focus:border-brand-violet focus:outline-none focus:ring-1 focus:ring-brand-lavender-mid"
         >
           {Array.from({ length: Math.min(maxQty, 10) }, (_, i) => i + 1).map((n) => (
             <option key={n} value={n}>
@@ -197,25 +197,25 @@ export function ProductBuyBox({
         type="button"
         onClick={onAdd}
         disabled={addDisabled}
-        className="mt-4 w-full rounded-lg bg-[#108967] py-3.5 text-sm font-semibold uppercase tracking-wide text-white shadow-sm transition hover:bg-[#0d7353] disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500"
+        className="mt-4 w-full rounded-lg bg-brand-violet py-3.5 text-sm font-semibold uppercase tracking-wide text-white shadow-violet-sm transition hover:-translate-y-px hover:bg-brand-violet-mid disabled:cursor-not-allowed disabled:bg-brand-violet-light disabled:text-brand-muted disabled:hover:translate-y-0"
       >
         {addDisabled ? "Out of stock" : "Add to cart"}
       </button>
 
       <Link
         href="/cart"
-        className="mt-2 flex w-full items-center justify-center rounded-lg border border-stone-300 bg-white py-3 text-sm font-semibold text-stone-800 transition hover:bg-stone-50"
+        className="mt-2 flex w-full items-center justify-center rounded-lg border border-[rgba(196,176,232,0.35)] bg-white py-3 text-sm font-semibold text-brand-ink transition hover:bg-brand-violet-light"
       >
         Go to cart
       </Link>
 
       {addedFlash ? (
-        <p className="mt-2 text-center text-sm font-medium text-emerald-600" role="status">
+        <p className="mt-2 text-center text-sm font-medium text-brand-sage" role="status">
           Added to cart
         </p>
       ) : null}
 
-      <div className="mt-4 grid grid-cols-2 gap-2 rounded-lg bg-[#f4f8f2] p-3 sm:gap-3">
+      <div className="mt-4 grid grid-cols-2 gap-2 rounded-lg bg-brand-sage-light p-3 sm:gap-3">
         {[
           {
             icon: "🎵",
@@ -228,14 +228,14 @@ export function ProductBuyBox({
         ].map((badge) => (
           <div key={badge.title} className="rounded-md bg-white px-2 py-3 text-center sm:px-3">
             <p className="text-lg">{badge.icon}</p>
-            <p className="mt-1 text-[11px] font-semibold leading-snug text-stone-800 sm:text-xs">{badge.title}</p>
-            <p className="mt-1 text-[10px] leading-snug text-stone-500">{badge.subtitle}</p>
+            <p className="mt-1 text-[11px] font-semibold leading-snug text-brand-ink sm:text-xs">{badge.title}</p>
+            <p className="mt-1 text-[10px] leading-snug text-brand-muted">{badge.subtitle}</p>
           </div>
         ))}
       </div>
 
       {variant ? (
-        <p className="mt-4 border-t border-stone-200 pt-4 text-center text-xs text-stone-500">
+        <p className="mt-4 border-t border-[rgba(196,176,232,0.25)] pt-4 text-center text-xs text-brand-muted">
           Secure checkout
         </p>
       ) : null}

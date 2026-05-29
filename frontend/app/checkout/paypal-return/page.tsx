@@ -56,10 +56,10 @@ function PayPalReturnInner() {
 
   return (
     <main className="mx-auto max-w-lg px-4 py-16 text-center">
-      <h1 className="font-serif text-2xl text-stone-900">PayPal</h1>
-      <p className="mt-4 text-stone-600">{message}</p>
+      <h1 className="display-text font-serif text-2xl text-brand-ink">PayPal</h1>
+      <p className="mt-4 text-brand-mid">{message}</p>
       {status === "err" ? (
-        <Link href="/checkout" className="mt-8 inline-block text-amber-800 underline">
+        <Link href="/checkout" className="mt-8 inline-block text-brand-violet underline">
           Back to checkout
         </Link>
       ) : null}
@@ -69,7 +69,7 @@ function PayPalReturnInner() {
 
 export default function PayPalReturnPage() {
   return (
-    <Suspense fallback={<p className="p-8 text-center text-stone-500">Loading…</p>}>
+    <Suspense fallback={<p className="p-8 text-center text-brand-muted">Loading…</p>}>
       <PayPalReturnInner />
     </Suspense>
   );

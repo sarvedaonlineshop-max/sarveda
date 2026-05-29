@@ -1,16 +1,20 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
 import Link from "next/link";
+import { useState } from "react";
 
+import { checkoutSummaryBoxClass } from "@/lib/checkout-ui";
 import { cartRemove, cartUpdate } from "@/lib/cart-api";
 import { formatINRFromPaise } from "@/lib/money";
 
 import { useCartData } from "./CartProvider";
 
+const rowBorder = "border-b border-[rgba(196,176,232,0.22)]";
+
 export function CartPageClient() {
-  const { items, subtotalInPaise, itemCount, loading, refreshCart } = useCartData();
+  const { items, subtotalInPaise, discountInPaise, coupon, itemCount, loading, refreshCart } =
+    useCartData();
   const [busy, setBusy] = useState<string | null>(null);
 
   async function setQty(variantId: string, quantity: number) {
@@ -35,7 +39,7 @@ export function CartPageClient() {
 
   if (loading && items.length === 0) {
     return (
-      <p className="mt-10 text-center text-stone-500" role="status">
+      <p className="mt-10 text-center font-light text-brand-mid" role="status">
         Loading cart…
       </p>
     );
@@ -43,11 +47,11 @@ export function CartPageClient() {
 
   if (items.length === 0) {
     return (
-      <div className="mt-6 rounded-none border-y border-stone-200 bg-white p-8 text-center md:mt-10 md:rounded-2xl md:border md:shadow-sm">
-        <p className="text-stone-500">Your cart is empty.</p>
+      <div className={`mt-6 text-center md:mt-10 ${checkoutSummaryBoxClass}`}>
+        <p className="text-brand-mid">Your cart is empty.</p>
         <Link
           href="/shop"
-          className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-xl bg-stone-900 px-8 font-semibold text-amber-400 transition-colors hover:bg-amber-700 hover:text-white"
+          className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-xl bg-brand-violet px-8 text-sm font-semibold uppercase tracking-wide text-white transition-colors hover:bg-brand-violet-mid"
         >
           Browse the shop
         </Link>
@@ -56,16 +60,16 @@ export function CartPageClient() {
   }
 
   return (
-    <div className="mt-4 space-y-0 md:mt-8 md:space-y-6">
-      <ul className="divide-y divide-stone-200 border-y border-stone-200 bg-white md:space-y-4 md:divide-none md:border-0 md:bg-transparent">
+    <div className="mt-4 md:mt-8">
+      <ul className="md:rounded-2xl md:border md:border-[rgba(196,176,232,0.25)] md:bg-brand-ivory">
         {items.map((line) => (
           <li
             key={line.variantId}
-            className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start md:rounded-2xl md:border md:border-stone-100 md:bg-white md:p-4 md:shadow-sm"
+            className={`flex flex-col gap-4 py-5 sm:flex-row sm:items-start md:px-5 ${rowBorder} last:border-b-0`}
           >
             <Link
               href={`/product/${line.productSlug}`}
-              className="relative mx-auto h-28 w-28 flex-shrink-0 overflow-hidden rounded-xl bg-stone-100 sm:mx-0"
+              className="relative mx-auto h-[72px] w-[72px] flex-shrink-0 overflow-hidden rounded-xl border border-[rgba(196,176,232,0.2)] bg-brand-violet-light sm:mx-0"
             >
               {line.primaryImageUrl ? (
                 <Image
@@ -73,42 +77,46 @@ export function CartPageClient() {
                   alt=""
                   fill
                   className="object-cover"
-                  sizes="112px"
+                  sizes="72px"
                   unoptimized
                 />
               ) : (
-                <div className="flex h-full items-center justify-center text-xs text-stone-400">No image</div>
+                <div className="flex h-full items-center justify-center text-xs text-brand-muted">No image</div>
               )}
             </Link>
             <div className="min-w-0 flex-1">
+              {line.variantLabel ? (
+                <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-brand-violet">
+                  {line.variantLabel}
+                </p>
+              ) : null}
               <Link
                 href={`/product/${line.productSlug}`}
-                className="font-medium text-stone-900 hover:text-amber-800"
+                className="display-text mt-1 block text-lg font-normal leading-snug text-brand-ink hover:text-brand-violet"
               >
                 {line.productName}
               </Link>
-              {line.variantLabel ? <p className="mt-1 text-sm text-stone-500">{line.variantLabel}</p> : null}
-              <p className="mt-2 text-sm font-semibold text-amber-800">
+              <p className="price-text mt-2 text-base font-medium text-brand-ink">
                 {formatINRFromPaise(line.unitPriceInPaise)} each
               </p>
               <div className="mt-4 flex flex-wrap items-center gap-3">
-                <div className="flex items-center rounded-xl border border-stone-200 bg-stone-50">
+                <div className="flex items-center rounded-[10px] border border-[rgba(196,176,232,0.3)]">
                   <button
                     type="button"
                     disabled={!!busy}
-                    className="flex h-11 min-w-[44px] items-center justify-center text-lg text-stone-700 hover:bg-stone-100 disabled:opacity-50"
+                    className="flex h-11 min-w-[44px] items-center justify-center text-lg text-brand-violet hover:bg-brand-violet-light disabled:opacity-50"
                     aria-label="Decrease quantity"
                     onClick={() => void setQty(line.variantId, line.quantity - 1)}
                   >
                     −
                   </button>
-                  <span className="min-w-[2.5rem] text-center text-sm font-medium tabular-nums">{line.quantity}</span>
+                  <span className="price-text min-w-[2.5rem] text-center text-sm font-medium tabular-nums">
+                    {line.quantity}
+                  </span>
                   <button
                     type="button"
-                    disabled={
-                      !!busy || (line.maxQuantity != null && line.quantity >= line.maxQuantity)
-                    }
-                    className="flex h-11 min-w-[44px] items-center justify-center text-lg text-stone-700 hover:bg-stone-100 disabled:opacity-50"
+                    disabled={!!busy || (line.maxQuantity != null && line.quantity >= line.maxQuantity)}
+                    className="flex h-11 min-w-[44px] items-center justify-center text-lg text-brand-violet hover:bg-brand-violet-light disabled:opacity-50"
                     aria-label="Increase quantity"
                     onClick={() => void setQty(line.variantId, line.quantity + 1)}
                   >
@@ -119,38 +127,46 @@ export function CartPageClient() {
                   type="button"
                   disabled={!!busy}
                   onClick={() => void remove(line.variantId)}
-                  className="min-h-[44px] text-sm font-medium text-stone-500 underline-offset-2 hover:text-stone-900 hover:underline disabled:opacity-50"
+                  className="min-h-[44px] text-sm font-light text-brand-mid underline-offset-2 hover:text-brand-violet hover:underline disabled:opacity-50"
                 >
                   Remove
                 </button>
               </div>
-              <p className="mt-3 text-sm text-stone-600">
-                Line total:{" "}
-                <span className="font-semibold text-amber-800">
-                  {formatINRFromPaise(line.unitPriceInPaise * line.quantity)}
-                </span>
+              <p className="price-text mt-3 text-base font-medium text-brand-ink">
+                Line total: {formatINRFromPaise(line.unitPriceInPaise * line.quantity)}
               </p>
             </div>
           </li>
         ))}
       </ul>
 
-      <div className="rounded-2xl border border-stone-100 bg-white p-6 shadow-sm">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-sm text-stone-500">{itemCount} items</p>
-            <p className="mt-1 font-serif text-2xl font-semibold text-amber-800">
-              {formatINRFromPaise(subtotalInPaise)}
-            </p>
-            <p className="text-xs text-stone-500">Subtotal · GST included · Shipping at checkout</p>
+      <div className={`mt-6 ${checkoutSummaryBoxClass}`}>
+        <h2 className="display-text text-[22px] font-normal text-brand-ink">Order summary</h2>
+        <dl className="mt-4 space-y-2 text-[13px]">
+          <div className="flex justify-between gap-4">
+            <dt className="font-light text-brand-mid">{itemCount} items · Subtotal</dt>
+            <dd className="price-text font-medium text-brand-ink">{formatINRFromPaise(subtotalInPaise)}</dd>
           </div>
-          <Link
-            href="/checkout"
-            className="inline-flex min-h-[52px] min-w-[200px] items-center justify-center rounded-2xl bg-stone-900 px-8 font-semibold tracking-wide text-amber-400 shadow-lg transition-colors hover:bg-amber-700 hover:text-white"
-          >
-            Proceed to checkout
-          </Link>
-        </div>
+          {discountInPaise > 0 && coupon ? (
+            <div className="flex justify-between gap-4">
+              <dt className="font-light text-brand-mid">Coupon ({coupon.code})</dt>
+              <dd className="price-text font-medium text-brand-green">−{formatINRFromPaise(discountInPaise)}</dd>
+            </div>
+          ) : null}
+          <div className="flex justify-between gap-4 border-t border-[rgba(196,176,232,0.22)] pt-3">
+            <dt className="font-light text-brand-mid">Estimated total</dt>
+            <dd className="price-text text-[15px] font-semibold text-brand-ink">
+              {formatINRFromPaise(Math.max(0, subtotalInPaise - discountInPaise))}
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-2 text-xs font-light text-brand-muted">GST included · Shipping at checkout</p>
+        <Link
+          href="/checkout"
+          className="mt-6 flex min-h-[52px] w-full items-center justify-center rounded-xl bg-brand-violet py-4 text-[15px] font-bold uppercase tracking-wide text-white transition-colors hover:bg-brand-violet-mid"
+        >
+          Proceed to checkout
+        </Link>
       </div>
     </div>
   );

@@ -37,12 +37,12 @@ export function ShopPagination({ page, totalPages, categorySlug, basePath }: Pro
       {page > 1 ? (
         <Link
           href={hrefForPage(page - 1, path)}
-          className={`${btnBase} border-stone-100 bg-white px-4 text-stone-700 shadow-sm hover:border-amber-300 hover:bg-amber-50`}
+          className={`${btnBase} border-[rgba(196,176,232,0.25)] bg-white px-4 text-brand-mid shadow-sm hover:border-brand-lavender hover:bg-brand-violet-light`}
         >
           Previous
         </Link>
       ) : (
-        <span className={`${btnBase} cursor-not-allowed border-transparent px-4 text-stone-400`}>Previous</span>
+        <span className={`${btnBase} cursor-not-allowed border-transparent px-4 text-brand-muted`}>Previous</span>
       )}
 
       <div className="flex flex-wrap items-center justify-center gap-1">
@@ -52,8 +52,8 @@ export function ShopPagination({ page, totalPages, categorySlug, basePath }: Pro
             href={hrefForPage(p, path)}
             className={`${btnBase} px-3 ${
               p === page
-                ? "border-stone-900 bg-stone-900 text-amber-400 shadow-md"
-                : "border-stone-100 bg-white text-stone-700 hover:border-amber-300 hover:bg-amber-50"
+                ? "border-brand-violet bg-brand-violet text-white shadow-md"
+                : "border-[rgba(196,176,232,0.25)] bg-white text-brand-mid hover:border-brand-lavender hover:bg-brand-violet-light"
             }`}
           >
             {p}
@@ -64,12 +64,12 @@ export function ShopPagination({ page, totalPages, categorySlug, basePath }: Pro
       {page < totalPages ? (
         <Link
           href={hrefForPage(page + 1, path)}
-          className={`${btnBase} border-stone-100 bg-white px-4 text-stone-700 shadow-sm hover:border-amber-300 hover:bg-amber-50`}
+          className={`${btnBase} border-[rgba(196,176,232,0.25)] bg-white px-4 text-brand-mid shadow-sm hover:border-brand-lavender hover:bg-brand-violet-light`}
         >
           Next
         </Link>
       ) : (
-        <span className={`${btnBase} cursor-not-allowed border-transparent px-4 text-stone-400`}>Next</span>
+        <span className={`${btnBase} cursor-not-allowed border-transparent px-4 text-brand-muted`}>Next</span>
       )}
     </nav>
   );

@@ -52,6 +52,7 @@ const config: Config = {
         gold: shadows.gold,
         "gold-lg": shadows.gold,
         violet: shadows.violet,
+        "violet-sm": "0 2px 8px rgba(91,62,155,0.20)",
         "violet-lg": shadows.violetLg,
         header: shadows.header
       },

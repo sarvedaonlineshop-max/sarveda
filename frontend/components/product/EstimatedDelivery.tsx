@@ -39,9 +39,9 @@ export function EstimatedDelivery({
       : `${formatDay(deliveryStart)} – ${formatDay(deliveryEnd)}`;
 
   return (
-    <p className="text-sm text-stone-700">
-      <span className="font-medium text-stone-900">Estimated delivery:</span>{" "}
-      <span className="text-[#108967] font-semibold">{range}</span>
+    <p className="text-sm text-brand-mid">
+      <span className="font-medium text-brand-ink">Estimated delivery:</span>{" "}
+      <span className="text-brand-sage font-semibold">{range}</span>
     </p>
   );
 }

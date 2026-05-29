@@ -44,7 +44,7 @@ export function ProductGallery({ images, productName, activeIndex, onActiveChang
 
   if (!resolved.length) {
     return (
-      <div className="flex aspect-square w-full items-center justify-center rounded-lg border border-dashed border-stone-200 bg-stone-100 text-stone-500">
+      <div className="flex aspect-square w-full items-center justify-center rounded-lg border border-dashed border-[rgba(196,176,232,0.25)] bg-brand-violet-light text-brand-muted">
         No images yet
       </div>
     );
@@ -72,7 +72,7 @@ export function ProductGallery({ images, productName, activeIndex, onActiveChang
             <button
               type="button"
               onClick={() => go(-1)}
-              className="absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-stone-200 bg-white/95 text-stone-700 shadow-md transition hover:bg-white"
+              className="absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[rgba(196,176,232,0.25)] bg-white/95 text-brand-mid shadow-md transition hover:bg-white"
               aria-label="Previous image"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -82,7 +82,7 @@ export function ProductGallery({ images, productName, activeIndex, onActiveChang
             <button
               type="button"
               onClick={() => go(1)}
-              className="absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-stone-200 bg-white/95 text-stone-700 shadow-md transition hover:bg-white"
+              className="absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[rgba(196,176,232,0.25)] bg-white/95 text-brand-mid shadow-md transition hover:bg-white"
               aria-label="Next image"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -99,7 +99,7 @@ export function ProductGallery({ images, productName, activeIndex, onActiveChang
           <button
             type="button"
             onClick={() => go(-1)}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-600 hover:border-[#108967]"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[rgba(196,176,232,0.25)] bg-white text-brand-mid hover:border-brand-violet"
             aria-label="Previous thumbnail"
           >
             ‹
@@ -113,7 +113,7 @@ export function ProductGallery({ images, productName, activeIndex, onActiveChang
               type="button"
               onClick={() => setActive(index)}
               className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-md border-2 bg-white transition-colors ${
-                index === active ? "border-stone-900" : "border-stone-200 hover:border-[#108967]"
+                index === active ? "border-brand-violet" : "border-[rgba(196,176,232,0.25)] hover:border-brand-violet"
               }`}
               aria-label={`View image ${index + 1}`}
               aria-current={index === active}
@@ -127,7 +127,7 @@ export function ProductGallery({ images, productName, activeIndex, onActiveChang
           <button
             type="button"
             onClick={() => go(1)}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-600 hover:border-[#108967]"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[rgba(196,176,232,0.25)] bg-white text-brand-mid hover:border-brand-violet"
             aria-label="Next thumbnail"
           >
             ›

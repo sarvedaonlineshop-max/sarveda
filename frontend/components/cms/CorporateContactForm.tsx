@@ -3,6 +3,9 @@
 import { FormEvent, useState } from "react";
 
 import { getApiBase } from "@/lib/api";
+import { checkoutInputClass, checkoutLabelClass } from "@/lib/checkout-ui";
+
+const fieldClass = `${checkoutInputClass} rounded-none border-0 border-b border-[rgba(196,176,232,0.35)] bg-transparent px-0 focus:ring-0`;
 
 export function CorporateContactForm() {
   const [submitted, setSubmitted] = useState(false);
@@ -43,7 +46,7 @@ export function CorporateContactForm() {
 
   if (submitted) {
     return (
-      <p className="rounded-xl bg-[#f0f7f4] px-6 py-8 text-center text-stone-700">
+      <p className="rounded-xl border border-[rgba(196,176,232,0.25)] bg-brand-violet-light px-6 py-8 text-center text-sm text-brand-mid">
         Thank you. Our corporate wellness team will reply within 24 hours.
       </p>
     );
@@ -52,57 +55,34 @@ export function CorporateContactForm() {
   return (
     <form onSubmit={(e) => void onSubmit(e)} className="space-y-6">
       <div>
-        <label htmlFor="cw-name" className="mb-2 block text-sm font-medium text-stone-800">
+        <label htmlFor="cw-name" className={checkoutLabelClass}>
           Name
         </label>
-        <input
-          id="cw-name"
-          name="name"
-          type="text"
-          required
-          className="w-full border-0 border-b border-stone-300 bg-transparent py-2 text-stone-900 outline-none focus:border-[#108967]"
-        />
+        <input id="cw-name" name="name" type="text" required className={fieldClass} />
       </div>
       <div>
-        <label htmlFor="cw-email" className="mb-2 block text-sm font-medium text-stone-800">
+        <label htmlFor="cw-email" className={checkoutLabelClass}>
           Mail
         </label>
-        <input
-          id="cw-email"
-          name="email"
-          type="email"
-          required
-          className="w-full border-0 border-b border-stone-300 bg-transparent py-2 text-stone-900 outline-none focus:border-[#108967]"
-        />
+        <input id="cw-email" name="email" type="email" required className={fieldClass} />
       </div>
       <div>
-        <label htmlFor="cw-phone" className="mb-2 block text-sm font-medium text-stone-800">
+        <label htmlFor="cw-phone" className={checkoutLabelClass}>
           Phone
         </label>
-        <input
-          id="cw-phone"
-          name="phone"
-          type="tel"
-          className="w-full border-0 border-b border-stone-300 bg-transparent py-2 text-stone-900 outline-none focus:border-[#108967]"
-        />
+        <input id="cw-phone" name="phone" type="tel" className={fieldClass} />
       </div>
       <div>
-        <label htmlFor="cw-query" className="mb-2 block text-sm font-medium text-stone-800">
+        <label htmlFor="cw-query" className={checkoutLabelClass}>
           Your query
         </label>
-        <textarea
-          id="cw-query"
-          name="query"
-          rows={4}
-          required
-          className="w-full resize-y border-0 border-b border-stone-300 bg-transparent py-2 text-stone-900 outline-none focus:border-[#108967]"
-        />
+        <textarea id="cw-query" name="query" rows={4} required className={`${fieldClass} resize-y`} />
       </div>
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-full bg-[#108967] px-8 py-3.5 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-[#0d7353] disabled:opacity-60"
+        className="w-full rounded-full bg-brand-violet px-8 py-3.5 text-sm font-semibold uppercase tracking-wide text-white shadow-violet-sm transition hover:-translate-y-px hover:bg-brand-violet-mid hover:shadow-violet disabled:opacity-60"
       >
         {loading ? "Sending…" : "Submit"}
       </button>

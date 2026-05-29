@@ -24,18 +24,18 @@ type Props = {
 function pillClasses(selected: boolean, available: boolean, style: "default" | "storefront"): string {
   if (style === "storefront") {
     if (!available) {
-      return "cursor-not-allowed border-stone-100 bg-stone-50 text-stone-300 line-through";
+      return "cursor-not-allowed border-[rgba(196,176,232,0.25)] bg-brand-bg text-brand-lavender-mid/50 line-through";
     }
     return selected
-      ? "border-[#108967] bg-[#108967] text-white shadow-sm"
-      : "border-[#108967] bg-white text-[#108967] hover:bg-[#108967]/5";
+      ? "border-brand-violet bg-brand-violet text-white shadow-sm"
+      : "border-brand-violet bg-white text-brand-violet hover:bg-brand-violet/5";
   }
   if (!available) {
-    return "cursor-not-allowed border-stone-100 bg-stone-50 text-stone-300 line-through";
+    return "cursor-not-allowed border-[rgba(196,176,232,0.25)] bg-brand-bg text-brand-lavender-mid/50 line-through";
   }
   return selected
-    ? "border-amber-700 bg-amber-50 text-amber-900 shadow-sm"
-    : "border-stone-200 bg-white text-stone-800 hover:border-amber-400";
+    ? "border-brand-violet bg-brand-violet-light text-brand-violet shadow-sm"
+    : "border-[rgba(196,176,232,0.25)] bg-white text-brand-ink hover:border-brand-lavender-mid";
 }
 
 function pickInitial(variants: ProductVariantDetail[]): ProductVariantDetail {
@@ -73,7 +73,7 @@ export function VariantSelector({
   if (!hasAxes) {
     return (
       <div>
-        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-stone-500">Select option</p>
+        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-brand-muted">Select option</p>
         <div className="flex flex-wrap gap-2" role="listbox" aria-label="Product options">
           {variants.map((item, index) => {
             const selected = item.id === selectedVariantId;
@@ -129,7 +129,7 @@ function AttributeRow({
   const label = attributeDisplayName(axis.slug, axis.name);
   return (
     <div>
-      <p className="mb-3 text-sm font-semibold text-stone-800">{label}</p>
+      <p className="mb-3 text-sm font-semibold text-brand-ink">{label}</p>
       <div className="flex flex-wrap gap-2" role="listbox" aria-label={axis.name}>
         {axis.values.map((val) => {
           const selected = selection[axis.slug] === val.slug;

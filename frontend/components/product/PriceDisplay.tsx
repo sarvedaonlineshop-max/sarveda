@@ -25,10 +25,10 @@ export function PriceDisplay({
   const isCompact = size === "compact";
   const isStorefront = presentation === "storefront";
   const saleClass = isStorefront
-    ? "text-2xl font-bold text-[#b85c38] sm:text-3xl"
+    ? "price-text text-2xl font-bold text-[#b85c38] sm:text-3xl"
     : isCompact
-      ? "text-lg font-bold tracking-tight text-stone-900"
-      : "text-3xl font-semibold tracking-tight text-stone-900 sm:text-4xl";
+      ? "price-text text-lg font-bold tracking-tight text-brand-ink"
+      : "price-text text-3xl font-semibold tracking-tight text-brand-ink sm:text-4xl";
 
   if (!variant && variants.length > 1) {
     const range = salePriceRange(variants, (v) => unitSaleMinor(v, zone));
@@ -39,9 +39,9 @@ export function PriceDisplay({
         : `${formatMinorFromPaise(range.min, currency)} – ${formatMinorFromPaise(range.max, currency)}`;
     return (
       <div className="space-y-1">
-        <p className="text-xs font-semibold uppercase tracking-widest text-stone-500">From</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-brand-muted">From</p>
         <p className={saleClass}>{fromLabel}</p>
-        <p className="text-xs text-stone-500">Select options to see exact price</p>
+        <p className="text-xs text-brand-muted">Select options to see exact price</p>
       </div>
     );
   }
@@ -62,27 +62,27 @@ export function PriceDisplay({
       ) : null}
       <div className={isStorefront ? "flex flex-wrap items-baseline gap-3" : undefined}>
         {mrp > sale && isStorefront ? (
-          <span className="text-lg text-stone-500 line-through">
+          <span className="price-text text-lg text-brand-muted line-through">
             {formatMinorFromPaise(mrp, currency)}
           </span>
         ) : null}
         <p className={saleClass}>{formatMinorFromPaise(sale, currency)}</p>
       </div>
       {mrp > sale && !isStorefront ? (
-        <div className="flex flex-wrap items-center gap-2 text-sm text-stone-500">
+        <div className="flex flex-wrap items-center gap-2 text-sm text-brand-muted">
           <span className="line-through">M.R.P. {formatMinorFromPaise(mrp, currency)}</span>
           {savings > 0 ? (
-            <span className="font-medium text-emerald-700">Save {formatMinorFromPaise(savings, currency)}</span>
+            <span className="price-text font-medium text-brand-sage">Save {formatMinorFromPaise(savings, currency)}</span>
           ) : null}
         </div>
       ) : null}
       {!isStorefront ? (
-        <p className="text-xs text-stone-500">
+        <p className="text-xs text-brand-muted">
           {zone === "IN" ? "Inclusive of all taxes" : `Price in ${currency}`}
           {variant.sku ? (
             <>
               {" "}
-              · <span className="text-stone-400">SKU {variant.sku}</span>
+              · <span className="text-brand-muted">SKU {variant.sku}</span>
             </>
           ) : null}
         </p>

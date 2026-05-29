@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { CheckoutProgress } from "@/components/checkout/CheckoutProgress";
 import { AddressFields, type CheckoutAddressForm } from "@/components/checkout/AddressFields";
 import { CouponInput } from "@/components/checkout/CouponInput";
 import { PaymentSelector } from "@/components/checkout/PaymentSelector";
+import { checkoutFormBlockClass } from "@/lib/checkout-ui";
 import { useCartData } from "@/components/cart/CartProvider";
 import { loadSavedCheckoutShipping, saveCheckoutShipping } from "@/lib/checkout-prefill";
 import { toCheckoutApiPhone, type CheckoutFieldErrors } from "@/lib/checkout-validation";
@@ -180,24 +182,24 @@ export function CheckoutClient() {
   }, [form.country, form.postalCode, itemCount]);
 
   if (loading) {
-    return <p className="text-center text-stone-500">Loading cart…</p>;
+    return <p className="text-center font-light text-brand-mid">Loading cart…</p>;
   }
 
   if (completingCheckout) {
     return (
-      <div className="rounded-2xl border border-stone-100 bg-white p-8 text-center shadow-sm">
-        <p className="text-stone-700">Payment received. Taking you to your order confirmation…</p>
+      <div className={`${checkoutFormBlockClass} text-center`}>
+        <p className="text-brand-mid">Payment received. Taking you to your order confirmation…</p>
       </div>
     );
   }
 
   if (items.length === 0 && !resumeOrderNumber) {
     return (
-      <div className="rounded-2xl border border-stone-100 bg-white p-8 text-center shadow-sm">
-        <p className="text-stone-600">Your cart is empty.</p>
+      <div className={`${checkoutFormBlockClass} text-center`}>
+        <p className="text-brand-mid">Your cart is empty.</p>
         <Link
           href="/shop"
-          className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-xl bg-stone-900 px-8 font-semibold text-amber-400 hover:bg-amber-700 hover:text-white"
+          className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-xl bg-brand-violet px-8 font-semibold text-white hover:bg-brand-violet-mid"
         >
           Continue shopping
         </Link>
@@ -207,14 +209,20 @@ export function CheckoutClient() {
 
   return (
     <>
+      <CheckoutProgress />
       {rzpLoadError ? (
-        <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950" role="status">
+        <p
+          className="mb-4 rounded-[10px] border border-[rgba(196,176,232,0.35)] bg-brand-violet-light px-4 py-3 text-sm text-brand-violet-deep"
+          role="status"
+        >
           {rzpLoadError}
         </p>
       ) : null}
       <div className="grid gap-10 lg:grid-cols-2">
         <div className="space-y-5">
-          <h2 className="text-xl font-semibold text-stone-900">Shipping details</h2>
+          <div className={checkoutFormBlockClass}>
+            <h2 className="display-text text-[22px] font-normal text-brand-ink">Shipping details</h2>
+            <div className="mt-5">
           <AddressFields
             form={form}
             fieldErrors={fieldErrors}
@@ -224,23 +232,25 @@ export function CheckoutClient() {
               setFieldErrors({});
             }}
           />
+            </div>
           {pinHint.kind !== "idle" ? (
             <p
-              className={`text-xs ${
+              className={`mt-4 text-xs ${
                 pinHint.kind === "ok"
-                  ? "text-emerald-700"
+                  ? "text-brand-green"
                   : pinHint.kind === "loading"
-                    ? "text-stone-500"
-                    : "text-amber-800"
+                    ? "text-brand-mid"
+                    : "text-brand-coral"
               }`}
               role="status"
             >
               {pinHint.text}
             </p>
           ) : null}
-          <div className="rounded-xl border border-stone-100 bg-stone-50/80 p-4">
-            <h3 className="text-sm font-semibold text-stone-800">Cart</h3>
-            <ul className="mt-2 max-h-48 space-y-2 overflow-y-auto text-sm text-stone-600">
+          </div>
+          <div className="rounded-[18px] border border-[rgba(196,176,232,0.25)] bg-brand-bg p-4">
+            <h3 className="text-[10px] font-normal uppercase tracking-[0.12em] text-brand-violet">Cart</h3>
+            <ul className="mt-2 max-h-48 space-y-2 overflow-y-auto text-sm font-light text-brand-mid">
               {items.map((item) => (
                 <li key={item.variantId} className="flex justify-between gap-2">
                   <span className="line-clamp-2">
@@ -264,7 +274,7 @@ export function CheckoutClient() {
             />
           ) : null}
           {resumeOrderNumber ? (
-            <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+            <p className="mb-4 rounded-[10px] border border-[rgba(196,176,232,0.35)] bg-brand-violet-light px-4 py-3 text-sm text-brand-violet-deep">
               Resume payment for order <span className="font-mono font-medium">{resumeOrderNumber}</span>. Your
               cart is unchanged if you left checkout earlier.
             </p>

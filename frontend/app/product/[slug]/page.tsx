@@ -94,7 +94,7 @@ export default async function ProductDetailPage({ params }: Props) {
   return (
     <>
       <JsonLd data={[productJsonLd(product), breadcrumbJsonLd(breadcrumbItems)]} />
-      <div className="hidden border-b border-stone-100 bg-white md:block">
+      <div className="hidden border-b border-[rgba(196,176,232,0.25)] bg-white md:block">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <Breadcrumbs
             items={[

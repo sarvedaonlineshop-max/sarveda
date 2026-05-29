@@ -84,7 +84,7 @@ export default async function ProductCategoryPage({ params, searchParams }: Prop
   return (
     <>
       <JsonLd data={breadcrumbJsonLd(breadcrumbItems)} />
-      <div className="border-b border-stone-200 bg-white md:border-stone-100 md:bg-stone-50">
+      <div className="border-b border-[rgba(196,176,232,0.25)] bg-white md:border-[rgba(196,176,232,0.25)] md:bg-brand-bg">
         <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-6 lg:px-8">
           <div className="hidden md:block">
             <Breadcrumbs
@@ -103,13 +103,13 @@ export default async function ProductCategoryPage({ params, searchParams }: Prop
               ]}
             />
           </div>
-          <h1 className="mt-0 font-serif text-2xl font-semibold tracking-tight text-stone-900 md:mt-6 md:text-4xl">
+          <h1 className="display-text mt-0 font-serif text-2xl font-semibold tracking-tight text-brand-ink md:mt-6 md:text-4xl">
             {category.name}
           </h1>
           {category.description ? (
-            <p className="mt-2 max-w-2xl text-stone-600 md:text-base">{category.description}</p>
+            <p className="mt-2 max-w-2xl text-brand-mid md:text-base">{category.description}</p>
           ) : (
-            <p className="mt-2 hidden max-w-2xl text-stone-500 md:block">
+            <p className="mt-2 hidden max-w-2xl text-brand-muted md:block">
               Explore {category.name} — curated for practice and everyday ritual.
             </p>
           )}
@@ -125,16 +125,16 @@ export default async function ProductCategoryPage({ params, searchParams }: Prop
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="mb-3 px-4 text-sm text-stone-500 md:mb-6 md:px-0">
+            <p className="mb-3 px-4 text-sm text-brand-muted md:mb-6 md:px-0">
               Showing{" "}
-              <span className="font-medium text-stone-800">{list.items.length}</span> of{" "}
-              <span className="font-medium text-stone-800">{list.pagination.total}</span> products
+              <span className="font-medium text-brand-ink">{list.items.length}</span> of{" "}
+              <span className="font-medium text-brand-ink">{list.pagination.total}</span> products
             </p>
 
             {list.items.length === 0 ? (
-              <p className="mx-4 rounded-2xl border border-dashed border-stone-200 bg-white p-10 text-center text-stone-500 md:mx-0">
+              <p className="mx-4 rounded-2xl border border-dashed border-[rgba(196,176,232,0.25)] bg-white p-10 text-center text-brand-muted md:mx-0">
                 No products in this category yet.{" "}
-                <Link href="/shop" className="font-medium text-amber-700 underline hover:text-amber-800">
+                <Link href="/shop" className="font-medium text-brand-violet underline hover:text-brand-violet">
                   Browse all products
                 </Link>
               </p>

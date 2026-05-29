@@ -32,24 +32,24 @@ const starterMessages: ChatMessage[] = [
 function ProductSuggestions({ products }: { products: ChatProduct[] }) {
   if (products.length === 0) return null;
   return (
-    <ul className="mt-3 space-y-2 border-t border-stone-100 pt-3">
+    <ul className="mt-3 space-y-2 border-t border-[rgba(196,176,232,0.25)] pt-3">
       {products.map((p) => (
         <li key={p.slug}>
           <Link
             href={`/product/${p.slug}`}
-            className="flex items-center gap-3 rounded-xl border border-stone-100 bg-stone-50/80 p-2 transition-colors hover:border-amber-200 hover:bg-amber-50/50"
+            className="flex items-center gap-3 rounded-xl border border-[rgba(196,176,232,0.25)] bg-brand-bg/80 p-2 transition-colors hover:border-brand-lavender-mid hover:bg-brand-violet-light/50"
           >
-            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-stone-200">
+            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-brand-violet-light">
               {p.imageUrl ? (
                 <Image src={p.imageUrl} alt="" fill className="object-cover" sizes="48px" />
               ) : (
-                <span className="flex h-full items-center justify-center text-[10px] text-stone-400">S</span>
+                <span className="flex h-full items-center justify-center text-[10px] text-brand-muted">S</span>
               )}
             </div>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-medium text-stone-800">{p.name}</span>
+              <span className="block truncate text-sm font-medium text-brand-ink">{p.name}</span>
               {p.priceInPaise != null ? (
-                <span className="text-xs text-amber-800">{formatINRFromPaise(p.priceInPaise)}</span>
+                <span className="text-xs text-brand-violet">{formatINRFromPaise(p.priceInPaise)}</span>
               ) : null}
             </span>
           </Link>
@@ -122,16 +122,16 @@ export function ChatClient() {
   );
 
   return (
-    <div className="flex min-h-[calc(100vh-8rem)] flex-col bg-stone-50 md:min-h-[70vh] md:rounded-3xl md:border md:border-stone-200 md:bg-white">
+    <div className="flex min-h-[calc(100vh-8rem)] flex-col bg-brand-bg md:min-h-[70vh] md:rounded-3xl md:border md:border-[rgba(196,176,232,0.25)] md:bg-white">
       <MobileSubpageHeader title="Chat" backHref="/" />
       {chatStatus?.enabled === false ? (
-        <div className="border-b border-amber-100 bg-amber-50 px-4 py-2.5 text-xs text-amber-900 md:rounded-t-3xl">
+        <div className="border-b border-brand-violet-light bg-brand-violet-light px-4 py-2.5 text-xs text-brand-violet-mid md:rounded-t-3xl">
           Set <code className="rounded bg-white/60 px-1">ANTHROPIC_API_KEY</code> or{" "}
           <code className="rounded bg-white/60 px-1">OPENAI_API_KEY</code> on the server (
           <code className="rounded bg-white/60 px-1">AI_PROVIDER</code> optional).
         </div>
       ) : chatStatus?.provider ? (
-        <div className="border-b border-stone-100 bg-stone-50/80 px-4 py-2 text-[11px] text-stone-500 md:rounded-t-3xl">
+        <div className="border-b border-[rgba(196,176,232,0.25)] bg-brand-bg/80 px-4 py-2 text-[11px] text-brand-muted md:rounded-t-3xl">
           Powered by {chatStatus.provider === "anthropic" ? "Claude" : "OpenAI"}
         </div>
       ) : null}
@@ -141,8 +141,8 @@ export function ChatClient() {
             key={message.id}
             className={`max-w-[92%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
               message.role === "assistant"
-                ? "bg-white text-stone-700 shadow-sm"
-                : "ml-auto bg-stone-900 text-amber-100"
+                ? "bg-white text-brand-mid shadow-sm"
+                : "ml-auto bg-brand-violet-deep text-brand-lavender"
             }`}
           >
             <p className="whitespace-pre-wrap">{message.text}</p>
@@ -152,7 +152,7 @@ export function ChatClient() {
           </div>
         ))}
         {loading ? (
-          <div className="max-w-[85%] rounded-2xl bg-white px-4 py-3 text-sm text-stone-500 shadow-sm">
+          <div className="max-w-[85%] rounded-2xl bg-white px-4 py-3 text-sm text-brand-muted shadow-sm">
             <span className="inline-flex gap-1">
               <span className="animate-pulse">●</span>
               <span className="animate-pulse [animation-delay:150ms]">●</span>
@@ -161,19 +161,19 @@ export function ChatClient() {
           </div>
         ) : null}
       </div>
-      <form onSubmit={handleSubmit} className="border-t border-stone-200 bg-white px-4 py-3 safe-area-pb md:rounded-b-3xl">
+      <form onSubmit={handleSubmit} className="border-t border-[rgba(196,176,232,0.25)] bg-white px-4 py-3 safe-area-pb md:rounded-b-3xl">
         <div className="flex gap-2">
           <input
             value={input}
             onChange={(event) => setInput(event.target.value)}
             placeholder="Ask about products, shipping, yoga gear…"
             disabled={loading}
-            className="min-h-[48px] flex-1 rounded-full border border-stone-200 px-4 text-sm text-stone-900 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 disabled:opacity-60"
+            className="min-h-[48px] flex-1 rounded-full border border-[rgba(196,176,232,0.25)] px-4 text-sm text-brand-ink focus:border-brand-lavender-mid focus:outline-none focus:ring-2 focus:ring-brand-lavender-mid/30 disabled:opacity-60"
           />
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-amber-500 px-5 text-sm font-semibold text-stone-900 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-brand-violet px-5 text-sm font-semibold text-brand-ink disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? "…" : "Send"}
           </button>

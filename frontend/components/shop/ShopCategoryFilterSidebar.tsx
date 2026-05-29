@@ -9,17 +9,22 @@ type Props = {
   selectedSlug: string | undefined;
 };
 
+const filterChipBase =
+  "flex min-h-[44px] items-center rounded-full border px-4 py-2 text-[11px] font-normal uppercase tracking-[0.08em] transition-all";
+
 export function ShopCategoryFilterSidebar({ categories, selectedSlug }: Props) {
   return (
-    <aside className="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm">
-      <h2 className="font-serif text-lg font-semibold text-stone-900">Categories</h2>
+    <aside className="rounded-2xl border border-[rgba(196,176,232,0.25)] bg-brand-ivory p-5">
+      <h2 className="text-[10px] font-normal uppercase tracking-[0.18em] text-brand-violet">
+        Categories
+      </h2>
       <div className="mt-4">
         <Link
           href="/shop"
-          className={`mb-2 flex min-h-[44px] items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+          className={`${filterChipBase} mb-2 w-full justify-center ${
             !selectedSlug
-              ? "bg-amber-50 text-amber-700"
-              : "text-stone-500 hover:bg-stone-50 hover:text-stone-900"
+              ? "border-[#9B82CC] bg-[rgba(91,62,155,0.08)] text-brand-violet"
+              : "border-[rgba(196,176,232,0.22)] bg-transparent text-[rgba(90,72,128,0.7)] hover:border-[rgba(196,176,232,0.4)] hover:bg-[rgba(91,62,155,0.08)] hover:text-brand-violet"
           }`}
         >
           All products

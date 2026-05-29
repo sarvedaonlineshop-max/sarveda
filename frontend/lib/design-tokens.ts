@@ -109,6 +109,7 @@ export const tailwindColors = {
     "mid":          colors.mid,
     "muted":        colors.muted,
     "gold":         colors.gold,
+    "gold-bright":  colors.goldBright,
     "sage":         colors.sage,
     "sage-light":   colors.sageLight,
     "coral":        colors.coral,

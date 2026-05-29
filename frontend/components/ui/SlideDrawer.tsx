@@ -36,7 +36,7 @@ export function SlideDrawer({
         <div className="fixed inset-0 z-[70] flex" aria-hidden={!open}>
           <motion.button
             type="button"
-            className="absolute inset-0 bg-stone-950/45 md:bg-stone-900/50 md:backdrop-blur-[2px]"
+            className="absolute inset-0 bg-brand-violet-deep/45 md:bg-brand-violet-deep/50 md:backdrop-blur-[2px]"
             aria-label="Close panel"
             onClick={onClose}
             variants={overlayVariants}
@@ -49,7 +49,7 @@ export function SlideDrawer({
             role="dialog"
             aria-modal="true"
             aria-label={ariaLabel ?? title}
-            className={`relative flex h-full w-full flex-col border-stone-200 bg-stone-50 shadow-2xl ${
+            className={`relative flex h-full w-full flex-col border-[rgba(196,176,232,0.25)] bg-brand-bg shadow-2xl ${
               side === "right" ? "ml-auto border-l" : "mr-auto border-r"
             } ${panelClassName}`}
             variants={drawerPanelVariants(side)}
@@ -58,15 +58,15 @@ export function SlideDrawer({
             exit="exit"
             transition={reduceMotion ? { duration: 0 } : drawerTransition}
           >
-            <div className="flex items-center justify-between border-b border-stone-100 bg-white px-4 py-4">
+            <div className="flex items-center justify-between border-b border-[rgba(196,176,232,0.25)] bg-white px-4 py-4">
               <div>
-                <h2 className="font-serif text-xl font-semibold text-stone-900">{title}</h2>
-                {subtitle ? <p className="text-xs text-stone-500">{subtitle}</p> : null}
+                <h2 className="display-text font-serif text-xl font-semibold text-brand-ink">{title}</h2>
+                {subtitle ? <p className="text-xs text-brand-muted">{subtitle}</p> : null}
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="flex h-11 min-w-[44px] items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-900"
+                className="flex h-11 min-w-[44px] items-center justify-center rounded-lg text-brand-muted transition-colors hover:bg-brand-violet-light hover:text-brand-ink"
                 aria-label="Close panel"
               >
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -75,7 +75,7 @@ export function SlideDrawer({
               </button>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
-            {footer ? <div className="border-t border-stone-100 bg-white safe-area-pb">{footer}</div> : null}
+            {footer ? <div className="border-t border-[rgba(196,176,232,0.25)] bg-white safe-area-pb">{footer}</div> : null}
           </motion.aside>
         </div>
       ) : null}

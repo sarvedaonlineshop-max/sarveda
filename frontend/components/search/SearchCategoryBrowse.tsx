@@ -52,11 +52,11 @@ export function SearchCategoryBrowse() {
   }, [activeChildSlug]);
 
   if (loading) {
-    return <p className="mt-8 text-stone-500">Loading categories…</p>;
+    return <p className="mt-8 text-brand-muted">Loading categories…</p>;
   }
 
   if (parents.length === 0) {
-    return <p className="mt-8 text-stone-500">Categories are not available right now.</p>;
+    return <p className="mt-8 text-brand-muted">Categories are not available right now.</p>;
   }
 
   return (
@@ -83,8 +83,8 @@ export function SearchCategoryBrowse() {
               }}
               className={`flex shrink-0 items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-medium transition-colors ${
                 active
-                  ? "border-brand-forest bg-brand-forest text-white shadow-sm"
-                  : "border-stone-200 bg-white text-stone-700 hover:border-stone-300"
+                  ? "border-brand-violet bg-brand-violet text-white shadow-sm"
+                  : "border-[rgba(196,176,232,0.25)] bg-white text-brand-mid hover:border-[rgba(196,176,232,0.35)]"
               }`}
             >
               <span aria-hidden>{categoryEmoji(cat.slug)}</span>
@@ -105,8 +105,8 @@ export function SearchCategoryBrowse() {
                 onClick={() => setChildSlug(sub.slug)}
                 className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                   active
-                    ? "bg-amber-100 text-amber-900 ring-1 ring-amber-300"
-                    : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                    ? "bg-brand-violet-light text-brand-violet-mid ring-1 ring-brand-lavender-mid"
+                    : "bg-brand-violet-light text-brand-mid hover:bg-brand-violet-light/80"
                 }`}
               >
                 {sub.name}
@@ -117,9 +117,9 @@ export function SearchCategoryBrowse() {
       ) : null}
 
       {loadingProducts ? (
-        <p className="mt-8 text-stone-500">Loading products…</p>
+        <p className="mt-8 text-brand-muted">Loading products…</p>
       ) : items.length === 0 ? (
-        <p className="mt-8 rounded-xl border border-dashed border-stone-200 bg-white p-8 text-center text-stone-500">
+        <p className="mt-8 rounded-xl border border-dashed border-[rgba(196,176,232,0.25)] bg-white p-8 text-center text-brand-muted">
           No products in this category yet.
         </p>
       ) : (

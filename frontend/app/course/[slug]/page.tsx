@@ -71,7 +71,7 @@ export default async function CourseDetailPage({ params }: Props) {
     <>
       <JsonLd data={[courseJsonLd(course), breadcrumbJsonLd(breadcrumbItems)]} />
 
-      <div className="border-b border-stone-100 bg-stone-50">
+      <div className="border-b border-[rgba(196,176,232,0.25)] bg-brand-bg">
         <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-6 lg:px-8">
           <Breadcrumbs
             items={[
@@ -86,15 +86,15 @@ export default async function CourseDetailPage({ params }: Props) {
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="grid gap-10 lg:grid-cols-[1fr_340px] lg:gap-12">
           <div>
-            <h1 className="font-serif text-3xl font-semibold tracking-tight text-stone-900 md:text-4xl">
+            <h1 className="display-text font-serif text-3xl font-semibold tracking-tight text-brand-ink md:text-4xl">
               {course.title}
             </h1>
             {course.shortDescription ? (
-              <p className="mt-4 text-lg text-stone-600">{course.shortDescription}</p>
+              <p className="mt-4 text-lg text-brand-mid">{course.shortDescription}</p>
             ) : null}
 
             {course.imageUrl ? (
-              <div className="mt-8 overflow-hidden rounded-2xl border border-stone-200 bg-white">
+              <div className="mt-8 overflow-hidden rounded-2xl border border-[rgba(196,176,232,0.25)] bg-white">
                 <Image
                   src={course.imageUrl}
                   alt={course.title}
@@ -107,7 +107,7 @@ export default async function CourseDetailPage({ params }: Props) {
             ) : null}
 
             {embedUrl ? (
-              <div className="mt-8 aspect-video overflow-hidden rounded-2xl border border-stone-200 bg-black">
+              <div className="mt-8 aspect-video overflow-hidden rounded-2xl border border-[rgba(196,176,232,0.25)] bg-black">
                 <iframe
                   src={embedUrl}
                   title={`${course.title} preview`}
@@ -126,15 +126,15 @@ export default async function CourseDetailPage({ params }: Props) {
 
             {extra?.faqs?.length ? (
               <section className="mt-12">
-                <h2 className="font-serif text-2xl font-semibold text-stone-900">FAQs</h2>
+                <h2 className="display-text font-serif text-2xl font-semibold text-brand-ink">FAQs</h2>
                 <ul className="mt-4 space-y-4">
                   {extra.faqs.map((faq) => (
                     <li
                       key={faq.question}
-                      className="rounded-xl border border-stone-200 bg-white p-5"
+                      className="rounded-xl border border-[rgba(196,176,232,0.25)] bg-white p-5"
                     >
-                      <h3 className="font-medium text-stone-900">{faq.question}</h3>
-                      <div className="mt-2 text-sm text-stone-600">
+                      <h3 className="display-text font-medium text-brand-ink">{faq.question}</h3>
+                      <div className="mt-2 text-sm text-brand-mid">
                         <ProductRichText html={faq.answer} />
                       </div>
                     </li>
@@ -146,8 +146,8 @@ export default async function CourseDetailPage({ params }: Props) {
 
           <aside className="lg:sticky lg:top-24 lg:self-start">
             <CourseEnrollActions item={course} pathPrefix="course" />
-            <p className="mt-4 text-center text-sm text-stone-500">
-              <Link href="/courses" className="text-amber-800 underline hover:text-amber-900">
+            <p className="mt-4 text-center text-sm text-brand-muted">
+              <Link href="/courses" className="text-brand-violet underline hover:text-brand-violet-mid">
                 ← All courses
               </Link>
             </p>

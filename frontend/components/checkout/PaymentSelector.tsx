@@ -21,6 +21,10 @@ import type { ShippingBreakdown } from "@/lib/shipping-rates-api";
 import { loadRazorpayScript } from "@/lib/load-razorpay";
 import { fetchShippingRatesEstimate } from "@/lib/shipping-rates-api";
 import {
+  checkoutSummaryBoxClass,
+  paymentOptionClass
+} from "@/lib/checkout-ui";
+import {
   clearPendingCheckout,
   loadPendingCheckout,
   savePendingCheckout
@@ -228,7 +232,7 @@ export function PaymentSelector({
           email: form.email.trim(),
           contact: form.phone.trim()
         },
-        theme: { color: "#44403c" },
+        theme: { color: "#5B3E9B" },
         handler: async (response: {
           razorpay_payment_id: string;
           razorpay_order_id: string;
@@ -431,58 +435,54 @@ export function PaymentSelector({
   ]);
 
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm md:p-6">
-      <h2 className="text-xl font-semibold text-stone-900">Order summary</h2>
+    <div className={checkoutSummaryBoxClass}>
+      <h2 className="display-text text-[22px] font-normal text-brand-ink">Order summary</h2>
 
-      <dl className="mt-4 space-y-2 border-b border-stone-100 pb-4 text-sm">
+      <dl className="mt-4 space-y-2 border-b border-[rgba(196,176,232,0.22)] pb-4 text-[13px]">
         <div className="flex justify-between gap-4">
-          <dt className="text-stone-600">Subtotal ({itemCount} items)</dt>
-          <dd className="font-medium text-stone-900">{formatMoney(subtotalInPaise)}</dd>
+          <dt className="font-light text-brand-mid">Subtotal ({itemCount} items)</dt>
+          <dd className="price-text font-medium text-brand-ink">{formatMoney(subtotalInPaise)}</dd>
         </div>
         {discountInPaise > 0 ? (
-          <div className="flex justify-between gap-4 text-emerald-800">
-            <dt>Coupon discount</dt>
-            <dd className="font-medium">−{formatMoney(discountInPaise)}</dd>
+          <div className="flex justify-between gap-4">
+            <dt className="font-light text-brand-mid">Coupon discount</dt>
+            <dd className="price-text font-medium text-brand-green">−{formatMoney(discountInPaise)}</dd>
           </div>
         ) : null}
         <div className="flex justify-between gap-4">
-          <dt className="text-stone-600">Shipping</dt>
-          <dd className="text-right font-medium text-stone-900">
+          <dt className="font-light text-brand-mid">Shipping</dt>
+          <dd className="price-text text-right font-medium text-brand-ink">
             {shippingLoading ? (
-              <span className="text-stone-400">Calculating…</span>
+              <span className="text-brand-muted">Calculating…</span>
             ) : shippingInPaise != null ? (
               formatMoney(estimatedShipping)
             ) : (
-              <span className="text-xs text-stone-500">
+              <span className="text-xs font-light text-brand-muted">
                 {isIndia ? "Enter PIN to estimate" : "Enter address to estimate"}
               </span>
             )}
           </dd>
         </div>
         {paymentMode === "cod" && shippingCodInPaise != null && shippingCodInPaise !== shippingInPaise ? (
-          <p className="text-xs text-amber-800">COD delivery rates applied to shipping.</p>
+          <p className="text-xs text-brand-mid">COD delivery rates applied to shipping.</p>
         ) : null}
-        <div className="flex justify-between gap-4 pt-2 text-base">
-          <dt className="font-semibold text-stone-900">Estimated total</dt>
-          <dd className="font-serif font-semibold text-amber-800">
+        <div className="flex justify-between gap-4 border-t border-[rgba(196,176,232,0.22)] pt-3">
+          <dt className="font-light text-brand-mid">Estimated total</dt>
+          <dd className="price-text text-[15px] font-semibold text-brand-ink">
             {shippingInPaise != null
               ? formatMoney(estimatedTotal)
               : formatMoney(merchandiseAfterDiscount)}
-            <span className="block text-xs font-sans font-normal text-stone-500">GST included</span>
+            <span className="mt-0.5 block text-xs font-light text-brand-muted">GST included</span>
           </dd>
         </div>
       </dl>
 
       {isIndia && !resumeOrderNumber ? (
         <fieldset className="mt-4 space-y-2">
-          <legend className="text-sm font-semibold text-stone-800">Payment method</legend>
-          <label
-            className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${
-              paymentMode === "razorpay"
-                ? "border-stone-900 bg-stone-50 ring-1 ring-stone-900"
-                : "border-stone-200 hover:border-stone-300"
-            }`}
-          >
+          <legend className="text-[10px] font-normal uppercase tracking-[0.12em] text-brand-mid">
+            Payment method
+          </legend>
+          <label className={paymentOptionClass(paymentMode === "razorpay")}>
             <input
               type="radio"
               name="paymentMode"
@@ -491,17 +491,11 @@ export function PaymentSelector({
               onChange={() => setPaymentMode("razorpay")}
             />
             <span>
-              <span className="font-medium text-stone-900">Pay online now</span>
-              <span className="mt-0.5 block text-xs text-stone-600">UPI, cards, netbanking via Razorpay</span>
+              <span className="font-medium text-brand-ink">Pay online now</span>
+              <span className="mt-0.5 block text-xs font-light text-brand-mid">UPI, cards, netbanking via Razorpay</span>
             </span>
           </label>
-          <label
-            className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${
-              paymentMode === "cod"
-                ? "border-stone-900 bg-stone-50 ring-1 ring-stone-900"
-                : "border-stone-200 hover:border-stone-300"
-            }`}
-          >
+          <label className={paymentOptionClass(paymentMode === "cod")}>
             <input
               type="radio"
               name="paymentMode"
@@ -510,21 +504,17 @@ export function PaymentSelector({
               onChange={() => setPaymentMode("cod")}
             />
             <span>
-              <span className="font-medium text-stone-900">Cash on delivery (COD)</span>
-              <span className="mt-0.5 block text-xs text-stone-600">Pay when the courier delivers your order</span>
+              <span className="font-medium text-brand-ink">Cash on delivery (COD)</span>
+              <span className="mt-0.5 block text-xs font-light text-brand-mid">Pay when the courier delivers your order</span>
             </span>
           </label>
         </fieldset>
       ) : !resumeOrderNumber ? (
         <fieldset className="mt-4 space-y-2">
-          <legend className="text-sm font-semibold text-stone-800">Payment method</legend>
-          <label
-            className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${
-              paymentMode === "stripe"
-                ? "border-stone-900 bg-stone-50 ring-1 ring-stone-900"
-                : "border-stone-200 hover:border-stone-300"
-            }`}
-          >
+          <legend className="text-[10px] font-normal uppercase tracking-[0.12em] text-brand-mid">
+            Payment method
+          </legend>
+          <label className={paymentOptionClass(paymentMode === "stripe")}>
             <input
               type="radio"
               name="paymentMode"
@@ -533,17 +523,11 @@ export function PaymentSelector({
               onChange={() => setPaymentMode("stripe")}
             />
             <span>
-              <span className="font-medium text-stone-900">Card (Stripe)</span>
-              <span className="mt-0.5 block text-xs text-stone-600">Visa, Mastercard, Amex — secure checkout</span>
+              <span className="font-medium text-brand-ink">Card (Stripe)</span>
+              <span className="mt-0.5 block text-xs text-brand-mid">Visa, Mastercard, Amex — secure checkout</span>
             </span>
           </label>
-          <label
-            className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${
-              paymentMode === "paypal"
-                ? "border-stone-900 bg-stone-50 ring-1 ring-stone-900"
-                : "border-stone-200 hover:border-stone-300"
-            }`}
-          >
+          <label className={paymentOptionClass(paymentMode === "paypal")}>
             <input
               type="radio"
               name="paymentMode"
@@ -552,8 +536,8 @@ export function PaymentSelector({
               onChange={() => setPaymentMode("paypal")}
             />
             <span>
-              <span className="font-medium text-stone-900">PayPal</span>
-              <span className="mt-0.5 block text-xs text-stone-600">Pay with your PayPal balance or linked card</span>
+              <span className="font-medium text-brand-ink">PayPal</span>
+              <span className="mt-0.5 block text-xs font-light text-brand-mid">Pay with your PayPal balance or linked card</span>
             </span>
           </label>
         </fieldset>
@@ -566,7 +550,7 @@ export function PaymentSelector({
       ) : null}
 
       {processing ? (
-        <p className="mt-4 text-sm font-medium text-amber-800" role="status">
+        <p className="mt-4 text-sm font-medium text-brand-violet" role="status">
           {paymentMode === "cod" ? "Placing your order…" : "Confirming payment…"}
         </p>
       ) : null}
@@ -579,19 +563,26 @@ export function PaymentSelector({
           (paymentMode === "razorpay" && !rzpReady && !busy)
         }
         onClick={() => void onSubmit()}
-        className="mt-6 flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-stone-900 py-3.5 text-base font-semibold tracking-wide text-amber-400 shadow-lg transition-colors hover:bg-amber-700 hover:text-white disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600"
+        className="price-text mt-6 flex min-h-[52px] w-full flex-col items-center justify-center rounded-xl bg-brand-violet-deep py-3.5 text-base font-semibold tracking-wide text-white transition-colors hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {busy || processing
-          ? "Please wait…"
-          : paymentMode === "cod"
-            ? "Place order (COD)"
-            : paymentMode === "stripe"
-              ? "Continue to Stripe"
-              : paymentMode === "paypal"
-                ? "Continue to PayPal"
-                : !rzpReady
-                  ? "Loading payment…"
-                  : "Pay now"}
+        <span>
+          {busy || processing
+            ? "Please wait…"
+            : paymentMode === "cod"
+              ? "Place order (COD)"
+              : paymentMode === "stripe"
+                ? "Continue to Stripe"
+                : paymentMode === "paypal"
+                  ? "Continue to PayPal"
+                  : !rzpReady
+                    ? "Loading payment…"
+                    : "Pay now"}
+        </span>
+        {shippingInPaise != null && !busy && !processing ? (
+          <span className="mt-0.5 text-sm font-medium opacity-90">
+            {formatMoney(estimatedTotal)}
+          </span>
+        ) : null}
       </button>
     </div>
   );

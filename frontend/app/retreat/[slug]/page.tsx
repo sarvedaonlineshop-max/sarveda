@@ -40,7 +40,7 @@ export default async function RetreatPage({ params }: Props) {
           { name: retreat.title, url: absoluteUrl(`/retreat/${retreat.slug}`) }
         ])}
       />
-      <div className="border-b border-stone-100 bg-stone-50">
+      <div className="border-b border-[rgba(196,176,232,0.25)] bg-brand-bg">
         <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
           <Breadcrumbs
             items={[
@@ -53,13 +53,13 @@ export default async function RetreatPage({ params }: Props) {
       </div>
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {retreat.imageUrl ? (
-          <div className="mb-8 overflow-hidden rounded-2xl border border-stone-200">
+          <div className="mb-8 overflow-hidden rounded-2xl border border-[rgba(196,176,232,0.25)]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={retreat.imageUrl} alt="" className="max-h-[420px] w-full object-cover" />
           </div>
         ) : null}
-        <h1 className="font-serif text-3xl font-semibold text-stone-900 md:text-4xl">{retreat.title}</h1>
-        <p className="mt-3 text-stone-600">
+        <h1 className="display-text font-serif text-3xl font-semibold text-brand-ink md:text-4xl">{retreat.title}</h1>
+        <p className="mt-3 text-brand-mid">
           {[retreat.location, retreat.duration].filter(Boolean).join(" · ")}
           {retreat.priceInPaise
             ? ` · ${formatINRFromPaise(retreat.priceInPaise)}`

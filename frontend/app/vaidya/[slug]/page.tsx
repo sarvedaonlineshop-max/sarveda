@@ -39,7 +39,7 @@ export default async function VaidyaPage({ params }: Props) {
   return (
     <>
       <JsonLd data={breadcrumbJsonLd(breadcrumbItems)} />
-      <div className="border-b border-stone-100 bg-stone-50">
+      <div className="border-b border-[rgba(196,176,232,0.25)] bg-brand-bg">
         <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
           <Breadcrumbs
             items={[
@@ -61,8 +61,8 @@ export default async function VaidyaPage({ params }: Props) {
             />
           ) : null}
           <div>
-            <h1 className="font-serif text-3xl font-semibold text-stone-900">{vaidya.name}</h1>
-            {vaidya.speciality ? <p className="mt-2 text-amber-800">{vaidya.speciality}</p> : null}
+            <h1 className="display-text font-serif text-3xl font-semibold text-brand-ink">{vaidya.name}</h1>
+            {vaidya.speciality ? <p className="mt-2 text-brand-violet">{vaidya.speciality}</p> : null}
             {vaidya.bio ? (
               <div className="mt-8">
                 <ProductRichText html={vaidya.bio} />

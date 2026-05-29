@@ -114,7 +114,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
                 {categoryTags.map((tag) => (
                   <span
                     key={tag}
-                    className="rounded-full border border-stone-200 bg-white px-3 py-1 text-xs font-medium text-stone-600"
+                    className="rounded-full border border-[rgba(196,176,232,0.25)] bg-white px-3 py-1 text-xs font-medium text-brand-mid"
                   >
                     {tag}
                   </span>
@@ -125,13 +125,13 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
 
           {/* —— Center: details (page scroll, not a nested scroll trap) —— */}
           <div className="min-w-0 lg:col-span-4 xl:col-span-4">
-            <h1 className="font-serif text-2xl font-semibold leading-tight text-stone-900 sm:text-[1.75rem]">
+            <h1 className="display-text font-serif text-2xl font-semibold leading-tight text-brand-ink sm:text-[1.75rem]">
               {product.name}
             </h1>
 
-            <div className="mt-2 flex items-center gap-1 text-sm text-stone-500" aria-label="No reviews yet">
+            <div className="mt-2 flex items-center gap-1 text-sm text-brand-muted" aria-label="No reviews yet">
               {Array.from({ length: 5 }).map((_, i) => (
-                <svg key={i} className="h-4 w-4 text-stone-300" fill="currentColor" viewBox="0 0 20 20">
+                <svg key={i} className="h-4 w-4 text-brand-lavender-mid/50" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                 </svg>
               ))}
@@ -139,7 +139,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
             </div>
 
             {codAvailable ? (
-              <div className="mt-4 inline-flex w-fit items-center gap-2 rounded-md border border-[#108967] px-3 py-2 text-sm text-[#108967]">
+              <div className="mt-4 inline-flex w-fit items-center gap-2 rounded-md border border-brand-violet px-3 py-2 text-sm text-brand-violet">
                 <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m0 0H21m-1.5 0h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5 0H21" />
                 </svg>
@@ -150,7 +150,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
             {product.shortDescription ? (
               <ProductRichText
                 html={product.shortDescription}
-                className="mt-4 text-sm leading-relaxed text-stone-600"
+                className="mt-4 text-sm leading-relaxed text-brand-mid"
               />
             ) : null}
 
@@ -203,17 +203,17 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
           </aside>
         </div>
 
-        <div className="mt-10 space-y-10 border-t border-stone-200 pt-10">
+        <div className="mt-10 space-y-10 border-t border-[rgba(196,176,232,0.25)] pt-10">
           {product.description ? (
             <section>
-              <h2 className="font-serif text-xl font-semibold text-stone-900">About this product</h2>
-              <ProductRichText html={product.description} className="mt-4 max-w-none prose-stone" />
+              <h2 className="display-text font-serif text-xl font-semibold text-brand-ink">About this product</h2>
+              <ProductRichText html={product.description} className="mt-4 max-w-none prose-brand" />
             </section>
           ) : null}
 
           {product.accordionItems.length > 0 ? (
             <section>
-              <h2 className="font-serif text-xl font-semibold text-stone-900">Product details</h2>
+              <h2 className="display-text font-serif text-xl font-semibold text-brand-ink">Product details</h2>
               <div className="mt-4">
                 <AccordionDescription items={product.accordionItems} />
               </div>
@@ -225,11 +225,11 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
       </div>
 
       {/* Mobile: price + add bar */}
-      <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-40 border-t border-stone-200 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur-md safe-area-pb lg:hidden">
+      <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-40 border-t border-[rgba(196,176,232,0.25)] bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur-md safe-area-pb lg:hidden">
         <div className="mx-auto flex max-w-lg items-center gap-3">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-xs text-stone-500">{product.name}</p>
-            <p className="text-lg font-bold tracking-tight text-[#b85c38]">
+            <p className="truncate text-xs text-brand-muted">{product.name}</p>
+            <p className="price-text text-lg font-bold tracking-tight text-[#b85c38]">
               {variant ? formatMinorFromPaise(saleMinor, currency) : "—"}
             </p>
           </div>
@@ -237,7 +237,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
             type="button"
             onClick={add}
             disabled={addDisabled}
-            className="min-h-[48px] flex-1 rounded-md bg-[#108967] px-4 text-sm font-semibold uppercase tracking-wide text-white disabled:bg-stone-300"
+            className="min-h-[48px] flex-1 rounded-md bg-brand-violet px-4 text-sm font-semibold uppercase tracking-wide text-white shadow-violet-sm transition hover:-translate-y-px hover:bg-brand-violet-mid disabled:bg-brand-violet-light disabled:hover:translate-y-0"
           >
             Add to cart
           </button>

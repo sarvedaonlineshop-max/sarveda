@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { PageListHero } from "@/components/layout/PageListHero";
 import { Breadcrumbs } from "@/components/product/Breadcrumbs";
-import { canonical, isProductionSite } from "@/lib/site";
 import { ShopCategoryFilterSidebar } from "@/components/shop/ShopCategoryFilterSidebar";
 import { ShopMobileCategoryDrawer } from "@/components/shop/ShopMobileCategoryDrawer";
 import { ShopPagination } from "@/components/shop/Pagination";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { fetchCategoryTree, fetchProductList } from "@/lib/api";
+import { canonical, isProductionSite } from "@/lib/site";
 
 export const revalidate = 60;
 
@@ -34,21 +35,22 @@ export default async function ShopPage({ searchParams }: Props) {
 
   return (
     <>
-      <div className="border-b border-stone-200 bg-white md:border-stone-100 md:bg-stone-50">
-        <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-6 lg:px-8">
-          <div className="hidden md:block">
-            <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Shop" }]} />
+      <PageListHero
+        eyebrow="Store"
+        title={
+          <>
+            Shop <span className="italic text-brand-lavender">the collection</span>
+          </>
+        }
+        subtitle="Instruments, botanicals, and mindful goods — chosen for depth of practice and everyday ritual."
+        topSlot={
+          <div className="mb-4 hidden md:block">
+            <Breadcrumbs variant="onDark" items={[{ label: "Home", href: "/" }, { label: "Shop" }]} />
           </div>
-          <h1 className="mt-0 font-serif text-2xl font-semibold tracking-tight text-stone-900 md:mt-6 md:text-4xl">
-            Shop
-          </h1>
-          <p className="mt-2 hidden max-w-2xl text-stone-500 md:block">
-            Instruments, botanicals, and mindful goods — chosen for depth of practice and everyday ritual.
-          </p>
-        </div>
-      </div>
+        }
+      />
 
-      <main className="mx-auto max-w-7xl md:px-4 md:py-8 lg:px-8">
+      <main className="bg-brand-bg md:mx-auto md:max-w-7xl md:px-4 md:py-8 lg:px-8">
         <ShopMobileCategoryDrawer categories={categories} selectedSlug={categorySlug} />
 
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
@@ -57,23 +59,22 @@ export default async function ShopPage({ searchParams }: Props) {
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="mb-3 px-4 text-sm text-stone-500 md:mb-6 md:px-0">
-              Showing{" "}
-              <span className="font-medium text-stone-800">{list.items.length}</span> of{" "}
-              <span className="font-medium text-stone-800">{list.pagination.total}</span> products
+            <p className="mb-3 px-4 text-sm font-light text-brand-mid md:mb-6 md:px-0">
+              Showing <span className="font-medium text-brand-ink">{list.items.length}</span> of{" "}
+              <span className="font-medium text-brand-ink">{list.pagination.total}</span> products
               {categorySlug ? (
                 <>
                   {" "}
-                  <span className="text-stone-400">·</span> filtered by{" "}
-                  <span className="font-medium text-stone-700">{categorySlug.replace(/-/g, " ")}</span>
+                  <span className="text-brand-muted">·</span> filtered by{" "}
+                  <span className="font-medium text-brand-violet">{categorySlug.replace(/-/g, " ")}</span>
                 </>
               ) : null}
             </p>
 
             {list.items.length === 0 ? (
-              <p className="mx-4 rounded-2xl border border-dashed border-stone-200 bg-white p-10 text-center text-stone-500 md:mx-0">
+              <p className="mx-4 rounded-2xl border border-dashed border-[rgba(196,176,232,0.35)] bg-brand-ivory p-10 text-center text-brand-mid md:mx-0">
                 No products match this filter yet.{" "}
-                <Link href="/shop" className="font-medium text-amber-700 underline hover:text-amber-800">
+                <Link href="/shop" className="font-medium text-brand-violet underline hover:text-brand-violet-mid">
                   Clear filters
                 </Link>
               </p>

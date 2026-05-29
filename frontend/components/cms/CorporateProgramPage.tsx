@@ -14,8 +14,8 @@ function ContentBlock({
 }: CorporateProgramPageData["sections"][number]) {
   const textCol = (
     <div className="flex flex-col justify-center">
-      <h2 className="font-sans text-xl font-semibold text-stone-900 md:text-2xl lg:text-3xl">{title}</h2>
-      <p className="mt-4 text-sm leading-relaxed text-stone-600 md:text-base">{body}</p>
+      <h2 className="display-text font-sans text-xl font-semibold text-brand-ink md:text-2xl lg:text-3xl">{title}</h2>
+      <p className="mt-4 text-sm leading-relaxed text-brand-mid md:text-base">{body}</p>
     </div>
   );
   const imageCol = (
@@ -45,10 +45,10 @@ function ContentBlock({
 
 export function CorporateProgramPage({ data }: Props) {
   return (
-    <main className="corporate-program bg-white text-stone-900">
+    <main className="corporate-program bg-white text-brand-ink">
       {/* Hero */}
       <section
-        className="relative flex min-h-[320px] items-center bg-stone-900 md:min-h-[420px]"
+        className="relative flex min-h-[320px] items-center bg-brand-violet-deep md:min-h-[420px]"
         style={{
           backgroundImage: `linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url(${data.hero.banner})`,
           backgroundSize: "cover",
@@ -56,7 +56,7 @@ export function CorporateProgramPage({ data }: Props) {
         }}
       >
         <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-          <h1 className="max-w-4xl font-sans text-4xl font-bold uppercase tracking-wide text-white md:text-5xl lg:text-6xl">
+          <h1 className="display-text max-w-4xl font-sans text-4xl font-bold uppercase tracking-wide text-white md:text-5xl lg:text-6xl">
             {data.title}
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-relaxed text-white/95 md:text-lg">{data.hero.subtitle}</p>
@@ -66,7 +66,7 @@ export function CorporateProgramPage({ data }: Props) {
       {/* Framework pillars */}
       <section className="bg-white px-4 py-14 md:py-16 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <p className="mx-auto max-w-3xl text-center text-sm leading-relaxed text-stone-600 md:text-base">
+          <p className="mx-auto max-w-3xl text-center text-sm leading-relaxed text-brand-mid md:text-base">
             {data.frameworkIntro}
           </p>
           <div
@@ -89,7 +89,7 @@ export function CorporateProgramPage({ data }: Props) {
                     sizes="220px"
                   />
                 </div>
-                <h3 className="mt-4 text-sm font-semibold text-stone-900 md:text-base">{pillar.title}</h3>
+                <h3 className="display-text mt-4 text-sm font-semibold text-brand-ink md:text-base">{pillar.title}</h3>
               </div>
             ))}
           </div>
@@ -100,12 +100,12 @@ export function CorporateProgramPage({ data }: Props) {
       {data.quoteBlock ? (
         <section className="bg-white px-4 py-12 md:py-16 lg:px-8">
           <div className="mx-auto grid max-w-7xl items-start gap-8 md:grid-cols-2 md:gap-12">
-            <h2 className="font-sans text-xl font-semibold leading-snug text-stone-900 md:text-2xl lg:text-3xl">
+            <h2 className="display-text font-sans text-xl font-semibold leading-snug text-brand-ink md:text-2xl lg:text-3xl">
               {data.quoteBlock.title}
             </h2>
             <div className="space-y-4">
               {data.quoteBlock.paragraphs.map((p) => (
-                <p key={p.slice(0, 40)} className="text-sm leading-relaxed text-stone-600 md:text-base">
+                <p key={p.slice(0, 40)} className="text-sm leading-relaxed text-brand-mid md:text-base">
                   {p}
                 </p>
               ))}

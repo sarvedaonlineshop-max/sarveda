@@ -63,9 +63,9 @@ export function ProductAudio({ audioUrl, title, variant = "default" }: Props) {
 
   if (variant === "storefront") {
     return (
-      <div className="rounded-xl border border-[#d8e7df] bg-[#f4f8f2] p-4 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-wide text-[#1e3a2f]">Audio Sample</p>
-        <p className="mt-1 text-sm font-medium text-stone-800">{title}</p>
+      <div className="rounded-xl border border-brand-sage-light bg-brand-sage-light p-4 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-wide text-brand-violet">Audio Sample</p>
+        <p className="mt-1 text-sm font-medium text-brand-ink">{title}</p>
         <audio ref={audioRef} preload="metadata" src={src} className="mt-3 w-full rounded-md bg-white" controls>
           <track kind="captions" />
         </audio>
@@ -74,23 +74,23 @@ export function ProductAudio({ audioUrl, title, variant = "default" }: Props) {
   }
 
   return (
-    <div className="rounded-2xl border border-stone-100 bg-amber-50 p-5 shadow-inner">
+    <div className="rounded-2xl border border-[rgba(196,176,232,0.25)] bg-brand-violet-light p-5 shadow-inner">
       <audio ref={audioRef} preload="metadata" className="hidden">
         <source src={src} />
       </audio>
-      <p className="text-xs font-semibold uppercase tracking-widest text-amber-800">Listen</p>
-      <p className="mt-1 font-serif text-lg text-stone-900">{title}</p>
+      <p className="text-xs font-semibold uppercase tracking-widest text-brand-violet">Listen</p>
+      <p className="mt-1 font-serif text-lg text-brand-ink">{title}</p>
 
       <div className="mt-5 flex items-center gap-4">
         <button
           type="button"
           onClick={toggle}
-          className="flex h-12 min-w-[48px] shrink-0 items-center justify-center rounded-full bg-stone-900 text-amber-400 shadow-md transition-colors hover:bg-amber-700 hover:text-white"
+          className="flex h-12 min-w-[48px] shrink-0 items-center justify-center rounded-full bg-brand-violet-deep text-brand-gold shadow-md transition-colors hover:bg-brand-violet-mid hover:text-white"
           aria-label={playing ? "Pause" : "Play"}
         >
           {playing ? "❚❚" : "▶"}
         </button>
-        <div className="min-w-0 flex-1 text-xs tabular-nums text-stone-500">
+        <div className="min-w-0 flex-1 text-xs tabular-nums text-brand-muted">
           {fmt(current)} / {fmt(duration)}
         </div>
       </div>

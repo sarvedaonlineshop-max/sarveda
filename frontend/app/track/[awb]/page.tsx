@@ -34,28 +34,28 @@ export default async function TrackPage({
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
-      <h1 className="font-serif text-3xl font-semibold text-stone-900">Track shipment</h1>
+      <h1 className="display-text font-serif text-3xl font-semibold text-brand-ink">Track shipment</h1>
       {!data ? (
-        <p className="mt-6 text-stone-600">
+        <p className="mt-6 text-brand-mid">
           We could not find tracking for AWB <strong>{awb}</strong>.
           {email ? " Check that the email matches your order." : null}
         </p>
       ) : (
-        <div className="mt-8 space-y-4 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
-          <p className="text-sm text-stone-500">AWB</p>
-          <p className="font-mono text-lg font-semibold text-stone-900">{data.waybill}</p>
-          <p className="text-sm text-stone-500">Courier</p>
-          <p className="text-stone-800">{data.courier}</p>
-          <p className="text-sm text-stone-500">Status</p>
-          <p className="text-lg font-medium text-amber-800">{data.shipmentStatus.replace(/_/g, " ")}</p>
-          <p className="text-sm text-stone-500">Order</p>
-          <p className="text-stone-800">{data.orderNumber}</p>
+        <div className="mt-8 space-y-4 rounded-2xl border border-[rgba(196,176,232,0.25)] bg-white p-6 shadow-sm">
+          <p className="text-sm text-brand-muted">AWB</p>
+          <p className="font-mono text-lg font-semibold text-brand-ink">{data.waybill}</p>
+          <p className="text-sm text-brand-muted">Courier</p>
+          <p className="text-brand-ink">{data.courier}</p>
+          <p className="text-sm text-brand-muted">Status</p>
+          <p className="text-lg font-medium text-brand-violet">{data.shipmentStatus.replace(/_/g, " ")}</p>
+          <p className="text-sm text-brand-muted">Order</p>
+          <p className="text-brand-ink">{data.orderNumber}</p>
           {data.trackingUrl ? (
             <a
               href={data.trackingUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block text-sm font-semibold text-amber-800 underline"
+              className="inline-block text-sm font-semibold text-brand-violet underline"
             >
               Open carrier tracking
             </a>
@@ -63,7 +63,7 @@ export default async function TrackPage({
         </div>
       )}
       <p className="mt-8">
-        <Link href="/shop" className="text-sm font-medium text-stone-700 underline">
+        <Link href="/shop" className="text-sm font-medium text-brand-mid underline">
           Continue shopping
         </Link>
       </p>

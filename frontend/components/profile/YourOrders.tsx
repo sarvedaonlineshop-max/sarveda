@@ -35,7 +35,7 @@ export function YourOrders({ email }: Props) {
   }, []);
 
   if (loading) {
-    return <p className="text-sm text-stone-500">Loading your orders…</p>;
+    return <p className="text-sm text-brand-muted">Loading your orders…</p>;
   }
 
   if (error) {
@@ -44,7 +44,7 @@ export function YourOrders({ email }: Props) {
 
   if (!orders.length) {
     return (
-      <div className="rounded-lg border border-dashed border-stone-200 bg-stone-50 p-6 text-sm text-stone-600">
+      <div className="rounded-lg border border-dashed border-[rgba(196,176,232,0.25)] bg-brand-bg p-6 text-sm text-brand-mid">
         You have no orders yet. When you place one, it will appear here with invoice download.
       </div>
     );
@@ -52,7 +52,7 @@ export function YourOrders({ email }: Props) {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-stone-600">
+      <p className="text-sm text-brand-mid">
         {orders.length} order{orders.length === 1 ? "" : "s"}
       </p>
       {orders.map((order) => (

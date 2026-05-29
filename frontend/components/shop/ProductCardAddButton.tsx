@@ -32,17 +32,22 @@ export function ProductCardAddButton({ product }: Props) {
   };
 
   return (
-    <div className="relative">
+    <div className="relative flex flex-col items-center">
       <button
         type="button"
         disabled={disabled}
         onClick={handleClick}
-        className="flex min-h-[48px] w-full items-center justify-center rounded-xl bg-stone-900 py-3 text-sm font-semibold tracking-wide text-amber-400 shadow-sm transition-colors hover:bg-amber-700 hover:text-white disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500"
+        aria-label="Add to cart"
+        className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-lg font-light leading-none text-white transition-colors hover:bg-brand-violet-mid disabled:cursor-not-allowed disabled:opacity-40"
+        style={{ background: disabled ? "rgba(91,62,155,0.35)" : "#5B3E9B" }}
       >
-        Add to Cart
+        +
       </button>
       {flash ? (
-        <p className="absolute -bottom-7 left-0 right-0 text-center text-xs font-medium text-emerald-600" role="status">
+        <p
+          className="absolute -bottom-6 left-1/2 w-max -translate-x-1/2 text-center text-[10px] font-medium text-brand-green"
+          role="status"
+        >
           Added
         </p>
       ) : null}

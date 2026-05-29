@@ -134,7 +134,22 @@ body {
   }
 }
 
-/* ─── Keyframes ────────────────────────────────────────────────── */
+@layer components {
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-cormorant), ui-serif, Georgia, serif;
+  }
+
+  .btn-primary {
+    @apply bg-brand-violet text-white shadow-violet-sm transition hover:-translate-y-px hover:bg-brand-violet-mid hover:shadow-violet disabled:hover:translate-y-0;
+  }
+
+  .card-interactive {
+    @apply transition hover:-translate-y-1 hover:shadow-card-hover;
+  }
+}
+
 @keyframes goldShimmer {
   0% {
     background-position: 0% center;

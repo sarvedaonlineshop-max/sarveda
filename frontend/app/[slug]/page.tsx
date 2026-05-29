@@ -190,7 +190,7 @@ export default async function SlugContentPage({ params }: Props) {
     return (
       <>
         <JsonLd data={breadcrumbJsonLd(breadcrumbItems)} />
-        <div className="border-b border-stone-100 bg-stone-50">
+        <div className="border-b border-[rgba(196,176,232,0.25)] bg-brand-bg">
           <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-6 lg:px-8">
             <Breadcrumbs items={uiBreadcrumbs} />
           </div>
@@ -206,11 +206,6 @@ export default async function SlugContentPage({ params }: Props) {
     return (
       <>
         <JsonLd data={breadcrumbJsonLd(breadcrumbItems)} />
-        <div className="border-b border-stone-100 bg-stone-50">
-          <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-6 lg:px-8">
-            <Breadcrumbs items={uiBreadcrumbs} />
-          </div>
-        </div>
         <CorporateWellnessPage page={cmsPage} />
       </>
     );
@@ -220,7 +215,7 @@ export default async function SlugContentPage({ params }: Props) {
     <>
       <JsonLd data={breadcrumbJsonLd(breadcrumbItems)} />
 
-      <div className="border-b border-stone-100 bg-stone-50">
+      <div className="border-b border-[rgba(196,176,232,0.25)] bg-brand-bg">
         <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-6 lg:px-8">
           <Breadcrumbs items={uiBreadcrumbs} />
         </div>
@@ -228,7 +223,7 @@ export default async function SlugContentPage({ params }: Props) {
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {content.kind === "blog" ? (
-          <p className="text-sm font-medium uppercase tracking-wide text-amber-800">
+          <p className="text-sm font-medium uppercase tracking-wide text-brand-violet">
             <Link href="/insights" className="hover:underline">
               Insights
             </Link>
@@ -240,11 +235,11 @@ export default async function SlugContentPage({ params }: Props) {
             ) : null}
           </p>
         ) : null}
-        <h1 className="font-serif text-3xl font-semibold tracking-tight text-stone-900 md:text-4xl">
+        <h1 className="display-text font-serif text-3xl font-semibold tracking-tight text-brand-ink md:text-4xl">
           {content.title}
         </h1>
         {content.imageUrl ? (
-          <div className="mt-8 overflow-hidden rounded-2xl border border-stone-200">
+          <div className="mt-8 overflow-hidden rounded-2xl border border-[rgba(196,176,232,0.25)]">
             <div className="relative aspect-[16/9] w-full">
               <Image
                 src={content.imageUrl}

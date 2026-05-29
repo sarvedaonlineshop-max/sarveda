@@ -37,7 +37,7 @@ export function ProductPurchaseSection({ productName, productType, variants }: P
   const currency = zoneToCurrency(zone);
 
   if (!variant) {
-    return <p className="text-sm text-stone-500">This product is not available for purchase.</p>;
+    return <p className="text-sm text-brand-muted">This product is not available for purchase.</p>;
   }
 
   const available = availableStock(variant);
@@ -70,23 +70,23 @@ export function ProductPurchaseSection({ productName, productType, variants }: P
         />
 
         {available !== null ? (
-          <p className="text-sm text-stone-500">
+          <p className="text-sm text-brand-muted">
             {available > 0 ? (
               <>
-                <span className="font-medium text-stone-800">{available}</span> in stock
+                <span className="font-medium text-brand-ink">{available}</span> in stock
                 {available <= 5 ? (
-                  <span className="ml-2 font-medium text-amber-800">— only a few left</span>
+                  <span className="ml-2 font-medium text-brand-violet">— only a few left</span>
                 ) : null}
               </>
             ) : (
-              <span className="font-medium text-amber-800">Currently out of stock</span>
+              <span className="font-medium text-brand-violet">Currently out of stock</span>
             )}
           </p>
         ) : null}
 
         <div className="hidden flex-col gap-4 sm:flex-row sm:items-end md:flex">
           <div className="sm:w-28">
-            <label htmlFor="qty" className="mb-2 block text-xs font-semibold uppercase tracking-widest text-stone-500">
+            <label htmlFor="qty" className="mb-2 block text-xs font-semibold uppercase tracking-widest text-brand-muted">
               Qty
             </label>
             <input
@@ -96,38 +96,38 @@ export function ProductPurchaseSection({ productName, productType, variants }: P
               max={available != null && available > 0 ? available : 999}
               value={qty}
               onChange={(event) => setQty(Math.max(1, Number(event.target.value) || 1))}
-              className="min-h-[48px] w-full rounded-xl border border-stone-100 bg-white px-3 py-2 text-center text-stone-900 shadow-inner focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+              className="min-h-[48px] w-full rounded-xl border border-[rgba(196,176,232,0.25)] bg-white px-3 py-2 text-center text-brand-ink shadow-inner focus:border-brand-lavender-mid focus:outline-none focus:ring-2 focus:ring-[rgba(155,130,204,0.35)]"
             />
           </div>
           <button
             type="button"
             onClick={add}
             disabled={addDisabled}
-            className="flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-stone-900 py-3.5 text-base font-semibold tracking-wide text-amber-400 shadow-lg transition-colors hover:bg-amber-700 hover:text-white disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500 disabled:shadow-none"
+            className="flex min-h-[52px] w-full items-center justify-center btn-primary rounded-2xl py-3.5 text-base font-semibold tracking-wide shadow-violet-sm disabled:cursor-not-allowed disabled:bg-brand-violet-light disabled:text-brand-muted disabled:shadow-none"
           >
             {addDisabled ? "Out of stock" : "Add to Cart"}
           </button>
         </div>
 
         {addedFlash ? (
-          <p className="text-sm font-medium text-emerald-600" role="status">
+          <p className="text-sm font-medium text-brand-sage" role="status">
             Added to cart.
           </p>
         ) : null}
       </div>
 
-      <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-40 border-t border-stone-200 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur-md safe-area-pb md:hidden">
+      <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-40 border-t border-[rgba(196,176,232,0.25)] bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur-md safe-area-pb md:hidden">
         <div className="mx-auto flex max-w-lg items-center gap-3">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-xs text-stone-500">{productName}</p>
-            <p className="text-lg font-bold tracking-tight text-stone-900">
+            <p className="truncate text-xs text-brand-muted">{productName}</p>
+            <p className="text-lg font-bold tracking-tight text-brand-ink">
               {formatMinorFromPaise(saleMinor, currency)}
             </p>
           </div>
-          <div className="flex items-center rounded-xl border border-stone-200 bg-stone-50">
+          <div className="flex items-center rounded-xl border border-[rgba(196,176,232,0.25)] bg-brand-bg">
             <button
               type="button"
-              className="flex h-11 min-w-[40px] items-center justify-center text-lg text-stone-700"
+              className="flex h-11 min-w-[40px] items-center justify-center text-lg text-brand-mid"
               aria-label="Decrease quantity"
               onClick={() => setQty((value) => Math.max(1, value - 1))}
             >
@@ -136,7 +136,7 @@ export function ProductPurchaseSection({ productName, productType, variants }: P
             <span className="min-w-[2rem] text-center text-sm font-medium tabular-nums">{qty}</span>
             <button
               type="button"
-              className="flex h-11 min-w-[40px] items-center justify-center text-lg text-stone-700"
+              className="flex h-11 min-w-[40px] items-center justify-center text-lg text-brand-mid"
               aria-label="Increase quantity"
               onClick={() => setQty((value) => value + 1)}
             >
@@ -147,7 +147,7 @@ export function ProductPurchaseSection({ productName, productType, variants }: P
             type="button"
             onClick={add}
             disabled={addDisabled}
-            className="min-h-[48px] flex-1 rounded-xl bg-stone-900 px-4 text-sm font-semibold text-amber-400 transition-colors hover:bg-amber-700 hover:text-white disabled:bg-stone-300 disabled:text-stone-500"
+            className="min-h-[48px] flex-1 btn-primary rounded-xl px-4 text-sm font-semibold disabled:bg-brand-violet-light disabled:text-brand-muted"
           >
             Add to cart
           </button>

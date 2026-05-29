@@ -9,7 +9,7 @@ export const metadata = {
 export default function ChatPage() {
   return (
     <div className="mx-auto max-w-3xl md:px-6 md:py-8">
-      <h1 className="hidden font-serif text-3xl font-semibold text-stone-900 md:block">Chat with Sarveda</h1>
+      <h1 className="display-text hidden font-serif text-3xl font-semibold text-brand-ink md:block">Chat with Sarveda</h1>
       <div className="md:mt-6">
         <ChatClient />
       </div>
