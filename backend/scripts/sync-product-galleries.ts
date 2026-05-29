@@ -13,7 +13,7 @@ import path from "path";
 
 import { PrismaClient } from "@prisma/client";
 
-import { readWxr } from "./wxr-utils";
+import { loadAttachmentMapFromWxr } from "./wxr-attachments";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
@@ -21,7 +21,7 @@ const prisma = new PrismaClient();
 const dryRun = process.argv.includes("--dry-run");
 
 const CSV_PATH = path.resolve(__dirname, "../prisma/wc-products.csv");
-const VARIATIONS_XML = path.resolve(__dirname, "../../data/variations.xml");
+const REPO_ROOT = path.resolve(__dirname, "../..");
 
 /** Products where CSV gallery attachment IDs are missing from variations.xml export */
 const EXTRA_GALLERY_BY_WOO_ID: Record<number, string[]> = {
@@ -32,32 +32,6 @@ const EXTRA_GALLERY_BY_WOO_ID: Record<number, string[]> = {
   ]
 };
 
-function loadAttachmentMap(): Map<number, string> {
-  const map = new Map<number, string>();
-  if (!fs.existsSync(VARIATIONS_XML)) return map;
-
-  const xml = readWxr(VARIATIONS_XML);
-  const blocks = xml.split(/\s*<item>/).slice(1);
-
-  for (const block of blocks) {
-    if (!block.includes("<wp:post_type><![CDATA[attachment]]>")) continue;
-
-    const idMatch =
-      block.match(/<wp:post_id>(\d+)<\/wp:post_id>/) ??
-      block.match(/<wp:post_id><!\[CDATA\[(\d+)\]\]><\/wp:post_id>/);
-    if (!idMatch) continue;
-
-    const urlMatch =
-      block.match(/<wp:attachment_url><!\[CDATA\[([^\]]+)\]\]><\/wp:attachment_url>/) ??
-      block.match(/<guid isPermaLink="false">([^<]+)<\/guid>/);
-    if (!urlMatch) continue;
-
-    const url = urlMatch[1].trim();
-    if (url.startsWith("http")) map.set(parseInt(idMatch[1], 10), url);
-  }
-
-  return map;
-}
 
 function collectUrlsFromRow(row: Record<string, string>, attachments: Map<number, string>): string[] {
   const urls: string[] = [];
@@ -98,8 +72,8 @@ function collectUrlsFromRow(row: Record<string, string>, attachments: Map<number
 }
 
 async function main(): Promise<void> {
-  const attachments = loadAttachmentMap();
-  console.log(`Attachment map: ${attachments.size} entries from variations.xml`);
+  const attachments = loadAttachmentMapFromWxr(REPO_ROOT);
+  console.log(`Attachment map: ${attachments.size} entries (media + products + variations WXR)`);
 
   const csvRaw = fs.readFileSync(CSV_PATH, "utf8");
   const rows = parse(csvRaw, { columns: true, skip_empty_lines: true, relax_column_count: true }) as Record<

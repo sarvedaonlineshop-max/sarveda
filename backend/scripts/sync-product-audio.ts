@@ -12,45 +12,16 @@ import path from "path";
 
 import { PrismaClient } from "@prisma/client";
 
-import { readWxr } from "./wxr-utils";
+import { loadAttachmentMapFromWxr } from "./wxr-attachments";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const prisma = new PrismaClient();
 const dryRun = process.argv.includes("--dry-run");
+const force = process.argv.includes("--force");
 
 const CSV_PATH = path.resolve(__dirname, "../prisma/wc-products.csv");
-const VARIATIONS_XML = path.resolve(__dirname, "../../data/variations.xml");
-
-function loadAttachmentMap(): Map<number, string> {
-  const map = new Map<number, string>();
-  if (!fs.existsSync(VARIATIONS_XML)) {
-    console.warn("Missing variations.xml — cannot resolve attachment IDs");
-    return map;
-  }
-
-  const xml = readWxr(VARIATIONS_XML);
-  const blocks = xml.split(/\s*<item>/).slice(1);
-
-  for (const block of blocks) {
-    if (!block.includes("<wp:post_type><![CDATA[attachment]]>")) continue;
-
-    const idMatch =
-      block.match(/<wp:post_id>(\d+)<\/wp:post_id>/) ??
-      block.match(/<wp:post_id><!\[CDATA\[(\d+)\]\]><\/wp:post_id>/);
-    if (!idMatch) continue;
-
-    const urlMatch =
-      block.match(/<wp:attachment_url><!\[CDATA\[([^\]]+)\]\]><\/wp:attachment_url>/) ??
-      block.match(/<guid isPermaLink="false">([^<]+)<\/guid>/);
-    if (!urlMatch) continue;
-
-    const url = urlMatch[1].trim();
-    if (url.startsWith("http")) map.set(parseInt(idMatch[1], 10), url);
-  }
-
-  return map;
-}
+const REPO_ROOT = path.resolve(__dirname, "../..");
 
 function firstAudioUrlFromRow(row: Record<string, string>, attachments: Map<number, string>): string | null {
   for (let i = 0; i < 12; i++) {
@@ -72,8 +43,8 @@ function firstAudioUrlFromRow(row: Record<string, string>, attachments: Map<numb
 }
 
 async function main(): Promise<void> {
-  const attachments = loadAttachmentMap();
-  console.log(`Attachment map: ${attachments.size} entries`);
+  const attachments = loadAttachmentMapFromWxr(REPO_ROOT);
+  console.log(`Attachment map: ${attachments.size} entries (media + products + variations WXR)`);
 
   const raw = fs.readFileSync(CSV_PATH, "utf-8");
   const rows = parse(raw, { relax_column_count: true, skip_empty_lines: true, bom: true }) as string[][];
@@ -111,7 +82,11 @@ async function main(): Promise<void> {
       noProduct++;
       continue;
     }
-    if (product.audioUrl === audioUrl) {
+    if (!force && product.audioUrl === audioUrl) {
+      skipped++;
+      continue;
+    }
+    if (!force && product.audioUrl?.includes("sarveda-media.s3") && audioUrl.includes("sarveda.com")) {
       skipped++;
       continue;
     }

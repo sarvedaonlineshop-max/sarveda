@@ -2,6 +2,8 @@
 
 | File | Contents | Import command |
 |------|----------|----------------|
+| `sarveda.WordPress.2026-05-29-media.xml` | **Media library** (~4154 attachments, MP3 samples) | Used by `npm run sync:audio` / `sync:galleries` (attachment ID → URL) |
+| `sarveda.WordPress.2026-05-29-products.xml` | **Products** export (170 products + embedded attachments) | Reference / future re-seed; shop data still from `wc-products.csv` |
 | `sarveda-courses.xml` | 15 published **courses** | `npm run import:courses` |
 | `sarveda-events.xml` | 36 published **events** | `npm run import:events` |
 | `pages.xml` | 7 marketing **pages** | `npm run import:pages` |

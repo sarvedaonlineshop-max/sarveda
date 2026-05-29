@@ -66,10 +66,17 @@ npm run sync:galleries
 
 ### 3. Audio samples (singing bowls, etc.)
 
+Requires **`data/sarveda.WordPress.2026-05-29-media.xml`** on the server (attachment IDs in CSV do **not** resolve from `variations.xml` alone).
+
 ```bash
+git pull   # get wxr-attachments + updated sync:audio
 npm run sync:audio:dry
 npm run sync:audio
+# expect ~38 products updated, not "0"
+npm run migrate:media
 ```
+
+If audio was already on old WP URLs: `npm run sync:audio -- --force`
 
 Then copy files to S3:
 

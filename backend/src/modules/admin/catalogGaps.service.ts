@@ -48,12 +48,16 @@ export async function buildCatalogGapsReport(): Promise<CatalogGapsReport> {
   const shippingGaps: CatalogGapRow[] = [];
 
   for (const v of variants) {
+    const sku = v.sku ?? "";
+    /** Course enrollments use COURSE-* SKUs — not physical shop catalog. */
+    if (sku.startsWith("COURSE-")) continue;
+
     const base = {
       productId: v.productRel.id,
       productName: v.productRel.name,
       productSlug: v.productRel.slug,
       variantId: v.id,
-      sku: v.sku
+      sku
     };
 
     if (v.saleUsdCents == null || v.saleUsdCents <= 0) {
