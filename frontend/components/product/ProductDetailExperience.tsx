@@ -44,8 +44,8 @@ const STICKY_TOP = "top-24 lg:top-28";
 export function ProductDetailExperience({ product, pairWithItems }: Props) {
   const router = useRouter();
   const isMobile = useIsMobile();
-  const { itemCount, refreshCart } = useCartData();
-  const hasCartRail = itemCount > 0;
+  const { items, itemCount, refreshCart } = useCartData();
+  const hasCartRail = itemCount > 0 || items.length > 0;
 
   const initial = useMemo(() => pickInitialVariant(product.variants), [product.variants]);
   const [variantId, setVariantId] = useState<string | null>(initial?.id ?? null);

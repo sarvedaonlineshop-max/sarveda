@@ -81,7 +81,8 @@ export function CartCheckoutSidebar({ mode, className = "" }: Props) {
   const { items, subtotalInPaise, itemCount, refreshCart } = useCartData();
   const [busy, setBusy] = useState<string | null>(null);
 
-  if (itemCount === 0) return null;
+  const count = itemCount > 0 ? itemCount : items.reduce((n, i) => n + i.quantity, 0);
+  if (count === 0 && items.length === 0) return null;
 
   const setQty = async (variantId: string, quantity: number) => {
     setBusy(variantId);
@@ -100,7 +101,7 @@ export function CartCheckoutSidebar({ mode, className = "" }: Props) {
     <div className={className}>
       <div className={`border-stone-200 bg-white ${isRail ? "border-b px-3 py-3" : "rounded-lg border p-4 shadow-sm"}`}>
         <p className="text-[11px] text-stone-600">
-          Subtotal ({itemCount} {itemCount === 1 ? "item" : "items"}):
+          Subtotal ({count} {count === 1 ? "item" : "items"}):
         </p>
         <p className="mt-0.5 text-lg font-semibold text-stone-900">{formatINRFromPaise(subtotalInPaise)}</p>
 

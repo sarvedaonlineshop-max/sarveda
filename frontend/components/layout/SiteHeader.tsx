@@ -51,7 +51,7 @@ const sessionLinkClass = "text-sm font-medium tracking-wide text-stone-400 trans
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const { openDrawer }           = useCartUi();
+  const { goToCart }             = useCartUi();
   const { itemCount: cartCount } = useCartData();
   const [menuOpen, setMenuOpen]  = useState(false);
   const [sessionUser, setSessionUser] = useState<PublicUser | null>(null);
@@ -137,7 +137,7 @@ export function SiteHeader() {
             )}
           </div>
 
-          <button type="button" onClick={openDrawer} className="flex flex-shrink-0 items-center rounded-xl" aria-label={`Open cart, ${cartCount} items`}>
+          <button type="button" onClick={goToCart} className="flex flex-shrink-0 items-center rounded-xl" aria-label={`Open cart, ${cartCount} items`}>
             <CartIcon count={cartCount} />
           </button>
         </div>
@@ -170,7 +170,7 @@ export function SiteHeader() {
               </>
             )}
             <div className="my-2 h-px" style={{ background:"rgba(255,255,255,0.08)" }} />
-            <button type="button" className="min-h-[52px] w-full rounded-xl px-4 py-3 text-left text-lg font-semibold text-amber-400 hover:bg-white/6" onClick={() => { setMenuOpen(false); openDrawer(); }}>
+            <button type="button" className="min-h-[52px] w-full rounded-xl px-4 py-3 text-left text-lg font-semibold text-amber-400 hover:bg-white/6" onClick={() => { setMenuOpen(false); goToCart(); }}>
               Cart {cartCount > 0 ? `(${cartCount})` : ""}
             </button>
           </nav>

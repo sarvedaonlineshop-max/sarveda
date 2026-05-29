@@ -3,11 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { useCartData, useCartUi } from "@/components/cart/CartProvider";
+import { useCartData } from "@/components/cart/CartProvider";
 
 export function MobileCartBar() {
   const pathname = usePathname();
-  const { openDrawer } = useCartUi();
   const { itemCount: count } = useCartData();
 
   if (pathname?.startsWith("/admin") || pathname?.startsWith("/login")) {
@@ -23,9 +22,8 @@ export function MobileCartBar() {
         >
           Shop
         </Link>
-        <button
-          type="button"
-          onClick={openDrawer}
+        <Link
+          href="/cart"
           className="flex min-h-[48px] flex-[2] items-center justify-center gap-2 rounded-lg bg-stone-800 px-4 text-amber-400 transition-colors hover:bg-stone-700"
         >
           <span className="text-lg" aria-hidden="true">
@@ -37,7 +35,7 @@ export function MobileCartBar() {
               {count > 99 ? "99+" : count}
             </span>
           ) : null}
-        </button>
+        </Link>
       </div>
     </div>
   );

@@ -61,7 +61,7 @@ const navLinkClass =
 export function Header() {
   const pathname = usePathname();
   const router   = useRouter();
-  const { openDrawer }           = useCartUi();
+  const { goToCart }             = useCartUi();
   const { itemCount: cartCount } = useCartData();
   const sessionUser              = useStorefrontSession();
   const [query, setQuery]        = useState("");
@@ -190,7 +190,7 @@ export function Header() {
             {/* Cart */}
             <button
               type="button"
-              onClick={openDrawer}
+              onClick={goToCart}
               className="inline-flex items-center rounded-xl transition-colors"
               aria-label={`Open cart, ${cartCount} items`}
             >

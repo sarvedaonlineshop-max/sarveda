@@ -8,17 +8,16 @@ import {
   useMemo,
   useState
 } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 
-import { useIsMobile } from "@/hooks/useIsMobile";
 import { type CartApiItem, cartGet } from "@/lib/cart-api";
 
-import { CartDrawer } from "./CartDrawer";
-
 type CartUiState = {
+  /** @deprecated drawer removed — navigates to /cart */
   drawerOpen: boolean;
   openDrawer: () => void;
   closeDrawer: () => void;
+  goToCart: () => void;
 };
 
 type CartDataState = {
@@ -55,10 +54,6 @@ export function useCartData(): CartDataState {
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const pathname = usePathname();
-  const isMobile = useIsMobile();
-  const isProductPage = pathname?.startsWith("/product/") ?? false;
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [items, setItems] = useState<CartApiItem[]>([]);
   const [subtotalInPaise, setSubtotalInPaise] = useState(0);
   const [discountInPaise, setDiscountInPaise] = useState(0);
@@ -79,7 +74,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       setTotalInPaise(data.totalInPaise ?? data.subtotalInPaise);
       setCoupon(data.coupon ?? null);
       setCurrency(data.currency ?? "INR");
-      setItemCount(data.itemCount);
+      setItemCount(data.itemCount ?? data.items.reduce((n, i) => n + i.quantity, 0));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Cart failed to load");
       setItems([]);
@@ -108,54 +103,27 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     };
   }, [refreshCart]);
 
-  const openDrawer = useCallback(() => {
-    if (isMobile) {
-      router.push("/cart");
-      return;
-    }
-    // PDP uses fixed cart rail — page stays scrollable
-    if (isProductPage) {
-      return;
-    }
-    setDrawerOpen(true);
-  }, [isMobile, isProductPage, router]);
+  const goToCart = useCallback(() => {
+    router.push("/cart");
+  }, [router]);
 
-  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+  const openDrawer = goToCart;
+  const closeDrawer = useCallback(() => {}, []);
 
   useEffect(() => {
-    const onOpen = () => {
-      if (isMobile) {
-        router.push("/cart");
-        return;
-      }
-      if (isProductPage) {
-        return;
-      }
-      setDrawerOpen(true);
-    };
+    const onOpen = () => goToCart();
     window.addEventListener("sarveda-open-cart", onOpen);
     return () => window.removeEventListener("sarveda-open-cart", onOpen);
-  }, [isMobile, isProductPage, router]);
-
-  useEffect(() => {
-    if (drawerOpen && !isMobile) {
-      void refreshCart();
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [drawerOpen, isMobile, refreshCart]);
+  }, [goToCart]);
 
   const uiValue = useMemo(
     () => ({
-      drawerOpen,
+      drawerOpen: false,
       openDrawer,
-      closeDrawer
+      closeDrawer,
+      goToCart
     }),
-    [drawerOpen, openDrawer, closeDrawer]
+    [openDrawer, closeDrawer, goToCart]
   );
 
   const dataValue = useMemo(
@@ -187,10 +155,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <CartUiContext.Provider value={uiValue}>
-      <CartDataContext.Provider value={dataValue}>
-        {children}
-        {!isMobile && !isProductPage ? <CartDrawer open={drawerOpen} onClose={closeDrawer} /> : null}
-      </CartDataContext.Provider>
+      <CartDataContext.Provider value={dataValue}>{children}</CartDataContext.Provider>
     </CartUiContext.Provider>
   );
 }
