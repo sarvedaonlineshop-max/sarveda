@@ -8,7 +8,7 @@ import {
   useMemo,
   useState
 } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { type CartApiItem, cartGet } from "@/lib/cart-api";
@@ -55,7 +55,9 @@ export function useCartData(): CartDataState {
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const isMobile = useIsMobile();
+  const isProductPage = pathname?.startsWith("/product/") ?? false;
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [items, setItems] = useState<CartApiItem[]>([]);
   const [subtotalInPaise, setSubtotalInPaise] = useState(0);
@@ -111,8 +113,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       router.push("/cart");
       return;
     }
+    // PDP uses fixed cart rail — page stays scrollable
+    if (isProductPage) {
+      return;
+    }
     setDrawerOpen(true);
-  }, [isMobile, router]);
+  }, [isMobile, isProductPage, router]);
 
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
@@ -122,11 +128,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         router.push("/cart");
         return;
       }
+      if (isProductPage) {
+        return;
+      }
       setDrawerOpen(true);
     };
     window.addEventListener("sarveda-open-cart", onOpen);
     return () => window.removeEventListener("sarveda-open-cart", onOpen);
-  }, [isMobile, router]);
+  }, [isMobile, isProductPage, router]);
 
   useEffect(() => {
     if (drawerOpen && !isMobile) {
@@ -180,7 +189,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     <CartUiContext.Provider value={uiValue}>
       <CartDataContext.Provider value={dataValue}>
         {children}
-        {!isMobile ? <CartDrawer open={drawerOpen} onClose={closeDrawer} /> : null}
+        {!isMobile && !isProductPage ? <CartDrawer open={drawerOpen} onClose={closeDrawer} /> : null}
       </CartDataContext.Provider>
     </CartUiContext.Provider>
   );

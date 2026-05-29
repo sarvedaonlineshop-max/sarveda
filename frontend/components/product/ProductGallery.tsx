@@ -16,10 +16,20 @@ type Props = {
   productName: string;
   activeIndex?: number;
   onActiveChange?: (index: number) => void;
+  enableZoom?: boolean;
 };
 
-export function ProductGallery({ images, productName, activeIndex, onActiveChange }: Props) {
+export function ProductGallery({
+  images,
+  productName,
+  activeIndex,
+  onActiveChange,
+  enableZoom = true
+}: Props) {
   const [internalActive, setInternalActive] = useState(0);
+  const [zoomActive, setZoomActive] = useState(false);
+  const [zoomOrigin, setZoomOrigin] = useState({ x: 50, y: 50 });
+
   const controlled = activeIndex !== undefined && onActiveChange !== undefined;
   const active = controlled ? activeIndex : internalActive;
 
@@ -40,6 +50,15 @@ export function ProductGallery({ images, productName, activeIndex, onActiveChang
     if (!resolved.length) return;
     const next = (active + delta + resolved.length) % resolved.length;
     setActive(next);
+    setZoomActive(false);
+  };
+
+  const onMainPointerMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!enableZoom) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setZoomOrigin({ x: Math.min(100, Math.max(0, x)), y: Math.min(100, Math.max(0, y)) });
   };
 
   if (!resolved.length) {
@@ -55,17 +74,36 @@ export function ProductGallery({ images, productName, activeIndex, onActiveChang
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
-        <Image
-          key={current.id}
-          src={current.url}
-          alt={current.altText || productName}
-          fill
-          className="object-contain p-2 transition-opacity duration-200"
-          sizes="(max-width: 1024px) 100vw, 42vw"
-          priority
-          unoptimized
-        />
+      <div
+        className="relative aspect-square w-full overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm"
+        onMouseEnter={() => enableZoom && setZoomActive(true)}
+        onMouseLeave={() => setZoomActive(false)}
+        onMouseMove={onMainPointerMove}
+      >
+        <div
+          className="relative h-full w-full transition-transform duration-150 ease-out"
+          style={{
+            transform: zoomActive ? "scale(2.15)" : "scale(1)",
+            transformOrigin: `${zoomOrigin.x}% ${zoomOrigin.y}%`
+          }}
+        >
+          <Image
+            key={current.id}
+            src={current.url}
+            alt={current.altText || productName}
+            fill
+            className="object-contain p-3"
+            sizes="(max-width: 1024px) 100vw, 48vw"
+            priority
+            unoptimized
+          />
+        </div>
+
+        {enableZoom ? (
+          <span className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wide text-stone-600 shadow-sm">
+            Hover to zoom
+          </span>
+        ) : null}
 
         {hasMultiple ? (
           <>
@@ -93,7 +131,6 @@ export function ProductGallery({ images, productName, activeIndex, onActiveChang
         ) : null}
       </div>
 
-      {/* Thumbnail strip — always visible when we have images */}
       <div className="flex items-center gap-2">
         {hasMultiple ? (
           <button
