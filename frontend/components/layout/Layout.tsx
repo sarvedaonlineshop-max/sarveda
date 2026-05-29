@@ -13,9 +13,10 @@ import { SiteFooter } from "./SiteFooter";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { itemCount } = useCartData();
+  const { itemCount, items } = useCartData();
   const onProductPage = pathname?.startsWith("/product/") ?? false;
-  const pdpCartRail = onProductPage && itemCount > 0;
+  const hasCartItems = itemCount > 0 || items.length > 0;
+  const pdpCartRail = onProductPage && hasCartItems;
   const chromeless =
     pathname?.startsWith("/admin") ||
     pathname?.startsWith("/login") ||

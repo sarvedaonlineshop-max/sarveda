@@ -1,11 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { useCartData } from "@/components/cart/CartProvider";
-import { cartSidebarContentPadClass } from "@/lib/cart-sidebar-layout";
-import { useIsMobile } from "@/hooks/useIsMobile";
 import { AccordionDescription } from "@/components/product/AccordionDescription";
 import { PairWithRow } from "@/components/product/PairWithRow";
 import { ProductAudio } from "@/components/product/ProductAudio";
@@ -17,7 +16,7 @@ import { PriceDisplay } from "@/components/product/PriceDisplay";
 import { cartAdd } from "@/lib/cart-api";
 import { readZoneFromCookie, unitSaleMinor, zoneToCurrency, type Zone } from "@/lib/currency";
 import { resolveMediaUrl } from "@/lib/media-cdn";
-import { formatMinorFromPaise } from "@/lib/money";
+import { formatINRFromPaise, formatMinorFromPaise } from "@/lib/money";
 import { imageIndexForVariant } from "@/lib/variant-image";
 import { availableStock, stockDisplay, variantDisplayLabel } from "@/lib/variant-utils";
 import type { ProductDetail, ProductListItem } from "@/lib/types";
@@ -42,9 +41,9 @@ const STICKY_TOP = "top-24 lg:top-28";
  */
 export function ProductDetailExperience({ product, pairWithItems }: Props) {
   const router = useRouter();
-  const isMobile = useIsMobile();
-  const { items, itemCount } = useCartData();
+  const { items, itemCount, subtotalInPaise } = useCartData();
   const hasCartRail = itemCount > 0 || items.length > 0;
+  const cartCount = itemCount > 0 ? itemCount : items.reduce((n, i) => n + i.quantity, 0);
 
   const initial = useMemo(() => pickInitialVariant(product.variants), [product.variants]);
   const [variantId, setVariantId] = useState<string | null>(initial?.id ?? null);
@@ -136,16 +135,12 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
     available,
     variantForStock: variant,
     layout: "inline" as const,
-    showPurchaseActions: !isMobile
+    showPurchaseActions: true
   };
 
   return (
     <>
-      <div
-        className={`mx-auto max-w-7xl px-4 py-6 pb-28 sm:px-6 lg:px-8 lg:py-10 lg:pb-12 ${
-          hasCartRail ? cartSidebarContentPadClass : ""
-        }`}
-      >
+      <div className="mx-auto max-w-7xl px-4 py-6 pb-32 sm:px-6 lg:px-8 lg:py-10 lg:pb-12">
         {/* Primary two-column block — left column sticks while right column scrolls */}
         <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-2 lg:gap-x-10 xl:gap-x-14">
           <div className={`lg:sticky ${STICKY_TOP} lg:self-start`}>
@@ -231,8 +226,17 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
         </div>
       </div>
 
-      {/* Mobile sticky bar */}
-      <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-50 border-t border-stone-200 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur-md safe-area-pb xl:hidden">
+      {/* Mobile / tablet sticky purchase bar (desktop uses fixed cart rail at lg+) */}
+      <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-50 border-t border-stone-200 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur-md safe-area-pb lg:hidden">
+        {hasCartRail ? (
+          <Link
+            href="/checkout"
+            className="mx-auto mb-3 flex min-h-[44px] w-full max-w-lg items-center justify-center rounded-lg bg-[#ffd814] text-sm font-semibold text-stone-900 shadow-sm transition hover:bg-[#f7ca00]"
+          >
+            Proceed to Buy · {formatINRFromPaise(subtotalInPaise)}
+            {cartCount > 0 ? ` (${cartCount})` : ""}
+          </Link>
+        ) : null}
         <div className="mx-auto flex max-w-lg items-center gap-2">
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs text-stone-500">{product.name}</p>
