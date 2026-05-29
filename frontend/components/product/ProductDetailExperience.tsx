@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { PdpCartRail } from "@/components/cart/PdpCartRail";
 import { useCartData } from "@/components/cart/CartProvider";
 import { cartSidebarContentPadClass } from "@/lib/cart-sidebar-layout";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -44,7 +43,7 @@ const STICKY_TOP = "top-24 lg:top-28";
 export function ProductDetailExperience({ product, pairWithItems }: Props) {
   const router = useRouter();
   const isMobile = useIsMobile();
-  const { items, itemCount, refreshCart } = useCartData();
+  const { items, itemCount } = useCartData();
   const hasCartRail = itemCount > 0 || items.length > 0;
 
   const initial = useMemo(() => pickInitialVariant(product.variants), [product.variants]);
@@ -92,7 +91,6 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
     if (!variant || qty < 1) return;
     try {
       await cartAdd(variant.id, qty);
-      await refreshCart();
       setAddedFlash(true);
       window.setTimeout(() => setAddedFlash(false), 2200);
     } catch (error) {
@@ -104,7 +102,6 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
     if (!variant || qty < 1 || addDisabled) return;
     try {
       await cartAdd(variant.id, qty);
-      await refreshCart();
       router.push("/checkout");
     } catch (error) {
       alert(error instanceof Error ? error.message : "Could not continue to checkout");
@@ -134,8 +131,6 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
 
   return (
     <>
-      <PdpCartRail />
-
       <div
         className={`mx-auto max-w-7xl px-4 py-6 pb-28 sm:px-6 lg:px-8 lg:py-10 lg:pb-12 ${
           hasCartRail ? cartSidebarContentPadClass : ""

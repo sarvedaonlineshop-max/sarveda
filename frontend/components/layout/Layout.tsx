@@ -3,6 +3,7 @@
 import { MotionConfig } from "framer-motion";
 import { usePathname } from "next/navigation";
 
+import { PdpCartRail } from "@/components/cart/PdpCartRail";
 import { useCartData } from "@/components/cart/CartProvider";
 import { cartSidebarWhatsAppRightClass } from "@/lib/cart-sidebar-layout";
 import { BottomNav } from "./BottomNav";
@@ -13,8 +14,8 @@ import { SiteFooter } from "./SiteFooter";
 export function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { itemCount } = useCartData();
-  const pdpCartRail =
-    (pathname?.startsWith("/product/") ?? false) && itemCount > 0;
+  const onProductPage = pathname?.startsWith("/product/") ?? false;
+  const pdpCartRail = onProductPage && itemCount > 0;
   const chromeless =
     pathname?.startsWith("/admin") ||
     pathname?.startsWith("/login") ||
@@ -26,6 +27,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <MotionConfig reducedMotion="user">
+      {onProductPage ? <PdpCartRail /> : null}
       <Header />
       <main className="pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0" style={{ background:"#fdf6ed" }}>
         <PageTransition>{children}</PageTransition>

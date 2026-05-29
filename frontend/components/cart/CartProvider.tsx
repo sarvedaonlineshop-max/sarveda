@@ -10,7 +10,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 
-import { type CartApiItem, cartGet } from "@/lib/cart-api";
+import { type CartApiItem, type CartApiResponse, cartGet } from "@/lib/cart-api";
 
 type CartUiState = {
   /** @deprecated drawer removed — navigates to /cart */
@@ -64,17 +64,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const applyCartResponse = useCallback((data: CartApiResponse) => {
+    setItems(data.items);
+    setSubtotalInPaise(data.subtotalInPaise);
+    setDiscountInPaise(data.discountInPaise ?? 0);
+    setTotalInPaise(data.totalInPaise ?? data.subtotalInPaise);
+    setCoupon(data.coupon ?? null);
+    setCurrency(data.currency ?? "INR");
+    setItemCount(data.itemCount ?? data.items.reduce((n, i) => n + i.quantity, 0));
+    setLoading(false);
+    setError(null);
+  }, []);
+
   const refreshCart = useCallback(async (shippingCountry?: string, checkoutEmail?: string) => {
     try {
       setError(null);
       const data = await cartGet(shippingCountry, checkoutEmail);
-      setItems(data.items);
-      setSubtotalInPaise(data.subtotalInPaise);
-      setDiscountInPaise(data.discountInPaise ?? 0);
-      setTotalInPaise(data.totalInPaise ?? data.subtotalInPaise);
-      setCoupon(data.coupon ?? null);
-      setCurrency(data.currency ?? "INR");
-      setItemCount(data.itemCount ?? data.items.reduce((n, i) => n + i.quantity, 0));
+      applyCartResponse(data);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Cart failed to load");
       setItems([]);
@@ -87,21 +93,28 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [applyCartResponse]);
 
   useEffect(() => {
     void refreshCart();
   }, [refreshCart]);
 
   useEffect(() => {
-    const onChange = () => void refreshCart();
+    const onChange = (event: Event) => {
+      const detail = (event as CustomEvent<CartApiResponse | undefined>).detail;
+      if (detail?.items) {
+        applyCartResponse(detail);
+        return;
+      }
+      void refreshCart();
+    };
     window.addEventListener("sarveda-cart-changed", onChange);
     window.addEventListener("storage", onChange);
     return () => {
       window.removeEventListener("sarveda-cart-changed", onChange);
       window.removeEventListener("storage", onChange);
     };
-  }, [refreshCart]);
+  }, [applyCartResponse, refreshCart]);
 
   const goToCart = useCallback(() => {
     router.push("/cart");

@@ -143,7 +143,7 @@ export function CartPageClient() {
         </div>
 
         {/* Sticky checkout box — stays visible while scrolling items */}
-        <aside className="mt-6 lg:sticky lg:top-28 lg:col-span-4 lg:mt-0 lg:self-start xl:col-span-3">
+        <aside className="mt-6 hidden lg:sticky lg:top-28 lg:col-span-4 lg:mt-0 lg:block lg:self-start xl:col-span-3">
           <CartCheckoutSidebar mode="cart-page" />
         </aside>
       </div>
