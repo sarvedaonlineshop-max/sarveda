@@ -27,12 +27,13 @@ type Props = {
   pairWithItems: ProductListItem[];
 };
 
+const STICKY_TOP = "top-24 lg:top-28";
+
 /**
- * Amazon-style PDP:
+ * Amazon-style PDP (main branch):
  * - Left: sticky gallery (+ audio)
- * - Center: all product copy scrolls with the page (about + accordion included)
- * - Right: sticky buy box
- * Page scroll continues to Related Products once this block ends.
+ * - Center: title, copy, pair-with, about + accordion (page scroll)
+ * - Right: sticky buy box (desktop)
  */
 export function ProductDetailExperience({ product, pairWithItems }: Props) {
   const initial = useMemo(() => pickInitialVariant(product.variants), [product.variants]);
@@ -90,12 +91,30 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
 
   const categoryTags = product.categories.map((c) => c.category.name).slice(0, 3);
 
+  const buyBoxProps = {
+    variant,
+    variants: product.variants,
+    onVariantChange: setVariantId,
+    zone,
+    saleMinor,
+    qty,
+    onQtyChange: setQty,
+    maxQty,
+    addDisabled,
+    addedFlash,
+    onAdd: add,
+    isDigital,
+    shippingDays,
+    available,
+    variantForStock: variant
+  };
+
   return (
     <>
-      <div className="mx-auto max-w-7xl px-4 py-6 pb-28 sm:px-6 lg:px-8 lg:py-10 lg:pb-10">
+      <div className="mx-auto max-w-7xl px-4 py-6 pb-28 sm:px-6 lg:px-8 lg:py-10 lg:pb-12">
         <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12 lg:gap-x-8 xl:gap-x-10">
-          {/* —— Left: sticky gallery —— */}
-          <div className="lg:col-span-5 xl:col-span-5 lg:sticky lg:top-28 lg:self-start">
+          {/* Left: sticky gallery */}
+          <div className={`lg:col-span-5 xl:col-span-5 lg:sticky ${STICKY_TOP} lg:self-start`}>
             <ProductGallery
               images={sortedImages}
               productName={product.name}
@@ -123,108 +142,81 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
             ) : null}
           </div>
 
-          {/* —— Center: details (page scroll, not a nested scroll trap) —— */}
-          <div className="min-w-0 lg:col-span-4 xl:col-span-4">
-            <h1 className="font-serif text-2xl font-semibold leading-tight text-stone-900 sm:text-[1.75rem]">
-              {product.name}
-            </h1>
+          {/* Center: product story + long copy (scrolls with page) */}
+          <div className="min-w-0 space-y-8 lg:col-span-4 xl:col-span-4">
+            <div>
+              <h1 className="font-serif text-2xl font-semibold leading-tight text-stone-900 sm:text-[1.75rem] lg:text-[2rem]">
+                {product.name}
+              </h1>
 
-            <div className="mt-2 flex items-center gap-1 text-sm text-stone-500" aria-label="No reviews yet">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <svg key={i} className="h-4 w-4 text-stone-300" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-              ))}
-              <span className="ml-1">0 out of 0 reviews</span>
-            </div>
-
-            {codAvailable ? (
-              <div className="mt-4 inline-flex w-fit items-center gap-2 rounded-md border border-[#108967] px-3 py-2 text-sm text-[#108967]">
-                <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m0 0H21m-1.5 0h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5 0H21" />
-                </svg>
-                Cash On Delivery Available
+              <div className="mt-2 flex items-center gap-1 text-sm text-stone-500" aria-label="No reviews yet">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <svg key={i} className="h-4 w-4 text-stone-300" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
+                <span className="ml-1">0 out of 0 reviews</span>
               </div>
-            ) : null}
 
-            {product.shortDescription ? (
-              <ProductRichText
-                html={product.shortDescription}
-                className="mt-4 text-sm leading-relaxed text-stone-600"
-              />
-            ) : null}
+              {codAvailable ? (
+                <div className="mt-4 inline-flex w-fit items-center gap-2 rounded-md border border-[#108967] px-3 py-2 text-sm text-[#108967]">
+                  <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m0 0H21m-1.5 0h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5 0H21"
+                    />
+                  </svg>
+                  Cash On Delivery Available
+                </div>
+              ) : null}
 
-            <div className="mt-6 space-y-6">
-              <div className="lg:hidden">
-                <ProductBuyBox
-                  variant={variant}
-                  variants={product.variants}
-                  onVariantChange={setVariantId}
-                  zone={zone}
-                  saleMinor={saleMinor}
-                  qty={qty}
-                  onQtyChange={setQty}
-                  maxQty={maxQty}
-                  addDisabled={addDisabled}
-                  addedFlash={addedFlash}
-                  onAdd={add}
-                  isDigital={isDigital}
-                  shippingDays={shippingDays}
-                  available={available}
-                  variantForStock={variant}
+              {product.shortDescription ? (
+                <ProductRichText
+                  html={product.shortDescription}
+                  className="mt-4 text-sm leading-relaxed text-stone-600"
                 />
-              </div>
-
-              <PairWithRow items={pairWithItems.slice(0, 3)} />
+              ) : null}
             </div>
+
+            {/* Mobile: options + delivery (Add to cart is on sticky bar) */}
+            <div className="lg:hidden">
+              <ProductBuyBox {...buyBoxProps} showPurchaseActions={false} />
+            </div>
+
+            <PairWithRow items={pairWithItems.slice(0, 3)} />
+
+            {product.description ? (
+              <section className="border-t border-stone-200 pt-8">
+                <h2 className="font-serif text-xl font-semibold text-stone-900">About this product</h2>
+                <ProductRichText html={product.description} className="mt-4 max-w-none prose-stone" />
+              </section>
+            ) : null}
+
+            {product.accordionItems.length > 0 ? (
+              <section className="border-t border-stone-200 pt-8">
+                <h2 className="font-serif text-xl font-semibold text-stone-900">Product details</h2>
+                <div className="mt-4">
+                  <AccordionDescription items={product.accordionItems} />
+                </div>
+              </section>
+            ) : null}
           </div>
 
-          {/* —— Right: sticky buy box (desktop) —— */}
+          {/* Right: sticky buy box (desktop) */}
           <aside className="hidden lg:col-span-3 lg:block xl:col-span-3">
-            <div className="sticky top-28">
-              <ProductBuyBox
-                variant={variant}
-                variants={product.variants}
-                onVariantChange={setVariantId}
-                zone={zone}
-                saleMinor={saleMinor}
-                qty={qty}
-                onQtyChange={setQty}
-                maxQty={maxQty}
-                addDisabled={addDisabled}
-                addedFlash={addedFlash}
-                onAdd={add}
-                isDigital={isDigital}
-                shippingDays={shippingDays}
-                available={available}
-                variantForStock={variant}
-              />
+            <div className={`sticky ${STICKY_TOP}`}>
+              <ProductBuyBox {...buyBoxProps} showPurchaseActions />
             </div>
           </aside>
         </div>
 
-        <div className="mt-10 space-y-10 border-t border-stone-200 pt-10">
-          {product.description ? (
-            <section>
-              <h2 className="font-serif text-xl font-semibold text-stone-900">About this product</h2>
-              <ProductRichText html={product.description} className="mt-4 max-w-none prose-stone" />
-            </section>
-          ) : null}
-
-          {product.accordionItems.length > 0 ? (
-            <section>
-              <h2 className="font-serif text-xl font-semibold text-stone-900">Product details</h2>
-              <div className="mt-4">
-                <AccordionDescription items={product.accordionItems} />
-              </div>
-            </section>
-          ) : null}
-
+        <div className="mt-12 border-t border-stone-200 pt-10">
           <ProductReviewsSection />
         </div>
       </div>
 
-      {/* Mobile: price + add bar */}
+      {/* Mobile sticky purchase bar */}
       <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-40 border-t border-stone-200 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur-md safe-area-pb lg:hidden">
         <div className="mx-auto flex max-w-lg items-center gap-3">
           <div className="min-w-0 flex-1">
@@ -237,13 +229,12 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
             type="button"
             onClick={add}
             disabled={addDisabled}
-            className="min-h-[48px] flex-1 rounded-md bg-[#108967] px-4 text-sm font-semibold uppercase tracking-wide text-white disabled:bg-stone-300"
+            className="min-h-[48px] flex-1 rounded-md bg-[#108967] px-4 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-[#0d7353] disabled:bg-stone-300"
           >
-            Add to cart
+            {addedFlash ? "Added ✓" : addDisabled ? "Out of stock" : "Add to cart"}
           </button>
         </div>
       </div>
-
     </>
   );
 }

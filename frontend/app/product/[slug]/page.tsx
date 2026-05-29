@@ -114,7 +114,7 @@ export default async function ProductDetailPage({ params }: Props) {
         </div>
       </div>
 
-      <main className="bg-white">
+      <main className="bg-stone-50">
         <ProductDetailExperience product={product} pairWithItems={pairWithItems} />
       </main>
 

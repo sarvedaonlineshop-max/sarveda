@@ -55,7 +55,7 @@ export function ProductGallery({ images, productName, activeIndex, onActiveChang
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-white">
+      <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
         <Image
           key={current.id}
           src={current.url}

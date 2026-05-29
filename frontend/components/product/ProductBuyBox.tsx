@@ -26,6 +26,8 @@ type Props = {
   shippingDays: string;
   available: number | null;
   variantForStock: ProductVariantDetail | null;
+  /** Mobile: variants/qty live in column; sticky bar handles Add to cart */
+  showPurchaseActions?: boolean;
 };
 
 export function ProductBuyBox({
@@ -43,7 +45,8 @@ export function ProductBuyBox({
   isDigital,
   shippingDays,
   available,
-  variantForStock
+  variantForStock,
+  showPurchaseActions = true
 }: Props) {
   const stock = variantForStock ? stockDisplay(variantForStock) : null;
   const preparationDays = "5 - 10 Days";
@@ -127,7 +130,7 @@ export function ProductBuyBox({
   };
 
   return (
-    <div className="rounded-xl border border-stone-200 bg-stone-50/80 p-5 shadow-sm">
+    <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-md ring-1 ring-stone-100">
       {attributeGroups.length > 0 ? (
         <div className="mb-4 space-y-4 border-b border-stone-200 pb-4">
           {attributeGroups.map((group) => {
@@ -193,26 +196,30 @@ export function ProductBuyBox({
         </select>
       </div>
 
-      <button
-        type="button"
-        onClick={onAdd}
-        disabled={addDisabled}
-        className="mt-4 w-full rounded-lg bg-[#108967] py-3.5 text-sm font-semibold uppercase tracking-wide text-white shadow-sm transition hover:bg-[#0d7353] disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500"
-      >
-        {addDisabled ? "Out of stock" : "Add to cart"}
-      </button>
+      {showPurchaseActions ? (
+        <>
+          <button
+            type="button"
+            onClick={onAdd}
+            disabled={addDisabled}
+            className="mt-4 w-full rounded-lg bg-[#108967] py-3.5 text-sm font-semibold uppercase tracking-wide text-white shadow-sm transition hover:bg-[#0d7353] disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500"
+          >
+            {addDisabled ? "Out of stock" : "Add to cart"}
+          </button>
 
-      <Link
-        href="/cart"
-        className="mt-2 flex w-full items-center justify-center rounded-lg border border-stone-300 bg-white py-3 text-sm font-semibold text-stone-800 transition hover:bg-stone-50"
-      >
-        Go to cart
-      </Link>
+          <Link
+            href="/cart"
+            className="mt-2 flex w-full items-center justify-center rounded-lg border border-stone-300 bg-white py-3 text-sm font-semibold text-stone-800 transition hover:bg-stone-50"
+          >
+            Go to cart
+          </Link>
 
-      {addedFlash ? (
-        <p className="mt-2 text-center text-sm font-medium text-emerald-600" role="status">
-          Added to cart
-        </p>
+          {addedFlash ? (
+            <p className="mt-2 text-center text-sm font-medium text-emerald-600" role="status">
+              Added to cart
+            </p>
+          ) : null}
+        </>
       ) : null}
 
       <div className="mt-4 grid grid-cols-2 gap-2 rounded-lg bg-[#f4f8f2] p-3 sm:gap-3">
