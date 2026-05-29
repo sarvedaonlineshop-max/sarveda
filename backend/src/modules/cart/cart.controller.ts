@@ -5,6 +5,7 @@ import {
   addCartItem,
   clearCartForRequest,
   getCartPayload,
+  mergeGuestCartIntoUser,
   removeCartItem,
   resolveCartContext,
   updateCartItemQuantity
@@ -93,6 +94,40 @@ export async function clear(req: Request, res: Response, next: NextFunction) {
       success: true,
       data: { items: [], subtotalInPaise: 0, itemCount: 0, currency: "INR" }
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** Merge guest `X-Sarveda-Cart-Session` into logged-in cart once (call after login). */
+export async function mergeSession(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = req.authUser?.id;
+    if (!userId) {
+      res.status(401).json({ success: false, error: "Login required", code: "UNAUTHORIZED" });
+      return;
+    }
+    const headerSession = req.headers["x-sarveda-cart-session"];
+    const guestSessionId =
+      typeof headerSession === "string" && headerSession.trim().length > 0
+        ? headerSession.trim()
+        : null;
+
+    const { cartId } = await resolveCartContext(req, "write");
+    if (!cartId) {
+      res.status(500).json({ success: false, error: "Cart error", code: "CART_ERROR" });
+      return;
+    }
+
+    if (guestSessionId) {
+      await mergeGuestCartIntoUser(cartId, guestSessionId);
+    }
+
+    const payload = await getCartPayload(cartId, pricingCountry(req), {
+      userId,
+      email: checkoutEmail(req)
+    });
+    res.json({ success: true, data: payload });
   } catch (err) {
     next(err);
   }

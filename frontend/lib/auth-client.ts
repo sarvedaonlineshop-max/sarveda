@@ -1,4 +1,5 @@
 import { getApiBase } from "@/lib/api";
+import { mergeGuestCartSession, setAccountCartOnly } from "@/lib/cart-api";
 
 export type PublicUser = {
   id: string;
@@ -81,6 +82,8 @@ export async function loginWithPassword(
   if (!res.ok || !json.success || !("data" in json)) {
     throw new Error("error" in json ? String(json.error) : `Login failed (${res.status})`);
   }
+  setAccountCartOnly(true);
+  await mergeGuestCartSession();
   return json.data.user;
 }
 
@@ -90,6 +93,7 @@ export async function logoutSession(): Promise<void> {
     credentials: "include",
     headers: { Accept: "application/json" }
   });
+  setAccountCartOnly(false);
 }
 
 const ADMIN_ROLES = new Set(["ADMIN", "SUPER_ADMIN"]);

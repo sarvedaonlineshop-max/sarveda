@@ -6,20 +6,23 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState
 } from "react";
 import { useRouter } from "next/navigation";
 
+import { fetchMe } from "@/lib/auth-client";
 import {
   type CartApiItem,
   type CartApiResponse,
   cartGet,
   cartRemove,
-  cartUpdate
+  cartUpdate,
+  mergeGuestCartSession,
+  setAccountCartOnly
 } from "@/lib/cart-api";
 
 type CartUiState = {
-  /** @deprecated drawer removed — navigates to /cart */
   drawerOpen: boolean;
   openDrawer: () => void;
   closeDrawer: () => void;
@@ -48,17 +51,13 @@ const CartDataContext = createContext<CartDataState | null>(null);
 
 export function useCartUi(): CartUiState {
   const ctx = useContext(CartUiContext);
-  if (!ctx) {
-    throw new Error("useCartUi must be used within CartProvider");
-  }
+  if (!ctx) throw new Error("useCartUi must be used within CartProvider");
   return ctx;
 }
 
 export function useCartData(): CartDataState {
   const ctx = useContext(CartDataContext);
-  if (!ctx) {
-    throw new Error("useCartData must be used within CartProvider");
-  }
+  if (!ctx) throw new Error("useCartData must be used within CartProvider");
   return ctx;
 }
 
@@ -75,7 +74,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [mutatingVariantId, setMutatingVariantId] = useState<string | null>(null);
 
-  const applyCartResponse = useCallback((data: CartApiResponse) => {
+  const itemsRef = useRef<CartApiItem[]>([]);
+  const cartVersionRef = useRef(0);
+  const authSyncedRef = useRef(false);
+
+  const applyCartResponse = useCallback((data: CartApiResponse, version?: number) => {
+    if (version != null && version !== cartVersionRef.current) return;
+    itemsRef.current = data.items;
     setItems(data.items);
     setSubtotalInPaise(data.subtotalInPaise);
     setDiscountInPaise(data.discountInPaise ?? 0);
@@ -87,35 +92,49 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setError(null);
   }, []);
 
-  const refreshCart = useCallback(async (shippingCountry?: string, checkoutEmail?: string) => {
-    try {
-      setError(null);
-      const data = await cartGet(shippingCountry, checkoutEmail);
-      applyCartResponse(data);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Cart failed to load");
-      setItems([]);
-      setSubtotalInPaise(0);
-      setDiscountInPaise(0);
-      setTotalInPaise(0);
-      setCoupon(null);
-      setCurrency("INR");
-      setItemCount(0);
-    } finally {
-      setLoading(false);
-    }
-  }, [applyCartResponse]);
+  const refreshCart = useCallback(
+    async (shippingCountry?: string, checkoutEmail?: string) => {
+      const version = ++cartVersionRef.current;
+      try {
+        setError(null);
+        const data = await cartGet(shippingCountry, checkoutEmail);
+        applyCartResponse(data, version);
+      } catch (e) {
+        if (version !== cartVersionRef.current) return;
+        setError(e instanceof Error ? e.message : "Cart failed to load");
+        setItems([]);
+        itemsRef.current = [];
+        setSubtotalInPaise(0);
+        setDiscountInPaise(0);
+        setTotalInPaise(0);
+        setCoupon(null);
+        setCurrency("INR");
+        setItemCount(0);
+      } finally {
+        if (version === cartVersionRef.current) setLoading(false);
+      }
+    },
+    [applyCartResponse]
+  );
+
+  const applyMutationResult = useCallback(
+    (data: CartApiResponse | undefined, version: number) => {
+      if (data?.items) {
+        applyCartResponse(data, version);
+      }
+    },
+    [applyCartResponse]
+  );
 
   const setLineQuantity = useCallback(
     async (variantId: string, quantity: number) => {
       if (mutatingVariantId) return;
+      const version = ++cartVersionRef.current;
       setMutatingVariantId(variantId);
       try {
-        if (quantity < 1) {
-          await cartRemove(variantId);
-        } else {
-          await cartUpdate(variantId, quantity);
-        }
+        const data =
+          quantity < 1 ? await cartRemove(variantId) : await cartUpdate(variantId, quantity);
+        applyMutationResult(data, version);
       } catch (err) {
         await refreshCart();
         throw err;
@@ -123,12 +142,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setMutatingVariantId(null);
       }
     },
-    [mutatingVariantId, refreshCart]
+    [mutatingVariantId, applyMutationResult, refreshCart]
   );
 
   const decreaseLine = useCallback(
     async (variantId: string) => {
-      const line = items.find((i) => i.variantId === variantId);
+      const line = itemsRef.current.find((i) => i.variantId === variantId);
       if (!line) return;
       try {
         await setLineQuantity(variantId, line.quantity - 1);
@@ -136,12 +155,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         alert(err instanceof Error ? err.message : "Could not update cart");
       }
     },
-    [items, setLineQuantity]
+    [setLineQuantity]
   );
 
   const increaseLine = useCallback(
     async (variantId: string) => {
-      const line = items.find((i) => i.variantId === variantId);
+      const line = itemsRef.current.find((i) => i.variantId === variantId);
       if (!line) return;
       if (line.maxQuantity != null && line.quantity >= line.maxQuantity) return;
       try {
@@ -150,15 +169,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         alert(err instanceof Error ? err.message : "Could not update cart");
       }
     },
-    [items, setLineQuantity]
+    [setLineQuantity]
   );
 
   const removeLine = useCallback(
     async (variantId: string) => {
       if (mutatingVariantId) return;
+      const version = ++cartVersionRef.current;
       setMutatingVariantId(variantId);
       try {
-        await cartRemove(variantId);
+        const data = await cartRemove(variantId);
+        applyMutationResult(data, version);
       } catch (err) {
         await refreshCart();
         alert(err instanceof Error ? err.message : "Could not remove item");
@@ -166,30 +187,45 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setMutatingVariantId(null);
       }
     },
-    [mutatingVariantId, refreshCart]
+    [mutatingVariantId, applyMutationResult, refreshCart]
   );
 
   useEffect(() => {
-    void refreshCart();
-  }, [refreshCart]);
+    let cancelled = false;
+    (async () => {
+      const user = await fetchMe();
+      if (cancelled) return;
+      if (user) {
+        setAccountCartOnly(true);
+        if (!authSyncedRef.current) {
+          authSyncedRef.current = true;
+          const merged = await mergeGuestCartSession();
+          if (merged) {
+            applyCartResponse(merged);
+            return;
+          }
+        }
+      } else {
+        setAccountCartOnly(false);
+        authSyncedRef.current = false;
+      }
+      await refreshCart();
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [applyCartResponse, refreshCart]);
 
   useEffect(() => {
     const onChange = (event: Event) => {
       const detail = (event as CustomEvent<CartApiResponse | undefined>).detail;
       if (detail?.items) {
         applyCartResponse(detail);
-        return;
       }
-      // Only refetch when no payload (e.g. cart cleared) — avoids stale GET overwriting a fresh PUT response.
-      void refreshCart();
     };
     window.addEventListener("sarveda-cart-changed", onChange);
-    window.addEventListener("storage", onChange);
-    return () => {
-      window.removeEventListener("sarveda-cart-changed", onChange);
-      window.removeEventListener("storage", onChange);
-    };
-  }, [applyCartResponse, refreshCart]);
+    return () => window.removeEventListener("sarveda-cart-changed", onChange);
+  }, [applyCartResponse]);
 
   const goToCart = useCallback(() => {
     router.push("/cart");

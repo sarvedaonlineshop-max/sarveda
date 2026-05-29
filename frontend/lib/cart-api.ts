@@ -2,6 +2,13 @@ import { getApiBase } from "./api";
 
 const SESSION_STORAGE_KEY = "sarveda_cart_session_id";
 
+/** When true, cart API uses only the logged-in account cart (no guest session header). */
+let useAccountCartOnly = false;
+
+export function setAccountCartOnly(enabled: boolean): void {
+  useAccountCartOnly = enabled;
+}
+
 function notifyCartChanged(data?: CartApiResponse): void {
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("sarveda-cart-changed", { detail: data }));
@@ -69,11 +76,39 @@ export function buildHeaders(includeJsonContentType: boolean): Record<string, st
   if (includeJsonContentType) {
     h["Content-Type"] = "application/json";
   }
-  const sid = readSession();
-  if (sid) {
-    h["X-Sarveda-Cart-Session"] = sid;
+  if (!useAccountCartOnly) {
+    const sid = readSession();
+    if (sid) {
+      h["X-Sarveda-Cart-Session"] = sid;
+    }
   }
   return h;
+}
+
+/** After login: merge guest cart once, then stop sending guest session on cart calls. */
+export async function mergeGuestCartSession(): Promise<CartApiResponse | null> {
+  const sid = readSession();
+  if (!sid) {
+    setAccountCartOnly(true);
+    return null;
+  }
+  const res = await fetch(`${getApiBase()}/api/cart/merge-session`, {
+    method: "POST",
+    credentials: "include",
+    headers: buildHeaders(true)
+  });
+  const json = (await res.json()) as {
+    success?: boolean;
+    data?: CartApiResponse;
+    error?: string;
+  };
+  clearSession();
+  setAccountCartOnly(true);
+  if (!res.ok || !json.success || !json.data) {
+    return null;
+  }
+  notifyCartChanged(json.data);
+  return json.data;
 }
 
 export async function cartGet(
@@ -145,11 +180,10 @@ export async function cartUpdate(variantId: string, quantity: number): Promise<C
     data?: CartApiResponse;
     error?: string;
   };
-  if (!res.ok || !json.success) {
+  if (!res.ok || !json.success || !json.data) {
     throw new Error(json.error || "Could not update cart");
   }
-  notifyCartChanged(json.data);
-  return json.data!;
+  return json.data;
 }
 
 /** Clear server cart after successful payment (guest session or logged-in). */
@@ -178,11 +212,10 @@ export async function cartRemove(variantId: string): Promise<CartApiResponse> {
     data?: CartApiResponse;
     error?: string;
   };
-  if (!res.ok || !json.success) {
+  if (!res.ok || !json.success || !json.data) {
     throw new Error(json.error || "Could not remove item");
   }
-  notifyCartChanged(json.data);
-  return json.data!;
+  return json.data;
 }
 
 export async function fetchCheckoutCouponOffers(opts?: {

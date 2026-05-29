@@ -26,6 +26,50 @@ function normalizeSessionHeader(req: Request): string | undefined {
 
 export type ResolveMode = "read" | "write";
 
+/** One-time merge of guest session cart into the logged-in user's cart (login / explicit merge only). */
+export async function mergeGuestCartIntoUser(
+  userCartId: string,
+  guestSessionId: string
+): Promise<void> {
+  const guestCart = await prisma.cart.findUnique({
+    where: { sessionId: guestSessionId },
+    include: { items: true }
+  });
+  if (!guestCart || guestCart.id === userCartId || guestCart.items.length === 0) {
+    return;
+  }
+
+  for (const item of guestCart.items) {
+    const existing = await prisma.cartItem.findUnique({
+      where: {
+        cartId_variantId: { cartId: userCartId, variantId: item.variantId }
+      },
+      select: { quantity: true }
+    });
+    const mergedQty = (existing?.quantity ?? 0) + item.quantity;
+    await prisma.cartItem.upsert({
+      where: {
+        cartId_variantId: { cartId: userCartId, variantId: item.variantId }
+      },
+      create: {
+        cartId: userCartId,
+        variantId: item.variantId,
+        quantity: item.quantity
+      },
+      update: {
+        quantity: mergedQty
+      }
+    });
+  }
+
+  await prisma.cartItem.deleteMany({ where: { cartId: guestCart.id } });
+  await prisma.cart.update({
+    where: { id: guestCart.id },
+    data: { couponCode: null }
+  });
+  await prisma.cart.delete({ where: { id: guestCart.id } });
+}
+
 export async function resolveCartContext(
   req: Request,
   mode: ResolveMode = "write"
@@ -51,37 +95,7 @@ export async function resolveCartContext(
       });
     }
 
-    if (headerSession) {
-      const guestCart = await prisma.cart.findUnique({
-        where: { sessionId: headerSession },
-        include: { items: true }
-      });
-      if (guestCart && guestCart.id !== cart.id && guestCart.items.length > 0) {
-        for (const item of guestCart.items) {
-          const existing = await prisma.cartItem.findUnique({
-            where: {
-              cartId_variantId: { cartId: cart.id, variantId: item.variantId }
-            },
-            select: { quantity: true }
-          });
-          const mergedQty = (existing?.quantity ?? 0) + item.quantity;
-          await prisma.cartItem.upsert({
-            where: {
-              cartId_variantId: { cartId: cart.id, variantId: item.variantId }
-            },
-            create: {
-              cartId: cart.id,
-              variantId: item.variantId,
-              quantity: item.quantity
-            },
-            update: {
-              quantity: mergedQty
-            }
-          });
-        }
-        await prisma.cart.delete({ where: { id: guestCart.id } }).catch(() => undefined);
-      }
-    }
+    // Guest session header is ignored here — merge only via POST /api/cart/merge-session on login.
 
     return { cartId: cart.id, sessionId: cart.sessionId, userId };
   }

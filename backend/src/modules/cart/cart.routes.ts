@@ -12,6 +12,7 @@ const router = Router();
 router.use(optionalAuth);
 
 router.post("/add", validateBody(cartAddSchema), controller.add);
+router.post("/merge-session", controller.mergeSession);
 router.get("/", controller.get);
 router.delete("/", controller.clear);
 router.put("/update", validateBody(cartUpdateSchema), controller.update);
