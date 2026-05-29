@@ -6,7 +6,8 @@ import { resolveMediaUrl } from "@/lib/media-cdn";
 
 type Props = {
   audioUrl: string;
-  title: string;
+  /** Shown only on non-storefront variant (legacy layout). */
+  title?: string;
   variant?: "default" | "storefront";
 };
 
@@ -64,8 +65,7 @@ export function ProductAudio({ audioUrl, title, variant = "default" }: Props) {
   if (variant === "storefront") {
     return (
       <div className="rounded-xl border border-[#d8e7df] bg-[#f4f8f2] p-4 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-wide text-[#1e3a2f]">Audio Sample</p>
-        <p className="mt-1 text-sm font-medium text-stone-800">{title}</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-[#1e3a2f]">Audio sample</p>
         <audio ref={audioRef} preload="metadata" src={src} className="mt-3 w-full rounded-md bg-white" controls>
           <track kind="captions" />
         </audio>
@@ -79,7 +79,7 @@ export function ProductAudio({ audioUrl, title, variant = "default" }: Props) {
         <source src={src} />
       </audio>
       <p className="text-xs font-semibold uppercase tracking-widest text-amber-800">Listen</p>
-      <p className="mt-1 font-serif text-lg text-stone-900">{title}</p>
+      {title ? <p className="mt-1 font-serif text-lg text-stone-900">{title}</p> : null}
 
       <div className="mt-5 flex items-center gap-4">
         <button

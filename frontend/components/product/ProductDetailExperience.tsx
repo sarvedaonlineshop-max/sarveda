@@ -151,7 +151,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
 
             {product.hasAudio && audioUrl ? (
               <div className="mt-5">
-                <ProductAudio audioUrl={audioUrl} title={variantLabel} variant="storefront" />
+                <ProductAudio audioUrl={audioUrl} variant="storefront" />
               </div>
             ) : null}
           </div>

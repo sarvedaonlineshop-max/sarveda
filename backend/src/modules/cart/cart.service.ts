@@ -58,6 +58,13 @@ export async function resolveCartContext(
       });
       if (guestCart && guestCart.id !== cart.id && guestCart.items.length > 0) {
         for (const item of guestCart.items) {
+          const existing = await prisma.cartItem.findUnique({
+            where: {
+              cartId_variantId: { cartId: cart.id, variantId: item.variantId }
+            },
+            select: { quantity: true }
+          });
+          const mergedQty = (existing?.quantity ?? 0) + item.quantity;
           await prisma.cartItem.upsert({
             where: {
               cartId_variantId: { cartId: cart.id, variantId: item.variantId }
@@ -68,7 +75,7 @@ export async function resolveCartContext(
               quantity: item.quantity
             },
             update: {
-              quantity: { increment: item.quantity }
+              quantity: mergedQty
             }
           });
         }

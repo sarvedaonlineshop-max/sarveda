@@ -10,7 +10,13 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 
-import { type CartApiItem, type CartApiResponse, cartGet } from "@/lib/cart-api";
+import {
+  type CartApiItem,
+  type CartApiResponse,
+  cartGet,
+  cartRemove,
+  cartUpdate
+} from "@/lib/cart-api";
 
 type CartUiState = {
   /** @deprecated drawer removed — navigates to /cart */
@@ -31,6 +37,10 @@ type CartDataState = {
   loading: boolean;
   error: string | null;
   refreshCart: (shippingCountry?: string, checkoutEmail?: string) => Promise<void>;
+  decreaseLine: (variantId: string) => Promise<void>;
+  increaseLine: (variantId: string) => Promise<void>;
+  removeLine: (variantId: string) => Promise<void>;
+  isCartMutating: boolean;
 };
 
 const CartUiContext = createContext<CartUiState | null>(null);
@@ -63,6 +73,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [itemCount, setItemCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [mutatingVariantId, setMutatingVariantId] = useState<string | null>(null);
 
   const applyCartResponse = useCallback((data: CartApiResponse) => {
     setItems(data.items);
@@ -95,6 +106,69 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [applyCartResponse]);
 
+  const setLineQuantity = useCallback(
+    async (variantId: string, quantity: number) => {
+      if (mutatingVariantId) return;
+      setMutatingVariantId(variantId);
+      try {
+        if (quantity < 1) {
+          await cartRemove(variantId);
+        } else {
+          await cartUpdate(variantId, quantity);
+        }
+      } catch (err) {
+        await refreshCart();
+        throw err;
+      } finally {
+        setMutatingVariantId(null);
+      }
+    },
+    [mutatingVariantId, refreshCart]
+  );
+
+  const decreaseLine = useCallback(
+    async (variantId: string) => {
+      const line = items.find((i) => i.variantId === variantId);
+      if (!line) return;
+      try {
+        await setLineQuantity(variantId, line.quantity - 1);
+      } catch (err) {
+        alert(err instanceof Error ? err.message : "Could not update cart");
+      }
+    },
+    [items, setLineQuantity]
+  );
+
+  const increaseLine = useCallback(
+    async (variantId: string) => {
+      const line = items.find((i) => i.variantId === variantId);
+      if (!line) return;
+      if (line.maxQuantity != null && line.quantity >= line.maxQuantity) return;
+      try {
+        await setLineQuantity(variantId, line.quantity + 1);
+      } catch (err) {
+        alert(err instanceof Error ? err.message : "Could not update cart");
+      }
+    },
+    [items, setLineQuantity]
+  );
+
+  const removeLine = useCallback(
+    async (variantId: string) => {
+      if (mutatingVariantId) return;
+      setMutatingVariantId(variantId);
+      try {
+        await cartRemove(variantId);
+      } catch (err) {
+        await refreshCart();
+        alert(err instanceof Error ? err.message : "Could not remove item");
+      } finally {
+        setMutatingVariantId(null);
+      }
+    },
+    [mutatingVariantId, refreshCart]
+  );
+
   useEffect(() => {
     void refreshCart();
   }, [refreshCart]);
@@ -106,6 +180,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         applyCartResponse(detail);
         return;
       }
+      // Only refetch when no payload (e.g. cart cleared) — avoids stale GET overwriting a fresh PUT response.
       void refreshCart();
     };
     window.addEventListener("sarveda-cart-changed", onChange);
@@ -150,7 +225,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       itemCount,
       loading,
       error,
-      refreshCart
+      refreshCart,
+      decreaseLine,
+      increaseLine,
+      removeLine,
+      isCartMutating: mutatingVariantId != null
     }),
     [
       items,
@@ -162,7 +241,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       itemCount,
       loading,
       error,
-      refreshCart
+      refreshCart,
+      decreaseLine,
+      increaseLine,
+      removeLine,
+      mutatingVariantId
     ]
   );
 

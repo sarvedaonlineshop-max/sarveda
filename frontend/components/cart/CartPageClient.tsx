@@ -1,38 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
 import Link from "next/link";
 
 import { CartCheckoutSidebar } from "@/components/cart/CartCheckoutSidebar";
-import { cartRemove, cartUpdate } from "@/lib/cart-api";
+import { CartLineQuantity } from "@/components/cart/CartLineQuantity";
 import { formatINRFromPaise } from "@/lib/money";
 
 import { useCartData } from "./CartProvider";
 
 export function CartPageClient() {
-  const { items, subtotalInPaise, itemCount, loading, refreshCart } = useCartData();
-  const [busy, setBusy] = useState<string | null>(null);
-
-  async function setQty(variantId: string, quantity: number) {
-    setBusy(variantId);
-    try {
-      await cartUpdate(variantId, quantity);
-      await refreshCart();
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function remove(variantId: string) {
-    setBusy(variantId);
-    try {
-      await cartRemove(variantId);
-      await refreshCart();
-    } finally {
-      setBusy(null);
-    }
-  }
+  const { items, subtotalInPaise, itemCount, loading, removeLine, isCartMutating } = useCartData();
 
   if (loading && items.length === 0) {
     return (
@@ -58,7 +36,6 @@ export function CartPageClient() {
 
   return (
     <div className="mt-4 md:mt-8">
-      {/* Desktop: items scroll left, sticky Proceed to Buy right (Amazon cart layout) */}
       <div className="lg:grid lg:grid-cols-12 lg:items-start lg:gap-6 xl:gap-8">
         <div className="min-w-0 lg:col-span-8 xl:col-span-9">
           <p className="mb-3 hidden text-sm text-stone-500 lg:block">
@@ -99,35 +76,11 @@ export function CartPageClient() {
                     {formatINRFromPaise(line.unitPriceInPaise)}
                   </p>
                   <div className="mt-4 flex flex-wrap items-center gap-3">
-                    <div className="inline-flex items-center rounded-full border-2 border-amber-400 bg-white">
-                      <button
-                        type="button"
-                        disabled={!!busy}
-                        className="flex h-9 w-9 items-center justify-center text-stone-700 disabled:opacity-50"
-                        aria-label="Decrease quantity"
-                        onClick={() => void setQty(line.variantId, line.quantity - 1)}
-                      >
-                        −
-                      </button>
-                      <span className="min-w-[2rem] text-center text-sm font-semibold tabular-nums">
-                        {line.quantity}
-                      </span>
-                      <button
-                        type="button"
-                        disabled={
-                          !!busy || (line.maxQuantity != null && line.quantity >= line.maxQuantity)
-                        }
-                        className="flex h-9 w-9 items-center justify-center disabled:opacity-50"
-                        aria-label="Increase quantity"
-                        onClick={() => void setQty(line.variantId, line.quantity + 1)}
-                      >
-                        +
-                      </button>
-                    </div>
+                    <CartLineQuantity line={line} size="md" />
                     <button
                       type="button"
-                      disabled={!!busy}
-                      onClick={() => void remove(line.variantId)}
+                      disabled={isCartMutating}
+                      onClick={() => void removeLine(line.variantId)}
                       className="text-sm font-medium text-stone-500 underline-offset-2 hover:text-stone-900 hover:underline disabled:opacity-50"
                     >
                       Delete
@@ -142,13 +95,11 @@ export function CartPageClient() {
           </ul>
         </div>
 
-        {/* Sticky checkout box — stays visible while scrolling items */}
         <aside className="mt-6 hidden lg:sticky lg:top-28 lg:col-span-4 lg:mt-0 lg:block lg:self-start xl:col-span-3">
           <CartCheckoutSidebar mode="cart-page" />
         </aside>
       </div>
 
-      {/* Mobile: checkout bar at bottom of list */}
       <div className="mt-6 border-t border-stone-200 bg-white p-4 lg:hidden">
         <p className="text-sm text-stone-500">{itemCount} items</p>
         <p className="font-serif text-2xl font-semibold text-amber-800">{formatINRFromPaise(subtotalInPaise)}</p>
