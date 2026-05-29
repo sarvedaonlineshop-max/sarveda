@@ -62,6 +62,16 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
   const currency = zoneToCurrency(zone);
   const primaryCategory = product.categories[0]?.category;
 
+  const hasMeaningfulHtml = (html: string | null | undefined) => {
+    const raw = (html ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+    return raw.length > 0;
+  };
+
+  const accordionItems = useMemo(
+    () => product.accordionItems.filter((item) => hasMeaningfulHtml(item.content)),
+    [product.accordionItems]
+  );
+
   const sortedImages = useMemo(
     () => [...product.images].sort((a, b) => a.position - b.position),
     [product.images]
@@ -204,11 +214,11 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
               <ProductRichText html={product.shortDescription} className="text-sm leading-relaxed text-stone-600" />
             ) : null}
 
-            {product.accordionItems.length > 0 ? (
+            {accordionItems.length > 0 ? (
               <div className="border-t border-stone-200 pt-8">
                 <h2 className="font-serif text-lg font-semibold text-stone-900">Product details</h2>
                 <div className="mt-4">
-                  <AccordionDescription items={product.accordionItems} />
+                  <AccordionDescription items={accordionItems} />
                 </div>
               </div>
             ) : null}
@@ -222,7 +232,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
       </div>
 
       {/* Mobile sticky bar */}
-      <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-40 border-t border-stone-200 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur-md safe-area-pb xl:hidden">
+      <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-50 border-t border-stone-200 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur-md safe-area-pb xl:hidden">
         <div className="mx-auto flex max-w-lg items-center gap-2">
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs text-stone-500">{product.name}</p>

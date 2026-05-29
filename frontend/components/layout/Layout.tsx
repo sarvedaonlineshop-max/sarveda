@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { PdpCartRail } from "@/components/cart/PdpCartRail";
 import { useCartData } from "@/components/cart/CartProvider";
-import { cartSidebarWhatsAppRightClass } from "@/lib/cart-sidebar-layout";
+import { cartSidebarContentPadClass, cartSidebarWhatsAppRightClass } from "@/lib/cart-sidebar-layout";
 import { BottomNav } from "./BottomNav";
 import { Header } from "./Header";
 import { PageTransition } from "./PageTransition";
@@ -28,6 +28,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <MotionConfig reducedMotion="user">
       {onProductPage ? <PdpCartRail /> : null}
+      <div className={pdpCartRail ? cartSidebarContentPadClass : ""}>
       <Header />
       <main className="pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0" style={{ background:"#fdf6ed" }}>
         <PageTransition>{children}</PageTransition>
@@ -47,6 +48,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </a>
       <SiteFooter />
       <BottomNav />
+      </div>
     </MotionConfig>
   );
 }
