@@ -22,7 +22,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <MotionConfig reducedMotion="user">
       <Header />
-      <main className="pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0" style={{ background:"#fdf6ed" }}>
+      <main className="bg-brand-bg pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
         <PageTransition>{children}</PageTransition>
       </main>
       <a

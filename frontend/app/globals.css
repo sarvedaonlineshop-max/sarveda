@@ -1,22 +1,17 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Sarveda Brand Tokens ────────────────────────────────────── */
+/* ─── Sarveda Brand Tokens (Violet Lotus) ───────────────────── */
 :root {
   color-scheme: light;
-  --brand-night:      #0f1a14;
-  --brand-forest:     #1e3a2f;
-  --brand-sage:       #4a7c59;
-  --brand-gold:       #c8960a;
-  --brand-gold-mid:   #e8b012;
-  --brand-gold-pale:  #f5d88a;
-  --brand-cream:      #fdf6ed;
-  --brand-cream-dark: #f0e6d6;
-  --brand-ivory:      #fffbf5;
-  --brand-terra:      #b85c38;
-  --brand-ink:        #2c2420;
-  --brand-muted:      #8a7060;
+  --font-price: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --brand-gold: #c8a460;
+  --brand-violet: #5b3e9b;
+  --brand-violet-deep: #22134a;
+  --brand-lavender: #c4b0e8;
   --sarveda-bottom-nav: 4.5rem;
 }
 
@@ -30,15 +25,25 @@ body {
   margin: 0;
   overflow-x: hidden;
   -webkit-tap-highlight-color: transparent;
-  background-color: var(--brand-cream);
-  color: var(--brand-ink);
+  background-color: #f7f4ff;
+  color: #1a0f35;
+  font-family: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
 }
 
 /* ─── Premium Scrollbar ────────────────────────────────────────── */
-::-webkit-scrollbar        { width: 5px; }
-::-webkit-scrollbar-track  { background: var(--brand-cream); }
-::-webkit-scrollbar-thumb  { background: #d4b896; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: var(--brand-gold); }
+::-webkit-scrollbar {
+  width: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #f7f4ff;
+}
+::-webkit-scrollbar-thumb {
+  background: #c4b0e8;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #7b5ec0;
+}
 
 /* ─── Safe Area ────────────────────────────────────────────────── */
 @supports (padding: max(0px)) {
@@ -56,14 +61,26 @@ body {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .price-text {
+    font-family: var(--font-price);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .display-text {
+    font-family: var(--font-cormorant), ui-serif, Georgia, serif;
+  }
 
   /* Shimmering gold text */
   .text-gold-shimmer {
     background: linear-gradient(
       90deg,
       var(--brand-gold) 0%,
-      var(--brand-gold-pale) 45%,
+      #e8c870 45%,
       var(--brand-gold) 100%
     );
     background-size: 200% auto;
@@ -75,7 +92,7 @@ body {
 
   /* Grain texture overlay (premium feel) */
   .grain-overlay::after {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
@@ -85,50 +102,85 @@ body {
 
   /* Frosted glass card */
   .glass-card {
-    background: rgba(253,246,237,0.72);
+    background: rgba(253, 252, 255, 0.72);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(200,150,10,0.15);
+    border: 1px solid rgba(196, 176, 232, 0.25);
   }
 
   /* Gold divider */
   .divider-gold {
     height: 1px;
-    background: linear-gradient(90deg, transparent, var(--brand-gold-pale), transparent);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(200, 164, 96, 0.45),
+      transparent
+    );
   }
 
   /* Fade-up stagger helpers */
-  .anim-delay-100 { animation-delay: 100ms; }
-  .anim-delay-200 { animation-delay: 200ms; }
-  .anim-delay-300 { animation-delay: 300ms; }
-  .anim-delay-400 { animation-delay: 400ms; }
+  .anim-delay-100 {
+    animation-delay: 100ms;
+  }
+  .anim-delay-200 {
+    animation-delay: 200ms;
+  }
+  .anim-delay-300 {
+    animation-delay: 300ms;
+  }
+  .anim-delay-400 {
+    animation-delay: 400ms;
+  }
 }
 
 /* ─── Keyframes ────────────────────────────────────────────────── */
 @keyframes goldShimmer {
-  0%   { background-position: 0% center;   }
-  100% { background-position: 200% center; }
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
 }
 
 @keyframes fadeUp {
-  0%   { opacity:0; transform:translateY(20px); }
-  100% { opacity:1; transform:translateY(0);    }
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes fadeIn {
-  from { opacity:0; }
-  to   { opacity:1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes marquee {
-  0%   { transform:translateX(0%);   }
-  100% { transform:translateX(-50%); }
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 /* ─── Reduced Motion ────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  html:focus-within { scroll-behavior: auto; }
-  *, *::before, *::after {
+  html:focus-within {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }

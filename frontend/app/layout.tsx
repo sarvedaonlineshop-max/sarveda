@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Cormorant_Garamond, Nunito } from "next/font/google";
 
 import { CartProvider } from "@/components/cart/CartProvider";
 import { Layout } from "@/components/layout/Layout";
@@ -7,15 +7,18 @@ import { getSiteUrl, isProductionSite } from "@/lib/site";
 
 import "./globals.css";
 
-const inter = Inter({
+const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
-  variable: "--font-inter",
+  weight: ["300", "400", "600"],
+  style: ["normal", "italic"],
+  variable: "--font-cormorant",
   display: "swap"
 });
 
-const playfair = Playfair_Display({
+const nunito = Nunito({
   subsets: ["latin"],
-  variable: "--font-playfair",
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-nunito",
   display: "swap"
 });
 
@@ -63,7 +66,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0c0a09",
+  themeColor: "#22134A",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover"
@@ -75,8 +78,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
-      <body className={`${inter.className} min-h-screen bg-stone-50 font-sans tracking-wide text-stone-900 antialiased`}>
+    <html lang="en" className={`${cormorant.variable} ${nunito.variable}`}>
+      <body
+        className={`${nunito.className} min-h-screen bg-brand-bg font-sans tracking-wide text-brand-ink antialiased`}
+      >
         <CartProvider>
           <Layout>{children}</Layout>
         </CartProvider>
