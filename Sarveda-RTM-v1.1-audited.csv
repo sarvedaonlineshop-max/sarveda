@@ -9,7 +9,7 @@ REQ-AUTH-007,Authentication,Session auto-logout after inactivity,Should Have,Not
 REQ-PROD-001,Products,169 products migrated from WooCommerce,Must Have,Complete,Complete,Pass,CSV/RDS import,Sprint 1,
 REQ-PROD-002,Products,Products have multiple images,Must Have,Complete,Complete,Not Tested,ProductGallery,Sprint 1,Audit: multi-image needs sync:galleries on EC2/RDS.
 REQ-PROD-003,Products,"Products have variants (size, weight, note/tone)",Must Have,Complete,In Progress,Not Tested,VariantSelector,Sprint 1,Audit: run import:variations for Type/Size labels.
-REQ-PROD-004,Products,Audio samples on singing bowl products,Must Have,Complete,Complete,Pass,hasAudio + S3 CDN,Sprint 1,
+REQ-PROD-004,Products,Audio samples on singing bowl products,Must Have,In Progress,Not Tested,,Sprint 1,May 2026: CSV has 38 WP attachment IDs; run sync:audio + migrate:media on EC2.
 REQ-PROD-005,Products,Product categories with hierarchical structure,Must Have,Complete,Complete,Pass,CategoryTree API,Sprint 1,
 REQ-PROD-006,Products,Stock level shown on product page,Must Have,Complete,Complete,Pass,stockDisplay(),Sprint 1,
 REQ-PROD-007,Products,Low stock badge when stock ≤ 5 units,Should Have,Complete,Complete,Pass,productListBadges(),Sprint 1,
@@ -43,7 +43,7 @@ REQ-PAY-005,Payments,Payment webhook verification (signature check),Must Have,Co
 REQ-PAY-006,Payments,Payment failure page with retry option,Must Have,Complete,Complete,Pass,/payment-failed,Sprint 1,
 REQ-PAY-007,Payments,Idempotency keys — prevent double charging,Must Have,Complete,Complete,Pass,Redis + header,Sprint 1,
 REQ-PAY-008,Payments,Refund processing via payment gateway,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
-REQ-PAY-009,Payments,"Multi-currency support — INR, USD, GBP",Must Have,Not Started,In Progress,Not Tested,,Sprint 3,Audit: zone INR/USD/GBP pricing; no manual switcher.
+REQ-PAY-009,Payments,"Multi-currency support — INR, USD, GBP",Must Have,In Progress,Not Tested,,Sprint 3,May 2026: Vercel middleware sets sarveda_zone from geo; shop+PDP zone prices. Deploy+VPN test pending.
 REQ-PAY-010,Payments,Currency switcher on frontend,Should Have,Not Started,Not Started,Not Tested,,Sprint 3,
 REQ-PAY-011,Payments,EMI options via Razorpay,Nice to Have,Not Started,Not Started,Not Tested,,Sprint 4,
 REQ-ORD-001,Orders,Order confirmation page after payment,Must Have,Complete,Complete,Pass,order/confirmed,Sprint 1,

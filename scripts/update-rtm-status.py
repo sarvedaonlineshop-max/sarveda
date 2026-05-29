@@ -31,6 +31,16 @@ UPDATES: dict[str, tuple[str, str, str]] = {
         "Not Tested",
         "May 2026: WELCOME10 works if imported via import:coupons.",
     ),
+    "REQ-PAY-009": (
+        "In Progress",
+        "Not Tested",
+        "May 2026: Vercel middleware sets sarveda_zone from geo; shop+PDP use zone prices.",
+    ),
+    "REQ-PROD-004": (
+        "In Progress",
+        "Not Tested",
+        "May 2026: sync:audio script resolves WP attachment IDs from variations.xml.",
+    ),
 }
 
 HEADER_ROW = 4
