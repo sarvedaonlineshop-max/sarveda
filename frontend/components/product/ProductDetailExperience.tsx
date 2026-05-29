@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { PdpCartRail } from "@/components/cart/PdpCartRail";
 import { useCartData } from "@/components/cart/CartProvider";
+import { cartSidebarContentPadClass } from "@/lib/cart-sidebar-layout";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { AccordionDescription } from "@/components/product/AccordionDescription";
 import { PairWithRow } from "@/components/product/PairWithRow";
@@ -137,7 +138,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
 
       <div
         className={`mx-auto max-w-7xl px-4 py-6 pb-28 sm:px-6 lg:px-8 lg:py-10 lg:pb-12 ${
-          hasCartRail ? "xl:pr-[21rem] 2xl:pr-80" : ""
+          hasCartRail ? cartSidebarContentPadClass : ""
         }`}
       >
         {/* Primary two-column block — left column sticks while right column scrolls */}

@@ -4,6 +4,7 @@ import { MotionConfig } from "framer-motion";
 import { usePathname } from "next/navigation";
 
 import { useCartData } from "@/components/cart/CartProvider";
+import { cartSidebarWhatsAppRightClass } from "@/lib/cart-sidebar-layout";
 import { BottomNav } from "./BottomNav";
 import { Header } from "./Header";
 import { PageTransition } from "./PageTransition";
@@ -34,7 +35,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         rel="noreferrer"
         aria-label="Chat on WhatsApp"
         className={`fixed bottom-24 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition hover:scale-105 md:bottom-6 ${
-          pdpCartRail ? "right-4 xl:right-[21rem] 2xl:right-80" : "right-4"
+          pdpCartRail ? `right-4 ${cartSidebarWhatsAppRightClass}` : "right-4"
         }`}
       >
         <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current" aria-hidden>
