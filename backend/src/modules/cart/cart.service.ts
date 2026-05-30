@@ -178,6 +178,7 @@ export async function getCartPayload(
     where: { id: cartId },
     include: {
       items: {
+        orderBy: { id: "asc" },
         include: {
           variant: {
             include: {

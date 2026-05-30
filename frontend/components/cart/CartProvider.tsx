@@ -19,6 +19,7 @@ import {
   cartRemove,
   cartUpdate,
   mergeGuestCartSession,
+  preserveCartItemOrder,
   setAccountCartOnly
 } from "@/lib/cart-api";
 
@@ -80,8 +81,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const applyCartResponse = useCallback((data: CartApiResponse, version?: number) => {
     if (version != null && version !== cartVersionRef.current) return;
-    itemsRef.current = data.items;
-    setItems(data.items);
+    setItems((prev) => {
+      const ordered = preserveCartItemOrder(prev, data.items);
+      itemsRef.current = ordered;
+      return ordered;
+    });
     setSubtotalInPaise(data.subtotalInPaise);
     setDiscountInPaise(data.discountInPaise ?? 0);
     setTotalInPaise(data.totalInPaise ?? data.subtotalInPaise);

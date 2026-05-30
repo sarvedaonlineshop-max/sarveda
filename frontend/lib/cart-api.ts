@@ -43,6 +43,32 @@ export type CheckoutCouponOffer = {
   ineligibleReason?: string;
 };
 
+/** Keep cart line order stable when qty changes (API row order can flicker). */
+export function preserveCartItemOrder(
+  previous: CartApiItem[],
+  incoming: CartApiItem[]
+): CartApiItem[] {
+  if (incoming.length === 0) return incoming;
+  if (previous.length === 0) {
+    return [...incoming].sort((a, b) => a.id.localeCompare(b.id));
+  }
+  const incomingByVariant = new Map(incoming.map((i) => [i.variantId, i]));
+  const ordered: CartApiItem[] = [];
+  for (const item of previous) {
+    const updated = incomingByVariant.get(item.variantId);
+    if (updated) {
+      ordered.push(updated);
+      incomingByVariant.delete(item.variantId);
+    }
+  }
+  for (const item of incoming) {
+    if (incomingByVariant.has(item.variantId)) {
+      ordered.push(item);
+    }
+  }
+  return ordered;
+}
+
 export type CartApiResponse = {
   items: CartApiItem[];
   /** Minor units for `currency` (paise, cents, or pence). */
