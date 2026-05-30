@@ -8,6 +8,7 @@ import { logoutSession } from "@/lib/auth-client";
 const nav = [
   { href: "/admin", label: "Dashboard", icon: "◆" },
   { href: "/admin/orders", label: "Orders", icon: "◇" },
+  { href: "/admin/customers", label: "Customers", icon: "◎" },
   { href: "/admin/reconciliation", label: "Reconciliation", icon: "₹" },
   { href: "/admin/products", label: "Products", icon: "○" },
   { href: "/admin/content", label: "Content", icon: "✎" },

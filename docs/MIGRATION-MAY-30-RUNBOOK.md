@@ -81,13 +81,22 @@ May-30 `products-1.xml` is used for **reviews** and media attachment IDs, not fu
 
 ## Verify after migration
 
+On EC2:
+
+```bash
+cd ~/sarveda/backend
+npm run verify:migration
+pm2 restart sarveda-backend --update-env
+```
+
 | Check | URL / action |
 |-------|----------------|
-| Order count ~4362 | Admin → Orders |
-| Customers exist | Admin (search by email from Woo) |
-| Reviews on PDP | Open a product with reviews on live site |
+| Order count ~4362 | Admin → Orders (numbers like `WOO-5325`) |
+| Customers ~532 | Admin → **Customers** (after latest deploy) |
+| Reviews on PDP | Product with reviews on live site |
 | Courses/events | `/courses`, `/events` |
-| Coupons | Checkout test with a known code |
+| Coupons | Checkout with `WELCOME10` |
+| Content | Admin → Content |
 
 ---
 

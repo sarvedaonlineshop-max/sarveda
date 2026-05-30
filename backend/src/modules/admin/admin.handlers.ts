@@ -458,6 +458,70 @@ function bucketWhere(bucket: Exclude<OrderBucket, "all">, now: Date): Record<str
   }
 }
 
+export async function customersList(req: Request, res: Response, next: NextFunction) {
+  try {
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
+    const skip = (page - 1) * limit;
+    const q = String(req.query.q ?? "").trim().toLowerCase();
+
+    const where =
+      q ?
+        {
+          OR: [
+            { email: { contains: q, mode: "insensitive" as const } },
+            { name: { contains: q, mode: "insensitive" as const } },
+            { phone: { contains: q } }
+          ]
+        }
+      : {};
+
+    const [total, rows] = await prisma.$transaction([
+      prisma.user.count({ where }),
+      prisma.user.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          phone: true,
+          role: true,
+          wooCommerceId: true,
+          createdAt: true,
+          _count: { select: { orders: true } }
+        }
+      })
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        items: rows.map((u) => ({
+          id: u.id,
+          email: u.email,
+          name: u.name,
+          phone: u.phone,
+          role: u.role,
+          wooCommerceId: u.wooCommerceId,
+          orderCount: u._count.orders,
+          createdAt: u.createdAt
+        })),
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit) || 1
+        }
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function ordersList(req: Request, res: Response, next: NextFunction) {
   try {
     const page = Math.max(1, Number(req.query.page) || 1);

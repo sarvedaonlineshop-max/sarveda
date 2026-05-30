@@ -40,6 +40,7 @@
     "import:refunds": "tsx scripts/import-refunds-wxr.ts",
     "import:reviews": "tsx scripts/import-reviews-from-products.ts",
     "migrate:may-30": "tsx scripts/migrate-may-30.ts",
+    "verify:migration": "tsx scripts/verify-may-30-migration.ts",
     "check:s3": "tsx scripts/check-s3-bucket.ts",
     "migrate:media": "tsx scripts/check-s3-bucket.ts && tsx scripts/migrate-media-to-s3.ts",
     "migrate:media:dry": "tsx scripts/migrate-media-to-s3.ts --dry-run"
