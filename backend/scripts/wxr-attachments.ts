@@ -3,14 +3,12 @@
  */
 import fs from "fs";
 
+import { may30 } from "./migration-paths";
 import { readWxr } from "./wxr-utils";
 
-const DEFAULT_XML_PATHS = [
-  "data/sarveda.WordPress.2026-05-29-media.xml",
-  "data/sarveda.WordPress.2026-05-29-products.xml",
-  "data/media.xml",
-  "data/variations.xml"
-];
+function defaultXmlPaths(): string[] {
+  return [may30.media(), may30.products(), may30.variations()];
+}
 
 function parseAttachmentBlocks(xml: string): Map<number, string> {
   const map = new Map<number, string>();
@@ -42,7 +40,7 @@ export function loadAttachmentMapFromWxr(
   extraPaths: string[] = []
 ): Map<number, string> {
   const map = new Map<number, string>();
-  const relPaths = [...extraPaths, ...DEFAULT_XML_PATHS];
+  const relPaths = [...extraPaths, ...defaultXmlPaths()];
 
   for (const rel of relPaths) {
     const abs = rel.startsWith("/") ? rel : `${repoRoot}/${rel}`;

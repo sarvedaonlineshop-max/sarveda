@@ -13,6 +13,13 @@ public/workbox-*.js.map
 .DS_Store
 .pem
 
-# WooCommerce exports — never commit orders (payment keys) or customer PII
+# WooCommerce exports — never commit (Stripe/Razorpay keys in orders, customer PII)
 data/orders.xml
 data/users.csv
+data/**/orders*.xml
+data/**/user-export*.csv
+data/**/refund.xml
+
+# May-30 batch: keep README in git; copy full folder to EC2 via SCP (not git)
+data/May-30/*
+!data/May-30/README.md

@@ -14,6 +14,7 @@ model User {
   name         String?
   passwordHash String?
   googleId     String?  @unique
+  wooCommerceId Int?    @unique
   role         Role     @default(CUSTOMER)
   isVerified   Boolean  @default(false)
   deletedAt    DateTime?
@@ -237,6 +238,8 @@ model CartItem {
 model Order {
   id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   orderNumber       String            @unique
+  wooCommerceId     Int?              @unique
+  wooLegacyMeta     Json?
   customerId        String?           @db.Uuid
   email             String
   phone             String

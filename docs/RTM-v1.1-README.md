@@ -5,40 +5,70 @@
 | File | Purpose |
 |------|---------|
 | `Sarveda-RTM.xlsx` | Your original (unchanged) |
-| `Sarveda-RTM-v1.1-audited.xlsx` | **Revised** — aligned to codebase, 19 May 2026 |
-| `Sarveda-RTM-v1.1-audited.csv` | Same data as flat CSV (optional import) |
+| `Sarveda-RTM-v1.1-audited.xlsx` | **Revised** — aligned to codebase |
+| `Sarveda-RTM-v1.1-audited.csv` | Flat CSV — **updated May 2026** |
+| `docs/RTM-STATUS-MAY-2026.md` | **Executive summary** — % complete, pending, deferred |
 
-**Regenerate Excel**
+**Refresh status (May 2026)**
 
 ```bash
-python3 scripts/generate-rtm-v1.1.py
+python3 scripts/update-rtm-may-2026.py
+python3 scripts/generate-rtm-v1.1.py   # optional: rebuild .xlsx from CSV logic in generator
 ```
 
-## Format: same idea, small improvements
+For cell-only patches on existing xlsx (preserves manual formatting):
+
+```bash
+PYTHONPATH=backend/.rtm-pip python3 scripts/update-rtm-status.py
+```
+
+---
+
+## Dashboard totals (May 2026 — after demo sprint)
+
+| Metric | v1.1 (May 19) | **May 2026 (demo)** |
+|--------|-----------------|---------------------|
+| Total requirements | 130 | **135** (+5 new rows) |
+| Dev Complete | 54 | **76** |
+| In Progress | 23 | **13** |
+| Not Started | 53 | **41** |
+| Dev Deferred | — | **5** (WATI) |
+| Test Pass | 38 | **73** |
+
+**Must Have (102 items):** **71%** Dev done/deferred · **66%** Test Pass
+
+> Use **`Sarveda-RTM-v1.1-audited.csv`** as source of truth. Re-import into Excel if needed; `generate-rtm-v1.1.py` rebuilds xlsx from an older template.
+
+See **`docs/RTM-STATUS-MAY-2026.md`** for full “done vs pending” breakdown.
+
+---
+
+## What’s done vs pending (short)
+
+### ✅ Done on demo (shop revenue path ~95%)
+- Products, cart, checkout, Razorpay + Stripe + PayPal, coupons, emails, GST invoice  
+- AWB manual in admin, geo pricing, audio, cart fixes  
+- Courses / events / insights listings + homepage rails + corporate wellness pages  
+- Pay for courses/events via cart + enrollment records  
+
+### 🟡 In progress
+- Auto shipping / courier E2E, course lesson portal, SEO cutover (301 + sitemaps)  
+- GST line breakdown at checkout, advanced search filters  
+
+### ⏸ Deferred
+- **WATI / WhatsApp** (all NOT-006+)  
+- **Zoho** (external)  
+
+### ⬜ Not started
+- Password reset, reviews, wishlist, refunds UI, abandoned cart, GA/Meta pixel  
+
+---
+
+## Format
 
 | Original | v1.1 audited |
 |----------|----------------|
-| Excel `.xlsx` | Excel `.xlsx` (same tool for Arjun) |
-| Dashboard + Full RTM + 13 module tabs | Same structure |
-| Emoji sheet names (📊 Dashboard, etc.) | Plain names (`Dashboard`, `Products`, …) — opens the same in Excel |
-| 14 columns on Full RTM | **+2 columns:** `Deploy Dependency`, `Date Revised` |
-| Version 1.0 / 25 May 2026 | **v1.1** / audit date in header |
+| Excel `.xlsx` | Excel `.xlsx` |
+| 14 columns on Full RTM | + `Deploy Dependency`, `Date Revised` |
 
-## Dashboard totals (v1.1)
-
-- **130** requirements  
-- **54** Dev Complete (was 50 — some upgrades, some downgrades)  
-- **23** In Progress  
-- **38** Test Pass (conservative; many items need staging E2E)
-
-## What changed vs your v1.0 (high level)
-
-**Upgraded:** COD, guest checkout, related products, estimated delivery, shipping totals, order history, tracking page, course listing, partial SEO/email, zone pricing.
-
-**Downgraded:** Zoho L2 (not in repo), PDP pincode “before add to cart”, Delhivery/Shiprocket “Complete” → In Progress until live AWB test, password reset → Not Started.
-
-**Wording fix:** REQ-CART-003 — stock reserves at **checkout**, not on add-to-cart.
-
-**Deploy notes:** `import:variations`, `sync:galleries`, `migrate:media`, `SENDGRID_API_KEY` on EC2.
-
-Give Arjun **v1.1** for status; keep **v1.0** as your first draft if needed for history.
+Give Arjun **`Sarveda-RTM-v1.1-audited.csv`** or xlsx plus **`docs/RTM-STATUS-MAY-2026.md`** for status reviews.

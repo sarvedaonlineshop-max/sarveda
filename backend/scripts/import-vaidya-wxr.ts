@@ -7,15 +7,14 @@ import path from "path";
 
 import { PrismaClient } from "@prisma/client";
 import { loadPublishedItems, thumbUrl } from "./wxr-loop";
+import { may30 } from "./migration-paths";
 import { resolveMediaRef } from "./wxr-utils";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const prisma = new PrismaClient();
 const dryRun = process.argv.includes("--dry-run");
-const xmlPath =
-  process.argv.find((a) => a.endsWith(".xml")) ??
-  path.resolve(__dirname, "../../data/vaidya.xml");
+const xmlPath = process.argv.find((a) => a.endsWith(".xml")) ?? may30.vaidya();
 
 async function main() {
   const items = loadPublishedItems(xmlPath, "vaidya");

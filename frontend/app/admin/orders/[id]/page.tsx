@@ -94,6 +94,8 @@ type OrderLoaded = {
   shippingLastErrorAt: string | null;
   preferredCourier?: string | null;
   shippingZone?: string | null;
+  wooCommerceId?: number | null;
+  wooImportNote?: string | null;
 };
 
 function asOrder(raw: Record<string, unknown>): OrderLoaded {
@@ -110,6 +112,7 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
   const addresses = (raw.addresses as AddressRow[]) ?? [];
   const shipments = (raw.shipments as ShipmentRow[]) ?? [];
   const payments = (raw.payments as PaymentRow[]) ?? [];
+  const legacy = raw.wooLegacyMeta as { lineItemsNote?: string } | null | undefined;
   return {
     id: String(raw.id),
     orderNumber: String(raw.orderNumber),
@@ -132,7 +135,9 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
     shippingLastError: raw.shippingLastError != null ? String(raw.shippingLastError) : null,
     shippingLastErrorAt: raw.shippingLastErrorAt != null ? String(raw.shippingLastErrorAt) : null,
     preferredCourier: raw.preferredCourier != null ? String(raw.preferredCourier) : null,
-    shippingZone: raw.shippingZone != null ? String(raw.shippingZone) : null
+    shippingZone: raw.shippingZone != null ? String(raw.shippingZone) : null,
+    wooCommerceId: raw.wooCommerceId != null ? Number(raw.wooCommerceId) : null,
+    wooImportNote: legacy?.lineItemsNote ?? null
   };
 }
 
@@ -784,6 +789,12 @@ export default function AdminOrderDetailPage() {
             </Link>
           ) : null}
         </div>
+        {order.wooCommerceId && order.items.length === 0 ? (
+          <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+            WooCommerce order #{order.wooCommerceId} — header imported from WordPress export.
+            {order.wooImportNote ? ` ${order.wooImportNote}` : " Line items were not in the export file."}
+          </p>
+        ) : null}
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-stone-100 bg-stone-50 dark:border-stone-700 dark:bg-stone-800/80">

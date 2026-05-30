@@ -15,12 +15,14 @@ import {
   readWxr,
   toPrismaJson
 } from "./wxr-utils";
+import { may30 } from "./migration-paths";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const prisma = new PrismaClient();
 const dryRun = process.argv.includes("--dry-run");
-const xmlPath = path.resolve(__dirname, "../../data/pages.xml");
+
+const xmlPath = process.argv.find((a) => a.endsWith(".xml")) ?? may30.pages();
 
 /** WP system/duplicate pages — not public marketing URLs */
 const SKIP_SLUGS = new Set([

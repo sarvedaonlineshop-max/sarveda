@@ -13,15 +13,14 @@ import path from "path";
 import { PrismaClient } from "@prisma/client";
 
 import { slugify } from "../src/utils/slugify";
+import { may30 } from "./migration-paths";
 import { cdata, parseIntSafe, parseMeta, readWxr } from "./wxr-utils";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const prisma = new PrismaClient();
 const dryRun = process.argv.includes("--dry-run");
-const xmlPath =
-  process.argv.find((a) => a.endsWith(".xml")) ??
-  path.resolve(__dirname, "../../data/variations.xml");
+const xmlPath = process.argv.find((a) => a.endsWith(".xml")) ?? may30.variations();
 
 const UNTRACKED_ON_HAND = 999;
 

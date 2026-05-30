@@ -7,6 +7,7 @@ import path from "path";
 
 import { PrismaClient } from "@prisma/client";
 import { loadPublishedItems, thumbUrl } from "./wxr-loop";
+import { may30 } from "./migration-paths";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
@@ -14,7 +15,7 @@ const prisma = new PrismaClient();
 const dryRun = process.argv.includes("--dry-run");
 const xmlPath =
   process.argv.find((a) => a.endsWith(".xml")) ??
-  path.resolve(__dirname, "../../data/offers.xml");
+  may30.offers();
 
 const SKIP_SLUGS = new Set(["testing"]);
 

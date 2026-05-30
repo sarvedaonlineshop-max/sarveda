@@ -34,6 +34,12 @@
     "sync:audio:dry": "tsx scripts/sync-product-audio.ts --dry-run",
     "audit:catalog": "python3 ../scripts/audit-catalog-csv.py",
     "import:full": "npm run import:all && npm run import:coupons && npm run seed:corporate",
+    "flush:transactional": "tsx scripts/flush-transactional-data.ts",
+    "import:users": "tsx scripts/import-users-wc-csv.ts",
+    "import:orders": "tsx scripts/import-orders-wxr.ts",
+    "import:refunds": "tsx scripts/import-refunds-wxr.ts",
+    "import:reviews": "tsx scripts/import-reviews-from-products.ts",
+    "migrate:may-30": "tsx scripts/migrate-may-30.ts",
     "check:s3": "tsx scripts/check-s3-bucket.ts",
     "migrate:media": "tsx scripts/check-s3-bucket.ts && tsx scripts/migrate-media-to-s3.ts",
     "migrate:media:dry": "tsx scripts/migrate-media-to-s3.ts --dry-run"
