@@ -68,6 +68,15 @@ function pickExtra(meta: MetaMap, content: string) {
     const a = meta[`faqs_${i}_answer`];
     if (q && a) faqs.push({ question: q, answer: a });
   }
+
+  const teachers: string[] = [];
+  const singleTeacher = meta.teacher_section_teacher_name?.trim();
+  if (singleTeacher) teachers.push(singleTeacher);
+  for (let i = 0; i < 12; i++) {
+    const name = meta[`about_teachers_${i}_teacher_name`]?.trim();
+    if (name && !teachers.includes(name)) teachers.push(name);
+  }
+
   return {
     videoLink: meta.video_link || meta.youtube_embedd || null,
     duration: meta.duration || null,
@@ -75,6 +84,7 @@ function pickExtra(meta: MetaMap, content: string) {
     endDate: meta.end_date || null,
     courseIncludes: meta.course_includes || null,
     aboutTheCourse: meta.about_the_course || null,
+    teachers: teachers.length ? teachers : undefined,
     faqs: faqs.length ? faqs : undefined
   };
 }

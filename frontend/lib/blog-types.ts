@@ -5,6 +5,7 @@ export type BlogListItem = {
   excerpt: string | null;
   imageUrl: string | null;
   publishedAt: string | null;
+  seoKeyword: string | null;
 };
 
 export type BlogDetail = BlogListItem & {

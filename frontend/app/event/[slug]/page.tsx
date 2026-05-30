@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { ContentHeroBanner } from "@/components/content/ContentHeroBanner";
 import { CourseEnrollActions } from "@/components/course/CourseEnrollActions";
 import { Breadcrumbs } from "@/components/product/Breadcrumbs";
 import { ProductRichText } from "@/components/product/ProductRichText";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { fetchEventBySlug, fetchEventSlugs, skipBuildTimeStaticParams } from "@/lib/api";
+import { eventTypeLabel } from "@/lib/content-meta";
+import { formatINRFromPaise } from "@/lib/money";
 import { breadcrumbJsonLd, eventJsonLd } from "@/lib/seo-product";
 import { htmlToPlainText } from "@/lib/sanitize-html";
 import { absoluteUrl, canonical, isProductionSite } from "@/lib/site";
@@ -73,6 +75,10 @@ export default async function EventDetailPage({ params }: Props) {
   const event = await fetchEventBySlug(params.slug, { next: { revalidate: 300 } });
   if (!event) notFound();
 
+  const typeLabel = eventTypeLabel(event);
+  const priceLabel =
+    event.priceInPaise > 0 ? formatINRFromPaise(event.priceInPaise) : "Free";
+
   const breadcrumbItems = [
     { name: "Home", url: absoluteUrl("/") },
     { name: "Events", url: absoluteUrl("/events") },
@@ -82,6 +88,8 @@ export default async function EventDetailPage({ params }: Props) {
   return (
     <>
       <JsonLd data={[eventJsonLd(event), breadcrumbJsonLd(breadcrumbItems)]} />
+
+      {event.imageUrl ? <ContentHeroBanner src={event.imageUrl} alt={event.title} priority /> : null}
 
       <div className="border-b border-stone-100 bg-stone-50">
         <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-6 lg:px-8">
@@ -98,35 +106,30 @@ export default async function EventDetailPage({ params }: Props) {
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="grid gap-10 lg:grid-cols-[1fr_340px] lg:gap-12">
           <div>
-            <p className="text-sm font-medium text-amber-800">{formatWhen(event.startDate, event.endDate)}</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#108967]">{typeLabel}</p>
             <h1 className="mt-2 font-serif text-3xl font-semibold tracking-tight text-stone-900 md:text-4xl">
               {event.title}
             </h1>
             {event.shortDescription ? (
               <p className="mt-4 text-lg text-stone-600">{event.shortDescription}</p>
             ) : null}
-            {event.venue ? (
-              <p className="mt-2 text-stone-600">
-                <span className="font-medium text-stone-800">Location:</span> {event.venue}
-              </p>
-            ) : null}
-            {event.isOnline && event.zoomLink ? (
-              <p className="mt-2 text-sm text-stone-600">Online event — link shared after registration.</p>
-            ) : null}
 
-            {event.imageUrl ? (
-              <div className="mt-8 overflow-hidden rounded-2xl border border-stone-200 bg-white">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <Image
-                  src={event.imageUrl}
-                  alt={event.title}
-                  width={1200}
-                  height={750}
-                  className="h-auto w-full object-cover"
-                  sizes="(max-width: 1024px) 100vw, 66vw"
-                />
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-2xl border border-stone-200 bg-white p-5">
+                <p className="text-xs font-bold uppercase tracking-wide text-stone-500">When</p>
+                <p className="mt-2 text-sm text-stone-800">{formatWhen(event.startDate, event.endDate)}</p>
               </div>
-            ) : null}
+              <div className="rounded-2xl border border-stone-200 bg-white p-5">
+                <p className="text-xs font-bold uppercase tracking-wide text-stone-500">Where</p>
+                <p className="mt-2 text-sm text-stone-800">
+                  {event.isOnline ? "Online" : event.venue || "Sarveda"}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-stone-200 bg-white p-5 sm:col-span-2">
+                <p className="text-xs font-bold uppercase tracking-wide text-stone-500">Pricing</p>
+                <p className="mt-2 text-sm font-semibold text-stone-900">{priceLabel}</p>
+              </div>
+            </div>
 
             {event.description ? (
               <div className="mt-10">
@@ -139,7 +142,7 @@ export default async function EventDetailPage({ params }: Props) {
             <CourseEnrollActions
               item={event}
               pathPrefix="event"
-              payLabel="Register & pay online"
+              payLabel="Register"
             />
             <p className="mt-4 text-center text-sm text-stone-500">
               <Link href="/events" className="text-amber-800 underline hover:text-amber-900">

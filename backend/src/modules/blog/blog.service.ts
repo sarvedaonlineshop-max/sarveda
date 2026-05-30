@@ -9,6 +9,7 @@ export type BlogListItem = {
   excerpt: string | null;
   imageUrl: string | null;
   publishedAt: string | null;
+  seoKeyword: string | null;
 };
 
 export type BlogDetail = BlogListItem & {
@@ -25,6 +26,7 @@ function mapListRow(row: {
   excerpt: string | null;
   imageUrl: string | null;
   publishedAt: Date | null;
+  seoKeyword: string | null;
 }): BlogListItem {
   return {
     ...row,
@@ -42,7 +44,8 @@ export async function listPublishedPosts(): Promise<BlogListItem[]> {
       title: true,
       excerpt: true,
       imageUrl: true,
-      publishedAt: true
+      publishedAt: true,
+      seoKeyword: true
     }
   });
   return rows.map(mapListRow);

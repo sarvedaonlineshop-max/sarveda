@@ -13,6 +13,7 @@ export type CourseListItem = {
   isFree: boolean;
   enrollmentMode: CourseEnrollmentMode;
   checkoutVariantId: string | null;
+  extra: Prisma.JsonValue | null;
 };
 
 export type CourseDetail = CourseListItem & {
@@ -37,7 +38,8 @@ export async function listPublishedCourses(): Promise<CourseListItem[]> {
       priceUsdCents: true,
       isFree: true,
       enrollmentMode: true,
-      checkoutVariantId: true
+      checkoutVariantId: true,
+      extra: true
     }
   });
   return rows;

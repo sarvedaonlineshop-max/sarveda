@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { HomeExperienceSections } from "@/components/home/HomeExperienceSections";
 import { HomeProductShowcase } from "@/components/home/HomeProductShowcase";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { NewsletterForm }      from "@/components/home/NewsletterForm";
 import { ProductCard }         from "@/components/shop/ProductCard";
 import { categoryEmoji }       from "@/lib/category-emojis";
-import { fetchCategoryTree, fetchProductList, fetchTestimonials } from "@/lib/api";
+import { fetchCategoryTree, fetchCourses, fetchEvents, fetchBlogPosts, fetchProductList, fetchTestimonials } from "@/lib/api";
 import { organizationJsonLd } from "@/lib/seo-product";
 import { absoluteUrl, canonical, isProductionSite } from "@/lib/site";
 
@@ -95,12 +96,18 @@ export default async function HomePage() {
     pagination: { page:1, limit:8, total:0, totalPages:0 }
   };
   let dbTestimonials: Awaited<ReturnType<typeof fetchTestimonials>> = [];
+  let courses: Awaited<ReturnType<typeof fetchCourses>> = [];
+  let events: Awaited<ReturnType<typeof fetchEvents>> = [];
+  let posts: Awaited<ReturnType<typeof fetchBlogPosts>> = [];
 
   try {
-    [categories, featured, dbTestimonials] = await Promise.all([
+    [categories, featured, dbTestimonials, courses, events, posts] = await Promise.all([
       fetchCategoryTree({ next: { revalidate: 600 } }),
       fetchProductList({}, { next: { revalidate: 120 } }, { limit: 8 }),
-      fetchTestimonials({ next: { revalidate: 300 } })
+      fetchTestimonials({ next: { revalidate: 300 } }),
+      fetchCourses({ next: { revalidate: 300 } }),
+      fetchEvents({ cache: "no-store" }),
+      fetchBlogPosts({ cache: "no-store" })
     ]);
   } catch {
     /* Keep buildable when API is unreachable */
@@ -263,27 +270,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── Courses teaser ─────────────────────────────────────────── */}
-      <section
-        id="courses"
-        className="scroll-mt-24 border-y border-white/8 py-16"
-        style={{ background: "linear-gradient(160deg,#0f1a14 0%,#1e3a2f 100%)" }}
-      >
-        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
-          <h2 className="mt-5 font-serif text-2xl font-semibold text-white sm:text-3xl md:text-4xl">
-            Courses & guided practice
-          </h2>
-          <p className="mt-4 text-sm leading-relaxed text-stone-300 md:text-base">
-            Deepen pranayama, mantra, and Ayurvedic living with teachers who carry these lineages with care.
-          </p>
-          <Link
-            href="/courses"
-            className="mt-8 inline-flex min-h-[48px] items-center gap-2 rounded-full border border-brand-gold/50 px-8 text-sm font-semibold text-brand-gold transition-all hover:bg-brand-gold/10"
-          >
-            Browse courses
-          </Link>
-        </div>
-      </section>
+      <HomeExperienceSections courses={courses} events={events} posts={posts} />
 
       {/* ── Newsletter ─────────────────────────────────────────────── */}
       <section

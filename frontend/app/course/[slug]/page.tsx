@@ -1,13 +1,18 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { ContentHeroBanner } from "@/components/content/ContentHeroBanner";
 import { CourseEnrollActions } from "@/components/course/CourseEnrollActions";
 import { Breadcrumbs } from "@/components/product/Breadcrumbs";
 import { ProductRichText } from "@/components/product/ProductRichText";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { fetchCourseBySlug, fetchCourseSlugs, skipBuildTimeStaticParams } from "@/lib/api";
+import {
+  courseTeachers,
+  formatCourseDateRange,
+  parseCourseExtra
+} from "@/lib/content-meta";
 import { breadcrumbJsonLd, courseJsonLd } from "@/lib/seo-product";
 import { htmlToPlainText } from "@/lib/sanitize-html";
 import { absoluteUrl, canonical, isProductionSite } from "@/lib/site";
@@ -55,21 +60,24 @@ export default async function CourseDetailPage({ params }: Props) {
   const course = await fetchCourseBySlug(params.slug, { next: { revalidate: 300 } });
   if (!course) notFound();
 
+  const extra = parseCourseExtra(course.extra);
+  const teachers = courseTeachers(extra);
+  const dates = formatCourseDateRange(extra);
+
   const breadcrumbItems = [
     { name: "Home", url: absoluteUrl("/") },
     { name: "Courses", url: absoluteUrl("/courses") },
     { name: course.title, url: absoluteUrl(`/course/${course.slug}`) }
   ];
 
-  const extra = course.extra as {
-    faqs?: Array<{ question: string; answer: string }>;
-    videoLink?: string | null;
-  } | null;
-  const embedUrl = course.videoUrl || extra?.videoLink || null;
+  const embedUrl = course.videoUrl || extra.videoLink || null;
+  const faqs = (course.extra as { faqs?: Array<{ question: string; answer: string }> } | null)?.faqs;
 
   return (
     <>
       <JsonLd data={[courseJsonLd(course), breadcrumbJsonLd(breadcrumbItems)]} />
+
+      {course.imageUrl ? <ContentHeroBanner src={course.imageUrl} alt={course.title} priority /> : null}
 
       <div className="border-b border-stone-100 bg-stone-50">
         <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-6 lg:px-8">
@@ -86,25 +94,40 @@ export default async function CourseDetailPage({ params }: Props) {
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="grid gap-10 lg:grid-cols-[1fr_340px] lg:gap-12">
           <div>
-            <h1 className="font-serif text-3xl font-semibold tracking-tight text-stone-900 md:text-4xl">
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#108967]">Course</p>
+            <h1 className="mt-2 font-serif text-3xl font-semibold tracking-tight text-stone-900 md:text-4xl">
               {course.title}
             </h1>
             {course.shortDescription ? (
               <p className="mt-4 text-lg text-stone-600">{course.shortDescription}</p>
             ) : null}
 
-            {course.imageUrl ? (
-              <div className="mt-8 overflow-hidden rounded-2xl border border-stone-200 bg-white">
-                <Image
-                  src={course.imageUrl}
-                  alt={course.title}
-                  width={1200}
-                  height={750}
-                  className="h-auto w-full object-cover"
-                  sizes="(max-width: 1024px) 100vw, 66vw"
-                />
+            {(teachers.length > 0 || dates || extra.duration) && (
+              <div className="mt-6 rounded-2xl border border-stone-200 bg-white p-5 text-sm text-stone-700">
+                {teachers.length > 0 ? (
+                  <div>
+                    <p className="font-semibold text-stone-900">Facilitators</p>
+                    <ul className="mt-2 space-y-1">
+                      {teachers.map((name) => (
+                        <li key={name}>{name}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+                {dates ? (
+                  <p className={teachers.length > 0 ? "mt-4" : ""}>
+                    <span className="font-semibold text-stone-900">Dates: </span>
+                    {dates}
+                  </p>
+                ) : null}
+                {extra.duration ? (
+                  <p className="mt-2">
+                    <span className="font-semibold text-stone-900">Duration: </span>
+                    {extra.duration}
+                  </p>
+                ) : null}
               </div>
-            ) : null}
+            )}
 
             {embedUrl ? (
               <div className="mt-8 aspect-video overflow-hidden rounded-2xl border border-stone-200 bg-black">
@@ -124,11 +147,11 @@ export default async function CourseDetailPage({ params }: Props) {
               </div>
             ) : null}
 
-            {extra?.faqs?.length ? (
+            {faqs?.length ? (
               <section className="mt-12">
                 <h2 className="font-serif text-2xl font-semibold text-stone-900">FAQs</h2>
                 <ul className="mt-4 space-y-4">
-                  {extra.faqs.map((faq) => (
+                  {faqs.map((faq) => (
                     <li
                       key={faq.question}
                       className="rounded-xl border border-stone-200 bg-white p-5"

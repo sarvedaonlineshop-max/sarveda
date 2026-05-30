@@ -11,6 +11,7 @@ export type CourseListItem = {
   isFree: boolean;
   enrollmentMode: CourseEnrollmentMode;
   checkoutVariantId: string | null;
+  extra: Record<string, unknown> | null;
 };
 
 export type CourseDetail = CourseListItem & {

@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { ContentHeroBanner } from "@/components/content/ContentHeroBanner";
 import { Breadcrumbs } from "@/components/product/Breadcrumbs";
 import { ProductRichText } from "@/components/product/ProductRichText";
 import { CorporateProgramPage } from "@/components/cms/CorporateProgramPage";
@@ -220,6 +221,10 @@ export default async function SlugContentPage({ params }: Props) {
     <>
       <JsonLd data={breadcrumbJsonLd(breadcrumbItems)} />
 
+      {content.kind === "blog" && content.imageUrl ? (
+        <ContentHeroBanner src={content.imageUrl} alt={content.title} />
+      ) : null}
+
       <div className="border-b border-stone-100 bg-stone-50">
         <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-6 lg:px-8">
           <Breadcrumbs items={uiBreadcrumbs} />
@@ -243,7 +248,7 @@ export default async function SlugContentPage({ params }: Props) {
         <h1 className="font-serif text-3xl font-semibold tracking-tight text-stone-900 md:text-4xl">
           {content.title}
         </h1>
-        {content.imageUrl ? (
+        {content.kind !== "blog" && content.imageUrl ? (
           <div className="mt-8 overflow-hidden rounded-2xl border border-stone-200">
             <div className="relative aspect-[16/9] w-full">
               <Image
