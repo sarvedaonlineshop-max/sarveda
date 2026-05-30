@@ -98,9 +98,12 @@ export default function AdminCustomersPage() {
             </table>
           </div>
           <AdminPagination
-            page={data.pagination.page}
+            page={page}
             totalPages={data.pagination.totalPages}
-            onPageChange={setPage}
+            total={data.pagination.total}
+            itemLabel="customers"
+            onPrev={() => setPage((p) => Math.max(1, p - 1))}
+            onNext={() => setPage((p) => Math.min(data.pagination.totalPages, p + 1))}
           />
         </>
       ) : (
