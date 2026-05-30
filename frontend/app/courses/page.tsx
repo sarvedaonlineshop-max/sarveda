@@ -50,7 +50,7 @@ export default async function CoursesPage() {
                   href={`/course/${course.slug}`}
                   className="group flex h-full flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm transition hover:border-amber-300 hover:shadow-md"
                 >
-                  <div className="aspect-[16/10] overflow-hidden bg-stone-100">
+                  <div className="relative aspect-[16/10] overflow-hidden bg-stone-100">
                     {course.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <Image
