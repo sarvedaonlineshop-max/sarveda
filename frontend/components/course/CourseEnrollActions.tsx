@@ -99,6 +99,12 @@ export function CourseEnrollActions({
 
       {error ? <p className="mt-3 text-sm text-red-700">{error}</p> : null}
 
+      {showPay ? (
+        <p className="mt-3 text-xs text-stone-500">
+          Sign in before checkout to see your course or event under Profile → Courses & events.
+        </p>
+      ) : null}
+
       <p className="mt-4 text-xs text-stone-500">
         Questions?{" "}
         <Link href="/shop" className="font-medium text-amber-800 underline hover:text-amber-900">

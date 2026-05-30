@@ -4,6 +4,7 @@ import type { Request } from "express";
 
 import { prisma } from "../../config/db";
 import { unitMinorForZone } from "../../utils/variantPricing";
+import { isDigitalLine } from "../../utils/digitalCart";
 import { resolveCartCouponDiscount } from "../coupons/coupon.service";
 import { currencyForZone, zoneFromCountry } from "../shipping/shippingRates.service";
 
@@ -170,7 +171,8 @@ export async function getCartPayload(
         type: string;
         value: number;
         discountInPaise: number;
-      }
+      },
+      isDigitalOnly: false
     };
   }
 
@@ -208,7 +210,8 @@ export async function getCartPayload(
       currency,
       discountInPaise: 0,
       totalInPaise: 0,
-      coupon: null
+      coupon: null,
+      isDigitalOnly: false
     };
   }
 
@@ -227,12 +230,17 @@ export async function getCartPayload(
   const items: ItemOut[] = [];
   let subtotalInPaise = 0;
   let itemCount = 0;
+  let isDigitalOnly = cart.items.length > 0;
 
   for (const row of cart.items) {
     const v = row.variant;
     const p = v?.productRel;
     if (!v || !p) {
+      isDigitalOnly = false;
       continue;
+    }
+    if (!isDigitalLine(v)) {
+      isDigitalOnly = false;
     }
     const img = p.images[0]?.url ?? null;
     const price = unitMinorForZone(v, zone);
@@ -282,7 +290,7 @@ export async function getCartPayload(
 
   const totalInPaise = Math.max(0, subtotalInPaise - discountInPaise);
 
-  return { items, subtotalInPaise, itemCount, currency, discountInPaise, totalInPaise, coupon };
+  return { items, subtotalInPaise, itemCount, currency, discountInPaise, totalInPaise, coupon, isDigitalOnly };
 }
 
 export async function addCartItem(

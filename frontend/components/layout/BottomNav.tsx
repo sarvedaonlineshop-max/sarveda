@@ -70,19 +70,6 @@ export function BottomNav() {
           />
         </svg>
       )
-    },
-    {
-      key: "chat",
-      label: "Chat",
-      href: "/chat",
-      isActive: pathname?.startsWith("/chat") ?? false,
-      icon: (active) => (
-        <svg viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" className="h-6 w-6" aria-hidden="true">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={active ? 0 : 1.75}
-            d="M8 10h8M8 14h5M5 19l1.5-3H19a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v7a2 2 0 002 2z"
-          />
-        </svg>
-      )
     }
   ];
 
@@ -92,7 +79,7 @@ export function BottomNav() {
       style={{ background: "linear-gradient(180deg,#0f1a14 0%,#0c1510 100%)", backdropFilter:"blur(16px)" }}
       aria-label="Primary"
     >
-      <div className="mx-auto grid h-[4.5rem] max-w-lg grid-cols-5 items-stretch">
+      <div className="mx-auto grid h-[4.5rem] max-w-lg grid-cols-4 items-stretch">
         {items.map((item) => {
           const active = item.isActive;
           return (

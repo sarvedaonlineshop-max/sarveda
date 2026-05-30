@@ -3,6 +3,7 @@ import express from "express";
 import passport from "passport";
 import type { Profile } from "passport-google-oauth20";
 
+import { prisma } from "../../config/db";
 import { requireAuth } from "../../middleware/auth";
 import { validateBody } from "../../middleware/validate";
 import { setAuthCookie } from "../../utils/jwt";
@@ -102,6 +103,47 @@ authRouter.patch(
   asyncHandler(async (req, res) => {
     const user = await updateProfile(req.authUser!.id, req.body);
     res.json({ success: true, data: { user } });
+  })
+);
+
+authRouter.get(
+  "/me/enrollments",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const rows = await prisma.enrollment.findMany({
+      where: { userId: req.authUser!.id },
+      include: { course: { select: { slug: true, title: true } } },
+      orderBy: { createdAt: "desc" }
+    });
+    res.json({
+      success: true,
+      data: rows.map((r) => ({
+        slug: r.course.slug,
+        title: r.course.title,
+        enrolledAt: r.createdAt.toISOString()
+      }))
+    });
+  })
+);
+
+authRouter.get(
+  "/me/bookings",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const rows = await prisma.booking.findMany({
+      where: { userId: req.authUser!.id },
+      include: { event: { select: { slug: true, title: true, startDate: true } } },
+      orderBy: { createdAt: "desc" }
+    });
+    res.json({
+      success: true,
+      data: rows.map((r) => ({
+        slug: r.event.slug,
+        title: r.event.title,
+        startDate: r.event.startDate.toISOString(),
+        bookedAt: r.createdAt.toISOString()
+      }))
+    });
   })
 );
 

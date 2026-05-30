@@ -78,6 +78,7 @@ export type CartApiResponse = {
   coupon?: CartCouponInfo | null;
   itemCount: number;
   currency: string;
+  isDigitalOnly?: boolean;
   sessionId?: string;
 };
 

@@ -38,6 +38,7 @@ type CartDataState = {
   coupon: import("@/lib/cart-api").CartCouponInfo | null;
   currency: string;
   itemCount: number;
+  isDigitalOnly: boolean;
   loading: boolean;
   error: string | null;
   refreshCart: (shippingCountry?: string, checkoutEmail?: string) => Promise<void>;
@@ -71,6 +72,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [coupon, setCoupon] = useState<import("@/lib/cart-api").CartCouponInfo | null>(null);
   const [currency, setCurrency] = useState("INR");
   const [itemCount, setItemCount] = useState(0);
+  const [isDigitalOnly, setIsDigitalOnly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mutatingVariantId, setMutatingVariantId] = useState<string | null>(null);
@@ -92,6 +94,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setCoupon(data.coupon ?? null);
     setCurrency(data.currency ?? "INR");
     setItemCount(data.itemCount ?? data.items.reduce((n, i) => n + i.quantity, 0));
+    setIsDigitalOnly(Boolean(data.isDigitalOnly));
     setLoading(false);
     setError(null);
   }, []);
@@ -114,6 +117,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setCoupon(null);
         setCurrency("INR");
         setItemCount(0);
+        setIsDigitalOnly(false);
       } finally {
         if (version === cartVersionRef.current) setLoading(false);
       }
@@ -263,6 +267,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       coupon,
       currency,
       itemCount,
+      isDigitalOnly,
       loading,
       error,
       refreshCart,
@@ -279,6 +284,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       coupon,
       currency,
       itemCount,
+      isDigitalOnly,
       loading,
       error,
       refreshCart,

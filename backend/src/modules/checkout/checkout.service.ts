@@ -24,6 +24,7 @@ import * as delhivery from "../shipping/delhivery";
 import * as shiprocket from "../shipping/shiprocket";
 import { shippingEnv } from "../../config/env";
 import { unitMinorForZone } from "../../utils/variantPricing";
+import { isDigitalOnlyCart } from "../../utils/digitalCart";
 import type { CreateOrderBody } from "./schemas";
 
 function triStateEnv(envVal: string | undefined, defaultWhenUnset: boolean): boolean {
@@ -311,9 +312,12 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
     variantId: row.variantId,
     quantity: row.quantity
   }));
-  const shippingInPaise = await computeVariantShippingTotal(prisma, shippingLines, body.country ?? "IN", {
-    cod: Boolean(body.codDelivery) && zone === "IN"
-  });
+  const digitalOnly = isDigitalOnlyCart(lines);
+  const shippingInPaise = digitalOnly
+    ? 0
+    : await computeVariantShippingTotal(prisma, shippingLines, body.country ?? "IN", {
+        cod: Boolean(body.codDelivery) && zone === "IN"
+      });
 
   const cartRow = await prisma.cart.findUnique({
     where: { id: cartId },
@@ -335,8 +339,21 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
     throw e;
   }
 
-  await assertDelhiveryHeavyIndiaServiceable(body.country, body.postalCode, lines);
-  await assertIndiaCheckoutServiceable(body.country, body.postalCode, lines, body.codDelivery);
+  const paymentMethod = body.paymentMethod ?? (zone === "IN" ? "razorpay" : "stripe");
+  if (digitalOnly && (paymentMethod === "cod" || body.codDelivery)) {
+    const e = new Error("Cash on delivery is not available for courses and events") as Error & {
+      statusCode: number;
+      code: string;
+    };
+    e.statusCode = 400;
+    e.code = "COD_NOT_FOR_DIGITAL";
+    throw e;
+  }
+
+  if (!digitalOnly) {
+    await assertDelhiveryHeavyIndiaServiceable(body.country, body.postalCode, lines);
+    await assertIndiaCheckoutServiceable(body.country, body.postalCode, lines, body.codDelivery);
+  }
 
   const orderNumber = await generateOrderNumber();
   const receipt = orderNumber.replace(/[^a-zA-Z0-9]/g, "").slice(0, 40);

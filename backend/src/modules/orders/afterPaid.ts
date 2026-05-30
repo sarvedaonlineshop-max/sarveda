@@ -5,6 +5,8 @@ import { ensureOrderInvoicePdf } from "../invoices/invoice.service";
 import { notifyOrderEmail } from "../notifications/email";
 import { onOrderEnteredProcessing } from "../shipping/orderLifecycle";
 import { logger } from "../../config/logger";
+import { isDigitalSku } from "../../utils/digitalCart";
+import { fulfillDigitalPurchases } from "./fulfillDigitalPurchases";
 
 function autoFulfillmentEnabled(): boolean {
   const v = (process.env.AUTO_START_FULFILLMENT_ON_PAID ?? "0").trim().toLowerCase();
@@ -19,13 +21,19 @@ export async function afterOrderPaid(orderId: string): Promise<void> {
   notifyOrderEmail(orderId, "order_confirmed");
   await incrementCouponUsageForOrder(orderId);
   await clearCartForOrder(orderId);
+  await fulfillDigitalPurchases(orderId);
 
   if (autoFulfillmentEnabled()) {
     const order = await prisma.order.findFirst({
       where: { id: orderId, deletedAt: null },
-      select: { status: true }
+      select: {
+        status: true,
+        items: { select: { skuSnapshot: true } }
+      }
     });
-    if (order?.status === "PAID") {
+    const digitalOnly =
+      (order?.items.length ?? 0) > 0 && order!.items.every((i) => isDigitalSku(i.skuSnapshot));
+    if (order?.status === "PAID" && !digitalOnly) {
       await prisma.order.update({
         where: { id: orderId },
         data: { status: "PROCESSING" }

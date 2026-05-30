@@ -31,5 +31,14 @@ export function useStorefrontSession(): PublicUser | null {
     };
   }, [pathname]);
 
+  useEffect(() => {
+    const onAuthChange = (event: Event) => {
+      const detail = (event as CustomEvent<PublicUser | null>).detail;
+      setSessionUser(detail ?? null);
+    };
+    window.addEventListener("sarveda-auth-changed", onAuthChange);
+    return () => window.removeEventListener("sarveda-auth-changed", onAuthChange);
+  }, []);
+
   return sessionUser;
 }

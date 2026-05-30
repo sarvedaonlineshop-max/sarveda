@@ -6,6 +6,7 @@ import { Suspense, useMemo, useState } from "react";
 
 import { AuthShell } from "@/components/auth/AuthShell";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { PasswordInput } from "@/components/auth/PasswordInput";
 import {
   loginWithPassword,
   logoutSession,
@@ -118,13 +119,12 @@ function LoginForm() {
           <label htmlFor="password" className="sr-only">
             Password
           </label>
-          <input
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="current-password"
             required
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={setPassword}
             placeholder="Password"
             className={inputClass}
           />

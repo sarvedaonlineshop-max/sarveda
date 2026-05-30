@@ -82,6 +82,7 @@ type Props = {
   form: CreateOrderBody;
   addressForm: CheckoutAddressForm;
   cartItems: CartApiItem[];
+  isDigitalOnly?: boolean;
   subtotalInPaise: number;
   discountInPaise?: number;
   cartCurrency: string;
@@ -98,6 +99,7 @@ export function PaymentSelector({
   form,
   addressForm,
   cartItems,
+  isDigitalOnly = false,
   subtotalInPaise,
   discountInPaise = 0,
   cartCurrency,
@@ -132,13 +134,22 @@ export function PaymentSelector({
   const formatMoney = (minor: number) =>
     isIndia ? formatINRFromPaise(minor) : formatMinorFromPaise(minor, displayCurrency);
 
-  const estimatedShipping =
-    paymentMode === "cod" && shippingCodInPaise != null ? shippingCodInPaise : shippingInPaise ?? 0;
+  const estimatedShipping = isDigitalOnly
+    ? 0
+    : paymentMode === "cod" && shippingCodInPaise != null
+      ? shippingCodInPaise
+      : shippingInPaise ?? 0;
   const merchandiseAfterDiscount = Math.max(0, subtotalInPaise - discountInPaise);
   const estimatedTotal =
-    merchandiseAfterDiscount + (shippingInPaise != null ? estimatedShipping : 0);
+    merchandiseAfterDiscount + (isDigitalOnly ? 0 : shippingInPaise != null ? estimatedShipping : 0);
 
   useEffect(() => {
+    if (isDigitalOnly) {
+      setShippingInPaise(0);
+      setShippingCodInPaise(null);
+      setShippingBreakdown(null);
+      return;
+    }
     if (cartItems.length === 0) {
       setShippingInPaise(null);
       setShippingCodInPaise(null);
@@ -175,7 +186,7 @@ export function PaymentSelector({
         .finally(() => setShippingLoading(false));
     }, 400);
     return () => window.clearTimeout(handle);
-  }, [cartItems, form.country, form.postalCode, paymentMode]);
+  }, [cartItems, form.country, form.postalCode, paymentMode, isDigitalOnly]);
 
   const goSuccess = useCallback(
     (orderNumber: string, cod: boolean) => {
@@ -448,7 +459,9 @@ export function PaymentSelector({
         <div className="flex justify-between gap-4">
           <dt className="text-stone-600">Shipping</dt>
           <dd className="text-right font-medium text-stone-900">
-            {shippingLoading ? (
+            {isDigitalOnly ? (
+              <span className="text-emerald-700">Free (digital)</span>
+            ) : shippingLoading ? (
               <span className="text-stone-400">Calculating…</span>
             ) : shippingInPaise != null ? (
               formatMoney(estimatedShipping)
@@ -495,6 +508,7 @@ export function PaymentSelector({
               <span className="mt-0.5 block text-xs text-stone-600">UPI, cards, netbanking via Razorpay</span>
             </span>
           </label>
+          {!isDigitalOnly ? (
           <label
             className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${
               paymentMode === "cod"
@@ -514,6 +528,7 @@ export function PaymentSelector({
               <span className="mt-0.5 block text-xs text-stone-600">Pay when the courier delivers your order</span>
             </span>
           </label>
+          ) : null}
         </fieldset>
       ) : !resumeOrderNumber ? (
         <fieldset className="mt-4 space-y-2">

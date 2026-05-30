@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 
+import { YourLearning } from "@/components/profile/YourLearning";
 import { YourOrders } from "@/components/profile/YourOrders";
 import type { PublicUser } from "@/lib/auth-client";
 import { fetchMe, isAdminRole, logoutSession, updateProfile } from "@/lib/auth-client";
@@ -123,6 +124,13 @@ export function ProfileClient() {
             </Link>
           ) : null}
         </div>
+      </section>
+
+      <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h3 className="text-lg font-semibold text-stone-900">Courses & events</h3>
+        </div>
+        <YourLearning />
       </section>
 
       <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">

@@ -32,6 +32,7 @@ export function CheckoutClient() {
     coupon,
     currency,
     itemCount,
+    isDigitalOnly,
     loading,
     refreshCart
   } = useCartData();
@@ -134,7 +135,7 @@ export function CheckoutClient() {
 
   useEffect(() => {
     let cancelled = false;
-    if (form.country !== "IN") {
+    if (isDigitalOnly || form.country !== "IN") {
       setPinHint({ kind: "idle" });
       return () => {
         cancelled = true;
@@ -177,7 +178,7 @@ export function CheckoutClient() {
       cancelled = true;
       window.clearTimeout(handle);
     };
-  }, [form.country, form.postalCode, itemCount]);
+  }, [form.country, form.postalCode, itemCount, isDigitalOnly]);
 
   if (loading) {
     return <p className="text-center text-stone-500">Loading cart…</p>;
@@ -214,7 +215,14 @@ export function CheckoutClient() {
       ) : null}
       <div className="grid gap-10 lg:grid-cols-2">
         <div className="space-y-5">
-          <h2 className="text-xl font-semibold text-stone-900">Shipping details</h2>
+          <h2 className="text-xl font-semibold text-stone-900">
+            {isDigitalOnly ? "Billing details" : "Shipping details"}
+          </h2>
+          {isDigitalOnly ? (
+            <p className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+              Digital purchase — no shipping charge. We will email your confirmation and access details.
+            </p>
+          ) : null}
           <AddressFields
             form={form}
             fieldErrors={fieldErrors}
@@ -275,6 +283,7 @@ export function CheckoutClient() {
             form={formBody}
             addressForm={form}
             cartItems={items}
+            isDigitalOnly={isDigitalOnly}
             subtotalInPaise={subtotalInPaise}
             discountInPaise={discountInPaise}
             cartCurrency={currency}

@@ -84,6 +84,7 @@ export async function loginWithPassword(
   }
   setAccountCartOnly(true);
   await mergeGuestCartSession();
+  notifyAuthChanged(json.data.user);
   return json.data.user;
 }
 
@@ -94,6 +95,13 @@ export async function logoutSession(): Promise<void> {
     headers: { Accept: "application/json" }
   });
   setAccountCartOnly(false);
+  notifyAuthChanged(null);
+}
+
+export function notifyAuthChanged(user: PublicUser | null): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("sarveda-auth-changed", { detail: user }));
+  }
 }
 
 const ADMIN_ROLES = new Set(["ADMIN", "SUPER_ADMIN"]);

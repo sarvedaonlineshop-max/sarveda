@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 import { useCartData, useCartUi } from "@/components/cart/CartProvider";
 import { isAdminRole, logoutSession } from "@/lib/auth-client";
+import { MAIN_NAV_LINKS } from "@/lib/main-nav";
 
 import { useStorefrontSession } from "./useStorefrontSession";
 
@@ -65,6 +66,18 @@ export function Header() {
   const { itemCount: cartCount } = useCartData();
   const sessionUser              = useStorefrontSession();
   const [query, setQuery]        = useState("");
+  const [menuOpen, setMenuOpen]  = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [menuOpen]);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   if (
     pathname?.startsWith("/admin") ||
@@ -83,10 +96,12 @@ export function Header() {
 
   async function handleSignOut() {
     await logoutSession();
+    setMenuOpen(false);
     router.refresh();
   }
 
   return (
+    <>
     <div className={hideOnMobile ? "hidden md:block" : ""}>
       {/* Announcement Bar */}
       <AnnouncementBar />
@@ -96,6 +111,19 @@ export function Header() {
         style={{ background: "linear-gradient(180deg, #0f1a14 0%, #111d17 100%)", backdropFilter: "blur(12px)" }}
       >
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
+
+          {/* Mobile menu */}
+          <button
+            type="button"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-stone-300 transition-colors hover:bg-white/8 hover:text-brand-gold md:hidden"
+            onClick={() => setMenuOpen(true)}
+            aria-expanded={menuOpen}
+            aria-label="Open menu"
+          >
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
 
           {/* Logo */}
           <Link href="/" className="shrink-0 group">
@@ -110,10 +138,19 @@ export function Header() {
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden items-center gap-8 md:flex" aria-label="Main">
-            <Link href="/"        className={navLinkClass}>Home</Link>
-            <Link href="/shop"    className={navLinkClass}>Shop</Link>
-            <Link href="/courses" className={navLinkClass}>Courses</Link>
+          <nav className="hidden items-center gap-6 lg:gap-8 md:flex" aria-label="Main">
+            {MAIN_NAV_LINKS.map((link) => (
+              <Link key={link.href} href={link.href} className={navLinkClass}>
+                {link.label === "Corporate Wellness" ? (
+                  <>
+                    <span className="hidden lg:inline">Corporate Wellness</span>
+                    <span className="lg:hidden">Corporate</span>
+                  </>
+                ) : (
+                  link.label
+                )}
+              </Link>
+            ))}
           </nav>
 
           {/* Search Bar — desktop */}
@@ -200,5 +237,98 @@ export function Header() {
         </div>
       </header>
     </div>
+
+    {menuOpen ? (
+      <div
+        className="fixed inset-0 z-[60] flex flex-col md:hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation"
+        style={{ background: "linear-gradient(180deg, #0f1a14 0%, #111d17 100%)" }}
+      >
+        <div className="flex items-center justify-between border-b border-white/8 px-4 py-4">
+          <span className="font-serif text-xl italic text-brand-gold">☸ Menu</span>
+          <button
+            type="button"
+            className="flex h-11 min-w-[44px] items-center justify-center rounded-xl text-stone-300 hover:text-brand-gold"
+            onClick={() => setMenuOpen(false)}
+            aria-label="Close menu"
+          >
+            <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-4 py-6" aria-label="Mobile main">
+          {MAIN_NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="min-h-[52px] rounded-xl px-4 py-3 text-lg font-medium text-stone-200 hover:bg-white/6 hover:text-brand-gold"
+              onClick={() => setMenuOpen(false)}
+            >
+              {link.label}
+            </Link>
+          ))}
+          <div className="my-2 h-px bg-white/8" />
+          {sessionUser ? (
+            <>
+              <Link
+                href="/profile"
+                className="min-h-[52px] rounded-xl px-4 py-3 text-lg font-medium text-brand-gold hover:bg-white/6"
+                onClick={() => setMenuOpen(false)}
+              >
+                Hello, {displayName}
+              </Link>
+              {isAdminRole(sessionUser.role) ? (
+                <Link
+                  href="/admin"
+                  className="min-h-[52px] rounded-xl px-4 py-3 text-lg font-medium text-brand-gold hover:bg-white/6"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Admin panel
+                </Link>
+              ) : null}
+              <button
+                type="button"
+                className="min-h-[52px] w-full rounded-xl px-4 py-3 text-left text-lg font-medium text-stone-400 hover:bg-white/6"
+                onClick={() => void handleSignOut()}
+              >
+                Sign out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="min-h-[52px] rounded-xl px-4 py-3 text-lg font-medium text-stone-300 hover:bg-white/6 hover:text-brand-gold"
+                onClick={() => setMenuOpen(false)}
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/signup"
+                className="min-h-[52px] rounded-xl px-4 py-3 text-lg font-semibold text-brand-gold hover:bg-white/6"
+                onClick={() => setMenuOpen(false)}
+              >
+                Sign up
+              </Link>
+            </>
+          )}
+          <div className="my-2 h-px bg-white/8" />
+          <button
+            type="button"
+            className="min-h-[52px] w-full rounded-xl px-4 py-3 text-left text-lg font-semibold text-brand-gold hover:bg-white/6"
+            onClick={() => {
+              setMenuOpen(false);
+              goToCart();
+            }}
+          >
+            Cart {cartCount > 0 ? `(${cartCount})` : ""}
+          </button>
+        </nav>
+      </div>
+    ) : null}
+    </>
   );
 }
