@@ -184,7 +184,7 @@ export default function AdminDashboardPage() {
       <div>
         <h1 className="font-serif text-3xl italic text-stone-800 dark:text-stone-100">Dashboard</h1>
         <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-          Revenue cards use paid, fulfilment-eligible orders (same basis as charts).
+          Net sales (excl. tax & shipping), paid date in IST — aligned with Woo Analytics.
         </p>
       </div>
 

@@ -5,6 +5,13 @@ import { z } from "zod";
 
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
+import {
+  addDaysInstant,
+  dateKeyKolkata,
+  monthKeyKolkata,
+  startOfDayKolkata,
+  startOfMonthKolkata
+} from "../../utils/reporting-time";
 import { fetchRazorpayOrderPayments } from "../payments/razorpay";
 import { completePaidOrder } from "../payments/razorpay.verify";
 import { onOrderEnteredProcessing } from "../shipping/orderLifecycle";
@@ -78,18 +85,66 @@ function buildMonthlySeries(
   return keys.map((month) => ({ month, revenueInPaise: byMonth.get(month) ?? 0 }));
 }
 
+function buildDailySeriesKolkata(
+  startDay: Date,
+  dayCount: number,
+  orders: { reportingTotalInInrPaise: number | null; placedAt: Date | null; createdAt: Date }[]
+): Array<{ date: string; revenueInPaise: number }> {
+  const byDay = new Map<string, number>();
+  for (let i = 0; i < dayCount; i++) {
+    const k = dateKeyKolkata(addDaysInstant(startDay, i));
+    byDay.set(k, 0);
+  }
+  for (const o of orders) {
+    const dt = o.placedAt ?? o.createdAt;
+    const key = dateKeyKolkata(dt);
+    if (byDay.has(key)) {
+      byDay.set(key, (byDay.get(key) ?? 0) + (o.reportingTotalInInrPaise ?? 0));
+    }
+  }
+  return [...byDay.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, revenueInPaise]) => ({ date, revenueInPaise }));
+}
+
+function buildMonthlySeriesKolkata(
+  anchor: Date,
+  monthCount: number,
+  orders: { reportingTotalInInrPaise: number | null; placedAt: Date | null; createdAt: Date }[]
+): Array<{ month: string; revenueInPaise: number }> {
+  const keys: string[] = [];
+  for (let i = monthCount - 1; i >= 0; i--) {
+    const d = addUtcMonths(new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth(), 1)), -i);
+    keys.push(monthKeyKolkata(d));
+  }
+  const byMonth = new Map<string, number>();
+  for (const k of keys) byMonth.set(k, 0);
+  for (const o of orders) {
+    const dt = o.placedAt ?? o.createdAt;
+    const k = monthKeyKolkata(dt);
+    if (byMonth.has(k)) {
+      byMonth.set(k, (byMonth.get(k) ?? 0) + (o.reportingTotalInInrPaise ?? 0));
+    }
+  }
+  return keys.map((month) => ({ month, revenueInPaise: byMonth.get(month) ?? 0 }));
+}
+
 export async function dashboard(_req: Request, res: Response, next: NextFunction) {
   try {
     const now = new Date();
-    const today = startOfUtcDay(now);
-    const tomorrow = addUtcDays(today, 1);
-    const weekStart = addUtcDays(today, -6);
-    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-    const chart7Start = addUtcDays(today, -6);
-    const chart30Start = addUtcDays(today, -29);
+    const today = startOfDayKolkata(now);
+    const tomorrow = addDaysInstant(today, 1);
+    const weekStart = addDaysInstant(today, -6);
+    const monthStart = startOfMonthKolkata(now);
+    const chart7Start = addDaysInstant(today, -6);
+    const chart30Start = addDaysInstant(today, -29);
     const chart12mStart = addUtcMonths(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)), -11);
 
-    const revenueWhere = { deletedAt: null, status: { in: revenueStatuses } };
+    const revenueWhere = {
+      deletedAt: null as null,
+      status: { in: revenueStatuses },
+      reportingTotalInInrPaise: { not: null as null }
+    };
 
     const [
       revenueAgg,
@@ -109,28 +164,28 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
     ] = await Promise.all([
       prisma.order.aggregate({
         where: revenueWhere,
-        _sum: { grandTotalInPaise: true }
+        _sum: { reportingTotalInInrPaise: true }
       }),
       prisma.order.aggregate({
-        where: { ...revenueWhere, createdAt: { gte: today, lt: tomorrow } },
-        _sum: { grandTotalInPaise: true }
+        where: { ...revenueWhere, placedAt: { gte: today, lt: tomorrow } },
+        _sum: { reportingTotalInInrPaise: true }
       }),
       prisma.order.aggregate({
-        where: { ...revenueWhere, createdAt: { gte: weekStart } },
-        _sum: { grandTotalInPaise: true }
+        where: { ...revenueWhere, placedAt: { gte: weekStart } },
+        _sum: { reportingTotalInInrPaise: true }
       }),
       prisma.order.aggregate({
-        where: { ...revenueWhere, createdAt: { gte: monthStart } },
-        _sum: { grandTotalInPaise: true }
+        where: { ...revenueWhere, placedAt: { gte: monthStart } },
+        _sum: { reportingTotalInInrPaise: true }
       }),
       prisma.order.count({
-        where: { createdAt: { gte: today }, deletedAt: null }
+        where: { deletedAt: null, placedAt: { gte: today, lt: tomorrow } }
       }),
       prisma.order.count({
-        where: { createdAt: { gte: weekStart }, deletedAt: null }
+        where: { deletedAt: null, placedAt: { gte: weekStart } }
       }),
       prisma.order.count({
-        where: { createdAt: { gte: monthStart }, deletedAt: null }
+        where: { deletedAt: null, placedAt: { gte: monthStart } }
       }),
       prisma.product.groupBy({
         by: ["status"],
@@ -151,16 +206,16 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
         }
       }),
       prisma.order.findMany({
-        where: { ...revenueWhere, createdAt: { gte: chart7Start } },
-        select: { grandTotalInPaise: true, createdAt: true }
+        where: { ...revenueWhere, placedAt: { gte: chart7Start } },
+        select: { reportingTotalInInrPaise: true, placedAt: true, createdAt: true }
       }),
       prisma.order.findMany({
-        where: { ...revenueWhere, createdAt: { gte: chart30Start } },
-        select: { grandTotalInPaise: true, createdAt: true }
+        where: { ...revenueWhere, placedAt: { gte: chart30Start } },
+        select: { reportingTotalInInrPaise: true, placedAt: true, createdAt: true }
       }),
       prisma.order.findMany({
-        where: { ...revenueWhere, createdAt: { gte: chart12mStart } },
-        select: { grandTotalInPaise: true, createdAt: true }
+        where: { ...revenueWhere, placedAt: { gte: chart12mStart } },
+        select: { reportingTotalInInrPaise: true, placedAt: true, createdAt: true }
       }),
       prisma.orderItem.findMany({
         where: {
@@ -203,9 +258,9 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
     });
     const lowStock = inventoryCandidates.filter((inv) => inv.onHand <= inv.lowStockThreshold).slice(0, 25);
 
-    const revenueByDayLast7 = buildDailySeries(chart7Start, 7, ordersForChart7);
-    const revenueByDayLast30 = buildDailySeries(chart30Start, 30, ordersForChart30);
-    const revenueByMonthLast12 = buildMonthlySeries(now, 12, ordersForChart12m);
+    const revenueByDayLast7 = buildDailySeriesKolkata(chart7Start, 7, ordersForChart7);
+    const revenueByDayLast30 = buildDailySeriesKolkata(chart30Start, 30, ordersForChart30);
+    const revenueByMonthLast12 = buildMonthlySeriesKolkata(now, 12, ordersForChart12m);
 
     const byProduct = new Map<string, { name: string; units: number }>();
     for (const it of velocityItems) {
@@ -264,11 +319,11 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
     res.json({
       success: true,
       data: {
-        totalRevenueInPaise: revenueAgg._sum.grandTotalInPaise ?? 0,
+        totalRevenueInPaise: revenueAgg._sum.reportingTotalInInrPaise ?? 0,
         revenueInPaise: {
-          today: revenueTodayAgg._sum.grandTotalInPaise ?? 0,
-          last7Days: revenueWeekAgg._sum.grandTotalInPaise ?? 0,
-          thisMonth: revenueMonthAgg._sum.grandTotalInPaise ?? 0
+          today: revenueTodayAgg._sum.reportingTotalInInrPaise ?? 0,
+          last7Days: revenueWeekAgg._sum.reportingTotalInInrPaise ?? 0,
+          thisMonth: revenueMonthAgg._sum.reportingTotalInInrPaise ?? 0
         },
         ordersCount: {
           today: countsToday,

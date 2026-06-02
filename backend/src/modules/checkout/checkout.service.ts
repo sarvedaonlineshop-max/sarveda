@@ -6,6 +6,7 @@ import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { schedulePaymentTimeout } from "../../jobs/paymentTimeoutJob";
 import { generateOrderNumber } from "../../utils/orderNumber";
+import { reportingNetSalesInrPaiseFromOrder } from "../../utils/money";
 import { createPayPalOrder } from "../payments/paypal";
 import { createOrder, getRazorpayKeyId } from "../payments/razorpay";
 import { createStripeCheckoutSession } from "../payments/stripe.checkout";
@@ -374,7 +375,13 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
         grandTotalInPaise,
         currency: orderCurrency,
         shippingZone: zone,
-        couponCode: appliedCoupon?.code ?? null
+        couponCode: appliedCoupon?.code ?? null,
+        reportingTotalInInrPaise: reportingNetSalesInrPaiseFromOrder(
+          orderCurrency,
+          grandTotalInPaise,
+          shippingInPaise,
+          taxInPaise
+        )
       }
     });
 

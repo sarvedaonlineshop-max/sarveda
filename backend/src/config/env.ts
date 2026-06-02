@@ -78,6 +78,16 @@ const shippingEnvSchema = z.object({
 });
 
 export type ShippingEnv = z.infer<typeof shippingEnvSchema>;
+const zohoEnvSchema = z.object({
+  ZOHO_CLIENT_ID: z.string().min(1),
+  ZOHO_CLIENT_SECRET: z.string().min(1),
+  ZOHO_REFRESH_TOKEN: z.string().min(1),
+  ZOHO_ORGANIZATION_ID: z.string().min(1),
+  ZOHO_BOOKS_BASE_URL: z.string().url().default("https://www.zohoapis.in/books/v3"),
+  ZOHO_ACCOUNTS_URL: z.string().url().default("https://accounts.zoho.in")
+});
+
+export type ZohoEnv = z.infer<typeof zohoEnvSchema>;
 
 export const shippingEnv: ShippingEnv = shippingEnvSchema.parse({
   DELHIVERY_API_KEY: process.env.DELHIVERY_API_KEY,
@@ -91,4 +101,13 @@ export const shippingEnv: ShippingEnv = shippingEnvSchema.parse({
   INDIA_CHECKOUT_ONLY: process.env.INDIA_CHECKOUT_ONLY,
   SHIPROCKET_WEBHOOK_HEADER: process.env.SHIPROCKET_WEBHOOK_HEADER,
   SHIPROCKET_WEBHOOK_SECRET: process.env.SHIPROCKET_WEBHOOK_SECRET
+});
+
+export const zohoEnv: ZohoEnv = zohoEnvSchema.parse({
+  ZOHO_CLIENT_ID: process.env.ZOHO_CLIENT_ID,
+  ZOHO_CLIENT_SECRET: process.env.ZOHO_CLIENT_SECRET,
+  ZOHO_REFRESH_TOKEN: process.env.ZOHO_REFRESH_TOKEN,
+  ZOHO_ORGANIZATION_ID: process.env.ZOHO_ORGANIZATION_ID,
+  ZOHO_BOOKS_BASE_URL: process.env.ZOHO_BOOKS_BASE_URL,
+  ZOHO_ACCOUNTS_URL: process.env.ZOHO_ACCOUNTS_URL
 });

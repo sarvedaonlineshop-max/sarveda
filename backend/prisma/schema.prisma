@@ -256,6 +256,12 @@ model Order {
   notes             String?
   ipCountry         String?
   placedAt          DateTime?
+  zohoInvoiceId     String?
+  zohoInvoiceNo     String?
+  zohoSyncedAt      DateTime?
+  zohoSyncError     String?
+  /// INR paise for admin revenue (FX-normalized; matches Woo Analytics base currency)
+  reportingTotalInInrPaise Int?
   deletedAt         DateTime?
   /// Last courier/shipment integration failure (e.g. Delhivery create); cleared on success.
   shippingLastError   String?   @db.Text

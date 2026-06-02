@@ -1,8 +1,10 @@
 import type { Prisma } from "@prisma/client";
 
 import { prisma } from "../../config/db";
+import { logger } from "../../config/logger";
 import { confirmStockTx } from "../orders/orders.service";
 import { afterOrderPaid } from "../orders/afterPaid";
+import { createZohoInvoiceForOrder } from "../zoho";
 
 /** Mark order paid after Stripe checkout.session.completed (payment row id in session metadata). */
 export async function completeStripePaidOrder(
@@ -66,5 +68,8 @@ export async function completeStripePaidOrder(
   });
 
   await afterOrderPaid(payment.orderId);
+  createZohoInvoiceForOrder(payment.orderId).catch((err) =>
+    logger.error("Zoho invoice failed after Stripe", { orderId: payment.orderId, err })
+  );
   return { orderNumber: payment.order.orderNumber };
 }

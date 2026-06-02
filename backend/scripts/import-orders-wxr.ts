@@ -9,6 +9,7 @@ import dotenv from "dotenv";
 import path from "path";
 
 import { assertFile, may30 } from "./migration-paths";
+import { reportingNetSalesInrPaiseFromOrder } from "../src/utils/money";
 import {
   mapPaymentProvider,
   mapWooOrderStatus,
@@ -64,7 +65,8 @@ function parseOrderBlock(block: string) {
       new Date(parseIntSafe(meta._date_paid) * 1000)
     : null;
 
-  const placedAt = new Date(cdata("wp:post_date", block) || Date.now());
+  const postDate = new Date(cdata("wp:post_date", block) || Date.now());
+  const orderPlacedAt = paidAt ?? postDate;
 
   const billingName = [meta._billing_first_name, meta._billing_last_name].filter(Boolean).join(" ").trim() || "Customer";
 
@@ -94,8 +96,9 @@ function parseOrderBlock(block: string) {
     grandTotalInPaise: grandTotal,
     couponCode: meta._coupon_codes || meta.coupon_code || null,
     notes: meta._customer_note || null,
-    placedAt: paidAt ?? placedAt,
-    createdAt: placedAt,
+    placedAt: orderPlacedAt,
+    createdAt: orderPlacedAt,
+    reportingTotalInInrPaise: reportingNetSalesInrPaiseFromOrder(currency, grandTotal, shipping, tax),
     ...mapped,
     provider: mapPaymentProvider(meta._payment_method ?? ""),
     providerPaymentId:
@@ -176,6 +179,7 @@ async function main() {
             notes: o.notes,
             placedAt: o.placedAt,
             createdAt: o.createdAt,
+            reportingTotalInInrPaise: o.reportingTotalInInrPaise,
             wooLegacyMeta: o.wooLegacyMeta,
             addresses: {
               create: [
@@ -199,9 +203,10 @@ async function main() {
             paymentStatus: o.paymentStatus,
             fulfillmentStatus: o.fulfillmentStatus,
             grandTotalInPaise: o.grandTotalInPaise,
+            reportingTotalInInrPaise: o.reportingTotalInInrPaise,
+            placedAt: o.placedAt,
+            createdAt: o.createdAt,
             wooLegacyMeta: o.wooLegacyMeta
-          }
-        });
 
         if (
           o.paymentStatus === PaymentStatus.CAPTURED ||
