@@ -16,6 +16,11 @@ const nextConfig = {
   async rewrites() {
     const dest = String(backendBase).replace(/\/$/, "");
     return [
+      // Zoho Books — explicit proxy to EC2 (auth handled per-route on Express).
+      {
+        source: "/api/zoho/:path*",
+        destination: `${dest}/api/zoho/:path*`,
+      },
       {
         source: "/api/:path*",
         destination: `${dest}/api/:path*`,

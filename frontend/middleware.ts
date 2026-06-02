@@ -39,6 +39,11 @@ function ensurePricingZoneCookie(request: NextRequest, response: NextResponse): 
 export function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
+  // Zoho API: always pass through to Next rewrites / route handlers (no edge auth).
+  if (pathname === "/api/zoho" || pathname.startsWith("/api/zoho/")) {
+    return NextResponse.next();
+  }
+
   if (pathname === "/shop" || pathname === "/shop/") {
     const category = searchParams.get("category")?.trim();
     if (category) {
@@ -58,6 +63,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/api/zoho/:path*",
     "/shop",
     /*
      * Storefront pages (skip api, admin, static assets).
