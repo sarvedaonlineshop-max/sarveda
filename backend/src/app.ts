@@ -151,6 +151,16 @@ app.get("/api/zoho/test/stock-sync", async (_req: Request, res: Response, next: 
     next(err);
   }
 });
+// Public Zoho invoice test endpoint (temporary).
+app.post("/api/zoho/test/invoice/:orderId", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { createZohoInvoiceForOrder } = await import("./modules/zoho");
+    await createZohoInvoiceForOrder(req.params.orderId);
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
 app.use("/api/zoho", zohoRouter);
 
 app.use((_req: Request, _res: Response, next: NextFunction) => {
