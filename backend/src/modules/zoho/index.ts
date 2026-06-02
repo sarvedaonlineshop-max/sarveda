@@ -30,6 +30,16 @@ zohoRouter.post("/sync/stock", requireAdmin, async (_req, res, next) => {
   }
 });
 
+// Public test endpoint — remove after testing
+zohoRouter.get("/test/stock-sync", async (_req, res, next) => {
+  try {
+    const result = await syncStockFromZoho();
+    res.json({ success: true, ...result });
+  } catch (err) {
+    next(err);
+  }
+});
+
 zohoRouter.post("/sync/invoice/:orderId", requireAdmin, async (req, res, next) => {
   try {
     await createZohoInvoiceForOrder(req.params.orderId);
