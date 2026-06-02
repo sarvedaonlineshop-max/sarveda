@@ -16,8 +16,7 @@ export async function createZohoInvoiceForOrder(orderId: string): Promise<void> 
         }
       },
       addresses: true,
-      customer: true,
-      payments: { orderBy: { createdAt: "asc" } }
+      customer: true
     }
   });
 
@@ -65,14 +64,7 @@ export async function createZohoInvoiceForOrder(orderId: string): Promise<void> 
       due_date: new Date().toISOString().slice(0, 10),
       line_items: lineItems,
       shipping_charge: order.shippingInPaise / 100,
-      discount: order.discountInPaise / 100,
-      notes: `Order ${order.orderNumber} via Sarveda Platform`,
-      terms: "Thank you for shopping with Sarveda!",
-      custom_fields: [
-        { label: "Sarveda Order ID", value: order.orderNumber },
-        { label: "Payment Method", value: order.payments[0]?.provider ?? "" },
-        { label: "Currency", value: order.currency }
-      ]
+      discount: order.discountInPaise / 100
     });
 
     await prisma.order.update({
