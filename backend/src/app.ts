@@ -34,7 +34,7 @@ import { shippingRoutes } from "./modules/shipping";
 import { chatRoutes } from "./modules/chat/chat.routes";
 import { contactRoutes } from "./modules/contact/contact.routes";
 import { testimonialsRoutes } from "./modules/testimonials/testimonials.routes";
-import { zohoRouter } from "./modules/zoho";
+import { syncStockFromZoho, zohoRouter } from "./modules/zoho";
 
 configurePassport();
 
@@ -142,6 +142,15 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/testimonials", testimonialsRoutes);
 app.use("/api/admin", adminRoutes);
+// Public Zoho stock test endpoint (temporary; bypasses router-level admin checks).
+app.get("/api/zoho/test/stock-sync", async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await syncStockFromZoho();
+    res.json({ success: true, ...result });
+  } catch (err) {
+    next(err);
+  }
+});
 app.use("/api/zoho", zohoRouter);
 
 app.use((_req: Request, _res: Response, next: NextFunction) => {
