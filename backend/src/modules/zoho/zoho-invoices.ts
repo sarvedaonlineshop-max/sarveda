@@ -59,7 +59,7 @@ export async function createZohoInvoiceForOrder(orderId: string): Promise<void> 
       invoice: { invoice_id: string; invoice_number: string };
     }>("/invoices", {
       customer_id: contactId,
-      invoice_number: order.orderNumber,
+      reference_number: order.orderNumber,
       date: new Date().toISOString().slice(0, 10),
       due_date: new Date().toISOString().slice(0, 10),
       line_items: lineItems,
