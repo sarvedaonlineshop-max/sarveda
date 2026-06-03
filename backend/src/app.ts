@@ -34,7 +34,8 @@ import { shippingRoutes } from "./modules/shipping";
 import { chatRoutes } from "./modules/chat/chat.routes";
 import { contactRoutes } from "./modules/contact/contact.routes";
 import { testimonialsRoutes } from "./modules/testimonials/testimonials.routes";
-import { syncStockFromZoho, zohoRouter } from "./modules/zoho";
+import { zohoRouter } from "./modules/zoho";
+import { handleZohoWebhook } from "./modules/zoho/zoho-webhook";
 
 configurePassport();
 
@@ -142,24 +143,9 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/testimonials", testimonialsRoutes);
 app.use("/api/admin", adminRoutes);
-// Public Zoho stock test endpoint (temporary; bypasses router-level admin checks).
-app.get("/api/zoho/test/stock-sync", async (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    const result = await syncStockFromZoho();
-    res.json({ success: true, ...result });
-  } catch (err) {
-    next(err);
-  }
-});
-// Public Zoho invoice test endpoint (temporary).
-app.post("/api/zoho/test/invoice/:orderId", async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { createZohoInvoiceForOrder } = await import("./modules/zoho");
-    await createZohoInvoiceForOrder(req.params.orderId);
-    res.json({ success: true });
-  } catch (err) {
-    next(err);
-  }
+// Public — Zoho calls this, no auth needed
+app.post("/api/zoho/webhook", (req: Request, res: Response, next: NextFunction) => {
+  void handleZohoWebhook(req, res).catch(next);
 });
 app.use("/api/zoho", zohoRouter);
 

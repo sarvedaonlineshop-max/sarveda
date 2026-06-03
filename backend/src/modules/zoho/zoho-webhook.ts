@@ -1,0 +1,56 @@
+import type { Request, Response } from "express";
+
+import { prisma } from "../../config/db";
+import { logger } from "../../config/logger";
+
+export async function handleZohoWebhook(req: Request, res: Response): Promise<void> {
+  try {
+    const payload = req.body;
+    logger.info("Zoho webhook received", { payload });
+
+    const eventType = payload?.event_type || payload?.action;
+
+    if (
+      eventType === "item_updated" ||
+      eventType === "item.updated" ||
+      payload?.data?.item
+    ) {
+      const item = payload?.data?.item || payload?.item;
+      const sku = item?.sku;
+      const stockOnHand = parseFloat(item?.stock_on_hand ?? "0");
+
+      if (sku) {
+        await syncSingleItemStock(sku, stockOnHand);
+      }
+    }
+
+    res.status(200).json({ success: true });
+  } catch (err) {
+    logger.error("Zoho webhook error", { err });
+    res.status(200).json({ success: true });
+  }
+}
+
+async function syncSingleItemStock(sku: string, stockOnHand: number): Promise<void> {
+  const variant = await prisma.productVariant.findFirst({
+    where: { sku }
+  });
+
+  if (!variant) {
+    logger.warn("Zoho webhook: SKU not found in Sarveda", { sku });
+    return;
+  }
+
+  const onHand = Math.max(0, Math.floor(stockOnHand));
+  await prisma.inventory.upsert({
+    where: { variantId: variant.id },
+    create: { variantId: variant.id, onHand },
+    update: { onHand }
+  });
+
+  logger.info("Zoho webhook: stock updated", {
+    sku,
+    stockOnHand: onHand,
+    variantId: variant.id
+  });
+}

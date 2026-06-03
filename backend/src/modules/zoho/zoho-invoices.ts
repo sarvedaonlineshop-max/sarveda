@@ -62,6 +62,7 @@ export async function createZohoInvoiceForOrder(orderId: string): Promise<void> 
       reference_number: order.orderNumber,
       date: new Date().toISOString().slice(0, 10),
       due_date: new Date().toISOString().slice(0, 10),
+      is_inclusive_tax: true,
       line_items: lineItems,
       shipping_charge: order.shippingInPaise / 100,
       discount: order.discountInPaise / 100
@@ -76,6 +77,12 @@ export async function createZohoInvoiceForOrder(orderId: string): Promise<void> 
         zohoSyncError: null
       }
     });
+
+    try {
+      await zohoPost(`/invoices/${result.invoice.invoice_id}/status/sent`, {});
+    } catch (err) {
+      logger.warn("Could not mark invoice as sent", { err });
+    }
 
     logger.info("Zoho invoice created", {
       orderId,
