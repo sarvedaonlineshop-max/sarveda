@@ -24,7 +24,7 @@ zohoRouter.get("/status", async (_req, res) => {
 zohoRouter.post("/sync/stock", requireAdmin, async (_req, res, next) => {
   try {
     const result = await syncStockFromZoho();
-    res.json({ success: true, ...result });
+    res.json({ success: true, data: result });
   } catch (err) {
     next(err);
   }

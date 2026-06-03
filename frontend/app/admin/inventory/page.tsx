@@ -5,7 +5,11 @@ import { useCallback, useEffect, useState } from "react";
 
 import { AdminPagination } from "@/components/admin/AdminPagination";
 import type { InventoryRow } from "@/lib/admin-api";
-import { fetchAdminInventory, patchAdminInventoryVariant } from "@/lib/admin-api";
+import {
+  fetchAdminInventory,
+  patchAdminInventoryVariant,
+  syncStockFromZohoAdmin
+} from "@/lib/admin-api";
 
 const PAGE_SIZE = 25;
 
@@ -15,7 +19,19 @@ export default function AdminInventoryPage() {
   const [page, setPage] = useState(1);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
+  const [zohoSyncing, setZohoSyncing] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; error?: boolean } | null>(null);
+
+  const pushToast = useCallback((message: string, error = false) => {
+    setToast({ message, error });
+  }, []);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 5200);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   const load = useCallback(async () => {
     setErr(null);
@@ -55,13 +71,61 @@ export default function AdminInventoryPage() {
     }
   }
 
+  async function syncFromZoho() {
+    setZohoSyncing(true);
+    setErr(null);
+    try {
+      const result = await syncStockFromZohoAdmin();
+      pushToast(`✅ Synced ${result.synced} products from Zoho Books`);
+      await load();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Zoho stock sync failed";
+      pushToast(message, true);
+    } finally {
+      setZohoSyncing(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-serif text-3xl italic text-stone-800 dark:text-stone-100">Inventory</h1>
-        <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-          One row per variant (SKU). Adjust physical stock and watch low-stock badges.
-        </p>
+      {toast ? (
+        <div
+          className={`fixed bottom-6 left-1/2 z-[110] max-w-md -translate-x-1/2 rounded-xl border px-4 py-3 text-sm shadow-lg ${
+            toast.error
+              ? "border-red-300 bg-red-950 text-red-50 dark:border-red-800"
+              : "border-stone-300 bg-stone-900 text-amber-50 dark:border-stone-600"
+          }`}
+          role="status"
+        >
+          {toast.message}
+        </div>
+      ) : null}
+
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-serif text-3xl italic text-stone-800 dark:text-stone-100">Inventory</h1>
+          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+            One row per variant (SKU). Adjust physical stock and watch low-stock badges.
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={zohoSyncing}
+          onClick={() => void syncFromZoho()}
+          className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-stone-900 hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {zohoSyncing ? (
+            <>
+              <span
+                className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-stone-900 border-t-transparent"
+                aria-hidden
+              />
+              Syncing…
+            </>
+          ) : (
+            "Sync from Zoho"
+          )}
+        </button>
       </div>
 
       <aside className="rounded-xl border border-stone-200 bg-stone-50 p-4 text-sm text-stone-700 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300">

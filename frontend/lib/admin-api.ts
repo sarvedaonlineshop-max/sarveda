@@ -495,6 +495,16 @@ export function patchAdminInventoryVariant(variantId: string, onHand: number) {
   );
 }
 
+export type ZohoStockSyncResult = {
+  synced: number;
+  errors: number;
+  skipped: number;
+};
+
+export function syncStockFromZohoAdmin() {
+  return adminFetch<ZohoStockSyncResult>("/api/zoho/sync/stock", { method: "POST" });
+}
+
 export type ReconciliationRow = {
   orderId: string;
   orderNumber: string;
