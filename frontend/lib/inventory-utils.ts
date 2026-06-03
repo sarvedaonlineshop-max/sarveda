@@ -228,6 +228,43 @@ export function groupRowsByProduct(rows: InventoryRow[]): ProductInventoryGroup[
   return groups.sort((a, b) => a.productName.localeCompare(b.productName));
 }
 
+/** Group variants by product, preserving the order products first appear in `rows` (e.g. after sort/filter). */
+export function groupRowsByProductInOrder(rows: InventoryRow[]): ProductInventoryGroup[] {
+  const map = new Map<string, ProductInventoryGroup>();
+  const order: string[] = [];
+
+  for (const r of rows) {
+    let g = map.get(r.productId);
+    if (!g) {
+      g = {
+        productId: r.productId,
+        productName: r.productName,
+        productSlug: r.productSlug,
+        rows: [],
+        variantCount: 0,
+        totalAvailable: 0,
+        totalReserved: 0,
+        lowCount: 0,
+        outCount: 0,
+        zohoUnmatched: 0,
+        zohoMatched: 0
+      };
+      map.set(r.productId, g);
+      order.push(r.productId);
+    }
+    g.rows.push(r);
+    g.variantCount++;
+    g.totalAvailable += r.available;
+    g.totalReserved += r.reserved;
+    if (stockStatus(r) === "low_stock") g.lowCount++;
+    if (stockStatus(r) === "out_of_stock") g.outCount++;
+    if (r.inZohoBooks === false) g.zohoUnmatched++;
+    if (r.inZohoBooks === true) g.zohoMatched++;
+  }
+
+  return order.map((id) => map.get(id)!);
+}
+
 export function groupRowsByCategory(rows: InventoryRow[]): CategoryGroup[] {
   const map = new Map<string, CategoryGroup>();
   for (const r of rows) {
