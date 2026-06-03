@@ -2,6 +2,7 @@ import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 
 import { zohoGet } from "./zoho-client";
+import { recordZohoStockSync } from "./zoho-stock-sync-cache";
 
 interface ZohoItem {
   item_id: string;
@@ -19,6 +20,7 @@ export async function syncStockFromZoho(): Promise<{
   let synced = 0;
   let errors = 0;
   let skipped = 0;
+  const zohoSkus = new Set<string>();
   let page = 1;
   let hasMore = true;
 
@@ -33,6 +35,8 @@ export async function syncStockFromZoho(): Promise<{
         skipped++;
         continue;
       }
+
+      zohoSkus.add(item.sku.trim());
 
       try {
         const variant = await prisma.productVariant.findUnique({
@@ -59,6 +63,8 @@ export async function syncStockFromZoho(): Promise<{
     hasMore = res.page_context?.has_more_page ?? false;
     page++;
   }
+
+  await recordZohoStockSync(zohoSkus);
 
   logger.info("Zoho stock sync complete", { synced, errors, skipped });
   return { synced, errors, skipped };

@@ -456,6 +456,12 @@ export function fetchCatalogGaps(signal?: AbortSignal) {
   return adminFetch<CatalogGapsReport>(`/api/admin/catalog/gaps`, { signal });
 }
 
+export type InventoryCategoryRef = {
+  slug: string;
+  name: string;
+  position: number;
+};
+
 export type InventoryRow = {
   inventoryId: string;
   variantId: string;
@@ -465,32 +471,65 @@ export type InventoryRow = {
   productSlug: string;
   productStatus: string;
   variantLabel: string | null;
+  categories: InventoryCategoryRef[];
+  primaryCategorySlug: string | null;
+  primaryCategoryName: string;
   onHand: number;
   reserved: number;
   available: number;
   lowStockThreshold: number;
   low: boolean;
+  inZohoBooks: boolean | null;
 };
 
 export type InventoryListData = {
   items: InventoryRow[];
   pagination: { page: number; limit: number; total: number; totalPages: number };
+  meta: {
+    lastZohoStockSyncAt: string | null;
+    zohoSkuAuditAvailable: boolean;
+  };
 };
 
-export function fetchAdminInventory(params?: { page?: number; limit?: number }) {
+export function fetchAdminInventory(params?: { page?: number; limit?: number; all?: boolean }) {
   const q = new URLSearchParams();
-  if (params?.page) q.set("page", String(params.page));
-  if (params?.limit) q.set("limit", String(params.limit));
+  if (params?.all) q.set("all", "1");
+  else {
+    if (params?.page) q.set("page", String(params.page));
+    if (params?.limit) q.set("limit", String(params.limit));
+  }
   const qs = q.toString();
   return adminFetch<InventoryListData>(`/api/admin/inventory${qs ? `?${qs}` : ""}`);
 }
 
-export function patchAdminInventoryVariant(variantId: string, onHand: number) {
-  return adminFetch<{ inventory: Record<string, unknown> }>(
+export function patchAdminInventoryVariant(
+  variantId: string,
+  patch: { onHand?: number; lowStockThreshold?: number }
+) {
+  return adminFetch<{ inventory: InventoryRow | null }>(
     `/api/admin/inventory/${variantId}`,
     {
       method: "PATCH",
-      body: JSON.stringify({ onHand })
+      body: JSON.stringify(patch)
+    }
+  );
+}
+
+export function bulkPatchAdminInventory(
+  updates: Array<{ variantId: string; onHand?: number; lowStockThreshold?: number }>
+) {
+  return adminFetch<{ updated: number; requested: number }>(`/api/admin/inventory/bulk`, {
+    method: "POST",
+    body: JSON.stringify({ updates })
+  });
+}
+
+export function importAdminInventoryCsv(rows: Array<{ sku: string; onHand: number }>) {
+  return adminFetch<{ updated: number; notFound: number; total: number }>(
+    `/api/admin/inventory/import`,
+    {
+      method: "POST",
+      body: JSON.stringify({ rows })
     }
   );
 }

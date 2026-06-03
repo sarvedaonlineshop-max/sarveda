@@ -15,6 +15,7 @@ import {
 import { fetchRazorpayOrderPayments } from "../payments/razorpay";
 import { completePaidOrder } from "../payments/razorpay.verify";
 import { onOrderEnteredProcessing } from "../shipping/orderLifecycle";
+import { getZohoStockSyncMeta } from "../zoho/zoho-stock-sync-cache";
 
 const revenueStatuses: OrderStatus[] = [
   "PAID",
@@ -765,11 +766,83 @@ export async function patchOrderStatus(req: Request, res: Response, next: NextFu
   }
 }
 
+const inventoryInclude = {
+  variant: {
+    include: {
+      productRel: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          status: true,
+          categories: {
+            include: {
+              category: { select: { slug: true, name: true, position: true } }
+            }
+          }
+        }
+      },
+      attributeValues: {
+        include: {
+          attributeValue: {
+            include: { attribute: true }
+          }
+        }
+      }
+    }
+  }
+} as const;
+
+type InventoryRowDb = Awaited<
+  ReturnType<typeof prisma.inventory.findMany<{ include: typeof inventoryInclude }>>
+>[number];
+
+function mapInventoryRow(
+  inv: InventoryRowDb,
+  zohoSkuSet: Set<string> | null
+) {
+  const labels = inv.variant.attributeValues
+    .map((av) => `${av.attributeValue.attribute.name}: ${av.attributeValue.value}`)
+    .join(" · ");
+  const available = Math.max(0, inv.onHand - inv.reserved);
+  const low = inv.onHand > 0 && inv.onHand <= inv.lowStockThreshold;
+  const categories = inv.variant.productRel.categories
+    .map((pc) => ({
+      slug: pc.category.slug,
+      name: pc.category.name,
+      position: pc.category.position
+    }))
+    .sort((a, b) => a.position - b.position || a.name.localeCompare(b.name));
+
+  return {
+    inventoryId: inv.id,
+    variantId: inv.variantId,
+    sku: inv.variant.sku,
+    productId: inv.variant.productRel.id,
+    productName: inv.variant.productRel.name,
+    productSlug: inv.variant.productRel.slug,
+    productStatus: inv.variant.productRel.status,
+    variantLabel: labels || null,
+    categories,
+    primaryCategorySlug: categories[0]?.slug ?? null,
+    primaryCategoryName: categories[0]?.name ?? "Uncategorized",
+    onHand: inv.onHand,
+    reserved: inv.reserved,
+    available,
+    lowStockThreshold: inv.lowStockThreshold,
+    low,
+    inZohoBooks: zohoSkuSet ? zohoSkuSet.has(inv.variant.sku) : null
+  };
+}
+
 export async function inventoryList(req: Request, res: Response, next: NextFunction) {
   try {
+    const loadAll = req.query.all === "1" || req.query.all === "true";
     const page = Math.max(1, parseInt(String(req.query.page ?? "1"), 10) || 1);
-    const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit ?? "25"), 10) || 25));
-    const skip = (page - 1) * limit;
+    const limit = loadAll
+      ? 10000
+      : Math.min(100, Math.max(1, parseInt(String(req.query.limit ?? "25"), 10) || 25));
+    const skip = loadAll ? 0 : (page - 1) * limit;
 
     const where = {
       variant: {
@@ -777,86 +850,86 @@ export async function inventoryList(req: Request, res: Response, next: NextFunct
       }
     };
 
-    const [total, rows] = await prisma.$transaction([
+    const [{ lastSyncAt, skuSet: zohoSkuSet }, total, rows] = await Promise.all([
+      getZohoStockSyncMeta(),
       prisma.inventory.count({ where }),
       prisma.inventory.findMany({
         where,
         orderBy: [{ onHand: "asc" }],
         skip,
         take: limit,
-        include: {
-          variant: {
-            include: {
-              productRel: {
-                select: {
-                  id: true,
-                  name: true,
-                  slug: true,
-                  status: true
-                }
-              },
-              attributeValues: {
-                include: {
-                  attributeValue: {
-                    include: { attribute: true }
-                  }
-                }
-              }
-            }
-          }
-        }
+        include: inventoryInclude
       })
     ]);
 
-    const items = rows.map((inv) => {
-      const labels = inv.variant.attributeValues
-        .map((av) => `${av.attributeValue.attribute.name}: ${av.attributeValue.value}`)
-        .join(" · ");
-      const available = Math.max(0, inv.onHand - inv.reserved);
-      const low = inv.onHand <= inv.lowStockThreshold;
-      return {
-        inventoryId: inv.id,
-        variantId: inv.variantId,
-        sku: inv.variant.sku,
-        productId: inv.variant.productRel.id,
-        productName: inv.variant.productRel.name,
-        productSlug: inv.variant.productRel.slug,
-        productStatus: inv.variant.productRel.status,
-        variantLabel: labels || null,
-        onHand: inv.onHand,
-        reserved: inv.reserved,
-        available,
-        lowStockThreshold: inv.lowStockThreshold,
-        low
-      };
-    });
+    const items = rows.map((inv) => mapInventoryRow(inv, zohoSkuSet));
 
-    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const totalPages = loadAll ? 1 : Math.max(1, Math.ceil(total / limit));
     res.json({
       success: true,
-      data: { items, pagination: { page, limit, total, totalPages } }
+      data: {
+        items,
+        pagination: { page: loadAll ? 1 : page, limit, total, totalPages },
+        meta: {
+          lastZohoStockSyncAt: lastSyncAt,
+          zohoSkuAuditAvailable: zohoSkuSet !== null
+        }
+      }
     });
   } catch (err) {
     next(err);
   }
 }
 
+export const patchInventorySchema = z
+  .object({
+    onHand: z.number().int().min(0).optional(),
+    lowStockThreshold: z.number().int().min(0).optional()
+  })
+  .refine((d) => d.onHand !== undefined || d.lowStockThreshold !== undefined, {
+    message: "Provide onHand and/or lowStockThreshold"
+  });
+
+export const bulkInventoryPatchSchema = z.object({
+  updates: z
+    .array(
+      z
+        .object({
+          variantId: z.string().uuid(),
+          onHand: z.number().int().min(0).optional(),
+          lowStockThreshold: z.number().int().min(0).optional()
+        })
+        .refine((u) => u.onHand !== undefined || u.lowStockThreshold !== undefined, {
+          message: "Each update needs onHand and/or lowStockThreshold"
+        })
+    )
+    .min(1)
+    .max(500)
+});
+
+export const inventoryImportSchema = z.object({
+  rows: z
+    .array(
+      z.object({
+        sku: z.string().min(1).max(120),
+        onHand: z.number().int().min(0)
+      })
+    )
+    .min(1)
+    .max(5000)
+});
+
 export async function patchInventory(req: Request, res: Response, next: NextFunction) {
   try {
     const { variantId } = req.params;
-    const onHand = Number(req.body?.onHand);
-    if (!Number.isFinite(onHand) || onHand < 0) {
-      res.status(400).json({
-        success: false,
-        error: "Invalid onHand",
-        code: "INVALID_BODY"
-      });
-      return;
-    }
+    const body = req.body as z.infer<typeof patchInventorySchema>;
+    const data: { onHand?: number; lowStockThreshold?: number } = {};
+    if (body.onHand !== undefined) data.onHand = body.onHand;
+    if (body.lowStockThreshold !== undefined) data.lowStockThreshold = body.lowStockThreshold;
 
     const inv = await prisma.inventory.updateMany({
       where: { variantId },
-      data: { onHand: Math.floor(onHand) }
+      data
     });
     if (inv.count === 0) {
       res.status(404).json({
@@ -869,23 +942,72 @@ export async function patchInventory(req: Request, res: Response, next: NextFunc
 
     const row = await prisma.inventory.findUnique({
       where: { variantId },
-      include: {
-        variant: {
-          include: {
-            productRel: { select: { name: true, slug: true } },
-            attributeValues: {
-              include: {
-                attributeValue: {
-                  include: { attribute: true }
-                }
-              }
-            }
-          }
-        }
-      }
+      include: inventoryInclude
     });
 
-    res.json({ success: true, data: { inventory: row } });
+    const { skuSet } = await getZohoStockSyncMeta();
+    res.json({
+      success: true,
+      data: { inventory: row ? mapInventoryRow(row, skuSet) : null }
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function bulkPatchInventory(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { updates } = req.body as z.infer<typeof bulkInventoryPatchSchema>;
+    let updated = 0;
+
+    for (const u of updates) {
+      const data: { onHand?: number; lowStockThreshold?: number } = {};
+      if (u.onHand !== undefined) data.onHand = u.onHand;
+      if (u.lowStockThreshold !== undefined) data.lowStockThreshold = u.lowStockThreshold;
+      const result = await prisma.inventory.updateMany({
+        where: { variantId: u.variantId },
+        data
+      });
+      updated += result.count;
+    }
+
+    res.json({ success: true, data: { updated, requested: updates.length } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function importInventoryRows(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { rows } = req.body as z.infer<typeof inventoryImportSchema>;
+    let updated = 0;
+    let notFound = 0;
+
+    for (const row of rows) {
+      const sku = row.sku.trim();
+      if (!sku) continue;
+
+      const variant = await prisma.productVariant.findUnique({
+        where: { sku },
+        select: { id: true }
+      });
+      if (!variant) {
+        notFound++;
+        continue;
+      }
+
+      await prisma.inventory.upsert({
+        where: { variantId: variant.id },
+        create: { variantId: variant.id, onHand: row.onHand },
+        update: { onHand: row.onHand }
+      });
+      updated++;
+    }
+
+    res.json({
+      success: true,
+      data: { updated, notFound, total: rows.length }
+    });
   } catch (err) {
     next(err);
   }

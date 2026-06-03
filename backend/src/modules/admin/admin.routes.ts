@@ -66,9 +66,19 @@ router.patch(
 router.get("/catalog/gaps", productsController.catalogGaps);
 
 router.get("/inventory", admin.inventoryList);
+router.post(
+  "/inventory/bulk",
+  validateBody(admin.bulkInventoryPatchSchema),
+  admin.bulkPatchInventory
+);
+router.post(
+  "/inventory/import",
+  validateBody(admin.inventoryImportSchema),
+  admin.importInventoryRows
+);
 router.patch(
   "/inventory/:variantId",
-  validateBody(z.object({ onHand: z.number().int().min(0) })),
+  validateBody(admin.patchInventorySchema),
   admin.patchInventory
 );
 
