@@ -11,12 +11,13 @@ import {
   patchAdminInventoryVariant,
   syncStockFromZohoAdmin
 } from "@/lib/admin-api";
-import { fetchCategoryTree } from "@/lib/api";
 import {
+  buildCategoryFilterOptions,
   computeInventoryStats,
   downloadCsv,
   formatRelativeTime,
   groupRowsByCategory,
+  groupRowsByProduct,
   inventoryToCsv,
   matchesStockFilter,
   parseInventoryImportCsv,
@@ -25,16 +26,6 @@ import {
   type SortKey,
   type StockFilter
 } from "@/lib/inventory-utils";
-import type { CategoryNode } from "@/lib/types";
-
-function flattenCategories(nodes: CategoryNode[]): { slug: string; name: string }[] {
-  const out: { slug: string; name: string }[] = [];
-  for (const n of nodes) {
-    out.push({ slug: n.slug, name: n.name });
-    if (n.children?.length) out.push(...flattenCategories(n.children));
-  }
-  return out.sort((a, b) => a.name.localeCompare(b.name));
-}
 
 function SortHeader({
   label,
@@ -61,25 +52,54 @@ function SortHeader({
   );
 }
 
-function ZohoStatusIcon({ inZoho }: { inZoho: boolean | null }) {
-  if (inZoho === null) return null;
-  if (inZoho) {
+function ZohoSkuStatus({
+  sku,
+  inZoho,
+  auditAvailable,
+  compact = false
+}: {
+  sku: string;
+  inZoho: boolean | null;
+  auditAvailable: boolean;
+  compact?: boolean;
+}) {
+  if (!auditAvailable) {
+    return (
+      <span className={`text-stone-500 dark:text-stone-400 ${compact ? "text-xs" : "text-sm"}`}>
+        Unknown — run Sync from Zoho
+      </span>
+    );
+  }
+  if (inZoho === true) {
     return (
       <span
-        className="inline-block h-2 w-2 shrink-0 rounded-full bg-emerald-500"
-        title="In Zoho Books"
-        aria-label="In Zoho Books"
-      />
+        className={`inline-flex items-center gap-1 rounded-md bg-emerald-950/50 px-2 py-0.5 font-medium text-emerald-300 ${
+          compact ? "text-xs" : "text-sm"
+        }`}
+        title="SKU exists in Zoho Books. Stock updates on nightly sync and manual sync."
+      >
+        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden />
+        In Zoho
+      </span>
     );
   }
   return (
-    <span
-      className="cursor-help text-amber-600 dark:text-amber-400"
-      title="Not in Zoho Books — invoice will fail"
-      aria-label="Not in Zoho Books"
-    >
-      ⚠
-    </span>
+    <div className={compact ? "text-xs" : "text-sm"}>
+      <span className="font-medium text-amber-500 dark:text-amber-400">Not in Zoho</span>
+      {!compact ? (
+        <ul className="mt-1 list-disc space-y-0.5 pl-4 text-stone-500 dark:text-stone-400">
+          <li>
+            In Zoho Books, create an item with SKU <span className="font-mono text-stone-600 dark:text-stone-300">{sku}</span>
+          </li>
+          <li>
+            Or open <strong>Admin → Products</strong> and fix the variant SKU to match Zoho
+          </li>
+          <li>Until matched, paid orders may fail to create Zoho invoices</li>
+        </ul>
+      ) : (
+        <p className="text-stone-500 dark:text-stone-400">Fix SKU in Products or add item in Zoho</p>
+      )}
+    </div>
   );
 }
 
@@ -97,9 +117,11 @@ export function AdminInventoryWorkspace() {
   const [categorySlug, setCategorySlug] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("product");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [groupByProduct, setGroupByProduct] = useState(true);
   const [groupByCategory, setGroupByCategory] = useState(false);
+  const [flatList, setFlatList] = useState(false);
+  const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
   const [collapsedCats, setCollapsedCats] = useState<Set<string>>(new Set());
-  const [categoryOptions, setCategoryOptions] = useState<{ slug: string; name: string }[]>([]);
 
   const [busy, setBusy] = useState<string | null>(null);
   const [bulkSaving, setBulkSaving] = useState(false);
@@ -118,6 +140,8 @@ export function AdminInventoryWorkspace() {
     const t = setTimeout(() => setToast(null), 5200);
     return () => clearTimeout(t);
   }, [toast]);
+
+  const categoryOptions = useMemo(() => buildCategoryFilterOptions(allRows), [allRows]);
 
   const applyRows = useCallback((items: InventoryRow[]) => {
     setAllRows(items);
@@ -152,9 +176,6 @@ export function AdminInventoryWorkspace() {
 
   useEffect(() => {
     void load();
-    fetchCategoryTree({ cache: "no-store" })
-      .then((tree) => setCategoryOptions(flattenCategories(tree)))
-      .catch(() => {});
   }, [load]);
 
   const unsavedChanges = useMemo(() => {
@@ -216,19 +237,40 @@ export function AdminInventoryWorkspace() {
     return sortInventoryRows(filtered, sortKey, sortDir);
   }, [searchFiltered, stockFilter, sortKey, sortDir]);
 
-  const stats = useMemo(() => computeInventoryStats(allRows), [allRows]);
+  const productGroups = useMemo(() => groupRowsByProduct(displayedRows), [displayedRows]);
   const categoryGroups = useMemo(() => groupRowsByCategory(displayedRows), [displayedRows]);
+  const stats = useMemo(() => computeInventoryStats(allRows), [allRows]);
+
+  const zohoUnmatchedTotal = useMemo(
+    () => (zohoAuditAvailable ? allRows.filter((r) => r.inZohoBooks === false).length : 0),
+    [allRows, zohoAuditAvailable]
+  );
+
+  useEffect(() => {
+    const q = search.trim();
+    if (!q) return;
+    setExpandedProducts(new Set(displayedRows.map((r) => r.productId)));
+  }, [search, displayedRows]);
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else {
       setSortKey(key);
-      setSortDir(key === "onHand" ? "asc" : "asc");
+      setSortDir("asc");
     }
   }
 
   function rowHasUnsaved(variantId: string): boolean {
     return unsavedChanges.some((c) => c.variantId === variantId);
+  }
+
+  function toggleProductExpanded(productId: string) {
+    setExpandedProducts((prev) => {
+      const next = new Set(prev);
+      if (next.has(productId)) next.delete(productId);
+      else next.add(productId);
+      return next;
+    });
   }
 
   async function saveRow(variantId: string) {
@@ -255,7 +297,7 @@ export function AdminInventoryWorkspace() {
           ? { lowStockThreshold: change.lowStockThreshold }
           : {})
       });
-      pushToast("Row saved");
+      pushToast("Variant saved");
       await load();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Update failed");
@@ -342,19 +384,32 @@ export function AdminInventoryWorkspace() {
     }
   }
 
-  const stockTabs: { id: StockFilter; label: string }[] = [
-    { id: "all", label: "All" },
-    { id: "in_stock", label: "In Stock" },
-    { id: "low_stock", label: "Low Stock" },
-    { id: "out_of_stock", label: "Out of Stock" }
-  ];
+  const variantTableHeader = (
+    <thead className="border-b border-stone-100 bg-stone-50 dark:border-stone-700 dark:bg-stone-800/80">
+      <tr>
+        <th className="px-4 py-2 font-semibold text-stone-600 dark:text-stone-300">Variant</th>
+        <th className="px-4 py-2">
+          <SortHeader label="SKU" active={sortKey === "sku"} dir={sortDir} onClick={() => toggleSort("sku")} />
+        </th>
+        <th className="px-4 py-2 font-semibold text-stone-600 dark:text-stone-300">Zoho</th>
+        <th className="px-4 py-2 font-semibold text-stone-600 dark:text-stone-300" title="What customers can buy now (on hand minus reserved)">
+          Available
+        </th>
+        <th className="px-4 py-2 font-semibold text-stone-600 dark:text-stone-300" title="Physical count in warehouse — edit after stocktake">
+          On hand
+        </th>
+        <th className="px-4 py-2 font-semibold text-stone-600 dark:text-stone-300">Threshold</th>
+        <th className="px-4 py-2 font-semibold text-stone-600 dark:text-stone-300">Save</th>
+      </tr>
+    </thead>
+  );
 
-  function renderTableBody(rows: InventoryRow[]) {
+  function renderVariantRows(rows: InventoryRow[]) {
     if (rows.length === 0) {
       return (
         <tr>
-          <td colSpan={8} className="px-4 py-8 text-center text-stone-500">
-            No SKUs match your filters.
+          <td colSpan={7} className="px-4 py-6 text-center text-stone-500">
+            No variants match your filters.
           </td>
         </tr>
       );
@@ -364,33 +419,38 @@ export function AdminInventoryWorkspace() {
       return (
         <tr
           key={r.variantId}
-          className={`${r.low ? "bg-red-50/80 dark:bg-red-950/30" : ""} ${
+          className={`${r.low ? "bg-red-50/40 dark:bg-red-950/20" : ""} ${
             unsaved ? "border-l-4 border-l-amber-500" : ""
           }`}
         >
-          <td className="px-4 py-3">
-            <div className="flex items-start gap-2">
-              <ZohoStatusIcon inZoho={zohoAuditAvailable ? r.inZohoBooks : null} />
-              <div>
-                <Link
-                  href={`/product/${r.productSlug}`}
-                  className="font-medium text-amber-800 hover:underline dark:text-amber-400"
-                >
-                  {r.productName}
-                </Link>
-                {r.low ? (
-                  <span className="ml-2 rounded bg-red-200 px-1.5 py-0.5 text-[10px] font-bold uppercase text-red-900 dark:bg-red-900/70 dark:text-red-100">
-                    Low
-                  </span>
-                ) : null}
-              </div>
-            </div>
-          </td>
-          <td className="max-w-[10rem] px-4 py-3 text-xs text-stone-600 dark:text-stone-400">
+          <td className="px-4 py-2 text-xs text-stone-600 dark:text-stone-400">
             {r.variantLabel ?? "Default"}
+            {r.low ? (
+              <span className="ml-1 rounded bg-red-200 px-1 py-0.5 text-[10px] font-bold uppercase text-red-900 dark:bg-red-900/70 dark:text-red-100">
+                Low
+              </span>
+            ) : null}
           </td>
-          <td className="px-4 py-3 font-mono text-xs">{r.sku}</td>
-          <td className="px-4 py-3">
+          <td className="px-4 py-2 font-mono text-xs">{r.sku}</td>
+          <td className="max-w-[12rem] px-4 py-2">
+            <ZohoSkuStatus
+              sku={r.sku}
+              inZoho={r.inZohoBooks}
+              auditAvailable={zohoAuditAvailable}
+              compact
+            />
+          </td>
+          <td className="px-4 py-2">
+            <span className="font-mono text-sm font-semibold text-stone-800 dark:text-stone-100">
+              {r.available}
+            </span>
+            {r.reserved > 0 ? (
+              <p className="text-[10px] text-stone-500 dark:text-stone-400">
+                {r.onHand} on hand · {r.reserved} reserved
+              </p>
+            ) : null}
+          </td>
+          <td className="px-4 py-2">
             <input
               type="number"
               min={0}
@@ -398,14 +458,10 @@ export function AdminInventoryWorkspace() {
               onChange={(e) =>
                 setOnHandDrafts((d) => ({ ...d, [r.variantId]: e.target.value }))
               }
-              className={`w-20 rounded-md border px-2 py-1 font-mono text-sm dark:bg-stone-950 dark:text-stone-100 ${
-                r.low ? "border-red-300 dark:border-red-700" : "border-stone-300 dark:border-stone-600"
-              }`}
+              className="w-20 rounded-md border border-stone-300 px-2 py-1 font-mono text-sm dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
             />
           </td>
-          <td className="px-4 py-3 font-mono text-sm">{r.reserved}</td>
-          <td className="px-4 py-3 font-mono text-sm">{r.available}</td>
-          <td className="px-4 py-3">
+          <td className="px-4 py-2">
             <input
               type="number"
               min={0}
@@ -413,15 +469,15 @@ export function AdminInventoryWorkspace() {
               onChange={(e) =>
                 setThresholdDrafts((d) => ({ ...d, [r.variantId]: e.target.value }))
               }
-              className="w-16 rounded-md border border-stone-300 px-2 py-1 font-mono text-sm dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+              className="w-14 rounded-md border border-stone-300 px-2 py-1 font-mono text-sm dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
             />
           </td>
-          <td className="px-4 py-3">
+          <td className="px-4 py-2">
             <button
               type="button"
               disabled={busy === r.variantId || !unsaved}
               onClick={() => void saveRow(r.variantId)}
-              className="rounded-lg bg-stone-900 px-3 py-1 text-xs font-medium text-amber-400 disabled:opacity-40 dark:bg-stone-700 dark:text-amber-300"
+              className="rounded-lg bg-stone-900 px-3 py-1 text-xs font-medium text-amber-400 disabled:opacity-40 dark:bg-stone-700"
             >
               {busy === r.variantId ? "…" : "Save"}
             </button>
@@ -431,36 +487,79 @@ export function AdminInventoryWorkspace() {
     });
   }
 
-  const tableHeader = (
-    <thead className="border-b border-stone-100 bg-stone-50 dark:border-stone-700 dark:bg-stone-800/80">
-      <tr>
-        <th className="px-4 py-3">
-          <SortHeader
-            label="Product"
-            active={sortKey === "product"}
-            dir={sortDir}
-            onClick={() => toggleSort("product")}
-          />
-        </th>
-        <th className="px-4 py-3 font-semibold text-stone-600 dark:text-stone-300">Variant</th>
-        <th className="px-4 py-3">
-          <SortHeader label="SKU" active={sortKey === "sku"} dir={sortDir} onClick={() => toggleSort("sku")} />
-        </th>
-        <th className="px-4 py-3">
-          <SortHeader
-            label="On hand"
-            active={sortKey === "onHand"}
-            dir={sortDir}
-            onClick={() => toggleSort("onHand")}
-          />
-        </th>
-        <th className="px-4 py-3 font-semibold text-stone-600 dark:text-stone-300">Reserved</th>
-        <th className="px-4 py-3 font-semibold text-stone-600 dark:text-stone-300">Available</th>
-        <th className="px-4 py-3 font-semibold text-stone-600 dark:text-stone-300">Threshold</th>
-        <th className="px-4 py-3 font-semibold text-stone-600 dark:text-stone-300">Save</th>
-      </tr>
-    </thead>
-  );
+  function renderProductGroups(groups: ReturnType<typeof groupRowsByProduct>) {
+    return (
+      <div className="space-y-3">
+        {groups.map((g) => {
+          const expanded = expandedProducts.has(g.productId);
+          const adminHref = `/admin/products/${g.productId}`;
+          return (
+            <section
+              key={g.productId}
+              className="overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-stone-900"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-stone-100 bg-stone-50 px-4 py-3 dark:border-stone-700 dark:bg-stone-800/80">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleProductExpanded(g.productId)}
+                      className="text-left font-semibold text-stone-800 dark:text-stone-100"
+                    >
+                      {expanded ? "▾" : "▸"} {g.productName}
+                    </button>
+                    <Link
+                      href={adminHref}
+                      className="rounded-md border border-amber-600/40 bg-amber-950/30 px-2 py-0.5 text-xs font-medium text-amber-400 hover:bg-amber-900/40"
+                    >
+                      Edit product
+                    </Link>
+                  </div>
+                  <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+                    {g.variantCount} variant{g.variantCount === 1 ? "" : "s"} · {g.totalAvailable} available
+                    {g.totalReserved > 0 ? ` · ${g.totalReserved} reserved` : ""}
+                    {g.outCount > 0 ? ` · ${g.outCount} out of stock` : ""}
+                    {g.lowCount > 0 ? ` · ${g.lowCount} low` : ""}
+                  </p>
+                  {zohoAuditAvailable && g.zohoUnmatched > 0 ? (
+                    <p className="mt-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+                      {g.zohoUnmatched} SKU{g.zohoUnmatched === 1 ? "" : "s"} not in Zoho — fix before invoicing
+                    </p>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => toggleProductExpanded(g.productId)}
+                  className="text-sm text-amber-700 hover:underline dark:text-amber-400"
+                >
+                  {expanded ? "Hide variants" : "Edit stock by variant"}
+                </button>
+              </div>
+              {expanded ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-left text-sm">
+                    {variantTableHeader}
+                    <tbody className="divide-y divide-stone-100 dark:divide-stone-700">
+                      {renderVariantRows(g.rows)}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+            </section>
+          );
+        })}
+      </div>
+    );
+  }
+
+  const stockTabs: { id: StockFilter; label: string }[] = [
+    { id: "all", label: "All" },
+    { id: "in_stock", label: "In Stock" },
+    { id: "low_stock", label: "Low Stock" },
+    { id: "out_of_stock", label: "Out of Stock" }
+  ];
+
+  const useProductGroups = groupByProduct && !groupByCategory && !flatList;
 
   return (
     <div className="space-y-6">
@@ -481,7 +580,7 @@ export function AdminInventoryWorkspace() {
         <div>
           <h1 className="font-serif text-3xl italic text-stone-800 dark:text-stone-100">Inventory</h1>
           <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-            Search, filter, and bulk-edit stock across all SKUs. Zoho sync updates on-hand from Books.
+            Products are grouped — expand to edit stock per variant. Catalogue edits open in Admin → Products.
           </p>
         </div>
         <div className="flex flex-col items-end gap-1">
@@ -545,35 +644,66 @@ export function AdminInventoryWorkspace() {
           </div>
           <p className="text-xs text-stone-500 dark:text-stone-400">
             Last synced: {formatRelativeTime(lastZohoSync)}
-            {!zohoAuditAvailable ? " · Run Zoho sync for SKU match indicators" : null}
           </p>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-4 rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm shadow-sm dark:border-stone-700 dark:bg-stone-900">
         <div>
-          <span className="text-stone-500 dark:text-stone-400">Total variants: </span>
+          <span className="text-stone-500">Total variants: </span>
           <span className="font-semibold text-stone-800 dark:text-stone-100">{stats.total}</span>
         </div>
         <div>
-          <span className="text-stone-500 dark:text-stone-400">In stock: </span>
-          <span className="font-semibold text-stone-800 dark:text-stone-100">{stats.inStock}</span>
+          <span className="text-stone-500">In stock: </span>
+          <span className="font-semibold">{stats.inStock}</span>
         </div>
         <div>
-          <span className="text-stone-500 dark:text-stone-400">Low stock: </span>
+          <span className="text-stone-500">Low stock: </span>
           <span className="font-semibold text-amber-700 dark:text-amber-400">{stats.lowStock}</span>
         </div>
         <div>
-          <span className="text-stone-500 dark:text-stone-400">Out of stock: </span>
+          <span className="text-stone-500">Out of stock: </span>
           <span className="font-semibold text-red-700 dark:text-red-400">{stats.outOfStock}</span>
         </div>
-        <div className="border-l border-stone-200 pl-4 dark:border-stone-600">
-          <span className="text-stone-500 dark:text-stone-400">Last Zoho sync: </span>
-          <span className="font-medium text-stone-700 dark:text-stone-200">
-            {lastZohoSync ? formatRelativeTime(lastZohoSync) : "Never"}
-          </span>
-        </div>
+        {zohoAuditAvailable && zohoUnmatchedTotal > 0 ? (
+          <div className="border-l border-stone-200 pl-4 dark:border-stone-600">
+            <span className="font-medium text-amber-700 dark:text-amber-400">
+              {zohoUnmatchedTotal} SKUs not in Zoho
+            </span>
+          </div>
+        ) : null}
       </div>
+
+      <aside className="grid gap-4 rounded-xl border border-stone-200 bg-stone-50 p-4 text-sm dark:border-stone-700 dark:bg-stone-900 md:grid-cols-2">
+        <div>
+          <p className="font-medium text-stone-800 dark:text-stone-100">Stock columns</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-stone-600 dark:text-stone-400">
+            <li>
+              <strong>Available</strong> — what the shop can sell now (on hand minus reserved at checkout).
+            </li>
+            <li>
+              <strong>On hand</strong> — warehouse physical count; edit after stocktake or import CSV.
+            </li>
+            <li>
+              <strong>Reserved</strong> — held for unpaid orders (~15 min); shown under Available when &gt; 0.
+            </li>
+          </ul>
+        </div>
+        <div>
+          <p className="font-medium text-stone-800 dark:text-stone-100">Zoho Books sync</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-stone-600 dark:text-stone-400">
+            <li>
+              <strong>In Zoho</strong> — SKU matches; use Sync from Zoho or wait for nightly 2 AM job.
+            </li>
+            <li>
+              <strong>Not in Zoho</strong> — add item in Zoho with same SKU, or fix SKU under Edit product.
+            </li>
+            <li>
+              <strong>Unknown</strong> — run Sync from Zoho once to refresh SKU audit.
+            </li>
+          </ul>
+        </div>
+      </aside>
 
       <div className="flex flex-wrap items-end gap-3 rounded-xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900">
         <div className="min-w-[12rem] flex-1">
@@ -589,7 +719,7 @@ export function AdminInventoryWorkspace() {
             className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
           />
         </div>
-        <div className="min-w-[10rem]">
+        <div className="min-w-[12rem]">
           <label htmlFor="inv-cat" className="block text-xs font-semibold uppercase text-stone-500">
             Category
           </label>
@@ -602,20 +732,54 @@ export function AdminInventoryWorkspace() {
             <option value="">All categories</option>
             {categoryOptions.map((c) => (
               <option key={c.slug} value={c.slug}>
-                {c.name}
+                {c.label}
               </option>
             ))}
           </select>
         </div>
-        <label className="flex cursor-pointer items-center gap-2 pb-2 text-sm text-stone-700 dark:text-stone-300">
-          <input
-            type="checkbox"
-            checked={groupByCategory}
-            onChange={(e) => setGroupByCategory(e.target.checked)}
-            className="rounded border-stone-400 text-amber-600"
-          />
-          Group by category
-        </label>
+        <div className="flex flex-col gap-2 pb-1 text-sm text-stone-700 dark:text-stone-300">
+          <label className="flex cursor-pointer items-center gap-2">
+            <input
+              type="checkbox"
+              checked={groupByProduct && !flatList && !groupByCategory}
+              onChange={(e) => {
+                setGroupByProduct(e.target.checked);
+                if (e.target.checked) {
+                  setFlatList(false);
+                  setGroupByCategory(false);
+                }
+              }}
+              className="rounded border-stone-400 text-amber-600"
+            />
+            Group by product (recommended)
+          </label>
+          <label className="flex cursor-pointer items-center gap-2">
+            <input
+              type="checkbox"
+              checked={groupByCategory}
+              onChange={(e) => {
+                setGroupByCategory(e.target.checked);
+                if (e.target.checked) setFlatList(false);
+              }}
+              className="rounded border-stone-400 text-amber-600"
+            />
+            Group by category
+          </label>
+          <label className="flex cursor-pointer items-center gap-2">
+            <input
+              type="checkbox"
+              checked={flatList}
+              onChange={(e) => {
+                setFlatList(e.target.checked);
+                if (e.target.checked) {
+                  setGroupByCategory(false);
+                }
+              }}
+              className="rounded border-stone-400 text-amber-600"
+            />
+            Flat variant list
+          </label>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -647,6 +811,8 @@ export function AdminInventoryWorkspace() {
 
       {loading ? (
         <p className="text-sm text-stone-500">Loading inventory…</p>
+      ) : useProductGroups ? (
+        renderProductGroups(productGroups)
       ) : groupByCategory ? (
         <div className="space-y-4">
           {categoryGroups.map((g) => {
@@ -671,17 +837,17 @@ export function AdminInventoryWorkspace() {
                   <span className="font-semibold text-stone-800 dark:text-stone-100">
                     {collapsed ? "▸" : "▾"} {g.name}
                   </span>
-                  <span className="text-sm text-stone-500 dark:text-stone-400">
-                    {g.variantCount} variant{g.variantCount === 1 ? "" : "s"}
-                    {g.lowCount > 0 ? `, ${g.lowCount} low stock` : ""}
+                  <span className="text-sm text-stone-500">
+                    {g.variantCount} variants
+                    {g.lowCount > 0 ? `, ${g.lowCount} low` : ""}
                   </span>
                 </button>
                 {!collapsed ? (
                   <div className="overflow-x-auto">
                     <table className="min-w-full text-left text-sm">
-                      {tableHeader}
+                      {variantTableHeader}
                       <tbody className="divide-y divide-stone-100 dark:divide-stone-700">
-                        {renderTableBody(g.rows)}
+                        {renderVariantRows(g.rows)}
                       </tbody>
                     </table>
                   </div>
@@ -692,19 +858,115 @@ export function AdminInventoryWorkspace() {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-stone-900">
+          <p className="border-b border-stone-100 px-4 py-2 text-xs text-stone-500 dark:border-stone-700">
+            Flat list — use Group by product for easier editing.
+          </p>
           <table className="min-w-full text-left text-sm">
-            {tableHeader}
+            <thead className="border-b border-stone-100 bg-stone-50 dark:border-stone-700 dark:bg-stone-800/80">
+              <tr>
+                <th className="px-4 py-2">
+                  <SortHeader
+                    label="Product"
+                    active={sortKey === "product"}
+                    dir={sortDir}
+                    onClick={() => toggleSort("product")}
+                  />
+                </th>
+                <th className="px-4 py-2 font-semibold text-stone-600 dark:text-stone-300">Variant</th>
+                <th className="px-4 py-2">
+                  <SortHeader label="SKU" active={sortKey === "sku"} dir={sortDir} onClick={() => toggleSort("sku")} />
+                </th>
+                <th className="px-4 py-2 font-semibold text-stone-600 dark:text-stone-300">Zoho</th>
+                <th className="px-4 py-2 font-semibold text-stone-600 dark:text-stone-300">Available</th>
+                <th className="px-4 py-2 font-semibold text-stone-600 dark:text-stone-300">On hand</th>
+                <th className="px-4 py-2 font-semibold text-stone-600 dark:text-stone-300">Threshold</th>
+                <th className="px-4 py-2 font-semibold text-stone-600 dark:text-stone-300">Save</th>
+              </tr>
+            </thead>
             <tbody className="divide-y divide-stone-100 dark:divide-stone-700">
-              {renderTableBody(displayedRows)}
+              {displayedRows.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-6 text-center text-stone-500">
+                    No variants match your filters.
+                  </td>
+                </tr>
+              ) : (
+                displayedRows.map((r) => {
+                  const unsaved = rowHasUnsaved(r.variantId);
+                  return (
+                    <tr
+                      key={r.variantId}
+                      className={`${unsaved ? "border-l-4 border-l-amber-500" : ""} ${
+                        r.low ? "bg-red-50/40 dark:bg-red-950/20" : ""
+                      }`}
+                    >
+                      <td className="px-4 py-2">
+                        <Link
+                          href={`/admin/products/${r.productId}`}
+                          className="font-medium text-amber-800 hover:underline dark:text-amber-400"
+                        >
+                          {r.productName}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-2 text-xs text-stone-600 dark:text-stone-400">
+                        {r.variantLabel ?? "Default"}
+                      </td>
+                      <td className="px-4 py-2 font-mono text-xs">{r.sku}</td>
+                      <td className="max-w-[12rem] px-4 py-2">
+                        <ZohoSkuStatus
+                          sku={r.sku}
+                          inZoho={r.inZohoBooks}
+                          auditAvailable={zohoAuditAvailable}
+                          compact
+                        />
+                      </td>
+                      <td className="px-4 py-2 font-mono text-sm font-semibold">{r.available}</td>
+                      <td className="px-4 py-2">
+                        <input
+                          type="number"
+                          min={0}
+                          value={onHandDrafts[r.variantId] ?? ""}
+                          onChange={(e) =>
+                            setOnHandDrafts((d) => ({ ...d, [r.variantId]: e.target.value }))
+                          }
+                          className="w-20 rounded-md border border-stone-300 px-2 py-1 font-mono text-sm dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        <input
+                          type="number"
+                          min={0}
+                          value={thresholdDrafts[r.variantId] ?? ""}
+                          onChange={(e) =>
+                            setThresholdDrafts((d) => ({ ...d, [r.variantId]: e.target.value }))
+                          }
+                          className="w-14 rounded-md border border-stone-300 px-2 py-1 font-mono text-sm dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+                        />
+                      </td>
+                      <td className="px-4 py-2">
+                        <button
+                          type="button"
+                          disabled={busy === r.variantId || !unsaved}
+                          onClick={() => void saveRow(r.variantId)}
+                          className="rounded-lg bg-stone-900 px-3 py-1 text-xs font-medium text-amber-400 disabled:opacity-40 dark:bg-stone-700"
+                        >
+                          {busy === r.variantId ? "…" : "Save"}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
       )}
 
       <p className="text-xs text-stone-500 dark:text-stone-400">
-        Showing {displayedRows.length} of {allRows.length} SKUs
+        Showing {displayedRows.length} variant{displayedRows.length === 1 ? "" : "s"} across{" "}
+        {useProductGroups ? productGroups.length : "—"} product
+        {useProductGroups && productGroups.length !== 1 ? "s" : ""}
         {search || categorySlug || stockFilter !== "all" ? " (filtered)" : ""}.
-        {zohoAuditAvailable ? " ⚠ = SKU not found in last Zoho Books sync." : null}
       </p>
     </div>
   );

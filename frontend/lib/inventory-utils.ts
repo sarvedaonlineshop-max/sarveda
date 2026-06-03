@@ -140,6 +140,80 @@ export type CategoryGroup = {
   lowCount: number;
 };
 
+export type CategoryFilterOption = { slug: string; label: string };
+
+/** Categories that actually appear on inventory rows — one entry per slug; disambiguate duplicate names. */
+export function buildCategoryFilterOptions(rows: InventoryRow[]): CategoryFilterOption[] {
+  const bySlug = new Map<string, string>();
+  for (const r of rows) {
+    for (const c of r.categories) {
+      if (c.slug) bySlug.set(c.slug, c.name);
+    }
+  }
+  const nameCount = new Map<string, number>();
+  for (const name of Array.from(bySlug.values())) {
+    nameCount.set(name, (nameCount.get(name) ?? 0) + 1);
+  }
+  return Array.from(bySlug.entries())
+    .map(([slug, name]) => ({
+      slug,
+      label: (nameCount.get(name) ?? 0) > 1 ? `${name} (${slug})` : name
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+
+export type ProductInventoryGroup = {
+  productId: string;
+  productName: string;
+  productSlug: string;
+  rows: InventoryRow[];
+  variantCount: number;
+  totalAvailable: number;
+  totalReserved: number;
+  lowCount: number;
+  outCount: number;
+  zohoUnmatched: number;
+  zohoMatched: number;
+};
+
+export function groupRowsByProduct(rows: InventoryRow[]): ProductInventoryGroup[] {
+  const map = new Map<string, ProductInventoryGroup>();
+  for (const r of rows) {
+    let g = map.get(r.productId);
+    if (!g) {
+      g = {
+        productId: r.productId,
+        productName: r.productName,
+        productSlug: r.productSlug,
+        rows: [],
+        variantCount: 0,
+        totalAvailable: 0,
+        totalReserved: 0,
+        lowCount: 0,
+        outCount: 0,
+        zohoUnmatched: 0,
+        zohoMatched: 0
+      };
+      map.set(r.productId, g);
+    }
+    g.rows.push(r);
+    g.variantCount++;
+    g.totalAvailable += r.available;
+    g.totalReserved += r.reserved;
+    if (stockStatus(r) === "low_stock") g.lowCount++;
+    if (stockStatus(r) === "out_of_stock") g.outCount++;
+    if (r.inZohoBooks === false) g.zohoUnmatched++;
+    if (r.inZohoBooks === true) g.zohoMatched++;
+  }
+  const groups = Array.from(map.values());
+  for (const g of groups) {
+    g.rows.sort((a: InventoryRow, b: InventoryRow) =>
+      (a.variantLabel ?? "").localeCompare(b.variantLabel ?? "")
+    );
+  }
+  return groups.sort((a, b) => a.productName.localeCompare(b.productName));
+}
+
 export function groupRowsByCategory(rows: InventoryRow[]): CategoryGroup[] {
   const map = new Map<string, CategoryGroup>();
   for (const r of rows) {
