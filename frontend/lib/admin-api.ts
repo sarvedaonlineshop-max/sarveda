@@ -540,8 +540,14 @@ export type ZohoStockSyncResult = {
   skipped: number;
 };
 
-export function syncStockFromZohoAdmin() {
-  return adminFetch<ZohoStockSyncResult>("/api/zoho/sync/stock", { method: "POST" });
+export function syncStockFromZohoAdmin(opts?: {
+  productId?: string;
+  unmatchedOnly?: boolean;
+}) {
+  return adminFetch<ZohoStockSyncResult>("/api/zoho/sync/stock", {
+    method: "POST",
+    body: JSON.stringify(opts ?? {})
+  });
 }
 
 export type ReconciliationRow = {

@@ -1,6 +1,6 @@
 import type { InventoryRow } from "@/lib/admin-api";
 
-export type StockFilter = "all" | "in_stock" | "low_stock" | "out_of_stock";
+export type StockFilter = "all" | "in_stock" | "low_stock" | "out_of_stock" | "not_in_zoho";
 
 export type SortKey = "product" | "onHand" | "sku";
 export type SortDir = "asc" | "desc";
@@ -12,10 +12,11 @@ export function stockStatus(row: Pick<InventoryRow, "onHand" | "lowStockThreshol
 }
 
 export function matchesStockFilter(
-  row: Pick<InventoryRow, "onHand" | "lowStockThreshold">,
+  row: Pick<InventoryRow, "onHand" | "lowStockThreshold" | "inZohoBooks">,
   filter: StockFilter
 ): boolean {
   if (filter === "all") return true;
+  if (filter === "not_in_zoho") return row.inZohoBooks === false;
   return stockStatus(row) === filter;
 }
 
@@ -40,7 +41,7 @@ export function escapeCsvCell(value: string | number): string {
 }
 
 export function inventoryToCsv(rows: InventoryRow[]): string {
-  const header = ["SKU", "Product", "Variant", "On Hand", "Reserved", "Available", "Threshold"];
+  const header = ["SKU", "Product", "Variant", "Available", "Reserved", "In Zoho", "Threshold"];
   const lines = [
     header.join(","),
     ...rows.map((r) =>
@@ -48,14 +49,27 @@ export function inventoryToCsv(rows: InventoryRow[]): string {
         escapeCsvCell(r.sku),
         escapeCsvCell(r.productName),
         escapeCsvCell(r.variantLabel ?? "Default"),
-        r.onHand,
-        r.reserved,
         r.available,
+        r.reserved,
+        r.inZohoBooks === true ? "yes" : r.inZohoBooks === false ? "no" : "unknown",
         r.lowStockThreshold
       ].join(",")
     )
   ];
   return lines.join("\n");
+}
+
+/** First variant row per productId in display order (for product-level actions in flat list). */
+export function firstVariantRowByProduct(rows: InventoryRow[]): Set<string> {
+  const seen = new Set<string>();
+  const first = new Set<string>();
+  for (const r of rows) {
+    if (!seen.has(r.productId)) {
+      seen.add(r.productId);
+      first.add(r.variantId);
+    }
+  }
+  return first;
 }
 
 export function downloadCsv(filename: string, content: string): void {

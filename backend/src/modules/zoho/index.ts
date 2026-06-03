@@ -5,7 +5,11 @@ import { requireAdmin } from "../../middleware/admin";
 
 import { getZohoAccessToken } from "./zoho-auth";
 import { createZohoInvoiceForOrder } from "./zoho-invoices";
-import { syncStockFromZoho } from "./zoho-inventory";
+import {
+  syncStockForProduct,
+  syncStockFromZoho,
+  syncUnmatchedSkusFromZoho
+} from "./zoho-inventory";
 
 export { createZohoInvoiceForOrder } from "./zoho-invoices";
 export { syncStockFromZoho } from "./zoho-inventory";
@@ -21,9 +25,20 @@ zohoRouter.get("/status", async (_req, res) => {
   }
 });
 
-zohoRouter.post("/sync/stock", requireAdmin, async (_req, res, next) => {
+zohoRouter.post("/sync/stock", requireAdmin, async (req, res, next) => {
   try {
-    const result = await syncStockFromZoho();
+    const productId =
+      typeof req.body?.productId === "string" ? req.body.productId.trim() : undefined;
+    const unmatchedOnly = req.body?.unmatchedOnly === true;
+
+    let result;
+    if (productId) {
+      result = await syncStockForProduct(productId);
+    } else if (unmatchedOnly) {
+      result = await syncUnmatchedSkusFromZoho();
+    } else {
+      result = await syncStockFromZoho();
+    }
     res.json({ success: true, data: result });
   } catch (err) {
     next(err);

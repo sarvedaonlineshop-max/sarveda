@@ -2,7 +2,7 @@ import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 
 import { zohoGet } from "./zoho-client";
-import { recordZohoStockSync } from "./zoho-stock-sync-cache";
+import { getZohoStockSyncMeta, recordZohoStockSync } from "./zoho-stock-sync-cache";
 
 interface ZohoItem {
   item_id: string;
@@ -11,12 +11,20 @@ interface ZohoItem {
   stock_on_hand: number;
 }
 
-export async function syncStockFromZoho(): Promise<{
+export type ZohoStockSyncResult = {
   synced: number;
   errors: number;
   skipped: number;
-}> {
-  logger.info("Starting Zoho stock sync");
+};
+
+type SyncRunOptions = {
+  /** Only upsert inventory when Zoho SKU is in this set */
+  skuAllowlist?: Set<string>;
+  /** Replace (default) or merge Zoho SKU audit cache */
+  cacheMerge?: boolean;
+};
+
+async function runZohoStockSync(opts: SyncRunOptions = {}): Promise<ZohoStockSyncResult> {
   let synced = 0;
   let errors = 0;
   let skipped = 0;
@@ -36,11 +44,17 @@ export async function syncStockFromZoho(): Promise<{
         continue;
       }
 
-      zohoSkus.add(item.sku.trim());
+      const sku = item.sku.trim();
+      zohoSkus.add(sku);
+
+      if (opts.skuAllowlist && !opts.skuAllowlist.has(sku)) {
+        skipped++;
+        continue;
+      }
 
       try {
         const variant = await prisma.productVariant.findUnique({
-          where: { sku: item.sku },
+          where: { sku },
           select: { id: true }
         });
         if (!variant) {
@@ -55,7 +69,7 @@ export async function syncStockFromZoho(): Promise<{
         });
         synced++;
       } catch (err) {
-        logger.error("Stock sync error", { sku: item.sku, err });
+        logger.error("Stock sync error", { sku, err });
         errors++;
       }
     }
@@ -64,8 +78,51 @@ export async function syncStockFromZoho(): Promise<{
     page++;
   }
 
-  await recordZohoStockSync(zohoSkus);
+  await recordZohoStockSync(zohoSkus, { merge: opts.cacheMerge });
 
-  logger.info("Zoho stock sync complete", { synced, errors, skipped });
   return { synced, errors, skipped };
+}
+
+export async function syncStockFromZoho(): Promise<ZohoStockSyncResult> {
+  logger.info("Starting Zoho stock sync (full)");
+  const result = await runZohoStockSync();
+  logger.info("Zoho stock sync complete", result);
+  return result;
+}
+
+export async function syncStockForProduct(productId: string): Promise<ZohoStockSyncResult> {
+  const variants = await prisma.productVariant.findMany({
+    where: { productId, productRel: { deletedAt: null } },
+    select: { sku: true }
+  });
+  const skuAllowlist = new Set(variants.map((v) => v.sku));
+  logger.info("Starting Zoho stock sync for product", { productId, skuCount: skuAllowlist.size });
+  const result = await runZohoStockSync({ skuAllowlist, cacheMerge: true });
+  logger.info("Zoho product stock sync complete", { productId, ...result });
+  return result;
+}
+
+export async function syncUnmatchedSkusFromZoho(): Promise<ZohoStockSyncResult> {
+  const { skuSet } = await getZohoStockSyncMeta();
+  if (!skuSet) {
+    logger.info("No Zoho SKU audit cache — running full sync for unmatched");
+    return syncStockFromZoho();
+  }
+
+  const variants = await prisma.productVariant.findMany({
+    where: { productRel: { deletedAt: null } },
+    select: { sku: true }
+  });
+  const unmatched = variants.map((v) => v.sku).filter((sku) => !skuSet.has(sku));
+  if (unmatched.length === 0) {
+    return { synced: 0, errors: 0, skipped: 0 };
+  }
+
+  logger.info("Starting Zoho stock sync for unmatched SKUs", { count: unmatched.length });
+  const result = await runZohoStockSync({
+    skuAllowlist: new Set(unmatched),
+    cacheMerge: true
+  });
+  logger.info("Zoho unmatched stock sync complete", result);
+  return result;
 }
