@@ -1,6 +1,8 @@
 import { Prisma } from "@prisma/client";
 import type { NextFunction, Request, Response } from "express";
 
+import { logger } from "../config/logger";
+
 type ApiError = Error & {
   statusCode?: number;
   status?: number;
@@ -33,14 +35,18 @@ export const errorHandler = (
     statusCode = err.code === "P2002" ? 409 : 400;
     clientMessage = prismaClientMessage(err);
     code = err.code;
-  } else if (statusCode === 500) {
-    clientMessage = "Internal Server Error";
-    code = "INTERNAL_ERROR";
+  }
+
+  const fields = (err as ApiError & { fields?: Array<{ path: string; message: string }> }).fields;
+
+  if (statusCode >= 500) {
+    logger.error("api_error", { message: err.message, code, stack: err.stack });
   }
 
   res.status(statusCode).json({
     success: false,
-    error: clientMessage,
-    code
+    error: clientMessage || "Request failed",
+    code: code || "REQUEST_ERROR",
+    ...(fields?.length ? { fields } : {})
   });
 };

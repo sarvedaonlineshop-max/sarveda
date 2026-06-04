@@ -49,7 +49,12 @@ export function ProductImageUpload({
       onUrlChange(uploaded);
       if (!altText.trim()) onAltChange(file.name.replace(/\.[^.]+$/, "").replace(/[-_]/g, " "));
     } catch (e) {
-      setUploadErr(e instanceof Error ? e.message : "Upload failed");
+      const msg = e instanceof Error ? e.message : "Upload failed";
+      setUploadErr(
+        msg.includes("not found") || msg.includes("404")
+          ? `${msg} — deploy backend on EC2: git pull && npm run build && pm2 restart sarveda-backend`
+          : msg
+      );
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";

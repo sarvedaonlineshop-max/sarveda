@@ -1,4 +1,5 @@
 import { getApiBase } from "@/lib/api";
+import { AdminApiError, type ApiFieldError } from "@/lib/admin-errors";
 
 async function adminFetch<T>(
   path: string,
@@ -15,10 +16,29 @@ async function adminFetch<T>(
     }
   });
 
-  const json = (await res.json()) as { success?: boolean; data?: T; error?: string };
+  let json: {
+    success?: boolean;
+    data?: T;
+    error?: string;
+    code?: string;
+    fields?: ApiFieldError[];
+  } = {};
+  try {
+    json = (await res.json()) as typeof json;
+  } catch {
+    /* non-JSON body */
+  }
 
-  if (!res.ok || !json.success || json.data === undefined) {
-    throw new Error(json.error || `Admin request failed: ${res.status}`);
+  if (!res.ok || json.success === false) {
+    throw new AdminApiError(json.error?.trim() || `Request failed (${res.status})`, {
+      fields: json.fields,
+      status: res.status,
+      code: json.code
+    });
+  }
+
+  if (json.data === undefined) {
+    throw new AdminApiError("Empty response from server");
   }
 
   return json.data as T;
@@ -417,16 +437,32 @@ export function deleteAdminProduct(id: string) {
   });
 }
 
-export function uploadAdminMedia(body: {
+export async function uploadAdminMedia(body: {
   filename: string;
   contentType: string;
   base64: string;
   folder?: "products" | "audio";
 }) {
-  return adminFetch<{ url: string; key: string }>("/api/admin/media/upload", {
-    method: "POST",
-    body: JSON.stringify(body)
-  });
+  const payload = JSON.stringify(body);
+  const paths = ["/api/admin/media/upload", "/api/admin/products/upload-image"];
+  let lastErr: AdminApiError | null = null;
+  for (const path of paths) {
+    try {
+      return await adminFetch<{ url: string; key: string }>(path, {
+        method: "POST",
+        body: payload
+      });
+    } catch (e) {
+      lastErr = e instanceof AdminApiError ? e : new AdminApiError(String(e));
+      if (lastErr.status !== 404 && lastErr.code !== "NOT_FOUND") throw lastErr;
+    }
+  }
+  throw (
+    lastErr ??
+    new AdminApiError(
+      "Image upload API not found on server. Deploy latest backend on EC2 (git pull + pm2 restart)."
+    )
+  );
 }
 
 export type CatalogGapsReport = {

@@ -10,6 +10,7 @@ import {
   postAdminProduct,
   putAdminProduct
 } from "@/lib/admin-api";
+import { applyApiError, tabForFieldPath } from "@/lib/admin-errors";
 import { ProductImageUpload } from "@/components/admin/ProductImageUpload";
 import { SeoAnalysisPanel } from "@/components/admin/SeoAnalysisPanel";
 import { fetchCategoryTree } from "@/lib/api";
@@ -136,6 +137,13 @@ function CategoryCheckTree({
 const inputCls =
   "mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100";
 const labelCls = "text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400";
+const fieldErrCls = "mt-1 text-xs text-red-600 dark:text-red-400";
+const DRAFT_KEY = "sarveda_admin_new_product_draft";
+
+function FieldErr({ message }: { message?: string }) {
+  if (!message) return null;
+  return <p className={fieldErrCls}>{message}</p>;
+}
 
 const FORM_TABS = [
   { id: "general" as const, label: "General", hint: "Name, slug, categories" },
@@ -155,6 +163,7 @@ export function ProductForm({ productId }: { productId?: string }) {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -290,38 +299,64 @@ export function ProductForm({ productId }: { productId?: string }) {
 
   const tabIndex = FORM_TABS.findIndex((t) => t.id === tab);
 
-  function validateTab(target: FormTab): string | null {
+  function validateTab(target: FormTab): Record<string, string> {
+    const errors: Record<string, string> = {};
     if (target === "general") {
-      if (!name.trim()) return "Product name is required.";
-      if (!slug.trim()) return "Slug is required.";
-      return null;
+      if (!name.trim()) errors.name = "Product name is required.";
+      if (!slug.trim()) errors.slug = "Slug is required.";
+      else if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug.trim())) {
+        errors.slug = "Slug must be lowercase letters, numbers, and hyphens only.";
+      }
+      if (hasAudio && audioUrl.trim() && !/^https?:\/\/.+/i.test(audioUrl.trim())) {
+        errors.audioUrl = "Audio URL must start with http:// or https://";
+      }
     }
     if (target === "variants") {
-      for (let i = 0; i < variants.length; i++) {
-        if (!variants[i]!.sku.trim()) return `Variant ${i + 1}: SKU is required.`;
+      variants.forEach((v, i) => {
+        if (!v.sku.trim()) errors[`variants.${i}.sku`] = "SKU is required.";
+        if (toPaise(v.mrpInr) < 0 || toPaise(v.saleInr) < 0) {
+          errors[`variants.${i}.saleInr`] = "Prices cannot be negative.";
+        }
+      });
+      if (variants.filter((v) => v.isDefault).length !== 1) {
+        errors.variants = "Mark exactly one variant as default.";
       }
-      const defaults = variants.filter((v) => v.isDefault);
-      if (defaults.length !== 1) return "Mark exactly one variant as default.";
-      return null;
     }
-    return null;
+    if (target === "media") {
+      images.forEach((im, i) => {
+        if (im.url.trim() && !/^https?:\/\/.+/i.test(im.url.trim())) {
+          errors[`images.${i}.url`] = "Image URL must be a valid http(s) link (upload again if needed).";
+        }
+      });
+    }
+    return errors;
   }
 
-  function validateAll(): string | null {
+  function validateAll(): Record<string, string> {
+    const merged: Record<string, string> = {};
     for (const t of FORM_TABS) {
-      const msg = validateTab(t.id);
-      if (msg) return msg;
+      Object.assign(merged, validateTab(t.id));
     }
-    return null;
+    return merged;
+  }
+
+  function applyClientErrors(errors: Record<string, string>) {
+    setFieldErrors(errors);
+    const first = Object.keys(errors)[0];
+    if (first) {
+      setErr(errors[first]!);
+      setTab(tabForFieldPath(first));
+    }
   }
 
   function goNext() {
-    const msg = validateTab(tab);
-    if (msg) {
-      setErr(msg);
+    const errors = validateTab(tab);
+    if (Object.keys(errors).length > 0) {
+      applyClientErrors(errors);
       return;
     }
     setErr(null);
+    setFieldErrors({});
     if (tabIndex < FORM_TABS.length - 1) setTab(FORM_TABS[tabIndex + 1]!.id);
   }
 
@@ -428,18 +463,91 @@ export function ProductForm({ productId }: { productId?: string }) {
     };
   }
 
+  useEffect(() => {
+    if (!isNew) return;
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw) as Record<string, unknown>;
+      if (typeof d.name === "string" && d.name) setName(d.name);
+      if (typeof d.slug === "string" && d.slug) {
+        setSlug(d.slug);
+        setSlugTouched(true);
+      }
+      if (typeof d.description === "string") setDescription(d.description);
+      if (typeof d.shortDescription === "string") setShortDescription(d.shortDescription);
+      if (typeof d.productType === "string") setProductType(d.productType);
+      if (typeof d.status === "string") setStatus(d.status);
+      if (typeof d.tab === "string") setTab(d.tab as FormTab);
+      if (Array.isArray(d.variants)) setVariants(d.variants as VariantForm[]);
+      if (Array.isArray(d.images)) setImages(d.images as ImageForm[]);
+      if (Array.isArray(d.accordion)) setAccordion(d.accordion as AccordionForm[]);
+      if (Array.isArray(d.categoryIds)) setSelectedCats(new Set(d.categoryIds as string[]));
+    } catch {
+      /* ignore corrupt draft */
+    }
+  }, [isNew]);
+
+  useEffect(() => {
+    if (!isNew) return;
+    const t = window.setTimeout(() => {
+      try {
+        sessionStorage.setItem(
+          DRAFT_KEY,
+          JSON.stringify({
+            name,
+            slug,
+            description,
+            shortDescription,
+            productType,
+            status,
+            tab,
+            variants,
+            images,
+            accordion,
+            categoryIds: Array.from(selectedCats),
+            seoTitle,
+            seoDescription,
+            seoKeyword
+          })
+        );
+      } catch {
+        /* quota */
+      }
+    }, 400);
+    return () => window.clearTimeout(t);
+  }, [
+    isNew,
+    name,
+    slug,
+    description,
+    shortDescription,
+    productType,
+    status,
+    tab,
+    variants,
+    images,
+    accordion,
+    selectedCats,
+    seoTitle,
+    seoDescription,
+    seoKeyword
+  ]);
+
   async function handleSave() {
-    const validation = validateAll();
-    if (validation) {
-      setErr(validation);
+    const clientErrors = validateAll();
+    if (Object.keys(clientErrors).length > 0) {
+      applyClientErrors(clientErrors);
       return;
     }
     setSaving(true);
     setErr(null);
+    setFieldErrors({});
     try {
       const payload = buildPayload();
       if (isNew) {
         const created = await postAdminProduct(payload);
+        sessionStorage.removeItem(DRAFT_KEY);
         router.push(`/admin/products/${String(created.id)}`);
       } else {
         await putAdminProduct(productId!, payload);
@@ -447,7 +555,7 @@ export function ProductForm({ productId }: { productId?: string }) {
       }
       router.refresh();
     } catch (ex) {
-      setErr(ex instanceof Error ? ex.message : "Save failed");
+      applyApiError(ex, setErr, setFieldErrors, setTab);
     } finally {
       setSaving(false);
     }
@@ -525,13 +633,14 @@ export function ProductForm({ productId }: { productId?: string }) {
               type="button"
               onClick={() => {
                 if (isNew && i > tabIndex) {
-                  const msg = validateTab(tab);
-                  if (msg) {
-                    setErr(msg);
+                  const tabErrors = validateTab(tab);
+                  if (Object.keys(tabErrors).length > 0) {
+                    applyClientErrors(tabErrors);
                     return;
                   }
                 }
                 setErr(null);
+                setFieldErrors({});
                 setTab(t.id);
               }}
               className={`min-w-[8rem] flex-1 rounded-lg px-3 py-2.5 text-left transition-colors ${
@@ -573,10 +682,19 @@ export function ProductForm({ productId }: { productId?: string }) {
               <input
                 id="name"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setFieldErrors((p) => {
+                    const n = { ...p };
+                    delete n.name;
+                    return n;
+                  });
+                }}
                 required
                 className={inputCls}
+                aria-invalid={Boolean(fieldErrors.name)}
               />
+              <FieldErr message={fieldErrors.name} />
             </div>
             <div>
               <label htmlFor="slug" className={labelCls}>
@@ -588,10 +706,17 @@ export function ProductForm({ productId }: { productId?: string }) {
                 onChange={(e) => {
                   setSlugTouched(true);
                   setSlug(e.target.value);
+                  setFieldErrors((p) => {
+                    const n = { ...p };
+                    delete n.slug;
+                    return n;
+                  });
                 }}
                 required
                 className={`${inputCls} font-mono`}
+                aria-invalid={Boolean(fieldErrors.slug)}
               />
+              <FieldErr message={fieldErrors.slug} />
             </div>
             <div>
               <label htmlFor="short" className={labelCls}>
@@ -686,7 +811,9 @@ export function ProductForm({ productId }: { productId?: string }) {
                   onChange={(e) => setAudioUrl(e.target.value)}
                   placeholder="https://…"
                   className={inputCls}
+                  aria-invalid={Boolean(fieldErrors.audioUrl)}
                 />
+                <FieldErr message={fieldErrors.audioUrl} />
               </div>
             ) : null}
             <div>
@@ -700,6 +827,7 @@ export function ProductForm({ productId }: { productId?: string }) {
 
         {tab === "variants" ? (
           <div className="space-y-6">
+            <FieldErr message={fieldErrors.variants} />
             {variants.map((v, vi) => (
               <div
                 key={v.id ?? `new-${vi}`}
@@ -746,7 +874,9 @@ export function ProductForm({ productId }: { productId?: string }) {
                         )
                       }
                       className={inputCls}
+                      aria-invalid={Boolean(fieldErrors[`variants.${vi}.sku`])}
                     />
+                    <FieldErr message={fieldErrors[`variants.${vi}.sku`]} />
                   </div>
                   <div>
                     <label className={labelCls}>Stock on hand</label>
@@ -952,6 +1082,7 @@ export function ProductForm({ productId }: { productId?: string }) {
                   onRemove={() => removeImage(ii)}
                 />
               ))}
+              <FieldErr message={fieldErrors[`images.0.url`] || fieldErrors.images} />
               <button
                 type="button"
                 onClick={addImageRow}
@@ -1050,10 +1181,16 @@ export function ProductForm({ productId }: { productId?: string }) {
       <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-stone-200 bg-white/95 px-4 py-3 backdrop-blur md:left-64 dark:border-stone-700 dark:bg-stone-900/95">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
-            {err ? <p className="text-sm text-red-600 dark:text-red-400">{err}</p> : null}
-            {isNew && !err ? (
+            {err ? (
+              <p className="text-sm font-medium text-red-600 dark:text-red-400" role="alert">
+                {err}
+              </p>
+            ) : isNew ? (
               <p className="text-xs text-stone-500">
                 Step {tabIndex + 1} of {FORM_TABS.length} · {FORM_TABS[tabIndex]?.label}
+                {typeof window !== "undefined" && sessionStorage.getItem(DRAFT_KEY)
+                  ? " · draft saved in this browser"
+                  : ""}
               </p>
             ) : null}
           </div>

@@ -87,6 +87,7 @@ router.patch(
 
 const productsAdmin = Router();
 productsAdmin.get("/", productsController.adminList);
+productsAdmin.post("/upload-image", mediaHandlers.uploadAdminMedia);
 productsAdmin.get("/:id", productsController.adminGetOne);
 productsAdmin.post("/", validateBody(createProductSchema), productsController.create);
 productsAdmin.put("/:id", validateBody(updateProductSchema), productsController.update);
