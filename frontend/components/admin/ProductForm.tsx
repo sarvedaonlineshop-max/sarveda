@@ -18,6 +18,7 @@ import { ProductAudioUpload } from "@/components/admin/ProductAudioUpload";
 import { ProductImageUpload } from "@/components/admin/ProductImageUpload";
 import { SeoAnalysisPanel } from "@/components/admin/SeoAnalysisPanel";
 import { fetchCategoryTree } from "@/lib/api";
+import { TAX_CLASS_OPTIONS, taxClassForForm } from "@/lib/tax-classes";
 import type { CategoryNode } from "@/lib/types";
 
 const ZONES = ["IN", "US", "GB", "OTHER"] as const;
@@ -230,7 +231,7 @@ export function ProductForm({ productId }: { productId?: string }) {
       setShortDescription(String(p.shortDescription ?? ""));
       setProductType(String(p.productType ?? "SIMPLE"));
       setStatus(String(p.status ?? "DRAFT"));
-      setTaxClass(String(p.taxClass ?? "standard"));
+      setTaxClass(taxClassForForm(String(p.taxClass ?? "standard")));
       setHasAudio(Boolean(p.hasAudio));
       setAudioUrl(String(p.audioUrl ?? ""));
       setSeoTitle(String(p.seoTitle ?? ""));
@@ -460,9 +461,9 @@ export function ProductForm({ productId }: { productId?: string }) {
         description: description.trim(),
         categoryNames: catNames
       });
-      setSeoTitle(data.seoTitle);
-      setSeoDescription(data.seoDescription);
-      setSeoKeyword(data.seoKeyword);
+      setSeoTitle(data.seoTitle.trim());
+      setSeoDescription(data.seoDescription.trim());
+      setSeoKeyword(data.seoKeyword.trim());
       setToast({
         message:
           data.source === "ai"
@@ -495,7 +496,7 @@ export function ProductForm({ productId }: { productId?: string }) {
       shortDescription: shortDescription.trim() || null,
       productType,
       status,
-      taxClass: taxClass.trim() || "standard",
+      taxClass: taxClassForForm(taxClass.trim() || "standard"),
       hasAudio,
       audioUrl: hasAudio ? audioUrl.trim() || null : null,
       seoTitle: seoTitle.trim() || null,
@@ -893,12 +894,17 @@ export function ProductForm({ productId }: { productId?: string }) {
                   onChange={(e) => setTaxClass(e.target.value)}
                   className={inputCls}
                 >
-                  <option value="standard">18% (standard)</option>
-                  <option value="gst18">gst18</option>
-                  <option value="gst12">12%</option>
-                  <option value="gst-5">5%</option>
-                  <option value="gst-zero-rate">0%</option>
+                  {TAX_CLASS_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
                 </select>
+                <p className="mt-1 text-xs text-stone-500">
+                  Woo used <code className="text-[10px]">gst18</code> and{" "}
+                  <code className="text-[10px]">standard</code> for 18% — we store{" "}
+                  <strong>standard</strong> only.
+                </p>
               </div>
             </div>
             <label className="flex items-center gap-2 text-sm">
@@ -1267,16 +1273,31 @@ export function ProductForm({ productId }: { productId?: string }) {
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-stone-200 bg-stone-50/80 px-4 py-3 dark:border-stone-700 dark:bg-stone-950/40">
               <p className="text-sm text-stone-600 dark:text-stone-400">
-                Not an SEO expert? Let AI draft title, description, and keyword from your product copy.
+                AI fills SEO title, meta description, and focus keyword (tuned to pass the checklist
+                below).
               </p>
-              <button
-                type="button"
-                disabled={seoAiLoading || !name.trim()}
-                onClick={() => void fillSeoWithAi()}
-                className="inline-flex shrink-0 items-center gap-2 rounded-md bg-stone-800 px-4 py-2 text-sm font-semibold text-white hover:bg-stone-700 disabled:opacity-50 dark:bg-stone-200 dark:text-stone-900"
-              >
-                {seoAiLoading ? "Generating…" : "Fill SEO with AI"}
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={seoAiLoading || !name.trim()}
+                  onClick={() => void fillSeoWithAi()}
+                  className="inline-flex shrink-0 items-center gap-2 rounded-md bg-stone-800 px-4 py-2 text-sm font-semibold text-white hover:bg-stone-700 disabled:opacity-50 dark:bg-stone-200 dark:text-stone-900"
+                >
+                  {seoAiLoading ? "Generating…" : "Fill SEO with AI"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSeoTitle("");
+                    setSeoDescription("");
+                    setSeoKeyword("");
+                    setToast({ message: "SEO fields cleared" });
+                  }}
+                  className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-200"
+                >
+                  Reset SEO
+                </button>
+              </div>
             </div>
             <div>
               <label htmlFor="seoTitle" className={labelCls}>

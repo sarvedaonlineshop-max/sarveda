@@ -15,7 +15,13 @@ export function ProductAudioUpload({ url, onUrlChange, onClear }: Props) {
   const [uploading, setUploading] = useState(false);
   const [uploadErr, setUploadErr] = useState<string | null>(null);
 
+  const MAX_BYTES = 10 * 1024 * 1024;
+
   async function onFile(file: File) {
+    if (file.size > MAX_BYTES) {
+      setUploadErr(`File is ${(file.size / (1024 * 1024)).toFixed(1)}MB — max 10MB. Use a shorter clip or lower bitrate.`);
+      return;
+    }
     setUploading(true);
     setUploadErr(null);
     try {
@@ -34,7 +40,12 @@ export function ProductAudioUpload({ url, onUrlChange, onClear }: Props) {
       });
       onUrlChange(uploaded);
     } catch (e) {
-      setUploadErr(e instanceof Error ? e.message : "Upload failed");
+      const msg = e instanceof Error ? e.message : "Upload failed";
+      setUploadErr(
+        msg.toLowerCase().includes("too large") || msg.toLowerCase().includes("entity")
+          ? `${msg} — try a file under 10MB, then redeploy backend if this persists.`
+          : msg
+      );
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";

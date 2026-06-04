@@ -43,6 +43,16 @@ export const errorHandler = (
     logger.error("api_error", { message: err.message, code, stack: err.stack });
   }
 
+  if (
+    err.message?.toLowerCase().includes("entity too large") ||
+    (err as Error & { type?: string }).type === "entity.too.large"
+  ) {
+    statusCode = 413;
+    clientMessage =
+      "Upload too large (max 10MB file). Use a smaller audio clip or compress the file.";
+    code = "PAYLOAD_TOO_LARGE";
+  }
+
   res.status(statusCode).json({
     success: false,
     error: clientMessage || "Request failed",

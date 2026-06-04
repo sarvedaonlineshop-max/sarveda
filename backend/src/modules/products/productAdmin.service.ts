@@ -1,6 +1,7 @@
 import type { ProductStatus, ProductType } from "@prisma/client";
 
 import { prisma } from "../../config/db";
+import { normalizeTaxClass } from "../../utils/tax-class";
 
 function httpError(status: number, message: string, code: string): Error {
   const err = new Error(message) as Error & {
@@ -271,7 +272,7 @@ export async function saveProductAdmin(
         shortDescription: input.shortDescription ?? undefined,
         productType: input.productType,
         status: input.status ?? existing.status,
-        taxClass: input.taxClass ?? undefined,
+        taxClass: input.taxClass !== undefined ? normalizeTaxClass(input.taxClass) : undefined,
         hasAudio: input.hasAudio ?? undefined,
         audioUrl: input.audioUrl === "" ? null : input.audioUrl,
         seoTitle: input.seoTitle ?? undefined,
@@ -304,7 +305,7 @@ export async function saveProductAdmin(
       shortDescription: input.shortDescription ?? undefined,
       productType: input.productType,
       status: input.status ?? "DRAFT",
-      taxClass: input.taxClass ?? "standard",
+      taxClass: normalizeTaxClass(input.taxClass ?? "standard"),
       hasAudio: input.hasAudio ?? false,
       audioUrl: input.audioUrl || undefined,
       seoTitle: input.seoTitle ?? undefined,

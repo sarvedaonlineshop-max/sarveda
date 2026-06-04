@@ -100,7 +100,8 @@ app.post("/api/shipping/delhivery/webhook", delhiveryWebhookRaw, (req, res, next
   void delhiveryWebhookHandler(req, res).catch(next);
 });
 
-app.use(express.json({ limit: "1mb" }));
+// Base64 uploads (images/audio) need headroom; default 1mb causes "request entity too large"
+app.use(express.json({ limit: "14mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(passport.initialize());

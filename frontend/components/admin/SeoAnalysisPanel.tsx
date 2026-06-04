@@ -18,6 +18,16 @@ function normalize(value: string): string {
   return value.trim().toLowerCase();
 }
 
+/** Multi-word focus keyword passes if every word (3+ chars) appears in the text. */
+function textIncludesKeyword(text: string, keyword: string): boolean {
+  const hay = normalize(text);
+  const words = normalize(keyword)
+    .split(/\s+/)
+    .filter((w) => w.length >= 3);
+  if (words.length === 0) return hay.includes(normalize(keyword));
+  return words.every((w) => hay.includes(w));
+}
+
 function scoreColor(score: number): string {
   if (score === 8) return "text-emerald-700";
   if (score >= 6) return "text-amber-700";
@@ -58,12 +68,12 @@ export function SeoAnalysisPanel({
   const checks = [
     {
       label: "Focus keyword in SEO title",
-      check: Boolean(keyword) && normalize(seoTitle).includes(normalize(keyword)),
+      check: Boolean(keyword) && textIncludesKeyword(seoTitle, keyword),
       required: true
     },
     {
       label: "Focus keyword in meta description",
-      check: Boolean(keyword) && normalize(seoDescription).includes(normalize(keyword)),
+      check: Boolean(keyword) && textIncludesKeyword(seoDescription, keyword),
       required: true
     },
     {
