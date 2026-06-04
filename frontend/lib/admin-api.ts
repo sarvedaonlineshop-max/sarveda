@@ -488,8 +488,26 @@ export type InventoryListData = {
   meta: {
     lastZohoStockSyncAt: string | null;
     zohoSkuAuditAvailable: boolean;
+    productCount: number;
   };
 };
+
+export type ZohoStockSyncHistoryEntry = {
+  id: string;
+  at: string;
+  scope: "full" | "product" | "unmatched";
+  productId?: string;
+  productName?: string;
+  synced: number;
+  errors: number;
+  skipped: number;
+};
+
+export function fetchZohoStockSyncHistory(limit = 20) {
+  return adminFetch<{ entries: ZohoStockSyncHistoryEntry[] }>(
+    `/api/zoho/sync/history?limit=${limit}`
+  );
+}
 
 export function fetchAdminInventory(params?: { page?: number; limit?: number; all?: boolean }) {
   const q = new URLSearchParams();
@@ -542,6 +560,7 @@ export type ZohoStockSyncResult = {
 
 export function syncStockFromZohoAdmin(opts?: {
   productId?: string;
+  productName?: string;
   unmatchedOnly?: boolean;
 }) {
   return adminFetch<ZohoStockSyncResult>("/api/zoho/sync/stock", {

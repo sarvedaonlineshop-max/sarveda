@@ -10,6 +10,7 @@ import {
   syncStockFromZoho,
   syncUnmatchedSkusFromZoho
 } from "./zoho-inventory";
+import { getZohoStockSyncHistory } from "./zoho-stock-sync-history";
 
 export { createZohoInvoiceForOrder } from "./zoho-invoices";
 export { syncStockFromZoho } from "./zoho-inventory";
@@ -31,9 +32,12 @@ zohoRouter.post("/sync/stock", requireAdmin, async (req, res, next) => {
       typeof req.body?.productId === "string" ? req.body.productId.trim() : undefined;
     const unmatchedOnly = req.body?.unmatchedOnly === true;
 
+    const productName =
+      typeof req.body?.productName === "string" ? req.body.productName.trim() : undefined;
+
     let result;
     if (productId) {
-      result = await syncStockForProduct(productId);
+      result = await syncStockForProduct(productId, productName);
     } else if (unmatchedOnly) {
       result = await syncUnmatchedSkusFromZoho();
     } else {
@@ -50,6 +54,16 @@ zohoRouter.get("/test/stock-sync", async (_req, res, next) => {
   try {
     const result = await syncStockFromZoho();
     res.json({ success: true, ...result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+zohoRouter.get("/sync/history", requireAdmin, async (req, res, next) => {
+  try {
+    const limit = Math.min(50, Math.max(1, parseInt(String(req.query.limit ?? "20"), 10) || 20));
+    const entries = await getZohoStockSyncHistory(limit);
+    res.json({ success: true, data: { entries } });
   } catch (err) {
     next(err);
   }

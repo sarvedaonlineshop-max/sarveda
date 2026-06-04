@@ -850,9 +850,15 @@ export async function inventoryList(req: Request, res: Response, next: NextFunct
       }
     };
 
-    const [{ lastSyncAt, skuSet: zohoSkuSet }, total, rows] = await Promise.all([
+    const [{ lastSyncAt, skuSet: zohoSkuSet }, total, productCount, rows] = await Promise.all([
       getZohoStockSyncMeta(),
       prisma.inventory.count({ where }),
+      prisma.product.count({
+        where: {
+          deletedAt: null,
+          variants: { some: { inventory: { isNot: null } } }
+        }
+      }),
       prisma.inventory.findMany({
         where,
         orderBy: [{ onHand: "asc" }],
@@ -872,7 +878,8 @@ export async function inventoryList(req: Request, res: Response, next: NextFunct
         pagination: { page: loadAll ? 1 : page, limit, total, totalPages },
         meta: {
           lastZohoStockSyncAt: lastSyncAt,
-          zohoSkuAuditAvailable: zohoSkuSet !== null
+          zohoSkuAuditAvailable: zohoSkuSet !== null,
+          productCount
         }
       }
     });
