@@ -7,6 +7,7 @@ export type CourseExtra = {
   duration?: string | null;
   teachers?: string[];
   videoLink?: string | null;
+  seoKeyword?: string | null;
 };
 
 export function parseCourseExtra(extra: CourseListItem["extra"]): CourseExtra {

@@ -451,6 +451,13 @@ export function deleteAdminProduct(id: string) {
   });
 }
 
+export type SeoSuggestResult = {
+  seoTitle: string;
+  seoDescription: string;
+  seoKeyword: string;
+  source: "ai" | "local";
+};
+
 export function suggestProductSeo(body: {
   name: string;
   slug?: string;
@@ -458,12 +465,21 @@ export function suggestProductSeo(body: {
   description?: string;
   categoryNames?: string[];
 }) {
-  return adminFetch<{
-    seoTitle: string;
-    seoDescription: string;
-    seoKeyword: string;
-    source: "ai" | "local";
-  }>("/api/admin/products/seo-suggest", {
+  return adminFetch<SeoSuggestResult>("/api/admin/products/seo-suggest", {
+    method: "POST",
+    body: JSON.stringify(body)
+  });
+}
+
+export function suggestCourseSeo(body: {
+  name: string;
+  slug?: string;
+  shortDescription?: string;
+  description?: string;
+  teachers?: string[];
+  duration?: string;
+}) {
+  return adminFetch<SeoSuggestResult>("/api/admin/courses/seo-suggest", {
     method: "POST",
     body: JSON.stringify(body)
   });

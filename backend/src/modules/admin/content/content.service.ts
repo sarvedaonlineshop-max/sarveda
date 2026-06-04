@@ -81,7 +81,7 @@ function parseCourseExtraRecord(extra: Prisma.JsonValue | null | undefined): Rec
 function buildCourseExtra(
   body: Pick<
     ContentCreateBody,
-    "teachers" | "duration" | "courseStartDate" | "courseEndDate"
+    "teachers" | "duration" | "courseStartDate" | "courseEndDate" | "seoKeyword"
   >,
   existing?: Prisma.JsonValue | null
 ): Prisma.InputJsonValue {
@@ -102,6 +102,10 @@ function buildCourseExtra(
     const e = body.courseEndDate?.trim();
     extra.endDate = e || null;
   }
+  if (body.seoKeyword !== undefined) {
+    const kw = body.seoKeyword?.trim();
+    extra.seoKeyword = kw || null;
+  }
 
   return extra as Prisma.InputJsonValue;
 }
@@ -113,7 +117,8 @@ function courseExtraFieldsPresent(
     body.teachers !== undefined ||
     body.duration !== undefined ||
     body.courseStartDate !== undefined ||
-    body.courseEndDate !== undefined
+    body.courseEndDate !== undefined ||
+    body.seoKeyword !== undefined
   );
 }
 

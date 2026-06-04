@@ -135,6 +135,7 @@ export function itemToFormValues(type: AdminContentType, item: Record<string, un
     ...base,
     imageUrl: (item.imageUrl as string) ?? "",
     shortDescription: (item.shortDescription as string) ?? "",
+    seoKeyword: extra.seoKeyword ?? "",
     teachers: teachers.length > 0 ? teachers : [""],
     duration: extra.duration ?? "",
     courseStartDate: isoDateToInput(extra.startDate),
@@ -172,6 +173,7 @@ export function formValuesToPayload(type: AdminContentType, values: ContentFormV
     base.duration = values.duration.trim() || null;
     base.courseStartDate = values.courseStartDate.trim() || null;
     base.courseEndDate = values.courseEndDate.trim() || null;
+    base.seoKeyword = values.seoKeyword.trim() || null;
   } else {
     base.title = values.title.trim();
     base.description = values.body.trim() || null;

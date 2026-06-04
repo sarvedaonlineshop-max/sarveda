@@ -4,9 +4,17 @@ type SeoAnalysisPanelProps = {
   seoTitle: string;
   seoDescription: string;
   seoKeyword: string;
-  productName: string;
-  productDescription: string;
+  /** @deprecated use itemName */
+  productName?: string;
+  /** @deprecated use itemDescription */
+  productDescription?: string;
+  itemName?: string;
+  itemDescription?: string;
   slug: string;
+  /** URL segment in SERP preview, e.g. product or course */
+  serpPath?: string;
+  /** Label for checklist copy, e.g. product or course */
+  itemLabel?: string;
 };
 
 function truncate(text: string, max: number): string {
@@ -53,10 +61,16 @@ export function SeoAnalysisPanel({
   seoKeyword,
   productName,
   productDescription,
-  slug
+  itemName,
+  itemDescription,
+  slug,
+  serpPath = "product",
+  itemLabel = "product"
 }: SeoAnalysisPanelProps) {
-  const title = seoTitle.trim() || productName.trim();
-  const description = seoDescription.trim() || truncate(productDescription.trim(), 158);
+  const displayName = (itemName ?? productName ?? "").trim();
+  const displayDescription = (itemDescription ?? productDescription ?? "").trim();
+  const title = seoTitle.trim() || displayName;
+  const description = seoDescription.trim() || truncate(displayDescription, 158);
   const keyword = seoKeyword.trim();
 
   const titleLen = seoTitle.trim().length;
@@ -87,8 +101,8 @@ export function SeoAnalysisPanel({
       required: true
     },
     {
-      label: "SEO title is different from product name",
-      check: normalize(seoTitle) !== normalize(productName) && Boolean(seoTitle.trim()),
+      label: `SEO title is different from ${itemLabel} name`,
+      check: normalize(seoTitle) !== normalize(displayName) && Boolean(seoTitle.trim()),
       required: false
     },
     {
@@ -129,7 +143,9 @@ export function SeoAnalysisPanel({
         <h3 className="text-sm font-semibold uppercase tracking-wide text-emerald-800">Google SERP Preview</h3>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           <div className="rounded-lg border border-stone-200 bg-white p-3">
-            <p className="text-xs text-emerald-700">🌐 sarveda.com › product › {slug || "product-slug"}</p>
+            <p className="text-xs text-emerald-700">
+              🌐 sarveda.com › {serpPath} › {slug || `${serpPath}-slug`}
+            </p>
             <p className="mt-1 text-lg font-medium text-blue-700">{truncate(`${title} | Sarveda`, 65)}</p>
             <p className="mt-1 text-sm text-stone-600">{truncate(description, 158)}</p>
           </div>

@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { ContentImageUpload } from "@/components/admin/ContentImageUpload";
+import { SeoAnalysisPanel } from "@/components/admin/SeoAnalysisPanel";
 import {
   ADMIN_CONTENT_LABELS,
   type AdminContentType,
   createAdminContent,
   deleteAdminContent,
   fetchAdminContent,
+  suggestCourseSeo,
   updateAdminContent
 } from "@/lib/admin-api";
 import {
@@ -28,17 +30,6 @@ type Props = {
   itemId?: string;
 };
 
-const emptyForm = {
-  title: "",
-  slug: "",
-  status: "DRAFT",
-  body: "",
-  seoTitle: "",
-  seoDescription: "",
-  seoKeyword: "",
-  startDate: ""
-};
-
 const inputClass =
   "mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100";
 
@@ -50,6 +41,8 @@ export function ContentForm({ type, itemId }: Props) {
   const [values, setValues] = useState<ContentFormValues>(emptyContentForm);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
+  const [seoAiLoading, setSeoAiLoading] = useState(false);
+  const [seoAiNote, setSeoAiNote] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -91,6 +84,38 @@ export function ContentForm({ type, itemId }: Props) {
       setErr(ex instanceof Error ? ex.message : "Save failed");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function fillCourseSeoWithAi() {
+    if (type !== "courses") return;
+    setSeoAiLoading(true);
+    setSeoAiNote(null);
+    setErr(null);
+    try {
+      const data = await suggestCourseSeo({
+        name: values.title.trim(),
+        slug: values.slug.trim(),
+        shortDescription: values.shortDescription.trim(),
+        description: values.body.trim(),
+        teachers: values.teachers.map((t) => t.trim()).filter(Boolean),
+        duration: values.duration.trim()
+      });
+      setValues((v) => ({
+        ...v,
+        seoTitle: data.seoTitle.trim(),
+        seoDescription: data.seoDescription.trim(),
+        seoKeyword: data.seoKeyword.trim()
+      }));
+      setSeoAiNote(
+        data.source === "ai"
+          ? "SEO fields filled with AI suggestions"
+          : "SEO fields filled (smart defaults — add OPENAI_API_KEY on EC2 for AI)"
+      );
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : "SEO suggest failed");
+    } finally {
+      setSeoAiLoading(false);
     }
   }
 
@@ -277,6 +302,40 @@ export function ContentForm({ type, itemId }: Props) {
         <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
           SEO
         </h2>
+
+        {type === "courses" ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-stone-200 bg-stone-50/80 px-4 py-3 dark:border-stone-700 dark:bg-stone-950/40">
+            <p className="text-sm text-stone-600 dark:text-stone-400">
+              AI fills SEO title, meta description, and focus keyword (tuned to pass the checklist
+              below).
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={seoAiLoading || !values.title.trim()}
+                onClick={() => void fillCourseSeoWithAi()}
+                className="inline-flex shrink-0 items-center gap-2 rounded-md bg-stone-800 px-4 py-2 text-sm font-semibold text-white hover:bg-stone-700 disabled:opacity-50 dark:bg-stone-200 dark:text-stone-900"
+              >
+                {seoAiLoading ? "Generating…" : "Fill SEO with AI"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setValues((v) => ({ ...v, seoTitle: "", seoDescription: "", seoKeyword: "" }));
+                  setSeoAiNote("SEO fields cleared");
+                }}
+                className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-200"
+              >
+                Reset SEO
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        {seoAiNote && type === "courses" ? (
+          <p className="text-sm text-emerald-700 dark:text-emerald-400">{seoAiNote}</p>
+        ) : null}
+
         <Field label="SEO title">
           <input
             value={values.seoTitle}
@@ -292,14 +351,28 @@ export function ContentForm({ type, itemId }: Props) {
             className={inputClass}
           />
         </Field>
-        {type === "blog" ? (
-          <Field label="SEO keyword">
+        {type === "blog" || type === "courses" ? (
+          <Field label="Focus keyword">
             <input
               value={values.seoKeyword}
               onChange={(e) => setValues((v) => ({ ...v, seoKeyword: e.target.value }))}
               className={inputClass}
+              placeholder="2-word phrase for SEO checks"
             />
           </Field>
+        ) : null}
+
+        {type === "courses" ? (
+          <SeoAnalysisPanel
+            seoTitle={values.seoTitle}
+            seoDescription={values.seoDescription}
+            seoKeyword={values.seoKeyword}
+            itemName={values.title}
+            itemDescription={values.shortDescription || values.body}
+            slug={values.slug}
+            serpPath="course"
+            itemLabel="course"
+          />
         ) : null}
       </div>
 
