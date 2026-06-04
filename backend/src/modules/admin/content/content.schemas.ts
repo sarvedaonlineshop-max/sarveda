@@ -16,7 +16,13 @@ export const contentCreateSchema = z.object({
   seoTitle: nullableString,
   seoDescription: nullableString,
   seoKeyword: nullableString,
-  startDate: optionalString
+  startDate: optionalString,
+  imageUrl: nullableString,
+  shortDescription: nullableString,
+  teachers: z.array(z.string()).optional(),
+  duration: nullableString,
+  courseStartDate: nullableString,
+  courseEndDate: nullableString
 });
 
 export const contentUpdateSchema = contentCreateSchema.partial();

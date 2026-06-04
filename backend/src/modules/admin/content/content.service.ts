@@ -73,6 +73,50 @@ function normalizeEventStatus(raw?: string): EventStatus {
   return "DRAFT";
 }
 
+function parseCourseExtraRecord(extra: Prisma.JsonValue | null | undefined): Record<string, unknown> {
+  if (!extra || typeof extra !== "object" || Array.isArray(extra)) return {};
+  return extra as Record<string, unknown>;
+}
+
+function buildCourseExtra(
+  body: Pick<
+    ContentCreateBody,
+    "teachers" | "duration" | "courseStartDate" | "courseEndDate"
+  >,
+  existing?: Prisma.JsonValue | null
+): Prisma.InputJsonValue {
+  const extra = { ...parseCourseExtraRecord(existing) };
+
+  if (body.teachers !== undefined) {
+    extra.teachers = body.teachers.map((t) => t.trim()).filter(Boolean);
+  }
+  if (body.duration !== undefined) {
+    const d = body.duration?.trim();
+    extra.duration = d || null;
+  }
+  if (body.courseStartDate !== undefined) {
+    const s = body.courseStartDate?.trim();
+    extra.startDate = s || null;
+  }
+  if (body.courseEndDate !== undefined) {
+    const e = body.courseEndDate?.trim();
+    extra.endDate = e || null;
+  }
+
+  return extra as Prisma.InputJsonValue;
+}
+
+function courseExtraFieldsPresent(
+  body: ContentCreateBody | ContentUpdateBody
+): boolean {
+  return (
+    body.teachers !== undefined ||
+    body.duration !== undefined ||
+    body.courseStartDate !== undefined ||
+    body.courseEndDate !== undefined
+  );
+}
+
 function statusFromPost(s: PostStatus) {
   return s;
 }
@@ -374,9 +418,14 @@ export async function createContent(type: ContentType, body: ContentCreateBody) 
           title,
           slug,
           description: body.description ?? body.content ?? null,
+          shortDescription: body.shortDescription ?? null,
+          imageUrl: body.imageUrl ?? null,
           status: normalizeCourseStatus(body.status),
           seoTitle: body.seoTitle ?? null,
-          seoDescription: body.seoDescription ?? null
+          seoDescription: body.seoDescription ?? null,
+          ...(courseExtraFieldsPresent(body)
+            ? { extra: buildCourseExtra(body) }
+            : {})
         }
       });
       return { item };
@@ -532,12 +581,21 @@ export async function updateContent(type: ContentType, id: string, body: Content
               : body.content !== undefined
                 ? body.content
                 : (raw.description as string | null),
+          shortDescription:
+            body.shortDescription !== undefined
+              ? body.shortDescription
+              : (raw.shortDescription as string | null),
+          imageUrl:
+            body.imageUrl !== undefined ? body.imageUrl : (raw.imageUrl as string | null),
           status: body.status ? normalizeCourseStatus(body.status) : (raw.status as CourseStatus),
           seoTitle: body.seoTitle !== undefined ? body.seoTitle : (raw.seoTitle as string | null),
           seoDescription:
             body.seoDescription !== undefined
               ? body.seoDescription
-              : (raw.seoDescription as string | null)
+              : (raw.seoDescription as string | null),
+          ...(courseExtraFieldsPresent(body)
+            ? { extra: buildCourseExtra(body, raw.extra as Prisma.JsonValue | null) }
+            : {})
         }
       });
       return { item };

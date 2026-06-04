@@ -43,6 +43,12 @@ export type ContentCreateBody = {
   seoDescription?: string | null;
   seoKeyword?: string | null;
   startDate?: string;
+  imageUrl?: string | null;
+  shortDescription?: string | null;
+  teachers?: string[];
+  duration?: string | null;
+  courseStartDate?: string | null;
+  courseEndDate?: string | null;
 };
 
 export type ContentUpdateBody = Partial<ContentCreateBody>;

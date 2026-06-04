@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import { ContentImageUpload } from "@/components/admin/ContentImageUpload";
 import {
   ADMIN_CONTENT_LABELS,
   type AdminContentType,
@@ -16,8 +17,10 @@ import {
   contentBodyLabel,
   contentStatusOptions,
   contentTitleLabel,
+  emptyContentForm,
   formValuesToPayload,
-  itemToFormValues
+  itemToFormValues,
+  type ContentFormValues
 } from "@/lib/admin-content";
 
 type Props = {
@@ -44,7 +47,7 @@ export function ContentForm({ type, itemId }: Props) {
   const isNew = !itemId;
   const label = ADMIN_CONTENT_LABELS[type];
 
-  const [values, setValues] = useState(emptyForm);
+  const [values, setValues] = useState<ContentFormValues>(emptyContentForm);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -170,6 +173,93 @@ export function ContentForm({ type, itemId }: Props) {
               className={inputClass}
             />
           </Field>
+        ) : null}
+
+        {type === "courses" ? (
+          <>
+            <ContentImageUpload
+              url={values.imageUrl}
+              onUrlChange={(imageUrl) => setValues((v) => ({ ...v, imageUrl }))}
+              folder="courses"
+            />
+
+            <Field label="Short description">
+              <input
+                value={values.shortDescription}
+                onChange={(e) => setValues((v) => ({ ...v, shortDescription: e.target.value }))}
+                className={inputClass}
+              />
+            </Field>
+
+            <Field label="Teachers">
+              <div className="mt-1 space-y-2">
+                {values.teachers.map((name, index) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      value={name}
+                      onChange={(e) =>
+                        setValues((v) => {
+                          const teachers = [...v.teachers];
+                          teachers[index] = e.target.value;
+                          return { ...v, teachers };
+                        })
+                      }
+                      placeholder="Teacher name"
+                      className={`${inputClass} mt-0 flex-1`}
+                    />
+                    <button
+                      type="button"
+                      disabled={values.teachers.length <= 1}
+                      onClick={() =>
+                        setValues((v) => ({
+                          ...v,
+                          teachers: v.teachers.filter((_, i) => i !== index)
+                        }))
+                      }
+                      className="shrink-0 rounded-lg border border-stone-300 px-3 py-2 text-xs text-stone-600 hover:bg-stone-50 disabled:opacity-40 dark:border-stone-600 dark:text-stone-300 dark:hover:bg-stone-800"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setValues((v) => ({ ...v, teachers: [...v.teachers, ""] }))}
+                  className="text-sm font-medium text-amber-700 hover:underline dark:text-amber-400"
+                >
+                  + Add teacher
+                </button>
+              </div>
+            </Field>
+
+            <Field label="Duration">
+              <input
+                value={values.duration}
+                onChange={(e) => setValues((v) => ({ ...v, duration: e.target.value }))}
+                placeholder='e.g. "9 hours", "2 days"'
+                className={inputClass}
+              />
+            </Field>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Start date">
+                <input
+                  type="date"
+                  value={values.courseStartDate}
+                  onChange={(e) => setValues((v) => ({ ...v, courseStartDate: e.target.value }))}
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="End date">
+                <input
+                  type="date"
+                  value={values.courseEndDate}
+                  onChange={(e) => setValues((v) => ({ ...v, courseEndDate: e.target.value }))}
+                  className={inputClass}
+                />
+              </Field>
+            </div>
+          </>
         ) : null}
 
         <Field label={contentBodyLabel(type)}>
