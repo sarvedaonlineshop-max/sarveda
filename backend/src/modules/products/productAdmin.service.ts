@@ -1,6 +1,7 @@
 import type { ProductStatus, ProductType } from "@prisma/client";
 
 import { prisma } from "../../config/db";
+import { syncProductVariantsToZoho, type ZohoProductSyncResult } from "../zoho/zoho-items";
 import { normalizeTaxClass } from "../../utils/tax-class";
 
 function httpError(status: number, message: string, code: string): Error {
@@ -253,7 +254,7 @@ async function syncAccordion(productId: string, items: AccordionAdminInput[]): P
 export async function saveProductAdmin(
   productId: string | null,
   input: ProductAdminSaveInput
-): Promise<{ id: string }> {
+): Promise<{ id: string; zohoSync?: ZohoProductSyncResult }> {
   if (productId) {
     const existing = await prisma.product.findFirst({ where: { id: productId, deletedAt: null } });
     if (!existing) throw httpError(404, "Product not found", "NOT_FOUND");
@@ -291,7 +292,8 @@ export async function saveProductAdmin(
     if (input.images) await syncImages(productId, input.images);
     if (input.accordionItems) await syncAccordion(productId, input.accordionItems);
 
-    return { id: productId };
+    const zohoSync = await syncProductVariantsToZoho(productId);
+    return { id: productId, zohoSync };
   }
 
   const clash = await prisma.product.findUnique({ where: { slug: input.slug } });
@@ -339,7 +341,8 @@ export async function saveProductAdmin(
   if (input.images) await syncImages(product.id, input.images);
   if (input.accordionItems) await syncAccordion(product.id, input.accordionItems);
 
-  return { id: product.id };
+  const zohoSync = await syncProductVariantsToZoho(product.id);
+  return { id: product.id, zohoSync };
 }
 
 export async function deleteProductAdmin(id: string): Promise<void> {

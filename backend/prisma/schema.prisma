@@ -103,6 +103,7 @@ model ProductVariant {
   weightGrams     Int?
   isDefault       Boolean                 @default(false)
   status          VariantStatus           @default(ACTIVE)
+  zohoItemId      String?                 @db.VarChar(64)
   productRel      Product                 @relation(fields: [productId], references: [id])
   inventory       Inventory?
   attributeValues VariantAttributeValue[]

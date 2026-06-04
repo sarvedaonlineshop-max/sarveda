@@ -141,9 +141,9 @@ export async function catalogGaps(_req: Request, res: Response, next: NextFuncti
 export async function create(req: Request, res: Response, next: NextFunction) {
   try {
     const body = req.body as CreateProductBody;
-    const { id } = await saveProductAdmin(null, normalizeAdminBody(body));
+    const { id, zohoSync } = await saveProductAdmin(null, normalizeAdminBody(body));
     const product = await getProductAdminById(id);
-    res.status(201).json({ success: true, data: { product } });
+    res.status(201).json({ success: true, data: { product, zohoSync } });
   } catch (err) {
     next(err);
   }
@@ -176,9 +176,9 @@ export async function update(req: Request, res: Response, next: NextFunction) {
       images: body.images,
       accordionItems: body.accordionItems
     };
-    await saveProductAdmin(id, merged);
+    const { zohoSync } = await saveProductAdmin(id, merged);
     const product = await getProductAdminById(id);
-    res.json({ success: true, data: { product } });
+    res.json({ success: true, data: { product, zohoSync } });
   } catch (err) {
     next(err);
   }

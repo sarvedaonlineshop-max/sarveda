@@ -417,18 +417,32 @@ export function fetchAdminProduct(id: string, signal?: AbortSignal) {
   }).then((d) => d.product);
 }
 
+export type ZohoProductSyncResult = {
+  ok: boolean;
+  created: number;
+  updated: number;
+  skipped: number;
+  errors: string[];
+};
+
 export function postAdminProduct(body: Record<string, unknown>) {
-  return adminFetch<{ product: Record<string, unknown> }>(`/api/admin/products`, {
+  return adminFetch<{
+    product: Record<string, unknown>;
+    zohoSync?: ZohoProductSyncResult;
+  }>(`/api/admin/products`, {
     method: "POST",
     body: JSON.stringify(body)
-  }).then((d) => d.product);
+  });
 }
 
 export function putAdminProduct(id: string, body: Record<string, unknown>) {
-  return adminFetch<{ product: Record<string, unknown> }>(`/api/admin/products/${id}`, {
+  return adminFetch<{
+    product: Record<string, unknown>;
+    zohoSync?: ZohoProductSyncResult;
+  }>(`/api/admin/products/${id}`, {
     method: "PUT",
     body: JSON.stringify(body)
-  }).then((d) => d.product);
+  });
 }
 
 export function deleteAdminProduct(id: string) {

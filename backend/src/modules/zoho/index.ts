@@ -14,6 +14,7 @@ import { getZohoStockSyncHistory } from "./zoho-stock-sync-history";
 
 export { createZohoInvoiceForOrder } from "./zoho-invoices";
 export { syncStockFromZoho } from "./zoho-inventory";
+export { syncProductVariantsToZoho } from "./zoho-items";
 
 export const zohoRouter = Router();
 

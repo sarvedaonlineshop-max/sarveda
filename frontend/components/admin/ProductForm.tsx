@@ -15,7 +15,9 @@ import { formatAccordionSection, plainTextFromAccordionContent } from "@/lib/acc
 import { applyApiError, tabForFieldPath } from "@/lib/admin-errors";
 import { AdminToast } from "@/components/admin/AdminToast";
 import { ProductAudioUpload } from "@/components/admin/ProductAudioUpload";
+import { VariantPricingShippingTables } from "@/components/admin/VariantPricingShippingTables";
 import { ProductImageUpload } from "@/components/admin/ProductImageUpload";
+import { parseNonNegativeNumber, sanitizeNonNegativeInput } from "@/lib/admin-form-numbers";
 import { SeoAnalysisPanel } from "@/components/admin/SeoAnalysisPanel";
 import { fetchCategoryTree } from "@/lib/api";
 import { TAX_CLASS_OPTIONS, taxClassForForm } from "@/lib/tax-classes";
@@ -347,9 +349,30 @@ export function ProductForm({ productId }: { productId?: string }) {
     if (target === "variants") {
       variants.forEach((v, i) => {
         if (!v.sku.trim()) errors[`variants.${i}.sku`] = "SKU is required.";
-        if (toPaise(v.mrpInr) < 0 || toPaise(v.saleInr) < 0) {
-          errors[`variants.${i}.saleInr`] = "Prices cannot be negative.";
+        const mrp = parseNonNegativeNumber(v.mrpInr);
+        const sale = parseNonNegativeNumber(v.saleInr);
+        if (v.mrpInr.trim() && mrp === null) errors[`variants.${i}.mrpInr`] = "MRP cannot be negative.";
+        if (v.saleInr.trim() && sale === null) {
+          errors[`variants.${i}.saleInr`] = "Sale price cannot be negative.";
         }
+        if (mrp != null && sale != null && sale > mrp) {
+          errors[`variants.${i}.saleInr`] = "Sale price cannot be higher than MRP.";
+        }
+        const oh = parseNonNegativeNumber(v.onHand, false);
+        if (v.onHand.trim() && oh === null) errors[`variants.${i}.onHand`] = "Stock cannot be negative.";
+        v.shippingRates.forEach((r, ri) => {
+          for (const [key, label] of [
+            ["standardPerProduct", "First-item shipping"],
+            ["standardAdditional", "Extra-item shipping"],
+            ["codPerProduct", "COD first item"],
+            ["codAdditional", "COD extra item"]
+          ] as const) {
+            const val = r[key];
+            if (val.trim() && parseNonNegativeNumber(val) === null) {
+              errors[`variants.${i}.shipping.${ri}.${key}`] = `${label} cannot be negative.`;
+            }
+          }
+        });
       });
       if (variants.filter((v) => v.isDefault).length !== 1) {
         errors.variants = "Mark exactly one variant as default.";
@@ -639,18 +662,38 @@ export function ProductForm({ productId }: { productId?: string }) {
     setFieldErrors({});
     try {
       const payload = buildPayload();
+      const formatZoho = (z?: {
+        ok?: boolean;
+        created?: number;
+        updated?: number;
+        errors?: string[];
+      }) => {
+        if (!z) return "";
+        if (z.ok && !z.errors?.length) {
+          return ` Zoho: ${z.created ?? 0} item(s) created, ${z.updated ?? 0} updated.`;
+        }
+        if (z.errors?.length) return ` Zoho: ${z.errors[0]}`;
+        return "";
+      };
+
       if (isNew) {
-        const created = await postAdminProduct(payload);
+        const { product, zohoSync } = await postAdminProduct(payload);
         sessionStorage.removeItem(DRAFT_KEY);
-        const id = String(created.id);
-        setToast({ message: "Product created — you can keep editing" });
+        const id = String(product.id);
+        setToast({
+          message: `Product created — you can keep editing.${formatZoho(zohoSync)}`,
+          error: zohoSync?.ok === false
+        });
         setSavedAt(Date.now());
         router.replace(`/admin/products/${id}`);
         router.refresh();
       } else {
-        await putAdminProduct(productId!, payload);
+        const { zohoSync } = await putAdminProduct(productId!, payload);
         await loadProduct();
-        setToast({ message: "Changes saved" });
+        setToast({
+          message: `Changes saved.${formatZoho(zohoSync)}`,
+          error: zohoSync?.ok === false
+        });
         setSavedAt(Date.now());
         setErr(null);
         setFieldErrors({});
@@ -991,160 +1034,34 @@ export function ProductForm({ productId }: { productId?: string }) {
                   <div>
                     <label className={labelCls}>Stock on hand</label>
                     <input
-                      type="number"
+                      inputMode="numeric"
                       min={0}
                       value={v.onHand}
                       onChange={(e) =>
                         setVariants((prev) =>
-                          prev.map((x, i) => (i === vi ? { ...x, onHand: e.target.value } : x))
-                        )
-                      }
-                      className={inputCls}
-                    />
-                  </div>
-                </div>
-                <p className="mt-4 text-xs font-semibold uppercase text-stone-500">Pricing</p>
-                <div className="mt-2 grid gap-3 sm:grid-cols-3">
-                  <div className="space-y-2 rounded border border-stone-100 p-2 dark:border-stone-700">
-                    <p className="text-xs font-medium text-stone-600 dark:text-stone-300">India (INR)</p>
-                    <input
-                      placeholder="MRP ₹"
-                      value={v.mrpInr}
-                      onChange={(e) =>
-                        setVariants((prev) =>
-                          prev.map((x, i) => (i === vi ? { ...x, mrpInr: e.target.value } : x))
-                        )
-                      }
-                      className={inputCls}
-                    />
-                    <input
-                      placeholder="Sale ₹"
-                      value={v.saleInr}
-                      onChange={(e) =>
-                        setVariants((prev) =>
-                          prev.map((x, i) => (i === vi ? { ...x, saleInr: e.target.value } : x))
-                        )
-                      }
-                      className={inputCls}
-                    />
-                  </div>
-                  <div className="space-y-2 rounded border border-stone-100 p-2 dark:border-stone-700">
-                    <p className="text-xs font-medium text-stone-600 dark:text-stone-300">US (USD)</p>
-                    <input
-                      placeholder="MRP $"
-                      value={v.mrpUsd}
-                      onChange={(e) =>
-                        setVariants((prev) =>
-                          prev.map((x, i) => (i === vi ? { ...x, mrpUsd: e.target.value } : x))
-                        )
-                      }
-                      className={inputCls}
-                    />
-                    <input
-                      placeholder="Sale $"
-                      value={v.saleUsd}
-                      onChange={(e) =>
-                        setVariants((prev) =>
-                          prev.map((x, i) => (i === vi ? { ...x, saleUsd: e.target.value } : x))
-                        )
-                      }
-                      className={inputCls}
-                    />
-                  </div>
-                  <div className="space-y-2 rounded border border-stone-100 p-2 dark:border-stone-700">
-                    <p className="text-xs font-medium text-stone-600 dark:text-stone-300">UK (GBP)</p>
-                    <input
-                      placeholder="MRP £"
-                      value={v.mrpGbp}
-                      onChange={(e) =>
-                        setVariants((prev) =>
-                          prev.map((x, i) => (i === vi ? { ...x, mrpGbp: e.target.value } : x))
-                        )
-                      }
-                      className={inputCls}
-                    />
-                    <input
-                      placeholder="Sale £"
-                      value={v.saleGbp}
-                      onChange={(e) =>
-                        setVariants((prev) =>
-                          prev.map((x, i) => (i === vi ? { ...x, saleGbp: e.target.value } : x))
-                        )
-                      }
-                      className={inputCls}
-                    />
-                  </div>
-                </div>
-                <p className="mt-4 text-xs font-semibold uppercase text-stone-500">
-                  Shipping (IN ₹, US $, GB £, OTHER $)
-                </p>
-                {v.shippingRates.map((r, ri) => (
-                  <div
-                    key={r.country}
-                    className="mt-2 grid gap-2 rounded border border-dashed border-stone-200 p-2 sm:grid-cols-4 dark:border-stone-600"
-                  >
-                    <p className="text-sm font-medium text-stone-700 dark:text-stone-200">{r.country}</p>
-                    <input
-                      placeholder="Standard 1st"
-                      value={r.standardPerProduct}
-                      onChange={(e) =>
-                        setVariants((prev) =>
                           prev.map((x, i) =>
                             i === vi
-                              ? {
-                                  ...x,
-                                  shippingRates: x.shippingRates.map((sr, j) =>
-                                    j === ri ? { ...sr, standardPerProduct: e.target.value } : sr
-                                  )
-                                }
+                              ? { ...x, onHand: sanitizeNonNegativeInput(e.target.value, false) }
                               : x
                           )
                         )
                       }
                       className={inputCls}
                     />
-                    <input
-                      placeholder="Standard extra"
-                      value={r.standardAdditional}
-                      onChange={(e) =>
-                        setVariants((prev) =>
-                          prev.map((x, i) =>
-                            i === vi
-                              ? {
-                                  ...x,
-                                  shippingRates: x.shippingRates.map((sr, j) =>
-                                    j === ri ? { ...sr, standardAdditional: e.target.value } : sr
-                                  )
-                                }
-                              : x
-                          )
-                        )
-                      }
-                      className={inputCls}
-                    />
-                    {r.country === "IN" ? (
-                      <input
-                        placeholder="COD 1st"
-                        value={r.codPerProduct}
-                        onChange={(e) =>
-                          setVariants((prev) =>
-                            prev.map((x, i) =>
-                              i === vi
-                                ? {
-                                    ...x,
-                                    shippingRates: x.shippingRates.map((sr, j) =>
-                                      j === ri ? { ...sr, codPerProduct: e.target.value } : sr
-                                    )
-                                  }
-                                : x
-                            )
-                          )
-                        }
-                        className={inputCls}
-                      />
-                    ) : null}
+                    <p className="mt-1 text-xs text-stone-500">
+                      Day-to-day stock is synced from Zoho on the Inventory page.
+                    </p>
+                    <FieldErr message={fieldErrors[`variants.${vi}.onHand`]} />
                   </div>
-                ))}
+                </div>
+                <VariantPricingShippingTables
+                  variant={v}
+                  variantIndex={vi}
+                  fieldErrors={fieldErrors}
+                  onChange={(next) =>
+                    setVariants((prev) => prev.map((x, i) => (i === vi ? { ...x, ...next } : x)))
+                  }
+                />
               </div>
             ))}
             <button
