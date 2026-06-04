@@ -2,15 +2,19 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   deleteAdminProduct,
   fetchAdminProduct,
   postAdminProduct,
-  putAdminProduct
+  putAdminProduct,
+  suggestProductSeo
 } from "@/lib/admin-api";
+import { formatAccordionSection, plainTextFromAccordionContent } from "@/lib/accordion-format";
 import { applyApiError, tabForFieldPath } from "@/lib/admin-errors";
+import { AdminToast } from "@/components/admin/AdminToast";
+import { ProductAudioUpload } from "@/components/admin/ProductAudioUpload";
 import { ProductImageUpload } from "@/components/admin/ProductImageUpload";
 import { SeoAnalysisPanel } from "@/components/admin/SeoAnalysisPanel";
 import { fetchCategoryTree } from "@/lib/api";
@@ -44,8 +48,27 @@ type VariantForm = {
   shippingRates: ShippingRateForm[];
 };
 
-type ImageForm = { url: string; altText: string; isPrimary: boolean };
+type ImageForm = { url: string; altText: string; isPrimary: boolean; variantKey: string };
 type AccordionForm = { title: string; content: string };
+
+function variantKeyForForm(v: VariantForm): string {
+  if (v.id) return v.id;
+  const sku = v.sku.trim();
+  return sku ? `sku:${sku}` : "";
+}
+
+function imageVariantPayload(
+  variantKey: string,
+  variants: VariantForm[]
+): { variantId?: string | null; variantSku?: string | null } {
+  if (!variantKey) return { variantId: null, variantSku: null };
+  const match = variants.find((v) => v.id === variantKey);
+  if (match?.id) return { variantId: match.id, variantSku: null };
+  if (variantKey.startsWith("sku:")) {
+    return { variantId: null, variantSku: variantKey.slice(4) };
+  }
+  return { variantId: null, variantSku: variantKey };
+}
 
 function slugify(s: string) {
   return s
@@ -180,7 +203,12 @@ export function ProductForm({ productId }: { productId?: string }) {
   const [seoKeyword, setSeoKeyword] = useState("");
   const [selectedCats, setSelectedCats] = useState<Set<string>>(new Set());
   const [variants, setVariants] = useState<VariantForm[]>([newVariant("product")]);
-  const [images, setImages] = useState<ImageForm[]>([{ url: "", altText: "", isPrimary: true }]);
+  const [images, setImages] = useState<ImageForm[]>([
+    { url: "", altText: "", isPrimary: true, variantKey: "" }
+  ]);
+  const [toast, setToast] = useState<{ message: string; error?: boolean } | null>(null);
+  const [seoAiLoading, setSeoAiLoading] = useState(false);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
   const [accordion, setAccordion] = useState<AccordionForm[]>([
     { title: "Description", content: "" }
   ]);
@@ -261,15 +289,19 @@ export function ProductForm({ productId }: { productId?: string }) {
           ? imgs.map((im) => ({
               url: String(im.url),
               altText: String(im.altText ?? ""),
-              isPrimary: Boolean(im.isPrimary)
+              isPrimary: Boolean(im.isPrimary),
+              variantKey: im.variantId ? String(im.variantId) : ""
             }))
-          : [{ url: "", altText: "", isPrimary: true }]
+          : [{ url: "", altText: "", isPrimary: true, variantKey: "" }]
       );
 
       const acc = (p.accordionItems as Array<Record<string, unknown>>) ?? [];
       setAccordion(
         acc.length
-          ? acc.map((a) => ({ title: String(a.title), content: String(a.content) }))
+          ? acc.map((a) => ({
+              title: String(a.title),
+              content: plainTextFromAccordionContent(String(a.content))
+            }))
           : [{ title: "Description", content: "" }]
       );
     } catch (e) {
@@ -379,7 +411,7 @@ export function ProductForm({ productId }: { productId?: string }) {
       const removed = prev[index];
       const next = prev.filter((_, i) => i !== index);
       if (next.length === 0) {
-        return [{ url: "", altText: "", isPrimary: true }];
+        return [{ url: "", altText: "", isPrimary: true, variantKey: "" }];
       }
       if (removed?.isPrimary) {
         return next.map((im, i) => ({ ...im, isPrimary: i === 0 }));
@@ -391,8 +423,68 @@ export function ProductForm({ productId }: { productId?: string }) {
   function addImageRow() {
     setImages((prev) => [
       ...prev,
-      { url: "", altText: "", isPrimary: prev.length === 0 && !prev.some((im) => im.isPrimary) }
+      { url: "", altText: "", isPrimary: prev.length === 0 && !prev.some((im) => im.isPrimary), variantKey: "" }
     ]);
+  }
+
+  const variantImageOptions = useMemo(() => {
+    const opts = [{ key: "", label: "All variants (shared gallery)" }];
+    for (let i = 0; i < variants.length; i++) {
+      const v = variants[i]!;
+      opts.push({
+        key: variantKeyForForm(v),
+        label: v.sku.trim() ? `Variant: ${v.sku}` : `Variant ${i + 1}`
+      });
+    }
+    return opts;
+  }, [variants]);
+
+  const showVariantImages = productType === "VARIABLE" && variants.length > 1;
+
+  async function fillSeoWithAi() {
+    setSeoAiLoading(true);
+    setErr(null);
+    try {
+      const catNames: string[] = [];
+      const walkCats = (nodes: CategoryNode[]) => {
+        for (const n of nodes) {
+          if (selectedCats.has(n.id)) catNames.push(n.name);
+          if (n.children?.length) walkCats(n.children);
+        }
+      };
+      walkCats(categoryTree);
+      const data = await suggestProductSeo({
+        name: name.trim(),
+        slug: slug.trim(),
+        shortDescription: shortDescription.trim(),
+        description: description.trim(),
+        categoryNames: catNames
+      });
+      setSeoTitle(data.seoTitle);
+      setSeoDescription(data.seoDescription);
+      setSeoKeyword(data.seoKeyword);
+      setToast({
+        message:
+          data.source === "ai"
+            ? "SEO fields filled with AI suggestions"
+            : "SEO fields filled (smart defaults — add OPENAI_API_KEY for AI)"
+      });
+      setTab("seo");
+    } catch (e) {
+      setToast({
+        message: e instanceof Error ? e.message : "SEO suggest failed",
+        error: true
+      });
+    } finally {
+      setSeoAiLoading(false);
+    }
+  }
+
+  function removeAccordionSection(index: number) {
+    setAccordion((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      return next.length > 0 ? next : [{ title: "Description", content: "" }];
+    });
   }
 
   function buildPayload() {
@@ -450,14 +542,15 @@ export function ProductForm({ productId }: { productId?: string }) {
           url: im.url.trim(),
           altText: im.altText.trim() || null,
           position: i,
-          isPrimary: i === primaryIdx
+          isPrimary: i === primaryIdx,
+          ...imageVariantPayload(im.variantKey, variants)
         }));
       })(),
       accordionItems: accordion
         .filter((a) => a.title.trim())
         .map((a, i) => ({
           title: a.title.trim(),
-          content: a.content,
+          content: formatAccordionSection(a.title, a.content),
           position: i
         }))
     };
@@ -548,14 +641,25 @@ export function ProductForm({ productId }: { productId?: string }) {
       if (isNew) {
         const created = await postAdminProduct(payload);
         sessionStorage.removeItem(DRAFT_KEY);
-        router.push(`/admin/products/${String(created.id)}`);
+        const id = String(created.id);
+        setToast({ message: "Product created — you can keep editing" });
+        setSavedAt(Date.now());
+        router.replace(`/admin/products/${id}`);
+        router.refresh();
       } else {
         await putAdminProduct(productId!, payload);
-        router.push("/admin/products");
+        await loadProduct();
+        setToast({ message: "Changes saved" });
+        setSavedAt(Date.now());
+        setErr(null);
+        setFieldErrors({});
       }
-      router.refresh();
     } catch (ex) {
       applyApiError(ex, setErr, setFieldErrors, setTab);
+      setToast({
+        message: ex instanceof Error ? ex.message : "Save failed",
+        error: true
+      });
     } finally {
       setSaving(false);
     }
@@ -584,18 +688,24 @@ export function ProductForm({ productId }: { productId?: string }) {
   const onLastTab = tabIndex === FORM_TABS.length - 1;
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-5 pb-28">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="mx-auto w-full max-w-6xl space-y-5 pb-28 font-sans">
+      <AdminToast toast={toast} onDismiss={() => setToast(null)} />
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-stone-200 pb-4 dark:border-stone-700">
         <div>
           <Link
             href="/admin/products"
-            className="text-sm font-medium text-amber-700 hover:underline dark:text-amber-400"
+            className="text-sm font-medium text-stone-600 hover:text-amber-700 dark:text-stone-400 dark:hover:text-amber-400"
           >
             ← Products
           </Link>
-          <h1 className="mt-2 font-serif text-3xl italic text-stone-800 dark:text-stone-100">
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">
             {isNew ? "Add product" : "Edit product"}
           </h1>
+          {savedAt ? (
+            <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-400">
+              Saved {new Date(savedAt).toLocaleTimeString()}
+            </p>
+          ) : null}
           {isNew ? (
             <p className="mt-1 max-w-xl text-sm text-stone-600 dark:text-stone-400">
               Work through each step — nothing is saved until you click{" "}
@@ -801,20 +911,14 @@ export function ProductForm({ productId }: { productId?: string }) {
               Product has audio preview
             </label>
             {hasAudio ? (
-              <div>
-                <label htmlFor="audio" className={labelCls}>
-                  Audio URL
-                </label>
-                <input
-                  id="audio"
-                  value={audioUrl}
-                  onChange={(e) => setAudioUrl(e.target.value)}
-                  placeholder="https://…"
-                  className={inputCls}
-                  aria-invalid={Boolean(fieldErrors.audioUrl)}
-                />
-                <FieldErr message={fieldErrors.audioUrl} />
-              </div>
+              <ProductAudioUpload
+                url={audioUrl}
+                onUrlChange={(url) => {
+                  setAudioUrl(url);
+                  setHasAudio(true);
+                }}
+                onClear={() => setAudioUrl("")}
+              />
             ) : null}
             <div>
               <p className={labelCls}>Categories</p>
@@ -1058,9 +1162,8 @@ export function ProductForm({ productId }: { productId?: string }) {
               <div>
                 <p className={labelCls}>Product images</p>
                 <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
-                  Upload to Amazon S3 — the CDN URL is filled automatically. One{" "}
-                  <strong className="font-medium text-stone-800 dark:text-stone-200">primary</strong> image is
-                  used on the shop grid; others are gallery images.
+                  Upload to S3. Mark one primary image. With multiple variants, link each image to a
+                  variant so the gallery switches on the product page.
                 </p>
               </div>
               {images.map((im, ii) => (
@@ -1069,6 +1172,16 @@ export function ProductForm({ productId }: { productId?: string }) {
                   url={im.url}
                   altText={im.altText}
                   isPrimary={im.isPrimary}
+                  variantKey={im.variantKey}
+                  variantOptions={showVariantImages ? variantImageOptions : undefined}
+                  onVariantChange={
+                    showVariantImages
+                      ? (variantKey) =>
+                          setImages((prev) =>
+                            prev.map((x, i) => (i === ii ? { ...x, variantKey } : x))
+                          )
+                      : undefined
+                  }
                   role={im.isPrimary ? "primary" : "secondary"}
                   onUrlChange={(url) =>
                     setImages((prev) => prev.map((x, i) => (i === ii ? { ...x, url } : x)))
@@ -1092,11 +1205,32 @@ export function ProductForm({ productId }: { productId?: string }) {
               </button>
             </div>
             <div className="space-y-3">
-              <p className={labelCls}>Accordion sections (product page)</p>
+              <div>
+                <p className={labelCls}>Product page sections</p>
+                <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
+                  Type plain text or bullet lists (lines starting with -). Styling is applied
+                  automatically on the storefront — no HTML needed.
+                </p>
+              </div>
               {accordion.map((a, ai) => (
-                <div key={ai} className="space-y-2 rounded border border-stone-100 p-3 dark:border-stone-700">
+                <div
+                  key={ai}
+                  className="space-y-2 rounded-lg border border-stone-200 bg-stone-50/80 p-4 dark:border-stone-700 dark:bg-stone-950/40"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">
+                      Section {ai + 1}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeAccordionSection(ai)}
+                      className="text-xs font-medium text-red-600 hover:underline dark:text-red-400"
+                    >
+                      Remove section
+                    </button>
+                  </div>
                   <input
-                    placeholder="Section title"
+                    placeholder="Section title (e.g. Description, How to use)"
                     value={a.title}
                     onChange={(e) =>
                       setAccordion((prev) =>
@@ -1106,14 +1240,14 @@ export function ProductForm({ productId }: { productId?: string }) {
                     className={inputCls}
                   />
                   <textarea
-                    placeholder="HTML or plain text content"
+                    placeholder="Write content here. Use blank lines between paragraphs. Use - for bullet points."
                     value={a.content}
                     onChange={(e) =>
                       setAccordion((prev) =>
                         prev.map((x, i) => (i === ai ? { ...x, content: e.target.value } : x))
                       )
                     }
-                    rows={4}
+                    rows={5}
                     className={inputCls}
                   />
                 </div>
@@ -1121,7 +1255,7 @@ export function ProductForm({ productId }: { productId?: string }) {
               <button
                 type="button"
                 onClick={() => setAccordion((prev) => [...prev, { title: "", content: "" }])}
-                className="text-sm text-amber-700 dark:text-amber-400"
+                className="text-sm font-medium text-amber-700 hover:underline dark:text-amber-400"
               >
                 + Add section
               </button>
@@ -1131,6 +1265,19 @@ export function ProductForm({ productId }: { productId?: string }) {
 
         {tab === "seo" ? (
           <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-stone-200 bg-stone-50/80 px-4 py-3 dark:border-stone-700 dark:bg-stone-950/40">
+              <p className="text-sm text-stone-600 dark:text-stone-400">
+                Not an SEO expert? Let AI draft title, description, and keyword from your product copy.
+              </p>
+              <button
+                type="button"
+                disabled={seoAiLoading || !name.trim()}
+                onClick={() => void fillSeoWithAi()}
+                className="inline-flex shrink-0 items-center gap-2 rounded-md bg-stone-800 px-4 py-2 text-sm font-semibold text-white hover:bg-stone-700 disabled:opacity-50 dark:bg-stone-200 dark:text-stone-900"
+              >
+                {seoAiLoading ? "Generating…" : "Fill SEO with AI"}
+              </button>
+            </div>
             <div>
               <label htmlFor="seoTitle" className={labelCls}>
                 SEO title
@@ -1234,7 +1381,7 @@ export function ProductForm({ productId }: { productId?: string }) {
                 type="button"
                 disabled={saving}
                 onClick={() => void handleSave()}
-                className="rounded-lg bg-amber-500 px-5 py-2 text-sm font-semibold text-stone-900 hover:bg-amber-400 disabled:opacity-60"
+                className="rounded-md bg-amber-500 px-5 py-2 text-sm font-semibold text-stone-900 shadow-sm hover:bg-amber-400 disabled:opacity-60"
               >
                 {saving ? "Saving…" : "Save changes"}
               </button>

@@ -3,14 +3,21 @@ import type { ProductVariantDetail } from "@/lib/types";
 export type GalleryImageRef = {
   url: string;
   altText: string | null;
+  variantId?: string | null;
 };
 
-/** Pick gallery index that best matches the selected variant (URL/alt heuristics). */
+/** Pick gallery index that best matches the selected variant (explicit link, then URL/alt heuristics). */
 export function imageIndexForVariant(
   variant: ProductVariantDetail,
   images: GalleryImageRef[]
 ): number {
   if (!images.length) return 0;
+
+  const explicit = images.findIndex((im) => im.variantId === variant.id);
+  if (explicit >= 0) return explicit;
+
+  const pool = images.filter((im) => !im.variantId || im.variantId === variant.id);
+  const searchIn = pool.length > 0 ? pool : images;
 
   const needles: string[] = [];
   for (const row of variant.attributeValues) {
@@ -23,13 +30,16 @@ export function imageIndexForVariant(
 
   for (const needle of needles) {
     if (!needle || needle.length < 3) continue;
-    const idx = images.findIndex((img) => {
+    const idx = searchIn.findIndex((img) => {
       const u = img.url.toLowerCase();
       const a = (img.altText ?? "").toLowerCase();
       return u.includes(needle) || a.includes(needle);
     });
-    if (idx >= 0) return idx;
+    if (idx >= 0) return images.indexOf(searchIn[idx]!);
   }
+
+  const sharedIdx = images.findIndex((im) => !im.variantId);
+  if (sharedIdx >= 0) return sharedIdx;
 
   let hash = 0;
   for (let i = 0; i < variant.id.length; i++) {

@@ -437,6 +437,24 @@ export function deleteAdminProduct(id: string) {
   });
 }
 
+export function suggestProductSeo(body: {
+  name: string;
+  slug?: string;
+  shortDescription?: string;
+  description?: string;
+  categoryNames?: string[];
+}) {
+  return adminFetch<{
+    seoTitle: string;
+    seoDescription: string;
+    seoKeyword: string;
+    source: "ai" | "local";
+  }>("/api/admin/products/seo-suggest", {
+    method: "POST",
+    body: JSON.stringify(body)
+  });
+}
+
 export async function uploadAdminMedia(body: {
   filename: string;
   contentType: string;

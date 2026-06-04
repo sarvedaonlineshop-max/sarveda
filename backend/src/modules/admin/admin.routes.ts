@@ -17,6 +17,7 @@ import * as pickupLocations from "./pickupLocations.handlers";
 import { createPickupLocationSchema, updatePickupLocationSchema } from "./pickupLocations.handlers";
 import { contentRoutes } from "./content/content.routes";
 import * as mediaHandlers from "./media.handlers";
+import * as seoSuggest from "./seo-suggest.handlers";
 
 const router = Router();
 router.use(requireAdmin);
@@ -67,6 +68,7 @@ router.patch(
 router.get("/catalog/gaps", productsController.catalogGaps);
 
 router.post("/media/upload", mediaHandlers.uploadAdminMedia);
+router.post("/products/seo-suggest", seoSuggest.suggestProductSeo);
 
 router.get("/inventory", admin.inventoryList);
 router.post(

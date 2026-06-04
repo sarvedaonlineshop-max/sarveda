@@ -4,10 +4,15 @@ import { useRef, useState } from "react";
 
 import { uploadAdminMedia } from "@/lib/admin-api";
 
+export type VariantImageOption = { key: string; label: string };
+
 type Props = {
   url: string;
   altText: string;
   isPrimary: boolean;
+  variantKey: string;
+  variantOptions?: VariantImageOption[];
+  onVariantChange?: (key: string) => void;
   onUrlChange: (url: string) => void;
   onAltChange: (alt: string) => void;
   onPrimaryChange: () => void;
@@ -23,7 +28,10 @@ export function ProductImageUpload({
   onAltChange,
   onPrimaryChange,
   onRemove,
-  role
+  role,
+  variantKey,
+  variantOptions,
+  onVariantChange
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -126,6 +134,25 @@ export function ProductImageUpload({
                 value={url}
                 className="mt-1 w-full rounded-md border border-stone-200 bg-stone-100 px-3 py-2 font-mono text-xs text-stone-600 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-400"
               />
+            </div>
+          ) : null}
+
+          {variantOptions && variantOptions.length > 1 && onVariantChange ? (
+            <div>
+              <label className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">
+                Link to variant
+              </label>
+              <select
+                value={variantKey}
+                onChange={(e) => onVariantChange(e.target.value)}
+                className="mt-1 w-full rounded-md border border-stone-200 bg-white px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+              >
+                {variantOptions.map((o) => (
+                  <option key={o.key} value={o.key}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
             </div>
           ) : null}
 

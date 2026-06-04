@@ -16,7 +16,7 @@ function RichContent({ html }: { html: string }) {
   if (looksHtml) {
     return (
       <div
-        className="border-t border-stone-100 px-4 pb-4 pt-3 text-sm leading-relaxed text-stone-600 prose prose-stone max-w-none prose-p:my-2 prose-ul:my-2 prose-ul:list-disc prose-ul:pl-5 prose-li:my-1 prose-headings:text-stone-900"
+        className="border-t border-stone-100 px-4 pb-4 pt-3 text-sm leading-relaxed text-stone-600 prose prose-stone max-w-none prose-p:my-2 prose-ul:my-2 prose-ul:list-disc prose-ul:pl-5 prose-li:my-1 prose-headings:text-stone-900 [&_.sarveda-acc-p]:my-2 [&_.sarveda-acc-ul]:my-2 [&_.sarveda-acc-ul]:list-disc [&_.sarveda-acc-ul]:pl-5 [&_.sarveda-acc-li]:my-1"
         dangerouslySetInnerHTML={{ __html: cleaned }}
       />
     );

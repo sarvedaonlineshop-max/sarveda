@@ -33,7 +33,9 @@ const imageAdminSchema = z.object({
   url: z.string().min(1).max(2000),
   altText: z.string().max(500).optional().nullable(),
   position: z.number().int().min(0).optional(),
-  isPrimary: z.boolean().optional()
+  isPrimary: z.boolean().optional(),
+  variantId: z.string().uuid().optional().nullable(),
+  variantSku: z.string().max(120).optional().nullable()
 });
 
 const accordionAdminSchema = z.object({

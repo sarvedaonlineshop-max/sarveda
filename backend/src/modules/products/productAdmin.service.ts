@@ -47,6 +47,8 @@ export type ImageAdminInput = {
   altText?: string | null;
   position?: number;
   isPrimary?: boolean;
+  variantId?: string | null;
+  variantSku?: string | null;
 };
 
 export type AccordionAdminInput = {
@@ -190,6 +192,25 @@ async function syncVariants(productId: string, variants: VariantAdminInput[]): P
 
 }
 
+async function resolveVariantId(
+  productId: string,
+  im: ImageAdminInput
+): Promise<string | null> {
+  if (im.variantId) {
+    const v = await prisma.productVariant.findFirst({
+      where: { id: im.variantId, productId }
+    });
+    return v?.id ?? null;
+  }
+  if (im.variantSku?.trim()) {
+    const v = await prisma.productVariant.findFirst({
+      where: { productId, sku: im.variantSku.trim() }
+    });
+    return v?.id ?? null;
+  }
+  return null;
+}
+
 async function syncImages(productId: string, images: ImageAdminInput[]): Promise<void> {
   await prisma.productImage.deleteMany({ where: { productId } });
   if (images.length === 0) return;
@@ -198,9 +219,11 @@ async function syncImages(productId: string, images: ImageAdminInput[]): Promise
   for (let i = 0; i < images.length; i++) {
     const im = images[i];
     if (!im.url.trim()) continue;
+    const variantId = await resolveVariantId(productId, im);
     await prisma.productImage.create({
       data: {
         productId,
+        variantId,
         url: im.url.trim(),
         altText: im.altText?.trim() || null,
         position: im.position ?? i,
