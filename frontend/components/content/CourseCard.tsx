@@ -6,7 +6,6 @@ import { useEffect, useRef } from "react";
 import type { CourseListItem } from "@/lib/course-types";
 import {
   courseTeachers,
-  formatCourseDateRange,
   parseCourseExtra
 } from "@/lib/content-meta";
 
@@ -15,10 +14,22 @@ type Props = {
   compact?: boolean;
 };
 
+function formatDatePretty(dateStr: string | null | undefined): string | null {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+}
+
 export function CourseCard({ course, compact = false }: Props) {
   const extra = parseCourseExtra(course.extra);
   const teachers = courseTeachers(extra);
-  const dates = formatCourseDateRange(extra);
+  const startLabel = formatDatePretty(extra.startDate);
+  const endLabel = formatDatePretty(extra.endDate);
+  const dateRange = startLabel && endLabel && startLabel !== endLabel
+    ? `${startLabel} – ${endLabel}`
+    : startLabel || null;
+
   const ref = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
@@ -27,204 +38,137 @@ export function CourseCard({ course, compact = false }: Props) {
     const obs = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          el.classList.add("visible");
+          el.style.opacity = "1";
+          el.style.transform = "translateY(0)";
           obs.disconnect();
         }
       },
-      { threshold: 0.12 }
+      { threshold: 0.1 }
     );
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
 
-  const minH = compact ? "320px" : "420px";
+  const imgH = compact ? "200px" : "240px";
 
   return (
-    <>
-      <style>{`
-        .sarveda-course-card {
-          opacity: 0;
-          transform: translateY(28px);
-          transition: opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s ease;
-        }
-        .sarveda-course-card.visible {
-          opacity: 1;
-          transform: translateY(0);
-        }
-        .sarveda-course-card:hover {
-          box-shadow: 0 20px 60px rgba(0,0,0,0.7);
-        }
-        .sarveda-course-card:hover .card-img {
-          transform: scale(1.04);
-        }
-        .sarveda-course-card:hover .explore-btn {
-          background: #C9A84C;
-          color: #0D0D0D;
-        }
-        .sarveda-course-card:hover .gold-label {
-          letter-spacing: 0.28em;
-        }
-        .card-img {
-          transition: transform 0.6s cubic-bezier(0.22,1,0.36,1);
-        }
-        .explore-btn {
-          transition: background 0.25s ease, color 0.25s ease;
-        }
-        .gold-label {
-          transition: letter-spacing 0.3s ease;
-        }
-        .teacher-dot::before {
-          content: "";
-          display: inline-block;
-          width: 3px;
-          height: 3px;
-          border-radius: 50%;
-          background: #C9A84C;
-          margin-right: 6px;
-          vertical-align: middle;
-          flex-shrink: 0;
-        }
-      `}</style>
-
-      <Link
-        ref={ref}
-        href={`/course/${course.slug}`}
-        className="sarveda-course-card group relative flex flex-col overflow-hidden"
-        style={{
-          minHeight: minH,
-          background: "#141414",
-          border: "1px solid #2A2A2A",
-          borderRadius: "2px",
-          display: "flex",
-          flexDirection: "column"
-        }}
-      >
-        {/* Image area */}
-        <div className="relative overflow-hidden" style={{ flex: "0 0 auto", height: compact ? "200px" : "260px" }}>
-          {course.imageUrl ? (
-            <Image
-              src={course.imageUrl}
-              alt={course.title}
-              fill
-              className="card-img object-cover"
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              unoptimized
-            />
-          ) : (
-            <div
-              className="card-img absolute inset-0"
-              style={{
-                background: "linear-gradient(135deg, #1e3a2f 0%, #0f1a14 50%, #1a1200 100%)"
-              }}
-            />
-          )}
-          {/* Subtle bottom fade into card body */}
-          <div
-            className="absolute inset-x-0 bottom-0"
-            style={{
-              height: "60px",
-              background: "linear-gradient(to bottom, transparent, #141414)"
-            }}
+    <Link
+      ref={ref}
+      href={`/course/${course.slug}`}
+      className="group flex flex-col overflow-hidden"
+      style={{
+        background: "#141414",
+        border: "1px solid #222",
+        opacity: 0,
+        transform: "translateY(32px)",
+        transition: "opacity 0.6s cubic-bezier(0.22,1,0.36,1), transform 0.6s cubic-bezier(0.22,1,0.36,1)"
+      }}
+    >
+      {/* Image */}
+      <div className="relative overflow-hidden" style={{ height: imgH, flexShrink: 0 }}>
+        {course.imageUrl ? (
+          <Image
+            src={course.imageUrl}
+            alt={course.title}
+            fill
+            className="object-cover"
+            style={{ transition: "transform 0.6s cubic-bezier(0.22,1,0.36,1)" }}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            unoptimized
           />
-          {/* Gold label badge */}
-          <div className="absolute left-0 top-0">
-            <p
-              className="gold-label px-3 py-1.5 text-[9px] font-bold uppercase"
-              style={{
-                letterSpacing: "0.22em",
-                color: "#0D0D0D",
-                background: "#C9A84C"
-              }}
-            >
-              Course
-            </p>
-          </div>
-        </div>
+        ) : (
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg,#1e3a2f,#0f1a14)" }} />
+        )}
+        {/* hover scale via JS workaround since no CSS modules */}
+        <style>{`.group:hover .course-img{transform:scale(1.05)}`}</style>
+        <span className="course-img" style={{ display: "none" }} />
 
-        {/* Card body */}
-        <div
-          className="flex flex-col"
+        {/* Gold badge */}
+        <span
           style={{
-            flex: 1,
-            padding: "20px 22px 22px",
-            borderTop: "1px solid #2A2A2A"
+            position: "absolute", top: 0, left: 0,
+            background: "#C9A84C", color: "#0D0D0D",
+            fontSize: "9px", fontWeight: 700,
+            letterSpacing: "0.2em", textTransform: "uppercase",
+            padding: "5px 10px"
           }}
         >
-          <h3
-            className="font-serif text-lg font-semibold leading-snug md:text-xl"
-            style={{ color: "#F0EBE1" }}
-          >
-            {course.title}
-          </h3>
+          Course
+        </span>
+      </div>
 
-          {course.shortDescription && (
-            <p
-              className="mt-2 text-sm leading-relaxed line-clamp-2"
-              style={{ color: "#A89880" }}
-            >
-              {course.shortDescription}
-            </p>
-          )}
+      {/* Body */}
+      <div style={{ padding: "20px 22px 24px", flex: 1, display: "flex", flexDirection: "column", gap: "10px" }}>
 
-          {/* Teachers */}
+        <h3
+          className="font-serif"
+          style={{ color: "#F0EBE1", fontSize: "1.15rem", fontWeight: 600, lineHeight: 1.35 }}
+        >
+          {course.title}
+        </h3>
+
+        {course.shortDescription && (
+          <p style={{ color: "#8A7D6B", fontSize: "13px", lineHeight: 1.6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+            {course.shortDescription}
+          </p>
+        )}
+
+        {/* Divider */}
+        <div style={{ height: "1px", background: "#222", margin: "2px 0" }} />
+
+        {/* Meta rows */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "7px" }}>
           {teachers.length > 0 && (
-            <ul className="mt-4 space-y-1.5">
-              {teachers.slice(0, 3).map((name) => (
-                <li
-                  key={name}
-                  className="teacher-dot flex items-center text-sm"
-                  style={{ color: "#C8BCA8" }}
-                >
-                  {name}
-                </li>
-              ))}
-              {teachers.length > 3 && (
-                <li className="text-xs" style={{ color: "#A89880" }}>
-                  +{teachers.length - 3} more
-                </li>
-              )}
-            </ul>
-          )}
-
-          {/* Meta: dates + duration */}
-          {(dates || extra.duration) && (
-            <div
-              className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs"
-              style={{ color: "#A89880" }}
-            >
-              {dates && (
-                <span style={{ color: "#C9A84C" }}>{dates}</span>
-              )}
-              {extra.duration && (
-                <span
-                  style={{
-                    border: "1px solid #2A2A2A",
-                    padding: "2px 8px",
-                    borderRadius: "1px"
-                  }}
-                >
-                  {extra.duration}
-                </span>
-              )}
+            <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+              <span style={{ color: "#C9A84C", fontSize: "10px", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", minWidth: "72px", paddingTop: "1px" }}>With</span>
+              <span style={{ color: "#C8BCA8", fontSize: "13px" }}>
+                {teachers.slice(0, 3).join(" · ")}{teachers.length > 3 ? ` +${teachers.length - 3}` : ""}
+              </span>
             </div>
           )}
-
-          {/* Spacer + CTA */}
-          <div className="mt-auto pt-5">
-            <div
-              className="explore-btn inline-block px-5 py-2 text-xs font-bold uppercase"
-              style={{
-                letterSpacing: "0.16em",
-                border: "1px solid #C9A84C",
-                color: "#C9A84C",
-                borderRadius: "1px"
-              }}
-            >
-              Explore →
+          {dateRange && (
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <span style={{ color: "#C9A84C", fontSize: "10px", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", minWidth: "72px" }}>When</span>
+              <span style={{ color: "#C8BCA8", fontSize: "13px" }}>{dateRange}</span>
             </div>
-          </div>
+          )}
+          {extra.duration && (
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <span style={{ color: "#C9A84C", fontSize: "10px", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", minWidth: "72px" }}>Duration</span>
+              <span style={{ color: "#C8BCA8", fontSize: "13px" }}>{extra.duration}</span>
+            </div>
+          )}
+          {(course.priceInPaise > 0 || course.isFree) && (
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <span style={{ color: "#C9A84C", fontSize: "10px", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", minWidth: "72px" }}>Investment</span>
+              <span style={{ color: "#F0EBE1", fontSize: "13px", fontWeight: 600 }}>
+                {course.isFree ? "Free" : `₹${(course.priceInPaise / 100).toLocaleString("en-IN")}`}
+              </span>
+            </div>
+          )}
         </div>
-      </Link>
-    </>
+
+        {/* CTA */}
+        <div style={{ marginTop: "auto", paddingTop: "14px" }}>
+          <span
+            style={{
+              display: "inline-block",
+              border: "1px solid #C9A84C",
+              color: "#C9A84C",
+              fontSize: "10px",
+              fontWeight: 700,
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              padding: "8px 18px",
+              transition: "background 0.25s, color 0.25s"
+            }}
+            className="course-explore-btn"
+          >
+            Explore Programme →
+          </span>
+          <style>{`.group:hover .course-explore-btn{background:#C9A84C;color:#0D0D0D}`}</style>
+        </div>
+      </div>
+    </Link>
   );
 }
