@@ -10,6 +10,7 @@ import {
   postAdminProduct,
   putAdminProduct
 } from "@/lib/admin-api";
+import { ProductImageUpload } from "@/components/admin/ProductImageUpload";
 import { SeoAnalysisPanel } from "@/components/admin/SeoAnalysisPanel";
 import { fetchCategoryTree } from "@/lib/api";
 import type { CategoryNode } from "@/lib/types";
@@ -134,13 +135,21 @@ function CategoryCheckTree({
 
 const inputCls =
   "mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100";
-const labelCls = "text-xs font-semibold uppercase text-stone-500 dark:text-stone-400";
+const labelCls = "text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400";
+
+const FORM_TABS = [
+  { id: "general" as const, label: "General", hint: "Name, slug, categories" },
+  { id: "variants" as const, label: "Variants & shipping", hint: "SKU, prices, delivery" },
+  { id: "media" as const, label: "Images & content", hint: "Gallery, accordion" },
+  { id: "seo" as const, label: "SEO", hint: "Search listing" }
+];
+type FormTab = (typeof FORM_TABS)[number]["id"];
 
 export function ProductForm({ productId }: { productId?: string }) {
   const router = useRouter();
   const isNew = !productId;
 
-  const [tab, setTab] = useState<"general" | "variants" | "media" | "seo">("general");
+  const [tab, setTab] = useState<FormTab>("general");
   const [categoryTree, setCategoryTree] = useState<CategoryNode[]>([]);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
@@ -269,6 +278,58 @@ export function ProductForm({ productId }: { productId?: string }) {
     if (!slugTouched && isNew && name) setSlug(slugify(name));
   }, [name, slugTouched, isNew]);
 
+  useEffect(() => {
+    if (!isNew || !slug.trim()) return;
+    setVariants((prev) => {
+      if (prev.length !== 1 || prev[0]?.id) return prev;
+      const nextSku = `${slug.trim()}-v1`.slice(0, 120);
+      if (prev[0]?.sku === nextSku) return prev;
+      return [{ ...prev[0]!, sku: nextSku }];
+    });
+  }, [slug, isNew]);
+
+  const tabIndex = FORM_TABS.findIndex((t) => t.id === tab);
+
+  function validateTab(target: FormTab): string | null {
+    if (target === "general") {
+      if (!name.trim()) return "Product name is required.";
+      if (!slug.trim()) return "Slug is required.";
+      return null;
+    }
+    if (target === "variants") {
+      for (let i = 0; i < variants.length; i++) {
+        if (!variants[i]!.sku.trim()) return `Variant ${i + 1}: SKU is required.`;
+      }
+      const defaults = variants.filter((v) => v.isDefault);
+      if (defaults.length !== 1) return "Mark exactly one variant as default.";
+      return null;
+    }
+    return null;
+  }
+
+  function validateAll(): string | null {
+    for (const t of FORM_TABS) {
+      const msg = validateTab(t.id);
+      if (msg) return msg;
+    }
+    return null;
+  }
+
+  function goNext() {
+    const msg = validateTab(tab);
+    if (msg) {
+      setErr(msg);
+      return;
+    }
+    setErr(null);
+    if (tabIndex < FORM_TABS.length - 1) setTab(FORM_TABS[tabIndex + 1]!.id);
+  }
+
+  function goBack() {
+    setErr(null);
+    if (tabIndex > 0) setTab(FORM_TABS[tabIndex - 1]!.id);
+  }
+
   function toggleCat(catId: string) {
     setSelectedCats((prev) => {
       const next = new Set(prev);
@@ -367,8 +428,12 @@ export function ProductForm({ productId }: { productId?: string }) {
     };
   }
 
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSave() {
+    const validation = validateAll();
+    if (validation) {
+      setErr(validation);
+      return;
+    }
     setSaving(true);
     setErr(null);
     try {
@@ -408,22 +473,33 @@ export function ProductForm({ productId }: { productId?: string }) {
     return <p className="text-sm text-stone-500">Loading product…</p>;
   }
 
-  const tabs = [
-    { id: "general" as const, label: "General" },
-    { id: "variants" as const, label: "Variants & shipping" },
-    { id: "media" as const, label: "Images & content" },
-    { id: "seo" as const, label: "SEO" }
-  ];
+  const onLastTab = tabIndex === FORM_TABS.length - 1;
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6">
-      <Link href="/admin/products" className="text-sm text-amber-700 hover:underline dark:text-amber-400">
-        ← Products
-      </Link>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-serif text-3xl italic text-stone-800 dark:text-stone-100">
-          {isNew ? "Add product" : "Edit product"}
-        </h1>
+    <div className="mx-auto w-full max-w-6xl space-y-5 pb-28">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <Link
+            href="/admin/products"
+            className="text-sm font-medium text-amber-700 hover:underline dark:text-amber-400"
+          >
+            ← Products
+          </Link>
+          <h1 className="mt-2 font-serif text-3xl italic text-stone-800 dark:text-stone-100">
+            {isNew ? "Add product" : "Edit product"}
+          </h1>
+          {isNew ? (
+            <p className="mt-1 max-w-xl text-sm text-stone-600 dark:text-stone-400">
+              Work through each step — nothing is saved until you click{" "}
+              <strong className="font-medium text-stone-800 dark:text-stone-200">Create product</strong> on
+              the SEO step. You can move back anytime to change earlier sections.
+            </p>
+          ) : (
+            <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
+              Use the tabs to navigate. Save applies all sections at once.
+            </p>
+          )}
+        </div>
         {!isNew ? (
           <button
             type="button"
@@ -436,25 +512,56 @@ export function ProductForm({ productId }: { productId?: string }) {
         ) : null}
       </div>
 
-      <div className="flex flex-wrap gap-2 border-b border-stone-200 dark:border-stone-700">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
-              tab === t.id
-                ? "border-amber-500 text-amber-800 dark:text-amber-400"
-                : "border-transparent text-stone-500 hover:text-stone-800 dark:hover:text-stone-200"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <nav
+        className="flex flex-wrap gap-2 rounded-xl border border-stone-200 bg-stone-50/80 p-2 dark:border-stone-700 dark:bg-stone-950/50"
+        aria-label="Product form steps"
+      >
+        {FORM_TABS.map((t, i) => {
+          const active = tab === t.id;
+          const done = i < tabIndex;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => {
+                if (isNew && i > tabIndex) {
+                  const msg = validateTab(tab);
+                  if (msg) {
+                    setErr(msg);
+                    return;
+                  }
+                }
+                setErr(null);
+                setTab(t.id);
+              }}
+              className={`min-w-[8rem] flex-1 rounded-lg px-3 py-2.5 text-left transition-colors ${
+                active
+                  ? "bg-white shadow-sm ring-1 ring-amber-200 dark:bg-stone-900 dark:ring-amber-900/60"
+                  : "hover:bg-white/70 dark:hover:bg-stone-900/60"
+              }`}
+            >
+              <span
+                className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
+                  active
+                    ? "bg-amber-500 text-stone-900"
+                    : done
+                      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                      : "bg-stone-200 text-stone-600 dark:bg-stone-700 dark:text-stone-300"
+                }`}
+              >
+                {done && !active ? "✓" : i + 1}
+              </span>
+              <span className="mt-1 block text-sm font-semibold text-stone-800 dark:text-stone-100">
+                {t.label}
+              </span>
+              <span className="block text-[11px] text-stone-500">{t.hint}</span>
+            </button>
+          );
+        })}
+      </nav>
 
       <form
-        onSubmit={(e) => void handleSave(e)}
+        onSubmit={(e) => e.preventDefault()}
         className="space-y-5 rounded-xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-700 dark:bg-stone-900"
       >
         {tab === "general" ? (
@@ -819,106 +926,38 @@ export function ProductForm({ productId }: { productId?: string }) {
           <div className="space-y-6">
             <div className="space-y-3">
               <div>
-                <p className={labelCls}>Product images (CDN URLs)</p>
+                <p className={labelCls}>Product images</p>
                 <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
-                  Choose <strong className="font-medium text-stone-800 dark:text-stone-200">one primary</strong>{" "}
-                  image — shop grid and main product photo. All other URLs are{" "}
-                  <strong className="font-medium text-stone-800 dark:text-stone-200">secondary</strong> gallery images.
+                  Upload to Amazon S3 — the CDN URL is filled automatically. One{" "}
+                  <strong className="font-medium text-stone-800 dark:text-stone-200">primary</strong> image is
+                  used on the shop grid; others are gallery images.
                 </p>
               </div>
-              {images.map((im, ii) => {
-                const role = im.isPrimary ? "primary" : "secondary";
-                const hasUrl = Boolean(im.url.trim());
-                return (
-                  <div
-                    key={ii}
-                    className="rounded-lg border border-stone-200 bg-stone-50/80 p-3 dark:border-stone-600 dark:bg-stone-950/40"
-                  >
-                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ${
-                            im.isPrimary
-                              ? "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200"
-                              : "bg-stone-200 text-stone-700 dark:bg-stone-700 dark:text-stone-200"
-                          }`}
-                        >
-                          {im.isPrimary ? "Primary" : "Secondary"}
-                        </span>
-                        {!im.isPrimary && hasUrl ? (
-                          <span className="text-xs text-stone-500">Gallery only</span>
-                        ) : null}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeImage(ii)}
-                        className="rounded-lg border border-red-200 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/50"
-                        aria-label={`Remove ${role} image`}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-[5rem_1fr_1fr]">
-                      <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-stone-200 bg-white dark:border-stone-600 dark:bg-stone-900">
-                        {hasUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={im.url.trim()}
-                            alt={im.altText || "Preview"}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <span className="px-1 text-center text-[10px] text-stone-400">Preview</span>
-                        )}
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-semibold uppercase text-stone-500">Image URL</label>
-                        <input
-                          placeholder="https://…"
-                          value={im.url}
-                          onChange={(e) =>
-                            setImages((prev) =>
-                              prev.map((x, i) => (i === ii ? { ...x, url: e.target.value } : x))
-                            )
-                          }
-                          className={inputCls}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-semibold uppercase text-stone-500">Alt text</label>
-                        <input
-                          placeholder="Describe the image"
-                          value={im.altText}
-                          onChange={(e) =>
-                            setImages((prev) =>
-                              prev.map((x, i) => (i === ii ? { ...x, altText: e.target.value } : x))
-                            )
-                          }
-                          className={inputCls}
-                        />
-                      </div>
-                    </div>
-                    <label className="mt-2 flex cursor-pointer items-center gap-2 text-sm text-stone-700 dark:text-stone-300">
-                      <input
-                        type="radio"
-                        name="primaryImage"
-                        checked={im.isPrimary}
-                        onChange={() =>
-                          setImages((prev) => prev.map((x, i) => ({ ...x, isPrimary: i === ii })))
-                        }
-                        className="text-amber-600 focus:ring-amber-500"
-                      />
-                      Use as primary image
-                    </label>
-                  </div>
-                );
-              })}
+              {images.map((im, ii) => (
+                <ProductImageUpload
+                  key={ii}
+                  url={im.url}
+                  altText={im.altText}
+                  isPrimary={im.isPrimary}
+                  role={im.isPrimary ? "primary" : "secondary"}
+                  onUrlChange={(url) =>
+                    setImages((prev) => prev.map((x, i) => (i === ii ? { ...x, url } : x)))
+                  }
+                  onAltChange={(altText) =>
+                    setImages((prev) => prev.map((x, i) => (i === ii ? { ...x, altText } : x)))
+                  }
+                  onPrimaryChange={() =>
+                    setImages((prev) => prev.map((x, i) => ({ ...x, isPrimary: i === ii })))
+                  }
+                  onRemove={() => removeImage(ii)}
+                />
+              ))}
               <button
                 type="button"
                 onClick={addImageRow}
-                className="text-sm text-amber-700 dark:text-amber-400"
+                className="text-sm font-medium text-amber-700 hover:underline dark:text-amber-400"
               >
-                + Add secondary image
+                + Add gallery image
               </button>
             </div>
             <div className="space-y-3">
@@ -1006,24 +1045,66 @@ export function ProductForm({ productId }: { productId?: string }) {
           </div>
         ) : null}
 
-        {err ? <p className="text-sm text-red-600 dark:text-red-400">{err}</p> : null}
-
-        <div className="flex gap-3 border-t border-stone-100 pt-4 dark:border-stone-700">
-          <button
-            type="submit"
-            disabled={saving}
-            className="rounded-lg bg-amber-500 px-5 py-2.5 text-sm font-semibold text-stone-900 hover:bg-amber-400 disabled:opacity-60"
-          >
-            {saving ? "Saving…" : isNew ? "Create product" : "Save changes"}
-          </button>
-          <Link
-            href="/admin/products"
-            className="rounded-lg border border-stone-300 bg-white px-5 py-2.5 text-sm font-medium text-stone-700 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-          >
-            Cancel
-          </Link>
-        </div>
       </form>
+
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-stone-200 bg-white/95 px-4 py-3 backdrop-blur md:left-64 dark:border-stone-700 dark:bg-stone-900/95">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            {err ? <p className="text-sm text-red-600 dark:text-red-400">{err}</p> : null}
+            {isNew && !err ? (
+              <p className="text-xs text-stone-500">
+                Step {tabIndex + 1} of {FORM_TABS.length} · {FORM_TABS[tabIndex]?.label}
+              </p>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/admin/products"
+              className="rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+            >
+              Cancel
+            </Link>
+            {tabIndex > 0 ? (
+              <button
+                type="button"
+                onClick={goBack}
+                className="rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+              >
+                Back
+              </button>
+            ) : null}
+            {isNew && !onLastTab ? (
+              <button
+                type="button"
+                onClick={goNext}
+                className="rounded-lg bg-stone-800 px-5 py-2 text-sm font-semibold text-white hover:bg-stone-700 dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-white"
+              >
+                Next
+              </button>
+            ) : null}
+            {isNew && onLastTab ? (
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => void handleSave()}
+                className="rounded-lg bg-amber-500 px-5 py-2 text-sm font-semibold text-stone-900 hover:bg-amber-400 disabled:opacity-60"
+              >
+                {saving ? "Creating…" : "Create product"}
+              </button>
+            ) : null}
+            {!isNew ? (
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => void handleSave()}
+                className="rounded-lg bg-amber-500 px-5 py-2 text-sm font-semibold text-stone-900 hover:bg-amber-400 disabled:opacity-60"
+              >
+                {saving ? "Saving…" : "Save changes"}
+              </button>
+            ) : null}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

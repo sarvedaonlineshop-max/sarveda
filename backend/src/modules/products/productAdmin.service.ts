@@ -3,8 +3,13 @@ import type { ProductStatus, ProductType } from "@prisma/client";
 import { prisma } from "../../config/db";
 
 function httpError(status: number, message: string, code: string): Error {
-  const err = new Error(message) as Error & { status: number; code: string };
+  const err = new Error(message) as Error & {
+    status: number;
+    statusCode: number;
+    code: string;
+  };
   err.status = status;
+  err.statusCode = status;
   err.code = code;
   return err;
 }

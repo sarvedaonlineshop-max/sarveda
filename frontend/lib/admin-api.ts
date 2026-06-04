@@ -417,6 +417,18 @@ export function deleteAdminProduct(id: string) {
   });
 }
 
+export function uploadAdminMedia(body: {
+  filename: string;
+  contentType: string;
+  base64: string;
+  folder?: "products" | "audio";
+}) {
+  return adminFetch<{ url: string; key: string }>("/api/admin/media/upload", {
+    method: "POST",
+    body: JSON.stringify(body)
+  });
+}
+
 export type CatalogGapsReport = {
   summary: {
     activeProducts: number;
