@@ -8,6 +8,7 @@ import type {
 
 import { prisma } from "../../../config/db";
 import { slugify } from "../../../utils/slugify";
+import { ensureCourseCheckoutVariant } from "../../../utils/course-checkout-product";
 import { stripSessionsFromHtml } from "../../../utils/course-sessions";
 import type {
   ContentCreateBody,
@@ -128,24 +129,48 @@ async function resolveCheckoutVariantSku(
 async function courseCheckoutVariantId(
   body: ContentCreateBody | ContentUpdateBody,
   pricing: ReturnType<typeof coursePricingFromBody>,
-  excludeCourseId?: string
+  opts: {
+    excludeCourseId?: string;
+    courseSlug: string;
+    title: string;
+    imageUrl: string | null;
+  }
 ): Promise<string | null> {
-  const { isFree, enrollmentMode } = pricing;
+  const { isFree, enrollmentMode, priceInPaise, priceUsdCents } = pricing;
   if (isFree || enrollmentMode === "ENQUIRY") return null;
 
-  if (body.checkoutVariantSku !== undefined) {
-    return resolveCheckoutVariantSku(body.checkoutVariantSku, excludeCourseId);
+  const trimmedSku = body.checkoutVariantSku?.trim();
+  if (trimmedSku) {
+    return resolveCheckoutVariantSku(trimmedSku, opts.excludeCourseId);
   }
 
-  if (excludeCourseId) {
+  if (opts.excludeCourseId) {
     const existing = await prisma.course.findUnique({
-      where: { id: excludeCourseId },
+      where: { id: opts.excludeCourseId },
       select: { checkoutVariantId: true }
     });
-    return existing?.checkoutVariantId ?? null;
+    if (existing?.checkoutVariantId) {
+      const { variantId } = await ensureCourseCheckoutVariant(prisma, {
+        courseSlug: opts.courseSlug,
+        title: opts.title,
+        priceInPaise,
+        priceUsdCents,
+        imageUrl: opts.imageUrl
+      });
+      return variantId;
+    }
   }
 
-  return null;
+  if (priceInPaise <= 0) return null;
+
+  const { variantId } = await ensureCourseCheckoutVariant(prisma, {
+    courseSlug: opts.courseSlug,
+    title: opts.title,
+    priceInPaise,
+    priceUsdCents,
+    imageUrl: opts.imageUrl
+  });
+  return variantId;
 }
 
 function normalizeEventStatus(raw?: string): EventStatus {
@@ -677,7 +702,11 @@ export async function createContent(type: ContentType, body: ContentCreateBody) 
     }
     case "courses": {
       const pricing = coursePricingFromBody(body);
-      const checkoutVariantId = await courseCheckoutVariantId(body, pricing);
+      const checkoutVariantId = await courseCheckoutVariantId(body, pricing, {
+        courseSlug: slug,
+        title,
+        imageUrl: body.imageUrl ?? null
+      });
       const extra = courseExtraFieldsPresent(body)
         ? await buildCourseExtraPayload(body)
         : undefined;
@@ -877,7 +906,15 @@ export async function updateContent(type: ContentType, id: string, body: Content
           : null;
 
       const checkoutVariantId = pricing
-        ? await courseCheckoutVariantId(body, pricing, id)
+        ? await courseCheckoutVariantId(body, pricing, {
+            excludeCourseId: id,
+            courseSlug: slug,
+            title,
+            imageUrl:
+              body.imageUrl !== undefined
+                ? body.imageUrl
+                : ((raw.imageUrl as string | null) ?? null)
+          })
         : body.checkoutVariantSku !== undefined
           ? await resolveCheckoutVariantSku(body.checkoutVariantSku, id)
           : undefined;

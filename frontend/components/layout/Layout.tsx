@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { PdpCartRail } from "@/components/cart/PdpCartRail";
 import { useCartData } from "@/components/cart/CartProvider";
 import { cartSidebarContentPadClass, cartSidebarWhatsAppRightClass } from "@/lib/cart-sidebar-layout";
+import { whatsAppSiteUrl } from "@/lib/enquiry";
 import { BottomNav } from "./BottomNav";
 import { Header } from "./Header";
 import { MobileExploreLinks } from "./MobileExploreLinks";
@@ -36,7 +37,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <PageTransition>{children}</PageTransition>
       </main>
       <a
-        href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "919999999999"}`}
+        href={whatsAppSiteUrl()}
         target="_blank"
         rel="noreferrer"
         aria-label="Chat on WhatsApp"

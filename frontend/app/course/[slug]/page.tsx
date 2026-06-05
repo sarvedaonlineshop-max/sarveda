@@ -92,6 +92,16 @@ export default async function CourseDetailPage({ params }: Props) {
     layout === "STANDARD" ||
     (layout === "SESSIONS" && sessionRows.length === 0) ||
     (layout === "CURRICULUM" && curriculumModules.length === 0);
+  const showScheduleTable =
+    scheduleRows.length > 0 &&
+    !(layout === "SESSIONS" && sessionRows.length > 0) &&
+    !(
+      layout === "CURRICULUM" &&
+      curriculumModules.length > 0 &&
+      curriculumModules.some((m) => m.startDate || m.endDate)
+    );
+
+  const teachersSection = <CourseAboutTeachers teachers={teacherProfiles} />;
   const registrationOpen = isCourseUpcoming(course);
 
   const programmeRows = [
@@ -175,7 +185,23 @@ export default async function CourseDetailPage({ params }: Props) {
               </div>
             )}
 
-            {extra.aboutTheCourse?.trim() && (
+            {layout === "CUSTOM" && showMainDescription && course.description ? (
+              <div className="course-rich-text" style={{ marginBottom: "40px" }}>
+                <style>{`
+                  .course-rich-text { color: var(--brand-ink); line-height: 1.85; font-size: 15px; }
+                  .course-rich-text h2 { font-family: var(--font-playfair,serif); color:var(--brand-forest); font-size:1.4rem; font-weight:700; margin-top:2rem; margin-bottom:0.6rem; }
+                  .course-rich-text h3 { font-family: var(--font-playfair,serif); color:var(--brand-forest); font-size:1.1rem; font-weight:700; margin-top:1.5rem; margin-bottom:0.5rem; }
+                  .course-rich-text p { margin-bottom:1rem; }
+                  .course-rich-text ul, .course-rich-text ol { padding-left:1.25rem; margin-bottom:1rem; }
+                  .course-rich-text li { margin-bottom:0.4rem; }
+                  .course-rich-text strong { color:var(--brand-forest); }
+                  .course-rich-text a { color:var(--brand-gold); text-decoration:underline; }
+                `}</style>
+                <ProductRichText html={course.description} />
+              </div>
+            ) : null}
+
+            {layout !== "CUSTOM" && extra.aboutTheCourse?.trim() && (
               <section style={{ marginBottom:"40px" }}>
                 <h2 className="font-serif" style={{ color:"var(--brand-forest)", fontSize:"1.5rem", fontWeight:700, marginBottom:"16px" }}>
                   About the Course
@@ -186,8 +212,6 @@ export default async function CourseDetailPage({ params }: Props) {
               </section>
             )}
 
-            <CourseAboutTeachers teachers={teacherProfiles} />
-
             {layout === "SESSIONS" && sessionRows.length > 0 ? (
               <CourseSessionsList sessions={sessionRows} />
             ) : null}
@@ -196,7 +220,7 @@ export default async function CourseDetailPage({ params }: Props) {
               <CourseCurriculumList modules={curriculumModules} />
             ) : null}
 
-            {scheduleRows.length > 0 && (
+            {showScheduleTable && (
               <section style={{ marginBottom:"40px" }}>
                 <h2 className="font-serif" style={{ color:"var(--brand-forest)", fontSize:"1.5rem", fontWeight:700, marginBottom:"20px" }}>
                   Schedule
@@ -251,7 +275,7 @@ export default async function CourseDetailPage({ params }: Props) {
             )}
 
             {/* Description — hidden for SESSIONS when structured sessions exist (no duplicate) */}
-            {showMainDescription && course.description && (
+            {layout !== "CUSTOM" && showMainDescription && course.description && (
               <div className="course-rich-text">
                 <style>{`
                   .course-rich-text { color: var(--brand-ink); line-height: 1.85; font-size: 15px; }
@@ -285,15 +309,17 @@ export default async function CourseDetailPage({ params }: Props) {
                 </div>
               </section>
             ) : null}
+
+            {teachersSection}
           </div>
 
           {/* Sidebar */}
           <aside>
             <div style={{ position:"sticky", top:"100px", border:"1px solid var(--brand-cream-dark)", background:"var(--brand-ivory)", boxShadow:"0 4px 18px rgba(44,36,32,0.08)" }}>
-              {registrationOpen && (course.priceInPaise > 0 || course.isFree) && (
+              {(course.priceInPaise > 0 || course.isFree) && (
                 <div style={{ padding:"20px 24px", borderBottom:"1px solid var(--brand-cream-dark)", background:"linear-gradient(135deg,var(--brand-forest),var(--brand-night))" }}>
                   <p style={{ color:"var(--brand-gold-pale)", fontSize:"9px", fontWeight:700, letterSpacing:"0.18em", textTransform:"uppercase", marginBottom:"6px" }}>Investment</p>
-                  <p className="font-serif" style={{ color:"#fffbf5", fontSize:"2rem", fontWeight:700 }}>
+                  <p className="font-sans tabular-nums" style={{ color:"#fffbf5", fontSize:"1.75rem", fontWeight:600, letterSpacing:"-0.02em" }}>
                     {course.isFree ? "Free" : `₹${(course.priceInPaise / 100).toLocaleString("en-IN")}`}
                   </p>
                   {!course.isFree && <p style={{ color:"rgba(253,246,237,0.6)", fontSize:"11px", marginTop:"2px" }}>GST inclusive</p>}
@@ -304,6 +330,7 @@ export default async function CourseDetailPage({ params }: Props) {
                   item={course}
                   pathPrefix="course"
                   registrationClosed={!registrationOpen}
+                  embedded
                 />
                 <Link href="/courses" style={{ display:"block", textAlign:"center", marginTop:"14px", color:"var(--brand-muted)", fontSize:"13px" }}>
                   ← Back to all courses

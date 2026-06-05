@@ -342,11 +342,20 @@ export function ContentForm({ type, itemId }: Props) {
                 }
                 className={fieldInput}
               >
-                <option value="STANDARD">Standard — overview + description</option>
-                <option value="SESSIONS">Sessions — numbered session curriculum</option>
-                <option value="CURRICULUM">Curriculum — modules with hours &amp; pricing</option>
-                <option value="CUSTOM">Custom — build the full page in HTML below</option>
+                <option value="SESSIONS">Sessions — multi-session programme (session cards)</option>
+                <option value="CURRICULUM">Modules — topic breakdown (Yoga Therapy style)</option>
+                <option value="CUSTOM">Custom — full page in HTML below</option>
+                <option value="STANDARD">Simple overview (legacy import)</option>
               </select>
+              <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">
+                {values.layoutTemplate === "SESSIONS"
+                  ? "Add each session below. Dates, venue and timings go in session fields — not the schedule table."
+                  : values.layoutTemplate === "CURRICULUM"
+                    ? "Overall course price is set under Pricing. Module prices are optional reference breakdown only."
+                    : values.layoutTemplate === "CUSTOM"
+                      ? "Build the page body in HTML. Teachers, pricing sidebar, and optional FAQs still appear on the live page."
+                      : "Short overview + main description. For new courses prefer Sessions or Custom."}
+              </p>
             </Field>
 
             <Field label="Facilitators (from Mentors)">
@@ -423,32 +432,48 @@ export function ContentForm({ type, itemId }: Props) {
               </Field>
             </div>
 
-            <Field label="About the course (summary)">
-              <textarea
-                value={values.aboutTheCourse}
-                onChange={(e) => setValues((v) => ({ ...v, aboutTheCourse: e.target.value }))}
-                rows={4}
-                placeholder="Short overview block (HTML allowed)"
-                className={`${inputClass} font-mono text-xs`}
-              />
-            </Field>
+            {values.layoutTemplate !== "CUSTOM" ? (
+              <Field label="About the course (summary)">
+                <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
+                  Narrative overview — what the programme is about. Distinct from &quot;What&apos;s
+                  included&quot; (deliverables list).
+                </p>
+                <textarea
+                  value={values.aboutTheCourse}
+                  onChange={(e) => setValues((v) => ({ ...v, aboutTheCourse: e.target.value }))}
+                  rows={4}
+                  placeholder="Short overview block (HTML allowed)"
+                  className={`${inputClass} font-mono text-xs`}
+                />
+              </Field>
+            ) : null}
 
-            <Field label="What&apos;s included">
-              <textarea
-                value={values.courseIncludes}
-                onChange={(e) => setValues((v) => ({ ...v, courseIncludes: e.target.value }))}
-                rows={4}
-                placeholder="Bullet list or HTML"
-                className={`${inputClass} font-mono text-xs`}
-              />
-            </Field>
+            {values.layoutTemplate !== "CUSTOM" ? (
+              <Field label="What&apos;s included">
+                <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
+                  Bullet list of materials, access, certificates, etc. — not the course story.
+                </p>
+                <textarea
+                  value={values.courseIncludes}
+                  onChange={(e) => setValues((v) => ({ ...v, courseIncludes: e.target.value }))}
+                  rows={4}
+                  placeholder="Bullet list or HTML"
+                  className={`${inputClass} font-mono text-xs`}
+                />
+              </Field>
+            ) : null}
 
-            <Field label="Schedule / intake rows">
-              <CourseScheduleFields
-                rows={values.courseSchedule}
-                onChange={(courseSchedule) => setValues((v) => ({ ...v, courseSchedule }))}
-              />
-            </Field>
+            {values.layoutTemplate === "STANDARD" || values.layoutTemplate === "CUSTOM" ? (
+              <Field label="Schedule / intake rows">
+                <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
+                  Optional batch dates when not using session or module dates.
+                </p>
+                <CourseScheduleFields
+                  rows={values.courseSchedule}
+                  onChange={(courseSchedule) => setValues((v) => ({ ...v, courseSchedule }))}
+                />
+              </Field>
+            ) : null}
 
             <Field label="FAQs">
               <CourseFaqFields
@@ -478,8 +503,8 @@ export function ContentForm({ type, itemId }: Props) {
 
             {values.layoutTemplate === "CUSTOM" ? (
               <p className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
-                Custom layout: use the page content field below for your full HTML. Optional blocks
-                (FAQs, schedule, mentors) still render if you fill them.
+                Custom layout: use the page content field below for your full HTML. Teachers appear
+                last on the live page. Investment sidebar is always shown.
               </p>
             ) : null}
 
@@ -553,20 +578,15 @@ export function ContentForm({ type, itemId }: Props) {
 
               {!values.courseIsFree &&
               (values.enrollmentMode === "CHECKOUT" || values.enrollmentMode === "BOTH") ? (
-                <Field label="Checkout product SKU">
-                  <input
-                    value={values.checkoutVariantSku}
-                    onChange={(e) =>
-                      setValues((v) => ({ ...v, checkoutVariantSku: e.target.value }))
-                    }
-                    placeholder="Variant SKU used at Razorpay checkout"
-                    className={inputClass}
-                  />
-                  <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
-                    Create a hidden catalog product variant in Products admin, then paste its SKU here.
-                    Leave empty if you only want enquiries for now.
-                  </p>
-                </Field>
+                <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">
+                  A hidden checkout product (5% GST) is created automatically when you save — no SKU
+                  needed. SKU:{" "}
+                  {values.checkoutVariantSku.trim() ? (
+                    <span className="font-mono">{values.checkoutVariantSku}</span>
+                  ) : (
+                    <span className="italic">assigned on save</span>
+                  )}
+                </p>
               ) : null}
             </div>
           </>

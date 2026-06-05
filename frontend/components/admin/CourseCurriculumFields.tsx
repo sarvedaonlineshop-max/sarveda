@@ -29,7 +29,8 @@ export function CourseCurriculumFields({ modules, onChange }: Props) {
   return (
     <div className="space-y-4">
       <p className="text-xs text-stone-500">
-        Module breakdown with hours and optional per-module pricing (Yoga Therapy style).
+        Topic breakdown with hours and optional dates. The Investment sidebar uses the overall course
+        price above — module prices are reference only (e.g. Yoga Therapy optional modules).
       </p>
       {modules.map((mod, index) => (
         <div
@@ -72,7 +73,9 @@ export function CourseCurriculumFields({ modules, onChange }: Props) {
               />
             </label>
             <label className="block">
-              <span className="text-xs font-semibold uppercase text-stone-500">Price INR</span>
+              <span className="text-xs font-semibold uppercase text-stone-500">
+                Reference price INR (optional)
+              </span>
               <input
                 type="number"
                 min={0}
@@ -86,7 +89,9 @@ export function CourseCurriculumFields({ modules, onChange }: Props) {
               />
             </label>
             <label className="block">
-              <span className="text-xs font-semibold uppercase text-stone-500">Price USD</span>
+              <span className="text-xs font-semibold uppercase text-stone-500">
+                Reference price USD (optional)
+              </span>
               <input
                 type="number"
                 min={0}

@@ -1,0 +1,21 @@
+import { buildCourseEnquiryMessage } from "./enquiry";
+import { parseApiResponse } from "./parse-api-response";
+
+export async function submitCourseEnquiry(body: {
+  email: string;
+  courseTitle: string;
+  courseUrl: string;
+}): Promise<{ message: string }> {
+  const res = await fetch("/api/contact/course-enquiry", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: body.email.trim(),
+      courseTitle: body.courseTitle.trim(),
+      courseUrl: body.courseUrl.trim(),
+      message: buildCourseEnquiryMessage(body.courseTitle.trim())
+    })
+  });
+  const data = await parseApiResponse<{ message?: string }>(res);
+  return { message: data.message ?? "Thank you — we will reply shortly." };
+}
