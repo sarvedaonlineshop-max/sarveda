@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import type { CourseListItem } from "@/lib/course-types";
-import { courseTeachers, parseCourseExtra } from "@/lib/content-meta";
+import { courseTeachers, formatCourseDuration, parseCourseExtra } from "@/lib/content-meta";
 
 type Props = { course: CourseListItem; compact?: boolean };
 
@@ -101,10 +101,10 @@ export function CourseCard({ course, compact = false }: Props) {
               <span style={{ color: "var(--brand-ink)", fontSize: "13px" }}>{dateRange}</span>
             </div>
           )}
-          {extra.duration && (
+          {formatCourseDuration(extra) && (
             <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
               <span style={{ color: "var(--brand-gold)", fontSize: "9px", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", minWidth: "68px" }}>Duration</span>
-              <span style={{ color: "var(--brand-ink)", fontSize: "13px" }}>{extra.duration}</span>
+              <span style={{ color: "var(--brand-ink)", fontSize: "13px" }}>{formatCourseDuration(extra)}</span>
             </div>
           )}
           {(course.priceInPaise > 0 || course.isFree) && (

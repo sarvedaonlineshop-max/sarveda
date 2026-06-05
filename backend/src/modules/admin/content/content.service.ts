@@ -157,11 +157,39 @@ function parseCourseExtraRecord(extra: Prisma.JsonValue | null | undefined): Rec
   return extra as Record<string, unknown>;
 }
 
+async function teachersFromMentorIds(mentorIds: string[]) {
+  if (!mentorIds.length) return [];
+  const rows = await prisma.mentor.findMany({
+    where: { id: { in: mentorIds }, isActive: true },
+    select: {
+      id: true,
+      name: true,
+      bio: true,
+      photoUrl: true,
+      expertise: true
+    }
+  });
+  const order = new Map(mentorIds.map((id, i) => [id, i]));
+  return rows
+    .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
+    .map((m) => ({
+      name: m.name,
+      bio: m.bio,
+      imageUrl: m.photoUrl,
+      designation: m.expertise
+    }));
+}
+
 function buildCourseExtra(
   body: Pick<
     ContentCreateBody,
+    | "mentorIds"
     | "teachers"
+    | "layoutTemplate"
+    | "durationHours"
     | "duration"
+    | "sessions"
+    | "curriculum"
     | "courseStartDate"
     | "courseEndDate"
     | "seoKeyword"
@@ -174,11 +202,22 @@ function buildCourseExtra(
     | "schedule"
     | "videoUrl"
   >,
-  existing?: Prisma.JsonValue | null
+  existing?: Prisma.JsonValue | null,
+  resolvedTeachers?: Array<{
+    name: string;
+    bio?: string | null;
+    imageUrl?: string | null;
+    designation?: string | null;
+  }>
 ): Prisma.InputJsonValue {
   const extra = { ...parseCourseExtraRecord(existing) };
 
-  if (body.teachers !== undefined) {
+  if (body.mentorIds !== undefined) {
+    extra.mentorIds = body.mentorIds;
+  }
+  if (resolvedTeachers !== undefined) {
+    extra.teachers = resolvedTeachers;
+  } else if (body.teachers !== undefined) {
     extra.teachers = body.teachers
       .map((t) => ({
         name: t.name.trim(),
@@ -188,9 +227,40 @@ function buildCourseExtra(
       }))
       .filter((t) => t.name);
   }
+  if (body.layoutTemplate !== undefined) {
+    extra.layoutTemplate = body.layoutTemplate;
+  }
+  if (body.durationHours !== undefined) {
+    extra.durationHours = body.durationHours;
+  }
   if (body.duration !== undefined) {
     const d = body.duration?.trim();
     extra.duration = d || null;
+  }
+  if (body.sessions !== undefined) {
+    extra.sessions = body.sessions
+      .map((s) => ({
+        sessionId: s.sessionId.trim(),
+        name: s.name.trim(),
+        mentorId: s.mentorId?.trim() || null,
+        teacherName: s.teacherName?.trim() || null,
+        content: s.content.trim(),
+        scheduledAt: s.scheduledAt?.trim() || null,
+        scheduleNote: s.scheduleNote?.trim() || null
+      }))
+      .filter((s) => s.name);
+  }
+  if (body.curriculum !== undefined) {
+    extra.curriculum = body.curriculum
+      .map((m) => ({
+        name: m.name.trim(),
+        hours: m.hours ?? null,
+        priceInr: m.priceInr ?? null,
+        priceUsd: m.priceUsd ?? null,
+        startDate: m.startDate?.trim() || null,
+        endDate: m.endDate?.trim() || null
+      }))
+      .filter((m) => m.name);
   }
   if (body.courseStartDate !== undefined) {
     const s = body.courseStartDate?.trim();
@@ -259,8 +329,13 @@ function courseExtraFieldsPresent(
   body: ContentCreateBody | ContentUpdateBody
 ): boolean {
   return (
+    body.mentorIds !== undefined ||
     body.teachers !== undefined ||
+    body.layoutTemplate !== undefined ||
+    body.durationHours !== undefined ||
     body.duration !== undefined ||
+    body.sessions !== undefined ||
+    body.curriculum !== undefined ||
     body.courseStartDate !== undefined ||
     body.courseEndDate !== undefined ||
     body.seoKeyword !== undefined ||
@@ -273,6 +348,15 @@ function courseExtraFieldsPresent(
     body.schedule !== undefined ||
     body.videoUrl !== undefined
   );
+}
+
+async function buildCourseExtraPayload(
+  body: ContentCreateBody | ContentUpdateBody,
+  existing?: Prisma.JsonValue | null
+) {
+  const resolvedTeachers =
+    body.mentorIds !== undefined ? await teachersFromMentorIds(body.mentorIds) : undefined;
+  return buildCourseExtra(body, existing, resolvedTeachers);
 }
 
 function statusFromPost(s: PostStatus) {
@@ -581,6 +665,9 @@ export async function createContent(type: ContentType, body: ContentCreateBody) 
     case "courses": {
       const pricing = coursePricingFromBody(body);
       const checkoutVariantId = await courseCheckoutVariantId(body, pricing);
+      const extra = courseExtraFieldsPresent(body)
+        ? await buildCourseExtraPayload(body)
+        : undefined;
       const item = await prisma.course.create({
         data: {
           title,
@@ -597,9 +684,7 @@ export async function createContent(type: ContentType, body: ContentCreateBody) 
           priceUsdCents: pricing.priceUsdCents,
           enrollmentMode: pricing.enrollmentMode,
           checkoutVariantId,
-          ...(courseExtraFieldsPresent(body)
-            ? { extra: buildCourseExtra(body) }
-            : {})
+          ...(extra ? { extra } : {})
         },
         include: { checkoutVariant: { select: { sku: true } } }
       });
@@ -811,7 +896,12 @@ export async function updateContent(type: ContentType, id: string, body: Content
             : {}),
           ...(checkoutVariantId !== undefined ? { checkoutVariantId } : {}),
           ...(courseExtraFieldsPresent(body)
-            ? { extra: buildCourseExtra(body, raw.extra as Prisma.JsonValue | null) }
+            ? {
+                extra: await buildCourseExtraPayload(
+                  body,
+                  raw.extra as Prisma.JsonValue | null
+                )
+              }
             : {})
         },
         include: { checkoutVariant: { select: { sku: true } } }

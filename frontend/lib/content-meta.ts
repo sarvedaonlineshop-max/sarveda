@@ -1,5 +1,10 @@
 import type { CourseListItem } from "./course-types";
 import type { EventListItem } from "./event-types";
+import type {
+  CourseCurriculumModule,
+  CourseLayoutTemplate,
+  CourseSession
+} from "./course-sessions";
 
 export type CourseTeacher = {
   name: string;
@@ -21,18 +26,44 @@ export type CourseExtra = {
   startDate?: string | null;
   endDate?: string | null;
   duration?: string | null;
+  durationHours?: number | null;
+  layoutTemplate?: CourseLayoutTemplate;
+  mentorIds?: string[];
+  sessions?: CourseSession[];
+  curriculum?: CourseCurriculumModule[];
   mode?: string | null;
   venue?: string | null;
   timings?: string | null;
   courseIncludes?: string | null;
   aboutTheCourse?: string | null;
-  /** Legacy: string names only. New: full teacher objects. */
+  /** Synced from mentors on save; legacy import may use string[] only. */
   teachers?: string[] | CourseTeacher[];
   schedule?: CourseScheduleRow[];
   videoLink?: string | null;
   seoKeyword?: string | null;
   faqs?: Array<{ question: string; answer: string }>;
 };
+
+export function parseCourseSessions(extra: CourseExtra): CourseSession[] {
+  if (!Array.isArray(extra.sessions)) return [];
+  return extra.sessions.filter((s) => s.name?.trim());
+}
+
+export function courseDurationHours(extra: CourseExtra): number | null {
+  if (typeof extra.durationHours === "number" && extra.durationHours > 0) {
+    return extra.durationHours;
+  }
+  const raw = extra.duration?.trim();
+  if (!raw) return null;
+  const n = parseFloat(raw.replace(/[^\d.]/g, ""));
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+export function formatCourseDuration(extra: CourseExtra): string | null {
+  const hours = courseDurationHours(extra);
+  if (hours == null) return extra.duration?.trim() || null;
+  return hours === 1 ? "1 hour" : `${hours} hours`;
+}
 
 export function parseCourseExtra(extra: CourseListItem["extra"]): CourseExtra {
   if (!extra || typeof extra !== "object") return {};

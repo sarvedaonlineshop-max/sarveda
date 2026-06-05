@@ -45,13 +45,33 @@ export type ContentCreateBody = {
   startDate?: string;
   imageUrl?: string | null;
   shortDescription?: string | null;
+  mentorIds?: string[];
   teachers?: Array<{
     name: string;
     bio?: string | null;
     imageUrl?: string | null;
     designation?: string | null;
   }>;
+  layoutTemplate?: string;
+  durationHours?: number | null;
   duration?: string | null;
+  sessions?: Array<{
+    sessionId: string;
+    name: string;
+    mentorId?: string | null;
+    teacherName?: string | null;
+    content: string;
+    scheduledAt?: string | null;
+    scheduleNote?: string | null;
+  }>;
+  curriculum?: Array<{
+    name: string;
+    hours?: number | null;
+    priceInr?: number | null;
+    priceUsd?: number | null;
+    startDate?: string | null;
+    endDate?: string | null;
+  }>;
   courseStartDate?: string | null;
   courseEndDate?: string | null;
   videoUrl?: string | null;

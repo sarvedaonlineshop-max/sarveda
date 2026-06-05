@@ -1,28 +1,18 @@
 import type { AdminContentType } from "@/lib/admin-api";
-import {
-  parseCourseExtra,
-  parseCourseSchedule,
-  parseCourseTeachers
-} from "@/lib/content-meta";
+import { parseCourseExtra, parseCourseSchedule } from "@/lib/content-meta";
 import type { CourseFaqForm } from "@/components/admin/CourseFaqFields";
+import { emptyCurriculumModule } from "@/components/admin/CourseCurriculumFields";
 import {
   emptyCourseSchedule,
   type CourseScheduleForm
 } from "@/components/admin/CourseScheduleFields";
-
-export type CourseTeacherForm = {
-  name: string;
-  designation: string;
-  bio: string;
-  imageUrl: string;
-};
-
-export const emptyCourseTeacher: CourseTeacherForm = {
-  name: "",
-  designation: "",
-  bio: "",
-  imageUrl: ""
-};
+import { emptyCourseSession } from "@/components/admin/CourseSessionFields";
+import type {
+  CourseCurriculumModule,
+  CourseLayoutTemplate,
+  CourseSession
+} from "@/lib/course-sessions";
+import { courseDurationHours } from "@/lib/content-meta";
 
 export function contentUsesName(type: AdminContentType) {
   return type === "vaidyas" || type === "mentors";
@@ -82,8 +72,11 @@ export type ContentFormValues = {
   startDate: string;
   imageUrl: string;
   shortDescription: string;
-  courseTeachers: CourseTeacherForm[];
-  duration: string;
+  mentorIds: string[];
+  layoutTemplate: CourseLayoutTemplate;
+  durationHours: string;
+  courseSessions: CourseSession[];
+  courseCurriculum: CourseCurriculumModule[];
   courseStartDate: string;
   courseEndDate: string;
   videoUrl: string;
@@ -114,8 +107,11 @@ export const emptyContentForm: ContentFormValues = {
   startDate: "",
   imageUrl: "",
   shortDescription: "",
-  courseTeachers: [{ ...emptyCourseTeacher }],
-  duration: "",
+  mentorIds: [],
+  layoutTemplate: "STANDARD",
+  durationHours: "",
+  courseSessions: [{ ...emptyCourseSession, sessionId: "1" }],
+  courseCurriculum: [{ ...emptyCurriculumModule }],
   courseStartDate: "",
   courseEndDate: "",
   videoUrl: "",
@@ -171,8 +167,11 @@ export function itemToFormValues(type: AdminContentType, item: Record<string, un
       : "",
     imageUrl: "",
     shortDescription: "",
-    courseTeachers: [{ ...emptyCourseTeacher }],
-    duration: "",
+    mentorIds: [],
+    layoutTemplate: "STANDARD",
+    durationHours: "",
+    courseSessions: [{ ...emptyCourseSession, sessionId: "1" }],
+    courseCurriculum: [{ ...emptyCurriculumModule }],
     courseStartDate: "",
     courseEndDate: "",
     videoUrl: "",
@@ -206,23 +205,45 @@ export function itemToFormValues(type: AdminContentType, item: Record<string, un
   }
 
   const extra = parseCourseExtra(item.extra as Record<string, unknown> | null);
-  const teachers = parseCourseTeachers(extra);
+  const hours = courseDurationHours(extra);
 
   return {
     ...base,
     imageUrl: (item.imageUrl as string) ?? "",
     shortDescription: (item.shortDescription as string) ?? "",
     seoKeyword: extra.seoKeyword ?? "",
-    courseTeachers:
-      teachers.length > 0
-        ? teachers.map((t) => ({
-            name: t.name,
-            designation: t.designation ?? "",
-            bio: t.bio ?? "",
-            imageUrl: t.imageUrl ?? ""
+    mentorIds: Array.isArray(extra.mentorIds) ? extra.mentorIds : [],
+    layoutTemplate:
+      extra.layoutTemplate ??
+      (extra.sessions?.length && extra.sessions.length >= 2
+        ? "SESSIONS"
+        : extra.curriculum?.length && extra.curriculum.length >= 2
+          ? "CURRICULUM"
+          : "STANDARD"),
+    durationHours: hours != null ? String(hours) : "",
+    courseSessions:
+      extra.sessions?.length
+        ? extra.sessions.map((s) => ({
+            sessionId: s.sessionId ?? "",
+            name: s.name ?? "",
+            mentorId: s.mentorId ?? null,
+            teacherName: s.teacherName ?? "",
+            content: s.content ?? "",
+            scheduledAt: s.scheduledAt ?? "",
+            scheduleNote: s.scheduleNote ?? ""
           }))
-        : [{ ...emptyCourseTeacher }],
-    duration: extra.duration ?? "",
+        : [{ ...emptyCourseSession, sessionId: "1" }],
+    courseCurriculum:
+      extra.curriculum?.length
+        ? extra.curriculum.map((m) => ({
+            name: m.name ?? "",
+            hours: m.hours ?? null,
+            priceInr: m.priceInr ?? null,
+            priceUsd: m.priceUsd ?? null,
+            startDate: m.startDate ?? "",
+            endDate: m.endDate ?? ""
+          }))
+        : [{ ...emptyCurriculumModule }],
     courseStartDate: isoDateToInput(extra.startDate),
     courseEndDate: isoDateToInput(extra.endDate),
     videoUrl: (item.videoUrl as string) ?? extra.videoLink ?? "",
@@ -301,15 +322,37 @@ export function formValuesToPayload(type: AdminContentType, values: ContentFormV
     base.description = values.body.trim() || null;
     base.imageUrl = values.imageUrl.trim() || null;
     base.shortDescription = values.shortDescription.trim() || null;
-    base.teachers = values.courseTeachers
-      .map((t) => ({
-        name: t.name.trim(),
-        designation: t.designation.trim() || null,
-        bio: t.bio.trim() || null,
-        imageUrl: t.imageUrl.trim() || null
+    base.mentorIds = values.mentorIds;
+    base.layoutTemplate = values.layoutTemplate;
+    const hours = parseFloat(values.durationHours.replace(/,/g, ""));
+    base.durationHours = Number.isFinite(hours) && hours > 0 ? hours : null;
+    base.duration =
+      Number.isFinite(hours) && hours > 0
+        ? hours === 1
+          ? "1 hour"
+          : `${hours} hours`
+        : null;
+    base.sessions = values.courseSessions
+      .map((s) => ({
+        sessionId: s.sessionId.trim(),
+        name: s.name.trim(),
+        mentorId: s.mentorId?.trim() || null,
+        teacherName: s.teacherName?.trim() || null,
+        content: s.content.trim(),
+        scheduledAt: s.scheduledAt?.trim() || null,
+        scheduleNote: s.scheduleNote?.trim() || null
       }))
-      .filter((t) => t.name);
-    base.duration = values.duration.trim() || null;
+      .filter((s) => s.name);
+    base.curriculum = values.courseCurriculum
+      .map((m) => ({
+        name: m.name.trim(),
+        hours: m.hours ?? null,
+        priceInr: m.priceInr ?? null,
+        priceUsd: m.priceUsd ?? null,
+        startDate: m.startDate?.trim() || null,
+        endDate: m.endDate?.trim() || null
+      }))
+      .filter((m) => m.name);
     base.courseStartDate = values.courseStartDate.trim() || null;
     base.courseEndDate = values.courseEndDate.trim() || null;
     base.videoUrl = values.videoUrl.trim() || null;

@@ -9,6 +9,12 @@ import path from "path";
 
 import { PrismaClient } from "@prisma/client";
 import { toPaise, toUsdCents } from "../src/utils/money";
+import {
+  applySessionSchedules,
+  detectLayoutTemplate,
+  parseCurriculumFromMeta,
+  parseSessionsFromHtml
+} from "../src/utils/course-sessions";
 import { may30 } from "./migration-paths";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
@@ -143,7 +149,29 @@ function pickSchedule(meta: MetaMap): ImportedScheduleRow[] | undefined {
   return rows.length ? rows : undefined;
 }
 
-function pickExtra(meta: MetaMap, attachments: Map<string, string>) {
+async function matchMentorIdsByNames(names: string[]): Promise<string[]> {
+  const mentors = await prisma.mentor.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true }
+  });
+  const ids: string[] = [];
+  for (const raw of names) {
+    const name = raw.trim().toLowerCase();
+    if (!name) continue;
+    const hit =
+      mentors.find((m) => m.name.toLowerCase() === name) ??
+      mentors.find((m) => name.includes(m.name.toLowerCase()) || m.name.toLowerCase().includes(name));
+    if (hit && !ids.includes(hit.id)) ids.push(hit.id);
+  }
+  return ids;
+}
+
+function pickExtra(
+  meta: MetaMap,
+  attachments: Map<string, string>,
+  content: string,
+  mentorIds: string[]
+) {
   const faqs: Array<{ question: string; answer: string }> = [];
   for (let i = 0; i < 20; i++) {
     const q = meta[`faqs_${i}_question`];
@@ -154,10 +182,32 @@ function pickExtra(meta: MetaMap, attachments: Map<string, string>) {
   const teachers = pickTeachers(meta, attachments);
   const schedule = pickSchedule(meta);
   const firstSchedule = schedule?.[0];
+  const curriculum = parseCurriculumFromMeta(meta);
+  let sessions = applySessionSchedules(
+    parseSessionsFromHtml(content),
+    meta.course_includes
+  );
+  const layoutTemplate = detectLayoutTemplate({
+    sessionCount: sessions.length,
+    curriculumCount: curriculum.length
+  });
+  const durationRaw = meta.duration?.trim();
+  const durationHours = durationRaw ? parseFloat(durationRaw.replace(/[^\d.]/g, "")) : null;
+  const duration =
+    durationHours && Number.isFinite(durationHours)
+      ? durationHours === 1
+        ? "1 hour"
+        : `${durationHours} hours`
+      : durationRaw || firstSchedule?.duration || null;
 
   return {
     videoLink: meta.video_link || meta.youtube_embedd || null,
-    duration: meta.duration || firstSchedule?.duration || null,
+    duration,
+    durationHours: durationHours && Number.isFinite(durationHours) ? durationHours : null,
+    layoutTemplate,
+    mentorIds: mentorIds.length ? mentorIds : undefined,
+    sessions: sessions.length ? sessions : undefined,
+    curriculum: curriculum.length ? curriculum : undefined,
     startDate: meta.start_date || firstSchedule?.startDate || null,
     endDate: meta.end_date || firstSchedule?.endDate || null,
     mode: firstSchedule?.mode || null,
@@ -290,7 +340,9 @@ async function main() {
     const seoTitle = meta._yoast_wpseo_title || null;
     const seoDescription = meta._yoast_wpseo_metadesc || null;
     const videoUrl = meta.video_link || meta.youtube_embedd || null;
-    const extra = pickExtra(meta, attachments);
+    const teacherNames = pickTeachers(meta, attachments).map((t) => t.name);
+    const mentorIds = dryRun ? [] : await matchMentorIdsByNames(teacherNames);
+    const extra = pickExtra(meta, attachments, description, mentorIds);
 
     console.log(`→ ${slug} [${enrollmentMode}] ₹${inr}`);
 

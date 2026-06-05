@@ -19,6 +19,7 @@ export const contentCreateSchema = z.object({
   startDate: optionalString,
   imageUrl: nullableString,
   shortDescription: nullableString,
+  mentorIds: z.array(z.string().uuid()).optional(),
   teachers: z
     .array(
       z.object({
@@ -29,7 +30,34 @@ export const contentCreateSchema = z.object({
       })
     )
     .optional(),
+  layoutTemplate: z.enum(["STANDARD", "SESSIONS", "CURRICULUM"]).optional(),
+  durationHours: z.number().positive().nullable().optional(),
   duration: nullableString,
+  sessions: z
+    .array(
+      z.object({
+        sessionId: z.string(),
+        name: z.string(),
+        mentorId: nullableString,
+        teacherName: nullableString,
+        content: z.string(),
+        scheduledAt: nullableString,
+        scheduleNote: nullableString
+      })
+    )
+    .optional(),
+  curriculum: z
+    .array(
+      z.object({
+        name: z.string(),
+        hours: z.number().nullable().optional(),
+        priceInr: z.number().int().nullable().optional(),
+        priceUsd: z.number().nullable().optional(),
+        startDate: nullableString,
+        endDate: nullableString
+      })
+    )
+    .optional(),
   courseStartDate: nullableString,
   courseEndDate: nullableString,
   videoUrl: nullableString,

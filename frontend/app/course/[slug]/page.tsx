@@ -4,15 +4,19 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 
 import { CourseAboutTeachers } from "@/components/content/CourseAboutTeachers";
+import { CourseCurriculumList } from "@/components/content/CourseCurriculumList";
+import { CourseSessionsList } from "@/components/content/CourseSessionsList";
 import { CourseEnrollActions } from "@/components/course/CourseEnrollActions";
 import { ProductRichText } from "@/components/product/ProductRichText";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { fetchCourseBySlug, fetchCourseSlugs, skipBuildTimeStaticParams } from "@/lib/api";
 import {
   courseTeachers,
+  formatCourseDuration,
   isCourseUpcoming,
   parseCourseExtra,
   parseCourseSchedule,
+  parseCourseSessions,
   parseCourseTeachers
 } from "@/lib/content-meta";
 import { breadcrumbJsonLd, courseJsonLd } from "@/lib/seo-product";
@@ -77,12 +81,16 @@ export default async function CourseDetailPage({ params }: Props) {
   const embedUrl = course.videoUrl || extra.videoLink || null;
   const faqs = extra.faqs;
   const scheduleRows = parseCourseSchedule(extra);
+  const sessionRows = parseCourseSessions(extra);
+  const curriculumModules = extra.curriculum ?? [];
+  const durationLabel = formatCourseDuration(extra);
+  const layout = extra.layoutTemplate ?? (sessionRows.length >= 2 ? "SESSIONS" : "STANDARD");
   const registrationOpen = isCourseUpcoming(course);
 
   const programmeRows = [
     teachers.length > 0 && { label: "Facilitators", value: teachers.join(", ") },
     dateRange && { label: "When", value: dateRange },
-    extra.duration && { label: "Duration", value: extra.duration },
+    durationLabel && { label: "Duration", value: durationLabel },
     extra.mode && { label: "Mode", value: extra.mode },
     extra.venue && { label: "Venue", value: extra.venue },
     extra.timings && { label: "Timings", value: extra.timings }
@@ -172,6 +180,14 @@ export default async function CourseDetailPage({ params }: Props) {
             )}
 
             <CourseAboutTeachers teachers={teacherProfiles} />
+
+            {layout === "SESSIONS" && sessionRows.length > 0 ? (
+              <CourseSessionsList sessions={sessionRows} />
+            ) : null}
+
+            {layout === "CURRICULUM" && curriculumModules.length > 0 ? (
+              <CourseCurriculumList modules={curriculumModules} />
+            ) : null}
 
             {scheduleRows.length > 0 && (
               <section style={{ marginBottom:"40px" }}>

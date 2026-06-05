@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { ContentImageUpload } from "@/components/admin/ContentImageUpload";
+import { CourseCurriculumFields } from "@/components/admin/CourseCurriculumFields";
 import { CourseFaqFields } from "@/components/admin/CourseFaqFields";
+import { CourseMentorPicker } from "@/components/admin/CourseMentorPicker";
 import { CourseScheduleFields } from "@/components/admin/CourseScheduleFields";
-import { CourseTeacherFields } from "@/components/admin/CourseTeacherFields";
+import { CourseSessionFields } from "@/components/admin/CourseSessionFields";
 import { SeoAnalysisPanel } from "@/components/admin/SeoAnalysisPanel";
 import {
   ADMIN_CONTENT_LABELS,
@@ -15,6 +17,7 @@ import {
   createAdminContent,
   deleteAdminContent,
   fetchAdminContent,
+  fetchAdminContentList,
   suggestCourseSeo,
   updateAdminContent
 } from "@/lib/admin-api";
@@ -37,7 +40,11 @@ type Props = {
 const inputClass =
   "mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100";
 
+const courseInputClass =
+  "mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100";
+
 export function ContentForm({ type, itemId }: Props) {
+  const isCourse = type === "courses";
   const router = useRouter();
   const isNew = !itemId;
   const label = ADMIN_CONTENT_LABELS[type];
@@ -48,6 +55,25 @@ export function ContentForm({ type, itemId }: Props) {
   const [seoAiLoading, setSeoAiLoading] = useState(false);
   const [seoAiNote, setSeoAiNote] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [mentorOptions, setMentorOptions] = useState<Array<{ id: string; name: string }>>([]);
+
+  useEffect(() => {
+    if (!isCourse) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await fetchAdminContentList("mentors", { limit: 200 });
+        if (!cancelled) {
+          setMentorOptions(data.items.map((m) => ({ id: m.id, name: m.title })));
+        }
+      } catch {
+        /* picker loads its own list */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isCourse]);
 
   const load = useCallback(async () => {
     if (!itemId) return;
@@ -102,8 +128,12 @@ export function ContentForm({ type, itemId }: Props) {
         slug: values.slug.trim(),
         shortDescription: values.shortDescription.trim(),
         description: values.body.trim(),
-        teachers: values.courseTeachers.map((t) => t.name.trim()).filter(Boolean),
-        duration: values.duration.trim()
+        teachers: values.mentorIds
+          .map((id) => mentorOptions.find((m) => m.id === id)?.name)
+          .filter(Boolean) as string[],
+        duration: values.durationHours.trim()
+          ? `${values.durationHours.trim()} hours`
+          : ""
       });
       setValues((v) => ({
         ...v,
@@ -141,18 +171,38 @@ export function ContentForm({ type, itemId }: Props) {
     return <p className="text-sm text-stone-500 dark:text-stone-400">Loading…</p>;
   }
 
+  const fieldInput = isCourse ? courseInputClass : inputClass;
+  const formClass = isCourse
+    ? "mx-auto w-full max-w-6xl space-y-5 pb-28 font-sans"
+    : "mx-auto max-w-3xl space-y-6";
+  const cardClass = isCourse
+    ? "space-y-4 rounded-xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-700 dark:bg-stone-900"
+    : "space-y-4 rounded-xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-700 dark:bg-stone-900";
+
   return (
-    <form onSubmit={(e) => void onSubmit(e)} className="mx-auto max-w-3xl space-y-6">
+    <form onSubmit={(e) => void onSubmit(e)} className={formClass}>
       <div>
         <Link
-          href={`/admin/content?type=${type}`}
-          className="text-sm text-amber-700 hover:underline dark:text-amber-400"
+          href={isCourse ? "/admin/courses" : `/admin/content?type=${type}`}
+          className={`text-sm hover:underline ${isCourse ? "text-blue-700 dark:text-blue-400" : "text-amber-700 dark:text-amber-400"}`}
         >
           ← {label}
         </Link>
-        <h1 className="mt-2 font-serif text-3xl italic text-stone-800 dark:text-stone-100">
+        <h1
+          className={
+            isCourse
+              ? "mt-1 text-2xl font-semibold text-stone-900 dark:text-stone-100"
+              : "mt-2 font-serif text-3xl italic text-stone-800 dark:text-stone-100"
+          }
+        >
           {isNew ? `New ${label.slice(0, -1)}` : `Edit ${label.slice(0, -1)}`}
         </h1>
+        {isCourse ? (
+          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+            Standard template for most courses. Choose Sessions or Curriculum layout when the
+            course page needs structured modules.
+          </p>
+        ) : null}
       </div>
 
       {err ? (
@@ -161,12 +211,12 @@ export function ContentForm({ type, itemId }: Props) {
         </p>
       ) : null}
 
-      <div className="space-y-4 rounded-xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-700 dark:bg-stone-900">
+      <div className={cardClass}>
         <Field label={contentTitleLabel(type)} required>
           <input
             value={values.title}
             onChange={(e) => setValues((v) => ({ ...v, title: e.target.value }))}
-            className={inputClass}
+            className={fieldInput}
           />
         </Field>
 
@@ -175,7 +225,7 @@ export function ContentForm({ type, itemId }: Props) {
             value={values.slug}
             onChange={(e) => setValues((v) => ({ ...v, slug: e.target.value }))}
             placeholder="auto-generated if empty"
-            className={inputClass}
+            className={fieldInput}
           />
         </Field>
 
@@ -183,7 +233,7 @@ export function ContentForm({ type, itemId }: Props) {
           <select
             value={values.status}
             onChange={(e) => setValues((v) => ({ ...v, status: e.target.value }))}
-            className={inputClass}
+            className={fieldInput}
           >
             {contentStatusOptions(type).map((o) => (
               <option key={o.value} value={o.value}>
@@ -250,19 +300,39 @@ export function ContentForm({ type, itemId }: Props) {
               />
             </Field>
 
-            <Field label="Teachers">
-              <CourseTeacherFields
-                teachers={values.courseTeachers}
-                onChange={(courseTeachers) => setValues((v) => ({ ...v, courseTeachers }))}
+            <Field label="Page layout">
+              <select
+                value={values.layoutTemplate}
+                onChange={(e) =>
+                  setValues((v) => ({
+                    ...v,
+                    layoutTemplate: e.target.value as ContentFormValues["layoutTemplate"]
+                  }))
+                }
+                className={fieldInput}
+              >
+                <option value="STANDARD">Standard — overview + description</option>
+                <option value="SESSIONS">Sessions — numbered session curriculum</option>
+                <option value="CURRICULUM">Curriculum — modules with hours &amp; pricing</option>
+              </select>
+            </Field>
+
+            <Field label="Facilitators (from Mentors)">
+              <CourseMentorPicker
+                selectedIds={values.mentorIds}
+                onChange={(mentorIds) => setValues((v) => ({ ...v, mentorIds }))}
               />
             </Field>
 
-            <Field label="Duration">
+            <Field label="Total duration (hours)">
               <input
-                value={values.duration}
-                onChange={(e) => setValues((v) => ({ ...v, duration: e.target.value }))}
-                placeholder='e.g. "9 hours", "2 days"'
-                className={inputClass}
+                type="number"
+                min={0}
+                step={0.5}
+                value={values.durationHours}
+                onChange={(e) => setValues((v) => ({ ...v, durationHours: e.target.value }))}
+                placeholder="e.g. 13.5"
+                className={fieldInput}
               />
             </Field>
 
@@ -354,6 +424,25 @@ export function ContentForm({ type, itemId }: Props) {
                 onChange={(courseFaqs) => setValues((v) => ({ ...v, courseFaqs }))}
               />
             </Field>
+
+            {values.layoutTemplate === "SESSIONS" ? (
+              <Field label="Sessions">
+                <CourseSessionFields
+                  sessions={values.courseSessions}
+                  mentors={mentorOptions}
+                  onChange={(courseSessions) => setValues((v) => ({ ...v, courseSessions }))}
+                />
+              </Field>
+            ) : null}
+
+            {values.layoutTemplate === "CURRICULUM" ? (
+              <Field label="Curriculum modules">
+                <CourseCurriculumFields
+                  modules={values.courseCurriculum}
+                  onChange={(courseCurriculum) => setValues((v) => ({ ...v, courseCurriculum }))}
+                />
+              </Field>
+            ) : null}
 
             <div className="rounded-lg border border-stone-200 bg-stone-50/80 p-4 dark:border-stone-700 dark:bg-stone-950/40">
               <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
