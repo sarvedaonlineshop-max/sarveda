@@ -485,6 +485,18 @@ export function suggestCourseSeo(body: {
   });
 }
 
+export function suggestMentorSeo(body: {
+  name: string;
+  slug?: string;
+  description?: string;
+  expertise?: string;
+}) {
+  return adminFetch<SeoSuggestResult>("/api/admin/mentors/seo-suggest", {
+    method: "POST",
+    body: JSON.stringify(body)
+  });
+}
+
 export async function uploadAdminMedia(body: {
   filename: string;
   contentType: string;

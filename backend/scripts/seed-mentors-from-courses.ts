@@ -16,6 +16,12 @@ import {
   parseSessionsFromHtml,
   stripSessionsFromHtml
 } from "../src/utils/course-sessions";
+import {
+  aliasGroupForName,
+  namesMatchMentorAlias,
+  normalizeMentorNameKey,
+  pickRichestMentor
+} from "../src/utils/mentor-aliases";
 import { may30 } from "./migration-paths";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
@@ -62,7 +68,7 @@ function decodeName(name: string): string {
 }
 
 function normalizeNameKey(name: string): string {
-  return decodeName(name).toLowerCase().replace(/\s+/g, " ");
+  return normalizeMentorNameKey(decodeName(name));
 }
 
 function buildAttachmentMap(xmlPaths: string[]): Map<string, string> {
@@ -230,6 +236,8 @@ async function findMentorIdByName(name: string): Promise<string | null> {
   const mentors = await prisma.mentor.findMany({
     select: { id: true, name: true }
   });
+  const aliasHit = mentors.find((m) => namesMatchMentorAlias(m.name, name));
+  if (aliasHit) return aliasHit.id;
   const exact = mentors.find((m) => normalizeNameKey(m.name) === key);
   if (exact) return exact.id;
   const partial = mentors.find(
@@ -332,10 +340,33 @@ async function main() {
     conflicts.push(`Compound names kept as single mentors: ${compound.map((c) => c.name).join("; ")}`);
   }
 
+  const collapsed = new Map<string, TeacherProfile>();
+  for (const profile of merged.values()) {
+    const aliasGroup = aliasGroupForName(profile.name);
+    const collapseKey = aliasGroup
+      ? aliasGroup.map(normalizeMentorNameKey).sort().join("|")
+      : normalizeNameKey(profile.name);
+    const prev = collapsed.get(collapseKey);
+    if (!prev) {
+      collapsed.set(collapseKey, profile);
+      continue;
+    }
+    collapsed.set(collapseKey, {
+      name: pickRichestMentor([
+        { name: prev.name, bio: prev.bio, expertise: prev.designation, photoUrl: prev.imageUrl },
+        { name: profile.name, bio: profile.bio, expertise: profile.designation, photoUrl: profile.imageUrl }
+      ]).name,
+      bio: profile.bio || prev.bio,
+      designation: profile.designation || prev.designation,
+      imageUrl: profile.imageUrl || prev.imageUrl,
+      sources: [...prev.sources, ...profile.sources]
+    });
+  }
+
   let created = 0;
   let updated = 0;
 
-  for (const profile of merged.values()) {
+  for (const profile of collapsed.values()) {
     const baseSlug = slugify(profile.name) || `mentor-${created}`;
     let slug = baseSlug;
     let n = 2;
@@ -353,7 +384,8 @@ async function main() {
 
     if (dryRun) continue;
 
-    const existing = await prisma.mentor.findFirst({ where: { name: profile.name } });
+    const existingRows = await prisma.mentor.findMany({ select: { id: true, name: true } });
+    const existing = existingRows.find((m) => namesMatchMentorAlias(m.name, profile.name));
     if (existing) {
       await prisma.mentor.update({
         where: { id: existing.id },
@@ -380,7 +412,7 @@ async function main() {
     }
   }
 
-  console.log(`\nMentors: ${created} created, ${updated} updated, ${merged.size} profiles.${dryRun ? " (dry-run)" : ""}`);
+  console.log(`\nMentors: ${created} created, ${updated} updated, ${collapsed.size} profiles.${dryRun ? " (dry-run)" : ""}`);
   if (conflicts.length) {
     console.log("\nNotes:");
     for (const c of conflicts) console.log(`  • ${c}`);

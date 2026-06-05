@@ -521,7 +521,7 @@ export async function listContent(
       const [items, total] = await Promise.all([
         prisma.mentor.findMany({
           where,
-          orderBy: { updatedAt: "desc" },
+          orderBy: { name: "asc" },
           skip,
           take: limit,
           select: { id: true, slug: true, name: true, isActive: true, updatedAt: true }

@@ -19,6 +19,7 @@ import {
   fetchAdminContent,
   fetchAdminContentList,
   suggestCourseSeo,
+  suggestMentorSeo,
   updateAdminContent
 } from "@/lib/admin-api";
 import {
@@ -134,6 +135,36 @@ export function ContentForm({ type, itemId }: Props) {
         duration: values.durationHours.trim()
           ? `${values.durationHours.trim()} hours`
           : ""
+      });
+      setValues((v) => ({
+        ...v,
+        seoTitle: data.seoTitle.trim(),
+        seoDescription: data.seoDescription.trim(),
+        seoKeyword: data.seoKeyword.trim()
+      }));
+      setSeoAiNote(
+        data.source === "ai"
+          ? "SEO fields filled with AI suggestions"
+          : "SEO fields filled (smart defaults — add OPENAI_API_KEY on EC2 for AI)"
+      );
+    } catch (ex) {
+      setErr(ex instanceof Error ? ex.message : "SEO suggest failed");
+    } finally {
+      setSeoAiLoading(false);
+    }
+  }
+
+  async function fillMentorSeoWithAi() {
+    if (type !== "mentors") return;
+    setSeoAiLoading(true);
+    setSeoAiNote(null);
+    setErr(null);
+    try {
+      const data = await suggestMentorSeo({
+        name: values.title.trim(),
+        slug: values.slug.trim(),
+        description: values.body.trim(),
+        expertise: values.expertise.trim()
       });
       setValues((v) => ({
         ...v,
@@ -573,7 +604,7 @@ export function ContentForm({ type, itemId }: Props) {
           SEO
         </h2>
 
-        {type === "courses" ? (
+        {type === "courses" || type === "mentors" ? (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-stone-200 bg-stone-50/80 px-4 py-3 dark:border-stone-700 dark:bg-stone-950/40">
             <p className="text-sm text-stone-600 dark:text-stone-400">
               AI fills SEO title, meta description, and focus keyword (tuned to pass the checklist
@@ -583,7 +614,9 @@ export function ContentForm({ type, itemId }: Props) {
               <button
                 type="button"
                 disabled={seoAiLoading || !values.title.trim()}
-                onClick={() => void fillCourseSeoWithAi()}
+                onClick={() =>
+                  void (type === "courses" ? fillCourseSeoWithAi() : fillMentorSeoWithAi())
+                }
                 className="inline-flex shrink-0 items-center gap-2 rounded-md bg-stone-800 px-4 py-2 text-sm font-semibold text-white hover:bg-stone-700 disabled:opacity-50 dark:bg-stone-200 dark:text-stone-900"
               >
                 {seoAiLoading ? "Generating…" : "Fill SEO with AI"}
@@ -602,7 +635,7 @@ export function ContentForm({ type, itemId }: Props) {
           </div>
         ) : null}
 
-        {seoAiNote && type === "courses" ? (
+        {seoAiNote && (type === "courses" || type === "mentors") ? (
           <p className="text-sm text-emerald-700 dark:text-emerald-400">{seoAiNote}</p>
         ) : null}
 
@@ -621,7 +654,7 @@ export function ContentForm({ type, itemId }: Props) {
             className={inputClass}
           />
         </Field>
-        {type === "blog" || type === "courses" ? (
+        {type === "blog" || type === "courses" || type === "mentors" ? (
           <Field label="Focus keyword">
             <input
               value={values.seoKeyword}
@@ -642,6 +675,19 @@ export function ContentForm({ type, itemId }: Props) {
             slug={values.slug}
             serpPath="course"
             itemLabel="course"
+          />
+        ) : null}
+
+        {type === "mentors" ? (
+          <SeoAnalysisPanel
+            seoTitle={values.seoTitle}
+            seoDescription={values.seoDescription}
+            seoKeyword={values.seoKeyword}
+            itemName={values.title}
+            itemDescription={values.expertise || values.body}
+            slug={values.slug}
+            serpPath="mentor"
+            itemLabel="mentor"
           />
         ) : null}
       </div>

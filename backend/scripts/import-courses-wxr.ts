@@ -16,6 +16,7 @@ import {
   parseSessionsFromHtml,
   stripSessionsFromHtml
 } from "../src/utils/course-sessions";
+import { namesMatchMentorAlias } from "../src/utils/mentor-aliases";
 import { may30 } from "./migration-paths";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
@@ -157,11 +158,16 @@ async function matchMentorIdsByNames(names: string[]): Promise<string[]> {
   });
   const ids: string[] = [];
   for (const raw of names) {
-    const name = raw.trim().toLowerCase();
+    const name = raw.trim();
     if (!name) continue;
+    const lower = name.toLowerCase();
     const hit =
-      mentors.find((m) => m.name.toLowerCase() === name) ??
-      mentors.find((m) => name.includes(m.name.toLowerCase()) || m.name.toLowerCase().includes(name));
+      mentors.find((m) => namesMatchMentorAlias(m.name, name)) ??
+      mentors.find((m) => m.name.toLowerCase() === lower) ??
+      mentors.find(
+        (m) =>
+          lower.includes(m.name.toLowerCase()) || m.name.toLowerCase().includes(lower)
+      );
     if (hit && !ids.includes(hit.id)) ids.push(hit.id);
   }
   return ids;

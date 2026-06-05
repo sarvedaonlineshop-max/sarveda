@@ -70,6 +70,7 @@ router.get("/catalog/gaps", productsController.catalogGaps);
 router.post("/media/upload", mediaHandlers.uploadAdminMedia);
 router.post("/products/seo-suggest", seoSuggest.suggestProductSeo);
 router.post("/courses/seo-suggest", seoSuggest.suggestCourseSeo);
+router.post("/mentors/seo-suggest", seoSuggest.suggestMentorSeo);
 
 router.get("/inventory", admin.inventoryList);
 router.post(

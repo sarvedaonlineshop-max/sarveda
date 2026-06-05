@@ -11,7 +11,8 @@ const bodySchema = z.object({
   description: z.string().max(8000).optional(),
   categoryNames: z.array(z.string()).optional(),
   teachers: z.array(z.string()).optional(),
-  duration: z.string().max(200).optional()
+  duration: z.string().max(200).optional(),
+  expertise: z.string().max(500).optional()
 });
 
 function parseJsonBlock(text: string): Record<string, unknown> | null {
@@ -117,6 +118,35 @@ Short: ${input.shortDescription ?? ""}
 Duration: ${input.duration ?? ""}
 Teachers: ${teachers}
 Description: ${(input.description ?? "").slice(0, 1500)}`;
+
+    const data = await runSeoSuggest(input, system, user);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function suggestMentorSeo(req: Request, res: Response, next: NextFunction) {
+  try {
+    const parsed = bodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({
+        success: false,
+        error: parsed.error.issues.map((i) => i.message).join("; "),
+        code: "VALIDATION_ERROR"
+      });
+      return;
+    }
+
+    const input = parsed.data;
+    const system = `You are an SEO expert for Sarveda wellness mentors (yoga, meditation, sound healing, ayurveda teachers).
+Return ONLY valid JSON: seoTitle (exactly 50-60 chars), seoDescription (exactly 120-158 chars), seoKeyword (exactly 2 words).
+Rules: seoKeyword MUST appear verbatim in both seoTitle and seoDescription; title must end with "| Sarveda"; no markdown; highlight the mentor's expertise and credibility.`;
+
+    const user = `Mentor: ${input.name}
+Slug: ${input.slug ?? ""}
+Expertise: ${input.expertise ?? ""}
+Bio: ${(input.description ?? input.shortDescription ?? "").slice(0, 1500)}`;
 
     const data = await runSeoSuggest(input, system, user);
     res.json({ success: true, data });
