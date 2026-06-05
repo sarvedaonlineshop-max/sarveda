@@ -147,7 +147,7 @@ export default function AdminDashboardPage() {
       <div>
         <h2 style={{ fontSize: "22px", fontWeight: 700, color: "#2c2420" }}>Welcome back 👋</h2>
         <p style={{ fontSize: "13px", color: "#8a7060", marginTop: "4px" }}>
-          Here's what's happening with Sarveda today.
+          {Here's what's happening with Sarveda today.}
         </p>
       </div>
 
