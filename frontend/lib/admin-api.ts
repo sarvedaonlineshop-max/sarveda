@@ -489,7 +489,7 @@ export async function uploadAdminMedia(body: {
   filename: string;
   contentType: string;
   base64: string;
-  folder?: "products" | "audio" | "courses";
+  folder?: "products" | "audio" | "courses" | "mentors" | "vaidyas";
 }) {
   const payload = JSON.stringify(body);
   const paths = ["/api/admin/media/upload", "/api/admin/products/upload-image"];

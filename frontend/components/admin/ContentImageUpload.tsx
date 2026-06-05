@@ -7,7 +7,7 @@ import { uploadAdminMedia } from "@/lib/admin-api";
 type Props = {
   url: string;
   onUrlChange: (url: string) => void;
-  folder?: "products" | "courses" | "audio";
+  folder?: "products" | "courses" | "audio" | "mentors" | "vaidyas";
   label?: string;
 };
 

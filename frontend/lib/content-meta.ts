@@ -1,13 +1,37 @@
 import type { CourseListItem } from "./course-types";
 import type { EventListItem } from "./event-types";
 
+export type CourseTeacher = {
+  name: string;
+  bio?: string | null;
+  imageUrl?: string | null;
+  designation?: string | null;
+};
+
+export type CourseScheduleRow = {
+  startDate?: string | null;
+  endDate?: string | null;
+  mode?: string | null;
+  location?: string | null;
+  timings?: string | null;
+  duration?: string | null;
+};
+
 export type CourseExtra = {
   startDate?: string | null;
   endDate?: string | null;
   duration?: string | null;
-  teachers?: string[];
+  mode?: string | null;
+  venue?: string | null;
+  timings?: string | null;
+  courseIncludes?: string | null;
+  aboutTheCourse?: string | null;
+  /** Legacy: string names only. New: full teacher objects. */
+  teachers?: string[] | CourseTeacher[];
+  schedule?: CourseScheduleRow[];
   videoLink?: string | null;
   seoKeyword?: string | null;
+  faqs?: Array<{ question: string; answer: string }>;
 };
 
 export function parseCourseExtra(extra: CourseListItem["extra"]): CourseExtra {
@@ -47,8 +71,45 @@ export function formatCourseDateRange(extra: CourseExtra): string | null {
   return null;
 }
 
+/** Normalized teacher list (supports legacy string[] from import). */
+export function parseCourseTeachers(extra: CourseExtra): CourseTeacher[] {
+  const raw = extra.teachers;
+  if (!raw?.length) return [];
+
+  if (typeof raw[0] === "string") {
+    return (raw as string[])
+      .map((name) => name.trim())
+      .filter(Boolean)
+      .map((name) => ({ name }));
+  }
+
+  return (raw as CourseTeacher[])
+    .map((t) => ({
+      name: (t.name ?? "").trim(),
+      bio: t.bio?.trim() || null,
+      imageUrl: t.imageUrl?.trim() || null,
+      designation: t.designation?.trim() || null
+    }))
+    .filter((t) => t.name);
+}
+
+export function parseCourseSchedule(extra: CourseExtra): CourseScheduleRow[] {
+  const rows = extra.schedule;
+  if (!Array.isArray(rows)) return [];
+  return rows.filter((r) =>
+    Boolean(
+      r.startDate?.trim() ||
+        r.endDate?.trim() ||
+        r.mode?.trim() ||
+        r.location?.trim() ||
+        r.timings?.trim() ||
+        r.duration?.trim()
+    )
+  );
+}
+
 export function courseTeachers(extra: CourseExtra): string[] {
-  return extra.teachers?.filter(Boolean) ?? [];
+  return parseCourseTeachers(extra).map((t) => t.name);
 }
 
 export function isEventUpcoming(event: EventListItem, now = new Date()): boolean {

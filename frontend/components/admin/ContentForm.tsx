@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { ContentImageUpload } from "@/components/admin/ContentImageUpload";
+import { CourseFaqFields } from "@/components/admin/CourseFaqFields";
+import { CourseScheduleFields } from "@/components/admin/CourseScheduleFields";
+import { CourseTeacherFields } from "@/components/admin/CourseTeacherFields";
 import { SeoAnalysisPanel } from "@/components/admin/SeoAnalysisPanel";
 import {
   ADMIN_CONTENT_LABELS,
@@ -24,6 +27,7 @@ import {
   itemToFormValues,
   type ContentFormValues
 } from "@/lib/admin-content";
+import { sanitizeNonNegativeInput } from "@/lib/admin-form-numbers";
 
 type Props = {
   type: AdminContentType;
@@ -98,7 +102,7 @@ export function ContentForm({ type, itemId }: Props) {
         slug: values.slug.trim(),
         shortDescription: values.shortDescription.trim(),
         description: values.body.trim(),
-        teachers: values.teachers.map((t) => t.trim()).filter(Boolean),
+        teachers: values.courseTeachers.map((t) => t.name.trim()).filter(Boolean),
         duration: values.duration.trim()
       });
       setValues((v) => ({
@@ -200,6 +204,36 @@ export function ContentForm({ type, itemId }: Props) {
           </Field>
         ) : null}
 
+        {type === "mentors" || type === "vaidyas" ? (
+          <>
+            <ContentImageUpload
+              label="Profile photo"
+              url={values.imageUrl}
+              onUrlChange={(imageUrl) => setValues((v) => ({ ...v, imageUrl }))}
+              folder={type === "mentors" ? "mentors" : "vaidyas"}
+            />
+            {type === "mentors" ? (
+              <Field label="Expertise / designation">
+                <input
+                  value={values.expertise}
+                  onChange={(e) => setValues((v) => ({ ...v, expertise: e.target.value }))}
+                  placeholder="e.g. Yoga Therapy, Meditation"
+                  className={inputClass}
+                />
+              </Field>
+            ) : (
+              <Field label="Speciality">
+                <input
+                  value={values.speciality}
+                  onChange={(e) => setValues((v) => ({ ...v, speciality: e.target.value }))}
+                  placeholder="e.g. Ayurveda, Panchakarma"
+                  className={inputClass}
+                />
+              </Field>
+            )}
+          </>
+        ) : null}
+
         {type === "courses" ? (
           <>
             <ContentImageUpload
@@ -217,44 +251,10 @@ export function ContentForm({ type, itemId }: Props) {
             </Field>
 
             <Field label="Teachers">
-              <div className="mt-1 space-y-2">
-                {values.teachers.map((name, index) => (
-                  <div key={index} className="flex gap-2">
-                    <input
-                      value={name}
-                      onChange={(e) =>
-                        setValues((v) => {
-                          const teachers = [...v.teachers];
-                          teachers[index] = e.target.value;
-                          return { ...v, teachers };
-                        })
-                      }
-                      placeholder="Teacher name"
-                      className={`${inputClass} mt-0 flex-1`}
-                    />
-                    <button
-                      type="button"
-                      disabled={values.teachers.length <= 1}
-                      onClick={() =>
-                        setValues((v) => ({
-                          ...v,
-                          teachers: v.teachers.filter((_, i) => i !== index)
-                        }))
-                      }
-                      className="shrink-0 rounded-lg border border-stone-300 px-3 py-2 text-xs text-stone-600 hover:bg-stone-50 disabled:opacity-40 dark:border-stone-600 dark:text-stone-300 dark:hover:bg-stone-800"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => setValues((v) => ({ ...v, teachers: [...v.teachers, ""] }))}
-                  className="text-sm font-medium text-amber-700 hover:underline dark:text-amber-400"
-                >
-                  + Add teacher
-                </button>
-              </div>
+              <CourseTeacherFields
+                teachers={values.courseTeachers}
+                onChange={(courseTeachers) => setValues((v) => ({ ...v, courseTeachers }))}
+              />
             </Field>
 
             <Field label="Duration">
@@ -283,6 +283,163 @@ export function ContentForm({ type, itemId }: Props) {
                   className={inputClass}
                 />
               </Field>
+            </div>
+
+            <Field label="Video URL (YouTube / Vimeo embed)">
+              <input
+                value={values.videoUrl}
+                onChange={(e) => setValues((v) => ({ ...v, videoUrl: e.target.value }))}
+                placeholder="https://www.youtube.com/embed/..."
+                className={inputClass}
+              />
+            </Field>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Field label="Mode">
+                <input
+                  value={values.courseMode}
+                  onChange={(e) => setValues((v) => ({ ...v, courseMode: e.target.value }))}
+                  placeholder="Online / In-person"
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="Venue / location">
+                <input
+                  value={values.courseVenue}
+                  onChange={(e) => setValues((v) => ({ ...v, courseVenue: e.target.value }))}
+                  placeholder="Zoom, Rishikesh…"
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="Timings">
+                <input
+                  value={values.courseTimings}
+                  onChange={(e) => setValues((v) => ({ ...v, courseTimings: e.target.value }))}
+                  placeholder="Wed 7–8:30 PM IST"
+                  className={inputClass}
+                />
+              </Field>
+            </div>
+
+            <Field label="About the course (summary)">
+              <textarea
+                value={values.aboutTheCourse}
+                onChange={(e) => setValues((v) => ({ ...v, aboutTheCourse: e.target.value }))}
+                rows={4}
+                placeholder="Short overview block (HTML allowed)"
+                className={`${inputClass} font-mono text-xs`}
+              />
+            </Field>
+
+            <Field label="What&apos;s included">
+              <textarea
+                value={values.courseIncludes}
+                onChange={(e) => setValues((v) => ({ ...v, courseIncludes: e.target.value }))}
+                rows={4}
+                placeholder="Bullet list or HTML"
+                className={`${inputClass} font-mono text-xs`}
+              />
+            </Field>
+
+            <Field label="Schedule / intake rows">
+              <CourseScheduleFields
+                rows={values.courseSchedule}
+                onChange={(courseSchedule) => setValues((v) => ({ ...v, courseSchedule }))}
+              />
+            </Field>
+
+            <Field label="FAQs">
+              <CourseFaqFields
+                faqs={values.courseFaqs}
+                onChange={(courseFaqs) => setValues((v) => ({ ...v, courseFaqs }))}
+              />
+            </Field>
+
+            <div className="rounded-lg border border-stone-200 bg-stone-50/80 p-4 dark:border-stone-700 dark:bg-stone-950/40">
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
+                Pricing &amp; enrolment
+              </p>
+
+              <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm text-stone-700 dark:text-stone-200">
+                <input
+                  type="checkbox"
+                  checked={values.courseIsFree}
+                  onChange={(e) =>
+                    setValues((v) => ({
+                      ...v,
+                      courseIsFree: e.target.checked,
+                      priceInr: e.target.checked ? "" : v.priceInr
+                    }))
+                  }
+                  className="rounded border-stone-300 text-amber-600"
+                />
+                Free course (no online payment)
+              </label>
+
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <Field label="Price (INR, GST inclusive)">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    disabled={values.courseIsFree}
+                    value={values.priceInr}
+                    onChange={(e) =>
+                      setValues((v) => ({
+                        ...v,
+                        priceInr: sanitizeNonNegativeInput(e.target.value)
+                      }))
+                    }
+                    placeholder={values.courseIsFree ? "Free" : "e.g. 4999"}
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Price (USD, optional)">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    disabled={values.courseIsFree}
+                    value={values.priceUsd}
+                    onChange={(e) =>
+                      setValues((v) => ({
+                        ...v,
+                        priceUsd: sanitizeNonNegativeInput(e.target.value)
+                      }))
+                    }
+                    placeholder="Optional"
+                    className={inputClass}
+                  />
+                </Field>
+              </div>
+
+              <Field label="How can people join?">
+                <select
+                  value={values.enrollmentMode}
+                  onChange={(e) => setValues((v) => ({ ...v, enrollmentMode: e.target.value }))}
+                  className={inputClass}
+                >
+                  <option value="ENQUIRY">Enquiry only (WhatsApp / email)</option>
+                  <option value="CHECKOUT">Online payment only</option>
+                  <option value="BOTH">Enquiry + online payment</option>
+                </select>
+              </Field>
+
+              {!values.courseIsFree &&
+              (values.enrollmentMode === "CHECKOUT" || values.enrollmentMode === "BOTH") ? (
+                <Field label="Checkout product SKU">
+                  <input
+                    value={values.checkoutVariantSku}
+                    onChange={(e) =>
+                      setValues((v) => ({ ...v, checkoutVariantSku: e.target.value }))
+                    }
+                    placeholder="Variant SKU used at Razorpay checkout"
+                    className={inputClass}
+                  />
+                  <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+                    Create a hidden catalog product variant in Products admin, then paste its SKU here.
+                    Leave empty if you only want enquiries for now.
+                  </p>
+                </Field>
+              ) : null}
             </div>
           </>
         ) : null}

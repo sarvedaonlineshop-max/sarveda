@@ -8,7 +8,7 @@ const uploadBodySchema = z.object({
   filename: z.string().min(1).max(200),
   contentType: z.string().min(1).max(120),
   base64: z.string().min(1),
-  folder: z.enum(["products", "audio", "courses"]).default("products")
+  folder: z.enum(["products", "audio", "courses", "mentors", "vaidyas"]).default("products")
 });
 
 const MAX_BYTES = 10 * 1024 * 1024;

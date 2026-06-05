@@ -1,4 +1,10 @@
-import type { CourseStatus, EventStatus, PostStatus, Prisma } from "@prisma/client";
+import type {
+  CourseEnrollmentMode,
+  CourseStatus,
+  EventStatus,
+  PostStatus,
+  Prisma
+} from "@prisma/client";
 
 import { prisma } from "../../../config/db";
 import { slugify } from "../../../utils/slugify";
@@ -68,6 +74,79 @@ function normalizeCourseStatus(raw?: string): CourseStatus {
   return "DRAFT";
 }
 
+function normalizeCourseEnrollmentMode(raw?: string): CourseEnrollmentMode {
+  if (raw === "CHECKOUT" || raw === "BOTH") return raw;
+  return "ENQUIRY";
+}
+
+function coursePricingFromBody(body: ContentCreateBody | ContentUpdateBody) {
+  const isFree = body.isFree === true || (body.priceInPaise ?? 0) <= 0;
+  const enrollmentMode = normalizeCourseEnrollmentMode(body.enrollmentMode);
+  const priceInPaise = isFree ? 0 : Math.max(0, Math.round(body.priceInPaise ?? 0));
+  const priceUsdCents =
+    body.priceUsdCents != null && body.priceUsdCents > 0
+      ? Math.round(body.priceUsdCents)
+      : null;
+
+  return { isFree, priceInPaise, priceUsdCents, enrollmentMode };
+}
+
+async function resolveCheckoutVariantSku(
+  sku: string | null | undefined,
+  excludeCourseId?: string
+): Promise<string | null> {
+  const trimmed = sku?.trim();
+  if (!trimmed) return null;
+
+  const variant = await prisma.productVariant.findFirst({
+    where: { sku: trimmed },
+    select: { id: true }
+  });
+  if (!variant) {
+    throw httpError(`No product variant found for SKU "${trimmed}"`, 400, "VARIANT_NOT_FOUND");
+  }
+
+  const taken = await prisma.course.findFirst({
+    where: {
+      checkoutVariantId: variant.id,
+      ...(excludeCourseId ? { NOT: { id: excludeCourseId } } : {})
+    },
+    select: { title: true }
+  });
+  if (taken) {
+    throw httpError(
+      `SKU "${trimmed}" is already linked to course "${taken.title}"`,
+      409,
+      "VARIANT_IN_USE"
+    );
+  }
+
+  return variant.id;
+}
+
+async function courseCheckoutVariantId(
+  body: ContentCreateBody | ContentUpdateBody,
+  pricing: ReturnType<typeof coursePricingFromBody>,
+  excludeCourseId?: string
+): Promise<string | null> {
+  const { isFree, enrollmentMode } = pricing;
+  if (isFree || enrollmentMode === "ENQUIRY") return null;
+
+  if (body.checkoutVariantSku !== undefined) {
+    return resolveCheckoutVariantSku(body.checkoutVariantSku, excludeCourseId);
+  }
+
+  if (excludeCourseId) {
+    const existing = await prisma.course.findUnique({
+      where: { id: excludeCourseId },
+      select: { checkoutVariantId: true }
+    });
+    return existing?.checkoutVariantId ?? null;
+  }
+
+  return null;
+}
+
 function normalizeEventStatus(raw?: string): EventStatus {
   if (raw === "PUBLISHED" || raw === "CANCELLED") return raw;
   return "DRAFT";
@@ -81,14 +160,33 @@ function parseCourseExtraRecord(extra: Prisma.JsonValue | null | undefined): Rec
 function buildCourseExtra(
   body: Pick<
     ContentCreateBody,
-    "teachers" | "duration" | "courseStartDate" | "courseEndDate" | "seoKeyword"
+    | "teachers"
+    | "duration"
+    | "courseStartDate"
+    | "courseEndDate"
+    | "seoKeyword"
+    | "mode"
+    | "venue"
+    | "timings"
+    | "courseIncludes"
+    | "aboutTheCourse"
+    | "faqs"
+    | "schedule"
+    | "videoUrl"
   >,
   existing?: Prisma.JsonValue | null
 ): Prisma.InputJsonValue {
   const extra = { ...parseCourseExtraRecord(existing) };
 
   if (body.teachers !== undefined) {
-    extra.teachers = body.teachers.map((t) => t.trim()).filter(Boolean);
+    extra.teachers = body.teachers
+      .map((t) => ({
+        name: t.name.trim(),
+        bio: t.bio?.trim() || null,
+        imageUrl: t.imageUrl?.trim() || null,
+        designation: t.designation?.trim() || null
+      }))
+      .filter((t) => t.name);
   }
   if (body.duration !== undefined) {
     const d = body.duration?.trim();
@@ -106,6 +204,53 @@ function buildCourseExtra(
     const kw = body.seoKeyword?.trim();
     extra.seoKeyword = kw || null;
   }
+  if (body.mode !== undefined) {
+    extra.mode = body.mode?.trim() || null;
+  }
+  if (body.venue !== undefined) {
+    extra.venue = body.venue?.trim() || null;
+  }
+  if (body.timings !== undefined) {
+    extra.timings = body.timings?.trim() || null;
+  }
+  if (body.courseIncludes !== undefined) {
+    extra.courseIncludes = body.courseIncludes?.trim() || null;
+  }
+  if (body.aboutTheCourse !== undefined) {
+    extra.aboutTheCourse = body.aboutTheCourse?.trim() || null;
+  }
+  if (body.faqs !== undefined) {
+    extra.faqs = body.faqs
+      .map((f) => ({
+        question: f.question.trim(),
+        answer: f.answer.trim()
+      }))
+      .filter((f) => f.question && f.answer);
+  }
+  if (body.schedule !== undefined) {
+    extra.schedule = body.schedule
+      .map((r) => ({
+        startDate: r.startDate?.trim() || null,
+        endDate: r.endDate?.trim() || null,
+        mode: r.mode?.trim() || null,
+        location: r.location?.trim() || null,
+        timings: r.timings?.trim() || null,
+        duration: r.duration?.trim() || null
+      }))
+      .filter(
+        (r) =>
+          r.startDate ||
+          r.endDate ||
+          r.mode ||
+          r.location ||
+          r.timings ||
+          r.duration
+      );
+  }
+  if (body.videoUrl !== undefined) {
+    const v = body.videoUrl?.trim();
+    extra.videoLink = v || null;
+  }
 
   return extra as Prisma.InputJsonValue;
 }
@@ -118,7 +263,15 @@ function courseExtraFieldsPresent(
     body.duration !== undefined ||
     body.courseStartDate !== undefined ||
     body.courseEndDate !== undefined ||
-    body.seoKeyword !== undefined
+    body.seoKeyword !== undefined ||
+    body.mode !== undefined ||
+    body.venue !== undefined ||
+    body.timings !== undefined ||
+    body.courseIncludes !== undefined ||
+    body.aboutTheCourse !== undefined ||
+    body.faqs !== undefined ||
+    body.schedule !== undefined ||
+    body.videoUrl !== undefined
   );
 }
 
@@ -347,9 +500,17 @@ export async function getContent(type: ContentType, id: string) {
       return { item: { ...item, status: statusFromPost(item.status) } };
     }
     case "courses": {
-      const item = await prisma.course.findUnique({ where: { id } });
+      const item = await prisma.course.findUnique({
+        where: { id },
+        include: { checkoutVariant: { select: { sku: true } } }
+      });
       if (!item) throw httpError("Not found", 404);
-      return { item };
+      return {
+        item: {
+          ...item,
+          checkoutVariantSku: item.checkoutVariant?.sku ?? ""
+        }
+      };
     }
     case "events": {
       const item = await prisma.event.findUnique({ where: { id } });
@@ -418,6 +579,8 @@ export async function createContent(type: ContentType, body: ContentCreateBody) 
       return { item };
     }
     case "courses": {
+      const pricing = coursePricingFromBody(body);
+      const checkoutVariantId = await courseCheckoutVariantId(body, pricing);
       const item = await prisma.course.create({
         data: {
           title,
@@ -425,15 +588,24 @@ export async function createContent(type: ContentType, body: ContentCreateBody) 
           description: body.description ?? body.content ?? null,
           shortDescription: body.shortDescription ?? null,
           imageUrl: body.imageUrl ?? null,
+          videoUrl: body.videoUrl ?? null,
           status: normalizeCourseStatus(body.status),
           seoTitle: body.seoTitle ?? null,
           seoDescription: body.seoDescription ?? null,
+          isFree: pricing.isFree,
+          priceInPaise: pricing.priceInPaise,
+          priceUsdCents: pricing.priceUsdCents,
+          enrollmentMode: pricing.enrollmentMode,
+          checkoutVariantId,
           ...(courseExtraFieldsPresent(body)
             ? { extra: buildCourseExtra(body) }
             : {})
-        }
+        },
+        include: { checkoutVariant: { select: { sku: true } } }
       });
-      return { item };
+      return {
+        item: { ...item, checkoutVariantSku: item.checkoutVariant?.sku ?? "" }
+      };
     }
     case "events": {
       const startDate = body.startDate ? new Date(body.startDate) : new Date();
@@ -474,6 +646,8 @@ export async function createContent(type: ContentType, body: ContentCreateBody) 
           name,
           slug,
           bio: body.bio ?? body.content ?? null,
+          photoUrl: body.photoUrl ?? null,
+          speciality: body.speciality ?? null,
           isActive: body.status !== "DRAFT" && body.status !== "ARCHIVED",
           seoTitle: body.seoTitle ?? null,
           seoDescription: body.seoDescription ?? null
@@ -488,6 +662,8 @@ export async function createContent(type: ContentType, body: ContentCreateBody) 
           name,
           slug,
           bio: body.bio ?? body.content ?? null,
+          photoUrl: body.photoUrl ?? null,
+          expertise: body.expertise ?? null,
           isActive: body.status !== "DRAFT" && body.status !== "ARCHIVED",
           seoTitle: body.seoTitle ?? null,
           seoDescription: body.seoDescription ?? null
@@ -575,6 +751,31 @@ export async function updateContent(type: ContentType, id: string, body: Content
     case "courses": {
       const title = body.title ?? (raw.title as string);
       const slug = body.slug ? await uniqueSlug(body.slug, type, id) : (raw.slug as string);
+      const pricing =
+        body.isFree !== undefined ||
+        body.priceInPaise !== undefined ||
+        body.enrollmentMode !== undefined
+          ? coursePricingFromBody({
+              isFree: body.isFree ?? (raw.isFree as boolean),
+              priceInPaise:
+                body.priceInPaise !== undefined
+                  ? body.priceInPaise
+                  : (raw.priceInPaise as number),
+              priceUsdCents:
+                body.priceUsdCents !== undefined
+                  ? body.priceUsdCents
+                  : (raw.priceUsdCents as number | null),
+              enrollmentMode:
+                body.enrollmentMode ?? (raw.enrollmentMode as string)
+            })
+          : null;
+
+      const checkoutVariantId = pricing
+        ? await courseCheckoutVariantId(body, pricing, id)
+        : body.checkoutVariantSku !== undefined
+          ? await resolveCheckoutVariantSku(body.checkoutVariantSku, id)
+          : undefined;
+
       const item = await prisma.course.update({
         where: { id },
         data: {
@@ -592,18 +793,32 @@ export async function updateContent(type: ContentType, id: string, body: Content
               : (raw.shortDescription as string | null),
           imageUrl:
             body.imageUrl !== undefined ? body.imageUrl : (raw.imageUrl as string | null),
+          videoUrl:
+            body.videoUrl !== undefined ? body.videoUrl : (raw.videoUrl as string | null),
           status: body.status ? normalizeCourseStatus(body.status) : (raw.status as CourseStatus),
           seoTitle: body.seoTitle !== undefined ? body.seoTitle : (raw.seoTitle as string | null),
           seoDescription:
             body.seoDescription !== undefined
               ? body.seoDescription
               : (raw.seoDescription as string | null),
+          ...(pricing
+            ? {
+                isFree: pricing.isFree,
+                priceInPaise: pricing.priceInPaise,
+                priceUsdCents: pricing.priceUsdCents,
+                enrollmentMode: pricing.enrollmentMode
+              }
+            : {}),
+          ...(checkoutVariantId !== undefined ? { checkoutVariantId } : {}),
           ...(courseExtraFieldsPresent(body)
             ? { extra: buildCourseExtra(body, raw.extra as Prisma.JsonValue | null) }
             : {})
-        }
+        },
+        include: { checkoutVariant: { select: { sku: true } } }
       });
-      return { item };
+      return {
+        item: { ...item, checkoutVariantSku: item.checkoutVariant?.sku ?? "" }
+      };
     }
     case "events": {
       const title = body.title ?? (raw.title as string);
@@ -675,6 +890,9 @@ export async function updateContent(type: ContentType, id: string, body: Content
           name,
           slug,
           bio: body.bio !== undefined ? body.bio : body.content !== undefined ? body.content : (raw.bio as string | null),
+          photoUrl: body.photoUrl !== undefined ? body.photoUrl : (raw.photoUrl as string | null),
+          speciality:
+            body.speciality !== undefined ? body.speciality : (raw.speciality as string | null),
           isActive,
           seoTitle: body.seoTitle !== undefined ? body.seoTitle : (raw.seoTitle as string | null),
           seoDescription:
@@ -698,6 +916,9 @@ export async function updateContent(type: ContentType, id: string, body: Content
           name,
           slug,
           bio: body.bio !== undefined ? body.bio : body.content !== undefined ? body.content : (raw.bio as string | null),
+          photoUrl: body.photoUrl !== undefined ? body.photoUrl : (raw.photoUrl as string | null),
+          expertise:
+            body.expertise !== undefined ? body.expertise : (raw.expertise as string | null),
           isActive,
           seoTitle: body.seoTitle !== undefined ? body.seoTitle : (raw.seoTitle as string | null),
           seoDescription:

@@ -11,6 +11,8 @@ const nav = [
   { href: "/admin/customers", label: "Customers", icon: "◎" },
   { href: "/admin/reconciliation", label: "Reconciliation", icon: "₹" },
   { href: "/admin/products", label: "Products", icon: "○" },
+  { href: "/admin/courses", label: "Courses", icon: "◇" },
+  { href: "/admin/mentors", label: "Mentors", icon: "◎" },
   { href: "/admin/content", label: "Content", icon: "✎" },
   { href: "/admin/catalog-gaps", label: "Catalog gaps", icon: "!" },
   { href: "/admin/inventory", label: "Inventory", icon: "▫" },

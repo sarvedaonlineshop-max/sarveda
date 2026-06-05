@@ -45,10 +45,38 @@ export type ContentCreateBody = {
   startDate?: string;
   imageUrl?: string | null;
   shortDescription?: string | null;
-  teachers?: string[];
+  teachers?: Array<{
+    name: string;
+    bio?: string | null;
+    imageUrl?: string | null;
+    designation?: string | null;
+  }>;
   duration?: string | null;
   courseStartDate?: string | null;
   courseEndDate?: string | null;
+  videoUrl?: string | null;
+  mode?: string | null;
+  venue?: string | null;
+  timings?: string | null;
+  courseIncludes?: string | null;
+  aboutTheCourse?: string | null;
+  faqs?: Array<{ question: string; answer: string }>;
+  schedule?: Array<{
+    startDate?: string | null;
+    endDate?: string | null;
+    mode?: string | null;
+    location?: string | null;
+    timings?: string | null;
+    duration?: string | null;
+  }>;
+  photoUrl?: string | null;
+  expertise?: string | null;
+  speciality?: string | null;
+  isFree?: boolean;
+  priceInPaise?: number;
+  priceUsdCents?: number | null;
+  enrollmentMode?: string;
+  checkoutVariantSku?: string | null;
 };
 
 export type ContentUpdateBody = Partial<ContentCreateBody>;

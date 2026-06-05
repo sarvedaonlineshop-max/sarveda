@@ -3,11 +3,18 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
+import { CourseAboutTeachers } from "@/components/content/CourseAboutTeachers";
 import { CourseEnrollActions } from "@/components/course/CourseEnrollActions";
 import { ProductRichText } from "@/components/product/ProductRichText";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { fetchCourseBySlug, fetchCourseSlugs, skipBuildTimeStaticParams } from "@/lib/api";
-import { courseTeachers, parseCourseExtra } from "@/lib/content-meta";
+import {
+  courseTeachers,
+  isCourseUpcoming,
+  parseCourseExtra,
+  parseCourseSchedule,
+  parseCourseTeachers
+} from "@/lib/content-meta";
 import { breadcrumbJsonLd, courseJsonLd } from "@/lib/seo-product";
 import { htmlToPlainText } from "@/lib/sanitize-html";
 import { absoluteUrl, canonical, isProductionSite } from "@/lib/site";
@@ -56,6 +63,7 @@ export default async function CourseDetailPage({ params }: Props) {
 
   const extra = parseCourseExtra(course.extra);
   const teachers = courseTeachers(extra);
+  const teacherProfiles = parseCourseTeachers(extra);
   const s = prettyDate(extra.startDate);
   const e = prettyDate(extra.endDate);
   const dateRange = s && e && s !== e ? `${s} – ${e}` : s ?? null;
@@ -67,7 +75,18 @@ export default async function CourseDetailPage({ params }: Props) {
   ];
 
   const embedUrl = course.videoUrl || extra.videoLink || null;
-  const faqs = (course.extra as { faqs?: Array<{ question: string; answer: string }> } | null)?.faqs;
+  const faqs = extra.faqs;
+  const scheduleRows = parseCourseSchedule(extra);
+  const registrationOpen = isCourseUpcoming(course);
+
+  const programmeRows = [
+    teachers.length > 0 && { label: "Facilitators", value: teachers.join(", ") },
+    dateRange && { label: "When", value: dateRange },
+    extra.duration && { label: "Duration", value: extra.duration },
+    extra.mode && { label: "Mode", value: extra.mode },
+    extra.venue && { label: "Venue", value: extra.venue },
+    extra.timings && { label: "Timings", value: extra.timings }
+  ].filter(Boolean) as Array<{ label: string; value: string }>;
 
   return (
     <div style={{ background: "var(--brand-cream)" }}>
@@ -125,19 +144,14 @@ export default async function CourseDetailPage({ params }: Props) {
               </p>
             )}
 
-            {/* Programme Details card */}
-            {(teachers.length > 0 || dateRange || extra.duration) && (
+            {programmeRows.length > 0 && (
               <div style={{ border:"1px solid var(--brand-cream-dark)", background:"var(--brand-ivory)", padding:"24px 28px", marginBottom:"40px" }}>
                 <p style={{ color:"var(--brand-gold)", fontSize:"9px", fontWeight:700, letterSpacing:"0.2em", textTransform:"uppercase", marginBottom:"20px" }}>
                   Programme Details
                 </p>
                 <div style={{ display:"flex", flexDirection:"column", gap:"0" }}>
-                  {[
-                    teachers.length > 0 && { label:"Facilitators", value: teachers.join(", ") },
-                    dateRange && { label:"When", value: dateRange },
-                    extra.duration && { label:"Duration", value: extra.duration },
-                  ].filter(Boolean).map((row: any, i, arr) => (
-                    <div key={row.label} style={{ display:"flex", gap:"20px", alignItems:"flex-start", padding:"14px 0", borderBottom: i < arr.length-1 ? "1px solid var(--brand-cream-dark)" : "none" }}>
+                  {programmeRows.map((row, i) => (
+                    <div key={row.label} style={{ display:"flex", gap:"20px", alignItems:"flex-start", padding:"14px 0", borderBottom: i < programmeRows.length - 1 ? "1px solid var(--brand-cream-dark)" : "none" }}>
                       <span style={{ color:"var(--brand-muted)", fontSize:"11px", fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", minWidth:"90px", paddingTop:"2px" }}>{row.label}</span>
                       <span style={{ color:"var(--brand-ink)", fontSize:"14px", lineHeight:1.6 }}>{row.value}</span>
                     </div>
@@ -146,12 +160,71 @@ export default async function CourseDetailPage({ params }: Props) {
               </div>
             )}
 
+            {extra.aboutTheCourse?.trim() && (
+              <section style={{ marginBottom:"40px" }}>
+                <h2 className="font-serif" style={{ color:"var(--brand-forest)", fontSize:"1.5rem", fontWeight:700, marginBottom:"16px" }}>
+                  About the Course
+                </h2>
+                <div className="course-rich-text" style={{ color:"var(--brand-ink)", lineHeight:1.85, fontSize:"15px" }}>
+                  <ProductRichText html={extra.aboutTheCourse} />
+                </div>
+              </section>
+            )}
+
+            <CourseAboutTeachers teachers={teacherProfiles} />
+
+            {scheduleRows.length > 0 && (
+              <section style={{ marginBottom:"40px" }}>
+                <h2 className="font-serif" style={{ color:"var(--brand-forest)", fontSize:"1.5rem", fontWeight:700, marginBottom:"20px" }}>
+                  Schedule
+                </h2>
+                <div style={{ overflowX:"auto", border:"1px solid var(--brand-cream-dark)" }}>
+                  <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"14px", background:"var(--brand-ivory)" }}>
+                    <thead>
+                      <tr style={{ background:"var(--brand-forest)", color:"#fffbf5", textAlign:"left" }}>
+                        {["Dates", "Mode", "Location", "Timings", "Duration"].map((h) => (
+                          <th key={h} style={{ padding:"12px 14px", fontSize:"11px", fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {scheduleRows.map((row, i) => {
+                        const rs = prettyDate(row.startDate);
+                        const re = prettyDate(row.endDate);
+                        const dates = rs && re && rs !== re ? `${rs} – ${re}` : rs ?? re ?? "—";
+                        return (
+                          <tr key={i} style={{ borderTop:"1px solid var(--brand-cream-dark)" }}>
+                            <td style={{ padding:"12px 14px", color:"var(--brand-ink)" }}>{dates}</td>
+                            <td style={{ padding:"12px 14px", color:"var(--brand-muted)" }}>{row.mode || "—"}</td>
+                            <td style={{ padding:"12px 14px", color:"var(--brand-muted)" }}>{row.location || "—"}</td>
+                            <td style={{ padding:"12px 14px", color:"var(--brand-muted)" }}>{row.timings || "—"}</td>
+                            <td style={{ padding:"12px 14px", color:"var(--brand-muted)" }}>{row.duration || "—"}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            )}
+
             {/* Video */}
             {embedUrl && (
               <div className="mb-10 overflow-hidden" style={{ aspectRatio:"16/9", border:"1px solid var(--brand-cream-dark)" }}>
                 <iframe src={embedUrl} title={`${course.title} preview`} className="h-full w-full"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
               </div>
+            )}
+
+            {extra.courseIncludes?.trim() && (
+              <section style={{ marginBottom:"40px" }}>
+                <h2 className="font-serif" style={{ color:"var(--brand-forest)", fontSize:"1.5rem", fontWeight:700, marginBottom:"16px" }}>
+                  What&apos;s Included
+                </h2>
+                <div className="course-rich-text" style={{ color:"var(--brand-ink)", lineHeight:1.85, fontSize:"15px" }}>
+                  <ProductRichText html={extra.courseIncludes} />
+                </div>
+              </section>
             )}
 
             {/* Description */}
@@ -194,7 +267,7 @@ export default async function CourseDetailPage({ params }: Props) {
           {/* Sidebar */}
           <aside>
             <div style={{ position:"sticky", top:"100px", border:"1px solid var(--brand-cream-dark)", background:"var(--brand-ivory)", boxShadow:"0 4px 18px rgba(44,36,32,0.08)" }}>
-              {(course.priceInPaise > 0 || course.isFree) && (
+              {registrationOpen && (course.priceInPaise > 0 || course.isFree) && (
                 <div style={{ padding:"20px 24px", borderBottom:"1px solid var(--brand-cream-dark)", background:"linear-gradient(135deg,var(--brand-forest),var(--brand-night))" }}>
                   <p style={{ color:"var(--brand-gold-pale)", fontSize:"9px", fontWeight:700, letterSpacing:"0.18em", textTransform:"uppercase", marginBottom:"6px" }}>Investment</p>
                   <p className="font-serif" style={{ color:"#fffbf5", fontSize:"2rem", fontWeight:700 }}>
@@ -204,7 +277,11 @@ export default async function CourseDetailPage({ params }: Props) {
                 </div>
               )}
               <div style={{ padding:"20px 24px" }}>
-                <CourseEnrollActions item={course} pathPrefix="course" />
+                <CourseEnrollActions
+                  item={course}
+                  pathPrefix="course"
+                  registrationClosed={!registrationOpen}
+                />
                 <Link href="/courses" style={{ display:"block", textAlign:"center", marginTop:"14px", color:"var(--brand-muted)", fontSize:"13px" }}>
                   ← Back to all courses
                 </Link>

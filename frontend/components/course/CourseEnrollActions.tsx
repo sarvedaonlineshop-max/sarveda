@@ -15,12 +15,15 @@ type Props = {
   /** URL path segment: course or event */
   pathPrefix: "course" | "event";
   payLabel?: string;
+  /** When true, checkout / enrol is hidden (e.g. past course intake). */
+  registrationClosed?: boolean;
 };
 
 export function CourseEnrollActions({
   item: course,
   pathPrefix,
-  payLabel = "Pay & enrol online"
+  payLabel = "Pay & enrol online",
+  registrationClosed = false
 }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -28,11 +31,13 @@ export function CourseEnrollActions({
 
   const courseUrl = absoluteUrl(`/${pathPrefix}/${course.slug}`);
   const showPay =
+    !registrationClosed &&
     (course.enrollmentMode === "CHECKOUT" || course.enrollmentMode === "BOTH") &&
     course.checkoutVariantId &&
     course.priceInPaise > 0;
   const showEnquire =
-    course.enrollmentMode === "ENQUIRY" || course.enrollmentMode === "BOTH" || !showPay;
+    !registrationClosed &&
+    (course.enrollmentMode === "ENQUIRY" || course.enrollmentMode === "BOTH" || !showPay);
 
   const pay = async () => {
     if (!course.checkoutVariantId) return;
@@ -50,6 +55,32 @@ export function CourseEnrollActions({
 
   return (
     <div className="rounded-2xl border border-stone-200 bg-stone-50 p-5 md:p-6">
+      {registrationClosed ? (
+        <>
+          <p className="font-serif text-lg font-semibold text-stone-900">Registration closed</p>
+          <p className="mt-2 text-sm text-stone-600">
+            This {pathPrefix === "course" ? "programme" : "event"} has ended. Online enrolment and
+            payment are no longer available for this intake.
+          </p>
+          <div className="mt-5 flex flex-col gap-3">
+            <a
+              href={buildEnquiryWhatsAppUrl(course.title, courseUrl)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-stone-300 bg-white px-5 text-sm font-semibold text-stone-800 transition hover:border-amber-400 hover:bg-amber-50"
+            >
+              Ask about a future intake
+            </a>
+            <Link
+              href={pathPrefix === "course" ? "/courses" : "/events"}
+              className="text-center text-sm font-medium text-amber-800 underline hover:text-amber-900"
+            >
+              View {pathPrefix === "course" ? "all courses" : "all events"}
+            </Link>
+          </div>
+        </>
+      ) : (
+        <>
       {course.priceInPaise > 0 ? (
         <p className="font-serif text-2xl font-semibold text-stone-900">
           {formatINRFromPaise(course.priceInPaise)}
@@ -111,6 +142,8 @@ export function CourseEnrollActions({
           Browse products
         </Link>
       </p>
+        </>
+      )}
     </div>
   );
 }

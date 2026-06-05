@@ -1,5 +1,28 @@
 import type { AdminContentType } from "@/lib/admin-api";
-import { parseCourseExtra } from "@/lib/content-meta";
+import {
+  parseCourseExtra,
+  parseCourseSchedule,
+  parseCourseTeachers
+} from "@/lib/content-meta";
+import type { CourseFaqForm } from "@/components/admin/CourseFaqFields";
+import {
+  emptyCourseSchedule,
+  type CourseScheduleForm
+} from "@/components/admin/CourseScheduleFields";
+
+export type CourseTeacherForm = {
+  name: string;
+  designation: string;
+  bio: string;
+  imageUrl: string;
+};
+
+export const emptyCourseTeacher: CourseTeacherForm = {
+  name: "",
+  designation: "",
+  bio: "",
+  imageUrl: ""
+};
 
 export function contentUsesName(type: AdminContentType) {
   return type === "vaidyas" || type === "mentors";
@@ -59,10 +82,25 @@ export type ContentFormValues = {
   startDate: string;
   imageUrl: string;
   shortDescription: string;
-  teachers: string[];
+  courseTeachers: CourseTeacherForm[];
   duration: string;
   courseStartDate: string;
   courseEndDate: string;
+  videoUrl: string;
+  courseMode: string;
+  courseVenue: string;
+  courseTimings: string;
+  courseIncludes: string;
+  aboutTheCourse: string;
+  courseFaqs: CourseFaqForm[];
+  courseSchedule: CourseScheduleForm[];
+  expertise: string;
+  speciality: string;
+  courseIsFree: boolean;
+  priceInr: string;
+  priceUsd: string;
+  enrollmentMode: string;
+  checkoutVariantSku: string;
 };
 
 export const emptyContentForm: ContentFormValues = {
@@ -76,10 +114,25 @@ export const emptyContentForm: ContentFormValues = {
   startDate: "",
   imageUrl: "",
   shortDescription: "",
-  teachers: [""],
+  courseTeachers: [{ ...emptyCourseTeacher }],
   duration: "",
   courseStartDate: "",
-  courseEndDate: ""
+  courseEndDate: "",
+  videoUrl: "",
+  courseMode: "",
+  courseVenue: "",
+  courseTimings: "",
+  courseIncludes: "",
+  aboutTheCourse: "",
+  courseFaqs: [{ question: "", answer: "" }],
+  courseSchedule: [{ ...emptyCourseSchedule }],
+  expertise: "",
+  speciality: "",
+  courseIsFree: false,
+  priceInr: "",
+  priceUsd: "",
+  enrollmentMode: "ENQUIRY",
+  checkoutVariantSku: ""
 };
 
 function isoDateToInput(raw: string | null | undefined): string {
@@ -118,28 +171,94 @@ export function itemToFormValues(type: AdminContentType, item: Record<string, un
       : "",
     imageUrl: "",
     shortDescription: "",
-    teachers: [""],
+    courseTeachers: [{ ...emptyCourseTeacher }],
     duration: "",
     courseStartDate: "",
-    courseEndDate: ""
+    courseEndDate: "",
+    videoUrl: "",
+    courseMode: "",
+    courseVenue: "",
+    courseTimings: "",
+    courseIncludes: "",
+    aboutTheCourse: "",
+    courseFaqs: [{ question: "", answer: "" }],
+    courseSchedule: [{ ...emptyCourseSchedule }],
+    expertise: "",
+    speciality: "",
+    courseIsFree: false,
+    priceInr: "",
+    priceUsd: "",
+    enrollmentMode: "ENQUIRY",
+    checkoutVariantSku: ""
   };
+
+  if (type === "mentors" || type === "vaidyas") {
+    return {
+      ...base,
+      imageUrl: (item.photoUrl as string) ?? "",
+      expertise: (item.expertise as string) ?? "",
+      speciality: (item.speciality as string) ?? ""
+    };
+  }
 
   if (type !== "courses") {
     return base;
   }
 
   const extra = parseCourseExtra(item.extra as Record<string, unknown> | null);
-  const teachers = extra.teachers?.filter(Boolean) ?? [];
+  const teachers = parseCourseTeachers(extra);
 
   return {
     ...base,
     imageUrl: (item.imageUrl as string) ?? "",
     shortDescription: (item.shortDescription as string) ?? "",
     seoKeyword: extra.seoKeyword ?? "",
-    teachers: teachers.length > 0 ? teachers : [""],
+    courseTeachers:
+      teachers.length > 0
+        ? teachers.map((t) => ({
+            name: t.name,
+            designation: t.designation ?? "",
+            bio: t.bio ?? "",
+            imageUrl: t.imageUrl ?? ""
+          }))
+        : [{ ...emptyCourseTeacher }],
     duration: extra.duration ?? "",
     courseStartDate: isoDateToInput(extra.startDate),
-    courseEndDate: isoDateToInput(extra.endDate)
+    courseEndDate: isoDateToInput(extra.endDate),
+    videoUrl: (item.videoUrl as string) ?? extra.videoLink ?? "",
+    courseMode: extra.mode ?? "",
+    courseVenue: extra.venue ?? "",
+    courseTimings: extra.timings ?? "",
+    courseIncludes: extra.courseIncludes ?? "",
+    aboutTheCourse: extra.aboutTheCourse ?? "",
+    courseFaqs:
+      extra.faqs?.length
+        ? extra.faqs.map((f) => ({ question: f.question, answer: f.answer }))
+        : [{ question: "", answer: "" }],
+    courseSchedule: (() => {
+      const rows = parseCourseSchedule(extra);
+      return rows.length
+        ? rows.map((r) => ({
+            startDate: isoDateToInput(r.startDate),
+            endDate: isoDateToInput(r.endDate),
+            mode: r.mode ?? "",
+            location: r.location ?? "",
+            timings: r.timings ?? "",
+            duration: r.duration ?? ""
+          }))
+        : [{ ...emptyCourseSchedule }];
+    })(),
+    courseIsFree: Boolean(item.isFree),
+    priceInr:
+      typeof item.priceInPaise === "number" && item.priceInPaise > 0
+        ? String(item.priceInPaise / 100)
+        : "",
+    priceUsd:
+      typeof item.priceUsdCents === "number" && item.priceUsdCents > 0
+        ? String(item.priceUsdCents / 100)
+        : "",
+    enrollmentMode: (item.enrollmentMode as string) ?? "ENQUIRY",
+    checkoutVariantSku: (item.checkoutVariantSku as string) ?? ""
   };
 }
 
@@ -157,6 +276,13 @@ export function formValuesToPayload(type: AdminContentType, values: ContentFormV
   } else if (contentUsesName(type)) {
     base.name = values.title.trim();
     base.bio = values.body.trim() || null;
+    base.photoUrl = values.imageUrl.trim() || null;
+    if (type === "mentors") {
+      base.expertise = values.expertise.trim() || null;
+    }
+    if (type === "vaidyas") {
+      base.speciality = values.speciality.trim() || null;
+    }
   } else if (type === "blog") {
     base.title = values.title.trim();
     base.content = values.body;
@@ -165,15 +291,55 @@ export function formValuesToPayload(type: AdminContentType, values: ContentFormV
     base.title = values.title.trim();
     base.content = values.body.trim() || null;
   } else if (type === "courses") {
+    const rupees = parseFloat(values.priceInr.replace(/,/g, "")) || 0;
+    const priceInPaise = values.courseIsFree ? 0 : Math.round(Math.max(0, rupees) * 100);
+    const usd = parseFloat(values.priceUsd.replace(/,/g, ""));
+    const priceUsdCents =
+      !values.courseIsFree && Number.isFinite(usd) && usd > 0 ? Math.round(usd * 100) : null;
+
     base.title = values.title.trim();
     base.description = values.body.trim() || null;
     base.imageUrl = values.imageUrl.trim() || null;
     base.shortDescription = values.shortDescription.trim() || null;
-    base.teachers = values.teachers.map((t) => t.trim()).filter(Boolean);
+    base.teachers = values.courseTeachers
+      .map((t) => ({
+        name: t.name.trim(),
+        designation: t.designation.trim() || null,
+        bio: t.bio.trim() || null,
+        imageUrl: t.imageUrl.trim() || null
+      }))
+      .filter((t) => t.name);
     base.duration = values.duration.trim() || null;
     base.courseStartDate = values.courseStartDate.trim() || null;
     base.courseEndDate = values.courseEndDate.trim() || null;
+    base.videoUrl = values.videoUrl.trim() || null;
+    base.mode = values.courseMode.trim() || null;
+    base.venue = values.courseVenue.trim() || null;
+    base.timings = values.courseTimings.trim() || null;
+    base.courseIncludes = values.courseIncludes.trim() || null;
+    base.aboutTheCourse = values.aboutTheCourse.trim() || null;
+    base.faqs = values.courseFaqs
+      .map((f) => ({ question: f.question.trim(), answer: f.answer.trim() }))
+      .filter((f) => f.question && f.answer);
+    base.schedule = values.courseSchedule
+      .map((r) => ({
+        startDate: r.startDate.trim() || null,
+        endDate: r.endDate.trim() || null,
+        mode: r.mode.trim() || null,
+        location: r.location.trim() || null,
+        timings: r.timings.trim() || null,
+        duration: r.duration.trim() || null
+      }))
+      .filter(
+        (r) =>
+          r.startDate || r.endDate || r.mode || r.location || r.timings || r.duration
+      );
     base.seoKeyword = values.seoKeyword.trim() || null;
+    base.isFree = values.courseIsFree;
+    base.priceInPaise = priceInPaise;
+    base.priceUsdCents = priceUsdCents;
+    base.enrollmentMode = values.enrollmentMode;
+    base.checkoutVariantSku = values.checkoutVariantSku.trim() || null;
   } else {
     base.title = values.title.trim();
     base.description = values.body.trim() || null;

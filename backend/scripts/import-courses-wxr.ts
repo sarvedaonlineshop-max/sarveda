@@ -59,7 +59,91 @@ function inferEnrollmentMode(priceInPaise: number, html: string): CourseEnrollme
   return "CHECKOUT";
 }
 
-function pickExtra(meta: MetaMap, content: string) {
+type ImportedTeacher = {
+  name: string;
+  bio?: string | null;
+  imageUrl?: string | null;
+  designation?: string | null;
+};
+
+type ImportedScheduleRow = {
+  startDate?: string | null;
+  endDate?: string | null;
+  mode?: string | null;
+  location?: string | null;
+  timings?: string | null;
+  duration?: string | null;
+};
+
+function resolveAttachment(
+  id: string | undefined,
+  attachments: Map<string, string>
+): string | null {
+  if (!id?.trim()) return null;
+  return attachments.get(id.trim()) ?? null;
+}
+
+function pickTeachers(meta: MetaMap, attachments: Map<string, string>): ImportedTeacher[] {
+  const byName = new Map<string, ImportedTeacher>();
+
+  function mergeTeacher(t: ImportedTeacher) {
+    const name = t.name?.trim();
+    if (!name) return;
+    const prev = byName.get(name);
+    byName.set(name, {
+      name,
+      bio: t.bio?.trim() || prev?.bio || null,
+      imageUrl: t.imageUrl || prev?.imageUrl || null,
+      designation: t.designation?.trim() || prev?.designation || null
+    });
+  }
+
+  const singleName = meta.teacher_section_teacher_name?.trim();
+  if (singleName) {
+    mergeTeacher({
+      name: singleName,
+      bio: meta.teacher_section_about_teacher || null,
+      imageUrl: resolveAttachment(meta.teacher_section_teacher_image, attachments),
+      designation: meta.teacher_section_teacher_designation || null
+    });
+  }
+
+  for (let i = 0; i < 12; i++) {
+    const name = meta[`about_teachers_${i}_teacher_name`]?.trim();
+    if (!name) continue;
+    mergeTeacher({
+      name,
+      bio: meta[`about_teachers_${i}_about_teacher`] || null,
+      imageUrl: resolveAttachment(meta[`about_teachers_${i}_teacher_image`], attachments),
+      designation: meta[`about_teachers_${i}_teacher_designation`] || null
+    });
+  }
+
+  return Array.from(byName.values());
+}
+
+function pickSchedule(meta: MetaMap): ImportedScheduleRow[] | undefined {
+  const rows: ImportedScheduleRow[] = [];
+  for (let i = 0; i < 8; i++) {
+    const startDate = meta[`course_detail_table_${i}_start_date`]?.trim() || null;
+    const endDate = meta[`course_detail_table_${i}_end_date`]?.trim() || null;
+    const mode =
+      meta[`course_detail_table_${i}_mode`]?.trim() ||
+      meta[`course_detail_table_${i}_event_mode`]?.trim() ||
+      null;
+    const location =
+      meta[`course_detail_table_${i}_location`]?.trim() ||
+      meta[`course_detail_table_${i}_event_location`]?.trim() ||
+      null;
+    const timings = meta[`course_detail_table_${i}_course_timmings`]?.trim() || null;
+    const duration = meta[`course_detail_table_${i}_duration`]?.trim() || null;
+    if (!startDate && !endDate && !mode && !location && !timings && !duration) continue;
+    rows.push({ startDate, endDate, mode, location, timings, duration });
+  }
+  return rows.length ? rows : undefined;
+}
+
+function pickExtra(meta: MetaMap, attachments: Map<string, string>) {
   const faqs: Array<{ question: string; answer: string }> = [];
   for (let i = 0; i < 20; i++) {
     const q = meta[`faqs_${i}_question`];
@@ -67,22 +151,22 @@ function pickExtra(meta: MetaMap, content: string) {
     if (q && a) faqs.push({ question: q, answer: a });
   }
 
-  const teachers: string[] = [];
-  const singleTeacher = meta.teacher_section_teacher_name?.trim();
-  if (singleTeacher) teachers.push(singleTeacher);
-  for (let i = 0; i < 12; i++) {
-    const name = meta[`about_teachers_${i}_teacher_name`]?.trim();
-    if (name && !teachers.includes(name)) teachers.push(name);
-  }
+  const teachers = pickTeachers(meta, attachments);
+  const schedule = pickSchedule(meta);
+  const firstSchedule = schedule?.[0];
 
   return {
     videoLink: meta.video_link || meta.youtube_embedd || null,
-    duration: meta.duration || null,
-    startDate: meta.start_date || null,
-    endDate: meta.end_date || null,
+    duration: meta.duration || firstSchedule?.duration || null,
+    startDate: meta.start_date || firstSchedule?.startDate || null,
+    endDate: meta.end_date || firstSchedule?.endDate || null,
+    mode: firstSchedule?.mode || null,
+    venue: firstSchedule?.location || null,
+    timings: firstSchedule?.timings || null,
     courseIncludes: meta.course_includes || null,
     aboutTheCourse: meta.about_the_course || null,
     teachers: teachers.length ? teachers : undefined,
+    schedule,
     faqs: faqs.length ? faqs : undefined
   };
 }
@@ -206,7 +290,7 @@ async function main() {
     const seoTitle = meta._yoast_wpseo_title || null;
     const seoDescription = meta._yoast_wpseo_metadesc || null;
     const videoUrl = meta.video_link || meta.youtube_embedd || null;
-    const extra = pickExtra(meta, description);
+    const extra = pickExtra(meta, attachments);
 
     console.log(`→ ${slug} [${enrollmentMode}] ₹${inr}`);
 

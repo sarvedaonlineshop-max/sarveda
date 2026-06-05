@@ -19,10 +19,48 @@ export const contentCreateSchema = z.object({
   startDate: optionalString,
   imageUrl: nullableString,
   shortDescription: nullableString,
-  teachers: z.array(z.string()).optional(),
+  teachers: z
+    .array(
+      z.object({
+        name: z.string(),
+        bio: nullableString,
+        imageUrl: nullableString,
+        designation: nullableString
+      })
+    )
+    .optional(),
   duration: nullableString,
   courseStartDate: nullableString,
-  courseEndDate: nullableString
+  courseEndDate: nullableString,
+  videoUrl: nullableString,
+  mode: nullableString,
+  venue: nullableString,
+  timings: nullableString,
+  courseIncludes: nullableString,
+  aboutTheCourse: nullableString,
+  faqs: z
+    .array(z.object({ question: z.string(), answer: z.string() }))
+    .optional(),
+  schedule: z
+    .array(
+      z.object({
+        startDate: nullableString,
+        endDate: nullableString,
+        mode: nullableString,
+        location: nullableString,
+        timings: nullableString,
+        duration: nullableString
+      })
+    )
+    .optional(),
+  photoUrl: nullableString,
+  expertise: nullableString,
+  speciality: nullableString,
+  isFree: z.boolean().optional(),
+  priceInPaise: z.number().int().min(0).optional(),
+  priceUsdCents: z.number().int().min(0).nullable().optional(),
+  enrollmentMode: optionalString,
+  checkoutVariantSku: nullableString
 });
 
 export const contentUpdateSchema = contentCreateSchema.partial();
