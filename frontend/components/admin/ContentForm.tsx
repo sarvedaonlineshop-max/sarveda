@@ -314,6 +314,7 @@ export function ContentForm({ type, itemId }: Props) {
                 <option value="STANDARD">Standard — overview + description</option>
                 <option value="SESSIONS">Sessions — numbered session curriculum</option>
                 <option value="CURRICULUM">Curriculum — modules with hours &amp; pricing</option>
+                <option value="CUSTOM">Custom — build the full page in HTML below</option>
               </select>
             </Field>
 
@@ -444,6 +445,13 @@ export function ContentForm({ type, itemId }: Props) {
               </Field>
             ) : null}
 
+            {values.layoutTemplate === "CUSTOM" ? (
+              <p className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
+                Custom layout: use the page content field below for your full HTML. Optional blocks
+                (FAQs, schedule, mentors) still render if you fill them.
+              </p>
+            ) : null}
+
             <div className="rounded-lg border border-stone-200 bg-stone-50/80 p-4 dark:border-stone-700 dark:bg-stone-950/40">
               <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
                 Pricing &amp; enrolment
@@ -533,12 +541,28 @@ export function ContentForm({ type, itemId }: Props) {
           </>
         ) : null}
 
-        <Field label={contentBodyLabel(type)}>
+        <Field
+          label={
+            isCourse
+              ? values.layoutTemplate === "SESSIONS"
+                ? "Additional page content (optional)"
+                : values.layoutTemplate === "CUSTOM"
+                  ? "Custom page content (HTML)"
+                  : "Page content / description"
+              : contentBodyLabel(type)
+          }
+        >
+          {isCourse && values.layoutTemplate === "SESSIONS" ? (
+            <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
+              Session details belong in the Sessions section above — not here. Use this field only
+              for intro text before the session list.
+            </p>
+          ) : null}
           <textarea
             value={values.body}
             onChange={(e) => setValues((v) => ({ ...v, body: e.target.value }))}
-            rows={12}
-            className={`${inputClass} font-mono text-xs`}
+            rows={isCourse && values.layoutTemplate === "CUSTOM" ? 24 : 12}
+            className={`${fieldInput} font-mono text-xs`}
             placeholder="HTML or plain text"
           />
         </Field>

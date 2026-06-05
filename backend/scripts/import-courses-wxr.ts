@@ -13,7 +13,8 @@ import {
   applySessionSchedules,
   detectLayoutTemplate,
   parseCurriculumFromMeta,
-  parseSessionsFromHtml
+  parseSessionsFromHtml,
+  stripSessionsFromHtml
 } from "../src/utils/course-sessions";
 import { may30 } from "./migration-paths";
 
@@ -343,6 +344,10 @@ async function main() {
     const teacherNames = pickTeachers(meta, attachments).map((t) => t.name);
     const mentorIds = dryRun ? [] : await matchMentorIdsByNames(teacherNames);
     const extra = pickExtra(meta, attachments, description, mentorIds);
+    const courseDescription =
+      extra.layoutTemplate === "SESSIONS" && extra.sessions?.length
+        ? stripSessionsFromHtml(description) || null
+        : description || null;
 
     console.log(`→ ${slug} [${enrollmentMode}] ₹${inr}`);
 
@@ -358,7 +363,7 @@ async function main() {
       create: {
         slug,
         title,
-        description: description || null,
+        description: courseDescription,
         shortDescription,
         priceInPaise,
         priceUsdCents,
@@ -375,7 +380,7 @@ async function main() {
       },
       update: {
         title,
-        description: description || null,
+        description: courseDescription,
         shortDescription,
         priceInPaise,
         priceUsdCents,

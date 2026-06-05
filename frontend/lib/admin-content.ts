@@ -12,6 +12,7 @@ import type {
   CourseLayoutTemplate,
   CourseSession
 } from "@/lib/course-sessions";
+import { htmlHasSessionBlocks, stripSessionsFromHtml } from "@/lib/course-sessions";
 import { courseDurationHours } from "@/lib/content-meta";
 
 export function contentUsesName(type: AdminContentType) {
@@ -206,20 +207,29 @@ export function itemToFormValues(type: AdminContentType, item: Record<string, un
 
   const extra = parseCourseExtra(item.extra as Record<string, unknown> | null);
   const hours = courseDurationHours(extra);
+  const layoutTemplate =
+    extra.layoutTemplate ??
+    (extra.sessions?.length && extra.sessions.length >= 2
+      ? "SESSIONS"
+      : extra.curriculum?.length && extra.curriculum.length >= 2
+        ? "CURRICULUM"
+        : "STANDARD");
+  let courseBody =
+    (item.description as string) ??
+    (item.content as string) ??
+    "";
+  if (layoutTemplate === "SESSIONS" && htmlHasSessionBlocks(courseBody)) {
+    courseBody = stripSessionsFromHtml(courseBody);
+  }
 
   return {
     ...base,
+    body: courseBody,
     imageUrl: (item.imageUrl as string) ?? "",
     shortDescription: (item.shortDescription as string) ?? "",
     seoKeyword: extra.seoKeyword ?? "",
     mentorIds: Array.isArray(extra.mentorIds) ? extra.mentorIds : [],
-    layoutTemplate:
-      extra.layoutTemplate ??
-      (extra.sessions?.length && extra.sessions.length >= 2
-        ? "SESSIONS"
-        : extra.curriculum?.length && extra.curriculum.length >= 2
-          ? "CURRICULUM"
-          : "STANDARD"),
+    layoutTemplate,
     durationHours: hours != null ? String(hours) : "",
     courseSessions:
       extra.sessions?.length
@@ -319,7 +329,11 @@ export function formValuesToPayload(type: AdminContentType, values: ContentFormV
       !values.courseIsFree && Number.isFinite(usd) && usd > 0 ? Math.round(usd * 100) : null;
 
     base.title = values.title.trim();
-    base.description = values.body.trim() || null;
+    let description = values.body.trim();
+    if (values.layoutTemplate === "SESSIONS" && htmlHasSessionBlocks(description)) {
+      description = stripSessionsFromHtml(description);
+    }
+    base.description = description || null;
     base.imageUrl = values.imageUrl.trim() || null;
     base.shortDescription = values.shortDescription.trim() || null;
     base.mentorIds = values.mentorIds;

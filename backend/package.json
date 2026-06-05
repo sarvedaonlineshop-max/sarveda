@@ -18,6 +18,7 @@
     "import:pages": "tsx scripts/import-pages-wxr.ts",
     "import:vaidya": "tsx scripts/import-vaidya-wxr.ts",
     "import:mentors": "tsx scripts/import-mentors-wxr.ts",
+    "seed:mentors-from-courses": "tsx scripts/seed-mentors-from-courses.ts",
     "import:retreats": "tsx scripts/import-retreats-wxr.ts",
     "import:testimonials": "tsx scripts/import-testimonials-wxr.ts",
     "import:offers": "tsx scripts/import-offers-wxr.ts",

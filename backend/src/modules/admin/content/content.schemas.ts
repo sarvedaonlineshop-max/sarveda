@@ -30,7 +30,7 @@ export const contentCreateSchema = z.object({
       })
     )
     .optional(),
-  layoutTemplate: z.enum(["STANDARD", "SESSIONS", "CURRICULUM"]).optional(),
+  layoutTemplate: z.enum(["STANDARD", "SESSIONS", "CURRICULUM", "CUSTOM"]).optional(),
   durationHours: z.number().positive().nullable().optional(),
   duration: nullableString,
   sessions: z

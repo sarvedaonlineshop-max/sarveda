@@ -8,6 +8,7 @@ import type {
 
 import { prisma } from "../../../config/db";
 import { slugify } from "../../../utils/slugify";
+import { stripSessionsFromHtml } from "../../../utils/course-sessions";
 import type {
   ContentCreateBody,
   ContentListResult,
@@ -350,6 +351,18 @@ function courseExtraFieldsPresent(
   );
 }
 
+function sanitizeCourseDescription(
+  description: string | null | undefined,
+  layoutTemplate: string | null | undefined
+): string | null {
+  const raw = description?.trim();
+  if (!raw) return null;
+  if (layoutTemplate === "SESSIONS" && /<h3[^>]*>\s*Session\s+\d+/i.test(raw)) {
+    return stripSessionsFromHtml(raw) || null;
+  }
+  return raw;
+}
+
 async function buildCourseExtraPayload(
   body: ContentCreateBody | ContentUpdateBody,
   existing?: Prisma.JsonValue | null
@@ -668,11 +681,19 @@ export async function createContent(type: ContentType, body: ContentCreateBody) 
       const extra = courseExtraFieldsPresent(body)
         ? await buildCourseExtraPayload(body)
         : undefined;
+      const layoutTemplate =
+        body.layoutTemplate ??
+        (extra && typeof extra === "object" && "layoutTemplate" in extra
+          ? String((extra as Record<string, unknown>).layoutTemplate)
+          : undefined);
       const item = await prisma.course.create({
         data: {
           title,
           slug,
-          description: body.description ?? body.content ?? null,
+          description: sanitizeCourseDescription(
+            body.description ?? body.content ?? null,
+            layoutTemplate
+          ),
           shortDescription: body.shortDescription ?? null,
           imageUrl: body.imageUrl ?? null,
           videoUrl: body.videoUrl ?? null,
@@ -861,17 +882,22 @@ export async function updateContent(type: ContentType, id: string, body: Content
           ? await resolveCheckoutVariantSku(body.checkoutVariantSku, id)
           : undefined;
 
+      const nextLayout =
+        body.layoutTemplate ??
+        ((raw.extra as Record<string, unknown> | null)?.layoutTemplate as string | undefined);
+      const nextDescription =
+        body.description !== undefined
+          ? body.description
+          : body.content !== undefined
+            ? body.content
+            : (raw.description as string | null);
+
       const item = await prisma.course.update({
         where: { id },
         data: {
           title,
           slug,
-          description:
-            body.description !== undefined
-              ? body.description
-              : body.content !== undefined
-                ? body.content
-                : (raw.description as string | null),
+          description: sanitizeCourseDescription(nextDescription, nextLayout),
           shortDescription:
             body.shortDescription !== undefined
               ? body.shortDescription

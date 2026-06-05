@@ -10,7 +10,7 @@ function decodeHtmlEntities(text: string): string {
     .replace(/&#39;/g, "'");
 }
 
-export type CourseLayoutTemplate = "STANDARD" | "SESSIONS" | "CURRICULUM";
+export type CourseLayoutTemplate = "STANDARD" | "SESSIONS" | "CURRICULUM" | "CUSTOM";
 
 export type CourseSession = {
   sessionId: string;
@@ -137,4 +137,18 @@ export function parseCurriculumFromMeta(
     });
   }
   return modules;
+}
+
+/** Remove structured session blocks so they are not duplicated in the main description. */
+export function stripSessionsFromHtml(html: string): string {
+  if (!html?.trim()) return "";
+  const re = /<h3[^>]*>\s*Session\s+\d+\s*:/i;
+  const match = html.match(re);
+  if (!match || match.index == null) return html.trim();
+  const before = html.slice(0, match.index).trim();
+  return before;
+}
+
+export function htmlHasSessionBlocks(html: string): boolean {
+  return /<h3[^>]*>\s*Session\s+\d+\s*:/i.test(html ?? "");
 }

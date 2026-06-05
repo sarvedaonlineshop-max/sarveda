@@ -84,7 +84,14 @@ export default async function CourseDetailPage({ params }: Props) {
   const sessionRows = parseCourseSessions(extra);
   const curriculumModules = extra.curriculum ?? [];
   const durationLabel = formatCourseDuration(extra);
-  const layout = extra.layoutTemplate ?? (sessionRows.length >= 2 ? "SESSIONS" : "STANDARD");
+  const layout =
+    extra.layoutTemplate ??
+    (sessionRows.length >= 2 ? "SESSIONS" : curriculumModules.length >= 2 ? "CURRICULUM" : "STANDARD");
+  const showMainDescription =
+    layout === "CUSTOM" ||
+    layout === "STANDARD" ||
+    (layout === "SESSIONS" && sessionRows.length === 0) ||
+    (layout === "CURRICULUM" && curriculumModules.length === 0);
   const registrationOpen = isCourseUpcoming(course);
 
   const programmeRows = [
@@ -243,8 +250,8 @@ export default async function CourseDetailPage({ params }: Props) {
               </section>
             )}
 
-            {/* Description */}
-            {course.description && (
+            {/* Description — hidden for SESSIONS when structured sessions exist (no duplicate) */}
+            {showMainDescription && course.description && (
               <div className="course-rich-text">
                 <style>{`
                   .course-rich-text { color: var(--brand-ink); line-height: 1.85; font-size: 15px; }
