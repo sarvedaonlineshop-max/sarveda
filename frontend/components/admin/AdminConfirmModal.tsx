@@ -6,7 +6,6 @@ type AdminConfirmModalProps = {
   message: string;
   confirmLabel?: string;
   cancelLabel?: string;
-  /** Optional second action (e.g. remove label locally when already cancelled in Shiprocket). */
   secondaryConfirmLabel?: string;
   onSecondaryConfirm?: () => void;
   danger?: boolean;
@@ -16,60 +15,99 @@ type AdminConfirmModalProps = {
 };
 
 export function AdminConfirmModal({
-  open,
-  title,
-  message,
-  confirmLabel = "Confirm",
-  cancelLabel = "Cancel",
-  secondaryConfirmLabel,
-  onSecondaryConfirm,
-  danger,
-  busy,
-  onConfirm,
-  onClose
+  open, title, message,
+  confirmLabel = "Confirm", cancelLabel = "Cancel",
+  secondaryConfirmLabel, onSecondaryConfirm,
+  danger, busy, onConfirm, onClose
 }: AdminConfirmModalProps) {
   if (!open) return null;
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="admin-confirm-title"
+      style={{
+        position: "fixed", inset: 0, zIndex: 100,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        background: "rgba(0,0,0,0.45)", padding: "16px",
+        backdropFilter: "blur(4px)"
+      }}
+      role="dialog" aria-modal="true" aria-labelledby="confirm-title"
     >
-      <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl dark:border-stone-600 dark:bg-stone-900">
-        <h2 id="admin-confirm-title" className="font-serif text-xl italic text-stone-900 dark:text-stone-50">
-          {title}
-        </h2>
-        <p className="mt-3 text-sm leading-relaxed text-stone-600 dark:text-stone-300">{message}</p>
-        <div className="mt-6 flex flex-wrap justify-end gap-3">
+      <div style={{
+        width: "100%", maxWidth: "440px",
+        background: "#ffffff", borderRadius: "16px",
+        boxShadow: "0 24px 64px rgba(0,0,0,0.2)",
+        overflow: "hidden"
+      }}>
+        {/* Header stripe */}
+        <div style={{
+          background: danger ? "#fef2f2" : "#f4f1ec",
+          padding: "20px 24px 16px",
+          borderBottom: `1px solid ${danger ? "#fecaca" : "#e8e2d9"}`
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div style={{
+              width: "38px", height: "38px", borderRadius: "10px", flexShrink: 0,
+              background: danger ? "#fee2e2" : "rgba(30,58,47,0.08)",
+              display: "flex", alignItems: "center", justifyContent: "center"
+            }}>
+              {danger ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1e3a2f" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+              )}
+            </div>
+            <h2 id="confirm-title" style={{ fontSize: "16px", fontWeight: 700, color: "#2c2420" }}>
+              {title}
+            </h2>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: "20px 24px" }}>
+          <p style={{ fontSize: "14px", lineHeight: 1.65, color: "#6b5c52" }}>{message}</p>
+        </div>
+
+        {/* Actions */}
+        <div style={{
+          padding: "0 24px 20px",
+          display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: "10px"
+        }}>
           <button
-            type="button"
-            disabled={busy}
-            onClick={onClose}
-            className="rounded-xl border border-stone-300 px-4 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50 disabled:opacity-50 dark:border-stone-600 dark:text-stone-200 dark:hover:bg-stone-800"
+            type="button" disabled={busy} onClick={onClose}
+            style={{
+              padding: "9px 18px", borderRadius: "8px", fontSize: "13px", fontWeight: 500,
+              border: "1px solid #e0d8ce", background: "#ffffff", color: "#6b5c52",
+              cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.5 : 1
+            }}
           >
             {cancelLabel}
           </button>
-          {secondaryConfirmLabel && onSecondaryConfirm ? (
+          {secondaryConfirmLabel && onSecondaryConfirm && (
             <button
-              type="button"
-              disabled={busy}
-              onClick={onSecondaryConfirm}
-              className="rounded-xl border border-amber-700/50 bg-amber-500/15 px-4 py-2.5 text-sm font-semibold text-amber-950 hover:bg-amber-500/25 disabled:opacity-50 dark:border-amber-500/40 dark:text-amber-100"
+              type="button" disabled={busy} onClick={onSecondaryConfirm}
+              style={{
+                padding: "9px 18px", borderRadius: "8px", fontSize: "13px", fontWeight: 600,
+                border: "1px solid #c8960a", background: "rgba(200,150,10,0.08)", color: "#8a6200",
+                cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.5 : 1
+              }}
             >
               {secondaryConfirmLabel}
             </button>
-          ) : null}
+          )}
           <button
-            type="button"
-            disabled={busy}
-            onClick={onConfirm}
-            className={`rounded-xl px-4 py-2.5 text-sm font-semibold disabled:opacity-50 ${
-              danger
-                ? "bg-red-600 text-white hover:bg-red-500"
-                : "bg-amber-500 text-stone-900 hover:bg-amber-400 dark:text-stone-950"
-            }`}
+            type="button" disabled={busy} onClick={onConfirm}
+            style={{
+              padding: "9px 18px", borderRadius: "8px", fontSize: "13px", fontWeight: 600,
+              border: "none", cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.5 : 1,
+              background: danger ? "#dc2626" : "#1e3a2f",
+              color: "#ffffff"
+            }}
           >
             {busy ? "Please wait…" : confirmLabel}
           </button>
