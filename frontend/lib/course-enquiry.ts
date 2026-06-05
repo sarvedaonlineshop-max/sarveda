@@ -16,6 +16,9 @@ export async function submitCourseEnquiry(body: {
       message: buildCourseEnquiryMessage(body.courseTitle.trim())
     })
   });
-  const data = await parseApiResponse<{ message?: string }>(res);
-  return { message: data.message ?? "Thank you — we will reply shortly." };
+  const json = await parseApiResponse<{ message?: string }>(res);
+  if (!res.ok || !json.success) {
+    throw new Error(json.success ? `Request failed: ${res.status}` : json.error);
+  }
+  return { message: json.data.message ?? "Thank you — we will reply shortly." };
 }

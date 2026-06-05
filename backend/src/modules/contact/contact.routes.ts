@@ -37,7 +37,10 @@ router.post(
 
       await sendMail(to, subject, html, text, email);
       logger.info("corporate_contact_submitted", { email });
-      res.json({ success: true, message: "Thank you — we will reply within 24 hours." });
+      res.json({
+        success: true,
+        data: { message: "Thank you — we will reply within 24 hours." }
+      });
     } catch (err) {
       next(err);
     }
@@ -62,7 +65,10 @@ router.post(
 
       await sendMail(to, subject, html, text, email);
       logger.info("course_enquiry_submitted", { email, courseTitle });
-      res.json({ success: true, message: "Thank you — we will reply shortly." });
+      res.json({
+        success: true,
+        data: { message: "Thank you — we will reply shortly." }
+      });
     } catch (err) {
       next(err);
     }
