@@ -31,6 +31,7 @@ export function buildEnquiryMailto(courseTitle: string, courseUrl: string): stri
   return `mailto:${enquiryEmail()}?subject=${subject}&body=${body}`;
 }
 
-export function whatsAppSiteUrl(): string {
-  return `https://wa.me/${enquiryWhatsAppE164()}`;
+export function whatsAppSiteUrl(prefill = "Hi"): string {
+  const text = encodeURIComponent(prefill);
+  return `https://wa.me/${enquiryWhatsAppE164()}?text=${text}`;
 }

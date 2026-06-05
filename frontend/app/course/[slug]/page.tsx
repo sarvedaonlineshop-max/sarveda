@@ -113,8 +113,22 @@ export default async function CourseDetailPage({ params }: Props) {
     extra.timings && { label: "Timings", value: extra.timings }
   ].filter(Boolean) as Array<{ label: string; value: string }>;
 
+  const courseRichTextCss = `
+    .course-rich-text { color: var(--brand-ink); line-height: 1.85; font-size: 15px; overflow-wrap: anywhere; word-break: break-word; max-width: 100%; }
+    .course-rich-text h2 { font-family: var(--font-playfair,serif); color:var(--brand-forest); font-size:1.4rem; font-weight:700; margin-top:2rem; margin-bottom:0.6rem; }
+    .course-rich-text h3 { font-family: var(--font-playfair,serif); color:var(--brand-forest); font-size:1.1rem; font-weight:700; margin-top:1.5rem; margin-bottom:0.5rem; }
+    .course-rich-text p { margin-bottom:1rem; }
+    .course-rich-text ul, .course-rich-text ol { padding-left:1.25rem; margin-bottom:1rem; }
+    .course-rich-text li { margin-bottom:0.4rem; }
+    .course-rich-text strong { color:var(--brand-forest); }
+    .course-rich-text a { color:var(--brand-gold); text-decoration:underline; overflow-wrap: anywhere; }
+    .course-rich-text img, .course-rich-text video, .course-rich-text iframe { max-width: 100% !important; height: auto !important; }
+    .course-rich-text table { display: block; max-width: 100%; overflow-x: auto; }
+    .course-rich-text pre { overflow-x: auto; max-width: 100%; white-space: pre-wrap; }
+  `;
+
   return (
-    <div style={{ background: "var(--brand-cream)" }}>
+    <div className="overflow-x-hidden" style={{ background: "var(--brand-cream)" }}>
       <JsonLd data={[courseJsonLd(course), breadcrumbJsonLd(breadcrumbItems)]} />
 
       {/* Hero image — full bleed with forest gradient overlay */}
@@ -142,7 +156,7 @@ export default async function CourseDetailPage({ params }: Props) {
             <span>/</span>
             <Link href="/courses" style={{ color:"var(--brand-muted)" }}>Courses</Link>
             <span>/</span>
-            <span style={{ color:"var(--brand-ink)" }}>{course.title}</span>
+            <span className="min-w-0 truncate" style={{ color:"var(--brand-ink)" }}>{course.title}</span>
           </nav>
         </div>
       </div>
@@ -158,27 +172,27 @@ export default async function CourseDetailPage({ params }: Props) {
       )}
 
       {/* Main */}
-      <main className="mx-auto max-w-7xl px-6 py-12 lg:px-12">
-        <div className="grid gap-12 lg:grid-cols-[1fr_340px]">
+      <main className="mx-auto max-w-7xl overflow-x-hidden px-4 py-12 sm:px-6 lg:px-12">
+        <div className="grid min-w-0 gap-12 lg:grid-cols-[1fr_340px]">
 
           {/* Left */}
-          <div>
+          <div className="min-w-0 max-w-full">
             {course.shortDescription && (
-              <p style={{ color:"var(--brand-muted)", fontSize:"1.1rem", lineHeight:1.8, marginBottom:"32px", maxWidth:"620px" }}>
+              <p className="break-words" style={{ color:"var(--brand-muted)", fontSize:"1.1rem", lineHeight:1.8, marginBottom:"32px", maxWidth:"620px" }}>
                 {course.shortDescription}
               </p>
             )}
 
             {programmeRows.length > 0 && (
-              <div style={{ border:"1px solid var(--brand-cream-dark)", background:"var(--brand-ivory)", padding:"24px 28px", marginBottom:"40px" }}>
+              <div className="min-w-0" style={{ border:"1px solid var(--brand-cream-dark)", background:"var(--brand-ivory)", padding:"20px 16px", marginBottom:"40px" }}>
                 <p style={{ color:"var(--brand-gold)", fontSize:"9px", fontWeight:700, letterSpacing:"0.2em", textTransform:"uppercase", marginBottom:"20px" }}>
                   Programme Details
                 </p>
                 <div style={{ display:"flex", flexDirection:"column", gap:"0" }}>
                   {programmeRows.map((row, i) => (
-                    <div key={row.label} style={{ display:"flex", gap:"20px", alignItems:"flex-start", padding:"14px 0", borderBottom: i < programmeRows.length - 1 ? "1px solid var(--brand-cream-dark)" : "none" }}>
-                      <span style={{ color:"var(--brand-muted)", fontSize:"11px", fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", minWidth:"90px", paddingTop:"2px" }}>{row.label}</span>
-                      <span style={{ color:"var(--brand-ink)", fontSize:"14px", lineHeight:1.6 }}>{row.value}</span>
+                    <div key={row.label} className="flex flex-col gap-1 py-3.5 sm:flex-row sm:items-start sm:gap-5" style={{ borderBottom: i < programmeRows.length - 1 ? "1px solid var(--brand-cream-dark)" : "none" }}>
+                      <span className="shrink-0" style={{ color:"var(--brand-muted)", fontSize:"11px", fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", minWidth:"90px", paddingTop:"2px" }}>{row.label}</span>
+                      <span className="min-w-0 break-words" style={{ color:"var(--brand-ink)", fontSize:"14px", lineHeight:1.6 }}>{row.value}</span>
                     </div>
                   ))}
                 </div>
@@ -186,17 +200,8 @@ export default async function CourseDetailPage({ params }: Props) {
             )}
 
             {layout === "CUSTOM" && showMainDescription && course.description ? (
-              <div className="course-rich-text" style={{ marginBottom: "40px" }}>
-                <style>{`
-                  .course-rich-text { color: var(--brand-ink); line-height: 1.85; font-size: 15px; }
-                  .course-rich-text h2 { font-family: var(--font-playfair,serif); color:var(--brand-forest); font-size:1.4rem; font-weight:700; margin-top:2rem; margin-bottom:0.6rem; }
-                  .course-rich-text h3 { font-family: var(--font-playfair,serif); color:var(--brand-forest); font-size:1.1rem; font-weight:700; margin-top:1.5rem; margin-bottom:0.5rem; }
-                  .course-rich-text p { margin-bottom:1rem; }
-                  .course-rich-text ul, .course-rich-text ol { padding-left:1.25rem; margin-bottom:1rem; }
-                  .course-rich-text li { margin-bottom:0.4rem; }
-                  .course-rich-text strong { color:var(--brand-forest); }
-                  .course-rich-text a { color:var(--brand-gold); text-decoration:underline; }
-                `}</style>
+              <div className="course-rich-text min-w-0" style={{ marginBottom: "40px" }}>
+                <style>{courseRichTextCss}</style>
                 <ProductRichText html={course.description} />
               </div>
             ) : null}
@@ -206,7 +211,8 @@ export default async function CourseDetailPage({ params }: Props) {
                 <h2 className="font-serif" style={{ color:"var(--brand-forest)", fontSize:"1.5rem", fontWeight:700, marginBottom:"16px" }}>
                   About the Course
                 </h2>
-                <div className="course-rich-text" style={{ color:"var(--brand-ink)", lineHeight:1.85, fontSize:"15px" }}>
+                <div className="course-rich-text min-w-0" style={{ color:"var(--brand-ink)", lineHeight:1.85, fontSize:"15px" }}>
+                  <style>{courseRichTextCss}</style>
                   <ProductRichText html={extra.aboutTheCourse} />
                 </div>
               </section>
@@ -268,7 +274,8 @@ export default async function CourseDetailPage({ params }: Props) {
                 <h2 className="font-serif" style={{ color:"var(--brand-forest)", fontSize:"1.5rem", fontWeight:700, marginBottom:"16px" }}>
                   What&apos;s Included
                 </h2>
-                <div className="course-rich-text" style={{ color:"var(--brand-ink)", lineHeight:1.85, fontSize:"15px" }}>
+                <div className="course-rich-text min-w-0" style={{ color:"var(--brand-ink)", lineHeight:1.85, fontSize:"15px" }}>
+                  <style>{courseRichTextCss}</style>
                   <ProductRichText html={extra.courseIncludes} />
                 </div>
               </section>
@@ -276,17 +283,8 @@ export default async function CourseDetailPage({ params }: Props) {
 
             {/* Description — hidden for SESSIONS when structured sessions exist (no duplicate) */}
             {layout !== "CUSTOM" && showMainDescription && course.description && (
-              <div className="course-rich-text">
-                <style>{`
-                  .course-rich-text { color: var(--brand-ink); line-height: 1.85; font-size: 15px; }
-                  .course-rich-text h2 { font-family: var(--font-playfair,serif); color:var(--brand-forest); font-size:1.4rem; font-weight:700; margin-top:2rem; margin-bottom:0.6rem; }
-                  .course-rich-text h3 { font-family: var(--font-playfair,serif); color:var(--brand-forest); font-size:1.1rem; font-weight:700; margin-top:1.5rem; margin-bottom:0.5rem; }
-                  .course-rich-text p { margin-bottom:1rem; }
-                  .course-rich-text ul, .course-rich-text ol { padding-left:1.25rem; margin-bottom:1rem; }
-                  .course-rich-text li { margin-bottom:0.4rem; }
-                  .course-rich-text strong { color:var(--brand-forest); }
-                  .course-rich-text a { color:var(--brand-gold); text-decoration:underline; }
-                `}</style>
+              <div className="course-rich-text min-w-0">
+                <style>{courseRichTextCss}</style>
                 <ProductRichText html={course.description} />
               </div>
             )}
@@ -314,7 +312,7 @@ export default async function CourseDetailPage({ params }: Props) {
           </div>
 
           {/* Sidebar */}
-          <aside>
+          <aside className="min-w-0">
             <div style={{ position:"sticky", top:"100px", border:"1px solid var(--brand-cream-dark)", background:"var(--brand-ivory)", boxShadow:"0 4px 18px rgba(44,36,32,0.08)" }}>
               {(course.priceInPaise > 0 || course.isFree) && (
                 <div style={{ padding:"20px 24px", borderBottom:"1px solid var(--brand-cream-dark)", background:"linear-gradient(135deg,var(--brand-forest),var(--brand-night))" }}>

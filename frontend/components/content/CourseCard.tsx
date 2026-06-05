@@ -50,28 +50,30 @@ export function CourseCard({ course, compact = false }: Props) {
       <style>{`.group:hover{box-shadow:0 10px 32px rgba(44,36,32,0.13)!important}.group:hover .ccard-img{transform:scale(1.04)}.group:hover .ccard-cta{background:var(--brand-forest);color:var(--brand-ivory)}`}</style>
 
       {/* Image */}
-      <div className="relative overflow-hidden" style={{ height: compact ? "195px" : "230px", flexShrink: 0 }}>
+      <div
+        className="relative w-full overflow-hidden"
+        style={{ height: compact ? "240px" : "320px", flexShrink: 0 }}
+      >
         {course.imageUrl ? (
           <Image src={course.imageUrl} alt={course.title} fill
-            className="ccard-img object-cover"
+            className="ccard-img object-cover object-center"
             style={{ transition: "transform 0.6s cubic-bezier(0.22,1,0.36,1)" }}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" unoptimized />
         ) : (
           <div className="ccard-img absolute inset-0" style={{ background: "var(--brand-forest)" }} />
         )}
-        {/* Gold badge */}
         <span style={{
           position: "absolute", top: 0, left: 0,
           background: "var(--brand-gold)", color: "#fff",
           fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em",
           textTransform: "uppercase", padding: "5px 12px"
-        }}>Course</span>
+        }}>{course.isFree ? "Free" : "Paid"}</span>
       </div>
 
       {/* Body */}
-      <div style={{ padding: "20px 22px 24px", flex: 1, display: "flex", flexDirection: "column", gap: "12px" }}>
+      <div style={{ padding: "20px 22px 24px", flex: 1, display: "flex", flexDirection: "column", gap: "12px", minWidth: 0 }}>
 
-        <h3 className="font-serif" style={{ color: "var(--brand-ink)", fontSize: "1.15rem", fontWeight: 700, lineHeight: 1.3 }}>
+        <h3 className="font-serif break-words" style={{ color: "var(--brand-ink)", fontSize: "1.15rem", fontWeight: 700, lineHeight: 1.3 }}>
           {course.title}
         </h3>
 
@@ -88,9 +90,9 @@ export function CourseCard({ course, compact = false }: Props) {
         {/* Meta rows */}
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {teachers.length > 0 && (
-            <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
-              <span style={{ color: "var(--brand-gold)", fontSize: "9px", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", minWidth: "68px", paddingTop: "2px" }}>With</span>
-              <span style={{ color: "var(--brand-ink)", fontSize: "13px" }}>
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-2.5">
+              <span style={{ color: "var(--brand-gold)", fontSize: "9px", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", minWidth: "68px", paddingTop: "2px", flexShrink: 0 }}>With</span>
+              <span className="min-w-0 break-words" style={{ color: "var(--brand-ink)", fontSize: "13px" }}>
                 {teachers.slice(0, 3).join(" · ")}{teachers.length > 3 ? ` +${teachers.length - 3}` : ""}
               </span>
             </div>

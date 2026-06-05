@@ -36,10 +36,11 @@ export function CourseSessionsList({ sessions }: Props) {
           return (
             <article
               key={`${session.sessionId}-${session.name}`}
+              className="min-w-0"
               style={{
                 border: "1px solid var(--brand-cream-dark)",
                 background: "var(--brand-ivory)",
-                padding: "22px 26px"
+                padding: "18px 16px"
               }}
             >
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "baseline" }}>
@@ -59,7 +60,7 @@ export function CourseSessionsList({ sessions }: Props) {
                 ) : null}
               </div>
               <h3
-                className="font-serif"
+                className="font-serif break-words"
                 style={{
                   color: "var(--brand-forest)",
                   fontSize: "1.15rem",
@@ -76,11 +77,12 @@ export function CourseSessionsList({ sessions }: Props) {
                 </p>
               ) : null}
               {session.content?.trim() ? (
-                <div className="course-session-content text-sm leading-relaxed" style={{ color: "var(--brand-ink)" }}>
+                <div className="course-session-content min-w-0 break-words text-sm leading-relaxed" style={{ color: "var(--brand-ink)" }}>
                   <style>{`
                     .course-session-content ul { padding-left: 1.25rem; margin: 0.5rem 0; }
                     .course-session-content li { margin-bottom: 0.35rem; }
                     .course-session-content p { margin-bottom: 0.75rem; }
+                    .course-session-content img, .course-session-content iframe { max-width: 100% !important; height: auto !important; }
                   `}</style>
                   <ProductRichText html={session.content} />
                 </div>
