@@ -2,50 +2,25 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-
 import { fetchCatalogGaps, type CatalogGapsReport } from "@/lib/admin-api";
 
-function GapTable({
-  rows,
-  editHref
-}: {
-  rows: CatalogGapsReport["pricingGaps"];
-  editHref: (productId: string) => string;
-}) {
-  if (rows.length === 0) {
-    return <p className="text-sm text-stone-500">No gaps in this category.</p>;
-  }
+const card: React.CSSProperties = { background: "#fff", borderRadius: "12px", border: "1px solid #e8e2d9", boxShadow: "0 1px 4px rgba(44,36,32,0.06)" };
+const thSt: React.CSSProperties = { padding: "9px 14px", fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8a7060", background: "#f9f7f4", textAlign: "left", position: "sticky" as const, top: 0 };
+const tdSt: React.CSSProperties = { padding: "10px 14px", fontSize: "13px", color: "#4a3f38", borderBottom: "1px solid #f0ece6" };
+
+function GapTable({ rows, editHref }: { rows: CatalogGapsReport["pricingGaps"]; editHref: (id: string) => string }) {
+  if (rows.length === 0) return <p style={{ fontSize: "13px", color: "#8a7060", padding: "16px" }}>No gaps in this category.</p>;
   return (
-    <div className="max-h-80 overflow-auto rounded-lg border border-stone-200 dark:border-stone-700">
-      <table className="min-w-full text-left text-sm">
-        <thead className="sticky top-0 bg-stone-50 text-xs uppercase text-stone-500 dark:bg-stone-800">
-          <tr>
-            <th className="px-3 py-2">Product</th>
-            <th className="px-3 py-2">SKU</th>
-            <th className="px-3 py-2">Issue</th>
-            <th className="px-3 py-2" />
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-stone-100 dark:divide-stone-700">
+    <div style={{ maxHeight: "320px", overflowY: "auto", ...card }}>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead><tr>{["Product","SKU","Issue",""].map((h) => <th key={h} style={thSt}>{h}</th>)}</tr></thead>
+        <tbody>
           {rows.map((r, i) => (
-            <tr key={`${r.variantId}-${r.zone}-${i}`}>
-              <td className="px-3 py-2">
-                <p className="font-medium text-stone-800 dark:text-stone-100">{r.productName}</p>
-                <p className="text-xs text-stone-500">{r.productSlug}</p>
-              </td>
-              <td className="px-3 py-2 font-mono text-xs">{r.sku}</td>
-              <td className="px-3 py-2 text-stone-600 dark:text-stone-300">
-                {r.issue}
-                {r.zone ? ` (${r.zone})` : ""}
-              </td>
-              <td className="px-3 py-2">
-                <Link
-                  href={editHref(r.productId)}
-                  className="text-xs font-medium text-amber-700 hover:underline dark:text-amber-400"
-                >
-                  Fix
-                </Link>
-              </td>
+            <tr key={`${r.variantId}-${i}`}>
+              <td style={tdSt}><p style={{ fontWeight: 600, color: "#2c2420" }}>{r.productName}</p><p style={{ fontSize: "11px", color: "#8a7060" }}>{r.productSlug}</p></td>
+              <td style={{ ...tdSt, fontFamily: "monospace", fontSize: "12px" }}>{r.sku}</td>
+              <td style={{ ...tdSt, color: "#6b5c52" }}>{r.issue}{r.zone ? ` (${r.zone})` : ""}</td>
+              <td style={tdSt}><Link href={editHref(r.productId)} style={{ fontSize: "12px", fontWeight: 600, color: "#c8960a", textDecoration: "none" }}>Fix →</Link></td>
             </tr>
           ))}
         </tbody>
@@ -60,137 +35,77 @@ export default function CatalogGapsPage() {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    setLoading(true);
-    setErr(null);
-    try {
-      setReport(await fetchCatalogGaps());
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "Failed to load report");
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true); setErr(null);
+    try { setReport(await fetchCatalogGaps()); }
+    catch (e) { setErr(e instanceof Error ? e.message : "Failed"); }
+    finally { setLoading(false); }
   }, []);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  const editHref = (id: string) => `/admin/products/${id}`;
+  useEffect(() => { void load(); }, [load]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
         <div>
-          <Link href="/admin/products" className="text-sm text-amber-700 hover:underline dark:text-amber-400">
-            ← Products
-          </Link>
-          <h1 className="mt-2 font-serif text-3xl italic text-stone-800 dark:text-stone-100">
-            Catalog & payment gaps
-          </h1>
-          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-            Missing international prices, zone shipping rows, and payment gateway configuration.
-          </p>
+          <Link href="/admin/products" style={{ fontSize: "13px", color: "#c8960a", textDecoration: "none" }}>← Products</Link>
+          <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#2c2420", marginTop: "8px" }}>Catalog &amp; Payment Gaps</h1>
+          <p style={{ fontSize: "13px", color: "#8a7060", marginTop: "4px" }}>Missing prices, shipping rows, and payment gateway config.</p>
         </div>
-        <button
-          type="button"
-          onClick={() => void load()}
-          className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-amber-400 dark:bg-stone-700"
-        >
+        <button type="button" onClick={() => void load()} style={{ height: "40px", padding: "0 20px", borderRadius: "8px", background: "#1e3a2f", color: "#fffbf5", fontSize: "13px", fontWeight: 600, border: "none", cursor: "pointer" }}>
           Refresh
         </button>
       </div>
 
-      {loading ? <p className="text-sm text-stone-500">Loading…</p> : null}
-      {err ? (
-        <p className="text-red-600 dark:text-red-400" role="alert">
-          {err}
-        </p>
-      ) : null}
+      {loading && <p style={{ color: "#8a7060" }}>Loading...</p>}
+      {err && <p style={{ color: "#dc2626" }} role="alert">{err}</p>}
 
-      {report ? (
+      {report && (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-xl border border-stone-200 bg-white p-4 dark:border-stone-700 dark:bg-stone-900">
-              <p className="text-xs uppercase text-stone-500">Pricing gaps</p>
-              <p className="mt-1 text-2xl font-semibold text-stone-900 dark:text-stone-100">
-                {report.summary.pricingGapCount}
-              </p>
-            </div>
-            <div className="rounded-xl border border-stone-200 bg-white p-4 dark:border-stone-700 dark:bg-stone-900">
-              <p className="text-xs uppercase text-stone-500">Shipping gaps</p>
-              <p className="mt-1 text-2xl font-semibold text-stone-900 dark:text-stone-100">
-                {report.summary.shippingGapCount}
-              </p>
-            </div>
-            <div className="rounded-xl border border-stone-200 bg-white p-4 dark:border-stone-700 dark:bg-stone-900">
-              <p className="text-xs uppercase text-stone-500">No primary image</p>
-              <p className="mt-1 text-2xl font-semibold text-stone-900 dark:text-stone-100">
-                {report.summary.productsWithoutImage}
-              </p>
-            </div>
-            <div className="rounded-xl border border-stone-200 bg-white p-4 dark:border-stone-700 dark:bg-stone-900">
-              <p className="text-xs uppercase text-stone-500">Active variants</p>
-              <p className="mt-1 text-2xl font-semibold text-stone-900 dark:text-stone-100">
-                {report.summary.activeVariants}
-              </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "14px" }}>
+            {[
+              { label: "Pricing gaps", value: report.summary.pricingGapCount, warn: report.summary.pricingGapCount > 0 },
+              { label: "Shipping gaps", value: report.summary.shippingGapCount, warn: report.summary.shippingGapCount > 0 },
+              { label: "No primary image", value: report.summary.productsWithoutImage, warn: report.summary.productsWithoutImage > 0 },
+              { label: "Active variants", value: report.summary.activeVariants, warn: false },
+            ].map((item) => (
+              <div key={item.label} style={{ ...card, padding: "16px 18px", borderColor: item.warn ? "#fde68a" : "#e8e2d9", background: item.warn ? "#fffbf0" : "#fff" }}>
+                <p style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#8a7060", marginBottom: "6px" }}>{item.label}</p>
+                <p style={{ fontSize: "1.6rem", fontWeight: 700, color: item.warn ? "#92400e" : "#2c2420" }}>{item.value}</p>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ ...card, padding: "18px 22px" }}>
+            <p style={{ fontSize: "13px", fontWeight: 700, color: "#2c2420", marginBottom: "12px" }}>Payment Gateways</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+              {([["Razorpay (India)", report.summary.payment.razorpay],["COD", report.summary.payment.cod],["Stripe", report.summary.payment.stripe],["PayPal", report.summary.payment.paypal]] as const).map(([label, ok]) => (
+                <span key={label} style={{ padding: "4px 12px", borderRadius: "999px", fontSize: "12px", fontWeight: 600, background: ok ? "#dcfce7" : "#fee2e2", color: ok ? "#166534" : "#991b1b" }}>
+                  {label}: {ok ? "✓ configured" : "✗ missing"}
+                </span>
+              ))}
             </div>
           </div>
 
-          <section className="rounded-xl border border-stone-200 bg-white p-5 dark:border-stone-700 dark:bg-stone-900">
-            <h2 className="font-medium text-stone-800 dark:text-stone-100">Payment gateways (server env)</h2>
-            <ul className="mt-3 flex flex-wrap gap-3 text-sm">
-              {(
-                [
-                  ["Razorpay (India)", report.summary.payment.razorpay],
-                  ["COD", report.summary.payment.cod],
-                  ["Stripe", report.summary.payment.stripe],
-                  ["PayPal", report.summary.payment.paypal]
-                ] as const
-              ).map(([label, ok]) => (
-                <li
-                  key={label}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                    ok
-                      ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"
-                      : "bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200"
-                  }`}
-                >
-                  {label}: {ok ? "configured" : "missing keys"}
-                </li>
-              ))}
-            </ul>
-          </section>
+          <section><h2 style={{ fontSize: "15px", fontWeight: 700, color: "#2c2420", marginBottom: "10px" }}>Pricing Gaps</h2><GapTable rows={report.pricingGaps} editHref={(id) => `/admin/products/${id}`} /></section>
+          <section><h2 style={{ fontSize: "15px", fontWeight: 700, color: "#2c2420", marginBottom: "10px" }}>Shipping Gaps</h2><GapTable rows={report.shippingGaps} editHref={(id) => `/admin/products/${id}`} /></section>
 
-          <section>
-            <h2 className="mb-2 font-medium text-stone-800 dark:text-stone-100">Pricing gaps</h2>
-            <GapTable rows={report.pricingGaps} editHref={editHref} />
-          </section>
-
-          <section>
-            <h2 className="mb-2 font-medium text-stone-800 dark:text-stone-100">Shipping gaps</h2>
-            <GapTable rows={report.shippingGaps} editHref={editHref} />
-          </section>
-
-          {report.productsWithoutPrimaryImage.length > 0 ? (
+          {report.productsWithoutPrimaryImage.length > 0 && (
             <section>
-              <h2 className="mb-2 font-medium text-stone-800 dark:text-stone-100">Products without primary image</h2>
-              <ul className="space-y-1 text-sm">
-                {report.productsWithoutPrimaryImage.map((p) => (
-                  <li key={p.productId}>
-                    <Link
-                      href={editHref(p.productId)}
-                      className="text-amber-700 hover:underline dark:text-amber-400"
-                    >
-                      {p.name}
-                    </Link>
-                    <span className="text-stone-500"> — {p.slug}</span>
-                  </li>
-                ))}
-              </ul>
+              <h2 style={{ fontSize: "15px", fontWeight: 700, color: "#2c2420", marginBottom: "10px" }}>Products Without Primary Image</h2>
+              <div style={{ ...card, padding: "16px 20px" }}>
+                <ul style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  {report.productsWithoutPrimaryImage.map((p) => (
+                    <li key={p.productId} style={{ fontSize: "13px" }}>
+                      <Link href={`/admin/products/${p.productId}`} style={{ color: "#c8960a", textDecoration: "none", fontWeight: 500 }}>{p.name}</Link>
+                      <span style={{ color: "#8a7060" }}> — {p.slug}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </section>
-          ) : null}
+          )}
         </>
-      ) : null}
+      )}
     </div>
   );
 }

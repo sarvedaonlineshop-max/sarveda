@@ -11,13 +11,29 @@ import { formatMinorFromPaise } from "@/lib/money";
 const buckets = [
   { value: "all", label: "All" },
   { value: "pending", label: "Pending (48h)" },
-  { value: "abandoned", label: "Abandoned unpaid" },
+  { value: "abandoned", label: "Abandoned" },
   { value: "cancelled", label: "Cancelled" },
   { value: "refunded", label: "Refunded" },
-  { value: "paid", label: "Paid / processing" },
+  { value: "paid", label: "Paid" },
   { value: "shipped", label: "Shipped" },
   { value: "delivered", label: "Delivered" }
 ] as const;
+
+function StatusBadge({ status }: { status: string }) {
+  const s = status.toUpperCase().replace(/_/g, "");
+  let bg = "#f3f4f6", color = "#374151";
+  if (s.includes("PAID") || s.includes("PROCESSING")) { bg = "#dcfce7"; color = "#166534"; }
+  else if (s.includes("SHIPPED")) { bg = "#dbeafe"; color = "#1e40af"; }
+  else if (s.includes("DELIVERED")) { bg = "#f0fdf4"; color = "#15803d"; }
+  else if (s.includes("CANCEL")) { bg = "#fee2e2"; color = "#991b1b"; }
+  else if (s.includes("REFUND")) { bg = "#fef3c7"; color = "#92400e"; }
+  else if (s.includes("PENDING")) { bg = "#f3f4f6"; color = "#374151"; }
+  return <span style={{ background: bg, color, fontSize: "11px", fontWeight: 600, padding: "3px 10px", borderRadius: "999px", whiteSpace: "nowrap" }}>{status.replace(/_/g, " ")}</span>;
+}
+
+const card: React.CSSProperties = { background: "#fff", borderRadius: "12px", border: "1px solid #e8e2d9", boxShadow: "0 1px 4px rgba(44,36,32,0.06)" };
+const thSt: React.CSSProperties = { padding: "11px 16px", fontSize: "11px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8a7060", background: "#f9f7f4", textAlign: "left", whiteSpace: "nowrap" };
+const tdSt: React.CSSProperties = { padding: "12px 16px", fontSize: "13px", color: "#4a3f38", borderBottom: "1px solid #f0ece6" };
 
 export default function AdminOrdersPage() {
   const [bucket, setBucket] = useState<string>("all");
@@ -30,168 +46,78 @@ export default function AdminOrdersPage() {
   const load = useCallback(async () => {
     setErr(null);
     try {
-      const res = await fetchAdminOrders({
-        bucket: bucket === "all" ? undefined : bucket,
-        page,
-        limit: 20
-      });
+      const res = await fetchAdminOrders({ bucket: bucket === "all" ? undefined : bucket, page, limit: 20 });
       setData(res);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "Failed to load orders");
-      setData(null);
-    }
+    } catch (e) { setErr(e instanceof Error ? e.message : "Failed to load orders"); setData(null); }
   }, [bucket, page]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useEffect(() => { void load(); }, [load]);
 
   const exportPdf = async (range: "today" | "week" | "month" | "year") => {
-    setPdfErr(null);
-    setPdfLoading(range);
-    try {
-      await downloadAdminOrdersPdf(range);
-    } catch (e) {
-      setPdfErr(e instanceof Error ? e.message : "PDF export failed");
-    } finally {
-      setPdfLoading(null);
-    }
+    setPdfErr(null); setPdfLoading(range);
+    try { await downloadAdminOrdersPdf(range); }
+    catch (e) { setPdfErr(e instanceof Error ? e.message : "PDF export failed"); }
+    finally { setPdfLoading(null); }
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-serif text-3xl italic text-stone-800 dark:text-stone-100">Orders</h1>
-        <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-          Abandoned unpaid means pending payment for more than 48 hours (still not cancelled). Cancelled and refunded
-          are separate buckets.
-        </p>
-      </div>
-
-      <div className="rounded-xl border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-900/60">
-        <p className="text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
-          Export PDF
-        </p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {(
-            [
-              ["today", "Today"],
-              ["week", "Last 7 days"],
-              ["month", "This month"],
-              ["year", "This year (by month)"]
-            ] as const
-          ).map(([range, label]) => (
-            <button
-              key={range}
-              type="button"
-              disabled={pdfLoading !== null}
-              onClick={() => void exportPdf(range)}
-              className="rounded-full border border-stone-300 bg-white px-3 py-1.5 text-sm font-medium text-stone-700 hover:border-amber-500 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-200 dark:hover:border-amber-500"
-            >
-              {pdfLoading === range ? "Preparing…" : label}
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+        <div>
+          <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#2c2420" }}>Orders</h1>
+          <p style={{ fontSize: "13px", color: "#8a7060", marginTop: "4px" }}>Abandoned = pending payment for more than 48 hours.</p>
+        </div>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          {(["today","week","month","year"] as const).map((range) => (
+            <button key={range} type="button" disabled={pdfLoading !== null} onClick={() => void exportPdf(range)}
+              style={{ padding: "8px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: 500, cursor: "pointer", border: "1px solid #e0d8ce", background: "#fff", color: "#6b5c52", opacity: pdfLoading ? 0.6 : 1 }}>
+              {pdfLoading === range ? "Preparing…" : `PDF: ${range}`}
             </button>
           ))}
         </div>
-        {pdfErr ? (
-          <p className="mt-2 text-sm text-red-600 dark:text-red-400" role="alert">
-            {pdfErr}
-          </p>
-        ) : null}
       </div>
+      {pdfErr && <p style={{ color: "#dc2626", fontSize: "13px" }}>{pdfErr}</p>}
 
-      <div className="flex flex-wrap gap-2">
+      {/* Status filters */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
         {buckets.map((b) => (
-          <button
-            key={b.value}
-            type="button"
-            onClick={() => {
-              setPage(1);
-              setBucket(b.value);
-            }}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-              bucket === b.value
-                ? "bg-stone-900 text-amber-400"
-                : "border border-stone-300 bg-white text-stone-600 hover:border-amber-400 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:border-amber-500"
-            }`}
-          >
+          <button key={b.value} type="button" onClick={() => { setPage(1); setBucket(b.value); }}
+            style={{ padding: "7px 16px", borderRadius: "999px", fontSize: "13px", fontWeight: 500, cursor: "pointer", border: "1px solid", borderColor: bucket === b.value ? "#1e3a2f" : "#e0d8ce", background: bucket === b.value ? "#1e3a2f" : "#fff", color: bucket === b.value ? "#fffbf5" : "#6b5c52", transition: "all 0.15s" }}>
             {b.label}
           </button>
         ))}
       </div>
 
-      {err ? (
-        <p className="text-red-600 dark:text-red-400" role="alert">
-          {err}
-        </p>
-      ) : null}
+      {err && <p style={{ color: "#dc2626", fontSize: "13px" }} role="alert">{err}</p>}
 
-      {!data ? (
-        <p className="text-stone-500 dark:text-stone-400">Loading…</p>
-      ) : (
+      {!data ? <p style={{ color: "#8a7060" }}>Loading...</p> : (
         <>
-          <div className="overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-stone-900">
-            <table className="min-w-full text-left text-sm">
-              <thead className="border-b border-stone-100 bg-stone-50 dark:border-stone-700 dark:bg-stone-800/80">
-                <tr>
-                  <th className="px-4 py-3 font-semibold text-stone-600 dark:text-stone-300">Order</th>
-                  <th className="px-4 py-3 font-semibold text-stone-600 dark:text-stone-300">Customer</th>
-                  <th className="px-4 py-3 font-semibold text-stone-600 dark:text-stone-300">Items</th>
-                  <th className="px-4 py-3 font-semibold text-stone-600 dark:text-stone-300">Amount</th>
-                  <th className="px-4 py-3 font-semibold text-stone-600 dark:text-stone-300">Status</th>
-                  <th className="px-4 py-3 font-semibold text-stone-600 dark:text-stone-300">Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100 dark:divide-stone-700">
+          <div style={{ ...card, overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead><tr style={{ borderBottom: "2px solid #f0ece6" }}>
+                {["Order","Customer","Items","Amount","Status","Date"].map((h) => <th key={h} style={thSt}>{h}</th>)}
+              </tr></thead>
+              <tbody>
                 {data.items.map((o) => (
-                  <tr key={o.id} className="hover:bg-stone-50 dark:hover:bg-stone-800/40">
-                    <td className="px-4 py-3">
-                      <Link
-                        href={`/admin/orders/${o.id}`}
-                        className="font-mono font-medium text-amber-700 hover:underline dark:text-amber-400"
-                      >
-                        {o.orderNumber}
-                      </Link>
+                  <tr key={o.id} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#faf8f5"; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = ""; }}>
+                    <td style={tdSt}><Link href={`/admin/orders/${o.id}`} style={{ fontFamily: "monospace", fontWeight: 600, color: "#c8960a", textDecoration: "none" }}>{o.orderNumber}</Link></td>
+                    <td style={tdSt}>
+                      <div style={{ fontWeight: 500, color: "#2c2420" }}>{o.email}</div>
+                      {o.customerName && <div style={{ fontSize: "12px", color: "#8a7060" }}>{o.customerName}</div>}
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="text-stone-800 dark:text-stone-100">{o.email}</div>
-                      {o.customerName ? (
-                        <div className="text-xs text-stone-500 dark:text-stone-400">{o.customerName}</div>
-                      ) : null}
+                    <td style={tdSt}>
+                      <span style={{ fontSize: "12px" }}>{o.itemCount} units</span>
+                      {o.linePreview.length > 0 && <div style={{ fontSize: "11px", color: "#8a7060", maxWidth: "180px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.linePreview.join(" · ")}</div>}
                     </td>
-                    <td className="max-w-xs px-4 py-3 text-stone-600 dark:text-stone-300">
-                      <span className="text-xs">{o.itemCount} units</span>
-                      {o.linePreview.length ? (
-                        <div className="truncate text-xs text-stone-500 dark:text-stone-400">{o.linePreview.join(" · ")}</div>
-                      ) : null}
-                    </td>
-                    <td className="px-4 py-3 font-medium">
-                      {formatMinorFromPaise(o.grandTotalInPaise, o.currency)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-700 dark:bg-stone-800 dark:text-stone-200">
-                        {o.status.replace(/_/g, " ")}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-stone-500 whitespace-nowrap dark:text-stone-400">
-                      {new Date(o.createdAt).toLocaleString("en-IN", {
-                        dateStyle: "medium",
-                        timeStyle: "short"
-                      })}
-                    </td>
+                    <td style={{ ...tdSt, fontWeight: 600 }}>{formatMinorFromPaise(o.grandTotalInPaise, o.currency)}</td>
+                    <td style={tdSt}><StatusBadge status={o.status} /></td>
+                    <td style={{ ...tdSt, fontSize: "12px", color: "#8a7060", whiteSpace: "nowrap" }}>{new Date(o.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-
-          <AdminPagination
-            page={page}
-            totalPages={data.pagination.totalPages}
-            total={data.pagination.total}
-            itemLabel="orders"
-            onPrev={() => setPage((p) => Math.max(1, p - 1))}
-            onNext={() => setPage((p) => Math.min(data.pagination.totalPages, p + 1))}
-          />
+          <AdminPagination page={page} totalPages={data.pagination.totalPages} total={data.pagination.total} itemLabel="orders" onPrev={() => setPage((p) => Math.max(1, p - 1))} onNext={() => setPage((p) => Math.min(data.pagination.totalPages, p + 1))} />
         </>
       )}
     </div>
