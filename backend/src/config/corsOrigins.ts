@@ -22,7 +22,13 @@ function expandOriginVariants(origin: string): string[] {
 
 /** Comma-separated origins in FRONTEND_URL plus optional CORS_ORIGINS. */
 export function getCorsOrigins(): string[] {
-  const raw = [process.env.FRONTEND_URL, process.env.CORS_ORIGINS].filter(Boolean).join(",");
+  const raw = [
+    process.env.FRONTEND_URL,
+    process.env.FRONTEND_URL_STAGING,
+    process.env.CORS_ORIGINS
+  ]
+    .filter(Boolean)
+    .join(",");
   const fromEnv = raw
     .split(",")
     .map((origin) => normalizeOrigin(origin))

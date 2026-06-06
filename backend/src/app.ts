@@ -1,5 +1,6 @@
 import "./loadEnv";
 
+import { validateEnv } from "./config/validateEnv";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express, { type NextFunction, type Request, type Response } from "express";
@@ -8,6 +9,8 @@ import helmet from "helmet";
 import passport from "passport";
 
 import { getCorsOrigins, isAllowedCorsOrigin } from "./config/corsOrigins";
+import { prisma } from "./config/db";
+import { getRedisConnection } from "./config/redisConnection";
 import { errorHandler } from "./middleware/errorHandler";
 import { optionalAuth } from "./middleware/optionalAuth";
 import { authRouter, configurePassport } from "./modules/auth";
@@ -38,6 +41,8 @@ import { testimonialsRoutes } from "./modules/testimonials/testimonials.routes";
 import { zohoRouter } from "./modules/zoho";
 import { handleZohoWebhook } from "./modules/zoho/zoho-webhook";
 
+validateEnv();
+
 configurePassport();
 
 const app = express();
@@ -45,18 +50,68 @@ const app = express();
 // Vercel and other reverse proxies send X-Forwarded-For; rate limiting needs this.
 app.set("trust proxy", 1);
 
+app.get("/health", async (_req, res) => {
+  const checks: Record<string, "ok" | "error"> = {};
+
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    checks.database = "ok";
+  } catch {
+    checks.database = "error";
+  }
+
+  try {
+    const redis = getRedisConnection();
+    if (redis) {
+      await redis.ping();
+      checks.redis = "ok";
+    } else {
+      checks.redis = "error";
+    }
+  } catch {
+    checks.redis = "error";
+  }
+
+  const allOk = Object.values(checks).every((v) => v === "ok");
+
+  res.status(allOk ? 200 : 503).json({
+    status: allOk ? "ok" : "degraded",
+    timestamp: new Date().toISOString(),
+    checks,
+    version: process.env.npm_package_version ?? "unknown"
+  });
+});
+
+const allowedOrigins = [
+  ...getCorsOrigins(),
+  process.env.FRONTEND_URL_STAGING?.trim().replace(/\/$/, ""),
+  "http://localhost:3000",
+  "http://localhost:3001"
+].filter(Boolean) as string[];
+
 app.use(
   cors({
     origin(origin, callback) {
-      const allowed = getCorsOrigins();
-      if (isAllowedCorsOrigin(origin, allowed)) {
+      if (!origin) {
         callback(null, true);
         return;
       }
-      callback(null, false);
+      if (isAllowedCorsOrigin(origin, allowedOrigins)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error(`CORS: origin ${origin} not allowed`));
     },
     credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization", "X-Sarveda-Cart-Session", "Idempotency-Key"]
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Sarveda-Cart-Session",
+      "Idempotency-Key",
+      "X-Razorpay-Signature",
+      "Stripe-Signature"
+    ]
   })
 );
 app.use(helmet());
@@ -152,13 +207,6 @@ app.use(
     legacyHeaders: false
   })
 );
-
-app.get("/health", (_req: Request, res: Response) => {
-  res.status(200).json({
-    success: true,
-    data: { status: "ok" }
-  });
-});
 
 app.use("/api/auth", authRouter);
 app.use("/api/products", productsRoutes);
