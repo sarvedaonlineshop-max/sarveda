@@ -1309,7 +1309,7 @@ export function ProductForm({ productId }: { productId?: string }) {
                 type="button"
                 disabled={saving}
                 onClick={() => void handleSave()}
-                className="rounded-lg bg-amber-500 px-5 py-2 text-sm font-semibold text-stone-900 hover:bg-amber-400 disabled:opacity-60"
+                className="rounded-lg bg-[#1e3a2f] px-5 py-2 text-sm font-semibold text-[#fffbf5] hover:bg-[#2d5240] disabled:opacity-60"
               >
                 {saving ? "Creating…" : "Create product"}
               </button>

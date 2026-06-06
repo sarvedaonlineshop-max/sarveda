@@ -583,7 +583,7 @@ export function AdminInventoryWorkspace() {
             type="button"
             disabled={zohoSyncing !== null}
             onClick={() => void runZohoSync("all")}
-            className="inline-flex items-center gap-2 rounded-md bg-amber-500 px-4 py-2 text-sm font-semibold text-stone-900 shadow-sm hover:bg-amber-400 disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-md bg-[#1e3a2f] px-4 py-2 text-sm font-semibold text-[#fffbf5] shadow-sm hover:bg-[#2d5240] disabled:opacity-60"
           >
             <IconRefresh className={`h-4 w-4 ${zohoSyncing === "all" ? "animate-spin" : ""}`} />
             Sync all

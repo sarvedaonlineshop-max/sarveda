@@ -19,13 +19,20 @@ export function AdminToast({
 
   return (
     <div
-      className={`fixed bottom-6 left-1/2 z-[110] max-w-md -translate-x-1/2 rounded-lg border px-4 py-3 text-sm shadow-xl ${
-        toast.error
-          ? "border-red-200 bg-red-50 text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100"
-          : "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-100"
-      }`}
+      style={{
+        position: "fixed", bottom: "24px", left: "50%", transform: "translateX(-50%)",
+        zIndex: 110, maxWidth: "440px", width: "calc(100vw - 48px)",
+        padding: "12px 18px", borderRadius: "10px",
+        fontSize: "13px", fontWeight: 500,
+        boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+        background: toast.error ? "#fef2f2" : "#f0fdf4",
+        border: `1px solid ${toast.error ? "#fecaca" : "#bbf7d0"}`,
+        color: toast.error ? "#991b1b" : "#166534",
+        display: "flex", alignItems: "center", gap: "10px"
+      }}
       role="status"
     >
+      <span style={{ fontSize: "16px" }}>{toast.error ? "✗" : "✓"}</span>
       {toast.message}
     </div>
   );

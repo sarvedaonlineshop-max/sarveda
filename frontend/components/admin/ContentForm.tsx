@@ -716,7 +716,7 @@ export function ContentForm({ type, itemId }: Props) {
         <button
           type="submit"
           disabled={saving}
-          className="rounded-lg bg-amber-500 px-5 py-2 text-sm font-semibold text-stone-900 hover:bg-amber-400 disabled:opacity-50"
+          className="rounded-lg bg-[#1e3a2f] px-5 py-2 text-sm font-semibold text-[#fffbf5] hover:bg-[#2d5240] disabled:opacity-50"
         >
           {saving ? "Saving…" : isNew ? "Create" : "Save changes"}
         </button>
