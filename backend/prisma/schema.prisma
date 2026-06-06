@@ -260,6 +260,8 @@ model Order {
   notes             String?
   ipCountry         String?
   placedAt          DateTime?
+  /// Set once when post-payment side effects (email, coupon usage, cart clear) run.
+  afterPaidRanAt    DateTime?
   zohoInvoiceId     String?
   zohoInvoiceNo     String?
   zohoSyncedAt      DateTime?

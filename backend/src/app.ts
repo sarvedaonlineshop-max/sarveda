@@ -9,6 +9,7 @@ import passport from "passport";
 
 import { getCorsOrigins, isAllowedCorsOrigin } from "./config/corsOrigins";
 import { errorHandler } from "./middleware/errorHandler";
+import { optionalAuth } from "./middleware/optionalAuth";
 import { authRouter, configurePassport } from "./modules/auth";
 import { cartRoutes } from "./modules/cart/cart.routes";
 import { categoriesRoutes } from "./modules/categories/categories.routes";
@@ -60,6 +61,7 @@ app.use(
 );
 app.use(helmet());
 
+// Webhooks need raw body + must not hit storefront rate limits (registered before rateLimit).
 app.post(
   "/api/payments/razorpay/webhook",
   express.raw({ type: "application/json" }),
@@ -100,11 +102,45 @@ app.post("/api/shipping/delhivery/webhook", delhiveryWebhookRaw, (req, res, next
   void delhiveryWebhookHandler(req, res).catch(next);
 });
 
+app.post("/api/zoho/webhook", express.json(), (req: Request, res: Response, next: NextFunction) => {
+  void handleZohoWebhook(req, res).catch(next);
+});
+
 // Base64 uploads (images/audio) need headroom; default 1mb causes "request entity too large"
 app.use(express.json({ limit: "14mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(passport.initialize());
+
+const checkoutLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { error: "Too many checkout attempts. Please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.authUser?.id ?? req.ip ?? "unknown"
+});
+
+const paymentLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: { error: "Too many payment attempts. Please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const couponLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  message: { error: "Too many coupon attempts. Please slow down." },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+app.use("/api/checkout", optionalAuth, checkoutLimiter);
+app.use("/api/payments/razorpay/verify", paymentLimiter);
+app.use("/api/payments/stripe", paymentLimiter);
+app.use("/api/cart/coupon", optionalAuth, couponLimiter);
 
 app.use(
   "/api",
@@ -144,10 +180,6 @@ app.use("/api/chat", chatRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/testimonials", testimonialsRoutes);
 app.use("/api/admin", adminRoutes);
-// Public — Zoho calls this, no auth needed
-app.post("/api/zoho/webhook", (req: Request, res: Response, next: NextFunction) => {
-  void handleZohoWebhook(req, res).catch(next);
-});
 app.use("/api/zoho", zohoRouter);
 
 app.use((_req: Request, _res: Response, next: NextFunction) => {

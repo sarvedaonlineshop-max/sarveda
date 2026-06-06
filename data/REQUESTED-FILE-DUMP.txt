@@ -1,0 +1,3464 @@
+=== SARVEDA REQUESTED FILE DUMP ===
+Generated: 2026-06-06T18:42:48+05:30
+
+
+================================================================================
+FILE: backend/src/modules/notifications/email.ts
+LINES: 244
+================================================================================
+import sgMail from "@sendgrid/mail";
+
+import { prisma } from "../../config/db";
+import { logger } from "../../config/logger";
+
+export type OrderEmailEvent =
+  | "order_confirmed"
+  | "payment_failed"
+  | "payment_reminder"
+  | "order_processing"
+  | "order_shipped"
+  | "order_delivered"
+  | "refund_initiated"
+  | "order_cancelled";
+
+const EVENT_SUBJECTS: Record<OrderEmailEvent, string> = {
+  order_confirmed: "Your Sarveda order is confirmed",
+  payment_failed: "Payment could not be completed — Sarveda",
+  payment_reminder: "Complete your Sarveda order",
+  order_processing: "Your Sarveda order is being prepared",
+  order_shipped: "Your Sarveda order has shipped",
+  order_delivered: "Your Sarveda order was delivered",
+  refund_initiated: "Refund update for your Sarveda order",
+  order_cancelled: "Your Sarveda order was cancelled"
+};
+
+function siteBaseUrl(): string {
+  const raw =
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    process.env.FRONTEND_URL?.split(",")[0]?.trim() ||
+    "https://sarveda-demo.xyz";
+  return raw.replace(/\/$/, "");
+}
+
+function formatOrderTotal(minor: number, currency: string): string {
+  const c = currency.toUpperCase();
+  const major = minor / 100;
+  if (c === "INR") {
+    return `₹${major.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  try {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: c }).format(major);
+  } catch {
+    return `${c} ${major.toFixed(2)}`;
+  }
+}
+
+function orderViewUrl(orderNumber: string, email: string): string {
+  const q = new URLSearchParams({ email: email.trim().toLowerCase() });
+  return `${siteBaseUrl()}/order/confirmed?orderNumber=${encodeURIComponent(orderNumber)}&${q.toString()}`;
+}
+
+function invoiceUrl(orderNumber: string, email: string): string {
+  const q = new URLSearchParams({ email: email.trim().toLowerCase() });
+  return `${siteBaseUrl()}/api/orders/public/${encodeURIComponent(orderNumber)}/invoice?${q.toString()}`;
+}
+
+function trackUrl(awb: string): string {
+  return `${siteBaseUrl()}/track/${encodeURIComponent(awb)}`;
+}
+
+function buildHtml(title: string, lines: string[]): string {
+  const body = lines
+    .map((l) => `<p style="margin:0 0 12px;font-size:15px;line-height:1.5;color:#44403c;">${l}</p>`)
+    .join("");
+  return `<!DOCTYPE html><html><body style="font-family:Georgia,serif;background:#fafaf9;padding:24px;">
+<div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;padding:28px;border:1px solid #e7e5e4;">
+<h1 style="margin:0 0 16px;font-size:22px;color:#1c1917;">${title}</h1>
+${body}
+<p style="margin:24px 0 0;font-size:13px;color:#78716c;">With warmth,<br/>Team Sarveda</p>
+</div></body></html>`;
+}
+
+async function loadOrderEmailContext(orderId: string) {
+  return prisma.order.findFirst({
+    where: { id: orderId, deletedAt: null },
+    include: {
+      items: true,
+      shipments: { orderBy: { createdAt: "desc" }, take: 1 }
+    }
+  });
+}
+
+export async function sendMail(
+  to: string,
+  subject: string,
+  html: string,
+  text: string,
+  replyToEmail?: string
+): Promise<void> {
+  const key = process.env.SENDGRID_API_KEY?.trim();
+  const fromEmail = process.env.SENDGRID_FROM_EMAIL?.trim() || "hello@sarveda.com";
+  const fromName = process.env.SENDGRID_FROM_NAME?.trim() || "Sarveda";
+  const reply =
+    replyToEmail?.trim() || process.env.SENDGRID_REPLY_TO?.trim() || fromEmail;
+  if (!key) {
+    logger.warn("email_skipped_no_sendgrid", { to: to.replace(/@.*/, "@***") });
+    return;
+  }
+  sgMail.setApiKey(key);
+  await sgMail.send({
+    to,
+    from: { email: fromEmail, name: fromName },
+    replyTo: { email: reply, name: fromName },
+    subject,
+    html,
+    text,
+    categories: ["sarveda-transactional"],
+    mailSettings: {
+      bypassListManagement: { enable: true },
+      footer: { enable: false }
+    },
+    trackingSettings: {
+      clickTracking: { enable: false, enableText: false },
+      openTracking: { enable: false }
+    }
+  });
+}
+
+export async function sendOrderEmail(orderId: string, event: OrderEmailEvent): Promise<void> {
+  const order = await loadOrderEmailContext(orderId);
+  if (!order?.email) return;
+
+  const total = formatOrderTotal(order.grandTotalInPaise, order.currency);
+  const view = orderViewUrl(order.orderNumber, order.email);
+  const awb = order.shipments[0]?.awb;
+  const tracking = awb ? trackUrl(awb) : view;
+  const checkoutResume = `${siteBaseUrl()}/checkout?orderNumber=${encodeURIComponent(order.orderNumber)}&email=${encodeURIComponent(order.email)}`;
+
+  let lines: string[] = [];
+  switch (event) {
+    case "order_confirmed":
+      lines = [
+        `Thank you for your order <strong>${order.orderNumber}</strong>.`,
+        `Total: <strong>${total}</strong>.`,
+        `We are preparing your items. View your order:`,
+        `<a href="${view}">${view}</a>`,
+        `GST invoice: <a href="${invoiceUrl(order.orderNumber, order.email)}">Download invoice</a>`
+      ];
+      break;
+    case "payment_failed":
+      lines = [
+        `We could not complete payment for order <strong>${order.orderNumber}</strong>.`,
+        `Your cart is still saved. Retry checkout:`,
+        `<a href="${checkoutResume}">Continue checkout</a>`
+      ];
+      break;
+    case "payment_reminder":
+      lines = [
+        `Your order <strong>${order.orderNumber}</strong> (${total}) is waiting for payment.`,
+        `Complete checkout within a few minutes while stock is reserved:`,
+        `<a href="${checkoutResume}">Pay now</a>`
+      ];
+      break;
+    case "order_processing":
+      lines = [
+        `We have started preparing order <strong>${order.orderNumber}</strong>.`,
+        `You will receive tracking details when your package ships.`
+      ];
+      break;
+    case "order_shipped":
+      lines = [
+        `Good news — order <strong>${order.orderNumber}</strong> is on its way.`,
+        awb ? `Tracking (AWB): <strong>${awb}</strong>` : "",
+        `Track shipment: <a href="${tracking}">${tracking}</a>`
+      ].filter(Boolean);
+      break;
+    case "order_delivered":
+      lines = [
+        `Your order <strong>${order.orderNumber}</strong> has been delivered.`,
+        `We hope you love your purchase.`
+      ];
+      break;
+    case "refund_initiated":
+      lines = [
+        `A refund has been initiated for order <strong>${order.orderNumber}</strong> (${total}).`,
+        `It may take 5–10 business days to reflect depending on your bank or card issuer.`
+      ];
+      break;
+    case "order_cancelled":
+      lines = [
+        `Order <strong>${order.orderNumber}</strong> has been cancelled.`,
+        `If you were charged, any refund will follow your payment provider's timeline.`
+      ];
+      break;
+  }
+
+  const subject = `${EVENT_SUBJECTS[event]} — ${order.orderNumber}`;
+  const html = buildHtml(EVENT_SUBJECTS[event], lines);
+  const text = lines.map((l) => l.replace(/<[^>]+>/g, "")).join("\n\n");
+
+  try {
+    await sendMail(order.email, subject, html, text);
+    logger.info("order_email_sent", { orderId, event, to: order.email.replace(/@.*/, "@***") });
+  } catch (err) {
+    logger.error("order_email_failed", { orderId, event, err });
+  }
+}
+
+/** Logged-in shopper left items in cart (2h+). */
+export async function sendAbandonedCartEmail(userId: string): Promise<void> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, name: true }
+  });
+  if (!user?.email) return;
+
+  const cart = await prisma.cart.findUnique({
+    where: { userId },
+    include: {
+      items: {
+        take: 3,
+        include: {
+          variant: { include: { productRel: { select: { name: true } } } }
+        }
+      }
+    }
+  });
+  if (!cart?.items.length) return;
+
+  const names = cart.items.map((i) => i.variant.productRel.name).join(", ");
+  const lines = [
+    user.name ? `Hi ${user.name},` : "Hi there,",
+    `You left items in your Sarveda cart: <strong>${names}</strong>${cart.items.length > 3 ? " and more" : ""}.`,
+    `Your cart is saved. Continue when you are ready:`,
+    `<a href="${siteBaseUrl()}/cart">View cart</a>`
+  ];
+  const subject = "You left something in your cart — Sarveda";
+  const html = buildHtml("Your cart is waiting", lines);
+  const text = lines.map((l) => l.replace(/<[^>]+>/g, "")).join("\n\n");
+
+  try {
+    await sendMail(user.email, subject, html, text);
+    logger.info("abandoned_cart_email_sent", { userId });
+  } catch (err) {
+    logger.error("abandoned_cart_email_failed", { userId, err });
+  }
+}
+
+export function notifyOrderEmail(orderId: string, event: OrderEmailEvent): void {
+  void sendOrderEmail(orderId, event).catch((err) => {
+    logger.error("order_email_async_failed", { orderId, event, err });
+  });
+}
+
+================================================================================
+FILE: backend/src/modules/cart/cart.service.ts
+LINES: 428
+================================================================================
+import { randomUUID } from "crypto";
+
+import type { Request } from "express";
+
+import { prisma } from "../../config/db";
+import { unitMinorForZone } from "../../utils/variantPricing";
+import { isDigitalLine } from "../../utils/digitalCart";
+import { resolveCartCouponDiscount } from "../coupons/coupon.service";
+import { currencyForZone, zoneFromCountry } from "../shipping/shippingRates.service";
+
+const CART_HEADER = "x-sarveda-cart-session";
+
+export type CartContext = {
+  cartId: string;
+  sessionId: string | null;
+  /** New session id to return to client (first request only) */
+  newSessionId?: string;
+};
+
+function normalizeSessionHeader(req: Request): string | undefined {
+  const h = req.headers[CART_HEADER] ?? req.headers[CART_HEADER.toLowerCase() as keyof typeof req.headers];
+  if (typeof h === "string" && h.length > 0 && h.length < 200) {
+    return h.trim();
+  }
+  return undefined;
+}
+
+export type ResolveMode = "read" | "write";
+
+/** One-time merge of guest session cart into the logged-in user's cart (login / explicit merge only). */
+export async function mergeGuestCartIntoUser(
+  userCartId: string,
+  guestSessionId: string
+): Promise<void> {
+  const guestCart = await prisma.cart.findUnique({
+    where: { sessionId: guestSessionId },
+    include: { items: true }
+  });
+  if (!guestCart || guestCart.id === userCartId || guestCart.items.length === 0) {
+    return;
+  }
+
+  for (const item of guestCart.items) {
+    const existing = await prisma.cartItem.findUnique({
+      where: {
+        cartId_variantId: { cartId: userCartId, variantId: item.variantId }
+      },
+      select: { quantity: true }
+    });
+    const mergedQty = (existing?.quantity ?? 0) + item.quantity;
+    await prisma.cartItem.upsert({
+      where: {
+        cartId_variantId: { cartId: userCartId, variantId: item.variantId }
+      },
+      create: {
+        cartId: userCartId,
+        variantId: item.variantId,
+        quantity: item.quantity
+      },
+      update: {
+        quantity: mergedQty
+      }
+    });
+  }
+
+  await prisma.cartItem.deleteMany({ where: { cartId: guestCart.id } });
+  await prisma.cart.update({
+    where: { id: guestCart.id },
+    data: { couponCode: null }
+  });
+  await prisma.cart.delete({ where: { id: guestCart.id } });
+}
+
+export async function resolveCartContext(
+  req: Request,
+  mode: ResolveMode = "write"
+): Promise<{
+  cartId: string | null;
+  sessionId: string | null;
+  newSessionId?: string;
+  userId: string | null;
+}> {
+  const userId = req.authUser?.id ?? null;
+  const headerSession = normalizeSessionHeader(req);
+
+  if (userId) {
+    let cart = await prisma.cart.findUnique({
+      where: { userId },
+      select: { id: true, sessionId: true }
+    });
+
+    if (!cart) {
+      cart = await prisma.cart.create({
+        data: { userId },
+        select: { id: true, sessionId: true }
+      });
+    }
+
+    // Guest session header is ignored here — merge only via POST /api/cart/merge-session on login.
+
+    return { cartId: cart.id, sessionId: cart.sessionId, userId };
+  }
+
+  if (mode === "read" && !headerSession) {
+    return { cartId: null, sessionId: null, userId: null };
+  }
+
+  if (!headerSession && mode === "write") {
+    const sessionId = randomUUID();
+    const cart = await prisma.cart.create({
+      data: { sessionId },
+      select: { id: true }
+    });
+    return { cartId: cart.id, sessionId, newSessionId: sessionId, userId: null };
+  }
+
+  const sessionId = headerSession!;
+  let cart = await prisma.cart.findUnique({
+    where: { sessionId },
+    select: { id: true }
+  });
+
+  if (!cart) {
+    if (mode === "read") {
+      return { cartId: null, sessionId, userId: null };
+    }
+    cart = await prisma.cart.create({
+      data: { sessionId },
+      select: { id: true }
+    });
+  }
+
+  return { cartId: cart.id, sessionId, userId: null };
+}
+
+function variantLabel(
+  rows: Array<{
+    attributeValue?: { value: string; attribute?: { name: string } | null } | null;
+  }>
+): string | null {
+  if (!rows.length) return null;
+  const parts = rows
+    .map((row) => {
+      const value = row.attributeValue?.value;
+      const name = row.attributeValue?.attribute?.name;
+      if (!value) return null;
+      return name ? `${name}: ${value}` : value;
+    })
+    .filter(Boolean);
+  return parts.length ? parts.join(" · ") : null;
+}
+
+export async function getCartPayload(
+  cartId: string | null,
+  shippingCountry?: string,
+  opts?: { userId?: string | null; email?: string | null }
+) {
+  const zone = zoneFromCountry(shippingCountry ?? "IN");
+  const currency = currencyForZone(zone);
+
+  if (!cartId) {
+    return {
+      items: [],
+      subtotalInPaise: 0,
+      itemCount: 0,
+      currency,
+      discountInPaise: 0,
+      totalInPaise: 0,
+      coupon: null as null | {
+        code: string;
+        type: string;
+        value: number;
+        discountInPaise: number;
+      },
+      isDigitalOnly: false
+    };
+  }
+
+  const cart = await prisma.cart.findUnique({
+    where: { id: cartId },
+    include: {
+      items: {
+        orderBy: { id: "asc" },
+        include: {
+          variant: {
+            include: {
+              productRel: {
+                include: {
+                  images: { where: { isPrimary: true }, take: 1 }
+                }
+              },
+              attributeValues: {
+                include: {
+                  attributeValue: { include: { attribute: true } }
+                }
+              },
+              inventory: true
+            }
+          }
+        }
+      }
+    }
+  });
+
+  if (!cart) {
+    return {
+      items: [],
+      subtotalInPaise: 0,
+      itemCount: 0,
+      currency,
+      discountInPaise: 0,
+      totalInPaise: 0,
+      coupon: null,
+      isDigitalOnly: false
+    };
+  }
+
+  type ItemOut = {
+    id: string;
+    variantId: string;
+    productSlug: string;
+    productName: string;
+    quantity: number;
+    unitPriceInPaise: number;
+    variantLabel: string | null;
+    primaryImageUrl: string | null;
+    maxQuantity: number | null;
+  };
+
+  const items: ItemOut[] = [];
+  let subtotalInPaise = 0;
+  let itemCount = 0;
+  let isDigitalOnly = cart.items.length > 0;
+
+  for (const row of cart.items) {
+    const v = row.variant;
+    const p = v?.productRel;
+    if (!v || !p) {
+      isDigitalOnly = false;
+      continue;
+    }
+    if (!isDigitalLine(v)) {
+      isDigitalOnly = false;
+    }
+    const img = p.images[0]?.url ?? null;
+    const price = unitMinorForZone(v, zone);
+    const line = price * row.quantity;
+    subtotalInPaise += line;
+    itemCount += row.quantity;
+
+    const inv = v.inventory;
+    const maxQty = inv ? Math.max(0, inv.onHand - inv.reserved) : null;
+
+    items.push({
+      id: row.id,
+      variantId: v.id,
+      productSlug: p.slug,
+      productName: p.name,
+      quantity: row.quantity,
+      unitPriceInPaise: price,
+      variantLabel: variantLabel(v.attributeValues) ?? "Standard",
+      primaryImageUrl: img,
+      maxQuantity: maxQty
+    });
+  }
+
+  let discountInPaise = 0;
+  let coupon: {
+    code: string;
+    type: string;
+    value: number;
+    discountInPaise: number;
+  } | null = null;
+
+  if (cart.couponCode) {
+    try {
+      const resolved = await resolveCartCouponDiscount(subtotalInPaise, cart.couponCode, {
+        userId: opts?.userId ?? null,
+        email: opts?.email ?? null
+      });
+      discountInPaise = resolved.discountInPaise;
+      coupon = resolved.coupon;
+    } catch {
+      await prisma.cart.update({
+        where: { id: cartId },
+        data: { couponCode: null }
+      });
+    }
+  }
+
+  const totalInPaise = Math.max(0, subtotalInPaise - discountInPaise);
+
+  return { items, subtotalInPaise, itemCount, currency, discountInPaise, totalInPaise, coupon, isDigitalOnly };
+}
+
+export async function addCartItem(
+  cartId: string,
+  variantId: string,
+  quantity: number
+): Promise<void> {
+  const variant = await prisma.productVariant.findFirst({
+    where: {
+      id: variantId,
+      status: "ACTIVE",
+      productRel: { deletedAt: null, status: "ACTIVE" }
+    },
+    include: { inventory: true }
+  });
+
+  if (!variant) {
+    const e = new Error("Variant not found or unavailable") as Error & {
+      statusCode: number;
+      code: string;
+    };
+    e.statusCode = 400;
+    e.code = "INVALID_VARIANT";
+    throw e;
+  }
+
+  const inv = variant.inventory;
+  const available = inv ? inv.onHand - inv.reserved : 1_000_000;
+  if (available < 1) {
+    const e = new Error("Out of stock") as Error & { statusCode: number; code: string };
+    e.statusCode = 400;
+    e.code = "OUT_OF_STOCK";
+    throw e;
+  }
+
+  const existing = await prisma.cartItem.findUnique({
+    where: {
+      cartId_variantId: { cartId, variantId }
+    }
+  });
+
+  const nextQty = (existing?.quantity ?? 0) + quantity;
+  if (nextQty > available) {
+    const e = new Error(`Only ${available} available`) as Error & { statusCode: number; code: string };
+    e.statusCode = 400;
+    e.code = "INSUFFICIENT_STOCK";
+    throw e;
+  }
+
+  await prisma.cartItem.upsert({
+    where: {
+      cartId_variantId: { cartId, variantId }
+    },
+    create: { cartId, variantId, quantity: nextQty },
+    update: { quantity: nextQty }
+  });
+}
+
+export async function updateCartItemQuantity(
+  cartId: string,
+  variantId: string,
+  quantity: number
+): Promise<void> {
+  if (quantity < 1) {
+    await prisma.cartItem.deleteMany({
+      where: { cartId, variantId }
+    });
+    return;
+  }
+
+  const row = await prisma.cartItem.findUnique({
+    where: {
+      cartId_variantId: { cartId, variantId }
+    },
+    include: {
+      variant: { include: { inventory: true } }
+    }
+  });
+
+  if (!row) {
+    const e = new Error("Cart line not found") as Error & { statusCode: number; code: string };
+    e.statusCode = 404;
+    e.code = "NOT_FOUND";
+    throw e;
+  }
+
+  const inv = row.variant.inventory;
+  const available = inv ? inv.onHand - inv.reserved : 1_000_000;
+  if (quantity > available) {
+    const e = new Error(`Only ${available} available`) as Error & { statusCode: number; code: string };
+    e.statusCode = 400;
+    e.code = "INSUFFICIENT_STOCK";
+    throw e;
+  }
+
+  await prisma.cartItem.update({
+    where: {
+      cartId_variantId: { cartId, variantId }
+    },
+    data: { quantity }
+  });
+}
+
+export async function removeCartItem(cartId: string, variantId: string): Promise<void> {
+  await prisma.cartItem.deleteMany({
+    where: { cartId, variantId }
+  });
+}
+
+/** Empty the shopper cart after a successful payment (guest session or logged-in cart). */
+export async function clearCartForRequest(req: Request): Promise<void> {
+  const { cartId } = await resolveCartContext(req, "read");
+  if (!cartId) return;
+  await prisma.cartItem.deleteMany({ where: { cartId } });
+  await prisma.cart.update({
+    where: { id: cartId },
+    data: { couponCode: null }
+  });
+}
+
+/** Clear persisted cart for the customer who placed this order (logged-in shoppers). */
+export async function clearCartForOrder(orderId: string): Promise<void> {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { customerId: true }
+  });
+  if (!order?.customerId) return;
+  const cart = await prisma.cart.findUnique({ where: { userId: order.customerId } });
+  if (!cart) return;
+  await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
+  await prisma.cart.update({
+    where: { id: cart.id },
+    data: { couponCode: null }
+  });
+}
+
+================================================================================
+FILE: backend/src/modules/cart/cart.routes.ts
+LINES: 24
+================================================================================
+import { Router } from "express";
+
+import { optionalAuth } from "../../middleware/optionalAuth";
+import { validateBody } from "../../middleware/validate";
+
+import * as controller from "./cart.controller";
+import * as couponController from "./coupon.handlers";
+import { cartAddSchema, cartCouponSchema, cartUpdateSchema } from "./schemas";
+
+const router = Router();
+
+router.use(optionalAuth);
+
+router.post("/add", validateBody(cartAddSchema), controller.add);
+router.post("/merge-session", controller.mergeSession);
+router.get("/", controller.get);
+router.delete("/", controller.clear);
+router.put("/update", validateBody(cartUpdateSchema), controller.update);
+router.delete("/remove/:variantId", controller.remove);
+router.get("/coupon/offers", couponController.listOffers);
+router.post("/coupon", validateBody(cartCouponSchema), couponController.applyCoupon);
+router.delete("/coupon", couponController.removeCoupon);
+
+export { router as cartRoutes };
+
+================================================================================
+FILE: backend/src/modules/cart/cart.controller.ts
+LINES: 158
+================================================================================
+import type { NextFunction, Request, Response } from "express";
+
+import { logger } from "../../config/logger";
+import {
+  addCartItem,
+  clearCartForRequest,
+  getCartPayload,
+  mergeGuestCartIntoUser,
+  removeCartItem,
+  resolveCartContext,
+  updateCartItemQuantity
+} from "./cart.service";
+import type { CartAddBody, CartUpdateBody } from "./schemas";
+
+function pricingCountry(req: Request): string | undefined {
+  const q = req.query.country;
+  return typeof q === "string" && q.trim() ? q.trim() : undefined;
+}
+
+function checkoutEmail(req: Request): string | undefined {
+  const q = req.query.email;
+  return typeof q === "string" && q.includes("@") ? q.trim().toLowerCase() : undefined;
+}
+
+export async function add(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { cartId, newSessionId, userId } = await resolveCartContext(req, "write");
+    if (!cartId) {
+      res.status(500).json({ success: false, error: "Cart error", code: "CART_ERROR" });
+      return;
+    }
+    const body = req.body as CartAddBody;
+    await addCartItem(cartId, body.variantId, body.quantity);
+    const payload = await getCartPayload(cartId, pricingCountry(req), {
+      userId,
+      email: checkoutEmail(req)
+    });
+    res.status(200).json({
+      success: true,
+      data: {
+        ...payload,
+        sessionId: newSessionId
+      }
+    });
+  } catch (err) {
+    logger.error("cart_add_failed", { err });
+    next(err);
+  }
+}
+
+export async function get(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { cartId, newSessionId, userId } = await resolveCartContext(req, "read");
+    const payload = await getCartPayload(cartId, pricingCountry(req), {
+      userId,
+      email: checkoutEmail(req)
+    });
+    res.json({
+      success: true,
+      data: {
+        ...payload,
+        sessionId: newSessionId
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function update(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { cartId } = await resolveCartContext(req, "write");
+    if (!cartId) {
+      res.status(400).json({
+        success: false,
+        error: "Missing cart session. Add an item first or refresh.",
+        code: "NO_CART"
+      });
+      return;
+    }
+    const body = req.body as CartUpdateBody;
+    await updateCartItemQuantity(cartId, body.variantId, body.quantity);
+    const payload = await getCartPayload(cartId, pricingCountry(req));
+    res.json({ success: true, data: payload });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function clear(req: Request, res: Response, next: NextFunction) {
+  try {
+    await clearCartForRequest(req);
+    res.json({
+      success: true,
+      data: { items: [], subtotalInPaise: 0, itemCount: 0, currency: "INR" }
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** Merge guest `X-Sarveda-Cart-Session` into logged-in cart once (call after login). */
+export async function mergeSession(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = req.authUser?.id;
+    if (!userId) {
+      res.status(401).json({ success: false, error: "Login required", code: "UNAUTHORIZED" });
+      return;
+    }
+    const headerSession = req.headers["x-sarveda-cart-session"];
+    const guestSessionId =
+      typeof headerSession === "string" && headerSession.trim().length > 0
+        ? headerSession.trim()
+        : null;
+
+    const { cartId } = await resolveCartContext(req, "write");
+    if (!cartId) {
+      res.status(500).json({ success: false, error: "Cart error", code: "CART_ERROR" });
+      return;
+    }
+
+    if (guestSessionId) {
+      await mergeGuestCartIntoUser(cartId, guestSessionId);
+    }
+
+    const payload = await getCartPayload(cartId, pricingCountry(req), {
+      userId,
+      email: checkoutEmail(req)
+    });
+    res.json({ success: true, data: payload });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function remove(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { cartId } = await resolveCartContext(req, "write");
+    if (!cartId) {
+      res.status(400).json({
+        success: false,
+        error: "Missing cart session.",
+        code: "NO_CART"
+      });
+      return;
+    }
+    const { variantId } = req.params;
+    if (!variantId) {
+      res.status(400).json({ success: false, error: "variantId required", code: "BAD_REQUEST" });
+      return;
+    }
+    await removeCartItem(cartId, variantId);
+    const payload = await getCartPayload(cartId, pricingCountry(req));
+    res.json({ success: true, data: payload });
+  } catch (err) {
+    next(err);
+  }
+}
+
+================================================================================
+FILE: backend/src/modules/cart/coupon.handlers.ts
+LINES: 88
+================================================================================
+import type { NextFunction, Request, Response } from "express";
+
+import { listCheckoutCouponOffers } from "../coupons/coupon.service";
+import { getCartPayload, resolveCartContext } from "./cart.service";
+import { applyCouponToCart, removeCouponFromCart } from "./couponCart";
+import type { CartCouponBody } from "./schemas";
+
+function pricingCountry(req: Request): string | undefined {
+  const q = req.query.country;
+  return typeof q === "string" && q.trim() ? q.trim() : undefined;
+}
+
+function checkoutEmail(req: Request): string | undefined {
+  const q = req.query.email;
+  return typeof q === "string" && q.includes("@") ? q.trim().toLowerCase() : undefined;
+}
+
+export async function listOffers(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { cartId, userId } = await resolveCartContext(req, "read");
+    const payload = await getCartPayload(cartId, pricingCountry(req), {
+      userId,
+      email: checkoutEmail(req)
+    });
+    const offers = await listCheckoutCouponOffers({
+      subtotalInPaise: payload.subtotalInPaise,
+      userId,
+      email: checkoutEmail(req)
+    });
+    res.json({ success: true, data: { offers, appliedCode: payload.coupon?.code ?? null } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function applyCoupon(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { cartId, userId, newSessionId } = await resolveCartContext(req, "write");
+    if (!cartId) {
+      res.status(400).json({
+        success: false,
+        error: "Missing cart session. Add an item first.",
+        code: "NO_CART"
+      });
+      return;
+    }
+    const body = req.body as CartCouponBody;
+
+    await applyCouponToCart(cartId, body.code, {
+      userId,
+      email: body.email,
+      country: pricingCountry(req)
+    });
+
+    const payload = await getCartPayload(cartId, pricingCountry(req), {
+      userId,
+      email: body.email
+    });
+    res.json({
+      success: true,
+      data: { ...payload, sessionId: newSessionId }
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function removeCoupon(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { cartId, newSessionId } = await resolveCartContext(req, "write");
+    if (!cartId) {
+      res.status(400).json({
+        success: false,
+        error: "Missing cart session.",
+        code: "NO_CART"
+      });
+      return;
+    }
+    await removeCouponFromCart(cartId);
+    const payload = await getCartPayload(cartId, pricingCountry(req));
+    res.json({
+      success: true,
+      data: { ...payload, sessionId: newSessionId }
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+================================================================================
+FILE: backend/src/modules/cart/schemas.ts
+LINES: 21
+================================================================================
+import { z } from "zod";
+
+export const cartAddSchema = z.object({
+  variantId: z.string().uuid(),
+  quantity: z.coerce.number().int().min(1).max(999)
+});
+
+export const cartUpdateSchema = z.object({
+  variantId: z.string().uuid(),
+  quantity: z.coerce.number().int().min(0).max(999)
+});
+
+export const cartCouponSchema = z.object({
+  code: z.string().min(2).max(64),
+  /** Guest checkout: validate per-user coupon limits by email. */
+  email: z.string().email().optional()
+});
+
+export type CartAddBody = z.infer<typeof cartAddSchema>;
+export type CartUpdateBody = z.infer<typeof cartUpdateSchema>;
+export type CartCouponBody = z.infer<typeof cartCouponSchema>;
+
+================================================================================
+FILE: backend/src/modules/cart/couponCart.ts
+LINES: 42
+================================================================================
+import { prisma } from "../../config/db";
+import { getCartPayload } from "./cart.service";
+import { resolveCartCouponDiscount } from "../coupons/coupon.service";
+
+export async function applyCouponToCart(
+  cartId: string,
+  rawCode: string,
+  opts: { userId: string | null; email?: string; country?: string }
+): Promise<void> {
+  const payload = await getCartPayload(cartId, opts.country, {
+    userId: opts.userId,
+    email: opts.email
+  });
+  if (!payload.items.length) {
+    const e = new Error("Add items to your cart before applying a coupon.") as Error & {
+      statusCode: number;
+      code: string;
+      userMessage: string;
+    };
+    e.statusCode = 400;
+    e.code = "EMPTY_CART";
+    e.userMessage = e.message;
+    throw e;
+  }
+
+  await resolveCartCouponDiscount(payload.subtotalInPaise, rawCode, {
+    userId: opts.userId,
+    email: opts.email
+  });
+
+  await prisma.cart.update({
+    where: { id: cartId },
+    data: { couponCode: rawCode.trim().toUpperCase() }
+  });
+}
+
+export async function removeCouponFromCart(cartId: string): Promise<void> {
+  await prisma.cart.update({
+    where: { id: cartId },
+    data: { couponCode: null }
+  });
+}
+
+================================================================================
+FILE: backend/src/modules/coupons/coupon.service.ts
+LINES: 216
+================================================================================
+import type { Coupon, CouponType } from "@prisma/client";
+
+import { prisma } from "../../config/db";
+
+export type AppliedCoupon = {
+  code: string;
+  type: CouponType;
+  value: number;
+  discountInPaise: number;
+};
+
+const PAID_LIKE_STATUSES = ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"] as const;
+
+function normalizeCode(raw: string): string {
+  return raw.trim().toUpperCase();
+}
+
+function discountFromCoupon(coupon: Coupon, subtotalInPaise: number): number {
+  if (subtotalInPaise < 1) return 0;
+  if (subtotalInPaise < coupon.minOrderInPaise) return 0;
+
+  let discount = 0;
+  if (coupon.type === "PERCENTAGE") {
+    discount = Math.floor((subtotalInPaise * coupon.value) / 100);
+  } else {
+    discount = coupon.value;
+  }
+  return Math.min(Math.max(discount, 0), subtotalInPaise);
+}
+
+async function countCouponUsesForUser(
+  code: string,
+  userId: string | null,
+  email: string | null
+): Promise<number> {
+  const emailNorm = email?.trim().toLowerCase();
+  const or: Array<{ customerId: string } | { email: string }> = [];
+  if (userId) or.push({ customerId: userId });
+  if (emailNorm) or.push({ email: emailNorm });
+  if (!or.length) return 0;
+
+  return prisma.order.count({
+    where: {
+      couponCode: code,
+      deletedAt: null,
+      status: { in: [...PAID_LIKE_STATUSES] },
+      OR: or
+    }
+  });
+}
+
+export function couponError(
+  message: string,
+  code: string,
+  statusCode = 400
+): Error & { statusCode: number; code: string; userMessage: string } {
+  const e = new Error(message) as Error & {
+    statusCode: number;
+    code: string;
+    userMessage: string;
+  };
+  e.statusCode = statusCode;
+  e.code = code;
+  e.userMessage = message;
+  return e;
+}
+
+/** Validate coupon and return discount for a cart subtotal (minor units / paise). */
+export async function resolveCartCouponDiscount(
+  subtotalInPaise: number,
+  couponCode: string | null | undefined,
+  opts: { userId?: string | null; email?: string | null }
+): Promise<{ discountInPaise: number; coupon: AppliedCoupon | null }> {
+  if (!couponCode?.trim()) {
+    return { discountInPaise: 0, coupon: null };
+  }
+
+  const code = normalizeCode(couponCode);
+  const coupon = await prisma.coupon.findUnique({ where: { code } });
+  if (!coupon) {
+    throw couponError("This coupon code is not valid.", "COUPON_INVALID");
+  }
+
+  await assertCouponUsable(coupon, subtotalInPaise, opts.userId ?? null, opts.email ?? null);
+
+  const discountInPaise = discountFromCoupon(coupon, subtotalInPaise);
+  return {
+    discountInPaise,
+    coupon: {
+      code: coupon.code,
+      type: coupon.type,
+      value: coupon.value,
+      discountInPaise
+    }
+  };
+}
+
+async function assertCouponUsable(
+  coupon: Coupon,
+  subtotalInPaise: number,
+  userId: string | null,
+  email: string | null
+): Promise<void> {
+  if (!coupon.isActive) {
+    throw couponError("This coupon is no longer active.", "COUPON_INACTIVE");
+  }
+
+  const now = new Date();
+  if (coupon.validFrom && now < coupon.validFrom) {
+    throw couponError("This coupon is not valid yet.", "COUPON_NOT_STARTED");
+  }
+  if (coupon.validUntil && now > coupon.validUntil) {
+    throw couponError("This coupon has expired.", "COUPON_EXPIRED");
+  }
+
+  if (subtotalInPaise < coupon.minOrderInPaise) {
+    const min = (coupon.minOrderInPaise / 100).toLocaleString("en-IN");
+    throw couponError(
+      `Minimum order value for this coupon is ₹${min}.`,
+      "COUPON_MIN_ORDER"
+    );
+  }
+
+  if (coupon.maxUsageTotal != null && coupon.usageCount >= coupon.maxUsageTotal) {
+    throw couponError("This coupon has reached its usage limit.", "COUPON_EXHAUSTED");
+  }
+
+  const perUserLimit = coupon.maxUsagePerUser ?? 1;
+  if (perUserLimit > 0) {
+    const used = await countCouponUsesForUser(coupon.code, userId, email);
+    if (used >= perUserLimit) {
+      throw couponError("You have already used this coupon.", "COUPON_USER_LIMIT");
+    }
+  }
+}
+
+export function formatCouponOfferLabel(coupon: Coupon): string {
+  if (coupon.type === "PERCENTAGE") {
+    return `${coupon.value}% off`;
+  }
+  const rupees = (coupon.value / 100).toLocaleString("en-IN");
+  return `₹${rupees} off`;
+}
+
+function featuredCouponCodes(): string[] {
+  const raw = process.env.COUPON_CHECKOUT_FEATURED ?? "WELCOME10";
+  return raw
+    .split(",")
+    .map((c) => normalizeCode(c))
+    .filter(Boolean);
+}
+
+export type CheckoutCouponOffer = {
+  code: string;
+  label: string;
+  type: CouponType;
+  value: number;
+  /** False when this email/account already used the coupon (paid orders). */
+  eligible: boolean;
+  ineligibleReason?: string;
+};
+
+/** Quick-apply buttons on checkout — codes from COUPON_CHECKOUT_FEATURED env. */
+export async function listCheckoutCouponOffers(opts: {
+  subtotalInPaise: number;
+  userId?: string | null;
+  email?: string | null;
+}): Promise<CheckoutCouponOffer[]> {
+  const codes = featuredCouponCodes();
+  if (!codes.length) return [];
+
+  const coupons = await prisma.coupon.findMany({
+    where: { code: { in: codes }, isActive: true }
+  });
+  const byCode = new Map(coupons.map((c) => [c.code, c]));
+
+  const offers: CheckoutCouponOffer[] = [];
+  for (const code of codes) {
+    const coupon = byCode.get(code);
+    if (!coupon) continue;
+
+    let eligible = true;
+    let ineligibleReason: string | undefined;
+    try {
+      await assertCouponUsable(coupon, opts.subtotalInPaise, opts.userId ?? null, opts.email ?? null);
+    } catch (err) {
+      eligible = false;
+      ineligibleReason =
+        err instanceof Error ? err.message : "This offer is not available for your order.";
+    }
+
+    offers.push({
+      code: coupon.code,
+      label: formatCouponOfferLabel(coupon),
+      type: coupon.type,
+      value: coupon.value,
+      eligible,
+      ineligibleReason
+    });
+  }
+  return offers;
+}
+
+/** Increment global usage after order is paid. */
+export async function incrementCouponUsageForOrder(orderId: string): Promise<void> {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { couponCode: true }
+  });
+  if (!order?.couponCode) return;
+
+  await prisma.coupon.updateMany({
+    where: { code: order.couponCode },
+    data: { usageCount: { increment: 1 } }
+  });
+}
+
+================================================================================
+FILE: backend/src/middleware/auth.ts
+LINES: 25
+================================================================================
+import type { NextFunction, Request, Response } from "express";
+
+import { AUTH_COOKIE_NAME, verifyAccessToken } from "../utils/jwt";
+
+export function requireAuth(req: Request, res: Response, next: NextFunction) {
+  try {
+    const token = req.cookies?.[AUTH_COOKIE_NAME] as string | undefined;
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        error: "Not authenticated",
+        code: "UNAUTHORIZED"
+      });
+    }
+    const payload = verifyAccessToken(token);
+    req.authUser = { id: payload.sub, email: payload.email, role: payload.role };
+    next();
+  } catch {
+    return res.status(401).json({
+      success: false,
+      error: "Invalid or expired session",
+      code: "UNAUTHORIZED"
+    });
+  }
+}
+
+================================================================================
+FILE: backend/src/middleware/admin.ts
+LINES: 44
+================================================================================
+import type { NextFunction, Request, Response } from "express";
+
+import { prisma } from "../config/db";
+import { AUTH_COOKIE_NAME, verifyAccessToken } from "../utils/jwt";
+
+export async function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  try {
+    const token = req.cookies?.[AUTH_COOKIE_NAME] as string | undefined;
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        error: "Not authenticated",
+        code: "UNAUTHORIZED"
+      });
+    }
+    const payload = verifyAccessToken(token);
+    const user = await prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { id: true, email: true, role: true, deletedAt: true }
+    });
+    if (!user || user.deletedAt) {
+      return res.status(401).json({
+        success: false,
+        error: "Not authenticated",
+        code: "UNAUTHORIZED"
+      });
+    }
+    if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
+      return res.status(403).json({
+        success: false,
+        error: "Admin access required",
+        code: "FORBIDDEN"
+      });
+    }
+    req.authUser = { id: user.id, email: user.email, role: user.role };
+    next();
+  } catch {
+    return res.status(401).json({
+      success: false,
+      error: "Invalid or expired session",
+      code: "UNAUTHORIZED"
+    });
+  }
+}
+
+================================================================================
+FILE: backend/src/middleware/optionalAuth.ts
+LINES: 19
+================================================================================
+import type { NextFunction, Request, Response } from "express";
+
+import { AUTH_COOKIE_NAME, verifyAccessToken } from "../utils/jwt";
+
+/**
+ * Attach req.authUser when a valid auth cookie is present; otherwise continue without user.
+ */
+export function optionalAuth(req: Request, _res: Response, next: NextFunction): void {
+  try {
+    const token = req.cookies?.[AUTH_COOKIE_NAME] as string | undefined;
+    if (token) {
+      const payload = verifyAccessToken(token);
+      req.authUser = { id: payload.sub, email: payload.email, role: payload.role };
+    }
+  } catch {
+    /* no session */
+  }
+  next();
+}
+
+================================================================================
+FILE: backend/src/middleware/validate.ts
+LINES: 26
+================================================================================
+import type { NextFunction, Request, Response } from "express";
+import type { ZodSchema } from "zod";
+
+export function validateBody<T>(schema: ZodSchema<T>) {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) {
+      const fields = parsed.error.issues.map((e) => ({
+        path: e.path.join(".") || "body",
+        message: e.message
+      }));
+      const message = fields.map((f) => `${f.path}: ${f.message}`).join("; ");
+      const err = new Error(message) as Error & {
+        statusCode?: number;
+        code?: string;
+        fields?: Array<{ path: string; message: string }>;
+      };
+      err.statusCode = 400;
+      err.code = "VALIDATION_ERROR";
+      err.fields = fields;
+      return next(err);
+    }
+    req.body = parsed.data;
+    next();
+  };
+}
+
+================================================================================
+FILE: backend/src/middleware/errorHandler.ts
+LINES: 62
+================================================================================
+import { Prisma } from "@prisma/client";
+import type { NextFunction, Request, Response } from "express";
+
+import { logger } from "../config/logger";
+
+type ApiError = Error & {
+  statusCode?: number;
+  status?: number;
+  code?: string;
+  userMessage?: string;
+};
+
+function prismaClientMessage(err: Prisma.PrismaClientKnownRequestError): string {
+  if (err.code === "P2002") {
+    const target = Array.isArray(err.meta?.target) ? err.meta.target.join(", ") : "field";
+    return `Duplicate value for ${target}. Change SKU or slug and try again.`;
+  }
+  if (err.code === "P2003") return "Related record not found.";
+  if (err.code === "P2025") return "Record not found.";
+  return "Database request failed.";
+}
+
+export const errorHandler = (
+  err: ApiError,
+  _req: Request,
+  res: Response,
+  _next: NextFunction
+) => {
+  let statusCode =
+    err.statusCode ?? err.status ?? 500;
+  let clientMessage = err.userMessage ?? err.message;
+  let code = err.code ?? "REQUEST_ERROR";
+
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    statusCode = err.code === "P2002" ? 409 : 400;
+    clientMessage = prismaClientMessage(err);
+    code = err.code;
+  }
+
+  const fields = (err as ApiError & { fields?: Array<{ path: string; message: string }> }).fields;
+
+  if (statusCode >= 500) {
+    logger.error("api_error", { message: err.message, code, stack: err.stack });
+  }
+
+  if (
+    err.message?.toLowerCase().includes("entity too large") ||
+    (err as Error & { type?: string }).type === "entity.too.large"
+  ) {
+    statusCode = 413;
+    clientMessage =
+      "Upload too large (max 10MB file). Use a smaller audio clip or compress the file.";
+    code = "PAYLOAD_TOO_LARGE";
+  }
+
+  res.status(statusCode).json({
+    success: false,
+    error: clientMessage || "Request failed",
+    code: code || "REQUEST_ERROR",
+    ...(fields?.length ? { fields } : {})
+  });
+};
+
+================================================================================
+FILE: backend/src/app.ts
+LINES: 165
+================================================================================
+import "./loadEnv";
+
+import cookieParser from "cookie-parser";
+import cors from "cors";
+import express, { type NextFunction, type Request, type Response } from "express";
+import rateLimit from "express-rate-limit";
+import helmet from "helmet";
+import passport from "passport";
+
+import { getCorsOrigins, isAllowedCorsOrigin } from "./config/corsOrigins";
+import { errorHandler } from "./middleware/errorHandler";
+import { authRouter, configurePassport } from "./modules/auth";
+import { cartRoutes } from "./modules/cart/cart.routes";
+import { categoriesRoutes } from "./modules/categories/categories.routes";
+import { blogRoutes } from "./modules/blog/blog.routes";
+import { coursesRoutes } from "./modules/courses/courses.routes";
+import { eventsRoutes } from "./modules/events/events.routes";
+import { mentorsRoutes } from "./modules/mentors/mentors.routes";
+import { offersRoutes } from "./modules/offers/offers.routes";
+import { pagesRoutes } from "./modules/pages/pages.routes";
+import { retreatsRoutes } from "./modules/retreats/retreats.routes";
+import { vaidyasRoutes } from "./modules/vaidyas/vaidyas.routes";
+import { checkoutRoutes } from "./modules/checkout/checkout.routes";
+import { ordersRoutes } from "./modules/orders/orders.routes";
+import { paymentsJsonRoutes } from "./modules/payments/payments.routes";
+import { razorpayWebhookHandler } from "./modules/payments/razorpay.webhook";
+import { stripeWebhookHandler } from "./modules/payments/stripe.webhook";
+import { paypalWebhookHandler } from "./modules/payments/paypal.webhook";
+import { delhiveryWebhookHandler } from "./modules/shipping/delhivery.webhook";
+import { shiprocketWebhookHandler } from "./modules/shipping/shiprocket.webhook";
+import { adminRoutes } from "./modules/admin";
+import { productsRoutes } from "./modules/products/products.routes";
+import { shippingRoutes } from "./modules/shipping";
+import { chatRoutes } from "./modules/chat/chat.routes";
+import { contactRoutes } from "./modules/contact/contact.routes";
+import { testimonialsRoutes } from "./modules/testimonials/testimonials.routes";
+import { zohoRouter } from "./modules/zoho";
+import { handleZohoWebhook } from "./modules/zoho/zoho-webhook";
+
+configurePassport();
+
+const app = express();
+
+// Vercel and other reverse proxies send X-Forwarded-For; rate limiting needs this.
+app.set("trust proxy", 1);
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      const allowed = getCorsOrigins();
+      if (isAllowedCorsOrigin(origin, allowed)) {
+        callback(null, true);
+        return;
+      }
+      callback(null, false);
+    },
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization", "X-Sarveda-Cart-Session", "Idempotency-Key"]
+  })
+);
+app.use(helmet());
+
+app.post(
+  "/api/payments/razorpay/webhook",
+  express.raw({ type: "application/json" }),
+  (req: Request, res: Response, next: NextFunction) => {
+    void razorpayWebhookHandler(req, res).catch(next);
+  }
+);
+
+app.post(
+  "/api/payments/stripe/webhook",
+  express.raw({ type: "application/json" }),
+  (req: Request, res: Response, next: NextFunction) => {
+    void stripeWebhookHandler(req, res).catch(next);
+  }
+);
+
+app.post(
+  "/api/payments/paypal/webhook",
+  express.raw({ type: "application/json" }),
+  (req: Request, res: Response, next: NextFunction) => {
+    void paypalWebhookHandler(req, res).catch(next);
+  }
+);
+
+const shiprocketWebhookRaw = express.raw({ type: "application/json" });
+const delhiveryWebhookRaw = express.raw({ type: "application/json" });
+const shiprocketWebhookRoute = (req: Request, res: Response, next: NextFunction) => {
+  void shiprocketWebhookHandler(req, res).catch(next);
+};
+/** Primary path (code name). */
+app.post("/api/shipping/shiprocket/webhook", shiprocketWebhookRaw, shiprocketWebhookRoute);
+/**
+ * Shiprocket dashboard often rejects URLs containing "shiprocket" / "sr".
+ * Use this URL in Settings → Webhooks instead.
+ */
+app.post("/api/shipping/carrier-events/webhook", shiprocketWebhookRaw, shiprocketWebhookRoute);
+app.post("/api/shipping/delhivery/webhook", delhiveryWebhookRaw, (req, res, next) => {
+  void delhiveryWebhookHandler(req, res).catch(next);
+});
+
+// Base64 uploads (images/audio) need headroom; default 1mb causes "request entity too large"
+app.use(express.json({ limit: "14mb" }));
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(passport.initialize());
+
+app.use(
+  "/api",
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    // Storefront + Vercel ISR can burst; 200/15min caused 429 plain-text during builds
+    max: process.env.NODE_ENV === "production" ? 800 : 2000,
+    standardHeaders: true,
+    legacyHeaders: false
+  })
+);
+
+app.get("/health", (_req: Request, res: Response) => {
+  res.status(200).json({
+    success: true,
+    data: { status: "ok" }
+  });
+});
+
+app.use("/api/auth", authRouter);
+app.use("/api/products", productsRoutes);
+app.use("/api/categories", categoriesRoutes);
+app.use("/api/courses", coursesRoutes);
+app.use("/api/events", eventsRoutes);
+app.use("/api/vaidyas", vaidyasRoutes);
+app.use("/api/mentors", mentorsRoutes);
+app.use("/api/retreats", retreatsRoutes);
+app.use("/api/offers", offersRoutes);
+app.use("/api/pages", pagesRoutes);
+app.use("/api/blog", blogRoutes);
+app.use("/api/cart", cartRoutes);
+app.use("/api/checkout", checkoutRoutes);
+app.use("/api/payments", paymentsJsonRoutes);
+app.use("/api/orders", ordersRoutes);
+app.use("/api/shipping", shippingRoutes);
+app.use("/api/chat", chatRoutes);
+app.use("/api/contact", contactRoutes);
+app.use("/api/testimonials", testimonialsRoutes);
+app.use("/api/admin", adminRoutes);
+// Public — Zoho calls this, no auth needed
+app.post("/api/zoho/webhook", (req: Request, res: Response, next: NextFunction) => {
+  void handleZohoWebhook(req, res).catch(next);
+});
+app.use("/api/zoho", zohoRouter);
+
+app.use((_req: Request, _res: Response, next: NextFunction) => {
+  const err = new Error("Route not found") as Error & {
+    statusCode?: number;
+    code?: string;
+  };
+  err.statusCode = 404;
+  err.code = "NOT_FOUND";
+  next(err);
+});
+
+app.use(errorHandler);
+
+export { app };
+
+================================================================================
+FILE: backend/src/server.ts
+LINES: 18
+================================================================================
+import { app } from "./app";
+import { initSentry } from "./config/sentry";
+import { startAbandonedNotificationWorker } from "./jobs/abandonedNotificationJob";
+import { startPaymentTimeoutWorker } from "./jobs/paymentTimeoutJob";
+import { startTrackingSyncWorker } from "./jobs/trackingSyncJob";
+import { startZohoStockSyncWorker } from "./jobs/zohoStockSyncJob";
+
+void initSentry();
+
+const port = Number(process.env.PORT ?? 5000);
+
+app.listen(port, () => {
+  process.stdout.write(`Sarveda backend running on http://localhost:${port}\n`);
+  startPaymentTimeoutWorker();
+  startAbandonedNotificationWorker();
+  void startTrackingSyncWorker();
+  void startZohoStockSyncWorker();
+});
+
+================================================================================
+FILE: backend/src/jobs/paymentTimeoutJob.ts
+LINES: 77
+================================================================================
+import { Queue, Worker, type Job } from "bullmq";
+
+import { getRedisConnection } from "../config/redisConnection";
+import { logger } from "../config/logger";
+import { notifyOrderEmail } from "../modules/notifications/email";
+import { prisma } from "../config/db";
+import { cancelUnpaidOrderWithRelease } from "../modules/orders/orders.service";
+
+export const PAYMENT_TIMEOUT_QUEUE = "payment-timeout";
+const DELAY_MS = 15 * 60 * 1000;
+
+let queue: Queue | null = null;
+let worker: Worker | null = null;
+
+function getQueue(): Queue | null {
+  const conn = getRedisConnection();
+  if (!conn) return null;
+  if (!queue) {
+    queue = new Queue(PAYMENT_TIMEOUT_QUEUE, { connection: conn });
+  }
+  return queue;
+}
+
+export async function schedulePaymentTimeout(orderId: string): Promise<void> {
+  const q = getQueue();
+  if (!q) {
+    logger.warn("payment_timeout_queue_disabled", { orderId, reason: "REDIS_URL not set" });
+    return;
+  }
+  await q.add(
+    "expire-pending-payment",
+    { orderId },
+    {
+      delay: DELAY_MS,
+      jobId: `payment-timeout-${orderId}`,
+      removeOnComplete: true,
+      removeOnFail: 100
+    }
+  );
+  logger.info("payment_timeout_scheduled", { orderId, delayMs: DELAY_MS });
+}
+
+async function processTimeout(job: Job<{ orderId: string }>): Promise<void> {
+  const { orderId } = job.data;
+  // BUG 3: COD orders use paymentStatus PENDING but must not be auto-cancelled
+  const codPayment = await prisma.payment.findFirst({
+    where: { orderId, provider: "COD" }
+  });
+  if (codPayment) {
+    logger.warn("payment_timeout_skipped_cod", { orderId });
+    return;
+  }
+  const changed = await cancelUnpaidOrderWithRelease(
+    orderId,
+    "Payment not completed within 15 minutes — stock released",
+    { source: "payment_timeout_job" }
+  );
+  if (changed) {
+    notifyOrderEmail(orderId, "payment_failed");
+    logger.info("payment_timeout_cancelled_order", { orderId });
+  }
+}
+
+export function startPaymentTimeoutWorker(): void {
+  const conn = getRedisConnection();
+  if (!conn) {
+    logger.warn("payment_timeout_worker_skipped", { reason: "REDIS_URL not set" });
+    return;
+  }
+  if (worker) return;
+
+  worker = new Worker(PAYMENT_TIMEOUT_QUEUE, (job) => processTimeout(job), { connection: conn });
+  worker.on("failed", (job, err) => {
+    logger.error("payment_timeout_job_failed", { jobId: job?.id, err });
+  });
+  logger.info("payment_timeout_worker_started");
+}
+
+================================================================================
+FILE: backend/src/jobs/abandonedNotificationJob.ts
+LINES: 114
+================================================================================
+import { Queue, Worker, type Job } from "bullmq";
+
+import { getRedisConnection } from "../config/redisConnection";
+import { logger } from "../config/logger";
+import { prisma } from "../config/db";
+import { notifyOrderEmail, sendAbandonedCartEmail } from "../modules/notifications/email";
+
+export const ABANDONED_QUEUE = "abandoned-notifications";
+const CART_DELAY_MS = 2 * 60 * 60 * 1000;
+const PAYMENT_REMINDER_MS = 2 * 60 * 60 * 1000;
+const SCAN_INTERVAL_MS = 30 * 60 * 1000;
+
+let queue: Queue | null = null;
+let worker: Worker | null = null;
+
+function getQueue(): Queue | null {
+  const conn = getRedisConnection();
+  if (!conn) return null;
+  if (!queue) queue = new Queue(ABANDONED_QUEUE, { connection: conn });
+  return queue;
+}
+
+async function scanAbandonedCarts(): Promise<void> {
+  const cutoff = new Date(Date.now() - CART_DELAY_MS);
+  const carts = await prisma.cart.findMany({
+    where: {
+      updatedAt: { lte: cutoff },
+      userId: { not: null },
+      items: { some: {} }
+    },
+    include: {
+      user: { select: { email: true, name: true } },
+      items: { take: 1 }
+    },
+    take: 50
+  });
+
+  for (const cart of carts) {
+    if (!cart.user?.email) continue;
+    const redis = getRedisConnection();
+    const dedupeKey = `abandoned-cart:${cart.id}`;
+    if (redis) {
+      const sent = await redis.get(dedupeKey);
+      if (sent) continue;
+    }
+
+    await sendAbandonedCartEmail(cart.userId!).catch(() => undefined);
+    if (redis) {
+      await redis.set(dedupeKey, "1", "EX", 7 * 24 * 60 * 60);
+    }
+    logger.info("abandoned_cart_email_sent", { cartId: cart.id });
+  }
+}
+
+async function scanPaymentReminders(): Promise<void> {
+  const cutoff = new Date(Date.now() - PAYMENT_REMINDER_MS);
+  const orders = await prisma.order.findMany({
+    where: {
+      status: "PENDING_PAYMENT",
+      paymentStatus: "PENDING",
+      deletedAt: null,
+      createdAt: { lte: cutoff }
+    },
+    take: 50
+  });
+
+  const redis = getRedisConnection();
+
+  for (const order of orders) {
+    const dedupeKey = `payment-reminder:${order.id}`;
+    if (redis) {
+      const sent = await redis.get(dedupeKey);
+      if (sent) continue;
+    }
+
+    notifyOrderEmail(order.id, "payment_reminder");
+    if (redis) {
+      await redis.set(dedupeKey, "1", "EX", 7 * 24 * 60 * 60);
+    }
+    logger.info("payment_reminder_sent", { orderId: order.id, orderNumber: order.orderNumber });
+  }
+}
+
+async function processScan(_job: Job): Promise<void> {
+  await scanAbandonedCarts();
+  await scanPaymentReminders();
+}
+
+export async function scheduleAbandonedScan(): Promise<void> {
+  const q = getQueue();
+  if (!q) return;
+  await q.add(
+    "scan",
+    {},
+    {
+      repeat: { every: SCAN_INTERVAL_MS },
+      jobId: "abandoned-scan-repeat",
+      removeOnComplete: true
+    }
+  );
+}
+
+export function startAbandonedNotificationWorker(): void {
+  const conn = getRedisConnection();
+  if (!conn) {
+    logger.warn("abandoned_notification_worker_skipped", { reason: "REDIS_URL not set" });
+    return;
+  }
+  if (worker) return;
+
+  worker = new Worker(ABANDONED_QUEUE, () => processScan({} as Job), { connection: conn });
+  void scheduleAbandonedScan();
+  logger.info("abandoned_notification_worker_started");
+}
+
+================================================================================
+FILE: backend/src/jobs/trackingSyncJob.ts
+LINES: 74
+================================================================================
+import { Queue, Worker } from "bullmq";
+
+import { prisma } from "../config/db";
+import { logger } from "../config/logger";
+import { getRedisConnection } from "../config/redisConnection";
+import { syncTrackingByWaybill } from "../modules/shipping/orderLifecycle";
+
+const QUEUE_NAME = "tracking-sync";
+const REPEAT_EVERY_MS = 20 * 60 * 1000;
+
+let queue: Queue | null = null;
+
+function getQueue(): Queue | null {
+  const connection = getRedisConnection();
+  if (!connection) return null;
+  if (!queue) {
+    queue = new Queue(QUEUE_NAME, { connection });
+  }
+  return queue;
+}
+
+async function syncActiveShipments(): Promise<void> {
+  const rows = await prisma.shipment.findMany({
+    where: {
+      awb: { not: null },
+      status: { in: ["CREATED", "PICKED", "INTRANSIT", "OUT_FOR_DELIVERY"] },
+      order: {
+        status: { in: ["PAID", "PROCESSING", "PACKED", "SHIPPED"] },
+        deletedAt: null
+      }
+    },
+    select: { awb: true },
+    take: 200
+  });
+
+  for (const row of rows) {
+    if (!row.awb || row.awb.startsWith("STUB-")) continue;
+    const r = await syncTrackingByWaybill(row.awb);
+    if (!r.success) {
+      logger.warn("tracking_sync_poll_failed", { awb: row.awb, error: r.error });
+    }
+  }
+  logger.info("tracking_sync_poll_done", { count: rows.length });
+}
+
+export async function startTrackingSyncWorker(): Promise<void> {
+  const connection = getRedisConnection();
+  if (!connection) {
+    logger.warn("tracking_sync_worker_skipped_no_redis");
+    return;
+  }
+
+  const q = getQueue();
+  if (!q) return;
+
+  await q.add(
+    "poll",
+    {},
+    {
+      repeat: { every: REPEAT_EVERY_MS },
+      jobId: "tracking-sync-repeat"
+    }
+  );
+
+  new Worker(
+    QUEUE_NAME,
+    async () => {
+      await syncActiveShipments();
+    },
+    { connection, concurrency: 1 }
+  );
+
+  logger.info("tracking_sync_worker_started", { everyMs: REPEAT_EVERY_MS });
+}
+
+================================================================================
+FILE: backend/src/jobs/zohoStockSyncJob.ts
+LINES: 58
+================================================================================
+import { Queue, Worker } from "bullmq";
+
+import { logger } from "../config/logger";
+import { getRedisConnection } from "../config/redisConnection";
+import { refreshZohoAuditCache } from "../modules/zoho/zoho-inventory";
+
+const QUEUE_NAME = "zoho_stock_sync";
+/** 2:00 AM IST daily */
+const CRON_PATTERN = "0 0 2 * * *";
+const CRON_TZ = "Asia/Kolkata";
+
+let queue: Queue | null = null;
+
+function getQueue(): Queue | null {
+  const connection = getRedisConnection();
+  if (!connection) return null;
+  if (!queue) {
+    queue = new Queue(QUEUE_NAME, { connection });
+  }
+  return queue;
+}
+
+export async function startZohoStockSyncWorker(): Promise<void> {
+  const connection = getRedisConnection();
+  if (!connection) {
+    logger.warn("zoho_stock_sync_worker_skipped_no_redis");
+    return;
+  }
+
+  const q = getQueue();
+  if (!q) return;
+
+  await q.add(
+    "zoho_stock_sync",
+    {},
+    {
+      repeat: { pattern: CRON_PATTERN, tz: CRON_TZ },
+      jobId: "zoho-stock-sync-nightly"
+    }
+  );
+
+  new Worker(
+    QUEUE_NAME,
+    async () => {
+      try {
+        const result = await refreshZohoAuditCache();
+        logger.info("zoho_stock_sync_complete", result);
+      } catch (err) {
+        logger.error("zoho_stock_sync_failed", {
+          error: err instanceof Error ? err.message : String(err)
+        });
+      }
+    },
+    { connection, concurrency: 1 }
+  );
+
+  logger.info("zoho_stock_sync_worker_started", { pattern: CRON_PATTERN, tz: CRON_TZ });
+}
+
+================================================================================
+FILE: frontend/app/checkout/page.tsx
+LINES: 34
+================================================================================
+import Link from "next/link";
+import { Suspense } from "react";
+
+import { CheckoutClient } from "@/components/checkout/CheckoutClient";
+
+export const metadata = {
+  title: "Checkout",
+  description: "Complete your Sarveda order",
+  robots: { index: false, follow: false }
+};
+
+export default function CheckoutPage() {
+  return (
+    <main className="min-h-screen bg-stone-50 px-4 py-10 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl">
+        <nav className="text-sm text-stone-500">
+          <Link href="/cart" className="hover:text-amber-700">
+            ← Back to cart
+          </Link>
+        </nav>
+        <h1 className="mt-6 font-serif text-3xl font-semibold text-stone-900">Checkout</h1>
+        <p className="mt-2 text-stone-500">
+          Enter your shipping details and pay securely with Razorpay. If the gateway is slow, we keep checking your
+          order for up to 30 seconds after you pay. You will never get a duplicate order from double-clicking Pay.
+        </p>
+        <div className="mt-10">
+          <Suspense fallback={<p className="text-stone-500">Loading checkout…</p>}>
+            <CheckoutClient />
+          </Suspense>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+================================================================================
+FILE: frontend/app/checkout/paypal-return/page.tsx
+LINES: 76
+================================================================================
+"use client";
+
+import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+
+import { getApiBase } from "@/lib/api";
+import { clearCartAfterPayment } from "@/lib/clear-cart-after-payment";
+import { clearPendingCheckout, loadPendingCheckout } from "@/lib/pending-checkout";
+
+function PayPalReturnInner() {
+  const search = useSearchParams();
+  const router = useRouter();
+  const orderNumber = search.get("orderNumber") ?? "";
+  const token = search.get("token") ?? "";
+  const [status, setStatus] = useState<"working" | "ok" | "err">("working");
+  const [message, setMessage] = useState("Completing your PayPal payment…");
+
+  useEffect(() => {
+    if (!token) {
+      setStatus("err");
+      setMessage("Missing PayPal session. Please try checkout again.");
+      return;
+    }
+    void (async () => {
+      try {
+        const res = await fetch(`${getApiBase()}/api/payments/paypal/capture`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paypalOrderId: token })
+        });
+        const json = (await res.json()) as { success?: boolean; data?: { captured?: boolean }; error?: string };
+        if (!res.ok || !json.success || !json.data?.captured) {
+          throw new Error(json.error ?? "PayPal capture failed");
+        }
+        const pending = loadPendingCheckout();
+        const email =
+          search.get("email")?.trim() ||
+          pending?.email ||
+          "";
+        clearPendingCheckout();
+        await clearCartAfterPayment();
+        setStatus("ok");
+        const q = new URLSearchParams({
+          orderNumber: orderNumber || pending?.orderNumber || "",
+          email
+        });
+        router.replace(`/order/confirmed?${q.toString()}`);
+      } catch (e) {
+        setStatus("err");
+        setMessage(e instanceof Error ? e.message : "Payment could not be completed.");
+      }
+    })();
+  }, [orderNumber, router, search, token]);
+
+  return (
+    <main className="mx-auto max-w-lg px-4 py-16 text-center">
+      <h1 className="font-serif text-2xl text-stone-900">PayPal</h1>
+      <p className="mt-4 text-stone-600">{message}</p>
+      {status === "err" ? (
+        <Link href="/checkout" className="mt-8 inline-block text-amber-800 underline">
+          Back to checkout
+        </Link>
+      ) : null}
+    </main>
+  );
+}
+
+export default function PayPalReturnPage() {
+  return (
+    <Suspense fallback={<p className="p-8 text-center text-stone-500">Loading…</p>}>
+      <PayPalReturnInner />
+    </Suspense>
+  );
+}
+
+================================================================================
+FILE: frontend/components/checkout/CheckoutClient.tsx
+LINES: 303
+================================================================================
+"use client";
+
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+import { AddressFields, type CheckoutAddressForm } from "@/components/checkout/AddressFields";
+import { CouponInput } from "@/components/checkout/CouponInput";
+import { PaymentSelector } from "@/components/checkout/PaymentSelector";
+import { useCartData } from "@/components/cart/CartProvider";
+import { loadSavedCheckoutShipping, saveCheckoutShipping } from "@/lib/checkout-prefill";
+import { toCheckoutApiPhone, type CheckoutFieldErrors } from "@/lib/checkout-validation";
+import type { CreateOrderBody } from "@/lib/checkout-api";
+import { countryByCode } from "@/lib/countries";
+import { fetchMe } from "@/lib/auth-client";
+import { loadRazorpayScript } from "@/lib/load-razorpay";
+import { checkIndiaDelhiveryDelivery } from "@/lib/shipping-india-api";
+
+const indiaCheckoutOnly =
+  typeof process.env.NEXT_PUBLIC_INDIA_CHECKOUT_ONLY === "string" &&
+  ["1", "true", "yes"].includes(process.env.NEXT_PUBLIC_INDIA_CHECKOUT_ONLY.toLowerCase());
+
+export function CheckoutClient() {
+  const searchParams = useSearchParams();
+  const resumeOrderNumber = searchParams.get("orderNumber");
+  const resumeEmail = searchParams.get("email");
+
+  const {
+    items,
+    subtotalInPaise,
+    discountInPaise,
+    coupon,
+    currency,
+    itemCount,
+    isDigitalOnly,
+    loading,
+    refreshCart
+  } = useCartData();
+  const [rzpReady, setRzpReady] = useState(false);
+  const [rzpLoadError, setRzpLoadError] = useState<string | null>(null);
+  const [completingCheckout, setCompletingCheckout] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<CheckoutFieldErrors>({});
+  const [pinHint, setPinHint] = useState<{ kind: "idle" | "loading" | "ok" | "err"; text?: string }>({
+    kind: "idle"
+  });
+
+  const idempotencyKey = useMemo(
+    () =>
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `idem-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    []
+  );
+
+  const [form, setForm] = useState<CheckoutAddressForm>({
+    email: "",
+    phone: "",
+    phoneDial: "+91",
+    shippingFullName: "",
+    line1: "",
+    line2: "",
+    city: "",
+    state: "",
+    postalCode: "",
+    country: "IN"
+  });
+
+  const formBody: CreateOrderBody = {
+    email: form.email.trim(),
+    phone: toCheckoutApiPhone(form),
+    shippingFullName: form.shippingFullName.trim(),
+    line1: form.line1.trim(),
+    line2: form.line2?.trim() || undefined,
+    city: form.city.trim(),
+    state: form.state.trim(),
+    postalCode: form.country === "IN" ? form.postalCode.replace(/\D/g, "") : form.postalCode.trim(),
+    country: form.country || "IN"
+  };
+
+  const onRefreshCart = useCallback(async () => {
+    await refreshCart(form.country || "IN", form.email.trim() || undefined);
+  }, [refreshCart, form.country, form.email]);
+
+  useEffect(() => {
+    void refreshCart(form.country || "IN", form.email.trim() || undefined);
+  }, [form.country, form.email, refreshCart]);
+
+  useEffect(() => {
+    const saved = loadSavedCheckoutShipping();
+    if (saved) {
+      setForm((current) => ({
+        ...current,
+        ...saved,
+        phoneDial: saved.phoneDial ?? countryByCode(saved.country ?? "IN")?.dial ?? "+91"
+      }));
+    }
+    void fetchMe().then((user) => {
+      if (!user) return;
+      setForm((current) => ({
+        ...current,
+        email: current.email || user.email,
+        shippingFullName: current.shippingFullName || user.name?.trim() || current.shippingFullName,
+        phone: current.phone || user.phone?.replace(/^\+\d+/, "") || current.phone
+      }));
+    });
+  }, []);
+
+  useEffect(() => {
+    if (resumeEmail) {
+      setForm((current) => ({ ...current, email: resumeEmail }));
+    }
+  }, [resumeEmail]);
+
+  useEffect(() => {
+    const onPageShow = () => {
+      void refreshCart();
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, [refreshCart]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadRazorpayScript().then((ready) => {
+      if (cancelled) return;
+      setRzpReady(ready);
+      if (!ready) {
+        setRzpLoadError("Payment gateway is taking longer than usual. You can still try Pay after checking your connection.");
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (isDigitalOnly || form.country !== "IN") {
+      setPinHint({ kind: "idle" });
+      return () => {
+        cancelled = true;
+      };
+    }
+    const pin = form.postalCode.replace(/\D/g, "");
+    if (pin.length !== 6) {
+      setPinHint({ kind: "idle" });
+      return () => {
+        cancelled = true;
+      };
+    }
+    const handle = window.setTimeout(() => {
+      setPinHint({ kind: "loading", text: "Checking delivery to this PIN…" });
+      const weightKg = Math.max(0.05, Math.min(30, Math.max(itemCount, 1) * 0.35));
+      void checkIndiaDelhiveryDelivery(pin)
+        .then((r) => {
+          if (cancelled) return;
+          if (r.serviceable) {
+            setPinHint({
+              kind: "ok",
+              text: `Deliverable via Delhivery${r.estimatedDays ? ` (~${r.estimatedDays} days after dispatch)` : ""}.`
+            });
+          } else {
+            setPinHint({
+              kind: "err",
+              text: "No courier quoted for this PIN at the estimated cart weight. Checkout will verify again with your full cart before payment."
+            });
+          }
+        })
+        .catch((e: unknown) => {
+          if (cancelled) return;
+          setPinHint({
+            kind: "err",
+            text: e instanceof Error ? e.message : "Could not verify this PIN right now."
+          });
+        });
+    }, 500);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(handle);
+    };
+  }, [form.country, form.postalCode, itemCount, isDigitalOnly]);
+
+  if (loading) {
+    return <p className="text-center text-stone-500">Loading cart…</p>;
+  }
+
+  if (completingCheckout) {
+    return (
+      <div className="rounded-2xl border border-stone-100 bg-white p-8 text-center shadow-sm">
+        <p className="text-stone-700">Payment received. Taking you to your order confirmation…</p>
+      </div>
+    );
+  }
+
+  if (items.length === 0 && !resumeOrderNumber) {
+    return (
+      <div className="rounded-2xl border border-stone-100 bg-white p-8 text-center shadow-sm">
+        <p className="text-stone-600">Your cart is empty.</p>
+        <Link
+          href="/shop"
+          className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-xl bg-stone-900 px-8 font-semibold text-amber-400 hover:bg-amber-700 hover:text-white"
+        >
+          Continue shopping
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {rzpLoadError ? (
+        <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950" role="status">
+          {rzpLoadError}
+        </p>
+      ) : null}
+      <div className="grid gap-10 lg:grid-cols-2">
+        <div className="space-y-5">
+          <h2 className="text-xl font-semibold text-stone-900">
+            {isDigitalOnly ? "Billing details" : "Shipping details"}
+          </h2>
+          {isDigitalOnly ? (
+            <p className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+              Digital purchase — no shipping charge. We will email your confirmation and access details.
+            </p>
+          ) : null}
+          <AddressFields
+            form={form}
+            fieldErrors={fieldErrors}
+            indiaCheckoutOnly={indiaCheckoutOnly}
+            onChange={(next) => {
+              setForm(next);
+              setFieldErrors({});
+            }}
+          />
+          {pinHint.kind !== "idle" ? (
+            <p
+              className={`text-xs ${
+                pinHint.kind === "ok"
+                  ? "text-emerald-700"
+                  : pinHint.kind === "loading"
+                    ? "text-stone-500"
+                    : "text-amber-800"
+              }`}
+              role="status"
+            >
+              {pinHint.text}
+            </p>
+          ) : null}
+          <div className="rounded-xl border border-stone-100 bg-stone-50/80 p-4">
+            <h3 className="text-sm font-semibold text-stone-800">Cart</h3>
+            <ul className="mt-2 max-h-48 space-y-2 overflow-y-auto text-sm text-stone-600">
+              {items.map((item) => (
+                <li key={item.variantId} className="flex justify-between gap-2">
+                  <span className="line-clamp-2">
+                    {item.productName} × {item.quantity}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <div className="lg:sticky lg:top-24 space-y-4">
+          {!resumeOrderNumber && items.length > 0 ? (
+            <CouponInput
+              shippingCountry={form.country}
+              checkoutEmail={form.email.trim() || undefined}
+              appliedCode={coupon?.code}
+              discountInPaise={discountInPaise}
+              currency={currency}
+              onUpdated={onRefreshCart}
+            />
+          ) : null}
+          {resumeOrderNumber ? (
+            <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+              Resume payment for order <span className="font-mono font-medium">{resumeOrderNumber}</span>. Your
+              cart is unchanged if you left checkout earlier.
+            </p>
+          ) : null}
+          <PaymentSelector
+            rzpReady={rzpReady}
+            idempotencyKey={idempotencyKey}
+            form={formBody}
+            addressForm={form}
+            cartItems={items}
+            isDigitalOnly={isDigitalOnly}
+            subtotalInPaise={subtotalInPaise}
+            discountInPaise={discountInPaise}
+            cartCurrency={currency}
+            itemCount={itemCount}
+            onRefreshCart={onRefreshCart}
+            onCheckoutCompleting={() => {
+              saveCheckoutShipping(form);
+              setCompletingCheckout(true);
+            }}
+            onFieldErrors={setFieldErrors}
+            resumeOrderNumber={resumeOrderNumber}
+          />
+        </div>
+      </div>
+    </>
+  );
+}
+
+================================================================================
+FILE: frontend/components/checkout/PaymentSelector.tsx
+LINES: 613
+================================================================================
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import {
+  CheckoutApiError,
+  createOrder,
+  pollUntilPaidOrTerminal,
+  resumePendingOrder,
+  verifyRazorpayPayment,
+  type CreateOrderBody,
+  type CreateOrderResponse
+} from "@/lib/checkout-api";
+import { clearSession } from "@/lib/cart-api";
+import type { CartApiItem } from "@/lib/cart-api";
+import type { CheckoutAddressForm } from "@/components/checkout/AddressFields";
+import { validateCheckoutFormDetailed } from "@/lib/checkout-validation";
+import { formatINRFromPaise, formatMinorFromPaise } from "@/lib/money";
+import type { ShippingBreakdown } from "@/lib/shipping-rates-api";
+import { loadRazorpayScript } from "@/lib/load-razorpay";
+import { fetchShippingRatesEstimate } from "@/lib/shipping-rates-api";
+import {
+  clearPendingCheckout,
+  loadPendingCheckout,
+  savePendingCheckout
+} from "@/lib/pending-checkout";
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: Record<string, unknown>) => {
+      open: () => void;
+      on: (ev: string, fn: (err?: { error?: { description?: string; code?: string } }) => void) => void;
+    };
+  }
+}
+
+function mapRazorpayClientError(err?: { error?: { description?: string; code?: string } }): string {
+  const code = err?.error?.code ?? "";
+  const desc = (err?.error?.description ?? "").toLowerCase();
+  if (desc.includes("timeout") || code.includes("TIMEOUT")) {
+    return "Connection timeout. Your money is safe — please retry or check your order status in a few minutes.";
+  }
+  if (desc.includes("insufficient")) {
+    return "Insufficient funds. Please try another payment method.";
+  }
+  if (desc.includes("declined") || desc.includes("authentication")) {
+    return "Your card was declined. Please try another card.";
+  }
+  if (code === "BAD_REQUEST_ERROR") {
+    return err?.error?.description || "We could not process this payment. Please check your details and try again.";
+  }
+  if (code === "GATEWAY_ERROR") {
+    return "The payment gateway is temporarily unavailable. Please try again shortly.";
+  }
+  if (code === "SERVER_ERROR") {
+    return "Something went wrong. Please retry in a moment.";
+  }
+  return err?.error?.description || "Payment could not be completed. Your cart is still saved — you can try again.";
+}
+
+type PaymentMode = "razorpay" | "cod" | "stripe" | "paypal";
+
+function resumeMatchesMode(order: CreateOrderResponse, mode: PaymentMode): boolean {
+  switch (mode) {
+    case "stripe":
+      return order.paymentMethod === "stripe" && Boolean(order.stripeCheckoutUrl);
+    case "paypal":
+      return order.paymentMethod === "paypal" && Boolean(order.paypalApprovalUrl);
+    case "cod":
+      return order.paymentMethod === "cod" || Boolean(order.codConfirmed);
+    case "razorpay":
+      return order.paymentMethod === "razorpay" && Boolean(order.rzpOrderId && order.razorpayKeyId);
+    default:
+      return false;
+  }
+}
+
+type Props = {
+  rzpReady: boolean;
+  idempotencyKey: string;
+  form: CreateOrderBody;
+  addressForm: CheckoutAddressForm;
+  cartItems: CartApiItem[];
+  isDigitalOnly?: boolean;
+  subtotalInPaise: number;
+  discountInPaise?: number;
+  cartCurrency: string;
+  itemCount: number;
+  onRefreshCart: () => Promise<void>;
+  onCheckoutCompleting: () => void;
+  onFieldErrors: (errors: Partial<Record<keyof CheckoutAddressForm, string>>) => void;
+  resumeOrderNumber?: string | null;
+};
+
+export function PaymentSelector({
+  rzpReady,
+  idempotencyKey,
+  form,
+  addressForm,
+  cartItems,
+  isDigitalOnly = false,
+  subtotalInPaise,
+  discountInPaise = 0,
+  cartCurrency,
+  itemCount,
+  onRefreshCart,
+  onCheckoutCompleting,
+  onFieldErrors,
+  resumeOrderNumber
+}: Props) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [paymentMode, setPaymentMode] = useState<PaymentMode>("razorpay");
+  const [shippingInPaise, setShippingInPaise] = useState<number | null>(null);
+  const [shippingCodInPaise, setShippingCodInPaise] = useState<number | null>(null);
+  const [shippingCurrency, setShippingCurrency] = useState("INR");
+  const [shippingBreakdown, setShippingBreakdown] = useState<ShippingBreakdown | null>(null);
+  const [shippingLoading, setShippingLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const payStarted = useRef(false);
+  const isIndia = (form.country ?? "IN").toUpperCase() === "IN";
+  const checkoutIdempotencyKey = useMemo(
+    () => `${idempotencyKey}:${paymentMode}:${form.country ?? "IN"}`,
+    [idempotencyKey, paymentMode, form.country]
+  );
+
+  useEffect(() => {
+    setPaymentMode(isIndia ? "razorpay" : "stripe");
+  }, [isIndia]);
+
+  const displayCurrency = isIndia ? "INR" : cartCurrency || shippingCurrency;
+  const formatMoney = (minor: number) =>
+    isIndia ? formatINRFromPaise(minor) : formatMinorFromPaise(minor, displayCurrency);
+
+  const estimatedShipping = isDigitalOnly
+    ? 0
+    : paymentMode === "cod" && shippingCodInPaise != null
+      ? shippingCodInPaise
+      : shippingInPaise ?? 0;
+  const merchandiseAfterDiscount = Math.max(0, subtotalInPaise - discountInPaise);
+  const estimatedTotal =
+    merchandiseAfterDiscount + (isDigitalOnly ? 0 : shippingInPaise != null ? estimatedShipping : 0);
+
+  useEffect(() => {
+    if (isDigitalOnly) {
+      setShippingInPaise(0);
+      setShippingCodInPaise(null);
+      setShippingBreakdown(null);
+      return;
+    }
+    if (cartItems.length === 0) {
+      setShippingInPaise(null);
+      setShippingCodInPaise(null);
+      return;
+    }
+    const pin = form.postalCode.replace(/\D/g, "").slice(0, 6);
+    if (form.country === "IN" && pin.length !== 6) {
+      setShippingInPaise(null);
+      setShippingCodInPaise(null);
+      return;
+    }
+    const handle = window.setTimeout(() => {
+      setShippingLoading(true);
+      void fetchShippingRatesEstimate({
+        country: form.country ?? "IN",
+        pincode: form.postalCode,
+        variantIds: cartItems.map((i) => i.variantId),
+        quantities: cartItems.map((i) => i.quantity)
+      })
+        .then((r) => {
+          setShippingInPaise(r.standardShippingInMinorUnits);
+          setShippingCodInPaise(r.withCodInMinorUnits);
+          setShippingCurrency(r.currency);
+          setShippingBreakdown(
+            paymentMode === "cod" && r.breakdown?.withCod
+              ? r.breakdown.withCod
+              : r.breakdown?.standard ?? null
+          );
+        })
+        .catch(() => {
+          setShippingInPaise(null);
+          setShippingCodInPaise(null);
+        })
+        .finally(() => setShippingLoading(false));
+    }, 400);
+    return () => window.clearTimeout(handle);
+  }, [cartItems, form.country, form.postalCode, paymentMode, isDigitalOnly]);
+
+  const goSuccess = useCallback(
+    (orderNumber: string, cod: boolean) => {
+      clearPendingCheckout();
+      clearSession();
+      onCheckoutCompleting();
+      const q = new URLSearchParams({
+        orderNumber,
+        email: form.email.trim().toLowerCase()
+      });
+      if (cod) q.set("cod", "1");
+      router.push(`/order/confirmed?${q.toString()}`);
+      void onRefreshCart();
+    },
+    [form.email, onCheckoutCompleting, onRefreshCart, router]
+  );
+
+  const goFailure = useCallback(
+    (orderNumber: string, reason: string) => {
+      const q = new URLSearchParams({
+        orderNumber,
+        email: form.email.trim().toLowerCase(),
+        reason
+      });
+      router.push(`/payment-failed?${q.toString()}`);
+    },
+    [form.email, router]
+  );
+
+  const openRazorpay = useCallback(
+    (order: CreateOrderResponse & { razorpayKeyId: string; rzpOrderId: string }) => {
+      savePendingCheckout(order, form.email);
+
+      if (!window.Razorpay) {
+        setErr("Payment script not loaded. Please refresh the page.");
+        setBusy(false);
+        setProcessing(false);
+        payStarted.current = false;
+        return;
+      }
+
+      const rzp = new window.Razorpay({
+        key: order.razorpayKeyId,
+        amount: order.amountInPaise,
+        currency: order.currency,
+        order_id: order.rzpOrderId,
+        name: "Sarveda",
+        description: `Order ${order.orderNumber}`,
+        prefill: {
+          email: form.email.trim(),
+          contact: form.phone.trim()
+        },
+        theme: { color: "#44403c" },
+        handler: async (response: {
+          razorpay_payment_id: string;
+          razorpay_order_id: string;
+          razorpay_signature: string;
+        }) => {
+          setProcessing(true);
+          try {
+            try {
+              const { orderNumber } = await verifyRazorpayPayment({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
+              });
+              goSuccess(orderNumber, false);
+            } catch {
+              const polled = await pollUntilPaidOrTerminal(order.orderNumber, form.email, 30_000);
+              if (polled === "PAID") {
+                goSuccess(order.orderNumber, false);
+              } else if (polled === "CANCELLED") {
+                goFailure(order.orderNumber, "Payment was not completed");
+              } else {
+                setErr(
+                  "We could not confirm payment immediately. Your cart is unchanged. If money was debited, your order will update within a few minutes."
+                );
+              }
+            }
+          } catch (e) {
+            setErr(e instanceof Error ? e.message : "Verification failed");
+          } finally {
+            setProcessing(false);
+            setBusy(false);
+            payStarted.current = false;
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setBusy(false);
+            setProcessing(false);
+            payStarted.current = false;
+            goFailure(order.orderNumber, "Payment was cancelled. Your cart is still saved.");
+          }
+        }
+      });
+
+      const rzpAny = rzp as unknown as {
+        on?: (ev: string, fn: (failure?: { error?: { description?: string; code?: string } }) => void) => void;
+      };
+      rzpAny.on?.("payment.failed", (failure) => {
+        setErr(mapRazorpayClientError(failure));
+        setProcessing(false);
+        setBusy(false);
+        payStarted.current = false;
+      });
+
+      rzp.open();
+      setBusy(false);
+    },
+    [form.email, form.phone, goFailure, goSuccess]
+  );
+
+  const resolvePayableOrder = useCallback(async (): Promise<CreateOrderResponse> => {
+    const email = form.email.trim().toLowerCase();
+    const pending = loadPendingCheckout();
+    const resumeTarget = resumeOrderNumber?.trim() || pending?.orderNumber;
+
+    const tryResume = async (orderNumber: string): Promise<CreateOrderResponse | null> => {
+      try {
+        const order = await resumePendingOrder(orderNumber, email);
+        if (resumeMatchesMode(order, paymentMode)) {
+          return order;
+        }
+        clearPendingCheckout();
+        return null;
+      } catch (e) {
+        if (e instanceof CheckoutApiError && e.code === "ORDER_NOT_PAYABLE") {
+          clearPendingCheckout();
+        }
+        return null;
+      }
+    };
+
+    if (resumeTarget && (!pending || pending.email === email)) {
+      const resumed = await tryResume(resumeTarget);
+      if (resumed) return resumed;
+    }
+
+    if (pending && pending.email === email && pending.orderNumber !== resumeTarget) {
+      const resumed = await tryResume(pending.orderNumber);
+      if (resumed) return resumed;
+    }
+
+    if (pending && pending.email === email && !resumeMatchesMode(pending, paymentMode)) {
+      clearPendingCheckout();
+    }
+
+    return createOrder(
+      {
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        shippingFullName: form.shippingFullName.trim(),
+        line1: form.line1.trim(),
+        line2: form.line2?.trim() || undefined,
+        city: form.city.trim(),
+        state: form.state.trim(),
+        postalCode: form.postalCode.trim(),
+        country: form.country ?? "IN",
+        codDelivery: paymentMode === "cod",
+        paymentMethod: paymentMode
+      },
+      checkoutIdempotencyKey
+    );
+  }, [form, checkoutIdempotencyKey, paymentMode, resumeOrderNumber]);
+
+  const onSubmit = useCallback(async () => {
+    if (busy || payStarted.current || processing) return;
+    const validation = validateCheckoutFormDetailed(addressForm);
+    if (validation.message) {
+      onFieldErrors(validation.fieldErrors);
+      setErr(validation.message);
+      return;
+    }
+    onFieldErrors({});
+    setErr(null);
+    setBusy(true);
+    payStarted.current = true;
+
+    try {
+      if (paymentMode === "cod") {
+        setProcessing(true);
+        const order = await resolvePayableOrder();
+        if (order.codConfirmed || order.paymentMethod === "cod") {
+          goSuccess(order.orderNumber, true);
+          return;
+        }
+        throw new Error("COD checkout is not available for this order.");
+      }
+
+      if (paymentMode === "stripe") {
+        setProcessing(true);
+        const order = await resolvePayableOrder();
+        if (order.stripeCheckoutUrl) {
+          savePendingCheckout(order, form.email);
+          window.location.href = order.stripeCheckoutUrl;
+          return;
+        }
+        throw new Error(
+          order.paymentMethod === "stripe"
+            ? "Stripe checkout could not be started. Please try again."
+            : `This order is set up for ${order.paymentMethod}. Switch payment method or start checkout again.`
+        );
+      }
+
+      if (paymentMode === "paypal") {
+        setProcessing(true);
+        const order = await resolvePayableOrder();
+        if (order.paypalApprovalUrl) {
+          savePendingCheckout(order, form.email);
+          window.location.href = order.paypalApprovalUrl;
+          return;
+        }
+        throw new Error(
+          order.paymentMethod === "paypal"
+            ? "PayPal checkout could not be started. Please try again."
+            : `This order is set up for ${order.paymentMethod}. Switch payment method or start checkout again.`
+        );
+      }
+
+      const ready = rzpReady || (await loadRazorpayScript());
+      if (!ready) {
+        throw new Error("Payment gateway did not load. Check your connection and try again.");
+      }
+      const order = await resolvePayableOrder();
+      if (order.codConfirmed) {
+        goSuccess(order.orderNumber, true);
+        return;
+      }
+      if (!order.rzpOrderId || !order.razorpayKeyId) {
+        throw new Error("Payment session missing. Please try again.");
+      }
+      openRazorpay(order as CreateOrderResponse & { razorpayKeyId: string; rzpOrderId: string });
+    } catch (e) {
+      payStarted.current = false;
+      setErr(
+        e instanceof CheckoutApiError ? e.message : e instanceof Error ? e.message : "Checkout failed"
+      );
+      setBusy(false);
+      setProcessing(false);
+    }
+  }, [
+    addressForm,
+    busy,
+    form.email,
+    goSuccess,
+    onFieldErrors,
+    openRazorpay,
+    paymentMode,
+    processing,
+    resolvePayableOrder,
+    rzpReady
+  ]);
+
+  return (
+    <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm md:p-6">
+      <h2 className="text-xl font-semibold text-stone-900">Order summary</h2>
+
+      <dl className="mt-4 space-y-2 border-b border-stone-100 pb-4 text-sm">
+        <div className="flex justify-between gap-4">
+          <dt className="text-stone-600">Subtotal ({itemCount} items)</dt>
+          <dd className="font-medium text-stone-900">{formatMoney(subtotalInPaise)}</dd>
+        </div>
+        {discountInPaise > 0 ? (
+          <div className="flex justify-between gap-4 text-emerald-800">
+            <dt>Coupon discount</dt>
+            <dd className="font-medium">−{formatMoney(discountInPaise)}</dd>
+          </div>
+        ) : null}
+        <div className="flex justify-between gap-4">
+          <dt className="text-stone-600">Shipping</dt>
+          <dd className="text-right font-medium text-stone-900">
+            {isDigitalOnly ? (
+              <span className="text-emerald-700">Free (digital)</span>
+            ) : shippingLoading ? (
+              <span className="text-stone-400">Calculating…</span>
+            ) : shippingInPaise != null ? (
+              formatMoney(estimatedShipping)
+            ) : (
+              <span className="text-xs text-stone-500">
+                {isIndia ? "Enter PIN to estimate" : "Enter address to estimate"}
+              </span>
+            )}
+          </dd>
+        </div>
+        {paymentMode === "cod" && shippingCodInPaise != null && shippingCodInPaise !== shippingInPaise ? (
+          <p className="text-xs text-amber-800">COD delivery rates applied to shipping.</p>
+        ) : null}
+        <div className="flex justify-between gap-4 pt-2 text-base">
+          <dt className="font-semibold text-stone-900">Estimated total</dt>
+          <dd className="font-serif font-semibold text-amber-800">
+            {shippingInPaise != null
+              ? formatMoney(estimatedTotal)
+              : formatMoney(merchandiseAfterDiscount)}
+            <span className="block text-xs font-sans font-normal text-stone-500">GST included</span>
+          </dd>
+        </div>
+      </dl>
+
+      {isIndia && !resumeOrderNumber ? (
+        <fieldset className="mt-4 space-y-2">
+          <legend className="text-sm font-semibold text-stone-800">Payment method</legend>
+          <label
+            className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${
+              paymentMode === "razorpay"
+                ? "border-stone-900 bg-stone-50 ring-1 ring-stone-900"
+                : "border-stone-200 hover:border-stone-300"
+            }`}
+          >
+            <input
+              type="radio"
+              name="paymentMode"
+              className="mt-1"
+              checked={paymentMode === "razorpay"}
+              onChange={() => setPaymentMode("razorpay")}
+            />
+            <span>
+              <span className="font-medium text-stone-900">Pay online now</span>
+              <span className="mt-0.5 block text-xs text-stone-600">UPI, cards, netbanking via Razorpay</span>
+            </span>
+          </label>
+          {!isDigitalOnly ? (
+          <label
+            className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${
+              paymentMode === "cod"
+                ? "border-stone-900 bg-stone-50 ring-1 ring-stone-900"
+                : "border-stone-200 hover:border-stone-300"
+            }`}
+          >
+            <input
+              type="radio"
+              name="paymentMode"
+              className="mt-1"
+              checked={paymentMode === "cod"}
+              onChange={() => setPaymentMode("cod")}
+            />
+            <span>
+              <span className="font-medium text-stone-900">Cash on delivery (COD)</span>
+              <span className="mt-0.5 block text-xs text-stone-600">Pay when the courier delivers your order</span>
+            </span>
+          </label>
+          ) : null}
+        </fieldset>
+      ) : !resumeOrderNumber ? (
+        <fieldset className="mt-4 space-y-2">
+          <legend className="text-sm font-semibold text-stone-800">Payment method</legend>
+          <label
+            className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${
+              paymentMode === "stripe"
+                ? "border-stone-900 bg-stone-50 ring-1 ring-stone-900"
+                : "border-stone-200 hover:border-stone-300"
+            }`}
+          >
+            <input
+              type="radio"
+              name="paymentMode"
+              className="mt-1"
+              checked={paymentMode === "stripe"}
+              onChange={() => setPaymentMode("stripe")}
+            />
+            <span>
+              <span className="font-medium text-stone-900">Card (Stripe)</span>
+              <span className="mt-0.5 block text-xs text-stone-600">Visa, Mastercard, Amex — secure checkout</span>
+            </span>
+          </label>
+          <label
+            className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${
+              paymentMode === "paypal"
+                ? "border-stone-900 bg-stone-50 ring-1 ring-stone-900"
+                : "border-stone-200 hover:border-stone-300"
+            }`}
+          >
+            <input
+              type="radio"
+              name="paymentMode"
+              className="mt-1"
+              checked={paymentMode === "paypal"}
+              onChange={() => setPaymentMode("paypal")}
+            />
+            <span>
+              <span className="font-medium text-stone-900">PayPal</span>
+              <span className="mt-0.5 block text-xs text-stone-600">Pay with your PayPal balance or linked card</span>
+            </span>
+          </label>
+        </fieldset>
+      ) : null}
+
+      {err ? (
+        <div className="mt-4 rounded-xl border border-red-100 bg-red-50/80 p-3 text-sm text-red-800" role="alert">
+          {err}
+        </div>
+      ) : null}
+
+      {processing ? (
+        <p className="mt-4 text-sm font-medium text-amber-800" role="status">
+          {paymentMode === "cod" ? "Placing your order…" : "Confirming payment…"}
+        </p>
+      ) : null}
+
+      <button
+        type="button"
+        disabled={
+          busy ||
+          processing ||
+          (paymentMode === "razorpay" && !rzpReady && !busy)
+        }
+        onClick={() => void onSubmit()}
+        className="mt-6 flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-stone-900 py-3.5 text-base font-semibold tracking-wide text-amber-400 shadow-lg transition-colors hover:bg-amber-700 hover:text-white disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600"
+      >
+        {busy || processing
+          ? "Please wait…"
+          : paymentMode === "cod"
+            ? "Place order (COD)"
+            : paymentMode === "stripe"
+              ? "Continue to Stripe"
+              : paymentMode === "paypal"
+                ? "Continue to PayPal"
+                : !rzpReady
+                  ? "Loading payment…"
+                  : "Pay now"}
+      </button>
+    </div>
+  );
+}
+
+================================================================================
+FILE: frontend/components/checkout/CouponInput.tsx
+LINES: 187
+================================================================================
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+
+import {
+  applyCartCoupon,
+  fetchCheckoutCouponOffers,
+  removeCartCoupon,
+  type CheckoutCouponOffer
+} from "@/lib/cart-api";
+
+type Props = {
+  shippingCountry?: string;
+  checkoutEmail?: string;
+  appliedCode?: string | null;
+  discountInPaise?: number;
+  currency?: string;
+  onUpdated: () => Promise<void>;
+};
+
+export function CouponInput({
+  shippingCountry,
+  checkoutEmail,
+  appliedCode,
+  discountInPaise = 0,
+  currency = "INR",
+  onUpdated
+}: Props) {
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [offers, setOffers] = useState<CheckoutCouponOffer[]>([]);
+  const [offersLoading, setOffersLoading] = useState(true);
+
+  const formatDiscount =
+    currency === "INR"
+      ? `₹${(discountInPaise / 100).toLocaleString("en-IN")}`
+      : `${(discountInPaise / 100).toFixed(2)} ${currency}`;
+
+  const loadOffers = useCallback(async () => {
+    setOffersLoading(true);
+    try {
+      const data = await fetchCheckoutCouponOffers({
+        country: shippingCountry,
+        email: checkoutEmail
+      });
+      setOffers(data.offers);
+    } catch {
+      setOffers([]);
+    } finally {
+      setOffersLoading(false);
+    }
+  }, [shippingCountry, checkoutEmail]);
+
+  useEffect(() => {
+    void loadOffers();
+  }, [loadOffers]);
+
+  async function applyCode(couponCode: string) {
+    setBusy(true);
+    setError(null);
+    try {
+      await applyCartCoupon(couponCode, { country: shippingCountry, email: checkoutEmail });
+      setCode("");
+      await onUpdated();
+      await loadOffers();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not apply coupon.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onApply() {
+    const trimmed = code.trim();
+    if (!trimmed) {
+      setError("Enter a coupon code.");
+      return;
+    }
+    await applyCode(trimmed);
+  }
+
+  async function onRemove() {
+    setBusy(true);
+    setError(null);
+    try {
+      await removeCartCoupon(shippingCountry);
+      await onUpdated();
+      await loadOffers();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not remove coupon.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-4">
+      <p className="text-sm font-semibold text-stone-800">Coupon code</p>
+      <p className="mt-1 text-xs text-stone-500">
+        Most coupons are one-time per customer (email or account) after a successful order. You can remove
+        a coupon before paying and try another.
+      </p>
+
+      {appliedCode ? (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50/80 px-3 py-2">
+          <p className="text-sm text-stone-800">
+            <span className="font-mono font-semibold text-emerald-900">{appliedCode}</span>
+            {discountInPaise > 0 ? (
+              <span className="ml-2 font-medium text-emerald-800">−{formatDiscount}</span>
+            ) : null}
+            <span className="mt-0.5 block text-xs font-normal text-emerald-800/90">Applied to this order</span>
+          </p>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void onRemove()}
+            className="shrink-0 rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-800 hover:bg-emerald-50 disabled:opacity-50"
+          >
+            {busy ? "…" : "Remove"}
+          </button>
+        </div>
+      ) : (
+        <>
+          {!offersLoading && offers.length > 0 ? (
+            <div className="mt-3">
+              <p className="text-xs font-medium text-stone-600">Available offers</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {offers.map((offer) => (
+                  <button
+                    key={offer.code}
+                    type="button"
+                    disabled={busy || !offer.eligible}
+                    title={
+                      offer.eligible
+                        ? `Apply ${offer.code}`
+                        : offer.ineligibleReason ?? "Not available"
+                    }
+                    onClick={() => void applyCode(offer.code)}
+                    className={`rounded-full border px-3 py-1.5 text-left text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
+                      offer.eligible
+                        ? "border-amber-300 bg-amber-50 text-amber-950 hover:border-amber-500 hover:bg-amber-100"
+                        : "border-stone-200 bg-stone-100 text-stone-500"
+                    }`}
+                  >
+                    <span className="font-mono">{offer.code}</span>
+                    <span className="ml-1.5 font-normal opacity-90">{offer.label}</span>
+                  </button>
+                ))}
+              </div>
+              {offers.some((o) => !o.eligible) && checkoutEmail ? (
+                <p className="mt-2 text-xs text-stone-500">
+                  Greyed-out offers may already be used on this email or do not apply to your cart total.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+            <input
+              type="text"
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              placeholder="Or type a code"
+              className="min-h-[44px] flex-1 rounded-lg border border-stone-200 bg-white px-3 text-sm uppercase tracking-wide text-stone-900 placeholder:normal-case placeholder:tracking-normal"
+              aria-label="Coupon code"
+            />
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void onApply()}
+              className="min-h-[44px] rounded-lg border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-800 hover:bg-stone-100 disabled:opacity-50"
+            >
+              {busy ? "Applying…" : "Apply"}
+            </button>
+          </div>
+        </>
+      )}
+
+      {error ? (
+        <p className="mt-2 text-xs text-red-700" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+================================================================================
+FILE: frontend/components/checkout/AddressFields.tsx
+LINES: 220
+================================================================================
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+
+import { COUNTRIES, countryByCode } from "@/lib/countries";
+import { INDIAN_STATES } from "@/lib/indian-states";
+
+export type CheckoutAddressForm = {
+  email: string;
+  phone: string;
+  phoneDial: string;
+  shippingFullName: string;
+  line1: string;
+  line2: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+};
+
+type Props = {
+  form: CheckoutAddressForm;
+  onChange: (next: CheckoutAddressForm) => void;
+  fieldErrors?: Partial<Record<keyof CheckoutAddressForm, string>>;
+  /** When true (e.g. NEXT_PUBLIC_INDIA_CHECKOUT_ONLY), country is locked to India. */
+  indiaCheckoutOnly?: boolean;
+};
+
+export function AddressFields({ form, onChange, fieldErrors, indiaCheckoutOnly = false }: Props) {
+  const [countryQuery, setCountryQuery] = useState("");
+  const isIndia = form.country === "IN";
+
+  useEffect(() => {
+    if (indiaCheckoutOnly && form.country !== "IN") {
+      onChange({ ...form, country: "IN", phoneDial: "+91" });
+    }
+  }, [indiaCheckoutOnly, form, onChange]);
+
+  const filteredCountries = useMemo(() => {
+    const q = countryQuery.trim().toLowerCase();
+    if (!q) return COUNTRIES;
+    return COUNTRIES.filter(
+      (row) => row.name.toLowerCase().includes(q) || row.code.toLowerCase().includes(q)
+    );
+  }, [countryQuery]);
+
+  function patch(partial: Partial<CheckoutAddressForm>) {
+    onChange({ ...form, ...partial });
+  }
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <label className="sm:col-span-2">
+        <span className="mb-1 block text-sm font-medium text-stone-700">Full name</span>
+        <input
+          required
+          autoComplete="name"
+          className="min-h-[48px] w-full rounded-xl border border-stone-200 px-3 text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+          value={form.shippingFullName}
+          onChange={(event) => patch({ shippingFullName: event.target.value })}
+        />
+        {fieldErrors?.shippingFullName ? <p className="mt-1 text-xs text-red-600">{fieldErrors.shippingFullName}</p> : null}
+      </label>
+
+      <label className="sm:col-span-2">
+        <span className="mb-1 block text-sm font-medium text-stone-700">Email</span>
+        <input
+          required
+          type="email"
+          autoComplete="email"
+          className="min-h-[48px] w-full rounded-xl border border-stone-200 px-3 text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+          value={form.email}
+          onChange={(event) => patch({ email: event.target.value })}
+        />
+        {fieldErrors?.email ? <p className="mt-1 text-xs text-red-600">{fieldErrors.email}</p> : null}
+      </label>
+
+      <label className="sm:col-span-2">
+        <span className="mb-1 block text-sm font-medium text-stone-700">Mobile number</span>
+        <div className="flex gap-2">
+          <select
+            className="min-h-[48px] w-28 rounded-xl border border-stone-200 bg-white px-2 text-sm text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+            value={form.phoneDial}
+            onChange={(event) => patch({ phoneDial: event.target.value })}
+            aria-label="Country calling code"
+          >
+            {COUNTRIES.map((row) => (
+              <option key={`${row.code}-${row.dial}`} value={row.dial}>
+                {row.dial}
+              </option>
+            ))}
+          </select>
+          <input
+            required
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel-national"
+            placeholder={isIndia ? "10-digit mobile" : "Phone number"}
+            className="min-h-[48px] flex-1 rounded-xl border border-stone-200 px-3 text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+            value={form.phone}
+            onChange={(event) => patch({ phone: event.target.value })}
+          />
+        </div>
+        {fieldErrors?.phone ? <p className="mt-1 text-xs text-red-600">{fieldErrors.phone}</p> : null}
+      </label>
+
+      <label className="sm:col-span-2">
+        <span className="mb-1 block text-sm font-medium text-stone-700">Address line 1</span>
+        <input
+          required
+          autoComplete="address-line1"
+          className="min-h-[48px] w-full rounded-xl border border-stone-200 px-3 text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+          value={form.line1}
+          onChange={(event) => patch({ line1: event.target.value })}
+        />
+        {fieldErrors?.line1 ? <p className="mt-1 text-xs text-red-600">{fieldErrors.line1}</p> : null}
+      </label>
+
+      <label className="sm:col-span-2">
+        <span className="mb-1 block text-sm font-medium text-stone-700">Address line 2 (optional)</span>
+        <input
+          autoComplete="address-line2"
+          className="min-h-[48px] w-full rounded-xl border border-stone-200 px-3 text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+          value={form.line2}
+          onChange={(event) => patch({ line2: event.target.value })}
+        />
+      </label>
+
+      <label>
+        <span className="mb-1 block text-sm font-medium text-stone-700">City</span>
+        <input
+          required
+          autoComplete="address-level2"
+          className="min-h-[48px] w-full rounded-xl border border-stone-200 px-3 text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+          value={form.city}
+          onChange={(event) => patch({ city: event.target.value })}
+        />
+        {fieldErrors?.city ? <p className="mt-1 text-xs text-red-600">{fieldErrors.city}</p> : null}
+      </label>
+
+      <label>
+        <span className="mb-1 block text-sm font-medium text-stone-700">State</span>
+        {isIndia ? (
+          <select
+            required
+            className="min-h-[48px] w-full rounded-xl border border-stone-200 bg-white px-3 text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+            value={form.state}
+            onChange={(event) => patch({ state: event.target.value })}
+          >
+            <option value="">Select state</option>
+            {INDIAN_STATES.map((state) => (
+              <option key={state} value={state}>
+                {state}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            required
+            autoComplete="address-level1"
+            className="min-h-[48px] w-full rounded-xl border border-stone-200 px-3 text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+            value={form.state}
+            onChange={(event) => patch({ state: event.target.value })}
+          />
+        )}
+        {fieldErrors?.state ? <p className="mt-1 text-xs text-red-600">{fieldErrors.state}</p> : null}
+      </label>
+
+      <label>
+        <span className="mb-1 block text-sm font-medium text-stone-700">{isIndia ? "PIN code" : "Postal code"}</span>
+        <input
+          required
+          inputMode={isIndia ? "numeric" : "text"}
+          autoComplete="postal-code"
+          maxLength={isIndia ? 6 : 20}
+          className="min-h-[48px] w-full rounded-xl border border-stone-200 px-3 text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+          value={form.postalCode}
+          onChange={(event) => patch({ postalCode: event.target.value })}
+        />
+        {fieldErrors?.postalCode ? <p className="mt-1 text-xs text-red-600">{fieldErrors.postalCode}</p> : null}
+      </label>
+
+      <label className="sm:col-span-2">
+        <span className="mb-1 block text-sm font-medium text-stone-700">Country</span>
+        {indiaCheckoutOnly ? (
+          <div className="min-h-[48px] rounded-xl border border-stone-200 bg-stone-50 px-3 py-3 text-sm text-stone-800">
+            India — domestic delivery only on this site.
+          </div>
+        ) : (
+          <>
+            <input
+              type="search"
+              placeholder="Search country"
+              className="mb-2 min-h-[44px] w-full rounded-xl border border-stone-200 px-3 text-sm text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+              value={countryQuery}
+              onChange={(event) => setCountryQuery(event.target.value)}
+            />
+            <select
+              required
+              className="min-h-[48px] w-full rounded-xl border border-stone-200 bg-white px-3 text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+              value={form.country}
+              onChange={(event) => {
+                const country = event.target.value;
+                const dial = countryByCode(country)?.dial ?? form.phoneDial;
+                patch({ country, phoneDial: dial });
+              }}
+            >
+              {filteredCountries.map((row) => (
+                <option key={row.code} value={row.code}>
+                  {row.name} ({row.code})
+                </option>
+              ))}
+            </select>
+          </>
+        )}
+        {fieldErrors?.country ? <p className="mt-1 text-xs text-red-600">{fieldErrors.country}</p> : null}
+      </label>
+    </div>
+  );
+}

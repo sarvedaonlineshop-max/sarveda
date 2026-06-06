@@ -4,7 +4,6 @@ import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { confirmStockTx } from "../orders/orders.service";
 import { afterOrderPaid } from "../orders/afterPaid";
-import { createZohoInvoiceForOrder } from "../zoho";
 
 export async function completePayPalPaidOrder(
   paymentId: string,
@@ -67,12 +66,5 @@ export async function completePayPalPaidOrder(
   });
 
   await afterOrderPaid(payment.orderId);
-  // BUG 4: prominent log on Zoho invoice failure for manual retry via admin sync
-  try {
-    await createZohoInvoiceForOrder(payment.orderId);
-  } catch (err) {
-    console.error("[ZOHO_INVOICE_FAILED]", { orderId: payment.orderId, err });
-    logger.error("Zoho invoice failed after PayPal", { orderId: payment.orderId, err });
-  }
   return { orderNumber: payment.order.orderNumber };
 }

@@ -3,6 +3,13 @@ import sgMail from "@sendgrid/mail";
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 
+if (process.env.NODE_ENV === "production" && !process.env.SENDGRID_API_KEY) {
+  console.error(
+    "[EMAIL_CONFIG_MISSING] SENDGRID_API_KEY not set in production. " +
+      "No order emails will be sent. Set this env var immediately."
+  );
+}
+
 export type OrderEmailEvent =
   | "order_confirmed"
   | "payment_failed"
@@ -79,6 +86,46 @@ async function loadOrderEmailContext(orderId: string) {
       shipments: { orderBy: { createdAt: "desc" }, take: 1 }
     }
   });
+}
+
+type SendGridMailPayload = Parameters<typeof sgMail.send>[0];
+
+function sendGridErrorStatus(err: unknown): number {
+  const response = (err as { response?: { status?: number } })?.response;
+  return response?.status ?? 0;
+}
+
+async function sendMailWithRetry(
+  payload: SendGridMailPayload,
+  context: { orderId?: string; event?: OrderEmailEvent; maxAttempts?: number }
+): Promise<void> {
+  const maxAttempts = context.maxAttempts ?? 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      await sgMail.send(payload);
+      return;
+    } catch (err: unknown) {
+      const status = sendGridErrorStatus(err);
+      const isTransient = status >= 500 || status === 0;
+      if (!isTransient || attempt === maxAttempts) {
+        logger.error("order_email_failed_final", {
+          orderId: context.orderId,
+          event: context.event,
+          attempt,
+          status,
+          err
+        });
+        return;
+      }
+      logger.warn("order_email_retry", {
+        orderId: context.orderId,
+        event: context.event,
+        attempt,
+        status
+      });
+      await new Promise((r) => setTimeout(r, attempt * 1000));
+    }
+  }
 }
 
 export async function sendMail(
@@ -189,8 +236,38 @@ export async function sendOrderEmail(orderId: string, event: OrderEmailEvent): P
   const html = buildHtml(EVENT_SUBJECTS[event], lines);
   const text = lines.map((l) => l.replace(/<[^>]+>/g, "")).join("\n\n");
 
+  const key = process.env.SENDGRID_API_KEY?.trim();
+  const fromEmail = process.env.SENDGRID_FROM_EMAIL?.trim() || "hello@sarveda.com";
+  const fromName = process.env.SENDGRID_FROM_NAME?.trim() || "Sarveda";
+  const reply = process.env.SENDGRID_REPLY_TO?.trim() || fromEmail;
+
+  if (!key) {
+    logger.warn("email_skipped_no_sendgrid", { orderId, event, to: order.email.replace(/@.*/, "@***") });
+    return;
+  }
+  sgMail.setApiKey(key);
+
   try {
-    await sendMail(order.email, subject, html, text);
+    await sendMailWithRetry(
+      {
+        to: order.email,
+        from: { email: fromEmail, name: fromName },
+        replyTo: { email: reply, name: fromName },
+        subject,
+        html,
+        text,
+        categories: ["sarveda-transactional"],
+        mailSettings: {
+          bypassListManagement: { enable: true },
+          footer: { enable: false }
+        },
+        trackingSettings: {
+          clickTracking: { enable: false, enableText: false },
+          openTracking: { enable: false }
+        }
+      },
+      { orderId, event }
+    );
     logger.info("order_email_sent", { orderId, event, to: order.email.replace(/@.*/, "@***") });
   } catch (err) {
     logger.error("order_email_failed", { orderId, event, err });

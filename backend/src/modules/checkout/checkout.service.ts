@@ -5,7 +5,7 @@ import { getRedisConnection } from "../../config/redisConnection";
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { schedulePaymentTimeout } from "../../jobs/paymentTimeoutJob";
-import { generateOrderNumber } from "../../utils/orderNumber";
+import { generateOrderNumber, isOrderNumberUniqueViolation } from "../../utils/orderNumber";
 import { reportingNetSalesInrPaiseFromOrder } from "../../utils/money";
 import { createPayPalOrder } from "../payments/paypal";
 import { createOrder, getRazorpayKeyId } from "../payments/razorpay";
@@ -356,10 +356,23 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
     await assertIndiaCheckoutServiceable(body.country, body.postalCode, lines, body.codDelivery);
   }
 
-  const orderNumber = await generateOrderNumber();
-  const receipt = orderNumber.replace(/[^a-zA-Z0-9]/g, "").slice(0, 40);
+  let result:
+    | { order: { id: string; orderNumber: string }; payment: { id: string }; cod: true }
+    | { order: { id: string; orderNumber: string }; payment: { id: string }; stripe: true }
+    | { order: { id: string; orderNumber: string }; payment: { id: string }; paypal: true }
+    | {
+        order: { id: string; orderNumber: string };
+        payment: { id: string };
+        rzpOrderId: string;
+        cod: false;
+      };
 
-  const result = await prisma.$transaction(async (tx) => {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const orderNumber = await generateOrderNumber();
+    const receipt = orderNumber.replace(/[^a-zA-Z0-9]/g, "").slice(0, 40);
+
+    try {
+      result = await prisma.$transaction(async (tx) => {
     const order = await tx.order.create({
       data: {
         orderNumber,
@@ -591,7 +604,17 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
     });
 
     return { order, payment, rzpOrderId: rzp.id, cod: false as const };
-  });
+      });
+      break;
+    } catch (err: unknown) {
+      if (!isOrderNumberUniqueViolation(err) || attempt === 2) throw err;
+      await new Promise((r) => setTimeout(r, 50 + Math.random() * 100));
+    }
+  }
+
+  if (!result!) {
+    throw new Error("Failed to create checkout order after 3 attempts");
+  }
 
   if ("cod" in result && result.cod) {
     await afterOrderPaid(result.order.id);
@@ -661,6 +684,10 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
     };
     if (idemHeader) await setIdempotentCheckout(idemHeader, body, paypalPayload);
     return paypalPayload;
+  }
+
+  if (!("rzpOrderId" in result)) {
+    throw new Error("Unexpected checkout payment result");
   }
 
   await schedulePaymentTimeout(result.order.id);
