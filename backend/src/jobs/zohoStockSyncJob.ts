@@ -2,7 +2,7 @@ import { Queue, Worker } from "bullmq";
 
 import { logger } from "../config/logger";
 import { getRedisConnection } from "../config/redisConnection";
-import { syncStockFromZoho } from "../modules/zoho/zoho-inventory";
+import { refreshZohoAuditCache } from "../modules/zoho/zoho-inventory";
 
 const QUEUE_NAME = "zoho_stock_sync";
 /** 2:00 AM IST daily */
@@ -43,7 +43,7 @@ export async function startZohoStockSyncWorker(): Promise<void> {
     QUEUE_NAME,
     async () => {
       try {
-        const result = await syncStockFromZoho();
+        const result = await refreshZohoAuditCache();
         logger.info("zoho_stock_sync_complete", result);
       } catch (err) {
         logger.error("zoho_stock_sync_failed", {

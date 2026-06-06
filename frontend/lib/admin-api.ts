@@ -570,6 +570,23 @@ export type InventoryCategoryRef = {
   position: number;
 };
 
+export type ZohoSyncScenario = 1 | 2 | 3 | 4;
+
+export type ZohoOnlyItem = {
+  sku: string;
+  itemId: string;
+  name: string;
+  stockOnHand: number;
+};
+
+export type ZohoSyncSummary = {
+  synced: number;
+  countMismatch: number;
+  zohoOnly: number;
+  sarvedaOnly: number;
+  outOfSync: number;
+};
+
 export type InventoryRow = {
   inventoryId: string;
   variantId: string;
@@ -578,6 +595,7 @@ export type InventoryRow = {
   productName: string;
   productSlug: string;
   productStatus: string;
+  catalogHidden?: boolean;
   variantLabel: string | null;
   categories: InventoryCategoryRef[];
   primaryCategorySlug: string | null;
@@ -588,6 +606,8 @@ export type InventoryRow = {
   lowStockThreshold: number;
   low: boolean;
   inZohoBooks: boolean | null;
+  zohoStockOnHand: number | null;
+  zohoSyncScenario: ZohoSyncScenario | null;
 };
 
 export type InventoryListData = {
@@ -597,13 +617,15 @@ export type InventoryListData = {
     lastZohoStockSyncAt: string | null;
     zohoSkuAuditAvailable: boolean;
     productCount: number;
+    zohoSyncSummary: ZohoSyncSummary;
+    zohoOnlyItems: ZohoOnlyItem[];
   };
 };
 
 export type ZohoStockSyncHistoryEntry = {
   id: string;
   at: string;
-  scope: "full" | "product" | "unmatched";
+  scope: "full" | "product" | "unmatched" | "audit" | "pull" | "push" | "push_items" | "inactive";
   productId?: string;
   productName?: string;
   synced: number;
@@ -666,12 +688,53 @@ export type ZohoStockSyncResult = {
   skipped: number;
 };
 
+export type ZohoActionResult = {
+  ok: number;
+  errors: number;
+  messages: string[];
+};
+
+export function refreshZohoAuditAdmin() {
+  return adminFetch<{ zohoSkuCount: number; sarvedaSkuCount: number; summary: ZohoSyncSummary }>(
+    "/api/zoho/sync/audit",
+    { method: "POST", body: JSON.stringify({}) }
+  );
+}
+
+export function pullStockFromZohoAdmin(skus: string[]) {
+  return adminFetch<ZohoActionResult>("/api/zoho/sync/pull-stock", {
+    method: "POST",
+    body: JSON.stringify({ skus })
+  });
+}
+
+export function pushStockToZohoAdmin(skus: string[]) {
+  return adminFetch<ZohoActionResult>("/api/zoho/sync/push-stock", {
+    method: "POST",
+    body: JSON.stringify({ skus })
+  });
+}
+
+export function pushItemsToZohoAdmin(variantIds: string[]) {
+  return adminFetch<ZohoActionResult>("/api/zoho/sync/push-items", {
+    method: "POST",
+    body: JSON.stringify({ variantIds })
+  });
+}
+
+export function ignoreZohoItemsAdmin(skus: string[]) {
+  return adminFetch<ZohoActionResult>("/api/zoho/sync/ignore-zoho", {
+    method: "POST",
+    body: JSON.stringify({ skus })
+  });
+}
+
 export function syncStockFromZohoAdmin(opts?: {
   productId?: string;
   productName?: string;
   unmatchedOnly?: boolean;
 }) {
-  return adminFetch<ZohoStockSyncResult>("/api/zoho/sync/stock", {
+  return adminFetch<ZohoStockSyncResult & { summary?: ZohoSyncSummary }>("/api/zoho/sync/stock", {
     method: "POST",
     body: JSON.stringify(opts ?? {})
   });

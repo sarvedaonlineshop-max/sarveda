@@ -16,6 +16,9 @@ import { fetchRazorpayOrderPayments } from "../payments/razorpay";
 import { completePaidOrder } from "../payments/razorpay.verify";
 import { onOrderEnteredProcessing } from "../shipping/orderLifecycle";
 import { getZohoStockSyncMeta } from "../zoho/zoho-stock-sync-cache";
+import { auditSarvedaVariant, computeZohoSyncSummary, listZohoOnlyItems } from "../zoho/zoho-sync-audit";
+import type { ZohoItemAuditRow } from "../zoho/zoho-sync-types";
+import { shopCatalogProductWhere, shopInventoryWhere } from "../../utils/shop-catalog";
 
 const revenueStatuses: OrderStatus[] = [
   "PAID",
@@ -775,6 +778,7 @@ const inventoryInclude = {
           name: true,
           slug: true,
           status: true,
+          catalogHidden: true,
           categories: {
             include: {
               category: { select: { slug: true, name: true, position: true } }
@@ -799,7 +803,7 @@ type InventoryRowDb = Awaited<
 
 function mapInventoryRow(
   inv: InventoryRowDb,
-  zohoSkuSet: Set<string> | null
+  auditMap: Map<string, ZohoItemAuditRow> | null
 ) {
   const labels = inv.variant.attributeValues
     .map((av) => `${av.attributeValue.attribute.name}: ${av.attributeValue.value}`)
@@ -814,6 +818,8 @@ function mapInventoryRow(
     }))
     .sort((a, b) => a.position - b.position || a.name.localeCompare(b.name));
 
+  const audit = auditSarvedaVariant(inv.variant.sku, inv.onHand, auditMap);
+
   return {
     inventoryId: inv.id,
     variantId: inv.variantId,
@@ -822,6 +828,7 @@ function mapInventoryRow(
     productName: inv.variant.productRel.name,
     productSlug: inv.variant.productRel.slug,
     productStatus: inv.variant.productRel.status,
+    catalogHidden: inv.variant.productRel.catalogHidden,
     variantLabel: labels || null,
     categories,
     primaryCategorySlug: categories[0]?.slug ?? null,
@@ -831,7 +838,9 @@ function mapInventoryRow(
     available,
     lowStockThreshold: inv.lowStockThreshold,
     low,
-    inZohoBooks: zohoSkuSet ? zohoSkuSet.has(inv.variant.sku) : null
+    inZohoBooks: audit.inZohoBooks,
+    zohoStockOnHand: audit.zohoStockOnHand,
+    zohoSyncScenario: audit.scenario
   };
 }
 
@@ -844,31 +853,30 @@ export async function inventoryList(req: Request, res: Response, next: NextFunct
       : Math.min(100, Math.max(1, parseInt(String(req.query.limit ?? "25"), 10) || 25));
     const skip = loadAll ? 0 : (page - 1) * limit;
 
-    const where = {
-      variant: {
-        productRel: { deletedAt: null }
-      }
-    };
+    const where = shopInventoryWhere;
 
-    const [{ lastSyncAt, skuSet: zohoSkuSet }, total, productCount, rows] = await Promise.all([
-      getZohoStockSyncMeta(),
-      prisma.inventory.count({ where }),
-      prisma.product.count({
-        where: {
-          deletedAt: null,
-          variants: { some: { inventory: { isNot: null } } }
-        }
-      }),
-      prisma.inventory.findMany({
-        where,
-        orderBy: [{ onHand: "asc" }],
-        skip,
-        take: limit,
-        include: inventoryInclude
-      })
-    ]);
+    const [{ lastSyncAt, skuSet: zohoSkuSet, auditMap }, total, productCount, rows, syncSummary, zohoOnlyItems] =
+      await Promise.all([
+        getZohoStockSyncMeta(),
+        prisma.inventory.count({ where }),
+        prisma.product.count({
+          where: {
+            ...shopCatalogProductWhere,
+            variants: { some: { inventory: { isNot: null } } }
+          }
+        }),
+        prisma.inventory.findMany({
+          where,
+          orderBy: [{ onHand: "asc" }],
+          skip,
+          take: limit,
+          include: inventoryInclude
+        }),
+        computeZohoSyncSummary(),
+        listZohoOnlyItems()
+      ]);
 
-    const items = rows.map((inv) => mapInventoryRow(inv, zohoSkuSet));
+    const items = rows.map((inv) => mapInventoryRow(inv, auditMap));
 
     const totalPages = loadAll ? 1 : Math.max(1, Math.ceil(total / limit));
     res.json({
@@ -878,8 +886,10 @@ export async function inventoryList(req: Request, res: Response, next: NextFunct
         pagination: { page: loadAll ? 1 : page, limit, total, totalPages },
         meta: {
           lastZohoStockSyncAt: lastSyncAt,
-          zohoSkuAuditAvailable: zohoSkuSet !== null,
-          productCount
+          zohoSkuAuditAvailable: auditMap !== null || zohoSkuSet !== null,
+          productCount,
+          zohoSyncSummary: syncSummary,
+          zohoOnlyItems
         }
       }
     });
@@ -952,10 +962,10 @@ export async function patchInventory(req: Request, res: Response, next: NextFunc
       include: inventoryInclude
     });
 
-    const { skuSet } = await getZohoStockSyncMeta();
+    const { auditMap } = await getZohoStockSyncMeta();
     res.json({
       success: true,
-      data: { inventory: row ? mapInventoryRow(row, skuSet) : null }
+      data: { inventory: row ? mapInventoryRow(row, auditMap) : null }
     });
   } catch (err) {
     next(err);

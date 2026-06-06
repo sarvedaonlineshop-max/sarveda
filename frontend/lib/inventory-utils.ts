@@ -1,6 +1,13 @@
-import type { InventoryRow } from "@/lib/admin-api";
+import type { InventoryRow, ZohoOnlyItem, ZohoSyncScenario } from "@/lib/admin-api";
 
-export type StockFilter = "all" | "in_stock" | "low_stock" | "out_of_stock" | "not_in_zoho";
+export type StockFilter =
+  | "all"
+  | "in_stock"
+  | "low_stock"
+  | "out_of_stock"
+  | "out_of_sync";
+
+export type ZohoSyncSubFilter = "count_mismatch" | "zoho_only" | "sarveda_only";
 
 export type SortKey = "product" | "onHand" | "sku";
 export type SortDir = "asc" | "desc";
@@ -11,12 +18,21 @@ export function stockStatus(row: Pick<InventoryRow, "onHand" | "lowStockThreshol
   return "low_stock";
 }
 
+export function isOutOfSyncScenario(scenario: ZohoSyncScenario | null | undefined): boolean {
+  return scenario === 2 || scenario === 4;
+}
+
 export function matchesStockFilter(
-  row: Pick<InventoryRow, "onHand" | "lowStockThreshold" | "inZohoBooks">,
-  filter: StockFilter
+  row: Pick<InventoryRow, "onHand" | "lowStockThreshold" | "zohoSyncScenario">,
+  filter: StockFilter,
+  zohoSubFilter?: ZohoSyncSubFilter
 ): boolean {
   if (filter === "all") return true;
-  if (filter === "not_in_zoho") return row.inZohoBooks === false;
+  if (filter === "out_of_sync") {
+    if (zohoSubFilter === "count_mismatch") return row.zohoSyncScenario === 2;
+    if (zohoSubFilter === "sarveda_only") return row.zohoSyncScenario === 4;
+    return isOutOfSyncScenario(row.zohoSyncScenario);
+  }
   return stockStatus(row) === filter;
 }
 
@@ -41,7 +57,16 @@ export function escapeCsvCell(value: string | number): string {
 }
 
 export function inventoryToCsv(rows: InventoryRow[]): string {
-  const header = ["SKU", "Product", "Variant", "Available", "Reserved", "In Zoho", "Threshold"];
+  const header = [
+    "SKU",
+    "Product",
+    "Variant",
+    "Available",
+    "Reserved",
+    "Zoho stock",
+    "Sync scenario",
+    "Threshold"
+  ];
   const lines = [
     header.join(","),
     ...rows.map((r) =>
@@ -51,7 +76,8 @@ export function inventoryToCsv(rows: InventoryRow[]): string {
         escapeCsvCell(r.variantLabel ?? "Default"),
         r.available,
         r.reserved,
-        r.inZohoBooks === true ? "yes" : r.inZohoBooks === false ? "no" : "unknown",
+        r.zohoStockOnHand ?? "",
+        r.zohoSyncScenario ?? "",
         r.lowStockThreshold
       ].join(",")
     )
@@ -59,7 +85,6 @@ export function inventoryToCsv(rows: InventoryRow[]): string {
   return lines.join("\n");
 }
 
-/** First variant row per productId in display order (for product-level actions in flat list). */
 export function firstVariantRowByProduct(rows: InventoryRow[]): Set<string> {
   const seen = new Set<string>();
   const first = new Set<string>();
@@ -156,7 +181,6 @@ export type CategoryGroup = {
 
 export type CategoryFilterOption = { slug: string; label: string };
 
-/** Categories that actually appear on inventory rows — one entry per slug; disambiguate duplicate names. */
 export function buildCategoryFilterOptions(rows: InventoryRow[]): CategoryFilterOption[] {
   const bySlug = new Map<string, string>();
   for (const r of rows) {
@@ -186,9 +210,14 @@ export type ProductInventoryGroup = {
   totalReserved: number;
   lowCount: number;
   outCount: number;
-  zohoUnmatched: number;
-  zohoMatched: number;
+  zohoOutOfSync: number;
+  zohoSynced: number;
 };
+
+function tallyZoho(group: ProductInventoryGroup, r: InventoryRow) {
+  if (r.zohoSyncScenario === 1) group.zohoSynced++;
+  else if (r.zohoSyncScenario === 2 || r.zohoSyncScenario === 4) group.zohoOutOfSync++;
+}
 
 export function groupRowsByProduct(rows: InventoryRow[]): ProductInventoryGroup[] {
   const map = new Map<string, ProductInventoryGroup>();
@@ -205,8 +234,8 @@ export function groupRowsByProduct(rows: InventoryRow[]): ProductInventoryGroup[
         totalReserved: 0,
         lowCount: 0,
         outCount: 0,
-        zohoUnmatched: 0,
-        zohoMatched: 0
+        zohoOutOfSync: 0,
+        zohoSynced: 0
       };
       map.set(r.productId, g);
     }
@@ -216,8 +245,7 @@ export function groupRowsByProduct(rows: InventoryRow[]): ProductInventoryGroup[
     g.totalReserved += r.reserved;
     if (stockStatus(r) === "low_stock") g.lowCount++;
     if (stockStatus(r) === "out_of_stock") g.outCount++;
-    if (r.inZohoBooks === false) g.zohoUnmatched++;
-    if (r.inZohoBooks === true) g.zohoMatched++;
+    tallyZoho(g, r);
   }
   const groups = Array.from(map.values());
   for (const g of groups) {
@@ -228,7 +256,6 @@ export function groupRowsByProduct(rows: InventoryRow[]): ProductInventoryGroup[
   return groups.sort((a, b) => a.productName.localeCompare(b.productName));
 }
 
-/** Group variants by product, preserving the order products first appear in `rows` (e.g. after sort/filter). */
 export function groupRowsByProductInOrder(rows: InventoryRow[]): ProductInventoryGroup[] {
   const map = new Map<string, ProductInventoryGroup>();
   const order: string[] = [];
@@ -246,8 +273,8 @@ export function groupRowsByProductInOrder(rows: InventoryRow[]): ProductInventor
         totalReserved: 0,
         lowCount: 0,
         outCount: 0,
-        zohoUnmatched: 0,
-        zohoMatched: 0
+        zohoOutOfSync: 0,
+        zohoSynced: 0
       };
       map.set(r.productId, g);
       order.push(r.productId);
@@ -258,8 +285,7 @@ export function groupRowsByProductInOrder(rows: InventoryRow[]): ProductInventor
     g.totalReserved += r.reserved;
     if (stockStatus(r) === "low_stock") g.lowCount++;
     if (stockStatus(r) === "out_of_stock") g.outCount++;
-    if (r.inZohoBooks === false) g.zohoUnmatched++;
-    if (r.inZohoBooks === true) g.zohoMatched++;
+    tallyZoho(g, r);
   }
 
   return order.map((id) => map.get(id)!);
@@ -280,4 +306,15 @@ export function groupRowsByCategory(rows: InventoryRow[]): CategoryGroup[] {
     if (stockStatus(r) === "low_stock") g.lowCount++;
   }
   return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export function filterZohoOnlyItems(
+  items: ZohoOnlyItem[],
+  search: string
+): ZohoOnlyItem[] {
+  const q = search.trim().toLowerCase();
+  if (!q) return items;
+  return items.filter(
+    (item) => item.sku.toLowerCase().includes(q) || item.name.toLowerCase().includes(q)
+  );
 }

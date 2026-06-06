@@ -2,12 +2,16 @@ import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { gstRatePercent } from "../../utils/gst";
 
+import { getZohoAuditMap } from "./zoho-stock-sync-cache";
+import { appendZohoStockSyncHistory } from "./zoho-stock-sync-history";
+import type { ZohoActionResult } from "./zoho-sync-types";
 import { zohoGet, zohoPost, zohoPut } from "./zoho-client";
 
 type ZohoItemRow = {
   item_id: string;
   sku?: string;
   name?: string;
+  stock_on_hand?: number;
 };
 
 export type ZohoProductSyncResult = {
@@ -44,6 +48,7 @@ function buildItemPayload(opts: {
   rateInr: number;
   description?: string | null;
   taxPercent: number;
+  initialStock?: number;
 }) {
   const body: Record<string, unknown> = {
     name: opts.name.slice(0, 100),
@@ -61,16 +66,24 @@ function buildItemPayload(opts: {
     body.tax_percentage = opts.taxPercent;
   }
 
+  if (opts.initialStock !== undefined && opts.initialStock >= 0) {
+    body.initial_stock = opts.initialStock;
+    body.initial_stock_rate = opts.rateInr;
+  }
+
   return body;
 }
 
-async function upsertVariantToZoho(variant: {
-  id: string;
-  sku: string;
-  saleInPaise: number;
-  zohoItemId: string | null;
-  productRel: { name: string; shortDescription: string | null; taxClass: string | null };
-}): Promise<"created" | "updated" | "skipped"> {
+async function upsertVariantToZoho(
+  variant: {
+    id: string;
+    sku: string;
+    saleInPaise: number;
+    zohoItemId: string | null;
+    productRel: { name: string; shortDescription: string | null; taxClass: string | null };
+  },
+  initialStock?: number
+): Promise<"created" | "updated" | "skipped"> {
   const sku = variant.sku.trim();
   if (!sku) return "skipped";
 
@@ -81,7 +94,8 @@ async function upsertVariantToZoho(variant: {
     sku,
     rateInr,
     description: variant.productRel.shortDescription,
-    taxPercent
+    taxPercent,
+    initialStock
   });
 
   if (variant.zohoItemId) {
@@ -110,6 +124,35 @@ async function upsertVariantToZoho(variant: {
   return "created";
 }
 
+async function adjustZohoStock(itemId: string, quantityAdjusted: number, reason: string): Promise<void> {
+  const accountId = process.env.ZOHO_ADJUSTMENT_ACCOUNT_ID?.trim();
+  if (!accountId) {
+    throw new Error("ZOHO_ADJUSTMENT_ACCOUNT_ID is not configured");
+  }
+
+  await zohoPost("/inventoryadjustments", {
+    date: new Date().toISOString().slice(0, 10),
+    reason,
+    adjustment_type: "quantity",
+    line_items: [
+      {
+        item_id: itemId,
+        quantity_adjusted: quantityAdjusted,
+        adjustment_account_id: accountId
+      }
+    ]
+  });
+}
+
+async function getZohoStockForItem(itemId: string, sku: string): Promise<number> {
+  const auditMap = await getZohoAuditMap();
+  const cached = auditMap?.get(sku);
+  if (cached?.itemId === itemId) return cached.stockOnHand;
+
+  const res = await zohoGet<{ item: ZohoItemRow }>(`/items/${itemId}`);
+  return Math.max(0, res.item?.stock_on_hand ?? 0);
+}
+
 /** Push all active variants for a product to Zoho Books as inventory items (SKU = unique key). */
 export async function syncProductVariantsToZoho(productId: string): Promise<ZohoProductSyncResult> {
   const result: ZohoProductSyncResult = {
@@ -128,14 +171,19 @@ export async function syncProductVariantsToZoho(productId: string): Promise<Zoho
 
   const variants = await prisma.productVariant.findMany({
     where: { productId, status: "ACTIVE" },
-    include: {
+    select: {
+      id: true,
+      sku: true,
+      saleInPaise: true,
+      zohoItemId: true,
+      inventory: { select: { onHand: true } },
       productRel: { select: { name: true, shortDescription: true, taxClass: true } }
     }
   });
 
   for (const v of variants) {
     try {
-      const action = await upsertVariantToZoho(v);
+      const action = await upsertVariantToZoho(v, v.inventory?.onHand ?? 0);
       if (action === "created") result.created++;
       else if (action === "updated") result.updated++;
       else result.skipped++;
@@ -159,4 +207,146 @@ export async function resolveZohoItemIdForSku(sku: string): Promise<string | nul
   if (variant?.zohoItemId) return variant.zohoItemId;
   const hit = await findZohoItemBySku(sku);
   return hit?.item_id ?? null;
+}
+
+export async function pushVariantsToZoho(variantIds: string[]): Promise<ZohoActionResult> {
+  const result: ZohoActionResult = { ok: 0, errors: 0, messages: [] };
+
+  if (!zohoConfigured()) {
+    result.errors = variantIds.length;
+    result.messages.push("Zoho Books is not configured");
+    return result;
+  }
+
+  for (const variantId of variantIds) {
+    try {
+      const variant = await prisma.productVariant.findUnique({
+        where: { id: variantId },
+        select: {
+          id: true,
+          sku: true,
+          saleInPaise: true,
+          zohoItemId: true,
+          inventory: { select: { onHand: true } },
+          productRel: { select: { name: true, shortDescription: true, taxClass: true } }
+        }
+      });
+      if (!variant) {
+        result.errors++;
+        result.messages.push(`${variantId}: variant not found`);
+        continue;
+      }
+
+      await upsertVariantToZoho(variant, variant.inventory?.onHand ?? 0);
+      result.ok++;
+    } catch (err) {
+      result.errors++;
+      result.messages.push(`${variantId}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  await appendZohoStockSyncHistory({
+    scope: "push_items",
+    synced: result.ok,
+    errors: result.errors,
+    skipped: result.errors
+  });
+
+  return result;
+}
+
+export async function pushStockToZohoForSkus(skus: string[]): Promise<ZohoActionResult> {
+  const result: ZohoActionResult = { ok: 0, errors: 0, messages: [] };
+
+  if (!zohoConfigured()) {
+    result.errors = skus.length;
+    result.messages.push("Zoho Books is not configured");
+    return result;
+  }
+
+  for (const raw of skus) {
+    const sku = raw.trim();
+    if (!sku) continue;
+
+    try {
+      const variant = await prisma.productVariant.findUnique({
+        where: { sku },
+        include: { inventory: { select: { onHand: true } } }
+      });
+      if (!variant?.inventory) {
+        result.errors++;
+        result.messages.push(`${sku}: no Sarveda inventory row`);
+        continue;
+      }
+
+      const itemId = await resolveZohoItemIdForSku(sku);
+      if (!itemId) {
+        result.errors++;
+        result.messages.push(`${sku}: not linked in Zoho — use Push to Zoho first`);
+        continue;
+      }
+
+      const zohoStock = await getZohoStockForItem(itemId, sku);
+      const delta = variant.inventory.onHand - zohoStock;
+      if (delta === 0) {
+        result.ok++;
+        continue;
+      }
+
+      await adjustZohoStock(itemId, delta, "Sarveda admin stock sync");
+      result.ok++;
+    } catch (err) {
+      result.errors++;
+      result.messages.push(`${sku}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  await appendZohoStockSyncHistory({
+    scope: "push",
+    synced: result.ok,
+    errors: result.errors,
+    skipped: result.errors
+  });
+
+  return result;
+}
+
+export async function markZohoItemsInactiveForSkus(skus: string[]): Promise<ZohoActionResult> {
+  const auditMap = await getZohoAuditMap();
+  const result: ZohoActionResult = { ok: 0, errors: 0, messages: [] };
+
+  if (!zohoConfigured()) {
+    result.errors = skus.length;
+    result.messages.push("Zoho Books is not configured");
+    return result;
+  }
+
+  for (const raw of skus) {
+    const sku = raw.trim();
+    if (!sku) continue;
+
+    try {
+      const itemId = auditMap?.get(sku)?.itemId ?? (await findZohoItemBySku(sku))?.item_id;
+      if (!itemId) {
+        result.errors++;
+        result.messages.push(`${sku}: Zoho item not found`);
+        continue;
+      }
+
+      await zohoPost(`/items/${itemId}/inactive`, {});
+      result.ok++;
+    } catch (err) {
+      result.errors++;
+      result.messages.push(`${sku}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  await appendZohoStockSyncHistory({
+    scope: "inactive",
+    synced: result.ok,
+    errors: result.errors,
+    skipped: result.errors
+  });
+
+  return result;
 }

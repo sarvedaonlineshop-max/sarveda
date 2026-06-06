@@ -4,7 +4,15 @@ import { logger } from "../../config/logger";
 const HISTORY_KEY = "zoho:stock-sync:history";
 const MAX_ENTRIES = 50;
 
-export type ZohoSyncScope = "full" | "product" | "unmatched";
+export type ZohoSyncScope =
+  | "full"
+  | "product"
+  | "unmatched"
+  | "audit"
+  | "pull"
+  | "push"
+  | "push_items"
+  | "inactive";
 
 export type ZohoStockSyncHistoryEntry = {
   id: string;
