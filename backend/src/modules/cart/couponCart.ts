@@ -30,13 +30,13 @@ export async function applyCouponToCart(
 
   await prisma.cart.update({
     where: { id: cartId },
-    data: { couponCode: rawCode.trim().toUpperCase() }
+    data: { couponCode: rawCode.trim().toUpperCase(), abandonedEmailSentAt: null }
   });
 }
 
 export async function removeCouponFromCart(cartId: string): Promise<void> {
   await prisma.cart.update({
     where: { id: cartId },
-    data: { couponCode: null }
+    data: { couponCode: null, abandonedEmailSentAt: null }
   });
 }

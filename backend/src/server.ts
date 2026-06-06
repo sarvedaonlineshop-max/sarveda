@@ -1,6 +1,7 @@
 import { app } from "./app";
 import { initSentry } from "./config/sentry";
 import { startAbandonedNotificationWorker } from "./jobs/abandonedNotificationJob";
+import { startCartCleanupWorker } from "./jobs/cartCleanupJob";
 import { startPaymentTimeoutWorker } from "./jobs/paymentTimeoutJob";
 import { startTrackingSyncWorker } from "./jobs/trackingSyncJob";
 import { startZohoStockSyncWorker } from "./jobs/zohoStockSyncJob";
@@ -15,4 +16,5 @@ app.listen(port, () => {
   startAbandonedNotificationWorker();
   void startTrackingSyncWorker();
   void startZohoStockSyncWorker();
+  void startCartCleanupWorker();
 });

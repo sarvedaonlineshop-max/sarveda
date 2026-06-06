@@ -21,12 +21,13 @@ function getQueue(): Queue | null {
 }
 
 async function scanAbandonedCarts(): Promise<void> {
-  const cutoff = new Date(Date.now() - CART_DELAY_MS);
+  const twoHoursAgo = new Date(Date.now() - CART_DELAY_MS);
   const carts = await prisma.cart.findMany({
     where: {
-      updatedAt: { lte: cutoff },
+      updatedAt: { lt: twoHoursAgo },
       userId: { not: null },
-      items: { some: {} }
+      items: { some: {} },
+      abandonedEmailSentAt: null
     },
     include: {
       user: { select: { email: true, name: true } },
@@ -36,18 +37,15 @@ async function scanAbandonedCarts(): Promise<void> {
   });
 
   for (const cart of carts) {
-    if (!cart.user?.email) continue;
-    const redis = getRedisConnection();
-    const dedupeKey = `abandoned-cart:${cart.id}`;
-    if (redis) {
-      const sent = await redis.get(dedupeKey);
-      if (sent) continue;
-    }
+    if (!cart.user?.email || !cart.userId) continue;
 
-    await sendAbandonedCartEmail(cart.userId!).catch(() => undefined);
-    if (redis) {
-      await redis.set(dedupeKey, "1", "EX", 7 * 24 * 60 * 60);
-    }
+    const sent = await sendAbandonedCartEmail(cart.userId);
+    if (!sent) continue;
+
+    await prisma.cart.update({
+      where: { id: cart.id },
+      data: { abandonedEmailSentAt: new Date() }
+    });
     logger.info("abandoned_cart_email_sent", { cartId: cart.id });
   }
 }

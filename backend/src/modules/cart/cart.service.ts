@@ -10,6 +10,14 @@ import { currencyForZone, zoneFromCountry } from "../shipping/shippingRates.serv
 
 const CART_HEADER = "x-sarveda-cart-session";
 
+/** Reset abandoned-cart email flag when shopper changes the cart. */
+async function markCartMutated(cartId: string): Promise<void> {
+  await prisma.cart.update({
+    where: { id: cartId },
+    data: { abandonedEmailSentAt: null }
+  });
+}
+
 export type CartContext = {
   cartId: string;
   sessionId: string | null;
@@ -69,6 +77,7 @@ export async function mergeGuestCartIntoUser(
     data: { couponCode: null }
   });
   await prisma.cart.delete({ where: { id: guestCart.id } });
+  await markCartMutated(userCartId);
 }
 
 export async function resolveCartContext(
@@ -347,6 +356,7 @@ export async function addCartItem(
     create: { cartId, variantId, quantity: nextQty },
     update: { quantity: nextQty }
   });
+  await markCartMutated(cartId);
 }
 
 export async function updateCartItemQuantity(
@@ -358,6 +368,7 @@ export async function updateCartItemQuantity(
     await prisma.cartItem.deleteMany({
       where: { cartId, variantId }
     });
+    await markCartMutated(cartId);
     return;
   }
 
@@ -392,12 +403,14 @@ export async function updateCartItemQuantity(
     },
     data: { quantity }
   });
+  await markCartMutated(cartId);
 }
 
 export async function removeCartItem(cartId: string, variantId: string): Promise<void> {
   await prisma.cartItem.deleteMany({
     where: { cartId, variantId }
   });
+  await markCartMutated(cartId);
 }
 
 /** Empty the shopper cart after a successful payment (guest session or logged-in cart). */
@@ -407,7 +420,7 @@ export async function clearCartForRequest(req: Request): Promise<void> {
   await prisma.cartItem.deleteMany({ where: { cartId } });
   await prisma.cart.update({
     where: { id: cartId },
-    data: { couponCode: null }
+    data: { couponCode: null, abandonedEmailSentAt: null }
   });
 }
 
@@ -423,6 +436,6 @@ export async function clearCartForOrder(orderId: string): Promise<void> {
   await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
   await prisma.cart.update({
     where: { id: cart.id },
-    data: { couponCode: null }
+    data: { couponCode: null, abandonedEmailSentAt: null }
   });
 }

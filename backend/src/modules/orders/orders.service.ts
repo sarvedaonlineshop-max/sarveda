@@ -13,20 +13,20 @@ export async function reserveStockTx(tx: Prisma.TransactionClient, orderId: stri
   for (const item of items) {
     const inv = item.variant.inventory;
     if (!inv) continue;
-    const available = inv.onHand - inv.reserved;
-    if (item.qtyOrdered > available) {
-      const e = new Error(`Insufficient stock for SKU ${item.skuSnapshot}`) as Error & {
-        statusCode: number;
-        code: string;
-      };
-      e.statusCode = 400;
-      e.code = "INSUFFICIENT_STOCK";
-      throw e;
+
+    const rows = await tx.$executeRaw`
+      UPDATE "Inventory"
+      SET reserved = reserved + ${item.qtyOrdered}
+      WHERE id = ${inv.id}::uuid
+      AND ("onHand" - reserved) >= ${item.qtyOrdered}
+    `;
+
+    if (rows === 0) {
+      throw Object.assign(new Error(`Insufficient stock for SKU ${item.skuSnapshot}`), {
+        statusCode: 409,
+        code: "OUT_OF_STOCK"
+      });
     }
-    await tx.inventory.update({
-      where: { id: inv.id },
-      data: { reserved: { increment: item.qtyOrdered } }
-    });
   }
 }
 

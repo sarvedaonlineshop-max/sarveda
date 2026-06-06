@@ -222,6 +222,8 @@ model Cart {
   userId     String?    @unique @db.Uuid
   sessionId  String?    @unique
   couponCode String?
+  /// Set when abandoned-cart reminder email was sent (reset on cart mutation).
+  abandonedEmailSentAt DateTime?
   user       User?      @relation(fields: [userId], references: [id])
   items      CartItem[]
   createdAt  DateTime   @default(now())

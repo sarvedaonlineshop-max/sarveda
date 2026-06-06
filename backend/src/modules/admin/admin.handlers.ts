@@ -1362,3 +1362,13 @@ export async function orderShippingBreakdown(req: Request, res: Response, next: 
     next(err);
   }
 }
+
+export async function triggerCartCleanup(_req: Request, res: Response, next: NextFunction) {
+  try {
+    const { runCartCleanupJob } = await import("../../jobs/cartCleanupJob");
+    const data = await runCartCleanupJob();
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}

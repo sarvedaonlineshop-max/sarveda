@@ -10,7 +10,7 @@ import { reportingNetSalesInrPaiseFromOrder } from "../../utils/money";
 import { createPayPalOrder } from "../payments/paypal";
 import { createOrder, getRazorpayKeyId } from "../payments/razorpay";
 import { createStripeCheckoutSession } from "../payments/stripe.checkout";
-import { confirmStockTx, reserveStockTx } from "../orders/orders.service";
+import { confirmStockTx, reserveStockTx, cancelUnpaidOrderWithRelease } from "../orders/orders.service";
 import { afterOrderPaid } from "../orders/afterPaid";
 import { invoiceNumberForOrder } from "../../utils/invoice";
 import { getCartPayload, resolveCartContext } from "../cart/cart.service";
@@ -354,6 +354,33 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
   if (!digitalOnly) {
     await assertDelhiveryHeavyIndiaServiceable(body.country, body.postalCode, lines);
     await assertIndiaCheckoutServiceable(body.country, body.postalCode, lines, body.codDelivery);
+  }
+
+  const twentyMinAgo = new Date(Date.now() - 20 * 60 * 1000);
+  const existingPendingOrder = await prisma.order.findFirst({
+    where: userId
+      ? {
+          customerId: userId,
+          status: "PENDING_PAYMENT",
+          deletedAt: null,
+          createdAt: { gte: twentyMinAgo }
+        }
+      : {
+          customerId: null,
+          email: body.email.trim().toLowerCase(),
+          status: "PENDING_PAYMENT",
+          deletedAt: null,
+          createdAt: { gte: twentyMinAgo }
+        },
+    orderBy: { createdAt: "desc" }
+  });
+
+  if (existingPendingOrder) {
+    await cancelUnpaidOrderWithRelease(
+      existingPendingOrder.id,
+      "Superseded by new checkout attempt"
+    );
+    logger.info("checkout_cancelled_stale_pending", { oldOrderId: existingPendingOrder.id });
   }
 
   let result:

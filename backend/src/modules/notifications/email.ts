@@ -274,13 +274,13 @@ export async function sendOrderEmail(orderId: string, event: OrderEmailEvent): P
   }
 }
 
-/** Logged-in shopper left items in cart (2h+). */
-export async function sendAbandonedCartEmail(userId: string): Promise<void> {
+/** Logged-in shopper left items in cart (2h+). Returns true if email was sent. */
+export async function sendAbandonedCartEmail(userId: string): Promise<boolean> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { email: true, name: true }
   });
-  if (!user?.email) return;
+  if (!user?.email) return false;
 
   const cart = await prisma.cart.findUnique({
     where: { userId },
@@ -293,7 +293,7 @@ export async function sendAbandonedCartEmail(userId: string): Promise<void> {
       }
     }
   });
-  if (!cart?.items.length) return;
+  if (!cart?.items.length) return false;
 
   const names = cart.items.map((i) => i.variant.productRel.name).join(", ");
   const lines = [
@@ -309,8 +309,10 @@ export async function sendAbandonedCartEmail(userId: string): Promise<void> {
   try {
     await sendMail(user.email, subject, html, text);
     logger.info("abandoned_cart_email_sent", { userId });
+    return true;
   } catch (err) {
     logger.error("abandoned_cart_email_failed", { userId, err });
+    return false;
   }
 }
 
