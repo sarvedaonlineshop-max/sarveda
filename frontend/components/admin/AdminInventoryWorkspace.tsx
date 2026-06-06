@@ -25,12 +25,15 @@ import {
   buildCategoryFilterOptions,
   computeInventoryStats,
   downloadCsv,
+  effectiveZohoScenario,
   filterZohoOnlyItems,
   formatRelativeTime,
   groupRowsByProductInOrder,
   inventoryToCsv,
   matchesStockFilter,
   parseInventoryImportCsv,
+  resolveZohoSyncSummary,
+  backendNeedsZohoScenarioUpdate,
   sortInventoryRows,
   type ProductInventoryGroup,
   type SortDir,
@@ -139,14 +142,15 @@ function MetricCard({
 }
 
 function ZohoBadge({
-  scenario,
-  zohoStock,
+  row,
   auditAvailable
 }: {
-  scenario: InventoryRow["zohoSyncScenario"];
-  zohoStock: number | null;
+  row: Pick<InventoryRow, "zohoSyncScenario" | "inZohoBooks" | "zohoStockOnHand" | "onHand">;
   auditAvailable: boolean;
 }) {
+  const scenario = effectiveZohoScenario(row);
+  const zohoStock = row.zohoStockOnHand;
+
   if (!auditAvailable) return <span className="text-xs text-stone-400">—</span>;
   if (scenario === 1) {
     return (
@@ -330,8 +334,8 @@ export function AdminInventoryWorkspace() {
 
   const zohoSubCounts = useMemo(
     () => ({
-      count_mismatch: searchFiltered.filter((r) => r.zohoSyncScenario === 2).length,
-      sarveda_only: searchFiltered.filter((r) => r.zohoSyncScenario === 4).length,
+      count_mismatch: searchFiltered.filter((r) => effectiveZohoScenario(r) === 2).length,
+      sarveda_only: searchFiltered.filter((r) => effectiveZohoScenario(r) === 4).length,
       zoho_only: filterZohoOnlyItems(zohoOnlyItems, search).length
     }),
     [searchFiltered, zohoOnlyItems, search]
@@ -358,7 +362,15 @@ export function AdminInventoryWorkspace() {
   const filteredProductCount = useMemo(() => productGroups.length, [productGroups]);
 
   const stats = useMemo(() => computeInventoryStats(allRows), [allRows]);
-  const outOfSyncTotal = zohoSyncSummary.outOfSync;
+  const resolvedSyncSummary = useMemo(
+    () => resolveZohoSyncSummary(allRows, zohoOnlyItems, zohoSyncSummary),
+    [allRows, zohoOnlyItems, zohoSyncSummary]
+  );
+  const outOfSyncTotal = resolvedSyncSummary.outOfSync;
+  const staleBackend = useMemo(
+    () => backendNeedsZohoScenarioUpdate(allRows, zohoAuditAvailable),
+    [allRows, zohoAuditAvailable]
+  );
 
   const hasActiveFilter = Boolean(search.trim() || categorySlug || stockFilter !== "all");
 
@@ -474,15 +486,15 @@ export function AdminInventoryWorkspace() {
         const r = await ignoreZohoItemsAdmin(skus);
         pushToast(`Marked ${r.ok} item${r.ok === 1 ? "" : "s"} inactive in Zoho`, r.errors > 0);
       } else if (action === "push_item") {
-        const ids = displayedRows.filter((r) => r.zohoSyncScenario === 4).map((r) => r.variantId);
+        const ids = displayedRows.filter((r) => effectiveZohoScenario(r) === 4).map((r) => r.variantId);
         if (ids.length === 0) return;
         const r = await pushItemsToZohoAdmin(ids);
         pushToast(`Pushed ${r.ok} item${r.ok === 1 ? "" : "s"} to Zoho`, r.errors > 0);
       } else {
         const skus =
           zohoSubFilter === "count_mismatch"
-            ? displayedRows.filter((r) => r.zohoSyncScenario === 2).map((r) => r.sku)
-            : displayedRows.filter((r) => r.zohoSyncScenario === 4).map((r) => r.sku);
+            ? displayedRows.filter((r) => effectiveZohoScenario(r) === 2).map((r) => r.sku)
+            : displayedRows.filter((r) => effectiveZohoScenario(r) === 4).map((r) => r.sku);
         if (skus.length === 0) return;
         const r =
           action === "pull" ? await pullStockFromZohoAdmin(skus) : await pushStockToZohoAdmin(skus);
@@ -557,10 +569,11 @@ export function AdminInventoryWorkspace() {
     "px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400";
 
   function renderZohoRowActions(r: InventoryRow) {
-    if (!zohoAuditAvailable || !r.zohoSyncScenario || r.zohoSyncScenario === 1) return null;
+    const scenario = effectiveZohoScenario(r);
+    if (!zohoAuditAvailable || !scenario || scenario === 1) return null;
     const syncing = busy === r.sku || zohoSyncing !== null;
 
-    if (r.zohoSyncScenario === 2) {
+    if (scenario === 2) {
       return (
         <div className="flex flex-wrap justify-end gap-1">
           <button
@@ -585,7 +598,7 @@ export function AdminInventoryWorkspace() {
       );
     }
 
-    if (r.zohoSyncScenario === 4) {
+    if (scenario === 4) {
       return (
         <button
           type="button"
@@ -677,15 +690,11 @@ export function AdminInventoryWorkspace() {
         </td>
         <td className="px-4 py-2.5 font-mono text-xs text-stone-500">{r.sku}</td>
         <td className="px-4 py-2.5">
-          <ZohoBadge
-            scenario={r.zohoSyncScenario}
-            zohoStock={r.zohoStockOnHand}
-            auditAvailable={zohoAuditAvailable}
-          />
+          <ZohoBadge row={r} auditAvailable={zohoAuditAvailable} />
         </td>
         <td className="px-4 py-2.5 text-right font-mono font-medium tabular-nums">
           {r.available}
-          {r.zohoStockOnHand !== null && r.zohoSyncScenario === 2 ? (
+          {r.zohoStockOnHand !== null && effectiveZohoScenario(r) === 2 ? (
             <span className="block text-[10px] font-normal text-stone-400">Zoho: {r.zohoStockOnHand}</span>
           ) : null}
           {r.reserved > 0 ? (
@@ -1048,6 +1057,19 @@ export function AdminInventoryWorkspace() {
           </div>
         ) : null}
       </div>
+
+      {staleBackend ? (
+        <div
+          className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100"
+          role="status"
+        >
+          <strong>Backend update pending on EC2.</strong> Staging is still running the old Zoho API (no{" "}
+          <code className="text-xs">zohoSyncScenario</code> per row). Counts below use legacy{" "}
+          <code className="text-xs">inZohoBooks</code> until you deploy backend and click{" "}
+          <strong>Refresh Zoho audit</strong>. SSH:{" "}
+          <code className="text-xs">git pull && cd backend && npm install && npm run build && pm2 restart sarveda-backend</code>
+        </div>
+      ) : null}
 
       {err ? (
         <p className="rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-800" role="alert">

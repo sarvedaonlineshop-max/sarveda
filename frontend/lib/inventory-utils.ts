@@ -22,16 +22,80 @@ export function isOutOfSyncScenario(scenario: ZohoSyncScenario | null | undefine
   return scenario === 2 || scenario === 4;
 }
 
+/** Use API scenario when present; fall back to legacy inZohoBooks until EC2 backend is updated. */
+export function effectiveZohoScenario(
+  row: Pick<InventoryRow, "zohoSyncScenario" | "inZohoBooks" | "zohoStockOnHand" | "onHand">
+): ZohoSyncScenario | null {
+  if (row.zohoSyncScenario != null) return row.zohoSyncScenario;
+  if (row.inZohoBooks === null) return null;
+  if (row.inZohoBooks === false) return 4;
+  if (row.zohoStockOnHand != null && row.zohoStockOnHand !== row.onHand) return 2;
+  return 1;
+}
+
+export function computeClientZohoSyncSummary(
+  rows: InventoryRow[],
+  zohoOnlyItems: ZohoOnlyItem[]
+): {
+  synced: number;
+  countMismatch: number;
+  zohoOnly: number;
+  sarvedaOnly: number;
+  outOfSync: number;
+} {
+  let synced = 0;
+  let countMismatch = 0;
+  let sarvedaOnly = 0;
+  for (const r of rows) {
+    const s = effectiveZohoScenario(r);
+    if (s === 1) synced++;
+    else if (s === 2) countMismatch++;
+    else if (s === 4) sarvedaOnly++;
+  }
+  const zohoOnly = zohoOnlyItems.length;
+  return {
+    synced,
+    countMismatch,
+    zohoOnly,
+    sarvedaOnly,
+    outOfSync: countMismatch + sarvedaOnly + zohoOnly
+  };
+}
+
+export function resolveZohoSyncSummary(
+  rows: InventoryRow[],
+  zohoOnlyItems: ZohoOnlyItem[],
+  server?: {
+    synced: number;
+    countMismatch: number;
+    zohoOnly: number;
+    sarvedaOnly: number;
+    outOfSync: number;
+  }
+) {
+  const serverHasScenarioData = rows.some((r) => r.zohoSyncScenario != null);
+  if (serverHasScenarioData && server) return server;
+  return computeClientZohoSyncSummary(rows, zohoOnlyItems);
+}
+
+export function backendNeedsZohoScenarioUpdate(rows: InventoryRow[], auditAvailable: boolean): boolean {
+  return auditAvailable && rows.length > 0 && rows.every((r) => r.zohoSyncScenario == null);
+}
+
 export function matchesStockFilter(
-  row: Pick<InventoryRow, "onHand" | "lowStockThreshold" | "zohoSyncScenario">,
+  row: Pick<
+    InventoryRow,
+    "onHand" | "lowStockThreshold" | "zohoSyncScenario" | "inZohoBooks" | "zohoStockOnHand"
+  >,
   filter: StockFilter,
   zohoSubFilter?: ZohoSyncSubFilter
 ): boolean {
   if (filter === "all") return true;
   if (filter === "out_of_sync") {
-    if (zohoSubFilter === "count_mismatch") return row.zohoSyncScenario === 2;
-    if (zohoSubFilter === "sarveda_only") return row.zohoSyncScenario === 4;
-    return isOutOfSyncScenario(row.zohoSyncScenario);
+    const scenario = effectiveZohoScenario(row);
+    if (zohoSubFilter === "count_mismatch") return scenario === 2;
+    if (zohoSubFilter === "sarveda_only") return scenario === 4;
+    return isOutOfSyncScenario(scenario);
   }
   return stockStatus(row) === filter;
 }
