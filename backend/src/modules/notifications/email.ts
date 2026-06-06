@@ -17,6 +17,7 @@ export type OrderEmailEvent =
   | "order_processing"
   | "order_shipped"
   | "order_delivered"
+  | "order_returned"
   | "refund_initiated"
   | "order_cancelled";
 
@@ -27,6 +28,7 @@ const EVENT_SUBJECTS: Record<OrderEmailEvent, string> = {
   order_processing: "Your Sarveda order is being prepared",
   order_shipped: "Your Sarveda order has shipped",
   order_delivered: "Your Sarveda order was delivered",
+  order_returned: "Your Sarveda order was returned to us",
   refund_initiated: "Refund update for your Sarveda order",
   order_cancelled: "Your Sarveda order was cancelled"
 };
@@ -216,6 +218,13 @@ export async function sendOrderEmail(orderId: string, event: OrderEmailEvent): P
       lines = [
         `Your order <strong>${order.orderNumber}</strong> has been delivered.`,
         `We hope you love your purchase.`
+      ];
+      break;
+    case "order_returned":
+      lines = [
+        `Your order <strong>${order.orderNumber}</strong> was returned to us by the courier (RTO).`,
+        `Please contact <a href="mailto:support@sarveda.com">support@sarveda.com</a> to arrange re-delivery or a refund.`,
+        `We are sorry for the inconvenience.`
       ];
       break;
     case "refund_initiated":

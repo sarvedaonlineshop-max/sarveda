@@ -8,6 +8,7 @@ import { assertOrderEligibleForTrackingSync, autoSelectAndCreate } from "./route
 import { scheduleShippingRetry } from "../../jobs/shippingRetryJob";
 import * as shiprocket from "./shiprocket";
 import { notifyOrderEmail } from "../notifications/email";
+import { handlePaidOrderStatusChange } from "../orders/orders.service";
 
 import {
   mapCourierStatusToShipment,
@@ -31,6 +32,71 @@ const BLOCKED_TRACK_ORDER: OrderStatus[] = ["CANCELLED", "REFUNDED", "PENDING_PA
 
 export function orderBlocksCarrierSync(status: OrderStatus): boolean {
   return BLOCKED_TRACK_ORDER.includes(status);
+}
+
+const RTO_STATUS_LABELS = [
+  "RTO",
+  "RTO Initiated",
+  "RTO Delivered",
+  "Return to Origin",
+  "Returned"
+];
+
+export function isShiprocketRtoStatus(status: string | undefined): boolean {
+  if (!status?.trim()) return false;
+  const lower = status.toLowerCase();
+  return RTO_STATUS_LABELS.some((s) => lower.includes(s.toLowerCase()));
+}
+
+export async function handleRtoShipment(
+  orderId: string,
+  awb: string,
+  status: string
+): Promise<void> {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: {
+      id: true,
+      status: true,
+      email: true,
+      orderNumber: true,
+      notes: true
+    }
+  });
+  if (!order) return;
+
+  await prisma.shipment.updateMany({
+    where: { orderId, awb },
+    data: { status: "RTO", rtoAt: new Date() }
+  });
+
+  if (!["CANCELLED", "REFUNDED"].includes(order.status)) {
+    await handlePaidOrderStatusChange(
+      orderId,
+      "CANCELLED",
+      `RTO: ${status} — AWB ${awb}`
+    );
+
+    const rtoNote = `RTO: ${status} — AWB ${awb}`;
+    await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        notes: order.notes ? `${order.notes}\n${rtoNote}` : rtoNote
+      }
+    });
+  }
+
+  notifyOrderEmail(orderId, "order_returned");
+
+  console.error("[RTO_ALERT]", {
+    orderId,
+    orderNumber: order.orderNumber,
+    awb,
+    status,
+    customerEmail: order.email
+  });
+
+  logger.info("rto_handled", { orderId, awb, status });
 }
 
 export async function onOrderEnteredProcessing(orderId: string): Promise<void> {

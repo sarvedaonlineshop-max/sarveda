@@ -7,7 +7,7 @@ import { shippingEnv } from "../../config/env";
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 
-import { applyCarrierWebhookTracking, syncTrackingByWaybill } from "./orderLifecycle";
+import { applyCarrierWebhookTracking, handleRtoShipment, isShiprocketRtoStatus, syncTrackingByWaybill } from "./orderLifecycle";
 
 function timingSafeEq(a: string, b: string): boolean {
   const ba = Buffer.from(a, "utf8");
@@ -191,7 +191,24 @@ export async function shiprocketWebhookHandler(req: Request, res: Response): Pro
       | { success: true; data: { orderStatus: string; shipmentStatus: string } }
       | { success: false; code?: string };
 
-    if (statusLabel) {
+    if (statusLabel && isShiprocketRtoStatus(statusLabel)) {
+      const shipment = await prisma.shipment.findFirst({
+        where: { awb: waybill },
+        include: { order: true }
+      });
+      if (shipment) {
+        await handleRtoShipment(shipment.orderId, waybill, statusLabel);
+        applied = {
+          success: true,
+          data: {
+            orderStatus: "CANCELLED",
+            shipmentStatus: "RTO"
+          }
+        };
+      } else {
+        applied = { success: false, code: "NOT_FOUND" };
+      }
+    } else if (statusLabel) {
       const r = await applyCarrierWebhookTracking(waybill, statusLabel);
       applied = r.success
         ? {

@@ -18,6 +18,7 @@ import { createPickupLocationSchema, updatePickupLocationSchema } from "./pickup
 import { contentRoutes } from "./content/content.routes";
 import * as mediaHandlers from "./media.handlers";
 import * as seoSuggest from "./seo-suggest.handlers";
+import { couponAdminRoutes } from "../coupons/coupon.admin.routes";
 
 const router = Router();
 router.use(requireAdmin);
@@ -34,6 +35,8 @@ router.patch(
   pickupLocations.updatePickupLocation
 );
 router.delete("/pickup-locations/:id", pickupLocations.deletePickupLocation);
+
+router.use("/coupons", couponAdminRoutes);
 
 router.get("/dashboard", admin.dashboard);
 router.post("/jobs/cart-cleanup", admin.triggerCartCleanup);
@@ -60,6 +63,8 @@ router.patch(
   admin.patchOrderAddress
 );
 router.post("/orders/:id/reconcile-razorpay", admin.reconcileRazorpayOrder);
+router.post("/orders/:id/refund", admin.refundOrder);
+router.post("/orders/:id/cancel", admin.cancelOrder);
 router.patch(
   "/orders/:id/status",
   validateBody(z.object({ status: z.nativeEnum(OrderStatus) })),

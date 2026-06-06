@@ -98,6 +98,193 @@ type OrderLoaded = {
   wooImportNote?: string | null;
 };
 
+function RefundCancelPanel({
+  orderId,
+  status,
+  paymentStatus,
+  onDone
+}: {
+  orderId: string;
+  status: string;
+  paymentStatus: string;
+  onDone: () => void;
+}) {
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [confirm, setConfirm] = useState<"cancel" | "refund" | null>(null);
+
+  const canCancel = !["CANCELLED", "REFUNDED", "DELIVERED"].includes(status);
+  const canRefund =
+    ["PAID", "PROCESSING", "PACKED", "SHIPPED"].includes(status) && paymentStatus === "CAPTURED";
+
+  async function execute(action: "cancel" | "refund") {
+    setBusy(true);
+    setMsg(null);
+    setConfirm(null);
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}/${action}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ reason: reason.trim() || undefined })
+      });
+      const data = (await res.json()) as { message?: string; error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Failed");
+      setMsg({ text: data.message ?? "Done", ok: true });
+      onDone();
+    } catch (err) {
+      setMsg({
+        text: err instanceof Error ? err.message : "Failed",
+        ok: false
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!canCancel && !canRefund) return null;
+
+  return (
+    <div
+      style={{
+        border: "1px solid #e8e2d9",
+        borderRadius: "12px",
+        background: "#fff",
+        padding: "20px 24px",
+        marginTop: "16px"
+      }}
+    >
+      <p style={{ fontSize: "13px", fontWeight: 700, color: "#2c2420", marginBottom: "12px" }}>
+        Refund / Cancel
+      </p>
+
+      <input
+        placeholder="Reason (optional)"
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        style={{
+          width: "100%",
+          padding: "8px 12px",
+          border: "1px solid #e0d8ce",
+          borderRadius: "8px",
+          fontSize: "13px",
+          marginBottom: "12px",
+          boxSizing: "border-box"
+        }}
+      />
+
+      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+        {canCancel ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => setConfirm("cancel")}
+            style={{
+              padding: "8px 16px",
+              borderRadius: "8px",
+              border: "1px solid #e0d8ce",
+              background: "#fff",
+              fontSize: "13px",
+              fontWeight: 600,
+              color: "#6b5c52",
+              cursor: "pointer",
+              opacity: busy ? 0.5 : 1
+            }}
+          >
+            Cancel Order
+          </button>
+        ) : null}
+        {canRefund ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => setConfirm("refund")}
+            style={{
+              padding: "8px 16px",
+              borderRadius: "8px",
+              border: "1px solid #dc2626",
+              background: "rgba(220,38,38,0.06)",
+              fontSize: "13px",
+              fontWeight: 600,
+              color: "#dc2626",
+              cursor: "pointer",
+              opacity: busy ? 0.5 : 1
+            }}
+          >
+            {busy ? "Processing..." : "Refund to Customer"}
+          </button>
+        ) : null}
+      </div>
+
+      {confirm ? (
+        <div
+          style={{
+            marginTop: "12px",
+            padding: "12px 16px",
+            background: "#fef2f2",
+            borderRadius: "8px",
+            border: "1px solid #fecaca"
+          }}
+        >
+          <p style={{ fontSize: "13px", color: "#991b1b", marginBottom: "10px" }}>
+            {confirm === "refund"
+              ? "This will refund the customer via the original payment method. Are you sure?"
+              : "Cancel this order? Stock will be restored."}
+          </p>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button
+              type="button"
+              onClick={() => void execute(confirm)}
+              style={{
+                padding: "6px 14px",
+                borderRadius: "6px",
+                background: "#dc2626",
+                color: "#fff",
+                border: "none",
+                fontSize: "12px",
+                fontWeight: 700,
+                cursor: "pointer"
+              }}
+            >
+              Yes, confirm
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirm(null)}
+              style={{
+                padding: "6px 14px",
+                borderRadius: "6px",
+                background: "#fff",
+                border: "1px solid #e0d8ce",
+                fontSize: "12px",
+                cursor: "pointer"
+              }}
+            >
+              No, go back
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {msg ? (
+        <p
+          style={{
+            marginTop: "10px",
+            fontSize: "13px",
+            color: msg.ok ? "#166534" : "#dc2626",
+            background: msg.ok ? "#dcfce7" : "#fee2e2",
+            padding: "8px 12px",
+            borderRadius: "6px"
+          }}
+        >
+          {msg.text}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function asOrder(raw: Record<string, unknown>): OrderLoaded {
   const items = ((raw.items as Array<Record<string, unknown>>) ?? []).map((row) => ({
     id: row.id != null ? String(row.id) : undefined,
@@ -669,6 +856,12 @@ export default function AdminOrderDetailPage() {
                 {reconcileBusy ? "Checking Razorpay…" : "Sync payment (Razorpay)"}
               </button>
             ) : null}
+            <RefundCancelPanel
+              orderId={order.id}
+              status={order.status}
+              paymentStatus={order.paymentStatus}
+              onDone={() => void load()}
+            />
           </div>
         </div>
       </div>

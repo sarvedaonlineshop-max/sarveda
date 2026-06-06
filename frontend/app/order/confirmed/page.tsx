@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 
 import { clearCartAfterPayment } from "@/lib/clear-cart-after-payment";
+import { trackPurchase } from "@/lib/analytics";
+import { DEFAULT_DISPLAY_GST_RATE, extractGst } from "@/lib/gst";
 import { formatMinorFromPaise } from "@/lib/money";
 import type { OrderPublic } from "@/lib/orders-api";
 import { fetchOrderPublic, orderInvoiceDownloadUrl } from "@/lib/orders-api";
@@ -45,6 +47,7 @@ function ConfirmedInner() {
   const [order, setOrder] = useState<OrderPublic | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [cartCleared, setCartCleared] = useState(false);
+  const purchaseTracked = useRef(false);
 
   useEffect(() => {
     if (!orderNumber || !email) return;
@@ -59,6 +62,21 @@ function ConfirmedInner() {
         ) {
           setCartCleared(true);
           await clearCartAfterPayment();
+        }
+        const paid = o.paymentStatus === "CAPTURED" || o.status === "PAID" || o.isCod;
+        if (paid && !purchaseTracked.current) {
+          purchaseTracked.current = true;
+          trackPurchase({
+            orderId: o.orderNumber,
+            value: o.grandTotalInPaise,
+            currency: o.currency,
+            items: o.items.map((i) => ({
+              id: i.skuSnapshot,
+              name: i.nameSnapshot,
+              quantity: i.qtyOrdered,
+              price: i.unitPriceInPaise
+            }))
+          });
         }
       } catch (e) {
         setErr(e instanceof Error ? e.message : "Could not load order");
@@ -96,6 +114,8 @@ function ConfirmedInner() {
   const addr = order.shippingAddress;
   const fmt = (n: number) => formatMinorFromPaise(n, order.currency);
   const paid = order.paymentStatus === "CAPTURED" || order.status === "PAID";
+  const isIndia = order.currency === "INR" || addr?.country === "IN";
+  const { gstInPaise } = extractGst(order.subtotalInPaise, DEFAULT_DISPLAY_GST_RATE);
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -142,6 +162,11 @@ function ConfirmedInner() {
               <dt>{isCod ? "Grand total (COD)" : "Grand total"}</dt>
               <dd>{fmt(order.grandTotalInPaise)}</dd>
             </div>
+            {isIndia ? (
+              <p className="pt-1 text-xs text-stone-500">
+                GST included: ₹{(gstInPaise / 100).toLocaleString("en-IN")} ({DEFAULT_DISPLAY_GST_RATE}%)
+              </p>
+            ) : null}
           </dl>
         </div>
       </div>

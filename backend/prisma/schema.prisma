@@ -484,6 +484,7 @@ model Coupon {
   validFrom       DateTime?
   validUntil      DateTime?
   isActive        Boolean    @default(true)
+  description     String?
   createdAt       DateTime   @default(now())
 }
 

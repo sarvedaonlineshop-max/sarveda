@@ -14,6 +14,12 @@ import {
 } from "../../utils/reporting-time";
 import { fetchRazorpayOrderPayments } from "../payments/razorpay";
 import { completePaidOrder } from "../payments/razorpay.verify";
+import { initiateGatewayRefund } from "../payments/refund.service";
+import {
+  cancelUnpaidOrderWithRelease,
+  handlePaidOrderStatusChange
+} from "../orders/orders.service";
+import { notifyOrderEmail } from "../notifications/email";
 import { onOrderEnteredProcessing } from "../shipping/orderLifecycle";
 import { getZohoStockSyncMeta } from "../zoho/zoho-stock-sync-cache";
 import { auditSarvedaVariant, computeZohoSyncSummary, listZohoOnlyItems } from "../zoho/zoho-sync-audit";
@@ -764,6 +770,59 @@ export async function patchOrderStatus(req: Request, res: Response, next: NextFu
     }
 
     res.json({ success: true, data: { order } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function refundOrder(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const reason = (req.body as { reason?: string }).reason;
+    const result = await initiateGatewayRefund(id, reason);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function cancelOrder(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const reason = (req.body as { reason?: string }).reason?.trim() || "Admin cancelled order";
+
+    const order = await prisma.order.findFirst({
+      where: { id, deletedAt: null },
+      include: { payments: { orderBy: { createdAt: "desc" } } }
+    });
+    if (!order) {
+      res.status(404).json({ success: false, error: "Order not found", code: "NOT_FOUND" });
+      return;
+    }
+
+    if (order.status === "PENDING_PAYMENT") {
+      const changed = await cancelUnpaidOrderWithRelease(id, reason);
+      res.json({
+        success: true,
+        message: changed
+          ? "Unpaid order cancelled and stock released."
+          : "Order was already cancelled or paid."
+      });
+      return;
+    }
+
+    const capturedPayment = order.payments.find((p) => p.status === "CAPTURED");
+    const codPaid = order.payments.some((p) => p.provider === "COD");
+
+    if (capturedPayment || codPaid) {
+      const result = await initiateGatewayRefund(id, reason);
+      res.json(result);
+      return;
+    }
+
+    await handlePaidOrderStatusChange(id, "CANCELLED", reason);
+    notifyOrderEmail(id, "order_cancelled");
+    res.json({ success: true, message: "Order cancelled." });
   } catch (err) {
     next(err);
   }

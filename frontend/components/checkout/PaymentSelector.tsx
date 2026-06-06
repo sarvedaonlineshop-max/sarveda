@@ -16,6 +16,8 @@ import { clearSession } from "@/lib/cart-api";
 import type { CartApiItem } from "@/lib/cart-api";
 import type { CheckoutAddressForm } from "@/components/checkout/AddressFields";
 import { validateCheckoutFormDetailed } from "@/lib/checkout-validation";
+import { trackInitiateCheckout } from "@/lib/analytics";
+import { DEFAULT_DISPLAY_GST_RATE, extractGst } from "@/lib/gst";
 import { formatINRFromPaise, formatMinorFromPaise } from "@/lib/money";
 import type { ShippingBreakdown } from "@/lib/shipping-rates-api";
 import { loadRazorpayScript } from "@/lib/load-razorpay";
@@ -120,6 +122,7 @@ export function PaymentSelector({
   const [shippingLoading, setShippingLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const payStarted = useRef(false);
+  const checkoutTracked = useRef(false);
   const isIndia = (form.country ?? "IN").toUpperCase() === "IN";
   const checkoutIdempotencyKey = useMemo(
     () => `${idempotencyKey}:${paymentMode}:${form.country ?? "IN"}`,
@@ -145,6 +148,7 @@ export function PaymentSelector({
       ? shippingCodInPaise
       : shippingInPaise ?? 0;
   const merchandiseAfterDiscount = Math.max(0, subtotalInPaise - discountInPaise);
+  const { gstInPaise } = extractGst(merchandiseAfterDiscount, DEFAULT_DISPLAY_GST_RATE);
   const estimatedTotal =
     merchandiseAfterDiscount + (isDigitalOnly ? 0 : shippingInPaise != null ? estimatedShipping : 0);
 
@@ -375,6 +379,13 @@ export function PaymentSelector({
     setErr(null);
     setBusy(true);
     payStarted.current = true;
+    if (!checkoutTracked.current) {
+      checkoutTracked.current = true;
+      trackInitiateCheckout(
+        shippingInPaise != null ? estimatedTotal : merchandiseAfterDiscount,
+        displayCurrency
+      );
+    }
 
     try {
       if (paymentMode === "cod") {
@@ -448,7 +459,11 @@ export function PaymentSelector({
     paymentMode,
     processing,
     resolvePayableOrder,
-    rzpReady
+    rzpReady,
+    estimatedTotal,
+    merchandiseAfterDiscount,
+    shippingInPaise,
+    displayCurrency
   ]);
 
   return (
@@ -484,6 +499,36 @@ export function PaymentSelector({
         </div>
         {paymentMode === "cod" && shippingCodInPaise != null && shippingCodInPaise !== shippingInPaise ? (
           <p className="text-xs text-amber-800">COD delivery rates applied to shipping.</p>
+        ) : null}
+        {isIndia ? (
+          <div
+            style={{
+              borderTop: "1px solid var(--brand-cream-dark)",
+              paddingTop: "8px",
+              marginTop: "4px"
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "11px",
+                color: "var(--brand-muted)"
+              }}
+            >
+              <span>GST included ({DEFAULT_DISPLAY_GST_RATE}%)</span>
+              <span>₹{(gstInPaise / 100).toLocaleString("en-IN")}</span>
+            </div>
+            <p
+              style={{
+                fontSize: "10px",
+                color: "var(--brand-muted)",
+                marginTop: "2px"
+              }}
+            >
+              All prices are GST-inclusive. Tax invoice emailed after order.
+            </p>
+          </div>
         ) : null}
         <div className="flex justify-between gap-4 pt-2 text-base">
           <dt className="font-semibold text-stone-900">Estimated total</dt>

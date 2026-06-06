@@ -143,3 +143,11 @@ export async function capturePayPalOrder(paypalOrderId: string): Promise<{
 
   return { captured: true, paymentId: payment.id };
 }
+
+export async function getPayPalAccessToken(): Promise<string> {
+  return paypalAccessToken();
+}
+
+export function getPayPalApiBase(): string {
+  return paypalBase();
+}

@@ -1,4 +1,5 @@
 import { getApiBase } from "./api";
+import { trackAddToCart } from "./analytics";
 
 const SESSION_STORAGE_KEY = "sarveda_cart_session_id";
 
@@ -190,6 +191,15 @@ export async function cartAdd(variantId: string, quantity: number): Promise<Cart
   }
   if (json.data?.sessionId) {
     writeSession(json.data.sessionId);
+  }
+  const addedLine = json.data!.items.find((i) => i.variantId === variantId);
+  if (addedLine) {
+    trackAddToCart({
+      itemId: addedLine.variantId,
+      name: addedLine.productName,
+      value: addedLine.unitPriceInPaise * (Number(quantity) || 1),
+      currency: json.data!.currency
+    });
   }
   notifyCartChanged(json.data);
   return json.data!;

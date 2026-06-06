@@ -5,12 +5,13 @@ import Link from "next/link";
 
 import { CartCheckoutSidebar } from "@/components/cart/CartCheckoutSidebar";
 import { CartLineQuantity } from "@/components/cart/CartLineQuantity";
+import { FreeShippingBar } from "@/components/cart/FreeShippingBar";
 import { formatINRFromPaise } from "@/lib/money";
 
 import { useCartData } from "./CartProvider";
 
 export function CartPageClient() {
-  const { items, subtotalInPaise, itemCount, loading, removeLine, isCartMutating } = useCartData();
+  const { items, subtotalInPaise, itemCount, currency, loading, removeLine, isCartMutating } = useCartData();
 
   if (loading && items.length === 0) {
     return (
@@ -103,6 +104,7 @@ export function CartPageClient() {
       <div className="mt-6 border-t border-stone-200 bg-white p-4 lg:hidden">
         <p className="text-sm text-stone-500">{itemCount} items</p>
         <p className="font-serif text-2xl font-semibold text-amber-800">{formatINRFromPaise(subtotalInPaise)}</p>
+        <FreeShippingBar subtotalInPaise={subtotalInPaise} currency={currency} />
         <Link
           href="/checkout"
           className="mt-4 flex min-h-[52px] w-full items-center justify-center rounded-lg bg-[#ffd814] text-base font-medium text-stone-900"
