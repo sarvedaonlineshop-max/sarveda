@@ -43,6 +43,11 @@
 5. `cd frontend && npm install && npm run dev` → http://localhost:3000
 6. Open repo in Cursor (same account optional for settings). **Start chat with the handoff prompt below.**
 
+### Environment variables (dev machine)
+- **Backend `/.env` is already configured** on Shivakumar's machine (DB, Redis, JWT, Razorpay/Stripe/PayPal, AWS S3, SendGrid, Shiprocket, Delhivery, Zoho, MSG91, etc.). **Do not re-prompt to fill keys** unless a specific feature fails or `validateEnv` reports a missing required var at startup.
+- **`frontend/.env.local`** is separate (copy from machine; `JWT_SECRET` must match backend for admin auth).
+- Only flag gaps when code adds a **new** required env var or a runtime error points to a missing key.
+
 ### Cursor AI does not remember other machines
 - Chats are not the source of truth. Use **git + this file + commits**.
 - Always say: *"Read CLAUDE.md fully, especially section 0."*

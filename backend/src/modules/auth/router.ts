@@ -25,6 +25,7 @@ import {
   updateProfile,
   verifyOtpAndLogin
 } from "./service";
+import { requestPasswordReset, resetPassword } from "./passwordReset.service";
 import { loginSchema, registerSchema, sendOtpSchema, updateProfileSchema, verifyOtpSchema } from "./schemas";
 
 function asyncHandler(
@@ -54,6 +55,14 @@ const otpVerifyLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
   message: { error: "Too many failed attempts. Please request a new OTP." },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const resetRequestLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 3,
+  message: { error: "Too many reset requests. Try again later." },
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -98,6 +107,43 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const user = await verifyOtpAndLogin(res, req.body);
     res.json({ success: true, data: { user } });
+  })
+);
+
+authRouter.post(
+  "/forgot-password",
+  resetRequestLimiter,
+  asyncHandler(async (req, res) => {
+    const { email } = req.body as { email?: string };
+    if (!email?.trim()) {
+      res.status(400).json({ success: false, error: "Email is required", code: "VALIDATION_ERROR" });
+      return;
+    }
+    await requestPasswordReset(email.trim());
+    res.json({
+      success: true,
+      message: "If this email exists, a reset link has been sent."
+    });
+  })
+);
+
+authRouter.post(
+  "/reset-password",
+  asyncHandler(async (req, res) => {
+    const { token, password } = req.body as { token?: string; password?: string };
+    if (!token || !password) {
+      res.status(400).json({
+        success: false,
+        error: "Token and password required",
+        code: "VALIDATION_ERROR"
+      });
+      return;
+    }
+    await resetPassword(token, password);
+    res.json({
+      success: true,
+      message: "Password reset successfully. You can now log in."
+    });
   })
 );
 

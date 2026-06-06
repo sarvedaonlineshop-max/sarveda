@@ -128,6 +128,11 @@ function LoginForm() {
             placeholder="Password"
             className={inputClass}
           />
+          <p className="mt-2 text-right text-sm">
+            <Link href="/forgot-password" className="text-amber-400 hover:text-amber-300">
+              Forgot password?
+            </Link>
+          </p>
         </div>
         {message ? (
           <p className="text-sm text-red-400" role="alert">
