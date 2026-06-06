@@ -5,6 +5,7 @@ import { logger } from "../../config/logger";
 
 import * as delhivery from "./delhivery";
 import { assertOrderEligibleForTrackingSync, autoSelectAndCreate } from "./router";
+import { scheduleShippingRetry } from "../../jobs/shippingRetryJob";
 import * as shiprocket from "./shiprocket";
 import { notifyOrderEmail } from "../notifications/email";
 
@@ -48,6 +49,7 @@ export async function onOrderEnteredProcessing(orderId: string): Promise<void> {
     } catch (e) {
       logger.warn("shipping_error_persist_failed", { orderId, err: e });
     }
+    await scheduleShippingRetry(orderId);
     return;
   }
   try {

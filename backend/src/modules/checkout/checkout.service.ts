@@ -82,11 +82,11 @@ async function assertIndiaCheckoutServiceable(
   postalCode: string,
   lines: Array<{ quantity: number; variant: ProductVariant }>,
   codDelivery: boolean | undefined
-): Promise<void> {
-  if ((country ?? "IN").toUpperCase() !== "IN") return;
+): Promise<boolean> {
+  if ((country ?? "IN").toUpperCase() !== "IN") return false;
 
   const pin = postalCode.replace(/\D/g, "").slice(0, 6);
-  if (pin.length !== 6) return;
+  if (pin.length !== 6) return false;
 
   const useDelhivery =
     (process.env.DEFAULT_DOMESTIC_COURIER ?? "delhivery").trim().toLowerCase() !== "shiprocket" &&
@@ -96,8 +96,7 @@ async function assertIndiaCheckoutServiceable(
     const r = await delhivery.checkPincodeServiceability(pin);
     if (!r.success) {
       if (r.code === "DELHIVERY_NOT_CONFIGURED") {
-        await assertIndiaShiprocketCheckoutServiceable(country, postalCode, lines, codDelivery);
-        return;
+        return assertIndiaShiprocketCheckoutServiceable(country, postalCode, lines, codDelivery);
       }
       const e = new Error(r.error) as Error & {
         statusCode?: number;
@@ -119,10 +118,10 @@ async function assertIndiaCheckoutServiceable(
       e.userMessage = e.message;
       throw e;
     }
-    return;
+    return false;
   }
 
-  await assertIndiaShiprocketCheckoutServiceable(country, postalCode, lines, codDelivery);
+  return assertIndiaShiprocketCheckoutServiceable(country, postalCode, lines, codDelivery);
 }
 
 /** Block unpaid checkout if Shiprocket has no courier for warehouse→PIN (when enabled in env). */
@@ -131,12 +130,12 @@ async function assertIndiaShiprocketCheckoutServiceable(
   postalCode: string,
   lines: Array<{ quantity: number; variant: ProductVariant }>,
   codDelivery: boolean | undefined
-): Promise<void> {
-  if (!shippingEnv.INDIA_REQUIRE_SHIPROCKET_SERVICEABILITY) return;
-  if ((country ?? "IN").toUpperCase() !== "IN") return;
+): Promise<boolean> {
+  if (!shippingEnv.INDIA_REQUIRE_SHIPROCKET_SERVICEABILITY) return false;
+  if ((country ?? "IN").toUpperCase() !== "IN") return false;
 
   const pin = postalCode.replace(/\D/g, "").slice(0, 6);
-  if (pin.length !== 6) return;
+  if (pin.length !== 6) return false;
 
   let grams = 0;
   for (const row of lines) {
@@ -145,27 +144,18 @@ async function assertIndiaShiprocketCheckoutServiceable(
   grams = Math.max(grams, 1);
   const weightKg = Math.max(0.05, grams / 1000);
 
-  const sr = await shiprocket.checkIndiaCourierServiceability({
+  const serviceabilityResult = await shiprocket.checkIndiaCourierServiceabilityWithFallback({
     deliveryPincode: pin,
     weightKg,
     cod: Boolean(codDelivery)
   });
-  if (!sr.success) {
-    const e = new Error(sr.error) as Error & {
-      statusCode?: number;
-      code?: string;
-      userMessage?: string;
-    };
-    e.statusCode =
-      sr.code === "SHIPROCKET_ORIGIN_PIN" || sr.code === "SHIPROCKET_NOT_CONFIGURED" ? 503 : 502;
-    e.code = sr.code;
-    e.userMessage =
-      sr.code === "SHIPROCKET_ORIGIN_PIN"
-        ? "Shipping is not fully configured yet. Please contact Sarveda support."
-        : sr.error;
-    throw e;
+
+  if (serviceabilityResult.source === "fallback") {
+    logger.warn("checkout_shiprocket_fallback_used", { pin: postalCode });
+    return true;
   }
-  if (!sr.data.serviceable) {
+
+  if (!serviceabilityResult.serviceable) {
     const e = new Error(
       "Delivery is not available from our warehouse to this PIN for your cart size and options. Try another PIN or contact support."
     ) as Error & { statusCode?: number; code?: string; userMessage?: string };
@@ -174,6 +164,8 @@ async function assertIndiaShiprocketCheckoutServiceable(
     e.userMessage = e.message;
     throw e;
   }
+
+  return false;
 }
 
 const IDEM_TTL_SEC = 30 * 60;
@@ -351,9 +343,15 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
     throw e;
   }
 
+  let shiprocketPinCheckFallback = false;
   if (!digitalOnly) {
     await assertDelhiveryHeavyIndiaServiceable(body.country, body.postalCode, lines);
-    await assertIndiaCheckoutServiceable(body.country, body.postalCode, lines, body.codDelivery);
+    shiprocketPinCheckFallback = await assertIndiaCheckoutServiceable(
+      body.country,
+      body.postalCode,
+      lines,
+      body.codDelivery
+    );
   }
 
   const twentyMinAgo = new Date(Date.now() - 20 * 60 * 1000);
@@ -421,7 +419,13 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
           grandTotalInPaise,
           shippingInPaise,
           taxInPaise
-        )
+        ),
+        ...(shiprocketPinCheckFallback
+          ? {
+              notes:
+                "Shiprocket PIN check skipped (API fallback) — verify delivery manually before dispatch."
+            }
+          : {})
       }
     });
 

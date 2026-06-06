@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import express from "express";
+import rateLimit from "express-rate-limit";
 import passport from "passport";
 import type { Profile } from "passport-google-oauth20";
 
@@ -36,6 +37,27 @@ function asyncHandler(
 
 export const authRouter = express.Router();
 
+const otpLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 5,
+  message: { error: "Too many OTP requests. Please wait 10 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const body = req.body as { email?: string; phone?: string };
+    const identifier = body.email ?? body.phone ?? "";
+    return `${req.ip}:${identifier}`;
+  }
+});
+
+const otpVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: "Too many failed attempts. Please request a new OTP." },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 authRouter.post(
   "/register",
   validateBody(registerSchema),
@@ -61,6 +83,7 @@ authRouter.post("/logout", (_req, res) => {
 
 authRouter.post(
   "/send-otp",
+  otpLimiter,
   validateBody(sendOtpSchema),
   asyncHandler(async (req, res) => {
     await sendOtp(req.body);
@@ -70,6 +93,7 @@ authRouter.post(
 
 authRouter.post(
   "/verify-otp",
+  otpVerifyLimiter,
   validateBody(verifyOtpSchema),
   asyncHandler(async (req, res) => {
     const user = await verifyOtpAndLogin(res, req.body);

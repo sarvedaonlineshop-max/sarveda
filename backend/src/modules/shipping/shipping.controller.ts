@@ -16,6 +16,7 @@ import {
   zoneFromCountry
 } from "./shippingRates.service";
 import { autoSelectAndCreate } from "./router";
+import { scheduleShippingRetry } from "../../jobs/shippingRetryJob";
 
 const pincodeBody = z.object({
   pincode: z.string().min(3).max(10)
@@ -191,6 +192,7 @@ export async function createShipmentForOrder(req: Request, res: Response, next: 
       } catch {
         /* ignore */
       }
+      await scheduleShippingRetry(orderId);
       res.status(400).json(result);
       return;
     }

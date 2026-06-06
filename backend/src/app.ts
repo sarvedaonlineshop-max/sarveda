@@ -50,7 +50,7 @@ const app = express();
 // Vercel and other reverse proxies send X-Forwarded-For; rate limiting needs this.
 app.set("trust proxy", 1);
 
-app.get("/health", async (_req, res) => {
+app.get("/health", async (_req: Request, res: Response) => {
   const checks: Record<string, "ok" | "error"> = {};
 
   try {
@@ -78,7 +78,7 @@ app.get("/health", async (_req, res) => {
     status: allOk ? "ok" : "degraded",
     timestamp: new Date().toISOString(),
     checks,
-    version: process.env.npm_package_version ?? "unknown"
+    uptime: Math.floor(process.uptime())
   });
 });
 

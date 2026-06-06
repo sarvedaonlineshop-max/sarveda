@@ -668,6 +668,44 @@ export async function checkIndiaCourierServiceability(input: {
   }
 }
 
+export type IndiaServiceabilityWithFallback = {
+  serviceable: boolean;
+  source: "shiprocket" | "fallback";
+  courierCount?: number;
+};
+
+const SHIPROCKET_SERVICEABILITY_TIMEOUT_MS = 5000;
+
+/** Checkout PIN check with timeout — falls back to allow order when Shiprocket is down/slow. */
+export async function checkIndiaCourierServiceabilityWithFallback(input: {
+  deliveryPincode: string;
+  weightKg: number;
+  cod: boolean;
+}): Promise<IndiaServiceabilityWithFallback> {
+  try {
+    const result = await Promise.race([
+      checkIndiaCourierServiceability(input),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Shiprocket timeout")), SHIPROCKET_SERVICEABILITY_TIMEOUT_MS)
+      )
+    ]);
+    if (!result.success) {
+      throw new Error(result.error);
+    }
+    return {
+      serviceable: result.data.serviceable,
+      source: "shiprocket",
+      courierCount: result.data.courierCount
+    };
+  } catch (err) {
+    logger.warn("shiprocket_serviceability_fallback", {
+      pin: input.deliveryPincode,
+      reason: err instanceof Error ? err.message : String(err)
+    });
+    return { serviceable: true, source: "fallback" };
+  }
+}
+
 function parseNumericId(val: unknown): number | undefined {
   if (typeof val === "number" && Number.isFinite(val)) return val;
   if (typeof val === "string" && /^\d+$/.test(val.trim())) return parseInt(val.trim(), 10);
