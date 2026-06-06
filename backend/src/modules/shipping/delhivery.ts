@@ -40,6 +40,12 @@ function baseUrl(): string {
   return shippingEnv.DELHIVERY_BASE_URL.replace(/\/$/, "");
 }
 
+function assertDelhiveryConfigured(): void {
+  if (!shippingEnv.DELHIVERY_API_KEY.trim()) {
+    throw new Error("Delhivery not configured (DELHIVERY_API_KEY missing)");
+  }
+}
+
 function mapAxiosError(err: unknown, code: string): ApiErr {
   const ax = err as AxiosError<{ message?: string }>;
   const msg =
@@ -53,6 +59,15 @@ function mapAxiosError(err: unknown, code: string): ApiErr {
 export async function checkPincodeServiceability(
   pincode: string
 ): Promise<ApiOk<{ serviceable: boolean; estimatedDays: number }> | ApiErr> {
+  try {
+    assertDelhiveryConfigured();
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Delhivery not configured",
+      code: "DELHIVERY_NOT_CONFIGURED"
+    };
+  }
   const headers = authHeadersJson();
   if (!headers) {
     return { success: false, error: "Delhivery is not configured", code: "DELHIVERY_NOT_CONFIGURED" };
@@ -119,6 +134,15 @@ export type DelhiveryShipmentInput = {
 export async function createShipment(
   input: DelhiveryShipmentInput
 ): Promise<ApiOk<{ waybill: string; trackingUrl: string }> | ApiErr> {
+  try {
+    assertDelhiveryConfigured();
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Delhivery not configured",
+      code: "DELHIVERY_NOT_CONFIGURED"
+    };
+  }
   const headers = authHeadersForm();
   if (!headers) {
     return { success: false, error: "Delhivery is not configured", code: "DELHIVERY_NOT_CONFIGURED" };
@@ -194,6 +218,15 @@ export async function createShipment(
 }
 
 export async function trackShipment(waybill: string): Promise<ApiOk<{ status: string; raw: unknown }> | ApiErr> {
+  try {
+    assertDelhiveryConfigured();
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Delhivery not configured",
+      code: "DELHIVERY_NOT_CONFIGURED"
+    };
+  }
   const headers = authHeadersJson();
   if (!headers) {
     return { success: false, error: "Delhivery is not configured", code: "DELHIVERY_NOT_CONFIGURED" };
@@ -230,6 +263,15 @@ export async function trackShipment(waybill: string): Promise<ApiOk<{ status: st
 }
 
 export async function cancelShipment(waybill: string): Promise<ApiOk<{ cancelled: boolean }> | ApiErr> {
+  try {
+    assertDelhiveryConfigured();
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Delhivery not configured",
+      code: "DELHIVERY_NOT_CONFIGURED"
+    };
+  }
   const headers = authHeadersJson();
   if (!headers) {
     return { success: false, error: "Delhivery is not configured", code: "DELHIVERY_NOT_CONFIGURED" };

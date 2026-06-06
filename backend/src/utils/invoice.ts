@@ -97,7 +97,7 @@ export function buildGstInvoicePdf(input: GstInvoiceInput): Promise<Buffer> {
     doc.fontSize(9);
     doc.text("Item", 48, doc.y, { continued: false, width: 200 });
     const tableTop = doc.y + 4;
-    doc.text("HSN", 250, tableTop - 14, { width: 40 });
+    doc.text("HSN/SAC", 250, tableTop - 14, { width: 40 });
     doc.text("Qty", 295, tableTop - 14, { width: 30 });
     doc.text("Rate", 330, tableTop - 14, { width: 55 });
     doc.text("Taxable", 390, tableTop - 14, { width: 55 });

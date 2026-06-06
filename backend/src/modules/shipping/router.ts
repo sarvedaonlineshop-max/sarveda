@@ -3,6 +3,7 @@ import type { OrderStatus, PaymentProvider, PaymentStatus, Prisma } from "@prism
 import { prisma } from "../../config/db";
 import { shippingEnv } from "../../config/env";
 import { logger } from "../../config/logger";
+import { scheduleShippingRetry } from "../../jobs/shippingRetryJob";
 
 import * as delhivery from "./delhivery";
 import { resolvePickupForShipment } from "./pickupLocation.resolve";
@@ -257,6 +258,38 @@ export function nextCarrierChannelOrderId(
   return { channelOrderId, nextSeq };
 }
 
+const SHIPPING_RETRY_CODES = new Set([
+  "SHIPMENT_FAILED",
+  "SHIPROCKET_CREATE",
+  "SHIPROCKET_ASSIGN",
+  "SHIPROCKET_PARSE",
+  "SHIPROCKET_AUTH",
+  "DELHIVERY_CREATE",
+  "DELHIVERY_PARSE"
+]);
+
+async function recordShippingFailure(
+  orderId: string,
+  error: string,
+  code: string
+): Promise<void> {
+  const msg = `${code}: ${error}`.slice(0, 4000);
+  try {
+    await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        shippingLastError: msg,
+        shippingLastErrorAt: new Date()
+      }
+    });
+  } catch (e) {
+    logger.warn("shipping_error_persist_failed", { orderId, err: e });
+  }
+  if (SHIPPING_RETRY_CODES.has(code)) {
+    await scheduleShippingRetry(orderId);
+  }
+}
+
 export async function autoSelectAndCreate(
   orderId: string,
   options?: AutoShipmentCreateOptions
@@ -385,6 +418,7 @@ export async function autoSelectAndCreate(
         pincode: shipAddr.postalCode
       });
       if (!created.success) {
+        await recordShippingFailure(order.id, created.error, created.code);
         return created;
       }
       const pickupId =
@@ -411,7 +445,10 @@ export async function autoSelectAndCreate(
         pickupLocationName: shiprocketPickup!.pickupLocationName,
         channelOrderId
       });
-      if (!created.success) return created;
+      if (!created.success) {
+        await recordShippingFailure(order.id, created.error, created.code);
+        return created;
+      }
       await persistShipment(
         order.id,
         "Shiprocket International",
@@ -435,7 +472,10 @@ export async function autoSelectAndCreate(
       pickupLocationName: shiprocketPickup!.pickupLocationName,
       channelOrderId
     });
-    if (!srDomestic.success) return srDomestic;
+    if (!srDomestic.success) {
+      await recordShippingFailure(order.id, srDomestic.error, srDomestic.code);
+      return srDomestic;
+    }
     await persistShipment(
       order.id,
       "Shiprocket",
@@ -455,9 +495,11 @@ export async function autoSelectAndCreate(
     };
   } catch (err) {
     logger.error("shipping_router_failed", { orderId, err });
+    const message = err instanceof Error ? err.message : "Shipment creation failed";
+    await recordShippingFailure(orderId, message, "SHIPMENT_FAILED");
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Shipment creation failed",
+      error: message,
       code: "SHIPMENT_FAILED"
     };
   }
@@ -473,26 +515,43 @@ async function persistShipment(
   shippingLabelSeqAfter?: number
 ): Promise<void> {
   await prisma.$transaction(async (tx) => {
-    await tx.shipment.create({
-      data: {
-        orderId,
-        courier,
-        awb: waybill,
-        trackingUrl,
-        status: "CREATED",
-        ...(pickupLocationId ? { pickupLocationId } : {}),
-        ...(carrierMeta ? { carrierMeta } : {})
-      }
+    const existing = await tx.shipment.findFirst({
+      where: { orderId, courier },
+      orderBy: { createdAt: "desc" }
     });
+
+    if (existing) {
+      await tx.shipment.update({
+        where: { id: existing.id },
+        data: {
+          awb: waybill,
+          trackingUrl,
+          status: "CREATED",
+          ...(pickupLocationId ? { pickupLocationId } : {}),
+          ...(carrierMeta ? { carrierMeta } : {})
+        }
+      });
+    } else {
+      await tx.shipment.create({
+        data: {
+          orderId,
+          courier,
+          awb: waybill,
+          trackingUrl,
+          status: "CREATED",
+          ...(pickupLocationId ? { pickupLocationId } : {}),
+          ...(carrierMeta ? { carrierMeta } : {})
+        }
+      });
+    }
+
     await tx.order.update({
       where: { id: orderId },
       data: {
         fulfillmentStatus: "PARTIAL",
         shippingLastError: null,
         shippingLastErrorAt: null,
-        ...(shippingLabelSeqAfter !== undefined
-          ? { shippingLabelSeq: shippingLabelSeqAfter }
-          : {})
+        ...(shippingLabelSeqAfter !== undefined ? { shippingLabelSeq: shippingLabelSeqAfter } : {})
       }
     });
   });

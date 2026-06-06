@@ -68,6 +68,7 @@ export type ProductAdminSaveInput = {
   productType: ProductType;
   status?: ProductStatus;
   taxClass?: string | null;
+  hsnCode?: string | null;
   hasAudio?: boolean;
   audioUrl?: string | null;
   seoTitle?: string | null;
@@ -274,6 +275,7 @@ export async function saveProductAdmin(
         productType: input.productType,
         status: input.status ?? existing.status,
         taxClass: input.taxClass !== undefined ? normalizeTaxClass(input.taxClass) : undefined,
+        hsnCode: input.hsnCode !== undefined ? input.hsnCode?.trim() || null : undefined,
         hasAudio: input.hasAudio ?? undefined,
         audioUrl: input.audioUrl === "" ? null : input.audioUrl,
         seoTitle: input.seoTitle ?? undefined,
@@ -308,6 +310,7 @@ export async function saveProductAdmin(
       productType: input.productType,
       status: input.status ?? "DRAFT",
       taxClass: normalizeTaxClass(input.taxClass ?? "standard"),
+      hsnCode: input.hsnCode?.trim() || null,
       hasAudio: input.hasAudio ?? false,
       audioUrl: input.audioUrl || undefined,
       seoTitle: input.seoTitle ?? undefined,

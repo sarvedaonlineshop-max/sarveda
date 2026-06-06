@@ -38,6 +38,7 @@ import { shippingRoutes } from "./modules/shipping";
 import { chatRoutes } from "./modules/chat/chat.routes";
 import { contactRoutes } from "./modules/contact/contact.routes";
 import { testimonialsRoutes } from "./modules/testimonials/testimonials.routes";
+import { reviewsRoutes } from "./modules/reviews/reviews.routes";
 import { zohoRouter } from "./modules/zoho";
 import { handleZohoWebhook } from "./modules/zoho/zoho-webhook";
 
@@ -227,6 +228,7 @@ app.use("/api/shipping", shippingRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/testimonials", testimonialsRoutes);
+app.use("/api/reviews", reviewsRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/zoho", zohoRouter);
 

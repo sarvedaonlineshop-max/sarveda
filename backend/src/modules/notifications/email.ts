@@ -1,6 +1,7 @@
 import sgMail from "@sendgrid/mail";
 
 import { prisma } from "../../config/db";
+import { enqueueEmail } from "../../jobs/emailQueue";
 import { logger } from "../../config/logger";
 
 if (process.env.NODE_ENV === "production" && !process.env.SENDGRID_API_KEY) {
@@ -326,7 +327,10 @@ export async function sendAbandonedCartEmail(userId: string): Promise<boolean> {
 }
 
 export function notifyOrderEmail(orderId: string, event: OrderEmailEvent): void {
-  void sendOrderEmail(orderId, event).catch((err) => {
-    logger.error("order_email_async_failed", { orderId, event, err });
+  void enqueueEmail(
+    { type: "order_email", orderId, event },
+    `order-email:${orderId}:${event}`
+  ).catch((err) => {
+    logger.error("email_enqueue_failed", { orderId, event, err });
   });
 }

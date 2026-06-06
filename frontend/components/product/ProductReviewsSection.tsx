@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+import { getApiBase } from "@/lib/api";
 
 type Review = {
   id: string;
@@ -8,102 +10,355 @@ type Review = {
   title?: string | null;
   body?: string | null;
   createdAt: string;
+  isVerified?: boolean;
   user?: { name?: string | null } | null;
 };
 
-type Props = {
-  reviews?: Review[];
-};
+type Props = { productId: string };
 
-function Stars({ value }: { value: number }) {
+function Stars({
+  value,
+  interactive = false,
+  onSelect
+}: {
+  value: number;
+  interactive?: boolean;
+  onSelect?: (v: number) => void;
+}) {
+  const [hover, setHover] = useState(0);
   return (
-    <div className="flex items-center gap-1 text-amber-500">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <span key={i} className={i < value ? "opacity-100" : "opacity-30"}>
-          ★
-        </span>
-      ))}
+    <div style={{ display: "flex", gap: "2px" }}>
+      {Array.from({ length: 5 }).map((_, i) => {
+        const val = i + 1;
+        const filled = val <= (interactive ? hover || value : value);
+        return (
+          <span
+            key={val}
+            onClick={() => interactive && onSelect?.(val)}
+            onMouseEnter={() => interactive && setHover(val)}
+            onMouseLeave={() => interactive && setHover(0)}
+            style={{
+              fontSize: interactive ? "24px" : "16px",
+              color: filled ? "#c8960a" : "#e0d8ce",
+              cursor: interactive ? "pointer" : "default",
+              transition: "color 0.1s"
+            }}
+          >
+            ★
+          </span>
+        );
+      })}
     </div>
   );
 }
 
-export function ProductReviewsSection({ reviews = [] }: Props) {
+export function ProductReviewsSection({ productId }: Props) {
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [total, setTotal] = useState(0);
+  const [average, setAverage] = useState(0);
+  const [loading, setLoading] = useState(true);
+
   const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState("");
-  const average = useMemo(
-    () => (reviews.length ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0),
-    [reviews]
-  );
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [formErr, setFormErr] = useState<string | null>(null);
+
+  const loadReviews = useCallback(async () => {
+    try {
+      const res = await fetch(`${getApiBase()}/api/reviews/${productId}`);
+      const data = (await res.json()) as {
+        reviews: Review[];
+        total: number;
+        average: number;
+      };
+      setReviews(data.reviews ?? []);
+      setTotal(data.total ?? 0);
+      setAverage(data.average ?? 0);
+    } finally {
+      setLoading(false);
+    }
+  }, [productId]);
+
+  useEffect(() => {
+    void loadReviews();
+  }, [loadReviews]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    setFormErr(null);
+    try {
+      const res = await fetch(`${getApiBase()}/api/reviews/${productId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ rating, title, body })
+      });
+      const data = (await res.json()) as { error?: string; message?: string };
+      if (!res.ok) throw new Error(data.error ?? "Failed to submit review");
+      setSubmitted(true);
+      setTitle("");
+      setBody("");
+      setRating(5);
+    } catch (err) {
+      setFormErr(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
-    <section>
-      <h2 className="font-serif text-xl font-semibold text-stone-900">Reviews</h2>
-      <div className="mt-4 rounded-xl border border-stone-200 bg-white p-5">
-        {reviews.length > 0 ? (
-          <>
-            <div className="mb-5 flex items-center gap-3">
-              <Stars value={Math.round(average)} />
-              <p className="text-sm text-stone-600">
-                {average.toFixed(1)} out of 5 ({reviews.length} review{reviews.length > 1 ? "s" : ""})
-              </p>
-            </div>
-            <div className="space-y-4">
-              {reviews.map((review) => (
-                <article key={review.id} className="border-b border-stone-100 pb-4 last:border-b-0">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-stone-800">{review.user?.name || "Verified customer"}</p>
-                    <p className="text-xs text-stone-500">{new Date(review.createdAt).toLocaleDateString("en-IN")}</p>
-                  </div>
-                  <div className="mt-1">
-                    <Stars value={review.rating} />
-                  </div>
-                  {review.title ? <p className="mt-2 text-sm font-medium text-stone-800">{review.title}</p> : null}
-                  {review.body ? <p className="mt-1 text-sm text-stone-600">{review.body}</p> : null}
-                </article>
-              ))}
-            </div>
-          </>
-        ) : (
-          <p className="text-sm text-stone-600">Be the first to review this product.</p>
+    <section style={{ marginTop: "40px" }}>
+      <h2
+        className="font-serif"
+        style={{
+          fontSize: "1.3rem",
+          fontWeight: 700,
+          color: "var(--brand-forest)",
+          marginBottom: "16px"
+        }}
+      >
+        Reviews
+        {total > 0 && (
+          <span
+            style={{
+              fontSize: "14px",
+              fontWeight: 400,
+              color: "var(--brand-muted)",
+              marginLeft: "10px"
+            }}
+          >
+            ({total})
+          </span>
         )}
+      </h2>
 
-        <form
-          className="mt-6 rounded-lg border border-stone-200 bg-stone-50 p-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            alert("Review submission API is not connected yet.");
+      {total > 0 && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            marginBottom: "20px",
+            padding: "14px 18px",
+            background: "var(--brand-ivory)",
+            border: "1px solid var(--brand-cream-dark)",
+            borderRadius: "10px"
           }}
         >
-          <p className="text-sm font-semibold text-stone-800">Add a review</p>
-          <div className="mt-2 flex gap-1">
-            {Array.from({ length: 5 }).map((_, i) => {
-              const val = i + 1;
-              return (
-                <button
-                  key={val}
-                  type="button"
-                  onClick={() => setRating(val)}
-                  className={`text-lg ${val <= rating ? "text-amber-500" : "text-stone-300"}`}
-                >
-                  ★
-                </button>
-              );
-            })}
-          </div>
-          <textarea
-            className="mt-3 w-full rounded-md border border-stone-300 bg-white p-2 text-sm"
-            rows={4}
-            placeholder="Write your review"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-          />
-          <button
-            type="submit"
-            className="mt-3 rounded-md bg-[#1e3a2f] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white"
+          <p
+            style={{
+              fontSize: "2.5rem",
+              fontWeight: 700,
+              color: "var(--brand-forest)",
+              lineHeight: 1
+            }}
           >
-            Submit Review
-          </button>
-        </form>
+            {average.toFixed(1)}
+          </p>
+          <div>
+            <Stars value={Math.round(average)} />
+            <p style={{ fontSize: "12px", color: "var(--brand-muted)", marginTop: "4px" }}>
+              {total} review{total !== 1 ? "s" : ""}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <p style={{ fontSize: "13px", color: "var(--brand-muted)" }}>Loading reviews...</p>
+      ) : reviews.length > 0 ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
+          {reviews.map((r, i) => (
+            <article
+              key={r.id}
+              style={{
+                padding: "16px 0",
+                borderBottom: i < reviews.length - 1 ? "1px solid var(--brand-cream-dark)" : "none"
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  marginBottom: "6px"
+                }}
+              >
+                <div>
+                  <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--brand-ink)" }}>
+                    {r.user?.name ?? "Customer"}
+                  </span>
+                  {r.isVerified && (
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        fontWeight: 600,
+                        color: "#166534",
+                        background: "#dcfce7",
+                        padding: "2px 7px",
+                        borderRadius: "999px",
+                        marginLeft: "8px"
+                      }}
+                    >
+                      ✓ Verified purchase
+                    </span>
+                  )}
+                </div>
+                <span style={{ fontSize: "11px", color: "var(--brand-muted)" }}>
+                  {new Date(r.createdAt).toLocaleDateString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric"
+                  })}
+                </span>
+              </div>
+              <Stars value={r.rating} />
+              {r.title && (
+                <p
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    color: "var(--brand-ink)",
+                    marginTop: "6px"
+                  }}
+                >
+                  {r.title}
+                </p>
+              )}
+              {r.body && (
+                <p
+                  style={{
+                    fontSize: "13px",
+                    color: "var(--brand-muted)",
+                    marginTop: "4px",
+                    lineHeight: 1.65
+                  }}
+                >
+                  {r.body}
+                </p>
+              )}
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p style={{ fontSize: "13px", color: "var(--brand-muted)", padding: "16px 0" }}>
+          No reviews yet. Be the first to share your experience!
+        </p>
+      )}
+
+      <div
+        style={{
+          marginTop: "24px",
+          padding: "20px",
+          background: "var(--brand-ivory)",
+          border: "1px solid var(--brand-cream-dark)",
+          borderRadius: "12px"
+        }}
+      >
+        <h3
+          style={{
+            fontSize: "14px",
+            fontWeight: 700,
+            color: "var(--brand-ink)",
+            marginBottom: "14px"
+          }}
+        >
+          Write a Review
+        </h3>
+
+        {submitted ? (
+          <div
+            style={{
+              background: "#dcfce7",
+              border: "1px solid #bbf7d0",
+              borderRadius: "8px",
+              padding: "12px 16px"
+            }}
+          >
+            <p style={{ fontSize: "13px", color: "#166534", fontWeight: 600 }}>
+              ✓ Thank you! Your review is pending approval and will appear shortly.
+            </p>
+          </div>
+        ) : (
+          <form onSubmit={(e) => void handleSubmit(e)}>
+            <div style={{ marginBottom: "12px" }}>
+              <p
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "var(--brand-muted)",
+                  marginBottom: "6px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em"
+                }}
+              >
+                Your rating *
+              </p>
+              <Stars value={rating} interactive onSelect={setRating} />
+            </div>
+
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Review title (optional)"
+              style={{
+                width: "100%",
+                height: "38px",
+                padding: "0 12px",
+                borderRadius: "8px",
+                border: "1px solid var(--brand-cream-dark)",
+                fontSize: "13px",
+                marginBottom: "10px",
+                boxSizing: "border-box",
+                outline: "none"
+              }}
+            />
+
+            <textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder="Share your experience with this product..."
+              rows={4}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: "8px",
+                border: "1px solid var(--brand-cream-dark)",
+                fontSize: "13px",
+                resize: "vertical",
+                boxSizing: "border-box",
+                outline: "none",
+                marginBottom: "10px"
+              }}
+            />
+
+            {formErr && (
+              <p style={{ fontSize: "13px", color: "#dc2626", marginBottom: "10px" }}>{formErr}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={submitting}
+              style={{
+                height: "40px",
+                padding: "0 24px",
+                borderRadius: "8px",
+                background: "var(--brand-forest)",
+                color: "var(--brand-ivory)",
+                fontSize: "13px",
+                fontWeight: 600,
+                border: "none",
+                cursor: "pointer",
+                opacity: submitting ? 0.6 : 1
+              }}
+            >
+              {submitting ? "Submitting..." : "Submit Review"}
+            </button>
+          </form>
+        )}
       </div>
     </section>
   );

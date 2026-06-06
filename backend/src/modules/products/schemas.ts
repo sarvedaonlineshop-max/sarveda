@@ -53,6 +53,7 @@ export const createProductSchema = z.object({
   productType: productTypeSchema,
   status: productStatusSchema.optional(),
   taxClass: z.string().max(64).optional().nullable(),
+  hsnCode: z.string().max(16).optional().nullable(),
   hasAudio: z.boolean().optional(),
   audioUrl: z
     .union([z.string().url().max(2000), z.literal(""), z.null()])

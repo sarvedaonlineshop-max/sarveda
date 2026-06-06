@@ -199,6 +199,7 @@ export function ProductForm({ productId }: { productId?: string }) {
   const [productType, setProductType] = useState("SIMPLE");
   const [status, setStatus] = useState("DRAFT");
   const [taxClass, setTaxClass] = useState("standard");
+  const [hsnCode, setHsnCode] = useState("");
   const [hasAudio, setHasAudio] = useState(false);
   const [audioUrl, setAudioUrl] = useState("");
   const [seoTitle, setSeoTitle] = useState("");
@@ -234,6 +235,7 @@ export function ProductForm({ productId }: { productId?: string }) {
       setProductType(String(p.productType ?? "SIMPLE"));
       setStatus(String(p.status ?? "DRAFT"));
       setTaxClass(taxClassForForm(String(p.taxClass ?? "standard")));
+      setHsnCode(String((p as { hsnCode?: string | null }).hsnCode ?? ""));
       setHasAudio(Boolean(p.hasAudio));
       setAudioUrl(String(p.audioUrl ?? ""));
       setSeoTitle(String(p.seoTitle ?? ""));
@@ -520,6 +522,7 @@ export function ProductForm({ productId }: { productId?: string }) {
       productType,
       status,
       taxClass: taxClassForForm(taxClass.trim() || "standard"),
+      hsnCode: hsnCode.trim() || null,
       hasAudio,
       audioUrl: hasAudio ? audioUrl.trim() || null : null,
       seoTitle: seoTitle.trim() || null,
@@ -871,6 +874,24 @@ export function ProductForm({ productId }: { productId?: string }) {
                 aria-invalid={Boolean(fieldErrors.slug)}
               />
               <FieldErr message={fieldErrors.slug} />
+            </div>
+            <div>
+              <label htmlFor="hsn" className={labelCls}>
+                HSN Code
+                <span className="ml-1.5 font-normal normal-case tracking-normal text-stone-400">
+                  (required for GST invoice)
+                </span>
+              </label>
+              <input
+                id="hsn"
+                value={hsnCode}
+                onChange={(e) => setHsnCode(e.target.value)}
+                placeholder={process.env.NEXT_PUBLIC_DEFAULT_HSN_CODE ?? "9205"}
+                className={inputCls}
+              />
+              <p className="mt-1 text-xs text-stone-500">
+                Leave blank to use default: {process.env.NEXT_PUBLIC_DEFAULT_HSN_CODE ?? "9205"}
+              </p>
             </div>
             <div>
               <label htmlFor="short" className={labelCls}>

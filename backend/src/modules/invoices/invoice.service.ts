@@ -17,7 +17,7 @@ export async function loadOrderForInvoice(orderId: string) {
         include: {
           variant: {
             include: {
-              productRel: { select: { taxClass: true } }
+              productRel: { select: { taxClass: true, hsnCode: true } }
             }
           }
         }
@@ -36,10 +36,13 @@ export function buildInvoiceInputFromOrder(
 
   const interState = isInterState(shippingAddress.state, shippingAddress.country);
 
+  const defaultHsn = process.env.DEFAULT_HSN_CODE?.trim() || "9205";
+
   const lines: GstInvoiceLine[] = order.items.map((row) => {
     const taxClass = row.variant.productRel.taxClass;
     const rate = gstRatePercent(taxClass);
     const { taxableMinor, taxMinor } = gstFromInclusiveLine(row.lineTotalInPaise, rate);
+    const hsn = row.variant.productRel.hsnCode?.trim() || defaultHsn;
     return {
       name: row.nameSnapshot,
       sku: row.skuSnapshot,
@@ -47,7 +50,7 @@ export function buildInvoiceInputFromOrder(
       unitPriceInPaise: row.unitPriceInPaise,
       lineTotalInPaise: row.lineTotalInPaise,
       taxClass: taxClass ?? "standard",
-      hsn: process.env.DEFAULT_HSN_CODE?.trim() || "—",
+      hsn,
       gstRatePercent: rate,
       taxableMinor,
       taxMinor

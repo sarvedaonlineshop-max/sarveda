@@ -71,6 +71,7 @@ model Product {
   status           ProductStatus    @default(DRAFT)
   catalogHidden    Boolean          @default(false)
   taxClass         String?          @default("standard")
+  hsnCode          String?
   hasAudio         Boolean          @default(false)
   audioUrl         String?
   seoTitle         String?

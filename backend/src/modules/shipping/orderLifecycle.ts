@@ -5,7 +5,6 @@ import { logger } from "../../config/logger";
 
 import * as delhivery from "./delhivery";
 import { assertOrderEligibleForTrackingSync, autoSelectAndCreate } from "./router";
-import { scheduleShippingRetry } from "../../jobs/shippingRetryJob";
 import * as shiprocket from "./shiprocket";
 import { notifyOrderEmail } from "../notifications/email";
 import { handlePaidOrderStatusChange } from "../orders/orders.service";
@@ -103,31 +102,7 @@ export async function onOrderEnteredProcessing(orderId: string): Promise<void> {
   const result = await autoSelectAndCreate(orderId);
   if (!result.success) {
     logger.error("shipping_processing_failed", { orderId, error: result.error, code: result.code });
-    const msg = `${result.code ?? "SHIPMENT_FAILED"}: ${result.error}`.slice(0, 4000);
-    try {
-      await prisma.order.update({
-        where: { id: orderId },
-        data: {
-          shippingLastError: msg,
-          shippingLastErrorAt: new Date()
-        }
-      });
-    } catch (e) {
-      logger.warn("shipping_error_persist_failed", { orderId, err: e });
-    }
-    await scheduleShippingRetry(orderId);
     return;
-  }
-  try {
-    await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        shippingLastError: null,
-        shippingLastErrorAt: null
-      }
-    });
-  } catch {
-    /* ignore */
   }
   logger.info("shipping_processing_ok", { orderId, waybill: result.data.waybill });
 }

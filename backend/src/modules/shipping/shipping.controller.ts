@@ -16,7 +16,6 @@ import {
   zoneFromCountry
 } from "./shippingRates.service";
 import { autoSelectAndCreate } from "./router";
-import { scheduleShippingRetry } from "../../jobs/shippingRetryJob";
 
 const pincodeBody = z.object({
   pincode: z.string().min(3).max(10)
@@ -181,28 +180,8 @@ export async function createShipmentForOrder(req: Request, res: Response, next: 
       ...(shiprocketPickupName ? { shiprocketPickupName } : {})
     });
     if (!result.success) {
-      try {
-        await prisma.order.update({
-          where: { id: orderId },
-          data: {
-            shippingLastError: `${result.code ?? "SHIPMENT_FAILED"}: ${result.error}`.slice(0, 4000),
-            shippingLastErrorAt: new Date()
-          }
-        });
-      } catch {
-        /* ignore */
-      }
-      await scheduleShippingRetry(orderId);
       res.status(400).json(result);
       return;
-    }
-    try {
-      await prisma.order.update({
-        where: { id: orderId },
-        data: { shippingLastError: null, shippingLastErrorAt: null }
-      });
-    } catch {
-      /* ignore */
     }
     res.json({ success: true, data: result.data });
   } catch (err) {

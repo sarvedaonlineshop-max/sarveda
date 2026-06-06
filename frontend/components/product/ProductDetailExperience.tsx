@@ -219,7 +219,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
 
         <div className="mt-14 space-y-14 border-t border-stone-200 pt-12">
           <PairWithRow items={pairWithItems.slice(0, 3)} />
-          <ProductReviewsSection />
+          <ProductReviewsSection productId={product.id} />
         </div>
       </div>
 

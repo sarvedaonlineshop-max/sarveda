@@ -7,6 +7,8 @@ import { logger } from "../../config/logger";
 import type { ApiErr, ApiOk, OrderWithShippingContext } from "./types";
 
 const SHIPROCKET_API = "https://apiv2.shiprocket.in/v1/external";
+/** Max wait per Shiprocket HTTP call (create, assign AWB, auth, track). */
+const SHIPROCKET_HTTP_TIMEOUT_MS = 10_000;
 
 type TokenState = { token: string; expiresAtMs: number };
 let cachedToken: TokenState | null = null;
@@ -75,7 +77,7 @@ async function getToken(): Promise<ApiOk<{ token: string }> | ApiErr> {
   }
   try {
     const res = await axios.post(`${SHIPROCKET_API}/auth/login`, { email, password }, {
-      timeout: 20_000,
+      timeout: SHIPROCKET_HTTP_TIMEOUT_MS,
       validateStatus: () => true
     });
     const token = extractShiprocketLoginToken(res.data);
@@ -280,7 +282,7 @@ async function assignAwbForShipment(token: string, shipmentId: number): Promise<
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json"
       },
-      timeout: 45_000,
+      timeout: SHIPROCKET_HTTP_TIMEOUT_MS,
       validateStatus: () => true
     }
   );
@@ -395,7 +397,7 @@ export async function createInternationalShipment(
         Authorization: `Bearer ${bearerToken}`,
         "Content-Type": "application/json"
       },
-      timeout: 45_000,
+      timeout: SHIPROCKET_HTTP_TIMEOUT_MS,
       validateStatus: () => true
     });
     if (res.status === 401) {
@@ -408,7 +410,7 @@ export async function createInternationalShipment(
           Authorization: `Bearer ${bearerToken}`,
           "Content-Type": "application/json"
         },
-        timeout: 45_000,
+        timeout: SHIPROCKET_HTTP_TIMEOUT_MS,
         validateStatus: () => true
       });
     }
@@ -459,7 +461,7 @@ export async function createInternationalShipment(
             Authorization: `Bearer ${bearerToken}`,
             "Content-Type": "application/json"
           },
-          timeout: 45_000,
+          timeout: SHIPROCKET_HTTP_TIMEOUT_MS,
           validateStatus: () => true
         });
         if (res.status === 401) {
@@ -472,7 +474,7 @@ export async function createInternationalShipment(
               Authorization: `Bearer ${bearerToken}`,
               "Content-Type": "application/json"
             },
-            timeout: 45_000,
+            timeout: SHIPROCKET_HTTP_TIMEOUT_MS,
             validateStatus: () => true
           });
         }
@@ -532,6 +534,9 @@ export async function createInternationalShipment(
     return mapAxiosErr(err, "SHIPROCKET_CREATE");
   }
 }
+
+/** India domestic labels use the same Shiprocket adhoc create + assign AWB flow. */
+export const createDomesticShipment = createInternationalShipment;
 
 /** Shiprocket `shipment_status` / `track_status` numeric codes (API docs → Tracking). */
 const SHIPROCKET_TRACK_STATUS_NUM: Record<number, string> = {

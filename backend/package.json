@@ -39,6 +39,7 @@
     "flush:transactional": "tsx scripts/flush-transactional-data.ts",
     "import:users": "tsx scripts/import-users-wc-csv.ts",
     "import:orders": "tsx scripts/import-orders-wxr.ts",
+    "test:shipping": "tsx scripts/test-shipping.ts",
     "import:refunds": "tsx scripts/import-refunds-wxr.ts",
     "import:reviews": "tsx scripts/import-reviews-from-products.ts",
     "migrate:may-30": "tsx scripts/migrate-may-30.ts",
