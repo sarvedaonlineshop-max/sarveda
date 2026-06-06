@@ -111,7 +111,7 @@ authRouter.get(
   requireAuth,
   asyncHandler(async (req, res) => {
     const rows = await prisma.enrollment.findMany({
-      where: { userId: req.authUser!.id },
+      where: { userId: req.authUser!.id, status: "ACTIVE" },
       include: { course: { select: { slug: true, title: true } } },
       orderBy: { createdAt: "desc" }
     });
@@ -131,7 +131,7 @@ authRouter.get(
   requireAuth,
   asyncHandler(async (req, res) => {
     const rows = await prisma.booking.findMany({
-      where: { userId: req.authUser!.id },
+      where: { userId: req.authUser!.id, status: "ACTIVE" },
       include: { event: { select: { slug: true, title: true, startDate: true } } },
       orderBy: { createdAt: "desc" }
     });

@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 
 import { prisma } from "../../config/db";
+import { logger } from "../../config/logger";
 
 /** Reserve stock when checkout creates an order (increment `reserved` per line qty). */
 export async function reserveStockTx(tx: Prisma.TransactionClient, orderId: string): Promise<void> {
@@ -96,9 +97,14 @@ export async function cancelUnpaidOrderWithRelease(
   return prisma.$transaction(async (tx) => {
     const order = await tx.order.findFirst({
       where: { id: orderId, deletedAt: null },
-      include: { payments: { orderBy: { createdAt: "desc" }, take: 1 } }
+      include: { payments: { orderBy: { createdAt: "desc" } } }
     });
     if (!order) return false;
+    // Safety A: never auto-cancel COD orders (status PAID, payment PENDING)
+    if (order.payments.some((p) => p.provider === "COD")) {
+      logger.warn("cancel_unpaid_skipped_cod", { orderId });
+      return false;
+    }
     if (order.status !== "PENDING_PAYMENT") return false;
     const payment = order.payments[0];
     if (payment?.status === "CAPTURED") return false;
@@ -162,6 +168,21 @@ export async function restockPaidOrderTx(tx: Prisma.TransactionClient, orderId: 
   }
 }
 
+/** Mark course/event access cancelled when a paid digital order is refunded or cancelled. */
+async function revokeDigitalPurchasesTx(
+  tx: Prisma.TransactionClient,
+  orderId: string
+): Promise<void> {
+  await tx.enrollment.updateMany({
+    where: { orderId, status: { not: "CANCELLED" } },
+    data: { status: "CANCELLED" }
+  });
+  await tx.booking.updateMany({
+    where: { orderId, status: { not: "CANCELLED" } },
+    data: { status: "CANCELLED" }
+  });
+}
+
 export async function handlePaidOrderStatusChange(
   orderId: string,
   toStatus: "CANCELLED" | "REFUNDED",
@@ -179,6 +200,9 @@ export async function handlePaidOrderStatusChange(
 
     if (wasPaidPipeline && paymentCaptured) {
       await restockPaidOrderTx(tx, orderId);
+      if (toStatus === "REFUNDED" || toStatus === "CANCELLED") {
+        await revokeDigitalPurchasesTx(tx, orderId);
+      }
     }
 
     await tx.order.update({

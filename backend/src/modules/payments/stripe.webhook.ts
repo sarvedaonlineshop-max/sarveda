@@ -51,8 +51,20 @@ export async function stripeWebhookHandler(req: Request, res: Response): Promise
       }
     } else if (event.type === "payment_intent.payment_failed") {
       const pi = event.data.object as Stripe.PaymentIntent;
+      // BUG 1: checkout stores Stripe Session id in providerOrderId, not payment_intent id
+      const checkoutSessionId =
+        typeof pi.metadata?.checkoutSessionId === "string"
+          ? pi.metadata.checkoutSessionId.trim()
+          : undefined;
       const payRow = await prisma.payment.findFirst({
-        where: { provider: "STRIPE", providerOrderId: pi.id }
+        where: {
+          provider: "STRIPE",
+          OR: [
+            { providerOrderId: pi.id },
+            ...(checkoutSessionId ? [{ providerOrderId: checkoutSessionId }] : []),
+            { providerPaymentId: pi.id }
+          ]
+        }
       });
       if (payRow) {
         const cancelled = await cancelUnpaidOrderWithRelease(payRow.orderId, "Stripe payment failed");

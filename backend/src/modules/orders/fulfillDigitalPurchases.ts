@@ -34,8 +34,8 @@ export async function fulfillDigitalPurchases(orderId: string): Promise<void> {
       if (course) {
         await prisma.enrollment.upsert({
           where: { userId_courseId: { userId, courseId: course.id } },
-          create: { userId, courseId: course.id },
-          update: {}
+          create: { userId, courseId: course.id, orderId, status: "ACTIVE" },
+          update: { orderId, status: "ACTIVE" }
         });
       }
     } else if (sku.startsWith("EVENT-")) {
@@ -48,7 +48,14 @@ export async function fulfillDigitalPurchases(orderId: string): Promise<void> {
           where: { userId, eventId: event.id }
         });
         if (!existing) {
-          await prisma.booking.create({ data: { userId, eventId: event.id } });
+          await prisma.booking.create({
+            data: { userId, eventId: event.id, orderId, status: "ACTIVE" }
+          });
+        } else if (existing.status !== "ACTIVE" || existing.orderId !== orderId) {
+          await prisma.booking.update({
+            where: { id: existing.id },
+            data: { orderId, status: "ACTIVE" }
+          });
         }
       }
     }

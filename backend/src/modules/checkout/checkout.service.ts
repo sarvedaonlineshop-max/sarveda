@@ -452,6 +452,17 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
     const useStripe = paymentMethod === "stripe" && zone !== "IN";
     const usePayPal = paymentMethod === "paypal" && zone !== "IN";
 
+    // BUG 8: hard block COD outside India even if soft zone checks fail
+    if (paymentMethod === "cod" && zone !== "IN") {
+      const e = new Error("Cash on Delivery is only available for Indian addresses.") as Error & {
+        statusCode: number;
+        code: string;
+      };
+      e.statusCode = 400;
+      e.code = "COD_NOT_ALLOWED";
+      throw e;
+    }
+
     if (useCod) {
       const payment = await tx.payment.create({
         data: {
@@ -465,6 +476,12 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
       });
 
       await confirmStockTx(tx, order.id);
+      // Safety B: monitor COD orders in server logs
+      console.info("[COD_ORDER_CREATED]", {
+        orderId: order.id,
+        zone,
+        total: grandTotalInPaise
+      });
 
       await tx.order.update({
         where: { id: order.id },

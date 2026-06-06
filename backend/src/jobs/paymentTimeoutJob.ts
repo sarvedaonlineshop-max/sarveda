@@ -3,6 +3,7 @@ import { Queue, Worker, type Job } from "bullmq";
 import { getRedisConnection } from "../config/redisConnection";
 import { logger } from "../config/logger";
 import { notifyOrderEmail } from "../modules/notifications/email";
+import { prisma } from "../config/db";
 import { cancelUnpaidOrderWithRelease } from "../modules/orders/orders.service";
 
 export const PAYMENT_TIMEOUT_QUEUE = "payment-timeout";
@@ -41,6 +42,14 @@ export async function schedulePaymentTimeout(orderId: string): Promise<void> {
 
 async function processTimeout(job: Job<{ orderId: string }>): Promise<void> {
   const { orderId } = job.data;
+  // BUG 3: COD orders use paymentStatus PENDING but must not be auto-cancelled
+  const codPayment = await prisma.payment.findFirst({
+    where: { orderId, provider: "COD" }
+  });
+  if (codPayment) {
+    logger.warn("payment_timeout_skipped_cod", { orderId });
+    return;
+  }
   const changed = await cancelUnpaidOrderWithRelease(
     orderId,
     "Payment not completed within 15 minutes — stock released",

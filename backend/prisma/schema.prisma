@@ -285,6 +285,8 @@ model Order {
   statusHistory     OrderStatusHistory[]
   shipments         Shipment[]
   invoice           Invoice?
+  enrollments       Enrollment[]
+  bookings          Booking[]
 }
 
 enum OrderStatus {
@@ -549,16 +551,25 @@ model Lesson {
   course   Course  @relation(fields: [courseId], references: [id])
 }
 
+enum DigitalAccessStatus {
+  ACTIVE
+  CANCELLED
+}
+
 model Enrollment {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId      String    @db.Uuid
-  courseId    String    @db.Uuid
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String              @db.Uuid
+  courseId    String              @db.Uuid
+  orderId     String?             @db.Uuid
+  status      DigitalAccessStatus @default(ACTIVE)
   completedAt DateTime?
-  createdAt   DateTime  @default(now())
-  user        User      @relation(fields: [userId], references: [id])
-  course      Course    @relation(fields: [courseId], references: [id])
+  createdAt   DateTime            @default(now())
+  user        User                @relation(fields: [userId], references: [id])
+  course      Course              @relation(fields: [courseId], references: [id])
+  order       Order?              @relation(fields: [orderId], references: [id])
 
   @@unique([userId, courseId])
+  @@index([orderId])
 }
 
 model Event {
@@ -610,12 +621,17 @@ enum EventStatus {
 }
 
 model Booking {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId    String   @db.Uuid
-  eventId   String   @db.Uuid
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
-  event     Event    @relation(fields: [eventId], references: [id])
+  id        String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String              @db.Uuid
+  eventId   String              @db.Uuid
+  orderId   String?             @db.Uuid
+  status    DigitalAccessStatus @default(ACTIVE)
+  createdAt DateTime            @default(now())
+  user      User                @relation(fields: [userId], references: [id])
+  event     Event               @relation(fields: [eventId], references: [id])
+  order     Order?              @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
 }
 
 model Vaidya {

@@ -3,7 +3,7 @@ import type { Request, Response } from "express";
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { notifyOrderEmail } from "../notifications/email";
-import { cancelUnpaidOrderWithRelease } from "../orders/orders.service";
+import { cancelUnpaidOrderWithRelease, handlePaidOrderStatusChange } from "../orders/orders.service";
 
 import { completePayPalPaidOrder } from "./paypal.complete";
 
@@ -130,7 +130,7 @@ export async function paypalWebhookHandler(req: Request, res: Response): Promise
           }
         }
       }
-    } else if (type === "PAYMENT.CAPTURE.DENIED" || type === "PAYMENT.CAPTURE.REFUNDED") {
+    } else if (type === "PAYMENT.CAPTURE.DENIED") {
       const paymentId = event.resource?.custom_id;
       if (paymentId) {
         const pay = await prisma.payment.findFirst({
@@ -140,6 +140,24 @@ export async function paypalWebhookHandler(req: Request, res: Response): Promise
         if (pay && pay.order.status === "PENDING_PAYMENT") {
           const cancelled = await cancelUnpaidOrderWithRelease(pay.orderId, `PayPal ${type}`);
           if (cancelled) notifyOrderEmail(pay.orderId, "payment_failed");
+        }
+      }
+    } else if (type === "PAYMENT.CAPTURE.REFUNDED") {
+      // BUG 2: refund paid orders (restock + REFUNDED), not only PENDING_PAYMENT
+      const paymentId = event.resource?.custom_id;
+      if (paymentId) {
+        const pay = await prisma.payment.findFirst({
+          where: { id: paymentId, provider: "PAYPAL" },
+          include: { order: true }
+        });
+        if (pay) {
+          if (pay.order.status === "PENDING_PAYMENT") {
+            const cancelled = await cancelUnpaidOrderWithRelease(pay.orderId, `PayPal ${type}`);
+            if (cancelled) notifyOrderEmail(pay.orderId, "payment_failed");
+          } else {
+            await handlePaidOrderStatusChange(pay.orderId, "REFUNDED", "PayPal PAYMENT.CAPTURE.REFUNDED");
+            notifyOrderEmail(pay.orderId, "refund_initiated");
+          }
         }
       }
     }

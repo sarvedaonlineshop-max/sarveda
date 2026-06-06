@@ -119,5 +119,6 @@ export async function createZohoInvoiceForOrder(orderId: string): Promise<void> 
         data: { zohoSyncError: errorMsg }
       })
       .catch(() => {});
+    throw err;
   }
 }

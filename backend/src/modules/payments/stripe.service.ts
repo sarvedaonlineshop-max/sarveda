@@ -68,8 +68,12 @@ export async function completeStripePaidOrder(
   });
 
   await afterOrderPaid(payment.orderId);
-  createZohoInvoiceForOrder(payment.orderId).catch((err) =>
-    logger.error("Zoho invoice failed after Stripe", { orderId: payment.orderId, err })
-  );
+  // BUG 4: prominent log on Zoho invoice failure for manual retry via admin sync
+  try {
+    await createZohoInvoiceForOrder(payment.orderId);
+  } catch (err) {
+    console.error("[ZOHO_INVOICE_FAILED]", { orderId: payment.orderId, err });
+    logger.error("Zoho invoice failed after Stripe", { orderId: payment.orderId, err });
+  }
   return { orderNumber: payment.order.orderNumber };
 }

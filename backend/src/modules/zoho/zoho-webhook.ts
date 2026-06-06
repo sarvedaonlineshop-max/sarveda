@@ -33,7 +33,8 @@ export async function handleZohoWebhook(req: Request, res: Response): Promise<vo
 
 async function syncSingleItemStock(sku: string, stockOnHand: number): Promise<void> {
   const variant = await prisma.productVariant.findFirst({
-    where: { sku }
+    where: { sku },
+    include: { inventory: true }
   });
 
   if (!variant) {
@@ -41,16 +42,22 @@ async function syncSingleItemStock(sku: string, stockOnHand: number): Promise<vo
     return;
   }
 
-  const onHand = Math.max(0, Math.floor(stockOnHand));
+  const zohoOnHand = Math.max(0, Math.floor(stockOnHand));
+  const reserved = variant.inventory?.reserved ?? 0;
+  const onHand = zohoOnHand;
+  const available = Math.max(0, onHand - reserved);
   await prisma.inventory.upsert({
     where: { variantId: variant.id },
-    create: { variantId: variant.id, onHand },
-    update: { onHand }
+    create: { variantId: variant.id, onHand, reserved: 0 },
+    update: { onHand, reserved }
   });
 
   logger.info("Zoho webhook: stock updated", {
     sku,
-    stockOnHand: onHand,
+    onHand,
+    reserved,
+    available,
+    zohoReported: zohoOnHand,
     variantId: variant.id
   });
 }

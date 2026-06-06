@@ -167,11 +167,26 @@ export async function loginUser(res: Response, body: LoginBody) {
   if (!user || user.deletedAt) {
     throw httpError(401, "Invalid email or password", "INVALID_CREDENTIALS");
   }
+  // BUG 7: migrated Woo customers have no password — give a clear path to OTP/Google
   if (!user.passwordHash) {
+    if (user.wooCommerceId != null) {
+      throw httpError(
+        401,
+        "Your account was migrated from our old store. Please use OTP login or sign in with Google.",
+        "MIGRATED_ACCOUNT_USE_OTP"
+      );
+    }
     throw httpError(401, "Sign in with Google or OTP for this account", "PASSWORD_NOT_SET");
   }
   const ok = await verifyPassword(body.password, user.passwordHash);
   if (!ok) {
+    if (user.wooCommerceId != null) {
+      throw httpError(
+        401,
+        "Your account was migrated from our old store. Please use OTP login or sign in with Google.",
+        "MIGRATED_ACCOUNT_USE_OTP"
+      );
+    }
     throw httpError(401, "Invalid email or password", "INVALID_CREDENTIALS");
   }
   const effective = await applyAdminBootstrapIfNeeded(user);
