@@ -9,6 +9,18 @@ export const ABANDONED_QUEUE = "abandoned-notifications";
 const CART_DELAY_MS = 2 * 60 * 60 * 1000;
 const PAYMENT_REMINDER_MS = 2 * 60 * 60 * 1000;
 const SCAN_INTERVAL_MS = 30 * 60 * 1000;
+const ABANDONED_CART_DEDUP_TTL_SEC = 7 * 24 * 60 * 60;
+
+function abandonedCartDedupKey(cartId: string): string {
+  return `abandoned-cart:${cartId}`;
+}
+
+/** Clear Redis dedup when cart contents change so a new reminder can fire later. */
+export async function clearAbandonedCartEmailDedup(cartId: string): Promise<void> {
+  const redis = getRedisConnection();
+  if (!redis) return;
+  await redis.del(abandonedCartDedupKey(cartId));
+}
 
 let queue: Queue | null = null;
 let worker: Worker | null = null;
@@ -39,8 +51,19 @@ async function scanAbandonedCarts(): Promise<void> {
   for (const cart of carts) {
     if (!cart.user?.email || !cart.userId) continue;
 
+    const redis = getRedisConnection();
+    const dedupeKey = abandonedCartDedupKey(cart.id);
+    if (redis) {
+      const alreadySent = await redis.get(dedupeKey);
+      if (alreadySent) continue;
+    }
+
     const sent = await sendAbandonedCartEmail(cart.userId);
     if (!sent) continue;
+
+    if (redis) {
+      await redis.set(dedupeKey, "1", "EX", ABANDONED_CART_DEDUP_TTL_SEC);
+    }
 
     await prisma.cart.update({
       where: { id: cart.id },

@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import type { Request } from "express";
 
 import { prisma } from "../../config/db";
+import { clearAbandonedCartEmailDedup } from "../../jobs/abandonedNotificationJob";
 import { unitMinorForZone } from "../../utils/variantPricing";
 import { isDigitalLine } from "../../utils/digitalCart";
 import { resolveCartCouponDiscount } from "../coupons/coupon.service";
@@ -12,6 +13,7 @@ const CART_HEADER = "x-sarveda-cart-session";
 
 /** Reset abandoned-cart email flag when shopper changes the cart. */
 async function markCartMutated(cartId: string): Promise<void> {
+  await clearAbandonedCartEmailDedup(cartId);
   await prisma.cart.update({
     where: { id: cartId },
     data: { abandonedEmailSentAt: null }

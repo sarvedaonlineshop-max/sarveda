@@ -112,6 +112,7 @@ export async function createZohoInvoiceForOrder(orderId: string): Promise<void> 
     });
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error("[ZOHO_INVOICE_FAILED]", { orderId, err });
     logger.error("Zoho invoice creation failed", { orderId, error: errorMsg });
     await prisma.order
       .update({

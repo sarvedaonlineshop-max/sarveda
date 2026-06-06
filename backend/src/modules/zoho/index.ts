@@ -183,6 +183,7 @@ zohoRouter.post("/sync/invoice/:orderId", requireAdmin, async (req, res, next) =
     await createZohoInvoiceForOrder(req.params.orderId);
     res.json({ success: true });
   } catch (err) {
+    console.error("[ZOHO_INVOICE_FAILED]", { orderId: req.params.orderId, err });
     logger.error("Zoho invoice sync route failed", { orderId: req.params.orderId, err });
     next(err);
   }
