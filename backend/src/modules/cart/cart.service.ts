@@ -49,13 +49,27 @@ export async function mergeGuestCartIntoUser(
   }
 
   for (const item of guestCart.items) {
+    const variant = await prisma.productVariant.findUnique({
+      where: { id: item.variantId },
+      include: { inventory: true }
+    });
+
+    const available = variant?.inventory
+      ? Math.max(0, variant.inventory.onHand - variant.inventory.reserved)
+      : 1_000_000;
+
     const existing = await prisma.cartItem.findUnique({
       where: {
         cartId_variantId: { cartId: userCartId, variantId: item.variantId }
       },
       select: { quantity: true }
     });
-    const mergedQty = (existing?.quantity ?? 0) + item.quantity;
+
+    const rawMerged = (existing?.quantity ?? 0) + item.quantity;
+    const mergedQty = Math.min(rawMerged, available);
+
+    if (mergedQty < 1) continue;
+
     await prisma.cartItem.upsert({
       where: {
         cartId_variantId: { cartId: userCartId, variantId: item.variantId }
@@ -63,7 +77,7 @@ export async function mergeGuestCartIntoUser(
       create: {
         cartId: userCartId,
         variantId: item.variantId,
-        quantity: item.quantity
+        quantity: mergedQty
       },
       update: {
         quantity: mergedQty

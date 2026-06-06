@@ -130,6 +130,11 @@ export function PaymentSelector({
     setPaymentMode(isIndia ? "razorpay" : "stripe");
   }, [isIndia]);
 
+  useEffect(() => {
+    payStarted.current = false;
+    setErr(null);
+  }, [paymentMode]);
+
   const displayCurrency = isIndia ? "INR" : cartCurrency || shippingCurrency;
   const formatMoney = (minor: number) =>
     isIndia ? formatINRFromPaise(minor) : formatMinorFromPaise(minor, displayCurrency);
@@ -206,6 +211,9 @@ export function PaymentSelector({
 
   const goFailure = useCallback(
     (orderNumber: string, reason: string) => {
+      payStarted.current = false;
+      setBusy(false);
+      setProcessing(false);
       const q = new URLSearchParams({
         orderNumber,
         email: form.email.trim().toLowerCase(),
@@ -261,12 +269,14 @@ export function PaymentSelector({
               } else if (polled === "CANCELLED") {
                 goFailure(order.orderNumber, "Payment was not completed");
               } else {
+                payStarted.current = false;
                 setErr(
                   "We could not confirm payment immediately. Your cart is unchanged. If money was debited, your order will update within a few minutes."
                 );
               }
             }
           } catch (e) {
+            payStarted.current = false;
             setErr(e instanceof Error ? e.message : "Verification failed");
           } finally {
             setProcessing(false);

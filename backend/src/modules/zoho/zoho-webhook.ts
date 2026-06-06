@@ -43,13 +43,13 @@ async function syncSingleItemStock(sku: string, stockOnHand: number): Promise<vo
   }
 
   const zohoOnHand = Math.max(0, Math.floor(stockOnHand));
-  const reserved = variant.inventory?.reserved ?? 0;
   const onHand = zohoOnHand;
+  const reserved = variant.inventory?.reserved ?? 0;
   const available = Math.max(0, onHand - reserved);
   await prisma.inventory.upsert({
     where: { variantId: variant.id },
     create: { variantId: variant.id, onHand, reserved: 0 },
-    update: { onHand, reserved }
+    update: { onHand }
   });
 
   logger.info("Zoho webhook: stock updated", {

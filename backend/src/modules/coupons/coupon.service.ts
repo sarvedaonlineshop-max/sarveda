@@ -201,7 +201,7 @@ export async function listCheckoutCouponOffers(opts: {
   return offers;
 }
 
-/** Increment global usage after order is paid. */
+/** Increment global usage after order is paid (atomic — respects maxUsageTotal). */
 export async function incrementCouponUsageForOrder(orderId: string): Promise<void> {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
@@ -209,8 +209,13 @@ export async function incrementCouponUsageForOrder(orderId: string): Promise<voi
   });
   if (!order?.couponCode) return;
 
-  await prisma.coupon.updateMany({
-    where: { code: order.couponCode },
-    data: { usageCount: { increment: 1 } }
-  });
+  await prisma.$executeRaw`
+    UPDATE "Coupon"
+    SET "usageCount" = "usageCount" + 1
+    WHERE code = ${order.couponCode}
+    AND (
+      "maxUsageTotal" IS NULL
+      OR "usageCount" < "maxUsageTotal"
+    )
+  `;
 }
