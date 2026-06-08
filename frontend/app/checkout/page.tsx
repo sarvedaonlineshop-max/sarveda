@@ -20,8 +20,7 @@ export default function CheckoutPage() {
         </nav>
         <h1 className="mt-6 font-serif text-3xl font-semibold text-stone-900">Checkout</h1>
         <p className="mt-2 text-stone-500">
-          Enter your shipping details and pay securely with Razorpay. If the gateway is slow, we keep checking your
-          order for up to 30 seconds after you pay. You will never get a duplicate order from double-clicking Pay.
+          Enter your details and complete payment securely. Your order is confirmed once payment is verified.
         </p>
         <div className="mt-10">
           <Suspense fallback={<p className="text-stone-500">Loading checkout…</p>}>

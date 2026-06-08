@@ -8,7 +8,6 @@ import { SlideDrawer } from "@/components/ui/SlideDrawer";
 import { cartRemove, cartUpdate } from "@/lib/cart-api";
 import { formatINRFromPaise } from "@/lib/money";
 
-import { FreeShippingBar } from "./FreeShippingBar";
 import { useCartData } from "./CartProvider";
 
 type Props = {
@@ -17,7 +16,7 @@ type Props = {
 };
 
 export function CartDrawer({ open, onClose }: Props) {
-  const { items, subtotalInPaise, itemCount, currency, refreshCart } = useCartData();
+  const { items, subtotalInPaise, itemCount, refreshCart } = useCartData();
   const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
@@ -74,7 +73,6 @@ export function CartDrawer({ open, onClose }: Props) {
               </span>
             </div>
             <p className="mt-1 text-xs text-stone-500">GST included · Shipping calculated at checkout</p>
-            <FreeShippingBar subtotalInPaise={subtotalInPaise} currency={currency} />
             <Link
               href="/checkout"
               onClick={onClose}

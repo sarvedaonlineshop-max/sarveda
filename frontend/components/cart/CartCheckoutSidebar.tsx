@@ -7,7 +7,6 @@ import { CartLineQuantity } from "@/components/cart/CartLineQuantity";
 import type { CartApiItem } from "@/lib/cart-api";
 import { formatINRFromPaise } from "@/lib/money";
 
-import { FreeShippingBar } from "./FreeShippingBar";
 import { useCartData } from "./CartProvider";
 
 type Props = {
@@ -42,7 +41,7 @@ function CompactLine({ line }: { line: CartApiItem }) {
 }
 
 export function CartCheckoutSidebar({ mode, className = "" }: Props) {
-  const { items, subtotalInPaise, itemCount, currency } = useCartData();
+  const { items, subtotalInPaise, itemCount } = useCartData();
 
   const count = itemCount > 0 ? itemCount : items.reduce((n, i) => n + i.quantity, 0);
   if (count === 0 && items.length === 0) return null;
@@ -56,8 +55,6 @@ export function CartCheckoutSidebar({ mode, className = "" }: Props) {
           Subtotal ({count} {count === 1 ? "item" : "items"}):
         </p>
         <p className="mt-0.5 text-lg font-semibold text-stone-900">{formatINRFromPaise(subtotalInPaise)}</p>
-
-        <FreeShippingBar subtotalInPaise={subtotalInPaise} currency={currency} />
 
         <Link
           href="/checkout"

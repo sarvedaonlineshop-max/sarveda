@@ -97,6 +97,7 @@ export function Header() {
   async function handleSignOut() {
     await logoutSession();
     setMenuOpen(false);
+    router.push("/");
     router.refresh();
   }
 

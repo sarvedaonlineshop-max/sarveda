@@ -21,6 +21,13 @@ export default function ForgotPasswordPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email })
       });
+      if (res.status === 404) {
+        setError(
+          "No account found with this email. " +
+            "Please check your email or register a new account."
+        );
+        return;
+      }
       const data = await parseApiResponse<{ message?: string }>(res);
       if (!data.success) throw new Error(data.error);
       setSent(true);
@@ -52,8 +59,8 @@ export default function ForgotPasswordPage() {
             Check your email
           </h1>
           <p className="text-sm" style={{ color: "var(--brand-muted)" }}>
-            If <strong>{email}</strong> has an account, we sent a reset link. Check your inbox and
-            spam folder. The link expires in 30 minutes.
+            We sent a reset link to <strong>{email}</strong>. Check your inbox and spam folder. The
+            link expires in 30 minutes.
           </p>
         </div>
       </div>

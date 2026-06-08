@@ -14,8 +14,15 @@ export async function requestPasswordReset(email: string): Promise<void> {
     select: { id: true, email: true, name: true }
   });
 
-  // Always return success — never reveal if email exists
-  if (!user) return;
+  if (!user) {
+    throw Object.assign(
+      new Error(
+        "No account found with this email address. " +
+          "Please check and try again, or register a new account."
+      ),
+      { statusCode: 404, code: "EMAIL_NOT_FOUND" }
+    );
+  }
 
   await prisma.passwordResetToken.deleteMany({
     where: { userId: user.id }

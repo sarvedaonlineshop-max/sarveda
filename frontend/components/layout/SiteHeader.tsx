@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { useCartData, useCartUi } from "@/components/cart/CartProvider";
@@ -51,6 +51,7 @@ const sessionLinkClass = "text-sm font-medium tracking-wide text-stone-400 trans
 
 export function SiteHeader() {
   const pathname = usePathname();
+  const router = useRouter();
   const { goToCart }             = useCartUi();
   const { itemCount: cartCount } = useCartData();
   const [menuOpen, setMenuOpen]  = useState(false);
@@ -75,6 +76,8 @@ export function SiteHeader() {
     await logoutSession();
     setSessionUser(null);
     setMenuOpen(false);
+    router.push("/");
+    router.refresh();
   }
 
   if (pathname?.startsWith("/admin") || pathname?.startsWith("/login") || pathname?.startsWith("/signup")) {
