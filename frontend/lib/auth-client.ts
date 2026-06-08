@@ -1,5 +1,6 @@
 import { getApiBase } from "@/lib/api";
 import { mergeGuestCartSession, setAccountCartOnly } from "@/lib/cart-api";
+import { parseApiResponse } from "@/lib/parse-api-response";
 
 export type PublicUser = {
   id: string;
@@ -66,6 +67,43 @@ export function resolvePostLoginPath(
   return "/my-account";
 }
 
+async function completeAuthSession(user: PublicUser): Promise<PublicUser> {
+  setAccountCartOnly(true);
+  await mergeGuestCartSession();
+  notifyAuthChanged(user);
+  return user;
+}
+
+export async function sendLoginOtp(target: string): Promise<void> {
+  const res = await fetch(`${getApiBase()}/api/auth/send-otp`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ target: target.trim().toLowerCase() })
+  });
+  const json = await parseApiResponse<unknown>(res);
+  if (!res.ok || !json.success) {
+    throw new Error("error" in json ? json.error : `Failed to send OTP (${res.status})`);
+  }
+}
+
+export async function verifyLoginOtp(target: string, code: string): Promise<PublicUser> {
+  const res = await fetch(`${getApiBase()}/api/auth/verify-otp`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({
+      target: target.trim().toLowerCase(),
+      code: code.trim()
+    })
+  });
+  const json = await parseApiResponse<{ user: PublicUser }>(res);
+  if (!res.ok || !json.success || !("data" in json)) {
+    throw new Error("error" in json ? json.error : `OTP verification failed (${res.status})`);
+  }
+  return completeAuthSession(json.data.user);
+}
+
 export async function loginWithPassword(
   email: string,
   password: string
@@ -82,10 +120,7 @@ export async function loginWithPassword(
   if (!res.ok || !json.success || !("data" in json)) {
     throw new Error("error" in json ? String(json.error) : `Login failed (${res.status})`);
   }
-  setAccountCartOnly(true);
-  await mergeGuestCartSession();
-  notifyAuthChanged(json.data.user);
-  return json.data.user;
+  return completeAuthSession(json.data.user);
 }
 
 export async function logoutSession(): Promise<void> {
