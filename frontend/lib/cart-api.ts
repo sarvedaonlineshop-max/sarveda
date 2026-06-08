@@ -120,10 +120,15 @@ export async function mergeGuestCartSession(): Promise<CartApiResponse | null> {
     setAccountCartOnly(true);
     return null;
   }
+  // Always attach guest session for merge — even if account-cart mode is already on.
   const res = await fetch(`${getApiBase()}/api/cart/merge-session`, {
     method: "POST",
     credentials: "include",
-    headers: buildHeaders(true)
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "X-Sarveda-Cart-Session": sid
+    }
   });
   const json = (await res.json()) as {
     success?: boolean;

@@ -68,7 +68,6 @@ export function resolvePostLoginPath(
 }
 
 async function completeAuthSession(user: PublicUser): Promise<PublicUser> {
-  setAccountCartOnly(true);
   await mergeGuestCartSession();
   notifyAuthChanged(user);
   return user;

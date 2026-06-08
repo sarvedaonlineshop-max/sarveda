@@ -238,8 +238,12 @@ export function ProductBuyBox({
             +
           </button>
         </div>
-        {qtyMessage ? (
-          <p className="mt-2 text-sm text-amber-800" role="status">
+        {stockCap != null && qty >= stockCap ? (
+          <p className="mt-2 text-sm font-medium text-amber-800" role="status">
+            {qtyMessage ?? `Only ${stockCap} available`}
+          </p>
+        ) : qtyMessage ? (
+          <p className="mt-2 text-sm font-medium text-amber-800" role="status">
             {qtyMessage}
           </p>
         ) : null}

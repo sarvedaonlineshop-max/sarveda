@@ -13,13 +13,15 @@ const router = Router();
 /** Apply attempts only — GET /coupon/offers must not share this bucket (checkout refetches offers often). */
 const couponApplyLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 15,
-  message: { error: "Too many coupon attempts. Please slow down." },
+  max: 30,
+  skipSuccessfulRequests: true,
+  message: { success: false, error: "Too many coupon attempts. Please slow down.", code: "RATE_LIMITED" },
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
     const body = req.body as { code?: string; email?: string };
-    return `coupon-apply:${req.ip}:${body.code?.trim().toUpperCase() ?? ""}:${body.email?.trim().toLowerCase() ?? ""}`;
+    const userId = req.authUser?.id;
+    return `coupon-apply:${userId ?? req.ip}:${body.code?.trim().toUpperCase() ?? "unknown"}`;
   }
 });
 

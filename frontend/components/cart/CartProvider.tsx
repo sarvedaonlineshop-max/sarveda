@@ -202,21 +202,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     (async () => {
       const user = await fetchMe();
-      if (cancelled) return;
+      if (cancelled || authSyncedRef.current) return;
       if (user) {
-        setAccountCartOnly(true);
-        if (!authSyncedRef.current) {
-          authSyncedRef.current = true;
-          const merged = await mergeGuestCartSession();
-          if (merged) {
-            applyCartResponse(merged);
-            return;
-          }
+        authSyncedRef.current = true;
+        const merged = await mergeGuestCartSession();
+        if (cancelled) return;
+        if (merged) {
+          applyCartResponse(merged);
+          return;
         }
+        setAccountCartOnly(true);
       } else {
         setAccountCartOnly(false);
-        authSyncedRef.current = false;
       }
+      if (cancelled || authSyncedRef.current) return;
       await refreshCart();
     })();
     return () => {
@@ -237,22 +236,34 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const onAuthChange = (event: Event) => {
-      const user = (event as CustomEvent<{ id: string } | null>).detail;
-      if (user) return;
-      authSyncedRef.current = false;
-      setItems([]);
-      itemsRef.current = [];
-      setSubtotalInPaise(0);
-      setDiscountInPaise(0);
-      setTotalInPaise(0);
-      setCoupon(null);
-      setItemCount(0);
-      setIsDigitalOnly(false);
-      void refreshCart();
+      void (async () => {
+        const user = (event as CustomEvent<{ id: string } | null>).detail;
+        if (user) {
+          authSyncedRef.current = true;
+          const merged = await mergeGuestCartSession();
+          if (merged) {
+            applyCartResponse(merged);
+            return;
+          }
+          setAccountCartOnly(true);
+          await refreshCart();
+          return;
+        }
+        authSyncedRef.current = false;
+        setItems([]);
+        itemsRef.current = [];
+        setSubtotalInPaise(0);
+        setDiscountInPaise(0);
+        setTotalInPaise(0);
+        setCoupon(null);
+        setItemCount(0);
+        setIsDigitalOnly(false);
+        await refreshCart();
+      })();
     };
     window.addEventListener("sarveda-auth-changed", onAuthChange);
     return () => window.removeEventListener("sarveda-auth-changed", onAuthChange);
-  }, [refreshCart]);
+  }, [applyCartResponse, refreshCart]);
 
   const goToCart = useCallback(() => {
     router.push("/cart");

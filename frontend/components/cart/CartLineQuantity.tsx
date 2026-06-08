@@ -33,39 +33,46 @@ export function CartLineQuantity({ line, size = "md", showDeleteAtOne = false }:
       : "min-w-[2rem] text-center text-sm font-semibold tabular-nums";
 
   return (
-    <div className={shellClass}>
-      <button
-        type="button"
-        disabled={busy}
-        className={btnClass}
-        aria-label={atMin && showDeleteAtOne ? "Remove from cart" : "Decrease quantity"}
-        onClick={() => {
-          if (atMin && showDeleteAtOne) void removeLine(line.variantId);
-          else void decrease(line.variantId);
-        }}
-      >
-        {atMin && showDeleteAtOne ? (
-          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-            />
-          </svg>
-        ) : (
-          "−"
-        )}
-      </button>
-      <span className={qtyClass}>{line.quantity}</span>
-      <button
-        type="button"
-        disabled={busy || atMax}
-        className={btnClass}
-        aria-label="Increase quantity"
-        onClick={() => void increase(line.variantId)}
-      >
-        +
-      </button>
+    <div>
+      <div className={shellClass}>
+        <button
+          type="button"
+          disabled={busy}
+          className={btnClass}
+          aria-label={atMin && showDeleteAtOne ? "Remove from cart" : "Decrease quantity"}
+          onClick={() => {
+            if (atMin && showDeleteAtOne) void removeLine(line.variantId);
+            else void decrease(line.variantId);
+          }}
+        >
+          {atMin && showDeleteAtOne ? (
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
+            </svg>
+          ) : (
+            "−"
+          )}
+        </button>
+        <span className={qtyClass}>{line.quantity}</span>
+        <button
+          type="button"
+          disabled={busy || atMax}
+          className={btnClass}
+          aria-label="Increase quantity"
+          onClick={() => void increase(line.variantId)}
+        >
+          +
+        </button>
+      </div>
+      {atMax && line.maxQuantity != null ? (
+        <p className="mt-1.5 text-xs font-medium text-amber-800" role="status">
+          Only {line.maxQuantity} available
+        </p>
+      ) : null}
     </div>
   );
 }
