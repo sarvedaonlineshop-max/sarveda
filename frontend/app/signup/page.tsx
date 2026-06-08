@@ -20,7 +20,7 @@ function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next");
-  const googleNextPath = next ?? "/my-account";
+  const googleNextPath = next ?? "/";
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");

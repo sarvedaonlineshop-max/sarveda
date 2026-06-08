@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 
 import { DeliveryTimeline } from "@/components/product/DeliveryTimeline";
 import { EstimatedDelivery } from "@/components/product/EstimatedDelivery";
 import { PriceDisplay } from "@/components/product/PriceDisplay";
 import type { Zone } from "@/lib/currency";
-import { stockDisplay } from "@/lib/variant-utils";
+import { stockDisplay, UNTRACKED_STOCK_ON_HAND } from "@/lib/variant-utils";
 import type { ProductVariantDetail } from "@/lib/types";
 
 type Props = {
@@ -46,6 +46,7 @@ export function ProductBuyBox({
   onVariantChange,
   isDigital,
   shippingDays,
+  available,
   variantForStock,
   showPurchaseActions = true,
   layout = "card"
@@ -53,6 +54,20 @@ export function ProductBuyBox({
   const stock = variantForStock ? stockDisplay(variantForStock) : null;
   const preparationDays = "5 - 10 Days";
   const isInline = layout === "inline";
+  const [qtyMessage, setQtyMessage] = useState<string | null>(null);
+  const stockCap =
+    available != null && available > 0 && available < UNTRACKED_STOCK_ON_HAND ? available : null;
+  const qtyLimit = stockCap ?? maxQty;
+
+  function changeQty(next: number) {
+    if (stockCap != null && next > stockCap) {
+      setQtyMessage(`Only ${stockCap} available`);
+      onQtyChange(stockCap);
+      return;
+    }
+    setQtyMessage(null);
+    onQtyChange(Math.max(1, Math.min(qtyLimit, next)));
+  }
 
   const attributeGroups = useMemo(() => {
     const map = new Map<string, Set<string>>();
@@ -208,21 +223,26 @@ export function ProductBuyBox({
             disabled={qty <= 1}
             className="flex h-11 w-11 items-center justify-center text-lg text-stone-700 hover:bg-stone-50 disabled:opacity-40"
             aria-label="Decrease quantity"
-            onClick={() => onQtyChange(Math.max(1, qty - 1))}
+            onClick={() => changeQty(qty - 1)}
           >
             −
           </button>
           <span className="min-w-[2.5rem] text-center text-sm font-semibold tabular-nums text-stone-900">{qty}</span>
           <button
             type="button"
-            disabled={qty >= Math.min(maxQty, 10)}
+            disabled={qty >= qtyLimit}
             className="flex h-11 w-11 items-center justify-center text-lg text-stone-700 hover:bg-stone-50 disabled:opacity-40"
             aria-label="Increase quantity"
-            onClick={() => onQtyChange(Math.min(Math.min(maxQty, 10), qty + 1))}
+            onClick={() => changeQty(qty + 1)}
           >
             +
           </button>
         </div>
+        {qtyMessage ? (
+          <p className="mt-2 text-sm text-amber-800" role="status">
+            {qtyMessage}
+          </p>
+        ) : null}
       </div>
 
       {showPurchaseActions ? (

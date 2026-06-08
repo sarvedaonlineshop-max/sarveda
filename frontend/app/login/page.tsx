@@ -31,7 +31,7 @@ function LoginForm() {
     [next, searchParams]
   );
   /** Stored in OAuth cookie — backend also applies role-based landing. */
-  const googleNextPath = next ?? (adminOnly ? "/admin" : "/my-account");
+  const googleNextPath = next ?? (adminOnly ? "/admin" : "/");
 
   const [mode, setMode] = useState<LoginMode>("password");
   const [email, setEmail] = useState("");

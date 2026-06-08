@@ -195,18 +195,9 @@ const paymentLimiter = rateLimit({
   legacyHeaders: false
 });
 
-const couponLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 15,
-  message: { error: "Too many coupon attempts. Please slow down." },
-  standardHeaders: true,
-  legacyHeaders: false
-});
-
 app.use("/api/checkout", optionalAuth, checkoutLimiter);
 app.use("/api/payments/razorpay/verify", paymentLimiter);
 app.use("/api/payments/stripe", paymentLimiter);
-app.use("/api/cart/coupon", optionalAuth, couponLimiter);
 
 app.use(
   "/api",

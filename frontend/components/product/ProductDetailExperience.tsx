@@ -19,7 +19,12 @@ import { unitSaleMinor, zoneToCurrency } from "@/lib/currency";
 import { resolveMediaUrl } from "@/lib/media-cdn";
 import { formatINRFromPaise, formatMinorFromPaise } from "@/lib/money";
 import { imageIndexForVariant } from "@/lib/variant-image";
-import { availableStock, stockDisplay, variantDisplayLabel } from "@/lib/variant-utils";
+import {
+  availableStock,
+  stockDisplay,
+  UNTRACKED_STOCK_ON_HAND,
+  variantDisplayLabel
+} from "@/lib/variant-utils";
 import type { ProductDetail, ProductListItem } from "@/lib/types";
 
 function pickInitialVariant(variants: ProductDetail["variants"]) {
@@ -91,7 +96,13 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
   const addDisabled = !variant || !stockInfo?.inStock;
   const saleMinor = variant ? unitSaleMinor(variant, zone) : 0;
   const maxQty =
-    available != null && available > 0 && available < 999 ? Math.min(available, 10) : 10;
+    available != null && available > 0 && available < UNTRACKED_STOCK_ON_HAND
+      ? available
+      : UNTRACKED_STOCK_ON_HAND;
+
+  useEffect(() => {
+    setQty((current) => Math.min(Math.max(1, current), maxQty));
+  }, [variantId, maxQty]);
 
   const add = async () => {
     if (!variant || qty < 1) return;

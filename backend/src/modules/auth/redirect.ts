@@ -15,7 +15,7 @@ export function safeRelativeRedirect(next: string | undefined, fallback: string)
   return next;
 }
 
-/** After Google OAuth: admins default to /admin; customers default to /my-account. */
+/** After Google OAuth: admins default to /admin; customers default to home. */
 export function postOAuthFrontendPath(role: string, rawNext: string | undefined): string {
   const nextPath =
     rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : null;
@@ -24,7 +24,7 @@ export function postOAuthFrontendPath(role: string, rawNext: string | undefined)
     return nextPath?.startsWith("/admin") ? nextPath : "/admin";
   }
   if (nextPath?.startsWith("/admin")) {
-    return "/my-account";
+    return "/";
   }
-  return nextPath ?? "/my-account";
+  return nextPath ?? "/";
 }

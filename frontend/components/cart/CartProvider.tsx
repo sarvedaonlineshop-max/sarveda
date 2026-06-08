@@ -235,6 +235,25 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("sarveda-cart-changed", onChange);
   }, [applyCartResponse]);
 
+  useEffect(() => {
+    const onAuthChange = (event: Event) => {
+      const user = (event as CustomEvent<{ id: string } | null>).detail;
+      if (user) return;
+      authSyncedRef.current = false;
+      setItems([]);
+      itemsRef.current = [];
+      setSubtotalInPaise(0);
+      setDiscountInPaise(0);
+      setTotalInPaise(0);
+      setCoupon(null);
+      setItemCount(0);
+      setIsDigitalOnly(false);
+      void refreshCart();
+    };
+    window.addEventListener("sarveda-auth-changed", onAuthChange);
+    return () => window.removeEventListener("sarveda-auth-changed", onAuthChange);
+  }, [refreshCart]);
+
   const goToCart = useCallback(() => {
     router.push("/cart");
   }, [router]);

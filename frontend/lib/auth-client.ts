@@ -44,7 +44,7 @@ export function googleSignInUrl(nextPath: string): string {
 /**
  * Where to send the user after a successful credential login or sign-up.
  * - Admins → `/admin` (or a deeper `/admin/...` if `next` is under `/admin`).
- * - Customers → `next` when safe, otherwise `/my-account`.
+ * - Customers → `next` when safe, otherwise home (`/`).
  * - Customers must not land on `/admin` (throws).
  */
 export function resolvePostLoginPath(
@@ -64,7 +64,7 @@ export function resolvePostLoginPath(
   }
 
   if (target) return target;
-  return "/my-account";
+  return "/";
 }
 
 async function completeAuthSession(user: PublicUser): Promise<PublicUser> {
