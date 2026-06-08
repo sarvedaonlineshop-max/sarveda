@@ -6,8 +6,8 @@
 |------|---------|
 | `Sarveda-RTM.xlsx` | Your original (unchanged) |
 | `Sarveda-RTM-v1.1-audited.xlsx` | **Revised** — aligned to codebase |
-| `Sarveda-RTM-v1.1-audited.csv` | Flat CSV — **updated May 2026** |
-| `docs/RTM-STATUS-MAY-2026.md` | **Executive summary** — % complete, pending, deferred |
+| `Sarveda-RTM-v1.1-audited.csv` | Flat CSV — **updated Jun 2026** (`scripts/update-rtm-jun-2026.py`) |
+| `docs/RTM-STATUS-MAY-2026.md` | **Executive summary** — % complete, pending, deferred (Jun 2026 figures) |
 
 **Refresh status (May 2026)**
 
@@ -37,9 +37,9 @@ PYTHONPATH=backend/.rtm-pip python3 scripts/update-rtm-status.py
 
 **Must Have (102 items):** **71%** Dev done/deferred · **66%** Test Pass
 
-> Use **`Sarveda-RTM-v1.1-audited.csv`** as source of truth. Re-import into Excel if needed; `generate-rtm-v1.1.py` rebuilds xlsx from an older template.
+> Use **`Sarveda-RTM-v1.1-audited.csv`** as source of truth. Re-import into Excel if needed; run `python3 scripts/update-rtm-jun-2026.py` after sprint work.
 
-See **`docs/RTM-STATUS-MAY-2026.md`** for full “done vs pending” breakdown.
+See **`docs/RTM-STATUS-MAY-2026.md`** for full “done vs pending” breakdown (Jun 2026: **67%** dev complete, **33%** incomplete).
 
 ---
 

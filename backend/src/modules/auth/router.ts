@@ -67,6 +67,20 @@ const resetRequestLimiter = rateLimit({
   legacyHeaders: false
 });
 
+const adminLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5, // Only 5 admin login attempts per 15 min
+  message: {
+    error: "Too many login attempts. Try again in 15 minutes."
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const body = req.body as { email?: string };
+    return `admin-login:${req.ip}:${body.email ?? ""}`;
+  }
+});
+
 authRouter.post(
   "/register",
   validateBody(registerSchema),
@@ -79,6 +93,25 @@ authRouter.post(
 authRouter.post(
   "/login",
   validateBody(loginSchema),
+  async (req, res, next) => {
+    // Customers and admins share the same login endpoint; apply the stricter limiter only for admin roles.
+    const body = req.body as { email?: string };
+    const email = body.email?.trim().toLowerCase();
+    if (!email) return next();
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { role: true, deletedAt: true }
+    });
+
+    const isAdmin =
+      !!user &&
+      !user.deletedAt &&
+      (user.role === "ADMIN" || user.role === "SUPER_ADMIN");
+
+    if (!isAdmin) return next();
+    return adminLoginLimiter(req, res, next);
+  },
   asyncHandler(async (req, res) => {
     const user = await loginUser(res, req.body);
     res.json({ success: true, data: { user } });

@@ -1,7 +1,7 @@
 REQ ID,Module,Description,Priority,Design,Dev,Test,Evidence,Sprint,Notes
 REQ-AUTH-001,Authentication,Customer can register with email and password,Must Have,Complete,Complete,Pass,auth routes / signup,Sprint 1,
 REQ-AUTH-002,Authentication,Customer can login with Google OAuth,Must Have,Complete,Complete,Pass,Google OAuth sarveda-demo.xyz,Sprint 1,
-REQ-AUTH-003,Authentication,Customer can reset password via email,Must Have,Complete,Not Started,Not Tested,,Sprint 1,Forgot-password API still pending. Audit: no forgot-password API in repo.
+REQ-AUTH-003,Authentication,Customer can reset password via email,Must Have,Complete,Complete,Not Tested,forgot-password + reset-password,Sprint 1,Jun 2026: SendGrid reset flow + PasswordResetToken migration. Revised 06-Jun-2026. Forgot-password API still pending. Audit: no forgot-password API in repo.
 REQ-AUTH-004,Authentication,"JWT token issued on login, expires in 7 days",Must Have,Complete,Complete,Pass,auth middleware,Sprint 1,
 REQ-AUTH-005,Authentication,Admin panel protected — only admin roles can access,Must Have,Complete,Complete,Pass,AdminAuthBoundary,Sprint 1,
 REQ-AUTH-006,Authentication,"Multiple admin roles: Super Admin, Order Manager, Inventory, Marketing, Finance",Must Have,In Progress,Not Started,Not Tested,,Sprint 2,Schema: CUSTOMER / ADMIN / SUPER_ADMIN only
@@ -15,11 +15,11 @@ REQ-PROD-006,Products,Stock level shown on product page,Must Have,Complete,Compl
 REQ-PROD-007,Products,Low stock badge when stock ≤ 5 units,Should Have,Complete,Complete,Pass,productListBadges(),Sprint 1,
 REQ-PROD-008,Products,Out of stock badge — disable add to cart,Must Have,Complete,Complete,Pass,,Sprint 1,
 REQ-PROD-009,Products,Related products section on product page,Should Have,Not Started,Complete,Pass,RelatedProducts,Sprint 3,On PDP. Audit: RelatedProducts + PairWith on PDP.
-REQ-PROD-010,Products,Customer reviews and star ratings on product page,Should Have,Not Started,Not Started,Not Tested,,Sprint 3,Placeholder UI only
+REQ-PROD-010,Products,Customer reviews and star ratings on product page,Should Have,Not Started,Complete,Not Tested,reviews.routes + ProductReviewsSection + /admin/reviews,Sprint 3,"Jun 2026: Submit, moderation, verified purchase badge. Revised 06-Jun-2026. Placeholder UI only"
 REQ-PROD-011,Products,Pincode serviceability check before add to cart,Must Have,Complete,Complete,Pass,checkout/shipping API,Sprint 2,By design: pincode at checkout only (not PDP). Audit: removed from PDP; pincode at checkout/shipping API only.
 REQ-PROD-012,Products,Estimated delivery date shown on product page,Must Have,In Progress,Complete,Pass,ProductBuyBox,Sprint 2,Estimated delivery on PDP. Audit: EstimatedDelivery in ProductBuyBox.
 REQ-PROD-013,Products,"Product search with filters (category, price, weight)",Must Have,In Progress,In Progress,Not Tested,/search,Sprint 2,Search live; advanced filters partial. Search page exists; advanced filters partial
-REQ-PROD-014,Products,GST/HSN codes on products for invoicing,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-PROD-014,Products,GST/HSN codes on products for invoicing,Must Have,Not Started,Complete,Not Tested,Product.hsnCode + gst.ts + invoice PDF,Sprint 3,Jun 2026: Admin HSN field; DEFAULT_HSN_CODE fallback. Revised 06-Jun-2026.
 REQ-PROD-015,Products,Artisan/source story on product page,Nice to Have,Not Started,Not Started,Not Tested,,Sprint 4,
 REQ-PROD-016,Products,Product video embed support,Nice to Have,Not Started,Not Started,Not Tested,,Sprint 4,
 REQ-PROD-017,Products,Wishlist / Save for later,Nice to Have,Not Started,Not Started,Not Tested,,Sprint 4,
@@ -28,13 +28,13 @@ REQ-CART-001,Cart & Checkout,Add to cart with variant selection,Must Have,Comple
 REQ-CART-002,Cart & Checkout,Cart persists across sessions (logged in user),Must Have,Complete,Complete,Pass,,Sprint 1,
 REQ-CART-003,Cart & Checkout,Stock reserved at checkout — released if not paid in 15 min,Must Have,Complete,Complete,Pass,BullMQ payment timeout,Sprint 1,Audit: reserve at checkout create-order (not on cart add). Corrected wording from add-to-cart
 REQ-CART-004,Cart & Checkout,Cart drawer slides in from right (mobile + desktop),Must Have,Complete,Complete,Pass,/cart + PDP rail,Sprint 1,Cart page + rail; guest merge fix May 2026.
-REQ-CART-005,Cart & Checkout,Free shipping threshold indicator in cart,Should Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-CART-005,Cart & Checkout,Free shipping threshold indicator in cart,Should Have,Not Started,Complete,Not Tested,FreeShippingBar.tsx,Sprint 3,Jun 2026: INR ₹999 threshold (env configurable). Revised 06-Jun-2026.
 REQ-CART-006,Cart & Checkout,Coupon code application at checkout,Must Have,Not Started,Complete,Pass,CouponInput + API,Sprint 2,May 2026: WELCOME10 verified on demo. Coupons imported to DB; no checkout UI
 REQ-CART-007,Cart & Checkout,Guest checkout (without account),Should Have,Not Started,Complete,Pass,guest checkout,Sprint 3,Tested on demo. Audit: optionalAuth — guest email checkout supported.
 REQ-CART-008,Cart & Checkout,Address form with pincode auto-fill (city/state),Must Have,Complete,Complete,Pass,AddressFields,Sprint 1,
 REQ-CART-009,Cart & Checkout,Shipping cost calculated from VariantShippingRate table,Must Have,In Progress,Complete,Pass,checkout.service,Sprint 2,Including digital $0 shipping. Audit: computeVariantShippingTotal in checkout.service.
-REQ-CART-010,Cart & Checkout,Order summary with GST breakdown at checkout,Must Have,In Progress,In Progress,Not Tested,,Sprint 2,GST-inclusive prices; line breakdown TBD. Tax fields exist; full GST line breakdown TBD
-REQ-CART-011,Cart & Checkout,Abandoned cart recovery — WhatsApp/Email reminder,Should Have,Not Started,Not Started,Not Tested,,Sprint 3,payment_reminder email job partial
+REQ-CART-010,Cart & Checkout,Order summary with GST breakdown at checkout,Must Have,In Progress,Complete,Not Tested,PaymentSelector + order/confirmed GST row,Sprint 2,Jun 2026: Back-calculated GST from inclusive prices. Revised 06-Jun-2026. GST-inclusive prices; line breakdown TBD. Tax fields exist; full GST line breakdown TBD
+REQ-CART-011,Cart & Checkout,Abandoned cart recovery — WhatsApp/Email reminder,Should Have,Not Started,In Progress,Not Tested,abandonedNotificationJob + emailQueue,Sprint 3,Jun 2026: Email abandoned cart + payment reminder; WhatsApp still deferred. Revised 06-Jun-2026. payment_reminder email job partial
 REQ-PAY-001,Payments,"Razorpay integration — India payments (UPI, cards, netbanking)",Must Have,Complete,Complete,Pass,webhook + verify,Sprint 1,
 REQ-PAY-002,Payments,Stripe integration — international payments,Must Have,Complete,Complete,Pass,Stripe,Sprint 2,May 2026: E2E tested on demo. Backend + frontend; staging E2E pending
 REQ-PAY-003,Payments,PayPal integration — international payments,Must Have,Complete,Complete,Pass,PayPal,Sprint 2,May 2026: E2E tested on demo.
@@ -42,7 +42,7 @@ REQ-PAY-004,Payments,COD (Cash on Delivery) — India only,Must Have,Not Started
 REQ-PAY-005,Payments,Payment webhook verification (signature check),Must Have,Complete,Complete,Pass,HMAC webhooks,Sprint 1,
 REQ-PAY-006,Payments,Payment failure page with retry option,Must Have,Complete,Complete,Pass,/payment-failed,Sprint 1,
 REQ-PAY-007,Payments,Idempotency keys — prevent double charging,Must Have,Complete,Complete,Pass,Redis + header,Sprint 1,
-REQ-PAY-008,Payments,Refund processing via payment gateway,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-PAY-008,Payments,Refund processing via payment gateway,Must Have,Not Started,Complete,Not Tested,refund.service.ts,Sprint 3,Jun 2026: Razorpay/Stripe/PayPal gateway refunds. Revised 06-Jun-2026.
 REQ-PAY-009,Payments,"Multi-currency support — INR, USD, GBP",Must Have,In Progress,Complete,Pass,geo middleware + zone prices,May 2026: Vercel middleware sets sarveda_zone from geo; shop+PDP zone prices. Deploy+VPN test pending.,May 2026: INR/USD/GBP on shop+PDP.
 REQ-PAY-010,Payments,Currency switcher on frontend,Should Have,Not Started,Not Started,Not Tested,,Sprint 3,
 REQ-PAY-011,Payments,EMI options via Razorpay,Nice to Have,Not Started,Not Started,Not Tested,,Sprint 4,
@@ -53,13 +53,13 @@ REQ-ORD-004,Orders,Customer can view single order detail,Must Have,Complete,Comp
 REQ-ORD-005,Orders,Customer can download GST invoice from order page,Must Have,Not Started,Complete,Pass,invoice PDF,Sprint 3,May 2026: GST invoice generated on paid orders. Audit: invoice PDF service; needs paid-order + SendGrid test.
 REQ-ORD-006,Orders,Admin can view and filter all orders,Must Have,Complete,Complete,Pass,Admin orders,Sprint 1,
 REQ-ORD-007,Orders,Admin can update order status manually,Must Have,Complete,Complete,Pass,,Sprint 1,
-REQ-ORD-008,Orders,Admin can cancel order and trigger refund,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-ORD-008,Orders,Admin can cancel order and trigger refund,Must Have,Not Started,Complete,Not Tested,admin refund + cancel routes,Sprint 3,Jun 2026: RefundCancelPanel on order detail. Revised 06-Jun-2026.
 REQ-ORD-009,Orders,Order auto-cancels if payment not received in 15 min,Must Have,Complete,Complete,Pass,paymentTimeoutJob,Sprint 1,
 REQ-ORD-010,Orders,Order tracking page with AWB (public URL),Should Have,In Progress,Complete,Pass,/track/[awb],Sprint 2,Audit: /track/[awb] page exists.
-REQ-ORD-011,Orders,RTO (Return to Origin) status handling,Should Have,Not Started,Not Started,Not Tested,,Sprint 3,ShipmentStatus.RTO in schema
-REQ-SHIP-001,Shipping,Delhivery API integration — domestic India,Must Have,Complete,In Progress,Not Tested,delhivery.ts,Sprint 2,Module exists; full courier E2E pending. Audit: delhivery module; E2E not verified on staging.
-REQ-SHIP-002,Shipping,Shiprocket integration — international orders,Must Have,Complete,In Progress,Not Tested,shiprocket.ts,Sprint 2,Audit: shiprocket module; E2E not verified.
-REQ-SHIP-003,Shipping,Auto courier selection router (weight + zone + COD logic),Must Have,Complete,In Progress,Not Tested,router.ts,Sprint 2,Audit: router.ts exists; courier E2E pending.
+REQ-ORD-011,Orders,RTO (Return to Origin) status handling,Should Have,Not Started,Complete,Not Tested,handleRtoShipment + shiprocket webhook,Sprint 3,Jun 2026: RTO → cancel + customer email. Revised 06-Jun-2026. ShipmentStatus.RTO in schema
+REQ-SHIP-001,Shipping,Delhivery API integration — domestic India,Must Have,Complete,In Progress,Not Tested,delhivery.ts + assertDelhiveryConfigured,Sprint 2,Jun 2026: API module + router; live AWB sign-off pending. Revised 06-Jun-2026. Module exists; full courier E2E pending. Audit: delhivery module; E2E not verified on staging.
+REQ-SHIP-002,Shipping,Shiprocket integration — international orders,Must Have,Complete,In Progress,Not Tested,shiprocket.ts 10s timeout,Sprint 2,Jun 2026: createInternationalShipment; live AWB sign-off pending. Revised 06-Jun-2026. Audit: shiprocket module; E2E not verified.
+REQ-SHIP-003,Shipping,Auto courier selection router (weight + zone + COD logic),Must Have,Complete,In Progress,Not Tested,router.ts + shippingRetryJob,Sprint 2,"Jun 2026: AWB upsert, shippingLastError, test-shipping.ts. Revised 06-Jun-2026. Audit: router.ts exists; courier E2E pending."
 REQ-SHIP-004,Shipping,AWB auto-generated when order moves to PROCESSING,Must Have,Complete,Complete,Pass,admin AWB button,Sprint 2,May 2026: Manual AWB generation verified.
 REQ-SHIP-005,Shipping,Pincode serviceability check — India,Must Have,Complete,Complete,Pass,checkout pincode,Sprint 2,Audit: checkout pincode check; not on PDP.
 REQ-SHIP-006,Shipping,Shipping cost from VariantShippingRate — India and International,Must Have,Complete,Complete,Not Tested,checkout.service,Sprint 2,Audit: VariantShippingRate in checkout.
@@ -75,23 +75,23 @@ REQ-NOT-007,Notifications,WhatsApp — Shipment dispatched with AWB,Must Have,No
 REQ-NOT-008,Notifications,WhatsApp — Out for delivery,Should Have,Not Started,Deferred,Not Tested,,Sprint 3,WATI deferred.
 REQ-NOT-009,Notifications,WhatsApp — Order delivered + review request,Should Have,Not Started,Deferred,Not Tested,,Sprint 3,WATI deferred.
 REQ-NOT-010,Notifications,GST PDF invoice auto-generated on PAID status,Must Have,Not Started,Complete,Pass,ensureOrderInvoicePdf,Sprint 3,Audit: ensureOrderInvoicePdf on PAID.
-REQ-NOT-011,Notifications,BullMQ email queue — retry on failure,Must Have,Not Started,In Progress,Not Tested,sync email,Sprint 3,BullMQ retry queue TBD. Audit: sync email send; BullMQ email queue not yet.
+REQ-NOT-011,Notifications,BullMQ email queue — retry on failure,Must Have,Not Started,Complete,Not Tested,jobs/emailQueue.ts,Sprint 3,Jun 2026: BullMQ 5-attempt exponential backoff; worker in server.ts. Revised 06-Jun-2026. BullMQ retry queue TBD. Audit: sync email send; BullMQ email queue not yet.
 REQ-NOT-012,Notifications,BullMQ WhatsApp queue — retry on failure,Must Have,Not Started,Deferred,Not Tested,,Sprint 3,WATI deferred.
-REQ-ZOHO-001,Zoho,Order paid on Sarveda → auto create Sales Order in Zoho Inventory,Must Have,Complete,Not Started,Not Tested,Level 2 integration live,Sprint 1,Audit: no Zoho code in repo — document if external integration.
-REQ-ZOHO-002,Zoho,Stock updated in Zoho → reflect on Sarveda website,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
-REQ-ZOHO-003,Zoho,Customer data sync to Zoho CRM,Should Have,Not Started,Not Started,Not Tested,,Sprint 3,
-REQ-ZOHO-004,Zoho,Shipment AWB synced back from Zoho to Sarveda,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
-REQ-ZOHO-005,Zoho,Refund recorded in Zoho Books when processed,Should Have,Not Started,Not Started,Not Tested,,Sprint 4,
-REQ-ZOHO-006,Zoho,Nightly full stock sync (safety net),Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
-REQ-ZOHO-007,Zoho,Sync failure alert to admin if Zoho order creation fails,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
-REQ-ZOHO-008,Zoho,RTO return → stock added back in Zoho Inventory,Should Have,Not Started,Not Started,Not Tested,,Sprint 4,
+REQ-ZOHO-001,Zoho,Order paid on Sarveda → auto create Sales Order in Zoho Inventory,Must Have,Complete,In Progress,Not Tested,zoho-invoices.ts + afterPaid,Sprint 1,Jun 2026: Invoice on PAID; sales order E2E needs prod credentials. Revised 06-Jun-2026. Audit: no Zoho code in repo — document if external integration.
+REQ-ZOHO-002,Zoho,Stock updated in Zoho → reflect on Sarveda website,Must Have,Not Started,In Progress,Not Tested,zoho-inventory.ts pull/push,Sprint 3,Jun 2026: Stock sync + admin out-of-sync UI. Revised 06-Jun-2026.
+REQ-ZOHO-003,Zoho,Customer data sync to Zoho CRM,Should Have,Not Started,In Progress,Not Tested,zoho-contacts.ts,Sprint 3,Jun 2026: getOrCreateZohoContact on invoice path. Revised 06-Jun-2026.
+REQ-ZOHO-004,Zoho,Shipment AWB synced back from Zoho to Sarveda,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,Jun 2026: AWB → Zoho not wired. Revised 06-Jun-2026.
+REQ-ZOHO-005,Zoho,Refund recorded in Zoho Books when processed,Should Have,Not Started,Not Started,Not Tested,,Sprint 4,Jun 2026: Refund → Zoho Books not wired. Revised 06-Jun-2026.
+REQ-ZOHO-006,Zoho,Nightly full stock sync (safety net),Must Have,Not Started,In Progress,Not Tested,zohoStockSyncJob,Sprint 3,Jun 2026: Nightly/history sync job wired. Revised 06-Jun-2026.
+REQ-ZOHO-007,Zoho,Sync failure alert to admin if Zoho order creation fails,Must Have,Not Started,In Progress,Not Tested,ZOHO_INVOICE_FAILED logging,Sprint 3,Jun 2026: Failure logs + admin audit cache. Revised 06-Jun-2026.
+REQ-ZOHO-008,Zoho,RTO return → stock added back in Zoho Inventory,Should Have,Not Started,Not Started,Not Tested,,Sprint 4,Jun 2026: RTO stock return to Zoho not wired. Revised 06-Jun-2026.
 REQ-ADM-001,Admin Panel,"Dashboard: today's orders, revenue, pending, low stock",Must Have,Complete,Complete,Pass,Admin dashboard,Sprint 1,
 REQ-ADM-002,Admin Panel,"Product CRUD — add, edit, delete products",Must Have,Complete,Complete,Pass,Admin products,Sprint 1,
 REQ-ADM-003,Admin Panel,"Order management — filter by status, date, customer",Must Have,Complete,Complete,Pass,Admin orders,Sprint 1,
-REQ-ADM-004,Admin Panel,Inventory management — update stock levels,Must Have,In Progress,In Progress,Not Tested,admin inventory API,Sprint 2,
-REQ-ADM-005,Admin Panel,Customer management — view all customers,Should Have,Not Started,Not Started,Not Tested,,Sprint 3,
-REQ-ADM-006,Admin Panel,Coupon/discount management,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
-REQ-ADM-007,Admin Panel,"Revenue reports — daily, weekly, monthly",Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-ADM-004,Admin Panel,Inventory management — update stock levels,Must Have,In Progress,Complete,Pass,admin inventory + Zoho out-of-sync UI,Sprint 2,Jun 2026: Paginated inventory; Zoho sync tabs. Revised 06-Jun-2026.
+REQ-ADM-005,Admin Panel,Customer management — view all customers,Should Have,Not Started,Complete,Not Tested,/admin/customers,Sprint 3,Jun 2026: Customer list + search. Revised 06-Jun-2026.
+REQ-ADM-006,Admin Panel,Coupon/discount management,Must Have,Not Started,Complete,Not Tested,/admin/coupons + coupon.admin.routes,Sprint 3,Jun 2026: Full CRUD + deactivate. Revised 06-Jun-2026.
+REQ-ADM-007,Admin Panel,"Revenue reports — daily, weekly, monthly",Must Have,Not Started,Complete,Not Tested,/admin/reports,Sprint 3,"Jun 2026: Revenue KPIs, 30-day chart, movers. Revised 06-Jun-2026."
 REQ-ADM-008,Admin Panel,GST report for CA/accounting,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
 REQ-ADM-009,Admin Panel,Low stock alert system,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,Dashboard shows low stock count
 REQ-ADM-010,Admin Panel,Admin mobile responsive — works on phone,Should Have,In Progress,In Progress,Not Tested,,Sprint 2,
@@ -110,8 +110,8 @@ REQ-INF-002,Infrastructure,Backend deployed on AWS EC2 Mumbai,Must Have,Complete
 REQ-INF-003,Infrastructure,PostgreSQL on AWS RDS,Must Have,Complete,Complete,Pass,RDS Mumbai,Sprint 1,
 REQ-INF-004,Infrastructure,Redis on EC2 for BullMQ,Must Have,Complete,Complete,Pass,localhost:6379,Sprint 1,
 REQ-INF-005,Infrastructure,sarveda-demo.xyz domain purchased and configured,Must Have,Complete,Complete,Pass,Vercel domain,Sprint 2,
-REQ-INF-006,Infrastructure,SSL/HTTPS on EC2 backend (nginx + certbot),Must Have,Not Started,Not Started,Not Tested,,Sprint 5,API via Vercel proxy today
-REQ-INF-007,Infrastructure,api.sarveda-demo.xyz subdomain for backend,Must Have,Not Started,Not Started,Not Tested,,Sprint 5,
+REQ-INF-006,Infrastructure,SSL/HTTPS on EC2 backend (nginx + certbot),Must Have,Not Started,In Progress,Not Tested,backend/nginx/sarveda-api.conf,Sprint 5,Jun 2026: nginx + certbot README; EC2 apply pending. Revised 06-Jun-2026. API via Vercel proxy today
+REQ-INF-007,Infrastructure,api.sarveda-demo.xyz subdomain for backend,Must Have,Not Started,In Progress,Not Tested,nginx server_name api.sarveda-demo.xyz,Sprint 5,Jun 2026: DNS → 13.206.192.106 + SSL pending. Revised 06-Jun-2026.
 REQ-INF-008,Infrastructure,PM2 process manager for backend uptime,Must Have,Complete,Complete,Pass,pm2,Sprint 1,
 REQ-INF-009,Infrastructure,Razorpay webhook configured and verified,Must Have,Complete,Complete,Pass,Razorpay webhook,Sprint 2,Demo domain configured. Confirm dashboard URL on demo domain
 REQ-INF-010,Infrastructure,Google OAuth credentials for sarveda-demo.xyz,Must Have,Complete,Complete,Pass,GCP OAuth,Sprint 2,
@@ -122,8 +122,8 @@ REQ-CRS-004,Courses,Live session Zoom link delivery after purchase,Must Have,Not
 REQ-CRS-005,Courses,Pre-recorded video course playback,Should Have,Not Started,Not Started,Not Tested,,Sprint 4,
 REQ-CRS-006,Courses,Course completion certificate,Nice to Have,Not Started,Not Started,Not Tested,,Sprint 5,
 REQ-CRS-007,Courses,Himalayan Retreat booking page with $900 pricing,Must Have,Not Started,In Progress,Pass,/retreat + corporate,Sprint 4,Corporate wellness + program pages live. Retreat pages exist separately
-REQ-MKT-001,Marketing,Google Analytics 4 integration,Must Have,Not Started,Not Started,Not Tested,,Sprint 3,
-REQ-MKT-002,Marketing,Meta/Facebook Pixel integration,Should Have,Not Started,Not Started,Not Tested,,Sprint 3,
+REQ-MKT-001,Marketing,Google Analytics 4 integration,Must Have,Not Started,Complete,Not Tested,layout.tsx NEXT_PUBLIC_GA4_ID,Sprint 3,Jun 2026: Production-only gtag. Set on Vercel. Revised 06-Jun-2026.
+REQ-MKT-002,Marketing,Meta/Facebook Pixel integration,Should Have,Not Started,Complete,Not Tested,layout.tsx Meta Pixel,Sprint 3,Jun 2026: Production-only fbq; analytics.ts events. Revised 06-Jun-2026.
 REQ-MKT-003,Marketing,Newsletter signup with email collection,Must Have,Complete,Complete,Pass,NewsletterForm,Sprint 2,
 REQ-MKT-004,Marketing,Coupon code system — % and flat discount,Must Have,Not Started,Complete,Pass,coupons API,Sprint 3,May 2026: Checkout coupons verified.
 REQ-MKT-005,Marketing,"SEO — meta tags, OG tags, sitemap",Must Have,Not Started,In Progress,Not Tested,sitemap.xml,Sprint 3,Core SEO done; 22 WP sitemaps + 301 map pending launch. Audit: generateMetadata + sitemap.xml; 22 WP sitemaps deferred.

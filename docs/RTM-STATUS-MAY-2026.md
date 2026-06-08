@@ -1,6 +1,7 @@
-# Sarveda RTM status — May 2026 (demo / pre-launch)
+# Sarveda RTM status — June 2026 (demo / pre-launch)
 
-**Source file:** `Sarveda-RTM-v1.1-audited.csv` (updated via `python3 scripts/update-rtm-may-2026.py`)  
+**Source file:** `Sarveda-RTM-v1.1-audited.csv` (updated via `python3 scripts/update-rtm-jun-2026.py`)  
+**Previous snapshot:** `scripts/update-rtm-may-2026.py` (May 2026)  
 **Staging:** https://sarveda-demo.xyz  
 **Regenerate Excel:** `python3 scripts/generate-rtm-v1.1.py` (after CSV update)
 
@@ -11,113 +12,113 @@
 | Scope | Count | % |
 |--------|------:|---:|
 | **Total requirements** | 135 | 100% |
-| **Dev Complete** | 76 | **56%** |
-| **Dev In Progress** | 13 | 10% |
+| **Dev Complete** | 91 | **67%** ↑ from 56% |
+| **Dev In Progress** | 18 | 13% |
 | **Dev Deferred** (WATI etc.) | 5 | 4% |
-| **Dev Not Started** | 41 | 30% |
-| **Test Pass** | 73 | **54%** |
-| **Must Have — Dev Complete/Deferred** | 72 / 102 | **71%** |
-| **Must Have — Test Pass** | 67 / 102 | **66%** |
+| **Dev Not Started** | 21 | **16%** ↓ from 30% |
+| **Incomplete (NS + IP + Deferred)** | 44 | **33%** ↓ from 44% “left” on stale CSV |
+| **Test Pass** | 74 | 55% |
+| **Must Have — Dev Complete/Deferred** | 82 / 102 | **80%** ↑ from 71% |
+| **Must Have — Test Pass** | 68 / 102 | 67% |
 
-**Shop + checkout (revenue path):** ~**92–95%** dev complete; **~85%** tested on demo (Razorpay, Stripe, PayPal, coupons, invoice, AWB manual, emails).
+**Shop + checkout (revenue path):** ~**95%** dev complete; **~85%** tested on demo.
 
-**Full launch parity (SEO, Zoho, WATI, course portal, reviews):** ~**25–30%** still open — mostly **post-demo / launch week**.
+**Full launch parity (SEO cutover, WATI, LMS, Zoho E2E):** ~**15–20%** still open — mostly ops + Phase 2.
+
+---
+
+## Completed in Jun 2026 sprint (newly marked in RTM)
+
+| REQ | Area |
+|-----|------|
+| AUTH-003 | Password reset (email + token) |
+| PROD-010 | Reviews API, PDP, admin moderation |
+| PROD-014 | HSN on products + GST invoice lines |
+| CART-005 | Free shipping progress bar |
+| CART-010 | GST breakdown at checkout + confirmation |
+| PAY-008 | Gateway refunds (Razorpay/Stripe/PayPal) |
+| ORD-008 | Admin cancel + refund |
+| ORD-011 | RTO handling (Shiprocket webhook) |
+| NOT-011 | BullMQ email queue |
+| MKT-001 / MKT-002 | GA4 + Meta Pixel (production-gated) |
+| ADM-004 / 005 / 006 / 007 | Inventory+Zoho UI, customers, coupons, reports |
+
+**Shipping / infra (In Progress, not Complete):** AWB retry + error logging, `test-shipping.ts`, nginx config for `api.sarveda-demo.xyz` (deploy pending).
+
+**Zoho (In Progress, was 0/8 Complete):** Invoices on paid, stock pull/push, sync jobs, contacts, admin out-of-sync UI — **4/8 In Progress**, 4 still Not Started (AWB sync, refund to Books, RTO stock).
 
 ---
 
 ## Completed since v1.1 audit (high confidence)
 
 ### E-commerce core ✅
-- 169 products, variants, cart, checkout, guest + logged-in cart (merge fix)
-- Razorpay, Stripe, PayPal tested on demo
-- COD path implemented
-- Coupons at checkout (WELCOME10 verified)
+- 169 products, variants, cart, checkout, guest + logged-in cart
+- Razorpay, Stripe, PayPal, COD
+- Coupons at checkout + **admin coupon CRUD**
 - Order confirmation, payment failed, resume order
 - Stock reserve / 15 min timeout
-- Geo pricing INR / USD / GBP (middleware + shop/PDP)
-- GST invoice PDF on paid orders
-- SendGrid order emails working
-- Manual AWB generation in admin
+- Geo pricing INR / USD / GBP
+- GST invoice PDF + **HSN + checkout GST row**
+- SendGrid order emails + **BullMQ retry queue**
+- Manual + automated AWB path (router; live E2E sign-off pending)
+- **Refunds + RTO** in admin
 
 ### Catalog & media ✅
-- Audio samples on ~38 products (sync:audio + media XML)
-- Product galleries, variant labels import
-- Latest products CSV in use
+- Audio, galleries, variant labels, latest CSV
 
 ### UX & navigation ✅
-- Mobile bottom nav (Home, Search, Cart, You) — Chat link removed from tab bar
-- Full header nav: Courses, Events, Corporate Wellness, Insights
-- Mobile hamburger menu + sign out fix
-- Password show/hide on login/signup
-- Homepage: featured products + **courses / events / insights** rails
-- PDP Amazon-style layout, cart rail, cart order fix
+- Mobile nav, header, PDP Amazon layout, homepage rails
+- **GA4 / Meta Pixel**, **free shipping bar**, **reviews on PDP**
 
 ### Courses, events, insights ✅ (listing + pay — not full LMS)
-- `/courses`, `/events`, `/insights` — **full-image cards**, upcoming/past sections
-- `/course/[slug]`, `/event/[slug]` — hero banners, enroll/register via cart
-- Digital checkout (no shipping on course/event-only carts)
-- Enrollment + Booking records after payment (logged-in user)
-- Profile → Courses & events list
-- Corporate wellness + SAHYOG/SARGAM/SAMATVA/SAMSARA program pages
+- Enroll/register via cart; profile lists; corporate pages
 
 ---
 
-## In progress 🟡
+## In progress 🟡 (18 rows)
 
-| Area | REQ examples | What’s left |
-|------|----------------|-------------|
-| Shipping E2E | SHIP-001–003 | Auto-courier + live Delhivery/Shiprocket sign-off |
-| Course purchase | CRS-002, CRS-003 | Lesson player, full student portal, Zoom email |
+| Area | Examples | What’s left |
+|------|----------|-------------|
+| Shipping E2E | SHIP-001–003 | Live Delhivery/Shiprocket AWB on EC2 |
+| Zoho | ZOHO-001–003, 006–007 | Prod credentials + E2E; AWB/refund/RTO sync |
 | SEO launch | MKT-005 | 301 map from GSC, 22 sitemaps, sarveda.com cutover |
-| GST line items | CART-010, PROD-014 | Checkout GST breakdown + HSN on products |
-| Admin | ADM-004–011 | Coupons UI in admin, reports, RBAC |
+| Infra | INF-006, INF-007 | Apply nginx + SSL on EC2 |
+| Course portal | CRS-002, CRS-003, CRS-007 | Lesson player, Zoom email |
 | Search filters | PROD-013 | Advanced PLP filters |
+| Abandoned cart | CART-011 | Email ✅; WhatsApp deferred |
+| Admin UX | ADM-010 | Mobile polish |
 
 ---
 
-## Deferred / out of scope (client May 2026) ⏸
+## Deferred / out of scope (client) ⏸
 
 | Item | RTM |
 |------|-----|
 | **WATI / WhatsApp** all events | NOT-006–009, NOT-012 → **Deferred** |
-| **Zoho** sync | ZOHO-001–008 → external / not in repo |
-| Chat mobile tab | Removed from nav; `/chat` route kept |
 
 ---
 
-## Not started (launch or Phase 2) ⬜
+## Not started (21 rows — Phase 2 / nice-to-have)
 
-- Password reset email flow (AUTH-003)
-- Reviews on PDP (PROD-010)
-- Wishlist (PROD-017)
-- Refunds via gateway (PAY-008)
-- Abandoned cart automation (CART-011)
-- Google Analytics / Meta pixel (MKT-001, MKT-002)
-- Production SSL api subdomain (INF-006, INF-007)
-- Course certificates, pre-recorded LMS (CRS-005, CRS-006)
-- Insights category filter `?cat=` (needs WP categories export)
-
----
-
-## New RTM rows added (May 2026)
-
-| REQ ID | Description |
-|--------|-------------|
-| REQ-EVT-001 | Events listing (upcoming/past, full-image cards) |
-| REQ-INS-001 | Insights listing (full-image blog cards) |
-| REQ-UX-010 | Main nav Courses / Events / Corporate / Insights |
-| REQ-UX-011 | Password visibility toggle |
-| REQ-UX-012 | Sign out works on all pages |
+- AUTH-006, AUTH-007 — RBAC, session timeout
+- PROD-015–018 — artisan story, video, wishlist, bulk CSV
+- PAY-010, PAY-011 — currency switcher UI, EMI
+- CRS-004–006 — Zoom delivery, video LMS, certificates
+- ADM-008, ADM-009, ADM-011 — GST export, low-stock alerts, RBAC
+- MKT-006 — referral program
+- UX-006–008 — PWA, animations, cursor
+- ZOHO-004, 005, 008 — AWB sync, refund in Books, RTO stock in Zoho
 
 ---
 
 ## Recommended next (priority order)
 
 1. **Launch week:** GSC → 301 redirects → `sarveda.com` DNS + production webhooks  
-2. **Shipping:** One automated AWB path E2E (optional `AUTO_START_FULFILLMENT_ON_PAID`)  
-3. **Courses:** `import:courses` re-run for teacher names on cards; lesson curriculum XML when ready  
-4. **Phase 2:** Reviews, password reset, admin coupon UI, insights categories  
+2. **EC2:** `check-env.ts` → `run-migrations.sh` → nginx + certbot → `pm2 restart`  
+3. **Shipping:** One live AWB E2E (India + intl)  
+4. **Zoho:** Prod OAuth + paid order → invoice/sales order sign-off  
+5. **Phase 2:** Wishlist, GST export, LMS, insights `?cat=` filter  
 
 ---
 
-*Updated for Arjun / Shivakumar — May 2026 demo sprint.*
+*Updated Jun 2026 — reflects `update-rtm-jun-2026.py` on codebase.*

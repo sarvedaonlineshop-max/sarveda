@@ -115,7 +115,17 @@ app.use(
     ]
   })
 );
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // Vercel handles CSP
+    crossOriginEmbedderPolicy: false,
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true
+    }
+  })
+);
 
 // Webhooks need raw body + must not hit storefront rate limits (registered before rateLimit).
 app.post(
