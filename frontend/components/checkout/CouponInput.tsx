@@ -56,6 +56,10 @@ export function CouponInput({
     void loadOffers();
   }, [loadOffers]);
 
+  useEffect(() => {
+    if (appliedCode) setError(null);
+  }, [appliedCode]);
+
   async function applyCode(couponCode: string) {
     setBusy(true);
     setError(null);
@@ -98,8 +102,8 @@ export function CouponInput({
     <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-4">
       <p className="text-sm font-semibold text-stone-800">Coupon code</p>
       <p className="mt-1 text-xs text-stone-500">
-        Most coupons are one-time per customer (email or account) after a successful order. You can remove
-        a coupon before paying and try another.
+        Apply or remove coupons freely before you pay. A one-time coupon only becomes unavailable after you
+        complete a paid order with it.
       </p>
 
       {appliedCode ? (
