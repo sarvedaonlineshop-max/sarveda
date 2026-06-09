@@ -31,6 +31,24 @@ export function useStorefrontSession(): PublicUser | null {
     };
   }, [pathname]);
 
+  // Re-check session when the tab becomes visible again (browser reopen / back from sleep).
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      if (
+        !pathname ||
+        pathname.startsWith("/admin") ||
+        pathname.startsWith("/login") ||
+        pathname.startsWith("/signup")
+      ) {
+        return;
+      }
+      void fetchMe().then((user) => setSessionUser(user));
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [pathname]);
+
   useEffect(() => {
     const onAuthChange = (event: Event) => {
       const detail = (event as CustomEvent<PublicUser | null>).detail;

@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useCartData, useCartUi } from "@/components/cart/CartProvider";
+import { SearchWithSuggestions } from "@/components/search/SearchWithSuggestions";
 import { isAdminRole, logoutSession } from "@/lib/auth-client";
 import { MAIN_NAV_LINKS } from "@/lib/main-nav";
 
@@ -65,7 +66,6 @@ export function Header() {
   const { goToCart }             = useCartUi();
   const { itemCount: cartCount } = useCartData();
   const sessionUser              = useStorefrontSession();
-  const [query, setQuery]        = useState("");
   const [menuOpen, setMenuOpen]  = useState(false);
 
   useEffect(() => {
@@ -87,12 +87,6 @@ export function Header() {
 
   const hideOnMobile = pathname ? immersiveMobileRoutes.has(pathname) : false;
   const displayName  = sessionUser?.name?.trim() || sessionUser?.email?.split("@")[0];
-
-  function handleSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const trimmed = query.trim();
-    router.push(trimmed ? `/search?q=${encodeURIComponent(trimmed)}` : "/search");
-  }
 
   async function handleSignOut() {
     await logoutSession();
@@ -155,26 +149,27 @@ export function Header() {
           </nav>
 
           {/* Search Bar — desktop */}
-          <form
-            onSubmit={handleSearch}
-            className="hidden min-w-0 flex-1 md:flex md:max-w-sm lg:max-w-md"
-            role="search"
-          >
-            <label htmlFor="desktop-search" className="sr-only">Search products</label>
-            <div className="relative w-full">
-              <svg className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M16.5 10.5a6 6 0 11-12 0 6 6 0 0112 0z"/>
-              </svg>
-              <input
-                id="desktop-search"
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search Sarveda…"
-                className="w-full rounded-full border border-white/10 bg-white/6 py-2.5 pl-10 pr-4 text-sm text-stone-100 placeholder:text-stone-500 transition-all focus:border-brand-gold/60 focus:bg-white/10 focus:outline-none focus:ring-1 focus:ring-brand-gold/40"
+          <div className="relative hidden min-w-0 flex-1 md:block md:max-w-sm lg:max-w-md">
+            <svg
+              className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-stone-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-4.35-4.35M16.5 10.5a6 6 0 11-12 0 6 6 0 0112 0z"
               />
-            </div>
-          </form>
+            </svg>
+            <SearchWithSuggestions
+              id="desktop-search"
+              placeholder="Search Sarveda…"
+              inputClassName="w-full rounded-full border border-white/10 bg-white/6 py-2.5 pl-10 pr-4 text-sm text-stone-100 placeholder:text-stone-500 transition-all focus:border-brand-gold/60 focus:bg-white/10 focus:outline-none focus:ring-1 focus:ring-brand-gold/40"
+            />
+          </div>
 
           {/* Right actions */}
           <div className="ml-auto flex shrink-0 items-center gap-1 md:gap-2">
@@ -261,6 +256,14 @@ export function Header() {
           </button>
         </div>
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-4 py-6" aria-label="Mobile main">
+          <div className="mb-4 px-1">
+            <SearchWithSuggestions
+              id="mobile-search"
+              placeholder="Search products…"
+              inputClassName="w-full rounded-xl border border-white/10 bg-white/6 py-3 pl-4 pr-4 text-base text-stone-100 placeholder:text-stone-500 focus:border-brand-gold/60 focus:outline-none focus:ring-1 focus:ring-brand-gold/40"
+              onNavigate={() => setMenuOpen(false)}
+            />
+          </div>
           {MAIN_NAV_LINKS.map((link) => (
             <Link
               key={link.href}

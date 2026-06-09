@@ -13,6 +13,7 @@ import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductReviewsSection } from "@/components/product/ProductReviewsSection";
 import { ProductRichText } from "@/components/product/ProductRichText";
 import { PriceDisplay } from "@/components/product/PriceDisplay";
+import { fetchProductBySlug } from "@/lib/api";
 import { cartAdd } from "@/lib/cart-api";
 import { usePricingZone } from "@/hooks/usePricingZone";
 import { unitSaleMinor, zoneToCurrency } from "@/lib/currency";
@@ -51,14 +52,36 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
   const hasCartRail = itemCount > 0 || items.length > 0;
   const cartCount = itemCount > 0 ? itemCount : items.reduce((n, i) => n + i.quantity, 0);
 
-  const initial = useMemo(() => pickInitialVariant(product.variants), [product.variants]);
+  const [variants, setVariants] = useState(product.variants);
+  const initial = useMemo(() => pickInitialVariant(variants), [variants]);
   const [variantId, setVariantId] = useState<string | null>(initial?.id ?? null);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [qty, setQty] = useState(1);
   const zone = usePricingZone();
   const [addedFlash, setAddedFlash] = useState(false);
 
-  const variant = product.variants.find((v) => v.id === variantId) ?? initial;
+  useEffect(() => {
+    let cancelled = false;
+    void fetchProductBySlug(product.slug, { cache: "no-store" }).then((fresh) => {
+      if (!cancelled && fresh?.variants?.length) {
+        setVariants(fresh.variants);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [product.slug]);
+
+  useEffect(() => {
+    if (!variants.length) return;
+    const stillValid = variants.some((v) => v.id === variantId);
+    if (!stillValid) {
+      const next = pickInitialVariant(variants);
+      setVariantId(next?.id ?? null);
+    }
+  }, [variants, variantId]);
+
+  const variant = variants.find((v) => v.id === variantId) ?? initial;
   const isDigital = product.productType === "DIGITAL";
   const currency = zoneToCurrency(zone);
   const primaryCategory = product.categories[0]?.category;
@@ -127,7 +150,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
 
   const buyBoxProps = {
     variant,
-    variants: product.variants,
+    variants,
     onVariantChange: setVariantId,
     zone,
     saleMinor,

@@ -18,7 +18,7 @@ function productMetaDescription(raw: string | null | undefined): string | undefi
 }
 
 export const dynamicParams = true;
-export const revalidate = 300;
+export const revalidate = 60;
 
 export async function generateStaticParams() {
   if (skipBuildTimeStaticParams()) return [];

@@ -326,6 +326,23 @@ export async function sendAbandonedCartEmail(userId: string): Promise<boolean> {
   }
 }
 
+export async function sendWelcomeEmail(email: string, name: string): Promise<void> {
+  const shopUrl = `${siteBaseUrl()}/shop`;
+  const lines = [
+    `Hi ${name},`,
+    "Welcome to Sarveda — yoga, Ayurveda, and sound healing from India.",
+    `Your account is ready. Browse the shop and save your favourites:`,
+    `<a href="${shopUrl}">Visit Sarveda shop</a>`
+  ];
+  const html = buildHtml("Welcome to Sarveda", lines);
+  const text = [
+    `Hi ${name},`,
+    "Welcome to Sarveda — your account is ready.",
+    `Shop: ${shopUrl}`
+  ].join("\n\n");
+  await sendMail(email, "Welcome to Sarveda — your account is ready", html, text);
+}
+
 export function notifyOrderEmail(orderId: string, event: OrderEmailEvent): void {
   void enqueueEmail(
     { type: "order_email", orderId, event },

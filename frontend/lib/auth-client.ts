@@ -13,6 +13,7 @@ export type PublicUser = {
 export type RegisterInput = {
   email: string;
   password: string;
+  confirmPassword: string;
   name: string;
 };
 
@@ -24,6 +25,7 @@ export async function registerAccount(input: RegisterInput): Promise<PublicUser>
     body: JSON.stringify({
       email: input.email.trim().toLowerCase(),
       password: input.password,
+      confirmPassword: input.confirmPassword,
       name: input.name.trim()
     })
   });

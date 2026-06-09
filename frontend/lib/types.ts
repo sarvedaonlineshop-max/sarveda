@@ -75,7 +75,7 @@ export type ProductVariantDetail = {
   saleGbpPence?: number | null;
   weightGrams?: number | null;
   isDefault: boolean;
-  inventory: { onHand: number; reserved: number } | null;
+  inventory: { onHand: number; reserved: number; lowStockThreshold?: number } | null;
   attributeValues: VariantAttributeRow[];
   shippingRates?: VariantShippingRate[];
 };

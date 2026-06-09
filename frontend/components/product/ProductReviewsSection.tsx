@@ -279,7 +279,7 @@ export function ProductReviewsSection({ productId }: Props) {
             }}
           >
             <p style={{ fontSize: "13px", color: "#166534", fontWeight: 600 }}>
-              ✓ Thank you! Your review is pending approval and will appear shortly.
+              Thank you for your review!
             </p>
           </div>
         ) : (

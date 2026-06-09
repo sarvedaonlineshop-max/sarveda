@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
+import { sendWelcomeEmail } from "../notifications/email";
 import { hashPassword, verifyPassword } from "../../utils/hash";
 import { clearAuthCookie, setAuthCookie } from "../../utils/jwt";
 import type { LoginBody, RegisterBody, SendOtpBody, VerifyOtpBody } from "./schemas";
@@ -158,6 +159,11 @@ export async function registerUser(body: RegisterBody) {
       name: body.name.trim()
     }
   });
+
+  void sendWelcomeEmail(user.email, user.name ?? "there").catch((err) => {
+    logger.error("welcome_email_failed", { email: user.email, err });
+  });
+
   return publicUser(user);
 }
 
@@ -165,7 +171,7 @@ export async function loginUser(res: Response, body: LoginBody) {
   const email = body.email.trim().toLowerCase();
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || user.deletedAt) {
-    throw httpError(401, "Invalid email or password", "INVALID_CREDENTIALS");
+    throw httpError(404, "No account found with this email address.", "EMAIL_NOT_FOUND");
   }
   // BUG 7: migrated Woo customers have no password — give a clear path to OTP/Google
   if (!user.passwordHash) {
@@ -187,7 +193,7 @@ export async function loginUser(res: Response, body: LoginBody) {
         "MIGRATED_ACCOUNT_USE_OTP"
       );
     }
-    throw httpError(401, "Invalid email or password", "INVALID_CREDENTIALS");
+    throw httpError(401, "Incorrect password. Try again or use Forgot password.", "INVALID_PASSWORD");
   }
   const effective = await applyAdminBootstrapIfNeeded(user);
   setAuthCookie(res, { sub: effective.id, email: effective.email, role: effective.role });

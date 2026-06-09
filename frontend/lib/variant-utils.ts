@@ -114,6 +114,8 @@ export function stockDisplay(variant: ProductVariantDetail): {
   count: number;
 } {
   const avail = availableStock(variant);
+  const threshold = variant.inventory?.lowStockThreshold ?? 5;
+
   if (avail === null) {
     return { label: "In stock", inStock: true, showCount: false, count: 0 };
   }
@@ -123,10 +125,11 @@ export function stockDisplay(variant: ProductVariantDetail): {
   if (avail >= UNTRACKED_STOCK_ON_HAND) {
     return { label: "In stock", inStock: true, showCount: false, count: avail };
   }
+  const lowStock = avail <= threshold;
   return {
-    label: avail <= 5 ? `Only ${avail} left in stock` : "In stock",
+    label: lowStock ? `Only ${avail} left in stock` : "In stock",
     inStock: true,
-    showCount: avail <= 5,
+    showCount: lowStock,
     count: avail
   };
 }

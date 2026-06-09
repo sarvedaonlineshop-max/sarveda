@@ -7,11 +7,7 @@ import { Suspense, useMemo, useState } from "react";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { PasswordInput } from "@/components/auth/PasswordInput";
-import {
-  loginWithPassword,
-  registerAccount,
-  resolvePostLoginPath
-} from "@/lib/auth-client";
+import { loginWithPassword, registerAccount } from "@/lib/auth-client";
 
 const inputClass =
   "w-full rounded-xl border border-stone-600 bg-stone-950/70 px-3 py-2.5 text-stone-100 placeholder:text-stone-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500";
@@ -20,13 +16,15 @@ function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next");
-  const googleNextPath = next ?? "/";
+  const googleNextPath = next ?? "/shop";
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
+  const [success, setSuccess] = useState(false);
 
   const loginHref = useMemo(() => {
     const params = new URLSearchParams();
@@ -39,17 +37,38 @@ function SignupForm() {
     e.preventDefault();
     setSubmitting(true);
     setMessage("");
+    if (password !== confirmPassword) {
+      setMessage("Passwords do not match. Please re-enter the same password.");
+      setSubmitting(false);
+      return;
+    }
     try {
-      await registerAccount({ name, email, password });
-      const user = await loginWithPassword(email, password);
-      const destination = resolvePostLoginPath(user, next);
-      router.replace(destination);
-      router.refresh();
+      await registerAccount({ name, email, password, confirmPassword });
+      await loginWithPassword(email, password);
+      setSuccess(true);
+      window.setTimeout(() => {
+        const destination = next?.startsWith("/") ? next : "/shop";
+        router.replace(destination);
+        router.refresh();
+      }, 2000);
     } catch (ex) {
       setMessage(ex instanceof Error ? ex.message : "Sign up failed");
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (success) {
+    return (
+      <AuthShell
+        title="Account created"
+        subtitle="A confirmation email is on its way. Redirecting you to the Sarveda shop…"
+      >
+        <p className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100" role="status">
+          Welcome to Sarveda! Your account was created successfully.
+        </p>
+      </AuthShell>
+    );
   }
 
   return (
@@ -116,6 +135,21 @@ function SignupForm() {
             value={password}
             onChange={setPassword}
             placeholder="Password (8+ characters)"
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label htmlFor="confirmPassword" className="sr-only">
+            Re-enter password
+          </label>
+          <PasswordInput
+            id="confirmPassword"
+            autoComplete="new-password"
+            required
+            minLength={8}
+            value={confirmPassword}
+            onChange={setConfirmPassword}
+            placeholder="Re-enter password"
             className={inputClass}
           />
         </div>

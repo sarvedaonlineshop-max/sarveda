@@ -11,7 +11,6 @@ import { PasswordInput } from "@/components/auth/PasswordInput";
 import type { PublicUser } from "@/lib/auth-client";
 import {
   loginWithPassword,
-  logoutSession,
   resolvePostLoginPath
 } from "@/lib/auth-client";
 
@@ -91,17 +90,6 @@ function LoginForm() {
           <Link href="/" className="block text-amber-500 hover:text-amber-400">
             Back to storefront
           </Link>
-          <button
-            type="button"
-            className="text-stone-500 underline decoration-stone-700 hover:text-amber-400"
-            onClick={() => {
-              void logoutSession().then(() => {
-                setMessage("Signed out. You can sign in again.");
-              });
-            }}
-          >
-            Sign out (clear session cookie)
-          </button>
         </div>
       }
     >

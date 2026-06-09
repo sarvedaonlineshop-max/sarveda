@@ -49,17 +49,21 @@ export function verifyAccessToken(token: string): JwtUserPayload {
 export function cookieOptions(): {
   httpOnly: boolean;
   secure: boolean;
-  sameSite: "strict";
+  sameSite: "lax";
   path: string;
   maxAge: number;
+  expires: Date;
 } {
   const prod = process.env.NODE_ENV === "production";
+  const expires = new Date(Date.now() + sevenDaysMs);
   return {
     httpOnly: true,
     secure: prod,
-    sameSite: "strict",
+    // Lax + explicit expiry so the session survives browser restarts (not incognito).
+    sameSite: "lax",
     path: "/",
-    maxAge: sevenDaysMs
+    maxAge: sevenDaysMs,
+    expires
   };
 }
 
@@ -72,7 +76,7 @@ export function clearAuthCookie(res: Response): void {
   res.clearCookie(AUTH_COOKIE_NAME, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: "lax",
     path: "/"
   });
 }
