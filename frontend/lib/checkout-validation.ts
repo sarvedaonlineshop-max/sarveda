@@ -72,14 +72,15 @@ export function validateCheckoutFormDetailed(form: CheckoutFormInput): {
     fieldErrors.state = "Enter your state or province.";
   }
 
-  const digits = form.phone.replace(/\D/g, "");
-  if (country === "IN") {
+  const phone = form.phone.trim();
+  if (!phone) {
+    fieldErrors.phone = "Enter your mobile number.";
+  } else if (country === "IN") {
+    const digits = phone.replace(/\D/g, "");
     const national = digits.startsWith("91") ? digits.slice(2) : digits;
     if (national.length !== 10) {
       fieldErrors.phone = "Enter a valid 10-digit mobile number.";
     }
-  } else if (digits.length < 8) {
-    fieldErrors.phone = "Enter a valid phone number with country code.";
   }
 
   const firstError = Object.values(fieldErrors).find(Boolean) ?? null;

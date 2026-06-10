@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { COUNTRIES, countryByCode } from "@/lib/countries";
 import type { CheckoutFieldErrors } from "@/lib/checkout-validation";
@@ -100,7 +100,6 @@ export function AddressFields({
   indiaCheckoutOnly = false,
   showAllErrors = false
 }: Props) {
-  const [countryQuery, setCountryQuery] = useState("");
   const [touched, setTouched] = useState<Partial<Record<FieldKey, boolean>>>({});
   const isIndia = form.country === "IN";
 
@@ -109,14 +108,6 @@ export function AddressFields({
       onChange({ ...form, country: "IN", phoneDial: "+91" });
     }
   }, [indiaCheckoutOnly, form, onChange]);
-
-  const filteredCountries = useMemo(() => {
-    const q = countryQuery.trim().toLowerCase();
-    if (!q) return COUNTRIES;
-    return COUNTRIES.filter(
-      (row) => row.name.toLowerCase().includes(q) || row.code.toLowerCase().includes(q)
-    );
-  }, [countryQuery]);
 
   function patch(partial: Partial<CheckoutAddressForm>) {
     onChange({ ...form, ...partial });
@@ -143,6 +134,34 @@ export function AddressFields({
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
+      <div className="sm:col-span-2">
+        <span className="mb-1 block text-sm font-medium text-stone-700">Country</span>
+        {indiaCheckoutOnly ? (
+          <div className="min-h-[48px] rounded-xl border border-stone-200 bg-stone-50 px-3 py-3 text-sm text-stone-800">
+            India — domestic delivery only on this site.
+          </div>
+        ) : (
+          <select
+            required
+            className={`${inputClass(fieldState("country"))} bg-white`}
+            value={form.country}
+            onBlur={() => touch("country")}
+            onChange={(event) => {
+              const country = event.target.value;
+              const dial = countryByCode(country)?.dial ?? form.phoneDial;
+              patch({ country, phoneDial: dial });
+            }}
+          >
+            {COUNTRIES.map((row) => (
+              <option key={row.code} value={row.code}>
+                {row.name} ({row.code})
+              </option>
+            ))}
+          </select>
+        )}
+        <FieldFeedback message={fieldMessage("country")} state={fieldState("country")} />
+      </div>
+
       <div className="sm:col-span-2">
         <ValidatedLabel
           label="Full name"
@@ -309,48 +328,6 @@ export function AddressFields({
           />
         </ValidatedLabel>
         <FieldFeedback message={fieldMessage("postalCode")} state={fieldState("postalCode")} />
-        {isIndia ? (
-          <p className="mt-1 text-xs text-stone-500">
-            We check deliverability with Delhivery for this PIN. Shipping cost uses your cart and address.
-          </p>
-        ) : null}
-      </div>
-
-      <div className="sm:col-span-2">
-        <span className="mb-1 block text-sm font-medium text-stone-700">Country</span>
-        {indiaCheckoutOnly ? (
-          <div className="min-h-[48px] rounded-xl border border-stone-200 bg-stone-50 px-3 py-3 text-sm text-stone-800">
-            India — domestic delivery only on this site.
-          </div>
-        ) : (
-          <>
-            <input
-              type="search"
-              placeholder="Search country"
-              className="mb-2 min-h-[44px] w-full rounded-xl border border-stone-200 px-3 text-sm text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
-              value={countryQuery}
-              onChange={(event) => setCountryQuery(event.target.value)}
-            />
-            <select
-              required
-              className={`${inputClass(fieldState("country"))} bg-white`}
-              value={form.country}
-              onBlur={() => touch("country")}
-              onChange={(event) => {
-                const country = event.target.value;
-                const dial = countryByCode(country)?.dial ?? form.phoneDial;
-                patch({ country, phoneDial: dial });
-              }}
-            >
-              {filteredCountries.map((row) => (
-                <option key={row.code} value={row.code}>
-                  {row.name} ({row.code})
-                </option>
-              ))}
-            </select>
-          </>
-        )}
-        <FieldFeedback message={fieldMessage("country")} state={fieldState("country")} />
       </div>
     </div>
   );

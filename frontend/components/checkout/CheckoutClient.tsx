@@ -14,7 +14,6 @@ import type { CreateOrderBody } from "@/lib/checkout-api";
 import { countryByCode } from "@/lib/countries";
 import { fetchMe } from "@/lib/auth-client";
 import { loadRazorpayScript } from "@/lib/load-razorpay";
-import { checkIndiaDelhiveryDelivery } from "@/lib/shipping-india-api";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 const indiaCheckoutOnly =
@@ -42,10 +41,6 @@ export function CheckoutClient() {
   const [completingCheckout, setCompletingCheckout] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<CheckoutFieldErrors>({});
   const [showAllFieldErrors, setShowAllFieldErrors] = useState(false);
-  const [pinHint, setPinHint] = useState<{ kind: "idle" | "loading" | "ok" | "err"; text?: string }>({
-    kind: "idle"
-  });
-
   const idempotencyKey = useMemo(
     () =>
       typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -142,53 +137,6 @@ export function CheckoutClient() {
     };
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    if (isDigitalOnly || form.country !== "IN") {
-      setPinHint({ kind: "idle" });
-      return () => {
-        cancelled = true;
-      };
-    }
-    const pin = form.postalCode.replace(/\D/g, "");
-    if (pin.length !== 6) {
-      setPinHint({ kind: "idle" });
-      return () => {
-        cancelled = true;
-      };
-    }
-    const handle = window.setTimeout(() => {
-      setPinHint({ kind: "loading", text: "Checking delivery to this PIN…" });
-      const weightKg = Math.max(0.05, Math.min(30, Math.max(itemCount, 1) * 0.35));
-      void checkIndiaDelhiveryDelivery(pin)
-        .then((r) => {
-          if (cancelled) return;
-          if (r.serviceable) {
-            setPinHint({
-              kind: "ok",
-              text: `Deliverable via Delhivery${r.estimatedDays ? ` (~${r.estimatedDays} days after dispatch)` : ""}.`
-            });
-          } else {
-            setPinHint({
-              kind: "err",
-              text: "No courier quoted for this PIN at the estimated cart weight. Checkout will verify again with your full cart before payment."
-            });
-          }
-        })
-        .catch((e: unknown) => {
-          if (cancelled) return;
-          setPinHint({
-            kind: "err",
-            text: e instanceof Error ? e.message : "Could not verify this PIN right now."
-          });
-        });
-    }, 500);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(handle);
-    };
-  }, [form.country, form.postalCode, itemCount, isDigitalOnly]);
-
   if (loading) {
     return <p className="text-center text-stone-500">Loading cart…</p>;
   }
@@ -241,20 +189,6 @@ export function CheckoutClient() {
               setForm(next);
             }}
           />
-          {pinHint.kind !== "idle" ? (
-            <p
-              className={`text-xs ${
-                pinHint.kind === "ok"
-                  ? "text-emerald-700"
-                  : pinHint.kind === "loading"
-                    ? "text-stone-500"
-                    : "text-amber-800"
-              }`}
-              role="status"
-            >
-              {pinHint.text}
-            </p>
-          ) : null}
         </div>
 
         <div className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">

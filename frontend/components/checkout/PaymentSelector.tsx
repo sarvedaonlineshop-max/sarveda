@@ -553,13 +553,19 @@ export function PaymentSelector({
             </p>
           </div>
         ) : null}
-        <div className="flex justify-between gap-4 pt-2 text-base">
+        <div className="flex justify-between gap-4 border-t border-stone-100 pt-3 text-sm">
           <dt className="font-semibold text-stone-900">Estimated total</dt>
-          <dd className="font-serif font-semibold text-amber-800">
+          <dd className="text-right font-semibold text-stone-900">
             {shippingInPaise != null
               ? formatMoney(estimatedTotal)
               : formatMoney(merchandiseAfterDiscount)}
-            <span className="block text-xs font-sans font-normal text-stone-500">GST included</span>
+            {isIndia ? (
+              <span className="mt-0.5 block text-xs font-normal text-stone-500">GST included</span>
+            ) : (
+              <span className="mt-0.5 block text-xs font-normal text-stone-500">
+                No Indian GST · {displayCurrency}
+              </span>
+            )}
           </dd>
         </div>
       </dl>
