@@ -1,3 +1,5 @@
+import type { CheckoutFormInput } from "./checkout-validation";
+
 const STORAGE_KEY = "sarveda_checkout_shipping_v1";
 
 export type SavedCheckoutShipping = {
@@ -24,7 +26,11 @@ export function loadSavedCheckoutShipping(): Partial<SavedCheckoutShipping> | nu
   }
 }
 
-export function saveCheckoutShipping(value: SavedCheckoutShipping): void {
+export function saveCheckoutShipping(value: CheckoutFormInput): void {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+  const payload: SavedCheckoutShipping = {
+    ...value,
+    line2: value.line2 ?? ""
+  };
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 }
