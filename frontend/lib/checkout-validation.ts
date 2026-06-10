@@ -19,6 +19,13 @@ export function validateCheckoutForm(form: CheckoutFormInput): string | null {
   return validateCheckoutFormDetailed(form).message;
 }
 
+export function validateCheckoutField(
+  field: keyof CheckoutFormInput,
+  form: CheckoutFormInput
+): string | null {
+  return validateCheckoutFormDetailed(form).fieldErrors[field] ?? null;
+}
+
 export function validateCheckoutFormDetailed(form: CheckoutFormInput): {
   message: string | null;
   fieldErrors: CheckoutFieldErrors;

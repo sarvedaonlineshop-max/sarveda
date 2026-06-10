@@ -34,9 +34,26 @@ function formatPlacedDate(value: string | null | undefined): string {
 function statusTitle(order: OrderPublic, codFromUrl: boolean): string {
   const isCod = order.isCod || codFromUrl || order.paymentProvider === "COD";
   if (isCod) return "Order placed";
-  if (order.paymentStatus === "CAPTURED" || order.status === "PAID") return "Payment received";
+  if (order.paymentStatus === "CAPTURED" || order.status === "PAID") return "Payment Successful";
   if (order.status === "PENDING_PAYMENT") return "Payment pending";
   return order.status.replaceAll("_", " ");
+}
+
+async function downloadInvoicePdf(orderNumber: string, email: string) {
+  const res = await fetch(orderInvoiceDownloadUrl(orderNumber, email), { credentials: "include" });
+  if (!res.ok) {
+    const json = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(json.error || "Could not download invoice");
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `invoice-${orderNumber}.pdf`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
 }
 
 function ConfirmedInner() {
@@ -47,6 +64,8 @@ function ConfirmedInner() {
   const [order, setOrder] = useState<OrderPublic | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [cartCleared, setCartCleared] = useState(false);
+  const [invoiceBusy, setInvoiceBusy] = useState(false);
+  const [invoiceErr, setInvoiceErr] = useState<string | null>(null);
   const purchaseTracked = useRef(false);
 
   useEffect(() => {
@@ -115,7 +134,8 @@ function ConfirmedInner() {
   const fmt = (n: number) => formatMinorFromPaise(n, order.currency);
   const paid = order.paymentStatus === "CAPTURED" || order.status === "PAID";
   const isIndia = order.currency === "INR" || addr?.country === "IN";
-  const { gstInPaise } = extractGst(order.subtotalInPaise, DEFAULT_DISPLAY_GST_RATE);
+  const merchandiseAfterDiscount = Math.max(0, order.subtotalInPaise - (order.discountInPaise ?? 0));
+  const { gstInPaise } = extractGst(merchandiseAfterDiscount, DEFAULT_DISPLAY_GST_RATE);
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -133,27 +153,71 @@ function ConfirmedInner() {
         <span className="font-mono font-medium text-stone-900">{order.orderNumber}</span>
       </p>
 
-      <div className="mt-6 grid gap-4 border border-stone-200 bg-stone-50 p-4 lg:grid-cols-3">
-        {addr ? (
-          <div>
-            <p className="text-xs font-semibold uppercase text-stone-500">Ship to</p>
-            <p className="mt-2 whitespace-pre-line text-sm text-stone-800">{formatAddress(addr)}</p>
-            <p className="mt-2 text-sm text-stone-600">Phone: {addr.phone}</p>
-          </div>
-        ) : null}
-        <div>
-          <p className="text-xs font-semibold uppercase text-stone-500">Payment method</p>
-          <p className="mt-2 text-sm font-medium text-stone-900">
-            {isCod ? "Cash on delivery" : order.paymentProvider ?? "Online payment"}
-          </p>
+      <div className="mt-6 overflow-hidden rounded-lg border border-stone-200 bg-stone-50">
+        <div className="border-b border-stone-200 px-4 py-4">
+          <p className="font-semibold text-stone-900">{statusTitle(order, codFromUrl)}</p>
+          {isCod ? (
+            <p className="mt-1 text-sm text-stone-600">
+              Pay in cash when your package arrives. Estimated delivery 5–8 business days after dispatch.
+            </p>
+          ) : paid ? (
+            <p className="mt-1 text-sm text-stone-600">
+              Confirmation sent to <span className="font-medium">{order.email}</span>
+            </p>
+          ) : (
+            <p className="mt-1 text-sm text-amber-800">We are confirming your payment. Refresh in a moment.</p>
+          )}
         </div>
-        <div>
-          <p className="text-xs font-semibold uppercase text-stone-500">Order summary</p>
-          <dl className="mt-2 space-y-1 text-sm">
+
+        <div className="grid gap-4 border-b border-stone-200 p-4 sm:grid-cols-2">
+          <div>
+            <p className="text-xs font-semibold uppercase text-stone-500">Payment method</p>
+            <p className="mt-2 text-sm font-medium text-stone-900">
+              {isCod ? "Cash on delivery" : order.paymentProvider ?? "Online payment"}
+            </p>
+          </div>
+          {addr ? (
+            <div>
+              <p className="text-xs font-semibold uppercase text-stone-500">Ship to</p>
+              <p className="mt-2 whitespace-pre-line text-sm text-stone-800">{formatAddress(addr)}</p>
+              <p className="mt-2 text-sm text-stone-600">Phone: {addr.phone}</p>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="px-4 py-4">
+          <p className="text-xs font-semibold uppercase text-stone-500">Items</p>
+          <ul className="mt-3 divide-y divide-stone-100">
+            {order.items.map((i) => (
+              <li
+                key={`${i.nameSnapshot}-${i.qtyOrdered}`}
+                className="flex flex-wrap items-start justify-between gap-3 py-3 first:pt-0"
+              >
+                <div className="min-w-0">
+                  <p className="font-medium text-stone-900">{i.nameSnapshot}</p>
+                  <p className="mt-1 text-sm text-stone-600">Qty {i.qtyOrdered}</p>
+                </div>
+                <p className="text-sm font-semibold text-stone-900">{fmt(i.lineTotalInPaise)}</p>
+              </li>
+            ))}
+          </ul>
+
+          <dl className="mt-4 space-y-1 border-t border-stone-200 pt-4 text-sm">
             <div className="flex justify-between text-stone-600">
               <dt>Item(s) subtotal</dt>
               <dd>{fmt(order.subtotalInPaise)}</dd>
             </div>
+            {(order.discountInPaise ?? 0) > 0 ? (
+              <div className="flex justify-between text-emerald-800">
+                <dt>
+                  Coupon discount
+                  {order.couponCode ? (
+                    <span className="ml-1 font-mono text-xs">({order.couponCode})</span>
+                  ) : null}
+                </dt>
+                <dd>−{fmt(order.discountInPaise)}</dd>
+              </div>
+            ) : null}
             <div className="flex justify-between text-stone-600">
               <dt>Shipping</dt>
               <dd>{fmt(order.shippingInPaise)}</dd>
@@ -169,39 +233,6 @@ function ConfirmedInner() {
             ) : null}
           </dl>
         </div>
-      </div>
-
-      <div className="mt-6 overflow-hidden rounded-lg border border-stone-200 bg-white">
-        <div className="border-b border-stone-200 px-4 py-3">
-          <p className="font-semibold text-stone-900">{statusTitle(order, codFromUrl)}</p>
-          {isCod ? (
-            <p className="mt-1 text-sm text-stone-600">
-              Pay in cash when your package arrives. Estimated delivery 5–8 business days after dispatch.
-            </p>
-          ) : paid ? (
-            <p className="mt-1 text-sm text-stone-600">
-              Confirmation sent to <span className="font-medium">{order.email}</span>
-            </p>
-          ) : (
-            <p className="mt-1 text-sm text-amber-800">We are confirming your payment. Refresh in a moment.</p>
-          )}
-        </div>
-
-        <ul className="divide-y divide-stone-100">
-          {order.items.map((i) => (
-            <li
-              key={`${i.skuSnapshot}-${i.nameSnapshot}`}
-              className="flex flex-wrap items-start justify-between gap-3 px-4 py-4"
-            >
-              <div className="min-w-0">
-                <p className="font-medium text-stone-900">{i.nameSnapshot}</p>
-                <p className="mt-1 text-xs text-stone-500">SKU {i.skuSnapshot}</p>
-                <p className="mt-1 text-sm text-stone-600">Qty {i.qtyOrdered}</p>
-              </div>
-              <p className="text-sm font-semibold text-stone-900">{fmt(i.lineTotalInPaise)}</p>
-            </li>
-          ))}
-        </ul>
       </div>
 
       {(order.shipments ?? []).length > 0 ? (
@@ -226,6 +257,12 @@ function ConfirmedInner() {
         </section>
       ) : null}
 
+      {invoiceErr ? (
+        <p className="mt-4 text-sm text-red-600" role="alert">
+          {invoiceErr}
+        </p>
+      ) : null}
+
       <div className="mt-8 flex flex-wrap gap-3">
         <Link
           href="/shop"
@@ -234,12 +271,22 @@ function ConfirmedInner() {
           Continue shopping
         </Link>
         {!isCod && paid ? (
-          <a
-            href={orderInvoiceDownloadUrl(order.orderNumber, email)}
-            className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-stone-300 px-6 text-sm font-medium text-stone-800 hover:bg-stone-50"
+          <button
+            type="button"
+            disabled={invoiceBusy}
+            onClick={() => {
+              setInvoiceBusy(true);
+              setInvoiceErr(null);
+              void downloadInvoicePdf(order.orderNumber, email)
+                .catch((e) => {
+                  setInvoiceErr(e instanceof Error ? e.message : "Could not download invoice");
+                })
+                .finally(() => setInvoiceBusy(false));
+            }}
+            className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-stone-300 px-6 text-sm font-medium text-stone-800 hover:bg-stone-50 disabled:opacity-60"
           >
-            Download invoice
-          </a>
+            {invoiceBusy ? "Preparing PDF…" : "Download GST invoice"}
+          </button>
         ) : null}
         <Link
           href="/profile"

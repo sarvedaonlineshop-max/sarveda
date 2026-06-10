@@ -8,13 +8,14 @@ import { sendLoginOtp, verifyLoginOtp } from "@/lib/auth-client";
 type OtpLoginFormProps = {
   inputClass: string;
   onSuccess: (user: PublicUser) => void;
+  initialEmail?: string;
 };
 
 type OtpStep = "email" | "code";
 
-export function OtpLoginForm({ inputClass, onSuccess }: OtpLoginFormProps) {
+export function OtpLoginForm({ inputClass, onSuccess, initialEmail = "" }: OtpLoginFormProps) {
   const [step, setStep] = useState<OtpStep>("email");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");

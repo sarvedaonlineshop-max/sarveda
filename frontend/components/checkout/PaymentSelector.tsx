@@ -443,8 +443,12 @@ export function PaymentSelector({
       openRazorpay(order as CreateOrderResponse & { razorpayKeyId: string; rzpOrderId: string });
     } catch (e) {
       payStarted.current = false;
+      const raw =
+        e instanceof CheckoutApiError ? e.message : e instanceof Error ? e.message : "Checkout failed";
       setErr(
-        e instanceof CheckoutApiError ? e.message : e instanceof Error ? e.message : "Checkout failed"
+        raw.toLowerCase().includes("route not found")
+          ? "Checkout is temporarily unavailable. Please refresh the page and try again."
+          : raw
       );
       setBusy(false);
       setProcessing(false);
@@ -469,6 +473,25 @@ export function PaymentSelector({
   return (
     <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm md:p-6">
       <h2 className="text-xl font-semibold text-stone-900">Order summary</h2>
+
+      {cartItems.length > 0 ? (
+        <ul className="mt-4 space-y-2 border-b border-stone-100 pb-4 text-sm">
+          {cartItems.map((item) => (
+            <li key={item.variantId} className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-medium text-stone-900 line-clamp-2">{item.productName}</p>
+                {item.variantLabel ? (
+                  <p className="text-xs text-stone-500">{item.variantLabel}</p>
+                ) : null}
+                <p className="text-xs text-stone-500">Qty {item.quantity}</p>
+              </div>
+              <p className="shrink-0 font-medium text-stone-800">
+                {formatMoney(item.unitPriceInPaise * item.quantity)}
+              </p>
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
       <dl className="mt-4 space-y-2 border-b border-stone-100 pb-4 text-sm">
         <div className="flex justify-between gap-4">

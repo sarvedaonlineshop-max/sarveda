@@ -1,8 +1,11 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { getApiBase } from "@/lib/api";
+import { fetchMe, type PublicUser } from "@/lib/auth-client";
 
 type Review = {
   id: string;
@@ -53,10 +56,16 @@ function Stars({
 }
 
 export function ProductReviewsSection({ productId }: Props) {
+  const pathname = usePathname();
+  const loginHref = `/login?next=${encodeURIComponent(pathname || "/")}`;
+
   const [reviews, setReviews] = useState<Review[]>([]);
   const [total, setTotal] = useState(0);
   const [average, setAverage] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  const [sessionUser, setSessionUser] = useState<PublicUser | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
 
   const [rating, setRating] = useState(5);
   const [title, setTitle] = useState("");
@@ -85,6 +94,13 @@ export function ProductReviewsSection({ productId }: Props) {
     void loadReviews();
   }, [loadReviews]);
 
+  useEffect(() => {
+    void fetchMe().then((user) => {
+      setSessionUser(user);
+      setSessionChecked(true);
+    });
+  }, []);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
@@ -97,13 +113,23 @@ export function ProductReviewsSection({ productId }: Props) {
         body: JSON.stringify({ rating, title, body })
       });
       const data = (await res.json()) as { error?: string; message?: string };
+      if (res.status === 401) {
+        throw new Error("SIGN_IN_REQUIRED");
+      }
       if (!res.ok) throw new Error(data.error ?? "Failed to submit review");
       setSubmitted(true);
       setTitle("");
       setBody("");
       setRating(5);
     } catch (err) {
-      setFormErr(err instanceof Error ? err.message : "Something went wrong");
+      const msg = err instanceof Error ? err.message : "Something went wrong";
+      setFormErr(
+        msg === "SIGN_IN_REQUIRED"
+          ? "Please sign in to submit your review."
+          : msg === "Not authenticated"
+            ? "Please sign in to submit your review."
+            : msg
+      );
     } finally {
       setSubmitting(false);
     }
@@ -269,7 +295,32 @@ export function ProductReviewsSection({ productId }: Props) {
           Write a Review
         </h3>
 
-        {submitted ? (
+        {!sessionChecked ? (
+          <p style={{ fontSize: "13px", color: "var(--brand-muted)" }}>Loading…</p>
+        ) : !sessionUser ? (
+          <div>
+            <p style={{ fontSize: "14px", color: "var(--brand-muted)", lineHeight: 1.6, marginBottom: "14px" }}>
+              Sign in to share your experience with this product.
+            </p>
+            <Link
+              href={loginHref}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                height: "40px",
+                padding: "0 20px",
+                borderRadius: "8px",
+                background: "var(--brand-forest)",
+                color: "var(--brand-ivory)",
+                fontSize: "13px",
+                fontWeight: 600,
+                textDecoration: "none"
+              }}
+            >
+              Sign in to write a review
+            </Link>
+          </div>
+        ) : submitted ? (
           <div
             style={{
               background: "#dcfce7",
@@ -336,7 +387,14 @@ export function ProductReviewsSection({ productId }: Props) {
             />
 
             {formErr && (
-              <p style={{ fontSize: "13px", color: "#dc2626", marginBottom: "10px" }}>{formErr}</p>
+              <p style={{ fontSize: "13px", color: "#dc2626", marginBottom: "10px" }}>
+                {formErr}{" "}
+                {formErr.includes("sign in") ? (
+                  <Link href={loginHref} style={{ color: "var(--brand-forest)", fontWeight: 600 }}>
+                    Sign in
+                  </Link>
+                ) : null}
+              </p>
             )}
 
             <button

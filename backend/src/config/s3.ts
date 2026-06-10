@@ -1,4 +1,4 @@
-import { GetBucketLocationCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { GetBucketLocationCommand, GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 import { logger } from "./logger";
 
@@ -130,6 +130,38 @@ export async function mirrorUrlToS3(sourceUrl: string, key: string): Promise<str
 }
 
 /** Upload PDF buffer; returns public URL or null if S3 not configured. */
+/** Extract object key from a stored S3/CloudFront invoice URL. */
+export function s3KeyFromStoredUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    const path = decodeURIComponent(parsed.pathname.replace(/^\//, ""));
+    if (!path) return null;
+    const bucket = bucketName();
+    const cdn = process.env.AWS_CLOUDFRONT_URL?.trim()?.replace(/^\w+:\/\//, "").replace(/\/$/, "");
+    if (cdn && parsed.hostname === cdn.split("/")[0]) {
+      return path;
+    }
+    if (parsed.hostname.includes("amazonaws.com") && path) {
+      return path;
+    }
+    if (bucket && path.startsWith("invoices/")) {
+      return path;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function downloadPdfFromS3(key: string): Promise<Buffer | null> {
+  const c = s3Client();
+  const bucket = bucketName();
+  if (!c || !bucket) return null;
+  const out = await c.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+  const bytes = await out.Body?.transformToByteArray();
+  return bytes ? Buffer.from(bytes) : null;
+}
+
 export async function uploadPdf(key: string, body: Buffer): Promise<string | null> {
   const c = s3Client();
   const bucket = bucketName();

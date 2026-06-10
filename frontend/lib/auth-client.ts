@@ -10,6 +10,16 @@ export type PublicUser = {
   phone: string | null;
 };
 
+export class AuthError extends Error {
+  code?: string;
+
+  constructor(message: string, code?: string) {
+    super(message);
+    this.name = "AuthError";
+    this.code = code;
+  }
+}
+
 export type RegisterInput = {
   email: string;
   password: string;
@@ -117,9 +127,12 @@ export async function loginWithPassword(
   });
   const json = (await res.json()) as
     | { success: true; data: { user: PublicUser } }
-    | { success: false; error?: string };
+    | { success: false; error?: string; code?: string };
   if (!res.ok || !json.success || !("data" in json)) {
-    throw new Error("error" in json ? String(json.error) : `Login failed (${res.status})`);
+    throw new AuthError(
+      "error" in json ? String(json.error) : `Login failed (${res.status})`,
+      "code" in json ? json.code : undefined
+    );
   }
   return completeAuthSession(json.data.user);
 }

@@ -178,7 +178,7 @@ export async function loginUser(res: Response, body: LoginBody) {
     if (user.wooCommerceId != null) {
       throw httpError(
         401,
-        "Your account was migrated. Please reset your password at sarveda.com/forgot-password or use OTP login.",
+        "Password expired. Please set a new password or use OTP login.",
         "MIGRATED_ACCOUNT_USE_OTP"
       );
     }
@@ -189,7 +189,7 @@ export async function loginUser(res: Response, body: LoginBody) {
     if (user.wooCommerceId != null) {
       throw httpError(
         401,
-        "Your account was migrated. Please reset your password at sarveda.com/forgot-password or use OTP login.",
+        "Password expired. Please set a new password or use OTP login.",
         "MIGRATED_ACCOUNT_USE_OTP"
       );
     }

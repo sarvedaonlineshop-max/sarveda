@@ -15,6 +15,7 @@ import { countryByCode } from "@/lib/countries";
 import { fetchMe } from "@/lib/auth-client";
 import { loadRazorpayScript } from "@/lib/load-razorpay";
 import { checkIndiaDelhiveryDelivery } from "@/lib/shipping-india-api";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 
 const indiaCheckoutOnly =
   typeof process.env.NEXT_PUBLIC_INDIA_CHECKOUT_ONLY === "string" &&
@@ -40,6 +41,7 @@ export function CheckoutClient() {
   const [rzpLoadError, setRzpLoadError] = useState<string | null>(null);
   const [completingCheckout, setCompletingCheckout] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<CheckoutFieldErrors>({});
+  const [showAllFieldErrors, setShowAllFieldErrors] = useState(false);
   const [pinHint, setPinHint] = useState<{ kind: "idle" | "loading" | "ok" | "err"; text?: string }>({
     kind: "idle"
   });
@@ -65,6 +67,8 @@ export function CheckoutClient() {
     country: "IN"
   });
 
+  const debouncedEmail = useDebouncedValue(form.email, 450);
+
   const formBody: CreateOrderBody = {
     email: form.email.trim(),
     phone: toCheckoutApiPhone(form),
@@ -77,13 +81,18 @@ export function CheckoutClient() {
     country: form.country || "IN"
   };
 
+  const checkoutEmailForCart = useMemo(() => {
+    const email = debouncedEmail.trim().toLowerCase();
+    return email.includes("@") ? email : undefined;
+  }, [debouncedEmail]);
+
   const onRefreshCart = useCallback(async () => {
-    await refreshCart(form.country || "IN", form.email.trim() || undefined);
-  }, [refreshCart, form.country, form.email]);
+    await refreshCart(form.country || "IN", checkoutEmailForCart);
+  }, [refreshCart, form.country, checkoutEmailForCart]);
 
   useEffect(() => {
-    void refreshCart(form.country || "IN", form.email.trim() || undefined);
-  }, [form.country, form.email, refreshCart]);
+    void refreshCart(form.country || "IN", checkoutEmailForCart);
+  }, [form.country, checkoutEmailForCart, refreshCart]);
 
   useEffect(() => {
     const saved = loadSavedCheckoutShipping();
@@ -213,8 +222,8 @@ export function CheckoutClient() {
           {rzpLoadError}
         </p>
       ) : null}
-      <div className="grid gap-10 lg:grid-cols-2">
-        <div className="space-y-5">
+      <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(320px,400px)]">
+        <div className="min-w-0 space-y-5">
           <h2 className="text-xl font-semibold text-stone-900">
             {isDigitalOnly ? "Billing details" : "Shipping details"}
           </h2>
@@ -226,10 +235,10 @@ export function CheckoutClient() {
           <AddressFields
             form={form}
             fieldErrors={fieldErrors}
+            showAllErrors={showAllFieldErrors}
             indiaCheckoutOnly={indiaCheckoutOnly}
             onChange={(next) => {
               setForm(next);
-              setFieldErrors({});
             }}
           />
           {pinHint.kind !== "idle" ? (
@@ -246,25 +255,13 @@ export function CheckoutClient() {
               {pinHint.text}
             </p>
           ) : null}
-          <div className="rounded-xl border border-stone-100 bg-stone-50/80 p-4">
-            <h3 className="text-sm font-semibold text-stone-800">Cart</h3>
-            <ul className="mt-2 max-h-48 space-y-2 overflow-y-auto text-sm text-stone-600">
-              {items.map((item) => (
-                <li key={item.variantId} className="flex justify-between gap-2">
-                  <span className="line-clamp-2">
-                    {item.productName} × {item.quantity}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
 
-        <div className="lg:sticky lg:top-24 space-y-4">
+        <div className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
           {!resumeOrderNumber && items.length > 0 ? (
             <CouponInput
               shippingCountry={form.country}
-              checkoutEmail={form.email.trim() || undefined}
+              checkoutEmail={checkoutEmailForCart}
               appliedCode={coupon?.code}
               discountInPaise={discountInPaise}
               currency={currency}
@@ -293,7 +290,10 @@ export function CheckoutClient() {
               saveCheckoutShipping(form);
               setCompletingCheckout(true);
             }}
-            onFieldErrors={setFieldErrors}
+            onFieldErrors={(errors) => {
+              setShowAllFieldErrors(true);
+              setFieldErrors(errors);
+            }}
             resumeOrderNumber={resumeOrderNumber}
           />
         </div>

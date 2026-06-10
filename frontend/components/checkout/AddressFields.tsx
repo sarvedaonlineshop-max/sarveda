@@ -1,33 +1,107 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { COUNTRIES, countryByCode } from "@/lib/countries";
+import type { CheckoutFieldErrors } from "@/lib/checkout-validation";
+import { validateCheckoutField, type CheckoutFormInput } from "@/lib/checkout-validation";
 import { INDIAN_STATES } from "@/lib/indian-states";
 
-export type CheckoutAddressForm = {
-  email: string;
-  phone: string;
-  phoneDial: string;
-  shippingFullName: string;
-  line1: string;
-  line2: string;
-  city: string;
-  state: string;
-  postalCode: string;
-  country: string;
-};
+export type CheckoutAddressForm = CheckoutFormInput;
 
 type Props = {
   form: CheckoutAddressForm;
   onChange: (next: CheckoutAddressForm) => void;
-  fieldErrors?: Partial<Record<keyof CheckoutAddressForm, string>>;
-  /** When true (e.g. NEXT_PUBLIC_INDIA_CHECKOUT_ONLY), country is locked to India. */
+  fieldErrors?: CheckoutFieldErrors;
   indiaCheckoutOnly?: boolean;
+  /** After Pay is clicked with invalid fields, show every error. */
+  showAllErrors?: boolean;
 };
 
-export function AddressFields({ form, onChange, fieldErrors, indiaCheckoutOnly = false }: Props) {
+type FieldKey = keyof CheckoutAddressForm;
+
+function FieldFeedback({
+  message,
+  state
+}: {
+  message?: string | null;
+  state: "idle" | "valid" | "invalid";
+}) {
+  if (state === "valid") {
+    return (
+      <p className="mt-1 flex items-center gap-1.5 text-xs text-emerald-700" role="status">
+        <span aria-hidden className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold">
+          ✓
+        </span>
+        Looks good
+      </p>
+    );
+  }
+  if (state === "invalid" && message) {
+    return (
+      <p className="mt-1 flex items-start gap-1.5 text-xs text-red-600" role="alert">
+        <span aria-hidden className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-red-100 text-[10px] font-bold">
+          ✕
+        </span>
+        <span>{message}</span>
+      </p>
+    );
+  }
+  return null;
+}
+
+function inputClass(state: "idle" | "valid" | "invalid"): string {
+  const base =
+    "min-h-[48px] w-full rounded-xl border px-3 pr-10 text-stone-900 focus:outline-none focus:ring-2";
+  if (state === "valid") {
+    return `${base} border-emerald-300 bg-emerald-50/40 focus:border-emerald-500 focus:ring-emerald-500/20`;
+  }
+  if (state === "invalid") {
+    return `${base} border-red-300 bg-red-50/40 focus:border-red-500 focus:ring-red-500/20`;
+  }
+  return `${base} border-stone-200 focus:border-amber-700 focus:ring-amber-700/20`;
+}
+
+function ValidatedLabel({
+  label,
+  children,
+  state,
+  htmlFor
+}: {
+  label: string;
+  children: ReactNode;
+  state: "idle" | "valid" | "invalid";
+  htmlFor?: string;
+}) {
+  return (
+    <label className="relative block">
+      <span className="mb-1 block text-sm font-medium text-stone-700">{label}</span>
+      <div className="relative">
+        {children}
+        {state !== "idle" ? (
+          <span
+            className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold ${
+              state === "valid" ? "text-emerald-600" : "text-red-600"
+            }`}
+            aria-hidden
+          >
+            {state === "valid" ? "✓" : "✕"}
+          </span>
+        ) : null}
+      </div>
+    </label>
+  );
+}
+
+export function AddressFields({
+  form,
+  onChange,
+  fieldErrors,
+  indiaCheckoutOnly = false,
+  showAllErrors = false
+}: Props) {
   const [countryQuery, setCountryQuery] = useState("");
+  const [touched, setTouched] = useState<Partial<Record<FieldKey, boolean>>>({});
   const isIndia = form.country === "IN";
 
   useEffect(() => {
@@ -48,34 +122,63 @@ export function AddressFields({ form, onChange, fieldErrors, indiaCheckoutOnly =
     onChange({ ...form, ...partial });
   }
 
+  function touch(field: FieldKey) {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  }
+
+  function isFieldTouched(field: FieldKey): boolean {
+    return Boolean(touched[field] || showAllErrors || fieldErrors?.[field]);
+  }
+
+  function fieldState(field: FieldKey): "idle" | "valid" | "invalid" {
+    const message =
+      fieldErrors?.[field] ?? (isFieldTouched(field) ? validateCheckoutField(field, form) : null);
+    if (!isFieldTouched(field)) return "idle";
+    return message ? "invalid" : "valid";
+  }
+
+  function fieldMessage(field: FieldKey): string | null {
+    return fieldErrors?.[field] ?? (isFieldTouched(field) ? validateCheckoutField(field, form) : null);
+  }
+
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      <label className="sm:col-span-2">
-        <span className="mb-1 block text-sm font-medium text-stone-700">Full name</span>
-        <input
-          required
-          autoComplete="name"
-          className="min-h-[48px] w-full rounded-xl border border-stone-200 px-3 text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
-          value={form.shippingFullName}
-          onChange={(event) => patch({ shippingFullName: event.target.value })}
-        />
-        {fieldErrors?.shippingFullName ? <p className="mt-1 text-xs text-red-600">{fieldErrors.shippingFullName}</p> : null}
-      </label>
+      <div className="sm:col-span-2">
+        <ValidatedLabel
+          label="Full name"
+          state={fieldState("shippingFullName")}
+          htmlFor="checkout-full-name"
+        >
+          <input
+            id="checkout-full-name"
+            required
+            autoComplete="name"
+            className={inputClass(fieldState("shippingFullName"))}
+            value={form.shippingFullName}
+            onBlur={() => touch("shippingFullName")}
+            onChange={(event) => patch({ shippingFullName: event.target.value })}
+          />
+        </ValidatedLabel>
+        <FieldFeedback message={fieldMessage("shippingFullName")} state={fieldState("shippingFullName")} />
+      </div>
 
-      <label className="sm:col-span-2">
-        <span className="mb-1 block text-sm font-medium text-stone-700">Email</span>
-        <input
-          required
-          type="email"
-          autoComplete="email"
-          className="min-h-[48px] w-full rounded-xl border border-stone-200 px-3 text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
-          value={form.email}
-          onChange={(event) => patch({ email: event.target.value })}
-        />
-        {fieldErrors?.email ? <p className="mt-1 text-xs text-red-600">{fieldErrors.email}</p> : null}
-      </label>
+      <div className="sm:col-span-2">
+        <ValidatedLabel label="Email" state={fieldState("email")} htmlFor="checkout-email">
+          <input
+            id="checkout-email"
+            required
+            type="email"
+            autoComplete="email"
+            className={inputClass(fieldState("email"))}
+            value={form.email}
+            onBlur={() => touch("email")}
+            onChange={(event) => patch({ email: event.target.value })}
+          />
+        </ValidatedLabel>
+        <FieldFeedback message={fieldMessage("email")} state={fieldState("email")} />
+      </div>
 
-      <label className="sm:col-span-2">
+      <div className="sm:col-span-2">
         <span className="mb-1 block text-sm font-medium text-stone-700">Mobile number</span>
         <div className="flex gap-2">
           <select
@@ -90,31 +193,47 @@ export function AddressFields({ form, onChange, fieldErrors, indiaCheckoutOnly =
               </option>
             ))}
           </select>
-          <input
-            required
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel-national"
-            placeholder={isIndia ? "10-digit mobile" : "Phone number"}
-            className="min-h-[48px] flex-1 rounded-xl border border-stone-200 px-3 text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
-            value={form.phone}
-            onChange={(event) => patch({ phone: event.target.value })}
-          />
+          <div className="relative flex-1">
+            <input
+              required
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel-national"
+              placeholder={isIndia ? "10-digit mobile" : "Phone number"}
+              className={`${inputClass(fieldState("phone"))} pr-10`}
+              value={form.phone}
+              onBlur={() => touch("phone")}
+              onChange={(event) => patch({ phone: event.target.value })}
+            />
+            {fieldState("phone") !== "idle" ? (
+              <span
+                className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold ${
+                  fieldState("phone") === "valid" ? "text-emerald-600" : "text-red-600"
+                }`}
+                aria-hidden
+              >
+                {fieldState("phone") === "valid" ? "✓" : "✕"}
+              </span>
+            ) : null}
+          </div>
         </div>
-        {fieldErrors?.phone ? <p className="mt-1 text-xs text-red-600">{fieldErrors.phone}</p> : null}
-      </label>
+        <FieldFeedback message={fieldMessage("phone")} state={fieldState("phone")} />
+      </div>
 
-      <label className="sm:col-span-2">
-        <span className="mb-1 block text-sm font-medium text-stone-700">Address line 1</span>
-        <input
-          required
-          autoComplete="address-line1"
-          className="min-h-[48px] w-full rounded-xl border border-stone-200 px-3 text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
-          value={form.line1}
-          onChange={(event) => patch({ line1: event.target.value })}
-        />
-        {fieldErrors?.line1 ? <p className="mt-1 text-xs text-red-600">{fieldErrors.line1}</p> : null}
-      </label>
+      <div className="sm:col-span-2">
+        <ValidatedLabel label="Address line 1" state={fieldState("line1")} htmlFor="checkout-line1">
+          <input
+            id="checkout-line1"
+            required
+            autoComplete="address-line1"
+            className={inputClass(fieldState("line1"))}
+            value={form.line1}
+            onBlur={() => touch("line1")}
+            onChange={(event) => patch({ line1: event.target.value })}
+          />
+        </ValidatedLabel>
+        <FieldFeedback message={fieldMessage("line1")} state={fieldState("line1")} />
+      </div>
 
       <label className="sm:col-span-2">
         <span className="mb-1 block text-sm font-medium text-stone-700">Address line 2 (optional)</span>
@@ -126,25 +245,29 @@ export function AddressFields({ form, onChange, fieldErrors, indiaCheckoutOnly =
         />
       </label>
 
-      <label>
-        <span className="mb-1 block text-sm font-medium text-stone-700">City</span>
-        <input
-          required
-          autoComplete="address-level2"
-          className="min-h-[48px] w-full rounded-xl border border-stone-200 px-3 text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
-          value={form.city}
-          onChange={(event) => patch({ city: event.target.value })}
-        />
-        {fieldErrors?.city ? <p className="mt-1 text-xs text-red-600">{fieldErrors.city}</p> : null}
-      </label>
+      <div>
+        <ValidatedLabel label="City" state={fieldState("city")} htmlFor="checkout-city">
+          <input
+            id="checkout-city"
+            required
+            autoComplete="address-level2"
+            className={inputClass(fieldState("city"))}
+            value={form.city}
+            onBlur={() => touch("city")}
+            onChange={(event) => patch({ city: event.target.value })}
+          />
+        </ValidatedLabel>
+        <FieldFeedback message={fieldMessage("city")} state={fieldState("city")} />
+      </div>
 
-      <label>
+      <div>
         <span className="mb-1 block text-sm font-medium text-stone-700">State</span>
         {isIndia ? (
           <select
             required
-            className="min-h-[48px] w-full rounded-xl border border-stone-200 bg-white px-3 text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+            className={`${inputClass(fieldState("state"))} bg-white`}
             value={form.state}
+            onBlur={() => touch("state")}
             onChange={(event) => patch({ state: event.target.value })}
           >
             <option value="">Select state</option>
@@ -158,29 +281,42 @@ export function AddressFields({ form, onChange, fieldErrors, indiaCheckoutOnly =
           <input
             required
             autoComplete="address-level1"
-            className="min-h-[48px] w-full rounded-xl border border-stone-200 px-3 text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+            className={inputClass(fieldState("state"))}
             value={form.state}
+            onBlur={() => touch("state")}
             onChange={(event) => patch({ state: event.target.value })}
           />
         )}
-        {fieldErrors?.state ? <p className="mt-1 text-xs text-red-600">{fieldErrors.state}</p> : null}
-      </label>
+        <FieldFeedback message={fieldMessage("state")} state={fieldState("state")} />
+      </div>
 
-      <label>
-        <span className="mb-1 block text-sm font-medium text-stone-700">{isIndia ? "PIN code" : "Postal code"}</span>
-        <input
-          required
-          inputMode={isIndia ? "numeric" : "text"}
-          autoComplete="postal-code"
-          maxLength={isIndia ? 6 : 20}
-          className="min-h-[48px] w-full rounded-xl border border-stone-200 px-3 text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
-          value={form.postalCode}
-          onChange={(event) => patch({ postalCode: event.target.value })}
-        />
-        {fieldErrors?.postalCode ? <p className="mt-1 text-xs text-red-600">{fieldErrors.postalCode}</p> : null}
-      </label>
+      <div>
+        <ValidatedLabel
+          label={isIndia ? "PIN code" : "Postal code"}
+          state={fieldState("postalCode")}
+          htmlFor="checkout-postal"
+        >
+          <input
+            id="checkout-postal"
+            required
+            inputMode={isIndia ? "numeric" : "text"}
+            autoComplete="postal-code"
+            maxLength={isIndia ? 6 : 20}
+            className={inputClass(fieldState("postalCode"))}
+            value={form.postalCode}
+            onBlur={() => touch("postalCode")}
+            onChange={(event) => patch({ postalCode: event.target.value })}
+          />
+        </ValidatedLabel>
+        <FieldFeedback message={fieldMessage("postalCode")} state={fieldState("postalCode")} />
+        {isIndia ? (
+          <p className="mt-1 text-xs text-stone-500">
+            We check deliverability with Delhivery for this PIN. Shipping cost uses your cart and address.
+          </p>
+        ) : null}
+      </div>
 
-      <label className="sm:col-span-2">
+      <div className="sm:col-span-2">
         <span className="mb-1 block text-sm font-medium text-stone-700">Country</span>
         {indiaCheckoutOnly ? (
           <div className="min-h-[48px] rounded-xl border border-stone-200 bg-stone-50 px-3 py-3 text-sm text-stone-800">
@@ -197,8 +333,9 @@ export function AddressFields({ form, onChange, fieldErrors, indiaCheckoutOnly =
             />
             <select
               required
-              className="min-h-[48px] w-full rounded-xl border border-stone-200 bg-white px-3 text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+              className={`${inputClass(fieldState("country"))} bg-white`}
               value={form.country}
+              onBlur={() => touch("country")}
               onChange={(event) => {
                 const country = event.target.value;
                 const dial = countryByCode(country)?.dial ?? form.phoneDial;
@@ -213,8 +350,8 @@ export function AddressFields({ form, onChange, fieldErrors, indiaCheckoutOnly =
             </select>
           </>
         )}
-        {fieldErrors?.country ? <p className="mt-1 text-xs text-red-600">{fieldErrors.country}</p> : null}
-      </label>
+        <FieldFeedback message={fieldMessage("country")} state={fieldState("country")} />
+      </div>
     </div>
   );
 }

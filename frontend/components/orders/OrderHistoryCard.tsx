@@ -47,6 +47,7 @@ export function OrderHistoryCard({ order, email, shipToName }: Props) {
 
   return (
     <article className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
+      {/* ── Meta strip (removed duplicate "View order details" link) ── */}
       <div className="grid gap-2 border-b border-stone-200 bg-stone-100 px-4 py-3 text-xs text-stone-600 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <p className="font-semibold uppercase tracking-wide text-stone-500">Order placed</p>
@@ -65,14 +66,11 @@ export function OrderHistoryCard({ order, email, shipToName }: Props) {
         <div className="sm:text-right">
           <p className="font-semibold uppercase tracking-wide text-stone-500">Order #</p>
           <p className="mt-0.5 font-mono text-stone-900">{order.orderNumber}</p>
-          <p className="mt-1">
-            <Link href={detailsHref} className="font-medium text-sky-700 hover:text-sky-900 hover:underline">
-              View order details
-            </Link>
-          </p>
+          {/* ↑ "View order details" link removed from here — it was duplicated below */}
         </div>
       </div>
 
+      {/* ── Body ── */}
       <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
           <p className="text-base font-semibold text-stone-900">{title}</p>
@@ -86,21 +84,44 @@ export function OrderHistoryCard({ order, email, shipToName }: Props) {
             {order.itemCount} item{order.itemCount === 1 ? "" : "s"}
           </p>
         </div>
+
+        {/* ── Actions ── */}
         <div className="flex shrink-0 flex-col gap-2 sm:w-52">
+          {/* Primary CTA: Track order (replaces "View order details") */}
           <Link
             href={detailsHref}
-            className="inline-flex min-h-[36px] items-center justify-center rounded-full border border-stone-300 bg-stone-50 px-4 text-sm font-medium text-stone-800 hover:bg-stone-100"
+            className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-stone-900 px-4 text-sm font-medium text-white hover:bg-stone-700"
           >
-            View order details
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+              <circle cx="12" cy="9" r="2.5"/>
+            </svg>
+            Track order
           </Link>
+
+          {/* Invoice (paid orders only) */}
           {paid ? (
             <a
               href={orderInvoiceDownloadUrl(order.orderNumber, email)}
-              className="inline-flex min-h-[36px] items-center justify-center rounded-full border border-stone-300 bg-white px-4 text-sm font-medium text-stone-800 hover:bg-stone-50"
+              className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-stone-300 bg-white px-4 text-sm font-medium text-stone-800 hover:bg-stone-50"
             >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
               Invoice
             </a>
           ) : null}
+
+          {/* Need help? */}
+          <Link
+            href="/contact"
+            className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full px-4 text-sm text-stone-400 hover:text-stone-600"
+          >
+            Need help?
+          </Link>
         </div>
       </div>
     </article>

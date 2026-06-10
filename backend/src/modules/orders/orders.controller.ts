@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 
 import { prisma } from "../../config/db";
+import { downloadPdfFromS3, s3KeyFromStoredUrl } from "../../config/s3";
 import { invoiceNumberForOrder } from "../../utils/invoice";
 import {
   buildInvoiceInputFromOrder,
@@ -15,8 +16,10 @@ function serializePublicOrderView(order: {
   status: string;
   paymentStatus: string;
   subtotalInPaise: number;
+  discountInPaise: number;
   shippingInPaise: number;
   grandTotalInPaise: number;
+  couponCode: string | null;
   currency: string;
   email: string;
   createdAt: Date;
@@ -63,8 +66,10 @@ function serializePublicOrderView(order: {
     paymentProvider,
     isCod,
     subtotalInPaise: order.subtotalInPaise,
+    discountInPaise: order.discountInPaise,
     shippingInPaise: order.shippingInPaise,
     grandTotalInPaise: order.grandTotalInPaise,
+    couponCode: order.couponCode,
     currency: order.currency,
     email: order.email,
     createdAt: order.createdAt,
@@ -230,26 +235,35 @@ export async function downloadInvoice(req: Request, res: Response, next: NextFun
       return;
     }
 
-    if (order.invoice?.pdfUrl?.startsWith("http")) {
-      res.redirect(302, order.invoice.pdfUrl);
-      return;
+    let pdf: Buffer | null = null;
+    let invoiceNo = order.invoice?.invoiceNo ?? invoiceNumberForOrder(order.orderNumber);
+
+    const storedUrl = order.invoice?.pdfUrl;
+    if (storedUrl?.startsWith("http")) {
+      const key = s3KeyFromStoredUrl(storedUrl);
+      if (key) {
+        pdf = await downloadPdfFromS3(key);
+      }
     }
 
-    await ensureOrderInvoicePdf(order.id);
-    const refreshed = await loadOrderForInvoice(order.id);
-    const input = refreshed ? buildInvoiceInputFromOrder(refreshed) : null;
-    if (!input) {
-      res.status(400).json({
-        success: false,
-        error: "Shipping address missing for invoice",
-        code: "INVOICE_NOT_READY"
-      });
-      return;
+    if (!pdf) {
+      await ensureOrderInvoicePdf(order.id);
+      const refreshed = await loadOrderForInvoice(order.id);
+      const input = refreshed ? buildInvoiceInputFromOrder(refreshed) : null;
+      if (!input) {
+        res.status(400).json({
+          success: false,
+          error: "Shipping address missing for invoice",
+          code: "INVOICE_NOT_READY"
+        });
+        return;
+      }
+      invoiceNo = input.invoiceNo;
+      pdf = await buildGstInvoicePdf(input);
     }
 
-    const pdf = await buildGstInvoicePdf(input);
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="${input.invoiceNo}.pdf"`);
+    res.setHeader("Content-Disposition", `attachment; filename="${invoiceNo}.pdf"`);
     res.send(pdf);
   } catch (err) {
     next(err);

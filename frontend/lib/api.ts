@@ -189,10 +189,52 @@ export type ProductSuggestion = {
   priceInPaise: number | null;
 };
 
+/** @deprecated Use SiteSearchSuggestion + fetchSiteSearchSuggestions */
 export async function fetchProductSuggestions(term: string): Promise<ProductSuggestion[]> {
+  const items = await fetchSiteSearchSuggestions(term);
+  return items
+    .filter((item) => item.type === "product")
+    .map((item) => ({
+      slug: item.slug,
+      name: item.title,
+      imageUrl: item.imageUrl,
+      priceInPaise: item.priceInPaise
+    }));
+}
+
+export type SiteSearchType = "product" | "course" | "event" | "insight";
+
+export type SiteSearchSuggestion = {
+  type: SiteSearchType;
+  slug: string;
+  title: string;
+  imageUrl: string | null;
+  priceInPaise: number | null;
+  label: string;
+};
+
+export function siteSearchHref(item: Pick<SiteSearchSuggestion, "type" | "slug">): string {
+  switch (item.type) {
+    case "product":
+      return `/product/${item.slug}`;
+    case "course":
+      return `/course/${item.slug}`;
+    case "event":
+      return `/event/${item.slug}`;
+    case "insight":
+      return `/${item.slug}`;
+    default:
+      return "/";
+  }
+}
+
+export async function fetchSiteSearchSuggestions(
+  term: string,
+  limit = 10
+): Promise<SiteSearchSuggestion[]> {
   if (term.trim().length < 2) return [];
-  const q = new URLSearchParams({ q: term.trim() });
-  const data = await fetchApi<{ items: ProductSuggestion[] }>(`/api/products/suggest?${q.toString()}`);
+  const q = new URLSearchParams({ q: term.trim(), limit: String(limit) });
+  const data = await fetchApi<{ items: SiteSearchSuggestion[] }>(`/api/search/suggest?${q.toString()}`);
   return data.items;
 }
 

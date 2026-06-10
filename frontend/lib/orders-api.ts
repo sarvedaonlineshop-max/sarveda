@@ -18,8 +18,10 @@ export type OrderPublic = {
   paymentProvider?: string | null;
   isCod?: boolean;
   subtotalInPaise: number;
+  discountInPaise: number;
   shippingInPaise: number;
   grandTotalInPaise: number;
+  couponCode?: string | null;
   currency: string;
   email: string;
   createdAt: string;

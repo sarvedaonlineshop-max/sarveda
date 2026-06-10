@@ -6,9 +6,16 @@ export type IndiaDeliveryCheckResult = {
   estimatedDays?: number;
 };
 
+function friendlyDeliveryError(status: number, raw: string): string {
+  if (status === 404 || raw.toLowerCase().includes("route not found")) {
+    return "We could not verify this PIN right now. You can still continue — delivery is confirmed again before payment.";
+  }
+  return raw;
+}
+
 /** Delhivery PIN serviceability (default domestic courier). */
 export async function checkIndiaDelhiveryDelivery(pincode: string): Promise<IndiaDeliveryCheckResult> {
-  const url = `${getApiBase()}/api/shipping/pincode`;
+  const url = `${getApiBase()}/api/shipping/check-pincode`;
   const res = await fetch(url, {
     method: "POST",
     credentials: "include",
@@ -21,7 +28,7 @@ export async function checkIndiaDelhiveryDelivery(pincode: string): Promise<Indi
     error?: string;
   };
   if (!res.ok || !json.success || !json.data) {
-    throw new Error(json.error || `Delivery check failed (${res.status})`);
+    throw new Error(friendlyDeliveryError(res.status, json.error || `Delivery check failed (${res.status})`));
   }
   return {
     serviceable: json.data.serviceable,
@@ -47,7 +54,7 @@ export async function checkIndiaShiprocketDelivery(body: {
     error?: string;
   };
   if (!res.ok || !json.success || !json.data) {
-    throw new Error(json.error || `Delivery check failed (${res.status})`);
+    throw new Error(friendlyDeliveryError(res.status, json.error || `Delivery check failed (${res.status})`));
   }
   return json.data;
 }

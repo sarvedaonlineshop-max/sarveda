@@ -10,6 +10,7 @@ import { OtpLoginForm } from "@/components/auth/OtpLoginForm";
 import { PasswordInput } from "@/components/auth/PasswordInput";
 import type { PublicUser } from "@/lib/auth-client";
 import {
+  AuthError,
   loginWithPassword,
   resolvePostLoginPath
 } from "@/lib/auth-client";
@@ -36,6 +37,7 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [passwordExpired, setPasswordExpired] = useState(false);
   const [message, setMessage] = useState(() => {
     if (err === "google") return "Google sign-in was cancelled or failed. Please try again.";
     if (err === "google_profile") return "We could not read your Google profile. Try another account.";
@@ -54,11 +56,16 @@ function LoginForm() {
     e.preventDefault();
     setSubmitting(true);
     setMessage("");
+    setPasswordExpired(false);
     try {
       const user = await loginWithPassword(email, password);
       finishLogin(user);
     } catch (ex) {
-      setMessage(ex instanceof Error ? ex.message : "Login failed");
+      if (ex instanceof AuthError && ex.code === "MIGRATED_ACCOUNT_USE_OTP") {
+        setPasswordExpired(true);
+      } else {
+        setMessage(ex instanceof Error ? ex.message : "Login failed");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -71,7 +78,7 @@ function LoginForm() {
         : "Sign in with a one-time code sent to your email."
       : adminOnly
         ? "Use your Sarveda admin account, or continue with Google."
-        : "Sign in with email, OTP, or Google to continue shopping.";
+        : "Sign in with email, OTP, or Gmail to continue shopping.";
 
   return (
     <AuthShell
@@ -87,8 +94,8 @@ function LoginForm() {
               </Link>
             </p>
           ) : null}
-          <Link href="/" className="block text-amber-500 hover:text-amber-400">
-            Back to storefront
+          <Link href="/shop" className="block text-amber-500 hover:text-amber-400">
+            Back to Shopping Page
           </Link>
         </div>
       }
@@ -107,6 +114,7 @@ function LoginForm() {
           onClick={() => {
             setMode("password");
             setMessage("");
+            setPasswordExpired(false);
           }}
           className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
             mode === "password"
@@ -114,13 +122,14 @@ function LoginForm() {
               : "text-stone-400 hover:text-stone-200"
           }`}
         >
-          Password
+          Login with Password
         </button>
         <button
           type="button"
           onClick={() => {
             setMode("otp");
             setMessage("");
+            setPasswordExpired(false);
           }}
           className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
             mode === "otp"
@@ -128,12 +137,17 @@ function LoginForm() {
               : "text-stone-400 hover:text-stone-200"
           }`}
         >
-          Email OTP
+          Login with OTP
         </button>
       </div>
 
       {mode === "otp" ? (
-        <OtpLoginForm inputClass={inputClass} onSuccess={finishLogin} />
+        <OtpLoginForm
+          key={email.trim().toLowerCase()}
+          inputClass={inputClass}
+          onSuccess={finishLogin}
+          initialEmail={email}
+        />
       ) : (
         <form className="space-y-4" onSubmit={handlePasswordSubmit}>
           <div>
@@ -165,12 +179,42 @@ function LoginForm() {
               className={inputClass}
             />
             <p className="mt-2 text-right text-sm">
-              <Link href="/forgot-password" className="text-amber-400 hover:text-amber-300">
+              <Link
+                href={
+                  email.trim()
+                    ? `/forgot-password?email=${encodeURIComponent(email.trim().toLowerCase())}`
+                    : "/forgot-password"
+                }
+                className="text-amber-400 hover:text-amber-300"
+              >
                 Forgot password?
               </Link>
             </p>
           </div>
-          {message ? (
+          {passwordExpired ? (
+            <p className="text-sm text-red-400" role="alert">
+              Password expired. Please set your new password using{" "}
+              <Link
+                href={`/forgot-password?email=${encodeURIComponent(email.trim().toLowerCase())}`}
+                className="font-medium text-amber-400 underline hover:text-amber-300"
+              >
+                this link
+              </Link>{" "}
+              or{" "}
+              <button
+                type="button"
+                className="font-medium text-amber-400 underline hover:text-amber-300"
+                onClick={() => {
+                  setMode("otp");
+                  setPasswordExpired(false);
+                  setMessage("");
+                }}
+              >
+                use OTP login
+              </button>
+              .
+            </p>
+          ) : message ? (
             <p className="text-sm text-red-400" role="alert">
               {message}
             </p>

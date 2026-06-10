@@ -1,13 +1,10 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
 
-import { fetchProductSuggestions, type ProductSuggestion } from "@/lib/api";
-import { resolveMediaUrl } from "@/lib/media-cdn";
-import { formatINRFromPaise } from "@/lib/money";
+import { SearchSuggestionRow } from "@/components/search/SearchSuggestionRow";
+import { fetchSiteSearchSuggestions, type SiteSearchSuggestion } from "@/lib/api";
 
 type Props = {
   id: string;
@@ -25,7 +22,7 @@ export function SearchWithSuggestions({
   const router = useRouter();
   const wrapRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<ProductSuggestion[]>([]);
+  const [suggestions, setSuggestions] = useState<SiteSearchSuggestion[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -38,7 +35,7 @@ export function SearchWithSuggestions({
     }
     const timer = window.setTimeout(() => {
       setLoading(true);
-      void fetchProductSuggestions(term)
+      void fetchSiteSearchSuggestions(term)
         .then((items) => {
           setSuggestions(items);
           setOpen(items.length > 0);
@@ -78,7 +75,7 @@ export function SearchWithSuggestions({
     <div ref={wrapRef} className="relative w-full">
       <form onSubmit={onSubmit} role="search">
         <label htmlFor={id} className="sr-only">
-          Search products
+          Search Sarveda
         </label>
         <input
           id={id}
@@ -107,34 +104,14 @@ export function SearchWithSuggestions({
             <li className="px-4 py-3 text-sm text-stone-500">Searching…</li>
           ) : null}
           {suggestions.map((item) => (
-            <li key={item.slug} role="option">
-              <Link
-                href={`/product/${item.slug}`}
-                className="flex items-center gap-3 px-3 py-2.5 hover:bg-stone-50"
-                onClick={() => {
+            <li key={`${item.type}-${item.slug}`} role="option">
+              <SearchSuggestionRow
+                item={item}
+                onNavigate={() => {
                   setOpen(false);
                   onNavigate?.();
                 }}
-              >
-                <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-stone-100">
-                  {item.imageUrl ? (
-                    <Image
-                      src={resolveMediaUrl(item.imageUrl) ?? item.imageUrl}
-                      alt=""
-                      fill
-                      className="object-cover"
-                      sizes="40px"
-                      unoptimized
-                    />
-                  ) : null}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="line-clamp-2 text-sm font-medium text-stone-900">{item.name}</span>
-                  {item.priceInPaise != null ? (
-                    <span className="text-xs text-stone-500">{formatINRFromPaise(item.priceInPaise)}</span>
-                  ) : null}
-                </span>
-              </Link>
+              />
             </li>
           ))}
           <li className="border-t border-stone-100">
