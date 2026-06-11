@@ -13,7 +13,6 @@ import {
 type Props = {
   isLoggedIn?: boolean;
   shippingCountry?: string;
-  checkoutEmail?: string;
   appliedCode?: string | null;
   discountInPaise?: number;
   currency?: string;
@@ -23,7 +22,6 @@ type Props = {
 export function CouponInput({
   isLoggedIn = false,
   shippingCountry,
-  checkoutEmail,
   appliedCode,
   discountInPaise = 0,
   currency = "INR",
@@ -49,8 +47,7 @@ export function CouponInput({
     setOffersLoading(true);
     try {
       const data = await fetchCheckoutCouponOffers({
-        country: shippingCountry,
-        email: checkoutEmail
+        country: shippingCountry
       });
       setOffers(data.offers);
     } catch {
@@ -58,7 +55,7 @@ export function CouponInput({
     } finally {
       setOffersLoading(false);
     }
-  }, [isLoggedIn, shippingCountry, checkoutEmail]);
+  }, [isLoggedIn, shippingCountry]);
 
   useEffect(() => {
     void loadOffers();
@@ -72,7 +69,7 @@ export function CouponInput({
     setBusy(true);
     setError(null);
     try {
-      await applyCartCoupon(couponCode, { country: shippingCountry, email: checkoutEmail });
+      await applyCartCoupon(couponCode, { country: shippingCountry });
       setCode("");
       await onUpdated();
       await loadOffers();
@@ -177,9 +174,9 @@ export function CouponInput({
                   </button>
                 ))}
               </div>
-              {offers.some((o) => !o.eligible) && checkoutEmail ? (
+              {offers.some((o) => !o.eligible) ? (
                 <p className="mt-2 text-xs text-stone-500">
-                  Greyed-out offers may already be used on this email or do not apply to your cart total.
+                  Greyed-out offers may already be used on your account or do not apply to your cart total.
                 </p>
               ) : null}
             </div>

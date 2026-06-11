@@ -248,7 +248,9 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
     throw e;
   }
 
-  const cartData = await getCartPayload(cartId, body.country ?? "IN");
+  const cartData = await getCartPayload(cartId, body.country ?? "IN", {
+    userId: userId ?? null
+  });
   if (!cartData.items.length) {
     const e = new Error("Cart is empty") as Error & { statusCode: number; code: string };
     e.statusCode = 400;

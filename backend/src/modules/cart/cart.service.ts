@@ -306,8 +306,7 @@ export async function getCartPayload(
     } else {
       try {
         const resolved = await resolveCartCouponDiscount(subtotalInPaise, cart.couponCode, {
-          userId: opts.userId,
-          email: opts.email ?? null
+          userId: opts.userId
         });
         discountInPaise = resolved.discountInPaise;
         coupon = resolved.coupon;

@@ -29,48 +29,29 @@ function discountFromCoupon(coupon: Coupon, subtotalInPaise: number): number {
 }
 
 /**
- * Per-customer coupon usage count.
- * - Logged in: bound to account (`customerId` + login email only) — checkout email cannot bypass.
- * - Guest: bound to checkout email only.
+ * Per-customer coupon usage count (paid orders only).
+ * Logged-in shoppers: account `customerId` + unique login email only — checkout form email is ignored.
  */
-async function countCouponUsesForUser(
-  code: string,
-  userId: string | null,
-  email: string | null
-): Promise<number> {
+async function countCouponUsesForUser(code: string, userId: string): Promise<number> {
   const paidFilter = {
     OR: [{ status: { in: [...PAID_LIKE_STATUSES] } }, { paymentStatus: "CAPTURED" as const }]
   };
 
-  if (userId) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { email: true }
-    });
-    const accountEmail = user?.email?.trim().toLowerCase();
-    const identityOr: Array<{ customerId: string } | { email: string }> = [{ customerId: userId }];
-    if (accountEmail?.includes("@")) {
-      identityOr.push({ email: accountEmail });
-    }
-
-    return prisma.order.count({
-      where: {
-        couponCode: { equals: code, mode: "insensitive" },
-        deletedAt: null,
-        AND: [paidFilter, { OR: identityOr }]
-      }
-    });
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true }
+  });
+  const accountEmail = user?.email?.trim().toLowerCase();
+  const identityOr: Array<{ customerId: string } | { email: string }> = [{ customerId: userId }];
+  if (accountEmail?.includes("@")) {
+    identityOr.push({ email: accountEmail });
   }
-
-  const checkoutEmail = email?.trim().toLowerCase();
-  if (!checkoutEmail?.includes("@")) return 0;
 
   return prisma.order.count({
     where: {
       couponCode: { equals: code, mode: "insensitive" },
       deletedAt: null,
-      email: checkoutEmail,
-      AND: [paidFilter]
+      AND: [paidFilter, { OR: identityOr }]
     }
   });
 }
@@ -160,7 +141,7 @@ async function assertCouponUsable(
 
   const perUserLimit = coupon.maxUsagePerUser ?? 1;
   if (perUserLimit > 0) {
-    const used = await countCouponUsesForUser(coupon.code, userId, email);
+    const used = await countCouponUsesForUser(coupon.code, userId);
     if (used >= perUserLimit) {
       throw couponError("You have already used this coupon.", "COUPON_USER_LIMIT");
     }

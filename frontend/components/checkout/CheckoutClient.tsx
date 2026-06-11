@@ -381,7 +381,6 @@ export function CheckoutClient() {
             <CouponInput
               isLoggedIn={isLoggedIn}
               shippingCountry={form.country}
-              checkoutEmail={checkoutEmailForCart}
               appliedCode={coupon?.code}
               discountInPaise={discountInPaise}
               currency={currency}
