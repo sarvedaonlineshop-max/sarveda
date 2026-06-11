@@ -7,7 +7,7 @@ import { Suspense, useEffect, useState } from "react";
 import { formatMinorFromPaise } from "@/lib/money";
 import type { OrderPublic } from "@/lib/orders-api";
 import { fetchOrderPublic } from "@/lib/orders-api";
-import { reorderCancelledAndCheckout } from "@/lib/reorder-cancelled";
+import { checkoutReorderUrl } from "@/lib/reorder-cancelled";
 
 function CancelledInner() {
   const search = useSearchParams();
@@ -129,18 +129,8 @@ function CancelledInner() {
                 setReorderBusy(true);
                 setReorderMsg(null);
                 setReorderWarn(null);
-                void reorderCancelledAndCheckout(orderNumber, email, router)
-                  .then((result) => {
-                    if (result.skipped.length > 0) {
-                      setReorderWarn(
-                        `Some items could not be restored: ${result.skipped.join(", ")}`
-                      );
-                    }
-                  })
-                  .catch((e) => {
-                    setReorderWarn(e instanceof Error ? e.message : "Could not reorder");
-                  })
-                  .finally(() => setReorderBusy(false));
+                router.push(checkoutReorderUrl(orderNumber, email));
+                setReorderBusy(false);
               }}
               className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-xl bg-stone-900 px-4 text-sm font-semibold text-amber-400 hover:bg-stone-700 disabled:opacity-60"
             >

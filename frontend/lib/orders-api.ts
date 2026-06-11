@@ -1,6 +1,6 @@
 import { getApiBase } from "./api";
 import type { CartApiResponse } from "./cart-api";
-import { notifyCartChanged } from "./cart-api";
+import { notifyCartChanged, writeSession } from "./cart-api";
 
 export type OrderShipmentPublic = {
   id: string;
@@ -163,7 +163,7 @@ export async function reorderCancelledOrder(orderNumber: string, email: string):
     throw new Error(json.error || "Could not restore items to cart");
   }
   if (json.data.sessionId && typeof window !== "undefined") {
-    localStorage.setItem("sarveda_cart_session_id", json.data.sessionId);
+    writeSession(json.data.sessionId);
   }
   notifyCartChanged(json.data);
   return {

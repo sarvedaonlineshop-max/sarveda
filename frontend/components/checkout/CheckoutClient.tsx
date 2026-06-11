@@ -12,6 +12,7 @@ import { loadSavedCheckoutShipping, saveCheckoutShipping } from "@/lib/checkout-
 import { toCheckoutApiPhone, type CheckoutFieldErrors } from "@/lib/checkout-validation";
 import type { CreateOrderBody } from "@/lib/checkout-api";
 import { fetchPublicOrder } from "@/lib/checkout-api";
+import { reorderCancelledOrder } from "@/lib/orders-api";
 import { countryByCode } from "@/lib/countries";
 import { fetchMe } from "@/lib/auth-client";
 import { loadRazorpayScript } from "@/lib/load-razorpay";
@@ -26,7 +27,11 @@ export function CheckoutClient() {
   const searchParams = useSearchParams();
   const resumeOrderNumber = searchParams.get("orderNumber");
   const resumeEmail = searchParams.get("email");
+  const reorderOrder = searchParams.get("reorderOrder");
+  const reorderEmail = searchParams.get("reorderEmail");
   const [resumeCheckDone, setResumeCheckDone] = useState(!resumeOrderNumber);
+  const [reorderDone, setReorderDone] = useState(!reorderOrder);
+  const [reorderError, setReorderError] = useState<string | null>(null);
 
   const {
     items,
@@ -119,6 +124,40 @@ export function CheckoutClient() {
   }, [resumeEmail]);
 
   useEffect(() => {
+    if (reorderEmail) {
+      setForm((current) => ({ ...current, email: reorderEmail }));
+    }
+  }, [reorderEmail]);
+
+  useEffect(() => {
+    if (!reorderOrder || !reorderEmail) {
+      setReorderDone(true);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      setReorderDone(false);
+      setReorderError(null);
+      try {
+        await reorderCancelledOrder(reorderOrder, reorderEmail);
+        if (cancelled) return;
+        await refreshCart("IN", reorderEmail.trim().toLowerCase());
+        if (cancelled) return;
+        router.replace("/checkout");
+      } catch (e) {
+        if (!cancelled) {
+          setReorderError(e instanceof Error ? e.message : "Could not restore your items");
+        }
+      } finally {
+        if (!cancelled) setReorderDone(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [reorderOrder, reorderEmail, refreshCart, router]);
+
+  useEffect(() => {
     if (!resumeOrderNumber || !resumeEmail) {
       setResumeCheckDone(true);
       return;
@@ -172,8 +211,26 @@ export function CheckoutClient() {
     };
   }, []);
 
-  if (loading || !resumeCheckDone) {
-    return <p className="text-center text-stone-500">Loading cart…</p>;
+  if (loading || !resumeCheckDone || !reorderDone) {
+    return (
+      <p className="text-center text-stone-500">
+        {reorderOrder && !reorderDone ? "Restoring your items…" : "Loading cart…"}
+      </p>
+    );
+  }
+
+  if (reorderError) {
+    return (
+      <div className="rounded-2xl border border-stone-100 bg-white p-8 text-center shadow-sm">
+        <p className="text-stone-700">{reorderError}</p>
+        <Link
+          href="/shop"
+          className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-xl bg-stone-900 px-8 font-semibold text-amber-400 hover:bg-amber-700 hover:text-white"
+        >
+          Continue shopping
+        </Link>
+      </div>
+    );
   }
 
   if (completingCheckout) {

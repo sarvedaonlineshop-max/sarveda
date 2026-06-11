@@ -33,18 +33,38 @@ async function countCouponUsesForUser(
   userId: string | null,
   email: string | null
 ): Promise<number> {
-  const emailNorm = email?.trim().toLowerCase();
-  const or: Array<{ customerId: string } | { email: string }> = [];
-  if (userId) or.push({ customerId: userId });
-  if (emailNorm) or.push({ email: emailNorm });
-  if (!or.length) return 0;
+  const identityOr: Array<{ customerId: string } | { email: string }> = [];
+  const seenEmails = new Set<string>();
+
+  const addEmail = (raw: string | null | undefined) => {
+    const norm = raw?.trim().toLowerCase();
+    if (!norm || !norm.includes("@") || seenEmails.has(norm)) return;
+    seenEmails.add(norm);
+    identityOr.push({ email: norm });
+  };
+
+  if (userId) {
+    identityOr.push({ customerId: userId });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true }
+    });
+    addEmail(user?.email);
+  }
+
+  addEmail(email);
+  if (!identityOr.length) return 0;
 
   return prisma.order.count({
     where: {
-      couponCode: code,
+      couponCode: { equals: code, mode: "insensitive" },
       deletedAt: null,
-      status: { in: [...PAID_LIKE_STATUSES] },
-      OR: or
+      AND: [
+        {
+          OR: [{ status: { in: [...PAID_LIKE_STATUSES] } }, { paymentStatus: "CAPTURED" }]
+        },
+        { OR: identityOr }
+      ]
     }
   });
 }
