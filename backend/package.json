@@ -47,7 +47,9 @@
     "backfill:order-reporting": "tsx scripts/backfill-order-reporting-inr.ts",
     "check:s3": "tsx scripts/check-s3-bucket.ts",
     "migrate:media": "tsx scripts/check-s3-bucket.ts && tsx scripts/migrate-media-to-s3.ts",
-    "migrate:media:dry": "tsx scripts/migrate-media-to-s3.ts --dry-run"
+    "migrate:media:dry": "tsx scripts/migrate-media-to-s3.ts --dry-run",
+    "migrate:brand": "tsx scripts/check-s3-bucket.ts && tsx scripts/migrate-brand-logos-to-s3.ts",
+    "migrate:brand:dry": "tsx scripts/migrate-brand-logos-to-s3.ts --dry-run"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
