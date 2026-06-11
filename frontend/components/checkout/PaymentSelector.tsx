@@ -27,6 +27,7 @@ import {
   loadPendingCheckout,
   savePendingCheckout
 } from "@/lib/pending-checkout";
+import { saveCheckoutShipping } from "@/lib/checkout-prefill";
 
 declare global {
   interface Window {
@@ -93,6 +94,8 @@ type Props = {
   onCheckoutCompleting: () => void;
   onFieldErrors: (errors: Partial<Record<keyof CheckoutAddressForm, string>>) => void;
   resumeOrderNumber?: string | null;
+  /** When resuming an unpaid order, lock payment UI to the order's provider initially. */
+  resumePaymentMethod?: PaymentMode | null;
 };
 
 export function PaymentSelector({
@@ -109,7 +112,8 @@ export function PaymentSelector({
   onRefreshCart,
   onCheckoutCompleting,
   onFieldErrors,
-  resumeOrderNumber
+  resumeOrderNumber,
+  resumePaymentMethod
 }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -130,8 +134,12 @@ export function PaymentSelector({
   );
 
   useEffect(() => {
+    if (resumePaymentMethod) {
+      setPaymentMode(resumePaymentMethod);
+      return;
+    }
     setPaymentMode(isIndia ? "razorpay" : "stripe");
-  }, [isIndia]);
+  }, [isIndia, resumePaymentMethod]);
 
   useEffect(() => {
     payStarted.current = false;
@@ -377,6 +385,7 @@ export function PaymentSelector({
     }
     onFieldErrors({});
     setErr(null);
+    saveCheckoutShipping(addressForm);
     setBusy(true);
     payStarted.current = true;
     if (!checkoutTracked.current) {
@@ -566,7 +575,7 @@ export function PaymentSelector({
         </div>
       </dl>
 
-      {isIndia && !resumeOrderNumber ? (
+      {isIndia ? (
         <fieldset className="mt-4 space-y-2">
           <legend className="text-sm font-semibold text-stone-800">Payment method</legend>
           <label
@@ -610,7 +619,7 @@ export function PaymentSelector({
           </label>
           ) : null}
         </fieldset>
-      ) : !resumeOrderNumber ? (
+      ) : (
         <fieldset className="mt-4 space-y-2">
           <legend className="text-sm font-semibold text-stone-800">Payment method</legend>
           <label
@@ -652,7 +661,7 @@ export function PaymentSelector({
             </span>
           </label>
         </fieldset>
-      ) : null}
+      )}
 
       {err ? (
         <div className="mt-4 rounded-xl border border-red-100 bg-red-50/80 p-3 text-sm text-red-800" role="alert">

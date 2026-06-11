@@ -9,7 +9,7 @@ import {
   ensureOrderInvoicePdf,
   loadOrderForInvoice
 } from "../invoices/invoice.service";
-import { buildGstInvoicePdf } from "../../utils/invoice";
+import { buildOrderInvoicePdf } from "../../utils/invoice";
 import { orderBlocksCarrierSync, syncTrackingByWaybill } from "../shipping/orderLifecycle";
 
 function serializePublicOrderView(order: {
@@ -276,7 +276,7 @@ export async function downloadInvoice(req: Request, res: Response, next: NextFun
         return;
       }
       invoiceNo = input.invoiceNo;
-      pdf = await buildGstInvoicePdf(input);
+      pdf = await buildOrderInvoicePdf(input);
     }
 
     res.setHeader("Content-Type", "application/pdf");

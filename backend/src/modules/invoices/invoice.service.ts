@@ -2,7 +2,7 @@ import { prisma } from "../../config/db";
 import { uploadPdf } from "../../config/s3";
 import { logger } from "../../config/logger";
 import {
-  buildGstInvoicePdf,
+  buildOrderInvoicePdf,
   invoiceNumberForOrder,
   type GstInvoiceInput,
   type GstInvoiceLine
@@ -35,14 +35,20 @@ export function buildInvoiceInputFromOrder(
   const shippingAddress = order.addresses.find((a) => a.type === "SHIPPING");
   if (!shippingAddress) return null;
 
-  const interState = isInterState(shippingAddress.state, shippingAddress.country);
+  const shipCountry = shippingAddress.country.trim().toUpperCase();
+  const isGstApplicable = shipCountry === "IN" && order.currency === "INR";
+  const interState = isGstApplicable
+    ? isInterState(shippingAddress.state, shippingAddress.country)
+    : false;
 
   const defaultHsn = process.env.DEFAULT_HSN_CODE?.trim() || "9205";
 
   const lines: GstInvoiceLine[] = order.items.map((row) => {
     const taxClass = row.variant.productRel.taxClass;
-    const rate = gstRatePercent(taxClass);
-    const { taxableMinor, taxMinor } = gstFromInclusiveLine(row.lineTotalInPaise, rate);
+    const rate = isGstApplicable ? gstRatePercent(taxClass) : 0;
+    const { taxableMinor, taxMinor } = isGstApplicable
+      ? gstFromInclusiveLine(row.lineTotalInPaise, rate)
+      : { taxableMinor: row.lineTotalInPaise, taxMinor: 0 };
     const hsn = row.variant.productRel.hsnCode?.trim() || defaultHsn;
     return {
       name: row.nameSnapshot,
@@ -58,8 +64,8 @@ export function buildInvoiceInputFromOrder(
     };
   });
 
-  let totalTaxMinor = lines.reduce((s, l) => s + l.taxMinor, 0);
-  if (order.taxInPaise > 0) totalTaxMinor = order.taxInPaise;
+  let totalTaxMinor = isGstApplicable ? lines.reduce((s, l) => s + l.taxMinor, 0) : 0;
+  if (isGstApplicable && order.taxInPaise > 0) totalTaxMinor = order.taxInPaise;
 
   return {
     invoiceNo: order.invoice?.invoiceNo ?? invoiceNumberForOrder(order.orderNumber),
@@ -74,7 +80,8 @@ export function buildInvoiceInputFromOrder(
     shippingInPaise: order.shippingInPaise,
     taxInPaise: totalTaxMinor,
     grandTotalInPaise: order.grandTotalInPaise,
-    interState
+    interState,
+    isGstApplicable
   };
 }
 
@@ -103,7 +110,7 @@ export async function ensureOrderInvoicePdf(orderId: string): Promise<string | n
     return order.invoice.pdfUrl;
   }
 
-  const pdf = await buildGstInvoicePdf(input);
+  const pdf = await buildOrderInvoicePdf(input);
   const key = `invoices/${order.orderNumber}/${input.invoiceNo}.pdf`;
   const uploadedUrl = await uploadPdf(key, pdf);
   const pdfUrl = uploadedUrl ?? `local://${key}`;

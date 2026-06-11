@@ -12,7 +12,7 @@ import { loadSavedCheckoutShipping, saveCheckoutShipping } from "@/lib/checkout-
 import { toCheckoutApiPhone, type CheckoutFieldErrors } from "@/lib/checkout-validation";
 import type { CreateOrderBody } from "@/lib/checkout-api";
 import { fetchPublicOrder } from "@/lib/checkout-api";
-import { reorderCancelledOrder } from "@/lib/orders-api";
+import { fetchOrderPublic, reorderCancelledOrder, type OrderPublic } from "@/lib/orders-api";
 import { countryByCode } from "@/lib/countries";
 import { fetchMe } from "@/lib/auth-client";
 import { loadRazorpayScript } from "@/lib/load-razorpay";
@@ -21,6 +21,41 @@ import { useDebouncedValue } from "@/lib/use-debounced-value";
 const indiaCheckoutOnly =
   typeof process.env.NEXT_PUBLIC_INDIA_CHECKOUT_ONLY === "string" &&
   ["1", "true", "yes"].includes(process.env.NEXT_PUBLIC_INDIA_CHECKOUT_ONLY.toLowerCase());
+
+type CheckoutPaymentMode = "razorpay" | "cod" | "stripe" | "paypal";
+
+function paymentModeFromProvider(provider: string | null | undefined): CheckoutPaymentMode | null {
+  switch (provider) {
+    case "STRIPE":
+      return "stripe";
+    case "PAYPAL":
+      return "paypal";
+    case "RAZORPAY":
+      return "razorpay";
+    case "COD":
+      return "cod";
+    default:
+      return null;
+  }
+}
+
+function formFromOrder(order: OrderPublic, email: string): CheckoutAddressForm {
+  const addr = order.shippingAddress;
+  const country = addr?.country?.trim().toUpperCase() || "IN";
+  const phoneRaw = addr?.phone?.trim() ?? "";
+  return {
+    email: email.trim().toLowerCase(),
+    phone: phoneRaw.replace(/^\+\d+/, ""),
+    phoneDial: countryByCode(country)?.dial ?? "+91",
+    shippingFullName: addr?.fullName?.trim() ?? "",
+    line1: addr?.line1?.trim() ?? "",
+    line2: addr?.line2?.trim() ?? "",
+    city: addr?.city?.trim() ?? "",
+    state: addr?.state?.trim() ?? "",
+    postalCode: addr?.postalCode?.trim() ?? "",
+    country
+  };
+}
 
 export function CheckoutClient() {
   const router = useRouter();
@@ -32,6 +67,7 @@ export function CheckoutClient() {
   const [resumeCheckDone, setResumeCheckDone] = useState(!resumeOrderNumber);
   const [reorderDone, setReorderDone] = useState(!reorderOrder);
   const [reorderError, setReorderError] = useState<string | null>(null);
+  const [resumePaymentMethod, setResumePaymentMethod] = useState<CheckoutPaymentMode | null>(null);
 
   const {
     items,
@@ -49,6 +85,7 @@ export function CheckoutClient() {
   const [completingCheckout, setCompletingCheckout] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<CheckoutFieldErrors>({});
   const [showAllFieldErrors, setShowAllFieldErrors] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const idempotencyKey = useMemo(
     () =>
       typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -98,16 +135,19 @@ export function CheckoutClient() {
   }, [form.country, checkoutEmailForCart, refreshCart]);
 
   useEffect(() => {
-    const saved = loadSavedCheckoutShipping();
-    if (saved) {
-      setForm((current) => ({
-        ...current,
-        ...saved,
-        phoneDial: saved.phoneDial ?? countryByCode(saved.country ?? "IN")?.dial ?? "+91"
-      }));
+    if (!resumeOrderNumber) {
+      const saved = loadSavedCheckoutShipping();
+      if (saved) {
+        setForm((current) => ({
+          ...current,
+          ...saved,
+          phoneDial: saved.phoneDial ?? countryByCode(saved.country ?? "IN")?.dial ?? "+91"
+        }));
+      }
     }
     void fetchMe().then((user) => {
       if (!user) return;
+      setIsLoggedIn(true);
       setForm((current) => ({
         ...current,
         email: current.email || user.email,
@@ -116,12 +156,6 @@ export function CheckoutClient() {
       }));
     });
   }, []);
-
-  useEffect(() => {
-    if (resumeEmail) {
-      setForm((current) => ({ ...current, email: resumeEmail }));
-    }
-  }, [resumeEmail]);
 
   useEffect(() => {
     if (reorderEmail) {
@@ -159,43 +193,73 @@ export function CheckoutClient() {
 
   useEffect(() => {
     if (!resumeOrderNumber || !resumeEmail) {
+      setResumePaymentMethod(null);
       setResumeCheckDone(true);
       return;
     }
     let cancelled = false;
     void (async () => {
-      const o = await fetchPublicOrder(resumeOrderNumber, resumeEmail);
-      if (cancelled) return;
-      if (!o) {
+      try {
+        const o = await fetchOrderPublic(resumeOrderNumber, resumeEmail);
+        if (cancelled) return;
+        if (o.status === "CANCELLED" || o.paymentStatus === "FAILED") {
+          router.replace(
+            `/order/cancelled?${new URLSearchParams({ orderNumber: resumeOrderNumber, email: resumeEmail }).toString()}`
+          );
+          return;
+        }
+        if (o.status !== "PENDING_PAYMENT") {
+          router.replace(
+            `/order/confirmed?${new URLSearchParams({ orderNumber: resumeOrderNumber, email: resumeEmail }).toString()}`
+          );
+          return;
+        }
+        const restored = formFromOrder(o, resumeEmail);
+        setForm(restored);
+        saveCheckoutShipping(restored);
+        setResumePaymentMethod(paymentModeFromProvider(o.paymentProvider));
         setResumeCheckDone(true);
-        return;
+      } catch {
+        const summary = await fetchPublicOrder(resumeOrderNumber, resumeEmail);
+        if (cancelled) return;
+        if (!summary) {
+          setResumeCheckDone(true);
+          return;
+        }
+        if (summary.status === "CANCELLED" || summary.paymentStatus === "FAILED") {
+          router.replace(
+            `/order/cancelled?${new URLSearchParams({ orderNumber: resumeOrderNumber, email: resumeEmail }).toString()}`
+          );
+          return;
+        }
+        if (summary.status !== "PENDING_PAYMENT") {
+          router.replace(
+            `/order/confirmed?${new URLSearchParams({ orderNumber: resumeOrderNumber, email: resumeEmail }).toString()}`
+          );
+          return;
+        }
+        setForm((current) => ({ ...current, email: resumeEmail }));
+        setResumeCheckDone(true);
       }
-      if (o.status === "CANCELLED" || o.paymentStatus === "FAILED") {
-        router.replace(
-          `/order/cancelled?${new URLSearchParams({ orderNumber: resumeOrderNumber, email: resumeEmail }).toString()}`
-        );
-        return;
-      }
-      if (o.status !== "PENDING_PAYMENT") {
-        router.replace(
-          `/order/confirmed?${new URLSearchParams({ orderNumber: resumeOrderNumber, email: resumeEmail }).toString()}`
-        );
-        return;
-      }
-      setResumeCheckDone(true);
     })();
     return () => {
       cancelled = true;
     };
   }, [resumeOrderNumber, resumeEmail, router]);
 
+  const debouncedForm = useDebouncedValue(form, 600);
+  useEffect(() => {
+    if (!debouncedForm.email.trim() && !debouncedForm.line1.trim()) return;
+    saveCheckoutShipping(debouncedForm);
+  }, [debouncedForm]);
+
   useEffect(() => {
     const onPageShow = () => {
-      void refreshCart();
+      void refreshCart(form.country || "IN", checkoutEmailForCart);
     };
     window.addEventListener("pageshow", onPageShow);
     return () => window.removeEventListener("pageshow", onPageShow);
-  }, [refreshCart]);
+  }, [refreshCart, form.country, checkoutEmailForCart]);
 
   useEffect(() => {
     let cancelled = false;
@@ -311,9 +375,11 @@ export function CheckoutClient() {
               setFieldErrors(errors);
             }}
             resumeOrderNumber={resumeOrderNumber}
+            resumePaymentMethod={resumePaymentMethod}
           />
           {!resumeOrderNumber && items.length > 0 ? (
             <CouponInput
+              isLoggedIn={isLoggedIn}
               shippingCountry={form.country}
               checkoutEmail={checkoutEmailForCart}
               appliedCode={coupon?.code}

@@ -28,43 +28,49 @@ function discountFromCoupon(coupon: Coupon, subtotalInPaise: number): number {
   return Math.min(Math.max(discount, 0), subtotalInPaise);
 }
 
+/**
+ * Per-customer coupon usage count.
+ * - Logged in: bound to account (`customerId` + login email only) — checkout email cannot bypass.
+ * - Guest: bound to checkout email only.
+ */
 async function countCouponUsesForUser(
   code: string,
   userId: string | null,
   email: string | null
 ): Promise<number> {
-  const identityOr: Array<{ customerId: string } | { email: string }> = [];
-  const seenEmails = new Set<string>();
-
-  const addEmail = (raw: string | null | undefined) => {
-    const norm = raw?.trim().toLowerCase();
-    if (!norm || !norm.includes("@") || seenEmails.has(norm)) return;
-    seenEmails.add(norm);
-    identityOr.push({ email: norm });
+  const paidFilter = {
+    OR: [{ status: { in: [...PAID_LIKE_STATUSES] } }, { paymentStatus: "CAPTURED" as const }]
   };
 
   if (userId) {
-    identityOr.push({ customerId: userId });
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { email: true }
     });
-    addEmail(user?.email);
+    const accountEmail = user?.email?.trim().toLowerCase();
+    const identityOr: Array<{ customerId: string } | { email: string }> = [{ customerId: userId }];
+    if (accountEmail?.includes("@")) {
+      identityOr.push({ email: accountEmail });
+    }
+
+    return prisma.order.count({
+      where: {
+        couponCode: { equals: code, mode: "insensitive" },
+        deletedAt: null,
+        AND: [paidFilter, { OR: identityOr }]
+      }
+    });
   }
 
-  addEmail(email);
-  if (!identityOr.length) return 0;
+  const checkoutEmail = email?.trim().toLowerCase();
+  if (!checkoutEmail?.includes("@")) return 0;
 
   return prisma.order.count({
     where: {
       couponCode: { equals: code, mode: "insensitive" },
       deletedAt: null,
-      AND: [
-        {
-          OR: [{ status: { in: [...PAID_LIKE_STATUSES] } }, { paymentStatus: "CAPTURED" }]
-        },
-        { OR: identityOr }
-      ]
+      email: checkoutEmail,
+      AND: [paidFilter]
     }
   });
 }
@@ -121,6 +127,13 @@ async function assertCouponUsable(
   userId: string | null,
   email: string | null
 ): Promise<void> {
+  if (!userId) {
+    throw couponError(
+      "Sign in to your Sarveda account to use coupon codes.",
+      "COUPON_LOGIN_REQUIRED"
+    );
+  }
+
   if (!coupon.isActive) {
     throw couponError("This coupon is no longer active.", "COUPON_INACTIVE");
   }
@@ -186,6 +199,8 @@ export async function listCheckoutCouponOffers(opts: {
   userId?: string | null;
   email?: string | null;
 }): Promise<CheckoutCouponOffer[]> {
+  if (!opts.userId) return [];
+
   const codes = featuredCouponCodes();
   if (!codes.length) return [];
 

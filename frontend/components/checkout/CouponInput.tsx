@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import {
@@ -10,6 +11,7 @@ import {
 } from "@/lib/cart-api";
 
 type Props = {
+  isLoggedIn?: boolean;
   shippingCountry?: string;
   checkoutEmail?: string;
   appliedCode?: string | null;
@@ -19,6 +21,7 @@ type Props = {
 };
 
 export function CouponInput({
+  isLoggedIn = false,
   shippingCountry,
   checkoutEmail,
   appliedCode,
@@ -38,6 +41,11 @@ export function CouponInput({
       : `${(discountInPaise / 100).toFixed(2)} ${currency}`;
 
   const loadOffers = useCallback(async () => {
+    if (!isLoggedIn) {
+      setOffers([]);
+      setOffersLoading(false);
+      return;
+    }
     setOffersLoading(true);
     try {
       const data = await fetchCheckoutCouponOffers({
@@ -50,7 +58,7 @@ export function CouponInput({
     } finally {
       setOffersLoading(false);
     }
-  }, [shippingCountry, checkoutEmail]);
+  }, [isLoggedIn, shippingCountry, checkoutEmail]);
 
   useEffect(() => {
     void loadOffers();
@@ -96,6 +104,23 @@ export function CouponInput({
     } finally {
       setBusy(false);
     }
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-4">
+        <p className="text-sm font-semibold text-stone-800">Coupon code</p>
+        <p className="mt-2 text-sm text-stone-600">
+          Sign in to apply coupon codes. Guest checkout is available without coupons.
+        </p>
+        <Link
+          href="/login?next=/checkout"
+          className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-lg border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-800 hover:bg-stone-100"
+        >
+          Sign in for coupons
+        </Link>
+      </div>
+    );
   }
 
   return (

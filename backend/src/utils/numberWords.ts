@@ -57,3 +57,31 @@ export function amountInIndianWords(paise: number): string {
   const words = parts.join(" ").replace(/\s+/g, " ").trim();
   return `Indian Rupee ${words} Only`;
 }
+
+function englishWordsUnder100k(n: number): string {
+  if (n === 0) return "Zero";
+  const million = Math.floor(n / 1_000_000);
+  const thousand = Math.floor((n % 1_000_000) / 1000);
+  const rest = n % 1000;
+  const parts: string[] = [];
+  if (million) parts.push(`${threeDigits(million)} Million`);
+  if (thousand) parts.push(`${twoDigits(thousand)} Thousand`);
+  if (rest) parts.push(threeDigits(rest));
+  return parts.join(" ").replace(/\s+/g, " ").trim();
+}
+
+const CURRENCY_WORD_LABELS: Record<string, string> = {
+  INR: "Indian Rupee",
+  USD: "US Dollar",
+  GBP: "Pound Sterling"
+};
+
+/** Amount in words for invoice footer (minor units). */
+export function amountInCurrencyWords(minor: number, currency: string): string {
+  const code = currency.trim().toUpperCase() || "INR";
+  const major = Math.round(minor / 100);
+  const label = CURRENCY_WORD_LABELS[code] ?? code;
+  if (major === 0) return `${label} Zero Only`;
+  if (code === "INR") return amountInIndianWords(minor);
+  return `${label} ${englishWordsUnder100k(major)} Only`;
+}

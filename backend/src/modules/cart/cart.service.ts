@@ -298,18 +298,25 @@ export async function getCartPayload(
   } | null = null;
 
   if (cart.couponCode) {
-    try {
-      const resolved = await resolveCartCouponDiscount(subtotalInPaise, cart.couponCode, {
-        userId: opts?.userId ?? null,
-        email: opts?.email ?? null
-      });
-      discountInPaise = resolved.discountInPaise;
-      coupon = resolved.coupon;
-    } catch {
+    if (!opts?.userId) {
       await prisma.cart.update({
         where: { id: cartId },
         data: { couponCode: null }
       });
+    } else {
+      try {
+        const resolved = await resolveCartCouponDiscount(subtotalInPaise, cart.couponCode, {
+          userId: opts.userId,
+          email: opts.email ?? null
+        });
+        discountInPaise = resolved.discountInPaise;
+        coupon = resolved.coupon;
+      } catch {
+        await prisma.cart.update({
+          where: { id: cartId },
+          data: { couponCode: null }
+        });
+      }
     }
   }
 
