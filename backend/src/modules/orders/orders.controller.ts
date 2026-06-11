@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 
+import { addCartItem, getCartPayload, resolveCartContext } from "../cart/cart.service";
 import { prisma } from "../../config/db";
 import { downloadPdfFromS3, s3KeyFromStoredUrl } from "../../config/s3";
 import { invoiceNumberForOrder } from "../../utils/invoice";
@@ -100,6 +101,7 @@ function serializePublicOrderView(order: {
 
 function serializeOrderSummary(order: {
   orderNumber: string;
+  email: string;
   status: string;
   paymentStatus: string;
   grandTotalInPaise: number;
@@ -108,13 +110,18 @@ function serializeOrderSummary(order: {
   placedAt: Date | null;
   items: Array<{ nameSnapshot: string; qtyOrdered: number }>;
   invoice: { invoiceNo: string } | null;
+  payments?: Array<{ provider: string }>;
 }) {
   const headline = order.items[0]?.nameSnapshot ?? "Order";
   const itemCount = order.items.reduce((sum, row) => sum + row.qtyOrdered, 0);
+  const paymentProvider = order.payments?.[0]?.provider ?? null;
   return {
     orderNumber: order.orderNumber,
+    email: order.email,
     status: order.status,
     paymentStatus: order.paymentStatus,
+    paymentProvider,
+    isCod: paymentProvider === "COD",
     grandTotalInPaise: order.grandTotalInPaise,
     currency: order.currency,
     createdAt: order.createdAt,
@@ -138,7 +145,8 @@ export async function listMine(req: Request, res: Response, next: NextFunction) 
       take: 50,
       include: {
         items: { orderBy: { nameSnapshot: "asc" } },
-        invoice: true
+        invoice: true,
+        payments: { orderBy: { createdAt: "desc" }, take: 1 }
       }
     });
 
@@ -212,24 +220,33 @@ export async function downloadInvoice(req: Request, res: Response, next: NextFun
       return;
     }
 
-    const order = await loadOrderForInvoice(
-      (
-        await prisma.order.findFirst({
-          where: { orderNumber, deletedAt: null, email },
-          select: { id: true }
-        })
-      )?.id ?? ""
-    );
+    const orderRow = await prisma.order.findFirst({
+      where: { orderNumber, deletedAt: null, email },
+      select: { id: true, email: true }
+    });
+
+    if (!orderRow) {
+      res.status(404).json({ success: false, error: "Order not found", code: "NOT_FOUND" });
+      return;
+    }
+
+    const order = await loadOrderForInvoice(orderRow.id);
 
     if (!order || order.email !== email) {
       res.status(404).json({ success: false, error: "Order not found", code: "NOT_FOUND" });
       return;
     }
 
-    if (order.paymentStatus !== "CAPTURED" && order.status !== "PAID") {
+    const isCod = order.payments?.some((p) => p.provider === "COD") ?? false;
+    const invoiceReady =
+      order.paymentStatus === "CAPTURED" ||
+      order.status === "PAID" ||
+      (isCod && !["PENDING_PAYMENT", "CANCELLED", "REFUNDED"].includes(order.status));
+
+    if (!invoiceReady) {
       res.status(400).json({
         success: false,
-        error: "Invoice is available after payment is captured",
+        error: "Invoice is available after your order is confirmed",
         code: "INVOICE_NOT_READY"
       });
       return;
@@ -265,6 +282,99 @@ export async function downloadInvoice(req: Request, res: Response, next: NextFun
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${invoiceNo}.pdf"`);
     res.send(pdf);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** Restore line items from a cancelled unpaid order into the shopper's cart. */
+export async function reorderCancelledPublic(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { orderNumber } = req.params;
+    const { email: rawEmail } = req.body as { email: string };
+    const email = rawEmail.trim().toLowerCase();
+    if (!orderNumber || !email) {
+      res.status(400).json({
+        success: false,
+        error: "orderNumber and email are required",
+        code: "BAD_REQUEST"
+      });
+      return;
+    }
+
+    const order = await prisma.order.findUnique({
+      where: { orderNumber },
+      include: { items: true, addresses: true }
+    });
+
+    if (!order || order.deletedAt) {
+      res.status(404).json({ success: false, error: "Order not found", code: "NOT_FOUND" });
+      return;
+    }
+    if (order.email !== email) {
+      res.status(403).json({ success: false, error: "Forbidden", code: "FORBIDDEN" });
+      return;
+    }
+    if (order.status !== "CANCELLED") {
+      res.status(400).json({
+        success: false,
+        error: "Only cancelled orders can be reordered this way",
+        code: "ORDER_NOT_REORDERABLE"
+      });
+      return;
+    }
+    if (order.paymentStatus === "CAPTURED") {
+      res.status(400).json({
+        success: false,
+        error: "This order was paid — contact support if you need help",
+        code: "ORDER_NOT_REORDERABLE"
+      });
+      return;
+    }
+
+    const { cartId, newSessionId, userId } = await resolveCartContext(req, "write");
+    if (!cartId) {
+      res.status(500).json({ success: false, error: "Cart error", code: "CART_ERROR" });
+      return;
+    }
+
+    const added: string[] = [];
+    const skipped: Array<{ name: string; reason: string }> = [];
+
+    for (const line of order.items) {
+      try {
+        await addCartItem(cartId, line.variantId, line.qtyOrdered);
+        added.push(line.nameSnapshot);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unavailable";
+        skipped.push({ name: line.nameSnapshot, reason: message });
+      }
+    }
+
+    if (added.length === 0) {
+      res.status(400).json({
+        success: false,
+        error: "None of the items from this order are available right now",
+        code: "REORDER_UNAVAILABLE",
+        data: { skipped }
+      });
+      return;
+    }
+
+    const shippingCountry =
+      order.addresses.find((a) => a.type === "SHIPPING")?.country ??
+      order.addresses[0]?.country;
+    const payload = await getCartPayload(cartId, shippingCountry, { userId, email });
+
+    res.json({
+      success: true,
+      data: {
+        ...payload,
+        sessionId: newSessionId,
+        addedCount: added.length,
+        skipped
+      }
+    });
   } catch (err) {
     next(err);
   }

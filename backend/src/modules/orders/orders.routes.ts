@@ -15,6 +15,11 @@ router.post(
   validateBody(z.object({ email: z.string().trim().min(3).max(254) })),
   controller.refreshShippingPublic
 );
+router.post(
+  "/public/:orderNumber/reorder",
+  validateBody(z.object({ email: z.string().trim().min(3).max(254) })),
+  controller.reorderCancelledPublic
+);
 router.get("/public/:orderNumber", controller.getByOrderNumber);
 
 export { router as ordersRoutes };

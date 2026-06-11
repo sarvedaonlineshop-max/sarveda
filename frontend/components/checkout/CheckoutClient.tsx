@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AddressFields, type CheckoutAddressForm } from "@/components/checkout/AddressFields";
@@ -11,6 +11,7 @@ import { useCartData } from "@/components/cart/CartProvider";
 import { loadSavedCheckoutShipping, saveCheckoutShipping } from "@/lib/checkout-prefill";
 import { toCheckoutApiPhone, type CheckoutFieldErrors } from "@/lib/checkout-validation";
 import type { CreateOrderBody } from "@/lib/checkout-api";
+import { fetchPublicOrder } from "@/lib/checkout-api";
 import { countryByCode } from "@/lib/countries";
 import { fetchMe } from "@/lib/auth-client";
 import { loadRazorpayScript } from "@/lib/load-razorpay";
@@ -21,9 +22,11 @@ const indiaCheckoutOnly =
   ["1", "true", "yes"].includes(process.env.NEXT_PUBLIC_INDIA_CHECKOUT_ONLY.toLowerCase());
 
 export function CheckoutClient() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const resumeOrderNumber = searchParams.get("orderNumber");
   const resumeEmail = searchParams.get("email");
+  const [resumeCheckDone, setResumeCheckDone] = useState(!resumeOrderNumber);
 
   const {
     items,
@@ -116,6 +119,38 @@ export function CheckoutClient() {
   }, [resumeEmail]);
 
   useEffect(() => {
+    if (!resumeOrderNumber || !resumeEmail) {
+      setResumeCheckDone(true);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const o = await fetchPublicOrder(resumeOrderNumber, resumeEmail);
+      if (cancelled) return;
+      if (!o) {
+        setResumeCheckDone(true);
+        return;
+      }
+      if (o.status === "CANCELLED" || o.paymentStatus === "FAILED") {
+        router.replace(
+          `/order/cancelled?${new URLSearchParams({ orderNumber: resumeOrderNumber, email: resumeEmail }).toString()}`
+        );
+        return;
+      }
+      if (o.status !== "PENDING_PAYMENT") {
+        router.replace(
+          `/order/confirmed?${new URLSearchParams({ orderNumber: resumeOrderNumber, email: resumeEmail }).toString()}`
+        );
+        return;
+      }
+      setResumeCheckDone(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [resumeOrderNumber, resumeEmail, router]);
+
+  useEffect(() => {
     const onPageShow = () => {
       void refreshCart();
     };
@@ -137,7 +172,7 @@ export function CheckoutClient() {
     };
   }, []);
 
-  if (loading) {
+  if (loading || !resumeCheckDone) {
     return <p className="text-center text-stone-500">Loading cart…</p>;
   }
 
@@ -192,18 +227,8 @@ export function CheckoutClient() {
         </div>
 
         <div className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
-          {!resumeOrderNumber && items.length > 0 ? (
-            <CouponInput
-              shippingCountry={form.country}
-              checkoutEmail={checkoutEmailForCart}
-              appliedCode={coupon?.code}
-              discountInPaise={discountInPaise}
-              currency={currency}
-              onUpdated={onRefreshCart}
-            />
-          ) : null}
           {resumeOrderNumber ? (
-            <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
               Resume payment for order <span className="font-mono font-medium">{resumeOrderNumber}</span>. Your
               cart is unchanged if you left checkout earlier.
             </p>
@@ -230,6 +255,16 @@ export function CheckoutClient() {
             }}
             resumeOrderNumber={resumeOrderNumber}
           />
+          {!resumeOrderNumber && items.length > 0 ? (
+            <CouponInput
+              shippingCountry={form.country}
+              checkoutEmail={checkoutEmailForCart}
+              appliedCode={coupon?.code}
+              discountInPaise={discountInPaise}
+              currency={currency}
+              onUpdated={onRefreshCart}
+            />
+          ) : null}
         </div>
       </div>
     </>

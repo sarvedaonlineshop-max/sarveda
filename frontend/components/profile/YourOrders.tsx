@@ -5,11 +5,7 @@ import { useEffect, useState } from "react";
 import { OrderHistoryCard } from "@/components/orders/OrderHistoryCard";
 import { fetchMyOrders, type OrderSummary } from "@/lib/orders-api";
 
-type Props = {
-  email: string;
-};
-
-export function YourOrders({ email }: Props) {
+export function YourOrders() {
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -56,7 +52,7 @@ export function YourOrders({ email }: Props) {
         {orders.length} order{orders.length === 1 ? "" : "s"}
       </p>
       {orders.map((order) => (
-        <OrderHistoryCard key={order.orderNumber} order={order} email={email} shipToName={email.split("@")[0]} />
+        <OrderHistoryCard key={order.orderNumber} order={order} shipToName={order.email.split("@")[0]} />
       ))}
     </div>
   );

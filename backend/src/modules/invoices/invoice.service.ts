@@ -23,7 +23,8 @@ export async function loadOrderForInvoice(orderId: string) {
         }
       },
       addresses: true,
-      invoice: true
+      invoice: true,
+      payments: { orderBy: { createdAt: "desc" }, take: 1 }
     }
   });
 }
@@ -82,7 +83,13 @@ export async function ensureOrderInvoicePdf(orderId: string): Promise<string | n
   const order = await loadOrderForInvoice(orderId);
   if (!order) return null;
 
-  if (order.paymentStatus !== "CAPTURED" && order.status !== "PAID") {
+  const isCod = order.payments?.some((p) => p.provider === "COD") ?? false;
+  const invoiceReady =
+    order.paymentStatus === "CAPTURED" ||
+    order.status === "PAID" ||
+    (isCod && !["PENDING_PAYMENT", "CANCELLED", "REFUNDED"].includes(order.status));
+
+  if (!invoiceReady) {
     return order.invoice?.pdfUrl ?? null;
   }
 

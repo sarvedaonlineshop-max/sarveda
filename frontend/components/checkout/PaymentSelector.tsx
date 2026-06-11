@@ -561,11 +561,7 @@ export function PaymentSelector({
               : formatMoney(merchandiseAfterDiscount)}
             {isIndia ? (
               <span className="mt-0.5 block text-xs font-normal text-stone-500">GST included</span>
-            ) : (
-              <span className="mt-0.5 block text-xs font-normal text-stone-500">
-                No Indian GST · {displayCurrency}
-              </span>
-            )}
+            ) : null}
           </dd>
         </div>
       </dl>

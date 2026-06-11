@@ -137,7 +137,7 @@ export function ProfileClient() {
         <div className="mb-4 flex items-center justify-between gap-3">
           <h3 className="text-lg font-semibold text-stone-900">Your orders</h3>
         </div>
-        <YourOrders email={user.email} />
+        <YourOrders />
       </section>
 
       <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">

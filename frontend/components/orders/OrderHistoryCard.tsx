@@ -4,7 +4,7 @@ import Link from "next/link";
 
 import { formatMinorFromPaise } from "@/lib/money";
 import type { OrderSummary } from "@/lib/orders-api";
-import { orderInvoiceDownloadUrl } from "@/lib/orders-api";
+import { orderCancelledPageUrl, orderInvoiceDownloadUrl } from "@/lib/orders-api";
 
 function formatPlacedDate(value: string | null): string {
   if (!value) return "—";
@@ -16,12 +16,14 @@ function formatPlacedDate(value: string | null): string {
 }
 
 function statusHeadline(order: OrderSummary): { title: string; sub?: string } {
-  if (order.paymentStatus === "CAPTURED" || order.status === "PAID") {
+  const isCod = order.isCod || order.paymentProvider === "COD";
+  if (order.paymentStatus === "CAPTURED" || order.status === "PAID" || (isCod && order.status !== "CANCELLED")) {
     if (order.status === "SHIPPED") return { title: "Shipped", sub: "Your package is on the way." };
     if (order.status === "DELIVERED") return { title: "Delivered", sub: "Your order was delivered." };
     if (order.status === "PROCESSING" || order.status === "PACKED") {
       return { title: "Processing", sub: "We are preparing your order." };
     }
+    if (isCod) return { title: "Order placed", sub: "Pay in cash when your package arrives." };
     return { title: "Order placed", sub: "Payment received." };
   }
   if (order.status === "CANCELLED") {
@@ -30,18 +32,41 @@ function statusHeadline(order: OrderSummary): { title: string; sub?: string } {
   if (order.status === "PENDING_PAYMENT") {
     return { title: "Payment pending", sub: "Complete payment to confirm this order." };
   }
+  if (order.status === "CANCELLED" && order.paymentStatus !== "CAPTURED") {
+    return { title: "Cancelled", sub: "Payment was not completed — you can reorder the same items." };
+  }
   return { title: order.status.replaceAll("_", " "), sub: undefined };
 }
 
 type Props = {
   order: OrderSummary;
-  email: string;
   shipToName?: string;
 };
 
-export function OrderHistoryCard({ order, email, shipToName }: Props) {
-  const paid = order.paymentStatus === "CAPTURED" || order.status === "PAID";
+function checkoutResumeHref(orderNumber: string, email: string): string {
+  return `/checkout?${new URLSearchParams({ orderNumber, email }).toString()}`;
+}
+
+function orderAccessEmail(order: OrderSummary): string {
+  return order.email.trim().toLowerCase();
+}
+
+function orderIsPaid(order: OrderSummary): boolean {
+  if (order.paymentStatus === "CAPTURED" || order.status === "PAID") return true;
+  if (order.isCod || order.paymentProvider === "COD") {
+    return !["PENDING_PAYMENT", "CANCELLED", "REFUNDED"].includes(order.status);
+  }
+  return false;
+}
+
+export function OrderHistoryCard({ order, shipToName }: Props) {
+  const email = orderAccessEmail(order);
+  const paid = orderIsPaid(order);
+  const pendingPayment = order.status === "PENDING_PAYMENT" && !paid;
+  const cancelledUnpaid = order.status === "CANCELLED" && !paid;
   const detailsHref = `/order/confirmed?orderNumber=${encodeURIComponent(order.orderNumber)}&email=${encodeURIComponent(email)}`;
+  const payHref = checkoutResumeHref(order.orderNumber, email);
+  const reorderHref = orderCancelledPageUrl(order.orderNumber, email);
   const { title, sub } = statusHeadline(order);
   const totalLabel = formatMinorFromPaise(order.grandTotalInPaise, order.currency);
 
@@ -87,17 +112,48 @@ export function OrderHistoryCard({ order, email, shipToName }: Props) {
 
         {/* ── Actions ── */}
         <div className="flex shrink-0 flex-col gap-2 sm:w-52">
-          {/* Primary CTA: Track order (replaces "View order details") */}
-          <Link
-            href={detailsHref}
-            className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-stone-900 px-4 text-sm font-medium text-white hover:bg-stone-700"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
-              <circle cx="12" cy="9" r="2.5"/>
-            </svg>
-            Track order
-          </Link>
+          {pendingPayment ? (
+            <>
+              <Link
+                href={payHref}
+                className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-stone-900 px-4 text-sm font-medium text-amber-400 hover:bg-stone-700"
+              >
+                Complete payment
+              </Link>
+              <Link
+                href={detailsHref}
+                className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-stone-300 bg-white px-4 text-sm font-medium text-stone-800 hover:bg-stone-50"
+              >
+                View order details
+              </Link>
+            </>
+          ) : cancelledUnpaid ? (
+            <>
+              <Link
+                href={reorderHref}
+                className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-stone-900 px-4 text-sm font-medium text-amber-400 hover:bg-stone-700"
+              >
+                Reorder items
+              </Link>
+              <Link
+                href={detailsHref}
+                className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-stone-300 bg-white px-4 text-sm font-medium text-stone-800 hover:bg-stone-50"
+              >
+                View order details
+              </Link>
+            </>
+          ) : (
+            <Link
+              href={detailsHref}
+              className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-stone-900 px-4 text-sm font-medium text-white hover:bg-stone-700"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+                <circle cx="12" cy="9" r="2.5"/>
+              </svg>
+              Track order
+            </Link>
+          )}
 
           {/* Invoice (paid orders only) */}
           {paid ? (
@@ -117,7 +173,7 @@ export function OrderHistoryCard({ order, email, shipToName }: Props) {
 
           {/* Need help? */}
           <Link
-            href="/contact"
+            href={`/contact?orderNumber=${encodeURIComponent(order.orderNumber)}`}
             className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full px-4 text-sm text-stone-400 hover:text-stone-600"
           >
             Need help?

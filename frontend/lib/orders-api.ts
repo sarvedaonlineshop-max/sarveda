@@ -51,8 +51,11 @@ export type OrderPublic = {
 
 export type OrderSummary = {
   orderNumber: string;
+  email: string;
   status: string;
   paymentStatus: string;
+  paymentProvider?: string | null;
+  isCod?: boolean;
   grandTotalInPaise: number;
   currency: string;
   createdAt: string;
@@ -119,4 +122,44 @@ export async function fetchMyOrders(): Promise<OrderSummary[]> {
 export function orderInvoiceDownloadUrl(orderNumber: string, email: string): string {
   const q = new URLSearchParams({ email: email.trim().toLowerCase() });
   return `${getApiBase()}/api/orders/public/${encodeURIComponent(orderNumber)}/invoice?${q.toString()}`;
+}
+
+export function orderCancelledPageUrl(orderNumber: string, email: string): string {
+  const q = new URLSearchParams({ email: email.trim().toLowerCase(), orderNumber });
+  return `/order/cancelled?${q.toString()}`;
+}
+
+export type ReorderResult = {
+  addedCount: number;
+  skipped: Array<{ name: string; reason: string }>;
+  itemCount: number;
+};
+
+export async function reorderCancelledOrder(orderNumber: string, email: string): Promise<ReorderResult> {
+  const res = await fetch(
+    `${getApiBase()}/api/orders/public/${encodeURIComponent(orderNumber)}/reorder`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ email: email.trim().toLowerCase() })
+    }
+  );
+  const json = (await res.json()) as {
+    success?: boolean;
+    data?: ReorderResult & { sessionId?: string };
+    error?: string;
+    code?: string;
+  };
+  if (!res.ok || !json.success || !json.data) {
+    throw new Error(json.error || "Could not add items to cart");
+  }
+  if (json.data.sessionId && typeof window !== "undefined") {
+    localStorage.setItem("sarveda_cart_session_id", json.data.sessionId);
+  }
+  return {
+    addedCount: json.data.addedCount,
+    skipped: json.data.skipped ?? [],
+    itemCount: json.data.itemCount
+  };
 }

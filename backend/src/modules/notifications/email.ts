@@ -60,6 +60,11 @@ function orderViewUrl(orderNumber: string, email: string): string {
   return `${siteBaseUrl()}/order/confirmed?orderNumber=${encodeURIComponent(orderNumber)}&${q.toString()}`;
 }
 
+function orderCancelledUrl(orderNumber: string, email: string): string {
+  const q = new URLSearchParams({ email: email.trim().toLowerCase() });
+  return `${siteBaseUrl()}/order/cancelled?orderNumber=${encodeURIComponent(orderNumber)}&${q.toString()}`;
+}
+
 function invoiceUrl(orderNumber: string, email: string): string {
   const q = new URLSearchParams({ email: email.trim().toLowerCase() });
   return `${siteBaseUrl()}/api/orders/public/${encodeURIComponent(orderNumber)}/invoice?${q.toString()}`;
@@ -191,8 +196,9 @@ export async function sendOrderEmail(orderId: string, event: OrderEmailEvent): P
     case "payment_failed":
       lines = [
         `We could not complete payment for order <strong>${order.orderNumber}</strong>.`,
-        `Your cart is still saved. Retry checkout:`,
-        `<a href="${checkoutResume}">Continue checkout</a>`
+        `This order has been cancelled and reserved stock has been released.`,
+        `You can place a fresh order with the same items:`,
+        `<a href="${orderCancelledUrl(order.orderNumber, order.email)}">Reorder or view details</a>`
       ];
       break;
     case "payment_reminder":

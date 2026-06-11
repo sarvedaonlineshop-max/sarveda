@@ -755,3 +755,16 @@ model OtpCode {
   usedAt    DateTime?
   createdAt DateTime @default(now())
 }
+
+model ContactSubmission {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  email       String
+  phone       String?
+  subject     String?
+  message     String
+  orderNumber String?
+  userId      String?  @db.Uuid
+  source      String   @default("general")
+  createdAt   DateTime @default(now())
+}

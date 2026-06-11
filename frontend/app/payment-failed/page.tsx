@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { fetchPublicOrder, type PublicOrderSummary } from "@/lib/checkout-api";
 import { formatMinorFromPaise } from "@/lib/money";
+import { orderCancelledPageUrl } from "@/lib/orders-api";
 
 function PaymentFailedContent() {
+  const router = useRouter();
   const sp = useSearchParams();
   const orderNumber = sp.get("orderNumber") ?? "";
   const email = sp.get("email") ?? "";
@@ -23,12 +25,17 @@ function PaymentFailedContent() {
     let cancelled = false;
     void (async () => {
       const o = await fetchPublicOrder(orderNumber, email);
-      if (!cancelled) setSummary(o ?? null);
+      if (cancelled) return;
+      if (o?.status === "CANCELLED") {
+        router.replace(orderCancelledPageUrl(orderNumber, email));
+        return;
+      }
+      setSummary(o ?? null);
     })();
     return () => {
       cancelled = true;
     };
-  }, [orderNumber, email]);
+  }, [orderNumber, email, router]);
 
   if (!orderNumber || !email) {
     return (
@@ -40,6 +47,9 @@ function PaymentFailedContent() {
       </div>
     );
   }
+
+  const checkoutResume = `/checkout?${new URLSearchParams({ orderNumber, email }).toString()}`;
+  const orderCancelled = summary?.status === "CANCELLED";
 
   return (
     <div className="mx-auto max-w-lg space-y-6 rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
@@ -69,24 +79,35 @@ function PaymentFailedContent() {
         <p className="text-sm text-stone-500">We could not load this order. Check the link or contact support.</p>
       )}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+      {orderCancelled ? (
         <Link
-          href={`/checkout?${new URLSearchParams({ orderNumber, email }).toString()}`}
-          className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-xl bg-stone-900 px-4 text-center text-sm font-semibold text-amber-400 hover:bg-amber-800"
+          href={orderCancelledPageUrl(orderNumber, email)}
+          className="inline-flex min-h-[48px] w-full items-center justify-center rounded-xl bg-stone-900 px-4 text-center text-sm font-semibold text-amber-400 hover:bg-amber-800"
         >
-          Retry payment
+          View cancelled order & reorder
         </Link>
-        <Link
-          href={`/checkout?${new URLSearchParams({ orderNumber, email }).toString()}`}
-          className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-xl border border-stone-300 bg-white px-4 text-center text-sm font-semibold text-stone-800 hover:border-amber-600"
-        >
-          Pay via COD instead
-        </Link>
-      </div>
-      <p className="text-xs text-stone-500">
-        COD availability depends on your cart and zone. If checkout does not offer COD, email us with your order
-        number.
-      </p>
+      ) : (
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <Link
+            href={checkoutResume}
+            className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-xl bg-stone-900 px-4 text-center text-sm font-semibold text-amber-400 hover:bg-amber-800"
+          >
+            Retry payment
+          </Link>
+          <Link
+            href={checkoutResume}
+            className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-xl border border-stone-300 bg-white px-4 text-center text-sm font-semibold text-stone-800 hover:border-amber-600"
+          >
+            Pay via COD instead
+          </Link>
+        </div>
+      )}
+      {!orderCancelled ? (
+        <p className="text-xs text-stone-500">
+          COD availability depends on your cart and zone. If checkout does not offer COD, email us with your order
+          number.
+        </p>
+      ) : null}
 
       <a
         href="mailto:hello@sarveda.com"

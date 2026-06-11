@@ -9,7 +9,7 @@ import { trackPurchase } from "@/lib/analytics";
 import { DEFAULT_DISPLAY_GST_RATE, extractGst } from "@/lib/gst";
 import { formatMinorFromPaise } from "@/lib/money";
 import type { OrderPublic } from "@/lib/orders-api";
-import { fetchOrderPublic, orderInvoiceDownloadUrl } from "@/lib/orders-api";
+import { fetchOrderPublic, orderCancelledPageUrl, orderInvoiceDownloadUrl } from "@/lib/orders-api";
 
 function formatAddress(addr: NonNullable<OrderPublic["shippingAddress"]>): string {
   const lines = [
@@ -35,6 +35,7 @@ function statusTitle(order: OrderPublic, codFromUrl: boolean): string {
   const isCod = order.isCod || codFromUrl || order.paymentProvider === "COD";
   if (isCod) return "Order placed";
   if (order.paymentStatus === "CAPTURED" || order.status === "PAID") return "Payment Successful";
+  if (order.status === "CANCELLED" && order.paymentStatus !== "CAPTURED") return "Order cancelled";
   if (order.status === "PENDING_PAYMENT") return "Payment pending";
   return order.status.replaceAll("_", " ");
 }
@@ -133,6 +134,10 @@ function ConfirmedInner() {
   const addr = order.shippingAddress;
   const fmt = (n: number) => formatMinorFromPaise(n, order.currency);
   const paid = order.paymentStatus === "CAPTURED" || order.status === "PAID";
+  const pendingPayment = order.status === "PENDING_PAYMENT" && !paid && !isCod;
+  const cancelledUnpaid = order.status === "CANCELLED" && !paid && !isCod;
+  const checkoutResumeHref = `/checkout?${new URLSearchParams({ orderNumber: order.orderNumber, email }).toString()}`;
+  const reorderHref = orderCancelledPageUrl(order.orderNumber, email);
   const isIndia = order.currency === "INR" || addr?.country === "IN";
   const merchandiseAfterDiscount = Math.max(0, order.subtotalInPaise - (order.discountInPaise ?? 0));
   const { gstInPaise } = extractGst(merchandiseAfterDiscount, DEFAULT_DISPLAY_GST_RATE);
@@ -163,6 +168,16 @@ function ConfirmedInner() {
           ) : paid ? (
             <p className="mt-1 text-sm text-stone-600">
               Confirmation sent to <span className="font-medium">{order.email}</span>
+            </p>
+          ) : cancelledUnpaid ? (
+            <p className="mt-1 text-sm text-amber-800">
+              This order was cancelled because payment was not completed in time. You can place a fresh order with
+              the same items.
+            </p>
+          ) : pendingPayment ? (
+            <p className="mt-1 text-sm text-amber-800">
+              Payment was not completed. Finish checkout to confirm this order — unpaid orders are cancelled
+              automatically after 15 minutes.
             </p>
           ) : (
             <p className="mt-1 text-sm text-amber-800">We are confirming your payment. Refresh in a moment.</p>
@@ -264,6 +279,22 @@ function ConfirmedInner() {
       ) : null}
 
       <div className="mt-8 flex flex-wrap gap-3">
+        {pendingPayment ? (
+          <Link
+            href={checkoutResumeHref}
+            className="inline-flex min-h-[40px] items-center justify-center rounded-full bg-stone-900 px-6 text-sm font-semibold text-amber-400 hover:bg-stone-700"
+          >
+            Complete payment
+          </Link>
+        ) : null}
+        {cancelledUnpaid ? (
+          <Link
+            href={reorderHref}
+            className="inline-flex min-h-[40px] items-center justify-center rounded-full bg-stone-900 px-6 text-sm font-semibold text-amber-400 hover:bg-stone-700"
+          >
+            Reorder same items
+          </Link>
+        ) : null}
         <Link
           href="/shop"
           className="inline-flex min-h-[40px] items-center justify-center rounded-full bg-amber-500 px-6 text-sm font-semibold text-stone-900 hover:bg-amber-400"
