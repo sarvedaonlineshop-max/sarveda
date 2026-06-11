@@ -21,6 +21,10 @@ import {
   type AdminPickupLocationRow
 } from "@/lib/admin-api";
 import { formatMinorFromPaise } from "@/lib/money";
+import {
+  formatAdminOrderStatusLabel,
+  isUnpaidCheckoutAttempt
+} from "@/lib/order-status-display";
 
 const ORDER_STATUSES = [
   "PENDING_PAYMENT",
@@ -821,8 +825,39 @@ export default function AdminOrderDetailPage() {
         </Link>
         <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="font-serif text-3xl italic text-stone-800 dark:text-stone-100">{order.orderNumber}</h1>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="font-serif text-3xl italic text-stone-800 dark:text-stone-100">{order.orderNumber}</h1>
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
+                  isUnpaidCheckoutAttempt(
+                    order.status,
+                    order.paymentStatus,
+                    order.payments?.[0]?.provider
+                  )
+                    ? "bg-amber-100 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200"
+                    : order.status === "CANCELLED"
+                      ? "bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-200"
+                      : "bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-200"
+                }`}
+              >
+                {formatAdminOrderStatusLabel(
+                  order.status,
+                  order.paymentStatus,
+                  order.payments?.[0]?.provider
+                )}
+              </span>
+            </div>
             <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">{order.email}</p>
+            {isUnpaidCheckoutAttempt(
+              order.status,
+              order.paymentStatus,
+              order.payments?.[0]?.provider
+            ) ? (
+              <p className="mt-1 text-xs text-amber-800 dark:text-amber-200/90">
+                Payment was not completed (checkout abandoned, gateway exit, or replaced by a newer order). System
+                status remains <span className="font-mono">CANCELLED</span> for stock and reporting.
+              </p>
+            ) : null}
           </div>
           <div className="flex flex-col gap-2 sm:items-end">
             <label className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-300">
@@ -838,7 +873,7 @@ export default function AdminOrderDetailPage() {
               >
                 {ORDER_STATUSES.map((s) => (
                   <option key={s} value={s}>
-                    {s.replace(/_/g, " ")}
+                    {s === "CANCELLED" ? "Cancelled" : s.replace(/_/g, " ")}
                   </option>
                 ))}
               </select>

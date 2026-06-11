@@ -489,11 +489,30 @@ type OrderBucket =
   | "all"
   | "pending"
   | "abandoned"
+  | "attempted"
   | "cancelled"
   | "refunded"
   | "paid"
   | "shipped"
   | "delivered";
+
+/** Checkout started but payment never captured (gateway exit, timeout, superseded). */
+const unpaidAttemptCancelledWhere = {
+  status: "CANCELLED" as const,
+  paymentStatus: { notIn: ["CAPTURED", "PARTIALLY_REFUNDED"] as const },
+  NOT: {
+    payments: { some: { provider: "COD" as const } }
+  }
+};
+
+/** Cancelled after payment was captured, or COD order cancelled. */
+const genuineCancelledWhere = {
+  status: "CANCELLED" as const,
+  OR: [
+    { paymentStatus: { in: ["CAPTURED", "PARTIALLY_REFUNDED"] as const } },
+    { payments: { some: { provider: "COD" as const } } }
+  ]
+};
 
 function bucketWhere(bucket: Exclude<OrderBucket, "all">, now: Date): Record<string, unknown> {
   const abandonedCutoff = new Date(now.getTime() - ABANDON_CHECKOUT_MS);
@@ -508,8 +527,10 @@ function bucketWhere(bucket: Exclude<OrderBucket, "all">, now: Date): Record<str
         status: "PENDING_PAYMENT" as const,
         createdAt: { lt: abandonedCutoff }
       };
+    case "attempted":
+      return unpaidAttemptCancelledWhere;
     case "cancelled":
-      return { status: "CANCELLED" as const };
+      return genuineCancelledWhere;
     case "refunded":
       return { status: "REFUNDED" as const };
     case "paid":
@@ -598,6 +619,7 @@ export async function ordersList(req: Request, res: Response, next: NextFunction
       "all",
       "pending",
       "abandoned",
+      "attempted",
       "cancelled",
       "refunded",
       "paid",
