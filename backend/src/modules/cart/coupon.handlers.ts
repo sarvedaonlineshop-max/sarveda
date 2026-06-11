@@ -17,7 +17,8 @@ function checkoutEmail(req: Request): string | undefined {
 
 export async function listOffers(req: Request, res: Response, next: NextFunction) {
   try {
-    const { cartId, userId } = await resolveCartContext(req, "read");
+    const userId = req.authUser!.id;
+    const { cartId } = await resolveCartContext(req, "read");
     const payload = await getCartPayload(cartId, pricingCountry(req), {
       userId,
       email: checkoutEmail(req)
@@ -35,7 +36,8 @@ export async function listOffers(req: Request, res: Response, next: NextFunction
 
 export async function applyCoupon(req: Request, res: Response, next: NextFunction) {
   try {
-    const { cartId, userId, newSessionId } = await resolveCartContext(req, "write");
+    const userId = req.authUser!.id;
+    const { cartId, newSessionId } = await resolveCartContext(req, "write");
     if (!cartId) {
       res.status(400).json({
         success: false,
@@ -67,7 +69,8 @@ export async function applyCoupon(req: Request, res: Response, next: NextFunctio
 
 export async function removeCoupon(req: Request, res: Response, next: NextFunction) {
   try {
-    const { cartId, newSessionId, userId } = await resolveCartContext(req, "write");
+    const userId = req.authUser!.id;
+    const { cartId, newSessionId } = await resolveCartContext(req, "write");
     if (!cartId) {
       res.status(400).json({
         success: false,

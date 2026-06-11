@@ -14,7 +14,12 @@ import { confirmStockTx, reserveStockTx, cancelUnpaidOrderWithRelease } from "..
 import { afterOrderPaid } from "../orders/afterPaid";
 import { invoiceNumberForOrder } from "../../utils/invoice";
 import { getCartPayload, resolveCartContext } from "../cart/cart.service";
-import { couponError, couponUserMessage, resolveCartCouponDiscount } from "../coupons/coupon.service";
+import {
+  assertAccountCouponAvailable,
+  couponError,
+  couponUserMessage,
+  resolveCartCouponDiscount
+} from "../coupons/coupon.service";
 import {
   computeVariantShippingTotal,
   currencyForZone,
@@ -332,13 +337,23 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
   const pendingCouponCode = cartCouponRow?.couponCode ?? cartData.coupon?.code ?? null;
 
   if (pendingCouponCode) {
+    if (!userId) {
+      throw couponError(
+        "Sign in to your Sarveda account to use coupon codes.",
+        "COUPON_LOGIN_REQUIRED"
+      );
+    }
     try {
+      await assertAccountCouponAvailable(pendingCouponCode, userId);
       const resolved = await resolveCartCouponDiscount(subtotalMinor, pendingCouponCode, {
-        userId: userId ?? null
+        userId
       });
       discountInPaise = resolved.discountInPaise;
       appliedCoupon = resolved.coupon;
     } catch (err) {
+      if (err && typeof err === "object" && "code" in err) {
+        throw err;
+      }
       throw couponError(
         `${pendingCouponCode}: ${couponUserMessage(err, "This coupon cannot be used on this order.")}`,
         "COUPON_REJECTED"

@@ -11,6 +11,9 @@ export type AppliedCoupon = {
 
 const PAID_LIKE_STATUSES = ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"] as const;
 
+/** Orders that consume a one-time coupon for this account (paid, in-flight, or awaiting payment). */
+const COUPON_CONSUMING_STATUSES = ["PENDING_PAYMENT", ...PAID_LIKE_STATUSES] as const;
+
 function normalizeCode(raw: string): string {
   return raw.trim().toUpperCase();
 }
@@ -29,29 +32,26 @@ function discountFromCoupon(coupon: Coupon, subtotalInPaise: number): number {
 }
 
 /**
- * Per-customer coupon usage count (paid orders only).
- * Logged-in shoppers: account `customerId` + unique login email only — checkout form email is ignored.
+ * How many times this account has already used a coupon code.
+ * Only `customerId` counts — checkout form email is never used.
+ * Includes paid orders and any open checkout with the same code (prevents double apply).
  */
-async function countCouponUsesForUser(code: string, userId: string): Promise<number> {
-  const paidFilter = {
-    OR: [{ status: { in: [...PAID_LIKE_STATUSES] } }, { paymentStatus: "CAPTURED" as const }]
-  };
-
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { email: true }
-  });
-  const accountEmail = user?.email?.trim().toLowerCase();
-  const identityOr: Array<{ customerId: string } | { email: string }> = [{ customerId: userId }];
-  if (accountEmail?.includes("@")) {
-    identityOr.push({ email: accountEmail });
-  }
-
+export async function countCouponUsesForAccount(
+  code: string,
+  customerId: string,
+  opts?: { excludeOrderId?: string }
+): Promise<number> {
   return prisma.order.count({
     where: {
-      couponCode: { equals: code, mode: "insensitive" },
+      customerId,
       deletedAt: null,
-      AND: [paidFilter, { OR: identityOr }]
+      couponCode: { equals: normalizeCode(code), mode: "insensitive" },
+      status: { notIn: ["CANCELLED", "REFUNDED"] },
+      ...(opts?.excludeOrderId ? { id: { not: opts.excludeOrderId } } : {}),
+      OR: [
+        { paymentStatus: "CAPTURED" },
+        { status: { in: [...COUPON_CONSUMING_STATUSES] } }
+      ]
     }
   });
 }
@@ -154,10 +154,29 @@ async function assertCouponUsable(
 
   const perUserLimit = coupon.maxUsagePerUser ?? 1;
   if (perUserLimit > 0) {
-    const used = await countCouponUsesForUser(coupon.code, userId);
+    const used = await countCouponUsesForAccount(coupon.code, userId);
     if (used >= perUserLimit) {
-      throw couponError("You have already used this coupon.", "COUPON_USER_LIMIT");
+      throw couponError("You have already used this coupon on your account.", "COUPON_USER_LIMIT");
     }
+  }
+}
+
+/** Hard gate before checkout creates an order with a coupon on the account. */
+export async function assertAccountCouponAvailable(
+  code: string,
+  customerId: string,
+  opts?: { excludeOrderId?: string }
+): Promise<void> {
+  const coupon = await prisma.coupon.findUnique({ where: { code: normalizeCode(code) } });
+  if (!coupon) {
+    throw couponError("This coupon code is not valid.", "COUPON_INVALID");
+  }
+  const perUserLimit = coupon.maxUsagePerUser ?? 1;
+  if (perUserLimit < 1) return;
+
+  const used = await countCouponUsesForAccount(coupon.code, customerId, opts);
+  if (used >= perUserLimit) {
+    throw couponError("You have already used this coupon on your account.", "COUPON_USER_LIMIT");
   }
 }
 

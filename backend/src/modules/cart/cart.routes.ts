@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import { optionalAuth } from "../../middleware/optionalAuth";
+import { requireAuth } from "../../middleware/auth";
 import { validateBody } from "../../middleware/validate";
 
 import * as controller from "./cart.controller";
@@ -17,8 +18,8 @@ router.get("/", controller.get);
 router.delete("/", controller.clear);
 router.put("/update", validateBody(cartUpdateSchema), controller.update);
 router.delete("/remove/:variantId", controller.remove);
-router.get("/coupon/offers", couponController.listOffers);
-router.post("/coupon", validateBody(cartCouponSchema), couponController.applyCoupon);
-router.delete("/coupon", couponController.removeCoupon);
+router.get("/coupon/offers", requireAuth, couponController.listOffers);
+router.post("/coupon", requireAuth, validateBody(cartCouponSchema), couponController.applyCoupon);
+router.delete("/coupon", requireAuth, couponController.removeCoupon);
 
 export { router as cartRoutes };
