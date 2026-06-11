@@ -45,6 +45,7 @@ router.get("/payments/reconciliation", admin.paymentsReconciliation);
 router.get("/orders/export/pdf", admin.ordersExportPdf);
 router.get("/orders", admin.ordersList);
 router.get("/orders/:id/invoice", admin.orderInvoice);
+router.post("/orders/:id/invoice/regenerate", admin.regenerateOrderInvoice);
 router.get("/orders/:id", admin.orderDetail);
 router.get("/orders/:id/shipping-breakdown", admin.orderShippingBreakdown);
 router.patch(

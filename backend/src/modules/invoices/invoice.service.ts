@@ -85,8 +85,16 @@ export function buildInvoiceInputFromOrder(
   };
 }
 
+export type EnsureInvoicePdfOptions = {
+  /** Rebuild PDF, overwrite S3, and update `pdfUrl` even when one already exists. */
+  force?: boolean;
+};
+
 /** Build PDF, upload to S3 when configured, persist `pdfUrl`. Returns URL or null. */
-export async function ensureOrderInvoicePdf(orderId: string): Promise<string | null> {
+export async function ensureOrderInvoicePdf(
+  orderId: string,
+  opts?: EnsureInvoicePdfOptions
+): Promise<string | null> {
   const order = await loadOrderForInvoice(orderId);
   if (!order) return null;
 
@@ -106,7 +114,7 @@ export async function ensureOrderInvoicePdf(orderId: string): Promise<string | n
     return null;
   }
 
-  if (order.invoice?.pdfUrl) {
+  if (order.invoice?.pdfUrl && !opts?.force) {
     return order.invoice.pdfUrl;
   }
 
@@ -128,6 +136,26 @@ export async function ensureOrderInvoicePdf(orderId: string): Promise<string | n
     }
   });
 
-  logger.info("invoice_generated", { orderId, orderNumber: order.orderNumber, pdfUrl: uploadedUrl ?? "no-s3" });
+  logger.info("invoice_generated", {
+    orderId,
+    orderNumber: order.orderNumber,
+    pdfUrl: uploadedUrl ?? "no-s3",
+    forced: Boolean(opts?.force)
+  });
   return uploadedUrl ?? pdfUrl;
+}
+
+/** Admin/testing: rebuild invoice PDF and return bytes (also updates S3 + DB). */
+export async function regenerateOrderInvoicePdf(
+  orderId: string
+): Promise<{ pdf: Buffer; invoiceNo: string } | null> {
+  const order = await loadOrderForInvoice(orderId);
+  if (!order) return null;
+
+  const input = buildInvoiceInputFromOrder(order);
+  if (!input) return null;
+
+  await ensureOrderInvoicePdf(orderId, { force: true });
+  const pdf = await buildOrderInvoicePdf(input);
+  return { pdf, invoiceNo: input.invoiceNo };
 }

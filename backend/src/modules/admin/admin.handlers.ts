@@ -738,6 +738,38 @@ export async function orderInvoice(req: Request, res: Response, next: NextFuncti
   }
 }
 
+/** Force-regenerate GST/commercial invoice PDF (overwrites S3). For layout testing. */
+export async function regenerateOrderInvoice(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const order = await prisma.order.findFirst({
+      where: { id, deletedAt: null },
+      select: { id: true, orderNumber: true }
+    });
+    if (!order) {
+      res.status(404).json({ success: false, error: "Order not found", code: "NOT_FOUND" });
+      return;
+    }
+
+    const { regenerateOrderInvoicePdf } = await import("../invoices/invoice.service");
+    const result = await regenerateOrderInvoicePdf(order.id);
+    if (!result) {
+      res.status(400).json({
+        success: false,
+        error: "Could not generate invoice (missing shipping address or order data)",
+        code: "INVOICE_NOT_READY"
+      });
+      return;
+    }
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${result.invoiceNo}.pdf"`);
+    res.send(result.pdf);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function patchOrderStatus(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;

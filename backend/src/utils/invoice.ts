@@ -40,7 +40,6 @@ export type GstInvoiceInput = {
   taxInPaise: number;
   grandTotalInPaise: number;
   interState: boolean;
-  /** True for India shipping + INR — GST tax invoice. */
   isGstApplicable: boolean;
 };
 
@@ -56,18 +55,15 @@ function currencyCode(input: GstInvoiceInput): string {
 
 function currencySymbol(code: string): string {
   switch (code) {
-    case "USD":
-      return "$";
-    case "GBP":
-      return "£";
+    case "USD": return "$";
+    case "GBP": return "£";
     case "INR":
-    default:
-      return "₹";
+    default:    return "₹";
   }
 }
 
 function fmtMinor(minor: number, currency: string): string {
-  const code = currency.trim().toUpperCase() || "INR";
+  const code   = currency.trim().toUpperCase() || "INR";
   const locale = CURRENCY_LOCALES[code] ?? "en-US";
   return (minor / 100).toLocaleString(locale, {
     minimumFractionDigits: 2,
@@ -80,67 +76,51 @@ function fmtTotal(minor: number, currency: string): string {
 }
 
 const STATE_GST_CODES: Record<string, string> = {
-  karnataka: "29",
-  delhi: "07",
-  maharashtra: "27",
-  tamilnadu: "33",
-  "tamil nadu": "33",
-  haryana: "06",
-  uttarpradesh: "09",
-  "uttar pradesh": "09",
-  westbengal: "19",
-  "west bengal": "19",
-  gujarat: "24",
-  rajasthan: "08",
-  punjab: "03",
-  telangana: "36",
-  andhrapradesh: "37",
-  "andhra pradesh": "37",
-  kerala: "32",
-  madhyapradesh: "23",
-  "madhya pradesh": "23"
+  karnataka: "29", delhi: "07", maharashtra: "27",
+  tamilnadu: "33", "tamil nadu": "33", haryana: "06",
+  uttarpradesh: "09", "uttar pradesh": "09",
+  westbengal: "19", "west bengal": "19", gujarat: "24",
+  rajasthan: "08", punjab: "03", telangana: "36",
+  andhrapradesh: "37", "andhra pradesh": "37",
+  kerala: "32", madhyapradesh: "23", "madhya pradesh": "23"
 };
 
 function fiscalYearLabel(date: Date): string {
-  const y = date.getFullYear();
-  const m = date.getMonth();
+  const y     = date.getFullYear();
+  const m     = date.getMonth();
   const start = m >= 3 ? y : y - 1;
-  const end = (start + 1) % 100;
+  const end   = (start + 1) % 100;
   return `${String(start % 100).padStart(2, "0")}-${String(end).padStart(2, "0")}`;
 }
 
 export function formatDisplayInvoiceNo(orderNumber: string, issuedAt: Date): string {
-  const fy = fiscalYearLabel(issuedAt);
+  const fy     = fiscalYearLabel(issuedAt);
   const digits = orderNumber.replace(/\D/g, "");
-  const seq = digits.slice(-5).padStart(5, "0");
+  const seq    = digits.slice(-5).padStart(5, "0");
   return `INV/${fy}/${seq}`;
 }
 
 function placeOfSupply(state: string): string {
-  const key = state.trim().toLowerCase();
-  const code = STATE_GST_CODES[key];
+  const key   = state.trim().toLowerCase();
+  const code  = STATE_GST_CODES[key];
   const label = state.trim() || "India";
   return code ? `${label} (${code})` : label;
 }
 
 function sellerBlock(): {
-  name: string;
-  companyId: string;
-  addressLines: string[];
-  gstin: string;
-  phone: string;
-  email: string;
-  website: string;
+  name: string; companyId: string; addressLines: string[];
+  gstin: string; phone: string; email: string; website: string;
 } {
-  const address = process.env.SELLER_ADDRESS?.trim() || "Bengaluru, Karnataka, India";
+  const address = process.env.SELLER_ADDRESS?.trim() ||
+    "No. A2 403, PURVA ATRIA,\n1st Block, RMV 2nd Stage\nBengaluru Karnataka 560094\nIndia";
   return {
-    name: process.env.SELLER_LEGAL_NAME?.trim() || "Sarveda Life Private Limited",
-    companyId: process.env.SELLER_COMPANY_ID?.trim() || "",
+    name:         process.env.SELLER_LEGAL_NAME?.trim() || "Sarveda Life Private Limited",
+    companyId:    process.env.SELLER_COMPANY_ID?.trim() || "U85100KA2020PTC141985",
     addressLines: address.split(/\n+/).map((l) => l.trim()).filter(Boolean),
-    gstin: process.env.SELLER_GSTIN?.trim() || "",
-    phone: process.env.SELLER_PHONE?.trim() || "",
-    email: process.env.SELLER_EMAIL?.trim() || "care@sarveda.com",
-    website: process.env.SELLER_WEBSITE?.trim() || "www.sarveda.com"
+    gstin:        process.env.SELLER_GSTIN?.trim()      || "29ABFCS0538N1ZV",
+    phone:        process.env.SELLER_PHONE?.trim()      || "9845751678",
+    email:        process.env.SELLER_EMAIL?.trim()      || "care@sarveda.com",
+    website:      process.env.SELLER_WEBSITE?.trim()    || "www.sarveda.com"
   };
 }
 
@@ -152,15 +132,18 @@ export function buildOrderInvoicePdf(input: GstInvoiceInput): Promise<Buffer> {
 
 type PdfDoc = InstanceType<typeof PDFDocument>;
 
-// ── Palette ───────────────────────────────────────────────────────────────────
+// ── Palette ──────────────────────────────────────────────────────────────────
 const BRAND_DARK  = "#1C1C1C";
 const BRAND_OLIVE = "#4A5E3A";
 const ROW_ALT     = "#F7F6F3";
-const RULE_LIGHT  = "#E2E0DA";
-const TEXT_MUTED  = "#6B6860";
-const TEXT_BODY   = "#2C2B28";
+const RULE_LIGHT  = "#D8D6D0";
+const TEXT_MUTED  = "#7A7870";
+const TEXT_BODY   = "#1A1A18";
 const INV_WHITE   = "#FFFFFF";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// renderInvoiceHeader
+// ─────────────────────────────────────────────────────────────────────────────
 function renderInvoiceHeader(
   doc: PdfDoc,
   input: GstInvoiceInput,
@@ -173,112 +156,89 @@ function renderInvoiceHeader(
   const pageWidth        = doc.page.width - doc.page.margins.left - doc.page.margins.right;
   const left             = doc.page.margins.left;
   const top              = doc.page.margins.top;
+  const leftColW         = pageWidth * 0.52;
+  const rightColX        = left + leftColW + 18;
+  const rightColW        = pageWidth - leftColW - 18;
 
-  // ── 1. Full-width dark header bar ──────────────────────────────────────────
-  const barH = 54;
-  doc.rect(left - doc.page.margins.left, top - doc.page.margins.top,
-           doc.page.width, barH)
-     .fill(BRAND_DARK);
+  // ── 1. Company name (left) + "Tax Invoice" title (right) ───────────────────
+  doc.fontSize(13).font("Helvetica-Bold").fillColor(TEXT_BODY)
+     .text(seller.name, left, top, { width: leftColW });
 
-  // Brand name — left
-  doc.fillColor(INV_WHITE).fontSize(18).font("Helvetica-Bold")
-     .text("SARVEDA", left, top + 10, { width: pageWidth * 0.5 });
-  doc.fillColor("#B8C4A8").fontSize(7).font("Helvetica")
-     .text("YOGA  \u00B7  AYURVEDA  \u00B7  SOUND", left, top + 32,
-           { width: pageWidth * 0.5, characterSpacing: 1.2 });
+  doc.fontSize(24).font("Helvetica-Bold").fillColor(TEXT_BODY)
+     .text(title, left, top - 4, { width: pageWidth, align: "right" });
 
-  // Invoice title — right
-  doc.fillColor(INV_WHITE).fontSize(18).font("Helvetica-Bold")
-     .text(title.toUpperCase(), left, top + 9,
-           { width: pageWidth, align: "right", characterSpacing: 1 });
-  doc.fillColor("#B8C4A8").fontSize(7.5).font("Helvetica")
-     .text(`Invoice# ${displayInvoiceNo}`, left, top + 32,
-           { width: pageWidth, align: "right" });
-
-  doc.y = top + barH + 14;
-  doc.fillColor(TEXT_BODY);
-
-  // ── 2. Seller info (left) + Bill To (right) ────────────────────────────────
-  const colGap       = 20;
-  const leftColWidth = pageWidth * 0.52;
-  const rightColX    = left + leftColWidth + colGap;
-  const rightColW    = pageWidth - leftColWidth - colGap;
-  let sellerY        = doc.y;
-  const billStartY   = doc.y;
-
-  doc.fontSize(9).font("Helvetica-Bold").fillColor(TEXT_BODY)
-     .text(seller.name, left, sellerY, { width: leftColWidth });
-  sellerY = doc.y + 3;
-
+  // ── 2. Seller details ──────────────────────────────────────────────────────
+  let sy = top + 18;
   doc.fontSize(7.5).font("Helvetica").fillColor(TEXT_MUTED);
-  const sellerLines: string[] = [];
-  if (seller.companyId) sellerLines.push(`Company ID: ${seller.companyId}`);
-  sellerLines.push(...seller.addressLines);
-  if (opts.showGstin) {
-    sellerLines.push(seller.gstin ? `GSTIN: ${seller.gstin}` : "GSTIN: available on request");
-  }
-  if (seller.phone) sellerLines.push(seller.phone);
-  sellerLines.push(seller.email, seller.website);
-  for (const line of sellerLines) {
-    doc.text(line, left, sellerY, { width: leftColWidth });
-    sellerY = doc.y + 1;
-  }
 
-  // Bill To — right column, same start Y
-  doc.fontSize(7).font("Helvetica-Bold").fillColor(BRAND_OLIVE)
-     .text("BILL TO", rightColX, billStartY, { width: rightColW, characterSpacing: 0.8 });
-  let byY = billStartY + 13;
-  doc.fontSize(8.5).font("Helvetica-Bold").fillColor(TEXT_BODY)
+  if (seller.companyId) {
+    doc.text(`Company ID : ${seller.companyId}`, left, sy, { width: leftColW });
+    sy = doc.y + 1;
+  }
+  for (const line of seller.addressLines) {
+    doc.text(line, left, sy, { width: leftColW });
+    sy = doc.y + 1;
+  }
+  if (opts.showGstin) {
+    doc.text(`GSTIN ${seller.gstin || "available on request"}`, left, sy, { width: leftColW });
+    sy = doc.y + 1;
+  }
+  if (seller.phone) {
+    doc.text(seller.phone, left, sy, { width: leftColW });
+    sy = doc.y + 1;
+  }
+  doc.text(seller.email,   left, sy, { width: leftColW }); sy = doc.y + 1;
+  doc.text(seller.website, left, sy, { width: leftColW }); sy = doc.y + 1;
+
+  // ── 3. Invoice# below title ────────────────────────────────────────────────
+  doc.fontSize(9).font("Helvetica").fillColor(TEXT_MUTED)
+     .text(`Invoice# ${displayInvoiceNo}`, left, top + 28, { width: pageWidth, align: "right" });
+
+  // ── 4. Bill To (right column) ──────────────────────────────────────────────
+  const billStartY = top + 48;
+  doc.fontSize(7.5).font("Helvetica").fillColor(TEXT_MUTED)
+     .text("Bill To", rightColX, billStartY, { width: rightColW });
+  let byY = billStartY + 12;
+  doc.fontSize(9).font("Helvetica-Bold").fillColor(TEXT_BODY)
      .text(addr.fullName, rightColX, byY, { width: rightColW });
-  byY = doc.y + 2;
+  byY = doc.y + 3;
   doc.fontSize(7.5).font("Helvetica").fillColor(TEXT_MUTED);
   const billLines = [
-    addr.line1,
-    addr.line2,
+    addr.line1, addr.line2,
     [addr.city, addr.state, addr.postalCode].filter(Boolean).join(", "),
-    addr.country,
-    input.buyerEmail
+    addr.country, input.buyerEmail
   ].filter((l): l is string => Boolean(l?.trim()));
   for (const line of billLines) {
     doc.text(line, rightColX, byY, { width: rightColW });
     byY = doc.y + 1;
   }
   if (opts.showPlaceOfSupply) {
-    doc.fontSize(7.5).font("Helvetica-Bold").fillColor(BRAND_OLIVE)
-       .text(`Place of Supply: ${placeOfSupply(addr.state)}`, rightColX, byY + 3, { width: rightColW });
+    byY += 4;
+    doc.fontSize(7.5).font("Helvetica").fillColor(TEXT_MUTED)
+       .text(`Place Of Supply: ${placeOfSupply(addr.state)}`, rightColX, byY, { width: rightColW });
     byY = doc.y + 1;
   }
 
-  doc.y = Math.max(sellerY, byY) + 12;
+  doc.y = Math.max(sy, byY) + 14;
 
-  // ── 3. Olive accent rule ────────────────────────────────────────────────────
-  doc.rect(left, doc.y, pageWidth, 1.5).fill(BRAND_OLIVE);
-  doc.y += 6;
+  // ── 5. Invoice date strip (no Terms, no Due Date) ──────────────────────────
+  const stripY = doc.y;
+  doc.rect(left - doc.page.margins.left, stripY - 3, doc.page.width, 26).fill("#EEECE6");
+  doc.fontSize(7).font("Helvetica").fillColor(TEXT_MUTED)
+     .text("Invoice Date", left + 6, stripY + 1, { width: 120 });
+  doc.fontSize(8.5).font("Helvetica-Bold").fillColor(TEXT_BODY)
+     .text(
+       input.issuedAt.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
+       left + 6, stripY + 11, { width: 120 }
+     );
 
-  // ── 4. Meta strip ──────────────────────────────────────────────────────────
-  const invoiceDate = input.issuedAt.toLocaleDateString("en-IN", {
-    day: "2-digit", month: "short", year: "numeric"
-  });
-  const metaY    = doc.y;
-  const third    = pageWidth / 3;
-  const metaCols = [left, left + third, left + third * 2];
-  const labels   = ["INVOICE DATE", "TERMS", "DUE DATE"];
-  const values   = [invoiceDate, "Due on Receipt", invoiceDate];
-
-  doc.rect(left - 6, metaY - 4, pageWidth + 12, 28).fill("#F0EFE9");
-  doc.fillColor(BRAND_OLIVE).fontSize(6.5).font("Helvetica-Bold");
-  labels.forEach((lbl, i) => {
-    doc.text(lbl, metaCols[i] + 6, metaY, { width: third - 8, characterSpacing: 0.5 });
-  });
-  doc.fillColor(TEXT_BODY).fontSize(8.5).font("Helvetica-Bold");
-  values.forEach((val, i) => {
-    doc.text(val, metaCols[i] + 6, metaY + 12, { width: third - 8 });
-  });
-
-  doc.y = metaY + 28 + 10;
+  doc.y = stripY + 26 + 12;
   doc.fillColor(TEXT_BODY);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// renderInvoiceFooter
+// ─────────────────────────────────────────────────────────────────────────────
 function renderInvoiceFooter(
   doc: PdfDoc,
   input: GstInvoiceInput,
@@ -290,150 +250,64 @@ function renderInvoiceFooter(
 
   doc.moveDown(1.2);
 
-  // Olive rule
-  doc.rect(left, doc.y, pageWidth, 1).fill(BRAND_OLIVE);
-  doc.y += 10;
+  // Thin olive rule
+  doc.rect(left, doc.y, pageWidth, 0.75).fill(BRAND_OLIVE);
+  doc.y += 12;
 
-  // Total in Words
-  doc.fontSize(7.5).font("Helvetica-Bold").fillColor(BRAND_OLIVE)
-     .text("TOTAL IN WORDS", left, doc.y, { characterSpacing: 0.5 });
+  // Two-column footer: Total in Words (left) | Authorized Signatory (right)
+  const footLeftW  = pageWidth * 0.60;
+  const footRightX = left + footLeftW + 16;
+  const footRightW = pageWidth - footLeftW - 16;
+  const footStartY = doc.y;
+
+  // Left: Total in Words + Notes
+  doc.fontSize(7.5).font("Helvetica-Bold").fillColor(TEXT_MUTED)
+     .text("Total In Words:", left, footStartY, { width: footLeftW });
   doc.y += 11;
   doc.fontSize(8.5).font("Helvetica-Oblique").fillColor(TEXT_BODY)
-     .text(amountInCurrencyWords(totalMinor, code), left, doc.y, { width: pageWidth * 0.65 });
-
-  // Notes
+     .text(amountInCurrencyWords(totalMinor, code), left, doc.y, { width: footLeftW });
   doc.y += 14;
-  doc.fontSize(7.5).font("Helvetica-Bold").fillColor(BRAND_OLIVE)
-     .text("NOTES", left, doc.y, { characterSpacing: 0.5 });
+  doc.fontSize(7.5).font("Helvetica-Bold").fillColor(TEXT_MUTED)
+     .text("Notes", left, doc.y, { width: footLeftW });
   doc.y += 11;
   doc.fontSize(8).font("Helvetica").fillColor(TEXT_MUTED)
      .text(
        input.isGstApplicable
-         ? "Thank you for choosing Sarveda. We hope you enjoy your order."
-         : "Export sale — prices are tax-inclusive for your region. Thank you for choosing Sarveda.",
-       left, doc.y, { width: pageWidth * 0.65 }
+         ? "Thank you for your business."
+         : "Export sale — prices are tax-inclusive for your region. Thank you for your business.",
+       left, doc.y, { width: footLeftW }
      );
 
-  // Terms
-  doc.y += 16;
-  doc.fontSize(7.5).font("Helvetica-Bold").fillColor(BRAND_OLIVE)
-     .text("TERMS & CONDITIONS", left, doc.y, { characterSpacing: 0.5 });
-  doc.y += 11;
-  doc.fontSize(8).font("Helvetica").fillColor(TEXT_MUTED)
-     .text("Due upon receipt.", left, doc.y);
-
-  // Authorized signature — right aligned
-  const sigY     = doc.y - 30;
-  const sigLineY = sigY + 28;
-  const sigLineX = left + pageWidth * 0.68;
-  doc.fontSize(7.5).font("Helvetica-Bold").fillColor(BRAND_OLIVE)
-     .text("AUTHORIZED SIGNATORY", left, sigY,
-           { width: pageWidth, align: "right", characterSpacing: 0.5 });
-  doc.moveTo(sigLineX, sigLineY)
-     .lineTo(left + pageWidth, sigLineY)
+  // Right: Authorized signatory
+  doc.fontSize(7.5).font("Helvetica-Bold").fillColor(TEXT_MUTED)
+     .text("Authorized Signatory", footRightX, footStartY, { width: footRightW, align: "center" });
+  const sigLineY = footStartY + 44;
+  doc.moveTo(footRightX, sigLineY)
+     .lineTo(footRightX + footRightW, sigLineY)
      .strokeColor(RULE_LIGHT).lineWidth(0.5).stroke();
   doc.fontSize(7).font("Helvetica").fillColor(TEXT_MUTED)
-     .text("for Sarveda Life Private Limited", left, sigLineY + 3,
-           { width: pageWidth, align: "right" });
+     .text("for Sarveda Life Private Limited", footRightX, sigLineY + 3,
+           { width: footRightW, align: "center" });
 
-  // Dark footer bar
-  const footerY = doc.page.height - doc.page.margins.bottom - 18;
-  doc.rect(left - doc.page.margins.left, footerY - 4,
-           doc.page.width, 22).fill(BRAND_DARK);
-  doc.fontSize(6.5).font("Helvetica").fillColor("#9A9890")
+  // Page footer
+  doc.fontSize(6.5).font("Helvetica").fillColor(RULE_LIGHT)
      .text(
-       `Order ${input.orderNumber}  \u00B7  ${input.buyerEmail}  \u00B7  Computer-generated invoice`,
-       left, footerY + 1,
+       `Order ${input.orderNumber}  ·  ${input.buyerEmail}  ·  Computer-generated invoice`,
+       left,
+       doc.page.height - doc.page.margins.bottom - 12,
        { align: "center", width: pageWidth }
      );
 }
 
-function buildCommercialInvoicePdf(input: GstInvoiceInput): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ margin: 42, size: "A4" });
-    const chunks: Buffer[] = [];
-    doc.on("data", (chunk: Buffer) => chunks.push(chunk));
-    doc.on("end", () => resolve(Buffer.concat(chunks)));
-    doc.on("error", reject);
-
-    const code = currencyCode(input);
-    const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
-    const left = doc.page.margins.left;
-
-    renderInvoiceHeader(doc, input, "Invoice", { showGstin: false, showPlaceOfSupply: false });
-
-    const cols = {
-      num: left,
-      item: left + 18,
-      qty: left + 300,
-      rate: left + 340,
-      amt: left + 410
-    };
-
-    doc.fontSize(7).font("Helvetica-Bold");
-    const headY = doc.y;
-    doc.text("#", cols.num, headY);
-    doc.text("Item", cols.item, headY);
-    doc.text("Qty", cols.qty, headY);
-    doc.text("Rate", cols.rate, headY);
-    doc.text("Amount", cols.amt, headY);
-    doc.moveDown(0.6);
-    doc.moveTo(left, doc.y).lineTo(left + pageWidth, doc.y).strokeColor("#cccccc").stroke();
-    doc.moveDown(0.3);
-
-    let merchandiseSum = 0;
-    let qtySum = 0;
-
-    input.items.forEach((line, index) => {
-      const y = doc.y;
-      const unitMinor =
-        line.qty > 0 ? Math.round(line.lineTotalInPaise / line.qty) : line.lineTotalInPaise;
-      merchandiseSum += line.lineTotalInPaise;
-      qtySum += line.qty;
-
-      doc.fontSize(7).font("Helvetica");
-      doc.text(String(index + 1), cols.num, y);
-      doc.text(line.name, cols.item, y, { width: 260 });
-      doc.text(line.qty.toFixed(2), cols.qty, y);
-      doc.text(fmtMinor(unitMinor, code), cols.rate, y);
-      doc.text(fmtMinor(line.lineTotalInPaise, code), cols.amt, y);
-      doc.moveDown(1.1);
-    });
-
-    const summaryX = left + pageWidth * 0.52;
-    const summaryValX = left + pageWidth * 0.82;
-    let sy = doc.y + 8;
-
-    const addSummaryRow = (label: string, value: string, bold = false) => {
-      doc.fontSize(8).font(bold ? "Helvetica-Bold" : "Helvetica");
-      doc.text(label, summaryX, sy, { width: pageWidth * 0.28, align: "right" });
-      doc.text(value, summaryValX, sy, { width: pageWidth * 0.18, align: "right" });
-      sy += 14;
-    };
-
-    addSummaryRow("Sub Total", fmtMinor(merchandiseSum, code));
-    if (input.discountInPaise > 0) {
-      addSummaryRow("Discount", `-${fmtMinor(input.discountInPaise, code)}`);
-    }
-    if (input.shippingInPaise > 0) {
-      addSummaryRow("Shipping charge", fmtMinor(input.shippingInPaise, code));
-    }
-    addSummaryRow("Items in Total", qtySum.toFixed(2));
-    sy += 4;
-    addSummaryRow("Total", fmtTotal(input.grandTotalInPaise, code), true);
-    doc.y = Math.max(doc.y, sy + 10);
-
-    renderInvoiceFooter(doc, input, input.grandTotalInPaise);
-    doc.end();
-  });
-}
-
+// ─────────────────────────────────────────────────────────────────────────────
+// buildGstInvoicePdf
+// ─────────────────────────────────────────────────────────────────────────────
 export function buildGstInvoicePdf(input: GstInvoiceInput): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 42, size: "A4" });
     const chunks: Buffer[] = [];
-    doc.on("data", (chunk: Buffer) => chunks.push(chunk));
-    doc.on("end",  () => resolve(Buffer.concat(chunks)));
+    doc.on("data",  (chunk: Buffer) => chunks.push(chunk));
+    doc.on("end",   () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
     const code      = "INR";
@@ -443,140 +317,112 @@ export function buildGstInvoicePdf(input: GstInvoiceInput): Promise<Buffer> {
     renderInvoiceHeader(doc, input, "Tax Invoice", { showGstin: true, showPlaceOfSupply: true });
 
     // ── Column layout ─────────────────────────────────────────────────────────
-    // Inter-state:  #  Item  HSN  Qty  Rate  IGST%  IGST₹  Amount
-    // Intra-state:  #  Item  HSN  Qty  Rate  CGST%  CGST₹  SGST%  SGST₹  Amount
     const C = input.interState
-      ? {
-          num:    left,
-          item:   left + 16,
-          hsn:    left + 198,
-          qty:    left + 258,
-          rate:   left + 290,
-          tax:    left + 336,
-          taxAmt: left + 366,
-          amt:    left + 418,
-        }
-      : {
-          num:     left,
-          item:    left + 16,
-          hsn:     left + 182,
-          qty:     left + 238,
-          rate:    left + 268,
-          cgstPct: left + 308,
-          cgstAmt: left + 332,
-          sgstPct: left + 370,
-          sgstAmt: left + 394,
-          amt:     left + 436,
-        };
+      ? { num: left, item: left+16, hsn: left+200, qty: left+264, rate: left+298,
+          taxPct: left+344, taxAmt: left+372, amt: left+430 }
+      : { num: left, item: left+16, hsn: left+185, qty: left+242, rate: left+274,
+          cgstPct: left+314, cgstAmt: left+338, sgstPct: left+376, sgstAmt: left+400, amt: left+440 };
 
-    // ── Table header row (dark filled) ────────────────────────────────────────
-    const tableHeaderY = doc.y;
-    doc.rect(left - 2, tableHeaderY - 3, pageWidth + 4, 16).fill(BRAND_DARK);
+    // ── Table header ──────────────────────────────────────────────────────────
+    const thY = doc.y;
+    doc.rect(left - 2, thY - 3, pageWidth + 4, 17).fill(BRAND_DARK);
     doc.fontSize(6.5).font("Helvetica-Bold").fillColor(INV_WHITE);
-    doc.text("#",      C.num,           tableHeaderY, { width: 14,  align: "right" });
-    doc.text("ITEM",   C.item,          tableHeaderY, { width: 160 });
-    doc.text("HSN",    (C as any).hsn,  tableHeaderY, { width: 50 });
-    doc.text("QTY",    (C as any).qty,  tableHeaderY, { width: 36,  align: "right" });
-    doc.text("RATE",   (C as any).rate, tableHeaderY, { width: 44,  align: "right" });
+    doc.text("#",      C.num,            thY, { width: 14,  align: "right" });
+    doc.text("Item",   C.item,           thY, { width: 155 });
+    doc.text("HSN/SAC",(C as any).hsn,   thY, { width: 58 });
+    doc.text("Qty",    (C as any).qty,   thY, { width: 34,  align: "right" });
+    doc.text("Rate",   (C as any).rate,  thY, { width: 46,  align: "right" });
     if (input.interState) {
-      doc.text("IGST%",  (C as any).tax,    tableHeaderY, { width: 28, align: "right" });
-      doc.text("IGST",   (C as any).taxAmt, tableHeaderY, { width: 44, align: "right" });
+      doc.text("IGST%", (C as any).taxPct, thY, { width: 28, align: "right" });
+      doc.text("IGST",  (C as any).taxAmt, thY, { width: 50, align: "right" });
     } else {
-      doc.text("CGST%",  (C as any).cgstPct, tableHeaderY, { width: 24, align: "right" });
-      doc.text("CGST",   (C as any).cgstAmt, tableHeaderY, { width: 36, align: "right" });
-      doc.text("SGST%",  (C as any).sgstPct, tableHeaderY, { width: 24, align: "right" });
-      doc.text("SGST",   (C as any).sgstAmt, tableHeaderY, { width: 36, align: "right" });
+      doc.text("CGST%", (C as any).cgstPct, thY, { width: 24, align: "right" });
+      doc.text("CGST",  (C as any).cgstAmt, thY, { width: 38, align: "right" });
+      doc.text("SGST%", (C as any).sgstPct, thY, { width: 24, align: "right" });
+      doc.text("SGST",  (C as any).sgstAmt, thY, { width: 38, align: "right" });
     }
-    doc.text("AMOUNT", (C as any).amt, tableHeaderY, { width: 60, align: "right" });
-    doc.y = tableHeaderY + 16 + 2;
+    doc.text("Amount", (C as any).amt,   thY, { width: 58, align: "right" });
+    doc.y = thY + 17 + 2;
     doc.fillColor(TEXT_BODY);
 
-    // ── Table rows ────────────────────────────────────────────────────────────
+    // ── Rows ──────────────────────────────────────────────────────────────────
     const buckets = new Map<number, TaxBucket>();
-    let taxableSum = 0;
-    let taxSum     = 0;
-    let qtySum     = 0;
+    let taxableSum = 0, taxSum = 0, qtySum = 0;
 
-    input.items.forEach((line, index) => {
+    input.items.forEach((line, idx) => {
       const rowY    = doc.y;
-      const isAlt   = index % 2 === 1;
       const halfTax = Math.round(line.taxMinor / 2);
       const cgstAmt = input.interState ? 0 : halfTax;
       const sgstAmt = input.interState ? 0 : line.taxMinor - halfTax;
       const igstAmt = input.interState ? line.taxMinor : 0;
 
-      const lineCount = Math.ceil(line.name.length / 28) + 1;
-      const rowH      = Math.max(18, lineCount * 10 + 6);
-
-      if (isAlt) {
-        doc.rect(left - 2, rowY - 2, pageWidth + 4, rowH).fill(ROW_ALT);
-      }
-
-      const bucket = buckets.get(line.gstRatePercent)
-        ?? { rate: line.gstRatePercent, cgst: 0, sgst: 0, igst: 0 };
-      bucket.cgst += cgstAmt;
-      bucket.sgst += sgstAmt;
-      bucket.igst += igstAmt;
+      const bucket = buckets.get(line.gstRatePercent) ?? { rate: line.gstRatePercent, cgst: 0, sgst: 0, igst: 0 };
+      bucket.cgst += cgstAmt; bucket.sgst += sgstAmt; bucket.igst += igstAmt;
       buckets.set(line.gstRatePercent, bucket);
 
       taxableSum += line.taxableMinor;
       taxSum     += line.taxMinor;
       qtySum     += line.qty;
 
-      const unitTaxableMinor = line.qty > 0
-        ? Math.round(line.taxableMinor / line.qty)
-        : line.taxableMinor;
+      const lineCount = Math.ceil(line.name.length / 26) + 1;
+      const rowH      = Math.max(20, lineCount * 10 + 6);
+
+      if (idx % 2 === 1) doc.rect(left - 2, rowY - 2, pageWidth + 4, rowH).fill(ROW_ALT);
+
+      const unitTax = line.qty > 0 ? Math.round(line.taxableMinor / line.qty) : line.taxableMinor;
 
       doc.fontSize(7.5).font("Helvetica").fillColor(TEXT_BODY);
-      doc.text(String(index + 1), C.num,          rowY, { width: 14,  align: "right" });
-      doc.text(line.name,         C.item,          rowY, { width: 158 });
-      doc.text(line.hsn ?? "",    (C as any).hsn,  rowY, { width: 50 });
-      doc.text(line.qty.toFixed(2), (C as any).qty, rowY, { width: 36, align: "right" });
-      doc.text(fmtMinor(unitTaxableMinor, code), (C as any).rate, rowY, { width: 44, align: "right" });
+      doc.text(String(idx + 1),          C.num,           rowY, { width: 14, align: "right" });
+      doc.text(line.name,                C.item,          rowY, { width: 155 });
+      doc.text(line.hsn ?? "",           (C as any).hsn,  rowY, { width: 58 });
+      doc.text(line.qty.toFixed(2),      (C as any).qty,  rowY, { width: 34, align: "right" });
+      doc.text(fmtMinor(unitTax, code),  (C as any).rate, rowY, { width: 46, align: "right" });
 
       if (input.interState) {
-        doc.text(`${line.gstRatePercent}%`,  (C as any).tax,    rowY, { width: 28, align: "right" });
-        doc.text(fmtMinor(igstAmt, code),    (C as any).taxAmt, rowY, { width: 44, align: "right" });
+        doc.text(`${line.gstRatePercent}%`,  (C as any).taxPct, rowY, { width: 28, align: "right" });
+        doc.text(fmtMinor(igstAmt, code),    (C as any).taxAmt, rowY, { width: 50, align: "right" });
       } else {
-        doc.text(`${line.gstRatePercent / 2}%`, (C as any).cgstPct, rowY, { width: 24, align: "right" });
-        doc.text(fmtMinor(cgstAmt, code),        (C as any).cgstAmt, rowY, { width: 36, align: "right" });
-        doc.text(`${line.gstRatePercent / 2}%`, (C as any).sgstPct, rowY, { width: 24, align: "right" });
-        doc.text(fmtMinor(sgstAmt, code),        (C as any).sgstAmt, rowY, { width: 36, align: "right" });
+        doc.text(`${line.gstRatePercent/2}%`, (C as any).cgstPct, rowY, { width: 24, align: "right" });
+        doc.text(fmtMinor(cgstAmt, code),     (C as any).cgstAmt, rowY, { width: 38, align: "right" });
+        doc.text(`${line.gstRatePercent/2}%`, (C as any).sgstPct, rowY, { width: 24, align: "right" });
+        doc.text(fmtMinor(sgstAmt, code),     (C as any).sgstAmt, rowY, { width: 38, align: "right" });
       }
-      doc.text(fmtMinor(line.taxableMinor, code), (C as any).amt, rowY, { width: 60, align: "right" });
+      doc.text(fmtMinor(line.taxableMinor, code), (C as any).amt, rowY, { width: 58, align: "right" });
 
       doc.y = rowY + rowH;
-      doc.moveTo(left, doc.y - 1)
-         .lineTo(left + pageWidth, doc.y - 1)
+      doc.moveTo(left, doc.y - 1).lineTo(left + pageWidth, doc.y - 1)
          .strokeColor(RULE_LIGHT).lineWidth(0.3).stroke();
     });
 
-    doc.y += 6;
+    doc.y += 8;
 
-    // ── Summary block ─────────────────────────────────────────────────────────
-    const summaryLabelX = left + pageWidth * 0.50;
-    const summaryValX   = left + pageWidth * 0.80;
-    const summaryW      = pageWidth * 0.28;
-    const valW          = pageWidth * 0.20;
+    // ── Summary ───────────────────────────────────────────────────────────────
+    const sLabelX = left + pageWidth * 0.50;
+    const sValX   = left + pageWidth * 0.80;
+    const sLabelW = pageWidth * 0.28;
+    const sValW   = pageWidth * 0.20;
     let sy = doc.y;
+
+    // "Items in Total" shown left-aligned, same row as Sub Total
+    doc.fontSize(7.5).font("Helvetica").fillColor(TEXT_MUTED)
+       .text(`Items in Total  ${qtySum.toFixed(2)}`, left, sy, { width: pageWidth * 0.40 });
 
     const addRow = (label: string, value: string, bold = false, highlight = false) => {
       if (highlight) {
-        doc.rect(left + pageWidth * 0.48, sy - 3, pageWidth * 0.52 + 2, 17).fill(BRAND_DARK);
-        doc.fillColor(INV_WHITE).fontSize(8.5).font("Helvetica-Bold");
+        doc.rect(left + pageWidth * 0.47, sy - 3, pageWidth * 0.53 + 2, 18).fill(BRAND_DARK);
+        doc.fillColor(INV_WHITE).fontSize(9).font("Helvetica-Bold");
       } else {
         doc.fillColor(bold ? TEXT_BODY : TEXT_MUTED)
            .fontSize(bold ? 8 : 7.5)
            .font(bold ? "Helvetica-Bold" : "Helvetica");
       }
-      doc.text(label, summaryLabelX, sy, { width: summaryW, align: "right" });
-      doc.text(value, summaryValX,   sy, { width: valW,     align: "right" });
+      doc.text(label, sLabelX, sy, { width: sLabelW, align: "right" });
+      doc.text(value, sValX,   sy, { width: sValW,   align: "right" });
       if (!highlight) {
-        doc.moveTo(summaryLabelX, sy + 12)
-           .lineTo(left + pageWidth, sy + 12)
+        doc.moveTo(sLabelX, sy + 13).lineTo(left + pageWidth, sy + 13)
            .strokeColor(RULE_LIGHT).lineWidth(0.3).stroke();
       }
-      sy += 15;
+      sy += 16;
       doc.fillColor(TEXT_BODY);
     };
 
@@ -589,23 +435,110 @@ export function buildGstInvoicePdf(input: GstInvoiceInput): Promise<Buffer> {
       if (input.interState) {
         if (b.igst > 0) addRow(`IGST (${rate}%)`, fmtMinor(b.igst, code));
       } else {
-        if (b.cgst > 0) addRow(`CGST${rate / 2} (${rate / 2}%)`, fmtMinor(b.cgst, code));
-        if (b.sgst > 0) addRow(`SGST${rate / 2} (${rate / 2}%)`, fmtMinor(b.sgst, code));
+        if (b.cgst > 0) addRow(`CGST${rate/2} (${rate/2}%)`, fmtMinor(b.cgst, code));
+        if (b.sgst > 0) addRow(`SGST${rate/2} (${rate/2}%)`, fmtMinor(b.sgst, code));
       }
     }
-
     if (input.shippingInPaise > 0) {
       addRow("Shipping charge", fmtMinor(input.shippingInPaise, code));
     }
-
     const computedTotal = taxableSum + taxSum + input.shippingInPaise - input.discountInPaise;
     const roundOff      = input.grandTotalInPaise - computedTotal;
     if (Math.abs(roundOff) >= 1) {
       const sign = roundOff < 0 ? "(-)" : "(+)";
       addRow(`Round Off ${sign}`, fmtMinor(Math.abs(roundOff), code));
     }
+    sy += 2;
+    addRow("Total", fmtTotal(input.grandTotalInPaise, code), true, true);
 
-    addRow("Items in Total", qtySum.toFixed(2));
+    doc.y = Math.max(doc.y, sy + 8);
+    renderInvoiceFooter(doc, input, input.grandTotalInPaise);
+    doc.end();
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// buildCommercialInvoicePdf  (international — unchanged logic, updated style)
+// ─────────────────────────────────────────────────────────────────────────────
+function buildCommercialInvoicePdf(input: GstInvoiceInput): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 42, size: "A4" });
+    const chunks: Buffer[] = [];
+    doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+    doc.on("end",  () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+
+    const code      = currencyCode(input);
+    const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const left      = doc.page.margins.left;
+
+    renderInvoiceHeader(doc, input, "Invoice", { showGstin: false, showPlaceOfSupply: false });
+
+    const cols = { num: left, item: left+18, qty: left+300, rate: left+340, amt: left+410 };
+
+    const thY = doc.y;
+    doc.rect(left - 2, thY - 3, pageWidth + 4, 17).fill(BRAND_DARK);
+    doc.fontSize(6.5).font("Helvetica-Bold").fillColor(INV_WHITE);
+    doc.text("#",      cols.num,  thY, { width: 14 });
+    doc.text("Item",   cols.item, thY, { width: 260 });
+    doc.text("Qty",    cols.qty,  thY, { width: 36, align: "right" });
+    doc.text("Rate",   cols.rate, thY, { width: 56, align: "right" });
+    doc.text("Amount", cols.amt,  thY, { width: 60, align: "right" });
+    doc.y = thY + 17 + 2;
+    doc.fillColor(TEXT_BODY);
+
+    let merchandiseSum = 0, qtySum = 0;
+    input.items.forEach((line, idx) => {
+      const rowY   = doc.y;
+      const rowH   = Math.max(18, Math.ceil(line.name.length / 36) * 10 + 6);
+      const unitMn = line.qty > 0 ? Math.round(line.lineTotalInPaise / line.qty) : line.lineTotalInPaise;
+      merchandiseSum += line.lineTotalInPaise;
+      qtySum         += line.qty;
+
+      if (idx % 2 === 1) doc.rect(left - 2, rowY - 2, pageWidth + 4, rowH).fill(ROW_ALT);
+
+      doc.fontSize(7.5).font("Helvetica").fillColor(TEXT_BODY);
+      doc.text(String(idx + 1),                      cols.num,  rowY, { width: 14 });
+      doc.text(line.name,                            cols.item, rowY, { width: 260 });
+      doc.text(line.qty.toFixed(2),                  cols.qty,  rowY, { width: 36, align: "right" });
+      doc.text(fmtMinor(unitMn, code),               cols.rate, rowY, { width: 56, align: "right" });
+      doc.text(fmtMinor(line.lineTotalInPaise, code), cols.amt, rowY, { width: 60, align: "right" });
+      doc.y = rowY + rowH;
+      doc.moveTo(left, doc.y - 1).lineTo(left + pageWidth, doc.y - 1)
+         .strokeColor(RULE_LIGHT).lineWidth(0.3).stroke();
+    });
+
+    doc.y += 8;
+    const sLabelX = left + pageWidth * 0.50;
+    const sValX   = left + pageWidth * 0.80;
+    const sLabelW = pageWidth * 0.28;
+    const sValW   = pageWidth * 0.20;
+    let sy = doc.y;
+
+    doc.fontSize(7.5).font("Helvetica").fillColor(TEXT_MUTED)
+       .text(`Items in Total  ${qtySum.toFixed(2)}`, left, sy, { width: pageWidth * 0.40 });
+
+    const addRow = (label: string, value: string, bold = false, highlight = false) => {
+      if (highlight) {
+        doc.rect(left + pageWidth * 0.47, sy - 3, pageWidth * 0.53 + 2, 18).fill(BRAND_DARK);
+        doc.fillColor(INV_WHITE).fontSize(9).font("Helvetica-Bold");
+      } else {
+        doc.fillColor(bold ? TEXT_BODY : TEXT_MUTED).fontSize(bold ? 8 : 7.5)
+           .font(bold ? "Helvetica-Bold" : "Helvetica");
+      }
+      doc.text(label, sLabelX, sy, { width: sLabelW, align: "right" });
+      doc.text(value, sValX,   sy, { width: sValW,   align: "right" });
+      if (!highlight) {
+        doc.moveTo(sLabelX, sy + 13).lineTo(left + pageWidth, sy + 13)
+           .strokeColor(RULE_LIGHT).lineWidth(0.3).stroke();
+      }
+      sy += 16;
+      doc.fillColor(TEXT_BODY);
+    };
+
+    addRow("Sub Total", fmtMinor(merchandiseSum, code));
+    if (input.discountInPaise > 0) addRow("Discount", `-${fmtMinor(input.discountInPaise, code)}`);
+    if (input.shippingInPaise > 0) addRow("Shipping charge", fmtMinor(input.shippingInPaise, code));
     sy += 2;
     addRow("Total", fmtTotal(input.grandTotalInPaise, code), true, true);
 
