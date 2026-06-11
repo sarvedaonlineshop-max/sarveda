@@ -36,6 +36,7 @@ type CartDataState = {
   discountInPaise: number;
   totalInPaise: number;
   coupon: import("@/lib/cart-api").CartCouponInfo | null;
+  couponRejected: import("@/lib/cart-api").CartCouponRejected | null;
   currency: string;
   itemCount: number;
   isDigitalOnly: boolean;
@@ -70,6 +71,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [discountInPaise, setDiscountInPaise] = useState(0);
   const [totalInPaise, setTotalInPaise] = useState(0);
   const [coupon, setCoupon] = useState<import("@/lib/cart-api").CartCouponInfo | null>(null);
+  const [couponRejected, setCouponRejected] = useState<
+    import("@/lib/cart-api").CartCouponRejected | null
+  >(null);
   const [currency, setCurrency] = useState("INR");
   const [itemCount, setItemCount] = useState(0);
   const [isDigitalOnly, setIsDigitalOnly] = useState(false);
@@ -92,6 +96,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setDiscountInPaise(data.discountInPaise ?? 0);
     setTotalInPaise(data.totalInPaise ?? data.subtotalInPaise);
     setCoupon(data.coupon ?? null);
+    setCouponRejected(data.couponRejected ?? null);
     setCurrency(data.currency ?? "INR");
     setItemCount(data.itemCount ?? data.items.reduce((n, i) => n + i.quantity, 0));
     setIsDigitalOnly(Boolean(data.isDigitalOnly));
@@ -115,6 +120,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setDiscountInPaise(0);
         setTotalInPaise(0);
         setCoupon(null);
+        setCouponRejected(null);
         setCurrency("INR");
         setItemCount(0);
         setIsDigitalOnly(false);
@@ -295,6 +301,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       discountInPaise,
       totalInPaise,
       coupon,
+      couponRejected,
       currency,
       itemCount,
       isDigitalOnly,
@@ -312,6 +319,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       discountInPaise,
       totalInPaise,
       coupon,
+      couponRejected,
       currency,
       itemCount,
       isDigitalOnly,

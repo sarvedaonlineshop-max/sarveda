@@ -56,6 +56,19 @@ async function countCouponUsesForUser(code: string, userId: string): Promise<num
   });
 }
 
+export function couponUserMessage(err: unknown, fallback: string): string {
+  if (
+    err &&
+    typeof err === "object" &&
+    "userMessage" in err &&
+    typeof (err as { userMessage: unknown }).userMessage === "string"
+  ) {
+    return (err as { userMessage: string }).userMessage;
+  }
+  if (err instanceof Error && err.message) return err.message;
+  return fallback;
+}
+
 export function couponError(
   message: string,
   code: string,

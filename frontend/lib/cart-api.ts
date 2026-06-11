@@ -70,6 +70,11 @@ export function preserveCartItemOrder(
   return ordered;
 }
 
+export type CartCouponRejected = {
+  code: string;
+  message: string;
+};
+
 export type CartApiResponse = {
   items: CartApiItem[];
   /** Minor units for `currency` (paise, cents, or pence). */
@@ -77,6 +82,8 @@ export type CartApiResponse = {
   discountInPaise?: number;
   totalInPaise?: number;
   coupon?: CartCouponInfo | null;
+  /** Set when a saved coupon was removed because it is not valid for this cart/account. */
+  couponRejected?: CartCouponRejected | null;
   itemCount: number;
   currency: string;
   isDigitalOnly?: boolean;

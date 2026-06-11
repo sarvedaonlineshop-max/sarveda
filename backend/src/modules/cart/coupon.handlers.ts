@@ -67,7 +67,7 @@ export async function applyCoupon(req: Request, res: Response, next: NextFunctio
 
 export async function removeCoupon(req: Request, res: Response, next: NextFunction) {
   try {
-    const { cartId, newSessionId } = await resolveCartContext(req, "write");
+    const { cartId, newSessionId, userId } = await resolveCartContext(req, "write");
     if (!cartId) {
       res.status(400).json({
         success: false,
@@ -77,7 +77,7 @@ export async function removeCoupon(req: Request, res: Response, next: NextFuncti
       return;
     }
     await removeCouponFromCart(cartId);
-    const payload = await getCartPayload(cartId, pricingCountry(req));
+    const payload = await getCartPayload(cartId, pricingCountry(req), { userId });
     res.json({
       success: true,
       data: { ...payload, sessionId: newSessionId }

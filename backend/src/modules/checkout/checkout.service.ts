@@ -14,7 +14,7 @@ import { confirmStockTx, reserveStockTx, cancelUnpaidOrderWithRelease } from "..
 import { afterOrderPaid } from "../orders/afterPaid";
 import { invoiceNumberForOrder } from "../../utils/invoice";
 import { getCartPayload, resolveCartContext } from "../cart/cart.service";
-import { resolveCartCouponDiscount } from "../coupons/coupon.service";
+import { couponError, couponUserMessage, resolveCartCouponDiscount } from "../coupons/coupon.service";
 import {
   computeVariantShippingTotal,
   currencyForZone,
@@ -248,9 +248,22 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
     throw e;
   }
 
+  const cartCouponRow = await prisma.cart.findUnique({
+    where: { id: cartId },
+    select: { couponCode: true }
+  });
+
   const cartData = await getCartPayload(cartId, body.country ?? "IN", {
     userId: userId ?? null
   });
+
+  if (cartData.couponRejected) {
+    throw couponError(
+      `${cartData.couponRejected.code}: ${cartData.couponRejected.message}`,
+      "COUPON_REJECTED"
+    );
+  }
+
   if (!cartData.items.length) {
     const e = new Error("Cart is empty") as Error & { statusCode: number; code: string };
     e.statusCode = 400;
@@ -314,15 +327,24 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
         cod: Boolean(body.codDelivery) && zone === "IN"
       });
 
-  const cartRow = await prisma.cart.findUnique({
-    where: { id: cartId },
-    select: { couponCode: true }
-  });
-  const { discountInPaise, coupon: appliedCoupon } = await resolveCartCouponDiscount(
-    subtotalMinor,
-    cartRow?.couponCode,
-    { userId: userId ?? null, email: body.email }
-  );
+  let discountInPaise = 0;
+  let appliedCoupon: Awaited<ReturnType<typeof resolveCartCouponDiscount>>["coupon"] = null;
+  const pendingCouponCode = cartCouponRow?.couponCode ?? cartData.coupon?.code ?? null;
+
+  if (pendingCouponCode) {
+    try {
+      const resolved = await resolveCartCouponDiscount(subtotalMinor, pendingCouponCode, {
+        userId: userId ?? null
+      });
+      discountInPaise = resolved.discountInPaise;
+      appliedCoupon = resolved.coupon;
+    } catch (err) {
+      throw couponError(
+        `${pendingCouponCode}: ${couponUserMessage(err, "This coupon cannot be used on this order.")}`,
+        "COUPON_REJECTED"
+      );
+    }
+  }
   const taxInPaise = 0;
   const grandTotalInPaise = subtotalMinor - discountInPaise + shippingInPaise + taxInPaise;
   const orderCurrency = currencyForZone(zone);

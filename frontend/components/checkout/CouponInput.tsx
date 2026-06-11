@@ -7,12 +7,14 @@ import {
   applyCartCoupon,
   fetchCheckoutCouponOffers,
   removeCartCoupon,
+  type CartCouponRejected,
   type CheckoutCouponOffer
 } from "@/lib/cart-api";
 
 type Props = {
   isLoggedIn?: boolean;
   shippingCountry?: string;
+  couponRejected?: CartCouponRejected | null;
   appliedCode?: string | null;
   discountInPaise?: number;
   currency?: string;
@@ -22,6 +24,7 @@ type Props = {
 export function CouponInput({
   isLoggedIn = false,
   shippingCountry,
+  couponRejected,
   appliedCode,
   discountInPaise = 0,
   currency = "INR",
@@ -37,6 +40,9 @@ export function CouponInput({
     currency === "INR"
       ? `₹${(discountInPaise / 100).toLocaleString("en-IN")}`
       : `${(discountInPaise / 100).toFixed(2)} ${currency}`;
+
+  const eligibleOffers = offers.filter((o) => o.eligible);
+  const ineligibleOffers = offers.filter((o) => !o.eligible);
 
   const loadOffers = useCallback(async () => {
     if (!isLoggedIn) {
@@ -64,6 +70,12 @@ export function CouponInput({
   useEffect(() => {
     if (appliedCode) setError(null);
   }, [appliedCode]);
+
+  useEffect(() => {
+    if (couponRejected) {
+      setError(`${couponRejected.code}: ${couponRejected.message}`);
+    }
+  }, [couponRejected]);
 
   async function applyCode(couponCode: string) {
     setBusy(true);
@@ -124,9 +136,15 @@ export function CouponInput({
     <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-4">
       <p className="text-sm font-semibold text-stone-800">Coupon code</p>
       <p className="mt-1 text-xs text-stone-500">
-        Apply or remove coupons freely before you pay. A one-time coupon only becomes unavailable after you
-        complete a paid order with it.
+        Coupons are checked against your Sarveda account before they can be applied. Invalid codes are
+        rejected here — not silently removed at payment.
       </p>
+
+      {couponRejected && !appliedCode ? (
+        <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800" role="alert">
+          <span className="font-semibold font-mono">{couponRejected.code}</span>: {couponRejected.message}
+        </p>
+      ) : null}
 
       {appliedCode ? (
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50/80 px-3 py-2">
@@ -148,37 +166,44 @@ export function CouponInput({
         </div>
       ) : (
         <>
-          {!offersLoading && offers.length > 0 ? (
+          {!offersLoading && eligibleOffers.length > 0 ? (
             <div className="mt-3">
-              <p className="text-xs font-medium text-stone-600">Available offers</p>
+              <p className="text-xs font-medium text-stone-600">Available for your account</p>
               <div className="mt-2 flex flex-wrap gap-2">
-                {offers.map((offer) => (
+                {eligibleOffers.map((offer) => (
                   <button
                     key={offer.code}
                     type="button"
-                    disabled={busy || !offer.eligible}
-                    title={
-                      offer.eligible
-                        ? `Apply ${offer.code}`
-                        : offer.ineligibleReason ?? "Not available"
-                    }
+                    disabled={busy}
+                    title={`Apply ${offer.code}`}
                     onClick={() => void applyCode(offer.code)}
-                    className={`rounded-full border px-3 py-1.5 text-left text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
-                      offer.eligible
-                        ? "border-amber-300 bg-amber-50 text-amber-950 hover:border-amber-500 hover:bg-amber-100"
-                        : "border-stone-200 bg-stone-100 text-stone-500"
-                    }`}
+                    className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1.5 text-left text-xs font-semibold text-amber-950 transition-colors hover:border-amber-500 hover:bg-amber-100 disabled:opacity-50"
                   >
                     <span className="font-mono">{offer.code}</span>
                     <span className="ml-1.5 font-normal opacity-90">{offer.label}</span>
                   </button>
                 ))}
               </div>
-              {offers.some((o) => !o.eligible) ? (
-                <p className="mt-2 text-xs text-stone-500">
-                  Greyed-out offers may already be used on your account or do not apply to your cart total.
-                </p>
-              ) : null}
+            </div>
+          ) : null}
+
+          {!offersLoading && ineligibleOffers.length > 0 ? (
+            <div className="mt-3">
+              <p className="text-xs font-medium text-stone-600">Not available for your account</p>
+              <ul className="mt-2 space-y-2">
+                {ineligibleOffers.map((offer) => (
+                  <li
+                    key={offer.code}
+                    className="rounded-lg border border-stone-200 bg-stone-100/80 px-3 py-2 text-xs text-stone-600"
+                  >
+                    <span className="font-mono font-semibold text-stone-700">{offer.code}</span>
+                    <span className="ml-1.5">{offer.label}</span>
+                    {offer.ineligibleReason ? (
+                      <span className="mt-0.5 block text-stone-500">{offer.ineligibleReason}</span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
             </div>
           ) : null}
 

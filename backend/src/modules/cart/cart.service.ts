@@ -6,7 +6,7 @@ import { prisma } from "../../config/db";
 import { clearAbandonedCartEmailDedup } from "../../jobs/abandonedNotificationJob";
 import { unitMinorForZone } from "../../utils/variantPricing";
 import { isDigitalLine } from "../../utils/digitalCart";
-import { resolveCartCouponDiscount } from "../coupons/coupon.service";
+import { couponUserMessage, resolveCartCouponDiscount } from "../coupons/coupon.service";
 import { currencyForZone, zoneFromCountry } from "../shipping/shippingRates.service";
 
 const CART_HEADER = "x-sarveda-cart-session";
@@ -197,6 +197,7 @@ export async function getCartPayload(
         value: number;
         discountInPaise: number;
       },
+      couponRejected: null as null | { code: string; message: string },
       isDigitalOnly: false
     };
   }
@@ -296,9 +297,14 @@ export async function getCartPayload(
     value: number;
     discountInPaise: number;
   } | null = null;
+  let couponRejected: { code: string; message: string } | null = null;
 
   if (cart.couponCode) {
     if (!opts?.userId) {
+      couponRejected = {
+        code: cart.couponCode,
+        message: "Sign in to your Sarveda account to use coupon codes."
+      };
       await prisma.cart.update({
         where: { id: cartId },
         data: { couponCode: null }
@@ -310,7 +316,11 @@ export async function getCartPayload(
         });
         discountInPaise = resolved.discountInPaise;
         coupon = resolved.coupon;
-      } catch {
+      } catch (err) {
+        couponRejected = {
+          code: cart.couponCode,
+          message: couponUserMessage(err, "This coupon is not valid for your cart.")
+        };
         await prisma.cart.update({
           where: { id: cartId },
           data: { couponCode: null }
@@ -321,7 +331,17 @@ export async function getCartPayload(
 
   const totalInPaise = Math.max(0, subtotalInPaise - discountInPaise);
 
-  return { items, subtotalInPaise, itemCount, currency, discountInPaise, totalInPaise, coupon, isDigitalOnly };
+  return {
+    items,
+    subtotalInPaise,
+    itemCount,
+    currency,
+    discountInPaise,
+    totalInPaise,
+    coupon,
+    couponRejected,
+    isDigitalOnly
+  };
 }
 
 export async function addCartItem(

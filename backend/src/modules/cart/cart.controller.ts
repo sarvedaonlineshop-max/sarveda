@@ -69,7 +69,7 @@ export async function get(req: Request, res: Response, next: NextFunction) {
 
 export async function update(req: Request, res: Response, next: NextFunction) {
   try {
-    const { cartId } = await resolveCartContext(req, "write");
+    const { cartId, userId } = await resolveCartContext(req, "write");
     if (!cartId) {
       res.status(400).json({
         success: false,
@@ -80,7 +80,7 @@ export async function update(req: Request, res: Response, next: NextFunction) {
     }
     const body = req.body as CartUpdateBody;
     await updateCartItemQuantity(cartId, body.variantId, body.quantity);
-    const payload = await getCartPayload(cartId, pricingCountry(req));
+    const payload = await getCartPayload(cartId, pricingCountry(req), { userId });
     res.json({ success: true, data: payload });
   } catch (err) {
     next(err);
@@ -135,7 +135,7 @@ export async function mergeSession(req: Request, res: Response, next: NextFuncti
 
 export async function remove(req: Request, res: Response, next: NextFunction) {
   try {
-    const { cartId } = await resolveCartContext(req, "write");
+    const { cartId, userId } = await resolveCartContext(req, "write");
     if (!cartId) {
       res.status(400).json({
         success: false,
@@ -150,7 +150,7 @@ export async function remove(req: Request, res: Response, next: NextFunction) {
       return;
     }
     await removeCartItem(cartId, variantId);
-    const payload = await getCartPayload(cartId, pricingCountry(req));
+    const payload = await getCartPayload(cartId, pricingCountry(req), { userId });
     res.json({ success: true, data: payload });
   } catch (err) {
     next(err);

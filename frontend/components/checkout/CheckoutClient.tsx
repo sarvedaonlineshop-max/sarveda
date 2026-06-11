@@ -74,6 +74,7 @@ export function CheckoutClient() {
     subtotalInPaise,
     discountInPaise,
     coupon,
+    couponRejected,
     currency,
     itemCount,
     isDigitalOnly,
@@ -381,6 +382,7 @@ export function CheckoutClient() {
             <CouponInput
               isLoggedIn={isLoggedIn}
               shippingCountry={form.country}
+              couponRejected={couponRejected}
               appliedCode={coupon?.code}
               discountInPaise={discountInPaise}
               currency={currency}
