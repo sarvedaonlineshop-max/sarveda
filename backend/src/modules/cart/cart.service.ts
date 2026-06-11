@@ -375,6 +375,54 @@ export async function addCartItem(
   await markCartMutated(cartId);
 }
 
+/** Set exact line quantity (create or replace) — used for reorder-from-cancelled. */
+export async function setCartItemQuantity(
+  cartId: string,
+  variantId: string,
+  quantity: number
+): Promise<void> {
+  if (quantity < 1) {
+    await prisma.cartItem.deleteMany({ where: { cartId, variantId } });
+    await markCartMutated(cartId);
+    return;
+  }
+
+  const variant = await prisma.productVariant.findFirst({
+    where: {
+      id: variantId,
+      status: "ACTIVE",
+      productRel: { deletedAt: null, status: "ACTIVE" }
+    },
+    include: { inventory: true }
+  });
+
+  if (!variant) {
+    const e = new Error("Variant not found or unavailable") as Error & {
+      statusCode: number;
+      code: string;
+    };
+    e.statusCode = 400;
+    e.code = "INVALID_VARIANT";
+    throw e;
+  }
+
+  const inv = variant.inventory;
+  const available = inv ? inv.onHand - inv.reserved : 1_000_000;
+  if (available < quantity) {
+    const e = new Error(`Only ${available} available`) as Error & { statusCode: number; code: string };
+    e.statusCode = 400;
+    e.code = "INSUFFICIENT_STOCK";
+    throw e;
+  }
+
+  await prisma.cartItem.upsert({
+    where: { cartId_variantId: { cartId, variantId } },
+    create: { cartId, variantId, quantity },
+    update: { quantity }
+  });
+  await markCartMutated(cartId);
+}
+
 export async function updateCartItemQuantity(
   cartId: string,
   variantId: string,

@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 
-import { addCartItem, getCartPayload, resolveCartContext } from "../cart/cart.service";
+import { getCartPayload, resolveCartContext, setCartItemQuantity } from "../cart/cart.service";
 import { prisma } from "../../config/db";
 import { downloadPdfFromS3, s3KeyFromStoredUrl } from "../../config/s3";
 import { invoiceNumberForOrder } from "../../utils/invoice";
@@ -338,20 +338,20 @@ export async function reorderCancelledPublic(req: Request, res: Response, next: 
       return;
     }
 
-    const added: string[] = [];
+    const restored: string[] = [];
     const skipped: Array<{ name: string; reason: string }> = [];
 
     for (const line of order.items) {
       try {
-        await addCartItem(cartId, line.variantId, line.qtyOrdered);
-        added.push(line.nameSnapshot);
+        await setCartItemQuantity(cartId, line.variantId, line.qtyOrdered);
+        restored.push(line.nameSnapshot);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unavailable";
         skipped.push({ name: line.nameSnapshot, reason: message });
       }
     }
 
-    if (added.length === 0) {
+    if (restored.length === 0) {
       res.status(400).json({
         success: false,
         error: "None of the items from this order are available right now",
@@ -371,7 +371,7 @@ export async function reorderCancelledPublic(req: Request, res: Response, next: 
       data: {
         ...payload,
         sessionId: newSessionId,
-        addedCount: added.length,
+        restoredCount: restored.length,
         skipped
       }
     });

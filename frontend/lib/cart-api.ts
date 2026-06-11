@@ -10,7 +10,7 @@ export function setAccountCartOnly(enabled: boolean): void {
   useAccountCartOnly = enabled;
 }
 
-function notifyCartChanged(data?: CartApiResponse): void {
+export function notifyCartChanged(data?: CartApiResponse): void {
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("sarveda-cart-changed", { detail: data }));
   }

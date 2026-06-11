@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { formatMinorFromPaise } from "@/lib/money";
 import type { OrderSummary } from "@/lib/orders-api";
 import { orderCancelledPageUrl, orderInvoiceDownloadUrl } from "@/lib/orders-api";
+import { reorderCancelledAndCheckout } from "@/lib/reorder-cancelled";
 
 function formatPlacedDate(value: string | null): string {
   if (!value) return "—";
@@ -70,15 +73,33 @@ function orderIsPaid(order: OrderSummary): boolean {
 }
 
 export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
+  const router = useRouter();
+  const [reorderBusy, setReorderBusy] = useState(false);
+  const [reorderErr, setReorderErr] = useState<string | null>(null);
   const email = orderAccessEmail(order, accountEmail);
   const paid = orderIsPaid(order);
   const pendingPayment = order.status === "PENDING_PAYMENT" && !paid;
   const cancelledUnpaid = order.status === "CANCELLED" && !paid;
   const detailsHref = `/order/confirmed?orderNumber=${encodeURIComponent(order.orderNumber)}&email=${encodeURIComponent(email)}`;
   const payHref = checkoutResumeHref(order.orderNumber, email);
-  const reorderHref = orderCancelledPageUrl(order.orderNumber, email);
+  const cancelledDetailsHref = orderCancelledPageUrl(order.orderNumber, email);
   const { title, sub } = statusHeadline(order);
   const totalLabel = formatMinorFromPaise(order.grandTotalInPaise, order.currency);
+
+  async function handleReorder() {
+    if (!email) {
+      setReorderErr("Order email missing — open order details from your confirmation email.");
+      return;
+    }
+    setReorderBusy(true);
+    setReorderErr(null);
+    try {
+      await reorderCancelledAndCheckout(order.orderNumber, email, router);
+    } catch (err) {
+      setReorderErr(err instanceof Error ? err.message : "Could not reorder");
+      setReorderBusy(false);
+    }
+  }
 
   return (
     <article className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
@@ -118,6 +139,11 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
           <p className="mt-1 text-xs text-stone-500">
             {order.itemCount} item{order.itemCount === 1 ? "" : "s"}
           </p>
+          {reorderErr ? (
+            <p className="mt-2 text-xs text-red-600" role="alert">
+              {reorderErr}
+            </p>
+          ) : null}
         </div>
 
         {/* ── Actions ── */}
@@ -139,17 +165,19 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
             </>
           ) : cancelledUnpaid ? (
             <>
-              <Link
-                href={reorderHref}
-                className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-stone-900 px-4 text-sm font-medium text-amber-400 hover:bg-stone-700"
+              <button
+                type="button"
+                disabled={reorderBusy}
+                onClick={() => void handleReorder()}
+                className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-stone-900 px-4 text-sm font-medium text-amber-400 hover:bg-stone-700 disabled:opacity-60"
               >
-                Reorder items
-              </Link>
+                {reorderBusy ? "Adding to cart…" : "Reorder items"}
+              </button>
               <Link
-                href={detailsHref}
+                href={cancelledDetailsHref}
                 className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-stone-300 bg-white px-4 text-sm font-medium text-stone-800 hover:bg-stone-50"
               >
-                View order details
+                Why cancelled?
               </Link>
             </>
           ) : (

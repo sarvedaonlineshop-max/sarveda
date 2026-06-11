@@ -6,7 +6,8 @@ import { Suspense, useEffect, useState } from "react";
 
 import { formatMinorFromPaise } from "@/lib/money";
 import type { OrderPublic } from "@/lib/orders-api";
-import { fetchOrderPublic, reorderCancelledOrder } from "@/lib/orders-api";
+import { fetchOrderPublic } from "@/lib/orders-api";
+import { reorderCancelledAndCheckout } from "@/lib/reorder-cancelled";
 
 function CancelledInner() {
   const search = useSearchParams();
@@ -128,17 +129,13 @@ function CancelledInner() {
                 setReorderBusy(true);
                 setReorderMsg(null);
                 setReorderWarn(null);
-                void reorderCancelledOrder(orderNumber, email)
+                void reorderCancelledAndCheckout(orderNumber, email, router)
                   .then((result) => {
-                    setReorderMsg(
-                      `${result.addedCount} item${result.addedCount === 1 ? "" : "s"} added to your cart.`
-                    );
                     if (result.skipped.length > 0) {
                       setReorderWarn(
-                        `Some items could not be added: ${result.skipped.map((s) => s.name).join(", ")}`
+                        `Some items could not be restored: ${result.skipped.join(", ")}`
                       );
                     }
-                    router.push("/checkout");
                   })
                   .catch((e) => {
                     setReorderWarn(e instanceof Error ? e.message : "Could not reorder");

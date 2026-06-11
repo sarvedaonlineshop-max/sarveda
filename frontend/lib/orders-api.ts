@@ -1,4 +1,6 @@
 import { getApiBase } from "./api";
+import type { CartApiResponse } from "./cart-api";
+import { notifyCartChanged } from "./cart-api";
 
 export type OrderShipmentPublic = {
   id: string;
@@ -131,9 +133,10 @@ export function orderCancelledPageUrl(orderNumber: string, email: string): strin
 }
 
 export type ReorderResult = {
-  addedCount: number;
+  restoredCount: number;
   skipped: Array<{ name: string; reason: string }>;
   itemCount: number;
+  cart?: CartApiResponse;
 };
 
 export async function reorderCancelledOrder(orderNumber: string, email: string): Promise<ReorderResult> {
@@ -148,19 +151,25 @@ export async function reorderCancelledOrder(orderNumber: string, email: string):
   );
   const json = (await res.json()) as {
     success?: boolean;
-    data?: ReorderResult & { sessionId?: string };
+    data?: CartApiResponse & {
+      sessionId?: string;
+      restoredCount?: number;
+      skipped?: Array<{ name: string; reason: string }>;
+    };
     error?: string;
     code?: string;
   };
   if (!res.ok || !json.success || !json.data) {
-    throw new Error(json.error || "Could not add items to cart");
+    throw new Error(json.error || "Could not restore items to cart");
   }
   if (json.data.sessionId && typeof window !== "undefined") {
     localStorage.setItem("sarveda_cart_session_id", json.data.sessionId);
   }
+  notifyCartChanged(json.data);
   return {
-    addedCount: json.data.addedCount,
+    restoredCount: json.data.restoredCount ?? 0,
     skipped: json.data.skipped ?? [],
-    itemCount: json.data.itemCount
+    itemCount: json.data.itemCount,
+    cart: json.data
   };
 }
