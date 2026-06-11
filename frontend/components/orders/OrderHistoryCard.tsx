@@ -40,6 +40,8 @@ function statusHeadline(order: OrderSummary): { title: string; sub?: string } {
 
 type Props = {
   order: OrderSummary;
+  /** Logged-in account email when order.email is missing from API. */
+  accountEmail?: string;
   shipToName?: string;
 };
 
@@ -47,8 +49,16 @@ function checkoutResumeHref(orderNumber: string, email: string): string {
   return `/checkout?${new URLSearchParams({ orderNumber, email }).toString()}`;
 }
 
-function orderAccessEmail(order: OrderSummary): string {
-  return order.email.trim().toLowerCase();
+function orderAccessEmail(order: OrderSummary, accountEmail?: string): string {
+  const raw = order.email?.trim() || accountEmail?.trim() || "";
+  return raw.toLowerCase();
+}
+
+function shipToLabel(order: OrderSummary, accountEmail?: string, shipToName?: string): string {
+  if (shipToName?.trim()) return shipToName.trim();
+  const email = orderAccessEmail(order, accountEmail);
+  if (!email) return "—";
+  return email.split("@")[0] ?? "—";
 }
 
 function orderIsPaid(order: OrderSummary): boolean {
@@ -59,8 +69,8 @@ function orderIsPaid(order: OrderSummary): boolean {
   return false;
 }
 
-export function OrderHistoryCard({ order, shipToName }: Props) {
-  const email = orderAccessEmail(order);
+export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
+  const email = orderAccessEmail(order, accountEmail);
   const paid = orderIsPaid(order);
   const pendingPayment = order.status === "PENDING_PAYMENT" && !paid;
   const cancelledUnpaid = order.status === "CANCELLED" && !paid;
@@ -86,7 +96,7 @@ export function OrderHistoryCard({ order, shipToName }: Props) {
         </div>
         <div>
           <p className="font-semibold uppercase tracking-wide text-stone-500">Ship to</p>
-          <p className="mt-0.5 font-medium text-stone-900">{shipToName ?? "—"}</p>
+          <p className="mt-0.5 font-medium text-stone-900">{shipToLabel(order, accountEmail, shipToName)}</p>
         </div>
         <div className="sm:text-right">
           <p className="font-semibold uppercase tracking-wide text-stone-500">Order #</p>

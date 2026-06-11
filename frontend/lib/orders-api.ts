@@ -51,7 +51,8 @@ export type OrderPublic = {
 
 export type OrderSummary = {
   orderNumber: string;
-  email: string;
+  /** Checkout email — present once backend is updated; fall back to account email in UI. */
+  email?: string;
   status: string;
   paymentStatus: string;
   paymentProvider?: string | null;
