@@ -348,6 +348,15 @@ function buildCourseExtra(
     extra.videoLink = v || null;
   }
 
+  if (!extra.startDate && !extra.endDate) {
+    const schedule = extra.schedule;
+    if (Array.isArray(schedule) && schedule.length > 0) {
+      const row = schedule[0] as { startDate?: string | null; endDate?: string | null };
+      if (row.startDate) extra.startDate = row.startDate;
+      if (row.endDate) extra.endDate = row.endDate;
+    }
+  }
+
   return extra as Prisma.InputJsonValue;
 }
 

@@ -73,7 +73,24 @@ type ShipmentRow = {
   pickupLocation?: { id: string; label: string; shiprocketPickupName: string } | null;
 };
 
-type PaymentRow = { provider: string };
+type RefundRow = {
+  id: string;
+  amountInPaise: number;
+  reason?: string | null;
+  providerRefundId?: string | null;
+  status: string;
+  createdAt: string;
+};
+
+type PaymentRow = {
+  provider: string;
+  status?: string;
+  providerOrderId?: string | null;
+  providerPaymentId?: string | null;
+  amountInPaise?: number;
+  refundedInPaise?: number;
+  refunds?: RefundRow[];
+};
 
 type OrderLoaded = {
   id: string;
@@ -118,9 +135,15 @@ function RefundCancelPanel({
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [confirm, setConfirm] = useState<"cancel" | "refund" | null>(null);
 
-  const canCancel = !["CANCELLED", "REFUNDED", "DELIVERED"].includes(status);
+  const terminal = ["CANCELLED", "REFUNDED", "DELIVERED"].includes(status);
   const canRefund =
-    ["PAID", "PROCESSING", "PACKED", "SHIPPED"].includes(status) && paymentStatus === "CAPTURED";
+    !terminal &&
+    paymentStatus === "CAPTURED" &&
+    ["PAID", "PROCESSING", "PACKED", "SHIPPED"].includes(status);
+  const canCancel =
+    !terminal &&
+    !canRefund &&
+    (status === "PENDING_PAYMENT" || paymentStatus === "PENDING" || paymentStatus === "FAILED");
 
   async function execute(action: "cancel" | "refund") {
     setBusy(true);
@@ -133,9 +156,17 @@ function RefundCancelPanel({
         credentials: "include",
         body: JSON.stringify({ reason: reason.trim() || undefined })
       });
-      const data = (await res.json()) as { message?: string; error?: string };
+      const data = (await res.json()) as {
+        message?: string;
+        error?: string;
+        refundId?: string;
+      };
       if (!res.ok) throw new Error(data.error ?? "Failed");
-      setMsg({ text: data.message ?? "Done", ok: true });
+      const detail =
+        action === "refund" && data.refundId
+          ? `${data.message ?? "Refund initiated."} Refund ID: ${data.refundId}`
+          : (data.message ?? "Done");
+      setMsg({ text: detail, ok: true });
       onDone();
     } catch (err) {
       setMsg({
@@ -160,7 +191,7 @@ function RefundCancelPanel({
       }}
     >
       <p style={{ fontSize: "13px", fontWeight: 700, color: "#2c2420", marginBottom: "12px" }}>
-        Refund / Cancel
+        {canRefund ? "Refund" : "Cancel order"}
       </p>
 
       <input
@@ -233,8 +264,8 @@ function RefundCancelPanel({
         >
           <p style={{ fontSize: "13px", color: "#991b1b", marginBottom: "10px" }}>
             {confirm === "refund"
-              ? "This will refund the customer via the original payment method. Are you sure?"
-              : "Cancel this order? Stock will be restored."}
+              ? "Refund the full amount to the customer’s original payment method and restore stock?"
+              : "Cancel this unpaid order and release reserved stock?"}
           </p>
           <div style={{ display: "flex", gap: "8px" }}>
             <button
@@ -302,7 +333,22 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
   }));
   const addresses = (raw.addresses as AddressRow[]) ?? [];
   const shipments = (raw.shipments as ShipmentRow[]) ?? [];
-  const payments = (raw.payments as PaymentRow[]) ?? [];
+  const payments = ((raw.payments as Array<Record<string, unknown>>) ?? []).map((p) => ({
+    provider: String(p.provider),
+    status: p.status != null ? String(p.status) : undefined,
+    providerOrderId: p.providerOrderId != null ? String(p.providerOrderId) : null,
+    providerPaymentId: p.providerPaymentId != null ? String(p.providerPaymentId) : null,
+    amountInPaise: p.amountInPaise != null ? Number(p.amountInPaise) : undefined,
+    refundedInPaise: p.refundedInPaise != null ? Number(p.refundedInPaise) : undefined,
+    refunds: ((p.refunds as Array<Record<string, unknown>>) ?? []).map((r) => ({
+      id: String(r.id),
+      amountInPaise: Number(r.amountInPaise),
+      reason: r.reason != null ? String(r.reason) : null,
+      providerRefundId: r.providerRefundId != null ? String(r.providerRefundId) : null,
+      status: String(r.status),
+      createdAt: String(r.createdAt)
+    }))
+  }));
   const legacy = raw.wooLegacyMeta as { lineItemsNote?: string } | null | undefined;
   return {
     id: String(raw.id),
@@ -1272,6 +1318,70 @@ export default function AdminOrderDetailPage() {
             Created {new Date(order.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
           </p>
         </div>
+
+        {(order.payments ?? []).some(
+          (p) => p.providerPaymentId || (p.refunds?.length ?? 0) > 0
+        ) ? (
+          <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900">
+            <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Payment &amp; refunds</h2>
+            <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+              Match these IDs in Razorpay Dashboard → Transactions → Payments → Refunds.
+            </p>
+            <ul className="mt-4 space-y-4">
+              {(order.payments ?? []).map((p, idx) => (
+                <li
+                  key={`${p.provider}-${p.providerPaymentId ?? idx}`}
+                  className="rounded-lg border border-stone-100 bg-stone-50/80 p-3 text-sm dark:border-stone-700 dark:bg-stone-800/50"
+                >
+                  <p className="font-semibold text-stone-800 dark:text-stone-100">
+                    {p.provider}
+                    {p.status ? (
+                      <span className="ml-2 text-xs font-normal uppercase text-stone-500">{p.status}</span>
+                    ) : null}
+                  </p>
+                  {p.providerPaymentId ? (
+                    <p className="mt-1 font-mono text-xs text-stone-600 dark:text-stone-300">
+                      Payment ID: {p.providerPaymentId}
+                    </p>
+                  ) : null}
+                  {p.providerOrderId ? (
+                    <p className="mt-0.5 font-mono text-xs text-stone-500 dark:text-stone-400">
+                      Order ID: {p.providerOrderId}
+                    </p>
+                  ) : null}
+                  {p.refundedInPaise != null && p.refundedInPaise > 0 ? (
+                    <p className="mt-1 text-xs text-stone-600 dark:text-stone-300">
+                      Refunded: {formatMinorFromPaise(p.refundedInPaise, order.currency)}
+                    </p>
+                  ) : null}
+                  {(p.refunds ?? []).length > 0 ? (
+                    <ul className="mt-2 space-y-2 border-t border-stone-200 pt-2 dark:border-stone-600">
+                      {(p.refunds ?? []).map((r) => (
+                        <li key={r.id} className="text-xs text-stone-600 dark:text-stone-300">
+                          {r.providerRefundId ? (
+                            <p className="font-mono font-medium text-stone-800 dark:text-stone-100">
+                              Refund ID: {r.providerRefundId}
+                            </p>
+                          ) : (
+                            <p className="font-medium text-stone-800 dark:text-stone-100">Refund (no gateway id)</p>
+                          )}
+                          <p>
+                            {formatMinorFromPaise(r.amountInPaise, order.currency)} · {r.status} ·{" "}
+                            {new Date(r.createdAt).toLocaleString("en-IN", {
+                              dateStyle: "medium",
+                              timeStyle: "short"
+                            })}
+                          </p>
+                          {r.reason ? <p className="text-stone-500">{r.reason}</p> : null}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
 
         <div className="space-y-4">
           <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Addresses</h2>

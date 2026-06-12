@@ -50,7 +50,9 @@ async function main(): Promise<void> {
       value,
       minOrderInPaise: 0,
       maxUsageTotal: usageLimit > 0 ? usageLimit : null,
-      maxUsagePerUser: usagePerUser > 0 ? usagePerUser : 1,
+      // Woo often has 5+ per user; first-order codes must stay 1 per Sarveda account.
+      maxUsagePerUser:
+        code === "WELCOME10" ? 1 : usagePerUser > 0 ? usagePerUser : 1,
       usageCount: Number.isFinite(usageCount) ? usageCount : 0,
       validFrom: null as Date | null,
       validUntil: parseExpires(item.meta),

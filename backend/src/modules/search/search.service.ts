@@ -1,4 +1,5 @@
 import { prisma } from "../../config/db";
+import { isCourseUpcomingExtra } from "../../utils/courseSchedule";
 
 export type SiteSearchType = "product" | "course" | "event" | "insight";
 
@@ -11,21 +12,6 @@ export type SiteSearchSuggestion = {
   /** Short label for UI, e.g. "Course · Upcoming" */
   label: string;
 };
-
-function parseScheduleEnd(extra: unknown): Date | null {
-  if (!extra || typeof extra !== "object") return null;
-  const row = extra as { startDate?: string; endDate?: string };
-  const raw = row.endDate?.trim() || row.startDate?.trim();
-  if (!raw) return null;
-  const d = new Date(raw);
-  return Number.isNaN(d.getTime()) ? null : d;
-}
-
-function isCourseUpcoming(extra: unknown, now = new Date()): boolean {
-  const ref = parseScheduleEnd(extra);
-  if (!ref) return false;
-  return ref >= now;
-}
 
 async function checkoutOnlyProductIds(): Promise<Set<string>> {
   const [courseVariants, eventVariants] = await Promise.all([
@@ -148,7 +134,7 @@ export async function suggestSiteSearch(q: string, limit = 10): Promise<SiteSear
   }
 
   for (const c of courses) {
-    const upcoming = isCourseUpcoming(c.extra, now);
+    const upcoming = isCourseUpcomingExtra(c.extra, now);
     const canPay =
       upcoming && (c.enrollmentMode === "CHECKOUT" || c.enrollmentMode === "BOTH") && !c.isFree;
     out.push({

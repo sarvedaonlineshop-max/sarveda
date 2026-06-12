@@ -694,7 +694,12 @@ export async function orderDetail(req: Request, res: Response, next: NextFunctio
           }
         },
         addresses: true,
-        payments: true,
+        payments: {
+          orderBy: { createdAt: "desc" },
+          include: {
+            refunds: { orderBy: { createdAt: "desc" } }
+          }
+        },
         invoice: true,
         shipments: {
           orderBy: { createdAt: "desc" },
@@ -866,11 +871,23 @@ export async function cancelOrder(req: Request, res: Response, next: NextFunctio
     }
 
     const capturedPayment = order.payments.find((p) => p.status === "CAPTURED");
-    const codPaid = order.payments.some((p) => p.provider === "COD");
+    if (capturedPayment) {
+      res.status(400).json({
+        success: false,
+        error: "This order was paid online. Use Refund to Customer instead.",
+        code: "USE_REFUND"
+      });
+      return;
+    }
 
-    if (capturedPayment || codPaid) {
-      const result = await initiateGatewayRefund(id, reason);
-      res.json(result);
+    const codPaid = order.payments.some((p) => p.provider === "COD");
+    if (codPaid && order.status !== "PENDING_PAYMENT") {
+      await handlePaidOrderStatusChange(id, "CANCELLED", reason);
+      notifyOrderEmail(id, "order_cancelled");
+      res.json({
+        success: true,
+        message: "COD order cancelled and stock restored. Arrange cash refund manually."
+      });
       return;
     }
 
