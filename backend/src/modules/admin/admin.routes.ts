@@ -8,6 +8,7 @@ import * as productsController from "../products/products.controller";
 import { createProductSchema, updateProductSchema } from "../products/schemas";
 
 import * as admin from "./admin.handlers";
+import * as enrollments from "./enrollments.handlers";
 import {
   orderAddressPatchSchema,
   orderItemWarehousesSchema,
@@ -41,6 +42,8 @@ router.use("/coupons", couponAdminRoutes);
 router.get("/dashboard", admin.dashboard);
 router.post("/jobs/cart-cleanup", admin.triggerCartCleanup);
 router.get("/customers", admin.customersList);
+router.get("/enrollments/courses", enrollments.courseEnrollmentsCourses);
+router.get("/enrollments", enrollments.courseEnrollmentsList);
 router.get("/payments/reconciliation", admin.paymentsReconciliation);
 router.get("/orders/export/pdf", admin.ordersExportPdf);
 router.get("/orders", admin.ordersList);

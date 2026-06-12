@@ -146,6 +146,58 @@ export function fetchAdminCustomers(params: { q?: string; page?: number; limit?:
   return adminFetch<CustomersListData>(`/api/admin/customers${qs ? `?${qs}` : ""}`);
 }
 
+export type CourseEnrollmentRow = {
+  id: string;
+  status: string;
+  enrolledAt: string;
+  user: { id: string; email: string; name: string | null; phone: string | null };
+  course: { id: string; slug: string; title: string };
+  order: {
+    id: string;
+    orderNumber: string;
+    grandTotalInPaise: number;
+    currency: string;
+    paymentStatus: string;
+    orderStatus: string;
+  } | null;
+};
+
+export type CourseEnrollmentsListData = {
+  items: CourseEnrollmentRow[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+};
+
+export type CourseEnrollmentFilterCourse = {
+  id: string;
+  slug: string;
+  title: string;
+  status: string;
+  enrollmentCount: number;
+};
+
+export function fetchAdminCourseEnrollments(params: {
+  q?: string;
+  courseId?: string;
+  status?: string;
+  page?: number;
+  limit?: number;
+}) {
+  const search = new URLSearchParams();
+  if (params.q) search.set("q", params.q);
+  if (params.courseId) search.set("courseId", params.courseId);
+  if (params.status) search.set("status", params.status);
+  if (params.page) search.set("page", String(params.page));
+  if (params.limit) search.set("limit", String(params.limit));
+  const qs = search.toString();
+  return adminFetch<CourseEnrollmentsListData>(`/api/admin/enrollments${qs ? `?${qs}` : ""}`);
+}
+
+export function fetchAdminEnrollmentCourses() {
+  return adminFetch<{ courses: CourseEnrollmentFilterCourse[] }>("/api/admin/enrollments/courses").then(
+    (d) => d.courses
+  );
+}
+
 export function fetchAdminOrders(
   params: { bucket?: string; page?: number; limit?: number },
   signal?: AbortSignal

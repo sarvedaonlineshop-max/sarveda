@@ -1239,7 +1239,8 @@ Day 10: 🎯 Staging URL ready → send to Arjun
 ✅ Product-category ISR fix (Vercel `DYNAMIC_SERVER_USAGE`)  
 🔄 PDP: Amazon-style 3-column (`ProductDetailExperience`, `ProductBuyBox`), pincode removed, S3 audio  
 
-⬜ **Next:** PDP user feedback + variant attributes import + reviews on PDP  
+⬜ **Next:** PDP user feedback + variant attributes import + reviews on PDP
+⬜ **LMS (future):** lesson player, enrolled-only video/content, progress — admin course enrollments list at `/admin/enrollments` ✅  
 ⬜ Confirm Razorpay + Google OAuth env on EC2/Vercel for `sarveda-demo.xyz`  
 ⬜ Email + WhatsApp + GST Invoice, Shiprocket E2E, SEO sitemaps  
 
