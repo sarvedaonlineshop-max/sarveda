@@ -214,6 +214,10 @@ export async function listProducts(query: ListProductsQuery) {
       primaryImageUrl: img,
       fromPriceInPaise: v?.saleInPaise ?? null,
       fromMrpInPaise: v?.mrpInPaise ?? null,
+      fromSaleUsdCents: v?.saleUsdCents ?? null,
+      fromMrpUsdCents: v?.mrpUsdCents ?? null,
+      fromSaleGbpPence: v?.saleGbpPence ?? null,
+      fromMrpGbpPence: v?.mrpGbpPence ?? null,
       defaultVariantId: v?.id ?? null,
       categories: p.categories.map((pc) => ({
         slug: pc.category.slug,
