@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 import type { PublicUser } from "@/lib/auth-client";
 import { fetchMe } from "@/lib/auth-client";
+import { syncPricingZoneFromGeo } from "@/lib/pricing-zone";
 
 export function useStorefrontSession(): PublicUser | null {
   const pathname = usePathname();
@@ -23,7 +24,9 @@ export function useStorefrontSession(): PublicUser | null {
 
     let cancelled = false;
     void fetchMe().then((user) => {
-      if (!cancelled) setSessionUser(user);
+      if (cancelled) return;
+      setSessionUser(user);
+      if (user) void syncPricingZoneFromGeo();
     });
 
     return () => {
@@ -43,7 +46,10 @@ export function useStorefrontSession(): PublicUser | null {
       ) {
         return;
       }
-      void fetchMe().then((user) => setSessionUser(user));
+      void fetchMe().then((user) => {
+        setSessionUser(user);
+        if (user) void syncPricingZoneFromGeo();
+      });
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);

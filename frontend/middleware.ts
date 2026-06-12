@@ -2,29 +2,32 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { ZONE_COOKIE, countryToZone, isValidZone } from "@/lib/currency";
+import { detectCountryFromHeaders } from "@/lib/geo-zone";
 
 const ZONE_COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
+const AUTH_COOKIE = "sarveda_auth";
 
 function detectCountryCode(request: NextRequest): string | null {
   const geoCountry = request.geo?.country?.trim();
   if (geoCountry) return geoCountry.toUpperCase();
-
-  const fromHeader =
-    request.headers.get("cf-ipcountry")?.trim() ||
-    request.headers.get("x-vercel-ip-country")?.trim();
-  if (fromHeader && fromHeader !== "XX") return fromHeader.toUpperCase();
-
-  return null;
+  return detectCountryFromHeaders(request.headers);
 }
 
 function ensurePricingZoneCookie(request: NextRequest, response: NextResponse): void {
   const existing = request.cookies.get(ZONE_COOKIE)?.value;
-  if (isValidZone(existing)) return;
+  const isLoggedIn = Boolean(request.cookies.get(AUTH_COOKIE)?.value);
 
   const country = detectCountryCode(request);
   if (!country) return;
 
   const zone = countryToZone(country);
+
+  // Logged-in shoppers: refresh zone from current geo on each visit.
+  // Guests: set once on first visit (sticky 30 days).
+  const shouldSet = isLoggedIn || !isValidZone(existing);
+  if (!shouldSet) return;
+  if (isValidZone(existing) && existing === zone) return;
+
   response.cookies.set({
     name: ZONE_COOKIE,
     value: zone,

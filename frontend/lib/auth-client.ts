@@ -1,5 +1,6 @@
 import { getApiBase } from "@/lib/api";
 import { mergeGuestCartSession, setAccountCartOnly } from "@/lib/cart-api";
+import { syncPricingZoneFromGeo } from "@/lib/pricing-zone";
 import { parseApiResponse } from "@/lib/parse-api-response";
 
 export type PublicUser = {
@@ -81,6 +82,7 @@ export function resolvePostLoginPath(
 
 async function completeAuthSession(user: PublicUser): Promise<PublicUser> {
   await mergeGuestCartSession();
+  await syncPricingZoneFromGeo();
   notifyAuthChanged(user);
   return user;
 }

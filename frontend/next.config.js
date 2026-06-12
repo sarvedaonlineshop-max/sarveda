@@ -17,6 +17,8 @@ const nextConfig = {
   async rewrites() {
     const dest = String(backendBase).replace(/\/$/, "");
     return [
+      // Geo zone runs on Vercel edge (uses request.geo); must not proxy to EC2.
+      // Next.js route handlers win over rewrites, but this documents intent.
       // Zoho Books — explicit proxy to EC2 (auth handled per-route on Express).
       {
         source: "/api/zoho/:path*",
