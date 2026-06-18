@@ -9,7 +9,10 @@ import { generateOrderNumber, isOrderNumberUniqueViolation } from "../../utils/o
 import { reportingNetSalesInrPaiseFromOrder } from "../../utils/money";
 import { createPayPalOrder } from "../payments/paypal";
 import { createOrder, getRazorpayKeyId } from "../payments/razorpay";
-import { createStripeCheckoutSession } from "../payments/stripe.checkout";
+import {
+  createStripeCheckoutSession,
+  type StripeCheckoutAddress
+} from "../payments/stripe.checkout";
 import { confirmStockTx, reserveStockTx, cancelUnpaidOrderWithRelease } from "../orders/orders.service";
 import { afterOrderPaid } from "../orders/afterPaid";
 import { invoiceNumberForOrder } from "../../utils/invoice";
@@ -38,6 +41,57 @@ function triStateEnv(envVal: string | undefined, defaultWhenUnset: boolean): boo
   if (["1", "true", "yes"].includes(v)) return true;
   if (["0", "false", "no"].includes(v)) return false;
   return defaultWhenUnset;
+}
+
+function stripeAddressFromCheckoutBody(body: CreateOrderBody): StripeCheckoutAddress {
+  return {
+    email: body.email.trim().toLowerCase(),
+    fullName: body.shippingFullName.trim(),
+    phone: body.phone.trim(),
+    line1: body.line1.trim(),
+    line2: body.line2?.trim() || null,
+    city: body.city.trim(),
+    state: body.state.trim(),
+    postalCode: body.postalCode.trim(),
+    country: (body.country ?? "IN").toUpperCase()
+  };
+}
+
+function stripeAddressFromOrder(
+  email: string,
+  addresses: Array<{
+    type: string;
+    fullName: string;
+    phone: string;
+    line1: string;
+    line2: string | null;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  }>
+): StripeCheckoutAddress {
+  const ship = addresses.find((a) => a.type === "SHIPPING") ?? addresses[0];
+  if (!ship) {
+    const e = new Error("Shipping address not found for this order") as Error & {
+      statusCode: number;
+      code: string;
+    };
+    e.statusCode = 400;
+    e.code = "ADDRESS_NOT_FOUND";
+    throw e;
+  }
+  return {
+    email,
+    fullName: ship.fullName,
+    phone: ship.phone,
+    line1: ship.line1,
+    line2: ship.line2,
+    city: ship.city,
+    state: ship.state,
+    postalCode: ship.postalCode,
+    country: ship.country
+  };
 }
 
 /** India + zone-A pin + cart > 5 kg → Delhivery-heavy lane; block checkout if NSZ. */
@@ -715,7 +769,8 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
       orderNumber: result.order.orderNumber,
       email: body.email.trim().toLowerCase(),
       amountMinor: grandTotalInPaise,
-      currency: orderCurrency
+      currency: orderCurrency,
+      shippingAddress: stripeAddressFromCheckoutBody(body)
     });
     await schedulePaymentTimeout(result.order.id);
     const stripePayload: CreateCheckoutResult = {
@@ -792,6 +847,7 @@ export async function resumePendingCheckout(orderNumber: string, email: string):
   const order = await prisma.order.findFirst({
     where: { orderNumber, deletedAt: null },
     include: {
+      addresses: true,
       payments: {
         where: { status: "PENDING" },
         orderBy: { createdAt: "desc" },
@@ -843,7 +899,8 @@ export async function resumePendingCheckout(orderNumber: string, email: string):
       orderNumber: order.orderNumber,
       email: normalizedEmail,
       amountMinor: order.grandTotalInPaise,
-      currency: order.currency
+      currency: order.currency,
+      shippingAddress: stripeAddressFromOrder(normalizedEmail, order.addresses)
     });
     return {
       ...base,

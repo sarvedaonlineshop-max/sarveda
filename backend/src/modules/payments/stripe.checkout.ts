@@ -1,16 +1,30 @@
+import Stripe from "stripe";
+
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 
-function stripeSecret(): string {
+function stripeClient(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY?.trim();
   if (!key) throw new Error("STRIPE_SECRET_KEY is not configured");
-  return key;
+  return new Stripe(key, { apiVersion: "2024-06-20" });
 }
 
 function siteUrl(): string {
   const u = (process.env.FRONTEND_URL ?? "http://localhost:3000").split(",")[0]?.trim();
   return (u ?? "http://localhost:3000").replace(/\/$/, "");
 }
+
+export type StripeCheckoutAddress = {
+  email: string;
+  fullName: string;
+  phone?: string;
+  line1: string;
+  line2?: string | null;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+};
 
 export async function createStripeCheckoutSession(input: {
   paymentId: string;
@@ -19,47 +33,70 @@ export async function createStripeCheckoutSession(input: {
   email: string;
   amountMinor: number;
   currency: string;
+  shippingAddress: StripeCheckoutAddress;
 }): Promise<{ url: string; sessionId: string }> {
+  const stripe = stripeClient();
   const currency = input.currency.toLowerCase();
-  const params = new URLSearchParams();
-  params.set("mode", "payment");
-  params.set("customer_email", input.email);
-  params.set("success_url", `${siteUrl()}/order/confirmed?orderNumber=${encodeURIComponent(input.orderNumber)}&email=${encodeURIComponent(input.email)}&stripe=1`);
-  params.set("cancel_url", `${siteUrl()}/checkout?orderNumber=${encodeURIComponent(input.orderNumber)}&email=${encodeURIComponent(input.email)}`);
-  params.set("client_reference_id", input.orderId);
-  params.set("metadata[sarveda_payment_id]", input.paymentId);
-  params.set("metadata[order_id]", input.orderId);
-  params.set("metadata[order_number]", input.orderNumber);
-  params.set("line_items[0][quantity]", "1");
-  params.set("line_items[0][price_data][currency]", currency);
-  params.set("line_items[0][price_data][unit_amount]", String(input.amountMinor));
-  params.set(
-    "line_items[0][price_data][product_data][name]",
-    `Sarveda order ${input.orderNumber}`
-  );
+  const email = input.email.trim().toLowerCase();
+  const addr = input.shippingAddress;
+  const country = addr.country.toUpperCase().slice(0, 2);
 
-  const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${stripeSecret()}`,
-      "Content-Type": "application/x-www-form-urlencoded"
+  const customer = await stripe.customers.create({
+    email,
+    name: addr.fullName,
+    address: {
+      line1: addr.line1,
+      line2: addr.line2 ?? undefined,
+      city: addr.city,
+      state: addr.state,
+      postal_code: addr.postalCode,
+      country
     },
-    body: params.toString()
+    phone: addr.phone ?? undefined
   });
 
-  const raw = (await res.json()) as { id?: string; url?: string; error?: { message?: string } };
-  if (!res.ok || !raw.url || !raw.id) {
-    logger.warn("stripe_checkout_create_failed", { status: res.status, error: raw.error?.message });
-    throw new Error(raw.error?.message ?? "Could not start Stripe checkout");
+  const session = await stripe.checkout.sessions.create({
+    mode: "payment",
+    customer: customer.id,
+    billing_address_collection: "auto",
+    success_url: `${siteUrl()}/order/confirmed?orderNumber=${encodeURIComponent(input.orderNumber)}&email=${encodeURIComponent(email)}&stripe=1`,
+    cancel_url: `${siteUrl()}/checkout?orderNumber=${encodeURIComponent(input.orderNumber)}&email=${encodeURIComponent(email)}`,
+    client_reference_id: input.orderId,
+    metadata: {
+      sarveda_payment_id: input.paymentId,
+      order_id: input.orderId,
+      order_number: input.orderNumber
+    },
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency,
+          unit_amount: input.amountMinor,
+          product_data: {
+            name: `Sarveda order ${input.orderNumber}`
+          }
+        }
+      }
+    ]
+  });
+
+  if (!session.url || !session.id) {
+    logger.warn("stripe_checkout_create_failed", { sessionId: session.id });
+    throw new Error("Could not start Stripe checkout");
   }
 
   await prisma.payment.update({
     where: { id: input.paymentId },
     data: {
-      providerOrderId: raw.id,
-      rawPayload: { stripeSessionId: raw.id, createdAt: new Date().toISOString() }
+      providerOrderId: session.id,
+      rawPayload: {
+        stripeSessionId: session.id,
+        stripeCustomerId: customer.id,
+        createdAt: new Date().toISOString()
+      }
     }
   });
 
-  return { url: raw.url, sessionId: raw.id };
+  return { url: session.url, sessionId: session.id };
 }
