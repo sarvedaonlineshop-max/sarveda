@@ -326,7 +326,8 @@ export async function cancelShipment(waybill: string): Promise<ApiOk<{ cancelled
 }
 
 export async function fetchPackingSlip(
-  waybill: string
+  waybill: string,
+  renderOptions?: import("./delhivery.label").LabelRenderOptions
 ): Promise<ApiOk<{ packages: DelhiveryPackingSlipPackage[]; html: string }> | ApiErr> {
   try {
     assertDelhiveryConfigured();
@@ -376,7 +377,7 @@ export async function fetchPackingSlip(
       success: true,
       data: {
         packages,
-        html: renderDelhiveryPackingSlipHtml(packages)
+        html: renderDelhiveryPackingSlipHtml(packages, renderOptions)
       }
     };
   } catch (err) {

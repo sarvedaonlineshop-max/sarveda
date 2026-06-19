@@ -487,7 +487,28 @@ export async function getAdminLabel(req: Request, res: Response, next: NextFunct
       res.status(400).json({ success: false, error: "waybill required", code: "BAD_REQUEST" });
       return;
     }
-    const result = await delhivery.fetchPackingSlip(waybill);
+
+    const shipment = await prisma.shipment.findFirst({
+      where: { awb: waybill },
+      include: {
+        order: {
+          include: {
+            items: { orderBy: { id: "asc" } }
+          }
+        }
+      }
+    });
+
+    const lineItems =
+      shipment?.order?.items.map((it) => ({
+        name: it.nameSnapshot,
+        sku: it.skuSnapshot,
+        qty: it.qtyOrdered,
+        unitPrice: it.unitPriceInPaise / 100,
+        lineTotal: it.lineTotalInPaise / 100
+      })) ?? undefined;
+
+    const result = await delhivery.fetchPackingSlip(waybill, lineItems?.length ? { lineItems } : undefined);
     if (!result.success) {
       res.status(result.code === "NOT_CONFIGURED" ? 503 : 400).json(result);
       return;
