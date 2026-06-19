@@ -505,6 +505,64 @@ export async function autoSelectAndCreate(
   }
 }
 
+function courierDisplayName(code: string): string {
+  switch (code.trim().toUpperCase()) {
+    case "DELHIVERY":
+      return "Delhivery";
+    case "SHIPROCKET":
+      return "Shiprocket";
+    case "SHIPROCKET_INTERNATIONAL":
+      return "Shiprocket International";
+    default:
+      return code.trim() || "Other";
+  }
+}
+
+function trackingUrlForManualAwb(courierCode: string, awb: string): string {
+  const upper = courierCode.trim().toUpperCase();
+  if (upper === "DELHIVERY") {
+    return `https://www.delhivery.com/track/package/${awb}`;
+  }
+  if (upper === "SHIPROCKET" || upper === "SHIPROCKET_INTERNATIONAL") {
+    return `https://shiprocket.co/tracking/${awb}`;
+  }
+  return "";
+}
+
+export async function persistManualAwb(
+  orderId: string,
+  awb: string,
+  courierCode: string
+): Promise<
+  | { success: true; data: { courier: string; waybill: string; trackingUrl: string } }
+  | { success: false; error: string; code: string }
+> {
+  const trimmed = awb.trim();
+  if (!trimmed) {
+    return { success: false, error: "AWB required", code: "BAD_REQUEST" };
+  }
+
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, deletedAt: null }
+  });
+  if (!order) {
+    return { success: false, error: "Order not found", code: "NOT_FOUND" };
+  }
+
+  const courierName = courierDisplayName(courierCode);
+  const trackingUrl = trackingUrlForManualAwb(courierCode, trimmed);
+
+  await persistShipment(orderId, courierName, trimmed, trackingUrl, null, {
+    carrier: courierCode.trim().toUpperCase(),
+    manual: true
+  });
+
+  return {
+    success: true,
+    data: { courier: courierName, waybill: trimmed, trackingUrl }
+  };
+}
+
 async function persistShipment(
   orderId: string,
   courier: string,

@@ -362,6 +362,12 @@ export function ProductForm({ productId }: { productId?: string }) {
         }
         const oh = parseNonNegativeNumber(v.onHand, false);
         if (v.onHand.trim() && oh === null) errors[`variants.${i}.onHand`] = "Stock cannot be negative.";
+        if (v.weightGrams.trim()) {
+          const wg = parseInt(v.weightGrams, 10);
+          if (!Number.isFinite(wg) || wg < 50) {
+            errors[`variants.${i}.weightGrams`] = "Weight must be at least 50 grams.";
+          }
+        }
         v.shippingRates.forEach((r, ri) => {
           for (const [key, label] of [
             ["standardPerProduct", "First-item shipping"],
@@ -538,7 +544,7 @@ export function ProductForm({ productId }: { productId?: string }) {
         saleUsdCents: v.saleUsd ? toCents(v.saleUsd) : null,
         mrpGbpPence: v.mrpGbp ? toPence(v.mrpGbp) : null,
         saleGbpPence: v.saleGbp ? toPence(v.saleGbp) : null,
-        weightGrams: parseInt(v.weightGrams, 10) || 0,
+        weightGrams: v.weightGrams.trim() ? Math.max(50, parseInt(v.weightGrams, 10) || 0) : null,
         isDefault: v.isDefault,
         status: v.status,
         onHand: parseInt(v.onHand, 10) || 0,
@@ -1073,6 +1079,27 @@ export function ProductForm({ productId }: { productId?: string }) {
                       Day-to-day stock is synced from Zoho on the Inventory page.
                     </p>
                     <FieldErr message={fieldErrors[`variants.${vi}.onHand`]} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Weight (grams)</label>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={50}
+                      value={v.weightGrams}
+                      onChange={(e) =>
+                        setVariants((prev) =>
+                          prev.map((x, i) =>
+                            i === vi ? { ...x, weightGrams: e.target.value } : x
+                          )
+                        )
+                      }
+                      placeholder="500"
+                      className={inputCls}
+                      aria-invalid={Boolean(fieldErrors[`variants.${vi}.weightGrams`])}
+                    />
+                    <p className="mt-1 text-xs text-stone-500">Min 50g. Used for shipping calculation.</p>
+                    <FieldErr message={fieldErrors[`variants.${vi}.weightGrams`]} />
                   </div>
                 </div>
                 <VariantPricingShippingTables

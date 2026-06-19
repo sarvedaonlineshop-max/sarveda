@@ -348,6 +348,24 @@ export function adminTrackShipmentByWaybill(waybill: string) {
   }>(`/api/shipping/track/${encodeURIComponent(waybill)}`);
 }
 
+export function adminSaveManualAwb(
+  orderId: string,
+  body: { awb: string; courier: "DELHIVERY" | "SHIPROCKET" | "OTHER" }
+) {
+  return adminFetch<{ courier: string; waybill: string; trackingUrl: string }>(
+    `/api/shipping/admin/manual-awb/${encodeURIComponent(orderId)}`,
+    { method: "POST", body: JSON.stringify(body) }
+  );
+}
+
+export function delhiveryLabelUrl(waybill: string): string {
+  return `/api/shipping/admin/label/${encodeURIComponent(waybill)}`;
+}
+
+export function isDelhiveryCourier(courier: string): boolean {
+  return courier.trim().toLowerCase().includes("delhivery");
+}
+
 export type AdminPickupLocationRow = {
   id: string;
   label: string;

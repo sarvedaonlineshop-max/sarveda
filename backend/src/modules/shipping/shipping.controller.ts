@@ -15,7 +15,7 @@ import {
   resolveRateCountryCode,
   zoneFromCountry
 } from "./shippingRates.service";
-import { autoSelectAndCreate } from "./router";
+import { autoSelectAndCreate, persistManualAwb } from "./router";
 
 const pincodeBody = z.object({
   pincode: z.string().min(3).max(10)
@@ -454,6 +454,56 @@ const intlRatesQuery = z.object({
   country: z.string().min(2).max(10),
   weight: z.string().min(1)
 });
+
+export async function getAdminLabel(req: Request, res: Response, next: NextFunction) {
+  try {
+    const waybill = String(req.params.waybill ?? "").trim();
+    if (!waybill) {
+      res.status(400).json({ success: false, error: "waybill required", code: "BAD_REQUEST" });
+      return;
+    }
+    const result = await delhivery.fetchLabelPdf(waybill);
+    if (!result.success) {
+      res.status(result.code === "NOT_CONFIGURED" ? 503 : 400).json(result);
+      return;
+    }
+    res.redirect(result.data.pdfUrl);
+  } catch (err) {
+    next(err);
+  }
+}
+
+const manualAwbBody = z.object({
+  awb: z.string().min(4).max(64),
+  courier: z.enum(["DELHIVERY", "SHIPROCKET", "OTHER"])
+});
+
+export async function postManualAwb(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { orderId } = req.params;
+    if (!orderId) {
+      res.status(400).json({ success: false, error: "orderId required", code: "BAD_REQUEST" });
+      return;
+    }
+    const parsed = manualAwbBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({
+        success: false,
+        error: "awb and courier (DELHIVERY | SHIPROCKET | OTHER) required",
+        code: "VALIDATION_ERROR"
+      });
+      return;
+    }
+    const result = await persistManualAwb(orderId, parsed.data.awb, parsed.data.courier);
+    if (!result.success) {
+      res.status(result.code === "NOT_FOUND" ? 404 : 400).json(result);
+      return;
+    }
+    res.json({ success: true, data: result.data });
+  } catch (err) {
+    next(err);
+  }
+}
 
 export async function internationalRates(req: Request, res: Response, next: NextFunction) {
   try {

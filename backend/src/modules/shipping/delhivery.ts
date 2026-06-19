@@ -297,3 +297,31 @@ export async function cancelShipment(waybill: string): Promise<ApiOk<{ cancelled
     return mapAxiosError(err, "DELHIVERY_CANCEL");
   }
 }
+
+export async function fetchLabelPdf(
+  waybill: string
+): Promise<ApiOk<{ pdfUrl: string }> | ApiErr> {
+  try {
+    assertDelhiveryConfigured();
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Delhivery not configured",
+      code: "NOT_CONFIGURED"
+    };
+  }
+  const headers = authHeadersJson();
+  if (!headers) {
+    return {
+      success: false,
+      error: "Not configured",
+      code: "NOT_CONFIGURED"
+    };
+  }
+  const wb = waybill.trim();
+  if (!wb) {
+    return { success: false, error: "Waybill required", code: "BAD_REQUEST" };
+  }
+  const pdfUrl = `${baseUrl()}/api/p/packing_slip?wbns=${encodeURIComponent(wb)}&token=${encodeURIComponent(shippingEnv.DELHIVERY_API_KEY)}`;
+  return { success: true, data: { pdfUrl } };
+}

@@ -8,11 +8,14 @@ import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
 import {
   adminCancelWaybill,
   adminCreateShipmentForOrder,
+  adminSaveManualAwb,
   adminSyncOrderShipments,
   adminTrackShipmentByWaybill,
+  delhiveryLabelUrl,
   fetchAdminOrderDetail,
   fetchAdminOrderInvoice,
   fetchAdminPickupLocations,
+  isDelhiveryCourier,
   patchAdminOrderAddress,
   patchAdminOrderItemWarehouses,
   patchAdminOrderPreferredCourier,
@@ -398,6 +401,8 @@ export default function AdminOrderDetailPage() {
   const [toast, setToast] = useState<{ message: string; error?: boolean } | null>(null);
   const [statusConfirm, setStatusConfirm] = useState<string | null>(null);
   const [cancelAwbConfirm, setCancelAwbConfirm] = useState<string | null>(null);
+  const [manualAwb, setManualAwb] = useState("");
+  const [manualCourier, setManualCourier] = useState<"DELHIVERY" | "SHIPROCKET" | "OTHER">("DELHIVERY");
   const [reconcileBusy, setReconcileBusy] = useState(false);
   const [addressModal, setAddressModal] = useState<AddressRow | null>(null);
   const [addrSaving, setAddrSaving] = useState(false);
@@ -598,6 +603,26 @@ export default function AdminOrderDetailPage() {
       pushToast("Shipment label created or refreshed.");
     } catch (e) {
       pushToast(e instanceof Error ? e.message : "Shipment create failed", true);
+    } finally {
+      setShipBusy(null);
+    }
+  }
+
+  async function handleSaveManualAwb() {
+    if (!id) return;
+    const awb = manualAwb.trim();
+    if (!awb) {
+      pushToast("Enter an AWB number.", true);
+      return;
+    }
+    setShipBusy("manual-awb");
+    try {
+      await adminSaveManualAwb(id, { awb, courier: manualCourier });
+      setManualAwb("");
+      await load();
+      pushToast("Manual AWB saved.");
+    } catch (e) {
+      pushToast(e instanceof Error ? e.message : "Failed to save AWB", true);
     } finally {
       setShipBusy(null);
     }
@@ -987,33 +1012,71 @@ export default function AdminOrderDetailPage() {
       ) : null}
 
       <div className="rounded-xl border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-stone-900">
-        <div className="flex flex-col gap-3 border-b border-stone-100 p-4 dark:border-stone-700 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Line items &amp; fulfillment</h2>
-            <p className="text-xs text-stone-500 dark:text-stone-400">
-              Fulfillment:{" "}
-              <span className="font-medium text-stone-700 dark:text-stone-200">{order.fulfillmentStatus}</span>
-              {order.shippingZone ? ` · Zone ${order.shippingZone}` : ""}
-            </p>
+        <div className="border-b border-stone-100 p-4 dark:border-stone-700">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Line items &amp; fulfillment</h2>
+              <p className="text-xs text-stone-500 dark:text-stone-400">
+                Fulfillment:{" "}
+                <span className="font-medium text-stone-700 dark:text-stone-200">{order.fulfillmentStatus}</span>
+                {order.shippingZone ? ` · Zone ${order.shippingZone}` : ""}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={!!shipBusy || !shipUi}
+                onClick={() => void handleSyncAllTracking()}
+                className="rounded-lg bg-stone-800 px-3 py-2 text-xs font-semibold text-amber-100 hover:bg-stone-700 disabled:opacity-50 dark:bg-stone-200 dark:text-stone-900"
+              >
+                {shipBusy === "sync-all" ? "Syncing…" : "Refresh all tracking"}
+              </button>
+              <button
+                type="button"
+                disabled={!!shipBusy || !shipUi}
+                onClick={() => void handleRetryShipment()}
+                className="rounded-lg border border-amber-600 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-500/20 disabled:opacity-50 dark:border-amber-500 dark:text-amber-200"
+              >
+                {shipBusy === "create" ? "Working…" : "Create / retry shipment"}
+              </button>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={!!shipBusy || !shipUi}
-              onClick={() => void handleSyncAllTracking()}
-              className="rounded-lg bg-stone-800 px-3 py-2 text-xs font-semibold text-amber-100 hover:bg-stone-700 disabled:opacity-50 dark:bg-stone-200 dark:text-stone-900"
-            >
-              {shipBusy === "sync-all" ? "Syncing…" : "Refresh all tracking"}
-            </button>
-            <button
-              type="button"
-              disabled={!!shipBusy || !shipUi}
-              onClick={() => void handleRetryShipment()}
-              className="rounded-lg border border-amber-600 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-500/20 disabled:opacity-50 dark:border-amber-500 dark:text-amber-200"
-            >
-              {shipBusy === "create" ? "Working…" : "Create / retry shipment"}
-            </button>
-          </div>
+          {!order.shipments.some((s) => s.awb?.trim()) ? (
+            <div className="mt-3 border-t border-stone-100 pt-3 dark:border-stone-700">
+              <p className="mb-1.5 text-[11px] text-stone-500 dark:text-stone-400">
+                Or enter AWB manually (if created in Delhivery/Shiprocket):
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <input
+                  value={manualAwb}
+                  onChange={(e) => setManualAwb(e.target.value)}
+                  placeholder="AWB number"
+                  disabled={!!shipBusy || !shipUi}
+                  className="min-w-[10rem] flex-1 rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-[13px] dark:border-stone-600 dark:bg-stone-950"
+                />
+                <select
+                  value={manualCourier}
+                  onChange={(e) =>
+                    setManualCourier(e.target.value as "DELHIVERY" | "SHIPROCKET" | "OTHER")
+                  }
+                  disabled={!!shipBusy || !shipUi}
+                  className="rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-[13px] dark:border-stone-600 dark:bg-stone-950"
+                >
+                  <option value="DELHIVERY">Delhivery</option>
+                  <option value="SHIPROCKET">Shiprocket</option>
+                  <option value="OTHER">Other</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={() => void handleSaveManualAwb()}
+                  disabled={!!shipBusy || !shipUi}
+                  className="rounded-lg bg-stone-800 px-3.5 py-1.5 text-xs font-semibold text-amber-50 hover:bg-stone-700 disabled:opacity-50 dark:bg-stone-200 dark:text-stone-900"
+                >
+                  {shipBusy === "manual-awb" ? "Saving…" : "Save"}
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
         {!shipUi ? (
           <p className="border-b border-stone-100 px-4 py-2 text-xs text-amber-900/90 dark:border-stone-700 dark:text-amber-200/90">
@@ -1197,6 +1260,16 @@ export default function AdminOrderDetailPage() {
                                 {shipBusy === `cancel-${primaryShipment.awb}` ? "…" : "Cancel label"}
                               </button>
                             ) : null}
+                            {primaryShipment.awb && isDelhiveryCourier(primaryShipment.courier) ? (
+                              <a
+                                href={delhiveryLabelUrl(primaryShipment.awb)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 rounded-lg border border-emerald-900/30 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-950 no-underline hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100"
+                              >
+                                Print label
+                              </a>
+                            ) : null}
                           </div>
                           {order.shipments.length > 1 ? (
                             <p className="text-stone-400">+{order.shipments.length - 1} more label(s) — use Refresh all</p>
@@ -1259,6 +1332,16 @@ export default function AdminOrderDetailPage() {
                             >
                               Cancel
                             </button>
+                          ) : null}
+                          {s.awb && isDelhiveryCourier(s.courier) ? (
+                            <a
+                              href={delhiveryLabelUrl(s.awb)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-semibold text-emerald-800 no-underline dark:text-emerald-300"
+                            >
+                              Print label
+                            </a>
                           ) : null}
                         </div>
                       </td>
