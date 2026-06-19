@@ -462,12 +462,14 @@ export async function getAdminLabel(req: Request, res: Response, next: NextFunct
       res.status(400).json({ success: false, error: "waybill required", code: "BAD_REQUEST" });
       return;
     }
-    const result = await delhivery.fetchLabelPdf(waybill);
+    const result = await delhivery.fetchPackingSlip(waybill);
     if (!result.success) {
       res.status(result.code === "NOT_CONFIGURED" ? 503 : 400).json(result);
       return;
     }
-    res.redirect(result.data.pdfUrl);
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Cache-Control", "no-store");
+    res.send(result.data.html);
   } catch (err) {
     next(err);
   }

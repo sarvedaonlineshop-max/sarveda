@@ -4,6 +4,8 @@ import { URLSearchParams } from "node:url";
 import { shippingEnv } from "../../config/env";
 import { logger } from "../../config/logger";
 
+import type { DelhiveryPackingSlipPackage } from "./delhivery.label";
+import { renderDelhiveryPackingSlipHtml } from "./delhivery.label";
 import type { ApiErr, ApiOk } from "./types";
 
 /**
@@ -298,9 +300,9 @@ export async function cancelShipment(waybill: string): Promise<ApiOk<{ cancelled
   }
 }
 
-export async function fetchLabelPdf(
+export async function fetchPackingSlip(
   waybill: string
-): Promise<ApiOk<{ pdfUrl: string }> | ApiErr> {
+): Promise<ApiOk<{ packages: DelhiveryPackingSlipPackage[]; html: string }> | ApiErr> {
   try {
     assertDelhiveryConfigured();
   } catch (err) {
@@ -322,6 +324,50 @@ export async function fetchLabelPdf(
   if (!wb) {
     return { success: false, error: "Waybill required", code: "BAD_REQUEST" };
   }
-  const pdfUrl = `${baseUrl()}/api/p/packing_slip?wbns=${encodeURIComponent(wb)}&token=${encodeURIComponent(shippingEnv.DELHIVERY_API_KEY)}`;
-  return { success: true, data: { pdfUrl } };
+  try {
+    const url = `${baseUrl()}/api/p/packing_slip?wbns=${encodeURIComponent(wb)}`;
+    const res = await axios.get(url, {
+      headers,
+      timeout: 25_000,
+      validateStatus: () => true
+    });
+    if (res.status >= 400) {
+      const detail =
+        res.data && typeof res.data === "object" && "detail" in res.data
+          ? String((res.data as { detail?: string }).detail)
+          : "Delhivery label request failed";
+      return mapAxiosError({ response: res, message: detail }, "DELHIVERY_LABEL");
+    }
+    const raw = res.data as { packages?: DelhiveryPackingSlipPackage[] };
+    const packages = Array.isArray(raw?.packages) ? raw.packages : [];
+    if (packages.length === 0) {
+      return {
+        success: false,
+        error: "No packing slip data returned for this waybill",
+        code: "DELHIVERY_LABEL_EMPTY"
+      };
+    }
+    return {
+      success: true,
+      data: {
+        packages,
+        html: renderDelhiveryPackingSlipHtml(packages)
+      }
+    };
+  } catch (err) {
+    return mapAxiosError(err, "DELHIVERY_LABEL");
+  }
+}
+
+/** @deprecated Use fetchPackingSlip — Delhivery auth must be server-side, not URL redirect. */
+export async function fetchLabelPdf(
+  waybill: string
+): Promise<ApiOk<{ pdfUrl: string }> | ApiErr> {
+  const out = await fetchPackingSlip(waybill);
+  if (!out.success) return out;
+  return {
+    success: false,
+    error: "Direct PDF URL is not supported; use admin label endpoint",
+    code: "USE_ADMIN_LABEL_PROXY"
+  };
 }
