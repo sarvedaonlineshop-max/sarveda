@@ -1,6 +1,8 @@
 import type { NextFunction, Request, Response } from "express";
 import { z } from "zod";
 
+import type { Prisma } from "@prisma/client";
+
 import { prisma } from "../../config/db";
 
 const optionalAddr = z.string().max(500).optional();
@@ -35,13 +37,9 @@ const pickupFields = {
 
 export const createPickupLocationSchema = z.object(pickupFields);
 
-export const updatePickupLocationSchema = z
-  .object({
-    ...Object.fromEntries(
-      Object.entries(pickupFields).map(([k, v]) => [k, v.optional()])
-    ),
-    isActive: z.boolean().optional()
-  })
+export const updatePickupLocationSchema = createPickupLocationSchema
+  .partial()
+  .extend({ isActive: z.boolean().optional() })
   .refine((o) => Object.keys(o).length > 0, { message: "At least one field is required" });
 
 function normalizeBody(body: z.infer<typeof createPickupLocationSchema>) {
@@ -59,7 +57,7 @@ function normalizeBody(body: z.infer<typeof createPickupLocationSchema>) {
     postalCode: body.postalCode?.trim() || null,
     country: (body.country?.trim() || "IN").toUpperCase(),
     defaultPickupSlot: body.defaultPickupSlot?.trim() || null,
-    workingDays: body.workingDays?.length ? body.workingDays : null,
+    workingDays: body.workingDays?.length ? (body.workingDays as Prisma.InputJsonValue) : undefined,
     returnSameAsPickup: body.returnSameAsPickup ?? true,
     returnLine1: body.returnLine1?.trim() || null,
     returnLine2: body.returnLine2?.trim() || null,
@@ -161,7 +159,9 @@ export async function updatePickupLocation(req: Request, res: Response, next: Ne
     if (raw.postalCode !== undefined) data.postalCode = raw.postalCode?.trim() || null;
     if (raw.country !== undefined) data.country = (raw.country?.trim() || "IN").toUpperCase();
     if (raw.defaultPickupSlot !== undefined) data.defaultPickupSlot = raw.defaultPickupSlot?.trim() || null;
-    if (raw.workingDays !== undefined) data.workingDays = raw.workingDays?.length ? raw.workingDays : null;
+    if (raw.workingDays !== undefined) {
+      data.workingDays = raw.workingDays?.length ? (raw.workingDays as Prisma.InputJsonValue) : null;
+    }
     if (raw.returnSameAsPickup !== undefined) data.returnSameAsPickup = raw.returnSameAsPickup;
     if (raw.returnLine1 !== undefined) data.returnLine1 = raw.returnLine1?.trim() || null;
     if (raw.returnLine2 !== undefined) data.returnLine2 = raw.returnLine2?.trim() || null;
