@@ -118,23 +118,37 @@ export async function checkPincodeServiceability(
   }
 }
 
+export type DelhiveryBoxInput = {
+  lengthCm: number;
+  breadthCm: number;
+  heightCm: number;
+  weightGrams: number;
+  /** PLASTIC_COVER = flyer (dead weight up to 1 kg); CARDBOARD_BOX = volumetric billing */
+  packageType?: "PLASTIC_COVER" | "CARDBOARD_BOX";
+};
+
 export type DelhiveryShipmentInput = {
   orderNumber: string;
   paymentMode: "Pre-paid" | "COD";
   codAmountRupees?: number;
+  /** Order invoice / declared value in rupees — populates label `rs` for Pre-paid. */
+  orderValueRupees?: number;
+  productsDesc?: string;
+  sellerGstTin?: string;
+  hsnCode?: string;
+  invoiceReference?: string;
   weightKg: number;
-  /** Override computed weight (grams). */
+  /** Override computed weight (grams) when single-box. */
   weightGrams?: number;
   pickupLocation?: string;
-  /** Sales channel — stored on order meta; default Sarveda website. */
   channel?: string;
   lengthCm?: number;
   breadthCm?: number;
   heightCm?: number;
-  /** Surface (S) or Express (E) */
   shippingMode?: "S" | "E";
-  packageType?: string;
-  /** Ship-to */
+  packageType?: "PLASTIC_COVER" | "CARDBOARD_BOX";
+  /** Multi-piece (MPS): up to 5 boxes; each needs a pre-fetched waybill. */
+  boxes?: DelhiveryBoxInput[];
   consigneeName: string;
   consigneePhone: string;
   address: string;
@@ -143,9 +157,203 @@ export type DelhiveryShipmentInput = {
   pincode: string;
 };
 
+/** Delhivery chargeable weight: max(dead, volumetric); flyer uses dead weight up to 1 kg. */
+export function chargeableWeightGrams(box: DelhiveryBoxInput): number {
+  const dead = Math.max(50, Math.round(box.weightGrams));
+  if (box.packageType === "PLASTIC_COVER" && dead <= 1000) return dead;
+  const volKg = (Math.max(1, box.lengthCm) * Math.max(1, box.breadthCm) * Math.max(1, box.heightCm)) / 5000;
+  return Math.max(dead, Math.round(volKg * 1000), 50);
+}
+
+export function totalChargeableWeightGrams(boxes: DelhiveryBoxInput[]): number {
+  return boxes.reduce((sum, b) => sum + chargeableWeightGrams(b), 0);
+}
+
+function resolveBoxes(input: DelhiveryShipmentInput): DelhiveryBoxInput[] {
+  if (input.boxes?.length) {
+    return input.boxes.slice(0, 5).map((b) => ({
+      lengthCm: Math.max(5, b.lengthCm),
+      breadthCm: Math.max(5, b.breadthCm),
+      heightCm: Math.max(5, b.heightCm),
+      weightGrams: Math.max(50, Math.round(b.weightGrams)),
+      packageType: b.packageType ?? input.packageType
+    }));
+  }
+  const weightG = Math.max(
+    50,
+    input.weightGrams != null ? Math.round(input.weightGrams) : Math.round(input.weightKg * 1000)
+  );
+  return [
+    {
+      lengthCm: Math.max(5, input.lengthCm ?? 10),
+      breadthCm: Math.max(5, input.breadthCm ?? 10),
+      heightCm: Math.max(5, input.heightCm ?? 10),
+      weightGrams: weightG,
+      packageType: input.packageType
+    }
+  ];
+}
+
+function buildShipmentRecord(
+  input: DelhiveryShipmentInput,
+  box: DelhiveryBoxInput,
+  opts: { paymentMode: string; pin: string; orderValue: number; isMaster: boolean; mpsCount: number; waybill?: string; masterWaybill?: string }
+): Record<string, unknown> {
+  const weightG = chargeableWeightGrams(box);
+  const shipment: Record<string, unknown> = {
+    name: input.consigneeName,
+    phone: input.consigneePhone,
+    order: input.orderNumber,
+    add: input.address,
+    pin: opts.pin,
+    city: input.city,
+    state: input.state,
+    country: "India",
+    payment_mode: opts.paymentMode,
+    weight: weightG,
+    shipment_width: box.breadthCm,
+    shipment_height: box.heightCm,
+    shipment_length: box.lengthCm
+  };
+  if (input.shippingMode) {
+    shipment.shipping_mode = input.shippingMode === "E" ? "Express" : "Surface";
+  }
+  if (input.productsDesc?.trim()) {
+    shipment.products_desc = input.productsDesc.trim().slice(0, 240);
+  }
+  if (opts.orderValue > 0) {
+    shipment.total_amount = Number(opts.orderValue.toFixed(2));
+  }
+  if (opts.paymentMode === "COD" && opts.orderValue > 0) {
+    shipment.cod_amount = Number(opts.orderValue.toFixed(2));
+  } else if (opts.paymentMode === "COD" && input.codAmountRupees != null) {
+    shipment.cod_amount = Number(input.codAmountRupees.toFixed(2));
+  }
+  const gst = input.sellerGstTin?.trim() || process.env.SELLER_GSTIN?.trim();
+  if (gst) shipment.seller_gst_tin = gst;
+  const hsn = input.hsnCode?.trim() || process.env.DEFAULT_HSN_CODE?.trim();
+  if (hsn) shipment.hsn_code = hsn;
+  if (input.invoiceReference?.trim()) {
+    shipment.invoice_reference = input.invoiceReference.trim().slice(0, 64);
+  }
+  if (opts.waybill) shipment.waybill = opts.waybill;
+  if (opts.mpsCount > 1) {
+    if (opts.isMaster) {
+      shipment.mps_amount = String(opts.mpsCount);
+    } else if (opts.masterWaybill) {
+      shipment.master_waybill = opts.masterWaybill;
+    }
+  }
+  return shipment;
+}
+
+/** Pre-fetch AWBs for MPS (Delhivery requires explicit waybill per box). */
+export async function fetchBulkWaybills(count: number): Promise<ApiOk<{ waybills: string[] }> | ApiErr> {
+  try {
+    assertDelhiveryConfigured();
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Delhivery not configured",
+      code: "DELHIVERY_NOT_CONFIGURED"
+    };
+  }
+  const n = Math.min(Math.max(1, Math.round(count)), 10);
+  const client = process.env.DELHIVERY_CLIENT_NAME?.trim();
+  const token = shippingEnv.DELHIVERY_API_KEY.trim();
+  if (!client) {
+    return {
+      success: false,
+      error: "Multi-box shipments need DELHIVERY_CLIENT_NAME in backend .env (Delhivery registered client name).",
+      code: "DELHIVERY_CLIENT_NAME"
+    };
+  }
+  try {
+    const url = `${baseUrl()}/waybill/api/bulk/json/`;
+    const res = await axios.get(url, {
+      params: { cl: client, token, count: n },
+      timeout: 25_000,
+      validateStatus: () => true
+    });
+    if (res.status >= 400) {
+      return mapAxiosError({ response: res, message: "bulk waybill fetch failed" }, "DELHIVERY_WAYBILL");
+    }
+    const raw = res.data;
+    let waybills: string[] = [];
+    if (Array.isArray(raw)) {
+      waybills = raw.map((w) => String(w)).filter(Boolean);
+    } else if (raw && typeof raw === "object") {
+      const o = raw as Record<string, unknown>;
+      const list = o.waybills ?? o.wbns ?? o.data;
+      if (Array.isArray(list)) waybills = list.map((w) => String(w)).filter(Boolean);
+    }
+    if (waybills.length < n) {
+      return {
+        success: false,
+        error: `Delhivery returned ${waybills.length} waybill(s), needed ${n}`,
+        code: "DELHIVERY_WAYBILL"
+      };
+    }
+    return { success: true, data: { waybills: waybills.slice(0, n) } };
+  } catch (err) {
+    return mapAxiosError(err, "DELHIVERY_WAYBILL");
+  }
+}
+
+export type DelhiveryShippingEstimateInput = {
+  originPin: string;
+  destPin: string;
+  shippingMode: "S" | "E";
+  paymentMode: "Pre-paid" | "COD";
+  boxes: DelhiveryBoxInput[];
+};
+
+/** Delhivery invoice/shipping charge API — approximate freight (not label order value). */
+export async function estimateShippingCharge(
+  input: DelhiveryShippingEstimateInput
+): Promise<ApiOk<{ chargeableGrams: number; totalAmount: number; raw: unknown }> | ApiErr> {
+  try {
+    assertDelhiveryConfigured();
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Delhivery not configured",
+      code: "DELHIVERY_NOT_CONFIGURED"
+    };
+  }
+  const headers = authHeadersJson();
+  if (!headers) {
+    return { success: false, error: "Delhivery is not configured", code: "DELHIVERY_NOT_CONFIGURED" };
+  }
+  const oPin = input.originPin.replace(/\D/g, "").slice(0, 6);
+  const dPin = input.destPin.replace(/\D/g, "").slice(0, 6);
+  if (oPin.length !== 6 || dPin.length !== 6) {
+    return { success: false, error: "Valid 6-digit origin and destination PIN required", code: "BAD_REQUEST" };
+  }
+  const cgm = totalChargeableWeightGrams(input.boxes);
+  const pt = input.paymentMode === "COD" ? "COD" : "Pre-paid";
+  try {
+    const url = `${baseUrl()}/api/kinko/v1/invoice/charges/.json`;
+    const res = await axios.get(url, {
+      headers,
+      params: { md: input.shippingMode, cgm, o_pin: oPin, d_pin: dPin, ss: "Delivered", pt },
+      timeout: 20_000,
+      validateStatus: () => true
+    });
+    if (res.status >= 400) {
+      return mapAxiosError({ response: res, message: "shipping estimate failed" }, "DELHIVERY_ESTIMATE");
+    }
+    const raw = res.data as Record<string, unknown>;
+    const totalAmount = Number(raw?.total_amount ?? raw?.Total_amount ?? 0) || 0;
+    return { success: true, data: { chargeableGrams: cgm, totalAmount, raw } };
+  } catch (err) {
+    return mapAxiosError(err, "DELHIVERY_ESTIMATE");
+  }
+}
+
 export async function createShipment(
   input: DelhiveryShipmentInput
-): Promise<ApiOk<{ waybill: string; trackingUrl: string }> | ApiErr> {
+): Promise<ApiOk<{ waybill: string; trackingUrl: string; mpsWaybills?: string[] }> | ApiErr> {
   try {
     assertDelhiveryConfigured();
   } catch (err) {
@@ -161,42 +369,34 @@ export async function createShipment(
   }
   try {
     const pin = input.pincode.replace(/\D/g, "").slice(0, 6);
-    const weightG = Math.max(
-      50,
-      input.weightGrams != null ? Math.round(input.weightGrams) : Math.round(input.weightKg * 1000)
-    );
     const paymentMode = input.paymentMode === "COD" ? "COD" : "Prepaid";
-    const lengthCm = Math.max(5, input.lengthCm ?? 10);
-    const breadthCm = Math.max(5, input.breadthCm ?? 10);
-    const heightCm = Math.max(5, input.heightCm ?? 10);
+    const boxes = resolveBoxes(input);
+    const orderValue =
+      input.orderValueRupees ??
+      (input.paymentMode === "COD" ? input.codAmountRupees : undefined) ??
+      0;
 
-    const shipment: Record<string, unknown> = {
-      name: input.consigneeName,
-      phone: input.consigneePhone,
-      order: input.orderNumber,
-      add: input.address,
-      pin,
-      city: input.city,
-      state: input.state,
-      country: "India",
-      payment_mode: paymentMode,
-      weight: weightG,
-      shipment_width: breadthCm,
-      shipment_height: heightCm,
-      shipment_length: lengthCm
-    };
-    if (input.shippingMode) {
-      shipment.shipping_mode = input.shippingMode === "E" ? "Express" : "Surface";
+    let waybills: string[] = [];
+    if (boxes.length > 1) {
+      const bulk = await fetchBulkWaybills(boxes.length);
+      if (!bulk.success) return bulk;
+      waybills = bulk.data.waybills;
     }
-    if (input.packageType?.trim()) {
-      shipment.products_desc = input.packageType.trim();
-    }
-    if (paymentMode === "COD" && input.codAmountRupees != null) {
-      shipment.cod_amount = Number(input.codAmountRupees.toFixed(2));
-    }
+
+    const shipments = boxes.map((box, idx) =>
+      buildShipmentRecord(input, box, {
+        paymentMode,
+        pin,
+        orderValue,
+        isMaster: idx === 0,
+        mpsCount: boxes.length,
+        waybill: waybills[idx],
+        masterWaybill: idx > 0 ? waybills[0] : undefined
+      })
+    );
 
     const payload: Record<string, unknown> = {
-      shipments: [shipment]
+      shipments
     };
     if (input.pickupLocation) {
       payload.pickups = [{ pickup_location: input.pickupLocation }];
@@ -238,7 +438,14 @@ export async function createShipment(
       };
     }
     const trackingUrl = `https://www.delhivery.com/track/package/${waybill}`;
-    return { success: true, data: { waybill, trackingUrl } };
+    return {
+      success: true,
+      data: {
+        waybill,
+        trackingUrl,
+        ...(waybills.length > 1 ? { mpsWaybills: waybills } : {})
+      }
+    };
   } catch (err) {
     return mapAxiosError(err, "DELHIVERY_CREATE");
   }

@@ -272,8 +272,9 @@ export type AutoShipmentCreateOptions = {
   breadthCm?: number;
   heightCm?: number;
   weightGrams?: number;
-  packageType?: string;
+  packageType?: "PLASTIC_COVER" | "CARDBOARD_BOX";
   shippingMode?: "S" | "E";
+  boxes?: import("./delhivery").DelhiveryBoxInput[];
 };
 
 /** Shiprocket/Delhivery channel order id — first label uses Sarveda order number; retries get -R2, -R3 after cancel. */
@@ -364,7 +365,12 @@ export async function autoSelectAndCreate(
   const order = await prisma.order.findFirst({
     where: { id: orderId, deletedAt: null },
     include: {
-      items: { include: { variant: true, pickupLocation: true } },
+      items: {
+        include: {
+          variant: { include: { productRel: { select: { hsnCode: true } } } },
+          pickupLocation: true
+        }
+      },
       addresses: true,
       payments: { orderBy: { createdAt: "desc" }, take: 1 }
     }
@@ -434,17 +440,36 @@ export async function autoSelectAndCreate(
     if (choice === "DELHIVERY") {
       const delhiveryPickup = await resolveDelhiveryPickupName(orderId, options);
       const computedWeightG = Math.max(50, totalWeightGrams(order as OrderWithShippingContext));
+      const defaultHsn = process.env.DEFAULT_HSN_CODE?.trim() || "9205";
+      const hsnCodes = [
+        ...new Set(
+          order.items.map(
+            (it) => it.variant?.productRel?.hsnCode?.trim() || defaultHsn
+          )
+        )
+      ];
+      const productsDesc = order.items
+        .map((it) => `${it.nameSnapshot} (${it.qtyOrdered})`)
+        .join(", ")
+        .slice(0, 240);
+      const orderValueRupees = order.grandTotalInPaise / 100;
+      const boxes =
+        options?.boxes?.length ?
+          options.boxes.map((b) => ({
+            ...b,
+            packageType: b.packageType ?? options.packageType ?? "CARDBOARD_BOX"
+          }))
+        : undefined;
       const weightGrams = options?.weightGrams ?? computedWeightG;
-      const packageLabel =
-        options?.packageType === "PLASTIC_COVER"
-          ? "Plastic cover/Flyer"
-          : options?.packageType === "CARDBOARD_BOX"
-            ? "Cardboard Box"
-            : undefined;
       const created = await delhivery.createShipment({
         orderNumber: channelOrderId,
         paymentMode,
         codAmountRupees: paymentMode === "COD" ? codAmountRupees(order as OrderWithShippingContext) : undefined,
+        orderValueRupees,
+        productsDesc,
+        sellerGstTin: process.env.SELLER_GSTIN?.trim(),
+        hsnCode: hsnCodes.join(","),
+        invoiceReference: order.orderNumber,
         weightKg,
         weightGrams,
         pickupLocation: delhiveryPickup,
@@ -453,7 +478,8 @@ export async function autoSelectAndCreate(
         breadthCm: options?.breadthCm,
         heightCm: options?.heightCm,
         shippingMode: options?.shippingMode ?? "S",
-        packageType: packageLabel,
+        packageType: options?.packageType ?? "CARDBOARD_BOX",
+        boxes,
         consigneeName: shipAddr.fullName,
         consigneePhone: shipAddr.phone,
         address: [shipAddr.line1, shipAddr.line2].filter(Boolean).join(", "),
@@ -485,7 +511,10 @@ export async function autoSelectAndCreate(
           weightGrams,
           packageType: options?.packageType ?? null,
           shippingMode: options?.shippingMode ?? "S",
-          pickupLocation: delhiveryPickup ?? null
+          pickupLocation: delhiveryPickup ?? null,
+          orderValueRupees,
+          boxes: boxes ?? null,
+          mpsWaybills: created.data.mpsWaybills ?? null
         },
         nextSeq
       );

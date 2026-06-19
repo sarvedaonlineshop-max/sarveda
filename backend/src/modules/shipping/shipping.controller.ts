@@ -6,6 +6,8 @@ import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 
 import * as delhivery from "./delhivery";
+import type { LabelRenderOptions } from "./delhivery.label";
+import { formatPickupReturnAddress, getLabelAddressDefaults } from "./labelAssets";
 import { assertOrderEligibleForTrackingSync } from "./router";
 import { orderBlocksCarrierSync, syncTrackingByWaybill } from "./orderLifecycle";
 import * as shiprocket from "./shiprocket";
@@ -162,7 +164,20 @@ export async function createShipmentForOrder(req: Request, res: Response, next: 
         heightCm: z.number().min(5).max(200).optional(),
         weightGrams: z.number().int().min(50).max(500_000).optional(),
         packageType: z.enum(["PLASTIC_COVER", "CARDBOARD_BOX"]).optional(),
-        shippingMode: z.enum(["S", "E"]).optional()
+        shippingMode: z.enum(["S", "E"]).optional(),
+        boxes: z
+          .array(
+            z.object({
+              lengthCm: z.number().min(5).max(200),
+              breadthCm: z.number().min(5).max(200),
+              heightCm: z.number().min(5).max(200),
+              weightGrams: z.number().int().min(50).max(500_000),
+              packageType: z.enum(["PLASTIC_COVER", "CARDBOARD_BOX"]).optional()
+            })
+          )
+          .min(1)
+          .max(5)
+          .optional()
       })
       .safeParse(req.body && typeof req.body === "object" ? req.body : {});
 
@@ -185,7 +200,8 @@ export async function createShipmentForOrder(req: Request, res: Response, next: 
       heightCm,
       weightGrams,
       packageType,
-      shippingMode
+      shippingMode,
+      boxes
     } = bodyParsed.data;
     if (preferredCourier) {
       await prisma.order.update({
@@ -202,7 +218,8 @@ export async function createShipmentForOrder(req: Request, res: Response, next: 
       ...(heightCm != null ? { heightCm } : {}),
       ...(weightGrams != null ? { weightGrams } : {}),
       ...(packageType ? { packageType } : {}),
-      ...(shippingMode ? { shippingMode } : {})
+      ...(shippingMode ? { shippingMode } : {}),
+      ...(boxes?.length ? { boxes } : {})
     });
     if (!result.success) {
       res.status(400).json(result);
@@ -491,6 +508,7 @@ export async function getAdminLabel(req: Request, res: Response, next: NextFunct
     const shipment = await prisma.shipment.findFirst({
       where: { awb: waybill },
       include: {
+        pickupLocation: true,
         order: {
           include: {
             items: { orderBy: { id: "asc" } }
@@ -498,6 +516,28 @@ export async function getAdminLabel(req: Request, res: Response, next: NextFunct
         }
       }
     });
+
+    const defaults = getLabelAddressDefaults();
+    let pickupReturn = defaults.returnAddress;
+    if (shipment?.pickupLocation) {
+      const formatted = formatPickupReturnAddress(shipment.pickupLocation);
+      if (formatted) pickupReturn = formatted;
+    } else {
+      const primary = await prisma.pickupLocation.findFirst({
+        where: { isActive: true, isPrimary: true }
+      });
+      if (primary) {
+        const formatted = formatPickupReturnAddress(primary);
+        if (formatted) pickupReturn = formatted;
+      }
+    }
+
+    const renderOptions: LabelRenderOptions = {
+      sellerName: defaults.sellerName,
+      sellerAddress: defaults.sellerAddress,
+      sellerGst: defaults.sellerGst,
+      returnAddress: pickupReturn
+    };
 
     const lineItems =
       shipment?.order?.items.map((it) => ({
@@ -507,8 +547,12 @@ export async function getAdminLabel(req: Request, res: Response, next: NextFunct
         unitPrice: it.unitPriceInPaise / 100,
         lineTotal: it.lineTotalInPaise / 100
       })) ?? undefined;
+    if (lineItems?.length) renderOptions.lineItems = lineItems;
+    if (shipment?.order) {
+      renderOptions.declaredAmountRupees = shipment.order.grandTotalInPaise / 100;
+    }
 
-    const result = await delhivery.fetchPackingSlip(waybill, lineItems?.length ? { lineItems } : undefined);
+    const result = await delhivery.fetchPackingSlip(waybill, renderOptions);
     if (!result.success) {
       res.status(result.code === "NOT_CONFIGURED" ? 503 : 400).json(result);
       return;
@@ -545,6 +589,48 @@ export async function postManualAwb(req: Request, res: Response, next: NextFunct
     const result = await persistManualAwb(orderId, parsed.data.awb, parsed.data.courier);
     if (!result.success) {
       res.status(result.code === "NOT_FOUND" ? 404 : 400).json(result);
+      return;
+    }
+    res.json({ success: true, data: result.data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+const delhiveryEstimateBody = z.object({
+  originPin: z.string().min(6).max(10),
+  destPin: z.string().min(6).max(10),
+  shippingMode: z.enum(["S", "E"]).default("S"),
+  paymentMode: z.enum(["Pre-paid", "COD"]).default("Pre-paid"),
+  boxes: z
+    .array(
+      z.object({
+        lengthCm: z.number().min(5).max(200),
+        breadthCm: z.number().min(5).max(200),
+        heightCm: z.number().min(5).max(200),
+        weightGrams: z.number().int().min(50).max(500_000),
+        packageType: z.enum(["PLASTIC_COVER", "CARDBOARD_BOX"]).optional()
+      })
+    )
+    .min(1)
+    .max(5)
+});
+
+/** Admin: Delhivery freight estimate from box dimensions (chargeable weight × rate API). */
+export async function estimateDelhiveryCharge(req: Request, res: Response, next: NextFunction) {
+  try {
+    const parsed = delhiveryEstimateBody.safeParse(req.body && typeof req.body === "object" ? req.body : {});
+    if (!parsed.success) {
+      res.status(400).json({
+        success: false,
+        error: parsed.error.issues.map((i) => i.message).join("; "),
+        code: "VALIDATION_ERROR"
+      });
+      return;
+    }
+    const result = await delhivery.estimateShippingCharge(parsed.data);
+    if (!result.success) {
+      res.status(result.code === "DELHIVERY_NOT_CONFIGURED" ? 503 : 400).json(result);
       return;
     }
     res.json({ success: true, data: result.data });

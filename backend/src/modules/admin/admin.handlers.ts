@@ -735,9 +735,43 @@ export async function orderInvoice(req: Request, res: Response, next: NextFuncti
       success: true,
       data: {
         pdfUrl: inv?.pdfUrl ?? null,
-        invoiceNo: inv?.invoiceNo ?? null
+        invoiceNo: inv?.invoiceNo ?? null,
+        /** Same-origin proxy — S3 invoice objects are private. */
+        downloadUrl: inv ? `/api/admin/orders/${id}/invoice/download` : null
       }
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** Admin invoice download — fetches from private S3 or regenerates PDF. */
+export async function downloadOrderInvoice(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const order = await prisma.order.findFirst({
+      where: { id, deletedAt: null },
+      select: { id: true }
+    });
+    if (!order) {
+      res.status(404).json({ success: false, error: "Order not found", code: "NOT_FOUND" });
+      return;
+    }
+
+    const { downloadOrderInvoicePdf } = await import("../invoices/invoice.service");
+    const result = await downloadOrderInvoicePdf(order.id);
+    if (!result) {
+      res.status(400).json({
+        success: false,
+        error: "Invoice not available yet (order must be paid or COD confirmed)",
+        code: "INVOICE_NOT_READY"
+      });
+      return;
+    }
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${result.invoiceNo}.pdf"`);
+    res.send(result.pdf);
   } catch (err) {
     next(err);
   }

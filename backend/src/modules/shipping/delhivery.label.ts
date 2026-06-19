@@ -1,4 +1,4 @@
-import { getSarvedaIconDataUri, getSarvedaLogoDataUri } from "./labelAssets";
+import { getSarvedaIconDataUri, getSarvedaLogoDataUri, getLabelAddressDefaults } from "./labelAssets";
 
 export type DelhiveryPackingSlipPackage = {
   wbn?: string;
@@ -42,7 +42,25 @@ export type LabelLineItem = {
 export type LabelRenderOptions = {
   lineItems?: LabelLineItem[];
   sarvedaLogoDataUri?: string;
+  sellerName?: string;
+  sellerAddress?: string;
+  sellerGst?: string;
+  returnAddress?: string;
+  /** Fallback order invoice value when Delhivery returns rs/cod 0 (Pre-paid). */
+  declaredAmountRupees?: number;
 };
+
+function resolveLabelAmount(pkg: DelhiveryPackingSlipPackage, options?: LabelRenderOptions): number {
+  const fromDelhivery = Number(pkg.cod ?? pkg.rs ?? 0) || 0;
+  if (fromDelhivery > 0) return fromDelhivery;
+  if (options?.declaredAmountRupees != null && options.declaredAmountRupees > 0) {
+    return options.declaredAmountRupees;
+  }
+  if (options?.lineItems?.length) {
+    return options.lineItems.reduce((sum, it) => sum + it.lineTotal, 0);
+  }
+  return 0;
+}
 
 function esc(s: unknown): string {
   if (s == null) return "";
@@ -83,10 +101,26 @@ function paymentLine(pt: unknown, mot: unknown): string {
   return `${pay} - ${shippingModeLabel(mot)}`;
 }
 
-function truncateAddress(addr: string, max = 95): string {
+function truncateAddress(addr: string, max = 120): string {
   const t = addr.replace(/\s+/g, " ").trim();
   if (t.length <= max) return t;
   return `${t.slice(0, max - 3)}...`;
+}
+
+function resolveSellerReturn(
+  pkg: DelhiveryPackingSlipPackage,
+  options?: LabelRenderOptions
+): { sellerName: string; sellerAddress: string; gst: string; returnAddr: string } {
+  const defaults = getLabelAddressDefaults();
+  const sellerName = String(pkg.snm ?? options?.sellerName ?? defaults.sellerName).trim() || defaults.sellerName;
+  const sellerAddress = String(pkg.sadd ?? options?.sellerAddress ?? defaults.sellerAddress)
+    .replace(/\s+/g, " ")
+    .trim();
+  const gst = String(pkg.seller_gst_tin ?? pkg.client_gst_tin ?? options?.sellerGst ?? defaults.sellerGst).trim();
+  const returnAddr = String(pkg.radd ?? options?.returnAddress ?? defaults.returnAddress)
+    .replace(/\s+/g, " ")
+    .trim();
+  return { sellerName, sellerAddress, gst, returnAddr };
 }
 
 function resolveLineItems(pkg: DelhiveryPackingSlipPackage, options?: LabelRenderOptions): LabelLineItem[] {
@@ -142,11 +176,10 @@ function renderSlip(pkg: DelhiveryPackingSlipPackage, options?: LabelRenderOptio
   const awb = String(pkg.wbn ?? "");
   const pin = String(pkg.pin ?? "");
   const sortCode = String(pkg.sort_code ?? "");
-  const amount = Number(pkg.cod ?? pkg.rs ?? 0) || 0;
-  const gst = String(pkg.seller_gst_tin ?? pkg.client_gst_tin ?? "");
-  const sellerName = String(pkg.snm ?? "Sarveda");
-  const sellerAddr = truncateAddress(String(pkg.sadd ?? ""));
-  const returnAddr = String(pkg.radd ?? "").replace(/\s+/g, " ").trim();
+  const amount = resolveLabelAmount(pkg, options);
+  const { sellerName, sellerAddress, gst, returnAddr } = resolveSellerReturn(pkg, options);
+  const sellerAddrDisplay = truncateAddress(sellerAddress);
+  const returnAddrDisplay = truncateAddress(returnAddr, 200);
   const hub = String(pkg.destination ?? "");
   const lineItems = resolveLineItems(pkg, options);
 
@@ -191,9 +224,8 @@ function renderSlip(pkg: DelhiveryPackingSlipPackage, options?: LabelRenderOptio
 
     <div class="section seller-block">
       <div class="seller-left">
-        <div>Seller:<strong>${esc(sellerName)}</strong></div>
-        <div class="seller-addr">${esc(sellerAddr)}</div>
-        ${gst ? `<div class="gst">GST: ${esc(gst)}</div>` : ""}
+        <div class="seller-line">Seller:<strong>${esc(sellerName)}</strong> ${esc(sellerAddrDisplay)}</div>
+        <div class="gst">GST: ${esc(gst)}</div>
       </div>
       <div class="seller-right">
         <div class="oid">${esc(pkg.oid)}</div>
@@ -202,19 +234,25 @@ function renderSlip(pkg: DelhiveryPackingSlipPackage, options?: LabelRenderOptio
     </div>
 
     <table class="products">
+      <colgroup>
+        <col class="col-product" />
+        <col class="col-qty" />
+        <col class="col-price" />
+        <col class="col-total" />
+      </colgroup>
       <thead>
         <tr>
-          <th>Product Name &amp; SKU</th>
-          <th>Qty.</th>
-          <th>Price</th>
-          <th>Total</th>
+          <th class="col-product">Product Name &amp; SKU</th>
+          <th class="col-qty">Qty.</th>
+          <th class="col-price">Price</th>
+          <th class="col-total">Total</th>
         </tr>
       </thead>
       <tbody>${renderProductRows(lineItems)}</tbody>
     </table>
 
     <footer class="foot">
-      <div class="return">Return Address: ${esc(returnAddr)}</div>
+      <div class="return"><span class="return-label">Return Address:</span> ${esc(returnAddrDisplay)}</div>
       <div class="page-no">Page 1 of 1</div>
     </footer>
   </section>`;
@@ -311,8 +349,9 @@ export function renderDelhiveryPackingSlipHtml(
     .date-row { font-size: 8px; }
     .date-label { display: block; color: #333; margin-bottom: 0.5mm; }
     .seller-block { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 2mm; align-items: start; }
-    .seller-addr { margin: 1mm 0; word-break: break-word; font-size: 8px; }
-    .gst { font-size: 8px; }
+    .seller-line { word-break: break-word; font-size: 8px; line-height: 1.4; margin-bottom: 1mm; }
+    .seller-line strong { font-weight: 700; }
+    .gst { font-size: 8px; margin-top: 0.5mm; }
     .seller-right { text-align: right; }
     .oid { font-size: 11px; font-weight: 700; margin-bottom: 0.5mm; }
     .products {
@@ -320,17 +359,21 @@ export function renderDelhiveryPackingSlipHtml(
       border-collapse: collapse;
       margin-top: 1.5mm;
       font-size: 8px;
+      table-layout: fixed;
     }
     .products th {
-      text-align: left;
       font-weight: 700;
       padding: 1mm 1mm 1.5mm;
       border-bottom: 1px solid #111;
       font-size: 7.5px;
+      vertical-align: bottom;
     }
     .products td { padding: 1.2mm 1mm; vertical-align: top; border-bottom: 1px solid #ddd; }
-    .col-qty, .col-price, .col-total { width: 12mm; text-align: right; white-space: nowrap; }
-    .col-product { width: auto; }
+    .col-product { width: 52%; text-align: left; }
+    .col-qty { width: 12%; text-align: right; white-space: nowrap; }
+    .col-price { width: 18%; text-align: right; white-space: nowrap; }
+    .col-total { width: 18%; text-align: right; white-space: nowrap; }
+    .products th.col-qty, .products th.col-price, .products th.col-total { text-align: right; }
     .product-name { font-weight: 600; margin-bottom: 0.5mm; word-break: break-word; }
     .product-sku { font-size: 7.5px; color: #333; }
     .foot {
@@ -341,7 +384,8 @@ export function renderDelhiveryPackingSlipHtml(
       font-size: 7.5px;
       align-items: flex-end;
     }
-    .return { flex: 1; word-break: break-word; line-height: 1.3; }
+    .return { flex: 1; word-break: break-word; line-height: 1.35; font-size: 7.5px; }
+    .return-label { font-weight: 700; }
     .page-no { white-space: nowrap; font-size: 7.5px; }
     @media print {
       body { background: #fff; }

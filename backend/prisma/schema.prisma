@@ -785,3 +785,87 @@ model ContactSubmission {
   source      String   @default("general")
   createdAt   DateTime @default(now())
 }
+
+enum ComplaintPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ComplaintStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  REOPENED
+}
+
+enum ComplaintEventType {
+  COMMENT
+  STATUS_CHANGE
+  REOPENED
+  ATTACHMENT_ADDED
+  CREATED
+}
+
+enum ComplaintAuthorType {
+  MEMBER
+  ADMIN
+}
+
+model Complaint {
+  id            String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  raisedByEmail String
+  raisedByName  String?
+  title         String
+  description   String?
+  priority      ComplaintPriority     @default(MEDIUM)
+  status        ComplaintStatus       @default(OPEN)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  resolvedAt    DateTime?
+  events        ComplaintEvent[]
+  attachments   ComplaintAttachment[]
+
+  @@index([status])
+  @@index([raisedByEmail])
+  @@index([priority])
+}
+
+model ComplaintEvent {
+  id          String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  complaintId String                @db.Uuid
+  type        ComplaintEventType
+  authorEmail String
+  authorType  ComplaintAuthorType
+  message     String?
+  createdAt   DateTime              @default(now())
+  complaint   Complaint             @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  attachments ComplaintAttachment[]
+
+  @@index([complaintId])
+}
+
+model ComplaintAttachment {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  complaintId   String?         @db.Uuid
+  eventId       String?         @db.Uuid
+  type          String
+  s3Key         String
+  s3Url         String
+  fileName      String?
+  fileSizeBytes Int?
+  createdAt     DateTime        @default(now())
+  complaint     Complaint?      @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  event         ComplaintEvent? @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([complaintId])
+  @@index([eventId])
+}
+
+model ComplaintWhitelist {
+  id       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email    String   @unique
+  name     String?
+  addedAt  DateTime @default(now())
+  isActive Boolean  @default(true)
+}

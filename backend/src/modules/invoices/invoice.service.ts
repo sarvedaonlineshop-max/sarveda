@@ -1,5 +1,5 @@
 import { prisma } from "../../config/db";
-import { uploadPdf } from "../../config/s3";
+import { downloadPdfFromS3, s3KeyFromStoredUrl, uploadPdf } from "../../config/s3";
 import { logger } from "../../config/logger";
 import {
   buildOrderInvoicePdf,
@@ -158,4 +158,41 @@ export async function regenerateOrderInvoicePdf(
   await ensureOrderInvoicePdf(orderId, { force: true });
   const pdf = await buildOrderInvoicePdf(input);
   return { pdf, invoiceNo: input.invoiceNo };
+}
+
+/** Stream-ready invoice PDF for admin / authenticated download (S3 private objects). */
+export async function downloadOrderInvoicePdf(
+  orderId: string
+): Promise<{ pdf: Buffer; invoiceNo: string } | null> {
+  const order = await loadOrderForInvoice(orderId);
+  if (!order) return null;
+
+  const isCod = order.payments?.some((p) => p.provider === "COD") ?? false;
+  const invoiceReady =
+    order.paymentStatus === "CAPTURED" ||
+    order.status === "PAID" ||
+    (isCod && !["PENDING_PAYMENT", "CANCELLED", "REFUNDED"].includes(order.status));
+
+  if (!invoiceReady) return null;
+
+  let invoiceNo = order.invoice?.invoiceNo ?? invoiceNumberForOrder(order.orderNumber);
+  let pdf: Buffer | null = null;
+
+  const storedUrl = order.invoice?.pdfUrl;
+  if (storedUrl?.startsWith("http")) {
+    const key = s3KeyFromStoredUrl(storedUrl);
+    if (key) pdf = await downloadPdfFromS3(key);
+  }
+
+  if (!pdf) {
+    await ensureOrderInvoicePdf(order.id);
+    const refreshed = await loadOrderForInvoice(orderId);
+    const input = refreshed ? buildInvoiceInputFromOrder(refreshed) : null;
+    if (!input) return null;
+    invoiceNo = input.invoiceNo;
+    pdf = await buildOrderInvoicePdf(input);
+  }
+
+  if (!pdf) return null;
+  return { pdf, invoiceNo };
 }

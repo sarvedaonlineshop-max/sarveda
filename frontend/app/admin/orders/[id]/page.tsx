@@ -8,12 +8,14 @@ import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
 import {
   adminCancelWaybill,
   adminCreateShipmentForOrder,
+  adminEstimateDelhiveryCharge,
   adminSaveManualAwb,
   adminSyncOrderShipments,
   adminTrackShipmentByWaybill,
   delhiveryLabelUrl,
   fetchAdminOrderDetail,
   fetchAdminOrderInvoice,
+  adminOrderInvoiceDownloadUrl,
   fetchAdminPickupLocations,
   isDelhiveryCourier,
   patchAdminOrderAddress,
@@ -21,13 +23,34 @@ import {
   patchAdminOrderPreferredCourier,
   patchAdminOrderStatus,
   reconcileAdminOrderRazorpay,
-  type AdminPickupLocationRow
+  type AdminPickupLocationRow,
+  type DelhiveryShipBox
 } from "@/lib/admin-api";
 import { formatMinorFromPaise } from "@/lib/money";
 import {
   formatAdminOrderStatusLabel,
   isUnpaidCheckoutAttempt
 } from "@/lib/order-status-display";
+
+const MAX_SHIP_BOXES = 5;
+
+function defaultShipBox(weightGrams = 500): DelhiveryShipBox {
+  return {
+    lengthCm: 10,
+    breadthCm: 10,
+    heightCm: 10,
+    weightGrams: Math.max(50, weightGrams),
+    packageType: "CARDBOARD_BOX"
+  };
+}
+
+/** Delhivery chargeable weight (matches backend). */
+function chargeableWeightGrams(box: DelhiveryShipBox): number {
+  const dead = Math.max(50, Math.round(box.weightGrams));
+  if (box.packageType === "PLASTIC_COVER" && dead <= 1000) return dead;
+  const volKg = (Math.max(1, box.lengthCm) * Math.max(1, box.breadthCm) * Math.max(1, box.heightCm)) / 5000;
+  return Math.max(dead, Math.round(volKg * 1000), 50);
+}
 
 const ORDER_STATUSES = [
   "PENDING_PAYMENT",
@@ -387,7 +410,11 @@ export default function AdminOrderDetailPage() {
 
   const [order, setOrder] = useState<OrderLoaded | null>(null);
   const [statusSaving, setStatusSaving] = useState(false);
-  const [invoice, setInvoice] = useState<{ pdfUrl: string | null; invoiceNo: string | null } | null>(null);
+  const [invoice, setInvoice] = useState<{
+    pdfUrl: string | null;
+    invoiceNo: string | null;
+    downloadUrl: string | null;
+  } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [shipBusy, setShipBusy] = useState<string | null>(null);
   const [pickupOptions, setPickupOptions] = useState<AdminPickupLocationRow[]>([]);
@@ -404,12 +431,14 @@ export default function AdminOrderDetailPage() {
   const [manualAwb, setManualAwb] = useState("");
   const [manualCourier, setManualCourier] = useState<"DELHIVERY" | "SHIPROCKET" | "OTHER">("DELHIVERY");
   const [shipChannel] = useState("www.sarveda.com");
-  const [shipLengthCm, setShipLengthCm] = useState(10);
-  const [shipBreadthCm, setShipBreadthCm] = useState(10);
-  const [shipHeightCm, setShipHeightCm] = useState(10);
-  const [shipWeightGrams, setShipWeightGrams] = useState(500);
-  const [shipPackageType, setShipPackageType] = useState<"PLASTIC_COVER" | "CARDBOARD_BOX">("CARDBOARD_BOX");
+  const [shipBoxes, setShipBoxes] = useState<DelhiveryShipBox[]>([defaultShipBox()]);
+  const [activeShipBoxIdx, setActiveShipBoxIdx] = useState(0);
   const [shipMode, setShipMode] = useState<"S" | "E">("S");
+  const [freightEstimate, setFreightEstimate] = useState<{
+    chargeableGrams: number;
+    totalAmount: number;
+  } | null>(null);
+  const [freightEstimateBusy, setFreightEstimateBusy] = useState(false);
   const [reconcileBusy, setReconcileBusy] = useState(false);
   const [addressModal, setAddressModal] = useState<AddressRow | null>(null);
   const [addrSaving, setAddrSaving] = useState(false);
@@ -473,8 +502,55 @@ export default function AdminOrderDetailPage() {
       50,
       order.items.reduce((sum, it) => sum + it.qtyOrdered * 500, 0) || 500
     );
-    setShipWeightGrams(g);
+    setShipBoxes([defaultShipBox(g)]);
+    setActiveShipBoxIdx(0);
   }, [order?.id, order?.items]);
+
+  const activeShipBox = shipBoxes[activeShipBoxIdx] ?? shipBoxes[0] ?? defaultShipBox();
+  const totalChargeableG = shipBoxes.reduce((sum, b) => sum + chargeableWeightGrams(b), 0);
+
+  useEffect(() => {
+    if (!order || selectedCourier === "SHIPROCKET" || selectedCourier === "SHIPROCKET_INTERNATIONAL") {
+      setFreightEstimate(null);
+      return;
+    }
+    const shipAddr = order.addresses.find((a) => a.type === "SHIPPING");
+    const destPin = shipAddr?.postalCode?.replace(/\D/g, "").slice(0, 6) ?? "";
+    const pickup = pickupOptions.find((p) => p.id === selectedPickupId);
+    const originPin =
+      pickup?.postalCode?.replace(/\D/g, "").slice(0, 6) ||
+      process.env.NEXT_PUBLIC_SHIPPING_ORIGIN_PINCODE?.replace(/\D/g, "").slice(0, 6) ||
+      "560002";
+    if (destPin.length !== 6 || shipBoxes.length === 0) {
+      setFreightEstimate(null);
+      return;
+    }
+    const isCod = (order.payments ?? []).some((p) => p.provider === "COD");
+    let cancelled = false;
+    setFreightEstimateBusy(true);
+    const t = setTimeout(() => {
+      void adminEstimateDelhiveryCharge({
+        originPin,
+        destPin,
+        shippingMode: shipMode,
+        paymentMode: isCod ? "COD" : "Pre-paid",
+        boxes: shipBoxes
+      })
+        .then((r) => {
+          if (!cancelled) setFreightEstimate({ chargeableGrams: r.chargeableGrams, totalAmount: r.totalAmount });
+        })
+        .catch(() => {
+          if (!cancelled) setFreightEstimate(null);
+        })
+        .finally(() => {
+          if (!cancelled) setFreightEstimateBusy(false);
+        });
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [order, shipBoxes, shipMode, selectedCourier, selectedPickupId, pickupOptions]);
 
   useEffect(() => {
     if (!id) return;
@@ -615,12 +691,13 @@ export default function AdminOrderDetailPage() {
         preferredCourier: (selectedCourier ||
           bulkCourier) as "AUTO" | "DELHIVERY" | "SHIPROCKET" | "SHIPROCKET_INTERNATIONAL",
         channel: shipChannel,
-        lengthCm: shipLengthCm,
-        breadthCm: shipBreadthCm,
-        heightCm: shipHeightCm,
-        weightGrams: shipWeightGrams,
-        packageType: shipPackageType,
-        shippingMode: shipMode
+        lengthCm: activeShipBox.lengthCm,
+        breadthCm: activeShipBox.breadthCm,
+        heightCm: activeShipBox.heightCm,
+        weightGrams: activeShipBox.weightGrams,
+        packageType: activeShipBox.packageType,
+        shippingMode: shipMode,
+        boxes: shipBoxes
       });
       await load();
       pushToast("Shipment label created or refreshed.");
@@ -1002,9 +1079,9 @@ export default function AdminOrderDetailPage() {
             <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">{invoice.invoiceNo}</p>
           ) : null}
           <div className="mt-3">
-            {invoice.pdfUrl ? (
+            {invoice.invoiceNo || invoice.pdfUrl ? (
               <a
-                href={invoice.pdfUrl}
+                href={invoice.downloadUrl ?? adminOrderInvoiceDownloadUrl(id)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-stone-900 hover:bg-amber-400"
@@ -1109,14 +1186,47 @@ export default function AdminOrderDetailPage() {
               </label>
             </div>
             <div className="space-y-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Box details</p>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Box details</p>
+                <div className="flex flex-wrap items-center gap-1">
+                  {shipBoxes.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setActiveShipBoxIdx(idx)}
+                      className={`rounded-md border px-2.5 py-1 text-xs font-semibold ${
+                        activeShipBoxIdx === idx
+                          ? "border-stone-900 bg-stone-900 text-amber-50 dark:border-stone-200 dark:bg-stone-100 dark:text-stone-900"
+                          : "border-stone-300 text-stone-600 dark:border-stone-600"
+                      }`}
+                    >
+                      Box {idx + 1}
+                    </button>
+                  ))}
+                  {shipBoxes.length < MAX_SHIP_BOXES ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShipBoxes((prev) => [...prev, defaultShipBox(activeShipBox.weightGrams)]);
+                        setActiveShipBoxIdx(shipBoxes.length);
+                      }}
+                      className="rounded-md border border-dashed border-stone-400 px-2.5 py-1 text-xs font-semibold text-stone-600 dark:border-stone-500"
+                    >
+                      + Add box
+                    </button>
+                  ) : null}
+                </div>
+              </div>
               <label className="block">
                 <span className="text-xs text-stone-500">Package type</span>
                 <select
-                  value={shipPackageType}
-                  onChange={(e) =>
-                    setShipPackageType(e.target.value as "PLASTIC_COVER" | "CARDBOARD_BOX")
-                  }
+                  value={activeShipBox.packageType}
+                  onChange={(e) => {
+                    const packageType = e.target.value as DelhiveryShipBox["packageType"];
+                    setShipBoxes((prev) =>
+                      prev.map((b, i) => (i === activeShipBoxIdx ? { ...b, packageType } : b))
+                    );
+                  }}
                   className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
                 >
                   <option value="PLASTIC_COVER">Plastic cover / Flyer</option>
@@ -1129,24 +1239,39 @@ export default function AdminOrderDetailPage() {
                   <input
                     type="number"
                     min={5}
-                    value={shipLengthCm}
-                    onChange={(e) => setShipLengthCm(Number(e.target.value) || 10)}
+                    value={activeShipBox.lengthCm}
+                    onChange={(e) => {
+                      const lengthCm = Number(e.target.value) || 10;
+                      setShipBoxes((prev) =>
+                        prev.map((b, i) => (i === activeShipBoxIdx ? { ...b, lengthCm } : b))
+                      );
+                    }}
                     placeholder="L"
                     className="rounded-lg border border-stone-300 px-2 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
                   />
                   <input
                     type="number"
                     min={5}
-                    value={shipBreadthCm}
-                    onChange={(e) => setShipBreadthCm(Number(e.target.value) || 10)}
+                    value={activeShipBox.breadthCm}
+                    onChange={(e) => {
+                      const breadthCm = Number(e.target.value) || 10;
+                      setShipBoxes((prev) =>
+                        prev.map((b, i) => (i === activeShipBoxIdx ? { ...b, breadthCm } : b))
+                      );
+                    }}
                     placeholder="B"
                     className="rounded-lg border border-stone-300 px-2 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
                   />
                   <input
                     type="number"
                     min={5}
-                    value={shipHeightCm}
-                    onChange={(e) => setShipHeightCm(Number(e.target.value) || 10)}
+                    value={activeShipBox.heightCm}
+                    onChange={(e) => {
+                      const heightCm = Number(e.target.value) || 10;
+                      setShipBoxes((prev) =>
+                        prev.map((b, i) => (i === activeShipBoxIdx ? { ...b, heightCm } : b))
+                      );
+                    }}
                     placeholder="H"
                     className="rounded-lg border border-stone-300 px-2 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
                   />
@@ -1158,11 +1283,46 @@ export default function AdminOrderDetailPage() {
                 <input
                   type="number"
                   min={50}
-                  value={shipWeightGrams}
-                  onChange={(e) => setShipWeightGrams(Math.max(50, Number(e.target.value) || 50))}
+                  value={activeShipBox.weightGrams}
+                  onChange={(e) => {
+                    const weightGrams = Math.max(50, Number(e.target.value) || 50);
+                    setShipBoxes((prev) =>
+                      prev.map((b, i) => (i === activeShipBoxIdx ? { ...b, weightGrams } : b))
+                    );
+                  }}
                   className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
                 />
               </label>
+              <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs text-stone-600 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300">
+                <p>
+                  Chargeable weight (box {activeShipBoxIdx + 1}):{" "}
+                  <strong>{chargeableWeightGrams(activeShipBox).toLocaleString("en-IN")} gm</strong>
+                </p>
+                <p className="mt-1">
+                  Total chargeable ({shipBoxes.length} box{shipBoxes.length > 1 ? "es" : ""}):{" "}
+                  <strong>{totalChargeableG.toLocaleString("en-IN")} gm</strong>
+                </p>
+                {shipBoxes.length > 1 ? (
+                  <p className="mt-1 text-amber-800 dark:text-amber-400">
+                    Multi-box (MPS) requires DELHIVERY_CLIENT_NAME on EC2 backend .env.
+                  </p>
+                ) : null}
+                {freightEstimateBusy ? (
+                  <p className="mt-1 text-stone-500">Estimating Delhivery freight…</p>
+                ) : freightEstimate?.totalAmount ? (
+                  <p className="mt-1">
+                    Est. Delhivery freight ({shipMode === "E" ? "Express" : "Surface"}):{" "}
+                    <strong>₹{freightEstimate.totalAmount.toLocaleString("en-IN")}</strong>
+                    <span className="text-stone-500"> (approx., Delhivery rate API)</span>
+                  </p>
+                ) : null}
+                {order ? (
+                  <p className="mt-1">
+                    Label order value:{" "}
+                    <strong>{formatMinorFromPaise(order.grandTotalInPaise, order.currency)}</strong>
+                  </p>
+                ) : null}
+              </div>
               <div>
                 <span className="text-xs text-stone-500">Shipping mode</span>
                 <div className="mt-2 grid grid-cols-2 gap-2">

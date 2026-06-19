@@ -310,6 +310,14 @@ export function fetchAdminOrderShippingBreakdown(orderId: string) {
   }>(`/api/admin/orders/${encodeURIComponent(orderId)}/shipping-breakdown`);
 }
 
+export type DelhiveryShipBox = {
+  lengthCm: number;
+  breadthCm: number;
+  heightCm: number;
+  weightGrams: number;
+  packageType: "PLASTIC_COVER" | "CARDBOARD_BOX";
+};
+
 export function adminCreateShipmentForOrder(
   orderId: string,
   body?: {
@@ -323,11 +331,25 @@ export function adminCreateShipmentForOrder(
     weightGrams?: number;
     packageType?: "PLASTIC_COVER" | "CARDBOARD_BOX";
     shippingMode?: "S" | "E";
+    boxes?: DelhiveryShipBox[];
   }
 ) {
   return adminFetch<{ courier: string; waybill: string; trackingUrl: string }>(
     `/api/shipping/create-shipment/${encodeURIComponent(orderId)}`,
     { method: "POST", body: JSON.stringify(body ?? {}) }
+  );
+}
+
+export function adminEstimateDelhiveryCharge(body: {
+  originPin: string;
+  destPin: string;
+  shippingMode: "S" | "E";
+  paymentMode: "Pre-paid" | "COD";
+  boxes: DelhiveryShipBox[];
+}) {
+  return adminFetch<{ chargeableGrams: number; totalAmount: number; raw: unknown }>(
+    "/api/shipping/admin/delhivery-estimate",
+    { method: "POST", body: JSON.stringify(body) }
   );
 }
 
@@ -474,10 +496,14 @@ export function deleteAdminPickupLocation(id: string) {
 }
 
 export function fetchAdminOrderInvoice(id: string, signal?: AbortSignal) {
-  return adminFetch<{ pdfUrl: string | null; invoiceNo: string | null }>(
+  return adminFetch<{ pdfUrl: string | null; invoiceNo: string | null; downloadUrl: string | null }>(
     `/api/admin/orders/${id}/invoice`,
     { signal }
   );
+}
+
+export function adminOrderInvoiceDownloadUrl(orderId: string): string {
+  return `/api/admin/orders/${encodeURIComponent(orderId)}/invoice/download`;
 }
 
 export type AdminProductRow = {
