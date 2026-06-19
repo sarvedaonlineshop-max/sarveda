@@ -123,7 +123,17 @@ export type DelhiveryShipmentInput = {
   paymentMode: "Pre-paid" | "COD";
   codAmountRupees?: number;
   weightKg: number;
+  /** Override computed weight (grams). */
+  weightGrams?: number;
   pickupLocation?: string;
+  /** Sales channel — stored on order meta; default Sarveda website. */
+  channel?: string;
+  lengthCm?: number;
+  breadthCm?: number;
+  heightCm?: number;
+  /** Surface (S) or Express (E) */
+  shippingMode?: "S" | "E";
+  packageType?: string;
   /** Ship-to */
   consigneeName: string;
   consigneePhone: string;
@@ -151,8 +161,14 @@ export async function createShipment(
   }
   try {
     const pin = input.pincode.replace(/\D/g, "").slice(0, 6);
-    const weightG = Math.max(1, Math.round(input.weightKg * 1000));
+    const weightG = Math.max(
+      50,
+      input.weightGrams != null ? Math.round(input.weightGrams) : Math.round(input.weightKg * 1000)
+    );
     const paymentMode = input.paymentMode === "COD" ? "COD" : "Prepaid";
+    const lengthCm = Math.max(5, input.lengthCm ?? 10);
+    const breadthCm = Math.max(5, input.breadthCm ?? 10);
+    const heightCm = Math.max(5, input.heightCm ?? 10);
 
     const shipment: Record<string, unknown> = {
       name: input.consigneeName,
@@ -165,10 +181,16 @@ export async function createShipment(
       country: "India",
       payment_mode: paymentMode,
       weight: weightG,
-      shipment_width: 10,
-      shipment_height: 10,
-      shipment_length: 10
+      shipment_width: breadthCm,
+      shipment_height: heightCm,
+      shipment_length: lengthCm
     };
+    if (input.shippingMode) {
+      shipment.shipping_mode = input.shippingMode === "E" ? "Express" : "Surface";
+    }
+    if (input.packageType?.trim()) {
+      shipment.products_desc = input.packageType.trim();
+    }
     if (paymentMode === "COD" && input.codAmountRupees != null) {
       shipment.cod_amount = Number(input.codAmountRupees.toFixed(2));
     }
@@ -178,6 +200,9 @@ export async function createShipment(
     };
     if (input.pickupLocation) {
       payload.pickups = [{ pickup_location: input.pickupLocation }];
+    }
+    if (input.channel?.trim()) {
+      payload.channel = input.channel.trim();
     }
 
     const form = new URLSearchParams();

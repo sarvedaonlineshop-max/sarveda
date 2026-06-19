@@ -25,7 +25,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/content": "Content",
   "/admin/catalog-gaps": "Catalog Gaps",
   "/admin/inventory": "Inventory",
-  "/admin/settings/pickup-locations": "Warehouses"
+  "/admin/settings/pickup-locations": "Pickup Locations"
 };
 
 function getPageTitle(pathname: string): string {

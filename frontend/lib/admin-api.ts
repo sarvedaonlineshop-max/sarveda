@@ -316,6 +316,13 @@ export function adminCreateShipmentForOrder(
     pickupLocationId?: string;
     shiprocketPickupName?: string;
     preferredCourier?: "AUTO" | "DELHIVERY" | "SHIPROCKET" | "SHIPROCKET_INTERNATIONAL";
+    channel?: string;
+    lengthCm?: number;
+    breadthCm?: number;
+    heightCm?: number;
+    weightGrams?: number;
+    packageType?: "PLASTIC_COVER" | "CARDBOARD_BOX";
+    shippingMode?: "S" | "E";
   }
 ) {
   return adminFetch<{ courier: string; waybill: string; trackingUrl: string }>(
@@ -370,11 +377,25 @@ export type AdminPickupLocationRow = {
   id: string;
   label: string;
   shiprocketPickupName: string;
+  delhiveryPickupName: string | null;
+  contactPerson: string | null;
+  phone: string | null;
+  email: string | null;
   line1: string | null;
   line2: string | null;
   city: string | null;
   state: string | null;
   postalCode: string | null;
+  country: string;
+  defaultPickupSlot: string | null;
+  workingDays: string[] | null;
+  returnSameAsPickup: boolean;
+  returnLine1: string | null;
+  returnLine2: string | null;
+  returnCity: string | null;
+  returnState: string | null;
+  returnPostalCode: string | null;
+  returnCountry: string | null;
   notes: string | null;
   isPrimary: boolean;
   sortOrder: number;
@@ -383,49 +404,63 @@ export type AdminPickupLocationRow = {
   updatedAt: string;
 };
 
-export function fetchAdminPickupLocations(params?: { activeOnly?: boolean }) {
+export type AdminPickupLocationInput = {
+  label: string;
+  shiprocketPickupName: string;
+  delhiveryPickupName?: string;
+  contactPerson?: string;
+  phone?: string;
+  email?: string;
+  line1?: string;
+  line2?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+  defaultPickupSlot?: string;
+  workingDays?: string[];
+  returnSameAsPickup?: boolean;
+  returnLine1?: string;
+  returnLine2?: string;
+  returnCity?: string;
+  returnState?: string;
+  returnPostalCode?: string;
+  returnCountry?: string;
+  notes?: string;
+  isPrimary?: boolean;
+  sortOrder?: number;
+  isActive?: boolean;
+};
+
+export function fetchAdminPickupLocations(params?: {
+  activeOnly?: boolean;
+  q?: string;
+  status?: "active" | "inactive" | "";
+}) {
   const q = new URLSearchParams();
   if (params?.activeOnly) q.set("activeOnly", "true");
+  if (params?.q) q.set("q", params.q);
+  if (params?.status) q.set("status", params.status);
   const qs = q.toString();
   return adminFetch<{ items: AdminPickupLocationRow[] }>(
     `/api/admin/pickup-locations${qs ? `?${qs}` : ""}`
   ).then((d) => d.items);
 }
 
-export function postAdminPickupLocation(body: {
-  label: string;
-  shiprocketPickupName: string;
-  line1?: string;
-  line2?: string;
-  city?: string;
-  state?: string;
-  postalCode?: string;
-  notes?: string;
-  isPrimary?: boolean;
-  sortOrder?: number;
-}) {
+export function fetchAdminPickupLocation(id: string) {
+  return adminFetch<{ item: AdminPickupLocationRow }>(`/api/admin/pickup-locations/${id}`).then(
+    (d) => d.item
+  );
+}
+
+export function postAdminPickupLocation(body: AdminPickupLocationInput) {
   return adminFetch<{ item: AdminPickupLocationRow }>("/api/admin/pickup-locations", {
     method: "POST",
     body: JSON.stringify(body)
   }).then((d) => d.item);
 }
 
-export function patchAdminPickupLocation(
-  id: string,
-  body: Partial<{
-    label: string;
-    shiprocketPickupName: string;
-    line1: string | null;
-    line2: string | null;
-    city: string | null;
-    state: string | null;
-    postalCode: string | null;
-    notes: string | null;
-    isPrimary: boolean;
-    sortOrder: number;
-    isActive: boolean;
-  }>
-) {
+export function patchAdminPickupLocation(id: string, body: Partial<AdminPickupLocationInput>) {
   return adminFetch<{ item: AdminPickupLocationRow }>(`/api/admin/pickup-locations/${id}`, {
     method: "PATCH",
     body: JSON.stringify(body)

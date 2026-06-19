@@ -426,16 +426,33 @@ model Invoice {
   order     Order    @relation(fields: [orderId], references: [id])
 }
 
-/// Admin-managed warehouse; `shiprocketPickupName` must match Shiprocket pickup_location exactly.
+/// Admin-managed warehouse / pickup facility (Shiprocket + Delhivery names).
 model PickupLocation {
   id                   String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   label                String
+  /// Must match Shiprocket pickup_location name exactly.
   shiprocketPickupName String
+  /// Must match Delhivery One facility name exactly (pickup_location in CMU API).
+  delhiveryPickupName  String?
+  contactPerson        String?
+  phone                String?
+  email                String?
   line1                String?
   line2                String?
   city                 String?
   state                String?
   postalCode           String?
+  country              String     @default("IN")
+  defaultPickupSlot    String?
+  /// e.g. ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
+  workingDays          Json?
+  returnSameAsPickup   Boolean    @default(true)
+  returnLine1          String?
+  returnLine2          String?
+  returnCity           String?
+  returnState          String?
+  returnPostalCode     String?
+  returnCountry        String?
   notes                String?
   isPrimary            Boolean    @default(false)
   sortOrder            Int        @default(0)

@@ -209,11 +209,27 @@ export async function resolveDelhiveryPickupName(
   orderId: string,
   options?: AutoShipmentCreateOptions
 ): Promise<string | undefined> {
+  function facilityName(row: {
+    delhiveryPickupName: string | null;
+    shiprocketPickupName: string;
+    label: string;
+  }): string {
+    return (
+      row.delhiveryPickupName?.trim() ||
+      row.shiprocketPickupName.trim() ||
+      row.label.trim() ||
+      ""
+    );
+  }
+
   if (options?.pickupLocationId) {
     const row = await prisma.pickupLocation.findFirst({
       where: { id: options.pickupLocationId, isActive: true }
     });
-    if (row) return row.shiprocketPickupName.trim() || row.label.trim();
+    if (row) {
+      const name = facilityName(row);
+      if (name) return name;
+    }
   }
   const items = await prisma.orderItem.findMany({
     where: { orderId, pickupLocationId: { not: null } },
@@ -221,11 +237,17 @@ export async function resolveDelhiveryPickupName(
     take: 1
   });
   const fromLine = items[0]?.pickupLocation;
-  if (fromLine) return fromLine.shiprocketPickupName.trim() || fromLine.label.trim();
+  if (fromLine) {
+    const name = facilityName(fromLine);
+    if (name) return name;
+  }
   const primary = await prisma.pickupLocation.findFirst({
     where: { isActive: true, isPrimary: true }
   });
-  if (primary) return primary.shiprocketPickupName.trim() || primary.label.trim();
+  if (primary) {
+    const name = facilityName(primary);
+    if (name) return name;
+  }
   return undefined;
 }
 
@@ -245,6 +267,13 @@ function codAmountRupees(order: OrderWithShippingContext): number {
 export type AutoShipmentCreateOptions = {
   pickupLocationId?: string;
   shiprocketPickupName?: string;
+  channel?: string;
+  lengthCm?: number;
+  breadthCm?: number;
+  heightCm?: number;
+  weightGrams?: number;
+  packageType?: string;
+  shippingMode?: "S" | "E";
 };
 
 /** Shiprocket/Delhivery channel order id — first label uses Sarveda order number; retries get -R2, -R3 after cancel. */
@@ -404,12 +433,27 @@ export async function autoSelectAndCreate(
 
     if (choice === "DELHIVERY") {
       const delhiveryPickup = await resolveDelhiveryPickupName(orderId, options);
+      const computedWeightG = Math.max(50, totalWeightGrams(order as OrderWithShippingContext));
+      const weightGrams = options?.weightGrams ?? computedWeightG;
+      const packageLabel =
+        options?.packageType === "PLASTIC_COVER"
+          ? "Plastic cover/Flyer"
+          : options?.packageType === "CARDBOARD_BOX"
+            ? "Cardboard Box"
+            : undefined;
       const created = await delhivery.createShipment({
         orderNumber: channelOrderId,
         paymentMode,
         codAmountRupees: paymentMode === "COD" ? codAmountRupees(order as OrderWithShippingContext) : undefined,
         weightKg,
+        weightGrams,
         pickupLocation: delhiveryPickup,
+        channel: options?.channel ?? "www.sarveda.com",
+        lengthCm: options?.lengthCm,
+        breadthCm: options?.breadthCm,
+        heightCm: options?.heightCm,
+        shippingMode: options?.shippingMode ?? "S",
+        packageType: packageLabel,
         consigneeName: shipAddr.fullName,
         consigneePhone: shipAddr.phone,
         address: [shipAddr.line1, shipAddr.line2].filter(Boolean).join(", "),
@@ -431,7 +475,18 @@ export async function autoSelectAndCreate(
         created.data.waybill,
         created.data.trackingUrl,
         pickupId,
-        { channelOrderId, carrier: "DELHIVERY" },
+        {
+          channelOrderId,
+          carrier: "DELHIVERY",
+          channel: options?.channel ?? "www.sarveda.com",
+          lengthCm: options?.lengthCm ?? 10,
+          breadthCm: options?.breadthCm ?? 10,
+          heightCm: options?.heightCm ?? 10,
+          weightGrams,
+          packageType: options?.packageType ?? null,
+          shippingMode: options?.shippingMode ?? "S",
+          pickupLocation: delhiveryPickup ?? null
+        },
         nextSeq
       );
       return {

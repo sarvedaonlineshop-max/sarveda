@@ -155,7 +155,14 @@ export async function createShipmentForOrder(req: Request, res: Response, next: 
         shiprocketPickupName: z.string().min(1).max(200).optional(),
         preferredCourier: z
           .enum(["AUTO", "DELHIVERY", "SHIPROCKET", "SHIPROCKET_INTERNATIONAL"])
-          .optional()
+          .optional(),
+        channel: z.string().min(1).max(120).optional(),
+        lengthCm: z.number().min(5).max(200).optional(),
+        breadthCm: z.number().min(5).max(200).optional(),
+        heightCm: z.number().min(5).max(200).optional(),
+        weightGrams: z.number().int().min(50).max(500_000).optional(),
+        packageType: z.enum(["PLASTIC_COVER", "CARDBOARD_BOX"]).optional(),
+        shippingMode: z.enum(["S", "E"]).optional()
       })
       .safeParse(req.body && typeof req.body === "object" ? req.body : {});
 
@@ -168,7 +175,18 @@ export async function createShipmentForOrder(req: Request, res: Response, next: 
       return;
     }
 
-    const { pickupLocationId, shiprocketPickupName, preferredCourier } = bodyParsed.data;
+    const {
+      pickupLocationId,
+      shiprocketPickupName,
+      preferredCourier,
+      channel,
+      lengthCm,
+      breadthCm,
+      heightCm,
+      weightGrams,
+      packageType,
+      shippingMode
+    } = bodyParsed.data;
     if (preferredCourier) {
       await prisma.order.update({
         where: { id: orderId },
@@ -177,7 +195,14 @@ export async function createShipmentForOrder(req: Request, res: Response, next: 
     }
     const result = await autoSelectAndCreate(orderId, {
       ...(pickupLocationId ? { pickupLocationId } : {}),
-      ...(shiprocketPickupName ? { shiprocketPickupName } : {})
+      ...(shiprocketPickupName ? { shiprocketPickupName } : {}),
+      ...(channel ? { channel } : {}),
+      ...(lengthCm != null ? { lengthCm } : {}),
+      ...(breadthCm != null ? { breadthCm } : {}),
+      ...(heightCm != null ? { heightCm } : {}),
+      ...(weightGrams != null ? { weightGrams } : {}),
+      ...(packageType ? { packageType } : {}),
+      ...(shippingMode ? { shippingMode } : {})
     });
     if (!result.success) {
       res.status(400).json(result);

@@ -25,6 +25,7 @@ const router = Router();
 router.use(requireAdmin);
 
 router.get("/pickup-locations", pickupLocations.listPickupLocations);
+router.get("/pickup-locations/:id", pickupLocations.getPickupLocation);
 router.post(
   "/pickup-locations",
   validateBody(createPickupLocationSchema),
