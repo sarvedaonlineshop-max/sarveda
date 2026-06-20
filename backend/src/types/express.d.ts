@@ -8,6 +8,10 @@ declare global {
         email: string;
         role?: string;
       };
+      complaintUser?: {
+        email: string;
+        name?: string;
+      };
       user?: Profile;
     }
   }
