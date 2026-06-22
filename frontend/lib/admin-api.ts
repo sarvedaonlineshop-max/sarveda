@@ -979,3 +979,98 @@ export function deleteAdminContent(type: AdminContentType, id: string) {
     { method: "DELETE" }
   );
 }
+
+export type EnquiryThreadListItem = {
+  id: string;
+  source: string;
+  subjectCategory: string | null;
+  customSubject: string | null;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string | null;
+  orderNumber: string | null;
+  contextTitle: string | null;
+  status: string;
+  unreadByAdmin: boolean;
+  lastMessageAt: string;
+  createdAt: string;
+  messages: Array<{ body: string; authorType: string; createdAt: string }>;
+};
+
+export type EnquiryAttachmentRow = {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  s3Url: string;
+  fileSizeBytes: number | null;
+};
+
+export type EnquiryMessageRow = {
+  id: string;
+  authorType: "CUSTOMER" | "ADMIN";
+  authorName: string;
+  authorEmail: string;
+  body: string;
+  createdAt: string;
+  attachments: EnquiryAttachmentRow[];
+  adminUser?: { id: string; name: string | null; email: string } | null;
+};
+
+export type EnquiryThreadDetail = Omit<EnquiryThreadListItem, "messages"> & {
+  contextUrl: string | null;
+  messages: EnquiryMessageRow[];
+};
+
+export function fetchEnquiryUnreadCount() {
+  return adminFetch<{ count: number }>("/api/admin/enquiries/unread-count").then((d) => d.count);
+}
+
+export function fetchAdminEnquiries(params?: {
+  page?: number;
+  unreadOnly?: boolean;
+  source?: string;
+}) {
+  const q = new URLSearchParams();
+  if (params?.page) q.set("page", String(params.page));
+  if (params?.unreadOnly) q.set("unreadOnly", "true");
+  if (params?.source) q.set("source", params.source);
+  const qs = q.toString();
+  return adminFetch<{
+    items: EnquiryThreadListItem[];
+    total: number;
+    page: number;
+    limit: number;
+    unreadCount: number;
+  }>(`/api/admin/enquiries${qs ? `?${qs}` : ""}`);
+}
+
+export function fetchAdminEnquiryThread(id: string) {
+  return adminFetch<EnquiryThreadDetail>(`/api/admin/enquiries/${encodeURIComponent(id)}`);
+}
+
+export async function replyAdminEnquiryThread(
+  id: string,
+  message: string,
+  attachments?: File[]
+) {
+  const form = new FormData();
+  form.append("message", message);
+  for (const file of attachments ?? []) {
+    form.append("attachments", file);
+  }
+  const url = `${getApiBase()}/api/admin/enquiries/${encodeURIComponent(id)}/reply`;
+  const res = await fetch(url, { method: "POST", credentials: "include", body: form });
+  const json = (await res.json()) as { success?: boolean; data?: EnquiryMessageRow; error?: string };
+  if (!res.ok || !json.success || !json.data) {
+    throw new AdminApiError(json.error || `Reply failed (${res.status})`);
+  }
+  return json.data;
+}
+
+export function patchAdminEnquiryStatus(id: string, status: "OPEN" | "CLOSED") {
+  return adminFetch<EnquiryThreadDetail>(`/api/admin/enquiries/${encodeURIComponent(id)}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status })
+  });
+}
+

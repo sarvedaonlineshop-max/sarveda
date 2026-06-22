@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logoutSession } from "@/lib/auth-client";
+import { AdminChatsSidebarLink } from "@/components/admin/AdminChatsSidebarLink";
 
 const nav = [
   {
@@ -232,6 +233,7 @@ export function AdminSidebar({
             </Link>
           );
         })}
+        <AdminChatsSidebarLink onNavigate={onNavigate} />
       </nav>
 
       {/* Footer */}

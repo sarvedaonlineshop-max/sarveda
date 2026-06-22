@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { cartAdd } from "@/lib/cart-api";
 import { submitCourseEnquiry } from "@/lib/course-enquiry";
-import { buildEnquiryWhatsAppUrl } from "@/lib/enquiry";
+import { buildCourseEnquiryMessage, buildEnquiryWhatsAppUrl } from "@/lib/enquiry";
 import { formatINRFromPaise } from "@/lib/money";
 import type { EnrollableItem } from "@/lib/enrollable";
 import { absoluteUrl } from "@/lib/site";
@@ -33,10 +33,15 @@ export function CourseEnrollActions({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
+  const [enquiryMessage, setEnquiryMessage] = useState("");
   const [emailSending, setEmailSending] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
   const courseUrl = absoluteUrl(`/${pathPrefix}/${course.slug}`);
+
+  useEffect(() => {
+    setEnquiryMessage(buildCourseEnquiryMessage(course.title));
+  }, [course.title]);
   const showPay =
     !registrationClosed &&
     (course.enrollmentMode === "CHECKOUT" || course.enrollmentMode === "BOTH") &&
@@ -71,7 +76,8 @@ export function CourseEnrollActions({
       await submitCourseEnquiry({
         email: email.trim(),
         courseTitle: course.title,
-        courseUrl
+        courseUrl,
+        message: enquiryMessage.trim() || buildCourseEnquiryMessage(course.title)
       });
       setEmailSent(true);
     } catch (ex) {
@@ -157,7 +163,7 @@ export function CourseEnrollActions({
           {showEnquire && pathPrefix === "course" ? (
             <div className={`space-y-3 ${embedded ? "mt-4 border-t border-stone-200 pt-4" : "mt-4"}`}>
               <p className="text-xs text-stone-500">
-                Or email us — we&apos;ll send your enquiry to care@sarveda.com
+                Or email us — your enquiry is saved and sent to care@sarveda.com
               </p>
               {emailSent ? (
                 <p className="text-sm text-emerald-700">Enquiry sent. We will reply to {email}.</p>
@@ -169,6 +175,13 @@ export function CourseEnrollActions({
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Your email address"
                     className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900"
+                  />
+                  <textarea
+                    value={enquiryMessage}
+                    onChange={(e) => setEnquiryMessage(e.target.value)}
+                    rows={3}
+                    placeholder="Your questions about this course…"
+                    className="w-full resize-y rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900"
                   />
                   <button
                     type="button"
@@ -182,12 +195,7 @@ export function CourseEnrollActions({
               )}
             </div>
           ) : showEnquire && pathPrefix === "event" ? (
-            <a
-              href={`mailto:care@sarveda.com?subject=${encodeURIComponent(`Event enquiry: ${course.title}`)}`}
-              className="mt-4 inline-flex min-h-[48px] w-full items-center justify-center rounded-full border border-stone-300 bg-white px-6 text-sm font-semibold text-stone-800 transition hover:border-amber-400 hover:bg-amber-50"
-            >
-              Email enquiry
-            </a>
+            <EventEmailEnquiry title={course.title} slug={course.slug} courseUrl={courseUrl} />
           ) : null}
 
           {course.enrollmentMode === "BOTH" && showPay ? (
@@ -203,6 +211,80 @@ export function CourseEnrollActions({
               Sign in before checkout to see your course or event under Profile → Courses & events.
             </p>
           ) : null}
+        </>
+      )}
+    </div>
+  );
+}
+
+function EventEmailEnquiry({
+  title,
+  courseUrl
+}: {
+  title: string;
+  slug: string;
+  courseUrl: string;
+}) {
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState(`Hi, I have questions about the event: ${title}`);
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  return (
+    <div className="mt-4 space-y-3">
+      {sent ? (
+        <p className="text-sm text-emerald-700">Enquiry sent. We will reply to {email}.</p>
+      ) : (
+        <>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Your email"
+            className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm"
+          />
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            rows={3}
+            className="w-full resize-y rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm"
+          />
+          {error ? <p className="text-sm text-red-700">{error}</p> : null}
+          <button
+            type="button"
+            disabled={sending}
+            onClick={() => {
+              void (async () => {
+                if (!email.trim()) {
+                  setError("Please enter your email.");
+                  return;
+                }
+                setSending(true);
+                setError(null);
+                try {
+                  const { submitEnquiry } = await import("@/lib/enquiry-api");
+                  await submitEnquiry({
+                    source: "EVENT",
+                    subjectCategory: "COURSE",
+                    name: email.split("@")[0] || "Guest",
+                    email: email.trim(),
+                    message: message.trim(),
+                    contextTitle: title,
+                    contextUrl: courseUrl
+                  });
+                  setSent(true);
+                } catch (e) {
+                  setError(e instanceof Error ? e.message : "Could not send enquiry.");
+                } finally {
+                  setSending(false);
+                }
+              })();
+            }}
+            className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full border border-stone-300 bg-white px-6 text-sm font-semibold text-stone-800 hover:border-amber-400 hover:bg-amber-50 disabled:opacity-60"
+          >
+            {sending ? "Sending…" : "Email enquiry"}
+          </button>
         </>
       )}
     </div>

@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { InsightCard } from "@/components/content/InsightCard";
 import { ContentCardGrid } from "@/components/content/ContentListingSection";
+import { EnquiryPanelForm } from "@/components/enquiries/EnquiryPanelForm";
 import { fetchBlogPosts } from "@/lib/api";
 import { canonical, isProductionSite } from "@/lib/site";
 
@@ -48,6 +49,13 @@ export default async function InsightsPage() {
             ))}
           </ContentCardGrid>
         )}
+        <section className="mt-16 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm sm:p-8">
+          <EnquiryPanelForm
+            source="INSIGHTS"
+            title="Questions or story ideas?"
+            subtitle="Reach our editorial team — we reply by email."
+          />
+        </section>
       </main>
     </>
   );

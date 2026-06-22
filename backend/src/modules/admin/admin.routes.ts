@@ -20,6 +20,7 @@ import { contentRoutes } from "./content/content.routes";
 import * as mediaHandlers from "./media.handlers";
 import * as seoSuggest from "./seo-suggest.handlers";
 import { couponAdminRoutes } from "../coupons/coupon.admin.routes";
+import { enquiriesAdminRoutes } from "../enquiries/enquiries.admin.routes";
 
 const router = Router();
 router.use(requireAdmin);
@@ -42,6 +43,7 @@ router.use("/coupons", couponAdminRoutes);
 
 router.get("/dashboard", admin.dashboard);
 router.get("/notifications", admin.adminNotifications);
+router.use("/enquiries", enquiriesAdminRoutes);
 router.post("/jobs/cart-cleanup", admin.triggerCartCleanup);
 router.get("/customers", admin.customersList);
 router.get("/enrollments/courses", enrollments.courseEnrollmentsCourses);

@@ -29,6 +29,8 @@ model User {
   bookings     Booking[]
   stockNotifications StockNotification[]
   passwordResetTokens PasswordResetToken[]
+  enquiryThreads      EnquiryThread[]
+  enquiryAdminMessages EnquiryMessage[] @relation("EnquiryAdminMessages")
 }
 
 enum Role {
@@ -795,17 +797,85 @@ model OtpCode {
   createdAt DateTime @default(now())
 }
 
-model ContactSubmission {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String
-  email       String
-  phone       String?
-  subject     String?
-  message     String
-  orderNumber String?
-  userId      String?  @db.Uuid
-  source      String   @default("general")
-  createdAt   DateTime @default(now())
+enum EnquirySource {
+  CONTACT
+  CORPORATE
+  COURSE
+  EVENT
+  INSIGHTS
+}
+
+enum EnquirySubjectCategory {
+  ORDER
+  PAYMENT
+  COURSE
+  CORPORATE
+  OTHER
+}
+
+enum EnquiryMessageAuthor {
+  CUSTOMER
+  ADMIN
+}
+
+enum EnquiryThreadStatus {
+  OPEN
+  CLOSED
+}
+
+model EnquiryThread {
+  id              String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  source          EnquirySource
+  subjectCategory EnquirySubjectCategory?
+  customSubject   String?
+  customerName    String
+  customerEmail   String
+  customerPhone   String?
+  orderNumber     String?
+  contextTitle    String?
+  contextUrl      String?
+  userId          String?                 @db.Uuid
+  status          EnquiryThreadStatus     @default(OPEN)
+  unreadByAdmin   Boolean                 @default(true)
+  lastMessageAt   DateTime                @default(now())
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  user            User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  messages        EnquiryMessage[]
+
+  @@index([unreadByAdmin, lastMessageAt(sort: Desc)])
+  @@index([customerEmail])
+  @@index([source])
+}
+
+model EnquiryMessage {
+  id          String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  threadId    String               @db.Uuid
+  authorType  EnquiryMessageAuthor
+  adminUserId String?              @db.Uuid
+  authorName  String
+  authorEmail String
+  body        String
+  createdAt   DateTime             @default(now())
+  thread      EnquiryThread        @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  adminUser   User?                @relation("EnquiryAdminMessages", fields: [adminUserId], references: [id], onDelete: SetNull)
+  attachments EnquiryAttachment[]
+
+  @@index([threadId, createdAt])
+}
+
+model EnquiryAttachment {
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  messageId     String         @db.Uuid
+  fileName      String
+  mimeType      String
+  fileSizeBytes Int?
+  s3Key         String
+  s3Url         String
+  createdAt     DateTime       @default(now())
+  message       EnquiryMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
 }
 
 enum ComplaintPriority {

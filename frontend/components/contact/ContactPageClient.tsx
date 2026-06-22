@@ -1,11 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, Suspense, useEffect, useState } from "react";
+import { FormEvent, Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-import { getApiBase } from "@/lib/api";
 import { fetchMe } from "@/lib/auth-client";
+import { submitEnquiry } from "@/lib/enquiry-api";
+import {
+  ACCEPTED_ENQUIRY_FILE_TYPES,
+  ENQUIRY_SUBJECT_OPTIONS,
+  type EnquirySubjectValue
+} from "@/lib/enquiry-subjects";
+
+const inputCls =
+  "min-h-[48px] w-full rounded-xl border border-stone-200 px-4 text-sm text-stone-900 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20";
 
 function ContactFormInner() {
   const search = useSearchParams();
@@ -14,56 +22,54 @@ function ContactFormInner() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [subject, setSubject] = useState("");
+  const [subjectCategory, setSubjectCategory] = useState<EnquirySubjectValue>(
+    presetOrder ? "ORDER" : "OTHER"
+  );
   const [orderNumber, setOrderNumber] = useState(presetOrder);
   const [message, setMessage] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [confirmText, setConfirmText] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setOrderNumber(presetOrder);
+    if (presetOrder) setSubjectCategory("ORDER");
   }, [presetOrder]);
 
   useEffect(() => {
     void fetchMe().then((user) => {
       if (!user) return;
-      setName((current) => current || user.name?.trim() || "");
-      setEmail((current) => current || user.email);
-      setPhone((current) => current || user.phone?.replace(/^\+\d+/, "") || "");
+      setName((c) => c || user.name?.trim() || "");
+      setEmail((c) => c || user.email);
+      setPhone((c) => c || user.phone?.replace(/^\+\d+/, "") || "");
     });
   }, []);
+
+  function onFilesChange(list: FileList | null) {
+    if (!list) return;
+    setFiles((prev) => [...prev, ...Array.from(list)].slice(0, 5));
+  }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${getApiBase()}/api/contact/support`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          email: email.trim(),
-          phone: phone.trim() || undefined,
-          subject: subject.trim() || undefined,
-          message: message.trim(),
-          orderNumber: orderNumber.trim() || undefined
-        })
+      const result = await submitEnquiry({
+        source: "CONTACT",
+        subjectCategory,
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim() || undefined,
+        message: message.trim(),
+        orderNumber:
+          subjectCategory === "ORDER" ? orderNumber.trim() || undefined : orderNumber.trim() || undefined,
+        attachments: files
       });
-      const json = (await res.json()) as {
-        success?: boolean;
-        data?: { message?: string };
-        error?: string;
-      };
-      if (!res.ok || !json.success) {
-        throw new Error(json.error || "Could not send your message. Please email care@sarveda.com.");
-      }
-      setConfirmText(
-        json.data?.message ?? "Thank you — we received your message and will reply within 1–2 business days."
-      );
+      setConfirmText(result.message);
       setSubmitted(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
@@ -77,6 +83,7 @@ function ContactFormInner() {
       <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-8 text-center">
         <p className="text-lg font-semibold text-emerald-950">Message sent</p>
         <p className="mt-3 text-sm text-emerald-900">{confirmText}</p>
+        <p className="mt-2 text-xs text-emerald-800">We will reply to {email}.</p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Link
             href="/shop"
@@ -105,6 +112,24 @@ function ContactFormInner() {
         </p>
       ) : null}
 
+      <div>
+        <label htmlFor="contact-subject" className="mb-2 block text-sm font-medium text-stone-700">
+          What is this about?
+        </label>
+        <select
+          id="contact-subject"
+          value={subjectCategory}
+          onChange={(e) => setSubjectCategory(e.target.value as EnquirySubjectValue)}
+          className={inputCls}
+        >
+          {ENQUIRY_SUBJECT_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
           <label htmlFor="contact-name" className="mb-2 block text-sm font-medium text-stone-700">
@@ -116,7 +141,7 @@ function ContactFormInner() {
             onChange={(e) => setName(e.target.value)}
             required
             autoComplete="name"
-            className="min-h-[48px] w-full rounded-xl border border-stone-200 px-4 text-sm text-stone-900 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+            className={inputCls}
           />
         </div>
         <div>
@@ -130,7 +155,7 @@ function ContactFormInner() {
             onChange={(e) => setEmail(e.target.value)}
             required
             autoComplete="email"
-            className="min-h-[48px] w-full rounded-xl border border-stone-200 px-4 text-sm text-stone-900 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+            className={inputCls}
           />
         </div>
       </div>
@@ -146,39 +171,26 @@ function ContactFormInner() {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             autoComplete="tel"
-            className="min-h-[48px] w-full rounded-xl border border-stone-200 px-4 text-sm text-stone-900 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+            className={inputCls}
           />
         </div>
         <div>
           <label htmlFor="contact-order" className="mb-2 block text-sm font-medium text-stone-700">
-            Order number (optional)
+            Order number {subjectCategory === "ORDER" ? "" : "(optional)"}
           </label>
           <input
             id="contact-order"
             value={orderNumber}
             onChange={(e) => setOrderNumber(e.target.value)}
             placeholder="SRV-20260600001"
-            className="min-h-[48px] w-full rounded-xl border border-stone-200 px-4 font-mono text-sm text-stone-900 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+            className={`${inputCls} font-mono`}
           />
         </div>
       </div>
 
       <div>
-        <label htmlFor="contact-subject" className="mb-2 block text-sm font-medium text-stone-700">
-          Subject (optional)
-        </label>
-        <input
-          id="contact-subject"
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-          placeholder="Delivery, refund, product question…"
-          className="min-h-[48px] w-full rounded-xl border border-stone-200 px-4 text-sm text-stone-900 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
-        />
-      </div>
-
-      <div>
         <label htmlFor="contact-message" className="mb-2 block text-sm font-medium text-stone-700">
-          How can we help?
+          Message
         </label>
         <textarea
           id="contact-message"
@@ -186,8 +198,42 @@ function ContactFormInner() {
           onChange={(e) => setMessage(e.target.value)}
           required
           rows={5}
+          placeholder="Tell us how we can help…"
           className="w-full resize-y rounded-xl border border-stone-200 px-4 py-3 text-sm text-stone-900 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
         />
+      </div>
+
+      <div>
+        <label className="mb-2 block text-sm font-medium text-stone-700">
+          Attachments (optional, up to 5 files, 10 MB each)
+        </label>
+        <input
+          ref={fileRef}
+          type="file"
+          multiple
+          accept={ACCEPTED_ENQUIRY_FILE_TYPES}
+          className="block w-full text-sm text-stone-600 file:mr-3 file:rounded-lg file:border-0 file:bg-stone-100 file:px-3 file:py-2 file:text-sm file:font-medium"
+          onChange={(e) => {
+            onFilesChange(e.target.files);
+            e.target.value = "";
+          }}
+        />
+        {files.length > 0 ? (
+          <ul className="mt-2 space-y-1 text-xs text-stone-600">
+            {files.map((f, i) => (
+              <li key={`${f.name}-${i}`} className="flex items-center justify-between gap-2">
+                <span className="truncate">{f.name}</span>
+                <button
+                  type="button"
+                  className="text-red-600 hover:underline"
+                  onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </div>
 
       {error ? (
@@ -221,7 +267,8 @@ export function ContactPageClient() {
 
         <h1 className="mt-4 font-serif text-3xl font-semibold text-stone-900">Need help?</h1>
         <p className="mt-2 text-sm text-stone-600">
-          Questions about an order, delivery, or a product? Send us a message and our team will get back to you.
+          Questions about an order, delivery, or a product? Our team replies by email — usually within 1–2
+          business days.
         </p>
 
         <div className="mt-8 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm sm:p-8">
