@@ -998,7 +998,7 @@ export async function cancelOrder(req: Request, res: Response, next: NextFunctio
     }
 
     const codPaid = order.payments.some((p) => p.provider === "COD");
-    if (codPaid && order.status !== "PENDING_PAYMENT") {
+    if (codPaid) {
       await handlePaidOrderStatusChange(id, "CANCELLED", reason);
       notifyOrderEmail(id, "order_cancelled");
       res.json({
