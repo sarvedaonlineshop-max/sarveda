@@ -13,6 +13,8 @@ export const createOrderSchema = z
     country: z.string().min(2).max(2).default("IN"),
     /** India COD shipping surcharge (VariantShippingRate). */
     codDelivery: z.boolean().optional().default(false),
+    giftWrap: z.boolean().optional().default(false),
+    customerNotes: z.string().max(2000).optional().nullable(),
     /** India: razorpay | cod. International: stripe | paypal. */
     paymentMethod: z
       .enum(["razorpay", "cod", "stripe", "paypal"])

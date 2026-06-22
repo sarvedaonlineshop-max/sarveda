@@ -17,6 +17,7 @@ type Props = {
   activeIndex?: number;
   onActiveChange?: (index: number) => void;
   enableZoom?: boolean;
+  videoUrl?: string | null;
 };
 
 export function ProductGallery({
@@ -24,11 +25,13 @@ export function ProductGallery({
   productName,
   activeIndex,
   onActiveChange,
-  enableZoom = true
+  enableZoom = true,
+  videoUrl
 }: Props) {
   const [internalActive, setInternalActive] = useState(0);
   const [zoomActive, setZoomActive] = useState(false);
   const [zoomOrigin, setZoomOrigin] = useState({ x: 50, y: 50 });
+  const [videoOpen, setVideoOpen] = useState(false);
 
   const controlled = activeIndex !== undefined && onActiveChange !== undefined;
   const active = controlled ? activeIndex : internalActive;
@@ -131,6 +134,21 @@ export function ProductGallery({
         ) : null}
       </div>
 
+      {videoUrl ? (
+        <button
+          type="button"
+          onClick={() => setVideoOpen(true)}
+          className="flex w-full items-center gap-3 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-left transition hover:border-[#c45a2a]/40"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1e3a2f] text-white">
+            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M6.3 4.2a1 1 0 011.05.1l7.2 4.8a1 1 0 010 1.66l-7.2 4.8A1 1 0 016 14.8V5.2a1 1 0 01.3-.8z" />
+            </svg>
+          </span>
+          <span className="text-sm font-medium text-stone-800">Watch product video</span>
+        </button>
+      ) : null}
+
       <div className="flex items-center gap-2">
         {hasMultiple ? (
           <button
@@ -171,6 +189,34 @@ export function ProductGallery({
           </button>
         ) : null}
       </div>
+
+      {videoOpen && videoUrl ? (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 p-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setVideoOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-3xl overflow-hidden rounded-xl bg-black"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setVideoOpen(false)}
+              className="absolute right-2 top-2 z-10 rounded-full bg-black/60 px-3 py-1 text-sm text-white"
+            >
+              Close
+            </button>
+            <video
+              src={resolveMediaUrl(videoUrl) ?? videoUrl}
+              controls
+              autoPlay
+              className="max-h-[80vh] w-full"
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

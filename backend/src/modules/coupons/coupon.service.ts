@@ -196,6 +196,22 @@ function featuredCouponCodes(): string[] {
     .filter(Boolean);
 }
 
+function pdpCouponCodes(): string[] {
+  const raw = process.env.COUPON_PDP_FEATURED ?? process.env.COUPON_CHECKOUT_FEATURED ?? "WELCOME10";
+  return raw
+    .split(",")
+    .map((c) => normalizeCode(c))
+    .filter(Boolean);
+}
+
+function isCouponCurrentlyValid(coupon: Coupon, now = new Date()): boolean {
+  if (!coupon.isActive) return false;
+  if (coupon.validFrom && now < coupon.validFrom) return false;
+  if (coupon.validUntil && now > coupon.validUntil) return false;
+  if (coupon.maxUsageTotal != null && coupon.usageCount >= coupon.maxUsageTotal) return false;
+  return true;
+}
+
 export type CheckoutCouponOffer = {
   code: string;
   label: string;
@@ -205,6 +221,36 @@ export type CheckoutCouponOffer = {
   eligible: boolean;
   ineligibleReason?: string;
 };
+
+export type PdpCouponOffer = {
+  code: string;
+  label: string;
+  description: string | null;
+};
+
+/** Active PDP coupon badges (e.g. Welcome 10) — hides expired/inactive. */
+export async function listActivePdpCouponOffers(): Promise<PdpCouponOffer[]> {
+  const codes = pdpCouponCodes();
+  if (!codes.length) return [];
+
+  const coupons = await prisma.coupon.findMany({
+    where: { code: { in: codes } },
+    orderBy: { createdAt: "desc" }
+  });
+  const byCode = new Map(coupons.map((c) => [c.code, c]));
+  const offers: PdpCouponOffer[] = [];
+
+  for (const code of codes) {
+    const coupon = byCode.get(code);
+    if (!coupon || !isCouponCurrentlyValid(coupon)) continue;
+    offers.push({
+      code: coupon.code,
+      label: formatCouponOfferLabel(coupon),
+      description: coupon.description ?? null
+    });
+  }
+  return offers;
+}
 
 /** Quick-apply buttons on checkout — codes from COUPON_CHECKOUT_FEATURED env. */
 export async function listCheckoutCouponOffers(opts: {

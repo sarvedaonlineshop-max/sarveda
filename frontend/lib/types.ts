@@ -89,6 +89,9 @@ export type ProductDetail = {
   productType: string;
   hasAudio: boolean;
   audioUrl: string | null;
+  videoUrl?: string | null;
+  expressShippingEnabled?: boolean;
+  relatedArticleSlugs?: string[];
   seoTitle: string | null;
   seoDescription: string | null;
   seoKeyword: string | null;

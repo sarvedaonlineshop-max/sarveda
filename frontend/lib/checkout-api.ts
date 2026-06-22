@@ -12,6 +12,8 @@ export type CreateOrderBody = {
   postalCode: string;
   country?: string;
   codDelivery?: boolean;
+  giftWrap?: boolean;
+  customerNotes?: string | null;
   paymentMethod?: "razorpay" | "cod" | "stripe" | "paypal";
 };
 

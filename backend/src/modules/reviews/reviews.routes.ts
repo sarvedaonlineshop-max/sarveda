@@ -11,7 +11,8 @@ const router = Router();
 const CreateReviewSchema = z.object({
   rating: z.number().int().min(1).max(5),
   title: z.string().max(100).optional(),
-  body: z.string().max(1000).optional()
+  body: z.string().max(1000).optional(),
+  reviewerCountry: z.string().length(2).optional()
 });
 
 const PAID_LIKE_STATUSES = ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"] as const;
@@ -69,6 +70,7 @@ router.get("/:productId", optionalAuth, async (req, res, next) => {
         body: true,
         isVerified: true,
         createdAt: true,
+        reviewerCountry: true,
         user: { select: { name: true } }
       }
     });
@@ -126,6 +128,7 @@ router.post("/:productId", requireAuth, async (req, res, next) => {
         rating: data.rating,
         title: data.title ?? null,
         body: data.body ?? null,
+        reviewerCountry: data.reviewerCountry?.toUpperCase() ?? null,
         isVerified: !!hasPurchased,
         isApproved: false
       }

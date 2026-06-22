@@ -14,7 +14,8 @@ import type { CreateOrderBody } from "@/lib/checkout-api";
 import { fetchPublicOrder } from "@/lib/checkout-api";
 import { fetchOrderPublic, reorderCancelledOrder, type OrderPublic } from "@/lib/orders-api";
 import { countryByCode } from "@/lib/countries";
-import { fetchMe } from "@/lib/auth-client";
+import { SavedAddressPicker } from "@/components/checkout/SavedAddressPicker";
+import { fetchMe, fetchMyAddresses, type UserAddress } from "@/lib/auth-client";
 import { loadRazorpayScript } from "@/lib/load-razorpay";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 
@@ -87,6 +88,9 @@ export function CheckoutClient() {
   const [fieldErrors, setFieldErrors] = useState<CheckoutFieldErrors>({});
   const [showAllFieldErrors, setShowAllFieldErrors] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [giftWrap, setGiftWrap] = useState(false);
+  const [customerNotes, setCustomerNotes] = useState("");
+  const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([]);
   const idempotencyKey = useMemo(
     () =>
       typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -119,7 +123,9 @@ export function CheckoutClient() {
     city: form.city.trim(),
     state: form.state.trim(),
     postalCode: form.country === "IN" ? form.postalCode.replace(/\D/g, "") : form.postalCode.trim(),
-    country: form.country || "IN"
+    country: form.country || "IN",
+    giftWrap,
+    customerNotes: customerNotes.trim() || undefined
   };
 
   const checkoutEmailForCart = useMemo(() => {
@@ -155,6 +161,7 @@ export function CheckoutClient() {
         shippingFullName: current.shippingFullName || user.name?.trim() || current.shippingFullName,
         phone: current.phone || user.phone?.replace(/^\+\d+/, "") || current.phone
       }));
+      void fetchMyAddresses().then(setSavedAddresses);
     });
   }, []);
 
@@ -337,6 +344,12 @@ export function CheckoutClient() {
               Digital purchase — no shipping charge. We will email your confirmation and access details.
             </p>
           ) : null}
+          {isLoggedIn && savedAddresses.length > 0 ? (
+            <SavedAddressPicker
+              addresses={savedAddresses}
+              onSelect={(partial) => setForm((current) => ({ ...current, ...partial }))}
+            />
+          ) : null}
           <AddressFields
             form={form}
             fieldErrors={fieldErrors}
@@ -346,9 +359,48 @@ export function CheckoutClient() {
               setForm(next);
             }}
           />
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3">
+            <input
+              type="checkbox"
+              checked={giftWrap}
+              onChange={(e) => setGiftWrap(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-amber-400 text-amber-600 focus:ring-amber-500"
+            />
+            <span className="text-sm text-stone-800">
+              <span className="font-semibold">I want this gift wrapped</span>
+              <span className="mt-0.5 block text-xs text-stone-600">
+                Our team will see this on your order and pack it as a gift when possible.
+              </span>
+            </span>
+          </label>
+          <div>
+            <label htmlFor="checkout-customer-notes" className="mb-1.5 block text-sm font-medium text-stone-800">
+              Notes for our team <span className="font-normal text-stone-500">(optional)</span>
+            </label>
+            <textarea
+              id="checkout-customer-notes"
+              value={customerNotes}
+              onChange={(e) => setCustomerNotes(e.target.value)}
+              rows={3}
+              maxLength={2000}
+              placeholder="Gift message, delivery instructions, or product preferences…"
+              className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+            />
+          </div>
         </div>
 
         <div className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
+          {!resumeOrderNumber && items.length > 0 ? (
+            <CouponInput
+              isLoggedIn={isLoggedIn}
+              shippingCountry={form.country}
+              couponRejected={couponRejected}
+              appliedCode={coupon?.code}
+              discountInPaise={discountInPaise}
+              currency={currency}
+              onUpdated={onRefreshCart}
+            />
+          ) : null}
           {resumeOrderNumber ? (
             <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
               Resume payment for order <span className="font-mono font-medium">{resumeOrderNumber}</span>. Your
@@ -378,17 +430,6 @@ export function CheckoutClient() {
             resumeOrderNumber={resumeOrderNumber}
             resumePaymentMethod={resumePaymentMethod}
           />
-          {!resumeOrderNumber && items.length > 0 ? (
-            <CouponInput
-              isLoggedIn={isLoggedIn}
-              shippingCountry={form.country}
-              couponRejected={couponRejected}
-              appliedCode={coupon?.code}
-              discountInPaise={discountInPaise}
-              currency={currency}
-              onUpdated={onRefreshCart}
-            />
-          ) : null}
         </div>
       </div>
     </>

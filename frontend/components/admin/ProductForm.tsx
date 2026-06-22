@@ -202,6 +202,8 @@ export function ProductForm({ productId }: { productId?: string }) {
   const [hsnCode, setHsnCode] = useState("");
   const [hasAudio, setHasAudio] = useState(false);
   const [audioUrl, setAudioUrl] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
+  const [expressShippingEnabled, setExpressShippingEnabled] = useState(true);
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDescription, setSeoDescription] = useState("");
   const [seoKeyword, setSeoKeyword] = useState("");
@@ -238,6 +240,10 @@ export function ProductForm({ productId }: { productId?: string }) {
       setHsnCode(String((p as { hsnCode?: string | null }).hsnCode ?? ""));
       setHasAudio(Boolean(p.hasAudio));
       setAudioUrl(String(p.audioUrl ?? ""));
+      setVideoUrl(String((p as { videoUrl?: string | null }).videoUrl ?? ""));
+      setExpressShippingEnabled(
+        (p as { expressShippingEnabled?: boolean }).expressShippingEnabled !== false
+      );
       setSeoTitle(String(p.seoTitle ?? ""));
       setSeoDescription(String(p.seoDescription ?? ""));
       setSeoKeyword(String(p.seoKeyword ?? ""));
@@ -531,6 +537,8 @@ export function ProductForm({ productId }: { productId?: string }) {
       hsnCode: hsnCode.trim() || null,
       hasAudio,
       audioUrl: hasAudio ? audioUrl.trim() || null : null,
+      videoUrl: videoUrl.trim() || null,
+      expressShippingEnabled,
       seoTitle: seoTitle.trim() || null,
       seoDescription: seoDescription.trim() || null,
       seoKeyword: seoKeyword.trim() || null,
@@ -882,24 +890,6 @@ export function ProductForm({ productId }: { productId?: string }) {
               <FieldErr message={fieldErrors.slug} />
             </div>
             <div>
-              <label htmlFor="hsn" className={labelCls}>
-                HSN Code
-                <span className="ml-1.5 font-normal normal-case tracking-normal text-stone-400">
-                  (required for GST invoice)
-                </span>
-              </label>
-              <input
-                id="hsn"
-                value={hsnCode}
-                onChange={(e) => setHsnCode(e.target.value)}
-                placeholder={process.env.NEXT_PUBLIC_DEFAULT_HSN_CODE ?? "9205"}
-                className={inputCls}
-              />
-              <p className="mt-1 text-xs text-stone-500">
-                Leave blank to use default: {process.env.NEXT_PUBLIC_DEFAULT_HSN_CODE ?? "9205"}
-              </p>
-            </div>
-            <div>
               <label htmlFor="short" className={labelCls}>
                 Short description
               </label>
@@ -976,7 +966,31 @@ export function ProductForm({ productId }: { productId?: string }) {
                   <strong>standard</strong> only.
                 </p>
               </div>
+              <div>
+                <label htmlFor="hsn" className={labelCls}>
+                  HSN Code
+                  <span className="ml-1.5 font-normal normal-case tracking-normal text-stone-400">
+                    (GST invoice)
+                  </span>
+                </label>
+                <input
+                  id="hsn"
+                  value={hsnCode}
+                  onChange={(e) => setHsnCode(e.target.value)}
+                  placeholder={process.env.NEXT_PUBLIC_DEFAULT_HSN_CODE ?? "9205"}
+                  className={inputCls}
+                />
+              </div>
             </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={expressShippingEnabled}
+                onChange={(e) => setExpressShippingEnabled(e.target.checked)}
+                className="rounded text-amber-600"
+              />
+              Offer express shipping on PDP (2–3 days India, 5–7 days international)
+            </label>
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
@@ -996,6 +1010,19 @@ export function ProductForm({ productId }: { productId?: string }) {
                 onClear={() => setAudioUrl("")}
               />
             ) : null}
+            <div>
+              <label htmlFor="videoUrl" className={labelCls}>
+                Product video URL
+              </label>
+              <input
+                id="videoUrl"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="https://… (MP4 or hosted video)"
+                className={inputCls}
+              />
+              <p className="mt-1 text-xs text-stone-500">Shown as a video thumbnail on the product page.</p>
+            </div>
             <div>
               <p className={labelCls}>Categories</p>
               <div className="mt-2 max-h-48 overflow-y-auto rounded-lg border border-stone-200 bg-stone-50 p-3 dark:border-stone-600 dark:bg-stone-950/60">

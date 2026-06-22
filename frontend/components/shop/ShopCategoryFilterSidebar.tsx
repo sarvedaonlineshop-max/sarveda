@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { CategoryNode } from "@/lib/types";
 
 import { CategoryNavTree } from "./CategoryNavTree";
+import { sortShopCategories } from "@/lib/shop-categories";
 
 type Props = {
   categories: CategoryNode[];
@@ -10,8 +11,10 @@ type Props = {
 };
 
 export function ShopCategoryFilterSidebar({ categories, selectedSlug }: Props) {
+  const sorted = sortShopCategories(categories);
+
   return (
-    <aside className="rounded-2xl border border-stone-100 bg-white p-5 shadow-sm">
+    <aside className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto rounded-2xl border border-stone-100 bg-white p-5 shadow-sm">
       <h2 className="font-serif text-lg font-semibold text-stone-900">Categories</h2>
       <div className="mt-4">
         <Link
@@ -24,7 +27,7 @@ export function ShopCategoryFilterSidebar({ categories, selectedSlug }: Props) {
         >
           All products
         </Link>
-        <CategoryNavTree nodes={categories} selectedSlug={selectedSlug} depth={0} />
+        <CategoryNavTree nodes={sorted} selectedSlug={selectedSlug} depth={0} />
       </div>
     </aside>
   );

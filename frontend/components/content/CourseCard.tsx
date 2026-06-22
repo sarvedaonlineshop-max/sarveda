@@ -109,14 +109,6 @@ export function CourseCard({ course, compact = false }: Props) {
               <span style={{ color: "var(--brand-ink)", fontSize: "13px" }}>{formatCourseDuration(extra)}</span>
             </div>
           )}
-          {(course.priceInPaise > 0 || course.isFree) && (
-            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-              <span style={{ color: "var(--brand-gold)", fontSize: "9px", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", minWidth: "68px" }}>Fee</span>
-              <span className="font-serif" style={{ color: "var(--brand-forest)", fontSize: "15px", fontWeight: 700 }}>
-                {course.isFree ? "Free" : `₹${(course.priceInPaise / 100).toLocaleString("en-IN")}`}
-              </span>
-            </div>
-          )}
         </div>
 
         {/* CTA */}

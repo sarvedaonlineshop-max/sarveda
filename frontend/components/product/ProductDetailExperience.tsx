@@ -6,9 +6,11 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useCartData } from "@/components/cart/CartProvider";
 import { AccordionDescription } from "@/components/product/AccordionDescription";
+import { NotifyMeButton } from "@/components/product/NotifyMeButton";
 import { PairWithRow } from "@/components/product/PairWithRow";
 import { ProductAudio } from "@/components/product/ProductAudio";
 import { ProductBuyBox } from "@/components/product/ProductBuyBox";
+import { ProductOffersBanner } from "@/components/product/ProductOffersBanner";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductReviewsSection } from "@/components/product/ProductReviewsSection";
 import { ProductRichText } from "@/components/product/ProductRichText";
@@ -84,7 +86,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
   const variant = variants.find((v) => v.id === variantId) ?? initial;
   const isDigital = product.productType === "DIGITAL";
   const currency = zoneToCurrency(zone);
-  const primaryCategory = product.categories[0]?.category;
+  const categoryTags = product.categories.map((c) => c.category).filter(Boolean);
 
   const hasMeaningfulHtml = (html: string | null | undefined) => {
     const raw = (html ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
@@ -166,7 +168,8 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
     available,
     variantForStock: variant,
     layout: "inline" as const,
-    showPurchaseActions: true
+    showPurchaseActions: true,
+    expressShippingEnabled: product.expressShippingEnabled !== false
   };
 
   return (
@@ -181,7 +184,22 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
               activeIndex={galleryIndex}
               onActiveChange={setGalleryIndex}
               enableZoom
+              videoUrl={product.videoUrl}
             />
+
+            {categoryTags.length > 0 ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {categoryTags.map((cat) => (
+                  <Link
+                    key={cat.slug}
+                    href={`/product-category/${cat.slug}`}
+                    className="rounded-full border border-stone-200 bg-white px-3 py-1 text-xs font-medium text-stone-700 hover:border-[#c45a2a]/50 hover:text-[#c45a2a]"
+                  >
+                    {cat.name}
+                  </Link>
+                ))}
+              </div>
+            ) : null}
 
             {product.hasAudio && audioUrl ? (
               <div className="mt-5">
@@ -191,15 +209,11 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
           </div>
 
           <div className="min-w-0 space-y-6">
-            {primaryCategory ? (
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#c45a2a]">
-                {primaryCategory.name}
-              </p>
-            ) : null}
-
             <h1 className="font-serif text-2xl font-semibold leading-tight text-stone-900 sm:text-3xl lg:text-[2rem]">
               {product.name}
             </h1>
+
+            <ProductOffersBanner />
 
             <div className="flex items-center gap-1 text-sm text-stone-500" aria-label="No reviews yet">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -229,6 +243,10 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
             ) : null}
 
             <ProductBuyBox {...buyBoxProps} />
+
+            {addDisabled && variant ? (
+              <NotifyMeButton productSlug={product.slug} variantId={variant.id} />
+            ) : null}
 
             {product.description ? (
               <div className="border-t border-stone-200 pt-8">

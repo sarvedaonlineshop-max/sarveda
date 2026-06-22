@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { HomeExperienceSections } from "@/components/home/HomeExperienceSections";
-import { HomeProductShowcase } from "@/components/home/HomeProductShowcase";
+import { HomeHero } from "@/components/home/HomeHero";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { NewsletterForm }      from "@/components/home/NewsletterForm";
 import { ProductCard }         from "@/components/shop/ProductCard";
@@ -129,7 +129,7 @@ export default async function HomePage() {
       <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
 
       {/* ── Hero ───────────────────────────────────────────────────── */}
-      <HomeProductShowcase products={featured.items} />
+      <HomeHero />
 
       {/* ── Category Pills ─────────────────────────────────────────── */}
       <section className="border-b border-stone-100 bg-white py-7 md:py-10">

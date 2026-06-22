@@ -16,7 +16,7 @@ import {
 } from "@/lib/auth-client";
 
 const inputClass =
-  "w-full rounded-xl border border-stone-600 bg-stone-950/70 px-3 py-2.5 text-stone-100 placeholder:text-stone-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500";
+  "w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-stone-900 placeholder:text-stone-400 focus:border-amber-600 focus:outline-none focus:ring-1 focus:ring-amber-600";
 
 type LoginMode = "password" | "otp";
 
@@ -82,33 +82,32 @@ function LoginForm() {
 
   return (
     <AuthShell
+      variant="light"
       title={adminOnly ? "Admin sign-in" : "Welcome back"}
       subtitle={subtitle}
       footer={
-        <div className="space-y-3 text-center text-sm text-stone-400">
-          {!adminOnly ? (
-            <p>
-              New here?{" "}
-              <Link href={`/signup${next ? `?next=${encodeURIComponent(next)}` : ""}`} className="text-amber-400 hover:text-amber-300">
-                Create an account
-              </Link>
-            </p>
-          ) : null}
-          <Link href="/shop" className="block text-amber-500 hover:text-amber-400">
-            Back to Shopping Page
-          </Link>
-        </div>
+        !adminOnly ? (
+          <p className="text-center text-sm text-stone-500">
+            New here?{" "}
+            <Link
+              href={`/signup${next ? `?next=${encodeURIComponent(next)}` : ""}`}
+              className="font-medium text-amber-700 hover:text-amber-800"
+            >
+              Create an account
+            </Link>
+          </p>
+        ) : null
       }
     >
       <GoogleSignInButton nextPath={googleNextPath} />
 
-      <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-stone-500">
-        <span className="h-px flex-1 bg-stone-700" />
+      <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-stone-400">
+        <span className="h-px flex-1 bg-stone-200" />
         <span>or sign in with</span>
-        <span className="h-px flex-1 bg-stone-700" />
+        <span className="h-px flex-1 bg-stone-200" />
       </div>
 
-      <div className="mb-6 flex rounded-xl border border-stone-700 bg-stone-950/50 p-1">
+      <div className="mb-6 flex rounded-xl border border-stone-200 bg-stone-50 p-1">
         <button
           type="button"
           onClick={() => {
@@ -119,7 +118,7 @@ function LoginForm() {
           className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
             mode === "password"
               ? "bg-amber-500 text-stone-900"
-              : "text-stone-400 hover:text-stone-200"
+              : "text-stone-500 hover:text-stone-800"
           }`}
         >
           Login with Password
@@ -134,7 +133,7 @@ function LoginForm() {
           className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
             mode === "otp"
               ? "bg-amber-500 text-stone-900"
-              : "text-stone-400 hover:text-stone-200"
+              : "text-stone-500 hover:text-stone-800"
           }`}
         >
           Login with OTP
@@ -236,7 +235,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-stone-950 text-stone-400">
+        <div className="flex min-h-screen items-center justify-center bg-[#fdf6ed] text-stone-500">
           Loading…
         </div>
       }

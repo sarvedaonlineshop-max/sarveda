@@ -210,6 +210,18 @@ authRouter.patch(
 );
 
 authRouter.get(
+  "/me/addresses",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const rows = await prisma.address.findMany({
+      where: { userId: req.authUser!.id },
+      orderBy: [{ isDefault: "desc" }, { id: "asc" }]
+    });
+    res.json({ success: true, data: { items: rows } });
+  })
+);
+
+authRouter.get(
   "/me/enrollments",
   requireAuth,
   asyncHandler(async (req, res) => {

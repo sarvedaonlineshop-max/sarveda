@@ -58,6 +58,11 @@ export const createProductSchema = z.object({
   audioUrl: z
     .union([z.string().url().max(2000), z.literal(""), z.null()])
     .optional(),
+  videoUrl: z
+    .union([z.string().url().max(2000), z.literal(""), z.null()])
+    .optional(),
+  expressShippingEnabled: z.boolean().optional(),
+  relatedArticleSlugs: z.array(z.string().min(1).max(220)).optional(),
   seoTitle: z.string().max(500).optional().nullable(),
   seoDescription: z.string().max(2000).optional().nullable(),
   seoKeyword: z.string().max(500).optional().nullable(),

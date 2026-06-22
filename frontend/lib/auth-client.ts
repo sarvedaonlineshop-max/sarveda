@@ -202,3 +202,31 @@ export async function fetchMe(): Promise<PublicUser | null> {
     return null;
   }
 }
+
+export type UserAddress = {
+  id: string;
+  label: string | null;
+  fullName: string;
+  phone: string;
+  line1: string;
+  line2: string | null;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  isDefault: boolean;
+};
+
+export async function fetchMyAddresses(): Promise<UserAddress[]> {
+  try {
+    const res = await fetch(`${getApiBase()}/api/auth/me/addresses`, {
+      credentials: "include",
+      headers: { Accept: "application/json" }
+    });
+    if (!res.ok) return [];
+    const json = (await res.json()) as { success?: boolean; data?: { items: UserAddress[] } };
+    return json.success && json.data?.items ? json.data.items : [];
+  } catch {
+    return [];
+  }
+}

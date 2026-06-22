@@ -1,6 +1,10 @@
 import type { NextFunction, Request, Response } from "express";
+import { z } from "zod";
 
 import { ProductStatus } from "@prisma/client";
+
+import { prisma } from "../../config/db";
+import { subscribeStockNotification } from "../stock-notifications/stockNotification.service";
 
 import { buildCatalogGapsReport } from "../admin/catalogGaps.service";
 import { deleteProductAdmin, saveProductAdmin } from "./productAdmin.service";
@@ -108,6 +112,56 @@ export async function getOne(req: Request, res: Response, next: NextFunction) {
   }
 }
 
+const NotifyStockSchema = z.object({
+  email: z.string().email().max(320).optional(),
+  variantId: z.string().uuid().optional().nullable()
+});
+
+export async function notifyStock(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { slug } = req.params;
+    const body = NotifyStockSchema.parse(req.body ?? {});
+    const product = await prisma.product.findFirst({
+      where: { slug, deletedAt: null, status: "ACTIVE" },
+      select: { id: true, name: true }
+    });
+    if (!product) {
+      res.status(404).json({ success: false, error: "Product not found", code: "NOT_FOUND" });
+      return;
+    }
+
+    const email = body.email?.trim().toLowerCase() || req.authUser?.email;
+    if (!email) {
+      res.status(400).json({
+        success: false,
+        error: "Enter your email to get notified when this item is back in stock.",
+        code: "EMAIL_REQUIRED"
+      });
+      return;
+    }
+
+    const result = await subscribeStockNotification({
+      productId: product.id,
+      variantId: body.variantId ?? null,
+      email,
+      userId: req.authUser?.id ?? null
+    });
+
+    res.json({
+      success: true,
+      data: {
+        subscribed: true,
+        alreadySubscribed: !result.created,
+        message: result.created
+          ? "We will email you when this item is back in stock."
+          : "You are already on the notify list for this item."
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 function normalizeAdminBody(body: CreateProductBody | UpdateProductBody): ProductAdminSaveInput {
   return {
     slug: body.slug!,
@@ -120,6 +174,9 @@ function normalizeAdminBody(body: CreateProductBody | UpdateProductBody): Produc
     hsnCode: body.hsnCode === undefined ? undefined : body.hsnCode?.trim() || null,
     hasAudio: body.hasAudio,
     audioUrl: body.audioUrl === undefined ? undefined : body.audioUrl || null,
+    videoUrl: body.videoUrl === undefined ? undefined : body.videoUrl || null,
+    expressShippingEnabled: body.expressShippingEnabled,
+    relatedArticleSlugs: body.relatedArticleSlugs,
     seoTitle: body.seoTitle,
     seoDescription: body.seoDescription,
     seoKeyword: body.seoKeyword,
@@ -167,6 +224,18 @@ export async function update(req: Request, res: Response, next: NextFunction) {
       hsnCode: body.hsnCode !== undefined ? body.hsnCode?.trim() || null : existing.hsnCode,
       hasAudio: body.hasAudio ?? existing.hasAudio,
       audioUrl: body.audioUrl === undefined ? existing.audioUrl : body.audioUrl || null,
+      videoUrl:
+        body.videoUrl === undefined
+          ? (existing as { videoUrl?: string | null }).videoUrl ?? null
+          : body.videoUrl || null,
+      expressShippingEnabled:
+        body.expressShippingEnabled ??
+        (existing as { expressShippingEnabled?: boolean }).expressShippingEnabled ??
+        true,
+      relatedArticleSlugs:
+        body.relatedArticleSlugs ??
+        (existing as { relatedArticleSlugs?: string[] }).relatedArticleSlugs ??
+        [],
       seoTitle: body.seoTitle !== undefined ? body.seoTitle : existing.seoTitle,
       seoDescription:
         body.seoDescription !== undefined ? body.seoDescription : existing.seoDescription,

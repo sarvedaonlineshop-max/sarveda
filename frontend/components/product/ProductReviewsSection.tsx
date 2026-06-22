@@ -6,6 +6,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import { getApiBase } from "@/lib/api";
 import { fetchMe, type PublicUser } from "@/lib/auth-client";
+import { countryDisplayName, countryFlagEmoji } from "@/lib/country-flag";
+import { usePricingZone } from "@/hooks/usePricingZone";
 
 type Review = {
   id: string;
@@ -14,6 +16,7 @@ type Review = {
   body?: string | null;
   createdAt: string;
   isVerified?: boolean;
+  reviewerCountry?: string | null;
   user?: { name?: string | null } | null;
 };
 
@@ -58,6 +61,7 @@ function Stars({
 export function ProductReviewsSection({ productId }: Props) {
   const pathname = usePathname();
   const loginHref = `/login?next=${encodeURIComponent(pathname || "/")}`;
+  const zone = usePricingZone();
 
   const [reviews, setReviews] = useState<Review[]>([]);
   const [total, setTotal] = useState(0);
@@ -110,7 +114,7 @@ export function ProductReviewsSection({ productId }: Props) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ rating, title, body })
+        body: JSON.stringify({ rating, title, body, reviewerCountry: zone })
       });
       const data = (await res.json()) as { error?: string; message?: string };
       if (res.status === 401) {
@@ -217,6 +221,18 @@ export function ProductReviewsSection({ productId }: Props) {
                   <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--brand-ink)" }}>
                     {r.user?.name ?? "Customer"}
                   </span>
+                  {r.reviewerCountry ? (
+                    <span
+                      style={{
+                        fontSize: "12px",
+                        color: "var(--brand-muted)",
+                        marginLeft: "8px"
+                      }}
+                    >
+                      {countryFlagEmoji(r.reviewerCountry)}{" "}
+                      {countryDisplayName(r.reviewerCountry)}
+                    </span>
+                  ) : null}
                   {r.isVerified && (
                     <span
                       style={{

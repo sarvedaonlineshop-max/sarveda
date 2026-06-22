@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Suspense } from "react";
 
 import { Breadcrumbs } from "@/components/product/Breadcrumbs";
 import { canonical, isProductionSite } from "@/lib/site";
 import { ShopCategoryFilterSidebar } from "@/components/shop/ShopCategoryFilterSidebar";
+import { ShopFiltersBar } from "@/components/shop/ShopFiltersBar";
+import { ShopInfiniteProductGrid } from "@/components/shop/ShopInfiniteProductGrid";
 import { ShopMobileCategoryDrawer } from "@/components/shop/ShopMobileCategoryDrawer";
-import { ShopPagination } from "@/components/shop/Pagination";
-import { ProductCard } from "@/components/shop/ProductCard";
 import { fetchCategoryTree, fetchProductList } from "@/lib/api";
+import { sortShopCategories } from "@/lib/shop-categories";
 
 export const revalidate = 60;
 
@@ -26,15 +27,22 @@ type Props = {
 export default async function ShopPage({ searchParams }: Props) {
   const [categories, list] = await Promise.all([
     fetchCategoryTree({ next: { revalidate: 300 } }),
-    fetchProductList(searchParams, { next: { revalidate: 60 } })
+    fetchProductList(searchParams, { next: { revalidate: 60 } }, { limit: 24 })
   ]);
 
+  const sortedCategories = sortShopCategories(categories);
   const categorySlug =
     typeof searchParams.category === "string" ? searchParams.category : undefined;
+  const searchQ =
+    typeof searchParams.q === "string"
+      ? searchParams.q
+      : typeof searchParams.search === "string"
+        ? searchParams.search
+        : undefined;
 
   return (
     <>
-      <div className="border-b border-stone-200 bg-white md:border-stone-100 md:bg-stone-50">
+      <div className="sticky top-0 z-30 border-b border-stone-200 bg-white/95 backdrop-blur md:border-stone-100 md:bg-stone-50/95">
         <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-6 lg:px-8">
           <div className="hidden md:block">
             <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Shop" }]} />
@@ -49,52 +57,25 @@ export default async function ShopPage({ searchParams }: Props) {
       </div>
 
       <main className="mx-auto max-w-7xl md:px-4 md:py-8 lg:px-8">
-        <ShopMobileCategoryDrawer categories={categories} selectedSlug={categorySlug} />
+        <ShopMobileCategoryDrawer categories={sortedCategories} selectedSlug={categorySlug} />
 
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
           <div className="hidden lg:block lg:w-72 lg:flex-shrink-0">
-            <ShopCategoryFilterSidebar categories={categories} selectedSlug={categorySlug} />
+            <ShopCategoryFilterSidebar categories={sortedCategories} selectedSlug={categorySlug} />
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="mb-3 px-4 text-sm text-stone-500 md:mb-6 md:px-0">
-              Showing{" "}
-              <span className="font-medium text-stone-800">{list.items.length}</span> of{" "}
-              <span className="font-medium text-stone-800">{list.pagination.total}</span> products
-              {categorySlug ? (
-                <>
-                  {" "}
-                  <span className="text-stone-400">·</span> filtered by{" "}
-                  <span className="font-medium text-stone-700">{categorySlug.replace(/-/g, " ")}</span>
-                </>
-              ) : null}
-            </p>
-
-            {list.items.length === 0 ? (
-              <p className="mx-4 rounded-2xl border border-dashed border-stone-200 bg-white p-10 text-center text-stone-500 md:mx-0">
-                No products match this filter yet.{" "}
-                <Link href="/shop" className="font-medium text-amber-700 underline hover:text-amber-800">
-                  Clear filters
-                </Link>
-              </p>
-            ) : (
-              <>
-                <ul className="grid grid-cols-2 gap-3 px-3 md:grid-cols-2 md:gap-6 md:px-0 lg:grid-cols-3 lg:gap-8">
-                  {list.items.map((product) => (
-                    <li key={product.id}>
-                      <ProductCard product={product} />
-                    </li>
-                  ))}
-                </ul>
-                <div className="px-4 py-8 md:px-0">
-                  <ShopPagination
-                    page={list.pagination.page}
-                    totalPages={list.pagination.totalPages}
-                    categorySlug={categorySlug}
-                  />
-                </div>
-              </>
-            )}
+            <Suspense fallback={null}>
+              <ShopFiltersBar categorySlug={categorySlug} />
+            </Suspense>
+            <ShopInfiniteProductGrid
+              initialItems={list.items}
+              initialPage={list.pagination.page}
+              totalPages={list.pagination.totalPages}
+              total={list.pagination.total}
+              categorySlug={categorySlug}
+              searchQ={searchQ}
+            />
           </div>
         </div>
       </main>

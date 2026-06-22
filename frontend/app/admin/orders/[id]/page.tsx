@@ -118,11 +118,26 @@ type PaymentRow = {
   refunds?: RefundRow[];
 };
 
+function parseOrderNotes(notes: string | null | undefined) {
+  const raw = (notes ?? "").trim();
+  if (!raw) return { giftWrap: false, customerNote: null as string | null, internalNotes: null as string | null };
+  const giftWrap = raw.includes("[GIFT_WRAP]");
+  const customerMatch = raw.match(/Customer note:\s*(.+?)(?:\n|$)/);
+  const customerNote = customerMatch?.[1]?.trim() || null;
+  const internalNotes =
+    raw
+      .replace(/\[GIFT_WRAP\][^\n]*/g, "")
+      .replace(/Customer note:\s*.+/g, "")
+      .trim() || null;
+  return { giftWrap, customerNote, internalNotes };
+}
+
 type OrderLoaded = {
   id: string;
   orderNumber: string;
   email: string;
   phone: string;
+  notes?: string | null;
   status: string;
   paymentStatus: string;
   fulfillmentStatus: string;
@@ -1017,8 +1032,32 @@ export default function AdminOrderDetailPage() {
                   order.payments?.[0]?.provider
                 )}
               </span>
+              {parseOrderNotes(order.notes).giftWrap ? (
+                <span className="rounded-full border border-amber-400 bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-950 dark:border-amber-500/60 dark:bg-amber-950/40 dark:text-amber-100">
+                  Gift wrap requested
+                </span>
+              ) : null}
             </div>
             <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">{order.email}</p>
+            {(() => {
+              const { customerNote, internalNotes } = parseOrderNotes(order.notes);
+              if (!customerNote && !internalNotes) return null;
+              return (
+                <div className="mt-3 max-w-xl space-y-2 rounded-xl border border-amber-200/80 bg-amber-50/60 px-4 py-3 text-sm dark:border-amber-800/50 dark:bg-amber-950/20">
+                  {customerNote ? (
+                    <p className="text-stone-800 dark:text-stone-200">
+                      <span className="font-semibold text-amber-900 dark:text-amber-200">Customer note:</span>{" "}
+                      {customerNote}
+                    </p>
+                  ) : null}
+                  {internalNotes ? (
+                    <p className="text-stone-600 dark:text-stone-400">
+                      <span className="font-medium">Internal:</span> {internalNotes}
+                    </p>
+                  ) : null}
+                </div>
+              );
+            })()}
             {isUnpaidCheckoutAttempt(
               order.status,
               order.paymentStatus,

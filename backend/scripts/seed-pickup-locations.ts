@@ -1,6 +1,6 @@
 /**
  * Upsert Delhivery pickup locations from Delhivery One screenshots.
- * Deactivates legacy "Bihar" stub; sets Sarveda Life Pvt Ltd-1 (Mysore) as primary.
+ * Deletes legacy "Bihar" stub if present; sets Sarveda Life Pvt Ltd-1 (Mysore) as primary.
  *
  * Local:  cd backend && npm run seed:pickup-locations
  * EC2/RDS: cd ~/sarveda/backend && npm run seed:pickup-locations
@@ -254,16 +254,14 @@ async function findExisting(seed: PickupSeed) {
 }
 
 async function main() {
-  const deactivated = await prisma.pickupLocation.updateMany({
+  const removedBihar = await prisma.pickupLocation.deleteMany({
     where: {
-      isActive: true,
       OR: [
         { state: { equals: "Bihar", mode: "insensitive" } },
         { label: { contains: "Bihar", mode: "insensitive" } },
         { city: { equals: "Patna", mode: "insensitive" } }
       ]
-    },
-    data: { isActive: false, isPrimary: false }
+    }
   });
 
   await prisma.pickupLocation.updateMany({ data: { isPrimary: false } });
@@ -290,7 +288,7 @@ async function main() {
 
   const active = await prisma.pickupLocation.count({ where: { isActive: true } });
   console.log("");
-  console.log(`Done. created=${created} updated=${updated} deactivated_bihar=${deactivated.count} active_total=${active}`);
+  console.log(`Done. created=${created} updated=${updated} removed_bihar=${removedBihar.count} active_total=${active}`);
 }
 
 main()

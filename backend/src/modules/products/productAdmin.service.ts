@@ -71,6 +71,9 @@ export type ProductAdminSaveInput = {
   hsnCode?: string | null;
   hasAudio?: boolean;
   audioUrl?: string | null;
+  videoUrl?: string | null;
+  expressShippingEnabled?: boolean;
+  relatedArticleSlugs?: string[];
   seoTitle?: string | null;
   seoDescription?: string | null;
   seoKeyword?: string | null;
@@ -278,6 +281,9 @@ export async function saveProductAdmin(
         hsnCode: input.hsnCode !== undefined ? input.hsnCode?.trim() || null : undefined,
         hasAudio: input.hasAudio ?? undefined,
         audioUrl: input.audioUrl === "" ? null : input.audioUrl,
+        videoUrl: input.videoUrl === "" ? null : input.videoUrl,
+        expressShippingEnabled: input.expressShippingEnabled ?? undefined,
+        relatedArticleSlugs: input.relatedArticleSlugs ?? undefined,
         seoTitle: input.seoTitle ?? undefined,
         seoDescription: input.seoDescription ?? undefined,
         seoKeyword: input.seoKeyword ?? undefined,
@@ -313,6 +319,9 @@ export async function saveProductAdmin(
       hsnCode: input.hsnCode?.trim() || null,
       hasAudio: input.hasAudio ?? false,
       audioUrl: input.audioUrl || undefined,
+      videoUrl: input.videoUrl || undefined,
+      expressShippingEnabled: input.expressShippingEnabled ?? true,
+      relatedArticleSlugs: input.relatedArticleSlugs ?? [],
       seoTitle: input.seoTitle ?? undefined,
       seoDescription: input.seoDescription ?? undefined,
       seoKeyword: input.seoKeyword ?? undefined,

@@ -41,6 +41,7 @@ router.delete("/pickup-locations/:id", pickupLocations.deletePickupLocation);
 router.use("/coupons", couponAdminRoutes);
 
 router.get("/dashboard", admin.dashboard);
+router.get("/notifications", admin.adminNotifications);
 router.post("/jobs/cart-cleanup", admin.triggerCartCleanup);
 router.get("/customers", admin.customersList);
 router.get("/enrollments/courses", enrollments.courseEnrollmentsCourses);

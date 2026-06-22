@@ -366,6 +366,91 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
   }
 }
 
+/** Lightweight bell feed — low stock, today's sales, recent refunds. */
+export async function adminNotifications(_req: Request, res: Response, next: NextFunction) {
+  try {
+    const today = startOfDayKolkata(new Date());
+    const revenueStatuses: OrderStatus[] = ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"];
+
+    const [lowStockRows, soldToday, recentRefunds] = await Promise.all([
+      prisma.inventory.findMany({
+        where: {
+          variant: {
+            status: "ACTIVE",
+            productRel: { deletedAt: null, status: "ACTIVE", catalogHidden: false }
+          }
+        },
+        orderBy: { onHand: "asc" },
+        take: 80,
+        include: {
+          variant: {
+            include: { productRel: { select: { name: true, slug: true } } }
+          }
+        }
+      }),
+      prisma.orderItem.aggregate({
+        where: {
+          order: {
+            deletedAt: null,
+            status: { in: revenueStatuses },
+            createdAt: { gte: today }
+          }
+        },
+        _sum: { qtyOrdered: true }
+      }),
+      prisma.refund.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        include: {
+          payment: {
+            include: {
+              order: { select: { orderNumber: true } }
+            }
+          }
+        }
+      })
+    ]);
+
+    const lowStock = lowStockRows
+      .filter((inv) => inv.onHand <= inv.lowStockThreshold)
+      .slice(0, 8)
+      .map((inv) => ({
+        id: `low-${inv.variantId}`,
+        type: "low_stock" as const,
+        title: `${inv.variant.productRel.name} low stock`,
+        detail: `${inv.variant.sku} — ${inv.onHand} on hand`,
+        href: `/admin/inventory`
+      }));
+
+    const unitsToday = soldToday._sum.qtyOrdered ?? 0;
+    const soldNotice =
+      unitsToday > 0
+        ? [
+            {
+              id: "sold-today",
+              type: "sales" as const,
+              title: `${unitsToday} unit${unitsToday === 1 ? "" : "s"} sold today`,
+              detail: "Paid and in-flight orders since midnight IST",
+              href: "/admin/orders"
+            }
+          ]
+        : [];
+
+    const refundNotices = recentRefunds.map((r) => ({
+      id: `refund-${r.id}`,
+      type: "refund" as const,
+      title: `Refund ${r.status} · ${r.payment.order.orderNumber}`,
+      detail: r.reason?.trim() || "Recent refund activity",
+      href: "/admin/orders"
+    }));
+
+    const items = [...lowStock, ...soldNotice, ...refundNotices];
+    res.json({ success: true, data: { items, unreadCount: items.length } });
+  } catch (err) {
+    next(err);
+  }
+}
+
 const ordersExportPdfQuery = z.object({
   range: z.enum(["today", "week", "month", "year"])
 });
@@ -857,8 +942,6 @@ export async function patchOrderStatus(req: Request, res: Response, next: NextFu
     });
 
     if (status === "PROCESSING" && prevStatus !== "PROCESSING") {
-      const { notifyOrderEmail } = await import("../notifications/email");
-      notifyOrderEmail(order.id, "order_processing");
       void onOrderEnteredProcessing(order.id);
     }
 
@@ -1125,6 +1208,13 @@ export async function patchInventory(req: Request, res: Response, next: NextFunc
       where: { variantId },
       include: inventoryInclude
     });
+
+    if (body.onHand !== undefined && body.onHand > 0) {
+      const { notifyStockSubscribersForVariant } = await import(
+        "../stock-notifications/stockNotification.service"
+      );
+      void notifyStockSubscribersForVariant(variantId);
+    }
 
     const { auditMap } = await getZohoStockSyncMeta();
     res.json({

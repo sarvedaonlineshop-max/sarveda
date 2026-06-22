@@ -112,13 +112,13 @@ function sellerBlock(): {
   gstin: string; phone: string; email: string; website: string;
 } {
   const address = process.env.SELLER_ADDRESS?.trim() ||
-    "No. A2 403, PURVA ATRIA,\n1st Block, RMV 2nd Stage\nBengaluru Karnataka 560094\nIndia";
+    "Plot No. B, Part 2, RASUDHI WAREHOUSE\nKIADB Industrial Housing Layout, Hebbal 2nd stage\nMysore Karnataka 570016\nIndia";
   return {
     name:         process.env.SELLER_LEGAL_NAME?.trim() || "Sarveda Life Private Limited",
-    companyId:    process.env.SELLER_COMPANY_ID?.trim() || "U85100KA2020PTC141985",
+    companyId:    "",
     addressLines: address.split(/\n+/).map((l) => l.trim()).filter(Boolean),
     gstin:        process.env.SELLER_GSTIN?.trim()      || "29ABFCS0538N1ZV",
-    phone:        process.env.SELLER_PHONE?.trim()      || "9845751678",
+    phone:        process.env.SELLER_PHONE?.trim()      || "+919964278486",
     email:        process.env.SELLER_EMAIL?.trim()      || "care@sarveda.com",
     website:      process.env.SELLER_WEBSITE?.trim()    || "www.sarveda.com"
   };
@@ -171,16 +171,12 @@ function renderInvoiceHeader(
   let sy = top + 18;
   doc.fontSize(7.5).font("Helvetica").fillColor(TEXT_MUTED);
 
-  if (seller.companyId) {
-    doc.text(`Company ID : ${seller.companyId}`, left, sy, { width: leftColW });
-    sy = doc.y + 1;
-  }
   for (const line of seller.addressLines) {
     doc.text(line, left, sy, { width: leftColW });
     sy = doc.y + 1;
   }
-  if (opts.showGstin) {
-    doc.text(`GSTIN ${seller.gstin || "available on request"}`, left, sy, { width: leftColW });
+  if (opts.showGstin && seller.gstin) {
+    doc.text(`GSTIN: ${seller.gstin}`, left, sy, { width: leftColW });
     sy = doc.y + 1;
   }
   if (seller.phone) {
@@ -266,17 +262,6 @@ function renderInvoiceFooter(
   doc.y += 11;
   doc.fontSize(8.5).font("Helvetica-Oblique").fillColor(TEXT_BODY)
      .text(amountInCurrencyWords(totalMinor, code), left, doc.y, { width: footLeftW });
-  doc.y += 14;
-  doc.fontSize(7.5).font("Helvetica-Bold").fillColor(TEXT_MUTED)
-     .text("Notes", left, doc.y, { width: footLeftW });
-  doc.y += 11;
-  doc.fontSize(8).font("Helvetica").fillColor(TEXT_MUTED)
-     .text(
-       input.isGstApplicable
-         ? "Thank you for your business."
-         : "Export sale — prices are tax-inclusive for your region. Thank you for your business.",
-       left, doc.y, { width: footLeftW }
-     );
 
   // Right: Authorized signatory
   doc.fontSize(7.5).font("Helvetica-Bold").fillColor(TEXT_MUTED)

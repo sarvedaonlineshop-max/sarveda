@@ -43,6 +43,21 @@ function triStateEnv(envVal: string | undefined, defaultWhenUnset: boolean): boo
   return defaultWhenUnset;
 }
 
+function composeOrderNotes(
+  body: CreateOrderBody,
+  shiprocketPinCheckFallback?: boolean
+): string | undefined {
+  const parts: string[] = [];
+  if (body.giftWrap) parts.push("[GIFT_WRAP] Customer requested gift wrapping.");
+  if (body.customerNotes?.trim()) parts.push(`Customer note: ${body.customerNotes.trim()}`);
+  if (shiprocketPinCheckFallback) {
+    parts.push(
+      "Shiprocket PIN check skipped (API fallback) — verify delivery manually before dispatch."
+    );
+  }
+  return parts.length ? parts.join("\n") : undefined;
+}
+
 function stripeAddressFromCheckoutBody(body: CreateOrderBody): StripeCheckoutAddress {
   return {
     email: body.email.trim().toLowerCase(),
@@ -513,12 +528,10 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
           shippingInPaise,
           taxInPaise
         ),
-        ...(shiprocketPinCheckFallback
-          ? {
-              notes:
-                "Shiprocket PIN check skipped (API fallback) — verify delivery manually before dispatch."
-            }
-          : {})
+        ...((): { notes?: string } => {
+          const notes = composeOrderNotes(body, shiprocketPinCheckFallback);
+          return notes ? { notes } : {};
+        })()
       }
     });
 

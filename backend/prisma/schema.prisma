@@ -27,6 +27,7 @@ model User {
   reviews      Review[]
   enrollments  Enrollment[]
   bookings     Booking[]
+  stockNotifications StockNotification[]
   passwordResetTokens PasswordResetToken[]
 }
 
@@ -74,6 +75,9 @@ model Product {
   hsnCode          String?
   hasAudio         Boolean          @default(false)
   audioUrl         String?
+  videoUrl         String?
+  expressShippingEnabled Boolean    @default(true)
+  relatedArticleSlugs String[]      @default([])
   seoTitle         String?
   seoDescription   String?
   seoKeyword       String?
@@ -87,6 +91,7 @@ model Product {
   accordionItems   AccordionItem[]
   reviews          Review[]
   wishlist         Wishlist[]
+  stockNotifications StockNotification[]
 }
 
 enum ProductType {
@@ -124,6 +129,7 @@ model ProductVariant {
   orderItems      OrderItem[]
   courseCheckout  Course?
   eventCheckout   Event?
+  stockNotifications StockNotification[]
   createdAt       DateTime                @default(now())
   updatedAt       DateTime                @updatedAt
 }
@@ -518,11 +524,27 @@ model Review {
   rating     Int
   title      String?
   body       String?
+  reviewerCountry String? @db.VarChar(2)
   isVerified Boolean  @default(false)
   isApproved Boolean  @default(false)
   createdAt  DateTime @default(now())
   product    Product  @relation(fields: [productId], references: [id])
   user       User     @relation(fields: [userId], references: [id])
+}
+
+model StockNotification {
+  id         String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId  String          @db.Uuid
+  variantId  String?         @db.Uuid
+  email      String
+  userId     String?         @db.Uuid
+  notifiedAt DateTime?
+  createdAt  DateTime        @default(now())
+  product    Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant    ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  user       User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([productId, variantId, email])
 }
 
 model Wishlist {

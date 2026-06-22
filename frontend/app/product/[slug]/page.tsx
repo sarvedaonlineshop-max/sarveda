@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { Breadcrumbs } from "@/components/product/Breadcrumbs";
 import { ProductDetailExperience } from "@/components/product/ProductDetailExperience";
+import { ProductRelatedArticles } from "@/components/product/ProductRelatedArticles";
 import { RelatedProducts } from "@/components/product/RelatedProducts";
 import { fetchAllProductSlugs, fetchProductBySlug, fetchRelatedProducts, skipBuildTimeStaticParams } from "@/lib/api";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -116,6 +117,9 @@ export default async function ProductDetailPage({ params }: Props) {
 
       <main className="bg-stone-50">
         <ProductDetailExperience product={product} pairWithItems={pairWithItems} />
+        <div className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
+          <ProductRelatedArticles slugs={product.relatedArticleSlugs ?? []} />
+        </div>
       </main>
 
       <RelatedProducts excludeSlug={product.slug} categorySlug={primaryCategory?.slug} />
