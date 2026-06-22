@@ -1,22 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, Suspense, useEffect, useRef, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { fetchMe } from "@/lib/auth-client";
+import { EnquiryFilePicker } from "@/components/enquiries/EnquiryFilePicker";
 import { submitEnquiry } from "@/lib/enquiry-api";
-import {
-  ACCEPTED_ENQUIRY_FILE_TYPES,
-  ENQUIRY_SUBJECT_OPTIONS,
-  type EnquirySubjectValue
-} from "@/lib/enquiry-subjects";
-import {
-  formatFileSize,
-  MAX_ENQUIRY_ATTACHMENT_BYTES,
-  MAX_ENQUIRY_ATTACHMENTS,
-  MAX_ENQUIRY_ATTACHMENT_MB
-} from "@/lib/enquiry-limits";
+import { ENQUIRY_SUBJECT_OPTIONS, type EnquirySubjectValue } from "@/lib/enquiry-subjects";
 
 const inputCls =
   "min-h-[48px] w-full rounded-xl border border-stone-200 px-4 text-sm text-stone-900 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20";
@@ -38,7 +29,6 @@ function ContactFormInner() {
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [confirmText, setConfirmText] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setOrderNumber(presetOrder);
@@ -53,29 +43,6 @@ function ContactFormInner() {
       setPhone((c) => c || user.phone?.replace(/^\+\d+/, "") || "");
     });
   }, []);
-
-  function onFilesChange(list: FileList | null) {
-    if (!list) return;
-    const incoming = Array.from(list);
-    const merged = [...files, ...incoming].slice(0, MAX_ENQUIRY_ATTACHMENTS);
-    const rejected: string[] = [];
-    const accepted: File[] = [];
-    for (const file of merged) {
-      if (file.size > MAX_ENQUIRY_ATTACHMENT_BYTES) {
-        rejected.push(`${file.name} (over ${MAX_ENQUIRY_ATTACHMENT_MB} MB)`);
-        continue;
-      }
-      accepted.push(file);
-    }
-    setFiles(accepted);
-    if (rejected.length) {
-      setError(`Skipped: ${rejected.join(", ")}`);
-    } else if (incoming.length + files.length > MAX_ENQUIRY_ATTACHMENTS) {
-      setError(`Only the first ${MAX_ENQUIRY_ATTACHMENTS} files are kept.`);
-    } else {
-      setError(null);
-    }
-  }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -228,41 +195,16 @@ function ContactFormInner() {
       </div>
 
       <div>
-        <label className="mb-2 block text-sm font-medium text-stone-700">
-          Attachments (optional — up to {MAX_ENQUIRY_ATTACHMENTS} files, {MAX_ENQUIRY_ATTACHMENT_MB} MB each)
-        </label>
+        <label className="mb-2 block text-sm font-medium text-stone-700">Attachments (optional)</label>
         <p className="mb-2 text-xs text-stone-500">
-          Images, PDF, Word, audio, and video (MP4, MOV, WebM). Large videos upload directly to secure storage.
+          Photos, PDF, Word, audio, or video. After you pick files, they appear in the list below.
         </p>
-        <input
-          ref={fileRef}
-          type="file"
-          multiple
-          accept={ACCEPTED_ENQUIRY_FILE_TYPES}
-          className="block w-full text-sm text-stone-600 file:mr-3 file:rounded-lg file:border-0 file:bg-stone-100 file:px-3 file:py-2 file:text-sm file:font-medium"
-          onChange={(e) => {
-            onFilesChange(e.target.files);
-            e.target.value = "";
-          }}
+        <EnquiryFilePicker
+          files={files}
+          onChange={setFiles}
+          onError={setError}
+          disabled={loading}
         />
-        {files.length > 0 ? (
-          <ul className="mt-2 space-y-1 text-xs text-stone-600">
-            {files.map((f, i) => (
-              <li key={`${f.name}-${i}`} className="flex items-center justify-between gap-2">
-                <span className="truncate">
-                  {f.name} <span className="text-stone-400">({formatFileSize(f.size)})</span>
-                </span>
-                <button
-                  type="button"
-                  className="text-red-600 hover:underline"
-                  onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}
-                >
-                  Remove
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : null}
       </div>
 
       {error ? (
