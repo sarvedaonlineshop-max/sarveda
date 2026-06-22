@@ -16,6 +16,7 @@ import {
   ENQUIRY_SOURCE_LABELS,
   type EnquirySource
 } from "@/lib/enquiry-subjects";
+import { MAX_ENQUIRY_ATTACHMENTS } from "@/lib/enquiry-limits";
 
 function formatMsgTime(iso: string) {
   return new Date(iso).toLocaleString("en-IN", {
@@ -198,7 +199,7 @@ export default function AdminChatDetailPage() {
             className="hidden"
             onChange={(e) => {
               const list = e.target.files;
-              if (list) setFiles((prev) => [...prev, ...Array.from(list)].slice(0, 5));
+              if (list) setFiles((prev) => [...prev, ...Array.from(list)].slice(0, MAX_ENQUIRY_ATTACHMENTS));
               e.target.value = "";
             }}
           />

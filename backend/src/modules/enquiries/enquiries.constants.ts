@@ -29,8 +29,17 @@ export const ALLOWED_UPLOAD_MIME = new Set([
   "image/gif",
   "application/pdf",
   "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "video/mp4",
+  "video/quicktime",
+  "video/webm",
+  "video/x-msvideo",
+  "video/mpeg",
+  "audio/mpeg",
+  "audio/mp4",
+  "audio/wav"
 ]);
 
-export const MAX_ATTACHMENTS = 5;
-export const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+export const MAX_ATTACHMENTS = 10;
+export const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
+export const MAX_ATTACHMENT_MB = 25;

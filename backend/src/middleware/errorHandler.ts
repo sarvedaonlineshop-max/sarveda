@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import type { NextFunction, Request, Response } from "express";
 
 import { logger } from "../config/logger";
+import { MAX_ATTACHMENT_MB } from "../modules/enquiries/enquiries.constants";
 
 type ApiError = Error & {
   statusCode?: number;
@@ -49,7 +50,7 @@ export const errorHandler = (
   ) {
     statusCode = 413;
     clientMessage =
-      "Upload too large (max 10MB file). Use a smaller audio clip or compress the file.";
+      `Upload too large (max ${MAX_ATTACHMENT_MB} MB per file). Try a smaller clip or compress the video.`;
     code = "PAYLOAD_TOO_LARGE";
   }
 

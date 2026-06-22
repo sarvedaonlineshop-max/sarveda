@@ -11,6 +11,12 @@ import {
   ENQUIRY_SUBJECT_OPTIONS,
   type EnquirySubjectValue
 } from "@/lib/enquiry-subjects";
+import {
+  formatFileSize,
+  MAX_ENQUIRY_ATTACHMENT_BYTES,
+  MAX_ENQUIRY_ATTACHMENTS,
+  MAX_ENQUIRY_ATTACHMENT_MB
+} from "@/lib/enquiry-limits";
 
 const inputCls =
   "min-h-[48px] w-full rounded-xl border border-stone-200 px-4 text-sm text-stone-900 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20";
@@ -50,7 +56,25 @@ function ContactFormInner() {
 
   function onFilesChange(list: FileList | null) {
     if (!list) return;
-    setFiles((prev) => [...prev, ...Array.from(list)].slice(0, 5));
+    const incoming = Array.from(list);
+    const merged = [...files, ...incoming].slice(0, MAX_ENQUIRY_ATTACHMENTS);
+    const rejected: string[] = [];
+    const accepted: File[] = [];
+    for (const file of merged) {
+      if (file.size > MAX_ENQUIRY_ATTACHMENT_BYTES) {
+        rejected.push(`${file.name} (over ${MAX_ENQUIRY_ATTACHMENT_MB} MB)`);
+        continue;
+      }
+      accepted.push(file);
+    }
+    setFiles(accepted);
+    if (rejected.length) {
+      setError(`Skipped: ${rejected.join(", ")}`);
+    } else if (incoming.length + files.length > MAX_ENQUIRY_ATTACHMENTS) {
+      setError(`Only the first ${MAX_ENQUIRY_ATTACHMENTS} files are kept.`);
+    } else {
+      setError(null);
+    }
   }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -205,8 +229,11 @@ function ContactFormInner() {
 
       <div>
         <label className="mb-2 block text-sm font-medium text-stone-700">
-          Attachments (optional, up to 5 files, 10 MB each)
+          Attachments (optional — up to {MAX_ENQUIRY_ATTACHMENTS} files, {MAX_ENQUIRY_ATTACHMENT_MB} MB each)
         </label>
+        <p className="mb-2 text-xs text-stone-500">
+          Images, PDF, Word, audio, and video (MP4, MOV, WebM). Large videos upload directly to secure storage.
+        </p>
         <input
           ref={fileRef}
           type="file"
@@ -222,7 +249,9 @@ function ContactFormInner() {
           <ul className="mt-2 space-y-1 text-xs text-stone-600">
             {files.map((f, i) => (
               <li key={`${f.name}-${i}`} className="flex items-center justify-between gap-2">
-                <span className="truncate">{f.name}</span>
+                <span className="truncate">
+                  {f.name} <span className="text-stone-400">({formatFileSize(f.size)})</span>
+                </span>
                 <button
                   type="button"
                   className="text-red-600 hover:underline"
@@ -247,7 +276,7 @@ function ContactFormInner() {
         disabled={loading}
         className="inline-flex min-h-[48px] w-full items-center justify-center rounded-xl bg-stone-900 px-6 text-sm font-semibold text-amber-400 hover:bg-stone-700 disabled:opacity-60 sm:w-auto"
       >
-        {loading ? "Sending…" : "Send message"}
+        {loading ? "Uploading & sending…" : "Send message"}
       </button>
     </form>
   );

@@ -7,23 +7,32 @@ import type {
 } from "@prisma/client";
 
 import { prisma } from "../../config/db";
-import { uploadAsset } from "../../config/s3";
+import { getPublicMediaUrl, presignPutUploadUrl, uploadAsset } from "../../config/s3";
 import { logger } from "../../config/logger";
 import { sendMail } from "../notifications/email";
 import {
-  ALLOWED_UPLOAD_MIME,
   CARE_INBOX_EMAIL,
   MAX_ATTACHMENT_BYTES,
+  MAX_ATTACHMENT_MB,
   MAX_ATTACHMENTS,
   SOURCE_LABELS,
   SUBJECT_LABELS
 } from "./enquiries.constants";
+import { isAllowedEnquiryMime, normalizeEnquiryMime } from "./enquiries.mime";
 
 export type EnquiryAttachmentInput = {
   buffer: Buffer;
   mimeType: string;
   fileName: string;
   sizeBytes: number;
+};
+
+export type PreUploadedEnquiryAttachment = {
+  fileName: string;
+  mimeType: string;
+  fileSizeBytes: number;
+  s3Key: string;
+  s3Url: string;
 };
 
 export type CreateEnquiryInput = {
@@ -39,6 +48,7 @@ export type CreateEnquiryInput = {
   contextUrl?: string | null;
   userId?: string | null;
   attachments?: EnquiryAttachmentInput[];
+  preUploadedAttachments?: PreUploadedEnquiryAttachment[];
 };
 
 function siteBaseUrl(): string {
@@ -59,38 +69,75 @@ function formatThreadSubject(input: CreateEnquiryInput): string {
   return SOURCE_LABELS[input.source];
 }
 
-async function uploadEnquiryFiles(
-  files: EnquiryAttachmentInput[]
-): Promise<Array<{ fileName: string; mimeType: string; fileSizeBytes: number; s3Key: string; s3Url: string }>> {
-  const out: Array<{
-    fileName: string;
-    mimeType: string;
-    fileSizeBytes: number;
-    s3Key: string;
-    s3Url: string;
-  }> = [];
-  for (const file of files.slice(0, MAX_ATTACHMENTS)) {
-    if (!ALLOWED_UPLOAD_MIME.has(file.mimeType)) {
-      throw new Error(`File type not allowed: ${file.fileName}`);
-    }
-    if (file.sizeBytes > MAX_ATTACHMENT_BYTES) {
-      throw new Error(`File too large (max 10 MB): ${file.fileName}`);
-    }
+function validateAttachmentMeta(fileName: string, mimeType: string, sizeBytes: number): string {
+  const normalized = normalizeEnquiryMime(mimeType, fileName);
+  if (!isAllowedEnquiryMime(mimeType, fileName)) {
+    throw new Error(`File type not allowed: ${fileName}`);
+  }
+  if (sizeBytes > MAX_ATTACHMENT_BYTES) {
+    throw new Error(`File too large (max ${MAX_ATTACHMENT_MB} MB): ${fileName}`);
+  }
+  return normalized;
+}
+
+export async function presignEnquiryUploads(
+  files: Array<{ fileName: string; mimeType: string; sizeBytes: number }>
+) {
+  if (files.length > MAX_ATTACHMENTS) {
+    throw new Error(`Maximum ${MAX_ATTACHMENTS} files allowed`);
+  }
+  const uploads: PreUploadedEnquiryAttachment[] = [];
+  const signed: Array<PreUploadedEnquiryAttachment & { uploadUrl: string }> = [];
+
+  for (const file of files) {
+    const mimeType = validateAttachmentMeta(file.fileName, file.mimeType, file.sizeBytes);
     const ext = file.fileName.split(".").pop()?.toLowerCase() || "bin";
     const s3Key = `enquiries/${new Date().getFullYear()}/${randomUUID()}.${ext}`;
-    const s3Url = await uploadAsset(s3Key, file.buffer, file.mimeType);
+    const uploadUrl = await presignPutUploadUrl(s3Key, mimeType);
+    const s3Url = getPublicMediaUrl(s3Key);
+    const row: PreUploadedEnquiryAttachment = {
+      fileName: file.fileName,
+      mimeType,
+      fileSizeBytes: file.sizeBytes,
+      s3Key,
+      s3Url
+    };
+    uploads.push(row);
+    signed.push({ ...row, uploadUrl });
+  }
+
+  return { uploads: signed };
+}
+
+async function uploadEnquiryFiles(
+  files: EnquiryAttachmentInput[]
+): Promise<PreUploadedEnquiryAttachment[]> {
+  const out: PreUploadedEnquiryAttachment[] = [];
+  for (const file of files.slice(0, MAX_ATTACHMENTS)) {
+    const mimeType = validateAttachmentMeta(file.fileName, file.mimeType, file.sizeBytes);
+    const ext = file.fileName.split(".").pop()?.toLowerCase() || "bin";
+    const s3Key = `enquiries/${new Date().getFullYear()}/${randomUUID()}.${ext}`;
+    const s3Url = await uploadAsset(s3Key, file.buffer, mimeType);
     if (!s3Url) {
       throw new Error("Could not upload attachment. Please try again without files.");
     }
     out.push({
       fileName: file.fileName,
-      mimeType: file.mimeType,
+      mimeType,
       fileSizeBytes: file.sizeBytes,
       s3Key,
       s3Url
     });
   }
   return out;
+}
+
+function assertPreUploadedKeys(attachments: PreUploadedEnquiryAttachment[]) {
+  for (const a of attachments) {
+    if (!a.s3Key.startsWith("enquiries/")) {
+      throw new Error("Invalid attachment reference");
+    }
+  }
 }
 
 function attachmentLinesHtml(
@@ -104,7 +151,14 @@ function attachmentLinesHtml(
 }
 
 export async function createEnquiryThread(input: CreateEnquiryInput) {
-  const uploaded = await uploadEnquiryFiles(input.attachments ?? []);
+  const preUploaded = input.preUploadedAttachments ?? [];
+  if (preUploaded.length) {
+    assertPreUploadedKeys(preUploaded);
+  }
+  const uploaded =
+    preUploaded.length > 0
+      ? preUploaded
+      : await uploadEnquiryFiles(input.attachments ?? []);
   const now = new Date();
   const subjectLine = formatThreadSubject(input);
 

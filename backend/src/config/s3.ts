@@ -88,6 +88,13 @@ function contentTypeForKey(key: string): string {
   if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
   if (lower.endsWith(".gif")) return "image/gif";
   if (lower.endsWith(".mp3")) return "audio/mpeg";
+  if (lower.endsWith(".m4a")) return "audio/mp4";
+  if (lower.endsWith(".wav")) return "audio/wav";
+  if (lower.endsWith(".mp4")) return "video/mp4";
+  if (lower.endsWith(".mov")) return "video/quicktime";
+  if (lower.endsWith(".webm")) return "video/webm";
+  if (lower.endsWith(".avi")) return "video/x-msvideo";
+  if (lower.endsWith(".mpeg") || lower.endsWith(".mpg")) return "video/mpeg";
   if (lower.endsWith(".pdf")) return "application/pdf";
   return "application/octet-stream";
 }
@@ -179,4 +186,28 @@ export async function uploadPdf(key: string, body: Buffer): Promise<string | nul
     })
   );
   return publicUrlForKey(key);
+}
+
+/** Presigned PUT for browser-direct uploads (e.g. contact form videos). */
+export async function presignPutUploadUrl(
+  key: string,
+  contentType: string,
+  expiresInSeconds = 3600
+): Promise<string> {
+  const c = s3Client();
+  const bucket = bucketName();
+  if (!c || !bucket) {
+    throw new Error("S3 is not configured for file uploads");
+  }
+  const { getSignedUrl } = await import("@aws-sdk/s3-request-presigner");
+  return getSignedUrl(
+    c,
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      ContentType: contentType,
+      CacheControl: "private, max-age=31536000"
+    }),
+    { expiresIn: expiresInSeconds }
+  );
 }

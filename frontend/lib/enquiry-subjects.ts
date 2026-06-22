@@ -24,4 +24,4 @@ export const ENQUIRY_SOURCE_LABELS: Record<EnquirySource, string> = {
 };
 
 export const ACCEPTED_ENQUIRY_FILE_TYPES =
-  "image/jpeg,image/png,image/webp,image/gif,application/pdf,.doc,.docx";
+  "image/jpeg,image/png,image/webp,image/gif,application/pdf,.doc,.docx,video/mp4,video/quicktime,video/webm,video/x-msvideo,video/mpeg,audio/mpeg,audio/mp4,audio/wav,.mp4,.mov,.webm,.avi,.mpeg,.mpg,.mp3,.m4a,.wav";
