@@ -31,14 +31,15 @@ import {
   formatAdminOrderStatusLabel,
   isUnpaidCheckoutAttempt
 } from "@/lib/order-status-display";
+import { DEFAULT_SHIP_BOX_PRESET, SHIP_BOX_PRESETS } from "@/lib/ship-box-presets";
 
 const MAX_SHIP_BOXES = 5;
 
 function defaultShipBox(weightGrams = 500): DelhiveryShipBox {
   return {
-    lengthCm: 10,
-    breadthCm: 10,
-    heightCm: 10,
+    lengthCm: DEFAULT_SHIP_BOX_PRESET.lengthCm,
+    breadthCm: DEFAULT_SHIP_BOX_PRESET.breadthCm,
+    heightCm: DEFAULT_SHIP_BOX_PRESET.heightCm,
     weightGrams: Math.max(50, weightGrams),
     packageType: "CARDBOARD_BOX"
   };
@@ -1273,7 +1274,38 @@ export default function AdminOrderDetailPage() {
                 </select>
               </label>
               <div>
-                <span className="text-xs text-stone-500">Size (cm)</span>
+                <label className="block">
+                  <span className="text-xs text-stone-500">Box size preset</span>
+                  <select
+                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
+                    defaultValue=""
+                    onChange={(e) => {
+                      const preset = SHIP_BOX_PRESETS.find((p) => p.id === e.target.value);
+                      if (!preset) return;
+                      setShipBoxes((prev) =>
+                        prev.map((b, i) =>
+                          i === activeShipBoxIdx
+                            ? {
+                                ...b,
+                                lengthCm: preset.lengthCm,
+                                breadthCm: preset.breadthCm,
+                                heightCm: preset.heightCm
+                              }
+                            : b
+                        )
+                      );
+                      e.target.value = "";
+                    }}
+                  >
+                    <option value="">Select standard size…</option>
+                    {SHIP_BOX_PRESETS.map((preset) => (
+                      <option key={preset.id} value={preset.id}>
+                        {preset.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <span className="mt-2 block text-xs text-stone-500">Size (cm) — or enter manually</span>
                 <div className="mt-1 grid grid-cols-3 gap-2">
                   <input
                     type="number"

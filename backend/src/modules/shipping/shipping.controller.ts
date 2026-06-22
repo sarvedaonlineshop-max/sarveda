@@ -539,16 +539,36 @@ export async function getAdminLabel(req: Request, res: Response, next: NextFunct
       returnAddress: pickupReturn
     };
 
-    const lineItems =
+    const productLines =
       shipment?.order?.items.map((it) => ({
         name: it.nameSnapshot,
         sku: it.skuSnapshot,
         qty: it.qtyOrdered,
         unitPrice: it.unitPriceInPaise / 100,
         lineTotal: it.lineTotalInPaise / 100
-      })) ?? undefined;
-    if (lineItems?.length) renderOptions.lineItems = lineItems;
-    if (shipment?.order) {
+      })) ?? [];
+
+    if (productLines.length && shipment?.order) {
+      const grandTotal = shipment.order.grandTotalInPaise / 100;
+      const sumProducts = productLines.reduce((s, it) => s + it.lineTotal, 0);
+      const shippingRupees = (shipment.order.shippingInPaise ?? 0) / 100;
+      const shippingLine =
+        shippingRupees > 0
+          ? shippingRupees
+          : Math.round(Math.max(0, grandTotal - sumProducts) * 100) / 100;
+
+      if (shippingLine > 0.009) {
+        productLines.push({
+          name: "Shipping Charges",
+          sku: "",
+          qty: 1,
+          unitPrice: shippingLine,
+          lineTotal: shippingLine
+        });
+      }
+      renderOptions.lineItems = productLines;
+      renderOptions.declaredAmountRupees = grandTotal;
+    } else if (shipment?.order) {
       renderOptions.declaredAmountRupees = shipment.order.grandTotalInPaise / 100;
     }
 

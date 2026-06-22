@@ -324,9 +324,9 @@ export function renderDelhiveryPackingSlipHtml(
     .logo-del-text { font-size: 11px; font-weight: 900; letter-spacing: 0.06em; }
     .logo-del-accent { color: #e11; font-size: 8px; vertical-align: super; }
     .awb-title { font-size: 9px; margin-bottom: 1mm; }
-    .barcode-wrap { text-align: center; margin: 0.5mm 0; }
-    .barcode-main { width: 100%; max-height: 14mm; object-fit: contain; }
-    .barcode-oid { width: 22mm; max-height: 8mm; object-fit: contain; display: block; margin-top: 1mm; }
+    .barcode-wrap { text-align: center; margin: 1mm 0 1.5mm; padding: 0 1mm; }
+    .barcode-main { width: 100%; max-height: 24mm; min-height: 20mm; object-fit: contain; image-rendering: crisp-edges; }
+    .barcode-oid { width: 48mm; max-height: 16mm; min-height: 12mm; object-fit: contain; display: block; margin-top: 1mm; margin-left: auto; image-rendering: crisp-edges; }
     .barcode-fallback { font-family: monospace; font-size: 14px; font-weight: 700; text-align: center; }
     .awb-meta {
       display: grid;
@@ -352,8 +352,8 @@ export function renderDelhiveryPackingSlipHtml(
     .seller-line { word-break: break-word; font-size: 8px; line-height: 1.4; margin-bottom: 1mm; }
     .seller-line strong { font-weight: 700; }
     .gst { font-size: 8px; margin-top: 0.5mm; }
-    .seller-right { text-align: right; }
-    .oid { font-size: 11px; font-weight: 700; margin-bottom: 0.5mm; }
+    .seller-right { text-align: right; min-width: 50mm; }
+    .oid { font-size: 11px; font-weight: 700; margin-bottom: 1mm; }
     .products {
       width: 100%;
       border-collapse: collapse;
