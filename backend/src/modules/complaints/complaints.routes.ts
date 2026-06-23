@@ -120,6 +120,45 @@ router.get("/admin/all", requireAdmin, async (req, res, next) => {
   }
 });
 
+router.get("/admin/whitelist", requireAdmin, async (_req, res, next) => {
+  try {
+    const list = await prisma.complaintWhitelist.findMany({
+      orderBy: { addedAt: "desc" }
+    });
+    res.json({ success: true, whitelist: list });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/admin/whitelist", requireAdmin, async (req, res, next) => {
+  try {
+    const { email, name } = req.body as { email?: string; name?: string };
+    if (!email?.trim()) {
+      res.status(400).json({ success: false, error: "Email is required", code: "BAD_REQUEST" });
+      return;
+    }
+    const entry = await prisma.complaintWhitelist.create({
+      data: { email: email.toLowerCase().trim(), name: name?.trim() || null }
+    });
+    res.status(201).json({ success: true, entry });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete("/admin/whitelist/:id", requireAdmin, async (req, res, next) => {
+  try {
+    await prisma.complaintWhitelist.update({
+      where: { id: req.params.id },
+      data: { isActive: false }
+    });
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/admin/:id", requireAdmin, async (req, res, next) => {
   try {
     const complaint = await prisma.complaint.findUnique({
@@ -191,45 +230,6 @@ router.post("/admin/:id/reply", requireAdmin, async (req, res, next) => {
       return;
     }
     res.json({ success: true, complaint: await complaintWithSignedMedia(updated) });
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.get("/admin/whitelist", requireAdmin, async (_req, res, next) => {
-  try {
-    const list = await prisma.complaintWhitelist.findMany({
-      orderBy: { addedAt: "desc" }
-    });
-    res.json({ success: true, whitelist: list });
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.post("/admin/whitelist", requireAdmin, async (req, res, next) => {
-  try {
-    const { email, name } = req.body as { email?: string; name?: string };
-    if (!email?.trim()) {
-      res.status(400).json({ success: false, error: "Email is required", code: "BAD_REQUEST" });
-      return;
-    }
-    const entry = await prisma.complaintWhitelist.create({
-      data: { email: email.toLowerCase().trim(), name: name?.trim() || null }
-    });
-    res.status(201).json({ success: true, entry });
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.delete("/admin/whitelist/:id", requireAdmin, async (req, res, next) => {
-  try {
-    await prisma.complaintWhitelist.update({
-      where: { id: req.params.id },
-      data: { isActive: false }
-    });
-    res.json({ success: true });
   } catch (err) {
     next(err);
   }

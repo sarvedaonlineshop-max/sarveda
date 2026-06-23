@@ -27,12 +27,17 @@ export default function ComplaintWhitelistPage() {
 
   async function load() {
     const res = await fetch("/api/complaints/admin/whitelist", { credentials: "include" });
-    const data = (await res.json()) as { whitelist: WhitelistEntry[] };
+    const data = (await res.json()) as { whitelist?: WhitelistEntry[]; error?: string };
+    if (!res.ok) {
+      throw new Error(data.error ?? "Failed to load whitelist");
+    }
     setList(data.whitelist ?? []);
   }
 
   useEffect(() => {
-    void load();
+    void load().catch((err: unknown) => {
+      setError(err instanceof Error ? err.message : "Failed to load whitelist");
+    });
   }, []);
 
   async function handleAdd(e: React.FormEvent) {
@@ -40,20 +45,28 @@ export default function ComplaintWhitelistPage() {
     if (!email.trim()) return;
     setSaving(true);
     setError(null);
+    const payload = { email: email.trim(), name: name.trim() || undefined };
     try {
       const res = await fetch("/api/complaints/admin/whitelist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email: email.trim(), name: name.trim() || undefined })
+        body: JSON.stringify(payload)
       });
+      const data = (await res.json().catch(() => ({}))) as {
+        entry?: WhitelistEntry;
+        error?: string;
+      };
       if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(body.error ?? "Failed to add email");
+        throw new Error(data.error ?? "Failed to add email");
       }
       setEmail("");
       setName("");
-      await load();
+      if (data.entry) {
+        setList((prev) => [data.entry!, ...prev.filter((row) => row.id !== data.entry!.id)]);
+      } else {
+        await load();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add email");
     } finally {
@@ -63,11 +76,16 @@ export default function ComplaintWhitelistPage() {
 
   async function handleRemove(id: string) {
     if (!confirm("Remove this person's access?")) return;
-    await fetch(`/api/complaints/admin/whitelist/${id}`, {
+    const res = await fetch(`/api/complaints/admin/whitelist/${id}`, {
       method: "DELETE",
       credentials: "include"
     });
-    await load();
+    if (!res.ok) {
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      setError(body.error ?? "Failed to remove email");
+      return;
+    }
+    setList((prev) => prev.map((row) => (row.id === id ? { ...row, isActive: false } : row)));
   }
 
   return (
