@@ -6,28 +6,23 @@ const COMPLAINTS_BUCKET = process.env.AWS_S3_COMPLAINTS_BUCKET_NAME?.trim() ?? "
 
 function complaintsRegion(): string {
   return (
-    process.env.AWS_S3_REGION?.trim() ||
-    process.env.AWS_REGION?.trim() ||
+    process.env.AWS_S3_COMPLAINTS_REGION ??
+    process.env.AWS_S3_REGION ??
     "ap-south-1"
   );
-}
-
-function credentials() {
-  const accessKeyId = process.env.AWS_ACCESS_KEY_ID?.trim();
-  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY?.trim();
-  if (!accessKeyId || !secretAccessKey) return null;
-  return { accessKeyId, secretAccessKey };
 }
 
 let client: S3Client | null = null;
 
 function s3Client(): S3Client {
   if (client) return client;
-  const creds = credentials();
-  if (!creds) {
-    throw new Error("AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY not configured");
-  }
-  client = new S3Client({ region: complaintsRegion(), credentials: creds });
+  client = new S3Client({
+    region: process.env.AWS_S3_COMPLAINTS_REGION ?? process.env.AWS_S3_REGION ?? "ap-south-1",
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!
+    }
+  });
   return client;
 }
 
