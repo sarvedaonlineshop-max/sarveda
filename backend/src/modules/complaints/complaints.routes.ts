@@ -1,20 +1,18 @@
 import type { ComplaintPriority, ComplaintStatus } from "@prisma/client";
 import { Router } from "express";
-import { OAuth2Client } from "google-auth-library";
 import multer from "multer";
 import type { NextFunction, Request, Response } from "express";
 
 import { prisma } from "../../config/db";
 import { uploadComplaintMedia, getSignedComplaintMediaUrl } from "../../config/s3-complaints";
 import { requireAdmin } from "../../middleware/admin";
+import { verifyAccessToken } from "../../utils/jwt";
 
 const router = Router();
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 }
 });
-
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const PRIORITIES = new Set<ComplaintPriority>(["LOW", "MEDIUM", "HIGH"]);
 const STATUSES = new Set<ComplaintStatus>(["OPEN", "IN_PROGRESS", "RESOLVED", "REOPENED"]);
@@ -27,21 +25,12 @@ function mediaType(mime: string): string {
 
 async function verifyComplaintAuth(req: Request, res: Response, next: NextFunction) {
   try {
-    const idToken = req.headers.authorization?.replace(/^Bearer\s+/i, "").trim();
-    if (!idToken) {
+    const raw = req.headers.authorization?.replace(/^Bearer\s+/i, "").trim();
+    if (!raw) {
       res.status(401).json({ success: false, error: "No token", code: "UNAUTHORIZED" });
       return;
     }
-    const ticket = await googleClient.verifyIdToken({
-      idToken,
-      audience: process.env.GOOGLE_CLIENT_ID
-    });
-    const payload = ticket.getPayload();
-    if (!payload?.email) {
-      res.status(401).json({ success: false, error: "Invalid token", code: "UNAUTHORIZED" });
-      return;
-    }
-
+    const payload = verifyAccessToken(raw);
     const email = payload.email.toLowerCase();
     const whitelisted = await prisma.complaintWhitelist.findFirst({
       where: { email, isActive: true }
@@ -55,9 +44,14 @@ async function verifyComplaintAuth(req: Request, res: Response, next: NextFuncti
       return;
     }
 
+    const user = await prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { name: true }
+    });
+
     req.complaintUser = {
       email,
-      name: payload.name ?? whitelisted.name ?? undefined
+      name: user?.name ?? whitelisted.name ?? undefined
     };
     next();
   } catch {

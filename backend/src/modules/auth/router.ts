@@ -7,7 +7,7 @@ import type { Profile } from "passport-google-oauth20";
 import { prisma } from "../../config/db";
 import { requireAuth } from "../../middleware/auth";
 import { validateBody } from "../../middleware/validate";
-import { setAuthCookie } from "../../utils/jwt";
+import { setAuthCookie, signAccessToken } from "../../utils/jwt";
 import { googleOAuthConfigured } from "./passport";
 import {
   getPrimaryFrontendBase,
@@ -114,7 +114,12 @@ authRouter.post(
   },
   asyncHandler(async (req, res) => {
     const user = await loginUser(res, req.body);
-    res.json({ success: true, data: { user } });
+    const token = signAccessToken({
+      sub: user.id,
+      email: user.email,
+      role: user.role
+    });
+    res.json({ success: true, data: { user, token } });
   })
 );
 
@@ -139,7 +144,12 @@ authRouter.post(
   validateBody(verifyOtpSchema),
   asyncHandler(async (req, res) => {
     const user = await verifyOtpAndLogin(res, req.body);
-    res.json({ success: true, data: { user } });
+    const token = signAccessToken({
+      sub: user.id,
+      email: user.email,
+      role: user.role
+    });
+    res.json({ success: true, data: { user, token } });
   })
 );
 
