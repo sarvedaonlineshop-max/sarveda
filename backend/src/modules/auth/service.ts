@@ -299,12 +299,39 @@ export async function getMe(userId: string) {
   return publicUser(user);
 }
 
+function normalizePhoneInput(raw: string | null | undefined): string | null {
+  if (raw == null || raw.trim() === "") return null;
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length < 10) {
+    throw httpError(400, "Enter a valid 10-digit mobile number", "INVALID_PHONE");
+  }
+  if (digits.length === 10) return `91${digits}`;
+  if (digits.startsWith("91") && digits.length === 12) return digits;
+  return digits;
+}
+
 export async function updateProfile(userId: string, body: { name: string; phone?: string | null }) {
+  const phone =
+    body.phone !== undefined ? normalizePhoneInput(body.phone) : undefined;
+
+  if (phone) {
+    const clash = await prisma.user.findFirst({
+      where: { phone, NOT: { id: userId }, deletedAt: null }
+    });
+    if (clash) {
+      throw httpError(
+        409,
+        "This mobile number is already linked to another account",
+        "PHONE_EXISTS"
+      );
+    }
+  }
+
   const user = await prisma.user.update({
     where: { id: userId },
     data: {
-      name: body.name,
-      phone: body.phone ?? null
+      name: body.name.trim(),
+      ...(phone !== undefined ? { phone } : {})
     }
   });
   return publicUser(user);

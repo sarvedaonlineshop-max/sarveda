@@ -14,6 +14,9 @@ type ApiError = Error & {
 function prismaClientMessage(err: Prisma.PrismaClientKnownRequestError): string {
   if (err.code === "P2002") {
     const target = Array.isArray(err.meta?.target) ? err.meta.target.join(", ") : "field";
+    if (target.includes("phone")) {
+      return "This mobile number is already linked to another account";
+    }
     return `Duplicate value for ${target}. Change SKU or slug and try again.`;
   }
   if (err.code === "P2003") return "Related record not found.";
