@@ -9,8 +9,10 @@ declare global {
         role?: string;
       };
       complaintUser?: {
+        id: string;
         email: string;
         name?: string;
+        phone?: string | null;
       };
       user?: Profile;
     }

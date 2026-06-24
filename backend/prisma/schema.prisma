@@ -906,6 +906,7 @@ enum ComplaintAuthorType {
 
 model Complaint {
   id            String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  parentId      String?               @db.Uuid
   raisedByEmail String
   raisedByName  String?
   title         String
@@ -915,12 +916,15 @@ model Complaint {
   createdAt     DateTime              @default(now())
   updatedAt     DateTime              @updatedAt
   resolvedAt    DateTime?
+  parent        Complaint?            @relation("ComplaintHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children      Complaint[]           @relation("ComplaintHierarchy")
   events        ComplaintEvent[]
   attachments   ComplaintAttachment[]
 
   @@index([status])
   @@index([raisedByEmail])
   @@index([priority])
+  @@index([parentId])
 }
 
 model ComplaintEvent {

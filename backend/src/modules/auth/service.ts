@@ -8,7 +8,7 @@ import { logger } from "../../config/logger";
 import { sendWelcomeEmail } from "../notifications/email";
 import { hashPassword, verifyPassword } from "../../utils/hash";
 import { clearAuthCookie, setAuthCookie } from "../../utils/jwt";
-import type { LoginBody, RegisterBody, SendOtpBody, VerifyOtpBody } from "./schemas";
+import type { LoginBody, RegisterBody, SendOtpBody, VerifyOtpBody, ChangePasswordBody } from "./schemas";
 
 function httpError(status: number, message: string, code: string): Error {
   const e = new Error(message) as Error & { statusCode: number; code: string };
@@ -308,6 +308,25 @@ export async function updateProfile(userId: string, body: { name: string; phone?
     }
   });
   return publicUser(user);
+}
+
+export async function changePassword(userId: string, body: ChangePasswordBody) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || user.deletedAt) {
+    throw httpError(404, "User not found", "USER_NOT_FOUND");
+  }
+  if (!user.passwordHash) {
+    throw httpError(400, "Password not set for this account", "PASSWORD_NOT_SET");
+  }
+  const ok = await verifyPassword(body.currentPassword, user.passwordHash);
+  if (!ok) {
+    throw httpError(401, "Current password is incorrect", "INVALID_PASSWORD");
+  }
+  const passwordHash = await hashPassword(body.newPassword);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash }
+  });
 }
 
 type GoogleLikeProfile = {

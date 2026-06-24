@@ -23,10 +23,18 @@ import {
   sendOtp,
   upsertGoogleUser,
   updateProfile,
-  verifyOtpAndLogin
+  verifyOtpAndLogin,
+  changePassword
 } from "./service";
 import { requestPasswordReset, resetPassword } from "./passwordReset.service";
-import { loginSchema, registerSchema, sendOtpSchema, updateProfileSchema, verifyOtpSchema } from "./schemas";
+import {
+  loginSchema,
+  registerSchema,
+  sendOtpSchema,
+  updateProfileSchema,
+  verifyOtpSchema,
+  changePasswordSchema
+} from "./schemas";
 
 function asyncHandler(
   fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
@@ -216,6 +224,16 @@ authRouter.patch(
   asyncHandler(async (req, res) => {
     const user = await updateProfile(req.authUser!.id, req.body);
     res.json({ success: true, data: { user } });
+  })
+);
+
+authRouter.post(
+  "/change-password",
+  requireAuth,
+  validateBody(changePasswordSchema),
+  asyncHandler(async (req, res) => {
+    await changePassword(req.authUser!.id, req.body);
+    res.json({ success: true, message: "Password updated" });
   })
 );
 

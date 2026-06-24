@@ -46,12 +46,14 @@ async function verifyComplaintAuth(req: Request, res: Response, next: NextFuncti
 
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { name: true }
+      select: { id: true, name: true, phone: true }
     });
 
     req.complaintUser = {
+      id: payload.sub,
       email,
-      name: user?.name ?? whitelisted.name ?? undefined
+      name: user?.name ?? whitelisted.name ?? undefined,
+      phone: user?.phone ?? null
     };
     next();
   } catch {
@@ -88,6 +90,35 @@ async function complaintWithSignedMedia<T extends ComplaintWithMedia>(complaint:
       }))
     )
   };
+}
+
+async function phoneForEmail(email: string): Promise<string | null> {
+  const user = await prisma.user.findUnique({
+    where: { email: email.toLowerCase() },
+    select: { phone: true }
+  });
+  return user?.phone ?? null;
+}
+
+async function enrichComplaintList<
+  T extends {
+    raisedByEmail: string;
+    raisedByName: string | null;
+    children?: Array<{ id: string }>;
+    _count?: { children: number };
+  }
+>(rows: T[]) {
+  const emails = [...new Set(rows.map((r) => r.raisedByEmail.toLowerCase()))];
+  const users = await prisma.user.findMany({
+    where: { email: { in: emails } },
+    select: { email: true, phone: true }
+  });
+  const phoneMap = new Map(users.map((u) => [u.email.toLowerCase(), u.phone]));
+  return rows.map((row) => ({
+    ...row,
+    raisedByPhone: phoneMap.get(row.raisedByEmail.toLowerCase()) ?? null,
+    childCount: row._count?.children ?? row.children?.length ?? 0
+  }));
 }
 
 // ─── ADMIN ROUTES (before /:id) ─────────────────────────────────────────────
@@ -233,10 +264,11 @@ router.post("/admin/:id/reply", requireAdmin, async (req, res, next) => {
 
 router.post("/", verifyComplaintAuth, upload.array("files", 5), async (req, res, next) => {
   try {
-    const { title, description, priority: priorityRaw } = req.body as {
+    const { title, description, priority: priorityRaw, parentId } = req.body as {
       title?: string;
       description?: string;
       priority?: string;
+      parentId?: string;
     };
     const files = (req.files as Express.Multer.File[] | undefined) ?? [];
 
@@ -250,8 +282,20 @@ router.post("/", verifyComplaintAuth, upload.array("files", 5), async (req, res,
         ? (priorityRaw as ComplaintPriority)
         : "MEDIUM";
 
+    if (parentId) {
+      const parent = await prisma.complaint.findUnique({
+        where: { id: parentId },
+        select: { id: true }
+      });
+      if (!parent) {
+        res.status(404).json({ success: false, error: "Parent task not found", code: "NOT_FOUND" });
+        return;
+      }
+    }
+
     const complaint = await prisma.complaint.create({
       data: {
+        parentId: parentId ?? null,
         raisedByEmail: req.complaintUser!.email,
         raisedByName: req.complaintUser!.name ?? null,
         title: title.trim(),
@@ -300,14 +344,51 @@ router.post("/", verifyComplaintAuth, upload.array("files", 5), async (req, res,
   }
 });
 
+function statusFilterFromTab(tab: string | undefined): ComplaintStatus[] | undefined {
+  if (tab === "open") return ["OPEN", "REOPENED"];
+  if (tab === "in_progress") return ["IN_PROGRESS"];
+  if (tab === "closed") return ["RESOLVED"];
+  return undefined;
+}
+
+router.get("/all", verifyComplaintAuth, async (req, res, next) => {
+  try {
+    const tab = typeof req.query.tab === "string" ? req.query.tab : undefined;
+    const statuses = statusFilterFromTab(tab);
+    const complaints = await prisma.complaint.findMany({
+      where: {
+        parentId: null,
+        ...(statuses ? { status: { in: statuses } } : {})
+      },
+      orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
+      include: {
+        attachments: true,
+        _count: { select: { children: true } }
+      }
+    });
+    res.json({ success: true, complaints: await enrichComplaintList(complaints) });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/my", verifyComplaintAuth, async (req, res, next) => {
   try {
+    const tab = typeof req.query.tab === "string" ? req.query.tab : undefined;
+    const statuses = statusFilterFromTab(tab);
     const complaints = await prisma.complaint.findMany({
-      where: { raisedByEmail: req.complaintUser!.email },
+      where: {
+        raisedByEmail: req.complaintUser!.email,
+        parentId: null,
+        ...(statuses ? { status: { in: statuses } } : {})
+      },
       orderBy: { createdAt: "desc" },
-      include: { attachments: true }
+      include: {
+        attachments: true,
+        _count: { select: { children: true } }
+      }
     });
-    res.json({ success: true, complaints });
+    res.json({ success: true, complaints: await enrichComplaintList(complaints) });
   } catch (err) {
     next(err);
   }
@@ -319,6 +400,10 @@ router.get("/:id", verifyComplaintAuth, async (req, res, next) => {
       where: { id: req.params.id },
       include: {
         attachments: true,
+        children: {
+          orderBy: { createdAt: "asc" },
+          include: { attachments: true }
+        },
         events: {
           orderBy: { createdAt: "asc" },
           include: { attachments: true }
@@ -329,7 +414,13 @@ router.get("/:id", verifyComplaintAuth, async (req, res, next) => {
       res.status(404).json({ success: false, error: "Not found", code: "NOT_FOUND" });
       return;
     }
-    res.json({ success: true, complaint });
+    const raisedByPhone = await phoneForEmail(complaint.raisedByEmail);
+    const children = await enrichComplaintList(complaint.children);
+    const signed = await complaintWithSignedMedia(complaint);
+    res.json({
+      success: true,
+      complaint: { ...signed, raisedByPhone, children }
+    });
   } catch (err) {
     next(err);
   }
