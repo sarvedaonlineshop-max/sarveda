@@ -225,6 +225,10 @@ export default function TasksApp() {
   // Status update state
   const [statusUpdating,setStatusUpdating] = useState(false);
 
+  // Quick task compose (dashboard)
+  const [quickTask,setQuickTask] = useState("");
+  const [quickSubmitting,setQuickSubmitting] = useState(false);
+
   const prevView = useRef<View>("dashboard");
   const pollRef = useRef<ReturnType<typeof setInterval>|null>(null);
 
@@ -425,13 +429,16 @@ export default function TasksApp() {
   // ── Create task ───────────────────────────────────────
   async function handleCreateTask(e:React.FormEvent) {
     e.preventDefault();
-    if (!ntTitle.trim()) {
-      setNtMsg("❌ Title is required"); return;
+    if (!ntDesc.trim()) {
+      setNtMsg("❌ Description is required"); return;
     }
     setNtSubmitting(true);setNtMsg("");
     try {
+      const autoTitle = ntDesc.trim()
+        .split("\n")[0]
+        .slice(0, 100) || "Task";
       const fd = new FormData();
-      fd.append("title",ntTitle.trim());
+      fd.append("title", autoTitle);
       fd.append("description",ntDesc.trim());
       fd.append("priority",ntPriority);
       if (ntParentId) fd.append("parentId",ntParentId);
@@ -526,6 +533,28 @@ export default function TasksApp() {
     } catch(err:any) {
       setPMsg("❌ "+(err.message??"Failed"));
     } finally { setPSaving(false); }
+  }
+
+  async function submitQuickTask(text: string) {
+    const trimmed = text.trim();
+    if (!trimmed || !token) return;
+    setQuickSubmitting(true);
+    try {
+      const fd = new FormData();
+      fd.append("title", trimmed.slice(0, 100));
+      fd.append("description", trimmed);
+      fd.append("priority", "MEDIUM");
+      fd.append("assigneeEmails", JSON.stringify([]));
+      await fetch(`${API}/complaints`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      setQuickTask("");
+      void loadAll();
+    } finally {
+      setQuickSubmitting(false);
+    }
   }
 
   async function handleChangePwd(e:React.FormEvent) {
@@ -701,8 +730,8 @@ export default function TasksApp() {
   }
 
   function TaskCard({
-    task,onClick
-  }:{task:Task;onClick:()=>void}) {
+    task,onClick,isAssignment
+  }:{task:Task;onClick:()=>void;isAssignment?:boolean}) {
     const overdue = task.dueDate && 
       task.status!=="RESOLVED" &&
       new Date(task.dueDate)<new Date();
@@ -773,6 +802,25 @@ export default function TasksApp() {
           paddingTop:"10px",
           borderTop:"1px solid #f0ece6"
         }}>
+          {isAssignment ? (
+            <div style={{
+              fontSize:"12px",color:"#8a7060",
+              display:"flex",alignItems:"center",
+              gap:"6px",flexWrap:"wrap"
+            }}>
+              <span style={{fontWeight:700,color:"#1e3a2f"}}>You</span>
+              <span>→</span>
+              <AssigneeAvatars assignees={task.assignees}/>
+              <span>
+                {task.assignees.map(a =>
+                  a.assigneeName ??
+                  a.assigneeEmail.split("@")[0]
+                ).join(", ")}
+              </span>
+              <span style={{color:"#c0b8b0"}}>·</span>
+              <span>{timeAgo(task.updatedAt)}</span>
+            </div>
+          ) : (
           <div style={{
             display:"flex",alignItems:"center",gap:"6px"
           }}>
@@ -784,10 +832,12 @@ export default function TasksApp() {
             <span style={{
               fontSize:"11px",color:"#8a7060"
             }}>
-              {task.assignedByName??
-               task.assignedByEmail?.split("@")[0]??
-               task.raisedByName??
-               task.raisedByEmail.split("@")[0]}
+              {task.assignedByEmail === myEmail
+                ? "You"
+                : task.assignedByName ??
+                  task.assignedByEmail?.split("@")[0] ??
+                  task.raisedByName ??
+                  task.raisedByEmail.split("@")[0]}
             </span>
             {task.assignees.length>0&&(
               <>
@@ -798,7 +848,8 @@ export default function TasksApp() {
               </>
             )}
           </div>
-          {task.dueDate&&task.status!=="RESOLVED"&&(
+          )}
+          {!isAssignment && task.dueDate&&task.status!=="RESOLVED"&&(
             <span style={{
               fontSize:"10px",fontWeight:600,
               color:overdue?"#dc2626":"#8a7060"
@@ -1032,9 +1083,8 @@ export default function TasksApp() {
       <style>{CSS}</style>
       <div style={{
         minHeight:"100dvh",background:"#f0ece6",
-        paddingBottom:"80px"
+        paddingBottom:"130px"
       }}>
-        {/* Hero header */}
         <div style={{
           background:"linear-gradient(135deg,#1e3a2f,#2d5240)",
           padding:"16px 16px 24px"
@@ -1140,7 +1190,7 @@ export default function TasksApp() {
                 color:"#2c2420",marginBottom:"4px"
               }}>No tasks yet</p>
               <p style={{fontSize:"13px"}}>
-                Tap + to create your first task
+                Type below to create your first task
               </p>
             </div>
           ):(
@@ -1164,7 +1214,65 @@ export default function TasksApp() {
           )}
         </div>
 
-        <FAB/>
+        <div style={{
+          position:"fixed", bottom:"64px",
+          left:"50%", transform:"translateX(-50%)",
+          width:"calc(100% - 32px)", maxWidth:"448px",
+          background:"#fff",
+          borderRadius:"24px",
+          border:"1px solid #e0d8ce",
+          boxShadow:"0 4px 20px rgba(0,0,0,0.12)",
+          display:"flex", alignItems:"center",
+          gap:"10px", padding:"10px 14px",
+          zIndex:95
+        }}>
+          <div style={{
+            width:34, height:34, borderRadius:"50%",
+            background:"#1e3a2f", color:"#f5d88a",
+            display:"flex", alignItems:"center",
+            justifyContent:"center", fontSize:"18px",
+            flexShrink:0, cursor:"pointer"
+          }}
+            onClick={()=>{
+              setNtParentId(null);
+              setNtParentTitle(null);
+              prevView.current="dashboard";
+              setView("new");
+            }}>
+            +
+          </div>
+          <input
+            value={quickTask}
+            onChange={e=>setQuickTask(e.target.value)}
+            onKeyDown={async e=>{
+              if (e.key==="Enter" && quickTask.trim()) {
+                await submitQuickTask(quickTask);
+              }
+            }}
+            placeholder="Quick task... (press Enter)"
+            style={{
+              flex:1, border:"none", outline:"none",
+              fontSize:"14px", color:"#1a1614",
+              background:"transparent",
+              fontFamily:"inherit"
+            }}
+          />
+          {quickTask.trim() && (
+            <button
+              onClick={()=>void submitQuickTask(quickTask)}
+              disabled={quickSubmitting}
+              style={{
+                width:34, height:34, borderRadius:"50%",
+                background:"#1e3a2f", color:"#f5d88a",
+                border:"none", cursor:"pointer",
+                display:"flex", alignItems:"center",
+                justifyContent:"center", fontSize:"18px",
+                flexShrink:0
+              }}>
+              {quickSubmitting ? "..." : "↑"}
+            </button>
+          )}
+        </div>
         <BottomNav/>
       </div>
     </>
@@ -1269,6 +1377,7 @@ export default function TasksApp() {
               })
               .map(t=>(
                 <TaskCard key={t.id} task={t}
+                  isAssignment
                   onClick={async()=>{
                     await loadDetail(t.id);
                     prevView.current="myassignments";
@@ -1320,7 +1429,7 @@ export default function TasksApp() {
           )}
 
           {/* Title */}
-          <div style={{marginBottom:"16px"}}>
+          <div style={{marginBottom:"16px",display:"none"}}>
             <label style={{
               fontSize:"11px",fontWeight:700,
               color:"#8a7060",
@@ -1702,9 +1811,12 @@ export default function TasksApp() {
                   fontSize:"13px",fontWeight:700,
                   color:"#1a1614"
                 }}>
-                  {selected.assignedByName??
-                   selected.raisedByName??
-                   selected.raisedByEmail.split("@")[0]}
+                  {selected.assignedByEmail === myEmail ||
+                   selected.raisedByEmail === myEmail
+                    ? "You"
+                    : selected.assignedByName ??
+                      selected.raisedByName ??
+                      selected.raisedByEmail.split("@")[0]}
                 </p>
               </div>
               <p style={{
@@ -2141,7 +2253,9 @@ export default function TasksApp() {
                   padding:"14px",
                   marginBottom:"8px",
                   borderLeft:`4px solid ${
-                    n.isRead?"#e0d8ce":"#c8960a"
+                    n.type==="HIGH_PRIORITY_OVERDUE"
+                      ?"#dc2626"
+                      :n.isRead?"#e0d8ce":"#c8960a"
                   }`,
                   opacity:n.isRead?0.7:1
                 }}>
@@ -2152,9 +2266,12 @@ export default function TasksApp() {
                   <div style={{
                     fontSize:"20px",flexShrink:0
                   }}>
-                    {n.type==="ASSIGNED"?"📋"
+                    {n.type==="HIGH_PRIORITY_OVERDUE"?"🔴"
+                     :n.type==="ASSIGNED"?"📋"
                      :n.type==="REPLIED"?"💬"
-                     :n.type==="CLOSED"?"✅":"🔔"}
+                     :n.type==="CLOSED"?"✅"
+                     :n.type==="DUE_DATE_REMINDER"?"⏰"
+                     :"🔔"}
                   </div>
                   <div style={{flex:1}}>
                     <p style={{

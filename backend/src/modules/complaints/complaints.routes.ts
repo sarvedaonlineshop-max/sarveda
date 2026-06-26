@@ -4,8 +4,10 @@ import multer from "multer";
 import type { NextFunction, Request, Response } from "express";
 
 import { prisma } from "../../config/db";
+import { logger } from "../../config/logger";
 import { uploadComplaintMedia, getSignedComplaintMediaUrl } from "../../config/s3-complaints";
 import { requireAdmin } from "../../middleware/admin";
+import { sendMail } from "../notifications/email";
 import { verifyAccessToken } from "../../utils/jwt";
 
 const router = Router();
@@ -146,6 +148,18 @@ async function assigneeNameMap(emails: string[]): Promise<Map<string, string | n
     select: { email: true, name: true }
   });
   return new Map(rows.map((r) => [r.email.toLowerCase(), r.name]));
+}
+
+function tasksAppUrl(): string {
+  const raw =
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    process.env.FRONTEND_URL?.split(",")[0]?.trim() ||
+    "http://localhost:3000";
+  return `${raw.replace(/\/$/, "")}/complaints`;
+}
+
+function htmlToPlainText(html: string): string {
+  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
 // ─── ADMIN ROUTES (before /:id) ─────────────────────────────────────────────
@@ -389,6 +403,38 @@ router.post("/", verifyComplaintAuth, upload.array("files", 5), async (req, res,
             message: `${actor.name ?? actor.email} assigned you a task: "${complaint.title}"`
           }))
       });
+
+      for (const email of assigneeEmails) {
+        if (email === actor.email) continue;
+        const html = `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+          <div style="background:#1e3a2f;padding:20px;border-radius:12px 12px 0 0">
+            <h2 style="color:#f5d88a;margin:0">☸ Sarveda Tasks</h2>
+          </div>
+          <div style="background:#fff;padding:20px;border:1px solid #e0d8ce;border-top:none;border-radius:0 0 12px 12px">
+            <p style="color:#2c2420">
+              Hi, you have been assigned a new task by
+              <strong>${actor.name ?? actor.email}</strong>:
+            </p>
+            <div style="background:#f0fdf4;border-left:4px solid #1e3a2f;padding:14px;border-radius:8px;margin:16px 0">
+              <p style="font-size:16px;font-weight:700;color:#1a1614;margin:0 0 6px">${complaint.title}</p>
+              ${
+                complaint.description
+                  ? `<p style="color:#4a3f38;font-size:14px;margin:0">${complaint.description}</p>`
+                  : ""
+              }
+            </div>
+            <p style="color:#8a7060;font-size:13px">Priority: <strong>${complaint.priority}</strong></p>
+            <a href="${tasksAppUrl()}" style="display:inline-block;background:#1e3a2f;color:#f5d88a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;margin-top:16px">View Task →</a>
+          </div>
+        </div>`;
+        void sendMail(
+          email,
+          `New task assigned: ${complaint.title}`,
+          html,
+          htmlToPlainText(html)
+        ).catch((err) => logger.error("task_assignment_email_failed", { err, email }));
+      }
     }
 
     const updated = await prisma.complaint.update({
@@ -672,6 +718,33 @@ router.post("/:id/comment", verifyComplaintAuth, upload.array("files", 5), async
             message: `${actor.name ?? actor.email} replied on "${task.title}"`
           }))
         });
+
+        const replyPreview = message?.trim() ?? "(attachment)";
+        for (const email of notifyEmails) {
+          const html = `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+          <div style="background:#1e3a2f;padding:20px;border-radius:12px 12px 0 0">
+            <h2 style="color:#f5d88a;margin:0">☸ Sarveda Tasks</h2>
+          </div>
+          <div style="background:#fff;padding:20px;border:1px solid #e0d8ce;border-top:none;border-radius:0 0 12px 12px">
+            <p style="color:#2c2420">
+              <strong>${actor.name ?? actor.email.split("@")[0]}</strong>
+              replied on a task you are involved in:
+            </p>
+            <div style="background:#f9f7f4;border-left:4px solid #c8960a;padding:14px;border-radius:8px;margin:16px 0">
+              <p style="font-weight:700;color:#1a1614;margin:0 0 6px">${task.title}</p>
+              <p style="color:#4a3f38;font-size:14px;margin:0">"${replyPreview}"</p>
+            </div>
+            <a href="${tasksAppUrl()}" style="display:inline-block;background:#1e3a2f;color:#f5d88a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;margin-top:16px">View Conversation →</a>
+          </div>
+        </div>`;
+          void sendMail(
+            email,
+            `New reply on task: ${task.title}`,
+            html,
+            htmlToPlainText(html)
+          ).catch((err) => logger.error("task_reply_email_failed", { err, email }));
+        }
       }
     }
 
