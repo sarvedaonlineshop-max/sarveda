@@ -20,6 +20,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const pdpCartRail = onProductPage && hasCartItems;
   const chromeless =
     pathname?.startsWith("/admin") ||
+    pathname?.startsWith("/complaints") ||
     pathname?.startsWith("/login") ||
     pathname?.startsWith("/signup");
 
