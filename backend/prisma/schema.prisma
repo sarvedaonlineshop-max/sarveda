@@ -905,26 +905,57 @@ enum ComplaintAuthorType {
 }
 
 model Complaint {
-  id            String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  parentId      String?               @db.Uuid
-  raisedByEmail String
-  raisedByName  String?
-  title         String
-  description   String?
-  priority      ComplaintPriority     @default(MEDIUM)
-  status        ComplaintStatus       @default(OPEN)
-  createdAt     DateTime              @default(now())
-  updatedAt     DateTime              @updatedAt
-  resolvedAt    DateTime?
-  parent        Complaint?            @relation("ComplaintHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
-  children      Complaint[]           @relation("ComplaintHierarchy")
-  events        ComplaintEvent[]
-  attachments   ComplaintAttachment[]
+  id              String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  parentId        String?               @db.Uuid
+  raisedByEmail   String
+  raisedByName    String?
+  assignedByEmail String?
+  assignedByName  String?
+  dueDate         DateTime?
+  title           String
+  description     String?
+  priority        ComplaintPriority     @default(MEDIUM)
+  status          ComplaintStatus       @default(OPEN)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  resolvedAt      DateTime?
+  parent          Complaint?            @relation("ComplaintHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children        Complaint[]           @relation("ComplaintHierarchy")
+  events          ComplaintEvent[]
+  attachments     ComplaintAttachment[]
+  assignees       TaskAssignee[]
 
   @@index([status])
   @@index([raisedByEmail])
+  @@index([assignedByEmail])
   @@index([priority])
   @@index([parentId])
+}
+
+model TaskAssignee {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId        String    @db.Uuid
+  assigneeEmail String
+  assigneeName  String?
+  assignedAt    DateTime  @default(now())
+  task          Complaint @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, assigneeEmail])
+  @@index([assigneeEmail])
+}
+
+model TaskNotification {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recipientEmail String
+  taskId         String   @db.Uuid
+  taskTitle      String
+  type           String
+  message        String
+  isRead         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@index([recipientEmail, isRead])
+  @@index([taskId])
 }
 
 model ComplaintEvent {
