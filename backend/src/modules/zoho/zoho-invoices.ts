@@ -7,6 +7,37 @@ import { getOrCreateZohoContact } from "./zoho-contacts";
 import { zohoPost } from "./zoho-client";
 import { resolveZohoItemIdForSku } from "./zoho-items";
 
+function round2(amount: number): number {
+  return Math.round(amount * 100) / 100;
+}
+
+/** Spread order-level coupon discount into line rates (Zoho disallows after-tax invoice discount with item_id lines). */
+function lineRatesAfterOrderDiscount(
+  items: Array<{ unitPriceInPaise: number; qtyOrdered: number }>,
+  discountInPaise: number
+): number[] {
+  const grossLinePaise = items.reduce((sum, item) => sum + item.unitPriceInPaise * item.qtyOrdered, 0);
+  const discountPaise = Math.min(Math.max(0, discountInPaise), grossLinePaise);
+  if (discountPaise <= 0 || grossLinePaise <= 0) {
+    return items.map((item) => round2(item.unitPriceInPaise / 100));
+  }
+
+  let allocatedDiscount = 0;
+  return items.map((item, index) => {
+    const lineGross = item.unitPriceInPaise * item.qtyOrdered;
+    const lineDiscount =
+      index === items.length - 1
+        ? discountPaise - allocatedDiscount
+        : Math.round((lineGross * discountPaise) / grossLinePaise);
+    allocatedDiscount += lineDiscount;
+
+    const lineNetPaise = lineGross - lineDiscount;
+    const rate =
+      item.qtyOrdered > 0 ? round2(lineNetPaise / item.qtyOrdered / 100) : round2(item.unitPriceInPaise / 100);
+    return rate;
+  });
+}
+
 export async function createZohoInvoiceForOrder(orderId: string): Promise<void> {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
@@ -51,10 +82,11 @@ export async function createZohoInvoiceForOrder(orderId: string): Promise<void> 
     });
 
     const defaultTaxId = process.env.ZOHO_SALES_TAX_ID?.trim();
+    const discountedRates = lineRatesAfterOrderDiscount(order.items, order.discountInPaise);
 
     const lineItems = await Promise.all(
-      order.items.map(async (item) => {
-        const rate = item.unitPriceInPaise / 100;
+      order.items.map(async (item, index) => {
+        const rate = discountedRates[index] ?? round2(item.unitPriceInPaise / 100);
         const taxPercent = gstRatePercent(item.variant.productRel.taxClass);
         const zohoItemId = await resolveZohoItemIdForSku(item.variant.sku);
         const row: Record<string, unknown> = {
@@ -73,7 +105,13 @@ export async function createZohoInvoiceForOrder(orderId: string): Promise<void> 
       })
     );
 
+    const notes =
+      order.discountInPaise > 0
+        ? `Amounts are GST-inclusive. Coupon discount of ₹${round2(order.discountInPaise / 100)} is included in line rates.`
+        : "Amounts are GST-inclusive per Sarveda storefront pricing.";
+
     // Sarveda prices are GST-inclusive; Zoho must not add tax on top of line rates.
+    // Do not send invoice-level discount with is_discount_before_tax:false — Zoho error 4089 when item_id is set.
     const result = await zohoPost<{
       invoice: { invoice_id: string; invoice_number: string };
     }>("/invoices", {
@@ -82,11 +120,9 @@ export async function createZohoInvoiceForOrder(orderId: string): Promise<void> 
       date: new Date().toISOString().slice(0, 10),
       due_date: new Date().toISOString().slice(0, 10),
       is_inclusive_tax: true,
-      is_discount_before_tax: false,
       line_items: lineItems,
       shipping_charge: order.shippingInPaise / 100,
-      discount: order.discountInPaise / 100,
-      notes: "Amounts are GST-inclusive per Sarveda storefront pricing."
+      notes
     });
 
     await prisma.order.update({
