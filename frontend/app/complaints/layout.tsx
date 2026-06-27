@@ -9,14 +9,14 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Sarveda Tasks",
+  title: "Sarveda Task Manager",
   description: "Internal task manager",
   manifest: "/complaints-manifest.json",
   robots: { index: false, follow: false },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Sarveda Tasks",
+    title: "Sarveda Task Manager",
   },
   icons: {
     apple: "/brand/sarveda-logo.png",

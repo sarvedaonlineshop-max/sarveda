@@ -270,6 +270,9 @@ export default function TasksApp() {
 
   const prevView = useRef<View>("home");
   const pollRef = useRef<ReturnType<typeof setInterval>|null>(null);
+  const taskMenuRef = useRef<HTMLDivElement>(null);
+  const toPickerRef = useRef<HTMLDivElement>(null);
+  const tagPickerRef = useRef<HTMLDivElement>(null);
 
   // ── Helpers ──────────────────────────────────────────
   const ah = useCallback((t?:string) => ({
@@ -405,6 +408,39 @@ export default function TasksApp() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
+
+  useEffect(() => {
+    if (!showTaskMenu) return;
+    function handleOutside(e: MouseEvent | TouchEvent) {
+      const target = e.target as Node;
+      if (taskMenuRef.current && !taskMenuRef.current.contains(target)) {
+        setShowTaskMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutside);
+    document.addEventListener("touchstart", handleOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("touchstart", handleOutside);
+    };
+  }, [showTaskMenu]);
+
+  useEffect(() => {
+    if (!showMemberPicker) return;
+    const activeRef = showMemberPicker === "to" ? toPickerRef : tagPickerRef;
+    function handleOutside(e: MouseEvent | TouchEvent) {
+      const target = e.target as Node;
+      if (activeRef.current && !activeRef.current.contains(target)) {
+        setShowMemberPicker(null);
+      }
+    }
+    document.addEventListener("mousedown", handleOutside);
+    document.addEventListener("touchstart", handleOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("touchstart", handleOutside);
+    };
+  }, [showMemberPicker]);
 
   // ── Auth ─────────────────────────────────────────────
   async function handleLogin(e:React.FormEvent) {
@@ -731,19 +767,13 @@ export default function TasksApp() {
           display:"flex",alignItems:"center",
           gap:"10px"
         }}>
-          <img src={LOGO_PATH} alt="Sarveda"
-            style={{
-              width:36,height:36,
-              objectFit:"contain",
-              borderRadius:"8px",flexShrink:0
-            }}/>
           <div style={{flex:1}}>
             <p style={{
               fontSize:"16px",fontWeight:700,
               color:"#fff",margin:0,
               letterSpacing:"-0.2px",
               lineHeight:1.2
-            }}>Sarveda Task Management</p>
+            }}>Sarveda Task Manager</p>
             <p style={{
               fontSize:"12px",
               color:"rgba(255,255,255,.75)",
@@ -780,7 +810,6 @@ export default function TasksApp() {
               </div>
             )}
           </button>
-          <Avatar name={myName} email={myEmail} size={36}/>
         </div>
       </div>
     );
@@ -1055,7 +1084,7 @@ export default function TasksApp() {
           <h1 style={{
             fontSize:"30px",fontWeight:900,
             color:"#fffbf5",letterSpacing:"-0.5px"
-          }}>Sarveda Tasks</h1>
+          }}>Sarveda Task Manager</h1>
           <p style={{
             fontSize:"14px",color:"#a8d5b5",marginTop:"6px"
           }}>Team task management</p>
@@ -1263,7 +1292,7 @@ export default function TasksApp() {
       <style>{CSS}</style>
       <div style={{
         minHeight:"100dvh",background:"#ECE5DD",
-        paddingBottom:"140px"
+        paddingBottom:"80px"
       }}>
         <MainHeader/>
         <StatusTabs/>
@@ -1281,7 +1310,7 @@ export default function TasksApp() {
                 color:"#2c2420",marginBottom:"4px"
               }}>No tasks yet</p>
               <p style={{fontSize:"13px"}}>
-                Type below to create your first task
+                Tap + to create your first task
               </p>
             </div>
           ):(
@@ -1299,66 +1328,7 @@ export default function TasksApp() {
               ))
           )}
         </div>
-
-        <div style={{
-          position:"fixed", bottom:"64px",
-          left:"50%", transform:"translateX(-50%)",
-          width:"calc(100% - 32px)", maxWidth:"448px",
-          background:"#fff",
-          borderRadius:"24px",
-          border:"1px solid #e0d8ce",
-          boxShadow:"0 4px 20px rgba(0,0,0,0.12)",
-          display:"flex", alignItems:"center",
-          gap:"10px", padding:"10px 14px",
-          zIndex:95
-        }}>
-          <div style={{
-            width:34, height:34, borderRadius:"50%",
-            background:"#25D366", color:"#fff",
-            display:"flex", alignItems:"center",
-            justifyContent:"center", fontSize:"18px",
-            flexShrink:0, cursor:"pointer"
-          }}
-            onClick={()=>{
-              setNtParentId(null);
-              setNtParentTitle(null);
-              prevView.current="home";
-              setView("new");
-            }}>
-            +
-          </div>
-          <input
-            value={quickTask}
-            onChange={e=>setQuickTask(e.target.value)}
-            onKeyDown={async e=>{
-              if (e.key==="Enter" && quickTask.trim()) {
-                await submitQuickTask(quickTask);
-              }
-            }}
-            placeholder="Quick task... (press Enter)"
-            style={{
-              flex:1, border:"none", outline:"none",
-              fontSize:"14px", color:"#1a1614",
-              background:"transparent",
-              fontFamily:"inherit"
-            }}
-          />
-          {quickTask.trim() && (
-            <button
-              onClick={()=>void submitQuickTask(quickTask)}
-              disabled={quickSubmitting}
-              style={{
-                width:34, height:34, borderRadius:"50%",
-                background:"#25D366", color:"#fff",
-                border:"none", cursor:"pointer",
-                display:"flex", alignItems:"center",
-                justifyContent:"center", fontSize:"18px",
-                flexShrink:0
-              }}>
-              {quickSubmitting ? "..." : "↑"}
-            </button>
-          )}
-        </div>
+        <FAB/>
         <BottomNav/>
       </div>
     </>
@@ -1516,7 +1486,8 @@ export default function TasksApp() {
           )}
 
           {/* TO field */}
-          <div style={{marginBottom:"14px",position:"relative"}}>
+          <div ref={toPickerRef}
+            style={{marginBottom:"14px",position:"relative"}}>
             <div style={{
               display:"flex",alignItems:"flex-start",gap:"10px",
               borderBottom:"1px solid #e0d8ce",
@@ -1576,6 +1547,26 @@ export default function TasksApp() {
                 borderRadius:"12px",boxShadow:"0 8px 24px rgba(0,0,0,.12)",
                 maxHeight:"220px",overflowY:"auto",zIndex:60
               }}>
+                <div style={{
+                  display:"flex",alignItems:"center",
+                  justifyContent:"space-between",
+                  padding:"8px 12px",
+                  borderBottom:"1px solid #f0ece6",
+                  position:"sticky",top:0,background:"#fff",
+                  borderRadius:"12px 12px 0 0"
+                }}>
+                  <span style={{
+                    fontSize:"12px",fontWeight:700,
+                    color:"#8a7060"
+                  }}>Select people</span>
+                  <button type="button"
+                    onClick={()=>setShowMemberPicker(null)}
+                    style={{
+                      background:"none",border:"none",
+                      color:"#8a7060",cursor:"pointer",
+                      fontSize:"18px",lineHeight:1,padding:"0 4px"
+                    }}>×</button>
+                </div>
                 {members
                   .filter(m=>m.email!==myEmail)
                   .map(m=>{
@@ -1620,7 +1611,8 @@ export default function TasksApp() {
           </div>
 
           {/* TAG field */}
-          <div style={{marginBottom:"16px",position:"relative"}}>
+          <div ref={tagPickerRef}
+            style={{marginBottom:"16px",position:"relative"}}>
             <div style={{
               display:"flex",alignItems:"flex-start",gap:"10px",
               borderBottom:"1px solid #e0d8ce",
@@ -1680,6 +1672,26 @@ export default function TasksApp() {
                 borderRadius:"12px",boxShadow:"0 8px 24px rgba(0,0,0,.12)",
                 maxHeight:"220px",overflowY:"auto",zIndex:60
               }}>
+                <div style={{
+                  display:"flex",alignItems:"center",
+                  justifyContent:"space-between",
+                  padding:"8px 12px",
+                  borderBottom:"1px solid #f0ece6",
+                  position:"sticky",top:0,background:"#fff",
+                  borderRadius:"12px 12px 0 0"
+                }}>
+                  <span style={{
+                    fontSize:"12px",fontWeight:700,
+                    color:"#8a7060"
+                  }}>Tag people</span>
+                  <button type="button"
+                    onClick={()=>setShowMemberPicker(null)}
+                    style={{
+                      background:"none",border:"none",
+                      color:"#8a7060",cursor:"pointer",
+                      fontSize:"18px",lineHeight:1,padding:"0 4px"
+                    }}>×</button>
+                </div>
                 {members
                   .filter(m=>m.email!==myEmail)
                   .map(m=>{
@@ -1949,7 +1961,7 @@ export default function TasksApp() {
             </option>
             <option value="CLOSED" style={{color:"#000"}}>Closed</option>
           </select>
-          <div style={{position:"relative",flexShrink:0}}>
+          <div ref={taskMenuRef} style={{position:"relative",flexShrink:0}}>
             <button
               onClick={()=>setShowTaskMenu(!showTaskMenu)}
               style={{
