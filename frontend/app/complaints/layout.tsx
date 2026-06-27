@@ -33,7 +33,9 @@ export default function ComplaintsLayout({
       fontFamily: "'Inter', system-ui, sans-serif",
       maxWidth: "480px",
       margin: "0 auto",
-      minHeight: "100dvh",
+      height: "100dvh",
+      maxHeight: "100dvh",
+      overflow: "hidden",
       background: "#ECE5DD",
       position: "relative",
     }}>

@@ -61,6 +61,9 @@ type Stats = {
 // ── Constants ──────────────────────────────────────────
 const API = "/api";
 const LOGO_PATH = "/brand/sarveda-logo.png";
+const NAV_BAR_H = 58;
+const SCROLL_BOTTOM_PAD =
+  `calc(${NAV_BAR_H}px + env(safe-area-inset-bottom, 8px) + 12px)`;
 
 function uiStatus(raw: ApiStatus | Status): Status {
   if (raw === "OPEN") return "NEW";
@@ -85,7 +88,7 @@ function taskMatchesFilter(
 }
 
 function isTaskClosed(status: ApiStatus): boolean {
-  return status === "RESOLVED" || status === "REOPENED";
+  return status === "RESOLVED";
 }
 const PC: Record<Priority,string> = {
   HIGH:"#dc2626", MEDIUM:"#d97706", LOW:"#16a34a"
@@ -280,6 +283,7 @@ export default function TasksApp() {
   const [showCurPwd,setShowCurPwd] = useState(false);
   const [showNewPwd,setShowNewPwd] = useState(false);
   const [avatarUploading,setAvatarUploading] = useState(false);
+  const [showAvatarPicker,setShowAvatarPicker] = useState(false);
 
   // Profile state
   const [pName,setPName] = useState("");
@@ -301,6 +305,10 @@ export default function TasksApp() {
   const prevView = useRef<View>("home");
   const pollRef = useRef<ReturnType<typeof setInterval>|null>(null);
   const taskMenuRef = useRef<HTMLDivElement>(null);
+  const avatarCameraRef = useRef<HTMLInputElement>(null);
+  const avatarGalleryRef = useRef<HTMLInputElement>(null);
+  const msgCameraRef = useRef<HTMLInputElement>(null);
+  const msgFileRef = useRef<HTMLInputElement>(null);
   const toPickerRef = useRef<HTMLDivElement>(null);
   const tagPickerRef = useRef<HTMLDivElement>(null);
 
@@ -765,7 +773,11 @@ export default function TasksApp() {
       const d = await r.json() as any;
       if (!r.ok) throw new Error(d.error??"Upload failed");
       setMyAvatarUrl(d.avatarUrl);
-      void loadMembers();
+      setMembers(prev=>prev.map(m=>
+        m.email===myEmail
+          ?{...m,avatarUrl:d.avatarUrl}
+          :m
+      ));
     } catch(err:any) {
       alert(err.message??"Upload failed");
     } finally { setAvatarUploading(false); }
@@ -864,7 +876,10 @@ export default function TasksApp() {
   // ── Shared UI ─────────────────────────────────────────
   const CSS = `
     *{box-sizing:border-box;margin:0;padding:0}
-    html,body{background:#ECE5DD;
+    html,body{
+      height:100%;overflow:hidden;
+      overscroll-behavior:none;
+      background:#ECE5DD;
       font-family:'Inter',system-ui,sans-serif}
     .wa-bubble-in{
       background:#fff;
@@ -919,15 +934,21 @@ export default function TasksApp() {
       <div style={{
         background:"#075E54",
         padding:"10px 16px 12px",
-        position:"sticky",top:0,zIndex:50
+        flexShrink:0
       }}>
         <div style={{
           display:"flex",alignItems:"center",
           gap:"10px"
         }}>
-          <div style={{flex:1}}>
+          <img src={LOGO_PATH} alt="Sarveda"
+            style={{
+              width:32,height:32,
+              objectFit:"contain",
+              borderRadius:"8px",flexShrink:0
+            }}/>
+          <div style={{flex:1,minWidth:0}}>
             <p style={{
-              fontSize:"16px",fontWeight:700,
+              fontSize:"15px",fontWeight:700,
               color:"#fff",margin:0,
               letterSpacing:"-0.2px",
               lineHeight:1.2
@@ -980,10 +1001,29 @@ export default function TasksApp() {
     return (
       <div style={{
         background:"#075E54",
-        padding:"14px 12px",
-        display:"flex",alignItems:"center",gap:"10px",
-        minHeight:"56px"
+        flexShrink:0
       }}>
+        <div style={{
+          display:"flex",alignItems:"center",
+          gap:"8px",padding:"8px 12px 0"
+        }}>
+          <img src={LOGO_PATH} alt="Sarveda"
+            style={{
+              width:24,height:24,
+              objectFit:"contain",
+              borderRadius:"6px",flexShrink:0
+            }}/>
+          <span style={{
+            fontSize:"13px",fontWeight:700,
+            color:"rgba(255,255,255,.9)",
+            letterSpacing:"0.02em"
+          }}>Sarveda</span>
+        </div>
+        <div style={{
+          padding:"10px 12px 14px",
+          display:"flex",alignItems:"center",gap:"10px",
+          minHeight:"52px"
+        }}>
         <button onClick={onBack} style={{
           background:"none",border:"none",
           color:"#fff",fontSize:"24px",
@@ -997,11 +1037,12 @@ export default function TasksApp() {
           whiteSpace:"nowrap"
         }}>{title}</p>
         {children}
+        </div>
       </div>
     );
   }
 
-  function BottomNav() {
+  function BottomNav({embedded}:{embedded?:boolean}) {
     const tabs = [
       {id:"home",icon:"🏠",label:"Home"},
       {id:"assigned",icon:"📤",label:"Assigned"},
@@ -1010,8 +1051,10 @@ export default function TasksApp() {
     ] as const;
     return (
       <div style={{
-        position:"fixed",bottom:0,
-        left:"50%",transform:"translateX(-50%)",
+        ...(embedded?{}:{
+          position:"fixed",bottom:0,
+          left:"50%",transform:"translateX(-50%)",
+        }),
         width:"100%",maxWidth:"480px",
         background:"#fff",
         borderTop:"1px solid #e0d8ce",
@@ -1019,7 +1062,8 @@ export default function TasksApp() {
         gridTemplateColumns:"repeat(4,1fr)",
         paddingBottom:
           "env(safe-area-inset-bottom,4px)",
-        zIndex:100
+        flexShrink:0,
+        zIndex:embedded?1:100
       }}>
         {tabs.map(t=>(
           <button key={t.id} onClick={()=>{
@@ -1195,8 +1239,9 @@ export default function TasksApp() {
   }
 
   function FAB({
-    parentId,parentTitle
-  }:{parentId?:string;parentTitle?:string}) {
+    parentId,parentTitle,embedded
+  }:{parentId?:string;parentTitle?:string;
+    embedded?:boolean}) {
     return (
       <button onClick={()=>{
         setNtParentId(parentId??null);
@@ -1204,7 +1249,11 @@ export default function TasksApp() {
         prevView.current=view;
         setView("new");
       }} style={{
-        position:"fixed",bottom:"76px",right:"16px",
+        position:embedded?"absolute":"fixed",
+        bottom:embedded
+          ?`calc(${NAV_BAR_H}px + env(safe-area-inset-bottom, 8px) + 12px)`
+          :"76px",
+        right:"16px",
         width:"52px",height:"52px",borderRadius:"50%",
         border:"none",background:"#25D366",
         color:"#fff",fontSize:"26px",
@@ -1221,23 +1270,26 @@ export default function TasksApp() {
   }:{children:React.ReactNode;showFab?:boolean}) {
     return (
       <div style={{
-        height:"100dvh",display:"flex",
-        flexDirection:"column",background:"#ECE5DD",
+        height:"100dvh",maxHeight:"100dvh",
+        display:"flex",flexDirection:"column",
+        background:"#ECE5DD",
         maxWidth:"480px",margin:"0 auto",
-        overflow:"hidden"
+        overflow:"hidden",position:"relative",
+        width:"100%"
       }}>
         <div style={{flexShrink:0}}>
           <MainHeader/>
           <StatusTabs/>
         </div>
         <div style={{
-          flex:1,overflowY:"auto",
-          WebkitOverflowScrolling:"touch"
+          flex:1,minHeight:0,overflowY:"auto",
+          WebkitOverflowScrolling:"touch",
+          paddingBottom:SCROLL_BOTTOM_PAD
         }}>
           {children}
         </div>
-        {showFab&&<FAB/>}
-        <BottomNav/>
+        {showFab&&<FAB embedded/>}
+        <BottomNav embedded/>
       </div>
     );
   }
@@ -1552,10 +1604,11 @@ export default function TasksApp() {
     <>
       <style>{CSS}</style>
       <div style={{
-        height:"100dvh",display:"flex",
-        flexDirection:"column",background:"#ECE5DD",
+        height:"100dvh",maxHeight:"100dvh",
+        display:"flex",flexDirection:"column",
+        background:"#ECE5DD",
         maxWidth:"480px",margin:"0 auto",
-        overflow:"hidden"
+        overflow:"hidden",width:"100%"
       }}>
         <div style={{flexShrink:0}}>
           <MainHeader/>
@@ -1589,8 +1642,9 @@ export default function TasksApp() {
           <StatusTabs/>
         </div>
         <div style={{
-          flex:1,overflowY:"auto",
-          WebkitOverflowScrolling:"touch"
+          flex:1,minHeight:0,overflowY:"auto",
+          WebkitOverflowScrolling:"touch",
+          paddingBottom:SCROLL_BOTTOM_PAD
         }}>
           {dashTasks.length===0?(
             <div style={{
@@ -1618,8 +1672,8 @@ export default function TasksApp() {
               ))
           )}
         </div>
-        <FAB/>
-        <BottomNav/>
+        <FAB embedded/>
+        <BottomNav embedded/>
       </div>
     </>
   );
@@ -1629,14 +1683,24 @@ export default function TasksApp() {
     <>
       <style>{CSS}</style>
       <div style={{
-        minHeight:"100dvh",background:"#fff",
-        paddingBottom:"40px"
+        height:"100dvh",maxHeight:"100dvh",
+        display:"flex",flexDirection:"column",
+        background:"#fff",
+        maxWidth:"480px",margin:"0 auto",
+        overflow:"hidden",width:"100%"
       }}>
-        <DetailHeader
-          title={ntParentId?"Add Sub-task":"New Task"}
-          onBack={()=>setView(prevView.current)}
-        />
+        <div style={{flexShrink:0}}>
+          <DetailHeader
+            title={ntParentId?"Add Sub-task":"New Task"}
+            onBack={()=>setView(prevView.current)}
+          />
+        </div>
 
+        <div style={{
+          flex:1,minHeight:0,overflowY:"auto",
+          WebkitOverflowScrolling:"touch",
+          paddingBottom:"env(safe-area-inset-bottom, 12px)"
+        }}>
         <form onSubmit={e=>void handleCreateTask(e)}
           style={{padding:"16px"}}>
 
@@ -2074,6 +2138,7 @@ export default function TasksApp() {
             {ntSubmitting?"Assigning...":"Assign Task"}
           </button>
         </form>
+        </div>
       </div>
     </>
   );
@@ -2083,11 +2148,11 @@ export default function TasksApp() {
     <>
       <style>{CSS}</style>
       <div style={{
-        minHeight:"100dvh",height:"100dvh",
+        height:"100dvh",maxHeight:"100dvh",
         display:"flex",flexDirection:"column",
         background:"#ECE5DD",
         maxWidth:"480px",margin:"0 auto",
-        overflow:"hidden"
+        overflow:"hidden",width:"100%"
       }}>
         <div style={{flexShrink:0}}>
         <DetailHeader
@@ -2300,7 +2365,7 @@ export default function TasksApp() {
 
         {/* Scrollable chat area */}
         <div style={{
-          flex:1,overflowY:"auto",
+          flex:1,minHeight:0,overflowY:"auto",
           padding:"12px 16px",
           display:"flex",flexDirection:"column",gap:"6px",
           WebkitOverflowScrolling:"touch"
@@ -2625,34 +2690,57 @@ export default function TasksApp() {
               ↩ Reopen Task
             </button>
           </div>
-        ):!isTaskClosed(selected.status)?(
+        ):(
           <form onSubmit={e=>void handleAddQuery(e)}
             style={{
               display:"flex",alignItems:"flex-end",
-              gap:"8px",padding:"8px 12px",
+              gap:"6px",padding:"8px 10px",
               paddingBottom:
                 "calc(8px + env(safe-area-inset-bottom,0px))",
-              background:"#f0ece6"
+              background:"#f0ece6",
+              borderTop:"1px solid #e0d8ce"
             }}>
-            <label style={{
-              display:"flex",alignItems:"center",
-              justifyContent:"center",
-              width:36,height:36,borderRadius:"50%",
-              background:"#fff",cursor:"pointer",
-              flexShrink:0,fontSize:"18px"
-            }}>
-              📎
-              <input type="file"
-                accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
-                multiple hidden
-                onChange={e=>{
-                  if (e.target.files)
-                    setMsgFiles(f=>[
-                      ...f,
-                      ...Array.from(e.target.files!)
-                    ]);
-                }}/>
-            </label>
+            <button type="button"
+              onClick={()=>msgCameraRef.current?.click()}
+              style={{
+                display:"flex",alignItems:"center",
+                justifyContent:"center",
+                width:36,height:36,borderRadius:"50%",
+                background:"#fff",cursor:"pointer",
+                flexShrink:0,fontSize:"18px",
+                border:"1px solid #e0d8ce"
+              }} aria-label="Camera">📷</button>
+            <input ref={msgCameraRef} type="file"
+              accept="image/*" capture="environment"
+              hidden
+              onChange={e=>{
+                if (e.target.files?.[0]) {
+                  setMsgFiles(f=>[...f,e.target.files![0]]);
+                  e.target.value="";
+                }
+              }}/>
+            <button type="button"
+              onClick={()=>msgFileRef.current?.click()}
+              style={{
+                display:"flex",alignItems:"center",
+                justifyContent:"center",
+                width:36,height:36,borderRadius:"50%",
+                background:"#fff",cursor:"pointer",
+                flexShrink:0,fontSize:"18px",
+                border:"1px solid #e0d8ce"
+              }} aria-label="Attach file">📎</button>
+            <input ref={msgFileRef} type="file"
+              accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
+              multiple hidden
+              onChange={e=>{
+                if (e.target.files) {
+                  setMsgFiles(f=>[
+                    ...f,
+                    ...Array.from(e.target.files!)
+                  ]);
+                  e.target.value="";
+                }
+              }}/>
             <div style={{
               flex:1,background:"#fff",
               borderRadius:"24px",
@@ -2719,7 +2807,7 @@ export default function TasksApp() {
               {querySending?"…":"➤"}
             </button>
           </form>
-        ):null}
+        )}
         </div>
 
         {showMembersModal&&(
@@ -2958,24 +3046,34 @@ export default function TasksApp() {
     <>
       <style>{CSS}</style>
       <div style={{
-        minHeight:"100dvh",background:"#ECE5DD",
-        paddingBottom:"40px"
+        height:"100dvh",maxHeight:"100dvh",
+        display:"flex",flexDirection:"column",
+        background:"#ECE5DD",
+        maxWidth:"480px",margin:"0 auto",
+        overflow:"hidden",width:"100%"
       }}>
-        <DetailHeader title="Notifications"
-          onBack={()=>setView("home")}>
-          <button onClick={()=>void markAllRead()}
-            style={{
-              background:"rgba(255,255,255,.15)",
-              border:"none",color:"#fff",
-              fontSize:"11px",fontWeight:700,
-              padding:"6px 12px",borderRadius:"8px",
-              cursor:"pointer",flexShrink:0
-            }}>
-            Mark all read
-          </button>
-        </DetailHeader>
+        <div style={{flexShrink:0}}>
+          <DetailHeader title="Notifications"
+            onBack={()=>setView("home")}>
+            <button onClick={()=>void markAllRead()}
+              style={{
+                background:"rgba(255,255,255,.15)",
+                border:"none",color:"#fff",
+                fontSize:"11px",fontWeight:700,
+                padding:"6px 12px",borderRadius:"8px",
+                cursor:"pointer",flexShrink:0
+              }}>
+              Mark all read
+            </button>
+          </DetailHeader>
+        </div>
 
-        <div style={{padding:"12px 16px"}}>
+        <div style={{
+          flex:1,minHeight:0,overflowY:"auto",
+          WebkitOverflowScrolling:"touch",
+          padding:"12px 16px",
+          paddingBottom:SCROLL_BOTTOM_PAD
+        }}>
           {notifications.length===0?(
             <div style={{
               textAlign:"center",padding:"60px 0",
@@ -3050,6 +3148,7 @@ export default function TasksApp() {
             ))
           )}
         </div>
+        <BottomNav embedded/>
       </div>
     </>
   );
@@ -3058,19 +3157,43 @@ export default function TasksApp() {
   if (view==="profile") return (
     <>
       <style>{CSS}</style>
+      <input ref={avatarCameraRef} type="file"
+        accept="image/*" capture="user"
+        hidden
+        onChange={e=>{
+          const f = e.target.files?.[0];
+          if (f) {
+            void handleAvatarUpload(f);
+            setShowAvatarPicker(false);
+          }
+          e.target.value="";
+        }}/>
+      <input ref={avatarGalleryRef} type="file"
+        accept="image/*"
+        hidden
+        onChange={e=>{
+          const f = e.target.files?.[0];
+          if (f) {
+            void handleAvatarUpload(f);
+            setShowAvatarPicker(false);
+          }
+          e.target.value="";
+        }}/>
       <div style={{
-        height:"100dvh",display:"flex",
-        flexDirection:"column",background:"#ECE5DD",
+        height:"100dvh",maxHeight:"100dvh",
+        display:"flex",flexDirection:"column",
+        background:"#ECE5DD",
         maxWidth:"480px",margin:"0 auto",
-        overflow:"hidden"
+        overflow:"hidden",width:"100%"
       }}>
         <div style={{flexShrink:0}}>
           <MainHeader/>
         </div>
         <div style={{
-          flex:1,overflowY:"auto",
+          flex:1,minHeight:0,overflowY:"auto",
           WebkitOverflowScrolling:"touch",
-          padding:"16px"
+          padding:"16px",
+          paddingBottom:SCROLL_BOTTOM_PAD
         }}>
           <div style={{
             background:"linear-gradient(135deg,#075E54,#128C7E)",
@@ -3078,9 +3201,13 @@ export default function TasksApp() {
             display:"flex",flexDirection:"column",
             alignItems:"center",marginBottom:"16px"
           }}>
-            <label style={{
-              position:"relative",cursor:"pointer"
-            }}>
+            <button type="button"
+              onClick={()=>setShowAvatarPicker(true)}
+              disabled={avatarUploading}
+              style={{
+                position:"relative",cursor:"pointer",
+                background:"none",border:"none",padding:0
+              }}>
               <Avatar
                 name={myName} email={myEmail} size={72}
                 avatarUrl={myAvatarUrl}
@@ -3095,12 +3222,7 @@ export default function TasksApp() {
               }}>
                 {avatarUploading?"…":"📷"}
               </div>
-              <input type="file" accept="image/*" hidden
-                onChange={e=>{
-                  const f = e.target.files?.[0];
-                  if (f) void handleAvatarUpload(f);
-                }}/>
-            </label>
+            </button>
             <p style={{
               fontSize:"20px",fontWeight:900,
               color:"#fffbf5",marginTop:"12px",
@@ -3291,12 +3413,74 @@ export default function TasksApp() {
             border:"1.5px solid #fca5a5",
             background:"#fff5f5",color:"#dc2626",
             fontWeight:700,fontSize:"14px",
-            cursor:"pointer",marginBottom:"16px"
+            cursor:"pointer"
           }}>
             Sign Out
           </button>
         </div>
-        <BottomNav/>
+        <BottomNav embedded/>
+
+        {showAvatarPicker&&(
+          <div style={{
+            position:"fixed",inset:0,
+            background:"rgba(0,0,0,.5)",
+            display:"flex",alignItems:"flex-end",
+            justifyContent:"center",zIndex:300
+          }}
+            onClick={()=>setShowAvatarPicker(false)}>
+            <div style={{
+              background:"#fff",borderRadius:"20px 20px 0 0",
+              width:"100%",maxWidth:"480px",
+              padding:"20px 16px",
+              paddingBottom:
+                "calc(20px + env(safe-area-inset-bottom,0px))"
+            }}
+              onClick={e=>e.stopPropagation()}>
+              <p style={{
+                fontSize:"16px",fontWeight:700,
+                color:"#1a1614",marginBottom:"16px",
+                textAlign:"center"
+              }}>Profile photo</p>
+              <button type="button"
+                onClick={()=>avatarCameraRef.current?.click()}
+                style={{
+                  display:"block",width:"100%",
+                  padding:"14px",marginBottom:"8px",
+                  borderRadius:"12px",border:"none",
+                  background:"#075E54",color:"#fff",
+                  fontWeight:700,fontSize:"15px",
+                  cursor:"pointer"
+                }}>
+                📷 Take Photo
+              </button>
+              <button type="button"
+                onClick={()=>avatarGalleryRef.current?.click()}
+                style={{
+                  display:"block",width:"100%",
+                  padding:"14px",marginBottom:"8px",
+                  borderRadius:"12px",
+                  border:"1px solid #e0d8ce",
+                  background:"#fff",color:"#075E54",
+                  fontWeight:700,fontSize:"15px",
+                  cursor:"pointer"
+                }}>
+                🖼 Choose from Gallery
+              </button>
+              <button type="button"
+                onClick={()=>setShowAvatarPicker(false)}
+                style={{
+                  display:"block",width:"100%",
+                  padding:"14px",
+                  borderRadius:"12px",border:"none",
+                  background:"#f0ece6",color:"#8a7060",
+                  fontWeight:600,fontSize:"14px",
+                  cursor:"pointer"
+                }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
