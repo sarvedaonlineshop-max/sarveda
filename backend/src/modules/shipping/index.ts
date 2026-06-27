@@ -15,6 +15,7 @@ router.post("/admin/cancel-waybill", requireAdmin, controller.cancelWaybillAdmin
 router.get("/admin/label/:waybill", requireAdmin, controller.getAdminLabel);
 router.post("/admin/delhivery-estimate", requireAdmin, controller.estimateDelhiveryCharge);
 router.post("/admin/manual-awb/:orderId", requireAdmin, controller.postManualAwb);
+router.post("/admin/reverse-shipment/:orderId", requireAdmin, controller.createReverseShipment);
 router.get("/public/track/:waybill", controller.publicTrack);
 router.get("/track/:waybill", requireAdmin, controller.track);
 router.get("/international-rates", controller.internationalRates);

@@ -380,11 +380,34 @@ export function adminTrackShipmentByWaybill(waybill: string) {
 
 export function adminSaveManualAwb(
   orderId: string,
-  body: { awb: string; courier: "DELHIVERY" | "SHIPROCKET" | "OTHER" }
+  body: {
+    awb: string;
+    courier: "DELHIVERY" | "SHIPROCKET" | "FEDEX" | "INDIA_POST" | "OTHER";
+    trackingUrl?: string;
+  }
 ) {
   return adminFetch<{ courier: string; waybill: string; trackingUrl: string }>(
     `/api/shipping/admin/manual-awb/${encodeURIComponent(orderId)}`,
     { method: "POST", body: JSON.stringify(body) }
+  );
+}
+
+export function adminCreateReverseShipment(
+  orderId: string,
+  body?: {
+    pickupLocationId?: string;
+    channel?: string;
+    reason?: string;
+    shippingMode?: "S" | "E";
+    weightGrams?: number;
+    lengthCm?: number;
+    breadthCm?: number;
+    heightCm?: number;
+  }
+) {
+  return adminFetch<{ courier: string; waybill: string; trackingUrl: string }>(
+    `/api/shipping/admin/reverse-shipment/${encodeURIComponent(orderId)}`,
+    { method: "POST", body: JSON.stringify(body ?? {}) }
   );
 }
 

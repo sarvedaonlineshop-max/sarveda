@@ -17,7 +17,7 @@ import {
   resolveRateCountryCode,
   zoneFromCountry
 } from "./shippingRates.service";
-import { autoSelectAndCreate, persistManualAwb } from "./router";
+import { autoSelectAndCreate, createReverseShipmentForOrder, persistManualAwb } from "./router";
 
 const pincodeBody = z.object({
   pincode: z.string().min(3).max(10)
@@ -442,7 +442,7 @@ export async function cancelWaybillAdmin(req: Request, res: Response, next: Next
     }
 
     const cancelled = c.includes("delhivery")
-      ? await delhivery.cancelShipment(wb)
+      ? await delhivery.cancelShipmentWithMps(wb, row.carrierMeta)
       : await shiprocket.cancelShipment(wb, row.carrierMeta);
     if (!cancelled.success) {
       const isShiprocket = !c.includes("delhivery");
@@ -590,7 +590,8 @@ export async function getAdminLabel(req: Request, res: Response, next: NextFunct
 
 const manualAwbBody = z.object({
   awb: z.string().min(4).max(64),
-  courier: z.enum(["DELHIVERY", "SHIPROCKET", "OTHER"])
+  courier: z.enum(["DELHIVERY", "SHIPROCKET", "FEDEX", "INDIA_POST", "OTHER"]),
+  trackingUrl: z.string().url().max(500).optional().or(z.literal(""))
 });
 
 export async function postManualAwb(req: Request, res: Response, next: NextFunction) {
@@ -604,12 +605,17 @@ export async function postManualAwb(req: Request, res: Response, next: NextFunct
     if (!parsed.success) {
       res.status(400).json({
         success: false,
-        error: "awb and courier (DELHIVERY | SHIPROCKET | OTHER) required",
+        error: "awb, courier, and optional trackingUrl required",
         code: "VALIDATION_ERROR"
       });
       return;
     }
-    const result = await persistManualAwb(orderId, parsed.data.awb, parsed.data.courier);
+    const result = await persistManualAwb(
+      orderId,
+      parsed.data.awb,
+      parsed.data.courier,
+      parsed.data.trackingUrl
+    );
     if (!result.success) {
       res.status(result.code === "NOT_FOUND" ? 404 : 400).json(result);
       return;
@@ -678,6 +684,45 @@ export async function internationalRates(req: Request, res: Response, next: Next
     const result = await shiprocket.getShippingRates(weightKg, origin, parsed.data.country);
     if (!result.success) {
       res.status(result.code === "SHIPROCKET_NOT_CONFIGURED" ? 503 : 400).json(result);
+      return;
+    }
+    res.json({ success: true, data: result.data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+const reverseShipmentBody = z.object({
+  pickupLocationId: z.string().uuid().optional(),
+  channel: z.string().min(1).max(120).optional(),
+  reason: z.string().max(240).optional(),
+  shippingMode: z.enum(["S", "E"]).optional(),
+  weightGrams: z.number().int().min(50).max(500_000).optional(),
+  lengthCm: z.number().min(5).max(200).optional(),
+  breadthCm: z.number().min(5).max(200).optional(),
+  heightCm: z.number().min(5).max(200).optional()
+});
+
+/** Admin: Delhivery reverse pickup (return) for shipped/delivered orders. */
+export async function createReverseShipment(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { orderId } = req.params;
+    if (!orderId) {
+      res.status(400).json({ success: false, error: "orderId required", code: "BAD_REQUEST" });
+      return;
+    }
+    const parsed = reverseShipmentBody.safeParse(req.body && typeof req.body === "object" ? req.body : {});
+    if (!parsed.success) {
+      res.status(400).json({
+        success: false,
+        error: parsed.error.issues.map((i) => i.message).join("; "),
+        code: "VALIDATION_ERROR"
+      });
+      return;
+    }
+    const result = await createReverseShipmentForOrder(orderId, parsed.data);
+    if (!result.success) {
+      res.status(result.code === "NOT_FOUND" ? 404 : 400).json(result);
       return;
     }
     res.json({ success: true, data: result.data });

@@ -599,6 +599,10 @@ function courierDisplayName(code: string): string {
       return "Shiprocket";
     case "SHIPROCKET_INTERNATIONAL":
       return "Shiprocket International";
+    case "FEDEX":
+      return "FedEx";
+    case "INDIA_POST":
+      return "India Post";
     default:
       return code.trim() || "Other";
   }
@@ -612,13 +616,20 @@ function trackingUrlForManualAwb(courierCode: string, awb: string): string {
   if (upper === "SHIPROCKET" || upper === "SHIPROCKET_INTERNATIONAL") {
     return `https://shiprocket.co/tracking/${awb}`;
   }
+  if (upper === "FEDEX") {
+    return `https://www.fedex.com/fedextrack/?trknbr=${encodeURIComponent(awb)}`;
+  }
+  if (upper === "INDIA_POST") {
+    return `https://www.indiapost.gov.in/_layouts/15/DOP.Portal.Tracking/TrackConsignment.aspx?consignment=${encodeURIComponent(awb)}`;
+  }
   return "";
 }
 
 export async function persistManualAwb(
   orderId: string,
   awb: string,
-  courierCode: string
+  courierCode: string,
+  trackingUrlOverride?: string | null
 ): Promise<
   | { success: true; data: { courier: string; waybill: string; trackingUrl: string } }
   | { success: false; error: string; code: string }
@@ -636,11 +647,14 @@ export async function persistManualAwb(
   }
 
   const courierName = courierDisplayName(courierCode);
-  const trackingUrl = trackingUrlForManualAwb(courierCode, trimmed);
+  const trackingUrl =
+    trackingUrlOverride?.trim() ||
+    trackingUrlForManualAwb(courierCode, trimmed);
 
   await persistShipment(orderId, courierName, trimmed, trackingUrl, null, {
     carrier: courierCode.trim().toUpperCase(),
-    manual: true
+    manual: true,
+    ...(trackingUrlOverride?.trim() ? { trackingUrlManual: trackingUrlOverride.trim() } : {})
   });
 
   return {
@@ -699,4 +713,126 @@ async function persistShipment(
       }
     });
   });
+}
+
+export type ReverseShipmentCreateOptions = {
+  pickupLocationId?: string;
+  channel?: string;
+  reason?: string;
+  shippingMode?: "S" | "E";
+  weightGrams?: number;
+  lengthCm?: number;
+  breadthCm?: number;
+  heightCm?: number;
+};
+
+/** Admin: Delhivery reverse pickup (RVP) for returns. */
+export async function createReverseShipmentForOrder(
+  orderId: string,
+  options?: ReverseShipmentCreateOptions
+): Promise<
+  | { success: true; data: { courier: string; waybill: string; trackingUrl: string } }
+  | { success: false; error: string; code: string }
+> {
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, deletedAt: null },
+    include: {
+      items: true,
+      addresses: true,
+      payments: { orderBy: { createdAt: "desc" }, take: 1 }
+    }
+  });
+  if (!order) {
+    return { success: false, error: "Order not found", code: "NOT_FOUND" };
+  }
+  if (!["DELIVERED", "SHIPPED"].includes(order.status)) {
+    return {
+      success: false,
+      error: "Reverse pickup can only be created for Shipped or Delivered orders.",
+      code: "ORDER_STATE"
+    };
+  }
+  const payCheck = assertPaymentEligibleForShipping(order);
+  if (!payCheck.ok) {
+    return { success: false, error: payCheck.error, code: payCheck.code };
+  }
+  const shipAddr = order.addresses.find((a) => a.type === "SHIPPING");
+  if (!shipAddr) {
+    return { success: false, error: "Missing shipping address", code: "BAD_REQUEST" };
+  }
+  const { channelOrderId, nextSeq } = nextCarrierChannelOrderId(
+    order.orderNumber,
+    order.shippingLabelSeq
+  );
+  const reverseOrderId = `${channelOrderId}-RV`.slice(0, 50);
+  const delhiveryPickup = await resolveDelhiveryPickupName(orderId, {
+    pickupLocationId: options?.pickupLocationId
+  });
+  const pickupRow = options?.pickupLocationId
+    ? await prisma.pickupLocation.findUnique({ where: { id: options.pickupLocationId } })
+    : null;
+  const weightG =
+    options?.weightGrams ??
+    Math.max(50, order.items.reduce((s, it) => s + it.qtyOrdered * 500, 0) || 500);
+  const productsDesc = order.items
+    .map((it) => `${it.nameSnapshot} (${it.qtyOrdered})`)
+    .join(", ")
+    .slice(0, 240);
+  const created = await delhivery.createReversePickup({
+    orderNumber: reverseOrderId,
+    consigneeName: shipAddr.fullName,
+    consigneePhone: shipAddr.phone,
+    address: [shipAddr.line1, shipAddr.line2].filter(Boolean).join(", "),
+    city: shipAddr.city,
+    state: shipAddr.state,
+    pincode: shipAddr.postalCode,
+    pickupLocation: delhiveryPickup,
+    channel: options?.channel ?? "www.sarveda.com",
+    productsDesc,
+    weightGrams: weightG,
+    lengthCm: options?.lengthCm,
+    breadthCm: options?.breadthCm,
+    heightCm: options?.heightCm,
+    shippingMode: options?.shippingMode ?? "S",
+    reason: options?.reason,
+    ...(pickupRow
+      ? {
+          returnName: pickupRow.contactPerson ?? pickupRow.label,
+          returnPhone: pickupRow.phone ?? shipAddr.phone,
+          returnAddress: [pickupRow.line1, pickupRow.line2].filter(Boolean).join(", "),
+          returnCity: pickupRow.city ?? "",
+          returnState: pickupRow.state ?? "",
+          returnPin: pickupRow.postalCode ?? ""
+        }
+      : {})
+  });
+  if (!created.success) {
+    await recordShippingFailure(order.id, created.error, created.code);
+    return created;
+  }
+  await persistShipment(
+    order.id,
+    "Delhivery Return",
+    created.data.waybill,
+    created.data.trackingUrl,
+    options?.pickupLocationId ?? null,
+    {
+      channelOrderId: reverseOrderId,
+      carrier: "DELHIVERY",
+      direction: "REVERSE",
+      reason: options?.reason ?? null,
+      channel: options?.channel ?? "www.sarveda.com",
+      weightGrams: weightG,
+      shippingMode: options?.shippingMode ?? "S"
+    },
+    nextSeq
+  );
+  return {
+    success: true,
+    data: {
+      courier: "Delhivery Return",
+      waybill: created.data.waybill,
+      trackingUrl: created.data.trackingUrl
+    }
+  };
 }

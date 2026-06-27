@@ -545,6 +545,153 @@ export async function createShipment(
   }
 }
 
+export type DelhiveryReverseInput = {
+  orderNumber: string;
+  consigneeName: string;
+  consigneePhone: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  pickupLocation?: string;
+  channel?: string;
+  productsDesc?: string;
+  weightGrams: number;
+  lengthCm?: number;
+  breadthCm?: number;
+  heightCm?: number;
+  shippingMode?: "S" | "E";
+  /** Return warehouse — if omitted Delhivery uses registered warehouse. */
+  returnName?: string;
+  returnPhone?: string;
+  returnAddress?: string;
+  returnCity?: string;
+  returnState?: string;
+  returnPin?: string;
+  reason?: string;
+};
+
+/** Delhivery RVP / reverse pickup — same create API with payment_mode Pickup. */
+export async function createReversePickup(
+  input: DelhiveryReverseInput
+): Promise<ApiOk<{ waybill: string; trackingUrl: string }> | ApiErr> {
+  try {
+    assertDelhiveryConfigured();
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Delhivery not configured",
+      code: "DELHIVERY_NOT_CONFIGURED"
+    };
+  }
+  const headers = authHeadersForm();
+  if (!headers) {
+    return { success: false, error: "Delhivery is not configured", code: "DELHIVERY_NOT_CONFIGURED" };
+  }
+  try {
+    const pin = input.pincode.replace(/\D/g, "").slice(0, 6);
+    const weightG = Math.max(50, Math.round(input.weightGrams));
+    const shipment: Record<string, unknown> = {
+      name: input.consigneeName,
+      phone: input.consigneePhone,
+      order: input.orderNumber,
+      add: input.address,
+      pin,
+      city: input.city,
+      state: input.state,
+      country: "India",
+      payment_mode: "Pickup",
+      weight: weightG,
+      shipment_length: Math.max(5, input.lengthCm ?? 10),
+      shipment_width: Math.max(5, input.breadthCm ?? 10),
+      shipment_height: Math.max(5, input.heightCm ?? 10)
+    };
+    if (input.shippingMode) {
+      shipment.shipping_mode = input.shippingMode === "E" ? "Express" : "Surface";
+    }
+    if (input.productsDesc?.trim()) {
+      shipment.products_desc = input.productsDesc.trim().slice(0, 240);
+    }
+    if (input.reason?.trim()) {
+      shipment.seller_inv = input.reason.trim().slice(0, 120);
+    }
+    if (input.returnAddress?.trim()) {
+      shipment.return_name = input.returnName?.trim() || input.consigneeName;
+      shipment.return_phone = input.returnPhone?.trim() || input.consigneePhone;
+      shipment.return_add = input.returnAddress.trim();
+      shipment.return_pin = (input.returnPin ?? "").replace(/\D/g, "").slice(0, 6);
+      shipment.return_city = input.returnCity?.trim() ?? "";
+      shipment.return_state = input.returnState?.trim() ?? "";
+    }
+    const payload: Record<string, unknown> = { shipments: [shipment] };
+    if (input.pickupLocation?.trim()) {
+      payload.pickups = [{ pickup_location: input.pickupLocation.trim() }];
+    }
+    if (input.channel?.trim()) {
+      payload.channel = input.channel.trim();
+    }
+    const form = new URLSearchParams();
+    form.append("format", "json");
+    form.append("data", JSON.stringify(payload));
+    const url = `${baseUrl()}/api/cmu/create.json`;
+    const res = await axios.post(url, form.toString(), {
+      headers,
+      timeout: 45_000,
+      validateStatus: () => true
+    });
+    if (res.status >= 400) {
+      return mapAxiosError({ response: res, message: "reverse pickup failed" }, "DELHIVERY_REVERSE");
+    }
+    const body = res.data as Record<string, unknown>;
+    const pkgs = (body?.packages ??
+      body?.success ??
+      body?.Package ??
+      body?.data) as Record<string, unknown>[] | Record<string, unknown> | undefined;
+    let waybill = "";
+    const arr = Array.isArray(pkgs) ? pkgs : pkgs && typeof pkgs === "object" ? [pkgs as Record<string, unknown>] : [];
+    if (arr[0]) {
+      waybill = String(arr[0].waybill ?? arr[0].AWB ?? arr[0].wb ?? arr[0].Waybill ?? "");
+    }
+    if (!waybill && typeof body?.waybill === "string") waybill = body.waybill;
+    if (!waybill) {
+      logger.warn("delhivery_reverse_unparsed", { body });
+      return {
+        success: false,
+        error: "Delhivery did not return a reverse pickup waybill",
+        code: "DELHIVERY_PARSE"
+      };
+    }
+    return {
+      success: true,
+      data: { waybill, trackingUrl: `https://www.delhivery.com/track/package/${waybill}` }
+    };
+  } catch (err) {
+    return mapAxiosError(err, "DELHIVERY_REVERSE");
+  }
+}
+
+/** Cancel master + all MPS child waybills when present in carrierMeta. */
+export async function cancelShipmentWithMps(
+  masterWaybill: string,
+  carrierMeta: unknown
+): Promise<ApiOk<{ cancelled: string[] }> | ApiErr> {
+  const meta =
+    carrierMeta && typeof carrierMeta === "object"
+      ? (carrierMeta as { mpsWaybills?: unknown })
+      : null;
+  const list = Array.isArray(meta?.mpsWaybills)
+    ? meta!.mpsWaybills!.map((w) => String(w)).filter(Boolean)
+    : [];
+  const waybills = list.length > 1 ? list : [masterWaybill.trim()];
+  const cancelled: string[] = [];
+  for (const wb of waybills) {
+    const r = await cancelShipment(wb);
+    if (!r.success) return r;
+    cancelled.push(wb);
+  }
+  return { success: true, data: { cancelled } };
+}
+
 export async function trackShipment(waybill: string): Promise<ApiOk<{ status: string; raw: unknown }> | ApiErr> {
   try {
     assertDelhiveryConfigured();
