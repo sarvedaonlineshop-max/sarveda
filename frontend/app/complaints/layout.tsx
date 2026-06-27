@@ -5,7 +5,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#1e3a2f",
+  themeColor: "#075E54",
 };
 
 export const metadata: Metadata = {
@@ -17,6 +17,9 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "Sarveda Tasks",
+  },
+  icons: {
+    apple: "/brand/sarveda-logo.png",
   },
 };
 
@@ -31,7 +34,7 @@ export default function ComplaintsLayout({
       maxWidth: "480px",
       margin: "0 auto",
       minHeight: "100dvh",
-      background: "#fdf6ed",
+      background: "#ECE5DD",
       position: "relative",
     }}>
       {children}

@@ -2,10 +2,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 // ── Types ──────────────────────────────────────────────
-type View = "login"|"dashboard"|"mytasks"|"myassignments"
+type View = "login"|"home"|"assigned"|"alltasks"
            |"profile"|"new"|"detail"|"notifications";
 type Priority = "LOW"|"MEDIUM"|"HIGH";
-type Status = "OPEN"|"IN_PROGRESS"|"RESOLVED"|"REOPENED";
+type ApiStatus = "OPEN"|"IN_PROGRESS"|"RESOLVED"|"REOPENED";
+type Status = "NEW"|"IN_PROGRESS"|"CLOSED"|"REOPENED";
 type LoginMode = "password"|"otp";
 
 type Member = { email: string; name: string | null };
@@ -29,7 +30,7 @@ type TaskEvent = {
 type Task = {
   id: string; title: string;
   description: string | null;
-  priority: Priority; status: Status;
+  priority: Priority; status: ApiStatus;
   createdAt: string; updatedAt: string;
   raisedByEmail: string; raisedByName: string | null;
   assignedByEmail: string | null;
@@ -55,6 +56,33 @@ type Stats = {
 
 // ── Constants ──────────────────────────────────────────
 const API = "/api";
+const LOGO_PATH = "/brand/sarveda-logo.png";
+
+function uiStatus(raw: ApiStatus | Status): Status {
+  if (raw === "OPEN") return "NEW";
+  if (raw === "RESOLVED") return "CLOSED";
+  if (raw === "NEW" || raw === "CLOSED") return raw;
+  return raw as Status;
+}
+
+function apiStatus(ui: Status): ApiStatus {
+  if (ui === "NEW") return "OPEN";
+  if (ui === "CLOSED") return "RESOLVED";
+  return ui as ApiStatus;
+}
+
+function taskMatchesFilter(
+  taskStatus: ApiStatus,
+  filter: "NEW"|"IN_PROGRESS"|"CLOSED"
+): boolean {
+  const u = uiStatus(taskStatus);
+  if (filter === "CLOSED") return u === "CLOSED" || u === "REOPENED";
+  return u === filter;
+}
+
+function isTaskClosed(status: ApiStatus): boolean {
+  return status === "RESOLVED" || status === "REOPENED";
+}
 const PC: Record<Priority,string> = {
   HIGH:"#dc2626", MEDIUM:"#d97706", LOW:"#16a34a"
 };
@@ -62,9 +90,9 @@ const PB: Record<Priority,string> = {
   HIGH:"#fee2e2", MEDIUM:"#fef3c7", LOW:"#dcfce7"
 };
 const SS: Record<Status,{bg:string;color:string;label:string}> = {
-  OPEN:        {bg:"#fee2e2",color:"#991b1b",label:"Open"},
+  NEW:         {bg:"#dcfce7",color:"#166534",label:"New"},
   IN_PROGRESS: {bg:"#dbeafe",color:"#1e40af",label:"In Progress"},
-  RESOLVED:    {bg:"#dcfce7",color:"#166534",label:"Resolved"},
+  CLOSED:      {bg:"#f3f4f6",color:"#6b7280",label:"Closed"},
   REOPENED:    {bg:"#fef3c7",color:"#92400e",label:"Reopened"},
 };
 
@@ -111,8 +139,8 @@ function PriorityPill({p}:{p:Priority}) {
 
 function StatusPill({
   s,small
-}:{s:Status;small?:boolean}) {
-  const st = SS[s];
+}:{s:ApiStatus|Status;small?:boolean}) {
+  const st = SS[uiStatus(s)];
   return (
     <span style={{
       background:st.bg,color:st.color,
@@ -191,8 +219,8 @@ export default function TasksApp() {
   const [loading,setLoading] = useState(false);
 
   // Filter state
-  const [statusFilter,setStatusFilter] = 
-    useState<"OPEN"|"IN_PROGRESS"|"RESOLVED">("OPEN");
+  const [statusFilter,setStatusFilter] =
+    useState<"NEW"|"IN_PROGRESS"|"CLOSED">("NEW");
 
   // New task state
   const [ntTitle,setNtTitle] = useState("");
@@ -208,9 +236,20 @@ export default function TasksApp() {
   const [ntMsg,setNtMsg] = useState("");
 
   // Query/comment state
-  const [queryText,setQueryText] = useState("");
-  const [queryFiles,setQueryFiles] = useState<File[]>([]);
+  const [msgInput,setMsgInput] = useState("");
+  const [msgFiles,setMsgFiles] = useState<File[]>([]);
   const [querySending,setQuerySending] = useState(false);
+
+  // WhatsApp UI state
+  const [rememberMe,setRememberMe] = useState(false);
+  const [ntTagged,setNtTagged] = useState<string[]>([]);
+  const [showMemberPicker,setShowMemberPicker] =
+    useState<"to"|"tag"|null>(null);
+  const [showTaskMenu,setShowTaskMenu] = useState(false);
+  const [showDeleteConfirm,setShowDeleteConfirm] =
+    useState(false);
+  const [showSubtasks,setShowSubtasks] =
+    useState<Record<string,boolean>>({});
 
   // Profile state
   const [pName,setPName] = useState("");
@@ -229,7 +268,7 @@ export default function TasksApp() {
   const [quickTask,setQuickTask] = useState("");
   const [quickSubmitting,setQuickSubmitting] = useState(false);
 
-  const prevView = useRef<View>("dashboard");
+  const prevView = useRef<View>("home");
   const pollRef = useRef<ReturnType<typeof setInterval>|null>(null);
 
   // ── Helpers ──────────────────────────────────────────
@@ -239,18 +278,25 @@ export default function TasksApp() {
   }),[token]);
 
   function saveSession(
-    t:string,email:string,name:string,phone:string
+    t:string,email:string,name:string,phone:string,
+    remember=false
   ) {
     localStorage.setItem("sv_token",t);
     localStorage.setItem("sv_email",email);
     localStorage.setItem("sv_name",name);
     localStorage.setItem("sv_phone",phone);
+    if (remember) {
+      const exp = Date.now()+(90*24*60*60*1000);
+      localStorage.setItem("sv_expiry",String(exp));
+    } else {
+      localStorage.removeItem("sv_expiry");
+    }
     setToken(t);setMyEmail(email);
     setMyName(name);setMyPhone(phone);
   }
 
   function logout() {
-    ["sv_token","sv_email","sv_name","sv_phone"]
+    ["sv_token","sv_email","sv_name","sv_phone","sv_expiry"]
       .forEach(k=>localStorage.removeItem(k));
     if (pollRef.current) clearInterval(pollRef.current);
     setToken(null);setView("login");
@@ -341,9 +387,13 @@ export default function TasksApp() {
     const n = localStorage.getItem("sv_name");
     const p = localStorage.getItem("sv_phone");
     if (t&&e) {
+      const expiry = localStorage.getItem("sv_expiry");
+      if (expiry && Date.now() > Number(expiry)) {
+        logout(); return;
+      }
       setToken(t);setMyEmail(e);
       setMyName(n??"");setMyPhone(p??"");
-      setView("dashboard");
+      setView("home");
       void loadAll(t);
       // Poll notifications every 30 seconds
       pollRef.current = setInterval(
@@ -372,8 +422,8 @@ export default function TasksApp() {
       if (!r.ok) throw new Error(d.error??d.message??"Login failed");
       const t = d.data?.token??d.token;
       const u = d.data?.user??d.user;
-      saveSession(t,u.email,u.name??"",u.phone??"");
-      setView("dashboard");
+      saveSession(t,u.email,u.name??"",u.phone??"",rememberMe);
+      setView("home");
       void loadAll(t);
       pollRef.current = setInterval(
         ()=>void loadNotifications(t),30000
@@ -383,10 +433,26 @@ export default function TasksApp() {
     } finally { setLLoading(false); }
   }
 
+  async function checkWhitelist(email:string): Promise<boolean> {
+    try {
+      const r = await fetch(`${API}/complaints/check-whitelist`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({email}),
+      });
+      return r.ok;
+    } catch { return false; }
+  }
+
   async function handleSendOtp(e:React.FormEvent) {
     e.preventDefault();
     setLLoading(true);setLErr("");
     try {
+      const allowed = await checkWhitelist(lEmail.trim());
+      if (!allowed) {
+        setLErr("This email is not authorised for Sarveda Tasks. Contact admin for access.");
+        setLLoading(false); return;
+      }
       const r = await fetch(`${API}/auth/send-otp`,{
         method:"POST",
         headers:{"Content-Type":"application/json"},
@@ -415,8 +481,8 @@ export default function TasksApp() {
       if (!r.ok) throw new Error(d.error??"Invalid OTP");
       const t = d.data?.token??d.token;
       const u = d.data?.user??d.user;
-      saveSession(t,u.email,u.name??"",u.phone??"");
-      setView("dashboard");
+      saveSession(t,u.email,u.name??"",u.phone??"",rememberMe);
+      setView("home");
       void loadAll(t);
       pollRef.current = setInterval(
         ()=>void loadNotifications(t),30000
@@ -430,20 +496,26 @@ export default function TasksApp() {
   async function handleCreateTask(e:React.FormEvent) {
     e.preventDefault();
     if (!ntDesc.trim()) {
-      setNtMsg("❌ Description is required"); return;
+      setNtMsg("❌ Please describe the task"); return;
+    }
+    if (ntAssignees.length===0) {
+      setNtMsg("❌ Please add at least one person in To field"); return;
     }
     setNtSubmitting(true);setNtMsg("");
     try {
       const autoTitle = ntDesc.trim()
         .split("\n")[0]
         .slice(0, 100) || "Task";
+      const allAssignees = Array.from(
+        new Set([...ntAssignees,...ntTagged])
+      );
       const fd = new FormData();
       fd.append("title", autoTitle);
       fd.append("description",ntDesc.trim());
       fd.append("priority",ntPriority);
       if (ntParentId) fd.append("parentId",ntParentId);
       if (ntDueDate) fd.append("dueDate",ntDueDate);
-      fd.append("assigneeEmails",JSON.stringify(ntAssignees));
+      fd.append("assigneeEmails",JSON.stringify(allAssignees));
       ntFiles.forEach(f=>fd.append("files",f));
       const r = await fetch(`${API}/complaints`,{
         method:"POST",
@@ -456,7 +528,7 @@ export default function TasksApp() {
       }
       setNtTitle("");setNtDesc("");
       setNtFiles([]);setNtPriority("MEDIUM");
-      setNtAssignees([]);setNtDueDate("");
+      setNtAssignees([]);setNtTagged([]);setNtDueDate("");
       setNtParentId(null);setNtParentTitle(null);
       setNtMsg("✅ Task created and assigned!");
       void loadAll();
@@ -472,18 +544,18 @@ export default function TasksApp() {
   // ── Add query/comment ─────────────────────────────────
   async function handleAddQuery(e:React.FormEvent) {
     e.preventDefault();
-    if (!queryText.trim()&&queryFiles.length===0) return;
+    if (!msgInput.trim()&&msgFiles.length===0) return;
     setQuerySending(true);
     try {
       const fd = new FormData();
-      fd.append("message",queryText.trim());
-      queryFiles.forEach(f=>fd.append("files",f));
+      fd.append("message",msgInput.trim());
+      msgFiles.forEach(f=>fd.append("files",f));
       await fetch(`${API}/complaints/${selected?.id}/comment`,{
         method:"POST",
         headers:{Authorization:`Bearer ${token}`},
         body:fd,
       });
-      setQueryText("");setQueryFiles([]);
+      setMsgInput("");setMsgFiles([]);
       if (selected) await loadDetail(selected.id);
     } finally { setQuerySending(false); }
   }
@@ -496,11 +568,27 @@ export default function TasksApp() {
       await fetch(`${API}/complaints/${selected.id}/status`,{
         method:"PATCH",
         headers:ah(),
-        body:JSON.stringify({status:newStatus}),
+        body:JSON.stringify({status:apiStatus(newStatus)}),
       });
       await loadDetail(selected.id);
       void loadAll();
     } finally { setStatusUpdating(false); }
+  }
+
+  async function handleDeleteTask() {
+    if (!selected) return;
+    try {
+      await fetch(`${API}/complaints/${selected.id}`,{
+        method:"DELETE",
+        headers:{Authorization:`Bearer ${token}`},
+      });
+      setShowDeleteConfirm(false);
+      setShowTaskMenu(false);
+      setView(prevView.current);
+      void loadAll();
+    } catch {
+      alert("Failed to delete. Try again.");
+    }
   }
 
   // ── Mark notifications read ───────────────────────────
@@ -584,75 +672,153 @@ export default function TasksApp() {
   // ── Shared UI ─────────────────────────────────────────
   const CSS = `
     *{box-sizing:border-box;margin:0;padding:0}
-    html,body{background:#f0ece6;
+    html,body{background:#ECE5DD;
       font-family:'Inter',system-ui,sans-serif}
-    .card{background:#fff;border-radius:16px;
-      border:1px solid #ede8e0;
-      box-shadow:0 1px 4px rgba(44,36,32,.05)}
-    .pressable{cursor:pointer;transition:
-      transform .12s,opacity .12s}
-    .pressable:active{transform:scale(.97);opacity:.85}
-    .input{width:100%;padding:12px 14px;
-      border-radius:12px;border:1.5px solid #e0d8ce;
-      background:#fff;color:#1a1614;font-size:14px;
-      outline:none;font-family:inherit}
-    .input:focus{border-color:#1e3a2f}
-    .dark-input{background:rgba(255,255,255,.08);
-      border:1px solid rgba(255,255,255,.15);
+    .wa-bubble-in{
+      background:#fff;
+      border-radius:0 12px 12px 12px;
+      padding:8px 10px;
+      box-shadow:0 1px 2px rgba(0,0,0,.1);
+      max-width:75%}
+    .wa-bubble-out{
+      background:#DCF8C6;
+      border-radius:12px 0 12px 12px;
+      padding:8px 10px;
+      box-shadow:0 1px 2px rgba(0,0,0,.1);
+      max-width:75%}
+    .pressable{cursor:pointer;
+      transition:opacity .12s}
+    .pressable:active{opacity:.75}
+    .input{width:100%;padding:11px 14px;
+      border-radius:999px;
+      border:1.5px solid #e0d8ce;
+      background:#fff;color:#1a1614;
+      font-size:14px;outline:none;
+      font-family:inherit}
+    .input:focus{border-color:#075E54}
+    .dark-input{
+      background:rgba(255,255,255,.1);
+      border:1px solid rgba(255,255,255,.2);
       color:#fffbf5;border-radius:12px;
       padding:12px 14px;font-size:15px;
-      width:100%;outline:none;font-family:inherit}
+      width:100%;outline:none;
+      font-family:inherit}
     .dark-input::placeholder{
       color:rgba(255,255,255,.4)}
     .input::placeholder{color:#c0b8b0}
     ::-webkit-scrollbar{width:0;height:0}
-    .fade{animation:fadeIn .2s ease}
-    @keyframes fadeIn{from{opacity:0;
-      transform:translateY(4px)}to{opacity:1;
-      transform:translateY(0)}}
-    select.input option{color:#1a1614;background:#fff}
+    .fade{animation:fadeIn .15s ease}
+    @keyframes fadeIn{
+      from{opacity:0;transform:translateY(3px)}
+      to{opacity:1;transform:translateY(0)}}
+    .task-row{
+      background:#fff;
+      border-bottom:0.5px solid #f0ece6;
+      display:flex;gap:12px;
+      padding:12px 16px;cursor:pointer;
+      transition:background .1s}
+    .task-row:active{background:#f5f5f5}
   `;
 
-  function Header({
-    title,back,onBack,actions
-  }:{
-    title:string;back?:boolean;
-    onBack?:()=>void;
-    actions?:React.ReactNode
+  function MainHeader() {
+    return (
+      <div style={{
+        background:"#075E54",
+        padding:"10px 16px 12px",
+        position:"sticky",top:0,zIndex:50
+      }}>
+        <div style={{
+          display:"flex",alignItems:"center",
+          gap:"10px"
+        }}>
+          <img src={LOGO_PATH} alt="Sarveda"
+            style={{
+              width:36,height:36,
+              objectFit:"contain",
+              borderRadius:"8px",flexShrink:0
+            }}/>
+          <div style={{flex:1}}>
+            <p style={{
+              fontSize:"16px",fontWeight:700,
+              color:"#fff",margin:0,
+              letterSpacing:"-0.2px",
+              lineHeight:1.2
+            }}>Sarveda Task Management</p>
+            <p style={{
+              fontSize:"12px",
+              color:"rgba(255,255,255,.75)",
+              margin:0
+            }}>
+              Welcome {myName?.split(" ")[0]||"there"} 👋
+            </p>
+          </div>
+          <button onClick={()=>{
+            setView("notifications");
+            void markAllRead();
+          }} style={{
+            position:"relative",
+            background:"rgba(255,255,255,.12)",
+            border:"none",width:38,height:38,
+            borderRadius:"50%",cursor:"pointer",
+            display:"flex",alignItems:"center",
+            justifyContent:"center",fontSize:"20px"
+          }}>
+            🔔
+            {unreadCount>0&&(
+              <div style={{
+                position:"absolute",top:-3,right:-3,
+                minWidth:17,height:17,
+                borderRadius:"999px",
+                background:"#dc2626",color:"#fff",
+                fontSize:"9px",fontWeight:700,
+                display:"flex",alignItems:"center",
+                justifyContent:"center",
+                padding:"0 3px",
+                border:"2px solid #075E54"
+              }}>
+                {unreadCount>9?"9+":unreadCount}
+              </div>
+            )}
+          </button>
+          <Avatar name={myName} email={myEmail} size={36}/>
+        </div>
+      </div>
+    );
+  }
+
+  function DetailHeader({title,onBack,children}:{
+    title:string;onBack:()=>void;
+    children?:React.ReactNode
   }) {
     return (
       <div style={{
-        background:"#1e3a2f",
-        padding:"14px 16px",
-        display:"flex",alignItems:"center",gap:"12px",
+        background:"#075E54",
+        padding:"10px 12px",
         position:"sticky",top:0,zIndex:50,
-        borderBottom:"1px solid rgba(255,255,255,.08)"
+        display:"flex",alignItems:"center",gap:"10px"
       }}>
-        {back && (
-          <button onClick={onBack} style={{
-            background:"rgba(255,255,255,.1)",
-            border:"none",color:"#f5d88a",
-            width:34,height:34,borderRadius:"10px",
-            cursor:"pointer",fontSize:"18px",
-            display:"flex",alignItems:"center",
-            justifyContent:"center",flexShrink:0
-          }}>←</button>
-        )}
-        <h1 style={{
-          fontSize:"17px",fontWeight:800,
-          color:"#fffbf5",flex:1,
-          letterSpacing:"-0.3px"
-        }}>{title}</h1>
-        {actions}
+        <button onClick={onBack} style={{
+          background:"none",border:"none",
+          color:"#fff",fontSize:"24px",
+          cursor:"pointer",padding:"0 4px",
+          lineHeight:1,flexShrink:0
+        }}>←</button>
+        <p style={{
+          fontSize:"15px",fontWeight:600,
+          color:"#fff",flex:1,margin:0,
+          overflow:"hidden",textOverflow:"ellipsis",
+          whiteSpace:"nowrap"
+        }}>{title}</p>
+        {children}
       </div>
     );
   }
 
   function BottomNav() {
     const tabs = [
-      {id:"dashboard",icon:"🏠",label:"Home"},
-      {id:"mytasks",icon:"📋",label:"My Tasks"},
-      {id:"myassignments",icon:"📤",label:"Assigned"},
+      {id:"home",icon:"🏠",label:"Home"},
+      {id:"assigned",icon:"📤",label:"Assigned"},
+      {id:"alltasks",icon:"📋",label:"All Tasks"},
       {id:"profile",icon:"👤",label:"Profile"},
     ] as const;
     return (
@@ -660,11 +826,12 @@ export default function TasksApp() {
         position:"fixed",bottom:0,
         left:"50%",transform:"translateX(-50%)",
         width:"100%",maxWidth:"480px",
-        background:"#fffbf5",
+        background:"#fff",
         borderTop:"1px solid #e0d8ce",
         display:"grid",
         gridTemplateColumns:"repeat(4,1fr)",
-        paddingBottom:"env(safe-area-inset-bottom,8px)",
+        paddingBottom:
+          "env(safe-area-inset-bottom,4px)",
         zIndex:100
       }}>
         {tabs.map(t=>(
@@ -674,22 +841,24 @@ export default function TasksApp() {
             }
             setView(t.id as View);
           }} style={{
-            padding:"10px 4px 8px",border:"none",
+            padding:"8px 4px 6px",border:"none",
             background:"transparent",cursor:"pointer",
             display:"flex",flexDirection:"column",
-            alignItems:"center",gap:"3px"
+            alignItems:"center",gap:"2px"
           }}>
-            <span style={{fontSize:"20px"}}>{t.icon}</span>
+            <span style={{fontSize:"20px"}}>
+              {t.icon}
+            </span>
             <span style={{
-              fontSize:"10px",fontWeight:700,
-              color:view===t.id?"#1e3a2f":"#b8a898",
-              letterSpacing:"0.02em"
+              fontSize:"10px",fontWeight:600,
+              color:view===t.id
+                ?"#075E54":"#8a7060"
             }}>{t.label}</span>
             {view===t.id&&(
               <div style={{
-                width:"20px",height:"3px",
+                width:"24px",height:"3px",
                 borderRadius:"999px",
-                background:"#c8960a"
+                background:"#075E54"
               }}/>
             )}
           </button>
@@ -699,30 +868,34 @@ export default function TasksApp() {
   }
 
   function StatusTabs() {
+    const tabs = [
+      {v:"NEW",label:"New"},
+      {v:"IN_PROGRESS",label:"In Progress"},
+      {v:"CLOSED",label:"Closed"},
+    ] as const;
     return (
       <div style={{
         display:"flex",gap:"6px",
-        padding:"10px 16px",
-        background:"#fffbf5",
-        borderBottom:"1px solid #ede8e0",
+        padding:"8px 16px",
+        background:"#075E54",
         overflowX:"auto"
       }}>
-        {(["OPEN","IN_PROGRESS","RESOLVED"] as const)
-          .map(s=>(
-          <button key={s} onClick={()=>setStatusFilter(s)}
+        {tabs.map(t=>(
+          <button key={t.v}
+            onClick={()=>setStatusFilter(t.v)}
             style={{
-              padding:"7px 14px",borderRadius:"999px",
-              border:"1.5px solid",
-              borderColor:statusFilter===s
-                ?SS[s].color:"#e0d8ce",
-              background:statusFilter===s
-                ?SS[s].bg:"#fff",
-              color:statusFilter===s
-                ?SS[s].color:"#8a7060",
+              padding:"6px 16px",
+              borderRadius:"999px",
+              border:"none",
+              background:statusFilter===t.v
+                ?"#fff"
+                :"rgba(255,255,255,.2)",
+              color:statusFilter===t.v
+                ?"#075E54":"#fff",
               fontSize:"12px",fontWeight:700,
               cursor:"pointer",whiteSpace:"nowrap"
             }}>
-            {SS[s].label}
+            {t.label}
           </button>
         ))}
       </div>
@@ -732,133 +905,103 @@ export default function TasksApp() {
   function TaskCard({
     task,onClick,isAssignment
   }:{task:Task;onClick:()=>void;isAssignment?:boolean}) {
-    const overdue = task.dueDate && 
-      task.status!=="RESOLVED" &&
+    const overdue = task.dueDate &&
+      !isTaskClosed(task.status) &&
       new Date(task.dueDate)<new Date();
+    const assignerName =
+      task.assignedByEmail===myEmail
+        ?"You"
+        :(task.assignedByName??
+          task.assignedByEmail?.split("@")[0]??
+          task.raisedByName??
+          task.raisedByEmail.split("@")[0]);
+
     return (
-      <div className="card pressable fade"
-        onClick={onClick}
-        style={{padding:"14px 16px",marginBottom:"8px"}}>
-        {/* Header row */}
+      <div className="task-row pressable fade"
+        onClick={onClick}>
         <div style={{
-          display:"flex",alignItems:"flex-start",
-          gap:"8px",marginBottom:"10px"
+          width:48,height:48,borderRadius:"50%",
+          background:PB[task.priority],
+          border:`2px solid ${PC[task.priority]}`,
+          display:"flex",alignItems:"center",
+          justifyContent:"center",flexShrink:0,
+          fontSize:"13px",fontWeight:800,
+          color:PC[task.priority]
         }}>
+          {task.priority[0]}
+        </div>
+        <div style={{flex:1,minWidth:0}}>
           <div style={{
-            width:"10px",height:"10px",
-            borderRadius:"50%",
-            background:PC[task.priority],
-            flexShrink:0,marginTop:"4px"
-          }}/>
-          <p style={{
-            fontSize:"14px",fontWeight:700,
-            color:"#1a1614",flex:1,lineHeight:1.4
-          }}>{task.title}</p>
-        </div>
-
-        {/* Meta row */}
-        <div style={{
-          display:"flex",alignItems:"center",
-          gap:"6px",flexWrap:"wrap",marginBottom:"10px"
-        }}>
-          <StatusPill s={task.status} small/>
-          <PriorityPill p={task.priority}/>
-          {task._count?.events!=null&&
-           task._count.events>0&&(
-            <span style={{
-              fontSize:"11px",color:"#8a7060",
-              display:"flex",alignItems:"center",gap:"3px"
-            }}>
-              💬{task._count.events}
-            </span>
-          )}
-          {task.attachments.length>0&&(
-            <span style={{
-              fontSize:"11px",color:"#8a7060"
-            }}>
-              📎{task.attachments.length}
-            </span>
-          )}
-          {overdue&&(
-            <span style={{
-              fontSize:"10px",fontWeight:700,
-              color:"#dc2626",
-              background:"#fee2e2",
-              padding:"2px 8px",borderRadius:"999px"
-            }}>⚠️ Overdue</span>
-          )}
-          <span style={{
-            fontSize:"11px",color:"#b8a898",
-            marginLeft:"auto"
+            display:"flex",
+            justifyContent:"space-between",
+            alignItems:"flex-start",
+            marginBottom:"3px"
           }}>
-            {timeAgo(task.updatedAt)}
-          </span>
-        </div>
-
-        {/* People row */}
-        <div style={{
-          display:"flex",alignItems:"center",
-          justifyContent:"space-between",
-          paddingTop:"10px",
-          borderTop:"1px solid #f0ece6"
-        }}>
-          {isAssignment ? (
+            <p style={{
+              fontSize:"15px",fontWeight:500,
+              color:"#1a1614",margin:0,flex:1,
+              overflow:"hidden",
+              textOverflow:"ellipsis",
+              whiteSpace:"nowrap",
+              paddingRight:"8px"
+            }}>{task.title}</p>
             <div style={{
-              fontSize:"12px",color:"#8a7060",
-              display:"flex",alignItems:"center",
-              gap:"6px",flexWrap:"wrap"
+              display:"flex",flexDirection:"column",
+              alignItems:"flex-end",gap:"3px",
+              flexShrink:0
             }}>
-              <span style={{fontWeight:700,color:"#1e3a2f"}}>You</span>
-              <span>→</span>
-              <AssigneeAvatars assignees={task.assignees}/>
-              <span>
-                {task.assignees.map(a =>
-                  a.assigneeName ??
-                  a.assigneeEmail.split("@")[0]
-                ).join(", ")}
+              <span style={{
+                fontSize:"11px",color:"#8a7060"
+              }}>
+                {timeAgo(task.updatedAt)}
               </span>
-              <span style={{color:"#c0b8b0"}}>·</span>
-              <span>{timeAgo(task.updatedAt)}</span>
-            </div>
-          ) : (
-          <div style={{
-            display:"flex",alignItems:"center",gap:"6px"
-          }}>
-            <Avatar
-              name={task.assignedByName??task.raisedByName}
-              email={task.assignedByEmail??task.raisedByEmail}
-              size={20}
-            />
-            <span style={{
-              fontSize:"11px",color:"#8a7060"
-            }}>
-              {task.assignedByEmail === myEmail
-                ? "You"
-                : task.assignedByName ??
-                  task.assignedByEmail?.split("@")[0] ??
-                  task.raisedByName ??
-                  task.raisedByEmail.split("@")[0]}
-            </span>
-            {task.assignees.length>0&&(
-              <>
+              {overdue&&(
                 <span style={{
-                  fontSize:"11px",color:"#c0b8b0"
-                }}>→</span>
-                <AssigneeAvatars assignees={task.assignees}/>
-              </>
-            )}
+                  fontSize:"9px",fontWeight:700,
+                  color:"#dc2626",
+                  background:"#fee2e2",
+                  padding:"1px 6px",
+                  borderRadius:"999px"
+                }}>Overdue</span>
+              )}
+            </div>
           </div>
-          )}
-          {!isAssignment && task.dueDate&&task.status!=="RESOLVED"&&(
-            <span style={{
-              fontSize:"10px",fontWeight:600,
-              color:overdue?"#dc2626":"#8a7060"
+          <div style={{
+            display:"flex",alignItems:"center",
+            justifyContent:"space-between"
+          }}>
+            <p style={{
+              fontSize:"13px",color:"#8a7060",
+              margin:0,flex:1,overflow:"hidden",
+              textOverflow:"ellipsis",
+              whiteSpace:"nowrap"
             }}>
-              📅{new Date(task.dueDate)
-                .toLocaleDateString("en-IN",
-                  {day:"numeric",month:"short"})}
-            </span>
-          )}
+              {isAssignment
+                ?`You → ${task.assignees.map(a=>
+                    a.assigneeName??
+                    a.assigneeEmail.split("@")[0]
+                  ).join(", ")||"(unassigned)"}`
+                :`${assignerName} • ${
+                    task.description?.slice(0,35)||
+                    "No description"
+                  }${(task.description?.length||0)>35
+                    ?"...":""}`
+              }
+            </p>
+            <div style={{
+              display:"flex",alignItems:"center",
+              gap:"6px",flexShrink:0,marginLeft:"8px"
+            }}>
+              {(task._count?.events||0)>0&&(
+                <span style={{
+                  fontSize:"11px",color:"#8a7060"
+                }}>
+                  💬{task._count!.events}
+                </span>
+              )}
+              <StatusPill s={task.status} small/>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -875,12 +1018,12 @@ export default function TasksApp() {
         setView("new");
       }} style={{
         position:"fixed",bottom:"76px",right:"16px",
-        width:"52px",height:"52px",borderRadius:"16px",
-        border:"none",background:"#1e3a2f",
-        color:"#f5d88a",fontSize:"26px",
+        width:"52px",height:"52px",borderRadius:"50%",
+        border:"none",background:"#25D366",
+        color:"#fff",fontSize:"26px",
         cursor:"pointer",display:"flex",
         alignItems:"center",justifyContent:"center",
-        boxShadow:"0 4px 16px rgba(30,58,47,.35)",
+        boxShadow:"0 4px 16px rgba(37,211,102,.35)",
         zIndex:90
       }}>+</button>
     );
@@ -891,21 +1034,24 @@ export default function TasksApp() {
     <>
       <style>{CSS}</style>
       <div style={{
-        minHeight:"100dvh",background:"#1e3a2f",
+        minHeight:"100dvh",background:"#075E54",
         display:"flex",flexDirection:"column",
         alignItems:"center",justifyContent:"center",
         padding:"24px",maxWidth:"480px",margin:"0 auto"
       }}>
-        {/* Brand */}
         <div style={{textAlign:"center",marginBottom:"32px"}}>
           <div style={{
-            width:"80px",height:"80px",
-            borderRadius:"24px",margin:"0 auto 16px",
-            background:"rgba(200,150,10,.2)",
+            width:80,height:80,borderRadius:"20px",
+            overflow:"hidden",margin:"0 auto 16px",
             border:"2px solid rgba(200,150,10,.4)",
-            display:"flex",alignItems:"center",
-            justifyContent:"center",fontSize:"40px"
-          }}>☸</div>
+            background:"rgba(0,0,0,.2)"
+          }}>
+            <img src={LOGO_PATH} alt="Sarveda"
+              style={{
+                width:"100%",height:"100%",
+                objectFit:"cover"
+              }}/>
+          </div>
           <h1 style={{
             fontSize:"30px",fontWeight:900,
             color:"#fffbf5",letterSpacing:"-0.5px"
@@ -983,11 +1129,28 @@ export default function TasksApp() {
                 color:"#fca5a5",fontSize:"13px",
                 marginBottom:"12px",textAlign:"center"
               }}>{lErr}</p>}
+              <div style={{
+                display:"flex",alignItems:"center",
+                gap:"8px",marginBottom:"12px"
+              }}>
+                <input type="checkbox" id="rm"
+                  checked={rememberMe}
+                  onChange={e=>setRememberMe(e.target.checked)}
+                  style={{
+                    width:16,height:16,cursor:"pointer",
+                    accentColor:"#25D366"
+                  }}/>
+                <label htmlFor="rm" style={{
+                  fontSize:"13px",
+                  color:"rgba(255,255,255,.7)",
+                  cursor:"pointer"
+                }}>Remember me for 90 days</label>
+              </div>
               <button type="submit" disabled={lLoading}
                 style={{
                   width:"100%",padding:"14px",
                   borderRadius:"14px",border:"none",
-                  background:"#c8960a",color:"#1e3a2f",
+                  background:"#25D366",color:"#fff",
                   fontWeight:900,fontSize:"15px",
                   cursor:"pointer"
                 }}>
@@ -1002,11 +1165,28 @@ export default function TasksApp() {
                     color:"#fca5a5",fontSize:"13px",
                     marginBottom:"12px",textAlign:"center"
                   }}>{lErr}</p>}
+                  <div style={{
+                    display:"flex",alignItems:"center",
+                    gap:"8px",marginBottom:"12px"
+                  }}>
+                    <input type="checkbox" id="rm-otp"
+                      checked={rememberMe}
+                      onChange={e=>setRememberMe(e.target.checked)}
+                      style={{
+                        width:16,height:16,cursor:"pointer",
+                        accentColor:"#25D366"
+                      }}/>
+                    <label htmlFor="rm-otp" style={{
+                      fontSize:"13px",
+                      color:"rgba(255,255,255,.7)",
+                      cursor:"pointer"
+                    }}>Remember me for 90 days</label>
+                  </div>
                   <button type="submit"
                     disabled={lLoading} style={{
                     width:"100%",padding:"14px",
                     borderRadius:"14px",border:"none",
-                    background:"#c8960a",color:"#1e3a2f",
+                    background:"#25D366",color:"#fff",
                     fontWeight:900,fontSize:"15px",
                     cursor:"pointer",marginTop:"6px"
                   }}>
@@ -1043,7 +1223,7 @@ export default function TasksApp() {
                     disabled={lLoading} style={{
                     width:"100%",padding:"14px",
                     borderRadius:"14px",border:"none",
-                    background:"#c8960a",color:"#1e3a2f",
+                    background:"#25D366",color:"#fff",
                     fontWeight:900,fontSize:"15px",
                     cursor:"pointer"
                   }}>
@@ -1077,109 +1257,20 @@ export default function TasksApp() {
     </>
   );
 
-  // ── DASHBOARD VIEW ────────────────────────────────────
-  if (view==="dashboard") return (
+  // ── HOME VIEW ────────────────────────────────────────
+  if (view==="home") return (
     <>
       <style>{CSS}</style>
       <div style={{
-        minHeight:"100dvh",background:"#f0ece6",
-        paddingBottom:"130px"
+        minHeight:"100dvh",background:"#ECE5DD",
+        paddingBottom:"140px"
       }}>
-        <div style={{
-          background:"linear-gradient(135deg,#1e3a2f,#2d5240)",
-          padding:"16px 16px 24px"
-        }}>
-          <div style={{
-            display:"flex",alignItems:"center",
-            justifyContent:"space-between",
-            marginBottom:"16px"
-          }}>
-            <div>
-              <p style={{
-                fontSize:"13px",color:"#a8d5b5"
-              }}>Good day 👋</p>
-              <h1 style={{
-                fontSize:"22px",fontWeight:900,
-                color:"#fffbf5",letterSpacing:"-0.4px"
-              }}>
-                {myName?.split(" ")[0]||"Team"}
-              </h1>
-            </div>
-            <div style={{
-              display:"flex",alignItems:"center",gap:"10px"
-            }}>
-              {/* Notification bell */}
-              <button onClick={()=>{
-                setView("notifications");
-                void markAllRead();
-              }} style={{
-                position:"relative",
-                background:"rgba(255,255,255,.1)",
-                border:"none",color:"#f5d88a",
-                width:40,height:40,borderRadius:"12px",
-                cursor:"pointer",fontSize:"20px",
-                display:"flex",alignItems:"center",
-                justifyContent:"center"
-              }}>
-                🔔
-                {unreadCount>0&&(
-                  <div style={{
-                    position:"absolute",top:-4,right:-4,
-                    width:18,height:18,borderRadius:"50%",
-                    background:"#dc2626",color:"#fff",
-                    fontSize:"10px",fontWeight:800,
-                    display:"flex",alignItems:"center",
-                    justifyContent:"center",
-                    border:"2px solid #1e3a2f"
-                  }}>{unreadCount>9?"9+":unreadCount}</div>
-                )}
-              </button>
-              <Avatar name={myName} email={myEmail} size={40}/>
-            </div>
-          </div>
-
-          {/* Stats cards */}
-          <div style={{
-            display:"grid",
-            gridTemplateColumns:"repeat(4,1fr)",
-            gap:"8px"
-          }}>
-            {[
-              {label:"Total",n:dashStats.total,
-               color:"#f5d88a",bg:"rgba(245,216,138,.15)"},
-              {label:"Open",n:dashStats.open,
-               color:"#fca5a5",bg:"rgba(220,38,38,.2)"},
-              {label:"Active",n:dashStats.inProgress,
-               color:"#93c5fd",bg:"rgba(59,130,246,.2)"},
-              {label:"Done",n:dashStats.resolved,
-               color:"#86efac",bg:"rgba(34,197,94,.2)"},
-            ].map(s=>(
-              <div key={s.label} style={{
-                background:s.bg,borderRadius:"12px",
-                padding:"10px 8px",textAlign:"center"
-              }}>
-                <div style={{
-                  fontSize:"20px",fontWeight:900,
-                  color:s.color,lineHeight:1
-                }}>{s.n}</div>
-                <div style={{
-                  fontSize:"9px",fontWeight:700,
-                  color:"rgba(255,255,255,.6)",
-                  textTransform:"uppercase",
-                  letterSpacing:"0.06em",marginTop:"3px"
-                }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
+        <MainHeader/>
         <StatusTabs/>
-
-        {/* Task list */}
-        <div style={{padding:"12px 16px"}}>
-          {dashTasks.length===0?(
+        <div>
+          {myTasks.length===0?(
             <div style={{
-              textAlign:"center",padding:"60px 0",
+              textAlign:"center",padding:"60px 16px",
               color:"#8a7060"
             }}>
               <div style={{
@@ -1194,20 +1285,15 @@ export default function TasksApp() {
               </p>
             </div>
           ):(
-            dashTasks
-              .filter(t=>{
-                if (statusFilter==="RESOLVED")
-                  return t.status==="RESOLVED"||
-                         t.status==="REOPENED";
-                return t.status===statusFilter;
-              })
+            myTasks
+              .filter(t=>taskMatchesFilter(t.status,statusFilter))
               .map(t=>(
                 <TaskCard key={t.id} task={t}
                   onClick={async()=>{
                     setLoading(true);
                     await loadDetail(t.id);
                     setLoading(false);
-                    prevView.current="dashboard";
+                    prevView.current="home";
                     setView("detail");
                   }}/>
               ))
@@ -1228,7 +1314,7 @@ export default function TasksApp() {
         }}>
           <div style={{
             width:34, height:34, borderRadius:"50%",
-            background:"#1e3a2f", color:"#f5d88a",
+            background:"#25D366", color:"#fff",
             display:"flex", alignItems:"center",
             justifyContent:"center", fontSize:"18px",
             flexShrink:0, cursor:"pointer"
@@ -1236,7 +1322,7 @@ export default function TasksApp() {
             onClick={()=>{
               setNtParentId(null);
               setNtParentTitle(null);
-              prevView.current="dashboard";
+              prevView.current="home";
               setView("new");
             }}>
             +
@@ -1263,7 +1349,7 @@ export default function TasksApp() {
               disabled={quickSubmitting}
               style={{
                 width:34, height:34, borderRadius:"50%",
-                background:"#1e3a2f", color:"#f5d88a",
+                background:"#25D366", color:"#fff",
                 border:"none", cursor:"pointer",
                 display:"flex", alignItems:"center",
                 justifyContent:"center", fontSize:"18px",
@@ -1278,82 +1364,20 @@ export default function TasksApp() {
     </>
   );
 
-  // ── MY TASKS VIEW ─────────────────────────────────────
-  if (view==="mytasks") return (
+  // ── ASSIGNED VIEW ─────────────────────────────────────
+  if (view==="assigned") return (
     <>
       <style>{CSS}</style>
       <div style={{
-        minHeight:"100dvh",background:"#f0ece6",
+        minHeight:"100dvh",background:"#ECE5DD",
         paddingBottom:"80px"
       }}>
-        <Header title="My Tasks"
-          actions={
-            <span style={{
-              fontSize:"11px",color:"rgba(245,216,138,.7)"
-            }}>
-              Assigned to me
-            </span>
-          }/>
+        <MainHeader/>
         <StatusTabs/>
-        <div style={{padding:"12px 16px"}}>
-          {myTasks.length===0?(
-            <div style={{
-              textAlign:"center",padding:"60px 0",
-              color:"#8a7060"
-            }}>
-              <div style={{
-                fontSize:"48px",marginBottom:"12px"
-              }}>✅</div>
-              <p style={{
-                fontSize:"16px",fontWeight:700,
-                color:"#2c2420"
-              }}>No tasks assigned to you</p>
-            </div>
-          ):(
-            myTasks
-              .filter(t=>{
-                if (statusFilter==="RESOLVED")
-                  return t.status==="RESOLVED"||
-                         t.status==="REOPENED";
-                return t.status===statusFilter;
-              })
-              .map(t=>(
-                <TaskCard key={t.id} task={t}
-                  onClick={async()=>{
-                    await loadDetail(t.id);
-                    prevView.current="mytasks";
-                    setView("detail");
-                  }}/>
-              ))
-          )}
-        </div>
-        <FAB/>
-        <BottomNav/>
-      </div>
-    </>
-  );
-
-  // ── MY ASSIGNMENTS VIEW ───────────────────────────────
-  if (view==="myassignments") return (
-    <>
-      <style>{CSS}</style>
-      <div style={{
-        minHeight:"100dvh",background:"#f0ece6",
-        paddingBottom:"80px"
-      }}>
-        <Header title="My Assignments"
-          actions={
-            <span style={{
-              fontSize:"11px",color:"rgba(245,216,138,.7)"
-            }}>
-              Tasks I created
-            </span>
-          }/>
-        <StatusTabs/>
-        <div style={{padding:"12px 16px"}}>
+        <div>
           {myAssignments.length===0?(
             <div style={{
-              textAlign:"center",padding:"60px 0",
+              textAlign:"center",padding:"60px 16px",
               color:"#8a7060"
             }}>
               <div style={{
@@ -1369,18 +1393,83 @@ export default function TasksApp() {
             </div>
           ):(
             myAssignments
-              .filter(t=>{
-                if (statusFilter==="RESOLVED")
-                  return t.status==="RESOLVED"||
-                         t.status==="REOPENED";
-                return t.status===statusFilter;
-              })
+              .filter(t=>taskMatchesFilter(t.status,statusFilter))
               .map(t=>(
                 <TaskCard key={t.id} task={t}
                   isAssignment
                   onClick={async()=>{
                     await loadDetail(t.id);
-                    prevView.current="myassignments";
+                    prevView.current="assigned";
+                    setView("detail");
+                  }}/>
+              ))
+          )}
+        </div>
+        <FAB/>
+        <BottomNav/>
+      </div>
+    </>
+  );
+
+  // ── ALL TASKS VIEW ────────────────────────────────────
+  if (view==="alltasks") return (
+    <>
+      <style>{CSS}</style>
+      <div style={{
+        minHeight:"100dvh",background:"#ECE5DD",
+        paddingBottom:"80px"
+      }}>
+        <MainHeader/>
+        <div style={{
+          background:"#128C7E",
+          padding:"8px 16px",
+          display:"grid",
+          gridTemplateColumns:"repeat(4,1fr)",gap:"6px"
+        }}>
+          {[
+            {n:dashStats.total,l:"Total",c:"#fff"},
+            {n:dashStats.open,l:"New",c:"#86efac"},
+            {n:dashStats.inProgress,l:"Active",c:"#93c5fd"},
+            {n:dashStats.resolved,l:"Closed",c:"#d1d5db"},
+          ].map(s=>(
+            <div key={s.l} style={{
+              textAlign:"center",
+              background:"rgba(0,0,0,.15)",
+              borderRadius:"8px",padding:"6px 4px"
+            }}>
+              <div style={{
+                fontSize:"18px",fontWeight:700,color:s.c
+              }}>{s.n}</div>
+              <div style={{
+                fontSize:"9px",color:"rgba(255,255,255,.7)",
+                fontWeight:600
+              }}>{s.l}</div>
+            </div>
+          ))}
+        </div>
+        <StatusTabs/>
+        <div>
+          {dashTasks.length===0?(
+            <div style={{
+              textAlign:"center",padding:"60px 16px",
+              color:"#8a7060"
+            }}>
+              <div style={{
+                fontSize:"48px",marginBottom:"12px"
+              }}>📋</div>
+              <p style={{
+                fontSize:"16px",fontWeight:700,
+                color:"#2c2420"
+              }}>No tasks found</p>
+            </div>
+          ):(
+            dashTasks
+              .filter(t=>taskMatchesFilter(t.status,statusFilter))
+              .map(t=>(
+                <TaskCard key={t.id} task={t}
+                  onClick={async()=>{
+                    await loadDetail(t.id);
+                    prevView.current="alltasks";
                     setView("detail");
                   }}/>
               ))
@@ -1397,261 +1486,338 @@ export default function TasksApp() {
     <>
       <style>{CSS}</style>
       <div style={{
-        minHeight:"100dvh",background:"#f0ece6",
+        minHeight:"100dvh",background:"#fff",
         paddingBottom:"40px"
       }}>
-        <Header title={ntParentId
-          ?"Add Sub-task":"New Task"}
-          back onBack={()=>setView(prevView.current)}/>
+        <DetailHeader
+          title={ntParentId?"Add Sub-task":"New Task"}
+          onBack={()=>setView(prevView.current)}
+        />
 
         <form onSubmit={e=>void handleCreateTask(e)}
           style={{padding:"16px"}}>
 
-          {/* Parent banner */}
           {ntParentTitle&&(
             <div className="fade" style={{
-              background:"#f0fdf4",
-              border:"1px solid #bbf7d0",
-              borderRadius:"12px",padding:"12px",
+              background:"#e7f8ef",
+              borderLeft:"4px solid #25D366",
+              borderRadius:"8px",padding:"10px 14px",
               marginBottom:"16px"
             }}>
               <p style={{
-                fontSize:"11px",color:"#166534",
-                fontWeight:700,
-                textTransform:"uppercase",
-                letterSpacing:"0.08em"
-              }}>Sub-task of</p>
+                fontSize:"11px",color:"#075E54",
+                fontWeight:700,margin:0
+              }}>↳ Sub-task of</p>
               <p style={{
-                fontSize:"14px",color:"#2c2420",
-                fontWeight:600,marginTop:"2px"
+                fontSize:"14px",color:"#1a1614",
+                fontWeight:600,margin:"2px 0 0"
               }}>{ntParentTitle}</p>
             </div>
           )}
 
-          {/* Title */}
-          <div style={{marginBottom:"16px",display:"none"}}>
-            <label style={{
-              fontSize:"11px",fontWeight:700,
-              color:"#8a7060",
-              textTransform:"uppercase",
-              letterSpacing:"0.1em",
-              display:"block",marginBottom:"8px"
-            }}>Title *</label>
-            <input className="input"
-              value={ntTitle}
-              onChange={e=>setNtTitle(e.target.value)}
-              placeholder="What needs to be done?"/>
+          {/* TO field */}
+          <div style={{marginBottom:"14px",position:"relative"}}>
+            <div style={{
+              display:"flex",alignItems:"flex-start",gap:"10px",
+              borderBottom:"1px solid #e0d8ce",
+              paddingBottom:"10px"
+            }}>
+              <span style={{
+                fontSize:"13px",fontWeight:700,
+                color:"#075E54",paddingTop:"6px",
+                minWidth:"32px"
+              }}>To</span>
+              <div style={{
+                flex:1,display:"flex",flexWrap:"wrap",
+                gap:"6px",alignItems:"center"
+              }}>
+                {ntAssignees.map(email=>{
+                  const m = members.find(x=>x.email===email);
+                  return (
+                    <span key={email} style={{
+                      display:"inline-flex",alignItems:"center",
+                      gap:"4px",background:"#e7f8ef",
+                      borderRadius:"999px",padding:"3px 8px 3px 3px",
+                      fontSize:"12px",fontWeight:600,color:"#075E54"
+                    }}>
+                      <Avatar
+                        name={m?.name} email={email} size={22}/>
+                      {m?.name??email.split("@")[0]}
+                      <button type="button"
+                        onClick={()=>setNtAssignees(
+                          ntAssignees.filter(e=>e!==email)
+                        )}
+                        style={{
+                          background:"none",border:"none",
+                          color:"#075E54",cursor:"pointer",
+                          fontSize:"14px",lineHeight:1,padding:0
+                        }}>×</button>
+                    </span>
+                  );
+                })}
+                <button type="button"
+                  onClick={()=>setShowMemberPicker(
+                    showMemberPicker==="to"?null:"to"
+                  )}
+                  style={{
+                    background:"none",border:"none",
+                    color:"#25D366",fontSize:"13px",
+                    fontWeight:600,cursor:"pointer",padding:"4px 0"
+                  }}>
+                  {ntAssignees.length===0?"+ Add people":"+ Add"}
+                </button>
+              </div>
+            </div>
+            {showMemberPicker==="to"&&(
+              <div style={{
+                position:"absolute",left:0,right:0,top:"100%",
+                marginTop:"4px",background:"#fff",
+                border:"1px solid #e0d8ce",
+                borderRadius:"12px",boxShadow:"0 8px 24px rgba(0,0,0,.12)",
+                maxHeight:"220px",overflowY:"auto",zIndex:60
+              }}>
+                {members
+                  .filter(m=>m.email!==myEmail)
+                  .map(m=>{
+                    const sel = ntAssignees.includes(m.email);
+                    return (
+                      <div key={m.email}
+                        onClick={()=>{
+                          setNtAssignees(sel
+                            ?ntAssignees.filter(e=>e!==m.email)
+                            :[...ntAssignees,m.email]);
+                        }}
+                        style={{
+                          display:"flex",alignItems:"center",
+                          gap:"10px",padding:"10px 14px",
+                          cursor:"pointer",
+                          background:sel?"#e7f8ef":"transparent"
+                        }}>
+                        <Avatar name={m.name} email={m.email} size={32}/>
+                        <div style={{flex:1}}>
+                          <p style={{
+                            fontSize:"13px",fontWeight:600,
+                            color:"#1a1614",margin:0
+                          }}>
+                            {m.name??m.email.split("@")[0]}
+                          </p>
+                          <p style={{
+                            fontSize:"11px",color:"#8a7060",margin:0
+                          }}>{m.email}</p>
+                        </div>
+                        {sel&&<span style={{color:"#25D366"}}>✓</span>}
+                      </div>
+                    );
+                  })}
+                {members.filter(m=>m.email!==myEmail).length===0&&(
+                  <p style={{
+                    padding:"16px",textAlign:"center",
+                    color:"#8a7060",fontSize:"13px"
+                  }}>No team members found</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* TAG field */}
+          <div style={{marginBottom:"16px",position:"relative"}}>
+            <div style={{
+              display:"flex",alignItems:"flex-start",gap:"10px",
+              borderBottom:"1px solid #e0d8ce",
+              paddingBottom:"10px"
+            }}>
+              <span style={{
+                fontSize:"13px",fontWeight:700,
+                color:"#075E54",paddingTop:"6px",
+                minWidth:"32px"
+              }}>Tag</span>
+              <div style={{
+                flex:1,display:"flex",flexWrap:"wrap",
+                gap:"6px",alignItems:"center"
+              }}>
+                {ntTagged.map(email=>{
+                  const m = members.find(x=>x.email===email);
+                  return (
+                    <span key={email} style={{
+                      display:"inline-flex",alignItems:"center",
+                      gap:"4px",background:"#fef3c7",
+                      borderRadius:"999px",padding:"3px 8px 3px 3px",
+                      fontSize:"12px",fontWeight:600,color:"#92400e"
+                    }}>
+                      <Avatar
+                        name={m?.name} email={email} size={22}/>
+                      {m?.name??email.split("@")[0]}
+                      <button type="button"
+                        onClick={()=>setNtTagged(
+                          ntTagged.filter(e=>e!==email)
+                        )}
+                        style={{
+                          background:"none",border:"none",
+                          color:"#92400e",cursor:"pointer",
+                          fontSize:"14px",lineHeight:1,padding:0
+                        }}>×</button>
+                    </span>
+                  );
+                })}
+                <button type="button"
+                  onClick={()=>setShowMemberPicker(
+                    showMemberPicker==="tag"?null:"tag"
+                  )}
+                  style={{
+                    background:"none",border:"none",
+                    color:"#d97706",fontSize:"13px",
+                    fontWeight:600,cursor:"pointer",padding:"4px 0"
+                  }}>
+                  {ntTagged.length===0?"+ Tag people":"+ Add"}
+                </button>
+              </div>
+            </div>
+            {showMemberPicker==="tag"&&(
+              <div style={{
+                position:"absolute",left:0,right:0,top:"100%",
+                marginTop:"4px",background:"#fff",
+                border:"1px solid #e0d8ce",
+                borderRadius:"12px",boxShadow:"0 8px 24px rgba(0,0,0,.12)",
+                maxHeight:"220px",overflowY:"auto",zIndex:60
+              }}>
+                {members
+                  .filter(m=>m.email!==myEmail)
+                  .map(m=>{
+                    const sel = ntTagged.includes(m.email);
+                    return (
+                      <div key={m.email}
+                        onClick={()=>{
+                          setNtTagged(sel
+                            ?ntTagged.filter(e=>e!==m.email)
+                            :[...ntTagged,m.email]);
+                        }}
+                        style={{
+                          display:"flex",alignItems:"center",
+                          gap:"10px",padding:"10px 14px",
+                          cursor:"pointer",
+                          background:sel?"#fef3c7":"transparent"
+                        }}>
+                        <Avatar name={m.name} email={m.email} size={32}/>
+                        <div style={{flex:1}}>
+                          <p style={{
+                            fontSize:"13px",fontWeight:600,
+                            color:"#1a1614",margin:0
+                          }}>
+                            {m.name??m.email.split("@")[0]}
+                          </p>
+                          <p style={{
+                            fontSize:"11px",color:"#8a7060",margin:0
+                          }}>{m.email}</p>
+                        </div>
+                        {sel&&<span style={{color:"#d97706"}}>✓</span>}
+                      </div>
+                    );
+                  })}
+                {members.filter(m=>m.email!==myEmail).length===0&&(
+                  <p style={{
+                    padding:"16px",textAlign:"center",
+                    color:"#8a7060",fontSize:"13px"
+                  }}>No team members found</p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Description */}
           <div style={{marginBottom:"16px"}}>
-            <label style={{
-              fontSize:"11px",fontWeight:700,
-              color:"#8a7060",
-              textTransform:"uppercase",
-              letterSpacing:"0.1em",
-              display:"block",marginBottom:"8px"
-            }}>Description</label>
-            <textarea className="input"
+            <textarea
               value={ntDesc}
               onChange={e=>setNtDesc(e.target.value)}
-              placeholder="Add more context..."
-              rows={3}
+              placeholder="Describe the task... *"
+              required
+              rows={4}
               style={{
-                resize:"none",lineHeight:1.6
+                width:"100%",border:"none",outline:"none",
+                fontSize:"15px",lineHeight:1.6,
+                color:"#1a1614",resize:"none",
+                fontFamily:"inherit",background:"transparent"
               }}/>
           </div>
 
-          {/* Priority + Due date */}
-          <div style={{
-            display:"grid",
-            gridTemplateColumns:"1fr 1fr",
-            gap:"12px",marginBottom:"16px"
-          }}>
-            <div>
-              <label style={{
-                fontSize:"11px",fontWeight:700,
-                color:"#8a7060",
-                textTransform:"uppercase",
-                letterSpacing:"0.1em",
-                display:"block",marginBottom:"8px"
-              }}>Priority</label>
-              <div style={{
-                display:"flex",flexDirection:"column",
-                gap:"6px"
-              }}>
-                {(["LOW","MEDIUM","HIGH"] as Priority[])
-                  .map(p=>(
-                  <button key={p} type="button"
-                    onClick={()=>setNtPriority(p)}
-                    style={{
-                      padding:"8px 10px",borderRadius:"10px",
-                      border:"1.5px solid",
-                      borderColor:ntPriority===p
-                        ?PC[p]:"#e0d8ce",
-                      background:ntPriority===p
-                        ?PB[p]:"#fff",
-                      color:ntPriority===p
-                        ?PC[p]:"#8a7060",
-                      fontSize:"12px",fontWeight:700,
-                      cursor:"pointer",textAlign:"left",
-                      display:"flex",alignItems:"center",
-                      gap:"6px"
-                    }}>
-                    <div style={{
-                      width:8,height:8,
-                      borderRadius:"50%",
-                      background:ntPriority===p
-                        ?PC[p]:"#d0c8c0"
-                    }}/>
-                    {p}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label style={{
-                fontSize:"11px",fontWeight:700,
-                color:"#8a7060",
-                textTransform:"uppercase",
-                letterSpacing:"0.1em",
-                display:"block",marginBottom:"8px"
-              }}>Due Date</label>
-              <input type="date" className="input"
-                value={ntDueDate}
-                onChange={e=>setNtDueDate(e.target.value)}
-                style={{marginBottom:"0"}}/>
+          {/* Priority pills */}
+          <div style={{marginBottom:"16px"}}>
+            <p style={{
+              fontSize:"11px",fontWeight:700,
+              color:"#8a7060",textTransform:"uppercase",
+              letterSpacing:"0.08em",marginBottom:"8px"
+            }}>Priority</p>
+            <div style={{display:"flex",gap:"8px"}}>
+              {(["LOW","MEDIUM","HIGH"] as Priority[]).map(p=>(
+                <button key={p} type="button"
+                  onClick={()=>setNtPriority(p)}
+                  style={{
+                    padding:"6px 14px",borderRadius:"999px",
+                    border:"1.5px solid",
+                    borderColor:ntPriority===p?PC[p]:"#e0d8ce",
+                    background:ntPriority===p?PB[p]:"#fff",
+                    color:ntPriority===p?PC[p]:"#8a7060",
+                    fontSize:"12px",fontWeight:700,cursor:"pointer"
+                  }}>
+                  {p}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Assignees */}
+          {/* Due date */}
           <div style={{marginBottom:"16px"}}>
-            <label style={{
+            <p style={{
               fontSize:"11px",fontWeight:700,
-              color:"#8a7060",
-              textTransform:"uppercase",
-              letterSpacing:"0.1em",
-              display:"block",marginBottom:"8px"
-            }}>
-              Assign To ({ntAssignees.length} selected)
-            </label>
-            <div style={{
-              background:"#fff",
-              border:"1.5px solid #e0d8ce",
-              borderRadius:"12px",
-              maxHeight:"180px",overflowY:"auto",
-              padding:"4px"
-            }}>
-              {members
-                .filter(m=>m.email!==myEmail)
-                .map(m=>{
-                  const sel = ntAssignees.includes(m.email);
-                  return (
-                    <div key={m.email}
-                      onClick={()=>setNtAssignees(
-                        sel
-                          ?ntAssignees.filter(
-                              e=>e!==m.email)
-                          :[...ntAssignees,m.email]
-                      )}
-                      style={{
-                        display:"flex",
-                        alignItems:"center",
-                        gap:"10px",padding:"10px 12px",
-                        borderRadius:"8px",cursor:"pointer",
-                        background:sel
-                          ?"#f0fdf4":"transparent",
-                        marginBottom:"2px",
-                        transition:"background .15s"
-                      }}>
-                      <Avatar
-                        name={m.name}
-                        email={m.email}
-                        size={32}/>
-                      <div style={{flex:1}}>
-                        <p style={{
-                          fontSize:"13px",
-                          fontWeight:sel?700:500,
-                          color:"#1a1614"
-                        }}>
-                          {m.name??m.email.split("@")[0]}
-                        </p>
-                        <p style={{
-                          fontSize:"11px",color:"#8a7060"
-                        }}>{m.email}</p>
-                      </div>
-                      <div style={{
-                        width:20,height:20,
-                        borderRadius:"50%",
-                        border:`2px solid ${
-                          sel?"#166534":"#d0c8c0"
-                        }`,
-                        background:sel?"#166534":"transparent",
-                        display:"flex",
-                        alignItems:"center",
-                        justifyContent:"center",
-                        color:"#fff",fontSize:"11px",
-                        fontWeight:700,flexShrink:0
-                      }}>
-                        {sel?"✓":""}
-                      </div>
-                    </div>
-                  );
-                })}
-              {members.filter(m=>m.email!==myEmail)
-                .length===0&&(
-                <p style={{
-                  padding:"16px",textAlign:"center",
-                  color:"#8a7060",fontSize:"13px"
-                }}>
-                  No team members found
-                </p>
-              )}
-            </div>
+              color:"#8a7060",textTransform:"uppercase",
+              letterSpacing:"0.08em",marginBottom:"8px"
+            }}>Due Date</p>
+            <input type="date" className="input"
+              value={ntDueDate}
+              onChange={e=>setNtDueDate(e.target.value)}
+              style={{borderRadius:"12px"}}/>
           </div>
 
           {/* Attachments */}
           <div style={{marginBottom:"20px"}}>
-            <label style={{
+            <p style={{
               fontSize:"11px",fontWeight:700,
-              color:"#8a7060",
-              textTransform:"uppercase",
-              letterSpacing:"0.1em",
-              display:"block",marginBottom:"8px"
-            }}>Attachments</label>
+              color:"#8a7060",textTransform:"uppercase",
+              letterSpacing:"0.08em",marginBottom:"8px"
+            }}>Attachments</p>
             <div style={{
-              display:"grid",
-              gridTemplateColumns:"1fr 1fr 1fr",
-              gap:"8px",marginBottom:"8px"
+              display:"flex",gap:"8px",flexWrap:"wrap",
+              marginBottom:"8px"
             }}>
               {[
-                {label:"📷",hint:"Camera",
+                {icon:"📷",label:"Camera",
                   accept:"image/*",cap:"environment"},
-                {label:"🖼",hint:"Gallery",
-                  accept:"image/*,video/*"},
-                {label:"🎤",hint:"Audio",
+                {icon:"🖼",label:"Photo",
+                  accept:"image/*"},
+                {icon:"📄",label:"Document",
+                  accept:".pdf,.doc,.docx,.xls,.xlsx,.txt,application/*"},
+                {icon:"🎤",label:"Audio",
                   accept:"audio/*"},
+                {icon:"🎥",label:"Video",
+                  accept:"video/*"},
               ].map((btn,i)=>(
                 <label key={i} style={{
-                  display:"flex",
-                  flexDirection:"column",
-                  alignItems:"center",
-                  justifyContent:"center",
-                  gap:"4px",padding:"12px 6px",
+                  display:"flex",flexDirection:"column",
+                  alignItems:"center",justifyContent:"center",
+                  gap:"2px",padding:"10px 12px",
                   borderRadius:"12px",
-                  border:"1.5px dashed #e0d8ce",
+                  border:"1px solid #e0d8ce",
                   background:"#fafaf8",
-                  fontSize:"20px",cursor:"pointer",
-                  color:"#8a7060"
+                  fontSize:"18px",cursor:"pointer",
+                  color:"#8a7060",minWidth:"58px"
                 }}>
-                  {btn.label}
+                  {btn.icon}
                   <span style={{
-                    fontSize:"10px",fontWeight:600
-                  }}>{btn.hint}</span>
+                    fontSize:"9px",fontWeight:600
+                  }}>{btn.label}</span>
                   <input type="file"
                     accept={btn.accept}
                     capture={btn.cap as any}
-                    multiple={btn.hint==="Gallery"}
+                    multiple={btn.label!=="Camera"}
                     hidden
                     onChange={e=>{
                       if (e.target.files)
@@ -1667,13 +1833,14 @@ export default function TasksApp() {
               <div key={i} style={{
                 display:"flex",alignItems:"center",
                 gap:"10px",padding:"10px 12px",
-                background:"#fff",borderRadius:"10px",
+                background:"#f9f9f9",borderRadius:"10px",
                 border:"1px solid #e0d8ce",
                 marginBottom:"6px"
               }}>
                 <span style={{fontSize:"18px"}}>
                   {f.type.startsWith("image")?"🖼"
-                   :f.type.startsWith("video")?"🎥":"🎤"}
+                   :f.type.startsWith("video")?"🎥"
+                   :f.type.startsWith("audio")?"🎤":"📄"}
                 </span>
                 <span style={{
                   flex:1,fontSize:"12px",color:"#4a3f38",
@@ -1713,13 +1880,13 @@ export default function TasksApp() {
             style={{
               width:"100%",padding:"15px",
               borderRadius:"14px",border:"none",
-              background:"#1e3a2f",color:"#fffbf5",
+              background:"#25D366",color:"#fff",
               fontWeight:900,fontSize:"15px",
-              cursor:"pointer",
-              boxShadow:"0 4px 12px rgba(30,58,47,.25)"
+              cursor:ntSubmitting?"default":"pointer",
+              opacity:ntSubmitting?0.7:1,
+              boxShadow:"0 4px 12px rgba(37,211,102,.3)"
             }}>
-            {ntSubmitting
-              ?"Creating...":"Create & Assign Task ✓"}
+            {ntSubmitting?"Assigning...":"Assign Task"}
           </button>
         </form>
       </div>
@@ -1731,283 +1898,290 @@ export default function TasksApp() {
     <>
       <style>{CSS}</style>
       <div style={{
-        minHeight:"100dvh",background:"#f0ece6",
-        paddingBottom:"40px"
+        minHeight:"100dvh",height:"100dvh",
+        display:"flex",flexDirection:"column",
+        background:"#ECE5DD",
+        maxWidth:"480px",margin:"0 auto"
       }}>
-        <Header title="Task Details" back
-          onBack={()=>setView(prevView.current)}/>
-
-        <div style={{padding:"16px"}}>
-          {/* Status + Priority */}
-          <div style={{
-            display:"flex",gap:"8px",
-            marginBottom:"14px",flexWrap:"wrap"
-          }}>
-            <StatusPill s={selected.status}/>
-            <PriorityPill p={selected.priority}/>
-            {selected.dueDate&&(
-              <span style={{
-                fontSize:"11px",fontWeight:600,
-                padding:"3px 10px",borderRadius:"999px",
-                background: new Date(selected.dueDate)
-                  <new Date()&&
-                  selected.status!=="RESOLVED"
-                  ?"#fee2e2":"#f3f4f6",
-                color: new Date(selected.dueDate)
-                  <new Date()&&
-                  selected.status!=="RESOLVED"
-                  ?"#dc2626":"#6b7280"
+        <DetailHeader
+          title={selected.title}
+          onBack={()=>setView(prevView.current)}>
+          <select
+            value={selected.priority}
+            onChange={async e=>{
+              const p = e.target.value as Priority;
+              await fetch(`${API}/complaints/${selected.id}`,{
+                method:"PATCH",headers:ah(),
+                body:JSON.stringify({priority:p}),
+              });
+              await loadDetail(selected.id);
+            }}
+            style={{
+              background:"rgba(255,255,255,.15)",
+              border:"none",borderRadius:"8px",
+              color:"#fff",fontSize:"11px",
+              fontWeight:700,padding:"4px 6px",
+              cursor:"pointer",flexShrink:0
+            }}>
+            {(["LOW","MEDIUM","HIGH"] as Priority[]).map(p=>(
+              <option key={p} value={p} style={{color:"#000"}}>
+                {p}
+              </option>
+            ))}
+          </select>
+          <select
+            value={uiStatus(selected.status)}
+            disabled={statusUpdating}
+            onChange={e=>void handleStatusUpdate(
+              e.target.value as Status
+            )}
+            style={{
+              background:"rgba(255,255,255,.15)",
+              border:"none",borderRadius:"8px",
+              color:"#fff",fontSize:"11px",
+              fontWeight:700,padding:"4px 6px",
+              cursor:"pointer",flexShrink:0,
+              opacity:statusUpdating?0.6:1
+            }}>
+            <option value="NEW" style={{color:"#000"}}>New</option>
+            <option value="IN_PROGRESS" style={{color:"#000"}}>
+              In Progress
+            </option>
+            <option value="CLOSED" style={{color:"#000"}}>Closed</option>
+          </select>
+          <div style={{position:"relative",flexShrink:0}}>
+            <button
+              onClick={()=>setShowTaskMenu(!showTaskMenu)}
+              style={{
+                background:"none",border:"none",
+                color:"#fff",fontSize:"20px",
+                cursor:"pointer",padding:"0 4px",
+                lineHeight:1
+              }}>⋮</button>
+            {showTaskMenu&&(
+              <div style={{
+                position:"absolute",right:0,top:"100%",
+                marginTop:"4px",background:"#fff",
+                borderRadius:"10px",
+                boxShadow:"0 4px 16px rgba(0,0,0,.15)",
+                minWidth:"140px",zIndex:60,
+                overflow:"hidden"
               }}>
-                📅 {new Date(selected.dueDate)
-                  .toLocaleDateString("en-IN")}
-              </span>
+                <button
+                  onClick={()=>{
+                    setShowTaskMenu(false);
+                  }}
+                  style={{
+                    display:"block",width:"100%",
+                    padding:"12px 16px",border:"none",
+                    background:"#fff",color:"#8a7060",
+                    fontSize:"13px",fontWeight:600,
+                    textAlign:"left",cursor:"pointer"
+                  }}>
+                  📦 Archive
+                </button>
+                <button
+                  onClick={()=>{
+                    setShowTaskMenu(false);
+                    setShowDeleteConfirm(true);
+                  }}
+                  style={{
+                    display:"block",width:"100%",
+                    padding:"12px 16px",border:"none",
+                    background:"#fff",color:"#dc2626",
+                    fontSize:"13px",fontWeight:600,
+                    textAlign:"left",cursor:"pointer",
+                    borderTop:"1px solid #f0ece6"
+                  }}>
+                  🗑 Delete
+                </button>
+              </div>
             )}
           </div>
+        </DetailHeader>
 
-          {/* Title */}
-          <h2 style={{
-            fontSize:"20px",fontWeight:900,
-            color:"#1a1614",lineHeight:1.3,
-            marginBottom:"12px",
-            letterSpacing:"-0.3px"
-          }}>{selected.title}</h2>
-
-          {/* Description */}
-          {selected.description&&(
-            <div className="card" style={{
-              padding:"14px",marginBottom:"14px"
-            }}>
-              <p style={{
-                fontSize:"14px",color:"#4a3f38",
-                lineHeight:1.7
-              }}>{selected.description}</p>
-            </div>
-          )}
-
-          {/* People card */}
-          <div className="card" style={{
-            padding:"14px",marginBottom:"14px"
+        {/* Meta bar */}
+        <div style={{
+          background:"#128C7E",padding:"8px 16px",
+          display:"flex",alignItems:"center",
+          justifyContent:"space-between",gap:"10px"
+        }}>
+          <div style={{
+            display:"flex",alignItems:"center",gap:"8px"
           }}>
-            {/* Creator */}
-            <div style={{
-              display:"flex",alignItems:"center",
-              gap:"10px",marginBottom:
-                selected.assignees.length>0?"12px":"0"
-            }}>
-              <Avatar
-                name={selected.assignedByName??
-                      selected.raisedByName}
-                email={selected.assignedByEmail??
-                       selected.raisedByEmail}
-                size={36}/>
-              <div style={{flex:1}}>
-                <p style={{
-                  fontSize:"11px",color:"#8a7060",
-                  fontWeight:600,
-                  textTransform:"uppercase",
-                  letterSpacing:"0.08em"
-                }}>Created by</p>
-                <p style={{
-                  fontSize:"13px",fontWeight:700,
-                  color:"#1a1614"
+            {selected.assignees.length>0?(
+              <>
+                <AssigneeAvatars
+                  assignees={selected.assignees} max={4}/>
+                <span style={{
+                  fontSize:"12px",color:"rgba(255,255,255,.85)",
+                  fontWeight:500
                 }}>
-                  {selected.assignedByEmail === myEmail ||
-                   selected.raisedByEmail === myEmail
-                    ? "You"
-                    : selected.assignedByName ??
-                      selected.raisedByName ??
-                      selected.raisedByEmail.split("@")[0]}
-                </p>
-              </div>
+                  {selected.assignees.map(a=>
+                    a.assigneeName??
+                    a.assigneeEmail.split("@")[0]
+                  ).join(", ")}
+                </span>
+              </>
+            ):(
+              <span style={{
+                fontSize:"12px",color:"rgba(255,255,255,.7)"
+              }}>Unassigned</span>
+            )}
+          </div>
+          {selected.dueDate&&(
+            <span style={{
+              fontSize:"11px",fontWeight:600,
+              padding:"3px 10px",borderRadius:"999px",
+              background: !isTaskClosed(selected.status)&&
+                new Date(selected.dueDate)<new Date()
+                ?"rgba(220,38,38,.2)"
+                :"rgba(255,255,255,.15)",
+              color: !isTaskClosed(selected.status)&&
+                new Date(selected.dueDate)<new Date()
+                ?"#fecaca":"rgba(255,255,255,.9)",
+              whiteSpace:"nowrap"
+            }}>
+              📅 {new Date(selected.dueDate)
+                .toLocaleDateString("en-IN")}
+            </span>
+          )}
+        </div>
+
+        {/* Scrollable chat area */}
+        <div style={{
+          flex:1,overflowY:"auto",
+          padding:"12px 16px",
+          display:"flex",flexDirection:"column",gap:"6px"
+        }}>
+          {/* Initial task bubble */}
+          <div style={{
+            display:"flex",justifyContent:"flex-end"
+          }}>
+            <div className="wa-bubble-out">
               <p style={{
-                fontSize:"11px",color:"#b8a898"
+                fontSize:"11px",fontWeight:700,
+                color:"#075E54",marginBottom:"4px"
+              }}>
+                {selected.assignedByEmail===myEmail||
+                 selected.raisedByEmail===myEmail
+                  ?"You"
+                  :selected.assignedByName??
+                   selected.raisedByName??
+                   selected.raisedByEmail.split("@")[0]}
+              </p>
+              {selected.description&&(
+                <p style={{
+                  fontSize:"14px",color:"#1a1614",
+                  lineHeight:1.5,margin:0
+                }}>{selected.description}</p>
+              )}
+              {selected.attachments.length>0&&(
+                <div style={{
+                  display:"flex",gap:"6px",flexWrap:"wrap",
+                  marginTop:"8px"
+                }}>
+                  {selected.attachments.map(a=>(
+                    a.type==="image"?(
+                      <a key={a.id} href={a.s3Url}
+                        target="_blank"
+                        rel="noopener noreferrer">
+                        <img src={a.s3Url} alt=""
+                          style={{
+                            width:64,height:64,
+                            objectFit:"cover",
+                            borderRadius:"8px"
+                          }}/>
+                      </a>
+                    ):(
+                      <a key={a.id} href={a.s3Url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display:"flex",
+                          alignItems:"center",
+                          justifyContent:"center",
+                          width:64,height:64,
+                          borderRadius:"8px",
+                          background:"rgba(0,0,0,.06)",
+                          fontSize:"24px",
+                          textDecoration:"none"
+                        }}>
+                        {a.type==="video"?"🎥"
+                         :a.type==="audio"?"🎤":"📄"}
+                      </a>
+                    )
+                  ))}
+                </div>
+              )}
+              <p style={{
+                fontSize:"10px",color:"#8a7060",
+                textAlign:"right",marginTop:"4px"
               }}>
                 {timeAgo(selected.createdAt)}
               </p>
             </div>
+          </div>
 
-            {/* Assignees */}
-            {selected.assignees.length>0&&(
-              <>
-                <div style={{
-                  height:"1px",
-                  background:"#f0ece6",
-                  margin:"0 -14px 12px"
-                }}/>
-                <p style={{
-                  fontSize:"11px",color:"#8a7060",
-                  fontWeight:600,
-                  textTransform:"uppercase",
-                  letterSpacing:"0.08em",
-                  marginBottom:"10px"
+          {/* Sub-tasks collapsible */}
+          {selected.children&&selected.children.length>0&&(
+            <div style={{margin:"8px 0"}}>
+              <button
+                onClick={()=>setShowSubtasks(s=>({
+                  ...s,
+                  [selected.id]:!s[selected.id]
+                }))}
+                style={{
+                  width:"100%",padding:"10px 14px",
+                  borderRadius:"10px",border:"none",
+                  background:"rgba(255,255,255,.7)",
+                  color:"#075E54",fontSize:"13px",
+                  fontWeight:700,cursor:"pointer",
+                  display:"flex",alignItems:"center",
+                  justifyContent:"space-between"
                 }}>
-                  Assigned to ({selected.assignees.length})
-                </p>
-                <div style={{
-                  display:"flex",flexDirection:"column",
-                  gap:"8px"
-                }}>
-                  {selected.assignees.map(a=>(
-                    <div key={a.id} style={{
-                      display:"flex",
-                      alignItems:"center",gap:"10px"
-                    }}>
-                      <Avatar
-                        name={a.assigneeName}
-                        email={a.assigneeEmail}
-                        size={30}/>
-                      <div style={{flex:1}}>
+                <span>
+                  📋 Sub-tasks ({selected.children.length})
+                </span>
+                <span>{showSubtasks[selected.id]?"▲":"▼"}</span>
+              </button>
+              {showSubtasks[selected.id]&&(
+                <div style={{marginTop:"6px"}}>
+                  {selected.children.map(child=>(
+                    <div key={child.id}
+                      className="pressable"
+                      onClick={async()=>{
+                        await loadDetail(child.id);
+                      }}
+                      style={{
+                        background:"#fff",
+                        borderRadius:"10px",
+                        padding:"10px 12px",
+                        marginBottom:"6px",
+                        display:"flex",
+                        alignItems:"center",
+                        justifyContent:"space-between",
+                        gap:"8px",
+                        boxShadow:"0 1px 2px rgba(0,0,0,.08)"
+                      }}>
+                      <div style={{flex:1,minWidth:0}}>
                         <p style={{
                           fontSize:"13px",fontWeight:600,
-                          color:"#1a1614"
-                        }}>
-                          {a.assigneeName??
-                           a.assigneeEmail.split("@")[0]}
-                        </p>
-                        <p style={{
-                          fontSize:"11px",color:"#8a7060"
-                        }}>{a.assigneeEmail}</p>
+                          color:"#1a1614",margin:0,
+                          overflow:"hidden",
+                          textOverflow:"ellipsis",
+                          whiteSpace:"nowrap"
+                        }}>{child.title}</p>
+                        {child.assignees.length>0&&(
+                          <AssigneeAvatars
+                            assignees={child.assignees}/>
+                        )}
                       </div>
+                      <StatusPill s={child.status} small/>
                     </div>
                   ))}
                 </div>
-              </>
-            )}
-          </div>
-
-          {/* Status update buttons */}
-          <div style={{
-            display:"grid",
-            gridTemplateColumns:"repeat(3,1fr)",
-            gap:"8px",marginBottom:"14px"
-          }}>
-            {(["OPEN","IN_PROGRESS","RESOLVED"] as Status[])
-              .map(s=>(
-              <button key={s}
-                disabled={selected.status===s||
-                           statusUpdating}
-                onClick={()=>void handleStatusUpdate(s)}
-                style={{
-                  padding:"10px 4px",borderRadius:"10px",
-                  border:"1.5px solid",
-                  borderColor:selected.status===s
-                    ?SS[s].color:"#e0d8ce",
-                  background:selected.status===s
-                    ?SS[s].bg:"#fff",
-                  color:selected.status===s
-                    ?SS[s].color:"#8a7060",
-                  fontSize:"11px",fontWeight:700,
-                  cursor:selected.status===s
-                    ?"default":"pointer",
-                  opacity:statusUpdating?0.6:1
-                }}>
-                {SS[s].label}
-              </button>
-            ))}
-          </div>
-
-          {/* Attachments */}
-          {selected.attachments.length>0&&(
-            <div style={{marginBottom:"16px"}}>
-              <p style={{
-                fontSize:"11px",fontWeight:700,
-                color:"#8a7060",
-                textTransform:"uppercase",
-                letterSpacing:"0.1em",marginBottom:"10px"
-              }}>Attachments</p>
-              <div style={{
-                display:"flex",gap:"8px",
-                flexWrap:"wrap"
-              }}>
-                {selected.attachments.map(a=>(
-                  a.type==="image"?(
-                    <a key={a.id} href={a.s3Url}
-                      target="_blank"
-                      rel="noopener noreferrer">
-                      <img src={a.s3Url} alt=""
-                        style={{
-                          width:72,height:72,
-                          objectFit:"cover",
-                          borderRadius:"10px",
-                          border:"1px solid #e0d8ce"
-                        }}/>
-                    </a>
-                  ):(
-                    <a key={a.id} href={a.s3Url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        display:"flex",
-                        alignItems:"center",
-                        justifyContent:"center",
-                        width:72,height:72,
-                        borderRadius:"10px",
-                        border:"1px solid #e0d8ce",
-                        background:"#f4f1ec",
-                        fontSize:"28px",
-                        textDecoration:"none"
-                      }}>
-                      {a.type==="video"?"🎥":"🎤"}
-                    </a>
-                  )
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Sub-tasks */}
-          {selected.children&&
-           selected.children.length>0&&(
-            <div style={{marginBottom:"16px"}}>
-              <p style={{
-                fontSize:"11px",fontWeight:700,
-                color:"#8a7060",
-                textTransform:"uppercase",
-                letterSpacing:"0.1em",
-                marginBottom:"10px"
-              }}>
-                Sub-tasks ({selected.children.length})
-              </p>
-              {selected.children.map(child=>(
-                <div key={child.id}
-                  className="card pressable"
-                  onClick={async()=>{
-                    await loadDetail(child.id);
-                  }}
-                  style={{
-                    padding:"12px 14px",
-                    marginBottom:"8px"
-                  }}>
-                  <div style={{
-                    display:"flex",
-                    alignItems:"center",
-                    justifyContent:"space-between",
-                    gap:"8px"
-                  }}>
-                    <p style={{
-                      fontSize:"13px",fontWeight:600,
-                      color:"#1a1614",flex:1
-                    }}>{child.title}</p>
-                    <StatusPill s={child.status} small/>
-                  </div>
-                  {child.assignees.length>0&&(
-                    <div style={{
-                      marginTop:"8px",
-                      display:"flex",
-                      alignItems:"center",gap:"6px"
-                    }}>
-                      <AssigneeAvatars
-                        assignees={child.assignees}/>
-                      <span style={{
-                        fontSize:"11px",color:"#8a7060"
-                      }}>
-                        {child.assignees.length} assignee
-                        {child.assignees.length>1?"s":""}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ))}
+              )}
             </div>
           )}
 
@@ -2018,164 +2192,86 @@ export default function TasksApp() {
             prevView.current="detail";
             setView("new");
           }} style={{
-            width:"100%",padding:"12px",
-            borderRadius:"12px",
-            border:"1.5px dashed #c8960a",
-            background:"rgba(200,150,10,.04)",
-            color:"#c8960a",fontSize:"13px",
+            alignSelf:"center",padding:"8px 16px",
+            borderRadius:"999px",border:"none",
+            background:"rgba(255,255,255,.7)",
+            color:"#075E54",fontSize:"12px",
             fontWeight:700,cursor:"pointer",
-            marginBottom:"20px",
-            display:"flex",alignItems:"center",
-            justifyContent:"center",gap:"6px"
+            margin:"4px 0 8px"
           }}>
             + Add Sub-task
           </button>
 
-          {/* Query/Comments */}
-          <p style={{
-            fontSize:"11px",fontWeight:700,
-            color:"#8a7060",
-            textTransform:"uppercase",
-            letterSpacing:"0.1em",marginBottom:"12px"
-          }}>
-            Conversation ({selected.events?.length??0})
-          </p>
-
-          {selected.events?.map(ev=>(
-            <div key={ev.id} style={{
-              padding:"12px 14px",borderRadius:"12px",
-              marginBottom:"8px",
-              background:ev.authorType==="ADMIN"
-                ?"#f0fdf4"
-                :ev.authorEmail===myEmail
-                  ?"#eff6ff":"#fff",
-              border:`1px solid ${
-                ev.authorType==="ADMIN"?"#bbf7d0"
-                :ev.authorEmail===myEmail?"#bfdbfe"
-                :"#ede8e0"
-              }`
-            }}>
-              <div style={{
-                display:"flex",
-                justifyContent:"space-between",
-                alignItems:"flex-start",
-                marginBottom:"6px"
-              }}>
-                <div style={{
-                  display:"flex",
-                  alignItems:"center",gap:"8px"
+          {/* Chat events */}
+          {selected.events?.map(ev=>{
+            if (ev.type==="STATUS_CHANGE") {
+              return (
+                <div key={ev.id} style={{
+                  textAlign:"center",margin:"8px 0"
                 }}>
-                  <Avatar email={ev.authorEmail} size={24}/>
                   <span style={{
-                    fontSize:"12px",fontWeight:700,
-                    color:"#1a1614"
+                    fontSize:"11px",color:"#8a7060",
+                    background:"rgba(255,255,255,.6)",
+                    padding:"4px 12px",
+                    borderRadius:"999px",
+                    fontWeight:600
                   }}>
-                    {ev.authorEmail===myEmail
+                    🔄 {ev.message}
+                  </span>
+                  <p style={{
+                    fontSize:"10px",color:"#b8a898",
+                    marginTop:"2px"
+                  }}>
+                    {timeAgo(ev.createdAt)}
+                  </p>
+                </div>
+              );
+            }
+            const isMine = ev.authorEmail===myEmail;
+            return (
+              <div key={ev.id} style={{
+                display:"flex",
+                justifyContent:isMine?"flex-end":"flex-start"
+              }}>
+                <div className={
+                  isMine?"wa-bubble-out":"wa-bubble-in"
+                }>
+                  <p style={{
+                    fontSize:"11px",fontWeight:700,
+                    color:isMine?"#075E54":"#8a7060",
+                    marginBottom:"3px"
+                  }}>
+                    {isMine
                       ?"You"
                       :ev.authorEmail.split("@")[0]}
-                    {ev.authorType==="ADMIN"
-                      ?" (Admin)":""}
-                  </span>
-                </div>
-                <span style={{
-                  fontSize:"10px",color:"#b8a898"
-                }}>
-                  {timeAgo(ev.createdAt)}
-                </span>
-              </div>
-              {ev.type==="STATUS_CHANGE"?(
-                <p style={{
-                  fontSize:"12px",color:"#1e40af",
-                  fontWeight:600,
-                  fontStyle:"italic"
-                }}>
-                  🔄 {ev.message}
-                </p>
-              ):(
-                ev.message&&(
+                    {ev.authorType==="ADMIN"?" (Admin)":""}
+                  </p>
+                  {ev.message&&(
+                    <p style={{
+                      fontSize:"14px",color:"#1a1614",
+                      lineHeight:1.5,margin:0
+                    }}>{ev.message}</p>
+                  )}
                   <p style={{
-                    fontSize:"13px",color:"#4a3f38",
-                    lineHeight:1.6,marginLeft:"32px"
-                  }}>{ev.message}</p>
-                )
-              )}
-            </div>
-          ))}
+                    fontSize:"10px",color:"#8a7060",
+                    textAlign:"right",marginTop:"4px"
+                  }}>
+                    {timeAgo(ev.createdAt)}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
-          {/* Add query form */}
-          <form onSubmit={e=>void handleAddQuery(e)}
-            style={{
-              background:"#fff",borderRadius:"14px",
-              border:"1.5px solid #e0d8ce",
-              padding:"14px",marginTop:"8px"
-            }}>
-            <p style={{
-              fontSize:"12px",fontWeight:700,
-              color:"#8a7060",marginBottom:"10px",
-              textTransform:"uppercase",
-              letterSpacing:"0.08em"
-            }}>Add Query / Update</p>
-            <textarea className="input"
-              value={queryText}
-              onChange={e=>setQueryText(e.target.value)}
-              placeholder="Ask a question or add an update..."
-              rows={2}
-              style={{
-                resize:"none",marginBottom:"10px",
-                lineHeight:1.6
-              }}/>
-            <div style={{
-              display:"flex",
-              justifyContent:"space-between",
-              alignItems:"center"
-            }}>
-              <label style={{
-                display:"flex",alignItems:"center",
-                gap:"6px",padding:"8px 12px",
-                borderRadius:"8px",
-                border:"1px solid #e0d8ce",
-                background:"#fafaf8",
-                fontSize:"12px",fontWeight:600,
-                color:"#8a7060",cursor:"pointer"
-              }}>
-                📎 Attach
-                <input type="file"
-                  accept="image/*,video/*,audio/*"
-                  multiple hidden
-                  onChange={e=>{
-                    if (e.target.files)
-                      setQueryFiles(f=>[
-                        ...f,
-                        ...Array.from(e.target.files!)
-                      ]);
-                  }}/>
-              </label>
-              {queryFiles.length>0&&(
-                <span style={{
-                  fontSize:"11px",color:"#8a7060"
-                }}>
-                  {queryFiles.length} file(s) selected
-                </span>
-              )}
-              <button type="submit"
-                disabled={querySending||
-                  (!queryText.trim()&&
-                   queryFiles.length===0)}
-                style={{
-                  padding:"9px 18px",
-                  borderRadius:"10px",border:"none",
-                  background:"#1e3a2f",color:"#fffbf5",
-                  fontWeight:700,fontSize:"13px",
-                  cursor:"pointer",
-                  opacity:querySending?0.6:1
-                }}>
-                {querySending?"Sending...":"Send"}
-              </button>
-            </div>
-          </form>
-
-          {/* Reopen */}
-          {selected.status==="RESOLVED"&&(
+        {/* Bottom input bar or reopen */}
+        {selected.status==="RESOLVED"?(
+          <div style={{
+            padding:"12px 16px",
+            paddingBottom:
+              "calc(12px + env(safe-area-inset-bottom,0px))",
+            background:"#f0ece6"
+          }}>
             <button onClick={async()=>{
               await fetch(
                 `${API}/complaints/${selected.id}/reopen`,{
@@ -2192,13 +2288,163 @@ export default function TasksApp() {
               borderRadius:"12px",border:"none",
               background:"#c8960a",color:"#fff",
               fontWeight:800,fontSize:"14px",
-              cursor:"pointer",marginTop:"12px",
+              cursor:"pointer",
               boxShadow:"0 4px 12px rgba(200,150,10,.3)"
             }}>
               ↩ Reopen Task
             </button>
-          )}
-        </div>
+          </div>
+        ):!isTaskClosed(selected.status)?(
+          <form onSubmit={e=>void handleAddQuery(e)}
+            style={{
+              display:"flex",alignItems:"flex-end",
+              gap:"8px",padding:"8px 12px",
+              paddingBottom:
+                "calc(8px + env(safe-area-inset-bottom,0px))",
+              background:"#f0ece6"
+            }}>
+            <label style={{
+              display:"flex",alignItems:"center",
+              justifyContent:"center",
+              width:36,height:36,borderRadius:"50%",
+              background:"#fff",cursor:"pointer",
+              flexShrink:0,fontSize:"18px"
+            }}>
+              📎
+              <input type="file"
+                accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
+                multiple hidden
+                onChange={e=>{
+                  if (e.target.files)
+                    setMsgFiles(f=>[
+                      ...f,
+                      ...Array.from(e.target.files!)
+                    ]);
+                }}/>
+            </label>
+            <div style={{
+              flex:1,background:"#fff",
+              borderRadius:"24px",
+              padding:"8px 14px",
+              display:"flex",flexDirection:"column",
+              gap:"4px"
+            }}>
+              <input
+                value={msgInput}
+                onChange={e=>setMsgInput(e.target.value)}
+                onKeyDown={e=>{
+                  if (e.key==="Enter"&&!e.shiftKey) {
+                    e.preventDefault();
+                    if (msgInput.trim()||msgFiles.length>0)
+                      void handleAddQuery(e as any);
+                  }
+                }}
+                placeholder="Type a message..."
+                style={{
+                  border:"none",outline:"none",
+                  fontSize:"14px",color:"#1a1614",
+                  background:"transparent",
+                  fontFamily:"inherit",width:"100%"
+                }}/>
+              {msgFiles.length>0&&(
+                <div style={{
+                  display:"flex",gap:"4px",flexWrap:"wrap"
+                }}>
+                  {msgFiles.map((f,i)=>(
+                    <span key={i} style={{
+                      fontSize:"10px",color:"#8a7060",
+                      background:"#f0ece6",
+                      padding:"2px 8px",
+                      borderRadius:"999px",
+                      display:"flex",alignItems:"center",gap:"4px"
+                    }}>
+                      {f.name.slice(0,20)}
+                      <button type="button"
+                        onClick={()=>setMsgFiles(
+                          msgFiles.filter((_,j)=>j!==i)
+                        )}
+                        style={{
+                          background:"none",border:"none",
+                          color:"#dc2626",cursor:"pointer",
+                          fontSize:"12px",padding:0
+                        }}>×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button type="submit"
+              disabled={querySending||
+                (!msgInput.trim()&&msgFiles.length===0)}
+              style={{
+                width:44,height:44,borderRadius:"50%",
+                border:"none",background:"#25D366",
+                color:"#fff",fontSize:"20px",
+                cursor:"pointer",flexShrink:0,
+                display:"flex",alignItems:"center",
+                justifyContent:"center",
+                opacity:querySending?0.6:1
+              }}>
+              {querySending?"…":"➤"}
+            </button>
+          </form>
+        ):null}
+
+        {/* Delete confirm modal */}
+        {showDeleteConfirm&&(
+          <div style={{
+            position:"fixed",inset:0,
+            background:"rgba(0,0,0,.5)",
+            display:"flex",alignItems:"center",
+            justifyContent:"center",zIndex:200,
+            padding:"24px"
+          }}>
+            <div style={{
+              background:"#fff",borderRadius:"16px",
+              padding:"24px",maxWidth:"320px",
+              width:"100%",textAlign:"center"
+            }}>
+              <p style={{
+                fontSize:"18px",fontWeight:700,
+                color:"#1a1614",marginBottom:"8px"
+              }}>Delete Task?</p>
+              <p style={{
+                fontSize:"14px",color:"#8a7060",
+                marginBottom:"20px",lineHeight:1.5
+              }}>
+                This will permanently delete &ldquo;{selected.title}
+                &rdquo; and all its messages.
+              </p>
+              <div style={{
+                display:"flex",gap:"10px"
+              }}>
+                <button
+                  onClick={()=>setShowDeleteConfirm(false)}
+                  style={{
+                    flex:1,padding:"12px",
+                    borderRadius:"10px",
+                    border:"1px solid #e0d8ce",
+                    background:"#fff",color:"#4a3f38",
+                    fontWeight:700,fontSize:"14px",
+                    cursor:"pointer"
+                  }}>
+                  Cancel
+                </button>
+                <button
+                  onClick={()=>void handleDeleteTask()}
+                  style={{
+                    flex:1,padding:"12px",
+                    borderRadius:"10px",border:"none",
+                    background:"#dc2626",color:"#fff",
+                    fontWeight:700,fontSize:"14px",
+                    cursor:"pointer"
+                  }}>
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
@@ -2208,23 +2454,22 @@ export default function TasksApp() {
     <>
       <style>{CSS}</style>
       <div style={{
-        minHeight:"100dvh",background:"#f0ece6",
+        minHeight:"100dvh",background:"#ECE5DD",
         paddingBottom:"40px"
       }}>
-        <Header title="Notifications" back
-          onBack={()=>setView("dashboard")}
-          actions={
-            <button onClick={()=>void markAllRead()}
-              style={{
-                background:"rgba(255,255,255,.1)",
-                border:"none",color:"#f5d88a",
-                fontSize:"11px",fontWeight:700,
-                padding:"6px 12px",borderRadius:"8px",
-                cursor:"pointer"
-              }}>
-              Mark all read
-            </button>
-          }/>
+        <DetailHeader title="Notifications"
+          onBack={()=>setView("home")}>
+          <button onClick={()=>void markAllRead()}
+            style={{
+              background:"rgba(255,255,255,.15)",
+              border:"none",color:"#fff",
+              fontSize:"11px",fontWeight:700,
+              padding:"6px 12px",borderRadius:"8px",
+              cursor:"pointer",flexShrink:0
+            }}>
+            Mark all read
+          </button>
+        </DetailHeader>
 
         <div style={{padding:"12px 16px"}}>
           {notifications.length===0?(
@@ -2243,7 +2488,7 @@ export default function TasksApp() {
           ):(
             notifications.map(n=>(
               <div key={n.id}
-                className="card pressable fade"
+                className="pressable fade"
                 onClick={async()=>{
                   await loadDetail(n.taskId);
                   prevView.current="notifications";
@@ -2252,10 +2497,12 @@ export default function TasksApp() {
                 style={{
                   padding:"14px",
                   marginBottom:"8px",
+                  background:"#fff",
+                  borderRadius:"12px",
                   borderLeft:`4px solid ${
                     n.type==="HIGH_PRIORITY_OVERDUE"
                       ?"#dc2626"
-                      :n.isRead?"#e0d8ce":"#c8960a"
+                      :n.isRead?"#e0d8ce":"#25D366"
                   }`,
                   opacity:n.isRead?0.7:1
                 }}>
@@ -2290,7 +2537,7 @@ export default function TasksApp() {
                     <div style={{
                       width:8,height:8,
                       borderRadius:"50%",
-                      background:"#c8960a",
+                      background:"#25D366",
                       flexShrink:0,marginTop:"4px"
                     }}/>
                   )}
@@ -2308,15 +2555,14 @@ export default function TasksApp() {
     <>
       <style>{CSS}</style>
       <div style={{
-        minHeight:"100dvh",background:"#f0ece6",
+        minHeight:"100dvh",background:"#ECE5DD",
         paddingBottom:"100px"
       }}>
-        <Header title="My Profile"/>
+        <MainHeader/>
 
         <div style={{padding:"16px"}}>
-          {/* Avatar hero */}
           <div style={{
-            background:"linear-gradient(135deg,#1e3a2f,#2d5240)",
+            background:"linear-gradient(135deg,#075E54,#128C7E)",
             borderRadius:"20px",padding:"28px 20px",
             display:"flex",flexDirection:"column",
             alignItems:"center",marginBottom:"16px"
@@ -2339,10 +2585,10 @@ export default function TasksApp() {
             }}>
               {[
                 {n:myTasks.filter(
-                  t=>t.status!=="RESOLVED").length,
+                  t=>!isTaskClosed(t.status)).length,
                  l:"Active Tasks"},
                 {n:myAssignments.filter(
-                  t=>t.status!=="RESOLVED").length,
+                  t=>!isTaskClosed(t.status)).length,
                  l:"My Assignments"},
               ].map(s=>(
                 <div key={s.l} style={{
@@ -2366,8 +2612,10 @@ export default function TasksApp() {
           </div>
 
           {/* Edit profile */}
-          <div className="card" style={{
-            padding:"16px",marginBottom:"12px"
+          <div style={{
+            padding:"16px",marginBottom:"12px",
+            background:"#fff",borderRadius:"16px",
+            border:"1px solid #e0d8ce"
           }}>
             <p style={{
               fontSize:"14px",fontWeight:700,
@@ -2406,7 +2654,7 @@ export default function TasksApp() {
                 style={{
                   width:"100%",padding:"13px",
                   borderRadius:"12px",border:"none",
-                  background:"#1e3a2f",color:"#fffbf5",
+                  background:"#075E54",color:"#fff",
                   fontWeight:700,fontSize:"14px",
                   cursor:"pointer"
                 }}>
@@ -2416,8 +2664,10 @@ export default function TasksApp() {
           </div>
 
           {/* Change password */}
-          <div className="card" style={{
-            padding:"16px",marginBottom:"12px"
+          <div style={{
+            padding:"16px",marginBottom:"12px",
+            background:"#fff",borderRadius:"16px",
+            border:"1px solid #e0d8ce"
           }}>
             <p style={{
               fontSize:"14px",fontWeight:700,
@@ -2449,7 +2699,7 @@ export default function TasksApp() {
                 style={{
                   width:"100%",padding:"13px",
                   borderRadius:"12px",border:"none",
-                  background:"#1e3a2f",color:"#fffbf5",
+                  background:"#075E54",color:"#fff",
                   fontWeight:700,fontSize:"14px",
                   cursor:"pointer"
                 }}>

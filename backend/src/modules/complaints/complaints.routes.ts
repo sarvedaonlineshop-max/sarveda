@@ -547,6 +547,22 @@ router.get("/team-members", verifyComplaintAuth, async (_req, res, next) => {
   }
 });
 
+router.post("/check-whitelist", async (req, res, next) => {
+  try {
+    const { email } = req.body as { email?: string };
+    if (!email?.trim()) {
+      res.status(400).json({ success: false, error: "Email required", code: "BAD_REQUEST" });
+      return;
+    }
+    const found = await prisma.complaintWhitelist.findFirst({
+      where: { email: email.toLowerCase().trim(), isActive: true }
+    });
+    res.status(found ? 200 : 403).json({ success: true, allowed: !!found });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/notifications", verifyComplaintAuth, async (req, res, next) => {
   try {
     const email = req.complaintUser!.email;
@@ -615,6 +631,62 @@ router.get("/my", verifyComplaintAuth, async (req, res, next) => {
       }
     });
     res.json({ success: true, complaints: await enrichComplaintList(complaints) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete("/:id", verifyComplaintAuth, async (req, res, next) => {
+  try {
+    const email = req.complaintUser!.email;
+    const task = await prisma.complaint.findFirst({
+      where: {
+        id: req.params.id,
+        OR: [{ raisedByEmail: email }, { assignedByEmail: email }]
+      }
+    });
+    if (!task) {
+      res.status(403).json({ success: false, error: "Not authorized", code: "FORBIDDEN" });
+      return;
+    }
+    await prisma.complaint.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch("/:id", verifyComplaintAuth, async (req, res, next) => {
+  try {
+    const { priority } = req.body as { priority?: string };
+    const email = req.complaintUser!.email;
+
+    if (!priority || !PRIORITIES.has(priority as ComplaintPriority)) {
+      res.status(400).json({ success: false, error: "Invalid priority", code: "BAD_REQUEST" });
+      return;
+    }
+
+    const task = await prisma.complaint.findFirst({
+      where: {
+        id: req.params.id,
+        OR: [
+          { assignedByEmail: email },
+          { raisedByEmail: email },
+          { assignees: { some: { assigneeEmail: email } } }
+        ]
+      }
+    });
+
+    if (!task) {
+      res.status(403).json({ success: false, error: "Not authorized", code: "FORBIDDEN" });
+      return;
+    }
+
+    const updated = await prisma.complaint.update({
+      where: { id: req.params.id },
+      data: { priority: priority as ComplaintPriority }
+    });
+    res.json({ success: true, task: updated });
   } catch (err) {
     next(err);
   }
