@@ -32,13 +32,11 @@ import {
   isUnpaidCheckoutAttempt
 } from "@/lib/order-status-display";
 import {
-  breakdownChargeableWeight,
-  chargeableWeightGrams,
   digitsOnly,
   totalChargeableWeightGrams,
   validateBoxDimensions
 } from "@/lib/chargeable-weight";
-import { DEFAULT_SHIP_BOX_PRESET } from "@/lib/ship-box-presets";
+import { DEFAULT_SHIP_BOX_PRESET, SHIP_BOX_PRESETS } from "@/lib/ship-box-presets";
 
 const MAX_SHIP_BOXES = 5;
 const DIM_MIN_CM = 5;
@@ -469,10 +467,11 @@ export default function AdminOrderDetailPage() {
   const [shipBoxes, setShipBoxes] = useState<DelhiveryShipBox[]>([defaultShipBox()]);
   const [activeShipBoxIdx, setActiveShipBoxIdx] = useState(0);
   const [shipMode, setShipMode] = useState<"S" | "E">("S");
-  const [freightEstimate, setFreightEstimate] = useState<{
-    chargeableGrams: number;
-    totalAmount: number;
-  } | null>(null);
+  const [shipPaymentMode, setShipPaymentMode] = useState<"Pre-paid" | "COD">("Pre-paid");
+  const [freightByMode, setFreightByMode] = useState<{ S: number | null; E: number | null }>({
+    S: null,
+    E: null
+  });
   const [freightEstimateBusy, setFreightEstimateBusy] = useState(false);
   const [freightEstimateError, setFreightEstimateError] = useState<string | null>(null);
   const [shipResultModal, setShipResultModal] = useState<{
@@ -540,6 +539,8 @@ export default function AdminOrderDetailPage() {
 
   useEffect(() => {
     if (!order) return;
+    const isCod = (order.payments ?? []).some((p) => p.provider === "COD");
+    setShipPaymentMode(isCod ? "COD" : "Pre-paid");
     const g = Math.max(
       50,
       order.items.reduce((sum, it) => sum + it.qtyOrdered * 500, 0) || 500
@@ -549,7 +550,6 @@ export default function AdminOrderDetailPage() {
   }, [order?.id, order?.items]);
 
   const activeShipBox = shipBoxes[activeShipBoxIdx] ?? shipBoxes[0] ?? defaultShipBox();
-  const activeBreakdown = breakdownChargeableWeight(activeShipBox);
   const totalChargeableG = totalChargeableWeightGrams(shipBoxes);
   const boxDimError = validateBoxDimensions(
     activeShipBox.lengthCm,
@@ -569,7 +569,7 @@ export default function AdminOrderDetailPage() {
 
   useEffect(() => {
     if (!order || selectedCourier === "SHIPROCKET" || selectedCourier === "SHIPROCKET_INTERNATIONAL") {
-      setFreightEstimate(null);
+      setFreightByMode({ S: null, E: null });
       return;
     }
     const shipAddr = order.addresses.find((a) => a.type === "SHIPPING");
@@ -580,7 +580,7 @@ export default function AdminOrderDetailPage() {
       process.env.NEXT_PUBLIC_SHIPPING_ORIGIN_PINCODE?.replace(/\D/g, "").slice(0, 6) ||
       "560002";
     if (destPin.length !== 6 || shipBoxes.length === 0) {
-      setFreightEstimate(null);
+      setFreightByMode({ S: null, E: null });
       setFreightEstimateError(null);
       return;
     }
@@ -588,31 +588,44 @@ export default function AdminOrderDetailPage() {
       (b) => validateBoxDimensions(b.lengthCm, b.breadthCm, b.heightCm) != null
     );
     if (dimInvalid) {
-      setFreightEstimate(null);
+      setFreightByMode({ S: null, E: null });
       setFreightEstimateError("Fix box dimensions to estimate Delhivery freight.");
       return;
     }
-    const isCod = (order.payments ?? []).some((p) => p.provider === "COD");
     let cancelled = false;
     setFreightEstimateBusy(true);
     setFreightEstimateError(null);
     const t = setTimeout(() => {
-      void adminEstimateDelhiveryCharge({
+      const estimateBody = {
         originPin,
         destPin,
-        shippingMode: shipMode,
-        paymentMode: isCod ? "COD" : "Pre-paid",
+        paymentMode: shipPaymentMode,
         boxes: shipBoxes
-      })
-        .then((r) => {
-          if (!cancelled) {
-            setFreightEstimate({ chargeableGrams: r.chargeableGrams, totalAmount: r.totalAmount });
+      };
+      void Promise.all(
+        (["S", "E"] as const).map((mode) =>
+          adminEstimateDelhiveryCharge({ ...estimateBody, shippingMode: mode }).then(
+            (r) => ({ mode, amount: r.totalAmount }),
+            () => ({ mode, amount: null as number | null })
+          )
+        )
+      )
+        .then((rows) => {
+          if (cancelled) return;
+          const next = { S: null as number | null, E: null as number | null };
+          for (const row of rows) {
+            next[row.mode] = row.amount != null && row.amount > 0 ? row.amount : null;
+          }
+          setFreightByMode(next);
+          if (!next.S && !next.E) {
+            setFreightEstimateError("Delhivery returned no freight rate. Check API key and pincodes.");
+          } else {
             setFreightEstimateError(null);
           }
         })
         .catch((e) => {
           if (!cancelled) {
-            setFreightEstimate(null);
+            setFreightByMode({ S: null, E: null });
             setFreightEstimateError(e instanceof Error ? e.message : "Could not fetch Delhivery freight");
           }
         })
@@ -624,7 +637,15 @@ export default function AdminOrderDetailPage() {
       cancelled = true;
       clearTimeout(t);
     };
-  }, [order, shipBoxes, shipMode, selectedCourier, selectedPickupId, pickupOptions]);
+  }, [order, shipBoxes, shipPaymentMode, selectedCourier, selectedPickupId, pickupOptions]);
+
+  function formatFreightAmount(amount: number | null | undefined): string {
+    if (freightEstimateBusy) return "…";
+    if (amount != null && amount > 0) {
+      return `₹ ${amount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+    }
+    return "₹ ---";
+  }
 
   useEffect(() => {
     if (!id) return;
@@ -781,6 +802,7 @@ export default function AdminOrderDetailPage() {
         preferredCourier: (selectedCourier ||
           bulkCourier) as "AUTO" | "DELHIVERY" | "SHIPROCKET" | "SHIPROCKET_INTERNATIONAL",
         channel: shipChannel,
+        paymentMode: shipPaymentMode,
         lengthCm: activeShipBox.lengthCm,
         breadthCm: activeShipBox.breadthCm,
         heightCm: activeShipBox.heightCm,
@@ -1328,13 +1350,16 @@ export default function AdminOrderDetailPage() {
               </div>
               <label className="block">
                 <span className="text-xs font-semibold uppercase tracking-wide text-stone-500">Payment mode</span>
-                <input
-                  readOnly
-                  value={
-                    (order.payments ?? []).some((p) => p.provider === "COD") ? "Cash On Delivery" : "Pre-Paid"
+                <select
+                  value={shipPaymentMode}
+                  onChange={(e) =>
+                    setShipPaymentMode(e.target.value as "Pre-paid" | "COD")
                   }
-                  className="mt-2 w-full rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
-                />
+                  className="mt-2 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
+                >
+                  <option value="Pre-paid">Pre-Paid</option>
+                  <option value="COD">Cash On Delivery</option>
+                </select>
               </label>
               <label className="block">
                 <span className="text-xs font-semibold uppercase tracking-wide text-stone-500">Courier</span>
@@ -1410,7 +1435,39 @@ export default function AdminOrderDetailPage() {
                 </select>
               </label>
               <div>
-                <span className="text-xs font-semibold uppercase tracking-wide text-stone-500">
+                <label className="block">
+                  <span className="text-xs text-stone-500">Box size preset</span>
+                  <select
+                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
+                    defaultValue=""
+                    onChange={(e) => {
+                      const preset = SHIP_BOX_PRESETS.find((p) => p.id === e.target.value);
+                      if (!preset) return;
+                      setShipBoxes((prev) =>
+                        prev.map((b, i) =>
+                          i === activeShipBoxIdx
+                            ? {
+                                ...b,
+                                lengthCm: preset.lengthCm,
+                                breadthCm: preset.breadthCm,
+                                heightCm: preset.heightCm,
+                                packageType: "CARDBOARD_BOX"
+                              }
+                            : b
+                        )
+                      );
+                      e.target.value = "";
+                    }}
+                  >
+                    <option value="">Select standard size…</option>
+                    {SHIP_BOX_PRESETS.map((preset) => (
+                      <option key={preset.id} value={preset.id}>
+                        {preset.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <span className="mt-2 block text-xs font-semibold uppercase tracking-wide text-stone-500">
                   Size (cm) — integers only
                 </span>
                 <div className="mt-1 grid grid-cols-3 gap-2">
@@ -1475,47 +1532,6 @@ export default function AdminOrderDetailPage() {
                   className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
                 />
               </label>
-              <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-3 text-xs text-stone-600 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300">
-                <p className="font-semibold text-stone-800 dark:text-stone-100">How chargeable weight is calculated</p>
-                <p className="mt-2 leading-relaxed">
-                  Delhivery bills on the <strong>higher</strong> of actual weight vs volumetric weight per box.
-                </p>
-                <ul className="mt-2 list-inside list-disc space-y-1">
-                  <li>
-                    Actual weight (box {activeShipBoxIdx + 1}):{" "}
-                    <strong>{activeBreakdown.deadGrams.toLocaleString("en-IN")} gm</strong>
-                  </li>
-                  <li>
-                    Volumetric = L × B × H ÷ 5000 × 1000 ={" "}
-                    <strong>{activeBreakdown.volumetricGrams.toLocaleString("en-IN")} gm</strong>
-                  </li>
-                  <li>
-                    Chargeable (this box):{" "}
-                    <strong>{activeBreakdown.chargeableGrams.toLocaleString("en-IN")} gm</strong>
-                    {activeBreakdown.usesVolumetric ? " (volumetric)" : " (actual weight)"}
-                  </li>
-                  <li>
-                    Total chargeable ({shipBoxes.length} box{shipBoxes.length > 1 ? "es" : ""}):{" "}
-                    <strong>{totalChargeableG.toLocaleString("en-IN")} gm</strong>
-                  </li>
-                </ul>
-                {activeShipBox.packageType === "PLASTIC_COVER" && activeBreakdown.deadGrams <= 1000 ? (
-                  <p className="mt-2 text-[11px] text-stone-500">
-                    Plastic cover / flyer ≤ 1 kg uses actual weight only (no volumetric).
-                  </p>
-                ) : null}
-                {shipBoxes.length > 1 ? (
-                  <p className="mt-2 text-amber-800 dark:text-amber-400">
-                    Multi-box (MPS) requires DELHIVERY_CLIENT_NAME on EC2 backend .env.
-                  </p>
-                ) : null}
-                {order ? (
-                  <p className="mt-2 border-t border-stone-200 pt-2 dark:border-stone-700">
-                    Label order value (customer total):{" "}
-                    <strong>{formatMinorFromPaise(order.grandTotalInPaise, order.currency)}</strong>
-                  </p>
-                ) : null}
-              </div>
               <div>
                 <span className="text-xs text-stone-500">Shipping mode</span>
                 <div className="mt-2 grid grid-cols-2 gap-2">
@@ -1528,7 +1544,10 @@ export default function AdminOrderDetailPage() {
                         : "border-stone-300 text-stone-700 dark:border-stone-600"
                     }`}
                   >
-                    SURFACE
+                    <span className="block">SURFACE</span>
+                    <span className="mt-1 block text-base font-bold">
+                      {formatFreightAmount(freightByMode.S)}
+                    </span>
                   </button>
                   <button
                     type="button"
@@ -1539,34 +1558,18 @@ export default function AdminOrderDetailPage() {
                         : "border-stone-300 text-stone-700 dark:border-stone-600"
                     }`}
                   >
-                    EXPRESS
+                    <span className="block">EXPRESS</span>
+                    <span className="mt-1 block text-base font-bold">
+                      {formatFreightAmount(freightByMode.E)}
+                    </span>
                   </button>
                 </div>
-              </div>
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50/80 px-3 py-3 text-sm text-emerald-950 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100">
-                <p className="text-xs font-semibold uppercase tracking-wide">Delhivery freight estimate</p>
-                {freightEstimateBusy ? (
-                  <p className="mt-2 text-stone-600 dark:text-stone-300">Calculating from box size, weight, pins & mode…</p>
-                ) : freightEstimateError ? (
-                  <p className="mt-2 text-red-700 dark:text-red-300">{freightEstimateError}</p>
-                ) : freightEstimate ? (
-                  <p className="mt-2">
-                    <strong className="text-lg">
-                      ₹{freightEstimate.totalAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
-                    </strong>
-                    <span className="ml-2 text-xs text-emerald-800 dark:text-emerald-200">
-                      {shipMode === "E" ? "Express" : "Surface"} · {freightEstimate.chargeableGrams.toLocaleString("en-IN")}{" "}
-                      gm billed
-                    </span>
-                  </p>
-                ) : (
-                  <p className="mt-2 text-xs text-stone-600 dark:text-stone-400">
-                    Enter valid dimensions and a 6-digit shipping pincode to see Delhivery&apos;s rate.
-                  </p>
-                )}
-                <p className="mt-2 text-[11px] leading-relaxed opacity-80">
-                  Updates automatically when you change L/B/H, weight, box count, Surface/Express, or pickup pin.
-                  This is Delhivery&apos;s freight API — not the customer order total on the label.
+                <p className="mt-2 text-[11px] text-stone-500">
+                  Total chargeable:{" "}
+                  <strong>{totalChargeableG.toLocaleString("en-IN")} gm</strong>
+                  {freightEstimateError ? (
+                    <span className="ml-2 text-red-600 dark:text-red-400">{freightEstimateError}</span>
+                  ) : null}
                 </p>
               </div>
               <button

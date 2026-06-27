@@ -325,6 +325,7 @@ export function adminCreateShipmentForOrder(
     shiprocketPickupName?: string;
     preferredCourier?: "AUTO" | "DELHIVERY" | "SHIPROCKET" | "SHIPROCKET_INTERNATIONAL";
     channel?: string;
+    paymentMode?: "Pre-paid" | "COD";
     lengthCm?: number;
     breadthCm?: number;
     heightCm?: number;

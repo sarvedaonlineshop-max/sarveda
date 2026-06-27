@@ -268,6 +268,7 @@ export type AutoShipmentCreateOptions = {
   pickupLocationId?: string;
   shiprocketPickupName?: string;
   channel?: string;
+  paymentMode?: "Pre-paid" | "COD";
   lengthCm?: number;
   breadthCm?: number;
   heightCm?: number;
@@ -398,7 +399,8 @@ export async function autoSelectAndCreate(
 
   const weightKg = Math.max(0.05, totalWeightGrams(order as OrderWithShippingContext) / 1000);
   const paymentMode =
-    primaryPaymentProvider(order as OrderWithShippingContext) === "COD" ? "COD" : "Pre-paid";
+    options?.paymentMode ??
+    (primaryPaymentProvider(order as OrderWithShippingContext) === "COD" ? "COD" : "Pre-paid");
 
   logger.info("shipping_router_choice", { orderId, choice, weightKg, channelOrderId, nextSeq });
 

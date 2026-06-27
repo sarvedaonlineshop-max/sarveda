@@ -159,6 +159,7 @@ export async function createShipmentForOrder(req: Request, res: Response, next: 
           .enum(["AUTO", "DELHIVERY", "SHIPROCKET", "SHIPROCKET_INTERNATIONAL"])
           .optional(),
         channel: z.string().min(1).max(120).optional(),
+        paymentMode: z.enum(["Pre-paid", "COD"]).optional(),
         lengthCm: z.number().min(5).max(200).optional(),
         breadthCm: z.number().min(5).max(200).optional(),
         heightCm: z.number().min(5).max(200).optional(),
@@ -195,6 +196,7 @@ export async function createShipmentForOrder(req: Request, res: Response, next: 
       shiprocketPickupName,
       preferredCourier,
       channel,
+      paymentMode,
       lengthCm,
       breadthCm,
       heightCm,
@@ -213,6 +215,7 @@ export async function createShipmentForOrder(req: Request, res: Response, next: 
       ...(pickupLocationId ? { pickupLocationId } : {}),
       ...(shiprocketPickupName ? { shiprocketPickupName } : {}),
       ...(channel ? { channel } : {}),
+      ...(paymentMode ? { paymentMode } : {}),
       ...(lengthCm != null ? { lengthCm } : {}),
       ...(breadthCm != null ? { breadthCm } : {}),
       ...(heightCm != null ? { heightCm } : {}),

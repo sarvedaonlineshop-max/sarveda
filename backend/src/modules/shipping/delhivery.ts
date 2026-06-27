@@ -308,6 +308,80 @@ export type DelhiveryShippingEstimateInput = {
   boxes: DelhiveryBoxInput[];
 };
 
+/** Parse Delhivery kinko invoice/charges response (object, array, or XML string). */
+export function parseDelhiveryEstimateTotal(raw: unknown): number {
+  const asNum = (v: unknown): number => {
+    const n = typeof v === "string" ? parseFloat(v) : Number(v);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  };
+
+  const fromRecord = (o: Record<string, unknown>): number => {
+    const direct = asNum(
+      o.total_amount ??
+        o.Total_amount ??
+        o.totalAmount ??
+        o.total ??
+        o.charge ??
+        o.freight ??
+        o.amount
+    );
+    if (direct > 0) return direct;
+
+    const gross = asNum(o.gross_amount ?? o.grossAmount ?? o.gross);
+    if (gross > 0) {
+      const tax =
+        asNum(o.tax) +
+        asNum(o.cgst) +
+        asNum(o.sgst) +
+        asNum(o.igst) +
+        asNum(o.service_tax);
+      return gross + tax;
+    }
+    return 0;
+  };
+
+  const visit = (node: unknown): number => {
+    if (node == null) return 0;
+    if (typeof node === "number") return asNum(node);
+    if (typeof node === "string") {
+      const trimmed = node.trim();
+      if (!trimmed) return 0;
+      if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+        try {
+          return visit(JSON.parse(trimmed) as unknown);
+        } catch {
+          /* fall through to XML / regex */
+        }
+      }
+      const xmlMatch = trimmed.match(/<total_amount[^>]*>([\d.]+)<\/total_amount>/i);
+      if (xmlMatch?.[1]) return asNum(xmlMatch[1]);
+      const jsonMatch = trimmed.match(/"total_amount"\s*:\s*([\d.]+)/i);
+      if (jsonMatch?.[1]) return asNum(jsonMatch[1]);
+      return 0;
+    }
+    if (Array.isArray(node)) {
+      let best = 0;
+      for (const item of node) {
+        best = Math.max(best, visit(item));
+      }
+      return best;
+    }
+    if (typeof node === "object") {
+      const o = node as Record<string, unknown>;
+      const direct = fromRecord(o);
+      if (direct > 0) return direct;
+      let best = 0;
+      for (const v of Object.values(o)) {
+        best = Math.max(best, visit(v));
+      }
+      return best;
+    }
+    return 0;
+  };
+
+  return visit(raw);
+}
+
 /** Delhivery invoice/shipping charge API — approximate freight (not label order value). */
 export async function estimateShippingCharge(
   input: DelhiveryShippingEstimateInput
@@ -331,20 +405,40 @@ export async function estimateShippingCharge(
     return { success: false, error: "Valid 6-digit origin and destination PIN required", code: "BAD_REQUEST" };
   }
   const cgm = totalChargeableWeightGrams(input.boxes);
-  const pt = input.paymentMode === "COD" ? "COD" : "Pre-paid";
+  const ptCandidates =
+    input.paymentMode === "COD"
+      ? ["COD", "Cod"]
+      : ["Pre-paid", "Prepaid", "Pre-Paid"];
   try {
     const url = `${baseUrl()}/api/kinko/v1/invoice/charges/.json`;
-    const res = await axios.get(url, {
-      headers,
-      params: { md: input.shippingMode, cgm, o_pin: oPin, d_pin: dPin, ss: "Delivered", pt },
-      timeout: 20_000,
-      validateStatus: () => true
-    });
-    if (res.status >= 400) {
-      return mapAxiosError({ response: res, message: "shipping estimate failed" }, "DELHIVERY_ESTIMATE");
+    let raw: unknown = null;
+    let totalAmount = 0;
+    let usedPt = ptCandidates[0];
+    for (const pt of ptCandidates) {
+      const res = await axios.get(url, {
+        headers,
+        params: { md: input.shippingMode, cgm, o_pin: oPin, d_pin: dPin, ss: "Delivered", pt },
+        timeout: 20_000,
+        validateStatus: () => true
+      });
+      if (res.status >= 400) {
+        return mapAxiosError({ response: res, message: "shipping estimate failed" }, "DELHIVERY_ESTIMATE");
+      }
+      raw = res.data;
+      totalAmount = parseDelhiveryEstimateTotal(raw);
+      usedPt = pt;
+      if (totalAmount > 0) break;
     }
-    const raw = res.data as Record<string, unknown>;
-    const totalAmount = Number(raw?.total_amount ?? raw?.Total_amount ?? 0) || 0;
+    if (totalAmount <= 0) {
+      logger.warn("delhivery_estimate_zero_amount", {
+        cgm,
+        md: input.shippingMode,
+        oPin,
+        dPin,
+        pt: usedPt,
+        sample: typeof raw === "string" ? raw.slice(0, 400) : raw
+      });
+    }
     return { success: true, data: { chargeableGrams: cgm, totalAmount, raw } };
   } catch (err) {
     return mapAxiosError(err, "DELHIVERY_ESTIMATE");
