@@ -9,7 +9,11 @@ type ApiStatus = "OPEN"|"IN_PROGRESS"|"RESOLVED"|"REOPENED";
 type Status = "NEW"|"IN_PROGRESS"|"CLOSED"|"REOPENED";
 type LoginMode = "password"|"otp";
 
-type Member = { email: string; name: string | null };
+type Member = {
+  email: string;
+  name: string | null;
+  avatarUrl?: string | null;
+};
 
 type Assignee = {
   id: string; assigneeEmail: string; 
@@ -107,8 +111,19 @@ function timeAgo(d: string) {
 }
 
 function Avatar({
-  name,email,size=36
-}:{name?:string|null;email:string;size?:number}) {
+  name,email,size=36,avatarUrl
+}:{name?:string|null;email:string;size?:number;
+  avatarUrl?:string|null}) {
+  if (avatarUrl) {
+    return (
+      <img src={avatarUrl} alt=""
+        style={{
+          width:size,height:size,borderRadius:"50%",
+          objectFit:"cover",flexShrink:0,
+          display:"block"
+        }}/>
+    );
+  }
   const init = (name??email).split(" ")
     .map(w=>w[0]).join("").slice(0,2).toUpperCase();
   const palettes = [
@@ -152,10 +167,13 @@ function StatusPill({
 }
 
 function AssigneeAvatars({
-  assignees,max=3
-}:{assignees:Assignee[];max?:number}) {
+  assignees,max=3,memberLookup
+}:{assignees:Assignee[];max?:number;
+  memberLookup?:Member[]}) {
   const show = assignees.slice(0,max);
   const rest = assignees.length - max;
+  const avatarUrl = (email:string) =>
+    memberLookup?.find(m=>m.email===email)?.avatarUrl??null;
   return (
     <div style={{display:"flex",alignItems:"center"}}>
       {show.map((a,i) => (
@@ -169,6 +187,7 @@ function AssigneeAvatars({
             name={a.assigneeName}
             email={a.assigneeEmail}
             size={22}
+            avatarUrl={avatarUrl(a.assigneeEmail)}
           />
         </div>
       ))}
@@ -250,6 +269,17 @@ export default function TasksApp() {
     useState(false);
   const [showSubtasks,setShowSubtasks] =
     useState<Record<string,boolean>>({});
+  const [showMembersModal,setShowMembersModal] = useState(false);
+  const [showDueDateModal,setShowDueDateModal] = useState(false);
+  const [dueDateDraft,setDueDateDraft] = useState("");
+  const [membersDraft,setMembersDraft] = useState<string[]>([]);
+  const [membersSaving,setMembersSaving] = useState(false);
+  const [selectedMsgId,setSelectedMsgId] = useState<string|null>(null);
+  const [myAvatarUrl,setMyAvatarUrl] = useState<string|null>(null);
+  const [hasPassword,setHasPassword] = useState(true);
+  const [showCurPwd,setShowCurPwd] = useState(false);
+  const [showNewPwd,setShowNewPwd] = useState(false);
+  const [avatarUploading,setAvatarUploading] = useState(false);
 
   // Profile state
   const [pName,setPName] = useState("");
@@ -279,6 +309,44 @@ export default function TasksApp() {
     Authorization:`Bearer ${t??token??""}`,
     "Content-Type":"application/json",
   }),[token]);
+
+  function personName(
+    email:string,task?:Task|null
+  ): string {
+    if (email===myEmail) return myName||"You";
+    const member = members.find(m=>m.email===email);
+    if (member?.name) return member.name;
+    if (task) {
+      if (task.assignedByEmail===email&&task.assignedByName)
+        return task.assignedByName;
+      if (task.raisedByEmail===email&&task.raisedByName)
+        return task.raisedByName;
+      const a = task.assignees.find(
+        x=>x.assigneeEmail===email
+      );
+      if (a?.assigneeName) return a.assigneeName;
+    }
+    return email.split("@")[0];
+  }
+
+  function avatarFor(email:string): string|null {
+    if (email===myEmail&&myAvatarUrl) return myAvatarUrl;
+    return members.find(m=>m.email===email)?.avatarUrl??null;
+  }
+
+  const loadMeProfile = useCallback(async (t?:string) => {
+    const tk = t??token;
+    if (!tk) return;
+    const r = await fetch(`${API}/auth/me`,{
+      headers:{Authorization:`Bearer ${tk}`},
+    });
+    if (r.ok) {
+      const d = await r.json() as any;
+      const u = d.data?.user??d.user;
+      if (u?.avatarUrl) setMyAvatarUrl(u.avatarUrl);
+      setHasPassword(!!u?.hasPassword);
+    }
+  },[token]);
 
   function saveSession(
     t:string,email:string,name:string,phone:string,
@@ -379,9 +447,11 @@ export default function TasksApp() {
       loadMyAssignments(t),
       loadMembers(t),
       loadNotifications(t),
+      loadMeProfile(t),
     ]);
   },[loadDashboard,loadMyTasks,
-     loadMyAssignments,loadMembers,loadNotifications]);
+     loadMyAssignments,loadMembers,loadNotifications,
+     loadMeProfile]);
 
   // Restore session on mount
   useEffect(() => {
@@ -627,6 +697,88 @@ export default function TasksApp() {
     }
   }
 
+  async function handleSaveMembers() {
+    if (!selected) return;
+    setMembersSaving(true);
+    try {
+      await fetch(`${API}/complaints/${selected.id}/assignees`,{
+        method:"PATCH",headers:ah(),
+        body:JSON.stringify({assigneeEmails:membersDraft}),
+      });
+      setShowMembersModal(false);
+      setShowTaskMenu(false);
+      await loadDetail(selected.id);
+      void loadAll();
+    } catch {
+      alert("Failed to update members.");
+    } finally { setMembersSaving(false); }
+  }
+
+  async function handleDueDateSave() {
+    if (!selected) return;
+    try {
+      await fetch(`${API}/complaints/${selected.id}`,{
+        method:"PATCH",headers:ah(),
+        body:JSON.stringify({
+          dueDate:dueDateDraft||null
+        }),
+      });
+      setShowDueDateModal(false);
+      await loadDetail(selected.id);
+      void loadAll();
+    } catch {
+      alert("Failed to update due date.");
+    }
+  }
+
+  async function handleDeleteMessage(eventId:string) {
+    if (!selected) return;
+    try {
+      const r = await fetch(
+        `${API}/complaints/${selected.id}/events/${eventId}`,{
+        method:"DELETE",
+        headers:{Authorization:`Bearer ${token}`},
+      });
+      if (!r.ok) {
+        const d = await r.json() as any;
+        alert(d.error??"Cannot delete message");
+        return;
+      }
+      setSelectedMsgId(null);
+      await loadDetail(selected.id);
+    } catch {
+      alert("Failed to delete message.");
+    }
+  }
+
+  async function handleAvatarUpload(file:File) {
+    if (!token) return;
+    setAvatarUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("avatar",file);
+      const r = await fetch(`${API}/complaints/profile/avatar`,{
+        method:"POST",
+        headers:{Authorization:`Bearer ${token}`},
+        body:fd,
+      });
+      const d = await r.json() as any;
+      if (!r.ok) throw new Error(d.error??"Upload failed");
+      setMyAvatarUrl(d.avatarUrl);
+      void loadMembers();
+    } catch(err:any) {
+      alert(err.message??"Upload failed");
+    } finally { setAvatarUploading(false); }
+  }
+
+  function messageCanDelete(ev:TaskEvent): boolean {
+    if (ev.authorEmail!==myEmail) return false;
+    if (ev.type!=="COMMENT") return false;
+    if (ev.message?.startsWith("@@SYSTEM@@")) return false;
+    const age = Date.now()-new Date(ev.createdAt).getTime();
+    return age<=15*60*1000;
+  }
+
   // ── Mark notifications read ───────────────────────────
   async function markAllRead() {
     await fetch(`${API}/complaints/notifications/read-all`,{
@@ -688,17 +840,21 @@ export default function TasksApp() {
     }
     setPwdSaving(true);setPwdMsg("");
     try {
-      const r = await fetch(`${API}/auth/change-password`,{
+      const endpoint = hasPassword
+        ?"/auth/change-password":"/auth/set-password";
+      const body = hasPassword
+        ?{currentPassword:curPwd,newPassword:newPwd}
+        :{newPassword:newPwd};
+      const r = await fetch(`${API}${endpoint}`,{
         method:"POST",headers:ah(),
-        body:JSON.stringify({
-          currentPassword:curPwd,newPassword:newPwd
-        }),
+        body:JSON.stringify(body),
       });
       if (!r.ok) {
         const d = await r.json() as any;
         throw new Error(d.error??"Failed");
       }
-      setPwdMsg("✅ Password changed!");
+      setPwdMsg("✅ Password "+(hasPassword?"changed":"set")+"!");
+      if (!hasPassword) setHasPassword(true);
       setCurPwd("");setNewPwd("");
     } catch(err:any) {
       setPwdMsg("❌ "+(err.message??"Failed"));
@@ -752,7 +908,9 @@ export default function TasksApp() {
       border-bottom:0.5px solid #f0ece6;
       display:flex;gap:12px;
       padding:12px 16px;cursor:pointer;
-      transition:background .1s}
+      transition:background .1s;
+      user-select:none;-webkit-user-select:none;
+      -webkit-tap-highlight-color:transparent}
     .task-row:active{background:#f5f5f5}
   `;
 
@@ -822,9 +980,9 @@ export default function TasksApp() {
     return (
       <div style={{
         background:"#075E54",
-        padding:"10px 12px",
-        position:"sticky",top:0,zIndex:50,
-        display:"flex",alignItems:"center",gap:"10px"
+        padding:"14px 12px",
+        display:"flex",alignItems:"center",gap:"10px",
+        minHeight:"56px"
       }}>
         <button onClick={onBack} style={{
           background:"none",border:"none",
@@ -867,6 +1025,7 @@ export default function TasksApp() {
           <button key={t.id} onClick={()=>{
             if (t.id==="profile") {
               setPName(myName);setPPhone(myPhone);
+              void loadMeProfile();
             }
             setView(t.id as View);
           }} style={{
@@ -940,10 +1099,10 @@ export default function TasksApp() {
     const assignerName =
       task.assignedByEmail===myEmail
         ?"You"
-        :(task.assignedByName??
-          task.assignedByEmail?.split("@")[0]??
-          task.raisedByName??
-          task.raisedByEmail.split("@")[0]);
+        :personName(
+          task.assignedByEmail??task.raisedByEmail,
+          task
+        );
 
     return (
       <div className="task-row pressable fade"
@@ -1007,9 +1166,8 @@ export default function TasksApp() {
             }}>
               {isAssignment
                 ?`You → ${task.assignees.map(a=>
-                    a.assigneeName??
-                    a.assigneeEmail.split("@")[0]
-                  ).join(", ")||"(unassigned)"}`
+                  personName(a.assigneeEmail,task)
+                ).join(", ")||"(unassigned)"}`
                 :`${assignerName} • ${
                     task.description?.slice(0,35)||
                     "No description"
@@ -1055,6 +1213,32 @@ export default function TasksApp() {
         boxShadow:"0 4px 16px rgba(37,211,102,.35)",
         zIndex:90
       }}>+</button>
+    );
+  }
+
+  function ListShell({
+    children,showFab
+  }:{children:React.ReactNode;showFab?:boolean}) {
+    return (
+      <div style={{
+        height:"100dvh",display:"flex",
+        flexDirection:"column",background:"#ECE5DD",
+        maxWidth:"480px",margin:"0 auto",
+        overflow:"hidden"
+      }}>
+        <div style={{flexShrink:0}}>
+          <MainHeader/>
+          <StatusTabs/>
+        </div>
+        <div style={{
+          flex:1,overflowY:"auto",
+          WebkitOverflowScrolling:"touch"
+        }}>
+          {children}
+        </div>
+        {showFab&&<FAB/>}
+        <BottomNav/>
+      </div>
     );
   }
 
@@ -1290,47 +1474,38 @@ export default function TasksApp() {
   if (view==="home") return (
     <>
       <style>{CSS}</style>
-      <div style={{
-        minHeight:"100dvh",background:"#ECE5DD",
-        paddingBottom:"80px"
-      }}>
-        <MainHeader/>
-        <StatusTabs/>
-        <div>
-          {myTasks.length===0?(
+      <ListShell showFab>
+        {myTasks.length===0?(
+          <div style={{
+            textAlign:"center",padding:"60px 16px",
+            color:"#8a7060"
+          }}>
             <div style={{
-              textAlign:"center",padding:"60px 16px",
-              color:"#8a7060"
-            }}>
-              <div style={{
-                fontSize:"48px",marginBottom:"12px"
-              }}>🎯</div>
-              <p style={{
-                fontSize:"16px",fontWeight:700,
-                color:"#2c2420",marginBottom:"4px"
-              }}>No tasks yet</p>
-              <p style={{fontSize:"13px"}}>
-                Tap + to create your first task
-              </p>
-            </div>
-          ):(
-            myTasks
-              .filter(t=>taskMatchesFilter(t.status,statusFilter))
-              .map(t=>(
-                <TaskCard key={t.id} task={t}
-                  onClick={async()=>{
-                    setLoading(true);
-                    await loadDetail(t.id);
-                    setLoading(false);
-                    prevView.current="home";
-                    setView("detail");
-                  }}/>
-              ))
-          )}
-        </div>
-        <FAB/>
-        <BottomNav/>
-      </div>
+              fontSize:"48px",marginBottom:"12px"
+            }}>🎯</div>
+            <p style={{
+              fontSize:"16px",fontWeight:700,
+              color:"#2c2420",marginBottom:"4px"
+            }}>No tasks yet</p>
+            <p style={{fontSize:"13px"}}>
+              Tap + to create your first task
+            </p>
+          </div>
+        ):(
+          myTasks
+            .filter(t=>taskMatchesFilter(t.status,statusFilter))
+            .map(t=>(
+              <TaskCard key={t.id} task={t}
+                onClick={async()=>{
+                  setLoading(true);
+                  await loadDetail(t.id);
+                  setLoading(false);
+                  prevView.current="home";
+                  setView("detail");
+                }}/>
+            ))
+        )}
+      </ListShell>
     </>
   );
 
@@ -1338,46 +1513,37 @@ export default function TasksApp() {
   if (view==="assigned") return (
     <>
       <style>{CSS}</style>
-      <div style={{
-        minHeight:"100dvh",background:"#ECE5DD",
-        paddingBottom:"80px"
-      }}>
-        <MainHeader/>
-        <StatusTabs/>
-        <div>
-          {myAssignments.length===0?(
+      <ListShell showFab>
+        {myAssignments.length===0?(
+          <div style={{
+            textAlign:"center",padding:"60px 16px",
+            color:"#8a7060"
+          }}>
             <div style={{
-              textAlign:"center",padding:"60px 16px",
-              color:"#8a7060"
-            }}>
-              <div style={{
-                fontSize:"48px",marginBottom:"12px"
-              }}>📤</div>
-              <p style={{
-                fontSize:"16px",fontWeight:700,
-                color:"#2c2420",marginBottom:"4px"
-              }}>No assignments yet</p>
-              <p style={{fontSize:"13px"}}>
-                Tap + to assign a task to a team member
-              </p>
-            </div>
-          ):(
-            myAssignments
-              .filter(t=>taskMatchesFilter(t.status,statusFilter))
-              .map(t=>(
-                <TaskCard key={t.id} task={t}
-                  isAssignment
-                  onClick={async()=>{
-                    await loadDetail(t.id);
-                    prevView.current="assigned";
-                    setView("detail");
-                  }}/>
-              ))
-          )}
-        </div>
-        <FAB/>
-        <BottomNav/>
-      </div>
+              fontSize:"48px",marginBottom:"12px"
+            }}>📤</div>
+            <p style={{
+              fontSize:"16px",fontWeight:700,
+              color:"#2c2420",marginBottom:"4px"
+            }}>No assignments yet</p>
+            <p style={{fontSize:"13px"}}>
+              Tap + to assign a task to a team member
+            </p>
+          </div>
+        ):(
+          myAssignments
+            .filter(t=>taskMatchesFilter(t.status,statusFilter))
+            .map(t=>(
+              <TaskCard key={t.id} task={t}
+                isAssignment
+                onClick={async()=>{
+                  await loadDetail(t.id);
+                  prevView.current="assigned";
+                  setView("detail");
+                }}/>
+            ))
+        )}
+      </ListShell>
     </>
   );
 
@@ -1386,39 +1552,46 @@ export default function TasksApp() {
     <>
       <style>{CSS}</style>
       <div style={{
-        minHeight:"100dvh",background:"#ECE5DD",
-        paddingBottom:"80px"
+        height:"100dvh",display:"flex",
+        flexDirection:"column",background:"#ECE5DD",
+        maxWidth:"480px",margin:"0 auto",
+        overflow:"hidden"
       }}>
-        <MainHeader/>
-        <div style={{
-          background:"#128C7E",
-          padding:"8px 16px",
-          display:"grid",
-          gridTemplateColumns:"repeat(4,1fr)",gap:"6px"
-        }}>
-          {[
-            {n:dashStats.total,l:"Total",c:"#fff"},
-            {n:dashStats.open,l:"New",c:"#86efac"},
-            {n:dashStats.inProgress,l:"Active",c:"#93c5fd"},
-            {n:dashStats.resolved,l:"Closed",c:"#d1d5db"},
-          ].map(s=>(
-            <div key={s.l} style={{
-              textAlign:"center",
-              background:"rgba(0,0,0,.15)",
-              borderRadius:"8px",padding:"6px 4px"
-            }}>
-              <div style={{
-                fontSize:"18px",fontWeight:700,color:s.c
-              }}>{s.n}</div>
-              <div style={{
-                fontSize:"9px",color:"rgba(255,255,255,.7)",
-                fontWeight:600
-              }}>{s.l}</div>
-            </div>
-          ))}
+        <div style={{flexShrink:0}}>
+          <MainHeader/>
+          <div style={{
+            background:"#128C7E",
+            padding:"10px 16px",
+            display:"grid",
+            gridTemplateColumns:"repeat(4,1fr)",gap:"6px"
+          }}>
+            {[
+              {n:dashStats.total,l:"Total",c:"#fff"},
+              {n:dashStats.open,l:"New",c:"#86efac"},
+              {n:dashStats.inProgress,l:"Active",c:"#93c5fd"},
+              {n:dashStats.resolved,l:"Closed",c:"#d1d5db"},
+            ].map(s=>(
+              <div key={s.l} style={{
+                textAlign:"center",
+                background:"rgba(0,0,0,.15)",
+                borderRadius:"8px",padding:"8px 4px"
+              }}>
+                <div style={{
+                  fontSize:"18px",fontWeight:700,color:s.c
+                }}>{s.n}</div>
+                <div style={{
+                  fontSize:"9px",color:"rgba(255,255,255,.7)",
+                  fontWeight:600
+                }}>{s.l}</div>
+              </div>
+            ))}
+          </div>
+          <StatusTabs/>
         </div>
-        <StatusTabs/>
-        <div>
+        <div style={{
+          flex:1,overflowY:"auto",
+          WebkitOverflowScrolling:"touch"
+        }}>
           {dashTasks.length===0?(
             <div style={{
               textAlign:"center",padding:"60px 16px",
@@ -1913,8 +2086,10 @@ export default function TasksApp() {
         minHeight:"100dvh",height:"100dvh",
         display:"flex",flexDirection:"column",
         background:"#ECE5DD",
-        maxWidth:"480px",margin:"0 auto"
+        maxWidth:"480px",margin:"0 auto",
+        overflow:"hidden"
       }}>
+        <div style={{flexShrink:0}}>
         <DetailHeader
           title={selected.title}
           onBack={()=>setView(prevView.current)}>
@@ -1976,9 +2151,48 @@ export default function TasksApp() {
                 marginTop:"4px",background:"#fff",
                 borderRadius:"10px",
                 boxShadow:"0 4px 16px rgba(0,0,0,.15)",
-                minWidth:"140px",zIndex:60,
+                minWidth:"180px",zIndex:60,
                 overflow:"hidden"
               }}>
+                <button
+                  onClick={()=>{
+                    setMembersDraft(
+                      selected.assignees.map(
+                        a=>a.assigneeEmail
+                      )
+                    );
+                    setShowMembersModal(true);
+                    setShowTaskMenu(false);
+                  }}
+                  style={{
+                    display:"block",width:"100%",
+                    padding:"12px 16px",border:"none",
+                    background:"#fff",color:"#075E54",
+                    fontSize:"13px",fontWeight:600,
+                    textAlign:"left",cursor:"pointer"
+                  }}>
+                  👥 View task members
+                </button>
+                <button
+                  onClick={()=>{
+                    setMembersDraft(
+                      selected.assignees.map(
+                        a=>a.assigneeEmail
+                      )
+                    );
+                    setShowMembersModal(true);
+                    setShowTaskMenu(false);
+                  }}
+                  style={{
+                    display:"block",width:"100%",
+                    padding:"12px 16px",border:"none",
+                    background:"#fff",color:"#075E54",
+                    fontSize:"13px",fontWeight:600,
+                    textAlign:"left",cursor:"pointer",
+                    borderTop:"1px solid #f0ece6"
+                  }}>
+                  🏷 Tag someone
+                </button>
                 <button
                   onClick={()=>{
                     setShowTaskMenu(false);
@@ -1988,7 +2202,8 @@ export default function TasksApp() {
                     padding:"12px 16px",border:"none",
                     background:"#fff",color:"#8a7060",
                     fontSize:"13px",fontWeight:600,
-                    textAlign:"left",cursor:"pointer"
+                    textAlign:"left",cursor:"pointer",
+                    borderTop:"1px solid #f0ece6"
                   }}>
                   📦 Archive
                 </button>
@@ -2014,73 +2229,131 @@ export default function TasksApp() {
 
         {/* Meta bar */}
         <div style={{
-          background:"#128C7E",padding:"8px 16px",
+          background:"#128C7E",padding:"12px 16px",
           display:"flex",alignItems:"center",
-          justifyContent:"space-between",gap:"10px"
+          justifyContent:"space-between",gap:"10px",
+          minHeight:"52px"
         }}>
-          <div style={{
-            display:"flex",alignItems:"center",gap:"8px"
-          }}>
+          <button type="button"
+            onClick={()=>{
+              setMembersDraft(
+                selected.assignees.map(a=>a.assigneeEmail)
+              );
+              setShowMembersModal(true);
+            }}
+            style={{
+              display:"flex",alignItems:"center",gap:"8px",
+              background:"none",border:"none",cursor:"pointer",
+              flex:1,minWidth:0,textAlign:"left",padding:0
+            }}>
             {selected.assignees.length>0?(
               <>
                 <AssigneeAvatars
-                  assignees={selected.assignees} max={4}/>
+                  assignees={selected.assignees}
+                  max={4} memberLookup={members}/>
                 <span style={{
-                  fontSize:"12px",color:"rgba(255,255,255,.85)",
-                  fontWeight:500
+                  fontSize:"13px",color:"rgba(255,255,255,.9)",
+                  fontWeight:500,overflow:"hidden",
+                  textOverflow:"ellipsis",whiteSpace:"nowrap"
                 }}>
                   {selected.assignees.map(a=>
-                    a.assigneeName??
-                    a.assigneeEmail.split("@")[0]
+                    personName(a.assigneeEmail,selected)
                   ).join(", ")}
                 </span>
               </>
             ):(
               <span style={{
-                fontSize:"12px",color:"rgba(255,255,255,.7)"
-              }}>Unassigned</span>
+                fontSize:"13px",color:"rgba(255,255,255,.75)"
+              }}>Tap to add members</span>
             )}
-          </div>
-          {selected.dueDate&&(
-            <span style={{
-              fontSize:"11px",fontWeight:600,
-              padding:"3px 10px",borderRadius:"999px",
+          </button>
+          <button type="button"
+            onClick={()=>{
+              setDueDateDraft(selected.dueDate
+                ?new Date(selected.dueDate)
+                  .toISOString().slice(0,10)
+                :"");
+              setShowDueDateModal(true);
+            }}
+            style={{
+              fontSize:"12px",fontWeight:600,
+              padding:"6px 12px",borderRadius:"999px",
               background: !isTaskClosed(selected.status)&&
+                selected.dueDate&&
                 new Date(selected.dueDate)<new Date()
-                ?"rgba(220,38,38,.2)"
-                :"rgba(255,255,255,.15)",
+                ?"rgba(220,38,38,.25)"
+                :"rgba(255,255,255,.18)",
               color: !isTaskClosed(selected.status)&&
+                selected.dueDate&&
                 new Date(selected.dueDate)<new Date()
-                ?"#fecaca":"rgba(255,255,255,.9)",
-              whiteSpace:"nowrap"
+                ?"#fecaca":"rgba(255,255,255,.95)",
+              whiteSpace:"nowrap",border:"none",
+              cursor:"pointer",flexShrink:0
             }}>
-              📅 {new Date(selected.dueDate)
-                .toLocaleDateString("en-IN")}
-            </span>
-          )}
+            📅 {selected.dueDate
+              ?new Date(selected.dueDate)
+                .toLocaleDateString("en-IN")
+              :"Set date"}
+          </button>
+        </div>
         </div>
 
         {/* Scrollable chat area */}
         <div style={{
           flex:1,overflowY:"auto",
           padding:"12px 16px",
-          display:"flex",flexDirection:"column",gap:"6px"
+          display:"flex",flexDirection:"column",gap:"6px",
+          WebkitOverflowScrolling:"touch"
         }}>
+          {selectedMsgId&&(
+            <div style={{
+              position:"sticky",top:0,zIndex:10,
+              background:"#075E54",color:"#fff",
+              padding:"10px 14px",borderRadius:"10px",
+              display:"flex",alignItems:"center",
+              justifyContent:"space-between",gap:"10px",
+              marginBottom:"8px"
+            }}>
+              <span style={{fontSize:"13px",fontWeight:600}}>
+                Delete this message?
+              </span>
+              <div style={{display:"flex",gap:"8px"}}>
+                <button type="button"
+                  onClick={()=>setSelectedMsgId(null)}
+                  style={{
+                    padding:"6px 12px",borderRadius:"999px",
+                    border:"1px solid rgba(255,255,255,.4)",
+                    background:"transparent",color:"#fff",
+                    fontSize:"12px",cursor:"pointer"
+                  }}>Cancel</button>
+                <button type="button"
+                  onClick={()=>void handleDeleteMessage(
+                    selectedMsgId
+                  )}
+                  style={{
+                    padding:"6px 12px",borderRadius:"999px",
+                    border:"none",background:"#dc2626",
+                    color:"#fff",fontSize:"12px",
+                    fontWeight:700,cursor:"pointer"
+                  }}>Delete</button>
+              </div>
+            </div>
+          )}
           {/* Initial task bubble */}
           <div style={{
-            display:"flex",justifyContent:"flex-end"
+            display:"flex",justifyContent:"flex-end",
+            alignItems:"flex-end",gap:"6px"
           }}>
             <div className="wa-bubble-out">
               <p style={{
                 fontSize:"11px",fontWeight:700,
                 color:"#075E54",marginBottom:"4px"
               }}>
-                {selected.assignedByEmail===myEmail||
-                 selected.raisedByEmail===myEmail
-                  ?"You"
-                  :selected.assignedByName??
-                   selected.raisedByName??
-                   selected.raisedByEmail.split("@")[0]}
+                {personName(
+                  selected.assignedByEmail??
+                  selected.raisedByEmail,
+                  selected
+                )}
               </p>
               {selected.description&&(
                 <p style={{
@@ -2216,6 +2489,7 @@ export default function TasksApp() {
 
           {/* Chat events */}
           {selected.events?.map(ev=>{
+            if (ev.type==="CREATED") return null;
             if (ev.type==="STATUS_CHANGE") {
               return (
                 <div key={ev.id} style={{
@@ -2239,25 +2513,68 @@ export default function TasksApp() {
                 </div>
               );
             }
+            if (ev.message?.startsWith("@@SYSTEM@@")) {
+              return (
+                <div key={ev.id} style={{
+                  textAlign:"center",margin:"8px 0"
+                }}>
+                  <span style={{
+                    fontSize:"12px",color:"#4a3f38",
+                    background:"rgba(255,255,255,.75)",
+                    padding:"8px 14px",
+                    borderRadius:"12px",
+                    lineHeight:1.5,display:"inline-block",
+                    maxWidth:"90%"
+                  }}>
+                    {ev.message.replace("@@SYSTEM@@","")}
+                  </span>
+                  <p style={{
+                    fontSize:"10px",color:"#b8a898",
+                    marginTop:"4px"
+                  }}>
+                    {timeAgo(ev.createdAt)}
+                  </p>
+                </div>
+              );
+            }
             const isMine = ev.authorEmail===myEmail;
+            const canDel = messageCanDelete(ev);
+            const isSelected = selectedMsgId===ev.id;
             return (
               <div key={ev.id} style={{
                 display:"flex",
-                justifyContent:isMine?"flex-end":"flex-start"
+                justifyContent:isMine?"flex-end":"flex-start",
+                alignItems:"flex-end",gap:"6px"
               }}>
-                <div className={
-                  isMine?"wa-bubble-out":"wa-bubble-in"
-                }>
-                  <p style={{
-                    fontSize:"11px",fontWeight:700,
-                    color:isMine?"#075E54":"#8a7060",
-                    marginBottom:"3px"
+                {!isMine&&(
+                  <Avatar
+                    email={ev.authorEmail}
+                    name={personName(ev.authorEmail,selected)}
+                    size={24}
+                    avatarUrl={avatarFor(ev.authorEmail)}
+                  />
+                )}
+                <div
+                  className={isMine?"wa-bubble-out":"wa-bubble-in"}
+                  onClick={()=>{
+                    if (canDel) setSelectedMsgId(
+                      isSelected?null:ev.id
+                    );
+                  }}
+                  style={{
+                    cursor:canDel?"pointer":"default",
+                    outline:isSelected
+                      ?"2px solid #075E54":"none",
+                    userSelect:"none"
                   }}>
-                    {isMine
-                      ?"You"
-                      :ev.authorEmail.split("@")[0]}
-                    {ev.authorType==="ADMIN"?" (Admin)":""}
-                  </p>
+                  {!isMine&&(
+                    <p style={{
+                      fontSize:"11px",fontWeight:700,
+                      color:"#075E54",marginBottom:"3px"
+                    }}>
+                      {personName(ev.authorEmail,selected)}
+                    </p>
+                  )}
                   {ev.message&&(
                     <p style={{
                       fontSize:"14px",color:"#1a1614",
@@ -2269,6 +2586,7 @@ export default function TasksApp() {
                     textAlign:"right",marginTop:"4px"
                   }}>
                     {timeAgo(ev.createdAt)}
+                    {isMine?" ✓✓":""}
                   </p>
                 </div>
               </div>
@@ -2277,6 +2595,7 @@ export default function TasksApp() {
         </div>
 
         {/* Bottom input bar or reopen */}
+        <div style={{flexShrink:0}}>
         {selected.status==="RESOLVED"?(
           <div style={{
             padding:"12px 16px",
@@ -2401,6 +2720,179 @@ export default function TasksApp() {
             </button>
           </form>
         ):null}
+        </div>
+
+        {showMembersModal&&(
+          <div style={{
+            position:"fixed",inset:0,
+            background:"rgba(0,0,0,.5)",
+            display:"flex",alignItems:"flex-end",
+            justifyContent:"center",zIndex:200
+          }}
+            onClick={()=>setShowMembersModal(false)}>
+            <div style={{
+              background:"#fff",borderRadius:"20px 20px 0 0",
+              width:"100%",maxWidth:"480px",
+              maxHeight:"75vh",overflowY:"auto",
+              padding:"20px 16px"
+            }}
+              onClick={e=>e.stopPropagation()}>
+              <div style={{
+                display:"flex",justifyContent:"space-between",
+                alignItems:"center",marginBottom:"16px"
+              }}>
+                <h3 style={{
+                  fontSize:"17px",fontWeight:700,
+                  color:"#1a1614",margin:0
+                }}>Task members</h3>
+                <button type="button"
+                  onClick={()=>setShowMembersModal(false)}
+                  style={{
+                    background:"none",border:"none",
+                    fontSize:"22px",cursor:"pointer",
+                    color:"#8a7060"
+                  }}>×</button>
+              </div>
+              <p style={{
+                fontSize:"12px",color:"#8a7060",
+                marginBottom:"12px"
+              }}>Add or remove people on this task</p>
+              <div style={{marginBottom:"16px"}}>
+                {membersDraft.map(email=>{
+                  const m = members.find(x=>x.email===email);
+                  return (
+                    <div key={email} style={{
+                      display:"flex",alignItems:"center",
+                      gap:"10px",padding:"10px 0",
+                      borderBottom:"1px solid #f0ece6"
+                    }}>
+                      <Avatar
+                        name={m?.name??personName(email,selected)}
+                        email={email}
+                        size={36}
+                        avatarUrl={m?.avatarUrl??avatarFor(email)}
+                      />
+                      <div style={{flex:1}}>
+                        <p style={{
+                          fontSize:"14px",fontWeight:600,
+                          margin:0,color:"#1a1614"
+                        }}>
+                          {personName(email,selected)}
+                        </p>
+                        <p style={{
+                          fontSize:"11px",color:"#8a7060",margin:0
+                        }}>{email}</p>
+                      </div>
+                      <button type="button"
+                        onClick={()=>setMembersDraft(
+                          membersDraft.filter(e=>e!==email)
+                        )}
+                        style={{
+                          background:"#fee2e2",border:"none",
+                          color:"#dc2626",borderRadius:"8px",
+                          padding:"6px 10px",fontSize:"12px",
+                          fontWeight:600,cursor:"pointer"
+                        }}>Remove</button>
+                    </div>
+                  );
+                })}
+              </div>
+              <p style={{
+                fontSize:"12px",fontWeight:700,
+                color:"#075E54",marginBottom:"8px"
+              }}>Add member</p>
+              <div style={{
+                maxHeight:"160px",overflowY:"auto",
+                marginBottom:"16px"
+              }}>
+                {members
+                  .filter(m=>
+                    m.email!==myEmail&&
+                    !membersDraft.includes(m.email)
+                  )
+                  .map(m=>(
+                    <button key={m.email} type="button"
+                      onClick={()=>setMembersDraft(
+                        d=>[...d,m.email]
+                      )}
+                      style={{
+                        width:"100%",display:"flex",
+                        alignItems:"center",gap:"10px",
+                        padding:"10px 8px",border:"none",
+                        background:"#f9faf8",borderRadius:"10px",
+                        marginBottom:"6px",cursor:"pointer",
+                        textAlign:"left"
+                      }}>
+                      <Avatar
+                        name={m.name} email={m.email}
+                        size={32} avatarUrl={m.avatarUrl}
+                      />
+                      <span style={{
+                        fontSize:"13px",fontWeight:600,
+                        color:"#1a1614"
+                      }}>
+                        {m.name??m.email.split("@")[0]}
+                      </span>
+                    </button>
+                  ))}
+              </div>
+              <button type="button"
+                disabled={membersSaving}
+                onClick={()=>void handleSaveMembers()}
+                style={{
+                  width:"100%",padding:"14px",
+                  borderRadius:"999px",border:"none",
+                  background:"#25D366",color:"#fff",
+                  fontWeight:700,fontSize:"15px",
+                  cursor:"pointer"
+                }}>
+                {membersSaving?"Saving...":"Save members"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {showDueDateModal&&(
+          <div style={{
+            position:"fixed",inset:0,
+            background:"rgba(0,0,0,.5)",
+            display:"flex",alignItems:"center",
+            justifyContent:"center",zIndex:200,padding:"24px"
+          }}
+            onClick={()=>setShowDueDateModal(false)}>
+            <div style={{
+              background:"#fff",borderRadius:"16px",
+              padding:"24px",width:"100%",maxWidth:"320px"
+            }}
+              onClick={e=>e.stopPropagation()}>
+              <h3 style={{
+                fontSize:"17px",fontWeight:700,
+                margin:"0 0 16px",color:"#1a1614"
+              }}>Update due date</h3>
+              <input type="date" className="input"
+                value={dueDateDraft}
+                onChange={e=>setDueDateDraft(e.target.value)}
+                style={{marginBottom:"16px",borderRadius:"12px"}}
+              />
+              <div style={{display:"flex",gap:"10px"}}>
+                <button type="button"
+                  onClick={()=>setShowDueDateModal(false)}
+                  style={{
+                    flex:1,padding:"12px",borderRadius:"999px",
+                    border:"1.5px solid #e0d8ce",
+                    background:"#fff",cursor:"pointer"
+                  }}>Cancel</button>
+                <button type="button"
+                  onClick={()=>void handleDueDateSave()}
+                  style={{
+                    flex:1,padding:"12px",borderRadius:"999px",
+                    border:"none",background:"#075E54",
+                    color:"#fff",fontWeight:700,cursor:"pointer"
+                  }}>Save & notify</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Delete confirm modal */}
         {showDeleteConfirm&&(
@@ -2567,19 +3059,48 @@ export default function TasksApp() {
     <>
       <style>{CSS}</style>
       <div style={{
-        minHeight:"100dvh",background:"#ECE5DD",
-        paddingBottom:"100px"
+        height:"100dvh",display:"flex",
+        flexDirection:"column",background:"#ECE5DD",
+        maxWidth:"480px",margin:"0 auto",
+        overflow:"hidden"
       }}>
-        <MainHeader/>
-
-        <div style={{padding:"16px"}}>
+        <div style={{flexShrink:0}}>
+          <MainHeader/>
+        </div>
+        <div style={{
+          flex:1,overflowY:"auto",
+          WebkitOverflowScrolling:"touch",
+          padding:"16px"
+        }}>
           <div style={{
             background:"linear-gradient(135deg,#075E54,#128C7E)",
             borderRadius:"20px",padding:"28px 20px",
             display:"flex",flexDirection:"column",
             alignItems:"center",marginBottom:"16px"
           }}>
-            <Avatar name={myName} email={myEmail} size={72}/>
+            <label style={{
+              position:"relative",cursor:"pointer"
+            }}>
+              <Avatar
+                name={myName} email={myEmail} size={72}
+                avatarUrl={myAvatarUrl}
+              />
+              <div style={{
+                position:"absolute",bottom:0,right:0,
+                width:28,height:28,borderRadius:"50%",
+                background:"#25D366",color:"#fff",
+                display:"flex",alignItems:"center",
+                justifyContent:"center",fontSize:"14px",
+                border:"2px solid #fff"
+              }}>
+                {avatarUploading?"…":"📷"}
+              </div>
+              <input type="file" accept="image/*" hidden
+                onChange={e=>{
+                  const f = e.target.files?.[0];
+                  if (f) void handleAvatarUpload(f);
+                }}/>
+            </label>
             <p style={{
               fontSize:"20px",fontWeight:900,
               color:"#fffbf5",marginTop:"12px",
@@ -2684,21 +3205,61 @@ export default function TasksApp() {
             <p style={{
               fontSize:"14px",fontWeight:700,
               color:"#2c2420",marginBottom:"14px"
-            }}>Change Password</p>
+            }}>
+              {hasPassword?"Change Password":"Set Password"}
+            </p>
+            {!hasPassword&&(
+              <p style={{
+                fontSize:"12px",color:"#8a7060",
+                marginBottom:"12px",lineHeight:1.5
+              }}>
+                You signed in with OTP. Set a password to
+                also sign in with email and password.
+              </p>
+            )}
             <form onSubmit={e=>void handleChangePwd(e)}>
-              {[
-                {p:"Current password",v:curPwd,
-                  fn:setCurPwd},
-                {p:"New password (min 8 chars)",
-                  v:newPwd,fn:setNewPwd},
-              ].map((f,i)=>(
-                <input key={i} className="input"
-                  type="password"
-                  placeholder={f.p}
-                  value={f.v}
-                  onChange={e=>f.fn(e.target.value)}
-                  style={{marginBottom:"10px"}}/>
-              ))}
+              {hasPassword&&(
+                <div style={{
+                  position:"relative",marginBottom:"10px"
+                }}>
+                  <input className="input"
+                    type={showCurPwd?"text":"password"}
+                    placeholder="Current password"
+                    value={curPwd}
+                    onChange={e=>setCurPwd(e.target.value)}
+                    style={{paddingRight:"44px"}}
+                  />
+                  <button type="button"
+                    onClick={()=>setShowCurPwd(p=>!p)}
+                    style={{
+                      position:"absolute",right:"12px",
+                      top:"50%",transform:"translateY(-50%)",
+                      background:"none",border:"none",
+                      cursor:"pointer",fontSize:"16px"
+                    }}>
+                    {showCurPwd?"🙈":"👁"}
+                  </button>
+                </div>
+              )}
+              <div style={{position:"relative",marginBottom:"10px"}}>
+                <input className="input"
+                  type={showNewPwd?"text":"password"}
+                  placeholder="New password (min 8 chars)"
+                  value={newPwd}
+                  onChange={e=>setNewPwd(e.target.value)}
+                  style={{paddingRight:"44px"}}
+                />
+                <button type="button"
+                  onClick={()=>setShowNewPwd(p=>!p)}
+                  style={{
+                    position:"absolute",right:"12px",
+                    top:"50%",transform:"translateY(-50%)",
+                    background:"none",border:"none",
+                    cursor:"pointer",fontSize:"16px"
+                  }}>
+                  {showNewPwd?"🙈":"👁"}
+                </button>
+              </div>
               {pwdMsg&&(
                 <p style={{
                   fontSize:"13px",fontWeight:600,
@@ -2715,24 +3276,26 @@ export default function TasksApp() {
                   fontWeight:700,fontSize:"14px",
                   cursor:"pointer"
                 }}>
-                {pwdSaving?"Changing...":"Change Password"}
+                {pwdSaving
+                  ?"Saving..."
+                  :hasPassword
+                    ?"Change Password"
+                    :"Set Password"}
               </button>
             </form>
           </div>
 
-          {/* Sign out */}
           <button onClick={logout} style={{
             width:"100%",padding:"14px",
             borderRadius:"12px",
             border:"1.5px solid #fca5a5",
             background:"#fff5f5",color:"#dc2626",
             fontWeight:700,fontSize:"14px",
-            cursor:"pointer"
+            cursor:"pointer",marginBottom:"16px"
           }}>
             Sign Out
           </button>
         </div>
-
         <BottomNav/>
       </div>
     </>

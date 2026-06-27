@@ -13,6 +13,7 @@ model User {
   phone        String?  @unique
   name         String?
   passwordHash String?
+  avatarUrl    String?
   googleId     String?  @unique
   wooCommerceId Int?    @unique
   role         Role     @default(CUSTOMER)
@@ -965,6 +966,7 @@ model ComplaintEvent {
   authorEmail String
   authorType  ComplaintAuthorType
   message     String?
+  deletedAt   DateTime?
   createdAt   DateTime              @default(now())
   complaint   Complaint             @relation(fields: [complaintId], references: [id], onDelete: Cascade)
   attachments ComplaintAttachment[]
@@ -990,9 +992,10 @@ model ComplaintAttachment {
 }
 
 model ComplaintWhitelist {
-  id       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email    String   @unique
-  name     String?
-  addedAt  DateTime @default(now())
-  isActive Boolean  @default(true)
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String   @unique
+  name      String?
+  avatarUrl String?
+  addedAt   DateTime @default(now())
+  isActive  Boolean  @default(true)
 }

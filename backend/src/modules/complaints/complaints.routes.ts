@@ -48,14 +48,15 @@ async function verifyComplaintAuth(req: Request, res: Response, next: NextFuncti
 
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { id: true, name: true, phone: true }
+      select: { id: true, name: true, phone: true, avatarUrl: true }
     });
 
     req.complaintUser = {
       id: payload.sub,
       email,
       name: user?.name ?? whitelisted.name ?? undefined,
-      phone: user?.phone ?? null
+      phone: user?.phone ?? null,
+      avatarUrl: user?.avatarUrl ?? whitelisted.avatarUrl ?? undefined
     };
     next();
   } catch {
@@ -147,7 +148,52 @@ async function assigneeNameMap(emails: string[]): Promise<Map<string, string | n
     where: { email: { in: emails }, isActive: true },
     select: { email: true, name: true }
   });
-  return new Map(rows.map((r) => [r.email.toLowerCase(), r.name]));
+  const users = await prisma.user.findMany({
+    where: { email: { in: emails } },
+    select: { email: true, name: true }
+  });
+  const userNameMap = new Map(users.map((u) => [u.email.toLowerCase(), u.name]));
+  return new Map(
+    emails.map((email) => {
+      const key = email.toLowerCase();
+      const wl = rows.find((r) => r.email.toLowerCase() === key);
+      return [key, wl?.name ?? userNameMap.get(key) ?? null] as const;
+    })
+  );
+}
+
+async function displayNameForEmail(email: string): Promise<string> {
+  const map = await assigneeNameMap([email]);
+  return map.get(email.toLowerCase()) ?? email.split("@")[0];
+}
+
+async function notifyTaskTeam(
+  task: {
+    id: string;
+    title: string;
+    assignedByEmail: string | null;
+    raisedByEmail: string;
+    assignees: { assigneeEmail: string }[];
+  },
+  actorEmail: string,
+  message: string,
+  type: string
+) {
+  const emails = new Set(
+    [task.assignedByEmail, task.raisedByEmail, ...task.assignees.map((a) => a.assigneeEmail)].filter(
+      (e): e is string => !!e && e.toLowerCase() !== actorEmail.toLowerCase()
+    )
+  );
+  if (emails.size === 0) return;
+  await prisma.taskNotification.createMany({
+    data: Array.from(emails).map((e) => ({
+      recipientEmail: e,
+      taskId: task.id,
+      taskTitle: task.title,
+      type,
+      message
+    }))
+  });
 }
 
 function tasksAppUrl(): string {
@@ -377,7 +423,7 @@ router.post("/", verifyComplaintAuth, upload.array("files", 5), async (req, res,
         type: "CREATED",
         authorEmail: req.complaintUser!.email,
         authorType: "MEMBER",
-        message: description?.trim() ?? null
+        message: null
       }
     });
 
@@ -406,6 +452,16 @@ router.post("/", verifyComplaintAuth, upload.array("files", 5), async (req, res,
 
       for (const email of assigneeEmails) {
         if (email === actor.email) continue;
+        const assigneeName = names.get(email) ?? email.split("@")[0];
+        await prisma.complaintEvent.create({
+          data: {
+            complaintId: complaint.id,
+            type: "COMMENT",
+            authorEmail: actor.email,
+            authorType: "MEMBER",
+            message: `@@SYSTEM@@Hi ${assigneeName}, you are added to a new task. Please check above.`
+          }
+        });
         const html = `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
           <div style="background:#1e3a2f;padding:20px;border-radius:12px 12px 0 0">
@@ -536,12 +592,53 @@ router.get("/assigned-by-me", verifyComplaintAuth, async (req, res, next) => {
 
 router.get("/team-members", verifyComplaintAuth, async (_req, res, next) => {
   try {
-    const members = await prisma.complaintWhitelist.findMany({
+    const rows = await prisma.complaintWhitelist.findMany({
       where: { isActive: true },
-      select: { email: true, name: true },
+      select: { email: true, name: true, avatarUrl: true },
       orderBy: { name: "asc" }
     });
+    const emails = rows.map((r) => r.email.toLowerCase());
+    const users = await prisma.user.findMany({
+      where: { email: { in: emails } },
+      select: { email: true, avatarUrl: true, name: true }
+    });
+    const userMap = new Map(users.map((u) => [u.email.toLowerCase(), u]));
+    const members = rows.map((r) => {
+      const u = userMap.get(r.email.toLowerCase());
+      return {
+        email: r.email,
+        name: r.name ?? u?.name ?? null,
+        avatarUrl: r.avatarUrl ?? u?.avatarUrl ?? null
+      };
+    });
     res.json({ success: true, members });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/profile/avatar", verifyComplaintAuth, upload.single("avatar"), async (req, res, next) => {
+  try {
+    const file = req.file;
+    if (!file || !file.mimetype.startsWith("image/")) {
+      res.status(400).json({ success: false, error: "Image required", code: "BAD_REQUEST" });
+      return;
+    }
+    const actor = req.complaintUser!;
+    const { s3Key, s3Url } = await uploadComplaintMedia(
+      file.buffer,
+      file.mimetype,
+      `avatar-${actor.email}.${file.originalname.split(".").pop() ?? "jpg"}`
+    );
+    await prisma.user.update({
+      where: { id: actor.id },
+      data: { avatarUrl: s3Url }
+    });
+    await prisma.complaintWhitelist.updateMany({
+      where: { email: actor.email },
+      data: { avatarUrl: s3Url }
+    });
+    res.json({ success: true, avatarUrl: s3Url });
   } catch (err) {
     next(err);
   }
@@ -658,11 +755,15 @@ router.delete("/:id", verifyComplaintAuth, async (req, res, next) => {
 
 router.patch("/:id", verifyComplaintAuth, async (req, res, next) => {
   try {
-    const { priority } = req.body as { priority?: string };
+    const { priority, dueDate } = req.body as {
+      priority?: string;
+      dueDate?: string | null;
+    };
     const email = req.complaintUser!.email;
+    const actor = req.complaintUser!;
 
-    if (!priority || !PRIORITIES.has(priority as ComplaintPriority)) {
-      res.status(400).json({ success: false, error: "Invalid priority", code: "BAD_REQUEST" });
+    if (priority === undefined && dueDate === undefined) {
+      res.status(400).json({ success: false, error: "Nothing to update", code: "BAD_REQUEST" });
       return;
     }
 
@@ -674,7 +775,8 @@ router.patch("/:id", verifyComplaintAuth, async (req, res, next) => {
           { raisedByEmail: email },
           { assignees: { some: { assigneeEmail: email } } }
         ]
-      }
+      },
+      include: { assignees: true }
     });
 
     if (!task) {
@@ -682,9 +784,149 @@ router.patch("/:id", verifyComplaintAuth, async (req, res, next) => {
       return;
     }
 
+    const data: { priority?: ComplaintPriority; dueDate?: Date | null } = {};
+
+    if (priority !== undefined) {
+      if (!PRIORITIES.has(priority as ComplaintPriority)) {
+        res.status(400).json({ success: false, error: "Invalid priority", code: "BAD_REQUEST" });
+        return;
+      }
+      data.priority = priority as ComplaintPriority;
+    }
+
+    let dueDateChanged = false;
+    if (dueDate !== undefined) {
+      if (dueDate === null || dueDate === "") {
+        data.dueDate = null;
+        dueDateChanged = task.dueDate !== null;
+      } else {
+        const parsed = new Date(dueDate);
+        if (Number.isNaN(parsed.getTime())) {
+          res.status(400).json({ success: false, error: "Invalid due date", code: "BAD_REQUEST" });
+          return;
+        }
+        data.dueDate = parsed;
+        dueDateChanged =
+          !task.dueDate || task.dueDate.getTime() !== parsed.getTime();
+      }
+    }
+
     const updated = await prisma.complaint.update({
       where: { id: req.params.id },
-      data: { priority: priority as ComplaintPriority }
+      data,
+      include: { assignees: true }
+    });
+
+    if (dueDateChanged) {
+      const actorName = actor.name ?? actor.email.split("@")[0];
+      const label = data.dueDate
+        ? data.dueDate.toLocaleDateString("en-IN", {
+            day: "numeric",
+            month: "short",
+            year: "numeric"
+          })
+        : "removed";
+      const sysMsg = `@@SYSTEM@@📅 ${actorName} updated the due date to ${label}`;
+      await prisma.complaintEvent.create({
+        data: {
+          complaintId: task.id,
+          type: "COMMENT",
+          authorEmail: actor.email,
+          authorType: "MEMBER",
+          message: sysMsg
+        }
+      });
+      await notifyTaskTeam(updated, actor.email, sysMsg.replace("@@SYSTEM@@", ""), "DUE_DATE_REMINDER");
+    }
+
+    res.json({ success: true, task: updated });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch("/:id/assignees", verifyComplaintAuth, async (req, res, next) => {
+  try {
+    const { assigneeEmails } = req.body as { assigneeEmails?: string[] };
+    if (!Array.isArray(assigneeEmails)) {
+      res.status(400).json({ success: false, error: "assigneeEmails required", code: "BAD_REQUEST" });
+      return;
+    }
+    const emails = [...new Set(assigneeEmails.map((e) => e.trim().toLowerCase()).filter(Boolean))];
+    const actor = req.complaintUser!;
+    const email = actor.email;
+
+    const task = await prisma.complaint.findFirst({
+      where: {
+        id: req.params.id,
+        OR: [
+          { assignedByEmail: email },
+          { raisedByEmail: email },
+          { assignees: { some: { assigneeEmail: email } } }
+        ]
+      },
+      include: { assignees: true }
+    });
+
+    if (!task) {
+      res.status(403).json({ success: false, error: "Not authorized", code: "FORBIDDEN" });
+      return;
+    }
+
+    const existing = new Set(task.assignees.map((a) => a.assigneeEmail.toLowerCase()));
+    const incoming = new Set(emails);
+    const toAdd = emails.filter((e) => !existing.has(e));
+    const toRemove = task.assignees
+      .map((a) => a.assigneeEmail.toLowerCase())
+      .filter((e) => !incoming.has(e));
+
+    if (toRemove.length > 0) {
+      await prisma.taskAssignee.deleteMany({
+        where: {
+          taskId: task.id,
+          assigneeEmail: { in: toRemove }
+        }
+      });
+    }
+
+    if (toAdd.length > 0) {
+      const names = await assigneeNameMap(toAdd);
+      await prisma.taskAssignee.createMany({
+        data: toAdd.map((e) => ({
+          taskId: task.id,
+          assigneeEmail: e,
+          assigneeName: names.get(e) ?? null
+        }))
+      });
+
+      for (const e of toAdd) {
+        if (e === actor.email) continue;
+        const assigneeName = names.get(e) ?? e.split("@")[0];
+        const welcome = `@@SYSTEM@@Hi ${assigneeName}, you are added to a new task. Please check above.`;
+        await prisma.complaintEvent.create({
+          data: {
+            complaintId: task.id,
+            type: "COMMENT",
+            authorEmail: actor.email,
+            authorType: "MEMBER",
+            message: welcome
+          }
+        });
+        await prisma.taskNotification.create({
+          data: {
+            recipientEmail: e,
+            taskId: task.id,
+            taskTitle: task.title,
+            type: "ASSIGNED",
+            message: `${actor.name ?? actor.email} added you to task "${task.title}"`
+          }
+        });
+      }
+    }
+
+    const updated = await prisma.complaint.findUnique({
+      where: { id: task.id },
+      include: { assignees: true }
     });
     res.json({ success: true, task: updated });
   } catch (err) {
@@ -704,6 +946,7 @@ router.get("/:id", verifyComplaintAuth, async (req, res, next) => {
           include: { attachments: true, assignees: true }
         },
         events: {
+          where: { deletedAt: null },
           orderBy: { createdAt: "asc" },
           include: { attachments: true }
         }
@@ -821,6 +1064,48 @@ router.post("/:id/comment", verifyComplaintAuth, upload.array("files", 5), async
     }
 
     res.json({ success: true, event });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete("/:id/events/:eventId", verifyComplaintAuth, async (req, res, next) => {
+  try {
+    const actor = req.complaintUser!;
+    const event = await prisma.complaintEvent.findFirst({
+      where: {
+        id: req.params.eventId,
+        complaintId: req.params.id,
+        deletedAt: null,
+        type: "COMMENT"
+      }
+    });
+    if (!event) {
+      res.status(404).json({ success: false, error: "Message not found", code: "NOT_FOUND" });
+      return;
+    }
+    if (event.authorEmail.toLowerCase() !== actor.email.toLowerCase()) {
+      res.status(403).json({ success: false, error: "Not authorized", code: "FORBIDDEN" });
+      return;
+    }
+    if (event.message?.startsWith("@@SYSTEM@@")) {
+      res.status(403).json({ success: false, error: "Cannot delete system message", code: "FORBIDDEN" });
+      return;
+    }
+    const ageMs = Date.now() - event.createdAt.getTime();
+    if (ageMs > 15 * 60 * 1000) {
+      res.status(403).json({
+        success: false,
+        error: "Messages can only be deleted within 15 minutes",
+        code: "DELETE_WINDOW_EXPIRED"
+      });
+      return;
+    }
+    await prisma.complaintEvent.update({
+      where: { id: event.id },
+      data: { deletedAt: new Date() }
+    });
+    res.json({ success: true });
   } catch (err) {
     next(err);
   }

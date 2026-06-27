@@ -24,7 +24,8 @@ import {
   upsertGoogleUser,
   updateProfile,
   verifyOtpAndLogin,
-  changePassword
+  changePassword,
+  setPassword
 } from "./service";
 import { requestPasswordReset, resetPassword } from "./passwordReset.service";
 import {
@@ -33,7 +34,8 @@ import {
   sendOtpSchema,
   updateProfileSchema,
   verifyOtpSchema,
-  changePasswordSchema
+  changePasswordSchema,
+  setPasswordSchema
 } from "./schemas";
 
 function asyncHandler(
@@ -234,6 +236,16 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     await changePassword(req.authUser!.id, req.body);
     res.json({ success: true, message: "Password updated" });
+  })
+);
+
+authRouter.post(
+  "/set-password",
+  requireAuth,
+  validateBody(setPasswordSchema),
+  asyncHandler(async (req, res) => {
+    await setPassword(req.authUser!.id, req.body);
+    res.json({ success: true, message: "Password set" });
   })
 );
 

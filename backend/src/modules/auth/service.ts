@@ -127,15 +127,19 @@ function publicUser(u: {
   email: string;
   phone: string | null;
   name: string | null;
+  avatarUrl?: string | null;
   role: string;
   isVerified: boolean;
   createdAt: Date;
+  passwordHash?: string | null;
 }) {
   return {
     id: u.id,
     email: u.email,
     phone: u.phone,
     name: u.name,
+    avatarUrl: u.avatarUrl ?? null,
+    hasPassword: !!u.passwordHash,
     role: u.role,
     isVerified: u.isVerified,
     createdAt: u.createdAt
@@ -348,6 +352,21 @@ export async function changePassword(userId: string, body: ChangePasswordBody) {
   const ok = await verifyPassword(body.currentPassword, user.passwordHash);
   if (!ok) {
     throw httpError(401, "Current password is incorrect", "INVALID_PASSWORD");
+  }
+  const passwordHash = await hashPassword(body.newPassword);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash }
+  });
+}
+
+export async function setPassword(userId: string, body: { newPassword: string }) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || user.deletedAt) {
+    throw httpError(404, "User not found", "USER_NOT_FOUND");
+  }
+  if (user.passwordHash) {
+    throw httpError(400, "Password already set. Use change password instead.", "PASSWORD_ALREADY_SET");
   }
   const passwordHash = await hashPassword(body.newPassword);
   await prisma.user.update({
