@@ -3,6 +3,31 @@ export type ShipmentCarrierMeta = {
   direction?: string;
   mpsWaybills?: string[];
   carrier?: string;
+  paymentMode?: "Pre-paid" | "COD" | string;
+  shippingMode?: "S" | "E" | string;
+  delhiveryFreightInr?: number | null;
+  chargeableGrams?: number | null;
+  customerShippingInPaise?: number | null;
+  lengthCm?: number;
+  breadthCm?: number;
+  heightCm?: number;
+  weightGrams?: number;
+  boxes?: Array<{
+    lengthCm: number;
+    breadthCm: number;
+    heightCm: number;
+    weightGrams: number;
+    packageType?: string;
+  }>;
+};
+
+export type ShipmentLike = {
+  id: string;
+  courier: string;
+  awb: string | null;
+  trackingUrl: string | null;
+  status: string;
+  carrierMeta?: ShipmentCarrierMeta | null;
 };
 
 export type AwbLabelRow = {
@@ -17,7 +42,28 @@ export type AwbLabelRow = {
   isDelhiveryIntegrated: boolean;
 };
 
-function delhiveryTrackUrl(awb: string): string {
+export function primaryForwardShipment<T extends ShipmentLike>(shipments: T[]): T | undefined {
+  return (
+    shipments.find(
+      (s) => s.awb?.trim() && !s.carrierMeta?.manual && s.carrierMeta?.direction !== "REVERSE"
+    ) ?? shipments.find((s) => s.awb?.trim() && !s.carrierMeta?.manual)
+  );
+}
+
+export function shippingModeLabel(mode: string | null | undefined): string {
+  if (mode === "E") return "Express";
+  if (mode === "S") return "Surface";
+  return mode?.trim() || "—";
+}
+
+export function paymentModeLabel(mode: string | null | undefined): string {
+  if (!mode) return "—";
+  if (mode.toUpperCase() === "COD") return "Cash on delivery (COD)";
+  if (mode.toLowerCase().includes("pre")) return "Prepaid";
+  return mode;
+}
+
+export function delhiveryTrackUrl(awb: string): string {
   return `https://www.delhivery.com/track/package/${encodeURIComponent(awb)}`;
 }
 
@@ -25,14 +71,7 @@ export function isDelhiveryIntegratedCourier(courier: string): boolean {
   return courier.trim().toLowerCase().includes("delhivery");
 }
 
-export function expandShipmentAwbs(shipment: {
-  id: string;
-  courier: string;
-  awb: string | null;
-  trackingUrl: string | null;
-  status: string;
-  carrierMeta?: ShipmentCarrierMeta | null;
-}): AwbLabelRow[] {
+export function expandShipmentAwbs(shipment: ShipmentLike): AwbLabelRow[] {
   const awb = shipment.awb?.trim();
   if (!awb) return [];
 
@@ -76,15 +115,6 @@ export function expandShipmentAwbs(shipment: {
   ];
 }
 
-export function allOrderAwbRows(
-  shipments: Array<{
-    id: string;
-    courier: string;
-    awb: string | null;
-    trackingUrl: string | null;
-    status: string;
-    carrierMeta?: ShipmentCarrierMeta | null;
-  }>
-): AwbLabelRow[] {
+export function allOrderAwbRows(shipments: ShipmentLike[]): AwbLabelRow[] {
   return shipments.flatMap((s) => expandShipmentAwbs(s));
 }

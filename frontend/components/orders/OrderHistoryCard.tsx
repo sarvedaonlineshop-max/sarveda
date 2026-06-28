@@ -7,6 +7,7 @@ import { formatMinorFromPaise } from "@/lib/money";
 import type { OrderSummary } from "@/lib/orders-api";
 import { orderCancelledPageUrl, orderInvoiceDownloadUrl } from "@/lib/orders-api";
 import { checkoutReorderUrl } from "@/lib/reorder-cancelled";
+import { delhiveryTrackUrl } from "@/lib/shipment-labels";
 
 function formatPlacedDate(value: string | null): string {
   if (!value) return "—";
@@ -82,6 +83,14 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
   const cancelledDetailsHref = orderCancelledPageUrl(order.orderNumber, email);
   const { title, sub } = statusHeadline(order);
   const totalLabel = formatMinorFromPaise(order.grandTotalInPaise, order.currency);
+  const courierTrackUrl =
+    order.trackingUrl?.trim() ||
+    (order.awb?.trim() ? delhiveryTrackUrl(order.awb.trim()) : null);
+  const canTrackCourier =
+    paid &&
+    !!courierTrackUrl &&
+    ["PROCESSING", "PACKED", "SHIPPED", "DELIVERED"].includes(order.status);
+  const deliveryPartner = order.deliveryPartner?.trim() || null;
 
   return (
     <article className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
@@ -121,6 +130,15 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
           <p className="mt-1 text-xs text-stone-500">
             {order.itemCount} item{order.itemCount === 1 ? "" : "s"}
           </p>
+          {canTrackCourier && deliveryPartner ? (
+            <p className="mt-2 text-xs text-stone-600">
+              Delivery partner:{" "}
+              <span className="font-semibold text-stone-800">{deliveryPartner}</span>
+              {order.awb ? (
+                <span className="mt-0.5 block font-mono text-[11px] text-stone-500">AWB {order.awb}</span>
+              ) : null}
+            </p>
+          ) : null}
         </div>
 
         {/* ── Actions ── */}
@@ -161,16 +179,25 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
               </Link>
             </>
           ) : (
-            <Link
-              href={detailsHref}
-              className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-stone-900 px-4 text-sm font-medium text-white hover:bg-stone-700"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
-                <circle cx="12" cy="9" r="2.5"/>
-              </svg>
-              Track order
-            </Link>
+            <>
+              {canTrackCourier ? (
+                <a
+                  href={courierTrackUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-sky-700 bg-sky-50 px-4 text-sm font-medium text-sky-900 no-underline hover:bg-sky-100"
+                >
+                  Track package
+                </a>
+              ) : (
+                <Link
+                  href={detailsHref}
+                  className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-stone-900 px-4 text-sm font-medium text-white hover:bg-stone-700"
+                >
+                  View order details
+                </Link>
+              )}
+            </>
           )}
 
           {/* Invoice (paid orders only) */}

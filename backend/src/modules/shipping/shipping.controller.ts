@@ -166,6 +166,9 @@ export async function createShipmentForOrder(req: Request, res: Response, next: 
         weightGrams: z.number().int().min(50).max(500_000).optional(),
         packageType: z.enum(["PLASTIC_COVER", "CARDBOARD_BOX"]).optional(),
         shippingMode: z.enum(["S", "E"]).optional(),
+        delhiveryFreightInr: z.number().min(0).optional(),
+        chargeableGrams: z.number().int().min(0).optional(),
+        customerShippingInPaise: z.number().int().min(0).optional(),
         boxes: z
           .array(
             z.object({
@@ -203,6 +206,9 @@ export async function createShipmentForOrder(req: Request, res: Response, next: 
       weightGrams,
       packageType,
       shippingMode,
+      delhiveryFreightInr,
+      chargeableGrams,
+      customerShippingInPaise,
       boxes
     } = bodyParsed.data;
     if (preferredCourier) {
@@ -222,6 +228,9 @@ export async function createShipmentForOrder(req: Request, res: Response, next: 
       ...(weightGrams != null ? { weightGrams } : {}),
       ...(packageType ? { packageType } : {}),
       ...(shippingMode ? { shippingMode } : {}),
+      ...(delhiveryFreightInr != null ? { delhiveryFreightInr } : {}),
+      ...(chargeableGrams != null ? { chargeableGrams } : {}),
+      ...(customerShippingInPaise != null ? { customerShippingInPaise } : {}),
       ...(boxes?.length ? { boxes } : {})
     });
     if (!result.success) {

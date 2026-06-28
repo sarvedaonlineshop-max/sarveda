@@ -111,10 +111,22 @@ function serializeOrderSummary(order: {
   items: Array<{ nameSnapshot: string; qtyOrdered: number }>;
   invoice: { invoiceNo: string } | null;
   payments?: Array<{ provider: string }>;
+  shipments?: Array<{
+    courier: string;
+    awb: string | null;
+    trackingUrl: string | null;
+    status: string;
+    carrierMeta?: unknown;
+  }>;
 }) {
   const headline = order.items[0]?.nameSnapshot ?? "Order";
   const itemCount = order.items.reduce((sum, row) => sum + row.qtyOrdered, 0);
   const paymentProvider = order.payments?.[0]?.provider ?? null;
+  const trackShipment =
+    order.shipments?.find((s) => {
+      const meta = s.carrierMeta as { manual?: boolean; direction?: string } | null;
+      return s.awb?.trim() && !meta?.manual && meta?.direction !== "REVERSE";
+    }) ?? order.shipments?.find((s) => s.awb?.trim());
   return {
     orderNumber: order.orderNumber,
     email: order.email,
@@ -128,7 +140,11 @@ function serializeOrderSummary(order: {
     placedAt: order.placedAt,
     itemCount,
     headline,
-    invoiceNo: order.invoice?.invoiceNo ?? null
+    invoiceNo: order.invoice?.invoiceNo ?? null,
+    deliveryPartner: trackShipment?.courier ?? null,
+    awb: trackShipment?.awb ?? null,
+    trackingUrl: trackShipment?.trackingUrl ?? null,
+    shipmentStatus: trackShipment?.status ?? null
   };
 }
 
@@ -146,7 +162,12 @@ export async function listMine(req: Request, res: Response, next: NextFunction) 
       include: {
         items: { orderBy: { nameSnapshot: "asc" } },
         invoice: true,
-        payments: { orderBy: { createdAt: "desc" }, take: 1 }
+        payments: { orderBy: { createdAt: "desc" }, take: 1 },
+        shipments: {
+          where: { awb: { not: null } },
+          orderBy: { createdAt: "desc" },
+          take: 3
+        }
       }
     });
 

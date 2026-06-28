@@ -332,6 +332,9 @@ export function adminCreateShipmentForOrder(
     weightGrams?: number;
     packageType?: "PLASTIC_COVER" | "CARDBOARD_BOX";
     shippingMode?: "S" | "E";
+    delhiveryFreightInr?: number;
+    chargeableGrams?: number;
+    customerShippingInPaise?: number;
     boxes?: DelhiveryShipBox[];
   }
 ) {

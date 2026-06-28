@@ -66,6 +66,10 @@ export type OrderSummary = {
   itemCount: number;
   headline: string;
   invoiceNo: string | null;
+  deliveryPartner?: string | null;
+  awb?: string | null;
+  trackingUrl?: string | null;
+  shipmentStatus?: string | null;
 };
 
 export async function fetchOrderPublic(orderNumber: string, email: string): Promise<OrderPublic> {

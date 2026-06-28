@@ -276,6 +276,10 @@ export type AutoShipmentCreateOptions = {
   packageType?: "PLASTIC_COVER" | "CARDBOARD_BOX";
   shippingMode?: "S" | "E";
   boxes?: import("./delhivery").DelhiveryBoxInput[];
+  /** Delhivery freight API estimate at booking time (INR). */
+  delhiveryFreightInr?: number;
+  chargeableGrams?: number;
+  customerShippingInPaise?: number;
 };
 
 /** Shiprocket/Delhivery channel order id — first label uses Sarveda order number; retries get -R2, -R3 after cancel. */
@@ -513,10 +517,14 @@ export async function autoSelectAndCreate(
           weightGrams,
           packageType: options?.packageType ?? null,
           shippingMode: options?.shippingMode ?? "S",
+          paymentMode: paymentMode === "COD" ? "COD" : "Pre-paid",
           pickupLocation: delhiveryPickup ?? null,
           orderValueRupees,
           boxes: boxes ?? null,
-          mpsWaybills: created.data.mpsWaybills ?? null
+          mpsWaybills: created.data.mpsWaybills ?? null,
+          delhiveryFreightInr: options?.delhiveryFreightInr ?? null,
+          chargeableGrams: options?.chargeableGrams ?? null,
+          customerShippingInPaise: options?.customerShippingInPaise ?? null
         },
         nextSeq
       );

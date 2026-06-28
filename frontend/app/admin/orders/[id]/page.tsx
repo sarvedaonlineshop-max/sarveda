@@ -33,17 +33,33 @@ import {
 } from "@/lib/order-status-display";
 import {
   digitsOnly,
+  breakdownChargeableWeight,
   totalChargeableWeightGrams,
   validateBoxDimensions
 } from "@/lib/chargeable-weight";
 import { DEFAULT_SHIP_BOX_PRESET, SHIP_BOX_PRESETS } from "@/lib/ship-box-presets";
-import { allOrderAwbRows } from "@/lib/shipment-labels";
+import { allOrderAwbRows, paymentModeLabel, primaryForwardShipment, shippingModeLabel, type ShipmentCarrierMeta } from "@/lib/shipment-labels";
 
 const MAX_SHIP_BOXES = 5;
 /** Per-line warehouse/courier bulk UI — hidden until multi-carrier routing is re-enabled. */
 const SHOW_LEGACY_PER_LINE_FULFILLMENT = false;
 const DIM_MIN_CM = 5;
 const DIM_MAX_CM = 200;
+
+const AWB_PILL = {
+  track:
+    "inline-flex min-h-[30px] items-center rounded-full border border-sky-700 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-900 no-underline hover:bg-sky-100 dark:border-sky-500 dark:bg-sky-950/40 dark:text-sky-100",
+  sync:
+    "inline-flex min-h-[30px] items-center rounded-full border border-violet-700 bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-900 hover:bg-violet-100 disabled:opacity-50 dark:border-violet-500 dark:bg-violet-950/40 dark:text-violet-100",
+  label:
+    "inline-flex min-h-[30px] items-center rounded-full border border-emerald-700 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-900 no-underline hover:bg-emerald-100 dark:border-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-100",
+  cancel:
+    "inline-flex min-h-[30px] items-center rounded-full border border-red-700 bg-red-50 px-3 py-1 text-xs font-semibold text-red-800 hover:bg-red-100 disabled:opacity-50 dark:border-red-600 dark:bg-red-950/40 dark:text-red-200",
+  return:
+    "inline-flex min-h-[30px] items-center rounded-full border border-amber-700 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-950 hover:bg-amber-100 disabled:opacity-50 dark:border-amber-500 dark:bg-amber-950/40 dark:text-amber-100",
+  save:
+    "inline-flex min-h-[30px] items-center rounded-full border border-stone-700 bg-stone-800 px-3 py-1 text-xs font-semibold text-amber-50 hover:bg-stone-700 disabled:opacity-50 dark:border-stone-500 dark:bg-stone-200 dark:text-stone-900"
+} as const;
 
 function defaultShipBox(weightGrams = 500): DelhiveryShipBox {
   return {
@@ -118,12 +134,7 @@ type ShipmentRow = {
   rtoAt?: string | null;
   updatedAt?: string;
   pickupLocation?: { id: string; label: string; shiprocketPickupName: string } | null;
-  carrierMeta?: {
-    manual?: boolean;
-    direction?: string;
-    mpsWaybills?: string[];
-    carrier?: string;
-  } | null;
+  carrierMeta?: ShipmentCarrierMeta | null;
 };
 
 type RefundRow = {
@@ -191,12 +202,14 @@ function RefundCancelPanel({
   orderId,
   status,
   paymentStatus,
-  onDone
+  onDone,
+  compact
 }: {
   orderId: string;
   status: string;
   paymentStatus: string;
   onDone: () => void;
+  compact?: boolean;
 }) {
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
@@ -248,17 +261,13 @@ function RefundCancelPanel({
 
   if (!canCancel && !canRefund) return null;
 
+  const shell = compact
+    ? "min-w-0 flex-1 lg:max-w-md"
+    : "mt-4 rounded-xl border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700 dark:bg-stone-900";
+
   return (
-    <div
-      style={{
-        border: "1px solid #e8e2d9",
-        borderRadius: "12px",
-        background: "#fff",
-        padding: "20px 24px",
-        marginTop: "16px"
-      }}
-    >
-      <p style={{ fontSize: "13px", fontWeight: 700, color: "#2c2420", marginBottom: "12px" }}>
+    <div className={shell}>
+      <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">
         {canRefund ? "Refund" : "Cancel order"}
       </p>
 
@@ -266,36 +275,18 @@ function RefundCancelPanel({
         placeholder="Reason (optional)"
         value={reason}
         onChange={(e) => setReason(e.target.value)}
-        style={{
-          width: "100%",
-          padding: "8px 12px",
-          border: "1px solid #e0d8ce",
-          borderRadius: "8px",
-          fontSize: "13px",
-          marginBottom: "12px",
-          boxSizing: "border-box"
-        }}
+        className="mt-2 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
       />
 
-      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+      <div className="mt-3 flex flex-wrap gap-2">
         {canCancel ? (
           <button
             type="button"
             disabled={busy}
             onClick={() => setConfirm("cancel")}
-            style={{
-              padding: "8px 16px",
-              borderRadius: "8px",
-              border: "1px solid #e0d8ce",
-              background: "#fff",
-              fontSize: "13px",
-              fontWeight: 600,
-              color: "#6b5c52",
-              cursor: "pointer",
-              opacity: busy ? 0.5 : 1
-            }}
+            className="inline-flex min-h-[34px] items-center rounded-full border border-stone-400 bg-white px-4 text-xs font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-50 dark:border-stone-500 dark:bg-stone-900 dark:text-stone-200"
           >
-            Cancel Order
+            Cancel order
           </button>
         ) : null}
         {canRefund ? (
@@ -303,66 +294,32 @@ function RefundCancelPanel({
             type="button"
             disabled={busy}
             onClick={() => setConfirm("refund")}
-            style={{
-              padding: "8px 16px",
-              borderRadius: "8px",
-              border: "1px solid #dc2626",
-              background: "rgba(220,38,38,0.06)",
-              fontSize: "13px",
-              fontWeight: 600,
-              color: "#dc2626",
-              cursor: "pointer",
-              opacity: busy ? 0.5 : 1
-            }}
+            className="inline-flex min-h-[34px] items-center rounded-full border border-red-700 bg-red-50 px-4 text-xs font-semibold text-red-800 hover:bg-red-100 disabled:opacity-50 dark:border-red-600 dark:bg-red-950/40 dark:text-red-200"
           >
-            {busy ? "Processing..." : "Refund to Customer"}
+            {busy ? "Processing…" : "Refund to customer"}
           </button>
         ) : null}
       </div>
 
       {confirm ? (
-        <div
-          style={{
-            marginTop: "12px",
-            padding: "12px 16px",
-            background: "#fef2f2",
-            borderRadius: "8px",
-            border: "1px solid #fecaca"
-          }}
-        >
-          <p style={{ fontSize: "13px", color: "#991b1b", marginBottom: "10px" }}>
+        <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950/40">
+          <p className="text-xs text-red-900 dark:text-red-200">
             {confirm === "refund"
               ? "Refund the full amount to the customer’s original payment method and restore stock?"
               : "Cancel this unpaid order and release reserved stock?"}
           </p>
-          <div style={{ display: "flex", gap: "8px" }}>
+          <div className="mt-2 flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => void execute(confirm)}
-              style={{
-                padding: "6px 14px",
-                borderRadius: "6px",
-                background: "#dc2626",
-                color: "#fff",
-                border: "none",
-                fontSize: "12px",
-                fontWeight: 700,
-                cursor: "pointer"
-              }}
+              className="inline-flex min-h-[30px] items-center rounded-full bg-red-700 px-3 py-1 text-xs font-bold text-white hover:bg-red-800"
             >
               Yes, confirm
             </button>
             <button
               type="button"
               onClick={() => setConfirm(null)}
-              style={{
-                padding: "6px 14px",
-                borderRadius: "6px",
-                background: "#fff",
-                border: "1px solid #e0d8ce",
-                fontSize: "12px",
-                cursor: "pointer"
-              }}
+              className="inline-flex min-h-[30px] items-center rounded-full border border-stone-300 bg-white px-3 py-1 text-xs font-semibold text-stone-700 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-200"
             >
               No, go back
             </button>
@@ -372,14 +329,11 @@ function RefundCancelPanel({
 
       {msg ? (
         <p
-          style={{
-            marginTop: "10px",
-            fontSize: "13px",
-            color: msg.ok ? "#166534" : "#dc2626",
-            background: msg.ok ? "#dcfce7" : "#fee2e2",
-            padding: "8px 12px",
-            borderRadius: "6px"
-          }}
+          className={`mt-2 rounded-lg px-3 py-2 text-xs ${
+            msg.ok
+              ? "bg-emerald-50 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100"
+              : "bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-200"
+          }`}
         >
           {msg.text}
         </p>
@@ -798,7 +752,7 @@ export default function AdminOrderDetailPage() {
   }
 
   async function handleRetryShipment() {
-    if (!id) return;
+    if (!id || !order) return;
     const invalidBox = shipBoxes.find(
       (b) => validateBoxDimensions(b.lengthCm, b.breadthCm, b.heightCm) != null
     );
@@ -831,6 +785,9 @@ export default function AdminOrderDetailPage() {
         weightGrams: activeShipBox.weightGrams,
         packageType: activeShipBox.packageType,
         shippingMode: shipMode,
+        delhiveryFreightInr: freightByMode[shipMode] ?? undefined,
+        chargeableGrams: totalChargeableG,
+        customerShippingInPaise: order.shippingInPaise,
         boxes: shipBoxes
       });
       await load();
@@ -1013,7 +970,54 @@ export default function AdminOrderDetailPage() {
   const hasRazorpay = (order.payments ?? []).some((p) => p.provider === "RAZORPAY");
   const shipUi = carrierUiEnabled(order);
   const awbRows = allOrderAwbRows(order.shipments);
+  const forwardShipment = primaryForwardShipment(order.shipments);
+  const hasForwardAwb = !!forwardShipment?.awb?.trim();
+  const forwardMeta = forwardShipment?.carrierMeta;
+  const bookingBoxes =
+    forwardMeta?.boxes && forwardMeta.boxes.length > 0
+      ? forwardMeta.boxes
+      : forwardMeta?.lengthCm
+        ? [
+            {
+              lengthCm: forwardMeta.lengthCm,
+              breadthCm: forwardMeta.breadthCm ?? 0,
+              heightCm: forwardMeta.heightCm ?? 0,
+              weightGrams: forwardMeta.weightGrams ?? 0,
+              packageType: "CARDBOARD_BOX"
+            }
+          ]
+        : [];
   const canInitiateReturn = ["DELIVERED", "SHIPPED"].includes(order.status);
+  const customerShippingCharged =
+    forwardMeta?.customerShippingInPaise ?? order.shippingInPaise;
+  const delhiveryFreightBooked = forwardMeta?.delhiveryFreightInr;
+  const bookedPaymentMode =
+    forwardMeta?.paymentMode ??
+    ((order.payments ?? []).some((p) => p.provider === "COD") ? "COD" : "Pre-paid");
+  const bookedShippingMode = forwardMeta?.shippingMode ?? null;
+  const bookedChargeableG =
+    forwardMeta?.chargeableGrams ??
+    (bookingBoxes.length
+      ? bookingBoxes.reduce(
+          (sum, b) =>
+            sum +
+            breakdownChargeableWeight({
+              lengthCm: b.lengthCm,
+              breadthCm: b.breadthCm,
+              heightCm: b.heightCm,
+              weightGrams: b.weightGrams,
+              packageType: (b.packageType as "PLASTIC_COVER" | "CARDBOARD_BOX") ?? "CARDBOARD_BOX"
+            }).chargeableGrams,
+          0
+        )
+      : null);
+  const showRefundActions =
+    !["CANCELLED", "REFUNDED", "DELIVERED"].includes(order.status) &&
+    ((order.paymentStatus === "CAPTURED" &&
+      ["PAID", "PROCESSING", "PACKED", "SHIPPED"].includes(order.status)) ||
+      order.status === "PENDING_PAYMENT" ||
+      order.paymentStatus === "PENDING" ||
+      order.paymentStatus === "FAILED");
 
   return (
     <div className="space-y-8">
@@ -1302,37 +1306,42 @@ export default function AdminOrderDetailPage() {
                 {reconcileBusy ? "Checking Razorpay…" : "Sync payment (Razorpay)"}
               </button>
             ) : null}
-            <RefundCancelPanel
-              orderId={order.id}
-              status={order.status}
-              paymentStatus={order.paymentStatus}
-              onDone={() => void load()}
-            />
           </div>
         </div>
       </div>
 
-      {invoice ? (
-        <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900">
-          <span className="text-sm font-semibold text-stone-700 dark:text-stone-200">Invoice</span>
-          {invoice.invoiceNo ? (
-            <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">{invoice.invoiceNo}</p>
+      {(invoice || showRefundActions) ? (
+      <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          {invoice ? (
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Invoice</p>
+              {invoice.invoiceNo ? (
+                <p className="mt-0.5 font-mono text-xs text-stone-500 dark:text-stone-400">{invoice.invoiceNo}</p>
+              ) : null}
+              {invoice.invoiceNo || invoice.pdfUrl ? (
+                <a
+                  href={invoice.downloadUrl ?? adminOrderInvoiceDownloadUrl(id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-flex min-h-[34px] items-center rounded-full bg-amber-500 px-4 text-sm font-semibold text-stone-900 no-underline hover:bg-amber-400"
+                >
+                  Download PDF
+                </a>
+              ) : (
+                <p className="mt-2 text-sm text-stone-400 dark:text-stone-500">Invoice PDF not generated yet</p>
+              )}
+            </div>
           ) : null}
-          <div className="mt-3">
-            {invoice.invoiceNo || invoice.pdfUrl ? (
-              <a
-                href={invoice.downloadUrl ?? adminOrderInvoiceDownloadUrl(id)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-stone-900 hover:bg-amber-400"
-              >
-                Download PDF
-              </a>
-            ) : (
-              <span className="text-sm text-stone-400 dark:text-stone-500">Invoice PDF not generated yet</span>
-            )}
-          </div>
+          <RefundCancelPanel
+            compact
+            orderId={order.id}
+            status={order.status}
+            paymentStatus={order.paymentStatus}
+            onDone={() => void load()}
+          />
         </div>
+      </div>
       ) : null}
 
       {!order.shipments.some((s) => s.awb?.trim()) && shipUi ? (
@@ -1636,7 +1645,7 @@ export default function AdminOrderDetailPage() {
             <p className="mt-2 text-xs opacity-90">{new Date(order.shippingLastErrorAt).toLocaleString("en-IN")}</p>
           ) : null}
           <p className="mt-3 text-xs">
-            Set status to Processing to auto-retry, or use &quot;Create / retry shipment&quot; below.
+            Set status to Processing to auto-retry, or use the create shipment panel above.
           </p>
         </div>
       ) : null}
@@ -1653,30 +1662,24 @@ export default function AdminOrderDetailPage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                disabled={!!shipBusy || !shipUi}
-                onClick={() => void handleSyncAllTracking()}
-                className="rounded-lg bg-stone-800 px-3 py-2 text-xs font-semibold text-amber-100 hover:bg-stone-700 disabled:opacity-50 dark:bg-stone-200 dark:text-stone-900"
-              >
-                {shipBusy === "sync-all" ? "Syncing…" : "Refresh all tracking"}
-              </button>
-              <button
-                type="button"
-                disabled={!!shipBusy || !shipUi}
-                onClick={() => void handleRetryShipment()}
-                className="rounded-lg border border-amber-600 bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-500/20 disabled:opacity-50 dark:border-amber-500 dark:text-amber-200"
-              >
-                {shipBusy === "create" ? "Working…" : "Create / retry shipment"}
-              </button>
-              {canInitiateReturn && shipUi ? (
+              {awbRows.length > 0 ? (
                 <button
                   type="button"
-                  disabled={!!shipBusy}
-                  onClick={() => void handleCreateReturn()}
-                  className="rounded-lg border border-stone-400 bg-white px-3 py-2 text-xs font-semibold text-stone-800 hover:border-stone-600 disabled:opacity-50 dark:border-stone-500 dark:bg-stone-900 dark:text-stone-100"
+                  disabled={!!shipBusy || !shipUi}
+                  onClick={() => void handleSyncAllTracking()}
+                  className="inline-flex min-h-[34px] items-center rounded-full bg-stone-800 px-4 py-1.5 text-xs font-semibold text-amber-100 hover:bg-stone-700 disabled:opacity-50 dark:bg-stone-200 dark:text-stone-900"
                 >
-                  {shipBusy === "reverse" ? "Creating…" : "Initiate Delhivery return"}
+                  {shipBusy === "sync-all" ? "Syncing…" : "Refresh all tracking"}
+                </button>
+              ) : null}
+              {!hasForwardAwb ? (
+                <button
+                  type="button"
+                  disabled={!!shipBusy || !shipUi}
+                  onClick={() => void handleRetryShipment()}
+                  className="inline-flex min-h-[34px] items-center rounded-full border border-amber-700 bg-amber-50 px-4 py-1.5 text-xs font-semibold text-amber-950 hover:bg-amber-100 disabled:opacity-50 dark:border-amber-500 dark:bg-amber-950/40 dark:text-amber-100"
+                >
+                  {shipBusy === "create" ? "Working…" : "Create / retry shipment"}
                 </button>
               ) : null}
             </div>
@@ -1761,10 +1764,100 @@ export default function AdminOrderDetailPage() {
         </div>
 
         <div className="border-t border-stone-100 px-4 py-4 dark:border-stone-700">
-          <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Shipping labels &amp; AWBs</p>
-          <p className="mt-1 text-[11px] text-stone-500">
-            Delhivery AWBs are created above. For FedEx, India Post, or Shiprocket booked outside Sarveda, paste the reference below.
-          </p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Shipping labels &amp; AWBs</p>
+              <p className="mt-1 text-[11px] text-stone-500">
+                Delhivery AWBs are created above. For FedEx, India Post, or Shiprocket booked outside Sarveda, paste the reference below.
+              </p>
+            </div>
+            {canInitiateReturn && shipUi ? (
+              <button
+                type="button"
+                disabled={!!shipBusy}
+                onClick={() => void handleCreateReturn()}
+                className={AWB_PILL.return}
+              >
+                {shipBusy === "reverse" ? "Creating…" : "Initiate Delhivery return"}
+              </button>
+            ) : null}
+          </div>
+
+          {hasForwardAwb ? (
+            <div className="mt-4 rounded-lg border border-stone-200 bg-white px-3 py-3 dark:border-stone-600 dark:bg-stone-950/30">
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Delhivery booking summary</p>
+              <dl className="mt-2 grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-3">
+                <div>
+                  <dt className="text-stone-500">Customer shipping (checkout)</dt>
+                  <dd className="font-semibold text-stone-900 dark:text-stone-100">
+                    {formatMinorFromPaise(customerShippingCharged, order.currency)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-stone-500">Delhivery freight (at booking)</dt>
+                  <dd className="font-semibold text-stone-900 dark:text-stone-100">
+                    {delhiveryFreightBooked != null
+                      ? `₹${delhiveryFreightBooked.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`
+                      : "—"}
+                    {delhiveryFreightBooked != null &&
+                    customerShippingCharged !== Math.round((delhiveryFreightBooked ?? 0) * 100) ? (
+                      <span className="mt-0.5 block text-[10px] font-normal text-amber-800 dark:text-amber-300">
+                        May differ from checkout table — Delhivery API rate at booking time.
+                      </span>
+                    ) : null}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-stone-500">Payment mode</dt>
+                  <dd className="font-semibold text-stone-900 dark:text-stone-100">
+                    {paymentModeLabel(bookedPaymentMode)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-stone-500">Shipping mode</dt>
+                  <dd className="font-semibold text-stone-900 dark:text-stone-100">
+                    {shippingModeLabel(bookedShippingMode)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-stone-500">Total chargeable weight</dt>
+                  <dd className="font-semibold text-stone-900 dark:text-stone-100">
+                    {bookedChargeableG != null
+                      ? `${bookedChargeableG.toLocaleString("en-IN")} gm`
+                      : "—"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-stone-500">Boxes</dt>
+                  <dd className="font-semibold text-stone-900 dark:text-stone-100">
+                    {bookingBoxes.length > 0 ? bookingBoxes.length : "—"}
+                  </dd>
+                </div>
+              </dl>
+              {bookingBoxes.length > 0 ? (
+                <ul className="mt-3 space-y-1.5 border-t border-stone-100 pt-2 text-[11px] text-stone-600 dark:border-stone-700 dark:text-stone-300">
+                  {bookingBoxes.map((box, idx) => {
+                    const vol = breakdownChargeableWeight({
+                      lengthCm: box.lengthCm,
+                      breadthCm: box.breadthCm,
+                      heightCm: box.heightCm,
+                      weightGrams: box.weightGrams,
+                      packageType: (box.packageType as "PLASTIC_COVER" | "CARDBOARD_BOX") ?? "CARDBOARD_BOX"
+                    });
+                    return (
+                      <li key={idx}>
+                        <span className="font-semibold text-stone-800 dark:text-stone-100">Box {idx + 1}:</span>{" "}
+                        {box.lengthCm}×{box.breadthCm}×{box.heightCm} cm · dead {box.weightGrams.toLocaleString("en-IN")}{" "}
+                        gm · volumetric {vol.volumetricGrams.toLocaleString("en-IN")} gm · chargeable{" "}
+                        {vol.chargeableGrams.toLocaleString("en-IN")} gm
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
+
           {awbRows.length === 0 ? (
             <p className="mt-3 text-sm text-stone-400">No AWB yet — create a Delhivery shipment or add an external reference.</p>
           ) : (
@@ -1782,13 +1875,13 @@ export default function AdminOrderDetailPage() {
                         {row.courier} · {row.status.replace(/_/g, " ")}
                       </p>
                     </div>
-                    <div className="flex flex-wrap gap-2 text-xs">
+                    <div className="flex flex-wrap gap-2">
                       {row.trackingUrl ? (
                         <a
                           href={row.trackingUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="font-semibold text-amber-800 underline dark:text-amber-400"
+                          className={AWB_PILL.track}
                         >
                           Track
                         </a>
@@ -1797,7 +1890,7 @@ export default function AdminOrderDetailPage() {
                         <>
                           <button
                             type="button"
-                            className="font-semibold text-stone-700 underline dark:text-stone-300"
+                            className={AWB_PILL.sync}
                             disabled={!!shipBusy || !shipUi}
                             onClick={() => void handleTrackOne(row.awb)}
                           >
@@ -1807,18 +1900,18 @@ export default function AdminOrderDetailPage() {
                             href={delhiveryLabelUrl(row.awb)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex rounded-lg border border-emerald-900/30 bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-950 no-underline hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100"
+                            className={AWB_PILL.label}
                           >
-                            Download Delhivery label
+                            Download label
                           </a>
                           {row.role === "parent" || row.role === "return" ? (
                             <button
                               type="button"
-                              className="font-semibold text-red-700 underline dark:text-red-400"
+                              className={AWB_PILL.cancel}
                               disabled={!!shipBusy}
                               onClick={() => setCancelAwbConfirm(row.cancelWaybill)}
                             >
-                              Cancel Delhivery label
+                              Cancel label
                             </button>
                           ) : null}
                         </>
@@ -1867,7 +1960,7 @@ export default function AdminOrderDetailPage() {
                 type="button"
                 onClick={() => void handleSaveManualAwb()}
                 disabled={!!shipBusy || !shipUi}
-                className="rounded-lg bg-stone-800 px-3.5 py-1.5 text-xs font-semibold text-amber-50 hover:bg-stone-700 disabled:opacity-50 dark:bg-stone-200 dark:text-stone-900"
+                className={AWB_PILL.save}
               >
                 {shipBusy === "manual-awb" ? "Saving…" : "Save reference"}
               </button>
