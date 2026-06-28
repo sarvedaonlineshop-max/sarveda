@@ -57,7 +57,7 @@ export function SiteFooter() {
         <div className="lg:col-span-2">
           <Link href="/">
             <p className="font-serif text-3xl italic text-brand-gold">☸ Sarveda</p>
-            <p className="mt-0.5 text-xs tracking-[0.22em] text-brand-sage">YOGA · AYURVEDA · SOUND</p>
+            <p className="mt-0.5 text-xs tracking-[0.22em] text-brand-sage">YOGA · MEDITATION · SOUND</p>
           </Link>
           <p className="mt-5 max-w-sm text-sm leading-relaxed text-stone-400">
             Authentic yoga, Ayurveda, and sound healing products — curated with care for practitioners

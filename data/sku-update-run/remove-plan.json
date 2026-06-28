@@ -1,0 +1,457 @@
+[
+  {
+    "row": 34,
+    "product_name": "7 Chakras Gold - Copper Bottle",
+    "variant_name": "with-brush / 1L",
+    "sku": "Remove",
+    "key": [
+      "7 chakras gold - copper bottle",
+      "with-brush / 1l"
+    ],
+    "variant_id": "b79fa3da-4f88-4edb-aaa7-76987714053d",
+    "variant_label": "with-brush / 1L",
+    "current_sku": "woo-var-43494"
+  },
+  {
+    "row": 35,
+    "product_name": "7 Chakras Gold - Copper Bottle",
+    "variant_name": "with-brush / 500ml",
+    "sku": "Remove",
+    "key": [
+      "7 chakras gold - copper bottle",
+      "with-brush / 500ml"
+    ],
+    "variant_id": "4b5ed50e-c659-44ef-af4e-f20b6afb2af2",
+    "variant_label": "with-brush / 500ml",
+    "current_sku": "woo-var-5785"
+  },
+  {
+    "row": 33,
+    "product_name": "7 Chakras Gold - Copper Bottle",
+    "variant_name": "without-brush / 1L",
+    "sku": "Remove",
+    "key": [
+      "7 chakras gold - copper bottle",
+      "without-brush / 1l"
+    ],
+    "variant_id": "0c1d9dba-84a3-4f82-8e9e-0c8933deefc9",
+    "variant_label": "without-brush / 1L",
+    "current_sku": "woo-var-43493"
+  },
+  {
+    "row": 32,
+    "product_name": "7 Chakras Gold - Copper Bottle",
+    "variant_name": "without-brush / 500ml",
+    "sku": "Remove",
+    "key": [
+      "7 chakras gold - copper bottle",
+      "without-brush / 500ml"
+    ],
+    "variant_id": "3b4a70c5-8f94-4e16-9048-8945264581e5",
+    "variant_label": "without-brush / 500ml",
+    "current_sku": "woo-var-5784"
+  },
+  {
+    "row": 47,
+    "product_name": "7 Chakras Moderate Grip Yoga Mat",
+    "variant_name": "Blue / Dark Grey",
+    "sku": "Remove",
+    "key": [
+      "7 chakras moderate grip yoga mat",
+      "blue / dark grey"
+    ],
+    "variant_id": "2d84841a-87a7-4530-a493-609ebe2675f7",
+    "variant_label": "Blue / Dark Grey",
+    "current_sku": "woo-var-8434"
+  },
+  {
+    "row": 50,
+    "product_name": "7 Chakras Moderate Grip Yoga Mat",
+    "variant_name": "Brown / Blue",
+    "sku": "Remove",
+    "key": [
+      "7 chakras moderate grip yoga mat",
+      "brown / blue"
+    ],
+    "variant_id": "7e756bb0-5705-4ac7-995e-01a0c570f4ac",
+    "variant_label": "Brown / Blue",
+    "current_sku": "woo-var-8437"
+  },
+  {
+    "row": 40,
+    "product_name": "7 Chakras Moderate Grip Yoga Mat",
+    "variant_name": "Brown / Green",
+    "sku": "Remove",
+    "key": [
+      "7 chakras moderate grip yoga mat",
+      "brown / green"
+    ],
+    "variant_id": "49f0e821-fd26-434f-874f-4053fd842ef6",
+    "variant_label": "Brown / Green",
+    "current_sku": "woo-var-8427"
+  },
+  {
+    "row": 55,
+    "product_name": "7 Chakras Moderate Grip Yoga Mat",
+    "variant_name": "Brown / Orange",
+    "sku": "Remove",
+    "key": [
+      "7 chakras moderate grip yoga mat",
+      "brown / orange"
+    ],
+    "variant_id": "83274688-6f94-4939-bd83-1917e2182994",
+    "variant_label": "Brown / Orange",
+    "current_sku": "woo-var-8442"
+  },
+  {
+    "row": 45,
+    "product_name": "7 Chakras Moderate Grip Yoga Mat",
+    "variant_name": "Brown / Pink",
+    "sku": "Remove",
+    "key": [
+      "7 chakras moderate grip yoga mat",
+      "brown / pink"
+    ],
+    "variant_id": "6f84be26-79b9-46b7-bf99-400508937e83",
+    "variant_label": "Brown / Pink",
+    "current_sku": "woo-var-8432"
+  },
+  {
+    "row": 37,
+    "product_name": "7 Chakras Moderate Grip Yoga Mat",
+    "variant_name": "Dark Grey / Green",
+    "sku": "Remove",
+    "key": [
+      "7 chakras moderate grip yoga mat",
+      "dark grey / green"
+    ],
+    "variant_id": "f0532a4a-8307-4a7f-93b0-cf6c921a8486",
+    "variant_label": "Dark Grey / Green",
+    "current_sku": "woo-var-8424"
+  },
+  {
+    "row": 46,
+    "product_name": "7 Chakras Moderate Grip Yoga Mat",
+    "variant_name": "Green / Blue",
+    "sku": "Remove",
+    "key": [
+      "7 chakras moderate grip yoga mat",
+      "green / blue"
+    ],
+    "variant_id": "83db4e6e-0a21-4591-9f8a-003a31601006",
+    "variant_label": "Green / Blue",
+    "current_sku": "woo-var-8433"
+  },
+  {
+    "row": 36,
+    "product_name": "7 Chakras Moderate Grip Yoga Mat",
+    "variant_name": "Green / Green",
+    "sku": "Remove",
+    "key": [
+      "7 chakras moderate grip yoga mat",
+      "green / green"
+    ],
+    "variant_id": "b20c6c9d-0cc6-4b75-a74d-139e7051373d",
+    "variant_label": "Green / Green",
+    "current_sku": "woo-var-8423"
+  },
+  {
+    "row": 51,
+    "product_name": "7 Chakras Moderate Grip Yoga Mat",
+    "variant_name": "Green / Orange",
+    "sku": "Remove",
+    "key": [
+      "7 chakras moderate grip yoga mat",
+      "green / orange"
+    ],
+    "variant_id": "989fbeb2-335d-4682-b959-31b3edc04631",
+    "variant_label": "Green / Orange",
+    "current_sku": "woo-var-8438"
+  },
+  {
+    "row": 41,
+    "product_name": "7 Chakras Moderate Grip Yoga Mat",
+    "variant_name": "Green / Pink",
+    "sku": "Remove",
+    "key": [
+      "7 chakras moderate grip yoga mat",
+      "green / pink"
+    ],
+    "variant_id": "e3be03b7-6cb5-4fd5-80c4-88d780e2c8f7",
+    "variant_label": "Green / Pink",
+    "current_sku": "woo-var-8428"
+  },
+  {
+    "row": 48,
+    "product_name": "7 Chakras Moderate Grip Yoga Mat",
+    "variant_name": "Orange / Blue",
+    "sku": "Remove",
+    "key": [
+      "7 chakras moderate grip yoga mat",
+      "orange / blue"
+    ],
+    "variant_id": "688401ba-7f3f-4e5c-9f76-bf1d430e2ae3",
+    "variant_label": "Orange / Blue",
+    "current_sku": "woo-var-8435"
+  },
+  {
+    "row": 52,
+    "product_name": "7 Chakras Moderate Grip Yoga Mat",
+    "variant_name": "Orange / Dark Grey",
+    "sku": "Remove",
+    "key": [
+      "7 chakras moderate grip yoga mat",
+      "orange / dark grey"
+    ],
+    "variant_id": "4008d8cb-be83-4707-8513-037efbe53f8f",
+    "variant_label": "Orange / Dark Grey",
+    "current_sku": "woo-var-8439"
+  },
+  {
+    "row": 38,
+    "product_name": "7 Chakras Moderate Grip Yoga Mat",
+    "variant_name": "Orange / Green",
+    "sku": "Remove",
+    "key": [
+      "7 chakras moderate grip yoga mat",
+      "orange / green"
+    ],
+    "variant_id": "ba8cbbda-6a92-4f58-a938-05122d29b107",
+    "variant_label": "Orange / Green",
+    "current_sku": "woo-var-8425"
+  },
+  {
+    "row": 53,
+    "product_name": "7 Chakras Moderate Grip Yoga Mat",
+    "variant_name": "Orange / Orange",
+    "sku": "Remove",
+    "key": [
+      "7 chakras moderate grip yoga mat",
+      "orange / orange"
+    ],
+    "variant_id": "03abb8f8-d34d-4849-81d9-7c1f721cd78b",
+    "variant_label": "Orange / Orange",
+    "current_sku": "woo-var-8440"
+  },
+  {
+    "row": 42,
+    "product_name": "7 Chakras Moderate Grip Yoga Mat",
+    "variant_name": "Pink / Dark Grey",
+    "sku": "Remove",
+    "key": [
+      "7 chakras moderate grip yoga mat",
+      "pink / dark grey"
+    ],
+    "variant_id": "168143f8-e481-4a18-860f-e6c689cbd297",
+    "variant_label": "Pink / Dark Grey",
+    "current_sku": "woo-var-8429"
+  },
+  {
+    "row": 43,
+    "product_name": "7 Chakras Moderate Grip Yoga Mat",
+    "variant_name": "Pink / Orange",
+    "sku": "Remove",
+    "key": [
+      "7 chakras moderate grip yoga mat",
+      "pink / orange"
+    ],
+    "variant_id": "63b376e8-fe82-4514-9002-ca73196b486b",
+    "variant_label": "Pink / Orange",
+    "current_sku": "woo-var-8430"
+  },
+  {
+    "row": 57,
+    "product_name": "7 Chakras Moderate Grip Yoga Mat",
+    "variant_name": "Pink / Without Strap",
+    "sku": "Remove",
+    "key": [
+      "7 chakras moderate grip yoga mat",
+      "pink / without strap"
+    ],
+    "variant_id": "1f013213-fca5-4ea1-9bc6-07108df53385",
+    "variant_label": "Pink / Without Strap",
+    "current_sku": "woo-var-8474"
+  },
+  {
+    "row": 49,
+    "product_name": "7 Chakras Moderate Grip Yoga Mat",
+    "variant_name": "White / Blue",
+    "sku": "Remove",
+    "key": [
+      "7 chakras moderate grip yoga mat",
+      "white / blue"
+    ],
+    "variant_id": "a4cecb66-9ec3-4579-983f-48e5ddbd1c08",
+    "variant_label": "White / Blue",
+    "current_sku": "woo-var-8436"
+  },
+  {
+    "row": 39,
+    "product_name": "7 Chakras Moderate Grip Yoga Mat",
+    "variant_name": "White / Green",
+    "sku": "Remove",
+    "key": [
+      "7 chakras moderate grip yoga mat",
+      "white / green"
+    ],
+    "variant_id": "1ea58ac9-0af1-43d7-8a78-3f352869bad6",
+    "variant_label": "White / Green",
+    "current_sku": "woo-var-8426"
+  },
+  {
+    "row": 54,
+    "product_name": "7 Chakras Moderate Grip Yoga Mat",
+    "variant_name": "White / Orange",
+    "sku": "Remove",
+    "key": [
+      "7 chakras moderate grip yoga mat",
+      "white / orange"
+    ],
+    "variant_id": "b8c09c02-7846-42e5-8e5f-fa2875081857",
+    "variant_label": "White / Orange",
+    "current_sku": "woo-var-8441"
+  },
+  {
+    "row": 44,
+    "product_name": "7 Chakras Moderate Grip Yoga Mat",
+    "variant_name": "White / Pink",
+    "sku": "Remove",
+    "key": [
+      "7 chakras moderate grip yoga mat",
+      "white / pink"
+    ],
+    "variant_id": "4c960055-a938-466b-9d69-426beb1db491",
+    "variant_label": "White / Pink",
+    "current_sku": "woo-var-8431"
+  },
+  {
+    "row": 58,
+    "product_name": "7 Chakras Moderate Grip Yoga Mat",
+    "variant_name": "Without Strap / Blue",
+    "sku": "Remove",
+    "key": [
+      "7 chakras moderate grip yoga mat",
+      "without strap / blue"
+    ],
+    "variant_id": "02a68bc8-d515-4039-af9a-efe9dc4017c9",
+    "variant_label": "Without Strap / Blue",
+    "current_sku": "woo-var-8475"
+  },
+  {
+    "row": 56,
+    "product_name": "7 Chakras Moderate Grip Yoga Mat",
+    "variant_name": "Without Strap / Green",
+    "sku": "Remove",
+    "key": [
+      "7 chakras moderate grip yoga mat",
+      "without strap / green"
+    ],
+    "variant_id": "56fc4321-a68e-42e9-b876-e15c1c5fb06a",
+    "variant_label": "Without Strap / Green",
+    "current_sku": "woo-var-8471"
+  },
+  {
+    "row": 59,
+    "product_name": "7 Chakras Moderate Grip Yoga Mat",
+    "variant_name": "Without Strap / Orange",
+    "sku": "Remove",
+    "key": [
+      "7 chakras moderate grip yoga mat",
+      "without strap / orange"
+    ],
+    "variant_id": "2fe3d132-f8cb-46f3-9eed-2291dbfd1713",
+    "variant_label": "Without Strap / Orange",
+    "current_sku": "woo-var-8476"
+  },
+  {
+    "row": 71,
+    "product_name": "7 Chakras Vintage - Copper Bottle",
+    "variant_name": "with-brush / 1L",
+    "sku": "Remove",
+    "key": [
+      "7 chakras vintage - copper bottle",
+      "with-brush / 1l"
+    ],
+    "variant_id": "be2d3d73-dd16-40d8-8b90-c17ad1c5f8b9",
+    "variant_label": "with-brush / 1L",
+    "current_sku": "woo-var-43492"
+  },
+  {
+    "row": 72,
+    "product_name": "7 Chakras Vintage - Copper Bottle",
+    "variant_name": "with-brush / 500ml",
+    "sku": "Remove",
+    "key": [
+      "7 chakras vintage - copper bottle",
+      "with-brush / 500ml"
+    ],
+    "variant_id": "fe08a64d-28df-4476-a55f-bc9c1d24a424",
+    "variant_label": "with-brush / 500ml",
+    "current_sku": "woo-var-5787"
+  },
+  {
+    "row": 69,
+    "product_name": "7 Chakras Vintage - Copper Bottle",
+    "variant_name": "without-brush / 1L",
+    "sku": "Remove",
+    "key": [
+      "7 chakras vintage - copper bottle",
+      "without-brush / 1l"
+    ],
+    "variant_id": "789b2482-225e-4c42-b882-e2da8e528449",
+    "variant_label": "without-brush / 1L",
+    "current_sku": "woo-var-5786"
+  },
+  {
+    "row": 70,
+    "product_name": "7 Chakras Vintage - Copper Bottle",
+    "variant_name": "without-brush / 500ml",
+    "sku": "Remove",
+    "key": [
+      "7 chakras vintage - copper bottle",
+      "without-brush / 500ml"
+    ],
+    "variant_id": "d0e13e75-29ae-440b-911f-3f4d29eca346",
+    "variant_label": "without-brush / 500ml",
+    "current_sku": "woo-var-43491"
+  },
+  {
+    "row": 144,
+    "product_name": "Copper Tongue Cleaner",
+    "variant_name": "Ring / pack-of-1",
+    "sku": "Remove",
+    "key": [
+      "copper tongue cleaner",
+      "ring / pack-of-1"
+    ],
+    "variant_id": "4ec8677d-5ffe-432e-8bbf-41891fb7ad28",
+    "variant_label": "Ring / pack-of-1",
+    "current_sku": "woo-var-7807"
+  },
+  {
+    "row": 146,
+    "product_name": "Copper Tongue Cleaner",
+    "variant_name": "Ring / pack-of-2",
+    "sku": "Remove",
+    "key": [
+      "copper tongue cleaner",
+      "ring / pack-of-2"
+    ],
+    "variant_id": "c359c68f-2220-4d62-bb73-53f234a4d362",
+    "variant_label": "Ring / pack-of-2",
+    "current_sku": "woo-var-7809"
+  },
+  {
+    "row": 148,
+    "product_name": "Copper Tongue Cleaner",
+    "variant_name": "Ring / pack-of-4",
+    "sku": "Remove",
+    "key": [
+      "copper tongue cleaner",
+      "ring / pack-of-4"
+    ],
+    "variant_id": "cc5c737e-b66f-4031-b28c-89214d40c831",
+    "variant_label": "Ring / pack-of-4",
+    "current_sku": "woo-var-7811"
+  }
+]

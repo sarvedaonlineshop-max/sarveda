@@ -102,7 +102,7 @@ export function SiteHeader() {
             </button>
             <Link href="/" className="min-w-0 group">
               <span className="block font-serif text-xl italic leading-tight text-amber-400 group-hover:text-amber-300 md:text-2xl">☸ Sarveda</span>
-              <span className="mt-0.5 hidden text-[10px] font-normal tracking-[0.22em] text-stone-500 md:block">YOGA · AYURVEDA · SOUND</span>
+              <span className="mt-0.5 hidden text-[10px] font-normal tracking-[0.22em] text-stone-500 md:block">YOGA · MEDITATION · SOUND</span>
             </Link>
           </div>
 

@@ -56,15 +56,15 @@ export default async function ShopPage({ searchParams }: Props) {
         </div>
       </div>
 
-      <main className="mx-auto max-w-7xl md:px-4 md:py-8 lg:px-8">
+      <main className="mx-auto max-w-7xl md:px-4 lg:px-8">
         <ShopMobileCategoryDrawer categories={sortedCategories} selectedSlug={categorySlug} />
 
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
-          <div className="hidden lg:block lg:w-72 lg:flex-shrink-0">
+        <div className="flex flex-col lg:h-[calc(100dvh-8.5rem)] lg:flex-row lg:items-stretch lg:gap-10 lg:overflow-hidden lg:py-8">
+          <div className="hidden lg:flex lg:w-72 lg:flex-shrink-0 lg:flex-col lg:overflow-hidden">
             <ShopCategoryFilterSidebar categories={sortedCategories} selectedSlug={categorySlug} />
           </div>
 
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 lg:overflow-y-auto lg:pr-1">
             <Suspense fallback={null}>
               <ShopFiltersBar categorySlug={categorySlug} />
             </Suspense>

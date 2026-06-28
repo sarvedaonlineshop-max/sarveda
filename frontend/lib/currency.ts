@@ -34,6 +34,12 @@ export function writeZoneCookie(zone: Zone): void {
   document.cookie = `${ZONE_COOKIE}=${zone}; path=/; max-age=${maxAge}; samesite=lax${secure ? "; secure" : ""}`;
 }
 
+/** ISO alpha-2 for review country flag — pricing zones map 1:1 except OTHER. */
+export function zoneToReviewerCountry(zone: Zone): string | undefined {
+  if (zone === "IN" || zone === "US" || zone === "GB") return zone;
+  return undefined;
+}
+
 export function countryToZone(country: string): Zone {
   const c = country.toUpperCase();
   if (c === "IN") return "IN";

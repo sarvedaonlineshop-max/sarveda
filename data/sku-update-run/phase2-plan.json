@@ -1,0 +1,392 @@
+[
+  {
+    "kind": "rename",
+    "product_name": "8 Keys Wooden Xylophone",
+    "variant_name": "Standard",
+    "key": [
+      "8 keys wooden xylophone",
+      "standard"
+    ],
+    "expected_old": "woo-42340",
+    "new_sku": "MI-XP-W-8",
+    "row": 85,
+    "variant_id": "dd948ba9-bb7c-4aaf-a33f-49ef3aa4812a",
+    "current_sku": "woo-42340",
+    "api_variant_label": "Standard"
+  },
+  {
+    "kind": "rename",
+    "product_name": "Aluminium 22 Steel Bars Chime",
+    "variant_name": "Standard",
+    "key": [
+      "aluminium 22 steel bars chime",
+      "standard"
+    ],
+    "expected_old": "woo-46525",
+    "new_sku": "MI-Ch-BS-22",
+    "row": 88,
+    "variant_id": "e17ce87b-8f6f-4c1a-a7fa-077f5aded059",
+    "current_sku": "woo-46525",
+    "api_variant_label": "Standard"
+  },
+  {
+    "kind": "rename",
+    "product_name": "Belly Bowls",
+    "variant_name": "Standard",
+    "key": [
+      "belly bowls",
+      "standard"
+    ],
+    "expected_old": "woo-47924",
+    "new_sku": "MI-SB-BY",
+    "row": 120,
+    "variant_id": "975ffc3a-c4f2-4510-ac3b-a6372c723d50",
+    "current_sku": "woo-47924",
+    "api_variant_label": "Standard"
+  },
+  {
+    "kind": "rename",
+    "product_name": "Bendo Chimes",
+    "variant_name": "Standard",
+    "key": [
+      "bendo chimes",
+      "standard"
+    ],
+    "expected_old": "woo-47751",
+    "new_sku": "MI-CH-BE",
+    "row": 121,
+    "variant_id": "77ac41ff-9f44-4642-8f24-697390c46d63",
+    "current_sku": "woo-47751",
+    "api_variant_label": "Standard"
+  },
+  {
+    "kind": "rename",
+    "product_name": "Conscious Cards",
+    "variant_name": "Standard",
+    "key": [
+      "conscious cards",
+      "standard"
+    ],
+    "expected_old": "woo-45533",
+    "new_sku": "MS-CC",
+    "row": 141,
+    "variant_id": "14ece29e-3f55-4248-a3ec-c99ed557f2d8",
+    "current_sku": "woo-45533",
+    "api_variant_label": "Standard"
+  },
+  {
+    "kind": "rename",
+    "product_name": "Crescent Zafu Cushion - Wide",
+    "variant_name": "Large / Misty Blue",
+    "key": [
+      "crescent zafu cushion - wide",
+      "large / misty blue"
+    ],
+    "expected_old": "Me-C-Z-L-MB-1",
+    "new_sku": "Me-CZ-W-MB",
+    "row": 157,
+    "variant_id": "4351bab1-37a2-42d6-991c-385bc07ce94c",
+    "current_sku": "Me-C-Z-L-MB-1",
+    "api_variant_label": "Large / Misty Blue"
+  },
+  {
+    "kind": "rename",
+    "product_name": "Crescent Zafu Cushion - Wide",
+    "variant_name": "Large / Rouge Pink",
+    "key": [
+      "crescent zafu cushion - wide",
+      "large / rouge pink"
+    ],
+    "expected_old": "Me-C-Z-L-RP-1",
+    "new_sku": "Me-CZ-W-RP",
+    "row": 155,
+    "variant_id": "6b255b94-ece6-4df8-98fd-4e88c3af80b1",
+    "current_sku": "Me-C-Z-L-RP-1",
+    "api_variant_label": "Large / Rouge Pink"
+  },
+  {
+    "kind": "rename",
+    "product_name": "Crescent Zafu Cushion - Wide",
+    "variant_name": "Lavender / Large",
+    "key": [
+      "crescent zafu cushion - wide",
+      "lavender / large"
+    ],
+    "expected_old": "Me-C-Z-L-L-1",
+    "new_sku": "Me-CZ-W-L",
+    "row": 156,
+    "variant_id": "ecd82830-84fc-4ccb-a269-5f303366b3eb",
+    "current_sku": "Me-C-Z-L-L-1",
+    "api_variant_label": "Lavender / Large"
+  },
+  {
+    "kind": "rename",
+    "product_name": "Crystal Bowl with Handle",
+    "variant_name": "Standard",
+    "key": [
+      "crystal bowl with handle",
+      "standard"
+    ],
+    "expected_old": "woo-45661",
+    "new_sku": "MI-CBH",
+    "row": 161,
+    "variant_id": "f66379ff-d980-469a-a120-b6c294df089e",
+    "current_sku": "woo-45661",
+    "api_variant_label": "Standard"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Handmade Singing Bowls",
+    "variant_name": "Dorje / 6 in",
+    "key": [
+      "etched handmade singing bowls",
+      "dorje / 6 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-GG-DJ-6",
+    "row": 302,
+    "variant_id": "5c9966e8-93ba-4b6b-9426-206ea6967108",
+    "current_sku": "MI-SB-H-ET-DJ-6",
+    "api_variant_label": "Dorje / 6 in"
+  },
+  {
+    "kind": "rename",
+    "product_name": "Handpan Stand",
+    "variant_name": "Standard",
+    "key": [
+      "handpan stand",
+      "standard"
+    ],
+    "expected_old": "woo-46907",
+    "new_sku": "MI-HP-S",
+    "row": 453,
+    "variant_id": "68a64c4c-34a8-4225-ae8c-45c3a025de60",
+    "current_sku": "woo-46907",
+    "api_variant_label": "Standard"
+  },
+  {
+    "kind": "rename",
+    "product_name": "Kenari Seed Shell Shakers",
+    "variant_name": "Large",
+    "key": [
+      "kenari seed shell shakers",
+      "large"
+    ],
+    "expected_old": "MI-KR-S-L",
+    "new_sku": "MI-KS-L",
+    "row": 490,
+    "variant_id": "e4b84cb2-a509-4d4c-bfcb-bb6418e310ac",
+    "current_sku": "MI-KR-S-L",
+    "api_variant_label": "Large"
+  },
+  {
+    "kind": "rename",
+    "product_name": "Kenari Seed Shell Shakers",
+    "variant_name": "Small",
+    "key": [
+      "kenari seed shell shakers",
+      "small"
+    ],
+    "expected_old": "MI-KR-S-S",
+    "new_sku": "MI-KS-S",
+    "row": 489,
+    "variant_id": "f6134b50-d791-4dcf-a616-8a8dff4e6ef7",
+    "current_sku": "MI-KR-S-S",
+    "api_variant_label": "Small"
+  },
+  {
+    "kind": "rename",
+    "product_name": "Mini Coconut Shakers - 3 Types",
+    "variant_name": "All 3",
+    "key": [
+      "mini coconut shakers - 3 types",
+      "all 3"
+    ],
+    "expected_old": "CO-MI-CS-SRE",
+    "new_sku": "MI-CS-SET",
+    "row": 511,
+    "variant_id": "66458626-3cd1-440b-b7ad-e423feb6e781",
+    "current_sku": "CO-MI-CS-SRE",
+    "api_variant_label": "All 3"
+  },
+  {
+    "kind": "rename",
+    "product_name": "Native American Style Flute \u2013 Handcrafted Wooden Melody Maker",
+    "variant_name": "Standard",
+    "key": [
+      "native american style flute \u2013 handcrafted wooden melody maker",
+      "standard"
+    ],
+    "expected_old": "woo-48428",
+    "new_sku": "MI-NM-F",
+    "row": 520,
+    "variant_id": "cc5da362-93bb-41fb-8e5c-16db1e0dd26e",
+    "current_sku": "woo-48428",
+    "api_variant_label": "Standard"
+  },
+  {
+    "kind": "rename",
+    "product_name": "Ocean Drums",
+    "variant_name": "Dream Catcher / 30 cms",
+    "key": [
+      "ocean drums",
+      "dream catcher / 30 cms"
+    ],
+    "expected_old": "MI-OD-D-30",
+    "new_sku": "MI-OD-DC-30",
+    "row": 528,
+    "variant_id": "0eb543ad-2ca2-4637-8391-8b4665bd44d6",
+    "current_sku": "MI-OD-D-30",
+    "api_variant_label": "Dream Catcher / 30 cms"
+  },
+  {
+    "kind": "rename",
+    "product_name": "Ocean Drums",
+    "variant_name": "Dream Catcher / 35 cms",
+    "key": [
+      "ocean drums",
+      "dream catcher / 35 cms"
+    ],
+    "expected_old": "MI-OD-D-35",
+    "new_sku": "MI-OD-DC-35",
+    "row": 529,
+    "variant_id": "002be618-31b4-4faf-a559-12a052c3e5d0",
+    "current_sku": "MI-OD-D-35",
+    "api_variant_label": "Dream Catcher / 35 cms"
+  },
+  {
+    "kind": "rename",
+    "product_name": "Root Chakra Singing Bowl",
+    "variant_name": "Standard",
+    "key": [
+      "root chakra singing bowl",
+      "standard"
+    ],
+    "expected_old": "woo-45469",
+    "new_sku": "MI-SB-RC",
+    "row": 569,
+    "variant_id": "374de9b7-4f9d-4d1a-886c-05945bf32be2",
+    "current_sku": "woo-45469",
+    "api_variant_label": "Standard"
+  },
+  {
+    "kind": "rename",
+    "product_name": "Singing Bowl with Handle",
+    "variant_name": "Standard",
+    "key": [
+      "singing bowl with handle",
+      "standard"
+    ],
+    "expected_old": "woo-48931",
+    "new_sku": "MI-SB-BH",
+    "row": 625,
+    "variant_id": "5875aa8d-985e-4d06-b50f-5990005efbb3",
+    "current_sku": "woo-48931",
+    "api_variant_label": "Standard"
+  },
+  {
+    "kind": "rename",
+    "product_name": "Teak Wood - Stainless Steel Xylophone",
+    "variant_name": "15 Keys",
+    "key": [
+      "teak wood - stainless steel xylophone",
+      "15 keys"
+    ],
+    "expected_old": "MI-XP-W-15",
+    "new_sku": "MI-XP-TW-15",
+    "row": 735,
+    "variant_id": "8f4f0651-22e6-447b-8318-b7963ab3b2d7",
+    "current_sku": "MI-XP-W-15",
+    "api_variant_label": "15 Keys"
+  },
+  {
+    "kind": "rename",
+    "product_name": "The Four Bowl Set - Root, Heart, Third Eye and Universal",
+    "variant_name": "Standard",
+    "key": [
+      "the four bowl set - root, heart, third eye and universal",
+      "standard"
+    ],
+    "expected_old": "woo-45334",
+    "new_sku": "MI-SB-4B-SET",
+    "row": 736,
+    "variant_id": "0e9b7b94-fee3-4617-bde9-53d4ec6cf866",
+    "current_sku": "woo-45334",
+    "api_variant_label": "Standard"
+  },
+  {
+    "kind": "rename",
+    "product_name": "The Three Bowl Set - Root, Heart and Third Eye",
+    "variant_name": "Standard",
+    "key": [
+      "the three bowl set - root, heart and third eye",
+      "standard"
+    ],
+    "expected_old": "woo-45327",
+    "new_sku": "MI-SB-3B-SET",
+    "row": 738,
+    "variant_id": "67a57d38-764f-48b5-b87b-f4a2f5001860",
+    "current_sku": "woo-45327",
+    "api_variant_label": "Standard"
+  },
+  {
+    "kind": "rename",
+    "product_name": "Third Eye Chakra Singing Bowl",
+    "variant_name": "Standard",
+    "key": [
+      "third eye chakra singing bowl",
+      "standard"
+    ],
+    "expected_old": "woo-45477",
+    "new_sku": "MI-SB-TEC",
+    "row": 739,
+    "variant_id": "2e5d895b-078f-4b52-b121-66cc105fb6b1",
+    "current_sku": "woo-45477",
+    "api_variant_label": "Standard"
+  },
+  {
+    "kind": "rename",
+    "product_name": "Vibroacoustic Therapy Bowls - Universal, Belly and Head",
+    "variant_name": "Belly Bowl",
+    "key": [
+      "vibroacoustic therapy bowls - universal, belly and head",
+      "belly bowl"
+    ],
+    "expected_old": "Mi-SB-Z-9",
+    "new_sku": "Mi-SB-B",
+    "row": 800,
+    "variant_id": "c3d1c654-226f-4e86-9781-baf60d59db69",
+    "current_sku": "Mi-SB-Z-9",
+    "api_variant_label": "Belly Bowl"
+  },
+  {
+    "kind": "rename",
+    "product_name": "Vibroacoustic Therapy Bowls - Universal, Belly and Head",
+    "variant_name": "Head Bowl",
+    "key": [
+      "vibroacoustic therapy bowls - universal, belly and head",
+      "head bowl"
+    ],
+    "expected_old": "Mi-SB-Z-10",
+    "new_sku": "Mi-SB-H",
+    "row": 799,
+    "variant_id": "34d9c756-4ebb-4e1b-be97-0828e7d790f6",
+    "current_sku": "Mi-SB-Z-10",
+    "api_variant_label": "Head Bowl"
+  },
+  {
+    "kind": "rename",
+    "product_name": "Vibroacoustic Therapy Bowls - Universal, Belly and Head",
+    "variant_name": "Universal Bowl",
+    "key": [
+      "vibroacoustic therapy bowls - universal, belly and head",
+      "universal bowl"
+    ],
+    "expected_old": "Mi-SB-Z-8",
+    "new_sku": "Mi-SB-UN",
+    "row": 798,
+    "variant_id": "57aea300-e677-4849-ad04-2799aa406736",
+    "current_sku": "Mi-SB-Z-8",
+    "api_variant_label": "Universal Bowl"
+  }
+]

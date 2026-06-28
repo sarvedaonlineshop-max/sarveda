@@ -1,0 +1,24 @@
+[
+  {
+    "row": 181,
+    "product_name": "Curved Diamond Groove Copper Bottle",
+    "variant_name": "with-brush / copper / 500 ml",
+    "sku": "Remove",
+    "key": [
+      "curved diamond groove copper bottle",
+      "with-brush / copper / 500 ml"
+    ],
+    "reason": "no_api_match"
+  },
+  {
+    "row": 183,
+    "product_name": "Curved Diamond Groove Copper Bottle",
+    "variant_name": "with-brush / vintage / 500 ml",
+    "sku": "Remove",
+    "key": [
+      "curved diamond groove copper bottle",
+      "with-brush / vintage / 500 ml"
+    ],
+    "reason": "no_api_match"
+  }
+]

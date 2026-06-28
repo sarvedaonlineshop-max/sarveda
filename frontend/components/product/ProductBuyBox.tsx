@@ -57,12 +57,10 @@ export function ProductBuyBox({
   const preparationDays = "5 - 10 Days";
   const isInline = layout === "inline";
   const [qtyMessage, setQtyMessage] = useState<string | null>(null);
-  const [shippingSpeed, setShippingSpeed] = useState<"standard" | "express">("standard");
   const stockCap =
     available != null && available > 0 && available < UNTRACKED_STOCK_ON_HAND ? available : null;
   const qtyLimit = stockCap ?? maxQty;
   const expressDays = zone === "IN" ? "2 - 3 Days" : "5 - 7 Days";
-  const activeShippingDays = shippingSpeed === "express" ? expressDays : shippingDays;
   const showExpressOption = expressShippingEnabled && !isDigital;
 
   function changeQty(next: number) {
@@ -205,40 +203,23 @@ export function ProductBuyBox({
       {!isDigital ? (
         <div className={isInline ? "text-sm text-stone-600" : "mt-4 space-y-3"}>
           {showExpressOption ? (
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-stone-800">Shipping speed</p>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShippingSpeed("standard")}
-                  className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
-                    shippingSpeed === "standard"
-                      ? "border-stone-900 bg-stone-900 text-white"
-                      : "border-stone-300 bg-white text-stone-800 hover:border-stone-400"
-                  }`}
-                >
-                  Standard · {shippingDays}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShippingSpeed("express")}
-                  className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
-                    shippingSpeed === "express"
-                      ? "border-stone-900 bg-stone-900 text-white"
-                      : "border-stone-300 bg-white text-stone-800 hover:border-stone-400"
-                  }`}
-                >
-                  Express · {expressDays}
-                </button>
-              </div>
+            <div className="space-y-1 text-sm text-stone-600">
+              <p>
+                <span className="font-medium text-stone-800">Standard (surface) shipping:</span>{" "}
+                {shippingDays}
+              </p>
+              <p>
+                <span className="font-medium text-stone-800">Express shipping:</span> {expressDays}
+              </p>
+              <p className="text-xs text-stone-500">Choose shipping speed at checkout.</p>
             </div>
           ) : null}
           {isInline ? (
-            <EstimatedDelivery preparationDays={preparationDays} shippingDays={activeShippingDays} />
+            <EstimatedDelivery preparationDays={preparationDays} shippingDays={shippingDays} />
           ) : (
             <>
-              <EstimatedDelivery preparationDays={preparationDays} shippingDays={activeShippingDays} />
-              <DeliveryTimeline preparationDays={preparationDays} shippingDays={activeShippingDays} />
+              <EstimatedDelivery preparationDays={preparationDays} shippingDays={shippingDays} />
+              <DeliveryTimeline preparationDays={preparationDays} shippingDays={shippingDays} />
             </>
           )}
         </div>

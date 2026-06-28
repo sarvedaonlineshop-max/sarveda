@@ -118,7 +118,7 @@ function sellerBlock(): {
     companyId:    "",
     addressLines: address.split(/\n+/).map((l) => l.trim()).filter(Boolean),
     gstin:        process.env.SELLER_GSTIN?.trim()      || "29ABFCS0538N1ZV",
-    phone:        process.env.SELLER_PHONE?.trim()      || "+919964278486",
+    phone:        process.env.SELLER_PHONE?.trim()      || "+919535975075",
     email:        process.env.SELLER_EMAIL?.trim()      || "care@sarveda.com",
     website:      process.env.SELLER_WEBSITE?.trim()    || "www.sarveda.com"
   };

@@ -133,8 +133,8 @@ export function OtpLoginForm({ inputClass, onSuccess, initialEmail = "" }: OtpLo
   return (
     <form className="space-y-4" onSubmit={handleSendOtp}>
       <p className="text-sm text-stone-400">
-        We will email a one-time code to your Sarveda account. Works for migrated customers without a
-        password.
+        A one-time password will be sent to the email below. Please enter the correct email address.
+        Works for migrated customers without a password.
       </p>
       <div>
         <label htmlFor="otp-email" className="sr-only">

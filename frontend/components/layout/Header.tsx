@@ -127,7 +127,7 @@ export function Header() {
                 ☸ Sarveda
               </span>
               <span className="hidden text-[10px] font-normal tracking-[0.22em] text-brand-sage md:block">
-                YOGA · AYURVEDA · SOUND
+                YOGA · MEDITATION · SOUND
               </span>
             </div>
           </Link>

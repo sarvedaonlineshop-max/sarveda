@@ -6,7 +6,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import { getApiBase } from "@/lib/api";
 import { fetchMe, type PublicUser } from "@/lib/auth-client";
-import { countryDisplayName, countryFlagEmoji } from "@/lib/country-flag";
+import { countryDisplayName, countryFlagEmoji, countryFlagImageUrl } from "@/lib/country-flag";
+import { zoneToReviewerCountry } from "@/lib/currency";
 import { usePricingZone } from "@/hooks/usePricingZone";
 
 type Review = {
@@ -114,7 +115,12 @@ export function ProductReviewsSection({ productId }: Props) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ rating, title, body, reviewerCountry: zone })
+        body: JSON.stringify({
+          rating,
+          title,
+          body,
+          reviewerCountry: zoneToReviewerCountry(zone)
+        })
       });
       const data = (await res.json()) as { error?: string; message?: string };
       if (res.status === 401) {
@@ -226,10 +232,24 @@ export function ProductReviewsSection({ productId }: Props) {
                       style={{
                         fontSize: "12px",
                         color: "var(--brand-muted)",
-                        marginLeft: "8px"
+                        marginLeft: "8px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px"
                       }}
                     >
-                      {countryFlagEmoji(r.reviewerCountry)}{" "}
+                      {countryFlagImageUrl(r.reviewerCountry) ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={countryFlagImageUrl(r.reviewerCountry)!}
+                          alt=""
+                          width={16}
+                          height={12}
+                          style={{ display: "inline-block", borderRadius: "1px" }}
+                        />
+                      ) : (
+                        countryFlagEmoji(r.reviewerCountry)
+                      )}
                       {countryDisplayName(r.reviewerCountry)}
                     </span>
                   ) : null}

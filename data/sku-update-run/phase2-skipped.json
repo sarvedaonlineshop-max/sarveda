@@ -1,0 +1,4071 @@
+[
+  {
+    "kind": "conflict",
+    "product_name": "11 Note Tongue Drum",
+    "variant_name": "10 inches / Blue",
+    "key": [
+      "11 note tongue drum",
+      "10 inches / blue"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TD-11N-B-10",
+    "row": 7,
+    "reason": "already_applied",
+    "current_sku": "MI-TD-11N-B-10"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "11 Note Tongue Drum",
+    "variant_name": "10 inches / White",
+    "key": [
+      "11 note tongue drum",
+      "10 inches / white"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TD-11N-W-10",
+    "row": 3,
+    "reason": "already_applied",
+    "current_sku": "MI-TD-11N-W-10"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "11 Note Tongue Drum",
+    "variant_name": "12 inches / Blue",
+    "key": [
+      "11 note tongue drum",
+      "12 inches / blue"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TD-11N-B-12",
+    "row": 8,
+    "reason": "already_applied",
+    "current_sku": "MI-TD-11N-B-12"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "11 Note Tongue Drum",
+    "variant_name": "12 inches / White",
+    "key": [
+      "11 note tongue drum",
+      "12 inches / white"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TD-11N-W-12",
+    "row": 4,
+    "reason": "already_applied",
+    "current_sku": "MI-TD-11N-W-12"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "11 Note Tongue Drum",
+    "variant_name": "6 inches / Blue",
+    "key": [
+      "11 note tongue drum",
+      "6 inches / blue"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TD-11N-B-6",
+    "row": 9,
+    "reason": "already_applied",
+    "current_sku": "MI-TD-11N-B-6"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "11 Note Tongue Drum",
+    "variant_name": "6 inches / White",
+    "key": [
+      "11 note tongue drum",
+      "6 inches / white"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TD-11N-W-6",
+    "row": 5,
+    "reason": "already_applied",
+    "current_sku": "MI-TD-11N-W-6"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "11 Note Tongue Drum",
+    "variant_name": "8 inches / Blue",
+    "key": [
+      "11 note tongue drum",
+      "8 inches / blue"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TD-11N-B-8",
+    "row": 10,
+    "reason": "already_applied",
+    "current_sku": "MI-TD-11N-B-8"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "11 Note Tongue Drum",
+    "variant_name": "8 inches / White",
+    "key": [
+      "11 note tongue drum",
+      "8 inches / white"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TD-11N-W-8",
+    "row": 6,
+    "reason": "already_applied",
+    "current_sku": "MI-TD-11N-W-8"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "7 Chakra Morchang Set",
+    "variant_name": "A Tune",
+    "key": [
+      "7 chakra morchang set",
+      "a tune"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-MO-A",
+    "row": 17,
+    "reason": "already_applied",
+    "current_sku": "MI-MO-A"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "7 Chakra Morchang Set",
+    "variant_name": "B Tune",
+    "key": [
+      "7 chakra morchang set",
+      "b tune"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-MO-B",
+    "row": 18,
+    "reason": "already_applied",
+    "current_sku": "MI-MO-B"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "7 Chakra Morchang Set",
+    "variant_name": "C Tune",
+    "key": [
+      "7 chakra morchang set",
+      "c tune"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-MO-C",
+    "row": 12,
+    "reason": "already_applied",
+    "current_sku": "MI-MO-C"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "7 Chakra Morchang Set",
+    "variant_name": "D Tune",
+    "key": [
+      "7 chakra morchang set",
+      "d tune"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-MO-D",
+    "row": 13,
+    "reason": "already_applied",
+    "current_sku": "MI-MO-D"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "7 Chakra Morchang Set",
+    "variant_name": "E Tune",
+    "key": [
+      "7 chakra morchang set",
+      "e tune"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-MO-E",
+    "row": 14,
+    "reason": "already_applied",
+    "current_sku": "MI-MO-E"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "7 Chakra Morchang Set",
+    "variant_name": "F Tune",
+    "key": [
+      "7 chakra morchang set",
+      "f tune"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-MO-F",
+    "row": 15,
+    "reason": "already_applied",
+    "current_sku": "MI-MO-F"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "7 Chakra Morchang Set",
+    "variant_name": "Full Set",
+    "key": [
+      "7 chakra morchang set",
+      "full set"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-MO-ST",
+    "row": 19,
+    "reason": "already_applied",
+    "current_sku": "MI-MO-ST"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "7 Chakra Morchang Set",
+    "variant_name": "G Tune",
+    "key": [
+      "7 chakra morchang set",
+      "g tune"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-MO-G",
+    "row": 16,
+    "reason": "already_applied",
+    "current_sku": "MI-MO-G"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "7 Chakras Yoga Mats",
+    "variant_name": "Moderate / Orange",
+    "key": [
+      "7 chakras yoga mats",
+      "moderate / orange"
+    ],
+    "expected_old": null,
+    "new_sku": "Yo-M-C-MG-o-27",
+    "row": 74,
+    "reason": "already_applied",
+    "current_sku": "Yo-M-C-MG-o-27"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "7 Chakras Yoga Mats",
+    "variant_name": "Moderate / Pink",
+    "key": [
+      "7 chakras yoga mats",
+      "moderate / pink"
+    ],
+    "expected_old": null,
+    "new_sku": "Yo-M-C-MG-P-27",
+    "row": 76,
+    "reason": "already_applied",
+    "current_sku": "Yo-M-C-MG-P-27"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "7 Chakras Yoga Mats",
+    "variant_name": "Orange / Superior",
+    "key": [
+      "7 chakras yoga mats",
+      "orange / superior"
+    ],
+    "expected_old": null,
+    "new_sku": "Yo-M-C-HG-O",
+    "row": 78,
+    "reason": "already_applied",
+    "current_sku": "Yo-M-C-HG-O"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "7 Chakras Yoga Mats",
+    "variant_name": "Pink / Superior",
+    "key": [
+      "7 chakras yoga mats",
+      "pink / superior"
+    ],
+    "expected_old": null,
+    "new_sku": "Yo-M-C-HG-P",
+    "row": 80,
+    "reason": "already_applied",
+    "current_sku": "Yo-M-C-HG-P"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "7 Chakras Yoga Mats",
+    "variant_name": "Yellow / Superior",
+    "key": [
+      "7 chakras yoga mats",
+      "yellow / superior"
+    ],
+    "expected_old": null,
+    "new_sku": "Yo-M-C-HG-Y",
+    "row": 79,
+    "reason": "already_applied",
+    "current_sku": "Yo-M-C-HG-Y"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "9/10 Notes Handpan Drum - Handcrafted to Precision",
+    "variant_name": "D Celtic Minor 9",
+    "key": [
+      "9/10 notes handpan drum - handcrafted to precision",
+      "d celtic minor 9"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-D-HP-DC-M9",
+    "row": 86,
+    "reason": "already_applied",
+    "current_sku": "MI-D-HP-DC-M9"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "9/10 Notes Handpan Drum - Handcrafted to Precision",
+    "variant_name": "D Kurd 10",
+    "key": [
+      "9/10 notes handpan drum - handcrafted to precision",
+      "d kurd 10"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-D-HP-DK-10",
+    "row": 87,
+    "reason": "already_applied",
+    "current_sku": "MI-D-HP-DK-10"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Angel Tuning Forks",
+    "variant_name": "4096 Hz",
+    "key": [
+      "angel tuning forks",
+      "4096 hz"
+    ],
+    "expected_old": null,
+    "new_sku": "Mi-TF-AG-4096",
+    "row": 89,
+    "reason": "already_applied",
+    "current_sku": "Mi-TF-AG-4096"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Angel Tuning Forks",
+    "variant_name": "4160 Hz",
+    "key": [
+      "angel tuning forks",
+      "4160 hz"
+    ],
+    "expected_old": null,
+    "new_sku": "Mi-TF-AG-4160",
+    "row": 90,
+    "reason": "already_applied",
+    "current_sku": "Mi-TF-AG-4160"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Angel Tuning Forks",
+    "variant_name": "4225 Hz",
+    "key": [
+      "angel tuning forks",
+      "4225 hz"
+    ],
+    "expected_old": null,
+    "new_sku": "Mi-TF-AG-4225",
+    "row": 91,
+    "reason": "already_applied",
+    "current_sku": "Mi-TF-AG-4225"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Asalato/Aslatau or Kashaka Shaker",
+    "variant_name": "Painted / Single",
+    "key": [
+      "asalato/aslatau or kashaka shaker",
+      "painted / single"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-AS-P",
+    "row": 114,
+    "reason": "already_applied",
+    "current_sku": "MI-AS-P"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Asalato/Aslatau or Kashaka Shaker",
+    "variant_name": "Pair / Painted",
+    "key": [
+      "asalato/aslatau or kashaka shaker",
+      "pair / painted"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-AS-P-2",
+    "row": 115,
+    "reason": "already_applied",
+    "current_sku": "MI-AS-P-2"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Asalato/Aslatau or Kashaka Shaker",
+    "variant_name": "Pair / Plain",
+    "key": [
+      "asalato/aslatau or kashaka shaker",
+      "pair / plain"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-AS-2",
+    "row": 113,
+    "reason": "already_applied",
+    "current_sku": "MI-AS-2"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Asalato/Aslatau or Kashaka Shaker",
+    "variant_name": "Plain / Single",
+    "key": [
+      "asalato/aslatau or kashaka shaker",
+      "plain / single"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-AS",
+    "row": 112,
+    "reason": "already_applied",
+    "current_sku": "MI-AS"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Bendo Shaker",
+    "variant_name": "Large",
+    "key": [
+      "bendo shaker",
+      "large"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-BR-L",
+    "row": 123,
+    "reason": "already_applied",
+    "current_sku": "MI-BR-L"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Bendo Shaker",
+    "variant_name": "Small",
+    "key": [
+      "bendo shaker",
+      "small"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-BR-S",
+    "row": 122,
+    "reason": "already_applied",
+    "current_sku": "MI-BR-S"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Bird Flute",
+    "variant_name": "Brown / Pair",
+    "key": [
+      "bird flute",
+      "brown / pair"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-BF-BN-P",
+    "row": 125,
+    "reason": "already_applied",
+    "current_sku": "MI-BF-BN-P"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Bird Flute",
+    "variant_name": "Brown / Single",
+    "key": [
+      "bird flute",
+      "brown / single"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-BF-BN-S",
+    "row": 124,
+    "reason": "already_applied",
+    "current_sku": "MI-BF-BN-S"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Bird Flute",
+    "variant_name": "Pair / Green",
+    "key": [
+      "bird flute",
+      "pair / green"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-BF-GN-S",
+    "row": 126,
+    "reason": "already_applied",
+    "current_sku": "MI-BF-GN-S"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Bird Flute",
+    "variant_name": "Pair / Mixed",
+    "key": [
+      "bird flute",
+      "pair / mixed"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-BF-M",
+    "row": 128,
+    "reason": "already_applied",
+    "current_sku": "MI-BF-M"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Bird Flute",
+    "variant_name": "Single / Green",
+    "key": [
+      "bird flute",
+      "single / green"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-BF-GN-P",
+    "row": 127,
+    "reason": "already_applied",
+    "current_sku": "MI-BF-GN-P"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Box Tanpura",
+    "variant_name": "Female Tanpura",
+    "key": [
+      "box tanpura",
+      "female tanpura"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-BT-F",
+    "row": 130,
+    "reason": "already_applied",
+    "current_sku": "MI-BT-F"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Box Tanpura",
+    "variant_name": "Male Tanpura",
+    "key": [
+      "box tanpura",
+      "male tanpura"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-BT-M",
+    "row": 129,
+    "reason": "already_applied",
+    "current_sku": "MI-BT-M"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "C&G Tuning Forks",
+    "variant_name": "Unweighted",
+    "key": [
+      "c&g tuning forks",
+      "unweighted"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-CG-W",
+    "row": 132,
+    "reason": "c_and_g_hold"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "C&G Tuning Forks",
+    "variant_name": "Weighted",
+    "key": [
+      "c&g tuning forks",
+      "weighted"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-CG-W",
+    "row": 131,
+    "reason": "c_and_g_hold"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Coconut Maracas Shakers",
+    "variant_name": "Plain",
+    "key": [
+      "coconut maracas shakers",
+      "plain"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-CM",
+    "row": 138,
+    "reason": "already_applied",
+    "current_sku": "MI-CM"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Copper Bottle Gift Set - 7 Chakra",
+    "variant_name": "Gold",
+    "key": [
+      "copper bottle gift set - 7 chakra",
+      "gold"
+    ],
+    "expected_old": null,
+    "new_sku": "GP-CB-7C-C-2G",
+    "row": 142,
+    "reason": "already_applied",
+    "current_sku": "GP-CB-7C-C-2G"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Copper Bottle Gift Set - 7 Chakra",
+    "variant_name": "Vintage",
+    "key": [
+      "copper bottle gift set - 7 chakra",
+      "vintage"
+    ],
+    "expected_old": null,
+    "new_sku": "GP-CB-7C-V-2G",
+    "row": 143,
+    "reason": "already_applied",
+    "current_sku": "GP-CB-7C-V-2G"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Copper Tongue Cleaner",
+    "variant_name": "Straight / pack-of-1",
+    "key": [
+      "copper tongue cleaner",
+      "straight / pack-of-1"
+    ],
+    "expected_old": null,
+    "new_sku": "TC-S-1",
+    "row": 145,
+    "reason": "already_applied",
+    "current_sku": "TC-S-1"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Copper Tongue Cleaner",
+    "variant_name": "Straight / pack-of-2",
+    "key": [
+      "copper tongue cleaner",
+      "straight / pack-of-2"
+    ],
+    "expected_old": null,
+    "new_sku": "TC-S-2",
+    "row": 147,
+    "reason": "already_applied",
+    "current_sku": "TC-S-2"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Copper Tongue Cleaner",
+    "variant_name": "Straight / pack-of-4",
+    "key": [
+      "copper tongue cleaner",
+      "straight / pack-of-4"
+    ],
+    "expected_old": null,
+    "new_sku": "TC-S-4",
+    "row": 149,
+    "reason": "already_applied",
+    "current_sku": "TC-S-4"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Crescent Zafu Cushion - Compact",
+    "variant_name": "Dark Grey",
+    "key": [
+      "crescent zafu cushion - compact",
+      "dark grey"
+    ],
+    "expected_old": null,
+    "new_sku": "Me-CZ-C-DG",
+    "row": 150,
+    "reason": "already_applied",
+    "current_sku": "Me-CZ-C-DG"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Crescent Zafu Cushion - Compact",
+    "variant_name": "Lavender",
+    "key": [
+      "crescent zafu cushion - compact",
+      "lavender"
+    ],
+    "expected_old": null,
+    "new_sku": "Me-CZ-C-L",
+    "row": 152,
+    "reason": "already_applied",
+    "current_sku": "Me-CZ-C-L"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Crescent Zafu Cushion - Compact",
+    "variant_name": "Misty Blue",
+    "key": [
+      "crescent zafu cushion - compact",
+      "misty blue"
+    ],
+    "expected_old": null,
+    "new_sku": "Me-CZ-C-MB",
+    "row": 151,
+    "reason": "already_applied",
+    "current_sku": "Me-CZ-C-MB"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Crescent Zafu Cushion - Compact",
+    "variant_name": "Rose",
+    "key": [
+      "crescent zafu cushion - compact",
+      "rose"
+    ],
+    "expected_old": null,
+    "new_sku": "Me-CZ-C-RE",
+    "row": 154,
+    "reason": "already_applied",
+    "current_sku": "Me-CZ-C-RE"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Crescent Zafu Cushion - Compact",
+    "variant_name": "Sage",
+    "key": [
+      "crescent zafu cushion - compact",
+      "sage"
+    ],
+    "expected_old": null,
+    "new_sku": "Me-CZ-C-S",
+    "row": 153,
+    "reason": "already_applied",
+    "current_sku": "Me-CZ-C-S"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Crystal Bowl Bag",
+    "variant_name": "Large",
+    "key": [
+      "crystal bowl bag",
+      "large"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-CB-B-L",
+    "row": 160,
+    "reason": "already_applied",
+    "current_sku": "MI-CB-B-L"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Crystal Bowl Bag",
+    "variant_name": "Medium",
+    "key": [
+      "crystal bowl bag",
+      "medium"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-CB-B-M",
+    "row": 159,
+    "reason": "already_applied",
+    "current_sku": "MI-CB-B-M"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Crystal Bowl Bag",
+    "variant_name": "Small",
+    "key": [
+      "crystal bowl bag",
+      "small"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-CB-B-S",
+    "row": 158,
+    "reason": "already_applied",
+    "current_sku": "MI-CB-B-S"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Crystal Bowls - Set of 7",
+    "variant_name": "6-12-in-set / Chakra Coloured",
+    "key": [
+      "crystal bowls - set of 7",
+      "6-12-in-set / chakra coloured"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-CB-CL-6-12-SET",
+    "row": 174,
+    "reason": "already_applied",
+    "current_sku": "MI-CB-CL-6-12-SET"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Crystal Bowls - Set of 7",
+    "variant_name": "6-12-in-set / Frosted White",
+    "key": [
+      "crystal bowls - set of 7",
+      "6-12-in-set / frosted white"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-CB-W-6-12-SET",
+    "row": 171,
+    "reason": "already_applied",
+    "current_sku": "MI-CB-W-6-12-SET"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Crystal Bowls - Set of 7",
+    "variant_name": "8-14-in-set / Frosted White",
+    "key": [
+      "crystal bowls - set of 7",
+      "8-14-in-set / frosted white"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-CB-W-8-14-SET",
+    "row": 172,
+    "reason": "already_applied",
+    "current_sku": "MI-CB-W-8-14-SET"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Crystal Pyramid",
+    "variant_name": "6 in",
+    "key": [
+      "crystal pyramid",
+      "6 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-CP-6",
+    "row": 175,
+    "reason": "already_applied",
+    "current_sku": "MI-CP-6"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Crystal Pyramid",
+    "variant_name": "8 in",
+    "key": [
+      "crystal pyramid",
+      "8 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-CP-8",
+    "row": 176,
+    "reason": "already_applied",
+    "current_sku": "MI-CP-8"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Curved Copper Bottles",
+    "variant_name": "vintage / With Brush",
+    "key": [
+      "curved copper bottles",
+      "vintage / with brush"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-CV-B",
+    "row": 179,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Curved Copper Bottles",
+    "variant_name": "vintage / Without Brush",
+    "key": [
+      "curved copper bottles",
+      "vintage / without brush"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-CV",
+    "row": 180,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Curved Copper Bottles",
+    "variant_name": "With Brush / gold",
+    "key": [
+      "curved copper bottles",
+      "with brush / gold"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-CP-B",
+    "row": 177,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Curved Copper Bottles",
+    "variant_name": "Without Brush / gold",
+    "key": [
+      "curved copper bottles",
+      "without brush / gold"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-CP",
+    "row": 178,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Curved Diamond Groove Copper Bottle",
+    "variant_name": "copper / 1L / without-brush",
+    "key": [
+      "curved diamond groove copper bottle",
+      "copper / 1l / without-brush"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-CDG",
+    "row": 182,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Curved Diamond Groove Copper Bottle",
+    "variant_name": "vintage / 1L / without-brush",
+    "key": [
+      "curved diamond groove copper bottle",
+      "vintage / 1l / without-brush"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-CVDG",
+    "row": 184,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Curved Hammered Copper Bottles",
+    "variant_name": "vintage / without-brush",
+    "key": [
+      "curved hammered copper bottles",
+      "vintage / without-brush"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-CVH",
+    "row": 186,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Curved Hammered Copper Bottles",
+    "variant_name": "with-brush / vintage",
+    "key": [
+      "curved hammered copper bottles",
+      "with-brush / vintage"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-CVH-B",
+    "row": 185,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Djembe Drums",
+    "variant_name": "10in / Ivory",
+    "key": [
+      "djembe drums",
+      "10in / ivory"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-DJB-I-10",
+    "row": 189,
+    "reason": "already_applied",
+    "current_sku": "MI-DJB-I-10"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Djembe Drums",
+    "variant_name": "10in / Mahogany",
+    "key": [
+      "djembe drums",
+      "10in / mahogany"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-DJB-M-10",
+    "row": 190,
+    "reason": "already_applied",
+    "current_sku": "MI-DJB-M-10"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Djembe Drums",
+    "variant_name": "12in / Ivory",
+    "key": [
+      "djembe drums",
+      "12in / ivory"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-DJB-I-12",
+    "row": 191,
+    "reason": "already_applied",
+    "current_sku": "MI-DJB-I-12"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Djembe Drums",
+    "variant_name": "12in / Mahogany",
+    "key": [
+      "djembe drums",
+      "12in / mahogany"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-DJB-M-12",
+    "row": 192,
+    "reason": "already_applied",
+    "current_sku": "MI-DJB-M-12"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Djembe Drums",
+    "variant_name": "14in / Ivory",
+    "key": [
+      "djembe drums",
+      "14in / ivory"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-DJB-I-14",
+    "row": 194,
+    "reason": "already_applied",
+    "current_sku": "MI-DJB-I-14"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Djembe Drums",
+    "variant_name": "14in / Mahogany",
+    "key": [
+      "djembe drums",
+      "14in / mahogany"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-DJB-M-14",
+    "row": 193,
+    "reason": "already_applied",
+    "current_sku": "MI-DJB-M-14"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Djembe Drums",
+    "variant_name": "8in / Ivory",
+    "key": [
+      "djembe drums",
+      "8in / ivory"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-DJB-I-8",
+    "row": 187,
+    "reason": "already_applied",
+    "current_sku": "MI-DJB-I-8"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Djembe Drums",
+    "variant_name": "8in / Mahogany",
+    "key": [
+      "djembe drums",
+      "8in / mahogany"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-DJB-M-8",
+    "row": 188,
+    "reason": "already_applied",
+    "current_sku": "MI-DJB-M-8"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Dumru/Dumroo Indian Handmade Percussion Instrument",
+    "variant_name": "Dot Painted",
+    "key": [
+      "dumru/dumroo indian handmade percussion instrument",
+      "dot painted"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-D-DP",
+    "row": 199,
+    "reason": "already_applied",
+    "current_sku": "MI-D-DP"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Dumru/Dumroo Indian Handmade Percussion Instrument",
+    "variant_name": "Plain",
+    "key": [
+      "dumru/dumroo indian handmade percussion instrument",
+      "plain"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-D-P",
+    "row": 198,
+    "reason": "already_applied",
+    "current_sku": "MI-D-P"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Gongs",
+    "variant_name": "18 in / Buddhist Om",
+    "key": [
+      "etched gongs",
+      "18 in / buddhist om"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-G-ET-BM-18",
+    "row": 218,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Gongs",
+    "variant_name": "18 in / Chakra",
+    "key": [
+      "etched gongs",
+      "18 in / chakra"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-G-ET-7C-18",
+    "row": 204,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Gongs",
+    "variant_name": "18 in / Mantra",
+    "key": [
+      "etched gongs",
+      "18 in / mantra"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-G-ET-MT-18",
+    "row": 211,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Gongs",
+    "variant_name": "20 in / Mantra",
+    "key": [
+      "etched gongs",
+      "20 in / mantra"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-G-ET-MT-20",
+    "row": 212,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Gongs",
+    "variant_name": "22 in / Buddhist Om",
+    "key": [
+      "etched gongs",
+      "22 in / buddhist om"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-G-ET-BM-22",
+    "row": 220,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Gongs",
+    "variant_name": "22 in / Mantra",
+    "key": [
+      "etched gongs",
+      "22 in / mantra"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-G-ET-MT-22",
+    "row": 213,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Gongs",
+    "variant_name": "24 in / Buddhist Om",
+    "key": [
+      "etched gongs",
+      "24 in / buddhist om"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-G-ET-BM-24",
+    "row": 221,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Gongs",
+    "variant_name": "24 in / Mantra",
+    "key": [
+      "etched gongs",
+      "24 in / mantra"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-G-ET-MT-24",
+    "row": 214,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Gongs",
+    "variant_name": "28 in / Mantra",
+    "key": [
+      "etched gongs",
+      "28 in / mantra"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-G-ET-MT-28",
+    "row": 215,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Gongs",
+    "variant_name": "32 in / Mantra",
+    "key": [
+      "etched gongs",
+      "32 in / mantra"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-G-ET-MT-32",
+    "row": 216,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Gongs",
+    "variant_name": "40 in / Mantra",
+    "key": [
+      "etched gongs",
+      "40 in / mantra"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-G-ET-MT-40",
+    "row": 217,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Gongs",
+    "variant_name": "Buddhist Om / 20 in",
+    "key": [
+      "etched gongs",
+      "buddhist om / 20 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-G-ET-BM-20",
+    "row": 219,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Gongs",
+    "variant_name": "Buddhist Om / 28 in",
+    "key": [
+      "etched gongs",
+      "buddhist om / 28 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-G-ET-BM-28",
+    "row": 222,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Gongs",
+    "variant_name": "Buddhist Om / 32 in",
+    "key": [
+      "etched gongs",
+      "buddhist om / 32 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-G-ET-BM-32",
+    "row": 223,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Gongs",
+    "variant_name": "Buddhist Om / 40 in",
+    "key": [
+      "etched gongs",
+      "buddhist om / 40 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-G-ET-BM-40",
+    "row": 224,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Gongs",
+    "variant_name": "Chakra / 20 in",
+    "key": [
+      "etched gongs",
+      "chakra / 20 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-G-ET-7C-20",
+    "row": 205,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Gongs",
+    "variant_name": "Chakra / 22 in",
+    "key": [
+      "etched gongs",
+      "chakra / 22 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-G-ET-7C-22",
+    "row": 206,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Gongs",
+    "variant_name": "Chakra / 24 in",
+    "key": [
+      "etched gongs",
+      "chakra / 24 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-G-ET-7C-24",
+    "row": 207,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Gongs",
+    "variant_name": "Chakra / 28 in",
+    "key": [
+      "etched gongs",
+      "chakra / 28 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-G-ET-7C-28",
+    "row": 208,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Gongs",
+    "variant_name": "Chakra / 32 in",
+    "key": [
+      "etched gongs",
+      "chakra / 32 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-G-ET-7C-32",
+    "row": 209,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Gongs",
+    "variant_name": "Chakra / 40 in",
+    "key": [
+      "etched gongs",
+      "chakra / 40 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-G-ET-7C-40",
+    "row": 210,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Handmade Singing Bowls",
+    "variant_name": "10 in / Mantra",
+    "key": [
+      "etched handmade singing bowls",
+      "10 in / mantra"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-H-ET-M-10",
+    "row": 299,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-H-ET-M-10"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Handmade Singing Bowls",
+    "variant_name": "12 in / Mantra",
+    "key": [
+      "etched handmade singing bowls",
+      "12 in / mantra"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-H-ET-M-12",
+    "row": 301,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-H-ET-M-12"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Handmade Singing Bowls",
+    "variant_name": "6 in / Mantra",
+    "key": [
+      "etched handmade singing bowls",
+      "6 in / mantra"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-H-ET-M-6",
+    "row": 295,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-H-ET-M-6"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Handmade Singing Bowls",
+    "variant_name": "7 in / Mantra",
+    "key": [
+      "etched handmade singing bowls",
+      "7 in / mantra"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-H-ET-M-7",
+    "row": 296,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-H-ET-M-7"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Handmade Singing Bowls",
+    "variant_name": "8 in / Mantra",
+    "key": [
+      "etched handmade singing bowls",
+      "8 in / mantra"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-H-ET-M-8",
+    "row": 297,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-H-ET-M-8"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Handmade Singing Bowls",
+    "variant_name": "8 in / Yin Yang",
+    "key": [
+      "etched handmade singing bowls",
+      "8 in / yin yang"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-GG-YY-8",
+    "row": 290,
+    "reason": "already_applied",
+    "current_sku": "MI-GG-YY-8"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Handmade Singing Bowls",
+    "variant_name": "9 in / Mantra",
+    "key": [
+      "etched handmade singing bowls",
+      "9 in / mantra"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-H-ET-M-9",
+    "row": 298,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-H-ET-M-9"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Handmade Singing Bowls",
+    "variant_name": "Mantra / 11 in",
+    "key": [
+      "etched handmade singing bowls",
+      "mantra / 11 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-H-ET-M-11",
+    "row": 300,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-H-ET-M-11"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Handmade Singing Bowls",
+    "variant_name": "Yin Yang / 10 in",
+    "key": [
+      "etched handmade singing bowls",
+      "yin yang / 10 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-GG-YY-10",
+    "row": 292,
+    "reason": "already_applied",
+    "current_sku": "MI-GG-YY-10"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Handmade Singing Bowls",
+    "variant_name": "Yin Yang / 11 in",
+    "key": [
+      "etched handmade singing bowls",
+      "yin yang / 11 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-GG-YY-11",
+    "row": 293,
+    "reason": "already_applied",
+    "current_sku": "MI-GG-YY-11"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Handmade Singing Bowls",
+    "variant_name": "Yin Yang / 12 in",
+    "key": [
+      "etched handmade singing bowls",
+      "yin yang / 12 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-GG-YY-12",
+    "row": 294,
+    "reason": "already_applied",
+    "current_sku": "MI-GG-YY-12"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Handmade Singing Bowls",
+    "variant_name": "Yin Yang / 6 in",
+    "key": [
+      "etched handmade singing bowls",
+      "yin yang / 6 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-GG-YY-6",
+    "row": 288,
+    "reason": "already_applied",
+    "current_sku": "MI-GG-YY-6"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Handmade Singing Bowls",
+    "variant_name": "Yin Yang / 7 in",
+    "key": [
+      "etched handmade singing bowls",
+      "yin yang / 7 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-GG-YY-7",
+    "row": 289,
+    "reason": "already_applied",
+    "current_sku": "MI-GG-YY-7"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Handmade Singing Bowls",
+    "variant_name": "Yin Yang / 9 in",
+    "key": [
+      "etched handmade singing bowls",
+      "yin yang / 9 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-GG-YY-9",
+    "row": 291,
+    "reason": "already_applied",
+    "current_sku": "MI-GG-YY-9"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Plain/Wind Gong",
+    "variant_name": "14 in / Flower of Life-Center",
+    "key": [
+      "etched plain/wind gong",
+      "14 in / flower of life-center"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-H-ET-TR-34",
+    "row": 359,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-H-ET-TR-34"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Plain/Wind Gong",
+    "variant_name": "16 in / Flower of Life-Center",
+    "key": [
+      "etched plain/wind gong",
+      "16 in / flower of life-center"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-H-ET-TR-36",
+    "row": 360,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-H-ET-TR-36"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Plain/Wind Gong",
+    "variant_name": "18 in / Flower of Life-Center",
+    "key": [
+      "etched plain/wind gong",
+      "18 in / flower of life-center"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-H-ET-TR-38",
+    "row": 361,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-H-ET-TR-38"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Plain/Wind Gong",
+    "variant_name": "22 in / Flower of Life-Center",
+    "key": [
+      "etched plain/wind gong",
+      "22 in / flower of life-center"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-H-ET-TR-42",
+    "row": 363,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-H-ET-TR-42"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Plain/Wind Gong",
+    "variant_name": "24 in / Flower of Life-Center",
+    "key": [
+      "etched plain/wind gong",
+      "24 in / flower of life-center"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-H-ET-TR-44",
+    "row": 364,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-H-ET-TR-44"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Plain/Wind Gong",
+    "variant_name": "28 in / Flower of Life-Center",
+    "key": [
+      "etched plain/wind gong",
+      "28 in / flower of life-center"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-H-ET-TR-48",
+    "row": 366,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-H-ET-TR-48"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Plain/Wind Gong",
+    "variant_name": "Flower of Life / 26 in",
+    "key": [
+      "etched plain/wind gong",
+      "flower of life / 26 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-H-ET-TR-30",
+    "row": 357,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-H-ET-TR-30"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Plain/Wind Gong",
+    "variant_name": "Flower of Life / 28 in",
+    "key": [
+      "etched plain/wind gong",
+      "flower of life / 28 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-H-ET-TR-32",
+    "row": 358,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-H-ET-TR-32"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Plain/Wind Gong",
+    "variant_name": "Flower of Life-Center / 20 in",
+    "key": [
+      "etched plain/wind gong",
+      "flower of life-center / 20 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-H-ET-TR-40",
+    "row": 362,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-H-ET-TR-40"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Etched Plain/Wind Gong",
+    "variant_name": "Flower of Life-Center / 26 in",
+    "key": [
+      "etched plain/wind gong",
+      "flower of life-center / 26 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-H-ET-TR-46",
+    "row": 365,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-H-ET-TR-46"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Gong Stand",
+    "variant_name": "Extra Large / Dark",
+    "key": [
+      "gong stand",
+      "extra large / dark"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-GS-XL-D",
+    "row": 412,
+    "reason": "already_applied",
+    "current_sku": "MI-GS-XL-D"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Gong Stand",
+    "variant_name": "Extra Large / Light",
+    "key": [
+      "gong stand",
+      "extra large / light"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-GS-XL-L",
+    "row": 411,
+    "reason": "already_applied",
+    "current_sku": "MI-GS-XL-L"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Gong Stand",
+    "variant_name": "Large / Dark",
+    "key": [
+      "gong stand",
+      "large / dark"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-GS-L-D",
+    "row": 410,
+    "reason": "already_applied",
+    "current_sku": "MI-GS-L-D"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Gong Stand",
+    "variant_name": "Large / Light",
+    "key": [
+      "gong stand",
+      "large / light"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-GS-L-L",
+    "row": 407,
+    "reason": "already_applied",
+    "current_sku": "MI-GS-L-L"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Gong Stand",
+    "variant_name": "Light / Medium",
+    "key": [
+      "gong stand",
+      "light / medium"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-GS-L-M",
+    "row": 406,
+    "reason": "already_applied",
+    "current_sku": "MI-GS-L-M"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Gong Stand",
+    "variant_name": "Light / Small",
+    "key": [
+      "gong stand",
+      "light / small"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-GS-L-S",
+    "row": 405,
+    "reason": "already_applied",
+    "current_sku": "MI-GS-L-S"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Gong Stand",
+    "variant_name": "Medium / Dark",
+    "key": [
+      "gong stand",
+      "medium / dark"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-GS-M-D",
+    "row": 409,
+    "reason": "already_applied",
+    "current_sku": "MI-GS-M-D"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Gong Stand",
+    "variant_name": "Small / Dark",
+    "key": [
+      "gong stand",
+      "small / dark"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-GS-S-D",
+    "row": 408,
+    "reason": "already_applied",
+    "current_sku": "MI-GS-S-D"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Hammered Copper Bottle",
+    "variant_name": "copper / without-brush",
+    "key": [
+      "hammered copper bottle",
+      "copper / without-brush"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-CPH",
+    "row": 425,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Hammered Copper Bottle",
+    "variant_name": "with-brush / copper",
+    "key": [
+      "hammered copper bottle",
+      "with-brush / copper"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-CPH-B",
+    "row": 426,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Handmade Singing Bowls - All Sizes",
+    "variant_name": "13 in / Matte",
+    "key": [
+      "handmade singing bowls - all sizes",
+      "13 in / matte"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-H-M-13",
+    "row": 451,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-H-M-13"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Handmade Singing Bowls - All Sizes",
+    "variant_name": "13 in / Polished",
+    "key": [
+      "handmade singing bowls - all sizes",
+      "13 in / polished"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-H-P-13",
+    "row": 450,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-H-P-13"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Handmade Singing Bowls - All Sizes",
+    "variant_name": "Matte / 12 in",
+    "key": [
+      "handmade singing bowls - all sizes",
+      "matte / 12 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-H-M-12",
+    "row": 449,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-H-M-12"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Handmade Singing Bowls - All Sizes",
+    "variant_name": "Matte / 6 in",
+    "key": [
+      "handmade singing bowls - all sizes",
+      "matte / 6 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-H-M-6",
+    "row": 447,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-H-M-6"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Handmade Singing Bowls - All Sizes",
+    "variant_name": "Matte / 7 in",
+    "key": [
+      "handmade singing bowls - all sizes",
+      "matte / 7 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-H-M-7",
+    "row": 448,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-H-M-7"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Hanging Bowls/Zen Drops",
+    "variant_name": "Set of 3",
+    "key": [
+      "hanging bowls/zen drops",
+      "set of 3"
+    ],
+    "expected_old": null,
+    "new_sku": "SB-HB-3-SET",
+    "row": 455,
+    "reason": "already_applied",
+    "current_sku": "SB-HB-3-SET"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Hanging Bowls/Zen Drops",
+    "variant_name": "Single",
+    "key": [
+      "hanging bowls/zen drops",
+      "single"
+    ],
+    "expected_old": null,
+    "new_sku": "SB-HB-S",
+    "row": 454,
+    "reason": "already_applied",
+    "current_sku": "SB-HB-S"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Happiness is Inside",
+    "variant_name": "with-brush / 1L",
+    "key": [
+      "happiness is inside",
+      "with-brush / 1l"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-HW-B",
+    "row": 456,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Happiness is Inside",
+    "variant_name": "with-brush / 500ml",
+    "key": [
+      "happiness is inside",
+      "with-brush / 500ml"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-HW-B-5",
+    "row": 458,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Happiness is Inside",
+    "variant_name": "without-brush / 1L",
+    "key": [
+      "happiness is inside",
+      "without-brush / 1l"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-HW",
+    "row": 459,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Happiness is Inside",
+    "variant_name": "without-brush / 500ml",
+    "key": [
+      "happiness is inside",
+      "without-brush / 500ml"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-HW-5",
+    "row": 457,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Harmonium",
+    "variant_name": "Compact",
+    "key": [
+      "harmonium",
+      "compact"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-HM-MP",
+    "row": 461,
+    "reason": "already_applied",
+    "current_sku": "MI-HM-MP"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Harmonium",
+    "variant_name": "Professional",
+    "key": [
+      "harmonium",
+      "professional"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-HM-PP",
+    "row": 460,
+    "reason": "already_applied",
+    "current_sku": "MI-HM-PP"
+  },
+  {
+    "kind": "rename",
+    "product_name": "Heart Chakra Singing Bowl",
+    "variant_name": "Standard",
+    "key": [
+      "heart chakra singing bowl",
+      "standard"
+    ],
+    "expected_old": "woo-45473",
+    "new_sku": "MI-SB-HB",
+    "row": 462,
+    "reason": "user_skip"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Kenari Chimes - Small & Large",
+    "variant_name": "Large",
+    "key": [
+      "kenari chimes - small & large",
+      "large"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-KC-L",
+    "row": 488,
+    "reason": "already_applied",
+    "current_sku": "MI-KC-L"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Kenari Chimes - Small & Large",
+    "variant_name": "Small",
+    "key": [
+      "kenari chimes - small & large",
+      "small"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-KC-S",
+    "row": 487,
+    "reason": "already_applied",
+    "current_sku": "MI-KC-S"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Lotus Yoga Mat",
+    "variant_name": "Moderate / Orange",
+    "key": [
+      "lotus yoga mat",
+      "moderate / orange"
+    ],
+    "expected_old": null,
+    "new_sku": "YO-M-MG-O",
+    "row": 492,
+    "reason": "already_applied",
+    "current_sku": "YO-M-MG-O"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Lotus Yoga Mat",
+    "variant_name": "Moderate / Pink",
+    "key": [
+      "lotus yoga mat",
+      "moderate / pink"
+    ],
+    "expected_old": null,
+    "new_sku": "YO-M-MG-P",
+    "row": 494,
+    "reason": "already_applied",
+    "current_sku": "YO-M-MG-P"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Lotus Yoga Mat",
+    "variant_name": "Moderate / Teal",
+    "key": [
+      "lotus yoga mat",
+      "moderate / teal"
+    ],
+    "expected_old": null,
+    "new_sku": "YO-M-MG-T",
+    "row": 491,
+    "reason": "already_applied",
+    "current_sku": "YO-M-MG-T"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Lotus Yoga Mat",
+    "variant_name": "Moderate / Yellow",
+    "key": [
+      "lotus yoga mat",
+      "moderate / yellow"
+    ],
+    "expected_old": null,
+    "new_sku": "YO-M-MG-Y",
+    "row": 493,
+    "reason": "already_applied",
+    "current_sku": "YO-M-MG-Y"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Lotus Yoga Mat",
+    "variant_name": "Orange / Superior",
+    "key": [
+      "lotus yoga mat",
+      "orange / superior"
+    ],
+    "expected_old": null,
+    "new_sku": "YO-M-SP-O",
+    "row": 496,
+    "reason": "already_applied",
+    "current_sku": "YO-M-SP-O"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Lotus Yoga Mat",
+    "variant_name": "Pink / Superior",
+    "key": [
+      "lotus yoga mat",
+      "pink / superior"
+    ],
+    "expected_old": null,
+    "new_sku": "YO-M-SP-S",
+    "row": 498,
+    "reason": "already_applied",
+    "current_sku": "YO-M-SP-S"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Lotus Yoga Mat",
+    "variant_name": "Teal / Superior",
+    "key": [
+      "lotus yoga mat",
+      "teal / superior"
+    ],
+    "expected_old": null,
+    "new_sku": "YO-M-SP-T",
+    "row": 495,
+    "reason": "already_applied",
+    "current_sku": "YO-M-SP-T"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Lotus Yoga Mat",
+    "variant_name": "Yellow / Superior",
+    "key": [
+      "lotus yoga mat",
+      "yellow / superior"
+    ],
+    "expected_old": null,
+    "new_sku": "YO-M-SP-Y",
+    "row": 497,
+    "reason": "already_applied",
+    "current_sku": "YO-M-SP-Y"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Mayura Morchang Set",
+    "variant_name": "Bass",
+    "key": [
+      "mayura morchang set",
+      "bass"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-MM-B",
+    "row": 505,
+    "reason": "already_applied",
+    "current_sku": "MI-MM-B"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Mayura Morchang Set",
+    "variant_name": "Full Set",
+    "key": [
+      "mayura morchang set",
+      "full set"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-MM-SET",
+    "row": 506,
+    "reason": "already_applied",
+    "current_sku": "MI-MM-SET"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Mayura Morchang Set",
+    "variant_name": "Middle",
+    "key": [
+      "mayura morchang set",
+      "middle"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-MM-M",
+    "row": 504,
+    "reason": "already_applied",
+    "current_sku": "MI-MM-M"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Mayura Morchang Set",
+    "variant_name": "Sharp",
+    "key": [
+      "mayura morchang set",
+      "sharp"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-MM-S",
+    "row": 503,
+    "reason": "already_applied",
+    "current_sku": "MI-MM-S"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Mini Bamboo Slide Whistle",
+    "variant_name": "Double",
+    "key": [
+      "mini bamboo slide whistle",
+      "double"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-B-SW-D",
+    "row": 509,
+    "reason": "already_applied",
+    "current_sku": "MI-B-SW-D"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Mini Bamboo Slide Whistle",
+    "variant_name": "Single",
+    "key": [
+      "mini bamboo slide whistle",
+      "single"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-B-SW-S",
+    "row": 507,
+    "reason": "already_applied",
+    "current_sku": "MI-B-SW-S"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Mini Bamboo Slide Whistle",
+    "variant_name": "Single Painted",
+    "key": [
+      "mini bamboo slide whistle",
+      "single painted"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-B-SW-S-P",
+    "row": 508,
+    "reason": "already_applied",
+    "current_sku": "MI-B-SW-S-P"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Ocean Drums",
+    "variant_name": "Flower of Life / 30 cms",
+    "key": [
+      "ocean drums",
+      "flower of life / 30 cms"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-OD-FL-30",
+    "row": 533,
+    "reason": "already_applied",
+    "current_sku": "MI-OD-FL-30"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Ocean Drums",
+    "variant_name": "Flower of Life / 35 cms",
+    "key": [
+      "ocean drums",
+      "flower of life / 35 cms"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-OD-FL-35",
+    "row": 534,
+    "reason": "already_applied",
+    "current_sku": "MI-OD-FL-35"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Pink & Positive",
+    "variant_name": "with-brush / 1L",
+    "key": [
+      "pink & positive",
+      "with-brush / 1l"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-PNT-B",
+    "row": 543,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Pink & Positive",
+    "variant_name": "with-brush / 500ml",
+    "key": [
+      "pink & positive",
+      "with-brush / 500ml"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-PNT-B-5",
+    "row": 542,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Pink & Positive",
+    "variant_name": "without-brush / 1L",
+    "key": [
+      "pink & positive",
+      "without-brush / 1l"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-PNT-",
+    "row": 540,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Pink & Positive",
+    "variant_name": "without-brush / 500ml",
+    "key": [
+      "pink & positive",
+      "without-brush / 500ml"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-PNT-5",
+    "row": 541,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Plain Yoga Mats",
+    "variant_name": "Moderate / Orange",
+    "key": [
+      "plain yoga mats",
+      "moderate / orange"
+    ],
+    "expected_old": null,
+    "new_sku": "Yo-M-MG-O",
+    "row": 546,
+    "reason": "already_applied",
+    "current_sku": "Yo-M-MG-O"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Plain Yoga Mats",
+    "variant_name": "Moderate / Pink",
+    "key": [
+      "plain yoga mats",
+      "moderate / pink"
+    ],
+    "expected_old": null,
+    "new_sku": "Yo-M-MG-P",
+    "row": 550,
+    "reason": "already_applied",
+    "current_sku": "Yo-M-MG-P"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Plain Yoga Mats",
+    "variant_name": "Moderate / Teal",
+    "key": [
+      "plain yoga mats",
+      "moderate / teal"
+    ],
+    "expected_old": null,
+    "new_sku": "Yo-M-MG-T",
+    "row": 544,
+    "reason": "already_applied",
+    "current_sku": "Yo-M-MG-T"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Plain Yoga Mats",
+    "variant_name": "Moderate / Yellow",
+    "key": [
+      "plain yoga mats",
+      "moderate / yellow"
+    ],
+    "expected_old": null,
+    "new_sku": "Yo-M-MG-Y",
+    "row": 548,
+    "reason": "already_applied",
+    "current_sku": "Yo-M-MG-Y"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Plain Yoga Mats",
+    "variant_name": "Orange / Superior",
+    "key": [
+      "plain yoga mats",
+      "orange / superior"
+    ],
+    "expected_old": null,
+    "new_sku": "Yo-M-SG-O",
+    "row": 547,
+    "reason": "already_applied",
+    "current_sku": "Yo-M-SG-O"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Plain Yoga Mats",
+    "variant_name": "Teal / Superior",
+    "key": [
+      "plain yoga mats",
+      "teal / superior"
+    ],
+    "expected_old": null,
+    "new_sku": "Yo-M-SG-T",
+    "row": 545,
+    "reason": "already_applied",
+    "current_sku": "Yo-M-SG-T"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Plain Yoga Mats",
+    "variant_name": "Yellow / Superior",
+    "key": [
+      "plain yoga mats",
+      "yellow / superior"
+    ],
+    "expected_old": null,
+    "new_sku": "Yo-M-SG-Y",
+    "row": 549,
+    "reason": "already_applied",
+    "current_sku": "Yo-M-SG-Y"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Pulse Tubes",
+    "variant_name": "Big",
+    "key": [
+      "pulse tubes",
+      "big"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-PT-B",
+    "row": 560,
+    "reason": "already_applied",
+    "current_sku": "MI-PT-B"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Pulse Tubes",
+    "variant_name": "Medium",
+    "key": [
+      "pulse tubes",
+      "medium"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-PT-M",
+    "row": 561,
+    "reason": "already_applied",
+    "current_sku": "MI-PT-M"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Pulse Tubes",
+    "variant_name": "Small",
+    "key": [
+      "pulse tubes",
+      "small"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-PT-S",
+    "row": 562,
+    "reason": "already_applied",
+    "current_sku": "MI-PT-S"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Shamanic Drum",
+    "variant_name": "30 cms / Tree of Life",
+    "key": [
+      "shamanic drum",
+      "30 cms / tree of life"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SD-TL-30",
+    "row": 602,
+    "reason": "already_applied",
+    "current_sku": "MI-SD-TL-30"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Shamanic Drum",
+    "variant_name": "40 cms / Tree of Life",
+    "key": [
+      "shamanic drum",
+      "40 cms / tree of life"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SD-TL-40",
+    "row": 603,
+    "reason": "already_applied",
+    "current_sku": "MI-SD-TL-40"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Shamanic Drum",
+    "variant_name": "45 cms / Tree of Life",
+    "key": [
+      "shamanic drum",
+      "45 cms / tree of life"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SD-TL-45",
+    "row": 604,
+    "reason": "already_applied",
+    "current_sku": "MI-SD-TL-45"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Shamanic Drum Bags/Ocean Drum Bags",
+    "variant_name": "Large",
+    "key": [
+      "shamanic drum bags/ocean drum bags",
+      "large"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SD-BG-L",
+    "row": 606,
+    "reason": "already_applied",
+    "current_sku": "MI-SD-BG-L"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Shamanic Drum Bags/Ocean Drum Bags",
+    "variant_name": "Medium",
+    "key": [
+      "shamanic drum bags/ocean drum bags",
+      "medium"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SD-BG-M",
+    "row": 607,
+    "reason": "already_applied",
+    "current_sku": "MI-SD-BG-M"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Shamanic Drum Bags/Ocean Drum Bags",
+    "variant_name": "Small",
+    "key": [
+      "shamanic drum bags/ocean drum bags",
+      "small"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SD-BG-S",
+    "row": 605,
+    "reason": "already_applied",
+    "current_sku": "MI-SD-BG-S"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Shankh/Conch",
+    "variant_name": "Large",
+    "key": [
+      "shankh/conch",
+      "large"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SK-L",
+    "row": 610,
+    "reason": "already_applied",
+    "current_sku": "MI-SK-L"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Shankh/Conch",
+    "variant_name": "Medium",
+    "key": [
+      "shankh/conch",
+      "medium"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SK-M",
+    "row": 609,
+    "reason": "already_applied",
+    "current_sku": "MI-SK-M"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Shankh/Conch",
+    "variant_name": "Small",
+    "key": [
+      "shankh/conch",
+      "small"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SK-S",
+    "row": 608,
+    "reason": "already_applied",
+    "current_sku": "MI-SK-S"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Shruthi Thali/Gong Plates",
+    "variant_name": "A Plate",
+    "key": [
+      "shruthi thali/gong plates",
+      "a plate"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-ST-A",
+    "row": 612,
+    "reason": "already_applied",
+    "current_sku": "MI-ST-A"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Shruthi Thali/Gong Plates",
+    "variant_name": "B Plate",
+    "key": [
+      "shruthi thali/gong plates",
+      "b plate"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-ST-B",
+    "row": 611,
+    "reason": "already_applied",
+    "current_sku": "MI-ST-B"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Shruthi Thali/Gong Plates",
+    "variant_name": "C Plate",
+    "key": [
+      "shruthi thali/gong plates",
+      "c plate"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-ST-C",
+    "row": 617,
+    "reason": "already_applied",
+    "current_sku": "MI-ST-C"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Shruthi Thali/Gong Plates",
+    "variant_name": "D Plate",
+    "key": [
+      "shruthi thali/gong plates",
+      "d plate"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-ST-D",
+    "row": 616,
+    "reason": "already_applied",
+    "current_sku": "MI-ST-D"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Shruthi Thali/Gong Plates",
+    "variant_name": "E Plate",
+    "key": [
+      "shruthi thali/gong plates",
+      "e plate"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-ST-E",
+    "row": 615,
+    "reason": "already_applied",
+    "current_sku": "MI-ST-E"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Shruthi Thali/Gong Plates",
+    "variant_name": "F Plate",
+    "key": [
+      "shruthi thali/gong plates",
+      "f plate"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-ST-F",
+    "row": 614,
+    "reason": "already_applied",
+    "current_sku": "MI-ST-F"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Shruthi Thali/Gong Plates",
+    "variant_name": "Full Set",
+    "key": [
+      "shruthi thali/gong plates",
+      "full set"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-ST-SET",
+    "row": 618,
+    "reason": "already_applied",
+    "current_sku": "MI-ST-SET"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Shruthi Thali/Gong Plates",
+    "variant_name": "G Plate",
+    "key": [
+      "shruthi thali/gong plates",
+      "g plate"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-ST-G",
+    "row": 613,
+    "reason": "already_applied",
+    "current_sku": "MI-ST-G"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Shruti Box",
+    "variant_name": "1 Octave",
+    "key": [
+      "shruti box",
+      "1 octave"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SHB-01",
+    "row": 619,
+    "reason": "already_applied",
+    "current_sku": "MI-SHB-01"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Shruti Box",
+    "variant_name": "2 Octaves",
+    "key": [
+      "shruti box",
+      "2 octaves"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SHB-02",
+    "row": 620,
+    "reason": "already_applied",
+    "current_sku": "MI-SHB-02"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Shruti Box",
+    "variant_name": "3 Octaves",
+    "key": [
+      "shruti box",
+      "3 octaves"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SHB-03",
+    "row": 621,
+    "reason": "already_applied",
+    "current_sku": "MI-SHB-03"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Singing Bowls Silk Ring Cushion Accessories",
+    "variant_name": "Combo of 3",
+    "key": [
+      "singing bowls silk ring cushion accessories",
+      "combo of 3"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-C-CO-3",
+    "row": 691,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-C-CO-3"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Singing Bowls Silk Ring Cushion Accessories",
+    "variant_name": "Combo of 5",
+    "key": [
+      "singing bowls silk ring cushion accessories",
+      "combo of 5"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-C-CO-5",
+    "row": 692,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-C-CO-5"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Singing Bowls Silk Ring Cushion Accessories",
+    "variant_name": "Combo of 7",
+    "key": [
+      "singing bowls silk ring cushion accessories",
+      "combo of 7"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-C-CO-7",
+    "row": 693,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-C-CO-7"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Sunshine within Me",
+    "variant_name": "with-brush / 1L",
+    "key": [
+      "sunshine within me",
+      "with-brush / 1l"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-SM-B",
+    "row": 715,
+    "reason": "already_applied",
+    "current_sku": "CB-SM-B"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Sunshine within Me",
+    "variant_name": "with-brush / 500ml",
+    "key": [
+      "sunshine within me",
+      "with-brush / 500ml"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-SM-B-5",
+    "row": 717,
+    "reason": "already_applied",
+    "current_sku": "CB-SM-B-5"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Sunshine within Me",
+    "variant_name": "without-brush / 1L",
+    "key": [
+      "sunshine within me",
+      "without-brush / 1l"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-SM",
+    "row": 718,
+    "reason": "already_applied",
+    "current_sku": "CB-SM"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Sunshine within Me",
+    "variant_name": "without-brush / 500ml",
+    "key": [
+      "sunshine within me",
+      "without-brush / 500ml"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-SM-5",
+    "row": 716,
+    "reason": "already_applied",
+    "current_sku": "CB-SM-5"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tam-Tam/Chau Gong",
+    "variant_name": "16 in",
+    "key": [
+      "tam-tam/chau gong",
+      "16 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-CG-16",
+    "row": 721,
+    "reason": "already_applied",
+    "current_sku": "MI-CG-16"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tam-Tam/Chau Gong",
+    "variant_name": "18 in",
+    "key": [
+      "tam-tam/chau gong",
+      "18 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-CG-18",
+    "row": 722,
+    "reason": "already_applied",
+    "current_sku": "MI-CG-18"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tam-Tam/Chau Gong",
+    "variant_name": "20 in",
+    "key": [
+      "tam-tam/chau gong",
+      "20 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-CG-20",
+    "row": 723,
+    "reason": "already_applied",
+    "current_sku": "MI-CG-20"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tam-Tam/Chau Gong",
+    "variant_name": "22 in",
+    "key": [
+      "tam-tam/chau gong",
+      "22 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-CG-22",
+    "row": 724,
+    "reason": "already_applied",
+    "current_sku": "MI-CG-22"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tam-Tam/Chau Gong",
+    "variant_name": "24 in",
+    "key": [
+      "tam-tam/chau gong",
+      "24 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-CG-24",
+    "row": 725,
+    "reason": "already_applied",
+    "current_sku": "MI-CG-24"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tam-Tam/Chau Gong",
+    "variant_name": "26 in",
+    "key": [
+      "tam-tam/chau gong",
+      "26 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-CG-26",
+    "row": 726,
+    "reason": "already_applied",
+    "current_sku": "MI-CG-26"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tam-Tam/Chau Gong",
+    "variant_name": "28 in",
+    "key": [
+      "tam-tam/chau gong",
+      "28 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-CG-28",
+    "row": 727,
+    "reason": "already_applied",
+    "current_sku": "MI-CG-28"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tam-Tam/Chau Gong",
+    "variant_name": "30 in",
+    "key": [
+      "tam-tam/chau gong",
+      "30 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-CG-30",
+    "row": 728,
+    "reason": "already_applied",
+    "current_sku": "MI-CG-30"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tam-Tam/Chau Gong",
+    "variant_name": "32 in",
+    "key": [
+      "tam-tam/chau gong",
+      "32 in"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-CG-32",
+    "row": 729,
+    "reason": "already_applied",
+    "current_sku": "MI-CG-32"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tattvamasi-I am Infinite",
+    "variant_name": "with-brush / 1L",
+    "key": [
+      "tattvamasi-i am infinite",
+      "with-brush / 1l"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-T-B",
+    "row": 730,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tattvamasi-I am Infinite",
+    "variant_name": "with-brush / 500ml",
+    "key": [
+      "tattvamasi-i am infinite",
+      "with-brush / 500ml"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-T-B-5",
+    "row": 732,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tattvamasi-I am Infinite",
+    "variant_name": "without-brush / 1L",
+    "key": [
+      "tattvamasi-i am infinite",
+      "without-brush / 1l"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-T",
+    "row": 733,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tattvamasi-I am Infinite",
+    "variant_name": "without-brush / 500ml",
+    "key": [
+      "tattvamasi-i am infinite",
+      "without-brush / 500ml"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-T-5",
+    "row": 731,
+    "reason": "no_api_match"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Teak Wood - Stainless Steel Xylophone",
+    "variant_name": "8 Keys",
+    "key": [
+      "teak wood - stainless steel xylophone",
+      "8 keys"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-XP-TW-8",
+    "row": 734,
+    "reason": "already_applied",
+    "current_sku": "MI-XP-TW-8"
+  },
+  {
+    "kind": "rename",
+    "product_name": "The Head Bowl",
+    "variant_name": "Standard",
+    "key": [
+      "the head bowl",
+      "standard"
+    ],
+    "expected_old": "woo-45518",
+    "new_sku": "MI-SB-HB",
+    "row": 737,
+    "reason": "user_skip"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Thunder Tube - Basic Edition",
+    "variant_name": "20cms",
+    "key": [
+      "thunder tube - basic edition",
+      "20cms"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TT-20",
+    "row": 740,
+    "reason": "already_applied",
+    "current_sku": "MI-TT-20"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Thunder Tube - Basic Edition",
+    "variant_name": "25cms",
+    "key": [
+      "thunder tube - basic edition",
+      "25cms"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TT-25",
+    "row": 741,
+    "reason": "already_applied",
+    "current_sku": "MI-TT-25"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Thunder Tube - Basic Edition",
+    "variant_name": "30cms",
+    "key": [
+      "thunder tube - basic edition",
+      "30cms"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TT-30",
+    "row": 742,
+    "reason": "already_applied",
+    "current_sku": "MI-TT-30"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tibetan Buddhist Bell",
+    "variant_name": "Extra Large",
+    "key": [
+      "tibetan buddhist bell",
+      "extra large"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-BB-6",
+    "row": 746,
+    "reason": "already_applied",
+    "current_sku": "MI-BB-6"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tingsha Bell",
+    "variant_name": "Dark / Small",
+    "key": [
+      "tingsha bell",
+      "dark / small"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TB-D-S",
+    "row": 749,
+    "reason": "already_applied",
+    "current_sku": "MI-TB-D-S"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tingsha Bell",
+    "variant_name": "Golden / Small",
+    "key": [
+      "tingsha bell",
+      "golden / small"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TB-G-S",
+    "row": 747,
+    "reason": "already_applied",
+    "current_sku": "MI-TB-G-S"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tingsha Bell",
+    "variant_name": "Small / Etched",
+    "key": [
+      "tingsha bell",
+      "small / etched"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TB-E-S",
+    "row": 751,
+    "reason": "already_applied",
+    "current_sku": "MI-TB-E-S"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tingsha Bell",
+    "variant_name": "Standard / Dark",
+    "key": [
+      "tingsha bell",
+      "standard / dark"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TB-D-M",
+    "row": 750,
+    "reason": "already_applied",
+    "current_sku": "MI-TB-D-M"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tingsha Bell",
+    "variant_name": "Standard / Etched",
+    "key": [
+      "tingsha bell",
+      "standard / etched"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TB-E-M",
+    "row": 752,
+    "reason": "already_applied",
+    "current_sku": "MI-TB-E-M"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tingsha Bell",
+    "variant_name": "Standard / Golden",
+    "key": [
+      "tingsha bell",
+      "standard / golden"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TB-G-M",
+    "row": 748,
+    "reason": "already_applied",
+    "current_sku": "MI-TB-G-M"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Triad Crystal Bowl Set",
+    "variant_name": "CEG",
+    "key": [
+      "triad crystal bowl set",
+      "ceg"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-CEG-BG",
+    "row": 753,
+    "reason": "already_applied",
+    "current_sku": "CB-CEG-BG"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Triad Crystal Bowl Set",
+    "variant_name": "DFA",
+    "key": [
+      "triad crystal bowl set",
+      "dfa"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-DFA-BG",
+    "row": 754,
+    "reason": "already_applied",
+    "current_sku": "CB-DFA-BG"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Triad Crystal Bowl Set",
+    "variant_name": "EGB",
+    "key": [
+      "triad crystal bowl set",
+      "egb"
+    ],
+    "expected_old": null,
+    "new_sku": "CB-EGB-BG",
+    "row": 755,
+    "reason": "already_applied",
+    "current_sku": "CB-EGB-BG"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Fork - Single Weighted & Unweighted",
+    "variant_name": "136.10 Hz / Unweighted",
+    "key": [
+      "tuning fork - single weighted & unweighted",
+      "136.10 hz / unweighted"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-UW-136.10",
+    "row": 770,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-UW-136.10"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Fork - Single Weighted & Unweighted",
+    "variant_name": "440 Hz / Unweighted",
+    "key": [
+      "tuning fork - single weighted & unweighted",
+      "440 hz / unweighted"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-UW-440",
+    "row": 763,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-UW-440"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Fork - Single Weighted & Unweighted",
+    "variant_name": "64 Hz / Unweighted",
+    "key": [
+      "tuning fork - single weighted & unweighted",
+      "64 hz / unweighted"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-UW-64",
+    "row": 762,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-UW-64"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Fork - Single Weighted & Unweighted",
+    "variant_name": "Unweighted / 128 Hz",
+    "key": [
+      "tuning fork - single weighted & unweighted",
+      "unweighted / 128 hz"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-UW-128",
+    "row": 769,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-UW-128"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Fork - Single Weighted & Unweighted",
+    "variant_name": "Unweighted / 256 Hz",
+    "key": [
+      "tuning fork - single weighted & unweighted",
+      "unweighted / 256 hz"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-UW-256",
+    "row": 771,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-UW-256"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Fork - Single Weighted & Unweighted",
+    "variant_name": "Unweighted / 432 Hz",
+    "key": [
+      "tuning fork - single weighted & unweighted",
+      "unweighted / 432 hz"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-UW-432",
+    "row": 772,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-UW-432"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Fork - Single Weighted & Unweighted",
+    "variant_name": "Unweighted / 528 Hz",
+    "key": [
+      "tuning fork - single weighted & unweighted",
+      "unweighted / 528 hz"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-UW-528",
+    "row": 773,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-UW-528"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Fork - Single Weighted & Unweighted",
+    "variant_name": "Unweighted / 68.05 Hz",
+    "key": [
+      "tuning fork - single weighted & unweighted",
+      "unweighted / 68.05 hz"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-UW-68.05",
+    "row": 760,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-UW-68.05"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Fork - Single Weighted & Unweighted",
+    "variant_name": "Unweighted / 93.96 Hz",
+    "key": [
+      "tuning fork - single weighted & unweighted",
+      "unweighted / 93.96 hz"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-UW-93.96",
+    "row": 765,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-UW-93.96"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Fork - Single Weighted & Unweighted",
+    "variant_name": "Weighted / 136.10 Hz",
+    "key": [
+      "tuning fork - single weighted & unweighted",
+      "weighted / 136.10 hz"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-W-136.10",
+    "row": 767,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-W-136.10"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Fork - Single Weighted & Unweighted",
+    "variant_name": "Weighted / 440 Hz",
+    "key": [
+      "tuning fork - single weighted & unweighted",
+      "weighted / 440 hz"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-W-440",
+    "row": 764,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-W-440"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Fork - Single Weighted & Unweighted",
+    "variant_name": "Weighted / 528 Hz",
+    "key": [
+      "tuning fork - single weighted & unweighted",
+      "weighted / 528 hz"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-W-528",
+    "row": 768,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-W-528"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Fork - Single Weighted & Unweighted",
+    "variant_name": "Weighted / 64 Hz",
+    "key": [
+      "tuning fork - single weighted & unweighted",
+      "weighted / 64 hz"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-W-64",
+    "row": 761,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-W-64"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Fork - Single Weighted & Unweighted",
+    "variant_name": "Weighted / 68.05 Hz",
+    "key": [
+      "tuning fork - single weighted & unweighted",
+      "weighted / 68.05 hz"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-W-68.05",
+    "row": 759,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-W-68.05"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Fork - Single Weighted & Unweighted",
+    "variant_name": "Weighted / 93.96 Hz",
+    "key": [
+      "tuning fork - single weighted & unweighted",
+      "weighted / 93.96 hz"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-W-93.96",
+    "row": 766,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-W-93.96"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Fork Activators",
+    "variant_name": "Activator",
+    "key": [
+      "tuning fork activators",
+      "activator"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-A",
+    "row": 774,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-A"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Fork Activators",
+    "variant_name": "Activator & Mallet",
+    "key": [
+      "tuning fork activators",
+      "activator & mallet"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-A-M",
+    "row": 776,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-A-M"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Fork Activators",
+    "variant_name": "Mallet",
+    "key": [
+      "tuning fork activators",
+      "mallet"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-M",
+    "row": 775,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-M"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Fork Extensions",
+    "variant_name": "Circuit Boot",
+    "key": [
+      "tuning fork extensions",
+      "circuit boot"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-E-CB",
+    "row": 778,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-E-CB"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Fork Extensions",
+    "variant_name": "Extender",
+    "key": [
+      "tuning fork extensions",
+      "extender"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-E-E",
+    "row": 777,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-E-E"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Fork Extensions",
+    "variant_name": "Massage Boot",
+    "key": [
+      "tuning fork extensions",
+      "massage boot"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-E-MB",
+    "row": 779,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-E-MB"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Forks 7 Chakra Set",
+    "variant_name": "Colour Weighted / With Gem Foot",
+    "key": [
+      "tuning forks 7 chakra set",
+      "colour weighted / with gem foot"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-C-W--GF",
+    "row": 784,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-C-W--GF"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Forks 7 Chakra Set",
+    "variant_name": "Colour Weighted / Without Gem Foot",
+    "key": [
+      "tuning forks 7 chakra set",
+      "colour weighted / without gem foot"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-C-W",
+    "row": 785,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-C-W"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Forks 7 Chakra Set",
+    "variant_name": "Weighted / With Gem Foot",
+    "key": [
+      "tuning forks 7 chakra set",
+      "weighted / with gem foot"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-7C-W-GF",
+    "row": 780,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-7C-W-GF"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Forks 7 Chakra Set",
+    "variant_name": "Weighted / Without Gem Foot",
+    "key": [
+      "tuning forks 7 chakra set",
+      "weighted / without gem foot"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-7C-W",
+    "row": 781,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-7C-W"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Forks 7 Chakra Set",
+    "variant_name": "With Gem Foot / Colour Unweighted",
+    "key": [
+      "tuning forks 7 chakra set",
+      "with gem foot / colour unweighted"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-C-UW-GF",
+    "row": 786,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-C-UW-GF"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Forks 7 Chakra Set",
+    "variant_name": "With Gem Foot / Unweighted",
+    "key": [
+      "tuning forks 7 chakra set",
+      "with gem foot / unweighted"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-7C-UW-GF",
+    "row": 782,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-7C-UW-GF"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Forks 7 Chakra Set",
+    "variant_name": "Without Gem Foot / Colour Unweighted",
+    "key": [
+      "tuning forks 7 chakra set",
+      "without gem foot / colour unweighted"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-C-UW",
+    "row": 787,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-C-UW"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Forks 7 Chakra Set",
+    "variant_name": "Without Gem Foot / Unweighted",
+    "key": [
+      "tuning forks 7 chakra set",
+      "without gem foot / unweighted"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-7C-UW",
+    "row": 783,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-7C-UW"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Forks Gem Feet",
+    "variant_name": "Blue",
+    "key": [
+      "tuning forks gem feet",
+      "blue"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-GF-B",
+    "row": 791,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-GF-B"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Forks Gem Feet",
+    "variant_name": "Dark Blue",
+    "key": [
+      "tuning forks gem feet",
+      "dark blue"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-GF-DG",
+    "row": 793,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-GF-DG"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Forks Gem Feet",
+    "variant_name": "Full Set",
+    "key": [
+      "tuning forks gem feet",
+      "full set"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-GF-SET",
+    "row": 795,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-GF-SET"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Forks Gem Feet",
+    "variant_name": "Green",
+    "key": [
+      "tuning forks gem feet",
+      "green"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-GF-G",
+    "row": 792,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-GF-G"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Forks Gem Feet",
+    "variant_name": "Maroon",
+    "key": [
+      "tuning forks gem feet",
+      "maroon"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-GF-M",
+    "row": 788,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-GF-M"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Forks Gem Feet",
+    "variant_name": "Red",
+    "key": [
+      "tuning forks gem feet",
+      "red"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-GF-R",
+    "row": 794,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-GF-R"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Forks Gem Feet",
+    "variant_name": "Violet",
+    "key": [
+      "tuning forks gem feet",
+      "violet"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-GF-V",
+    "row": 790,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-GF-V"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Forks Gem Feet",
+    "variant_name": "Yellow",
+    "key": [
+      "tuning forks gem feet",
+      "yellow"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-GF-Y",
+    "row": 789,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-GF-Y"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Forks Solfeggio Set",
+    "variant_name": "Unweighted",
+    "key": [
+      "tuning forks solfeggio set",
+      "unweighted"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-SS-UW",
+    "row": 797,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-SS-UW"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Tuning Forks Solfeggio Set",
+    "variant_name": "Weighted",
+    "key": [
+      "tuning forks solfeggio set",
+      "weighted"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-SS-W",
+    "row": 796,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-SS-W"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Vibroacoustic Therapy Bowls - Universal, Belly and Head",
+    "variant_name": "Set of 3",
+    "key": [
+      "vibroacoustic therapy bowls - universal, belly and head",
+      "set of 3"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-VT-SET-3",
+    "row": 801,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-VT-SET-3"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Wooden Mallets for Singing Bowls",
+    "variant_name": "Black / Standard Wide",
+    "key": [
+      "wooden mallets for singing bowls",
+      "black / standard wide"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-M-B-SW",
+    "row": 815,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-M-B-SW"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Wooden Mallets for Singing Bowls",
+    "variant_name": "Black / Thick Wide",
+    "key": [
+      "wooden mallets for singing bowls",
+      "black / thick wide"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-M-B-TW",
+    "row": 813,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-M-B-TW"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Wooden Mallets for Singing Bowls",
+    "variant_name": "Red / Long Firm-Small",
+    "key": [
+      "wooden mallets for singing bowls",
+      "red / long firm-small"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-M-R-L-F",
+    "row": 812,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-M-R-L-F"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Wooden Mallets for Singing Bowls",
+    "variant_name": "Red / Long Firm-Standard",
+    "key": [
+      "wooden mallets for singing bowls",
+      "red / long firm-standard"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-M-R-L-S",
+    "row": 802,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-M-R-L-S"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Wooden Mallets for Singing Bowls",
+    "variant_name": "Red / Standard Wide",
+    "key": [
+      "wooden mallets for singing bowls",
+      "red / standard wide"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-M-R-SW",
+    "row": 816,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-M-R-SW"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Wooden Mallets for Singing Bowls",
+    "variant_name": "Red / Thick Wide",
+    "key": [
+      "wooden mallets for singing bowls",
+      "red / thick wide"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-M-R-TW",
+    "row": 814,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-M-R-TW"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Wooden Mallets for Singing Bowls",
+    "variant_name": "White / Long Firm-Small",
+    "key": [
+      "wooden mallets for singing bowls",
+      "white / long firm-small"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-M-W-L-F",
+    "row": 817,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-M-W-L-F"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Wooden Mallets for Singing Bowls",
+    "variant_name": "White / Long Firm-Standard",
+    "key": [
+      "wooden mallets for singing bowls",
+      "white / long firm-standard"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-SB-M-W-L-S",
+    "row": 818,
+    "reason": "already_applied",
+    "current_sku": "MI-SB-M-W-L-S"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Wooden Maracas Shakers | Plain & Dot Painted",
+    "variant_name": "Dot Painted",
+    "key": [
+      "wooden maracas shakers | plain & dot painted",
+      "dot painted"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-WM-P",
+    "row": 820,
+    "reason": "already_applied",
+    "current_sku": "MI-WM-P"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Wooden Maracas Shakers | Plain & Dot Painted",
+    "variant_name": "Plain",
+    "key": [
+      "wooden maracas shakers | plain & dot painted",
+      "plain"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-WM",
+    "row": 819,
+    "reason": "already_applied",
+    "current_sku": "MI-WM"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Wooden Stand for Tuning Forks",
+    "variant_name": "Five",
+    "key": [
+      "wooden stand for tuning forks",
+      "five"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-WS-5",
+    "row": 822,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-WS-5"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Wooden Stand for Tuning Forks",
+    "variant_name": "Nine",
+    "key": [
+      "wooden stand for tuning forks",
+      "nine"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-WS-9",
+    "row": 824,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-WS-9"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Wooden Stand for Tuning Forks",
+    "variant_name": "Seven",
+    "key": [
+      "wooden stand for tuning forks",
+      "seven"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-WS-7",
+    "row": 823,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-WS-7"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Wooden Stand for Tuning Forks",
+    "variant_name": "Three",
+    "key": [
+      "wooden stand for tuning forks",
+      "three"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-TF-WS-3",
+    "row": 821,
+    "reason": "already_applied",
+    "current_sku": "MI-TF-WS-3"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Wooden Tambourines",
+    "variant_name": "Circular",
+    "key": [
+      "wooden tambourines",
+      "circular"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-T-C",
+    "row": 826,
+    "reason": "already_applied",
+    "current_sku": "MI-T-C"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Wooden Tambourines",
+    "variant_name": "Half-Moon",
+    "key": [
+      "wooden tambourines",
+      "half-moon"
+    ],
+    "expected_old": null,
+    "new_sku": "MI-T-HM",
+    "row": 825,
+    "reason": "already_applied",
+    "current_sku": "MI-T-HM"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Zen Meditation Bench",
+    "variant_name": "Large",
+    "key": [
+      "zen meditation bench",
+      "large"
+    ],
+    "expected_old": null,
+    "new_sku": "ME-BE-L",
+    "row": 865,
+    "reason": "already_applied",
+    "current_sku": "ME-BE-L"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Zen Meditation Bench",
+    "variant_name": "Medium",
+    "key": [
+      "zen meditation bench",
+      "medium"
+    ],
+    "expected_old": null,
+    "new_sku": "ME-BE-M",
+    "row": 864,
+    "reason": "already_applied",
+    "current_sku": "ME-BE-M"
+  },
+  {
+    "kind": "conflict",
+    "product_name": "Zen Meditation Bench",
+    "variant_name": "Small",
+    "key": [
+      "zen meditation bench",
+      "small"
+    ],
+    "expected_old": null,
+    "new_sku": "ME-BE-S",
+    "row": 863,
+    "reason": "already_applied",
+    "current_sku": "ME-BE-S"
+  }
+]

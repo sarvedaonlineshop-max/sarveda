@@ -17,3 +17,9 @@ export function countryDisplayName(code: string | null | undefined): string | nu
     return code.toUpperCase();
   }
 }
+
+/** Reliable flag image (emoji flags often missing on Windows/Linux). */
+export function countryFlagImageUrl(code: string | null | undefined): string | null {
+  if (!code || code.length !== 2 || !/^[A-Za-z]{2}$/.test(code)) return null;
+  return `https://flagcdn.com/w20/${code.toLowerCase()}.png`;
+}
