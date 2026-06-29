@@ -2,7 +2,7 @@
  * Set default password (sarveda123) and ADMIN role on all active whitelist entries.
  * Creates matching User rows when missing.
  *
- * Usage: cd backend && npx tsx scripts/seed-whitelist-passwords.ts
+ * Usage (EC2): cd backend && npx prisma migrate deploy && npm run seed:whitelist-passwords
  */
 import { prisma } from "../src/config/db";
 import {
