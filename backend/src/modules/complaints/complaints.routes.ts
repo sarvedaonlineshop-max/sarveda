@@ -551,6 +551,7 @@ router.post("/", verifyComplaintAuth, upload.array("files", 5), async (req, res,
     });
 
     if (assigneeEmails.length > 0) {
+      const actor = req.complaintUser!;
       const names = await assigneeNameMap(assigneeEmails);
       await prisma.taskAssignee.createMany({
         data: assigneeEmails.map((email) => ({
@@ -562,7 +563,6 @@ router.post("/", verifyComplaintAuth, upload.array("files", 5), async (req, res,
         }))
       });
 
-      const actor = req.complaintUser!;
       await prisma.taskNotification.createMany({
         data: assigneeEmails
           .filter((e) => e !== actor.email)
