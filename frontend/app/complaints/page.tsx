@@ -125,6 +125,20 @@ function isTaskOwner(task: Task, email: string): boolean {
   return task.raisedByEmail.toLowerCase() === email.toLowerCase();
 }
 
+function canParticipateInTask(task: Task, email: string): boolean {
+  const e = email.toLowerCase();
+  if (task.raisedByEmail.toLowerCase() === e) return true;
+  if (task.assignedByEmail?.toLowerCase() === e) return true;
+  return task.assignees.some((a) => a.assigneeEmail.toLowerCase() === e);
+}
+
+function attachmentIcon(type: string): string {
+  if (type === "image") return "🖼";
+  if (type === "video") return "🎥";
+  if (type === "audio") return "🎤";
+  return "📄";
+}
+
 function headerTitle(task: Task): string {
   const t = task.title.trim();
   return t.length > 36 ? `${t.slice(0, 36)}…` : t || "Task";
@@ -134,63 +148,37 @@ function ChatMedia({ attachments }: { attachments: Attachment[] }) {
   if (!attachments.length) return null;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
-      {attachments.map((a) => {
-        if (a.type === "image") {
-          return (
-            <a key={a.id} href={a.s3Url} target="_blank" rel="noopener noreferrer">
-              <img
-                src={a.s3Url}
-                alt={a.fileName ?? "image"}
-                style={{
-                  maxWidth: "100%",
-                  width: 240,
-                  borderRadius: 10,
-                  display: "block",
-                  objectFit: "cover"
-                }}
-              />
-            </a>
-          );
-        }
-        if (a.type === "video") {
-          return (
-            <video
-              key={a.id}
-              src={a.s3Url}
-              controls
-              playsInline
-              style={{ maxWidth: "100%", width: 260, borderRadius: 10 }}
-            />
-          );
-        }
-        if (a.type === "audio") {
-          return (
-            <audio key={a.id} src={a.s3Url} controls style={{ width: "100%", maxWidth: 260 }} />
-          );
-        }
-        return (
-          <a
-            key={a.id}
-            href={a.s3Url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "10px 12px",
-              borderRadius: 10,
-              background: "rgba(0,0,0,.06)",
-              color: "#075E54",
-              fontWeight: 600,
-              fontSize: 13,
-              textDecoration: "none"
-            }}
-          >
-            📄 {a.fileName ?? "Document"}
-          </a>
-        );
-      })}
+      {attachments.map((a) => (
+        <button
+          key={a.id}
+          type="button"
+          onClick={() => window.open(a.s3Url, "_blank", "noopener,noreferrer")}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "10px 12px",
+            borderRadius: 10,
+            background: "rgba(0,0,0,.06)",
+            color: "#075E54",
+            fontWeight: 600,
+            fontSize: 13,
+            border: "none",
+            cursor: "pointer",
+            textAlign: "left",
+            width: "100%"
+          }}
+        >
+          <span>{attachmentIcon(a.type)}</span>
+          <span style={{
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap"
+          }}>
+            {a.fileName ?? "Attachment"}
+          </span>
+        </button>
+      ))}
     </div>
   );
 }
@@ -391,6 +379,8 @@ export default function TasksApp() {
   const [showNewPwd,setShowNewPwd] = useState(false);
   const [avatarUploading,setAvatarUploading] = useState(false);
   const [showAvatarPicker,setShowAvatarPicker] = useState(false);
+  const [pullDistance,setPullDistance] = useState(0);
+  const [refreshing,setRefreshing] = useState(false);
 
   // Profile state
   const [pName,setPName] = useState("");
@@ -409,9 +399,11 @@ export default function TasksApp() {
   const [quickTask,setQuickTask] = useState("");
   const [quickSubmitting,setQuickSubmitting] = useState(false);
 
-  const prevView = useRef<View>("home");
-  const historyBooted = useRef(false);
+  const viewStack = useRef<View[]>(["home"]);
+  const [showSubtasksFab,setShowSubtasksFab] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval>|null>(null);
+  const pullStartY = useRef<number|null>(null);
+  const pullArmed = useRef(false);
   const taskMenuRef = useRef<HTMLDivElement>(null);
   const avatarCameraRef = useRef<HTMLInputElement>(null);
   const avatarGalleryRef = useRef<HTMLInputElement>(null);
@@ -426,24 +418,72 @@ export default function TasksApp() {
     "Content-Type":"application/json",
   }),[token]);
 
-  const goToView = useCallback((next: View) => {
-    prevView.current = view;
+  function pullHandlers(onRefresh: () => Promise<void>) {
+    return {
+      onTouchStart: (e: React.TouchEvent<HTMLDivElement>) => {
+        const el = e.currentTarget;
+        if (el.scrollTop <= 0) {
+          pullStartY.current = e.touches[0].clientY;
+          pullArmed.current = true;
+        } else {
+          pullStartY.current = null;
+          pullArmed.current = false;
+        }
+      },
+      onTouchMove: (e: React.TouchEvent<HTMLDivElement>) => {
+        if (!pullArmed.current || pullStartY.current == null || refreshing) return;
+        const delta = Math.max(0, e.touches[0].clientY - pullStartY.current);
+        setPullDistance(Math.min(delta, 90));
+      },
+      onTouchEnd: () => {
+        const shouldRefresh = pullArmed.current && pullDistance >= 70 && !refreshing;
+        pullStartY.current = null;
+        pullArmed.current = false;
+        if (shouldRefresh) {
+          void onRefresh();
+        } else {
+          setPullDistance(0);
+        }
+      }
+    };
+  }
+
+  const switchTab = useCallback((tab: View) => {
+    viewStack.current = [tab];
+    setView(tab);
+  }, []);
+
+  const pushView = useCallback((next: View) => {
+    viewStack.current.push(next);
     setView(next);
-    if (typeof window !== "undefined" && historyBooted.current) {
-      window.history.pushState({ view: next }, "");
+  }, []);
+
+  const openNewTask = useCallback((
+    from: View,
+    parentId?: string | null,
+    parentTitle?: string | null
+  ) => {
+    if (from === "detail" && viewStack.current.includes("detail")) {
+      viewStack.current.push("new");
+    } else {
+      viewStack.current = [from, "new"];
     }
-  }, [view]);
+    setNtParentId(parentId ?? null);
+    setNtParentTitle(parentTitle ?? null);
+    setView("new");
+  }, []);
 
   const goBack = useCallback(() => {
     if (subtaskPanel) {
       setSubtaskPanel(null);
       return;
     }
-    if (typeof window !== "undefined" && historyBooted.current) {
-      window.history.back();
+    if (viewStack.current.length > 1) {
+      viewStack.current.pop();
+      setView(viewStack.current[viewStack.current.length - 1]);
       return;
     }
-    setView(prevView.current);
+    setView("home");
   }, [subtaskPanel]);
 
   function personName(
@@ -587,6 +627,14 @@ export default function TasksApp() {
     return null;
   },[token]);
 
+  const openTaskDetail = useCallback(async (taskId: string, from: View) => {
+    viewStack.current = [from, "detail"];
+    setSubtaskPanel(null);
+    setShowSubtasksFab(false);
+    await loadDetail(taskId);
+    setView("detail");
+  }, [loadDetail]);
+
   const loadSubtaskPanel = useCallback(async (id:string) => {
     const tk = token; if (!tk) return;
     setSubtaskLoading(true);
@@ -630,6 +678,24 @@ export default function TasksApp() {
      loadMyAssignments,loadMembers,loadNotifications,
      loadMeProfile]);
 
+  const refreshCurrentView = useCallback(async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      if (view === "home") await loadMyTasks();
+      else if (view === "assigned") await loadMyAssignments();
+      else if (view === "alltasks") await loadDashboard();
+      else if (view === "notifications") await loadNotifications();
+      void loadNotifications();
+    } finally {
+      setRefreshing(false);
+      setPullDistance(0);
+    }
+  }, [
+    view, loadMyTasks, loadMyAssignments, loadDashboard,
+    loadNotifications, refreshing
+  ]);
+
   // Restore session on mount
   useEffect(() => {
     const t = localStorage.getItem("sv_token");
@@ -655,37 +721,6 @@ export default function TasksApp() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!historyBooted.current) {
-      window.history.replaceState({ view }, "");
-      historyBooted.current = true;
-      return;
-    }
-    const onPop = (e: PopStateEvent) => {
-      if (subtaskPanel) {
-        setSubtaskPanel(null);
-        return;
-      }
-      const next = e.state?.view as View | undefined;
-      if (next) {
-        setView(next);
-      } else if (view !== "home") {
-        setView(prevView.current);
-      }
-    };
-    window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
-  }, [subtaskPanel, view]);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !historyBooted.current) return;
-    const current = window.history.state?.view as View | undefined;
-    if (current !== view) {
-      window.history.replaceState({ view }, "");
-    }
-  }, [view]);
 
   useEffect(() => {
     if (!showTaskMenu) return;
@@ -848,7 +883,6 @@ export default function TasksApp() {
       const created = await r.json() as {complaint?:{id:string}};
       const taskId = created.complaint?.id;
       const parentTaskId = ntParentId;
-      const returnView = prevView.current;
 
       setNtTitle("");setNtDesc("");
       setNtFiles([]);setNtPriority("LOW");
@@ -859,11 +893,19 @@ export default function TasksApp() {
         :"✅ Task created and assigned!");
       void loadAll();
       if (parentTaskId) {
+        if (viewStack.current[viewStack.current.length - 1] === "new") {
+          viewStack.current.pop();
+        }
+        if (viewStack.current[viewStack.current.length - 1] !== "detail") {
+          viewStack.current.push("detail");
+        }
         await loadDetail(parentTaskId);
         setSubtaskPanel(null);
         setView("detail");
       } else {
-        setView(returnView);
+        const base = viewStack.current[0] ?? "home";
+        viewStack.current = [base];
+        setView(base);
       }
 
       if (filesToUpload.length>0 && taskId) {
@@ -941,7 +983,7 @@ export default function TasksApp() {
       setShowDeleteConfirm(false);
       setShowTaskMenu(false);
       if (subtaskPanel) setSubtaskPanel(null);
-      else setView(prevView.current);
+      else goBack();
       void loadAll();
     } catch {
       alert("Failed to delete. Try again.");
@@ -1289,13 +1331,13 @@ export default function TasksApp() {
       }}>
         <div style={{
           display:"flex",alignItems:"center",
-          gap:"10px"
+          gap:"6px"
         }}>
           <img src={LOGO_PATH} alt="Sarveda"
             style={{
-              width:32,height:32,
+              width:28,height:28,
               objectFit:"contain",
-              borderRadius:"8px",flexShrink:0
+              borderRadius:"6px",flexShrink:0
             }}/>
           <div style={{flex:1,minWidth:0}}>
             <p style={{
@@ -1313,7 +1355,7 @@ export default function TasksApp() {
             </p>
           </div>
           <button onClick={()=>{
-            goToView("notifications");
+            pushView("notifications");
             void markAllRead();
           }} style={{
             position:"relative",
@@ -1352,47 +1394,26 @@ export default function TasksApp() {
     return (
       <div style={{
         background:"#075E54",
-        flexShrink:0
+        flexShrink:0,
+        padding:"6px 8px 10px",
+        display:"flex",alignItems:"center",gap:"4px",
+        minHeight:"52px"
       }}>
-        <div style={{
-          display:"flex",alignItems:"center",
-          gap:"8px",padding:"8px 12px 0"
-        }}>
-          <img src={LOGO_PATH} alt="Sarveda"
-            style={{
-              width:24,height:24,
-              objectFit:"contain",
-              borderRadius:"6px",flexShrink:0
-            }}/>
-          <span style={{
-            fontSize:"13px",fontWeight:700,
-            color:"rgba(255,255,255,.9)",
-            letterSpacing:"0.02em"
-          }}>Sarveda</span>
-        </div>
-        <div style={{
-          padding:"10px 12px 14px",
-          display:"flex",alignItems:"center",gap:"10px",
-          minHeight:"52px"
-        }}>
         <button onClick={onBack} style={{
-          background:"rgba(255,255,255,.12)",
-          border:"none",borderRadius:"10px",
-          color:"#fff",fontSize:"28px",
-          cursor:"pointer",padding:"0",
+          background:"none",border:"none",
+          color:"#fff",fontSize:"22px",
+          cursor:"pointer",padding:"8px 6px",
           lineHeight:1,flexShrink:0,
-          width:44,height:44,
           display:"flex",alignItems:"center",
           justifyContent:"center"
-        }} aria-label="Back">←</button>
+        }} aria-label="Back">‹</button>
         <p style={{
-          fontSize:"15px",fontWeight:600,
+          fontSize:"16px",fontWeight:600,
           color:"#fff",flex:1,margin:0,
           overflow:"hidden",textOverflow:"ellipsis",
           whiteSpace:"nowrap"
         }}>{title}</p>
         {children}
-        </div>
       </div>
     );
   }
@@ -1426,7 +1447,7 @@ export default function TasksApp() {
               setPName(myName);setPPhone(myPhone);
               void loadMeProfile();
             }
-            goToView(t.id as View);
+            switchTab(t.id as View);
           }} style={{
             padding:"8px 4px 6px",border:"none",
             background:"transparent",cursor:"pointer",
@@ -1600,9 +1621,7 @@ export default function TasksApp() {
     embedded?:boolean}) {
     return (
       <button onClick={()=>{
-        setNtParentId(parentId??null);
-        setNtParentTitle(parentTitle??null);
-        goToView("new");
+        openNewTask(view, parentId, parentTitle);
       }} style={{
         position:embedded?"absolute":"fixed",
         bottom:embedded
@@ -1623,6 +1642,7 @@ export default function TasksApp() {
   function ListShell({
     children,showFab
   }:{children:React.ReactNode;showFab?:boolean}) {
+    const pull = pullHandlers(refreshCurrentView);
     return (
       <div style={{
         height:"100dvh",maxHeight:"100dvh",
@@ -1640,7 +1660,20 @@ export default function TasksApp() {
           flex:1,minHeight:0,overflowY:"auto",
           WebkitOverflowScrolling:"touch",
           paddingBottom:SCROLL_BOTTOM_PAD
-        }}>
+        }} {...pull}>
+          <div style={{
+            height: pullDistance || refreshing ? 42 : 0,
+            transition:"height .15s ease",
+            display:"flex",
+            alignItems:"center",
+            justifyContent:"center",
+            color:"#075E54",
+            fontSize:"12px",
+            fontWeight:700,
+            overflow:"hidden"
+          }}>
+            {refreshing ? "Refreshing..." : pullDistance >= 70 ? "Release to refresh" : pullDistance > 0 ? "Pull to refresh" : ""}
+          </div>
           {children}
         </div>
         {showFab&&<FAB embedded/>}
@@ -1907,13 +1940,7 @@ export default function TasksApp() {
             ))
             .map(t=>(
               <TaskCard key={t.id} task={t}
-                onClick={async()=>{
-                  setSubtaskPanel(null);
-                  setLoading(true);
-                  await loadDetail(t.id);
-                  setLoading(false);
-                  goToView("detail");
-                }}/>
+                onClick={()=>void openTaskDetail(t.id,"home")}/>
             ))
         )}
       </ListShell>
@@ -1951,11 +1978,7 @@ export default function TasksApp() {
             .map(t=>(
               <TaskCard key={t.id} task={t}
                 isAssignment
-                onClick={async()=>{
-                  setSubtaskPanel(null);
-                  await loadDetail(t.id);
-                  goToView("detail");
-                }}/>
+                onClick={()=>void openTaskDetail(t.id,"assigned")}/>
             ))
         )}
       </ListShell>
@@ -1966,6 +1989,9 @@ export default function TasksApp() {
   if (view==="alltasks") return (
     <>
       <style>{CSS}</style>
+      {(() => {
+        const pull = pullHandlers(refreshCurrentView);
+        return (
       <div style={{
         height:"100dvh",maxHeight:"100dvh",
         display:"flex",flexDirection:"column",
@@ -2008,7 +2034,20 @@ export default function TasksApp() {
           flex:1,minHeight:0,overflowY:"auto",
           WebkitOverflowScrolling:"touch",
           paddingBottom:SCROLL_BOTTOM_PAD
-        }}>
+        }} {...pull}>
+          <div style={{
+            height: pullDistance || refreshing ? 42 : 0,
+            transition:"height .15s ease",
+            display:"flex",
+            alignItems:"center",
+            justifyContent:"center",
+            color:"#075E54",
+            fontSize:"12px",
+            fontWeight:700,
+            overflow:"hidden"
+          }}>
+            {refreshing ? "Refreshing..." : pullDistance >= 70 ? "Release to refresh" : pullDistance > 0 ? "Pull to refresh" : ""}
+          </div>
           {dashTasks.length===0?(
             <div style={{
               textAlign:"center",padding:"60px 16px",
@@ -2028,17 +2067,15 @@ export default function TasksApp() {
               .filter(t=>taskMatchesFilter(t.status,statusFilter))
               .map(t=>(
                 <TaskCard key={t.id} task={t}
-                  onClick={async()=>{
-                    setSubtaskPanel(null);
-                    await loadDetail(t.id);
-                    goToView("detail");
-                  }}/>
+                  onClick={()=>void openTaskDetail(t.id,"alltasks")}/>
               ))
           )}
         </div>
         <FAB embedded/>
         <BottomNav embedded/>
       </div>
+        );
+      })()}
     </>
   );
 
@@ -2385,6 +2422,9 @@ export default function TasksApp() {
     const activeTask = subtaskPanel ?? selected;
     const isSubtaskPanel = subtaskPanel !== null;
     const taskIsOwner = isTaskOwner(activeTask, myEmail);
+    const canAct = canParticipateInTask(activeTask, myEmail);
+    const subtaskHost = isSubtaskPanel ? activeTask : selected;
+    const subtaskCount = subtaskHost.children?.length ?? 0;
     const myAssignee = activeTask.assignees.find(
       (a) => a.assigneeEmail.toLowerCase() === myEmail.toLowerCase()
     );
@@ -2435,9 +2475,9 @@ export default function TasksApp() {
             style={{
               background:"rgba(255,255,255,.15)",
               border:"none",borderRadius:"10px",
-              color:"#fff",fontSize:"13px",
-              fontWeight:700,padding:"8px 10px",
-              minHeight:36,cursor:"pointer",flexShrink:0
+              color:"#fff",fontSize:"12px",
+              fontWeight:700,padding:"6px 8px",
+              minHeight:32,cursor:"pointer",flexShrink:0
             }}>
             {(["LOW","MEDIUM","HIGH"] as Priority[]).map(p=>(
               <option key={p} value={p} style={{color:"#000"}}>
@@ -2449,10 +2489,11 @@ export default function TasksApp() {
             <span style={{
               background:"rgba(255,255,255,.15)",
               borderRadius:"10px",color:"#fff",
-              fontSize:"12px",fontWeight:700,
-              padding:"8px 10px",flexShrink:0
+              fontSize:"11px",fontWeight:700,
+              padding:"6px 8px",flexShrink:0
             }}>{activeTask.priority}</span>
           )}
+          {canAct ? (
           <select
             value={uiStatus(activeTask.status)}
             disabled={statusUpdating}
@@ -2462,9 +2503,9 @@ export default function TasksApp() {
             style={{
               background:"rgba(255,255,255,.15)",
               border:"none",borderRadius:"10px",
-              color:"#fff",fontSize:"13px",
-              fontWeight:700,padding:"8px 10px",
-              minHeight:36,cursor:"pointer",flexShrink:0,
+              color:"#fff",fontSize:"12px",
+              fontWeight:700,padding:"6px 8px",
+              minHeight:32,cursor:"pointer",flexShrink:0,
               opacity:statusUpdating?0.6:1
             }}>
             <option value="NEW" style={{color:"#000"}}>New</option>
@@ -2473,15 +2514,24 @@ export default function TasksApp() {
             </option>
             <option value="CLOSED" style={{color:"#000"}}>Closed</option>
           </select>
+          ) : (
+            <span style={{
+              background:"rgba(255,255,255,.15)",
+              borderRadius:"10px",color:"#fff",
+              fontSize:"11px",fontWeight:700,
+              padding:"6px 8px",flexShrink:0
+            }}>{uiStatus(activeTask.status)}</span>
+          )}
+          {canAct && (
           <div ref={taskMenuRef} style={{position:"relative",flexShrink:0}}>
             <button
               onClick={()=>setShowTaskMenu(!showTaskMenu)}
               style={{
                 background:"rgba(255,255,255,.12)",
                 border:"none",borderRadius:"10px",
-                color:"#fff",fontSize:"26px",
+                color:"#fff",fontSize:"22px",
                 cursor:"pointer",padding:"0",
-                lineHeight:1,width:44,height:44,
+                lineHeight:1,width:36,height:36,
                 display:"flex",alignItems:"center",
                 justifyContent:"center"
               }} aria-label="Task menu">⋮</button>
@@ -2494,6 +2544,23 @@ export default function TasksApp() {
                 minWidth:"200px",zIndex:60,
                 overflow:"hidden"
               }}>
+                {!isSubtaskPanel&&(
+                <button
+                  onClick={()=>{
+                    const host = isSubtaskPanel ? activeTask : selected;
+                    setShowTaskMenu(false);
+                    openNewTask("detail", host.id, host.title);
+                  }}
+                  style={{
+                    display:"block",width:"100%",
+                    padding:"12px 16px",border:"none",
+                    background:"#fff",color:"#075E54",
+                    fontSize:"13px",fontWeight:600,
+                    textAlign:"left",cursor:"pointer"
+                  }}>
+                  ➕ Add Sub-task
+                </button>
+                )}
                 {!taskIsOwner&&(
                 <button
                   onClick={()=>{
@@ -2510,11 +2577,13 @@ export default function TasksApp() {
                     padding:"12px 16px",border:"none",
                     background:"#fff",color:"#075E54",
                     fontSize:"13px",fontWeight:600,
-                    textAlign:"left",cursor:"pointer"
+                    textAlign:"left",cursor:"pointer",
+                    borderTop:"1px solid #f0ece6"
                   }}>
                   📅 Extend Deadline
                 </button>
                 )}
+                {(taskIsOwner || activeTask.assignedByEmail?.toLowerCase() === myEmail.toLowerCase()) && (
                 <button
                   onClick={()=>{
                     setShowTaskMenu(false);
@@ -2530,9 +2599,11 @@ export default function TasksApp() {
                   }}>
                   🗑 Delete
                 </button>
+                )}
               </div>
             )}
           </div>
+          )}
         </DetailHeader>
 
         {isSubtaskPanel&&selected&&(
@@ -2556,6 +2627,7 @@ export default function TasksApp() {
         }}>
           <button type="button"
             onClick={()=>{
+              if (!canAct) return;
               setMembersDraft(
                 activeTask.assignees.map(a=>a.assigneeEmail)
               );
@@ -2563,7 +2635,8 @@ export default function TasksApp() {
             }}
             style={{
               display:"flex",alignItems:"center",gap:"8px",
-              background:"none",border:"none",cursor:"pointer",
+              background:"none",border:"none",
+              cursor:canAct?"pointer":"default",
               flex:1,minWidth:0,textAlign:"left",padding:0
             }}>
             {activeTask.assignees.length>0?(
@@ -2576,7 +2649,7 @@ export default function TasksApp() {
                   fontWeight:500,overflow:"hidden",
                   textOverflow:"ellipsis",whiteSpace:"nowrap"
                 }}>
-                  {selected.assignees.map(a=>
+                  {activeTask.assignees.map(a=>
                     personName(a.assigneeEmail,activeTask)
                   ).join(", ")}
                 </span>
@@ -2584,7 +2657,7 @@ export default function TasksApp() {
             ):(
               <span style={{
                 fontSize:"13px",color:"rgba(255,255,255,.75)"
-              }}>Tap to add members</span>
+              }}>{canAct ? "Tap to add members" : "No members"}</span>
             )}
           </button>
           <button type="button"
@@ -2618,29 +2691,6 @@ export default function TasksApp() {
               : taskIsOwner ? "Set date" : "No date"}
           </button>
         </div>
-        <button
-          type="button"
-          onClick={()=>{
-            const host = isSubtaskPanel ? activeTask : selected;
-            setNtParentId(host.id);
-            setNtParentTitle(host.title);
-            goToView("new");
-          }}
-          style={{
-            marginTop:"10px",
-            alignSelf:"flex-start",
-            padding:"8px 14px",
-            borderRadius:"999px",
-            border:"none",
-            background:"rgba(255,255,255,.18)",
-            color:"#fff",
-            fontSize:"12px",
-            fontWeight:700,
-            cursor:"pointer"
-          }}
-        >
-          + Add Sub-task
-        </button>
         </div>
 
         {/* Scrollable chat area */}
@@ -2689,7 +2739,7 @@ export default function TasksApp() {
               </div>
             </div>
           ))}
-          {selectedMsgId&&(
+          {canAct && selectedMsgId&&(
             <div style={{
               position:"sticky",top:0,zIndex:10,
               background:"#075E54",color:"#fff",
@@ -2757,69 +2807,7 @@ export default function TasksApp() {
             </div>
           </div>
 
-          {/* Sub-tasks collapsible */}
-          {(() => {
-            const subtaskHost = isSubtaskPanel ? activeTask : selected;
-            if (!subtaskHost.children?.length) return null;
-            return (
-            <div style={{margin:"8px 0"}}>
-              <button
-                onClick={()=>setShowSubtasks(s=>({
-                  ...s,
-                  [subtaskHost.id]:!s[subtaskHost.id]
-                }))}
-                style={{
-                  width:"100%",padding:"10px 14px",
-                  borderRadius:"10px",border:"none",
-                  background:"rgba(255,255,255,.7)",
-                  color:"#075E54",fontSize:"13px",
-                  fontWeight:700,cursor:"pointer",
-                  display:"flex",alignItems:"center",
-                  justifyContent:"space-between"
-                }}>
-                <span>
-                  📋 Sub-tasks ({subtaskHost.children.length})
-                </span>
-                <span>{showSubtasks[subtaskHost.id]?"▲":"▼"}</span>
-              </button>
-              {showSubtasks[subtaskHost.id]&&(
-                <div style={{marginTop:"6px"}}>
-                  {subtaskHost.children.map(child=>(
-                    <div key={child.id}
-                      className="pressable"
-                      onClick={()=>void loadSubtaskPanel(child.id)}
-                      style={{
-                        background:"#fff",
-                        borderRadius:"10px",
-                        padding:"10px 12px",
-                        marginBottom:"6px",
-                        display:"flex",
-                        alignItems:"center",
-                        justifyContent:"space-between",
-                        gap:"8px",
-                        boxShadow:"0 1px 2px rgba(0,0,0,.08)"
-                      }}>
-                      <div style={{flex:1,minWidth:0}}>
-                        <p style={{
-                          fontSize:"13px",fontWeight:600,
-                          color:"#1a1614",margin:0,
-                          overflow:"hidden",
-                          textOverflow:"ellipsis",
-                          whiteSpace:"nowrap"
-                        }}>{child.title}</p>
-                        {child.assignees.length>0&&(
-                          <AssigneeAvatars
-                            assignees={child.assignees}/>
-                        )}
-                      </div>
-                      <StatusPill s={child.status} small/>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            );
-          })()}
+          {/* Sub-tasks shown via floating button */}
 
           {/* Chat events */}
           {activeTask.events?.map(ev=>{
@@ -2891,7 +2879,7 @@ export default function TasksApp() {
               );
             }
             const isMine = ev.authorEmail===myEmail;
-            const canDel = messageCanDelete(ev);
+            const canDel = canAct && messageCanDelete(ev);
             const isSelected = selectedMsgId===ev.id;
             return (
               <div key={ev.id} style={{
@@ -2957,9 +2945,105 @@ export default function TasksApp() {
           })}
         </div>
 
+        <div style={{
+          flexShrink:0,position:"relative"
+        }}>
+        {!isSubtaskPanel && subtaskCount > 0 && (
+          <>
+            {showSubtasksFab && (
+              <div style={{
+                position:"absolute",
+                right:16,bottom:"calc(100% + 64px)",
+                width:280,maxWidth:"calc(100% - 32px)",
+                background:"#fff",
+                borderRadius:12,
+                boxShadow:"0 4px 20px rgba(0,0,0,.15)",
+                maxHeight:240,overflowY:"auto",
+                zIndex:80,padding:"8px"
+              }}>
+                <p style={{
+                  fontSize:12,fontWeight:700,color:"#075E54",
+                  margin:"4px 8px 8px"
+                }}>Sub-tasks ({subtaskCount})</p>
+                {subtaskHost.children!.map(child=>(
+                  <div key={child.id}
+                    className="pressable"
+                    onClick={()=>{
+                      setShowSubtasksFab(false);
+                      void loadSubtaskPanel(child.id);
+                    }}
+                    style={{
+                      padding:"10px 12px",
+                      borderRadius:10,
+                      marginBottom:4,
+                      display:"flex",
+                      alignItems:"center",
+                      justifyContent:"space-between",
+                      gap:8,
+                      background:"#f8f6f3",
+                      cursor:"pointer"
+                    }}>
+                    <p style={{
+                      fontSize:13,fontWeight:600,
+                      color:"#1a1614",margin:0,
+                      overflow:"hidden",
+                      textOverflow:"ellipsis",
+                      whiteSpace:"nowrap",flex:1
+                    }}>{child.title}</p>
+                    <StatusPill s={child.status} small/>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={()=>setShowSubtasksFab(s=>!s)}
+              style={{
+                position:"absolute",
+                right:16,
+                bottom:"100%",
+                marginBottom:8,
+                width:52,height:52,
+                borderRadius:"50%",
+                border:"none",
+                background:"#075E54",
+                color:"#fff",
+                fontSize:13,
+                fontWeight:800,
+                cursor:"pointer",
+                boxShadow:"0 4px 14px rgba(7,94,84,.35)",
+                zIndex:75,
+                display:"flex",
+                flexDirection:"column",
+                alignItems:"center",
+                justifyContent:"center",
+                lineHeight:1.1
+              }}
+              aria-label="Sub-tasks"
+            >
+              <span style={{fontSize:18}}>📋</span>
+              <span>{subtaskCount}</span>
+            </button>
+          </>
+        )}
+
         {/* Bottom input bar or reopen */}
         <div style={{flexShrink:0}}>
-        {activeTask.status==="RESOLVED"?(
+        {!canAct ? (
+          <div style={{
+            padding:"12px 16px",
+            paddingBottom:"calc(12px + env(safe-area-inset-bottom,0px))",
+            background:"#f0ece6",
+            borderTop:"1px solid #e0d8ce",
+            textAlign:"center"
+          }}>
+            <p style={{
+              fontSize:13,color:"#8a7060",margin:0,fontWeight:600
+            }}>
+              View only — you are not assigned to this task
+            </p>
+          </div>
+        ) : activeTask.status==="RESOLVED"?(
           <div style={{
             padding:"12px 16px",
             paddingBottom:
@@ -3085,6 +3169,7 @@ export default function TasksApp() {
             </button>
           </form>
         )}
+        </div>
         </div>
 
         {showMembersModal&&(
@@ -3389,7 +3474,7 @@ export default function TasksApp() {
       }}>
         <div style={{flexShrink:0}}>
           <DetailHeader title="Notifications"
-            onBack={()=>setView("home")}>
+            onBack={goBack}>
             <button onClick={()=>void clearAllNotifications()}
               style={{
                 background:"rgba(255,255,255,.15)",
@@ -3446,11 +3531,7 @@ export default function TasksApp() {
                   if (dx<-60) void deleteNotification(n.id);
                   swipeRef.current=null;
                 }}
-                onClick={async()=>{
-                  setSubtaskPanel(null);
-                  await loadDetail(n.taskId);
-                  goToView("detail");
-                }}
+                onClick={()=>void openTaskDetail(n.taskId,"notifications")}
                 style={{
                   padding:"14px",
                   marginBottom:"8px",

@@ -78,6 +78,19 @@ async function verifyComplaintAuth(req: Request, res: Response, next: NextFuncti
   }
 }
 
+async function findTaskForParticipant(taskId: string, email: string) {
+  return prisma.complaint.findFirst({
+    where: {
+      id: taskId,
+      OR: [
+        { raisedByEmail: email },
+        { assignedByEmail: email },
+        { assignees: { some: { assigneeEmail: email } } }
+      ]
+    }
+  });
+}
+
 async function signAttachmentUrls<T extends { s3Key: string; s3Url: string }>(rows: T[]): Promise<T[]> {
   return Promise.all(
     rows.map(async (row) => ({
@@ -1178,12 +1191,9 @@ router.post("/:id/attachments", verifyComplaintAuth, upload.array("files", 5), a
       return;
     }
 
-    const existing = await prisma.complaint.findUnique({
-      where: { id: req.params.id },
-      select: { id: true }
-    });
+    const existing = await findTaskForParticipant(req.params.id, req.complaintUser!.email);
     if (!existing) {
-      res.status(404).json({ success: false, error: "Not found", code: "NOT_FOUND" });
+      res.status(404).json({ success: false, error: "Not found or not authorized", code: "FORBIDDEN" });
       return;
     }
 
@@ -1219,12 +1229,9 @@ router.post("/:id/comment", verifyComplaintAuth, upload.array("files", 5), async
     const { message } = req.body as { message?: string };
     const files = (req.files as Express.Multer.File[] | undefined) ?? [];
 
-    const existing = await prisma.complaint.findUnique({
-      where: { id: req.params.id },
-      select: { id: true }
-    });
+    const existing = await findTaskForParticipant(req.params.id, req.complaintUser!.email);
     if (!existing) {
-      res.status(404).json({ success: false, error: "Not found", code: "NOT_FOUND" });
+      res.status(403).json({ success: false, error: "Not authorized to comment on this task", code: "FORBIDDEN" });
       return;
     }
 
