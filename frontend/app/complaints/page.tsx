@@ -656,7 +656,12 @@ export default function TasksApp() {
     e.preventDefault();
     setLLoading(true);setLErr("");
     try {
-      const r = await fetch(`${API}/auth/login`,{
+      const allowed = await checkWhitelist(lEmail.trim());
+      if (!allowed) {
+        setLErr("This email is not authorised for Sarveda Tasks. Contact admin for access.");
+        setLLoading(false); return;
+      }
+      const r = await fetch(`${API}/complaints/auth/login`,{
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({

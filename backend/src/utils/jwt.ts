@@ -7,6 +7,7 @@ export type JwtUserPayload = {
   sub: string;
   email: string;
   role: string;
+  complaintRole?: string;
 };
 
 const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
@@ -28,7 +29,8 @@ export function signAccessToken(payload: JwtUserPayload): string {
     {
       sub: payload.sub,
       email: payload.email,
-      role: payload.role
+      role: payload.role,
+      ...(payload.complaintRole ? { complaintRole: payload.complaintRole } : {})
     },
     getJwtSecret(),
     options
@@ -40,10 +42,14 @@ export function verifyAccessToken(token: string): JwtUserPayload {
   const sub = decoded.sub;
   const email = decoded.email;
   const role = typeof decoded.role === "string" ? decoded.role : "CUSTOMER";
+  const complaintRole =
+    typeof (decoded as { complaintRole?: string }).complaintRole === "string"
+      ? (decoded as { complaintRole: string }).complaintRole
+      : undefined;
   if (!sub || !email) {
     throw new Error("Invalid token payload");
   }
-  return { sub, email, role };
+  return { sub, email, role, ...(complaintRole ? { complaintRole } : {}) };
 }
 
 export function cookieOptions(): {

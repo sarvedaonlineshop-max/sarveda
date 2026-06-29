@@ -7,6 +7,7 @@ type WhitelistEntry = {
   id: string;
   email: string;
   name: string | null;
+  role: "ADMIN" | "STAFF";
   isActive: boolean;
   addedAt: string;
 };
@@ -97,7 +98,7 @@ export default function ComplaintWhitelistPage() {
       <div>
         <h1 style={{ fontSize: "20px", fontWeight: 700, color: "#2c2420" }}>App Access Whitelist</h1>
         <p style={{ fontSize: "13px", color: "#8a7060", marginTop: "4px" }}>
-          Only these emails can log in to the complaint app
+          Only these emails can log in to the complaint app. Default password: sarveda123
         </p>
       </div>
 
@@ -175,7 +176,22 @@ export default function ComplaintWhitelistPage() {
                 </p>
                 <p style={{ fontSize: "12px", color: "#8a7060" }}>{entry.email}</p>
               </div>
-              <button
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <span
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                    color: entry.role === "ADMIN" ? "#1e3a2f" : "#8a7060",
+                    background: entry.role === "ADMIN" ? "#e8f0ec" : "#f0ece6",
+                    padding: "4px 8px",
+                    borderRadius: "6px"
+                  }}
+                >
+                  {entry.role === "ADMIN" ? "Admin" : "Staff"}
+                </span>
+                <button
                 type="button"
                 onClick={() => void handleRemove(entry.id)}
                 style={{
@@ -188,6 +204,7 @@ export default function ComplaintWhitelistPage() {
               >
                 Remove
               </button>
+              </div>
             </div>
           ))}
         {list.filter((l) => l.isActive).length === 0 && (

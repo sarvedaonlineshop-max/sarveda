@@ -14,6 +14,7 @@ declare global {
         name?: string;
         phone?: string | null;
         avatarUrl?: string;
+        complaintRole?: string;
       };
       user?: Profile;
     }

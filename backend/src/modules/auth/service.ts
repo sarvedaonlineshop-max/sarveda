@@ -8,6 +8,7 @@ import { logger } from "../../config/logger";
 import { sendWelcomeEmail } from "../notifications/email";
 import { hashPassword, verifyPassword } from "../../utils/hash";
 import { clearAuthCookie, setAuthCookie } from "../../utils/jwt";
+import { syncComplaintPassword } from "../complaints/whitelist-auth";
 import type { LoginBody, RegisterBody, SendOtpBody, VerifyOtpBody, ChangePasswordBody } from "./schemas";
 
 function httpError(status: number, message: string, code: string): Error {
@@ -132,6 +133,7 @@ function publicUser(u: {
   isVerified: boolean;
   createdAt: Date;
   passwordHash?: string | null;
+  complaintRole?: string | null;
 }) {
   return {
     id: u.id,
@@ -141,6 +143,7 @@ function publicUser(u: {
     avatarUrl: u.avatarUrl ?? null,
     hasPassword: !!u.passwordHash,
     role: u.role,
+    complaintRole: u.complaintRole ?? null,
     isVerified: u.isVerified,
     createdAt: u.createdAt
   };
@@ -300,7 +303,16 @@ export async function getMe(userId: string) {
   if (!user || user.deletedAt) {
     throw httpError(404, "User not found", "USER_NOT_FOUND");
   }
-  return publicUser(user);
+  const whitelist = await prisma.complaintWhitelist.findFirst({
+    where: { email: user.email.toLowerCase(), isActive: true },
+    select: { passwordHash: true, role: true }
+  });
+  const effectivePassword = user.passwordHash ?? whitelist?.passwordHash ?? null;
+  return publicUser({
+    ...user,
+    passwordHash: effectivePassword,
+    complaintRole: whitelist?.role ?? null
+  });
 }
 
 function normalizePhoneInput(raw: string | null | undefined): string | null {
@@ -346,10 +358,15 @@ export async function changePassword(userId: string, body: ChangePasswordBody) {
   if (!user || user.deletedAt) {
     throw httpError(404, "User not found", "USER_NOT_FOUND");
   }
-  if (!user.passwordHash) {
+  const whitelist = await prisma.complaintWhitelist.findFirst({
+    where: { email: user.email.toLowerCase(), isActive: true },
+    select: { passwordHash: true }
+  });
+  const currentHash = user.passwordHash ?? whitelist?.passwordHash ?? null;
+  if (!currentHash) {
     throw httpError(400, "Password not set for this account", "PASSWORD_NOT_SET");
   }
-  const ok = await verifyPassword(body.currentPassword, user.passwordHash);
+  const ok = await verifyPassword(body.currentPassword, currentHash);
   if (!ok) {
     throw httpError(401, "Current password is incorrect", "INVALID_PASSWORD");
   }
@@ -358,6 +375,7 @@ export async function changePassword(userId: string, body: ChangePasswordBody) {
     where: { id: userId },
     data: { passwordHash }
   });
+  await syncComplaintPassword(user.email, passwordHash);
 }
 
 export async function setPassword(userId: string, body: { newPassword: string }) {
@@ -365,7 +383,11 @@ export async function setPassword(userId: string, body: { newPassword: string })
   if (!user || user.deletedAt) {
     throw httpError(404, "User not found", "USER_NOT_FOUND");
   }
-  if (user.passwordHash) {
+  const whitelist = await prisma.complaintWhitelist.findFirst({
+    where: { email: user.email.toLowerCase(), isActive: true },
+    select: { passwordHash: true }
+  });
+  if (user.passwordHash || whitelist?.passwordHash) {
     throw httpError(400, "Password already set. Use change password instead.", "PASSWORD_ALREADY_SET");
   }
   const passwordHash = await hashPassword(body.newPassword);
@@ -373,6 +395,7 @@ export async function setPassword(userId: string, body: { newPassword: string })
     where: { id: userId },
     data: { passwordHash }
   });
+  await syncComplaintPassword(user.email, passwordHash);
 }
 
 type GoogleLikeProfile = {

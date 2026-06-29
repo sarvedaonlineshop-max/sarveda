@@ -8,7 +8,11 @@ import { logger } from "../../config/logger";
 import { uploadComplaintMedia, getSignedComplaintMediaUrl, deleteComplaintMedia } from "../../config/s3-complaints";
 import { requireAdmin } from "../../middleware/admin";
 import { sendMail } from "../notifications/email";
-import { verifyAccessToken } from "../../utils/jwt";
+import { verifyAccessToken, signAccessToken } from "../../utils/jwt";
+import {
+  loginComplaintWithPassword,
+  provisionWhitelistCredentials
+} from "./whitelist-auth";
 
 const router = Router();
 const upload = multer({
@@ -65,7 +69,8 @@ async function verifyComplaintAuth(req: Request, res: Response, next: NextFuncti
       email,
       name: user?.name ?? whitelisted.name ?? undefined,
       phone: user?.phone ?? null,
-      avatarUrl: user?.avatarUrl ?? whitelisted.avatarUrl ?? undefined
+      avatarUrl: user?.avatarUrl ?? whitelisted.avatarUrl ?? undefined,
+      complaintRole: whitelisted.role
     };
     next();
   } catch {
@@ -298,12 +303,33 @@ router.get("/admin/all", requireAdmin, async (req, res, next) => {
   }
 });
 
+function whitelistPublic(entry: {
+  id: string;
+  email: string;
+  name: string | null;
+  avatarUrl?: string | null;
+  avatarS3Key?: string | null;
+  role: string;
+  addedAt: Date;
+  isActive: boolean;
+}) {
+  return {
+    id: entry.id,
+    email: entry.email,
+    name: entry.name,
+    avatarUrl: entry.avatarUrl ?? null,
+    role: entry.role,
+    addedAt: entry.addedAt,
+    isActive: entry.isActive
+  };
+}
+
 router.get("/admin/whitelist", requireAdmin, async (_req, res, next) => {
   try {
     const list = await prisma.complaintWhitelist.findMany({
       orderBy: { addedAt: "desc" }
     });
-    res.json({ success: true, whitelist: list });
+    res.json({ success: true, whitelist: list.map(whitelistPublic) });
   } catch (err) {
     next(err);
   }
@@ -337,14 +363,20 @@ router.post("/admin/whitelist", requireAdmin, async (req, res, next) => {
           ...(name?.trim() ? { name: name.trim() } : {})
         }
       });
-      res.status(200).json({ success: true, entry, reactivated: true });
+      const provisioned = await provisionWhitelistCredentials(entry);
+      res.status(200).json({ success: true, entry: whitelistPublic(provisioned), reactivated: true });
       return;
     }
 
     const entry = await prisma.complaintWhitelist.create({
-      data: { email: normalized, name: name?.trim() || null }
+      data: {
+        email: normalized,
+        name: name?.trim() || null,
+        role: "ADMIN"
+      }
     });
-    res.status(201).json({ success: true, entry });
+    const provisioned = await provisionWhitelistCredentials(entry);
+    res.status(201).json({ success: true, entry: whitelistPublic(provisioned) });
   } catch (err) {
     next(err);
   }
@@ -742,6 +774,31 @@ router.post("/profile/avatar", verifyComplaintAuth, upload.single("avatar"), asy
     });
     const signed = await getSignedComplaintMediaUrl(s3Key);
     res.json({ success: true, avatarUrl: signed });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/auth/login", async (req, res, next) => {
+  try {
+    const { email, password } = req.body as { email?: string; password?: string };
+    if (!email?.trim() || !password) {
+      res.status(400).json({
+        success: false,
+        error: "Email and password are required",
+        code: "BAD_REQUEST"
+      });
+      return;
+    }
+
+    const { user, whitelist } = await loginComplaintWithPassword(email, password);
+    const token = signAccessToken({
+      sub: user.id,
+      email: user.email,
+      role: "CUSTOMER",
+      complaintRole: whitelist.role
+    });
+    res.json({ success: true, data: { user, token } });
   } catch (err) {
     next(err);
   }

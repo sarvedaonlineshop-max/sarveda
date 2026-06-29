@@ -912,6 +912,11 @@ enum AssigneeResponseStatus {
   DENIED_AWAITING_OWNER
 }
 
+enum ComplaintAppRole {
+  ADMIN
+  STAFF
+}
+
 model Complaint {
   id              String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   parentId        String?               @db.Uuid
@@ -1002,11 +1007,13 @@ model ComplaintAttachment {
 }
 
 model ComplaintWhitelist {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email     String   @unique
-  name      String?
-  avatarUrl String?
-  avatarS3Key String?
-  addedAt   DateTime @default(now())
-  isActive  Boolean  @default(true)
+  id           String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String           @unique
+  name         String?
+  avatarUrl    String?
+  avatarS3Key  String?
+  role         ComplaintAppRole @default(ADMIN)
+  passwordHash String?
+  addedAt      DateTime         @default(now())
+  isActive     Boolean          @default(true)
 }
