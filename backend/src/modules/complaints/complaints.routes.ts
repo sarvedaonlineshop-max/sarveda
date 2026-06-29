@@ -316,8 +316,33 @@ router.post("/admin/whitelist", requireAdmin, async (req, res, next) => {
       res.status(400).json({ success: false, error: "Email is required", code: "BAD_REQUEST" });
       return;
     }
+    const normalized = email.toLowerCase().trim();
+    const existing = await prisma.complaintWhitelist.findUnique({
+      where: { email: normalized }
+    });
+
+    if (existing) {
+      if (existing.isActive) {
+        res.status(409).json({
+          success: false,
+          error: "This email is already on the whitelist",
+          code: "ALREADY_EXISTS"
+        });
+        return;
+      }
+      const entry = await prisma.complaintWhitelist.update({
+        where: { id: existing.id },
+        data: {
+          isActive: true,
+          ...(name?.trim() ? { name: name.trim() } : {})
+        }
+      });
+      res.status(200).json({ success: true, entry, reactivated: true });
+      return;
+    }
+
     const entry = await prisma.complaintWhitelist.create({
-      data: { email: email.toLowerCase().trim(), name: name?.trim() || null }
+      data: { email: normalized, name: name?.trim() || null }
     });
     res.status(201).json({ success: true, entry });
   } catch (err) {

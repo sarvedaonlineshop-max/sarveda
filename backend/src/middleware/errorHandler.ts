@@ -17,6 +17,9 @@ function prismaClientMessage(err: Prisma.PrismaClientKnownRequestError): string 
     if (target.includes("phone")) {
       return "This mobile number is already linked to another account";
     }
+    if (target.includes("email")) {
+      return "This email is already registered. Remove it first or use a different address.";
+    }
     return `Duplicate value for ${target}. Change SKU or slug and try again.`;
   }
   if (err.code === "P2003") return "Related record not found.";
