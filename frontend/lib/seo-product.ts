@@ -115,6 +115,6 @@ export function organizationJsonLd() {
     "@type": "Organization",
     name: "Sarveda",
     url: absoluteUrl("/"),
-    logo: absoluteUrl("/icon-512.png")
+    logo: absoluteUrl("/icons/icon-512.png")
   };
 }

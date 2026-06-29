@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { SarvedaLogoWatermark } from "@/components/brand/SarvedaLogo";
+
 /**
  * Static homepage hero — single brand panel (~70vh), no product carousel.
  */
@@ -19,7 +21,7 @@ export function HomeHero() {
         aria-hidden
       />
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden>
-        <span className="select-none text-[clamp(10rem,35vw,22rem)] leading-none text-amber-500/8">☸</span>
+        <SarvedaLogoWatermark height={320} className="opacity-[0.07]" />
       </div>
 
       <div className="relative mx-auto w-full max-w-7xl px-4 pb-12 pt-16 sm:px-6 md:pb-16 md:pt-20 lg:px-8">

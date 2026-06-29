@@ -22,7 +22,16 @@ const STATUSES = new Set<ComplaintStatus>(["OPEN", "IN_PROGRESS", "RESOLVED", "R
 function mediaType(mime: string): string {
   if (mime.startsWith("image/")) return "image";
   if (mime.startsWith("video/")) return "video";
-  return "audio";
+  if (mime.startsWith("audio/")) return "audio";
+  if (
+    mime === "application/pdf" ||
+    mime.includes("document") ||
+    mime.includes("sheet") ||
+    mime.startsWith("text/")
+  ) {
+    return "document";
+  }
+  return "file";
 }
 
 async function verifyComplaintAuth(req: Request, res: Response, next: NextFunction) {
@@ -465,7 +474,7 @@ router.post("/", verifyComplaintAuth, upload.array("files", 5), async (req, res,
         const html = `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
           <div style="background:#1e3a2f;padding:20px;border-radius:12px 12px 0 0">
-            <h2 style="color:#f5d88a;margin:0">☸ Sarveda Tasks</h2>
+            <h2 style="color:#f5d88a;margin:0">Sarveda Tasks</h2>
           </div>
           <div style="background:#fff;padding:20px;border:1px solid #e0d8ce;border-top:none;border-radius:0 0 12px 12px">
             <p style="color:#2c2420">
@@ -524,6 +533,7 @@ router.get("/dashboard", verifyComplaintAuth, async (req, res, next) => {
 
     const tasks = await prisma.complaint.findMany({
       where: {
+        parentId: null,
         OR: [
           { assignedByEmail: email },
           { assignees: { some: { assigneeEmail: email } } },
@@ -557,6 +567,7 @@ router.get("/assigned-to-me", verifyComplaintAuth, async (req, res, next) => {
     const email = req.complaintUser!.email;
     const tasks = await prisma.complaint.findMany({
       where: {
+        parentId: null,
         assignees: { some: { assigneeEmail: email } }
       },
       include: {
@@ -576,7 +587,7 @@ router.get("/assigned-by-me", verifyComplaintAuth, async (req, res, next) => {
   try {
     const email = req.complaintUser!.email;
     const tasks = await prisma.complaint.findMany({
-      where: { assignedByEmail: email },
+      where: { assignedByEmail: email, parentId: null },
       include: {
         assignees: true,
         attachments: true,
@@ -968,6 +979,50 @@ router.get("/:id", verifyComplaintAuth, async (req, res, next) => {
   }
 });
 
+router.post("/:id/attachments", verifyComplaintAuth, upload.array("files", 5), async (req, res, next) => {
+  try {
+    const files = (req.files as Express.Multer.File[] | undefined) ?? [];
+    if (files.length === 0) {
+      res.status(400).json({ success: false, error: "No files", code: "BAD_REQUEST" });
+      return;
+    }
+
+    const existing = await prisma.complaint.findUnique({
+      where: { id: req.params.id },
+      select: { id: true }
+    });
+    if (!existing) {
+      res.status(404).json({ success: false, error: "Not found", code: "NOT_FOUND" });
+      return;
+    }
+
+    const attachmentRecords = [];
+    for (const file of files) {
+      const { s3Key, s3Url } = await uploadComplaintMedia(
+        file.buffer,
+        file.mimetype,
+        file.originalname
+      );
+      const attachment = await prisma.complaintAttachment.create({
+        data: {
+          complaintId: req.params.id,
+          type: mediaType(file.mimetype),
+          s3Key,
+          s3Url,
+          fileName: file.originalname,
+          fileSizeBytes: file.size
+        }
+      });
+      attachmentRecords.push(attachment);
+    }
+
+    const signed = await signAttachmentUrls(attachmentRecords);
+    res.status(201).json({ success: true, attachments: signed });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post("/:id/comment", verifyComplaintAuth, upload.array("files", 5), async (req, res, next) => {
   try {
     const { message } = req.body as { message?: string };
@@ -1039,7 +1094,7 @@ router.post("/:id/comment", verifyComplaintAuth, upload.array("files", 5), async
           const html = `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
           <div style="background:#1e3a2f;padding:20px;border-radius:12px 12px 0 0">
-            <h2 style="color:#f5d88a;margin:0">☸ Sarveda Tasks</h2>
+            <h2 style="color:#f5d88a;margin:0">Sarveda Tasks</h2>
           </div>
           <div style="background:#fff;padding:20px;border:1px solid #e0d8ce;border-top:none;border-radius:0 0 12px 12px">
             <p style="color:#2c2420">

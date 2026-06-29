@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logoutSession } from "@/lib/auth-client";
@@ -184,14 +185,14 @@ export function AdminSidebar({
       <div style={{ padding: "24px 20px 20px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
         <Link href="/admin" onClick={onNavigate} style={{ display: "block" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div style={{
-              width: "34px", height: "34px", borderRadius: "8px",
-              background: "linear-gradient(135deg, #c8960a, #f5d88a)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              flexShrink: 0
-            }}>
-              <span style={{ color: "#1a2e22", fontSize: "16px", fontWeight: 800 }}>S</span>
-            </div>
+            <Image
+              src="/brand/sarveda-logo.png"
+              alt=""
+              width={34}
+              height={34}
+              style={{ objectFit: "contain", flexShrink: 0 }}
+              aria-hidden
+            />
             <div>
               <p style={{ color: "#fffbf5", fontSize: "15px", fontWeight: 700, lineHeight: 1.1 }}>Sarveda</p>
               <p style={{ color: "#c8960a", fontSize: "10px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>Admin</p>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { SarvedaLogo } from "@/components/brand/SarvedaLogo";
 import { whatsAppSiteUrl } from "@/lib/enquiry";
 
 const footerLinks = {
@@ -55,10 +56,12 @@ export function SiteFooter() {
 
         {/* Brand col */}
         <div className="lg:col-span-2">
-          <Link href="/">
-            <p className="font-serif text-3xl italic text-brand-gold">☸ Sarveda</p>
-            <p className="mt-0.5 text-xs tracking-[0.22em] text-brand-sage">YOGA · MEDITATION · SOUND</p>
-          </Link>
+          <SarvedaLogo
+            iconHeight={44}
+            showTagline
+            wordmarkClassName="font-serif text-3xl italic text-brand-gold"
+            taglineClassName="mt-0.5 text-xs tracking-[0.22em] text-brand-sage"
+          />
           <p className="mt-5 max-w-sm text-sm leading-relaxed text-stone-400">
             Authentic yoga, Ayurveda, and sound healing products — curated with care for practitioners
             across India and worldwide. Every piece chosen for depth of practice.

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -8,6 +9,8 @@ import { useCartData, useCartUi } from "@/components/cart/CartProvider";
 import { SearchWithSuggestions } from "@/components/search/SearchWithSuggestions";
 import { isAdminRole, logoutSession } from "@/lib/auth-client";
 import { MAIN_NAV_LINKS } from "@/lib/main-nav";
+
+import { SarvedaLogo } from "@/components/brand/SarvedaLogo";
 
 import { useStorefrontSession } from "./useStorefrontSession";
 
@@ -121,16 +124,11 @@ export function Header() {
           </button>
 
           {/* Logo */}
-          <Link href="/" className="shrink-0 group">
-            <div className="flex flex-col">
-              <span className="font-serif text-xl italic leading-tight tracking-wide text-brand-gold transition-colors group-hover:text-brand-gold-pale md:text-2xl">
-                ☸ Sarveda
-              </span>
-              <span className="hidden text-[10px] font-normal tracking-[0.22em] text-brand-sage md:block">
-                YOGA · MEDITATION · SOUND
-              </span>
-            </div>
-          </Link>
+          <SarvedaLogo
+            showTagline
+            iconHeight={34}
+            wordmarkClassName="font-serif text-xl italic leading-tight tracking-wide text-brand-gold transition-colors group-hover:text-brand-gold-pale md:text-2xl"
+          />
 
           {/* Desktop Nav */}
           <nav className="hidden items-center gap-6 lg:gap-8 md:flex" aria-label="Main">
@@ -243,7 +241,10 @@ export function Header() {
         style={{ background: "linear-gradient(180deg, #0f1a14 0%, #111d17 100%)" }}
       >
         <div className="flex items-center justify-between border-b border-white/8 px-4 py-4">
-          <span className="font-serif text-xl italic text-brand-gold">☸ Menu</span>
+          <div className="flex items-center gap-2">
+            <Image src="/brand/sarveda-logo.png" alt="" width={18} height={36} className="object-contain" aria-hidden />
+            <span className="font-serif text-xl italic text-brand-gold">Menu</span>
+          </div>
           <button
             type="button"
             className="flex h-11 min-w-[44px] items-center justify-center rounded-xl text-stone-300 hover:text-brand-gold"

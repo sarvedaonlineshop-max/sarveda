@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { SarvedaLogo, SarvedaLogoWatermark } from "@/components/brand/SarvedaLogo";
+
 type AuthShellProps = {
   title: string;
   subtitle: string;
@@ -27,24 +29,20 @@ export function AuthShell({
           : "relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-stone-900 via-stone-950 to-black px-4 py-12 sm:px-6 lg:py-16"
       }
     >
-      <span
-        className={`pointer-events-none absolute left-1/2 top-1/3 -translate-x-1/2 -translate-y-1/2 select-none text-[clamp(8rem,28vw,18rem)] leading-none ${
-          isLight ? "text-amber-600/10" : "text-amber-500/10"
-        }`}
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/3 -translate-x-1/2 -translate-y-1/2"
         aria-hidden="true"
       >
-        ☸
-      </span>
+        <SarvedaLogoWatermark className={isLight ? "opacity-[0.06]" : "opacity-[0.08]"} height={240} />
+      </div>
       <div className="relative mx-auto grid max-w-6xl gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] lg:items-center lg:gap-16">
         <div className="hidden text-center lg:block lg:text-left">
-          <Link
-            href="/"
-            className={`inline-flex items-center gap-2 transition-colors ${
-              isLight ? "text-brand-forest hover:text-brand-sage" : "text-amber-400 hover:text-amber-300"
+          <SarvedaLogo
+            iconHeight={40}
+            wordmarkClassName={`font-serif text-3xl italic ${
+              isLight ? "text-brand-forest group-hover:text-brand-sage" : "text-amber-400 group-hover:text-amber-300"
             }`}
-          >
-            <span className="font-serif text-3xl italic">☸ Sarveda</span>
-          </Link>
+          />
           <p
             className={`mt-4 max-w-md font-serif text-3xl leading-tight ${
               isLight ? "text-brand-ink" : "text-stone-100"

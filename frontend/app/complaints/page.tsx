@@ -29,6 +29,7 @@ type TaskEvent = {
   id: string; type: string; authorEmail: string;
   authorType: string; message: string | null;
   createdAt: string;
+  attachments?: Attachment[];
 };
 
 type Task = {
@@ -39,6 +40,7 @@ type Task = {
   raisedByEmail: string; raisedByName: string | null;
   assignedByEmail: string | null;
   assignedByName: string | null;
+  parentId?: string | null;
   assignees: Assignee[];
   attachments: Attachment[];
   events?: TaskEvent[];
@@ -85,6 +87,16 @@ function taskMatchesFilter(
   const u = uiStatus(taskStatus);
   if (filter === "CLOSED") return u === "CLOSED" || u === "REOPENED";
   return u === filter;
+}
+
+function rootTasksOnly(tasks: Task[]): Task[] {
+  return tasks.filter((t) => !t.parentId);
+}
+
+function defaultDueDate(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
 }
 
 function isTaskClosed(status: ApiStatus): boolean {
@@ -247,9 +259,9 @@ export default function TasksApp() {
   // New task state
   const [ntTitle,setNtTitle] = useState("");
   const [ntDesc,setNtDesc] = useState("");
-  const [ntPriority,setNtPriority] = useState<Priority>("MEDIUM");
+  const [ntPriority,setNtPriority] = useState<Priority>("LOW");
   const [ntAssignees,setNtAssignees] = useState<string[]>([]);
-  const [ntDueDate,setNtDueDate] = useState("");
+  const [ntDueDate,setNtDueDate] = useState(defaultDueDate);
   const [ntFiles,setNtFiles] = useState<File[]>([]);
   const [ntParentId,setNtParentId] = useState<string|null>(null);
   const [ntParentTitle,setNtParentTitle] = 
@@ -264,9 +276,10 @@ export default function TasksApp() {
 
   // WhatsApp UI state
   const [rememberMe,setRememberMe] = useState(false);
-  const [ntTagged,setNtTagged] = useState<string[]>([]);
   const [showMemberPicker,setShowMemberPicker] =
-    useState<"to"|"tag"|null>(null);
+    useState(false);
+  const [subtaskPanel,setSubtaskPanel] = useState<Task|null>(null);
+  const [subtaskLoading,setSubtaskLoading] = useState(false);
   const [showTaskMenu,setShowTaskMenu] = useState(false);
   const [showDeleteConfirm,setShowDeleteConfirm] =
     useState(false);
@@ -307,10 +320,8 @@ export default function TasksApp() {
   const taskMenuRef = useRef<HTMLDivElement>(null);
   const avatarCameraRef = useRef<HTMLInputElement>(null);
   const avatarGalleryRef = useRef<HTMLInputElement>(null);
-  const msgCameraRef = useRef<HTMLInputElement>(null);
   const msgFileRef = useRef<HTMLInputElement>(null);
   const toPickerRef = useRef<HTMLDivElement>(null);
-  const tagPickerRef = useRef<HTMLDivElement>(null);
 
   // ── Helpers ──────────────────────────────────────────
   const ah = useCallback((t?:string) => ({
@@ -439,14 +450,47 @@ export default function TasksApp() {
   const loadDetail = useCallback(async (
     id:string,t?:string
   ) => {
-    const tk = t??token; if (!tk) return;
+    const tk = t??token; if (!tk) return null;
     const r = await fetch(`${API}/complaints/${id}`,
       {headers:{Authorization:`Bearer ${tk}`}});
     if (r.ok) {
       const d = await r.json() as any;
-      setSelected(d.complaint??null);
+      const task = d.complaint??null;
+      setSelected(task);
+      return task as Task | null;
+    }
+    return null;
+  },[token]);
+
+  const loadSubtaskPanel = useCallback(async (id:string) => {
+    const tk = token; if (!tk) return;
+    setSubtaskLoading(true);
+    try {
+      const r = await fetch(`${API}/complaints/${id}`,
+        {headers:{Authorization:`Bearer ${tk}`}});
+      if (r.ok) {
+        const d = await r.json() as any;
+        setSubtaskPanel(d.complaint??null);
+      }
+    } finally {
+      setSubtaskLoading(false);
     }
   },[token]);
+
+  async function uploadTaskAttachments(taskId:string, files:File[]) {
+    if (files.length===0) return;
+    const fd = new FormData();
+    files.forEach((f)=>fd.append("files",f));
+    const r = await fetch(`${API}/complaints/${taskId}/attachments`,{
+      method:"POST",
+      headers:{Authorization:`Bearer ${token??""}`},
+      body:fd,
+    });
+    if (!r.ok) {
+      const d = await r.json().catch(()=>({})) as {error?:string};
+      throw new Error(d.error??"Attachment upload failed");
+    }
+  }
 
   const loadAll = useCallback(async (t?:string) => {
     await Promise.all([
@@ -505,11 +549,10 @@ export default function TasksApp() {
 
   useEffect(() => {
     if (!showMemberPicker) return;
-    const activeRef = showMemberPicker === "to" ? toPickerRef : tagPickerRef;
     function handleOutside(e: MouseEvent | TouchEvent) {
       const target = e.target as Node;
-      if (activeRef.current && !activeRef.current.contains(target)) {
-        setShowMemberPicker(null);
+      if (toPickerRef.current && !toPickerRef.current.contains(target)) {
+        setShowMemberPicker(false);
       }
     }
     document.addEventListener("mousedown", handleOutside);
@@ -616,21 +659,18 @@ export default function TasksApp() {
       setNtMsg("❌ Please add at least one person in To field"); return;
     }
     setNtSubmitting(true);setNtMsg("");
+    const filesToUpload = [...ntFiles];
     try {
       const autoTitle = ntDesc.trim()
         .split("\n")[0]
         .slice(0, 100) || "Task";
-      const allAssignees = Array.from(
-        new Set([...ntAssignees,...ntTagged])
-      );
       const fd = new FormData();
       fd.append("title", autoTitle);
       fd.append("description",ntDesc.trim());
       fd.append("priority",ntPriority);
       if (ntParentId) fd.append("parentId",ntParentId);
       if (ntDueDate) fd.append("dueDate",ntDueDate);
-      fd.append("assigneeEmails",JSON.stringify(allAssignees));
-      ntFiles.forEach(f=>fd.append("files",f));
+      fd.append("assigneeEmails",JSON.stringify(ntAssignees));
       const r = await fetch(`${API}/complaints`,{
         method:"POST",
         headers:{Authorization:`Bearer ${token}`},
@@ -640,16 +680,33 @@ export default function TasksApp() {
         const d = await r.json() as any;
         throw new Error(d.error??"Failed");
       }
+      const created = await r.json() as {complaint?:{id:string}};
+      const taskId = created.complaint?.id;
+      const returnView = prevView.current;
+
       setNtTitle("");setNtDesc("");
-      setNtFiles([]);setNtPriority("MEDIUM");
-      setNtAssignees([]);setNtTagged([]);setNtDueDate("");
+      setNtFiles([]);setNtPriority("LOW");
+      setNtAssignees([]);setNtDueDate(defaultDueDate());
       setNtParentId(null);setNtParentTitle(null);
-      setNtMsg("✅ Task created and assigned!");
+      setNtMsg(filesToUpload.length>0
+        ?"✅ Task created — uploading files…"
+        :"✅ Task created and assigned!");
       void loadAll();
-      setTimeout(()=>{
-        setNtMsg("");
-        setView(prevView.current);
-      },1200);
+      setView(returnView);
+
+      if (filesToUpload.length>0 && taskId) {
+        void uploadTaskAttachments(taskId, filesToUpload)
+          .then(()=>{
+            if (selected?.id===taskId || subtaskPanel?.id===taskId) {
+              void loadDetail(taskId);
+            }
+          })
+          .catch((err:Error)=>{
+            setNtMsg("⚠️ Task saved but some files failed: "+err.message);
+          });
+      }
+
+      setTimeout(()=>setNtMsg(""), filesToUpload.length>0 ? 2500 : 1200);
     } catch(err:any) {
       setNtMsg("❌ "+(err.message??"Failed"));
     } finally { setNtSubmitting(false); }
@@ -658,47 +715,60 @@ export default function TasksApp() {
   // ── Add query/comment ─────────────────────────────────
   async function handleAddQuery(e:React.FormEvent) {
     e.preventDefault();
+    const active = subtaskPanel ?? selected;
+    if (!active) return;
     if (!msgInput.trim()&&msgFiles.length===0) return;
     setQuerySending(true);
     try {
       const fd = new FormData();
       fd.append("message",msgInput.trim());
       msgFiles.forEach(f=>fd.append("files",f));
-      await fetch(`${API}/complaints/${selected?.id}/comment`,{
+      const r = await fetch(`${API}/complaints/${active.id}/comment`,{
         method:"POST",
         headers:{Authorization:`Bearer ${token}`},
         body:fd,
       });
+      if (!r.ok) {
+        const d = await r.json().catch(()=>({})) as {error?:string};
+        throw new Error(d.error??"Failed to send");
+      }
       setMsgInput("");setMsgFiles([]);
-      if (selected) await loadDetail(selected.id);
+      if (subtaskPanel) await loadSubtaskPanel(active.id);
+      else await loadDetail(active.id);
+    } catch(err:any) {
+      alert(err.message??"Could not send message. Try again.");
     } finally { setQuerySending(false); }
   }
 
   // ── Update status ─────────────────────────────────────
   async function handleStatusUpdate(newStatus:Status) {
-    if (!selected) return;
+    const active = subtaskPanel ?? selected;
+    if (!active) return;
     setStatusUpdating(true);
     try {
-      await fetch(`${API}/complaints/${selected.id}/status`,{
+      await fetch(`${API}/complaints/${active.id}/status`,{
         method:"PATCH",
         headers:ah(),
         body:JSON.stringify({status:apiStatus(newStatus)}),
       });
-      await loadDetail(selected.id);
+      if (subtaskPanel) await loadSubtaskPanel(active.id);
+      else await loadDetail(active.id);
       void loadAll();
     } finally { setStatusUpdating(false); }
   }
 
   async function handleDeleteTask() {
-    if (!selected) return;
+    const active = subtaskPanel ?? selected;
+    if (!active) return;
     try {
-      await fetch(`${API}/complaints/${selected.id}`,{
+      await fetch(`${API}/complaints/${active.id}`,{
         method:"DELETE",
         headers:{Authorization:`Bearer ${token}`},
       });
       setShowDeleteConfirm(false);
       setShowTaskMenu(false);
-      setView(prevView.current);
+      if (subtaskPanel) setSubtaskPanel(null);
+      else setView(prevView.current);
       void loadAll();
     } catch {
       alert("Failed to delete. Try again.");
@@ -706,16 +776,18 @@ export default function TasksApp() {
   }
 
   async function handleSaveMembers() {
-    if (!selected) return;
+    const active = subtaskPanel ?? selected;
+    if (!active) return;
     setMembersSaving(true);
     try {
-      await fetch(`${API}/complaints/${selected.id}/assignees`,{
+      await fetch(`${API}/complaints/${active.id}/assignees`,{
         method:"PATCH",headers:ah(),
         body:JSON.stringify({assigneeEmails:membersDraft}),
       });
       setShowMembersModal(false);
       setShowTaskMenu(false);
-      await loadDetail(selected.id);
+      if (subtaskPanel) await loadSubtaskPanel(active.id);
+      else await loadDetail(active.id);
       void loadAll();
     } catch {
       alert("Failed to update members.");
@@ -723,16 +795,18 @@ export default function TasksApp() {
   }
 
   async function handleDueDateSave() {
-    if (!selected) return;
+    const active = subtaskPanel ?? selected;
+    if (!active) return;
     try {
-      await fetch(`${API}/complaints/${selected.id}`,{
+      await fetch(`${API}/complaints/${active.id}`,{
         method:"PATCH",headers:ah(),
         body:JSON.stringify({
           dueDate:dueDateDraft||null
         }),
       });
       setShowDueDateModal(false);
-      await loadDetail(selected.id);
+      if (subtaskPanel) await loadSubtaskPanel(active.id);
+      else await loadDetail(active.id);
       void loadAll();
     } catch {
       alert("Failed to update due date.");
@@ -740,10 +814,11 @@ export default function TasksApp() {
   }
 
   async function handleDeleteMessage(eventId:string) {
-    if (!selected) return;
+    const active = subtaskPanel ?? selected;
+    if (!active) return;
     try {
       const r = await fetch(
-        `${API}/complaints/${selected.id}/events/${eventId}`,{
+        `${API}/complaints/${active.id}/events/${eventId}`,{
         method:"DELETE",
         headers:{Authorization:`Bearer ${token}`},
       });
@@ -753,7 +828,8 @@ export default function TasksApp() {
         return;
       }
       setSelectedMsgId(null);
-      await loadDetail(selected.id);
+      if (subtaskPanel) await loadSubtaskPanel(active.id);
+      else await loadDetail(active.id);
     } catch {
       alert("Failed to delete message.");
     }
@@ -927,6 +1003,9 @@ export default function TasksApp() {
       user-select:none;-webkit-user-select:none;
       -webkit-tap-highlight-color:transparent}
     .task-row:active{background:#f5f5f5}
+    @keyframes slideInRight{
+      from{transform:translateX(100%)}
+      to{transform:translateX(0)}}
   `;
 
   function MainHeader() {
@@ -1025,11 +1104,15 @@ export default function TasksApp() {
           minHeight:"52px"
         }}>
         <button onClick={onBack} style={{
-          background:"none",border:"none",
-          color:"#fff",fontSize:"24px",
-          cursor:"pointer",padding:"0 4px",
-          lineHeight:1,flexShrink:0
-        }}>←</button>
+          background:"rgba(255,255,255,.12)",
+          border:"none",borderRadius:"10px",
+          color:"#fff",fontSize:"28px",
+          cursor:"pointer",padding:"0",
+          lineHeight:1,flexShrink:0,
+          width:44,height:44,
+          display:"flex",alignItems:"center",
+          justifyContent:"center"
+        }} aria-label="Back">←</button>
         <p style={{
           fontSize:"15px",fontWeight:600,
           color:"#fff",flex:1,margin:0,
@@ -1545,10 +1628,12 @@ export default function TasksApp() {
           </div>
         ):(
           myTasks
+            .filter(t=>!t.parentId)
             .filter(t=>taskMatchesFilter(t.status,statusFilter))
             .map(t=>(
               <TaskCard key={t.id} task={t}
                 onClick={async()=>{
+                  setSubtaskPanel(null);
                   setLoading(true);
                   await loadDetail(t.id);
                   setLoading(false);
@@ -1584,11 +1669,13 @@ export default function TasksApp() {
           </div>
         ):(
           myAssignments
+            .filter(t=>!t.parentId)
             .filter(t=>taskMatchesFilter(t.status,statusFilter))
             .map(t=>(
               <TaskCard key={t.id} task={t}
                 isAssignment
                 onClick={async()=>{
+                  setSubtaskPanel(null);
                   await loadDetail(t.id);
                   prevView.current="assigned";
                   setView("detail");
@@ -1661,10 +1748,12 @@ export default function TasksApp() {
             </div>
           ):(
             dashTasks
+              .filter(t=>!t.parentId)
               .filter(t=>taskMatchesFilter(t.status,statusFilter))
               .map(t=>(
                 <TaskCard key={t.id} task={t}
                   onClick={async()=>{
+                    setSubtaskPanel(null);
                     await loadDetail(t.id);
                     prevView.current="alltasks";
                     setView("detail");
@@ -1764,9 +1853,7 @@ export default function TasksApp() {
                   );
                 })}
                 <button type="button"
-                  onClick={()=>setShowMemberPicker(
-                    showMemberPicker==="to"?null:"to"
-                  )}
+                  onClick={()=>setShowMemberPicker(!showMemberPicker)}
                   style={{
                     background:"none",border:"none",
                     color:"#25D366",fontSize:"13px",
@@ -1776,7 +1863,7 @@ export default function TasksApp() {
                 </button>
               </div>
             </div>
-            {showMemberPicker==="to"&&(
+            {showMemberPicker&&(
               <div style={{
                 position:"absolute",left:0,right:0,top:"100%",
                 marginTop:"4px",background:"#fff",
@@ -1797,7 +1884,7 @@ export default function TasksApp() {
                     color:"#8a7060"
                   }}>Select people</span>
                   <button type="button"
-                    onClick={()=>setShowMemberPicker(null)}
+                    onClick={()=>setShowMemberPicker(false)}
                     style={{
                       background:"none",border:"none",
                       color:"#8a7060",cursor:"pointer",
@@ -1834,131 +1921,6 @@ export default function TasksApp() {
                           }}>{m.email}</p>
                         </div>
                         {sel&&<span style={{color:"#25D366"}}>✓</span>}
-                      </div>
-                    );
-                  })}
-                {members.filter(m=>m.email!==myEmail).length===0&&(
-                  <p style={{
-                    padding:"16px",textAlign:"center",
-                    color:"#8a7060",fontSize:"13px"
-                  }}>No team members found</p>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* TAG field */}
-          <div ref={tagPickerRef}
-            style={{marginBottom:"16px",position:"relative"}}>
-            <div style={{
-              display:"flex",alignItems:"flex-start",gap:"10px",
-              borderBottom:"1px solid #e0d8ce",
-              paddingBottom:"10px"
-            }}>
-              <span style={{
-                fontSize:"13px",fontWeight:700,
-                color:"#075E54",paddingTop:"6px",
-                minWidth:"32px"
-              }}>Tag</span>
-              <div style={{
-                flex:1,display:"flex",flexWrap:"wrap",
-                gap:"6px",alignItems:"center"
-              }}>
-                {ntTagged.map(email=>{
-                  const m = members.find(x=>x.email===email);
-                  return (
-                    <span key={email} style={{
-                      display:"inline-flex",alignItems:"center",
-                      gap:"4px",background:"#fef3c7",
-                      borderRadius:"999px",padding:"3px 8px 3px 3px",
-                      fontSize:"12px",fontWeight:600,color:"#92400e"
-                    }}>
-                      <Avatar
-                        name={m?.name} email={email} size={22}/>
-                      {m?.name??email.split("@")[0]}
-                      <button type="button"
-                        onClick={()=>setNtTagged(
-                          ntTagged.filter(e=>e!==email)
-                        )}
-                        style={{
-                          background:"none",border:"none",
-                          color:"#92400e",cursor:"pointer",
-                          fontSize:"14px",lineHeight:1,padding:0
-                        }}>×</button>
-                    </span>
-                  );
-                })}
-                <button type="button"
-                  onClick={()=>setShowMemberPicker(
-                    showMemberPicker==="tag"?null:"tag"
-                  )}
-                  style={{
-                    background:"none",border:"none",
-                    color:"#d97706",fontSize:"13px",
-                    fontWeight:600,cursor:"pointer",padding:"4px 0"
-                  }}>
-                  {ntTagged.length===0?"+ Tag people":"+ Add"}
-                </button>
-              </div>
-            </div>
-            {showMemberPicker==="tag"&&(
-              <div style={{
-                position:"absolute",left:0,right:0,top:"100%",
-                marginTop:"4px",background:"#fff",
-                border:"1px solid #e0d8ce",
-                borderRadius:"12px",boxShadow:"0 8px 24px rgba(0,0,0,.12)",
-                maxHeight:"220px",overflowY:"auto",zIndex:60
-              }}>
-                <div style={{
-                  display:"flex",alignItems:"center",
-                  justifyContent:"space-between",
-                  padding:"8px 12px",
-                  borderBottom:"1px solid #f0ece6",
-                  position:"sticky",top:0,background:"#fff",
-                  borderRadius:"12px 12px 0 0"
-                }}>
-                  <span style={{
-                    fontSize:"12px",fontWeight:700,
-                    color:"#8a7060"
-                  }}>Tag people</span>
-                  <button type="button"
-                    onClick={()=>setShowMemberPicker(null)}
-                    style={{
-                      background:"none",border:"none",
-                      color:"#8a7060",cursor:"pointer",
-                      fontSize:"18px",lineHeight:1,padding:"0 4px"
-                    }}>×</button>
-                </div>
-                {members
-                  .filter(m=>m.email!==myEmail)
-                  .map(m=>{
-                    const sel = ntTagged.includes(m.email);
-                    return (
-                      <div key={m.email}
-                        onClick={()=>{
-                          setNtTagged(sel
-                            ?ntTagged.filter(e=>e!==m.email)
-                            :[...ntTagged,m.email]);
-                        }}
-                        style={{
-                          display:"flex",alignItems:"center",
-                          gap:"10px",padding:"10px 14px",
-                          cursor:"pointer",
-                          background:sel?"#fef3c7":"transparent"
-                        }}>
-                        <Avatar name={m.name} email={m.email} size={32}/>
-                        <div style={{flex:1}}>
-                          <p style={{
-                            fontSize:"13px",fontWeight:600,
-                            color:"#1a1614",margin:0
-                          }}>
-                            {m.name??m.email.split("@")[0]}
-                          </p>
-                          <p style={{
-                            fontSize:"11px",color:"#8a7060",margin:0
-                          }}>{m.email}</p>
-                        </div>
-                        {sel&&<span style={{color:"#d97706"}}>✓</span>}
                       </div>
                     );
                   })}
@@ -2144,36 +2106,61 @@ export default function TasksApp() {
   );
 
   // ── DETAIL VIEW ───────────────────────────────────────
-  if (view==="detail"&&selected) return (
+  if (view==="detail"&&selected) {
+    const activeTask = subtaskPanel ?? selected;
+    const isSubtaskPanel = subtaskPanel !== null;
+
+    return (
     <>
       <style>{CSS}</style>
+      {isSubtaskPanel&&(
+        <div style={{
+          position:"fixed",inset:0,
+          background:"rgba(0,0,0,.35)",
+          zIndex:140,maxWidth:"480px",
+          margin:"0 auto",left:0,right:0
+        }} aria-hidden onClick={()=>setSubtaskPanel(null)}/>
+      )}
       <div style={{
         height:"100dvh",maxHeight:"100dvh",
         display:"flex",flexDirection:"column",
         background:"#ECE5DD",
         maxWidth:"480px",margin:"0 auto",
-        overflow:"hidden",width:"100%"
+        overflow:"hidden",width:"100%",
+        ...(isSubtaskPanel?{
+          position:"fixed",top:0,left:0,right:0,
+          zIndex:150,
+          boxShadow:"-6px 0 28px rgba(0,0,0,.18)",
+          animation:"slideInRight .22s ease-out"
+        }:{}),
       }}>
         <div style={{flexShrink:0}}>
         <DetailHeader
-          title={selected.title}
-          onBack={()=>setView(prevView.current)}>
+          title={activeTask.title}
+          onBack={()=>{
+            if (subtaskPanel) {
+              setSubtaskPanel(null);
+              return;
+            }
+            setView(prevView.current);
+          }}>
           <select
-            value={selected.priority}
+            value={activeTask.priority}
             onChange={async e=>{
               const p = e.target.value as Priority;
-              await fetch(`${API}/complaints/${selected.id}`,{
+              await fetch(`${API}/complaints/${activeTask.id}`,{
                 method:"PATCH",headers:ah(),
                 body:JSON.stringify({priority:p}),
               });
-              await loadDetail(selected.id);
+              if (isSubtaskPanel) await loadSubtaskPanel(activeTask.id);
+              else await loadDetail(activeTask.id);
             }}
             style={{
               background:"rgba(255,255,255,.15)",
-              border:"none",borderRadius:"8px",
-              color:"#fff",fontSize:"11px",
-              fontWeight:700,padding:"4px 6px",
-              cursor:"pointer",flexShrink:0
+              border:"none",borderRadius:"10px",
+              color:"#fff",fontSize:"13px",
+              fontWeight:700,padding:"8px 10px",
+              minHeight:36,cursor:"pointer",flexShrink:0
             }}>
             {(["LOW","MEDIUM","HIGH"] as Priority[]).map(p=>(
               <option key={p} value={p} style={{color:"#000"}}>
@@ -2182,17 +2169,17 @@ export default function TasksApp() {
             ))}
           </select>
           <select
-            value={uiStatus(selected.status)}
+            value={uiStatus(activeTask.status)}
             disabled={statusUpdating}
             onChange={e=>void handleStatusUpdate(
               e.target.value as Status
             )}
             style={{
               background:"rgba(255,255,255,.15)",
-              border:"none",borderRadius:"8px",
-              color:"#fff",fontSize:"11px",
-              fontWeight:700,padding:"4px 6px",
-              cursor:"pointer",flexShrink:0,
+              border:"none",borderRadius:"10px",
+              color:"#fff",fontSize:"13px",
+              fontWeight:700,padding:"8px 10px",
+              minHeight:36,cursor:"pointer",flexShrink:0,
               opacity:statusUpdating?0.6:1
             }}>
             <option value="NEW" style={{color:"#000"}}>New</option>
@@ -2205,11 +2192,14 @@ export default function TasksApp() {
             <button
               onClick={()=>setShowTaskMenu(!showTaskMenu)}
               style={{
-                background:"none",border:"none",
-                color:"#fff",fontSize:"20px",
-                cursor:"pointer",padding:"0 4px",
-                lineHeight:1
-              }}>⋮</button>
+                background:"rgba(255,255,255,.12)",
+                border:"none",borderRadius:"10px",
+                color:"#fff",fontSize:"26px",
+                cursor:"pointer",padding:"0",
+                lineHeight:1,width:44,height:44,
+                display:"flex",alignItems:"center",
+                justifyContent:"center"
+              }} aria-label="Task menu">⋮</button>
             {showTaskMenu&&(
               <div style={{
                 position:"absolute",right:0,top:"100%",
@@ -2222,7 +2212,7 @@ export default function TasksApp() {
                 <button
                   onClick={()=>{
                     setMembersDraft(
-                      selected.assignees.map(
+                      activeTask.assignees.map(
                         a=>a.assigneeEmail
                       )
                     );
@@ -2241,7 +2231,7 @@ export default function TasksApp() {
                 <button
                   onClick={()=>{
                     setMembersDraft(
-                      selected.assignees.map(
+                      activeTask.assignees.map(
                         a=>a.assigneeEmail
                       )
                     );
@@ -2292,6 +2282,18 @@ export default function TasksApp() {
           </div>
         </DetailHeader>
 
+        {isSubtaskPanel&&selected&&(
+          <div style={{
+            background:"#128C7E",
+            padding:"8px 16px 10px",
+            fontSize:"12px",fontWeight:600,
+            color:"rgba(255,255,255,.85)",
+            borderTop:"1px solid rgba(255,255,255,.08)"
+          }}>
+            ↳ Sub-task of {selected.title}
+          </div>
+        )}
+
         {/* Meta bar */}
         <div style={{
           background:"#128C7E",padding:"12px 16px",
@@ -2302,7 +2304,7 @@ export default function TasksApp() {
           <button type="button"
             onClick={()=>{
               setMembersDraft(
-                selected.assignees.map(a=>a.assigneeEmail)
+                activeTask.assignees.map(a=>a.assigneeEmail)
               );
               setShowMembersModal(true);
             }}
@@ -2311,10 +2313,10 @@ export default function TasksApp() {
               background:"none",border:"none",cursor:"pointer",
               flex:1,minWidth:0,textAlign:"left",padding:0
             }}>
-            {selected.assignees.length>0?(
+            {activeTask.assignees.length>0?(
               <>
                 <AssigneeAvatars
-                  assignees={selected.assignees}
+                  assignees={activeTask.assignees}
                   max={4} memberLookup={members}/>
                 <span style={{
                   fontSize:"13px",color:"rgba(255,255,255,.9)",
@@ -2322,7 +2324,7 @@ export default function TasksApp() {
                   textOverflow:"ellipsis",whiteSpace:"nowrap"
                 }}>
                   {selected.assignees.map(a=>
-                    personName(a.assigneeEmail,selected)
+                    personName(a.assigneeEmail,activeTask)
                   ).join(", ")}
                 </span>
               </>
@@ -2334,8 +2336,8 @@ export default function TasksApp() {
           </button>
           <button type="button"
             onClick={()=>{
-              setDueDateDraft(selected.dueDate
-                ?new Date(selected.dueDate)
+              setDueDateDraft(activeTask.dueDate
+                ?new Date(activeTask.dueDate)
                   .toISOString().slice(0,10)
                 :"");
               setShowDueDateModal(true);
@@ -2343,20 +2345,20 @@ export default function TasksApp() {
             style={{
               fontSize:"12px",fontWeight:600,
               padding:"6px 12px",borderRadius:"999px",
-              background: !isTaskClosed(selected.status)&&
-                selected.dueDate&&
-                new Date(selected.dueDate)<new Date()
+              background: !isTaskClosed(activeTask.status)&&
+                activeTask.dueDate&&
+                new Date(activeTask.dueDate)<new Date()
                 ?"rgba(220,38,38,.25)"
                 :"rgba(255,255,255,.18)",
-              color: !isTaskClosed(selected.status)&&
-                selected.dueDate&&
-                new Date(selected.dueDate)<new Date()
+              color: !isTaskClosed(activeTask.status)&&
+                activeTask.dueDate&&
+                new Date(activeTask.dueDate)<new Date()
                 ?"#fecaca":"rgba(255,255,255,.95)",
               whiteSpace:"nowrap",border:"none",
               cursor:"pointer",flexShrink:0
             }}>
-            📅 {selected.dueDate
-              ?new Date(selected.dueDate)
+            📅 {activeTask.dueDate
+              ?new Date(activeTask.dueDate)
                 .toLocaleDateString("en-IN")
               :"Set date"}
           </button>
@@ -2415,23 +2417,23 @@ export default function TasksApp() {
                 color:"#075E54",marginBottom:"4px"
               }}>
                 {personName(
-                  selected.assignedByEmail??
-                  selected.raisedByEmail,
-                  selected
+                  activeTask.assignedByEmail??
+                  activeTask.raisedByEmail,
+                  activeTask
                 )}
               </p>
-              {selected.description&&(
+              {activeTask.description&&(
                 <p style={{
                   fontSize:"14px",color:"#1a1614",
                   lineHeight:1.5,margin:0
-                }}>{selected.description}</p>
+                }}>{activeTask.description}</p>
               )}
-              {selected.attachments.length>0&&(
+              {activeTask.attachments.length>0&&(
                 <div style={{
                   display:"flex",gap:"6px",flexWrap:"wrap",
                   marginTop:"8px"
                 }}>
-                  {selected.attachments.map(a=>(
+                  {activeTask.attachments.map(a=>(
                     a.type==="image"?(
                       <a key={a.id} href={a.s3Url}
                         target="_blank"
@@ -2468,18 +2470,21 @@ export default function TasksApp() {
                 fontSize:"10px",color:"#8a7060",
                 textAlign:"right",marginTop:"4px"
               }}>
-                {timeAgo(selected.createdAt)}
+                {timeAgo(activeTask.createdAt)}
               </p>
             </div>
           </div>
 
           {/* Sub-tasks collapsible */}
-          {selected.children&&selected.children.length>0&&(
+          {(() => {
+            const subtaskHost = isSubtaskPanel ? activeTask : selected;
+            if (!subtaskHost.children?.length) return null;
+            return (
             <div style={{margin:"8px 0"}}>
               <button
                 onClick={()=>setShowSubtasks(s=>({
                   ...s,
-                  [selected.id]:!s[selected.id]
+                  [subtaskHost.id]:!s[subtaskHost.id]
                 }))}
                 style={{
                   width:"100%",padding:"10px 14px",
@@ -2491,18 +2496,16 @@ export default function TasksApp() {
                   justifyContent:"space-between"
                 }}>
                 <span>
-                  📋 Sub-tasks ({selected.children.length})
+                  📋 Sub-tasks ({subtaskHost.children.length})
                 </span>
-                <span>{showSubtasks[selected.id]?"▲":"▼"}</span>
+                <span>{showSubtasks[subtaskHost.id]?"▲":"▼"}</span>
               </button>
-              {showSubtasks[selected.id]&&(
+              {showSubtasks[subtaskHost.id]&&(
                 <div style={{marginTop:"6px"}}>
-                  {selected.children.map(child=>(
+                  {subtaskHost.children.map(child=>(
                     <div key={child.id}
                       className="pressable"
-                      onClick={async()=>{
-                        await loadDetail(child.id);
-                      }}
+                      onClick={()=>void loadSubtaskPanel(child.id)}
                       style={{
                         background:"#fff",
                         borderRadius:"10px",
@@ -2533,12 +2536,14 @@ export default function TasksApp() {
                 </div>
               )}
             </div>
-          )}
+            );
+          })()}
 
           {/* Add sub-task */}
           <button onClick={()=>{
-            setNtParentId(selected.id);
-            setNtParentTitle(selected.title);
+            const host = isSubtaskPanel ? activeTask : selected;
+            setNtParentId(host.id);
+            setNtParentTitle(host.title);
             prevView.current="detail";
             setView("new");
           }} style={{
@@ -2553,7 +2558,7 @@ export default function TasksApp() {
           </button>
 
           {/* Chat events */}
-          {selected.events?.map(ev=>{
+          {activeTask.events?.map(ev=>{
             if (ev.type==="CREATED") return null;
             if (ev.type==="STATUS_CHANGE") {
               return (
@@ -2614,7 +2619,7 @@ export default function TasksApp() {
                 {!isMine&&(
                   <Avatar
                     email={ev.authorEmail}
-                    name={personName(ev.authorEmail,selected)}
+                    name={personName(ev.authorEmail,activeTask)}
                     size={24}
                     avatarUrl={avatarFor(ev.authorEmail)}
                   />
@@ -2637,7 +2642,7 @@ export default function TasksApp() {
                       fontSize:"11px",fontWeight:700,
                       color:"#075E54",marginBottom:"3px"
                     }}>
-                      {personName(ev.authorEmail,selected)}
+                      {personName(ev.authorEmail,activeTask)}
                     </p>
                   )}
                   {ev.message&&(
@@ -2645,6 +2650,40 @@ export default function TasksApp() {
                       fontSize:"14px",color:"#1a1614",
                       lineHeight:1.5,margin:0
                     }}>{ev.message}</p>
+                  )}
+                  {ev.attachments&&ev.attachments.length>0&&(
+                    <div style={{
+                      display:"flex",gap:"6px",flexWrap:"wrap",
+                      marginTop:ev.message?"8px":0
+                    }}>
+                      {ev.attachments.map((a)=>(
+                        a.type==="image"?(
+                          <a key={a.id} href={a.s3Url}
+                            target="_blank" rel="noopener noreferrer">
+                            <img src={a.s3Url} alt=""
+                              style={{
+                                width:64,height:64,
+                                objectFit:"cover",
+                                borderRadius:"8px"
+                              }}/>
+                          </a>
+                        ):(
+                          <a key={a.id} href={a.s3Url}
+                            target="_blank" rel="noopener noreferrer"
+                            style={{
+                              display:"flex",alignItems:"center",
+                              justifyContent:"center",
+                              width:64,height:64,
+                              borderRadius:"8px",
+                              background:"rgba(0,0,0,.06)",
+                              fontSize:"24px",textDecoration:"none"
+                            }}>
+                            {a.type==="video"?"🎥"
+                             :a.type==="audio"?"🎤":"📄"}
+                          </a>
+                        )
+                      ))}
+                    </div>
                   )}
                   <p style={{
                     fontSize:"10px",color:"#8a7060",
@@ -2661,7 +2700,7 @@ export default function TasksApp() {
 
         {/* Bottom input bar or reopen */}
         <div style={{flexShrink:0}}>
-        {selected.status==="RESOLVED"?(
+        {activeTask.status==="RESOLVED"?(
           <div style={{
             padding:"12px 16px",
             paddingBottom:
@@ -2670,14 +2709,15 @@ export default function TasksApp() {
           }}>
             <button onClick={async()=>{
               await fetch(
-                `${API}/complaints/${selected.id}/reopen`,{
+                `${API}/complaints/${activeTask.id}/reopen`,{
                   method:"POST",headers:ah(),
                   body:JSON.stringify({
                     reason:"Task needs attention"
                   }),
                 }
               );
-              await loadDetail(selected.id);
+              if (isSubtaskPanel) await loadSubtaskPanel(activeTask.id);
+              else await loadDetail(activeTask.id);
               void loadAll();
             }} style={{
               width:"100%",padding:"14px",
@@ -2701,36 +2741,17 @@ export default function TasksApp() {
               borderTop:"1px solid #e0d8ce"
             }}>
             <button type="button"
-              onClick={()=>msgCameraRef.current?.click()}
-              style={{
-                display:"flex",alignItems:"center",
-                justifyContent:"center",
-                width:36,height:36,borderRadius:"50%",
-                background:"#fff",cursor:"pointer",
-                flexShrink:0,fontSize:"18px",
-                border:"1px solid #e0d8ce"
-              }} aria-label="Camera">📷</button>
-            <input ref={msgCameraRef} type="file"
-              accept="image/*" capture="environment"
-              hidden
-              onChange={e=>{
-                if (e.target.files?.[0]) {
-                  setMsgFiles(f=>[...f,e.target.files![0]]);
-                  e.target.value="";
-                }
-              }}/>
-            <button type="button"
               onClick={()=>msgFileRef.current?.click()}
               style={{
                 display:"flex",alignItems:"center",
                 justifyContent:"center",
-                width:36,height:36,borderRadius:"50%",
+                width:44,height:44,borderRadius:"50%",
                 background:"#fff",cursor:"pointer",
-                flexShrink:0,fontSize:"18px",
+                flexShrink:0,fontSize:"22px",
                 border:"1px solid #e0d8ce"
               }} aria-label="Attach file">📎</button>
             <input ref={msgFileRef} type="file"
-              accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
+              accept="image/*,video/*,audio/*,.pdf,.doc,.docx,application/pdf"
               multiple hidden
               onChange={e=>{
                 if (e.target.files) {
@@ -2855,7 +2876,7 @@ export default function TasksApp() {
                       borderBottom:"1px solid #f0ece6"
                     }}>
                       <Avatar
-                        name={m?.name??personName(email,selected)}
+                        name={m?.name??personName(email,activeTask)}
                         email={email}
                         size={36}
                         avatarUrl={m?.avatarUrl??avatarFor(email)}
@@ -2865,7 +2886,7 @@ export default function TasksApp() {
                           fontSize:"14px",fontWeight:600,
                           margin:0,color:"#1a1614"
                         }}>
-                          {personName(email,selected)}
+                          {personName(email,activeTask)}
                         </p>
                         <p style={{
                           fontSize:"11px",color:"#8a7060",margin:0
@@ -3004,7 +3025,7 @@ export default function TasksApp() {
                 fontSize:"14px",color:"#8a7060",
                 marginBottom:"20px",lineHeight:1.5
               }}>
-                This will permanently delete &ldquo;{selected.title}
+                This will permanently delete &ldquo;{activeTask.title}
                 &rdquo; and all its messages.
               </p>
               <div style={{
@@ -3037,9 +3058,25 @@ export default function TasksApp() {
             </div>
           </div>
         )}
+        {subtaskLoading&&(
+          <div style={{
+            position:"fixed",inset:0,zIndex:160,
+            background:"rgba(0,0,0,.2)",
+            display:"flex",alignItems:"center",
+            justifyContent:"center",maxWidth:"480px",
+            margin:"0 auto"
+          }}>
+            <span style={{
+              background:"#fff",padding:"12px 20px",
+              borderRadius:"12px",fontWeight:600,
+              color:"#075E54"
+            }}>Loading…</span>
+          </div>
+        )}
       </div>
     </>
-  );
+    );
+  }
 
   // ── NOTIFICATIONS VIEW ────────────────────────────────
   if (view==="notifications") return (
@@ -3092,6 +3129,7 @@ export default function TasksApp() {
               <div key={n.id}
                 className="pressable fade"
                 onClick={async()=>{
+                  setSubtaskPanel(null);
                   await loadDetail(n.taskId);
                   prevView.current="notifications";
                   setView("detail");

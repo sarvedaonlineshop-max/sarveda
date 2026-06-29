@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -7,6 +8,7 @@ import { useEffect, useState } from "react";
 import { useCartData, useCartUi } from "@/components/cart/CartProvider";
 import type { PublicUser } from "@/lib/auth-client";
 import { fetchMe, isAdminRole, logoutSession } from "@/lib/auth-client";
+import { SarvedaLogo } from "@/components/brand/SarvedaLogo";
 import { MAIN_NAV_LINKS } from "@/lib/main-nav";
 
 const ANNOUNCEMENTS = [
@@ -100,10 +102,13 @@ export function SiteHeader() {
                 <path strokeLinecap="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <Link href="/" className="min-w-0 group">
-              <span className="block font-serif text-xl italic leading-tight text-amber-400 group-hover:text-amber-300 md:text-2xl">☸ Sarveda</span>
-              <span className="mt-0.5 hidden text-[10px] font-normal tracking-[0.22em] text-stone-500 md:block">YOGA · MEDITATION · SOUND</span>
-            </Link>
+            <SarvedaLogo
+              className="min-w-0"
+              showTagline
+              iconHeight={34}
+              wordmarkClassName="font-serif text-xl italic leading-tight text-amber-400 transition-colors group-hover:text-amber-300 md:text-2xl"
+              taglineClassName="mt-0.5 hidden text-[10px] font-normal tracking-[0.22em] text-stone-500 md:block"
+            />
           </div>
 
           <nav className="hidden items-center gap-6 lg:gap-8 md:flex" aria-label="Main">
@@ -149,7 +154,10 @@ export function SiteHeader() {
       {menuOpen && (
         <div className="fixed inset-0 z-[60] flex flex-col md:hidden" role="dialog" aria-modal="true" aria-label="Navigation" style={{ background:"#0f1a14" }}>
           <div className="flex items-center justify-between border-b px-4 py-4" style={{ borderColor:"rgba(255,255,255,0.08)" }}>
-            <span className="font-serif text-xl italic text-amber-400">☸ Menu</span>
+            <div className="flex items-center gap-2">
+              <Image src="/brand/sarveda-logo.png" alt="" width={18} height={36} className="object-contain" aria-hidden />
+              <span className="font-serif text-xl italic text-amber-400">Menu</span>
+            </div>
             <button type="button" className="flex h-11 min-w-[44px] items-center justify-center rounded-xl text-stone-300 hover:text-amber-400" onClick={() => setMenuOpen(false)} aria-label="Close menu">
               <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
