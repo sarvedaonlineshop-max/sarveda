@@ -214,6 +214,18 @@ function ownerEmail(task: { raisedByEmail: string }): string {
   return task.raisedByEmail.toLowerCase();
 }
 
+function formatAssigneeList(names: string[]): string {
+  if (names.length <= 1) return names[0] ?? "";
+  if (names.length === 2) return `${names[0]}, ${names[1]}`;
+  return `${names.slice(0, -1).join(", ")}, ${names.at(-1)}`;
+}
+
+function startPromptMessage(names: string[]): string {
+  const prefix = names.length === 1 ? `Hi ${names[0]}` : `Hi ${formatAssigneeList(names)}`;
+  const verb = names.length === 1 ? "is" : "are";
+  return `${prefix}, you ${verb} added to the above new task. Please press Start button to proceed.`;
+}
+
 async function postSystemChat(
   complaintId: string,
   authorEmail: string,
@@ -553,6 +565,9 @@ router.post("/", verifyComplaintAuth, upload.array("files", 5), async (req, res,
     if (assigneeEmails.length > 0) {
       const actor = req.complaintUser!;
       const names = await assigneeNameMap(assigneeEmails);
+      const assigneeDisplayNames = assigneeEmails
+        .filter((email) => email !== actor.email)
+        .map((email) => names.get(email) ?? email.split("@")[0]);
       await prisma.taskAssignee.createMany({
         data: assigneeEmails.map((email) => ({
           taskId: complaint.id,
@@ -575,18 +590,12 @@ router.post("/", verifyComplaintAuth, upload.array("files", 5), async (req, res,
           }))
       });
 
+      if (assigneeDisplayNames.length > 0) {
+        await postSystemChat(complaint.id, actor.email, startPromptMessage(assigneeDisplayNames));
+      }
+
       for (const email of assigneeEmails) {
         if (email === actor.email) continue;
-        const assigneeName = names.get(email) ?? email.split("@")[0];
-        await prisma.complaintEvent.create({
-          data: {
-            complaintId: complaint.id,
-            type: "COMMENT",
-            authorEmail: actor.email,
-            authorType: "MEMBER",
-            message: `@@SYSTEM@@Hi ${assigneeName}, you have been assigned a new task. Please open the task to Accept or Deny.`
-          }
-        });
         const html = `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
           <div style="background:#1e3a2f;padding:20px;border-radius:12px 12px 0 0">
@@ -606,7 +615,7 @@ router.post("/", verifyComplaintAuth, upload.array("files", 5), async (req, res,
               }
             </div>
             <p style="color:#8a7060;font-size:13px">Priority: <strong>${complaint.priority}</strong></p>
-            <a href="${tasksAppUrl()}" style="display:inline-block;background:#1e3a2f;color:#f5d88a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;margin-top:16px">Open task to Accept or Deny →</a>
+            <a href="${tasksAppUrl()}" style="display:inline-block;background:#1e3a2f;color:#f5d88a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;margin-top:16px">Open task and press Start →</a>
           </div>
         </div>`;
         void sendMail(
@@ -1086,6 +1095,9 @@ router.patch("/:id/assignees", verifyComplaintAuth, async (req, res, next) => {
 
     if (toAdd.length > 0) {
       const names = await assigneeNameMap(toAdd);
+      const addedDisplayNames = toAdd
+        .filter((email) => email !== actor.email)
+        .map((email) => names.get(email) ?? email.split("@")[0]);
       await prisma.taskAssignee.createMany({
         data: toAdd.map((e) => ({
           taskId: task.id,
@@ -1096,19 +1108,12 @@ router.patch("/:id/assignees", verifyComplaintAuth, async (req, res, next) => {
         }))
       });
 
+      if (addedDisplayNames.length > 0) {
+        await postSystemChat(task.id, actor.email, startPromptMessage(addedDisplayNames));
+      }
+
       for (const e of toAdd) {
         if (e === actor.email) continue;
-        const assigneeName = names.get(e) ?? e.split("@")[0];
-        const welcome = `@@SYSTEM@@Hi ${assigneeName}, you have been added to this task. Please Accept or Deny.`;
-        await prisma.complaintEvent.create({
-          data: {
-            complaintId: task.id,
-            type: "COMMENT",
-            authorEmail: actor.email,
-            authorType: "MEMBER",
-            message: welcome
-          }
-        });
         await prisma.taskNotification.create({
           data: {
             recipientEmail: e,
@@ -1461,6 +1466,59 @@ router.post("/:id/reopen", verifyComplaintAuth, async (req, res, next) => {
 });
 
 // ── Assignee accept / deny ───────────────────────────────────────────────────
+
+router.post("/:id/assignees/me/start", verifyComplaintAuth, async (req, res, next) => {
+  try {
+    const actor = req.complaintUser!;
+    const row = await prisma.taskAssignee.findFirst({
+      where: { taskId: req.params.id, assigneeEmail: actor.email }
+    });
+    if (!row) {
+      res.status(404).json({ success: false, error: "Not assigned to this task", code: "NOT_FOUND" });
+      return;
+    }
+
+    await prisma.taskAssignee.update({
+      where: { id: row.id },
+      data: { responseStatus: "ACCEPTED" }
+    });
+
+    const task = await prisma.complaint.findUnique({
+      where: { id: req.params.id },
+      include: { assignees: true }
+    });
+    if (!task) {
+      res.status(404).json({ success: false, error: "Task not found", code: "NOT_FOUND" });
+      return;
+    }
+
+    let updatedTask = task;
+    if (task.status === "OPEN" || task.status === "REOPENED") {
+      updatedTask = await prisma.complaint.update({
+        where: { id: task.id },
+        data: { status: "IN_PROGRESS" },
+        include: { assignees: true }
+      });
+      await prisma.complaintEvent.create({
+        data: {
+          complaintId: task.id,
+          type: "STATUS_CHANGE",
+          authorEmail: actor.email,
+          authorType: "MEMBER",
+          message: "Status changed to IN_PROGRESS"
+        }
+      });
+    }
+
+    const name = actor.name ?? actor.email.split("@")[0];
+    const msg = `▶️ ${name} started working on this task`;
+    await postSystemChat(task.id, actor.email, msg);
+    await notifyTaskTeam(updatedTask, actor.email, msg, "ASSIGNED");
+    res.json({ success: true, task: updatedTask });
+  } catch (err) {
+    next(err);
+  }
+});
 
 router.post("/:id/assignees/me/accept", verifyComplaintAuth, async (req, res, next) => {
   try {

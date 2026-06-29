@@ -106,6 +106,21 @@ function isTaskClosed(status: ApiStatus): boolean {
   return status === "RESOLVED";
 }
 
+function assigneeForEmail(task: Task, email: string): Assignee | undefined {
+  return task.assignees.find(
+    (a) => a.assigneeEmail.toLowerCase() === email.toLowerCase()
+  );
+}
+
+function viewerListStatus(task: Task, email: string, usePerUserStart: boolean): Status {
+  if (!usePerUserStart) return uiStatus(task.status);
+  const mine = assigneeForEmail(task, email);
+  if (mine && task.status === "IN_PROGRESS" && mine.responseStatus !== "ACCEPTED") {
+    return "NEW";
+  }
+  return uiStatus(task.status);
+}
+
 function isTaskOwner(task: Task, email: string): boolean {
   return task.raisedByEmail.toLowerCase() === email.toLowerCase();
 }
@@ -395,6 +410,7 @@ export default function TasksApp() {
   const [quickSubmitting,setQuickSubmitting] = useState(false);
 
   const prevView = useRef<View>("home");
+  const historyBooted = useRef(false);
   const pollRef = useRef<ReturnType<typeof setInterval>|null>(null);
   const taskMenuRef = useRef<HTMLDivElement>(null);
   const avatarCameraRef = useRef<HTMLInputElement>(null);
@@ -409,6 +425,26 @@ export default function TasksApp() {
     Authorization:`Bearer ${t??token??""}`,
     "Content-Type":"application/json",
   }),[token]);
+
+  const goToView = useCallback((next: View) => {
+    prevView.current = view;
+    setView(next);
+    if (typeof window !== "undefined" && historyBooted.current) {
+      window.history.pushState({ view: next }, "");
+    }
+  }, [view]);
+
+  const goBack = useCallback(() => {
+    if (subtaskPanel) {
+      setSubtaskPanel(null);
+      return;
+    }
+    if (typeof window !== "undefined" && historyBooted.current) {
+      window.history.back();
+      return;
+    }
+    setView(prevView.current);
+  }, [subtaskPanel]);
 
   function personName(
     email:string,task?:Task|null
@@ -470,20 +506,25 @@ export default function TasksApp() {
     ["sv_token","sv_email","sv_name","sv_phone","sv_expiry"]
       .forEach(k=>localStorage.removeItem(k));
     if (pollRef.current) clearInterval(pollRef.current);
-    setToken(null);setView("login");
+      setToken(null);setView("login");
   }
 
   // ── Data loading ─────────────────────────────────────
   const loadDashboard = useCallback(async (t?:string) => {
     const tk = t??token;
     if (!tk) return;
-    const r = await fetch(`${API}/complaints/dashboard`,
+    const r = await fetch(`${API}/complaints/all`,
       {headers:{Authorization:`Bearer ${tk}`}});
     if (r.ok) {
       const d = await r.json() as any;
-      setDashTasks(d.tasks??[]);
-      setDashStats(d.stats??
-        {open:0,inProgress:0,resolved:0,total:0});
+      const tasks = d.complaints??d.tasks??[];
+      setDashTasks(tasks);
+      setDashStats({
+        open: tasks.filter((t: Task) => t.status === "OPEN" || t.status === "REOPENED").length,
+        inProgress: tasks.filter((t: Task) => t.status === "IN_PROGRESS").length,
+        resolved: tasks.filter((t: Task) => t.status === "RESOLVED").length,
+        total: tasks.length
+      });
     }
   },[token]);
 
@@ -614,6 +655,37 @@ export default function TasksApp() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!historyBooted.current) {
+      window.history.replaceState({ view }, "");
+      historyBooted.current = true;
+      return;
+    }
+    const onPop = (e: PopStateEvent) => {
+      if (subtaskPanel) {
+        setSubtaskPanel(null);
+        return;
+      }
+      const next = e.state?.view as View | undefined;
+      if (next) {
+        setView(next);
+      } else if (view !== "home") {
+        setView(prevView.current);
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [subtaskPanel, view]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !historyBooted.current) return;
+    const current = window.history.state?.view as View | undefined;
+    if (current !== view) {
+      window.history.replaceState({ view }, "");
+    }
+  }, [view]);
 
   useEffect(() => {
     if (!showTaskMenu) return;
@@ -775,6 +847,7 @@ export default function TasksApp() {
       }
       const created = await r.json() as {complaint?:{id:string}};
       const taskId = created.complaint?.id;
+      const parentTaskId = ntParentId;
       const returnView = prevView.current;
 
       setNtTitle("");setNtDesc("");
@@ -785,7 +858,13 @@ export default function TasksApp() {
         ?"✅ Task created — uploading files…"
         :"✅ Task created and assigned!");
       void loadAll();
-      setView(returnView);
+      if (parentTaskId) {
+        await loadDetail(parentTaskId);
+        setSubtaskPanel(null);
+        setView("detail");
+      } else {
+        setView(returnView);
+      }
 
       if (filesToUpload.length>0 && taskId) {
         void uploadTaskAttachments(taskId, filesToUpload)
@@ -994,6 +1073,15 @@ export default function TasksApp() {
 
   async function handleAcceptTask(taskId: string) {
     await fetch(`${API}/complaints/${taskId}/assignees/me/accept`,{
+      method:"POST",headers:ah(),
+    });
+    if (subtaskPanel) await loadSubtaskPanel(taskId);
+    else await loadDetail(taskId);
+    void loadAll();
+  }
+
+  async function handleStartTask(taskId:string) {
+    await fetch(`${API}/complaints/${taskId}/assignees/me/start`,{
       method:"POST",headers:ah(),
     });
     if (subtaskPanel) await loadSubtaskPanel(taskId);
@@ -1225,7 +1313,7 @@ export default function TasksApp() {
             </p>
           </div>
           <button onClick={()=>{
-            setView("notifications");
+            goToView("notifications");
             void markAllRead();
           }} style={{
             position:"relative",
@@ -1338,7 +1426,7 @@ export default function TasksApp() {
               setPName(myName);setPPhone(myPhone);
               void loadMeProfile();
             }
-            setView(t.id as View);
+            goToView(t.id as View);
           }} style={{
             padding:"8px 4px 6px",border:"none",
             background:"transparent",cursor:"pointer",
@@ -1404,6 +1492,7 @@ export default function TasksApp() {
   function TaskCard({
     task,onClick,isAssignment
   }:{task:Task;onClick:()=>void;isAssignment?:boolean}) {
+    const cardStatus = viewerListStatus(task,myEmail,!view.startsWith("all"));
     const overdue = task.dueDate &&
       !isTaskClosed(task.status) &&
       new Date(task.dueDate)<new Date();
@@ -1497,7 +1586,7 @@ export default function TasksApp() {
                   💬{task._count!.events}
                 </span>
               )}
-              <StatusPill s={task.status} small/>
+              <StatusPill s={cardStatus} small/>
             </div>
           </div>
         </div>
@@ -1513,8 +1602,7 @@ export default function TasksApp() {
       <button onClick={()=>{
         setNtParentId(parentId??null);
         setNtParentTitle(parentTitle??null);
-        prevView.current=view;
-        setView("new");
+        goToView("new");
       }} style={{
         position:embedded?"absolute":"fixed",
         bottom:embedded
@@ -1813,7 +1901,10 @@ export default function TasksApp() {
         ):(
           myTasks
             .filter(t=>!t.parentId)
-            .filter(t=>taskMatchesFilter(t.status,statusFilter))
+            .filter(t=>taskMatchesFilter(
+              apiStatus(viewerListStatus(t,myEmail,true)),
+              statusFilter
+            ))
             .map(t=>(
               <TaskCard key={t.id} task={t}
                 onClick={async()=>{
@@ -1821,8 +1912,7 @@ export default function TasksApp() {
                   setLoading(true);
                   await loadDetail(t.id);
                   setLoading(false);
-                  prevView.current="home";
-                  setView("detail");
+                  goToView("detail");
                 }}/>
             ))
         )}
@@ -1854,15 +1944,17 @@ export default function TasksApp() {
         ):(
           myAssignments
             .filter(t=>!t.parentId)
-            .filter(t=>taskMatchesFilter(t.status,statusFilter))
+            .filter(t=>taskMatchesFilter(
+              apiStatus(viewerListStatus(t,myEmail,true)),
+              statusFilter
+            ))
             .map(t=>(
               <TaskCard key={t.id} task={t}
                 isAssignment
                 onClick={async()=>{
                   setSubtaskPanel(null);
                   await loadDetail(t.id);
-                  prevView.current="assigned";
-                  setView("detail");
+                  goToView("detail");
                 }}/>
             ))
         )}
@@ -1939,8 +2031,7 @@ export default function TasksApp() {
                   onClick={async()=>{
                     setSubtaskPanel(null);
                     await loadDetail(t.id);
-                    prevView.current="alltasks";
-                    setView("detail");
+                    goToView("detail");
                   }}/>
               ))
           )}
@@ -1965,7 +2056,7 @@ export default function TasksApp() {
         <div style={{flexShrink:0}}>
           <DetailHeader
             title={ntParentId?"Add Sub-task":"New Task"}
-            onBack={()=>setView(prevView.current)}
+            onBack={goBack}
           />
         </div>
 
@@ -2328,13 +2419,7 @@ export default function TasksApp() {
         <div style={{flexShrink:0}}>
         <DetailHeader
           title={headerTitle(activeTask)}
-          onBack={()=>{
-            if (subtaskPanel) {
-              setSubtaskPanel(null);
-              return;
-            }
-            setView(prevView.current);
-          }}>
+          onBack={goBack}>
           {taskIsOwner ? (
           <select
             value={activeTask.priority}
@@ -2533,6 +2618,29 @@ export default function TasksApp() {
               : taskIsOwner ? "Set date" : "No date"}
           </button>
         </div>
+        <button
+          type="button"
+          onClick={()=>{
+            const host = isSubtaskPanel ? activeTask : selected;
+            setNtParentId(host.id);
+            setNtParentTitle(host.title);
+            goToView("new");
+          }}
+          style={{
+            marginTop:"10px",
+            alignSelf:"flex-start",
+            padding:"8px 14px",
+            borderRadius:"999px",
+            border:"none",
+            background:"rgba(255,255,255,.18)",
+            color:"#fff",
+            fontSize:"12px",
+            fontWeight:700,
+            cursor:"pointer"
+          }}
+        >
+          + Add Sub-task
+        </button>
         </div>
 
         {/* Scrollable chat area */}
@@ -2542,33 +2650,6 @@ export default function TasksApp() {
           display:"flex",flexDirection:"column",gap:"6px",
           WebkitOverflowScrolling:"touch"
         }}>
-          {myAssignee?.responseStatus==="PENDING"&&(
-            <div style={{
-              background:"#fff",borderRadius:12,padding:12,
-              marginBottom:8,boxShadow:"0 1px 3px rgba(0,0,0,.08)"
-            }}>
-              <p style={{fontSize:13,fontWeight:600,color:"#1a1614",margin:"0 0 10px"}}>
-                You were assigned this task
-              </p>
-              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                <button type="button" onClick={()=>void handleAcceptTask(activeTask.id)}
-                  style={{flex:1,minWidth:100,padding:"10px",borderRadius:999,border:"none",background:"#25D366",color:"#fff",fontWeight:700,cursor:"pointer"}}>
-                  Accept
-                </button>
-                <button type="button" onClick={()=>void handleDenyTask(activeTask.id)}
-                  style={{flex:1,minWidth:100,padding:"10px",borderRadius:999,border:"1px solid #e0d8ce",background:"#fff",color:"#dc2626",fontWeight:700,cursor:"pointer"}}>
-                  Deny
-                </button>
-                <button type="button" onClick={()=>{
-                  setExtendDeadlineDraft(defaultDueDate());
-                  setShowExtendDeadlineModal(true);
-                }}
-                  style={{width:"100%",padding:"10px",borderRadius:999,border:"1px solid #e0d8ce",background:"#fff",color:"#075E54",fontWeight:600,cursor:"pointer"}}>
-                  Request deadline extension
-                </button>
-              </div>
-            </div>
-          )}
           {taskIsOwner&&activeTask.pendingDeadlineDate&&(
             <div style={{
               background:"#fef3c7",borderRadius:12,padding:12,marginBottom:8
@@ -2740,24 +2821,6 @@ export default function TasksApp() {
             );
           })()}
 
-          {/* Add sub-task */}
-          <button onClick={()=>{
-            const host = isSubtaskPanel ? activeTask : selected;
-            setNtParentId(host.id);
-            setNtParentTitle(host.title);
-            prevView.current="detail";
-            setView("new");
-          }} style={{
-            alignSelf:"center",padding:"8px 16px",
-            borderRadius:"999px",border:"none",
-            background:"rgba(255,255,255,.7)",
-            color:"#075E54",fontSize:"12px",
-            fontWeight:700,cursor:"pointer",
-            margin:"4px 0 8px"
-          }}>
-            + Add Sub-task
-          </button>
-
           {/* Chat events */}
           {activeTask.events?.map(ev=>{
             if (ev.type==="CREATED") return null;
@@ -2805,6 +2868,25 @@ export default function TasksApp() {
                   }}>
                     {timeAgo(ev.createdAt)}
                   </p>
+                  {myAssignee?.responseStatus==="PENDING" &&
+                    ev.message.includes("Please press Start button to proceed.") && (
+                    <button
+                      type="button"
+                      onClick={()=>void handleStartTask(activeTask.id)}
+                      style={{
+                        marginTop:"10px",
+                        padding:"10px 22px",
+                        borderRadius:"999px",
+                        border:"none",
+                        background:"#25D366",
+                        color:"#fff",
+                        fontWeight:800,
+                        cursor:"pointer"
+                      }}
+                    >
+                      Start
+                    </button>
+                  )}
                 </div>
               );
             }
@@ -3367,8 +3449,7 @@ export default function TasksApp() {
                 onClick={async()=>{
                   setSubtaskPanel(null);
                   await loadDetail(n.taskId);
-                  prevView.current="notifications";
-                  setView("detail");
+                  goToView("detail");
                 }}
                 style={{
                   padding:"14px",
