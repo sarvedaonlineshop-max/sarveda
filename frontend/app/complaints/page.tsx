@@ -18,6 +18,7 @@ type Member = {
 type Assignee = {
   id: string; assigneeEmail: string; 
   assigneeName: string | null;
+  responseStatus?: "PENDING"|"ACCEPTED"|"DENIED_AWAITING_OWNER";
 };
 
 type Attachment = {
@@ -46,6 +47,8 @@ type Task = {
   events?: TaskEvent[];
   children?: Task[];
   dueDate?: string | null;
+  pendingDeadlineDate?: string | null;
+  pendingDeadlineRequestedBy?: string | null;
   _count?: { events: number };
 };
 
@@ -102,6 +105,80 @@ function defaultDueDate(): string {
 function isTaskClosed(status: ApiStatus): boolean {
   return status === "RESOLVED";
 }
+
+function isTaskOwner(task: Task, email: string): boolean {
+  return task.raisedByEmail.toLowerCase() === email.toLowerCase();
+}
+
+function headerTitle(task: Task): string {
+  const t = task.title.trim();
+  return t.length > 36 ? `${t.slice(0, 36)}…` : t || "Task";
+}
+
+function ChatMedia({ attachments }: { attachments: Attachment[] }) {
+  if (!attachments.length) return null;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
+      {attachments.map((a) => {
+        if (a.type === "image") {
+          return (
+            <a key={a.id} href={a.s3Url} target="_blank" rel="noopener noreferrer">
+              <img
+                src={a.s3Url}
+                alt={a.fileName ?? "image"}
+                style={{
+                  maxWidth: "100%",
+                  width: 240,
+                  borderRadius: 10,
+                  display: "block",
+                  objectFit: "cover"
+                }}
+              />
+            </a>
+          );
+        }
+        if (a.type === "video") {
+          return (
+            <video
+              key={a.id}
+              src={a.s3Url}
+              controls
+              playsInline
+              style={{ maxWidth: "100%", width: 260, borderRadius: 10 }}
+            />
+          );
+        }
+        if (a.type === "audio") {
+          return (
+            <audio key={a.id} src={a.s3Url} controls style={{ width: "100%", maxWidth: 260 }} />
+          );
+        }
+        return (
+          <a
+            key={a.id}
+            href={a.s3Url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "10px 12px",
+              borderRadius: 10,
+              background: "rgba(0,0,0,.06)",
+              color: "#075E54",
+              fontWeight: 600,
+              fontSize: 13,
+              textDecoration: "none"
+            }}
+          >
+            📄 {a.fileName ?? "Document"}
+          </a>
+        );
+      })}
+    </div>
+  );
+}
 const PC: Record<Priority,string> = {
   HIGH:"#dc2626", MEDIUM:"#d97706", LOW:"#16a34a"
 };
@@ -134,7 +211,7 @@ function Avatar({
       <img src={avatarUrl} alt=""
         style={{
           width:size,height:size,borderRadius:"50%",
-          objectFit:"cover",flexShrink:0,
+          objectFit:"cover",objectPosition:"center",flexShrink:0,
           display:"block"
         }}/>
     );
@@ -287,6 +364,8 @@ export default function TasksApp() {
     useState<Record<string,boolean>>({});
   const [showMembersModal,setShowMembersModal] = useState(false);
   const [showDueDateModal,setShowDueDateModal] = useState(false);
+  const [showExtendDeadlineModal,setShowExtendDeadlineModal] = useState(false);
+  const [extendDeadlineDraft,setExtendDeadlineDraft] = useState("");
   const [dueDateDraft,setDueDateDraft] = useState("");
   const [membersDraft,setMembersDraft] = useState<string[]>([]);
   const [membersSaving,setMembersSaving] = useState(false);
@@ -322,6 +401,8 @@ export default function TasksApp() {
   const avatarGalleryRef = useRef<HTMLInputElement>(null);
   const msgFileRef = useRef<HTMLInputElement>(null);
   const toPickerRef = useRef<HTMLDivElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+  const swipeRef = useRef<{ id: string; startX: number } | null>(null);
 
   // ── Helpers ──────────────────────────────────────────
   const ah = useCallback((t?:string) => ({
@@ -432,9 +513,12 @@ export default function TasksApp() {
       {headers:{Authorization:`Bearer ${tk}`}});
     if (r.ok) {
       const d = await r.json() as any;
-      setMembers(d.members??[]);
+      const list = (d.members??[]) as Member[];
+      setMembers(list);
+      const me = list.find((m) => m.email.toLowerCase() === myEmail.toLowerCase());
+      if (me?.avatarUrl) setMyAvatarUrl(me.avatarUrl);
     }
-  },[token]);
+  },[token, myEmail]);
 
   const loadNotifications = useCallback(async (t?:string) => {
     const tk = t??token; if (!tk) return;
@@ -562,6 +646,10 @@ export default function TasksApp() {
       document.removeEventListener("touchstart", handleOutside);
     };
   }, [showMemberPicker]);
+
+  useEffect(() => {
+    if (view === "detail") scrollChatToBottom();
+  }, [view, selected?.id, subtaskPanel?.id, selected?.events?.length, subtaskPanel?.events?.length]);
 
   // ── Auth ─────────────────────────────────────────────
   async function handleLogin(e:React.FormEvent) {
@@ -735,6 +823,7 @@ export default function TasksApp() {
       setMsgInput("");setMsgFiles([]);
       if (subtaskPanel) await loadSubtaskPanel(active.id);
       else await loadDetail(active.id);
+      scrollChatToBottom();
     } catch(err:any) {
       alert(err.message??"Could not send message. Try again.");
     } finally { setQuerySending(false); }
@@ -867,12 +956,102 @@ export default function TasksApp() {
     return age<=15*60*1000;
   }
 
-  // ── Mark notifications read ───────────────────────────
   async function markAllRead() {
     await fetch(`${API}/complaints/notifications/read-all`,{
       method:"PATCH",headers:ah()
     });
     void loadNotifications();
+  }
+
+  async function clearAllNotifications() {
+    await fetch(`${API}/complaints/notifications`,{
+      method:"DELETE",
+      headers:{Authorization:`Bearer ${token}`},
+    });
+    void loadNotifications();
+  }
+
+  async function deleteNotification(id: string) {
+    await fetch(`${API}/complaints/notifications/${id}`,{
+      method:"DELETE",
+      headers:{Authorization:`Bearer ${token}`},
+    });
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    setUnreadCount((c) => Math.max(0, c - 1));
+  }
+
+  function scrollChatToBottom() {
+    requestAnimationFrame(() => {
+      const el = chatScrollRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    });
+  }
+
+  async function handleAcceptTask(taskId: string) {
+    await fetch(`${API}/complaints/${taskId}/assignees/me/accept`,{
+      method:"POST",headers:ah(),
+    });
+    if (subtaskPanel) await loadSubtaskPanel(taskId);
+    else await loadDetail(taskId);
+    void loadAll();
+  }
+
+  async function handleDenyTask(taskId: string) {
+    await fetch(`${API}/complaints/${taskId}/assignees/me/deny`,{
+      method:"POST",headers:ah(),
+    });
+    if (subtaskPanel) await loadSubtaskPanel(taskId);
+    else await loadDetail(taskId);
+    void loadAll();
+  }
+
+  async function handleApproveDenial(taskId: string, email: string) {
+    await fetch(`${API}/complaints/${taskId}/assignees/${encodeURIComponent(email)}/denial/approve`,{
+      method:"POST",headers:ah(),
+    });
+    if (subtaskPanel) await loadSubtaskPanel(taskId);
+    else await loadDetail(taskId);
+    void loadAll();
+  }
+
+  async function handleRejectDenial(taskId: string, email: string) {
+    await fetch(`${API}/complaints/${taskId}/assignees/${encodeURIComponent(email)}/denial/reject`,{
+      method:"POST",headers:ah(),
+    });
+    if (subtaskPanel) await loadSubtaskPanel(taskId);
+    else await loadDetail(taskId);
+    void loadAll();
+  }
+
+  async function handleRequestExtension(taskId: string) {
+    if (!extendDeadlineDraft) return;
+    await fetch(`${API}/complaints/${taskId}/deadline-extension`,{
+      method:"POST",headers:ah(),
+      body:JSON.stringify({ requestedDate: extendDeadlineDraft }),
+    });
+    setShowExtendDeadlineModal(false);
+    setExtendDeadlineDraft("");
+    if (subtaskPanel) await loadSubtaskPanel(taskId);
+    else await loadDetail(taskId);
+    void loadAll();
+  }
+
+  async function handleApproveExtension(taskId: string) {
+    await fetch(`${API}/complaints/${taskId}/deadline-extension/approve`,{
+      method:"POST",headers:ah(),
+    });
+    if (subtaskPanel) await loadSubtaskPanel(taskId);
+    else await loadDetail(taskId);
+    void loadAll();
+  }
+
+  async function handleRejectExtension(taskId: string) {
+    await fetch(`${API}/complaints/${taskId}/deadline-extension/reject`,{
+      method:"POST",headers:ah(),
+    });
+    if (subtaskPanel) await loadSubtaskPanel(taskId);
+    else await loadDetail(taskId);
+    void loadAll();
   }
 
   // ── Profile ───────────────────────────────────────────
@@ -2109,6 +2288,13 @@ export default function TasksApp() {
   if (view==="detail"&&selected) {
     const activeTask = subtaskPanel ?? selected;
     const isSubtaskPanel = subtaskPanel !== null;
+    const taskIsOwner = isTaskOwner(activeTask, myEmail);
+    const myAssignee = activeTask.assignees.find(
+      (a) => a.assigneeEmail.toLowerCase() === myEmail.toLowerCase()
+    );
+    const pendingDenials = activeTask.assignees.filter(
+      (a) => a.responseStatus === "DENIED_AWAITING_OWNER"
+    );
 
     return (
     <>
@@ -2136,7 +2322,7 @@ export default function TasksApp() {
       }}>
         <div style={{flexShrink:0}}>
         <DetailHeader
-          title={activeTask.title}
+          title={headerTitle(activeTask)}
           onBack={()=>{
             if (subtaskPanel) {
               setSubtaskPanel(null);
@@ -2144,6 +2330,7 @@ export default function TasksApp() {
             }
             setView(prevView.current);
           }}>
+          {taskIsOwner ? (
           <select
             value={activeTask.priority}
             onChange={async e=>{
@@ -2168,6 +2355,14 @@ export default function TasksApp() {
               </option>
             ))}
           </select>
+          ) : (
+            <span style={{
+              background:"rgba(255,255,255,.15)",
+              borderRadius:"10px",color:"#fff",
+              fontSize:"12px",fontWeight:700,
+              padding:"8px 10px",flexShrink:0
+            }}>{activeTask.priority}</span>
+          )}
           <select
             value={uiStatus(activeTask.status)}
             disabled={statusUpdating}
@@ -2206,17 +2401,18 @@ export default function TasksApp() {
                 marginTop:"4px",background:"#fff",
                 borderRadius:"10px",
                 boxShadow:"0 4px 16px rgba(0,0,0,.15)",
-                minWidth:"180px",zIndex:60,
+                minWidth:"200px",zIndex:60,
                 overflow:"hidden"
               }}>
+                {!taskIsOwner&&(
                 <button
                   onClick={()=>{
-                    setMembersDraft(
-                      activeTask.assignees.map(
-                        a=>a.assigneeEmail
-                      )
+                    setExtendDeadlineDraft(
+                      activeTask.dueDate
+                        ? new Date(activeTask.dueDate).toISOString().slice(0, 10)
+                        : defaultDueDate()
                     );
-                    setShowMembersModal(true);
+                    setShowExtendDeadlineModal(true);
                     setShowTaskMenu(false);
                   }}
                   style={{
@@ -2226,42 +2422,9 @@ export default function TasksApp() {
                     fontSize:"13px",fontWeight:600,
                     textAlign:"left",cursor:"pointer"
                   }}>
-                  👥 View task members
+                  📅 Extend Deadline
                 </button>
-                <button
-                  onClick={()=>{
-                    setMembersDraft(
-                      activeTask.assignees.map(
-                        a=>a.assigneeEmail
-                      )
-                    );
-                    setShowMembersModal(true);
-                    setShowTaskMenu(false);
-                  }}
-                  style={{
-                    display:"block",width:"100%",
-                    padding:"12px 16px",border:"none",
-                    background:"#fff",color:"#075E54",
-                    fontSize:"13px",fontWeight:600,
-                    textAlign:"left",cursor:"pointer",
-                    borderTop:"1px solid #f0ece6"
-                  }}>
-                  🏷 Tag someone
-                </button>
-                <button
-                  onClick={()=>{
-                    setShowTaskMenu(false);
-                  }}
-                  style={{
-                    display:"block",width:"100%",
-                    padding:"12px 16px",border:"none",
-                    background:"#fff",color:"#8a7060",
-                    fontSize:"13px",fontWeight:600,
-                    textAlign:"left",cursor:"pointer",
-                    borderTop:"1px solid #f0ece6"
-                  }}>
-                  📦 Archive
-                </button>
+                )}
                 <button
                   onClick={()=>{
                     setShowTaskMenu(false);
@@ -2336,6 +2499,7 @@ export default function TasksApp() {
           </button>
           <button type="button"
             onClick={()=>{
+              if (!taskIsOwner) return;
               setDueDateDraft(activeTask.dueDate
                 ?new Date(activeTask.dueDate)
                   .toISOString().slice(0,10)
@@ -2355,23 +2519,90 @@ export default function TasksApp() {
                 new Date(activeTask.dueDate)<new Date()
                 ?"#fecaca":"rgba(255,255,255,.95)",
               whiteSpace:"nowrap",border:"none",
-              cursor:"pointer",flexShrink:0
+              cursor:taskIsOwner?"pointer":"default",
+              flexShrink:0
             }}>
             📅 {activeTask.dueDate
               ?new Date(activeTask.dueDate)
                 .toLocaleDateString("en-IN")
-              :"Set date"}
+              : taskIsOwner ? "Set date" : "No date"}
           </button>
         </div>
         </div>
 
         {/* Scrollable chat area */}
-        <div style={{
+        <div ref={chatScrollRef} style={{
           flex:1,minHeight:0,overflowY:"auto",
           padding:"12px 16px",
           display:"flex",flexDirection:"column",gap:"6px",
           WebkitOverflowScrolling:"touch"
         }}>
+          {myAssignee?.responseStatus==="PENDING"&&(
+            <div style={{
+              background:"#fff",borderRadius:12,padding:12,
+              marginBottom:8,boxShadow:"0 1px 3px rgba(0,0,0,.08)"
+            }}>
+              <p style={{fontSize:13,fontWeight:600,color:"#1a1614",margin:"0 0 10px"}}>
+                You were assigned this task
+              </p>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                <button type="button" onClick={()=>void handleAcceptTask(activeTask.id)}
+                  style={{flex:1,minWidth:100,padding:"10px",borderRadius:999,border:"none",background:"#25D366",color:"#fff",fontWeight:700,cursor:"pointer"}}>
+                  Accept
+                </button>
+                <button type="button" onClick={()=>void handleDenyTask(activeTask.id)}
+                  style={{flex:1,minWidth:100,padding:"10px",borderRadius:999,border:"1px solid #e0d8ce",background:"#fff",color:"#dc2626",fontWeight:700,cursor:"pointer"}}>
+                  Deny
+                </button>
+                <button type="button" onClick={()=>{
+                  setExtendDeadlineDraft(defaultDueDate());
+                  setShowExtendDeadlineModal(true);
+                }}
+                  style={{width:"100%",padding:"10px",borderRadius:999,border:"1px solid #e0d8ce",background:"#fff",color:"#075E54",fontWeight:600,cursor:"pointer"}}>
+                  Request deadline extension
+                </button>
+              </div>
+            </div>
+          )}
+          {taskIsOwner&&activeTask.pendingDeadlineDate&&(
+            <div style={{
+              background:"#fef3c7",borderRadius:12,padding:12,marginBottom:8
+            }}>
+              <p style={{fontSize:13,color:"#92400e",margin:"0 0 10px",fontWeight:600}}>
+                Deadline extension requested for{" "}
+                {new Date(activeTask.pendingDeadlineDate).toLocaleDateString("en-IN")}
+              </p>
+              <div style={{display:"flex",gap:8}}>
+                <button type="button" onClick={()=>void handleApproveExtension(activeTask.id)}
+                  style={{flex:1,padding:"10px",borderRadius:999,border:"none",background:"#075E54",color:"#fff",fontWeight:700,cursor:"pointer"}}>
+                  Approve
+                </button>
+                <button type="button" onClick={()=>void handleRejectExtension(activeTask.id)}
+                  style={{flex:1,padding:"10px",borderRadius:999,border:"1px solid #d97706",background:"#fff",color:"#92400e",fontWeight:700,cursor:"pointer"}}>
+                  Decline
+                </button>
+              </div>
+            </div>
+          )}
+          {taskIsOwner&&pendingDenials.map((a)=>(
+            <div key={a.id} style={{
+              background:"#fee2e2",borderRadius:12,padding:12,marginBottom:8
+            }}>
+              <p style={{fontSize:13,color:"#991b1b",margin:"0 0 10px",fontWeight:600}}>
+                {personName(a.assigneeEmail, activeTask)} denied this task
+              </p>
+              <div style={{display:"flex",gap:8}}>
+                <button type="button" onClick={()=>void handleApproveDenial(activeTask.id, a.assigneeEmail)}
+                  style={{flex:1,padding:"10px",borderRadius:999,border:"none",background:"#dc2626",color:"#fff",fontWeight:700,cursor:"pointer"}}>
+                  Approve removal
+                </button>
+                <button type="button" onClick={()=>void handleRejectDenial(activeTask.id, a.assigneeEmail)}
+                  style={{flex:1,padding:"10px",borderRadius:999,border:"1px solid #dc2626",background:"#fff",color:"#991b1b",fontWeight:700,cursor:"pointer"}}>
+                  Keep member
+                </button>
+              </div>
+            </div>
+          ))}
           {selectedMsgId&&(
             <div style={{
               position:"sticky",top:0,zIndex:10,
@@ -2429,42 +2660,7 @@ export default function TasksApp() {
                 }}>{activeTask.description}</p>
               )}
               {activeTask.attachments.length>0&&(
-                <div style={{
-                  display:"flex",gap:"6px",flexWrap:"wrap",
-                  marginTop:"8px"
-                }}>
-                  {activeTask.attachments.map(a=>(
-                    a.type==="image"?(
-                      <a key={a.id} href={a.s3Url}
-                        target="_blank"
-                        rel="noopener noreferrer">
-                        <img src={a.s3Url} alt=""
-                          style={{
-                            width:64,height:64,
-                            objectFit:"cover",
-                            borderRadius:"8px"
-                          }}/>
-                      </a>
-                    ):(
-                      <a key={a.id} href={a.s3Url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          display:"flex",
-                          alignItems:"center",
-                          justifyContent:"center",
-                          width:64,height:64,
-                          borderRadius:"8px",
-                          background:"rgba(0,0,0,.06)",
-                          fontSize:"24px",
-                          textDecoration:"none"
-                        }}>
-                        {a.type==="video"?"🎥"
-                         :a.type==="audio"?"🎤":"📄"}
-                      </a>
-                    )
-                  ))}
-                </div>
+                <ChatMedia attachments={activeTask.attachments}/>
               )}
               <p style={{
                 fontSize:"10px",color:"#8a7060",
@@ -2620,7 +2816,7 @@ export default function TasksApp() {
                   <Avatar
                     email={ev.authorEmail}
                     name={personName(ev.authorEmail,activeTask)}
-                    size={24}
+                    size={28}
                     avatarUrl={avatarFor(ev.authorEmail)}
                   />
                 )}
@@ -2652,47 +2848,23 @@ export default function TasksApp() {
                     }}>{ev.message}</p>
                   )}
                   {ev.attachments&&ev.attachments.length>0&&(
-                    <div style={{
-                      display:"flex",gap:"6px",flexWrap:"wrap",
-                      marginTop:ev.message?"8px":0
-                    }}>
-                      {ev.attachments.map((a)=>(
-                        a.type==="image"?(
-                          <a key={a.id} href={a.s3Url}
-                            target="_blank" rel="noopener noreferrer">
-                            <img src={a.s3Url} alt=""
-                              style={{
-                                width:64,height:64,
-                                objectFit:"cover",
-                                borderRadius:"8px"
-                              }}/>
-                          </a>
-                        ):(
-                          <a key={a.id} href={a.s3Url}
-                            target="_blank" rel="noopener noreferrer"
-                            style={{
-                              display:"flex",alignItems:"center",
-                              justifyContent:"center",
-                              width:64,height:64,
-                              borderRadius:"8px",
-                              background:"rgba(0,0,0,.06)",
-                              fontSize:"24px",textDecoration:"none"
-                            }}>
-                            {a.type==="video"?"🎥"
-                             :a.type==="audio"?"🎤":"📄"}
-                          </a>
-                        )
-                      ))}
-                    </div>
+                    <ChatMedia attachments={ev.attachments}/>
                   )}
                   <p style={{
                     fontSize:"10px",color:"#8a7060",
                     textAlign:"right",marginTop:"4px"
                   }}>
                     {timeAgo(ev.createdAt)}
-                    {isMine?" ✓✓":""}
                   </p>
                 </div>
+                {isMine&&(
+                  <Avatar
+                    email={ev.authorEmail}
+                    name={personName(ev.authorEmail,activeTask)}
+                    size={28}
+                    avatarUrl={avatarFor(ev.authorEmail)}
+                  />
+                )}
               </div>
             );
           })}
@@ -2711,9 +2883,6 @@ export default function TasksApp() {
               await fetch(
                 `${API}/complaints/${activeTask.id}/reopen`,{
                   method:"POST",headers:ah(),
-                  body:JSON.stringify({
-                    reason:"Task needs attention"
-                  }),
                 }
               );
               if (isSubtaskPanel) await loadSubtaskPanel(activeTask.id);
@@ -3003,6 +3172,48 @@ export default function TasksApp() {
           </div>
         )}
 
+        {showExtendDeadlineModal&&(
+          <div style={{
+            position:"fixed",inset:0,
+            background:"rgba(0,0,0,.5)",
+            display:"flex",alignItems:"center",
+            justifyContent:"center",zIndex:200,padding:"24px"
+          }}
+            onClick={()=>setShowExtendDeadlineModal(false)}>
+            <div style={{
+              background:"#fff",borderRadius:"16px",
+              padding:"24px",width:"100%",maxWidth:"320px"
+            }}
+              onClick={e=>e.stopPropagation()}>
+              <h3 style={{
+                fontSize:"17px",fontWeight:700,
+                margin:"0 0 16px",color:"#1a1614"
+              }}>Request deadline extension</h3>
+              <input type="date" className="input"
+                value={extendDeadlineDraft}
+                onChange={e=>setExtendDeadlineDraft(e.target.value)}
+                style={{marginBottom:"16px",borderRadius:"12px"}}
+              />
+              <div style={{display:"flex",gap:"10px"}}>
+                <button type="button"
+                  onClick={()=>setShowExtendDeadlineModal(false)}
+                  style={{
+                    flex:1,padding:"12px",borderRadius:"999px",
+                    border:"1.5px solid #e0d8ce",
+                    background:"#fff",cursor:"pointer"
+                  }}>Cancel</button>
+                <button type="button"
+                  onClick={()=>void handleRequestExtension(activeTask.id)}
+                  style={{
+                    flex:1,padding:"12px",borderRadius:"999px",
+                    border:"none",background:"#075E54",
+                    color:"#fff",fontWeight:700,cursor:"pointer"
+                  }}>Send request</button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Delete confirm modal */}
         {showDeleteConfirm&&(
           <div style={{
@@ -3092,6 +3303,16 @@ export default function TasksApp() {
         <div style={{flexShrink:0}}>
           <DetailHeader title="Notifications"
             onBack={()=>setView("home")}>
+            <button onClick={()=>void clearAllNotifications()}
+              style={{
+                background:"rgba(255,255,255,.15)",
+                border:"none",color:"#fff",
+                fontSize:"12px",fontWeight:700,
+                padding:"8px 12px",borderRadius:"10px",
+                cursor:"pointer",flexShrink:0,marginRight:6
+              }}>
+              Clear all
+            </button>
             <button onClick={()=>void markAllRead()}
               style={{
                 background:"rgba(255,255,255,.15)",
@@ -3128,6 +3349,16 @@ export default function TasksApp() {
             notifications.map(n=>(
               <div key={n.id}
                 className="pressable fade"
+                onTouchStart={(e)=>{
+                  swipeRef.current={id:n.id,startX:e.touches[0].clientX};
+                }}
+                onTouchEnd={(e)=>{
+                  const s=swipeRef.current;
+                  if (!s||s.id!==n.id) return;
+                  const dx=e.changedTouches[0].clientX-s.startX;
+                  if (dx<-60) void deleteNotification(n.id);
+                  swipeRef.current=null;
+                }}
                 onClick={async()=>{
                   setSubtaskPanel(null);
                   await loadDetail(n.taskId);

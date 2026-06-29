@@ -1,4 +1,4 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "crypto";
 
@@ -72,4 +72,14 @@ export async function getSignedComplaintMediaUrl(s3Key: string): Promise<string>
     Key: s3Key
   });
   return getSignedUrl(s3Client(), command, { expiresIn: 3600 });
+}
+
+export async function deleteComplaintMedia(s3Key: string): Promise<void> {
+  if (!COMPLAINTS_BUCKET || !s3Key) return;
+  await s3Client().send(
+    new DeleteObjectCommand({
+      Bucket: COMPLAINTS_BUCKET,
+      Key: s3Key
+    })
+  );
 }

@@ -5,7 +5,7 @@ import type { NextFunction, Request, Response } from "express";
 
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
-import { uploadComplaintMedia, getSignedComplaintMediaUrl } from "../../config/s3-complaints";
+import { uploadComplaintMedia, getSignedComplaintMediaUrl, deleteComplaintMedia } from "../../config/s3-complaints";
 import { requireAdmin } from "../../middleware/admin";
 import { sendMail } from "../notifications/email";
 import { verifyAccessToken } from "../../utils/jwt";
@@ -203,6 +203,63 @@ async function notifyTaskTeam(
       message
     }))
   });
+}
+
+function ownerEmail(task: { raisedByEmail: string }): string {
+  return task.raisedByEmail.toLowerCase();
+}
+
+async function postSystemChat(
+  complaintId: string,
+  authorEmail: string,
+  text: string
+) {
+  await prisma.complaintEvent.create({
+    data: {
+      complaintId,
+      type: "COMMENT",
+      authorEmail,
+      authorType: "MEMBER",
+      message: `@@SYSTEM@@${text}`
+    }
+  });
+}
+
+async function emailTaskTeam(
+  task: {
+    title: string;
+    raisedByEmail: string;
+    assignedByEmail: string | null;
+    assignees: { assigneeEmail: string }[];
+  },
+  subject: string,
+  bodyHtml: string,
+  excludeEmail?: string
+) {
+  const emails = new Set(
+    [task.raisedByEmail, task.assignedByEmail, ...task.assignees.map((a) => a.assigneeEmail)].filter(
+      (e): e is string => !!e && e.toLowerCase() !== excludeEmail?.toLowerCase()
+    )
+  );
+  for (const email of emails) {
+    void sendMail(email, subject, bodyHtml, htmlToPlainText(bodyHtml)).catch((err) =>
+      logger.error("task_team_email_failed", { err, email })
+    );
+  }
+}
+
+async function signedAvatarUrl(
+  avatarUrl: string | null | undefined,
+  avatarS3Key: string | null | undefined
+): Promise<string | null> {
+  if (avatarS3Key) {
+    try {
+      return await getSignedComplaintMediaUrl(avatarS3Key);
+    } catch {
+      return avatarUrl ?? null;
+    }
+  }
+  return avatarUrl ?? null;
 }
 
 function tasksAppUrl(): string {
@@ -442,7 +499,9 @@ router.post("/", verifyComplaintAuth, upload.array("files", 5), async (req, res,
         data: assigneeEmails.map((email) => ({
           taskId: complaint.id,
           assigneeEmail: email,
-          assigneeName: names.get(email) ?? null
+          assigneeName: names.get(email) ?? null,
+          responseStatus:
+            email === actor.email.toLowerCase() ? "ACCEPTED" : "PENDING"
         }))
       });
 
@@ -468,7 +527,7 @@ router.post("/", verifyComplaintAuth, upload.array("files", 5), async (req, res,
             type: "COMMENT",
             authorEmail: actor.email,
             authorType: "MEMBER",
-            message: `@@SYSTEM@@Hi ${assigneeName}, you are added to a new task. Please check above.`
+            message: `@@SYSTEM@@Hi ${assigneeName}, you have been assigned a new task. Please open the task to Accept or Deny.`
           }
         });
         const html = `
@@ -490,7 +549,7 @@ router.post("/", verifyComplaintAuth, upload.array("files", 5), async (req, res,
               }
             </div>
             <p style="color:#8a7060;font-size:13px">Priority: <strong>${complaint.priority}</strong></p>
-            <a href="${tasksAppUrl()}" style="display:inline-block;background:#1e3a2f;color:#f5d88a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;margin-top:16px">View Task →</a>
+            <a href="${tasksAppUrl()}" style="display:inline-block;background:#1e3a2f;color:#f5d88a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;margin-top:16px">Open task to Accept or Deny →</a>
           </div>
         </div>`;
         void sendMail(
@@ -605,23 +664,30 @@ router.get("/team-members", verifyComplaintAuth, async (_req, res, next) => {
   try {
     const rows = await prisma.complaintWhitelist.findMany({
       where: { isActive: true },
-      select: { email: true, name: true, avatarUrl: true },
+      select: { email: true, name: true, avatarUrl: true, avatarS3Key: true },
       orderBy: { name: "asc" }
     });
     const emails = rows.map((r) => r.email.toLowerCase());
     const users = await prisma.user.findMany({
       where: { email: { in: emails } },
-      select: { email: true, avatarUrl: true, name: true }
+      select: { email: true, avatarUrl: true, avatarS3Key: true, name: true }
     });
     const userMap = new Map(users.map((u) => [u.email.toLowerCase(), u]));
-    const members = rows.map((r) => {
-      const u = userMap.get(r.email.toLowerCase());
-      return {
-        email: r.email,
-        name: r.name ?? u?.name ?? null,
-        avatarUrl: r.avatarUrl ?? u?.avatarUrl ?? null
-      };
-    });
+    const members = await Promise.all(
+      rows.map(async (r) => {
+        const u = userMap.get(r.email.toLowerCase());
+        const avatarS3Key = u?.avatarS3Key ?? r.avatarS3Key ?? null;
+        const avatarUrl = await signedAvatarUrl(
+          u?.avatarUrl ?? r.avatarUrl ?? null,
+          avatarS3Key
+        );
+        return {
+          email: r.email,
+          name: r.name ?? u?.name ?? null,
+          avatarUrl
+        };
+      })
+    );
     res.json({ success: true, members });
   } catch (err) {
     next(err);
@@ -643,13 +709,14 @@ router.post("/profile/avatar", verifyComplaintAuth, upload.single("avatar"), asy
     );
     await prisma.user.update({
       where: { id: actor.id },
-      data: { avatarUrl: s3Url }
+      data: { avatarUrl: s3Url, avatarS3Key: s3Key }
     });
     await prisma.complaintWhitelist.updateMany({
       where: { email: actor.email },
-      data: { avatarUrl: s3Url }
+      data: { avatarUrl: s3Url, avatarS3Key: s3Key }
     });
-    res.json({ success: true, avatarUrl: s3Url });
+    const signed = await getSignedComplaintMediaUrl(s3Key);
+    res.json({ success: true, avatarUrl: signed });
   } catch (err) {
     next(err);
   }
@@ -681,6 +748,31 @@ router.get("/notifications", verifyComplaintAuth, async (req, res, next) => {
     });
     const unreadCount = notifications.filter((n) => !n.isRead).length;
     res.json({ success: true, notifications, unreadCount });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete("/notifications", verifyComplaintAuth, async (req, res, next) => {
+  try {
+    const result = await prisma.taskNotification.deleteMany({
+      where: { recipientEmail: req.complaintUser!.email }
+    });
+    res.json({ success: true, deleted: result.count });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete("/notifications/:id", verifyComplaintAuth, async (req, res, next) => {
+  try {
+    await prisma.taskNotification.deleteMany({
+      where: {
+        id: req.params.id,
+        recipientEmail: req.complaintUser!.email
+      }
+    });
+    res.json({ success: true });
   } catch (err) {
     next(err);
   }
@@ -795,9 +887,15 @@ router.patch("/:id", verifyComplaintAuth, async (req, res, next) => {
       return;
     }
 
+    const isOwner = ownerEmail(task) === email.toLowerCase();
+
     const data: { priority?: ComplaintPriority; dueDate?: Date | null } = {};
 
     if (priority !== undefined) {
+      if (!isOwner) {
+        res.status(403).json({ success: false, error: "Only the task owner can change priority", code: "FORBIDDEN" });
+        return;
+      }
       if (!PRIORITIES.has(priority as ComplaintPriority)) {
         res.status(400).json({ success: false, error: "Invalid priority", code: "BAD_REQUEST" });
         return;
@@ -807,6 +905,10 @@ router.patch("/:id", verifyComplaintAuth, async (req, res, next) => {
 
     let dueDateChanged = false;
     if (dueDate !== undefined) {
+      if (!isOwner) {
+        res.status(403).json({ success: false, error: "Only the task owner can set the deadline directly", code: "FORBIDDEN" });
+        return;
+      }
       if (dueDate === null || dueDate === "") {
         data.dueDate = null;
         dueDateChanged = task.dueDate !== null;
@@ -906,14 +1008,16 @@ router.patch("/:id/assignees", verifyComplaintAuth, async (req, res, next) => {
         data: toAdd.map((e) => ({
           taskId: task.id,
           assigneeEmail: e,
-          assigneeName: names.get(e) ?? null
+          assigneeName: names.get(e) ?? null,
+          responseStatus:
+            e === actor.email.toLowerCase() ? "ACCEPTED" : "PENDING"
         }))
       });
 
       for (const e of toAdd) {
         if (e === actor.email) continue;
         const assigneeName = names.get(e) ?? e.split("@")[0];
-        const welcome = `@@SYSTEM@@Hi ${assigneeName}, you are added to a new task. Please check above.`;
+        const welcome = `@@SYSTEM@@Hi ${assigneeName}, you have been added to this task. Please Accept or Deny.`;
         await prisma.complaintEvent.create({
           data: {
             complaintId: task.id,
@@ -1240,30 +1344,319 @@ router.patch("/:id/status", verifyComplaintAuth, async (req, res, next) => {
 
 router.post("/:id/reopen", verifyComplaintAuth, async (req, res, next) => {
   try {
-    const { reason } = req.body as { reason?: string };
     const existing = await prisma.complaint.findUnique({
       where: { id: req.params.id },
-      select: { id: true }
+      select: { id: true, status: true }
     });
     if (!existing) {
       res.status(404).json({ success: false, error: "Not found", code: "NOT_FOUND" });
       return;
     }
 
+    const actor = req.complaintUser!;
     const complaint = await prisma.complaint.update({
       where: { id: req.params.id },
-      data: { status: "REOPENED", resolvedAt: null }
+      data: { status: "OPEN", resolvedAt: null }
     });
     await prisma.complaintEvent.create({
       data: {
         complaintId: req.params.id,
         type: "REOPENED",
-        authorEmail: req.complaintUser!.email,
+        authorEmail: actor.email,
         authorType: "MEMBER",
-        message: reason?.trim() ?? "Reopened by member"
+        message: "Task reopened"
       }
     });
+    await postSystemChat(
+      req.params.id,
+      actor.email,
+      `🔄 ${actor.name ?? actor.email.split("@")[0]} reopened this task`
+    );
     res.json({ success: true, complaint });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Assignee accept / deny ───────────────────────────────────────────────────
+
+router.post("/:id/assignees/me/accept", verifyComplaintAuth, async (req, res, next) => {
+  try {
+    const actor = req.complaintUser!;
+    const row = await prisma.taskAssignee.findFirst({
+      where: { taskId: req.params.id, assigneeEmail: actor.email }
+    });
+    if (!row) {
+      res.status(404).json({ success: false, error: "Not assigned to this task", code: "NOT_FOUND" });
+      return;
+    }
+    await prisma.taskAssignee.update({
+      where: { id: row.id },
+      data: { responseStatus: "ACCEPTED" }
+    });
+    const task = await prisma.complaint.findUnique({
+      where: { id: req.params.id },
+      include: { assignees: true }
+    });
+    if (task) {
+      const name = actor.name ?? actor.email.split("@")[0];
+      const msg = `✅ ${name} accepted this task`;
+      await postSystemChat(task.id, actor.email, msg);
+      await notifyTaskTeam(task, actor.email, msg, "ASSIGNED");
+    }
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/:id/assignees/me/deny", verifyComplaintAuth, async (req, res, next) => {
+  try {
+    const actor = req.complaintUser!;
+    const row = await prisma.taskAssignee.findFirst({
+      where: { taskId: req.params.id, assigneeEmail: actor.email }
+    });
+    if (!row) {
+      res.status(404).json({ success: false, error: "Not assigned to this task", code: "NOT_FOUND" });
+      return;
+    }
+    const task = await prisma.complaint.findUnique({
+      where: { id: req.params.id },
+      include: { assignees: true }
+    });
+    if (!task) {
+      res.status(404).json({ success: false, error: "Not found", code: "NOT_FOUND" });
+      return;
+    }
+    await prisma.taskAssignee.update({
+      where: { id: row.id },
+      data: { responseStatus: "DENIED_AWAITING_OWNER" }
+    });
+    const ownerName = await displayNameForEmail(task.raisedByEmail);
+    const name = actor.name ?? actor.email.split("@")[0];
+    const msg = `❌ ${name} denied this task — waiting for approval from ${ownerName}`;
+    await postSystemChat(task.id, actor.email, msg);
+    await prisma.taskNotification.create({
+      data: {
+        recipientEmail: task.raisedByEmail,
+        taskId: task.id,
+        taskTitle: task.title,
+        type: "DENIAL_PENDING",
+        message: `${name} denied the task "${task.title}". Approve removal or reject the denial.`
+      }
+    });
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/:id/assignees/:email/denial/approve", verifyComplaintAuth, async (req, res, next) => {
+  try {
+    const actor = req.complaintUser!;
+    const task = await prisma.complaint.findUnique({
+      where: { id: req.params.id },
+      include: { assignees: true }
+    });
+    if (!task || ownerEmail(task) !== actor.email.toLowerCase()) {
+      res.status(403).json({ success: false, error: "Only task owner can approve denial", code: "FORBIDDEN" });
+      return;
+    }
+    const target = req.params.email.toLowerCase();
+    const row = task.assignees.find((a) => a.assigneeEmail.toLowerCase() === target);
+    if (!row || row.responseStatus !== "DENIED_AWAITING_OWNER") {
+      res.status(400).json({ success: false, error: "No pending denial for this member", code: "BAD_REQUEST" });
+      return;
+    }
+    await prisma.taskAssignee.delete({ where: { id: row.id } });
+    const removedName = await displayNameForEmail(target);
+    const ownerName = actor.name ?? actor.email.split("@")[0];
+    const msg = `👤 ${ownerName} approved removal of ${removedName} from this task`;
+    await postSystemChat(task.id, actor.email, msg);
+    const updated = await prisma.complaint.findUnique({
+      where: { id: task.id },
+      include: { assignees: true }
+    });
+    if (updated) await notifyTaskTeam(updated, actor.email, msg, "ASSIGNED");
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/:id/assignees/:email/denial/reject", verifyComplaintAuth, async (req, res, next) => {
+  try {
+    const actor = req.complaintUser!;
+    const task = await prisma.complaint.findUnique({
+      where: { id: req.params.id },
+      include: { assignees: true }
+    });
+    if (!task || ownerEmail(task) !== actor.email.toLowerCase()) {
+      res.status(403).json({ success: false, error: "Only task owner can reject denial", code: "FORBIDDEN" });
+      return;
+    }
+    const target = req.params.email.toLowerCase();
+    const row = await prisma.taskAssignee.findFirst({
+      where: {
+        taskId: task.id,
+        assigneeEmail: target,
+        responseStatus: "DENIED_AWAITING_OWNER"
+      }
+    });
+    if (!row) {
+      res.status(400).json({ success: false, error: "No pending denial for this member", code: "BAD_REQUEST" });
+      return;
+    }
+    await prisma.taskAssignee.update({
+      where: { id: row.id },
+      data: { responseStatus: "ACCEPTED" }
+    });
+    const memberName = await displayNameForEmail(target);
+    const ownerName = actor.name ?? actor.email.split("@")[0];
+    const msg = `✅ ${ownerName} rejected the denial — ${memberName} remains on this task`;
+    await postSystemChat(task.id, actor.email, msg);
+    const updated = await prisma.complaint.findUnique({
+      where: { id: task.id },
+      include: { assignees: true }
+    });
+    if (updated) await notifyTaskTeam(updated, actor.email, msg, "ASSIGNED");
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Deadline extension ───────────────────────────────────────────────────────
+
+router.post("/:id/deadline-extension", verifyComplaintAuth, async (req, res, next) => {
+  try {
+    const { requestedDate } = req.body as { requestedDate?: string };
+    if (!requestedDate?.trim()) {
+      res.status(400).json({ success: false, error: "requestedDate required", code: "BAD_REQUEST" });
+      return;
+    }
+    const parsed = new Date(requestedDate);
+    if (Number.isNaN(parsed.getTime())) {
+      res.status(400).json({ success: false, error: "Invalid date", code: "BAD_REQUEST" });
+      return;
+    }
+    const actor = req.complaintUser!;
+    const task = await prisma.complaint.findUnique({
+      where: { id: req.params.id },
+      include: { assignees: true }
+    });
+    if (!task) {
+      res.status(404).json({ success: false, error: "Not found", code: "NOT_FOUND" });
+      return;
+    }
+    if (ownerEmail(task) === actor.email.toLowerCase()) {
+      res.status(400).json({
+        success: false,
+        error: "Task owner can set the deadline directly",
+        code: "BAD_REQUEST"
+      });
+      return;
+    }
+    await prisma.complaint.update({
+      where: { id: task.id },
+      data: {
+        pendingDeadlineDate: parsed,
+        pendingDeadlineRequestedBy: actor.email
+      }
+    });
+    const ownerName = await displayNameForEmail(task.raisedByEmail);
+    const requesterName = actor.name ?? actor.email.split("@")[0];
+    const label = parsed.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric"
+    });
+    const msg = `📅 ${requesterName} requested a deadline extension to ${label} — waiting for approval from ${ownerName}`;
+    await postSystemChat(task.id, actor.email, msg);
+    await prisma.taskNotification.create({
+      data: {
+        recipientEmail: task.raisedByEmail,
+        taskId: task.id,
+        taskTitle: task.title,
+        type: "DEADLINE_EXTENSION",
+        message: `${requesterName} requested deadline extension to ${label} on "${task.title}"`
+      }
+    });
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/:id/deadline-extension/approve", verifyComplaintAuth, async (req, res, next) => {
+  try {
+    const actor = req.complaintUser!;
+    const task = await prisma.complaint.findUnique({
+      where: { id: req.params.id },
+      include: { assignees: true }
+    });
+    if (!task || ownerEmail(task) !== actor.email.toLowerCase()) {
+      res.status(403).json({ success: false, error: "Only task owner can approve extension", code: "FORBIDDEN" });
+      return;
+    }
+    if (!task.pendingDeadlineDate || !task.pendingDeadlineRequestedBy) {
+      res.status(400).json({ success: false, error: "No pending extension request", code: "BAD_REQUEST" });
+      return;
+    }
+    const label = task.pendingDeadlineDate.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric"
+    });
+    const requesterName = await displayNameForEmail(task.pendingDeadlineRequestedBy);
+    const ownerName = actor.name ?? actor.email.split("@")[0];
+    const updated = await prisma.complaint.update({
+      where: { id: task.id },
+      data: {
+        dueDate: task.pendingDeadlineDate,
+        pendingDeadlineDate: null,
+        pendingDeadlineRequestedBy: null
+      },
+      include: { assignees: true }
+    });
+    const msg = `✅ ${ownerName} approved the deadline extension to ${label} (requested by ${requesterName})`;
+    await postSystemChat(task.id, actor.email, msg);
+    await notifyTaskTeam(updated, actor.email, msg, "DUE_DATE_REMINDER");
+    const html = `<div style="font-family:sans-serif"><p>${msg}</p><a href="${tasksAppUrl()}">Open task</a></div>`;
+    await emailTaskTeam(updated, `Deadline updated: ${task.title}`, html, actor.email);
+    res.json({ success: true, task: updated });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/:id/deadline-extension/reject", verifyComplaintAuth, async (req, res, next) => {
+  try {
+    const actor = req.complaintUser!;
+    const task = await prisma.complaint.findUnique({
+      where: { id: req.params.id },
+      include: { assignees: true }
+    });
+    if (!task || ownerEmail(task) !== actor.email.toLowerCase()) {
+      res.status(403).json({ success: false, error: "Only task owner can reject extension", code: "FORBIDDEN" });
+      return;
+    }
+    if (!task.pendingDeadlineDate) {
+      res.status(400).json({ success: false, error: "No pending extension request", code: "BAD_REQUEST" });
+      return;
+    }
+    await prisma.complaint.update({
+      where: { id: task.id },
+      data: {
+        pendingDeadlineDate: null,
+        pendingDeadlineRequestedBy: null
+      }
+    });
+    const ownerName = actor.name ?? actor.email.split("@")[0];
+    const msg = `❌ ${ownerName} declined the deadline extension request`;
+    await postSystemChat(task.id, actor.email, msg);
+    await notifyTaskTeam(task, actor.email, msg, "DUE_DATE_REMINDER");
+    res.json({ success: true });
   } catch (err) {
     next(err);
   }
