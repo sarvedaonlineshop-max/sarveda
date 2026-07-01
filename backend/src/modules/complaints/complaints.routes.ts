@@ -938,8 +938,9 @@ router.get("/all", verifyComplaintAuth, async (req, res, next) => {
       },
       orderBy: { updatedAt: "desc" },
       include: {
+        assignees: true,
         attachments: true,
-        _count: { select: { children: true } }
+        _count: { select: { children: true, events: true } }
       }
     });
     res.json({ success: true, complaints: await enrichComplaintList(complaints) });
@@ -960,8 +961,9 @@ router.get("/my", verifyComplaintAuth, async (req, res, next) => {
       },
       orderBy: { updatedAt: "desc" },
       include: {
+        assignees: true,
         attachments: true,
-        _count: { select: { children: true } }
+        _count: { select: { children: true, events: true } }
       }
     });
     res.json({ success: true, complaints: await enrichComplaintList(complaints) });

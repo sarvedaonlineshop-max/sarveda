@@ -164,10 +164,25 @@ function rootTasksOnly(tasks: Task[]): Task[] {
   return tasks.filter((t) => !t.parentId);
 }
 
+function normalizeTask(task: Task): Task {
+  return {
+    ...task,
+    assignees: task.assignees ?? [],
+    attachments: task.attachments ?? [],
+    children: task.children?.map(normalizeTask),
+  };
+}
+
+function normalizeTasks(tasks: Task[]): Task[] {
+  return tasks.map(normalizeTask);
+}
+
 function sortTasksByRecent(tasks: Task[]): Task[] {
-  return [...tasks].sort((a, b) =>
-    new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-  );
+  return [...tasks].sort((a, b) => {
+    const aTime = new Date(a.updatedAt ?? a.createdAt ?? 0).getTime();
+    const bTime = new Date(b.updatedAt ?? b.createdAt ?? 0).getTime();
+    return bTime - aTime;
+  });
 }
 
 function emailsMatch(a: string, b: string): boolean {
@@ -191,7 +206,7 @@ function isTaskClosed(status: ApiStatus): boolean {
 }
 
 function assigneeForEmail(task: Task, email: string): Assignee | undefined {
-  return task.assignees.find(
+  return (task.assignees ?? []).find(
     (a) => a.assigneeEmail.toLowerCase() === email.toLowerCase()
   );
 }
@@ -220,7 +235,7 @@ function canParticipateInTask(task: Task, email: string): boolean {
   const e = email.toLowerCase();
   if (task.raisedByEmail.toLowerCase() === e) return true;
   if (task.assignedByEmail?.toLowerCase() === e) return true;
-  return task.assignees.some((a) => a.assigneeEmail.toLowerCase() === e);
+  return (task.assignees ?? []).some((a) => a.assigneeEmail.toLowerCase() === e);
 }
 
 function attachmentIcon(type: string): string {
@@ -380,7 +395,7 @@ function resolvePersonName(
     if (emailsMatch(task.raisedByEmail, email) && task.raisedByName) {
       return task.raisedByName;
     }
-    const a = task.assignees.find(
+    const a = (task.assignees ?? []).find(
       (x) => emailsMatch(x.assigneeEmail, email)
     );
     if (a?.assigneeName) return a.assigneeName;
@@ -1173,7 +1188,7 @@ export default function TasksApp() {
         return task.assignedByName;
       if (task.raisedByEmail===email&&task.raisedByName)
         return task.raisedByName;
-      const a = task.assignees.find(
+      const a = (task.assignees ?? []).find(
         x=>x.assigneeEmail===email
       );
       if (a?.assigneeName) return a.assigneeName;
@@ -1234,7 +1249,7 @@ export default function TasksApp() {
       {headers:{Authorization:`Bearer ${tk}`}});
     if (r.ok) {
       const d = await r.json() as any;
-      const tasks = d.complaints??d.tasks??[];
+      const tasks = normalizeTasks(d.complaints??d.tasks??[]);
       setDashTasks(tasks);
       setDashStats({
         open: tasks.filter((t: Task) => t.status === "OPEN" || t.status === "REOPENED").length,
@@ -1251,7 +1266,7 @@ export default function TasksApp() {
       {headers:{Authorization:`Bearer ${tk}`}});
     if (r.ok) {
       const d = await r.json() as any;
-      setMyTasks(d.tasks??[]);
+      setMyTasks(normalizeTasks(d.tasks??[]));
     }
   },[token]);
 
@@ -1261,7 +1276,7 @@ export default function TasksApp() {
       {headers:{Authorization:`Bearer ${tk}`}});
     if (r.ok) {
       const d = await r.json() as any;
-      setMyAssignments(d.tasks??[]);
+      setMyAssignments(normalizeTasks(d.tasks??[]));
     }
   },[token]);
 
@@ -1300,9 +1315,11 @@ export default function TasksApp() {
       {headers:{Authorization:`Bearer ${tk}`}});
     if (r.ok) {
       const d = await r.json() as any;
-      const task = d.complaint??null;
+      const task = d.complaint
+        ? normalizeTask(d.complaint as Task)
+        : null;
       setSelected(task);
-      return task as Task | null;
+      return task;
     }
     return null;
   },[token]);
@@ -1323,7 +1340,9 @@ export default function TasksApp() {
         {headers:{Authorization:`Bearer ${tk}`}});
       if (r.ok) {
         const d = await r.json() as any;
-        setSubtaskPanel(d.complaint??null);
+        setSubtaskPanel(
+          d.complaint ? normalizeTask(d.complaint as Task) : null
+        );
       }
     } finally {
       setSubtaskLoading(false);
@@ -2775,9 +2794,9 @@ export default function TasksApp() {
               display:"flex",alignItems:"center",gap:"6px",
               flex:1,minWidth:0
             }}>
-              {task.assignees.length>0 ? (
+              {(task.assignees ?? []).length>0 ? (
                 <AssigneeAvatars
-                  assignees={task.assignees}
+                  assignees={task.assignees ?? []}
                   max={isAssignment ? 4 : 5}
                   memberLookup={members}
                 />
@@ -3866,9 +3885,9 @@ export default function TasksApp() {
               cursor:canAct?"pointer":"default",
               flex:1,minWidth:0,textAlign:"left",padding:0
             }}>
-            {activeTask.assignees.length>0?(
+            {(activeTask.assignees ?? []).length>0?(
               <AssigneeAvatars
-                assignees={activeTask.assignees}
+                assignees={activeTask.assignees ?? []}
                 max={5} memberLookup={members}/>
             ):(
               <span style={{
