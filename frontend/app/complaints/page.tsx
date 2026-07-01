@@ -4,6 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 // ── Types ──────────────────────────────────────────────
 type View = "login"|"home"|"assigned"|"alltasks"
            |"profile"|"new"|"detail"|"notifications";
+
+type AppHistoryState = {
+  stack: View[];
+  subtaskId?: string | null;
+};
 type Priority = "LOW"|"MEDIUM"|"HIGH";
 type ApiStatus = "OPEN"|"IN_PROGRESS"|"RESOLVED"|"REOPENED";
 type Status = "NEW"|"IN_PROGRESS"|"CLOSED"|"REOPENED";
@@ -159,6 +164,22 @@ function rootTasksOnly(tasks: Task[]): Task[] {
   return tasks.filter((t) => !t.parentId);
 }
 
+function sortTasksByRecent(tasks: Task[]): Task[] {
+  return [...tasks].sort((a, b) =>
+    new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+  );
+}
+
+function emailsMatch(a: string, b: string): boolean {
+  return a.toLowerCase() === b.toLowerCase();
+}
+
+function formatNameList(names: string[]): string {
+  if (names.length <= 1) return names[0] ?? "";
+  if (names.length === 2) return `${names[0]}, ${names[1]}`;
+  return `${names.slice(0, -1).join(", ")}, ${names.at(-1)}`;
+}
+
 function defaultDueDate(): string {
   const d = new Date();
   d.setDate(d.getDate() + 1);
@@ -281,10 +302,151 @@ function IconSend({
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
       aria-hidden>
-      <path d="m5 12 14-7-3 7 3 7-14-7Z"
-        fill={color}/>
+      <path d="M5 12h14M12 5l7 7-7 7"
+        stroke={color} strokeWidth="2.2"
+        strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
+}
+
+function IconRefresh({
+  size = 20, color = "#075E54",
+}: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      aria-hidden>
+      <path d="M21 12a9 9 0 1 1-2.64-6.36"
+        stroke={color} strokeWidth="2.2" strokeLinecap="round"/>
+      <path d="M21 3v6h-6"
+        stroke={color} strokeWidth="2.2"
+        strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function PullRefreshIndicator({
+  pullDistance, refreshing,
+}: { pullDistance: number; refreshing: boolean }) {
+  const show = pullDistance > 0 || refreshing;
+  const armed = pullDistance >= 70;
+  const spinDeg = refreshing
+    ? undefined
+    : Math.min(pullDistance / 70, 1) * 360;
+
+  return (
+    <div style={{
+      height: show ? 52 : 0,
+      transition: refreshing ? undefined : "height .15s ease",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      overflow: "hidden",
+    }}>
+      <div style={{
+        width: 38, height: 38, borderRadius: "50%",
+        background: "#fff",
+        boxShadow: "0 2px 10px rgba(0,0,0,.12)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        transform: spinDeg !== undefined
+          ? `rotate(${spinDeg}deg) scale(${armed ? 1 : 0.88})`
+          : undefined,
+        animation: refreshing
+          ? "sv-pull-spin .75s linear infinite" : undefined,
+        opacity: show ? 1 : 0,
+      }}>
+        <IconRefresh size={20} color="#075E54"/>
+      </div>
+    </div>
+  );
+}
+
+function resolvePersonName(
+  email: string,
+  task: Task | null | undefined,
+  members: Member[],
+  viewerEmail: string,
+  viewerName: string
+): string {
+  if (emailsMatch(email, viewerEmail)) {
+    return viewerName || "You";
+  }
+  const member = members.find((m) => emailsMatch(m.email, email));
+  if (member?.name) return member.name;
+  if (task) {
+    if (task.assignedByEmail && emailsMatch(task.assignedByEmail, email)
+      && task.assignedByName) {
+      return task.assignedByName;
+    }
+    if (emailsMatch(task.raisedByEmail, email) && task.raisedByName) {
+      return task.raisedByName;
+    }
+    const a = task.assignees.find(
+      (x) => emailsMatch(x.assigneeEmail, email)
+    );
+    if (a?.assigneeName) return a.assigneeName;
+  }
+  return email.split("@")[0];
+}
+
+function formatAssignPromptMessage(
+  raw: string,
+  viewerEmail: string,
+  task: Task | null | undefined,
+  members: Member[],
+  viewerName: string
+): string | null {
+  if (!raw.startsWith("@@ASSIGN_PROMPT@@")) return null;
+  const payload = raw.slice("@@ASSIGN_PROMPT@@".length);
+  const [ownerEmail, ...memberEmails] = payload.split("|");
+  if (!ownerEmail || memberEmails.length === 0) return null;
+
+  const ownerName = resolvePersonName(
+    ownerEmail, task, members, viewerEmail, viewerName
+  );
+  const isOwner = emailsMatch(viewerEmail, ownerEmail);
+  const labels = memberEmails.map((email) => {
+    if (!isOwner && emailsMatch(email, viewerEmail)) return "you";
+    return resolvePersonName(
+      email, task, members, viewerEmail, viewerName
+    );
+  });
+
+  const youIdx = labels.indexOf("you");
+  const nameList = youIdx >= 0
+    ? (labels.length === 1
+      ? "you"
+      : `you, ${formatNameList(labels.filter((_, i) => i !== youIdx))}`)
+    : formatNameList(labels);
+
+  return `${ownerName} has added ${nameList} to this task. Please press start button to proceed.`;
+}
+
+function systemMessageText(
+  message: string,
+  viewerEmail: string,
+  task: Task | null | undefined,
+  members: Member[],
+  viewerName: string
+): string {
+  const body = message.replace("@@SYSTEM@@", "");
+  return formatAssignPromptMessage(
+    body, viewerEmail, task, members, viewerName
+  ) ?? body;
+}
+
+function isStartPromptMessage(message: string): boolean {
+  const body = message.replace("@@SYSTEM@@", "");
+  return body.startsWith("@@ASSIGN_PROMPT@@")
+    || body.includes("Please press Start button to proceed.")
+    || body.includes("Please press start button to proceed.");
+}
+
+function seedAppHistory(stack: View[]) {
+  const state: AppHistoryState = {
+    stack: [...stack],
+    subtaskId: null,
+  };
+  window.history.replaceState(state, "", window.location.pathname);
 }
 
 function IconChevronDown({
@@ -671,9 +833,17 @@ function Avatar({
   name,email,size=36,avatarUrl
 }:{name?:string|null;email:string;size?:number;
   avatarUrl?:string|null}) {
-  if (avatarUrl) {
+  const [broken,setBroken] = useState(false);
+  useEffect(() => {
+    setBroken(false);
+  }, [avatarUrl, email]);
+
+  if (avatarUrl && !broken) {
     return (
-      <img src={avatarUrl} alt=""
+      <img
+        key={`${email}:${avatarUrl}`}
+        src={avatarUrl} alt=""
+        onError={()=>setBroken(true)}
         style={{
           width:size,height:size,borderRadius:"50%",
           objectFit:"cover",objectPosition:"center",flexShrink:0,
@@ -688,7 +858,7 @@ function Avatar({
     ["#7c3aed","#ddd6fe"],["#b45309","#fde68a"],
     ["#be123c","#fecdd3"],["#0f766e","#99f6e4"],
   ];
-  const [bg,fg] = palettes[email.charCodeAt(0)%palettes.length];
+  const [bg,fg] = palettes[email.toLowerCase().charCodeAt(0)%palettes.length];
   return (
     <div style={{
       width:size,height:size,borderRadius:"50%",
@@ -730,7 +900,9 @@ function AssigneeAvatars({
   const show = assignees.slice(0,max);
   const rest = assignees.length - max;
   const avatarUrl = (email:string) =>
-    memberLookup?.find(m=>m.email===email)?.avatarUrl??null;
+    memberLookup?.find(
+      m=>emailsMatch(m.email, email)
+    )?.avatarUrl??null;
   return (
     <div style={{display:"flex",alignItems:"center"}}>
       {show.map((a,i) => (
@@ -880,10 +1052,10 @@ export default function TasksApp() {
   const [quickSubmitting,setQuickSubmitting] = useState(false);
 
   const viewStack = useRef<View[]>(["home"]);
-  const [showSubtasksFab,setShowSubtasksFab] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval>|null>(null);
   const pullStartY = useRef<number|null>(null);
   const pullArmed = useRef(false);
+  const pullDistanceRef = useRef(0);
   const taskMenuRef = useRef<HTMLDivElement>(null);
   const avatarCameraRef = useRef<HTMLInputElement>(null);
   const avatarGalleryRef = useRef<HTMLInputElement>(null);
@@ -913,32 +1085,58 @@ export default function TasksApp() {
         }
       },
       onTouchMove: (e: React.TouchEvent<HTMLDivElement>) => {
-        if (!pullArmed.current || pullStartY.current == null || refreshing) return;
+        if (!pullArmed.current || pullStartY.current == null || refreshing) {
+          return;
+        }
         const delta = Math.max(0, e.touches[0].clientY - pullStartY.current);
-        setPullDistance(Math.min(delta, 90));
+        const d = Math.min(delta, 90);
+        pullDistanceRef.current = d;
+        setPullDistance(d);
       },
       onTouchEnd: () => {
-        const shouldRefresh = pullArmed.current && pullDistance >= 70 && !refreshing;
+        const shouldRefresh =
+          pullArmed.current && pullDistanceRef.current >= 70 && !refreshing;
         pullStartY.current = null;
         pullArmed.current = false;
         if (shouldRefresh) {
           void onRefresh();
         } else {
+          pullDistanceRef.current = 0;
           setPullDistance(0);
         }
       }
     };
   }
 
+  const writeHistory = useCallback((
+    stack: View[],
+    mode: "push" | "replace",
+    subtaskId?: string | null
+  ) => {
+    const state: AppHistoryState = {
+      stack: [...stack],
+      subtaskId: subtaskId ?? null,
+    };
+    if (mode === "replace") {
+      window.history.replaceState(state, "", window.location.pathname);
+    } else {
+      window.history.pushState(state, "", window.location.pathname);
+    }
+  }, []);
+
   const switchTab = useCallback((tab: View) => {
     viewStack.current = [tab];
+    setSelected(null);
+    setSubtaskPanel(null);
+    writeHistory(viewStack.current, "replace");
     setView(tab);
-  }, []);
+  }, [writeHistory]);
 
   const pushView = useCallback((next: View) => {
     viewStack.current.push(next);
+    writeHistory(viewStack.current, "push");
     setView(next);
-  }, []);
+  }, [writeHistory]);
 
   const openNewTask = useCallback((
     from: View,
@@ -950,19 +1148,15 @@ export default function TasksApp() {
     } else {
       viewStack.current = [from, "new"];
     }
+    writeHistory(viewStack.current, "push");
     setNtParentId(parentId ?? null);
     setNtParentTitle(parentTitle ?? null);
     setView("new");
-  }, []);
+  }, [writeHistory]);
 
   const goBack = useCallback(() => {
-    if (subtaskPanel) {
-      setSubtaskPanel(null);
-      return;
-    }
-    if (viewStack.current.length > 1) {
-      viewStack.current.pop();
-      setView(viewStack.current[viewStack.current.length - 1]);
+    if (subtaskPanel || viewStack.current.length > 1) {
+      window.history.back();
       return;
     }
     setView("home");
@@ -988,8 +1182,10 @@ export default function TasksApp() {
   }
 
   function avatarFor(email:string): string|null {
-    if (email===myEmail&&myAvatarUrl) return myAvatarUrl;
-    return members.find(m=>m.email===email)?.avatarUrl??null;
+    if (emailsMatch(email, myEmail) && myAvatarUrl) return myAvatarUrl;
+    return members.find(
+      (m) => emailsMatch(m.email, email)
+    )?.avatarUrl ?? null;
   }
 
   const loadMeProfile = useCallback(async (t?:string) => {
@@ -1001,7 +1197,6 @@ export default function TasksApp() {
     if (r.ok) {
       const d = await r.json() as any;
       const u = d.data?.user??d.user;
-      if (u?.avatarUrl) setMyAvatarUrl(u.avatarUrl);
       setHasPassword(!!u?.hasPassword);
     }
   },[token]);
@@ -1011,7 +1206,7 @@ export default function TasksApp() {
     remember=false
   ) {
     localStorage.setItem("sv_token",t);
-    localStorage.setItem("sv_email",email);
+    localStorage.setItem("sv_email",email.toLowerCase());
     localStorage.setItem("sv_name",name);
     localStorage.setItem("sv_phone",phone);
     if (remember) {
@@ -1020,7 +1215,7 @@ export default function TasksApp() {
     } else {
       localStorage.removeItem("sv_expiry");
     }
-    setToken(t);setMyEmail(email);
+    setToken(t);setMyEmail(email.toLowerCase());
     setMyName(name);setMyPhone(phone);
   }
 
@@ -1076,9 +1271,12 @@ export default function TasksApp() {
       {headers:{Authorization:`Bearer ${tk}`}});
     if (r.ok) {
       const d = await r.json() as any;
-      const list = (d.members??[]) as Member[];
+      const list = ((d.members??[]) as Member[]).map((m) => ({
+        ...m,
+        email: m.email.toLowerCase(),
+      }));
       setMembers(list);
-      const me = list.find((m) => m.email.toLowerCase() === myEmail.toLowerCase());
+      const me = list.find((m) => emailsMatch(m.email, myEmail));
       if (me?.avatarUrl) setMyAvatarUrl(me.avatarUrl);
     }
   },[token, myEmail]);
@@ -1111,11 +1309,11 @@ export default function TasksApp() {
 
   const openTaskDetail = useCallback(async (taskId: string, from: View) => {
     viewStack.current = [from, "detail"];
+    writeHistory(viewStack.current, "push");
     setSubtaskPanel(null);
-    setShowSubtasksFab(false);
     await loadDetail(taskId);
     setView("detail");
-  }, [loadDetail]);
+  }, [loadDetail, writeHistory]);
 
   const loadSubtaskPanel = useCallback(async (id:string) => {
     const tk = token; if (!tk) return;
@@ -1131,6 +1329,34 @@ export default function TasksApp() {
       setSubtaskLoading(false);
     }
   },[token]);
+
+  const applyHistoryState = useCallback((state: AppHistoryState | null) => {
+    if (!state?.stack?.length) {
+      viewStack.current = ["home"];
+      setView("home");
+      setSelected(null);
+      setSubtaskPanel(null);
+      return;
+    }
+    viewStack.current = state.stack;
+    const next = state.stack[state.stack.length - 1];
+    setView(next);
+    if (next !== "detail") {
+      setSelected(null);
+      setSubtaskPanel(null);
+      return;
+    }
+    if (state.subtaskId) {
+      void loadSubtaskPanel(state.subtaskId);
+    } else {
+      setSubtaskPanel(null);
+    }
+  }, [loadSubtaskPanel]);
+
+  const openSubtaskPanel = useCallback((id: string) => {
+    writeHistory(viewStack.current, "push", id);
+    void loadSubtaskPanel(id);
+  }, [loadSubtaskPanel, writeHistory]);
 
   async function uploadTaskAttachments(taskId:string, files:File[]) {
     if (files.length===0) return;
@@ -1164,13 +1390,20 @@ export default function TasksApp() {
     if (refreshing) return;
     setRefreshing(true);
     try {
-      if (view === "home") await loadMyTasks();
-      else if (view === "assigned") await loadMyAssignments();
-      else if (view === "alltasks") await loadDashboard();
-      else if (view === "notifications") await loadNotifications();
-      void loadNotifications();
+      if (view === "home") {
+        await Promise.all([loadMyTasks(), loadNotifications()]);
+      } else if (view === "assigned") {
+        await Promise.all([loadMyAssignments(), loadNotifications()]);
+      } else if (view === "alltasks") {
+        await Promise.all([loadDashboard(), loadNotifications()]);
+      } else if (view === "notifications") {
+        await loadNotifications();
+      } else {
+        await loadNotifications();
+      }
     } finally {
       setRefreshing(false);
+      pullDistanceRef.current = 0;
       setPullDistance(0);
     }
   }, [
@@ -1189,9 +1422,10 @@ export default function TasksApp() {
       if (expiry && Date.now() > Number(expiry)) {
         logout(); return;
       }
-      setToken(t);setMyEmail(e);
+      setToken(t);setMyEmail(e.toLowerCase());
       setMyName(n??"");setMyPhone(p??"");
       setView("home");
+      seedAppHistory(["home"]);
       void loadAll(t);
       // Poll notifications every 30 seconds
       pollRef.current = setInterval(
@@ -1219,6 +1453,21 @@ export default function TasksApp() {
       document.removeEventListener("touchstart", handleOutside);
     };
   }, [showTaskMenu]);
+
+  useEffect(() => {
+    if (view === "profile" && token) {
+      void loadMembers();
+    }
+  }, [view, token, loadMembers]);
+
+  useEffect(() => {
+    if (!token || view === "login") return;
+    const onPop = (e: PopStateEvent) => {
+      applyHistoryState(e.state as AppHistoryState | null);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [token, view, applyHistoryState]);
 
   useEffect(() => {
     if (!showMemberPicker) return;
@@ -1351,6 +1600,7 @@ export default function TasksApp() {
       const u = d.data?.user??d.user;
       saveSession(t,u.email,u.name??"",u.phone??"",rememberMe);
       setView("home");
+      seedAppHistory(["home"]);
       void loadAll(t);
       pollRef.current = setInterval(
         ()=>void loadNotifications(t),30000
@@ -1410,6 +1660,7 @@ export default function TasksApp() {
       const u = d.data?.user??d.user;
       saveSession(t,u.email,u.name??"",u.phone??"",rememberMe);
       setView("home");
+      seedAppHistory(["home"]);
       void loadAll(t);
       pollRef.current = setInterval(
         ()=>void loadNotifications(t),30000
@@ -1471,10 +1722,12 @@ export default function TasksApp() {
         }
         await loadDetail(parentTaskId);
         setSubtaskPanel(null);
+        writeHistory(viewStack.current, "replace");
         setView("detail");
       } else {
         const base = viewStack.current[0] ?? "home";
         viewStack.current = [base];
+        writeHistory(viewStack.current, "replace");
         setView(base);
       }
 
@@ -1867,7 +2120,7 @@ export default function TasksApp() {
       if (!r.ok) throw new Error(d.error??"Upload failed");
       setMyAvatarUrl(d.avatarUrl);
       setMembers(prev=>prev.map(m=>
-        m.email===myEmail
+        emailsMatch(m.email, myEmail)
           ?{...m,avatarUrl:d.avatarUrl}
           :m
       ));
@@ -2107,6 +2360,10 @@ export default function TasksApp() {
     .input::placeholder{color:#c0b8b0}
     ::-webkit-scrollbar{width:0;height:0}
     .fade{animation:fadeIn .15s ease}
+    @keyframes sv-pull-spin{
+      from{transform:rotate(0deg)}
+      to{transform:rotate(360deg)}
+    }
     @keyframes fadeIn{
       from{opacity:0;transform:translateY(3px)}
       to{opacity:1;transform:translateY(0)}}
@@ -2463,28 +2720,17 @@ export default function TasksApp() {
     const overdue = task.dueDate &&
       !isTaskClosed(task.status) &&
       new Date(task.dueDate)<new Date();
-    const assignerName =
-      task.assignedByEmail===myEmail
-        ?"You"
-        :personName(
-          task.assignedByEmail??task.raisedByEmail,
-          task
-        );
+    const ownerEmail = task.assignedByEmail ?? task.raisedByEmail;
 
     return (
       <div className="task-row pressable fade"
         onClick={onClick}>
-        <div style={{
-          width:48,height:48,borderRadius:"50%",
-          background:PB[task.priority],
-          border:`2px solid ${PC[task.priority]}`,
-          display:"flex",alignItems:"center",
-          justifyContent:"center",flexShrink:0,
-          fontSize:"13px",fontWeight:800,
-          color:PC[task.priority]
-        }}>
-          {task.priority[0]}
-        </div>
+        <Avatar
+          email={ownerEmail}
+          name={personName(ownerEmail, task)}
+          size={48}
+          avatarUrl={avatarFor(ownerEmail)}
+        />
         <div style={{flex:1,minWidth:0}}>
           <div style={{
             display:"flex",
@@ -2525,23 +2771,22 @@ export default function TasksApp() {
             display:"flex",alignItems:"center",
             justifyContent:"space-between"
           }}>
-            <p style={{
-              fontSize:"13px",color:"#8a7060",
-              margin:0,flex:1,overflow:"hidden",
-              textOverflow:"ellipsis",
-              whiteSpace:"nowrap"
+            <div style={{
+              display:"flex",alignItems:"center",gap:"6px",
+              flex:1,minWidth:0
             }}>
-              {isAssignment
-                ?`You → ${task.assignees.map(a=>
-                  personName(a.assigneeEmail,task)
-                ).join(", ")||"(unassigned)"}`
-                :`${assignerName} • ${
-                    task.description?.slice(0,35)||
-                    "No description"
-                  }${(task.description?.length||0)>35
-                    ?"...":""}`
-              }
-            </p>
+              {task.assignees.length>0 ? (
+                <AssigneeAvatars
+                  assignees={task.assignees}
+                  max={isAssignment ? 4 : 5}
+                  memberLookup={members}
+                />
+              ) : (
+                <span style={{
+                  fontSize:"12px",color:"#b8a898"
+                }}>No members</span>
+              )}
+            </div>
             <div style={{
               display:"flex",alignItems:"center",
               gap:"6px",flexShrink:0,marginLeft:"8px"
@@ -2615,19 +2860,10 @@ export default function TasksApp() {
           WebkitOverflowScrolling:"touch",
           paddingBottom:SCROLL_BOTTOM_PAD
         }} {...pull}>
-          <div style={{
-            height: pullDistance || refreshing ? 42 : 0,
-            transition:"height .15s ease",
-            display:"flex",
-            alignItems:"center",
-            justifyContent:"center",
-            color:"#075E54",
-            fontSize:"12px",
-            fontWeight:700,
-            overflow:"hidden"
-          }}>
-            {refreshing ? "Refreshing..." : pullDistance >= 70 ? "Release to refresh" : pullDistance > 0 ? "Pull to refresh" : ""}
-          </div>
+          <PullRefreshIndicator
+            pullDistance={pullDistance}
+            refreshing={refreshing}
+          />
           {children}
         </div>
         {showFab&&<FAB embedded/>}
@@ -2886,11 +3122,11 @@ export default function TasksApp() {
             </p>
           </div>
         ):(
-          myTasks
-            .filter((t) => matchesListFilters(
+          sortTasksByRecent(
+            myTasks.filter((t) => matchesListFilters(
               t, statusFilter, priorityFilter, myEmail, true
             ))
-            .map(t=>(
+          ).map(t=>(
               <TaskCard key={t.id} task={t}
                 onClick={()=>void openTaskDetail(t.id,"home")}/>
             ))
@@ -2921,11 +3157,11 @@ export default function TasksApp() {
             </p>
           </div>
         ):(
-          myAssignments
-            .filter((t) => matchesListFilters(
+          sortTasksByRecent(
+            myAssignments.filter((t) => matchesListFilters(
               t, statusFilter, priorityFilter, myEmail, true
             ))
-            .map(t=>(
+          ).map(t=>(
               <TaskCard key={t.id} task={t}
                 isAssignment
                 onClick={()=>void openTaskDetail(t.id,"assigned")}/>
@@ -2985,19 +3221,10 @@ export default function TasksApp() {
           WebkitOverflowScrolling:"touch",
           paddingBottom:SCROLL_BOTTOM_PAD
         }} {...pull}>
-          <div style={{
-            height: pullDistance || refreshing ? 42 : 0,
-            transition:"height .15s ease",
-            display:"flex",
-            alignItems:"center",
-            justifyContent:"center",
-            color:"#075E54",
-            fontSize:"12px",
-            fontWeight:700,
-            overflow:"hidden"
-          }}>
-            {refreshing ? "Refreshing..." : pullDistance >= 70 ? "Release to refresh" : pullDistance > 0 ? "Pull to refresh" : ""}
-          </div>
+          <PullRefreshIndicator
+            pullDistance={pullDistance}
+            refreshing={refreshing}
+          />
           {dashTasks.length===0?(
             <div style={{
               textAlign:"center",padding:"60px 16px",
@@ -3012,11 +3239,11 @@ export default function TasksApp() {
               }}>No tasks found</p>
             </div>
           ):(
-            dashTasks
-              .filter((t) => matchesListFilters(
+            sortTasksByRecent(
+              dashTasks.filter((t) => matchesListFilters(
                 t, statusFilter, priorityFilter, myEmail, false
               ))
-              .map(t=>(
+            ).map(t=>(
                 <TaskCard key={t.id} task={t}
                   onClick={()=>void openTaskDetail(t.id,"alltasks")}/>
               ))
@@ -3640,20 +3867,9 @@ export default function TasksApp() {
               flex:1,minWidth:0,textAlign:"left",padding:0
             }}>
             {activeTask.assignees.length>0?(
-              <>
-                <AssigneeAvatars
-                  assignees={activeTask.assignees}
-                  max={4} memberLookup={members}/>
-                <span style={{
-                  fontSize:"13px",color:"rgba(255,255,255,.9)",
-                  fontWeight:500,overflow:"hidden",
-                  textOverflow:"ellipsis",whiteSpace:"nowrap"
-                }}>
-                  {activeTask.assignees.map(a=>
-                    personName(a.assigneeEmail,activeTask)
-                  ).join(", ")}
-                </span>
-              </>
+              <AssigneeAvatars
+                assignees={activeTask.assignees}
+                max={5} memberLookup={members}/>
             ):(
               <span style={{
                 fontSize:"13px",color:"rgba(255,255,255,.75)"
@@ -3691,6 +3907,62 @@ export default function TasksApp() {
               : taskIsOwner ? "Set date" : "No date"}
           </button>
         </div>
+
+        {!isSubtaskPanel && subtaskCount > 0 && (
+          <div style={{
+            background:"linear-gradient(180deg,#0a6b60,#075E54)",
+            borderTop:"1px solid rgba(255,255,255,.08)",
+            maxHeight:200,overflowY:"auto",
+            WebkitOverflowScrolling:"touch",
+          }}>
+            <p style={{
+              fontSize:10,fontWeight:800,
+              letterSpacing:"0.1em",textTransform:"uppercase",
+              color:"rgba(255,255,255,.6)",
+              margin:"8px 16px 4px",
+            }}>
+              Sub-tasks ({subtaskCount})
+            </p>
+            {sortTasksByRecent(subtaskHost.children!).map((child) => {
+              const done = isTaskClosed(child.status);
+              return (
+                <div key={child.id}
+                  className="pressable"
+                  onClick={()=>void openSubtaskPanel(child.id)}
+                  style={{
+                    display:"flex",alignItems:"center",gap:10,
+                    padding:"10px 16px",
+                    borderBottom:"1px solid rgba(255,255,255,.06)",
+                    cursor:"pointer",
+                  }}>
+                  <div style={{
+                    width:26,height:26,borderRadius:"50%",
+                    background:done?"#25D366":"rgba(255,255,255,.18)",
+                    color:"#fff",display:"flex",
+                    alignItems:"center",justifyContent:"center",
+                    fontSize:12,fontWeight:800,flexShrink:0,
+                    border:done?"none":"1px solid rgba(255,255,255,.25)",
+                  }}>
+                    {done?"✓":"✕"}
+                  </div>
+                  <p style={{
+                    flex:1,margin:0,fontSize:13,fontWeight:600,
+                    color:"rgba(255,255,255,.95)",
+                    overflow:"hidden",textOverflow:"ellipsis",
+                    whiteSpace:"nowrap",
+                  }}>{child.title}</p>
+                  {child.assignees && child.assignees.length>0 && (
+                    <AssigneeAvatars
+                      assignees={child.assignees}
+                      max={3}
+                      memberLookup={members}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
         </div>
 
         {/* Scrollable chat area */}
@@ -3814,7 +4086,13 @@ export default function TasksApp() {
                     lineHeight:1.5,display:"inline-block",
                     maxWidth:"90%"
                   }}>
-                    {ev.message.replace("@@SYSTEM@@","")}
+                    {systemMessageText(
+                      ev.message,
+                      myEmail,
+                      activeTask,
+                      members,
+                      myName
+                    )}
                   </span>
                   <p style={{
                     fontSize:"10px",color:"#b8a898",
@@ -3823,7 +4101,7 @@ export default function TasksApp() {
                     <TimeAgo date={ev.createdAt}/>
                   </p>
                   {myAssignee?.responseStatus==="PENDING" &&
-                    ev.message.includes("Please press Start button to proceed.") && (
+                    isStartPromptMessage(ev.message) && (
                     <button
                       type="button"
                       onClick={()=>void handleStartTask(activeTask.id)}
@@ -3938,85 +4216,6 @@ export default function TasksApp() {
         <div style={{
           flexShrink:0,position:"relative"
         }}>
-        {!isSubtaskPanel && subtaskCount > 0 && (
-          <>
-            {showSubtasksFab && (
-              <div style={{
-                position:"absolute",
-                right:16,bottom:"calc(100% + 64px)",
-                width:280,maxWidth:"calc(100% - 32px)",
-                background:"#fff",
-                borderRadius:12,
-                boxShadow:"0 4px 20px rgba(0,0,0,.15)",
-                maxHeight:240,overflowY:"auto",
-                zIndex:80,padding:"8px"
-              }}>
-                <p style={{
-                  fontSize:12,fontWeight:700,color:"#075E54",
-                  margin:"4px 8px 8px"
-                }}>Sub-tasks ({subtaskCount})</p>
-                {subtaskHost.children!.map(child=>(
-                  <div key={child.id}
-                    className="pressable"
-                    onClick={()=>{
-                      setShowSubtasksFab(false);
-                      void loadSubtaskPanel(child.id);
-                    }}
-                    style={{
-                      padding:"10px 12px",
-                      borderRadius:10,
-                      marginBottom:4,
-                      display:"flex",
-                      alignItems:"center",
-                      justifyContent:"space-between",
-                      gap:8,
-                      background:"#f8f6f3",
-                      cursor:"pointer"
-                    }}>
-                    <p style={{
-                      fontSize:13,fontWeight:600,
-                      color:"#1a1614",margin:0,
-                      overflow:"hidden",
-                      textOverflow:"ellipsis",
-                      whiteSpace:"nowrap",flex:1
-                    }}>{child.title}</p>
-                    <StatusPill s={child.status} small/>
-                  </div>
-                ))}
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={()=>setShowSubtasksFab(s=>!s)}
-              style={{
-                position:"absolute",
-                right:16,
-                bottom:"100%",
-                marginBottom:8,
-                width:52,height:52,
-                borderRadius:"50%",
-                border:"none",
-                background:"#075E54",
-                color:"#fff",
-                fontSize:13,
-                fontWeight:800,
-                cursor:"pointer",
-                boxShadow:"0 4px 14px rgba(7,94,84,.35)",
-                zIndex:75,
-                display:"flex",
-                flexDirection:"column",
-                alignItems:"center",
-                justifyContent:"center",
-                lineHeight:1.1
-              }}
-              aria-label="Sub-tasks"
-            >
-              <span style={{fontSize:18}}>📋</span>
-              <span>{subtaskCount}</span>
-            </button>
-          </>
-        )}
-
         {/* Bottom input bar or reopen */}
         <div style={{flexShrink:0}}>
         {!canAct ? (
@@ -4944,6 +5143,9 @@ export default function TasksApp() {
   if (view==="notifications") return (
     <>
       <style>{CSS}</style>
+      {(() => {
+        const pull = pullHandlers(refreshCurrentView);
+        return (
       <div style={{
         height:"100dvh",maxHeight:"100dvh",
         display:"flex",flexDirection:"column",
@@ -4982,7 +5184,11 @@ export default function TasksApp() {
           WebkitOverflowScrolling:"touch",
           padding:"12px 16px",
           paddingBottom:SCROLL_BOTTOM_PAD
-        }}>
+        }} {...pull}>
+          <PullRefreshIndicator
+            pullDistance={pullDistance}
+            refreshing={refreshing}
+          />
           {notifications.length===0?(
             <div style={{
               textAlign:"center",padding:"60px 0",
@@ -5069,6 +5275,8 @@ export default function TasksApp() {
         </div>
         <BottomNav embedded/>
       </div>
+        );
+      })()}
     </>
   );
 

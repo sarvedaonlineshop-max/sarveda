@@ -238,10 +238,16 @@ function formatAssigneeList(names: string[]): string {
   return `${names.slice(0, -1).join(", ")}, ${names.at(-1)}`;
 }
 
-function startPromptMessage(names: string[]): string {
-  const prefix = names.length === 1 ? `Hi ${names[0]}` : `Hi ${formatAssigneeList(names)}`;
-  const verb = names.length === 1 ? "is" : "are";
-  return `${prefix}, you ${verb} added to the above new task. Please press Start button to proceed.`;
+function startPromptMessage(
+  ownerEmail: string,
+  assigneeEmails: string[]
+): string {
+  const owner = ownerEmail.toLowerCase();
+  const members = assigneeEmails
+    .map((e) => e.toLowerCase())
+    .filter((e) => e !== owner);
+  if (members.length === 0) return "";
+  return `@@ASSIGN_PROMPT@@${owner}|${members.join("|")}`;
 }
 
 async function postSystemChat(
@@ -324,7 +330,7 @@ router.get("/admin/all", requireAdmin, async (req, res, next) => {
 
     const complaints = await prisma.complaint.findMany({
       where: { status, priority },
-      orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
+      orderBy: { updatedAt: "desc" },
       include: { attachments: true }
     });
     res.json({ success: true, complaints });
@@ -612,7 +618,14 @@ router.post("/", verifyComplaintAuth, upload.array("files", 20), async (req, res
       });
 
       if (assigneeDisplayNames.length > 0) {
-        await postSystemChat(complaint.id, actor.email, startPromptMessage(assigneeDisplayNames));
+        await postSystemChat(
+          complaint.id,
+          actor.email,
+          startPromptMessage(
+            actor.email,
+            resolvedAssignees.filter((e) => e !== actor.email)
+          )
+        );
       }
 
       for (const email of resolvedAssignees) {
@@ -923,7 +936,7 @@ router.get("/all", verifyComplaintAuth, async (req, res, next) => {
           { isPrivate: true, raisedByEmail: email }
         ]
       },
-      orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
+      orderBy: { updatedAt: "desc" },
       include: {
         attachments: true,
         _count: { select: { children: true } }
@@ -945,7 +958,7 @@ router.get("/my", verifyComplaintAuth, async (req, res, next) => {
         parentId: null,
         ...(statuses ? { status: { in: statuses } } : {})
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { updatedAt: "desc" },
       include: {
         attachments: true,
         _count: { select: { children: true } }
@@ -1139,7 +1152,11 @@ router.patch("/:id/assignees", verifyComplaintAuth, async (req, res, next) => {
       });
 
       if (addedDisplayNames.length > 0) {
-        await postSystemChat(task.id, actor.email, startPromptMessage(addedDisplayNames));
+        await postSystemChat(
+          task.id,
+          actor.email,
+          startPromptMessage(actor.email, toAdd)
+        );
       }
 
       for (const e of toAdd) {
@@ -1181,7 +1198,7 @@ router.get("/:id", verifyComplaintAuth, async (req, res, next) => {
         attachments: true,
         assignees: true,
         children: {
-          orderBy: { createdAt: "asc" },
+          orderBy: { updatedAt: "desc" },
           include: { attachments: true, assignees: true }
         },
         events: {
