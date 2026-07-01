@@ -210,7 +210,9 @@ function attachmentIcon(type: string): string {
 }
 
 const MAX_CHAT_UPLOAD_BYTES = 250 * 1024 * 1024;
-const MAX_CHAT_ATTACHMENTS = 5;
+const MAX_CHAT_ATTACHMENTS = 20;
+const UPLOAD_LIMITS_HINT =
+  `Up to ${MAX_CHAT_ATTACHMENTS} files · 250 MB total per send`;
 
 function formatBytes(bytes: number): string {
   if (bytes >= 1024 * 1024) {
@@ -227,189 +229,380 @@ function headerTitle(task: Task): string {
   return t.length > 36 ? `${t.slice(0, 36)}…` : t || "Task";
 }
 
-function ChatAttachmentBubble({a}:{a:Attachment}) {
+function formatAudioTime(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function IconPaperclip({
+  size = 22, color = "#8696a0",
+}: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      aria-hidden>
+      <path d="M16.5 6.5v8.25a4.5 4.5 0 1 1-9 0V7a3 3 0 1 1 6 0v7.5a1.5 1.5 0 1 1-3 0V8"
+        stroke={color} strokeWidth="1.8" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function IconCamera({
+  size = 22, color = "#8696a0",
+}: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      aria-hidden>
+      <path d="M4 8.5h2.2l1.4-2h8.8l1.4 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z"
+        stroke={color} strokeWidth="1.8" strokeLinejoin="round"/>
+      <circle cx="12" cy="13.5" r="3.2" stroke={color} strokeWidth="1.8"/>
+    </svg>
+  );
+}
+
+function IconMic({
+  size = 22, color = "#fff",
+}: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      aria-hidden>
+      <rect x="9" y="3" width="6" height="11" rx="3"
+        fill={color}/>
+      <path d="M6 11.5a6 6 0 0 0 12 0M12 17.5v3.5"
+        stroke={color} strokeWidth="1.8" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function IconSend({
+  size = 20, color = "#fff",
+}: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      aria-hidden>
+      <path d="m5 12 14-7-3 7 3 7-14-7Z"
+        fill={color}/>
+    </svg>
+  );
+}
+
+function IconChevronDown({
+  size = 16, color = "#667781",
+}: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      aria-hidden>
+      <path d="m6 9 6 6 6-6" stroke={color}
+        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function AttachmentActionMenu({
+  open, onClose, onDownload, onDelete, canDelete,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onDownload: () => void;
+  onDelete?: () => void;
+  canDelete?: boolean;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open, onClose]);
+
+  if (!open) return null;
+  return (
+    <div ref={ref} style={{
+      position:"absolute",top:6,right:6,zIndex:20,
+      background:"#233138",borderRadius:10,
+      boxShadow:"0 8px 24px rgba(0,0,0,.28)",
+      minWidth:148,overflow:"hidden"
+    }}>
+      <button type="button"
+        onClick={()=>{ onDownload(); onClose(); }}
+        style={{
+          width:"100%",padding:"12px 14px",
+          border:"none",background:"transparent",
+          color:"#e9edef",fontSize:14,fontWeight:500,
+          display:"flex",alignItems:"center",gap:12,
+          cursor:"pointer",textAlign:"left"
+        }}>
+        <span style={{fontSize:16}}>⬇</span> Download
+      </button>
+      {canDelete && onDelete && (
+        <button type="button"
+          onClick={()=>{ onDelete(); onClose(); }}
+          style={{
+            width:"100%",padding:"12px 14px",
+            border:"none",background:"transparent",
+            color:"#ea7070",fontSize:14,fontWeight:500,
+            display:"flex",alignItems:"center",gap:12,
+            cursor:"pointer",textAlign:"left",
+            borderTop:"1px solid rgba(255,255,255,.08)"
+          }}>
+          <span style={{fontSize:16}}>🗑</span> Delete
+        </button>
+      )}
+    </div>
+  );
+}
+
+function WhatsAppAudioPlayer({src}:{src:string}) {
+  const audioRef = useRef<HTMLAudioElement|null>(null);
+  const [playing,setPlaying] = useState(false);
+  const [duration,setDuration] = useState(0);
+  const [current,setCurrent] = useState(0);
+
+  useEffect(() => {
+    const audio = new Audio(src);
+    audioRef.current = audio;
+    const onMeta = () => setDuration(audio.duration || 0);
+    const onTime = () => setCurrent(audio.currentTime || 0);
+    const onEnd = () => { setPlaying(false); setCurrent(0); };
+    audio.addEventListener("loadedmetadata", onMeta);
+    audio.addEventListener("timeupdate", onTime);
+    audio.addEventListener("ended", onEnd);
+    return () => {
+      audio.pause();
+      audio.removeEventListener("loadedmetadata", onMeta);
+      audio.removeEventListener("timeupdate", onTime);
+      audio.removeEventListener("ended", onEnd);
+      audioRef.current = null;
+    };
+  }, [src]);
+
+  const progress = duration > 0 ? current / duration : 0;
+
+  return (
+    <div style={{
+      display:"flex",alignItems:"center",gap:10,
+      padding:"8px 10px 6px",minWidth:210,maxWidth:260
+    }}>
+      <button type="button"
+        onClick={()=>{
+          const audio = audioRef.current;
+          if (!audio) return;
+          if (playing) {
+            audio.pause();
+            setPlaying(false);
+          } else {
+            void audio.play().then(()=>setPlaying(true))
+              .catch(()=>{});
+          }
+        }}
+        style={{
+          width:34,height:34,borderRadius:"50%",
+          border:"none",background:"#075E54",
+          color:"#fff",fontSize:14,cursor:"pointer",
+          display:"flex",alignItems:"center",
+          justifyContent:"center",flexShrink:0
+        }}>
+        {playing ? "❚❚" : "▶"}
+      </button>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{
+          position:"relative",height:24,
+          display:"flex",alignItems:"center",gap:2
+        }}>
+          {Array.from({length:28},(_,i)=>{
+            const barProgress = i / 27;
+            const active = barProgress <= progress;
+            return (
+              <div key={i} style={{
+                width:2,borderRadius:2,flexShrink:0,
+                height:`${Math.max(28,
+                  Math.sin(i * 0.75) * 42 + 48
+                )}%`,
+                background: active ? "#53bdeb" : "#9bb0b8",
+                opacity: active ? 1 : 0.65
+              }}/>
+            );
+          })}
+          <div style={{
+            position:"absolute",
+            left:`${Math.max(0, Math.min(100, progress * 100))}%`,
+            top:"50%",transform:"translate(-50%,-50%)",
+            width:10,height:10,borderRadius:"50%",
+            background:"#53bdeb",
+            boxShadow:"0 0 0 2px rgba(255,255,255,.9)"
+          }}/>
+        </div>
+        <div style={{
+          display:"flex",justifyContent:"space-between",
+          marginTop:4,fontSize:11,color:"#667781"
+        }}>
+          <span>{formatAudioTime(playing ? current : duration)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChatAttachmentBubble({
+  a, canDelete, onDelete,
+}: {
+  a: Attachment;
+  canDelete?: boolean;
+  onDelete?: () => void;
+}) {
   const isImage = a.type==="image";
   const isVideo = a.type==="video";
   const isAudio = a.type==="audio";
   const isDoc = a.type==="document"||a.type==="file";
   const [imgErr, setImgErr] = useState(false);
-  const bigDownloadStyle: React.CSSProperties = {
-    position:"absolute",
-    right:8,
-    bottom:8,
-    width:38,
-    height:38,
-    borderRadius:"50%",
-    background:"rgba(7,94,84,.92)",
-    display:"flex",
-    alignItems:"center",
-    justifyContent:"center",
-    color:"#fff",
-    fontSize:18,
-    textDecoration:"none",
-    boxShadow:"0 4px 10px rgba(0,0,0,.18)",
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const download = () => {
+    const link = document.createElement("a");
+    link.href = a.s3Url;
+    link.download = a.fileName ?? "download";
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   };
 
+  const view = () => {
+    if (isAudio) return;
+    window.open(a.s3Url, "_blank", "noopener");
+  };
+
+  const shellStyle: React.CSSProperties = {
+    position:"relative",
+    borderRadius:10,
+    overflow:"visible",
+    maxWidth:260,
+    background:"rgba(255,255,255,.55)",
+  };
+
+  const menuBtn = (
+    <button type="button"
+      onClick={e=>{ e.stopPropagation(); setMenuOpen(p=>!p); }}
+      style={{
+        position:"absolute",top:4,right:4,zIndex:15,
+        width:24,height:24,borderRadius:6,
+        border:"none",background:"rgba(255,255,255,.88)",
+        display:"flex",alignItems:"center",
+        justifyContent:"center",cursor:"pointer",
+        boxShadow:"0 1px 4px rgba(0,0,0,.12)"
+      }}
+      aria-label="Attachment options">
+      <IconChevronDown size={14}/>
+    </button>
+  );
+
+  const menu = (
+    <AttachmentActionMenu
+      open={menuOpen}
+      onClose={()=>setMenuOpen(false)}
+      onDownload={download}
+      onDelete={onDelete}
+      canDelete={canDelete}
+    />
+  );
+
   if (isImage && !imgErr) return (
-    <div style={{
-      borderRadius:10,overflow:"hidden",
-      maxWidth:220,cursor:"pointer",
-      position:"relative"
-    }}>
-      <img
-        src={a.s3Url}
-        alt={a.fileName??"image"}
-        onError={()=>setImgErr(true)}
-        onClick={()=>window.open(
-          a.s3Url,"_blank","noopener"
-        )}
-        style={{
-          width:"100%",maxHeight:200,
-          objectFit:"cover",display:"block",
-          borderRadius:10
-        }}
-      />
-      <a href={a.s3Url} download={a.fileName??"image"}
-        onClick={e=>e.stopPropagation()}
-        style={bigDownloadStyle}>⬇</a>
+    <div style={shellStyle}>
+      {menuBtn}
+      {menu}
+      <div onClick={view} style={{cursor:"pointer",borderRadius:10,overflow:"hidden"}}>
+        <img src={a.s3Url} alt={a.fileName??"image"}
+          onError={()=>setImgErr(true)}
+          style={{
+            width:"100%",maxHeight:220,display:"block",
+            objectFit:"cover"
+          }}/>
+      </div>
     </div>
   );
 
   if (isVideo) return (
-    <div style={{
-      borderRadius:10,overflow:"hidden",
-      maxWidth:240,position:"relative"
-    }}>
-      <video
-        src={a.s3Url}
-        controls
-        playsInline
+    <div style={shellStyle}>
+      {menuBtn}
+      {menu}
+      <video src={a.s3Url} controls playsInline
+        onClick={e=>e.stopPropagation()}
         style={{
-          width:"100%",maxHeight:200,
-          borderRadius:10,display:"block",
-          background:"#000"
-        }}
-      />
-      <a href={a.s3Url} download={a.fileName??"video"}
-        style={{
-          ...bigDownloadStyle,
-          top:8,
-          bottom:"auto",
-        }}>⬇</a>
+          width:"100%",maxHeight:220,display:"block",
+          background:"#000",borderRadius:10
+        }}/>
     </div>
   );
 
   if (isAudio) return (
-    <div style={{
-      display:"flex",alignItems:"center",
-      gap:10,padding:"10px 14px",
-      background:"rgba(0,0,0,.05)",
-      borderRadius:20,maxWidth:240
-    }}>
-      <button
-        type="button"
-        onClick={()=>{
-          const audio = new window.Audio(a.s3Url);
-          audio.play().catch(()=>{});
-        }}
-        style={{
-          width:36,height:36,borderRadius:"50%",
-          background:"#075E54",border:"none",
-          color:"#fff",fontSize:16,cursor:"pointer",
-          display:"flex",alignItems:"center",
-          justifyContent:"center",flexShrink:0
-        }}>▶</button>
-      <div style={{
-        flex:1,display:"flex",alignItems:"center",
-        gap:2,height:24
-      }}>
-        {Array.from({length:20},(_,i)=>(
-          <div key={i} style={{
-            width:2,borderRadius:2,
-            background:"#075E54",
-            height:`${Math.max(30,
-              Math.sin(i*0.8)*50+50
-            )}%`,
-            opacity:0.7
-          }}/>
-        ))}
-      </div>
-      <a href={a.s3Url} download={a.fileName??"audio"}
-        style={{
-          width:36,height:36,borderRadius:"50%",
-          background:"#25D366",color:"#fff",
-          fontSize:18,textDecoration:"none",
-          flexShrink:0,display:"flex",
-          alignItems:"center",justifyContent:"center"
-        }}>⬇</a>
+    <div style={{...shellStyle, overflow:"hidden"}}>
+      {menuBtn}
+      {menu}
+      <WhatsAppAudioPlayer src={a.s3Url}/>
     </div>
   );
 
   return (
-    <div
-      onClick={()=>window.open(
-        a.s3Url,"_blank","noopener"
-      )}
-      style={{
-      textDecoration:"none",
-      display:"flex",alignItems:"center",
-      gap:10,padding:"10px 12px",
-      background:"rgba(0,0,0,.05)",
-      borderRadius:10,maxWidth:240,
-      position:"relative",
-      cursor:"pointer"
-    }}>
-      <div style={{
-        width:36,height:36,borderRadius:8,
-        background:"#1e3a2f",color:"#f5d88a",
-        display:"flex",alignItems:"center",
-        justifyContent:"center",
-        fontSize:18,flexShrink:0
+    <div style={shellStyle}>
+      {menuBtn}
+      {menu}
+      <div onClick={view} style={{
+        display:"flex",alignItems:"center",gap:10,
+        padding:"10px 12px",cursor:"pointer"
       }}>
-        {isDoc?"📄":"📎"}
-      </div>
-      <div style={{flex:1,minWidth:0}}>
-        <p style={{
-          fontSize:12,fontWeight:600,
-          color:"#1a1614",margin:0,
-          overflow:"hidden",textOverflow:"ellipsis",
-          whiteSpace:"nowrap"
+        <div style={{
+          width:36,height:36,borderRadius:8,
+          background:"#1e3a2f",color:"#f5d88a",
+          display:"flex",alignItems:"center",
+          justifyContent:"center",fontSize:18,flexShrink:0
         }}>
-          {a.fileName??"Attachment"}
-        </p>
-        {a.fileSizeBytes!=null&&a.fileSizeBytes>0&&(
+          {isDoc?"📄":"📎"}
+        </div>
+        <div style={{flex:1,minWidth:0,paddingRight:18}}>
           <p style={{
-            fontSize:10,color:"#8a7060",margin:"2px 0 0"
+            fontSize:12,fontWeight:600,color:"#1a1614",
+            margin:0,overflow:"hidden",
+            textOverflow:"ellipsis",whiteSpace:"nowrap"
           }}>
-            {formatBytes(a.fileSizeBytes)}
+            {a.fileName??"Attachment"}
           </p>
-        )}
+          {a.fileSizeBytes!=null&&a.fileSizeBytes>0&&(
+            <p style={{
+              fontSize:10,color:"#8a7060",margin:"2px 0 0"
+            }}>
+              {formatBytes(a.fileSizeBytes)}
+            </p>
+          )}
+        </div>
       </div>
-      <a href={a.s3Url}
-        download={a.fileName??"file"}
-        onClick={e=>e.stopPropagation()}
-        style={{
-          width:36,height:36,borderRadius:"50%",
-          background:"#25D366",color:"#fff",
-          fontSize:18,textDecoration:"none",
-          flexShrink:0,display:"flex",
-          alignItems:"center",justifyContent:"center"
-        }}>⬇</a>
     </div>
   );
 }
 
 function ChatMedia({
-  attachments
-}: { attachments: Attachment[] }) {
+  attachments, canDelete, onDeleteMessage,
+}: {
+  attachments: Attachment[];
+  canDelete?: boolean;
+  onDeleteMessage?: () => void;
+}) {
   if (!attachments.length) return null;
   return (
     <div style={{
       display:"flex",flexDirection:"column",
-      gap:6,marginTop:6
+      gap:8,marginTop:6
     }}>
       {attachments.map(a=>(
-        <ChatAttachmentBubble key={a.id} a={a}/>
+        <ChatAttachmentBubble key={a.id} a={a}
+          canDelete={canDelete}
+          onDelete={onDeleteMessage}
+        />
       ))}
     </div>
   );
@@ -696,6 +889,7 @@ export default function TasksApp() {
   const avatarGalleryRef = useRef<HTMLInputElement>(null);
   const toPickerRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
+  const camBarRef = useRef<HTMLInputElement>(null);
   const swipeRef = useRef<{
     id: string; startX: number; startY: number;
   } | null>(null);
@@ -1121,9 +1315,9 @@ export default function TasksApp() {
     })));
     setMsgFiles(prev => {
       const next = [...prev, ...picked];
-      const summary = `${picked.length} file${picked.length > 1 ? "s" : ""} added (${next.length} total)`;
-      showAttachToast(`✓ ${summary} — tap ➤ to upload`);
-      setAttachStatus(`✓ ${summary} — tap ➤ to upload`);
+      const summary = `${picked.length} file${picked.length > 1 ? "s" : ""} added (${next.length}/${MAX_CHAT_ATTACHMENTS})`;
+      showAttachToast(`✓ ${summary} — tap send to upload`);
+      setAttachStatus(`✓ ${summary} · ${UPLOAD_LIMITS_HINT}`);
       return next;
     });
     setShowAttachMenu(false);
@@ -3709,7 +3903,17 @@ export default function TasksApp() {
                     }}>{ev.message}</p>
                   )}
                   {ev.attachments&&ev.attachments.length>0&&(
-                    <ChatMedia attachments={ev.attachments}/>
+                    <ChatMedia
+                      attachments={ev.attachments}
+                      canDelete={canDel}
+                      onDeleteMessage={()=>{
+                        if (window.confirm(
+                          "Delete this message and its files?"
+                        )) {
+                          void handleDeleteMessage(ev.id);
+                        }
+                      }}
+                    />
                   )}
                   <p style={{
                     fontSize:"10px",color:"#8a7060",
@@ -3882,16 +4086,28 @@ export default function TasksApp() {
           {/* Menu always in DOM — inputs nested in labels (iOS-safe) */}
           <div id="wa-attach-menu" style={{
             position:"absolute",
-            bottom:"72px",left:"10px",
+            bottom:"72px",right:"10px",
             background:"#fff",
             borderRadius:16,
             boxShadow:"0 4px 24px rgba(0,0,0,0.18)",
             overflow:"hidden",
-            zIndex:200,minWidth:200,
+            zIndex:200,minWidth:220,
             border:"1px solid #f0ece6",
             display:showAttachMenu?"block":"none",
             pointerEvents:showAttachMenu?"auto":"none"
           }}>
+            <div style={{
+              padding:"10px 14px",
+              background:"#f8f6f3",
+              borderBottom:"1px solid #f0ece6"
+            }}>
+              <p style={{
+                margin:0,fontSize:12,fontWeight:700,
+                color:"#075E54"
+              }}>
+                {UPLOAD_LIMITS_HINT}
+              </p>
+            </div>
             <label style={{
               position:"relative",
               display:"flex",alignItems:"center",
@@ -4010,57 +4226,63 @@ export default function TasksApp() {
           {/* Voice recording UI */}
           {isRecording&&(
             <div style={{
-              display:"flex",alignItems:"center",gap:12,
-              padding:"10px 14px",
+              padding:"10px 12px",
               background:"#fff",
               borderTop:"1px solid #e0d8ce"
             }}>
-              <button onClick={cancelRecording} style={{
-                background:"none",border:"none",
-                color:"#dc2626",fontSize:13,
-                fontWeight:600,cursor:"pointer",padding:0
-              }}>✕ Cancel</button>
               <div style={{
-                flex:1,display:"flex",alignItems:"center",
-                gap:8
+                display:"flex",alignItems:"center",
+                justifyContent:"space-between",marginBottom:10
               }}>
-                <div style={{
-                  width:10,height:10,borderRadius:"50%",
-                  background:"#dc2626",
-                  animation:"pulse 1s ease infinite"
-                }}/>
+                <span style={{
+                  fontSize:14,fontWeight:600,color:"#1a1614"
+                }}>
+                  {formatAudioTime(recordingSeconds)}
+                </span>
                 <div style={{
                   display:"flex",alignItems:"center",
-                  gap:2,flex:1,height:28
+                  gap:2,flex:1,marginLeft:12,height:28
                 }}>
-                  {Array.from({length:24},(_,i)=>(
+                  {Array.from({length:28},(_,i)=>(
                     <div key={i} style={{
                       width:2,borderRadius:2,
-                      background:"#075E54",
-                      height:`${Math.max(30,
-                        Math.sin(i*0.8)*50+50
+                      background:"#8696a0",
+                      height:`${Math.max(28,
+                        Math.sin(i*0.8)*42+48
                       )}%`,
-                      transition:"height .15s ease"
+                      opacity:0.8
                     }}/>
                   ))}
                 </div>
-                <span style={{
-                  fontSize:14,fontWeight:600,
-                  color:"#dc2626",flexShrink:0
-                }}>
-                  {String(Math.floor(recordingSeconds/60))
-                    .padStart(2,"0")}:
-                  {String(recordingSeconds%60)
-                    .padStart(2,"0")}
-                </span>
               </div>
-              <button onClick={()=>void stopAndUploadVoice()} style={{
-                width:44,height:44,borderRadius:"50%",
-                background:"#25D366",border:"none",
-                color:"#fff",fontSize:20,cursor:"pointer",
+              <div style={{
                 display:"flex",alignItems:"center",
-                justifyContent:"center"
-              }}>➤</button>
+                justifyContent:"space-between"
+              }}>
+                <button type="button" onClick={cancelRecording}
+                  style={{
+                    width:40,height:40,border:"none",
+                    background:"transparent",cursor:"pointer",
+                    fontSize:22,color:"#8696a0"
+                  }} aria-label="Discard recording">🗑</button>
+                <button type="button"
+                  style={{
+                    width:40,height:40,border:"none",
+                    background:"transparent",cursor:"default",
+                    fontSize:22,color:"#dc2626"
+                  }} aria-label="Recording">❚❚</button>
+                <button type="button"
+                  onClick={()=>void stopAndUploadVoice()}
+                  style={{
+                    width:48,height:48,borderRadius:"50%",
+                    background:"#25D366",border:"none",
+                    color:"#fff",cursor:"pointer",
+                    display:"flex",alignItems:"center",
+                    justifyContent:"center"
+                  }} aria-label="Send voice note">
+                  <IconSend size={22}/>
+                </button>
+              </div>
             </div>
           )}
 
@@ -4212,7 +4434,7 @@ export default function TasksApp() {
                           setAttachStatus(null);
                         } else {
                           setAttachStatus(
-                            `✓ ${next.length} file(s) ready — tap ➤ to upload`
+                            `✓ ${next.length}/${MAX_CHAT_ATTACHMENTS} ready · ${UPLOAD_LIMITS_HINT}`
                           );
                         }
                       }}
@@ -4237,48 +4459,23 @@ export default function TasksApp() {
             <form onSubmit={e=>void handleAddQuery(e)}
               onPointerDown={e=>e.stopPropagation()}
               style={{
-                display:"flex",alignItems:"center",
-                gap:8,padding:"8px 10px",
+                display:"flex",alignItems:"flex-end",
+                gap:8,padding:"6px 8px",
                 paddingBottom:
-                  "calc(8px + env(safe-area-inset-bottom,0px))",
+                  "calc(6px + env(safe-area-inset-bottom,0px))",
                 background:"#f0ece6",
                 borderTop:msgFiles.length>0
                   ?"none":"1px solid #e0d8ce",
                 position:"relative"
               }}>
 
-              <button id="wa-attach-btn" type="button"
-                onClick={()=>setShowAttachMenu(p=>!p)}
-                style={{
-                  width:40,height:40,borderRadius:"50%",
-                  background:"transparent",border:"none",
-                  color:"#8a7060",fontSize:24,
-                  cursor:"pointer",flexShrink:0,
-                  display:"flex",alignItems:"center",
-                  justifyContent:"center",
-                  position:"relative"
-                }}>
-                📎
-                {msgFiles.length>0&&(
-                  <span style={{
-                    position:"absolute",top:0,right:0,
-                    minWidth:18,height:18,padding:"0 4px",
-                    borderRadius:999,background:"#25D366",
-                    color:"#fff",fontSize:10,fontWeight:700,
-                    display:"flex",alignItems:"center",
-                    justifyContent:"center",
-                    border:"2px solid #f0ece6"
-                  }}>
-                    {msgFiles.length}
-                  </span>
-                )}
-              </button>
-
               <div style={{
                 flex:1,background:"#fff",
                 borderRadius:24,
-                padding:"8px 14px",
-                display:"flex",alignItems:"center"
+                padding:"6px 8px 6px 14px",
+                display:"flex",alignItems:"center",
+                gap:4,minHeight:48,
+                boxShadow:"0 1px 2px rgba(0,0,0,.06)"
               }}>
                 <input
                   value={msgInput}
@@ -4293,31 +4490,74 @@ export default function TasksApp() {
                         void handleAddQuery(e as any);
                     }
                   }}
-                  placeholder="Type a message..."
+                  placeholder="Message"
                   style={{
                     border:"none",outline:"none",
                     fontSize:15,color:"#1a1614",
                     background:"transparent",
-                    fontFamily:"inherit",width:"100%"
+                    fontFamily:"inherit",flex:1,minWidth:0
                   }}/>
+
+                <button id="wa-attach-btn" type="button"
+                  onClick={()=>setShowAttachMenu(p=>!p)}
+                  style={{
+                    width:36,height:36,borderRadius:"50%",
+                    background:"transparent",border:"none",
+                    cursor:"pointer",flexShrink:0,
+                    display:"flex",alignItems:"center",
+                    justifyContent:"center",position:"relative"
+                  }}
+                  aria-label="Attach file">
+                  <IconPaperclip/>
+                  {msgFiles.length>0&&(
+                    <span style={{
+                      position:"absolute",top:2,right:2,
+                      minWidth:16,height:16,padding:"0 3px",
+                      borderRadius:999,background:"#25D366",
+                      color:"#fff",fontSize:9,fontWeight:700,
+                      display:"flex",alignItems:"center",
+                      justifyContent:"center"
+                    }}>
+                      {msgFiles.length}
+                    </span>
+                  )}
+                </button>
+
+                <label style={{
+                  width:36,height:36,borderRadius:"50%",
+                  display:"flex",alignItems:"center",
+                  justifyContent:"center",cursor:"pointer",
+                  flexShrink:0,position:"relative"
+                }}>
+                  <input ref={camBarRef} type="file"
+                    accept="image/*"
+                    capture="environment"
+                    hidden
+                    onChange={e=>{
+                      addChatAttachments(
+                        e.target.files,"camera",e.target
+                      );
+                    }}/>
+                  <IconCamera/>
+                </label>
               </div>
 
               {(msgInput.trim()||msgFiles.length>0)?(
                 <button type="submit"
                   disabled={querySending}
                   style={{
-                    width:44,height:44,borderRadius:"50%",
+                    width:48,height:48,borderRadius:"50%",
                     border:"none",background:"#25D366",
-                    color:"#fff",fontSize:20,
-                    cursor:"pointer",flexShrink:0,
+                    color:"#fff",cursor:"pointer",flexShrink:0,
                     display:"flex",alignItems:"center",
                     justifyContent:"center",
                     opacity:querySending?0.6:1
-                  }}>
+                  }}
+                  aria-label="Send message">
                   {querySending ? (
                     uploadProgress!==null && uploadProgress<100
                       ? "↑" : "…"
-                  ) : "➤"}
+                  ) : <IconSend/>}
                 </button>
               ):(
                 <button type="button"
@@ -4328,17 +4568,14 @@ export default function TasksApp() {
                     }
                   }}
                   style={{
-                    width:44,height:44,borderRadius:"50%",
-                    border:"none",
-                    background:isRecording
-                      ?"#dc2626":"#075E54",
-                    color:"#fff",fontSize:22,
-                    cursor:"pointer",flexShrink:0,
+                    width:48,height:48,borderRadius:"50%",
+                    border:"none",background:"#25D366",
+                    color:"#fff",cursor:"pointer",flexShrink:0,
                     display:"flex",alignItems:"center",
-                    justifyContent:"center",
-                    transition:"background .2s"
-                  }}>
-                  🎤
+                    justifyContent:"center"
+                  }}
+                  aria-label="Record voice note">
+                  <IconMic/>
                 </button>
               )}
             </form>

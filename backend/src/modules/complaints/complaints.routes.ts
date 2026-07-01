@@ -502,7 +502,7 @@ router.post("/admin/:id/reply", requireAdmin, async (req, res, next) => {
 
 // ─── MEMBER ROUTES (Google ID token + whitelist) ────────────────────────────
 
-router.post("/", verifyComplaintAuth, upload.array("files", 5), async (req, res, next) => {
+router.post("/", verifyComplaintAuth, upload.array("files", 20), async (req, res, next) => {
   try {
     const body = req.body as Record<string, unknown>;
     const { title, description, priority: priorityRaw, parentId } = body as {
@@ -1219,7 +1219,7 @@ router.get("/:id", verifyComplaintAuth, async (req, res, next) => {
   }
 });
 
-router.post("/:id/attachments", verifyComplaintAuth, upload.array("files", 5), async (req, res, next) => {
+router.post("/:id/attachments", verifyComplaintAuth, upload.array("files", 20), async (req, res, next) => {
   try {
     const files = (req.files as Express.Multer.File[] | undefined) ?? [];
     if (files.length === 0) {
@@ -1260,7 +1260,7 @@ router.post("/:id/attachments", verifyComplaintAuth, upload.array("files", 5), a
   }
 });
 
-router.post("/:id/comment", verifyComplaintAuth, upload.array("files", 5), async (req, res, next) => {
+router.post("/:id/comment", verifyComplaintAuth, upload.array("files", 20), async (req, res, next) => {
   try {
     const { message } = req.body as { message?: string };
     const files = (req.files as Express.Multer.File[] | undefined) ?? [];
