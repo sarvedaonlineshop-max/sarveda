@@ -19,6 +19,7 @@ type Assignee = {
   id: string; assigneeEmail: string; 
   assigneeName: string | null;
   responseStatus?: "PENDING"|"ACCEPTED"|"DENIED_AWAITING_OWNER";
+  markedClosedAt?: string | null;
 };
 
 type Attachment = {
@@ -175,7 +176,14 @@ function assigneeForEmail(task: Task, email: string): Assignee | undefined {
 
 function viewerListStatus(task: Task, email: string, usePerUserStart: boolean): Status {
   if (!usePerUserStart) return uiStatus(task.status);
+
+  if (task.status === "RESOLVED") return "CLOSED";
+
+  const isOwner = isTaskOwner(task, email);
   const mine = assigneeForEmail(task, email);
+
+  if (!isOwner && mine?.markedClosedAt) return "CLOSED";
+
   if (mine && task.status === "IN_PROGRESS" && mine.responseStatus !== "ACCEPTED") {
     return "NEW";
   }
@@ -1022,10 +1030,6 @@ export default function TasksApp() {
   async function handleStatusUpdate(newStatus:Status) {
     const active = subtaskPanel ?? selected;
     if (!active) return;
-    if (newStatus === "CLOSED" && !isTaskOwner(active, myEmail)) {
-      alert("Only the task owner can close this task.");
-      return;
-    }
     setStatusUpdating(true);
     try {
       const r = await fetch(`${API}/complaints/${active.id}/status`,{
@@ -1036,9 +1040,6 @@ export default function TasksApp() {
       if (!r.ok) {
         const d = await r.json().catch(()=>({})) as {error?:string};
         alert(d.error ?? "Could not update status.");
-        if (subtaskPanel) await loadSubtaskPanel(active.id);
-        else await loadDetail(active.id);
-        return;
       }
       if (subtaskPanel) await loadSubtaskPanel(active.id);
       else await loadDetail(active.id);
@@ -2749,9 +2750,9 @@ export default function TasksApp() {
               padding:"6px 8px",flexShrink:0
             }}>{activeTask.priority}</span>
           )}
-          {canAct && (taskIsOwner || !isTaskClosed(activeTask.status)) ? (
+          {canAct && !isTaskClosed(activeTask.status) ? (
           <select
-            value={uiStatus(activeTask.status)}
+            value={viewerListStatus(activeTask, myEmail, true)}
             disabled={statusUpdating}
             onChange={e=>void handleStatusUpdate(
               e.target.value as Status
@@ -2768,17 +2769,22 @@ export default function TasksApp() {
             <option value="IN_PROGRESS" style={{color:"#000"}}>
               In Progress
             </option>
-            {taskIsOwner && (
             <option value="CLOSED" style={{color:"#000"}}>Closed</option>
-            )}
           </select>
+          ) : canAct && taskIsOwner && isTaskClosed(activeTask.status) ? (
+            <span style={{
+              background:"rgba(255,255,255,.15)",
+              borderRadius:"10px",color:"#fff",
+              fontSize:"11px",fontWeight:700,
+              padding:"6px 8px",flexShrink:0
+            }}>Closed</span>
           ) : canAct ? (
             <span style={{
               background:"rgba(255,255,255,.15)",
               borderRadius:"10px",color:"#fff",
               fontSize:"11px",fontWeight:700,
               padding:"6px 8px",flexShrink:0
-            }}>{uiStatus(activeTask.status)}</span>
+            }}>{viewerListStatus(activeTask, myEmail, true)}</span>
           ) : (
             <span style={{
               background:"rgba(255,255,255,.15)",
@@ -3309,6 +3315,7 @@ export default function TasksApp() {
             </p>
           </div>
         ) : activeTask.status==="RESOLVED"?(
+          taskIsOwner ? (
           <div style={{
             padding:"12px 16px",
             paddingBottom:
@@ -3316,11 +3323,16 @@ export default function TasksApp() {
             background:"#f0ece6"
           }}>
             <button onClick={async()=>{
-              await fetch(
+              const r = await fetch(
                 `${API}/complaints/${activeTask.id}/reopen`,{
                   method:"POST",headers:ah(),
                 }
               );
+              if (!r.ok) {
+                const d = await r.json().catch(()=>({})) as {error?:string};
+                alert(d.error ?? "Could not reopen task.");
+                return;
+              }
               if (isSubtaskPanel) await loadSubtaskPanel(activeTask.id);
               else await loadDetail(activeTask.id);
               void loadAll();
@@ -3335,6 +3347,21 @@ export default function TasksApp() {
               ↩ Reopen Task
             </button>
           </div>
+          ) : (
+          <div style={{
+            padding:"12px 16px",
+            paddingBottom:"calc(12px + env(safe-area-inset-bottom,0px))",
+            background:"#f0ece6",
+            borderTop:"1px solid #e0d8ce",
+            textAlign:"center"
+          }}>
+            <p style={{
+              fontSize:13,color:"#8a7060",margin:0,fontWeight:600
+            }}>
+              This task is closed by the owner
+            </p>
+          </div>
+          )
         ):(
           <form onSubmit={e=>void handleAddQuery(e)}
             style={{

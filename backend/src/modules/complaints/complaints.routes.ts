@@ -1428,16 +1428,50 @@ router.patch("/:id/status", verifyComplaintAuth, async (req, res, next) => {
     }
 
     const complaintStatus = status as ComplaintStatus;
-    if (
-      complaintStatus === "RESOLVED" &&
-      task.raisedByEmail.toLowerCase() !== email.toLowerCase()
-    ) {
-      res.status(403).json({
-        success: false,
-        error: "Only the task owner can close this task",
-        code: "FORBIDDEN"
+    const isOwner = task.raisedByEmail.toLowerCase() === email.toLowerCase();
+    const myAssignee = task.assignees.find(
+      (a) => a.assigneeEmail.toLowerCase() === email.toLowerCase()
+    );
+
+    if (complaintStatus === "RESOLVED" && !isOwner) {
+      if (!myAssignee) {
+        res.status(403).json({
+          success: false,
+          error: "Only task assignees can mark closed for themselves",
+          code: "FORBIDDEN"
+        });
+        return;
+      }
+
+      await prisma.taskAssignee.update({
+        where: { id: myAssignee.id },
+        data: { markedClosedAt: new Date() }
       });
+
+      const actorName = req.complaintUser!.name ?? email.split("@")[0];
+      await prisma.complaintEvent.create({
+        data: {
+          complaintId: req.params.id,
+          type: "STATUS_CHANGE",
+          authorEmail: email,
+          authorType: "MEMBER",
+          message: `${actorName} marked this task as closed (personal)`
+        }
+      });
+
+      const unchanged = await prisma.complaint.findUnique({
+        where: { id: req.params.id },
+        include: { assignees: true }
+      });
+      res.json({ success: true, task: unchanged, personalClose: true });
       return;
+    }
+
+    if (!isOwner && myAssignee?.markedClosedAt) {
+      await prisma.taskAssignee.update({
+        where: { id: myAssignee.id },
+        data: { markedClosedAt: null }
+      });
     }
 
     const updated = await prisma.complaint.update({
@@ -1447,6 +1481,18 @@ router.patch("/:id/status", verifyComplaintAuth, async (req, res, next) => {
         resolvedAt: complaintStatus === "RESOLVED" ? new Date() : null
       }
     });
+
+    if (complaintStatus === "RESOLVED") {
+      await prisma.taskAssignee.updateMany({
+        where: { taskId: req.params.id },
+        data: { markedClosedAt: new Date() }
+      });
+    } else if (complaintStatus === "OPEN" || complaintStatus === "IN_PROGRESS") {
+      await prisma.taskAssignee.updateMany({
+        where: { taskId: req.params.id },
+        data: { markedClosedAt: null }
+      });
+    }
 
     await prisma.complaintEvent.create({
       data: {
@@ -1486,12 +1532,21 @@ router.patch("/:id/status", verifyComplaintAuth, async (req, res, next) => {
 
 router.post("/:id/reopen", verifyComplaintAuth, async (req, res, next) => {
   try {
+    const email = req.complaintUser!.email;
     const existing = await prisma.complaint.findUnique({
       where: { id: req.params.id },
-      select: { id: true, status: true }
+      select: { id: true, status: true, raisedByEmail: true }
     });
     if (!existing) {
       res.status(404).json({ success: false, error: "Not found", code: "NOT_FOUND" });
+      return;
+    }
+    if (existing.raisedByEmail.toLowerCase() !== email.toLowerCase()) {
+      res.status(403).json({
+        success: false,
+        error: "Only the task owner can reopen this task",
+        code: "FORBIDDEN"
+      });
       return;
     }
 
@@ -1499,6 +1554,10 @@ router.post("/:id/reopen", verifyComplaintAuth, async (req, res, next) => {
     const complaint = await prisma.complaint.update({
       where: { id: req.params.id },
       data: { status: "OPEN", resolvedAt: null }
+    });
+    await prisma.taskAssignee.updateMany({
+      where: { taskId: req.params.id },
+      data: { markedClosedAt: null }
     });
     await prisma.complaintEvent.create({
       data: {

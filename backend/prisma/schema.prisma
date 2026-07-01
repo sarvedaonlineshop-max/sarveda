@@ -955,6 +955,7 @@ model TaskAssignee {
   assigneeEmail  String
   assigneeName   String?
   responseStatus AssigneeResponseStatus  @default(PENDING)
+  markedClosedAt DateTime?
   assignedAt     DateTime                @default(now())
   task           Complaint               @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
