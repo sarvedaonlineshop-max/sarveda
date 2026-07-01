@@ -557,6 +557,8 @@ export default function TasksApp() {
   // Query/comment state
   const [msgInput,setMsgInput] = useState("");
   const [msgFiles,setMsgFiles] = useState<File[]>([]);
+  const [uploadProgress, setUploadProgress] =
+    useState<number|null>(null);
   const [querySending,setQuerySending] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
@@ -620,10 +622,6 @@ export default function TasksApp() {
   const taskMenuRef = useRef<HTMLDivElement>(null);
   const avatarCameraRef = useRef<HTMLInputElement>(null);
   const avatarGalleryRef = useRef<HTMLInputElement>(null);
-  const msgFileRef = useRef<HTMLInputElement>(null);
-  const docFileRef = useRef<HTMLInputElement>(null);
-  const camFileRef = useRef<HTMLInputElement>(null);
-  const audioFileRef = useRef<HTMLInputElement>(null);
   const toPickerRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const swipeRef = useRef<{ id: string; startX: number } | null>(null);
@@ -1160,32 +1158,94 @@ export default function TasksApp() {
   }
 
   // ── Add query/comment ─────────────────────────────────
-  async function handleAddQuery(e:React.FormEvent) {
+  async function handleAddQuery(
+    e: React.FormEvent
+  ) {
     e.preventDefault();
     const active = subtaskPanel ?? selected;
     if (!active) return;
-    if (!msgInput.trim()&&msgFiles.length===0) return;
+    if (!msgInput.trim() && msgFiles.length===0) {
+      console.log("[chat] nothing to send");
+      return;
+    }
+    console.log("[chat] sending message:", {
+      text: msgInput.trim(),
+      files: msgFiles.map(f=>({
+        name:f.name,size:f.size,type:f.type
+      }))
+    });
     setQuerySending(true);
+    setUploadProgress(msgFiles.length>0 ? 0 : null);
     try {
       const fd = new FormData();
-      fd.append("message",msgInput.trim());
-      msgFiles.forEach(f=>fd.append("files",f));
-      const r = await fetch(`${API}/complaints/${active.id}/comment`,{
-        method:"POST",
-        headers:{Authorization:`Bearer ${token}`},
-        body:fd,
+      fd.append("message", msgInput.trim());
+      msgFiles.forEach((f,i)=>{
+        fd.append("files", f);
+        console.log(`[chat] appended file ${i}:`,
+          f.name, f.size, f.type);
       });
-      if (!r.ok) {
-        const d = await r.json().catch(()=>({})) as {error?:string};
-        throw new Error(d.error??"Failed to send");
-      }
-      setMsgInput("");setMsgFiles([]);
-      if (subtaskPanel) await loadSubtaskPanel(active.id);
-      else await loadDetail(active.id);
+
+      await new Promise<void>((resolve, reject)=>{
+        const xhr = new XMLHttpRequest();
+        xhr.open(
+          "POST",
+          `${API}/complaints/${active.id}/comment`
+        );
+        xhr.setRequestHeader(
+          "Authorization", `Bearer ${token}`
+        );
+
+        xhr.upload.onprogress = (ev)=>{
+          if (ev.lengthComputable) {
+            const pct = Math.round(
+              (ev.loaded/ev.total)*100
+            );
+            console.log(`[chat] upload progress: ${pct}%`);
+            setUploadProgress(pct);
+          }
+        };
+
+        xhr.onload = ()=>{
+          console.log("[chat] xhr status:", xhr.status);
+          if (xhr.status>=200 && xhr.status<300) {
+            resolve();
+          } else {
+            try {
+              const d = JSON.parse(xhr.responseText);
+              reject(new Error(d.error??"Upload failed"));
+            } catch {
+              reject(new Error(
+                `HTTP ${xhr.status}: Upload failed`
+              ));
+            }
+          }
+        };
+
+        xhr.onerror = ()=>{
+          console.error("[chat] xhr network error");
+          reject(new Error("Network error"));
+        };
+
+        xhr.send(fd);
+      });
+
+      console.log("[chat] send success, reloading");
+      setMsgInput("");
+      setMsgFiles([]);
+      setUploadProgress(null);
+      if (subtaskPanel)
+        await loadSubtaskPanel(active.id);
+      else
+        await loadDetail(active.id);
       scrollChatToBottom();
+
     } catch(err:any) {
-      alert(err.message??"Could not send message. Try again.");
-    } finally { setQuerySending(false); }
+      console.error("[chat] send failed:", err);
+      setUploadProgress(null);
+      alert(err.message ?? "Could not send. Try again.");
+    } finally {
+      setQuerySending(false);
+    }
   }
 
   async function startRecording() {
@@ -3657,111 +3717,135 @@ export default function TasksApp() {
           )
         ):(
           <>
-          {/* Hidden file inputs */}
-          <input ref={msgFileRef} type="file"
-            accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
-            multiple hidden
-            onChange={e=>{
-              if (e.target.files) {
-                setMsgFiles(f=>[
-                  ...f,...Array.from(e.target.files!)
-                ]);
-                e.target.value="";
-              }
-            }}/>
-          <input ref={camFileRef} type="file"
-            accept="image/*,video/*"
-            capture="environment"
-            hidden
-            onChange={e=>{
-              if (e.target.files) {
-                setMsgFiles(f=>[
-                  ...f,...Array.from(e.target.files!)
-                ]);
-                e.target.value="";
-              }
-            }}/>
-          <input ref={docFileRef} type="file"
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
-            multiple hidden
-            onChange={e=>{
-              if (e.target.files) {
-                setMsgFiles(f=>[
-                  ...f,...Array.from(e.target.files!)
-                ]);
-                e.target.value="";
-              }
-            }}/>
-          <input ref={audioFileRef} type="file"
-            accept="audio/*"
-            hidden
-            onChange={e=>{
-              if (e.target.files?.[0]) {
-                setMsgFiles(f=>[...f,e.target.files![0]]);
-                e.target.value="";
-              }
-            }}/>
-
           {/* Attachment popup menu (WhatsApp style) */}
           {showAttachMenu&&(
-            <div id="wa-attach-menu"
-              style={{
-                position:"absolute",
-                bottom:"72px",left:"10px",
-                background:"#fff",
-                borderRadius:16,
-                boxShadow:"0 4px 24px rgba(0,0,0,.18)",
-                padding:"8px 0",
-                zIndex:200,minWidth:180,
-                border:"1px solid #f0ece6"
-              }}>
-              {[
-                {icon:"📄",label:"Document",color:"#7c5cbf",
-                 action:()=>{
-                   docFileRef.current?.click();
-                   setShowAttachMenu(false);
-                 }},
-                {icon:"🖼",label:"Photos & Videos",
-                 color:"#2196F3",
-                 action:()=>{
-                   msgFileRef.current?.click();
-                   setShowAttachMenu(false);
-                 }},
-                {icon:"📷",label:"Camera",color:"#F44336",
-                 action:()=>{
-                   camFileRef.current?.click();
-                   setShowAttachMenu(false);
-                 }},
-                {icon:"🎤",label:"Audio",color:"#FF9800",
-                 action:()=>{
-                   audioFileRef.current?.click();
-                   setShowAttachMenu(false);
-                 }},
-              ].map(item=>(
-                <button key={item.label}
-                  onClick={item.action}
-                  style={{
-                    width:"100%",padding:"12px 16px",
-                    border:"none",background:"transparent",
-                    cursor:"pointer",display:"flex",
-                    alignItems:"center",gap:14,
-                    fontSize:14,color:"#1a1614",
-                    textAlign:"left"
-                  }}>
-                  <div style={{
-                    width:38,height:38,borderRadius:"50%",
-                    background:item.color+"18",
-                    display:"flex",alignItems:"center",
-                    justifyContent:"center",
-                    fontSize:18,flexShrink:0
-                  }}>
-                    {item.icon}
-                  </div>
-                  <span style={{fontWeight:500}}>
-                    {item.label}
-                  </span>
-                </button>
-              ))}
+            <div id="wa-attach-menu" style={{
+              position:"absolute",
+              bottom:"72px",left:"10px",
+              background:"#fff",
+              borderRadius:16,
+              boxShadow:"0 4px 24px rgba(0,0,0,.18)",
+              overflow:"hidden",
+              zIndex:200,minWidth:200,
+              border:"1px solid #f0ece6"
+            }}>
+              <label style={{
+                display:"flex",alignItems:"center",
+                gap:14,padding:"14px 16px",
+                cursor:"pointer",
+                borderBottom:"0.5px solid #f0ece6"
+              }}
+                onClick={()=>setShowAttachMenu(false)}>
+                <div style={{
+                  width:40,height:40,borderRadius:"50%",
+                  background:"#2196F318",
+                  display:"flex",alignItems:"center",
+                  justifyContent:"center",fontSize:20
+                }}>🖼</div>
+                <span style={{
+                  fontSize:15,color:"#1a1614",fontWeight:500
+                }}>Photos & Videos</span>
+                <input type="file"
+                  accept="image/*,video/*"
+                  multiple hidden
+                  onChange={e=>{
+                    console.log("[attach] photos selected:",
+                      e.target.files?.length);
+                    if (e.target.files)
+                      setMsgFiles(f=>[
+                        ...f,...Array.from(e.target.files!)
+                      ]);
+                    e.target.value="";
+                  }}/>
+              </label>
+
+              <label style={{
+                display:"flex",alignItems:"center",
+                gap:14,padding:"14px 16px",
+                cursor:"pointer",
+                borderBottom:"0.5px solid #f0ece6"
+              }}
+                onClick={()=>setShowAttachMenu(false)}>
+                <div style={{
+                  width:40,height:40,borderRadius:"50%",
+                  background:"#F4433618",
+                  display:"flex",alignItems:"center",
+                  justifyContent:"center",fontSize:20
+                }}>📷</div>
+                <span style={{
+                  fontSize:15,color:"#1a1614",fontWeight:500
+                }}>Camera</span>
+                <input type="file"
+                  accept="image/*"
+                  capture="environment"
+                  hidden
+                  onChange={e=>{
+                    console.log("[attach] camera photo selected");
+                    if (e.target.files?.[0])
+                      setMsgFiles(f=>[
+                        ...f,e.target.files![0]
+                      ]);
+                    e.target.value="";
+                  }}/>
+              </label>
+
+              <label style={{
+                display:"flex",alignItems:"center",
+                gap:14,padding:"14px 16px",
+                cursor:"pointer",
+                borderBottom:"0.5px solid #f0ece6"
+              }}
+                onClick={()=>setShowAttachMenu(false)}>
+                <div style={{
+                  width:40,height:40,borderRadius:"50%",
+                  background:"#7c5cbf18",
+                  display:"flex",alignItems:"center",
+                  justifyContent:"center",fontSize:20
+                }}>📄</div>
+                <span style={{
+                  fontSize:15,color:"#1a1614",fontWeight:500
+                }}>Document</span>
+                <input type="file"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,application/pdf,application/msword"
+                  multiple hidden
+                  onChange={e=>{
+                    console.log("[attach] doc selected:",
+                      e.target.files?.length);
+                    if (e.target.files)
+                      setMsgFiles(f=>[
+                        ...f,...Array.from(e.target.files!)
+                      ]);
+                    e.target.value="";
+                  }}/>
+              </label>
+
+              <label style={{
+                display:"flex",alignItems:"center",
+                gap:14,padding:"14px 16px",
+                cursor:"pointer"
+              }}
+                onClick={()=>setShowAttachMenu(false)}>
+                <div style={{
+                  width:40,height:40,borderRadius:"50%",
+                  background:"#FF980018",
+                  display:"flex",alignItems:"center",
+                  justifyContent:"center",fontSize:20
+                }}>🎵</div>
+                <span style={{
+                  fontSize:15,color:"#1a1614",fontWeight:500
+                }}>Audio</span>
+                <input type="file"
+                  accept="audio/*"
+                  hidden
+                  onChange={e=>{
+                    console.log("[attach] audio selected");
+                    if (e.target.files?.[0])
+                      setMsgFiles(f=>[
+                        ...f,e.target.files![0]
+                      ]);
+                    e.target.value="";
+                  }}/>
+              </label>
             </div>
           )}
 
@@ -3827,6 +3911,57 @@ export default function TasksApp() {
           )}
 
           {/* Preview strip for selected files */}
+          {uploadProgress !== null && (
+            <div style={{
+              padding:"8px 16px",
+              background:"#f0ece6",
+              display:"flex",alignItems:"center",gap:10,
+              borderTop:"1px solid #e0d8ce"
+            }}>
+              <div style={{
+                position:"relative",
+                width:36,height:36,flexShrink:0
+              }}>
+                <svg width="36" height="36"
+                  style={{transform:"rotate(-90deg)"}}>
+                  <circle cx="18" cy="18" r="14"
+                    fill="none" stroke="#e0d8ce"
+                    strokeWidth="3"/>
+                  <circle cx="18" cy="18" r="14"
+                    fill="none" stroke="#25D366"
+                    strokeWidth="3"
+                    strokeDasharray={`${2*Math.PI*14}`}
+                    strokeDashoffset={
+                      `${2*Math.PI*14*(1-uploadProgress/100)}`
+                    }
+                    strokeLinecap="round"/>
+                </svg>
+                <span style={{
+                  position:"absolute",inset:0,
+                  display:"flex",alignItems:"center",
+                  justifyContent:"center",
+                  fontSize:9,fontWeight:700,
+                  color:"#075E54"
+                }}>
+                  {uploadProgress}%
+                </span>
+              </div>
+              <div>
+                <p style={{
+                  fontSize:13,fontWeight:600,
+                  color:"#1a1614",margin:0
+                }}>
+                  {uploadProgress<100
+                    ?"Uploading...":"Processing..."}
+                </p>
+                <p style={{
+                  fontSize:11,color:"#8a7060",margin:"2px 0 0"
+                }}>
+                  {uploadProgress}% complete
+                </p>
+              </div>
+            </div>
+          )}
           {!isRecording&&msgFiles.length>0&&(
             <div style={{
               display:"flex",gap:8,padding:"8px 12px",
@@ -3973,7 +4108,10 @@ export default function TasksApp() {
                     justifyContent:"center",
                     opacity:querySending?0.6:1
                   }}>
-                  {querySending?"…":"➤"}
+                  {querySending ? (
+                    uploadProgress!==null && uploadProgress<100
+                      ? "↑" : "…"
+                  ) : "➤"}
                 </button>
               ):(
                 <button type="button"
