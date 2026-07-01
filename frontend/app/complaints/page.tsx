@@ -559,6 +559,8 @@ export default function TasksApp() {
   const [msgFiles,setMsgFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] =
     useState<number|null>(null);
+  const [attachStatus, setAttachStatus] =
+    useState<string|null>(null);
   const [querySending,setQuerySending] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
@@ -985,6 +987,32 @@ export default function TasksApp() {
     };
   }, [showAttachMenu]);
 
+  function addChatAttachments(
+    fileList: FileList | null,
+    source: string,
+    inputEl?: HTMLInputElement | null
+  ) {
+    if (!fileList || fileList.length === 0) {
+      console.log(`[attach] ${source}: cancelled or empty`);
+      setAttachStatus("No file selected");
+      window.setTimeout(() => setAttachStatus(null), 2500);
+      return;
+    }
+    const picked = Array.from(fileList);
+    console.log(`[attach] ${source}:`, picked.map(f => ({
+      name: f.name, size: f.size, type: f.type,
+    })));
+    setMsgFiles(prev => {
+      const next = [...prev, ...picked];
+      setAttachStatus(
+        `✓ ${picked.length} file${picked.length > 1 ? "s" : ""} ready (${next.length} total) — tap ➤ to upload`
+      );
+      return next;
+    });
+    setShowAttachMenu(false);
+    if (inputEl) inputEl.value = "";
+  }
+
   useEffect(() => {
     if (view === "detail") scrollChatToBottom();
   }, [view, selected?.id, subtaskPanel?.id, selected?.events?.length, subtaskPanel?.events?.length]);
@@ -1176,6 +1204,9 @@ export default function TasksApp() {
     });
     setQuerySending(true);
     setUploadProgress(msgFiles.length>0 ? 0 : null);
+    if (msgFiles.length > 0) {
+      setAttachStatus(`Uploading ${msgFiles.length} file(s)...`);
+    }
     try {
       const fd = new FormData();
       fd.append("message", msgInput.trim());
@@ -1202,6 +1233,7 @@ export default function TasksApp() {
             );
             console.log(`[chat] upload progress: ${pct}%`);
             setUploadProgress(pct);
+            setAttachStatus(`Uploading... ${pct}%`);
           }
         };
 
@@ -1233,6 +1265,7 @@ export default function TasksApp() {
       setMsgInput("");
       setMsgFiles([]);
       setUploadProgress(null);
+      setAttachStatus(null);
       if (subtaskPanel)
         await loadSubtaskPanel(active.id);
       else
@@ -1242,6 +1275,7 @@ export default function TasksApp() {
     } catch(err:any) {
       console.error("[chat] send failed:", err);
       setUploadProgress(null);
+      setAttachStatus(`Upload failed: ${err.message ?? "Try again"}`);
       alert(err.message ?? "Could not send. Try again.");
     } finally {
       setQuerySending(false);
@@ -3717,6 +3751,55 @@ export default function TasksApp() {
           )
         ):(
           <>
+          {/* Always mounted — must NOT unmount when menu closes (mobile onChange) */}
+          <input id="wa-photos-input" type="file"
+            accept="image/*,video/*"
+            multiple
+            style={{
+              position:"fixed",left:-9999,top:-9999,
+              width:1,height:1,opacity:0
+            }}
+            onChange={e=>{
+              addChatAttachments(
+                e.target.files,"photos",e.target
+              );
+            }}/>
+          <input id="wa-cam-input" type="file"
+            accept="image/*"
+            capture="environment"
+            style={{
+              position:"fixed",left:-9999,top:-9999,
+              width:1,height:1,opacity:0
+            }}
+            onChange={e=>{
+              addChatAttachments(
+                e.target.files,"camera",e.target
+              );
+            }}/>
+          <input id="wa-doc-input" type="file"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,application/pdf,application/msword"
+            multiple
+            style={{
+              position:"fixed",left:-9999,top:-9999,
+              width:1,height:1,opacity:0
+            }}
+            onChange={e=>{
+              addChatAttachments(
+                e.target.files,"document",e.target
+              );
+            }}/>
+          <input id="wa-audio-input" type="file"
+            accept="audio/*"
+            style={{
+              position:"fixed",left:-9999,top:-9999,
+              width:1,height:1,opacity:0
+            }}
+            onChange={e=>{
+              addChatAttachments(
+                e.target.files,"audio",e.target
+              );
+            }}/>
+
           {/* Attachment popup menu (WhatsApp style) */}
           {showAttachMenu&&(
             <div id="wa-attach-menu" style={{
@@ -3729,13 +3812,12 @@ export default function TasksApp() {
               zIndex:200,minWidth:200,
               border:"1px solid #f0ece6"
             }}>
-              <label style={{
+              <label htmlFor="wa-photos-input" style={{
                 display:"flex",alignItems:"center",
                 gap:14,padding:"14px 16px",
                 cursor:"pointer",
                 borderBottom:"0.5px solid #f0ece6"
-              }}
-                onClick={()=>setShowAttachMenu(false)}>
+              }}>
                 <div style={{
                   width:40,height:40,borderRadius:"50%",
                   background:"#2196F318",
@@ -3745,27 +3827,14 @@ export default function TasksApp() {
                 <span style={{
                   fontSize:15,color:"#1a1614",fontWeight:500
                 }}>Photos & Videos</span>
-                <input type="file"
-                  accept="image/*,video/*"
-                  multiple hidden
-                  onChange={e=>{
-                    console.log("[attach] photos selected:",
-                      e.target.files?.length);
-                    if (e.target.files)
-                      setMsgFiles(f=>[
-                        ...f,...Array.from(e.target.files!)
-                      ]);
-                    e.target.value="";
-                  }}/>
               </label>
 
-              <label style={{
+              <label htmlFor="wa-cam-input" style={{
                 display:"flex",alignItems:"center",
                 gap:14,padding:"14px 16px",
                 cursor:"pointer",
                 borderBottom:"0.5px solid #f0ece6"
-              }}
-                onClick={()=>setShowAttachMenu(false)}>
+              }}>
                 <div style={{
                   width:40,height:40,borderRadius:"50%",
                   background:"#F4433618",
@@ -3775,27 +3844,14 @@ export default function TasksApp() {
                 <span style={{
                   fontSize:15,color:"#1a1614",fontWeight:500
                 }}>Camera</span>
-                <input type="file"
-                  accept="image/*"
-                  capture="environment"
-                  hidden
-                  onChange={e=>{
-                    console.log("[attach] camera photo selected");
-                    if (e.target.files?.[0])
-                      setMsgFiles(f=>[
-                        ...f,e.target.files![0]
-                      ]);
-                    e.target.value="";
-                  }}/>
               </label>
 
-              <label style={{
+              <label htmlFor="wa-doc-input" style={{
                 display:"flex",alignItems:"center",
                 gap:14,padding:"14px 16px",
                 cursor:"pointer",
                 borderBottom:"0.5px solid #f0ece6"
-              }}
-                onClick={()=>setShowAttachMenu(false)}>
+              }}>
                 <div style={{
                   width:40,height:40,borderRadius:"50%",
                   background:"#7c5cbf18",
@@ -3805,26 +3861,13 @@ export default function TasksApp() {
                 <span style={{
                   fontSize:15,color:"#1a1614",fontWeight:500
                 }}>Document</span>
-                <input type="file"
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,application/pdf,application/msword"
-                  multiple hidden
-                  onChange={e=>{
-                    console.log("[attach] doc selected:",
-                      e.target.files?.length);
-                    if (e.target.files)
-                      setMsgFiles(f=>[
-                        ...f,...Array.from(e.target.files!)
-                      ]);
-                    e.target.value="";
-                  }}/>
               </label>
 
-              <label style={{
+              <label htmlFor="wa-audio-input" style={{
                 display:"flex",alignItems:"center",
                 gap:14,padding:"14px 16px",
                 cursor:"pointer"
-              }}
-                onClick={()=>setShowAttachMenu(false)}>
+              }}>
                 <div style={{
                   width:40,height:40,borderRadius:"50%",
                   background:"#FF980018",
@@ -3834,17 +3877,6 @@ export default function TasksApp() {
                 <span style={{
                   fontSize:15,color:"#1a1614",fontWeight:500
                 }}>Audio</span>
-                <input type="file"
-                  accept="audio/*"
-                  hidden
-                  onChange={e=>{
-                    console.log("[attach] audio selected");
-                    if (e.target.files?.[0])
-                      setMsgFiles(f=>[
-                        ...f,e.target.files![0]
-                      ]);
-                    e.target.value="";
-                  }}/>
               </label>
             </div>
           )}
@@ -3911,6 +3943,23 @@ export default function TasksApp() {
           )}
 
           {/* Preview strip for selected files */}
+          {/* Attachment status + upload progress */}
+          {!isRecording && attachStatus && (
+            <div style={{
+              padding:"10px 16px",
+              background:"#e8f5e9",
+              borderTop:"1px solid #c8e6c9",
+              display:"flex",alignItems:"center",gap:8
+            }}>
+              <span style={{fontSize:16}}>📎</span>
+              <p style={{
+                fontSize:13,fontWeight:600,
+                color:"#1b5e20",margin:0,flex:1
+              }}>
+                {attachStatus}
+              </p>
+            </div>
+          )}
           {uploadProgress !== null && (
             <div style={{
               padding:"8px 16px",
@@ -4021,9 +4070,19 @@ export default function TasksApp() {
                       </div>
                     )}
                     <button
-                      onClick={()=>setMsgFiles(
-                        msgFiles.filter((_,j)=>j!==i)
-                      )}
+                      onClick={()=>{
+                        const next = msgFiles.filter(
+                          (_,j)=>j!==i
+                        );
+                        setMsgFiles(next);
+                        if (next.length===0) {
+                          setAttachStatus(null);
+                        } else {
+                          setAttachStatus(
+                            `✓ ${next.length} file(s) ready — tap ➤ to upload`
+                          );
+                        }
+                      }}
                       style={{
                         position:"absolute",top:-6,right:-6,
                         width:18,height:18,borderRadius:"50%",
@@ -4063,9 +4122,23 @@ export default function TasksApp() {
                   color:"#8a7060",fontSize:24,
                   cursor:"pointer",flexShrink:0,
                   display:"flex",alignItems:"center",
-                  justifyContent:"center"
+                  justifyContent:"center",
+                  position:"relative"
                 }}>
                 📎
+                {msgFiles.length>0&&(
+                  <span style={{
+                    position:"absolute",top:0,right:0,
+                    minWidth:18,height:18,padding:"0 4px",
+                    borderRadius:999,background:"#25D366",
+                    color:"#fff",fontSize:10,fontWeight:700,
+                    display:"flex",alignItems:"center",
+                    justifyContent:"center",
+                    border:"2px solid #f0ece6"
+                  }}>
+                    {msgFiles.length}
+                  </span>
+                )}
               </button>
 
               <div style={{
