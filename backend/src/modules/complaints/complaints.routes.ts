@@ -78,6 +78,11 @@ async function verifyComplaintAuth(req: Request, res: Response, next: NextFuncti
   }
 }
 
+function computeIsPrivate(raisedByEmail: string, assigneeEmails: string[]): boolean {
+  const owner = raisedByEmail.toLowerCase();
+  return assigneeEmails.length === 1 && assigneeEmails[0] === owner;
+}
+
 async function findTaskForParticipant(taskId: string, email: string) {
   return prisma.complaint.findFirst({
     where: {
@@ -647,7 +652,11 @@ router.post("/", verifyComplaintAuth, upload.array("files", 5), async (req, res,
       where: { id: complaint.id },
       data: {
         assignedByEmail: req.complaintUser!.email,
-        assignedByName: req.complaintUser!.name ?? null
+        assignedByName: req.complaintUser!.name ?? null,
+        isPrivate: computeIsPrivate(
+          req.complaintUser!.email,
+          resolvedAssignees
+        )
       },
       include: { assignees: true, attachments: true }
     });
@@ -902,12 +911,17 @@ router.patch("/notifications/read-all", verifyComplaintAuth, async (req, res, ne
 
 router.get("/all", verifyComplaintAuth, async (req, res, next) => {
   try {
+    const email = req.complaintUser!.email;
     const tab = typeof req.query.tab === "string" ? req.query.tab : undefined;
     const statuses = statusFilterFromTab(tab);
     const complaints = await prisma.complaint.findMany({
       where: {
         parentId: null,
-        ...(statuses ? { status: { in: statuses } } : {})
+        ...(statuses ? { status: { in: statuses } } : {}),
+        OR: [
+          { isPrivate: false },
+          { isPrivate: true, raisedByEmail: email }
+        ]
       },
       orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
       include: {
@@ -1142,6 +1156,13 @@ router.patch("/:id/assignees", verifyComplaintAuth, async (req, res, next) => {
       }
     }
 
+    await prisma.complaint.update({
+      where: { id: task.id },
+      data: {
+        isPrivate: computeIsPrivate(task.raisedByEmail, emails)
+      }
+    });
+
     const updated = await prisma.complaint.findUnique({
       where: { id: task.id },
       include: { assignees: true }
@@ -1172,6 +1193,18 @@ router.get("/:id", verifyComplaintAuth, async (req, res, next) => {
     });
     if (!complaint) {
       res.status(404).json({ success: false, error: "Not found", code: "NOT_FOUND" });
+      return;
+    }
+    const viewerEmail = req.complaintUser!.email.toLowerCase();
+    if (
+      complaint.isPrivate &&
+      complaint.raisedByEmail.toLowerCase() !== viewerEmail
+    ) {
+      res.status(403).json({
+        success: false,
+        error: "This is a private task",
+        code: "FORBIDDEN"
+      });
       return;
     }
     const raisedByPhone = await phoneForEmail(complaint.raisedByEmail);
@@ -1395,6 +1428,18 @@ router.patch("/:id/status", verifyComplaintAuth, async (req, res, next) => {
     }
 
     const complaintStatus = status as ComplaintStatus;
+    if (
+      complaintStatus === "RESOLVED" &&
+      task.raisedByEmail.toLowerCase() !== email.toLowerCase()
+    ) {
+      res.status(403).json({
+        success: false,
+        error: "Only the task owner can close this task",
+        code: "FORBIDDEN"
+      });
+      return;
+    }
+
     const updated = await prisma.complaint.update({
       where: { id: req.params.id },
       data: {

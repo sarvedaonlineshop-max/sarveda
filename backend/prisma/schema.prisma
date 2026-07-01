@@ -931,6 +931,7 @@ model Complaint {
   description     String?
   priority        ComplaintPriority     @default(MEDIUM)
   status          ComplaintStatus       @default(OPEN)
+  isPrivate       Boolean               @default(false)
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
   resolvedAt      DateTime?
@@ -945,6 +946,7 @@ model Complaint {
   @@index([assignedByEmail])
   @@index([priority])
   @@index([parentId])
+  @@index([isPrivate])
 }
 
 model TaskAssignee {

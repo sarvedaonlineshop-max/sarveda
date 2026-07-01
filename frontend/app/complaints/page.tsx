@@ -1022,13 +1022,24 @@ export default function TasksApp() {
   async function handleStatusUpdate(newStatus:Status) {
     const active = subtaskPanel ?? selected;
     if (!active) return;
+    if (newStatus === "CLOSED" && !isTaskOwner(active, myEmail)) {
+      alert("Only the task owner can close this task.");
+      return;
+    }
     setStatusUpdating(true);
     try {
-      await fetch(`${API}/complaints/${active.id}/status`,{
+      const r = await fetch(`${API}/complaints/${active.id}/status`,{
         method:"PATCH",
         headers:ah(),
         body:JSON.stringify({status:apiStatus(newStatus)}),
       });
+      if (!r.ok) {
+        const d = await r.json().catch(()=>({})) as {error?:string};
+        alert(d.error ?? "Could not update status.");
+        if (subtaskPanel) await loadSubtaskPanel(active.id);
+        else await loadDetail(active.id);
+        return;
+      }
       if (subtaskPanel) await loadSubtaskPanel(active.id);
       else await loadDetail(active.id);
       void loadAll();
@@ -1546,15 +1557,64 @@ export default function TasksApp() {
     usePerUserStatus: boolean;
   }) {
     const statusTabs = [
-      { v: "NEW" as const, label: "New" },
-      { v: "IN_PROGRESS" as const, label: "In Progress" },
-      { v: "CLOSED" as const, label: "Closed" },
+      {
+        v: "NEW" as const,
+        label: "New",
+        activeBg: "#dcfce7",
+        activeColor: "#166534",
+        idleBg: "rgba(255,255,255,.14)",
+        idleColor: "#ecfdf5",
+      },
+      {
+        v: "IN_PROGRESS" as const,
+        label: "In Progress",
+        activeBg: "#dbeafe",
+        activeColor: "#1e40af",
+        idleBg: "rgba(255,255,255,.14)",
+        idleColor: "#eff6ff",
+      },
+      {
+        v: "CLOSED" as const,
+        label: "Closed",
+        activeBg: "#f3f4f6",
+        activeColor: "#4b5563",
+        idleBg: "rgba(255,255,255,.14)",
+        idleColor: "#f9fafb",
+      },
     ];
     const priorityTabs = [
-      { v: "ALL" as const, label: "All" },
-      { v: "HIGH" as const, label: "High" },
-      { v: "MEDIUM" as const, label: "Medium" },
-      { v: "LOW" as const, label: "Low" },
+      {
+        v: "ALL" as const,
+        label: "All",
+        activeBg: "#075E54",
+        activeColor: "#fff",
+        idleBg: "#fff",
+        idleColor: "#075E54",
+      },
+      {
+        v: "HIGH" as const,
+        label: "High",
+        activeBg: "#dc2626",
+        activeColor: "#fff",
+        idleBg: "#fee2e2",
+        idleColor: "#dc2626",
+      },
+      {
+        v: "MEDIUM" as const,
+        label: "Medium",
+        activeBg: "#d97706",
+        activeColor: "#fff",
+        idleBg: "#fef3c7",
+        idleColor: "#b45309",
+      },
+      {
+        v: "LOW" as const,
+        label: "Low",
+        activeBg: "#16a34a",
+        activeColor: "#fff",
+        idleBg: "#dcfce7",
+        idleColor: "#15803d",
+      },
     ];
     const statusCounts = countTasksByStatus(tasks, myEmail, usePerUserStatus);
     const priorityCounts = countTasksByPriority(
@@ -1563,64 +1623,105 @@ export default function TasksApp() {
       myEmail,
       usePerUserStatus
     );
-    const tabBtn = (
-      active: boolean,
-      onClick: () => void,
-      label: string,
+    const statusBtn = (
+      t: (typeof statusTabs)[number],
       count: number
-    ) => (
-      <button
-        type="button"
-        onClick={onClick}
-        style={{
-          padding: "6px 14px",
-          borderRadius: "999px",
-          border: "none",
-          background: active ? "#fff" : "rgba(255,255,255,.2)",
-          color: active ? "#075E54" : "#fff",
-          fontSize: "12px",
-          fontWeight: 700,
-          cursor: "pointer",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {label} ({count})
-      </button>
-    );
+    ) => {
+      const active = statusFilter === t.v;
+      return (
+        <button
+          key={t.v}
+          type="button"
+          onClick={() => {
+            setStatusFilter(t.v);
+            setPriorityFilter("ALL");
+          }}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            padding: "10px 8px",
+            borderRadius: "12px",
+            border: active ? "2px solid #fff" : "2px solid transparent",
+            background: active ? t.activeBg : t.idleBg,
+            color: active ? t.activeColor : t.idleColor,
+            fontSize: "12px",
+            fontWeight: 800,
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+            boxShadow: active ? "0 2px 8px rgba(0,0,0,.12)" : "none",
+          }}
+        >
+          {t.label} ({count})
+        </button>
+      );
+    };
+    const priorityBtn = (
+      t: (typeof priorityTabs)[number],
+      count: number
+    ) => {
+      const active = priorityFilter === t.v;
+      return (
+        <button
+          key={t.v}
+          type="button"
+          onClick={() => setPriorityFilter(t.v)}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            padding: "8px 6px",
+            borderRadius: "999px",
+            border: `1.5px solid ${active ? t.activeBg : "#e0d8ce"}`,
+            background: active ? t.activeBg : t.idleBg,
+            color: active ? t.activeColor : t.idleColor,
+            fontSize: "11px",
+            fontWeight: 800,
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {t.label} ({count})
+        </button>
+      );
+    };
     return (
-      <div style={{ background: "#075E54" }}>
+      <div style={{ flexShrink: 0 }}>
         <div style={{
-          display: "flex",
-          gap: "6px",
-          padding: "8px 16px 4px",
-          overflowX: "auto",
+          background: "linear-gradient(180deg, #075E54 0%, #064e47 100%)",
+          padding: "10px 12px 8px",
+          borderBottom: "1px solid rgba(255,255,255,.1)",
         }}>
-          {statusTabs.map((t) =>
-            tabBtn(
-              statusFilter === t.v,
-              () => {
-                setStatusFilter(t.v);
-                setPriorityFilter("ALL");
-              },
-              t.label,
-              statusCounts[t.v]
-            )
-          )}
+          <p style={{
+            fontSize: "10px",
+            fontWeight: 800,
+            color: "rgba(255,255,255,.55)",
+            margin: "0 0 8px 2px",
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+          }}>
+            Status
+          </p>
+          <div style={{ display: "flex", gap: "8px" }}>
+            {statusTabs.map((t) => statusBtn(t, statusCounts[t.v]))}
+          </div>
         </div>
         <div style={{
-          display: "flex",
-          gap: "6px",
-          padding: "4px 16px 8px",
-          overflowX: "auto",
+          background: "#f7f3ee",
+          padding: "10px 12px 12px",
+          borderBottom: "1px solid #e0d8ce",
         }}>
-          {priorityTabs.map((t) =>
-            tabBtn(
-              priorityFilter === t.v,
-              () => setPriorityFilter(t.v),
-              t.label,
-              priorityCounts[t.v]
-            )
-          )}
+          <p style={{
+            fontSize: "10px",
+            fontWeight: 800,
+            color: "#8a7060",
+            margin: "0 0 8px 2px",
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+          }}>
+            Priority
+          </p>
+          <div style={{ display: "flex", gap: "6px" }}>
+            {priorityTabs.map((t) => priorityBtn(t, priorityCounts[t.v]))}
+          </div>
         </div>
       </div>
     );
@@ -2648,7 +2749,7 @@ export default function TasksApp() {
               padding:"6px 8px",flexShrink:0
             }}>{activeTask.priority}</span>
           )}
-          {canAct ? (
+          {canAct && (taskIsOwner || !isTaskClosed(activeTask.status)) ? (
           <select
             value={uiStatus(activeTask.status)}
             disabled={statusUpdating}
@@ -2667,8 +2768,17 @@ export default function TasksApp() {
             <option value="IN_PROGRESS" style={{color:"#000"}}>
               In Progress
             </option>
+            {taskIsOwner && (
             <option value="CLOSED" style={{color:"#000"}}>Closed</option>
+            )}
           </select>
+          ) : canAct ? (
+            <span style={{
+              background:"rgba(255,255,255,.15)",
+              borderRadius:"10px",color:"#fff",
+              fontSize:"11px",fontWeight:700,
+              padding:"6px 8px",flexShrink:0
+            }}>{uiStatus(activeTask.status)}</span>
           ) : (
             <span style={{
               background:"rgba(255,255,255,.15)",
