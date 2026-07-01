@@ -209,6 +209,19 @@ function attachmentIcon(type: string): string {
   return "📄";
 }
 
+const MAX_CHAT_UPLOAD_BYTES = 250 * 1024 * 1024;
+const MAX_CHAT_ATTACHMENTS = 5;
+
+function formatBytes(bytes: number): string {
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+  if (bytes >= 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
+  return `${bytes} B`;
+}
+
 function headerTitle(task: Task): string {
   const t = task.title.trim();
   return t.length > 36 ? `${t.slice(0, 36)}…` : t || "Task";
@@ -220,6 +233,22 @@ function ChatAttachmentBubble({a}:{a:Attachment}) {
   const isAudio = a.type==="audio";
   const isDoc = a.type==="document"||a.type==="file";
   const [imgErr, setImgErr] = useState(false);
+  const bigDownloadStyle: React.CSSProperties = {
+    position:"absolute",
+    right:8,
+    bottom:8,
+    width:38,
+    height:38,
+    borderRadius:"50%",
+    background:"rgba(7,94,84,.92)",
+    display:"flex",
+    alignItems:"center",
+    justifyContent:"center",
+    color:"#fff",
+    fontSize:18,
+    textDecoration:"none",
+    boxShadow:"0 4px 10px rgba(0,0,0,.18)",
+  };
 
   if (isImage && !imgErr) return (
     <div style={{
@@ -242,15 +271,7 @@ function ChatAttachmentBubble({a}:{a:Attachment}) {
       />
       <a href={a.s3Url} download={a.fileName??"image"}
         onClick={e=>e.stopPropagation()}
-        style={{
-          position:"absolute",bottom:6,right:6,
-          background:"rgba(0,0,0,.5)",
-          borderRadius:"50%",width:28,height:28,
-          display:"flex",alignItems:"center",
-          justifyContent:"center",
-          color:"#fff",fontSize:14,
-          textDecoration:"none"
-        }}>⬇</a>
+        style={bigDownloadStyle}>⬇</a>
     </div>
   );
 
@@ -271,13 +292,9 @@ function ChatAttachmentBubble({a}:{a:Attachment}) {
       />
       <a href={a.s3Url} download={a.fileName??"video"}
         style={{
-          position:"absolute",top:6,right:6,
-          background:"rgba(0,0,0,.5)",
-          borderRadius:"50%",width:28,height:28,
-          display:"flex",alignItems:"center",
-          justifyContent:"center",
-          color:"#fff",fontSize:14,
-          textDecoration:"none"
+          ...bigDownloadStyle,
+          top:8,
+          bottom:"auto",
         }}>⬇</a>
     </div>
   );
@@ -319,18 +336,28 @@ function ChatAttachmentBubble({a}:{a:Attachment}) {
       </div>
       <a href={a.s3Url} download={a.fileName??"audio"}
         style={{
-          color:"#075E54",fontSize:14,
-          textDecoration:"none",flexShrink:0
+          width:36,height:36,borderRadius:"50%",
+          background:"#25D366",color:"#fff",
+          fontSize:18,textDecoration:"none",
+          flexShrink:0,display:"flex",
+          alignItems:"center",justifyContent:"center"
         }}>⬇</a>
     </div>
   );
 
   return (
-    <div style={{
+    <div
+      onClick={()=>window.open(
+        a.s3Url,"_blank","noopener"
+      )}
+      style={{
+      textDecoration:"none",
       display:"flex",alignItems:"center",
       gap:10,padding:"10px 12px",
       background:"rgba(0,0,0,.05)",
-      borderRadius:10,maxWidth:240
+      borderRadius:10,maxWidth:240,
+      position:"relative",
+      cursor:"pointer"
     }}>
       <div style={{
         width:36,height:36,borderRadius:8,
@@ -354,17 +381,19 @@ function ChatAttachmentBubble({a}:{a:Attachment}) {
           <p style={{
             fontSize:10,color:"#8a7060",margin:"2px 0 0"
           }}>
-            {(a.fileSizeBytes/1024).toFixed(1)} KB
+            {formatBytes(a.fileSizeBytes)}
           </p>
         )}
       </div>
       <a href={a.s3Url}
         download={a.fileName??"file"}
-        target="_blank"
-        rel="noopener noreferrer"
+        onClick={e=>e.stopPropagation()}
         style={{
-          color:"#075E54",fontSize:18,
-          textDecoration:"none",flexShrink:0
+          width:36,height:36,borderRadius:"50%",
+          background:"#25D366",color:"#fff",
+          fontSize:18,textDecoration:"none",
+          flexShrink:0,display:"flex",
+          alignItems:"center",justifyContent:"center"
         }}>⬇</a>
     </div>
   );
@@ -600,6 +629,8 @@ export default function TasksApp() {
     useState<string|null>(null);
   const [attachToast, setAttachToast] =
     useState<string|null>(null);
+  const [msgFilePreviews,setMsgFilePreviews] =
+    useState<string[]>([]);
   const [querySending,setQuerySending] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
@@ -665,7 +696,9 @@ export default function TasksApp() {
   const avatarGalleryRef = useRef<HTMLInputElement>(null);
   const toPickerRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
-  const swipeRef = useRef<{ id: string; startX: number } | null>(null);
+  const swipeRef = useRef<{
+    id: string; startX: number; startY: number;
+  } | null>(null);
 
   // ── Helpers ──────────────────────────────────────────
   const ah = useCallback((t?:string) => ({
@@ -1032,6 +1065,24 @@ export default function TasksApp() {
     window.setTimeout(() => setAttachToast(null), 5000);
   }
 
+  function totalUploadBytes(files: File[]): number {
+    return files.reduce((sum, file) => sum + file.size, 0);
+  }
+
+  useEffect(() => {
+    const nextPreviews = msgFiles.map((file) =>
+      file.type.startsWith("image") || file.type.startsWith("video")
+        ? URL.createObjectURL(file)
+        : ""
+    );
+    setMsgFilePreviews(nextPreviews);
+    return () => {
+      nextPreviews.forEach((url) => {
+        if (url) URL.revokeObjectURL(url);
+      });
+    };
+  }, [msgFiles]);
+
   function addChatAttachments(
     fileList: FileList | null,
     source: string,
@@ -1045,6 +1096,26 @@ export default function TasksApp() {
       return;
     }
     const picked = Array.from(fileList);
+    const nextCount = msgFiles.length + picked.length;
+    if (nextCount > MAX_CHAT_ATTACHMENTS) {
+      const reason =
+        `You can upload up to ${MAX_CHAT_ATTACHMENTS} files per message. Current selection would create ${nextCount} files.`;
+      console.error("[attach]", reason);
+      setAttachStatus(reason);
+      showAttachToast(reason);
+      if (inputEl) inputEl.value = "";
+      return;
+    }
+    const nextTotal = totalUploadBytes([...msgFiles, ...picked]);
+    if (nextTotal > MAX_CHAT_UPLOAD_BYTES) {
+      const reason =
+        `Upload limit exceeded. Maximum total size is 250 MB, current selection is ${formatBytes(nextTotal)}.`;
+      console.error("[attach]", reason);
+      setAttachStatus(reason);
+      showAttachToast(reason);
+      if (inputEl) inputEl.value = "";
+      return;
+    }
     console.log(`[attach] ${source}:`, picked.map(f => ({
       name: f.name, size: f.size, type: f.type,
     })));
@@ -1248,11 +1319,27 @@ export default function TasksApp() {
         name:f.name,size:f.size,type:f.type
       }))
     });
+    const totalBytes = totalUploadBytes(msgFiles);
+    if (msgFiles.length > MAX_CHAT_ATTACHMENTS) {
+      const reason =
+        `Upload blocked: only ${MAX_CHAT_ATTACHMENTS} files are allowed per message.`;
+      console.error("[chat]", reason);
+      setAttachStatus(reason);
+      alert(reason);
+      return;
+    }
+    if (totalBytes > MAX_CHAT_UPLOAD_BYTES) {
+      const reason =
+        `Upload blocked: total selected files are ${formatBytes(totalBytes)}, which exceeds the 250 MB limit.`;
+      console.error("[chat]", reason);
+      setAttachStatus(reason);
+      alert(reason);
+      return;
+    }
     setQuerySending(true);
     setUploadProgress(msgFiles.length>0 ? 0 : null);
     if (msgFiles.length > 0) {
-      setAttachStatus(`Uploading ${msgFiles.length} file(s)...`);
-      showAttachToast(`Uploading ${msgFiles.length} file(s)...`);
+      setAttachStatus(null);
     }
     try {
       const fd = new FormData();
@@ -1280,8 +1367,6 @@ export default function TasksApp() {
             );
             console.log(`[chat] upload progress: ${pct}%`);
             setUploadProgress(pct);
-            setAttachStatus(`Uploading... ${pct}%`);
-            showAttachToast(`Uploading... ${pct}%`);
           }
         };
 
@@ -1303,9 +1388,21 @@ export default function TasksApp() {
 
         xhr.onerror = ()=>{
           console.error("[chat] xhr network error");
-          reject(new Error("Network error"));
+          const reason = navigator.onLine
+            ? "Connection failed before the server completed the upload. This usually means the upload was interrupted or the server rejected the request."
+            : "You appear to be offline.";
+          reject(new Error(reason));
         };
 
+        xhr.onabort = ()=>{
+          reject(new Error("Upload was cancelled before completion."));
+        };
+
+        xhr.ontimeout = ()=>{
+          reject(new Error("Upload timed out before the server responded."));
+        };
+
+        xhr.timeout = 10 * 60 * 1000;
         xhr.send(fd);
       });
 
@@ -3448,40 +3545,6 @@ export default function TasksApp() {
               </div>
             </div>
           ))}
-          {canAct && selectedMsgId&&(
-            <div style={{
-              position:"sticky",top:0,zIndex:10,
-              background:"#075E54",color:"#fff",
-              padding:"10px 14px",borderRadius:"10px",
-              display:"flex",alignItems:"center",
-              justifyContent:"space-between",gap:"10px",
-              marginBottom:"8px"
-            }}>
-              <span style={{fontSize:"13px",fontWeight:600}}>
-                Delete this message?
-              </span>
-              <div style={{display:"flex",gap:"8px"}}>
-                <button type="button"
-                  onClick={()=>setSelectedMsgId(null)}
-                  style={{
-                    padding:"6px 12px",borderRadius:"999px",
-                    border:"1px solid rgba(255,255,255,.4)",
-                    background:"transparent",color:"#fff",
-                    fontSize:"12px",cursor:"pointer"
-                  }}>Cancel</button>
-                <button type="button"
-                  onClick={()=>void handleDeleteMessage(
-                    selectedMsgId
-                  )}
-                  style={{
-                    padding:"6px 12px",borderRadius:"999px",
-                    border:"none",background:"#dc2626",
-                    color:"#fff",fontSize:"12px",
-                    fontWeight:700,cursor:"pointer"
-                  }}>Delete</button>
-              </div>
-            </div>
-          )}
           {/* Initial task bubble */}
           <div style={{
             display:"flex",justifyContent:"flex-end",
@@ -3589,7 +3652,6 @@ export default function TasksApp() {
             }
             const isMine = ev.authorEmail===myEmail;
             const canDel = canAct && messageCanDelete(ev);
-            const isSelected = selectedMsgId===ev.id;
             return (
               <div key={ev.id} style={{
                 display:"flex",
@@ -3606,15 +3668,30 @@ export default function TasksApp() {
                 )}
                 <div
                   className={isMine?"wa-bubble-out":"wa-bubble-in"}
-                  onClick={()=>{
-                    if (canDel) setSelectedMsgId(
-                      isSelected?null:ev.id
+                  onTouchStart={e=>{
+                    if (!canDel) return;
+                    swipeRef.current = {
+                      id: ev.id,
+                      startX: e.touches[0].clientX,
+                      startY: e.touches[0].clientY,
+                    };
+                  }}
+                  onTouchEnd={e=>{
+                    if (!canDel) return;
+                    const swipe = swipeRef.current;
+                    swipeRef.current = null;
+                    if (!swipe || swipe.id !== ev.id) return;
+                    const dx =
+                      e.changedTouches[0].clientX - swipe.startX;
+                    const dy = Math.abs(
+                      e.changedTouches[0].clientY - swipe.startY
                     );
+                    if (dx > 70 && dy < 40) {
+                      setSelectedMsgId(ev.id);
+                    }
                   }}
                   style={{
-                    cursor:canDel?"pointer":"default",
-                    outline:isSelected
-                      ?"2px solid #075E54":"none",
+                    cursor:canDel?"grab":"default",
                     userSelect:"none"
                   }}>
                   {!isMine&&(
@@ -4067,30 +4144,31 @@ export default function TasksApp() {
                 const isImg = f.type.startsWith("image");
                 const isVid = f.type.startsWith("video");
                 const isAud = f.type.startsWith("audio");
-                const previewUrl = (isImg||isVid)
-                  ?URL.createObjectURL(f):null;
+                const previewUrl = msgFilePreviews[i] || null;
                 return (
                   <div key={i} style={{
-                    position:"relative",flexShrink:0
+                    position:"relative",flexShrink:0,
+                    width:72
                   }}>
                     {isImg&&previewUrl?(
                       <img src={previewUrl}
                         alt={f.name}
                         style={{
-                          width:60,height:60,
+                          width:72,height:72,
                           objectFit:"cover",
                           borderRadius:8,display:"block"
                         }}/>
                     ):isVid&&previewUrl?(
                       <video src={previewUrl}
+                        muted
                         style={{
-                          width:60,height:60,
+                          width:72,height:72,
                           objectFit:"cover",
                           borderRadius:8,display:"block"
                         }}/>
                     ):(
                       <div style={{
-                        width:60,height:60,
+                        width:72,height:72,
                         borderRadius:8,
                         background:"#fff",
                         border:"1px solid #e0d8ce",
@@ -4114,6 +4192,16 @@ export default function TasksApp() {
                         </span>
                       </div>
                     )}
+                    <p style={{
+                      margin:"6px 0 0",
+                      fontSize:9,
+                      color:"#6b5d53",
+                      whiteSpace:"nowrap",
+                      overflow:"hidden",
+                      textOverflow:"ellipsis"
+                    }}>
+                      {f.name}
+                    </p>
                     <button
                       onClick={()=>{
                         const next = msgFiles.filter(
@@ -4474,6 +4562,72 @@ export default function TasksApp() {
           </div>
         )}
 
+        {selectedMsgId&&(
+          <>
+            <div
+              aria-hidden
+              onClick={()=>setSelectedMsgId(null)}
+              style={{
+                position:"fixed",inset:0,
+                background:"rgba(0,0,0,.35)",
+                zIndex:150,maxWidth:"480px",
+                margin:"0 auto",left:0,right:0
+              }}
+            />
+            <div style={{
+              position:"fixed",
+              left:"50%",
+              bottom:"calc(84px + env(safe-area-inset-bottom,0px))",
+              transform:"translateX(-50%)",
+              width:"min(92vw, 360px)",
+              background:"#fff",
+              borderRadius:16,
+              boxShadow:"0 10px 30px rgba(0,0,0,.22)",
+              padding:16,
+              zIndex:151
+            }}>
+              <p style={{
+                margin:"0 0 12px",
+                fontSize:15,fontWeight:700,color:"#1a1614"
+              }}>
+                Delete this message?
+              </p>
+              <p style={{
+                margin:"0 0 14px",
+                fontSize:12,color:"#8a7060",lineHeight:1.5
+              }}>
+                Swipe right asks for confirmation. Delete is only available for your recent messages.
+              </p>
+              <div style={{
+                display:"flex",justifyContent:"flex-end",gap:10
+              }}>
+                <button
+                  type="button"
+                  onClick={()=>setSelectedMsgId(null)}
+                  style={{
+                    padding:"10px 14px",borderRadius:999,
+                    border:"1px solid #d7cec3",background:"#fff",
+                    color:"#4a3f38",fontWeight:700,cursor:"pointer"
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={()=>void handleDeleteMessage(selectedMsgId)}
+                  style={{
+                    padding:"10px 14px",borderRadius:999,
+                    border:"none",background:"#dc2626",
+                    color:"#fff",fontWeight:800,cursor:"pointer"
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
         {/* Delete confirm modal */}
         {showDeleteConfirm&&(
           <div style={{
@@ -4610,7 +4764,11 @@ export default function TasksApp() {
               <div key={n.id}
                 className="pressable fade"
                 onTouchStart={(e)=>{
-                  swipeRef.current={id:n.id,startX:e.touches[0].clientX};
+                  swipeRef.current={
+                    id:n.id,
+                    startX:e.touches[0].clientX,
+                    startY:e.touches[0].clientY
+                  };
                 }}
                 onTouchEnd={(e)=>{
                   const s=swipeRef.current;
