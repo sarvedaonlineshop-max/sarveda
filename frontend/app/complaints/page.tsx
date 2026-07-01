@@ -564,6 +564,7 @@ export default function TasksApp() {
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder|null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const audioBlobRef = useRef<Blob|null>(null);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval>|null>(null);
 
   // WhatsApp UI state
@@ -620,6 +621,9 @@ export default function TasksApp() {
   const avatarCameraRef = useRef<HTMLInputElement>(null);
   const avatarGalleryRef = useRef<HTMLInputElement>(null);
   const msgFileRef = useRef<HTMLInputElement>(null);
+  const docFileRef = useRef<HTMLInputElement>(null);
+  const camFileRef = useRef<HTMLInputElement>(null);
+  const audioFileRef = useRef<HTMLInputElement>(null);
   const toPickerRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const swipeRef = useRef<{ id: string; startX: number } | null>(null);
@@ -968,9 +972,19 @@ export default function TasksApp() {
 
   useEffect(() => {
     if (!showAttachMenu) return;
-    const close = () => setShowAttachMenu(false);
-    document.addEventListener("pointerdown", close);
-    return () => document.removeEventListener("pointerdown", close);
+    const close = (e: MouseEvent) => {
+      const target = e.target as Element;
+      if (target.closest("#wa-attach-menu")) return;
+      if (target.closest("#wa-attach-btn")) return;
+      setShowAttachMenu(false);
+    };
+    const timer = setTimeout(() => {
+      document.addEventListener("mousedown", close);
+    }, 0);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("mousedown", close);
+    };
   }, [showAttachMenu]);
 
   useEffect(() => {
@@ -1189,6 +1203,7 @@ export default function TasksApp() {
           audioChunksRef.current,
           {type:"audio/webm"}
         );
+        audioBlobRef.current = blob;
         setAudioBlob(blob);
         stream.getTracks().forEach(t=>t.stop());
       };
@@ -1222,17 +1237,20 @@ export default function TasksApp() {
     setRecordingSeconds(0);
     audioChunksRef.current = [];
     setAudioBlob(null);
+    audioBlobRef.current = null;
   }
 
   async function sendVoiceNote() {
-    if (!audioBlob) return;
+    const blob = audioBlobRef.current;
+    if (!blob) return;
     const file = new File(
-      [audioBlob],
+      [blob],
       `voice-${Date.now()}.webm`,
       {type:"audio/webm"}
     );
     setMsgFiles(f=>[...f,file]);
     setAudioBlob(null);
+    audioBlobRef.current = null;
     const fd = new FormData();
     fd.append("message","");
     fd.append("files",file);
@@ -1247,6 +1265,48 @@ export default function TasksApp() {
         body:fd,
       });
       if (!r.ok) throw new Error("Failed");
+      setMsgFiles([]);
+      if (subtaskPanel)
+        await loadSubtaskPanel(active.id);
+      else
+        await loadDetail(active.id);
+      scrollChatToBottom();
+    } catch(err:any) {
+      alert(err.message??"Could not send voice note");
+    } finally { setQuerySending(false); }
+  }
+
+  async function stopAndUploadVoice() {
+    mediaRecorderRef.current?.stop();
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+    }
+    setIsRecording(false);
+    setRecordingSeconds(0);
+    await new Promise(r=>setTimeout(r,400));
+    const blob = audioBlobRef.current;
+    if (!blob) return;
+    const file = new File(
+      [blob],
+      `voice-${Date.now()}.webm`,
+      {type:"audio/webm"}
+    );
+    audioBlobRef.current = null;
+    setAudioBlob(null);
+    const active = subtaskPanel ?? selected;
+    if (!active||!token) return;
+    setQuerySending(true);
+    try {
+      const fd = new FormData();
+      fd.append("message","");
+      fd.append("files",file);
+      const r = await fetch(
+        `${API}/complaints/${active.id}/comment`,{
+        method:"POST",
+        headers:{Authorization:`Bearer ${token}`},
+        body:fd,
+      });
+      if (!r.ok) throw new Error("Failed to send");
       setMsgFiles([]);
       if (subtaskPanel)
         await loadSubtaskPanel(active.id);
@@ -3609,7 +3669,7 @@ export default function TasksApp() {
                 e.target.value="";
               }
             }}/>
-          <input id="wa-cam-input" type="file"
+          <input ref={camFileRef} type="file"
             accept="image/*,video/*"
             capture="environment"
             hidden
@@ -3621,7 +3681,7 @@ export default function TasksApp() {
                 e.target.value="";
               }
             }}/>
-          <input id="wa-doc-input" type="file"
+          <input ref={docFileRef} type="file"
             accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
             multiple hidden
             onChange={e=>{
@@ -3632,7 +3692,7 @@ export default function TasksApp() {
                 e.target.value="";
               }
             }}/>
-          <input id="wa-audio-input" type="file"
+          <input ref={audioFileRef} type="file"
             accept="audio/*"
             hidden
             onChange={e=>{
@@ -3644,8 +3704,7 @@ export default function TasksApp() {
 
           {/* Attachment popup menu (WhatsApp style) */}
           {showAttachMenu&&(
-            <div
-              onPointerDown={e=>e.stopPropagation()}
+            <div id="wa-attach-menu"
               style={{
                 position:"absolute",
                 bottom:"72px",left:"10px",
@@ -3659,8 +3718,7 @@ export default function TasksApp() {
               {[
                 {icon:"📄",label:"Document",color:"#7c5cbf",
                  action:()=>{
-                   document.getElementById("wa-doc-input")
-                     ?.click();
+                   docFileRef.current?.click();
                    setShowAttachMenu(false);
                  }},
                 {icon:"🖼",label:"Photos & Videos",
@@ -3671,14 +3729,12 @@ export default function TasksApp() {
                  }},
                 {icon:"📷",label:"Camera",color:"#F44336",
                  action:()=>{
-                   document.getElementById("wa-cam-input")
-                     ?.click();
+                   camFileRef.current?.click();
                    setShowAttachMenu(false);
                  }},
                 {icon:"🎤",label:"Audio",color:"#FF9800",
                  action:()=>{
-                   document.getElementById("wa-audio-input")
-                     ?.click();
+                   audioFileRef.current?.click();
                    setShowAttachMenu(false);
                  }},
               ].map(item=>(
@@ -3760,10 +3816,7 @@ export default function TasksApp() {
                     .padStart(2,"0")}
                 </span>
               </div>
-              <button onClick={()=>{
-                stopRecording();
-                setTimeout(()=>void sendVoiceNote(),300);
-              }} style={{
+              <button onClick={()=>void stopAndUploadVoice()} style={{
                 width:44,height:44,borderRadius:"50%",
                 background:"#25D366",border:"none",
                 color:"#fff",fontSize:20,cursor:"pointer",
@@ -3867,7 +3920,7 @@ export default function TasksApp() {
                 position:"relative"
               }}>
 
-              <button type="button"
+              <button id="wa-attach-btn" type="button"
                 onClick={()=>setShowAttachMenu(p=>!p)}
                 style={{
                   width:40,height:40,borderRadius:"50%",
@@ -3925,12 +3978,9 @@ export default function TasksApp() {
               ):(
                 <button type="button"
                   onPointerDown={()=>void startRecording()}
-                  onPointerUp={()=>{
+                  onPointerUp={async ()=>{
                     if (isRecording) {
-                      stopRecording();
-                      setTimeout(
-                        ()=>void sendVoiceNote(),300
-                      );
+                      await stopAndUploadVoice();
                     }
                   }}
                   style={{
