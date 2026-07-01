@@ -408,6 +408,43 @@ function timeAgo(d: string) {
   return `${Math.floor(h/24)}d ago`;
 }
 
+function TimeAgo({date}:{date:string}) {
+  const [label,setLabel] = useState("…");
+  useEffect(()=>{
+    setLabel(timeAgo(date));
+    const t = window.setInterval(
+      ()=>setLabel(timeAgo(date)),30000
+    );
+    return ()=>window.clearInterval(t);
+  },[date]);
+  return <span>{label}</span>;
+}
+
+function AttachToastBar({message}:{message:string|null}) {
+  if (!message) return null;
+  return (
+    <div style={{
+      position:"fixed",top:12,left:"50%",
+      transform:"translateX(-50%)",
+      zIndex:9999,maxWidth:"min(92vw,400px)",
+      padding:"12px 16px",
+      background:"#1a1614",color:"#fff",
+      borderRadius:12,fontSize:14,fontWeight:600,
+      boxShadow:"0 8px 32px rgba(0,0,0,.35)",
+      textAlign:"center",pointerEvents:"none"
+    }}>
+      {message}
+    </div>
+  );
+}
+
+const CHAT_FILE_INPUT_STYLE: React.CSSProperties = {
+  position:"absolute",inset:0,
+  width:"100%",height:"100%",
+  opacity:0,cursor:"pointer",
+  fontSize:16,zIndex:2,
+};
+
 function Avatar({
   name,email,size=36,avatarUrl
 }:{name?:string|null;email:string;size?:number;
@@ -560,6 +597,8 @@ export default function TasksApp() {
   const [uploadProgress, setUploadProgress] =
     useState<number|null>(null);
   const [attachStatus, setAttachStatus] =
+    useState<string|null>(null);
+  const [attachToast, setAttachToast] =
     useState<string|null>(null);
   const [querySending,setQuerySending] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -987,6 +1026,12 @@ export default function TasksApp() {
     };
   }, [showAttachMenu]);
 
+  function showAttachToast(msg: string) {
+    console.log("[attach]", msg);
+    setAttachToast(msg);
+    window.setTimeout(() => setAttachToast(null), 5000);
+  }
+
   function addChatAttachments(
     fileList: FileList | null,
     source: string,
@@ -994,6 +1039,7 @@ export default function TasksApp() {
   ) {
     if (!fileList || fileList.length === 0) {
       console.log(`[attach] ${source}: cancelled or empty`);
+      showAttachToast("No file selected");
       setAttachStatus("No file selected");
       window.setTimeout(() => setAttachStatus(null), 2500);
       return;
@@ -1004,9 +1050,9 @@ export default function TasksApp() {
     })));
     setMsgFiles(prev => {
       const next = [...prev, ...picked];
-      setAttachStatus(
-        `✓ ${picked.length} file${picked.length > 1 ? "s" : ""} ready (${next.length} total) — tap ➤ to upload`
-      );
+      const summary = `${picked.length} file${picked.length > 1 ? "s" : ""} added (${next.length} total)`;
+      showAttachToast(`✓ ${summary} — tap ➤ to upload`);
+      setAttachStatus(`✓ ${summary} — tap ➤ to upload`);
       return next;
     });
     setShowAttachMenu(false);
@@ -1206,6 +1252,7 @@ export default function TasksApp() {
     setUploadProgress(msgFiles.length>0 ? 0 : null);
     if (msgFiles.length > 0) {
       setAttachStatus(`Uploading ${msgFiles.length} file(s)...`);
+      showAttachToast(`Uploading ${msgFiles.length} file(s)...`);
     }
     try {
       const fd = new FormData();
@@ -1234,6 +1281,7 @@ export default function TasksApp() {
             console.log(`[chat] upload progress: ${pct}%`);
             setUploadProgress(pct);
             setAttachStatus(`Uploading... ${pct}%`);
+            showAttachToast(`Uploading... ${pct}%`);
           }
         };
 
@@ -1266,6 +1314,7 @@ export default function TasksApp() {
       setMsgFiles([]);
       setUploadProgress(null);
       setAttachStatus(null);
+      showAttachToast("✓ Sent successfully");
       if (subtaskPanel)
         await loadSubtaskPanel(active.id);
       else
@@ -1276,6 +1325,7 @@ export default function TasksApp() {
       console.error("[chat] send failed:", err);
       setUploadProgress(null);
       setAttachStatus(`Upload failed: ${err.message ?? "Try again"}`);
+      showAttachToast(`Upload failed: ${err.message ?? "Try again"}`);
       alert(err.message ?? "Could not send. Try again.");
     } finally {
       setQuerySending(false);
@@ -2167,7 +2217,7 @@ export default function TasksApp() {
               <span style={{
                 fontSize:"11px",color:"#8a7060"
               }}>
-                {timeAgo(task.updatedAt)}
+                <TimeAgo date={task.updatedAt}/>
               </span>
               {overdue&&(
                 <span style={{
@@ -3079,6 +3129,7 @@ export default function TasksApp() {
     return (
     <>
       <style>{CSS}</style>
+      <AttachToastBar message={attachToast}/>
       {isSubtaskPanel&&(
         <div style={{
           position:"fixed",inset:0,
@@ -3460,7 +3511,7 @@ export default function TasksApp() {
                 fontSize:"10px",color:"#8a7060",
                 textAlign:"right",marginTop:"4px"
               }}>
-                {timeAgo(activeTask.createdAt)}
+                <TimeAgo date={activeTask.createdAt}/>
               </p>
             </div>
           </div>
@@ -3488,7 +3539,7 @@ export default function TasksApp() {
                     fontSize:"10px",color:"#b8a898",
                     marginTop:"2px"
                   }}>
-                    {timeAgo(ev.createdAt)}
+                    <TimeAgo date={ev.createdAt}/>
                   </p>
                 </div>
               );
@@ -3512,7 +3563,7 @@ export default function TasksApp() {
                     fontSize:"10px",color:"#b8a898",
                     marginTop:"4px"
                   }}>
-                    {timeAgo(ev.createdAt)}
+                    <TimeAgo date={ev.createdAt}/>
                   </p>
                   {myAssignee?.responseStatus==="PENDING" &&
                     ev.message.includes("Please press Start button to proceed.") && (
@@ -3587,7 +3638,7 @@ export default function TasksApp() {
                     fontSize:"10px",color:"#8a7060",
                     textAlign:"right",marginTop:"4px"
                   }}>
-                    {timeAgo(ev.createdAt)}
+                    <TimeAgo date={ev.createdAt}/>
                   </p>
                 </div>
                 {isMine&&(
@@ -3751,135 +3802,133 @@ export default function TasksApp() {
           )
         ):(
           <>
-          {/* Always mounted — must NOT unmount when menu closes (mobile onChange) */}
-          <input id="wa-photos-input" type="file"
-            accept="image/*,video/*"
-            multiple
-            style={{
-              position:"fixed",left:-9999,top:-9999,
-              width:1,height:1,opacity:0
-            }}
-            onChange={e=>{
-              addChatAttachments(
-                e.target.files,"photos",e.target
-              );
-            }}/>
-          <input id="wa-cam-input" type="file"
-            accept="image/*"
-            capture="environment"
-            style={{
-              position:"fixed",left:-9999,top:-9999,
-              width:1,height:1,opacity:0
-            }}
-            onChange={e=>{
-              addChatAttachments(
-                e.target.files,"camera",e.target
-              );
-            }}/>
-          <input id="wa-doc-input" type="file"
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,application/pdf,application/msword"
-            multiple
-            style={{
-              position:"fixed",left:-9999,top:-9999,
-              width:1,height:1,opacity:0
-            }}
-            onChange={e=>{
-              addChatAttachments(
-                e.target.files,"document",e.target
-              );
-            }}/>
-          <input id="wa-audio-input" type="file"
-            accept="audio/*"
-            style={{
-              position:"fixed",left:-9999,top:-9999,
-              width:1,height:1,opacity:0
-            }}
-            onChange={e=>{
-              addChatAttachments(
-                e.target.files,"audio",e.target
-              );
-            }}/>
-
-          {/* Attachment popup menu (WhatsApp style) */}
-          {showAttachMenu&&(
-            <div id="wa-attach-menu" style={{
-              position:"absolute",
-              bottom:"72px",left:"10px",
-              background:"#fff",
-              borderRadius:16,
-              boxShadow:"0 4px 24px rgba(0,0,0,.18)",
-              overflow:"hidden",
-              zIndex:200,minWidth:200,
-              border:"1px solid #f0ece6"
+          {/* Menu always in DOM — inputs nested in labels (iOS-safe) */}
+          <div id="wa-attach-menu" style={{
+            position:"absolute",
+            bottom:"72px",left:"10px",
+            background:"#fff",
+            borderRadius:16,
+            boxShadow:"0 4px 24px rgba(0,0,0,0.18)",
+            overflow:"hidden",
+            zIndex:200,minWidth:200,
+            border:"1px solid #f0ece6",
+            display:showAttachMenu?"block":"none",
+            pointerEvents:showAttachMenu?"auto":"none"
+          }}>
+            <label style={{
+              position:"relative",
+              display:"flex",alignItems:"center",
+              gap:14,padding:"14px 16px",
+              cursor:"pointer",
+              borderBottom:"0.5px solid #f0ece6"
             }}>
-              <label htmlFor="wa-photos-input" style={{
+              <input type="file"
+                accept="image/*,video/*"
+                multiple
+                style={CHAT_FILE_INPUT_STYLE}
+                onChange={e=>{
+                  addChatAttachments(
+                    e.target.files,"photos",e.target
+                  );
+                }}/>
+              <div style={{
+                width:40,height:40,borderRadius:"50%",
+                background:"#2196F318",
                 display:"flex",alignItems:"center",
-                gap:14,padding:"14px 16px",
-                cursor:"pointer",
-                borderBottom:"0.5px solid #f0ece6"
-              }}>
-                <div style={{
-                  width:40,height:40,borderRadius:"50%",
-                  background:"#2196F318",
-                  display:"flex",alignItems:"center",
-                  justifyContent:"center",fontSize:20
-                }}>🖼</div>
-                <span style={{
-                  fontSize:15,color:"#1a1614",fontWeight:500
-                }}>Photos & Videos</span>
-              </label>
+                justifyContent:"center",fontSize:20,
+                pointerEvents:"none"
+              }}>🖼</div>
+              <span style={{
+                fontSize:15,color:"#1a1614",fontWeight:500,
+                pointerEvents:"none"
+              }}>Photos & Videos</span>
+            </label>
 
-              <label htmlFor="wa-cam-input" style={{
+            <label style={{
+              position:"relative",
+              display:"flex",alignItems:"center",
+              gap:14,padding:"14px 16px",
+              cursor:"pointer",
+              borderBottom:"0.5px solid #f0ece6"
+            }}>
+              <input type="file"
+                accept="image/*"
+                capture="environment"
+                style={CHAT_FILE_INPUT_STYLE}
+                onChange={e=>{
+                  addChatAttachments(
+                    e.target.files,"camera",e.target
+                  );
+                }}/>
+              <div style={{
+                width:40,height:40,borderRadius:"50%",
+                background:"#F4433618",
                 display:"flex",alignItems:"center",
-                gap:14,padding:"14px 16px",
-                cursor:"pointer",
-                borderBottom:"0.5px solid #f0ece6"
-              }}>
-                <div style={{
-                  width:40,height:40,borderRadius:"50%",
-                  background:"#F4433618",
-                  display:"flex",alignItems:"center",
-                  justifyContent:"center",fontSize:20
-                }}>📷</div>
-                <span style={{
-                  fontSize:15,color:"#1a1614",fontWeight:500
-                }}>Camera</span>
-              </label>
+                justifyContent:"center",fontSize:20,
+                pointerEvents:"none"
+              }}>📷</div>
+              <span style={{
+                fontSize:15,color:"#1a1614",fontWeight:500,
+                pointerEvents:"none"
+              }}>Camera</span>
+            </label>
 
-              <label htmlFor="wa-doc-input" style={{
+            <label style={{
+              position:"relative",
+              display:"flex",alignItems:"center",
+              gap:14,padding:"14px 16px",
+              cursor:"pointer",
+              borderBottom:"0.5px solid #f0ece6"
+            }}>
+              <input type="file"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,application/pdf,application/msword"
+                multiple
+                style={CHAT_FILE_INPUT_STYLE}
+                onChange={e=>{
+                  addChatAttachments(
+                    e.target.files,"document",e.target
+                  );
+                }}/>
+              <div style={{
+                width:40,height:40,borderRadius:"50%",
+                background:"#7c5cbf18",
                 display:"flex",alignItems:"center",
-                gap:14,padding:"14px 16px",
-                cursor:"pointer",
-                borderBottom:"0.5px solid #f0ece6"
-              }}>
-                <div style={{
-                  width:40,height:40,borderRadius:"50%",
-                  background:"#7c5cbf18",
-                  display:"flex",alignItems:"center",
-                  justifyContent:"center",fontSize:20
-                }}>📄</div>
-                <span style={{
-                  fontSize:15,color:"#1a1614",fontWeight:500
-                }}>Document</span>
-              </label>
+                justifyContent:"center",fontSize:20,
+                pointerEvents:"none"
+              }}>📄</div>
+              <span style={{
+                fontSize:15,color:"#1a1614",fontWeight:500,
+                pointerEvents:"none"
+              }}>Document</span>
+            </label>
 
-              <label htmlFor="wa-audio-input" style={{
+            <label style={{
+              position:"relative",
+              display:"flex",alignItems:"center",
+              gap:14,padding:"14px 16px",
+              cursor:"pointer"
+            }}>
+              <input type="file"
+                accept="audio/*"
+                style={CHAT_FILE_INPUT_STYLE}
+                onChange={e=>{
+                  addChatAttachments(
+                    e.target.files,"audio",e.target
+                  );
+                }}/>
+              <div style={{
+                width:40,height:40,borderRadius:"50%",
+                background:"#FF980018",
                 display:"flex",alignItems:"center",
-                gap:14,padding:"14px 16px",
-                cursor:"pointer"
-              }}>
-                <div style={{
-                  width:40,height:40,borderRadius:"50%",
-                  background:"#FF980018",
-                  display:"flex",alignItems:"center",
-                  justifyContent:"center",fontSize:20
-                }}>🎵</div>
-                <span style={{
-                  fontSize:15,color:"#1a1614",fontWeight:500
-                }}>Audio</span>
-              </label>
-            </div>
-          )}
+                justifyContent:"center",fontSize:20,
+                pointerEvents:"none"
+              }}>🎵</div>
+              <span style={{
+                fontSize:15,color:"#1a1614",fontWeight:500,
+                pointerEvents:"none"
+              }}>Audio</span>
+            </label>
+          </div>
 
           {/* Voice recording UI */}
           {isRecording&&(
@@ -3911,13 +3960,9 @@ export default function TasksApp() {
                     <div key={i} style={{
                       width:2,borderRadius:2,
                       background:"#075E54",
-                      height:`${
-                        30+Math.abs(
-                          Math.sin(
-                            Date.now()/200+i*0.5
-                          )*50
-                        )
-                      }%`,
+                      height:`${Math.max(30,
+                        Math.sin(i*0.8)*50+50
+                      )}%`,
                       transition:"height .15s ease"
                     }}/>
                   ))}
@@ -4611,7 +4656,7 @@ export default function TasksApp() {
                       fontSize:"11px",
                       color:"#b8a898",marginTop:"4px"
                     }}>
-                      {timeAgo(n.createdAt)}
+                      <TimeAgo date={n.createdAt}/>
                     </p>
                   </div>
                   {!n.isRead&&(
