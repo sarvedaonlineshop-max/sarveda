@@ -317,7 +317,19 @@ function IconSend({
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
       aria-hidden>
-      <path d="M5 12h14M12 5l7 7-7 7"
+      <path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"
+        fill={color}/>
+    </svg>
+  );
+}
+
+function IconBack({
+  size = 22, color = "#fff",
+}: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      aria-hidden>
+      <path d="M15 6l-6 6 6 6"
         stroke={color} strokeWidth="2.2"
         strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
@@ -461,7 +473,12 @@ function seedAppHistory(stack: View[]) {
     stack: [...stack],
     subtaskId: null,
   };
-  window.history.replaceState(state, "", window.location.pathname);
+  const path = window.location.pathname;
+  window.history.replaceState(state, "", path);
+  window.history.pushState(state, "", path);
+  try {
+    sessionStorage.setItem("sv_view_stack", JSON.stringify(stack));
+  } catch { /* ignore */ }
 }
 
 function IconChevronDown({
@@ -994,6 +1011,9 @@ export default function TasksApp() {
   const [ntAssignees,setNtAssignees] = useState<string[]>([]);
   const [ntDueDate,setNtDueDate] = useState(defaultDueDate);
   const [ntFiles,setNtFiles] = useState<File[]>([]);
+  const [ntFilePreviews,setNtFilePreviews] = useState<string[]>([]);
+  const [ntAttachStatus,setNtAttachStatus] = useState<string|null>(null);
+  const [ntUploadProgress,setNtUploadProgress] = useState<number|null>(null);
   const [ntParentId,setNtParentId] = useState<string|null>(null);
   const [ntParentTitle,setNtParentTitle] = 
     useState<string|null>(null);
@@ -1013,6 +1033,7 @@ export default function TasksApp() {
     useState<string[]>([]);
   const [querySending,setQuerySending] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isRecordingPaused, setIsRecordingPaused] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob|null>(null);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
@@ -1039,7 +1060,9 @@ export default function TasksApp() {
   const [dueDateDraft,setDueDateDraft] = useState("");
   const [membersDraft,setMembersDraft] = useState<string[]>([]);
   const [membersSaving,setMembersSaving] = useState(false);
+  const [msgMenuId,setMsgMenuId] = useState<string|null>(null);
   const [selectedMsgId,setSelectedMsgId] = useState<string|null>(null);
+  const [keyboardInset,setKeyboardInset] = useState(0);
   const [myAvatarUrl,setMyAvatarUrl] = useState<string|null>(null);
   const [hasPassword,setHasPassword] = useState(true);
   const [showCurPwd,setShowCurPwd] = useState(false);
@@ -1132,11 +1155,15 @@ export default function TasksApp() {
       stack: [...stack],
       subtaskId: subtaskId ?? null,
     };
+    const path = window.location.pathname;
     if (mode === "replace") {
-      window.history.replaceState(state, "", window.location.pathname);
+      window.history.replaceState(state, "", path);
     } else {
-      window.history.pushState(state, "", window.location.pathname);
+      window.history.pushState(state, "", path);
     }
+    try {
+      sessionStorage.setItem("sv_view_stack", JSON.stringify(stack));
+    } catch { /* ignore */ }
   }, []);
 
   const switchTab = useCallback((tab: View) => {
@@ -1168,14 +1195,6 @@ export default function TasksApp() {
     setNtParentTitle(parentTitle ?? null);
     setView("new");
   }, [writeHistory]);
-
-  const goBack = useCallback(() => {
-    if (subtaskPanel || viewStack.current.length > 1) {
-      window.history.back();
-      return;
-    }
-    setView("home");
-  }, [subtaskPanel]);
 
   function personName(
     email:string,task?:Task|null
@@ -1330,6 +1349,8 @@ export default function TasksApp() {
     setSubtaskPanel(null);
     await loadDetail(taskId);
     setView("detail");
+    scrollChatToBottom();
+    window.setTimeout(scrollChatToBottom, 200);
   }, [loadDetail, writeHistory]);
 
   const loadSubtaskPanel = useCallback(async (id:string) => {
@@ -1350,46 +1371,93 @@ export default function TasksApp() {
   },[token]);
 
   const applyHistoryState = useCallback((state: AppHistoryState | null) => {
-    if (!state?.stack?.length) {
-      viewStack.current = ["home"];
-      setView("home");
-      setSelected(null);
-      setSubtaskPanel(null);
+    if (state?.stack?.length) {
+      viewStack.current = state.stack;
+      const next = state.stack[state.stack.length - 1];
+      setView(next);
+      if (next !== "detail") {
+        setSelected(null);
+        setSubtaskPanel(null);
+        return;
+      }
+      if (state.subtaskId) {
+        void loadSubtaskPanel(state.subtaskId);
+      } else {
+        setSubtaskPanel(null);
+      }
       return;
     }
-    viewStack.current = state.stack;
-    const next = state.stack[state.stack.length - 1];
-    setView(next);
-    if (next !== "detail") {
-      setSelected(null);
+
+    if (subtaskPanel) {
       setSubtaskPanel(null);
+      writeHistory(viewStack.current, "replace");
       return;
     }
-    if (state.subtaskId) {
-      void loadSubtaskPanel(state.subtaskId);
+    if (viewStack.current.length > 1) {
+      viewStack.current.pop();
+      const next = viewStack.current[viewStack.current.length - 1];
+      setView(next);
+      if (next !== "detail") {
+        setSelected(null);
+        setSubtaskPanel(null);
+      }
+      writeHistory(viewStack.current, "replace");
+      return;
+    }
+    if (view === "detail" || view === "new" || view === "notifications") {
+      const tab = viewStack.current[0] ?? "home";
+      viewStack.current = [tab];
+      setView(tab);
+      setSelected(null);
+      setSubtaskPanel(null);
+      writeHistory(viewStack.current, "replace");
+    }
+  }, [loadSubtaskPanel, writeHistory, subtaskPanel, view]);
+
+  const goBack = useCallback(() => {
+    if (window.history.length > 1) {
+      window.history.back();
     } else {
-      setSubtaskPanel(null);
+      applyHistoryState(null);
     }
-  }, [loadSubtaskPanel]);
+  }, [applyHistoryState]);
 
   const openSubtaskPanel = useCallback((id: string) => {
     writeHistory(viewStack.current, "push", id);
     void loadSubtaskPanel(id);
   }, [loadSubtaskPanel, writeHistory]);
 
-  async function uploadTaskAttachments(taskId:string, files:File[]) {
-    if (files.length===0) return;
+  async function uploadTaskAttachments(
+    taskId: string,
+    files: File[],
+    onProgress?: (pct: number) => void
+  ) {
+    if (files.length === 0) return;
     const fd = new FormData();
-    files.forEach((f)=>fd.append("files",f));
-    const r = await fetch(`${API}/complaints/${taskId}/attachments`,{
-      method:"POST",
-      headers:{Authorization:`Bearer ${token??""}`},
-      body:fd,
+    files.forEach((f) => fd.append("files", f));
+    await new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `${API}/complaints/${taskId}/attachments`);
+      xhr.setRequestHeader("Authorization", `Bearer ${token ?? ""}`);
+      xhr.upload.onprogress = (ev) => {
+        if (ev.lengthComputable && onProgress) {
+          onProgress(Math.round((ev.loaded / ev.total) * 100));
+        }
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) resolve();
+        else {
+          try {
+            const d = JSON.parse(xhr.responseText) as { error?: string };
+            reject(new Error(d.error ?? "Attachment upload failed"));
+          } catch {
+            reject(new Error("Attachment upload failed"));
+          }
+        }
+      };
+      xhr.onerror = () => reject(new Error("Upload failed"));
+      xhr.send(fd);
     });
-    if (!r.ok) {
-      const d = await r.json().catch(()=>({})) as {error?:string};
-      throw new Error(d.error??"Attachment upload failed");
-    }
   }
 
   const loadAll = useCallback(async (t?:string) => {
@@ -1521,6 +1589,20 @@ export default function TasksApp() {
     };
   }, [showAttachMenu]);
 
+  useEffect(() => {
+    if (!msgMenuId) return;
+    const close = () => setMsgMenuId(null);
+    const timer = window.setTimeout(() => {
+      document.addEventListener("mousedown", close);
+      document.addEventListener("touchstart", close);
+    }, 0);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("touchstart", close);
+    };
+  }, [msgMenuId]);
+
   function showAttachToast(msg: string) {
     console.log("[attach]", msg);
     setAttachToast(msg);
@@ -1544,6 +1626,72 @@ export default function TasksApp() {
       });
     };
   }, [msgFiles]);
+
+  useEffect(() => {
+    const nextPreviews = ntFiles.map((file) =>
+      file.type.startsWith("image") || file.type.startsWith("video")
+        ? URL.createObjectURL(file)
+        : ""
+    );
+    setNtFilePreviews(nextPreviews);
+    return () => {
+      nextPreviews.forEach((url) => {
+        if (url) URL.revokeObjectURL(url);
+      });
+    };
+  }, [ntFiles]);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      const inset = Math.max(
+        0,
+        window.innerHeight - vv.height - vv.offsetTop
+      );
+      setKeyboardInset(inset > 50 ? inset : 0);
+    };
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    update();
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, []);
+
+  function addNtAttachments(
+    fileList: FileList | null,
+    source: string,
+    inputEl?: HTMLInputElement | null
+  ) {
+    if (!fileList || fileList.length === 0) return;
+    const picked = Array.from(fileList);
+    const nextCount = ntFiles.length + picked.length;
+    if (nextCount > MAX_CHAT_ATTACHMENTS) {
+      const reason =
+        `You can upload up to ${MAX_CHAT_ATTACHMENTS} files. Current selection would create ${nextCount} files.`;
+      setNtAttachStatus(reason);
+      if (inputEl) inputEl.value = "";
+      return;
+    }
+    const nextTotal = totalUploadBytes([...ntFiles, ...picked]);
+    if (nextTotal > MAX_CHAT_UPLOAD_BYTES) {
+      const reason =
+        `Upload limit exceeded. Maximum total size is 250 MB, current selection is ${formatBytes(nextTotal)}.`;
+      setNtAttachStatus(reason);
+      if (inputEl) inputEl.value = "";
+      return;
+    }
+    setNtFiles((prev) => {
+      const next = [...prev, ...picked];
+      setNtAttachStatus(
+        `✓ ${picked.length} file${picked.length > 1 ? "s" : ""} added (${next.length}/${MAX_CHAT_ATTACHMENTS}) · ${UPLOAD_LIMITS_HINT}`
+      );
+      return next;
+    });
+    if (inputEl) inputEl.value = "";
+  }
 
   function addChatAttachments(
     fileList: FileList | null,
@@ -1590,11 +1738,22 @@ export default function TasksApp() {
     });
     setShowAttachMenu(false);
     if (inputEl) inputEl.value = "";
+    if (view === "detail") scrollChatToBottom();
   }
 
   useEffect(() => {
-    if (view === "detail") scrollChatToBottom();
-  }, [view, selected?.id, subtaskPanel?.id, selected?.events?.length, subtaskPanel?.events?.length]);
+    if (view === "detail") {
+      scrollChatToBottom();
+      const t1 = window.setTimeout(scrollChatToBottom, 120);
+      const t2 = window.setTimeout(scrollChatToBottom, 400);
+      return () => {
+        window.clearTimeout(t1);
+        window.clearTimeout(t2);
+      };
+    }
+  }, [view, selected?.id, subtaskPanel?.id,
+      selected?.events?.length, subtaskPanel?.events?.length,
+      msgFiles.length]);
 
   // ── Auth ─────────────────────────────────────────────
   async function handleLogin(e:React.FormEvent) {
@@ -1751,13 +1910,18 @@ export default function TasksApp() {
       }
 
       if (filesToUpload.length>0 && taskId) {
-        void uploadTaskAttachments(taskId, filesToUpload)
+        setNtUploadProgress(0);
+        void uploadTaskAttachments(taskId, filesToUpload, (pct) => {
+          setNtUploadProgress(pct);
+        })
           .then(()=>{
+            setNtUploadProgress(null);
             if (selected?.id===taskId || subtaskPanel?.id===taskId) {
               void loadDetail(taskId);
             }
           })
           .catch((err:Error)=>{
+            setNtUploadProgress(null);
             setNtMsg("⚠️ Task saved but some files failed: "+err.message);
           });
       }
@@ -1917,6 +2081,7 @@ export default function TasksApp() {
       mr.start();
       mediaRecorderRef.current = mr;
       setIsRecording(true);
+      setIsRecordingPaused(false);
       setRecordingSeconds(0);
       recordingTimerRef.current = setInterval(()=>{
         setRecordingSeconds(s=>s+1);
@@ -1926,12 +2091,31 @@ export default function TasksApp() {
     }
   }
 
+  function togglePauseRecording() {
+    const mr = mediaRecorderRef.current;
+    if (!mr || mr.state === "inactive") return;
+    if (isRecordingPaused) {
+      if (typeof mr.resume === "function") mr.resume();
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds((s) => s + 1);
+      }, 1000);
+      setIsRecordingPaused(false);
+    } else {
+      if (typeof mr.pause === "function") mr.pause();
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
+      setIsRecordingPaused(true);
+    }
+  }
+
   function stopRecording() {
     mediaRecorderRef.current?.stop();
     if (recordingTimerRef.current) {
       clearInterval(recordingTimerRef.current);
     }
     setIsRecording(false);
+    setIsRecordingPaused(false);
     setRecordingSeconds(0);
   }
 
@@ -1941,7 +2125,7 @@ export default function TasksApp() {
       clearInterval(recordingTimerRef.current);
     }
     setIsRecording(false);
-    setRecordingSeconds(0);
+    setIsRecordingPaused(false);
     audioChunksRef.current = [];
     setAudioBlob(null);
     audioBlobRef.current = null;
@@ -1989,6 +2173,7 @@ export default function TasksApp() {
       clearInterval(recordingTimerRef.current);
     }
     setIsRecording(false);
+    setIsRecordingPaused(false);
     setRecordingSeconds(0);
     await new Promise(r=>setTimeout(r,400));
     const blob = audioBlobRef.current;
@@ -2119,6 +2304,7 @@ export default function TasksApp() {
       setSelectedMsgId(null);
       if (subtaskPanel) await loadSubtaskPanel(active.id);
       else await loadDetail(active.id);
+      scrollChatToBottom();
     } catch {
       alert("Failed to delete message.");
     }
@@ -2182,8 +2368,10 @@ export default function TasksApp() {
 
   function scrollChatToBottom() {
     requestAnimationFrame(() => {
-      const el = chatScrollRef.current;
-      if (el) el.scrollTop = el.scrollHeight;
+      requestAnimationFrame(() => {
+        const el = chatScrollRef.current;
+        if (el) el.scrollTop = el.scrollHeight;
+      });
     });
   }
 
@@ -2474,20 +2662,21 @@ export default function TasksApp() {
       <div style={{
         background:"#075E54",
         flexShrink:0,
-        padding:"6px 8px 10px",
-        display:"flex",alignItems:"center",gap:"4px",
+        padding:"10px 12px",
+        display:"flex",alignItems:"center",gap:"8px",
         minHeight:"52px"
       }}>
         <button onClick={onBack} style={{
           background:"none",border:"none",
-          color:"#fff",fontSize:"22px",
-          cursor:"pointer",padding:"8px 6px",
-          lineHeight:1,flexShrink:0,
+          color:"#fff",cursor:"pointer",
+          padding:"4px",lineHeight:1,flexShrink:0,
           display:"flex",alignItems:"center",
           justifyContent:"center"
-        }} aria-label="Back">‹</button>
+        }} aria-label="Back">
+          <IconBack/>
+        </button>
         <p style={{
-          fontSize:"16px",fontWeight:600,
+          fontSize:"17px",fontWeight:600,
           color:"#fff",flex:1,margin:0,
           overflow:"hidden",textOverflow:"ellipsis",
           whiteSpace:"nowrap"
@@ -3544,17 +3733,18 @@ export default function TasksApp() {
             }}>
               {[
                 {icon:"📷",label:"Camera",
-                  accept:"image/*",cap:"environment"},
+                  accept:"image/*",cap:"environment",multi:false},
                 {icon:"🖼",label:"Photo",
-                  accept:"image/*"},
+                  accept:"image/*",multi:true},
                 {icon:"📄",label:"Document",
-                  accept:".pdf,.doc,.docx,.xls,.xlsx,.txt,application/*"},
+                  accept:".pdf,.doc,.docx,.xls,.xlsx,.txt,application/*",
+                  multi:true},
                 {icon:"🎤",label:"Audio",
-                  accept:"audio/*"},
+                  accept:"audio/*",multi:true},
                 {icon:"🎥",label:"Video",
-                  accept:"video/*"},
-              ].map((btn,i)=>(
-                <label key={i} style={{
+                  accept:"video/*",multi:true},
+              ].map((btn)=>(
+                <label key={btn.label} style={{
                   display:"flex",flexDirection:"column",
                   alignItems:"center",justifyContent:"center",
                   gap:"2px",padding:"10px 12px",
@@ -3570,51 +3760,96 @@ export default function TasksApp() {
                   }}>{btn.label}</span>
                   <input type="file"
                     accept={btn.accept}
-                    capture={btn.cap as any}
-                    multiple={btn.label!=="Camera"}
+                    capture={btn.cap as "environment" | undefined}
+                    multiple={btn.multi}
                     hidden
                     onChange={e=>{
-                      if (e.target.files)
-                        setNtFiles(f=>[
-                          ...f,
-                          ...Array.from(e.target.files!)
-                        ]);
+                      addNtAttachments(
+                        e.target.files,
+                        btn.label.toLowerCase(),
+                        e.target
+                      );
                     }}/>
                 </label>
               ))}
             </div>
-            {ntFiles.map((f,i)=>(
-              <div key={i} style={{
-                display:"flex",alignItems:"center",
-                gap:"10px",padding:"10px 12px",
-                background:"#f9f9f9",borderRadius:"10px",
-                border:"1px solid #e0d8ce",
-                marginBottom:"6px"
+            {ntAttachStatus && (
+              <p style={{
+                fontSize:"12px",fontWeight:600,
+                color:ntAttachStatus.startsWith("✓")
+                  ?"#166534":"#dc2626",
+                margin:"0 0 8px"
+              }}>{ntAttachStatus}</p>
+            )}
+            {ntUploadProgress !== null && (
+              <div style={{
+                padding:"8px 0",display:"flex",
+                alignItems:"center",gap:10,marginBottom:8
               }}>
-                <span style={{fontSize:"18px"}}>
-                  {f.type.startsWith("image")?"🖼"
-                   :f.type.startsWith("video")?"🎥"
-                   :f.type.startsWith("audio")?"🎤":"📄"}
-                </span>
+                <div style={{
+                  flex:1,height:6,borderRadius:999,
+                  background:"#e0d8ce",overflow:"hidden"
+                }}>
+                  <div style={{
+                    width:`${ntUploadProgress}%`,height:"100%",
+                    background:"#25D366",transition:"width .15s"
+                  }}/>
+                </div>
                 <span style={{
-                  flex:1,fontSize:"12px",color:"#4a3f38",
-                  overflow:"hidden",
-                  textOverflow:"ellipsis",
-                  whiteSpace:"nowrap"
-                }}>{f.name}</span>
-                <button type="button"
-                  onClick={()=>setNtFiles(
-                    ntFiles.filter((_,j)=>j!==i)
-                  )} style={{
-                  background:"#fee2e2",border:"none",
-                  color:"#dc2626",borderRadius:"6px",
-                  width:28,height:28,cursor:"pointer",
-                  fontSize:"13px",display:"flex",
-                  alignItems:"center",
-                  justifyContent:"center"
-                }}>✕</button>
+                  fontSize:11,fontWeight:700,color:"#075E54"
+                }}>{ntUploadProgress}%</span>
               </div>
-            ))}
+            )}
+            {ntFiles.length > 0 && (
+              <div style={{
+                display:"flex",gap:8,overflowX:"auto",
+                paddingBottom:4,marginBottom:8
+              }}>
+                {ntFiles.map((f,i)=>(
+                  <div key={`${f.name}-${i}`} style={{
+                    position:"relative",flexShrink:0
+                  }}>
+                    {ntFilePreviews[i] ? (
+                      f.type.startsWith("video") ? (
+                        <video src={ntFilePreviews[i]}
+                          style={{
+                            width:64,height:64,
+                            objectFit:"cover",borderRadius:10
+                          }}/>
+                      ) : (
+                        <img src={ntFilePreviews[i]} alt=""
+                          style={{
+                            width:64,height:64,
+                            objectFit:"cover",borderRadius:10
+                          }}/>
+                      )
+                    ) : (
+                      <div style={{
+                        width:64,height:64,borderRadius:10,
+                        background:"#f0ece6",
+                        display:"flex",alignItems:"center",
+                        justifyContent:"center",fontSize:22
+                      }}>
+                        {f.type.startsWith("audio")?"🎤"
+                          :f.type.startsWith("video")?"🎥":"📄"}
+                      </div>
+                    )}
+                    <button type="button"
+                      onClick={()=>{
+                        setNtFiles(ntFiles.filter((_,j)=>j!==i));
+                      }}
+                      style={{
+                        position:"absolute",top:-6,right:-6,
+                        width:18,height:18,borderRadius:"50%",
+                        background:"#dc2626",border:"2px solid #fff",
+                        color:"#fff",fontSize:10,cursor:"pointer",
+                        display:"flex",alignItems:"center",
+                        justifyContent:"center",padding:0
+                      }}>✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {ntMsg&&(
@@ -4159,36 +4394,53 @@ export default function TasksApp() {
                 )}
                 <div
                   className={isMine?"wa-bubble-out":"wa-bubble-in"}
-                  onTouchStart={e=>{
-                    if (!canDel) return;
-                    swipeRef.current = {
-                      id: ev.id,
-                      startX: e.touches[0].clientX,
-                      startY: e.touches[0].clientY,
-                    };
-                  }}
-                  onTouchEnd={e=>{
-                    if (!canDel) return;
-                    const swipe = swipeRef.current;
-                    swipeRef.current = null;
-                    if (!swipe || swipe.id !== ev.id) return;
-                    const dx =
-                      e.changedTouches[0].clientX - swipe.startX;
-                    const dy = Math.abs(
-                      e.changedTouches[0].clientY - swipe.startY
-                    );
-                    if (dx > 70 && dy < 40) {
-                      setSelectedMsgId(ev.id);
-                    }
-                  }}
-                  style={{
-                    cursor:canDel?"grab":"default",
-                    userSelect:"none"
-                  }}>
+                  style={{position:"relative",maxWidth:"75%"}}>
+                  {canDel && (
+                    <button type="button"
+                      onMouseDown={(e)=>e.stopPropagation()}
+                      onClick={(e)=>{
+                        e.stopPropagation();
+                        setMsgMenuId(
+                          msgMenuId === ev.id ? null : ev.id
+                        );
+                      }}
+                      style={{
+                        position:"absolute",top:4,right:4,
+                        width:24,height:24,borderRadius:6,
+                        border:"none",background:"rgba(0,0,0,.06)",
+                        color:"#4a3f38",cursor:"pointer",
+                        fontSize:14,lineHeight:1,zIndex:2
+                      }}
+                      aria-label="Message options">⋮</button>
+                  )}
+                  {msgMenuId === ev.id && canDel && (
+                    <div style={{
+                      position:"absolute",top:30,right:4,zIndex:20,
+                      background:"#233138",borderRadius:10,
+                      boxShadow:"0 8px 24px rgba(0,0,0,.28)",
+                      minWidth:120,overflow:"hidden"
+                    }}>
+                      <button type="button"
+                        onClick={()=>{
+                          setMsgMenuId(null);
+                          setSelectedMsgId(ev.id);
+                        }}
+                        style={{
+                          width:"100%",padding:"12px 14px",
+                          border:"none",background:"transparent",
+                          color:"#ea7070",fontSize:14,fontWeight:500,
+                          display:"flex",alignItems:"center",gap:12,
+                          cursor:"pointer",textAlign:"left"
+                        }}>
+                        <span style={{fontSize:16}}>🗑</span> Delete
+                      </button>
+                    </div>
+                  )}
                   {!isMine&&(
                     <p style={{
                       fontSize:"11px",fontWeight:700,
-                      color:"#075E54",marginBottom:"3px"
+                      color:"#075E54",marginBottom:"3px",
+                      paddingRight:canDel?22:0
                     }}>
                       {personName(ev.authorEmail,activeTask)}
                     </p>
@@ -4196,7 +4448,8 @@ export default function TasksApp() {
                   {ev.message&&(
                     <p style={{
                       fontSize:"14px",color:"#1a1614",
-                      lineHeight:1.5,margin:0
+                      lineHeight:1.5,margin:0,
+                      paddingRight:canDel?18:0
                     }}>{ev.message}</p>
                   )}
                   {ev.attachments&&ev.attachments.length>0&&(
@@ -4204,11 +4457,7 @@ export default function TasksApp() {
                       attachments={ev.attachments}
                       canDelete={canDel}
                       onDeleteMessage={()=>{
-                        if (window.confirm(
-                          "Delete this message and its files?"
-                        )) {
-                          void handleDeleteMessage(ev.id);
-                        }
+                        setSelectedMsgId(ev.id);
                       }}
                     />
                   )}
@@ -4484,11 +4733,16 @@ export default function TasksApp() {
                     fontSize:22,color:"#8696a0"
                   }} aria-label="Discard recording">🗑</button>
                 <button type="button"
+                  onClick={togglePauseRecording}
                   style={{
                     width:40,height:40,border:"none",
-                    background:"transparent",cursor:"default",
+                    background:"transparent",cursor:"pointer",
                     fontSize:22,color:"#dc2626"
-                  }} aria-label="Recording">❚❚</button>
+                  }}
+                  aria-label={isRecordingPaused
+                    ? "Resume recording" : "Pause recording"}>
+                  {isRecordingPaused ? "▶" : "❚❚"}
+                </button>
                 <button type="button"
                   onClick={()=>void stopAndUploadVoice()}
                   style={{
@@ -4679,8 +4933,10 @@ export default function TasksApp() {
               style={{
                 display:"flex",alignItems:"flex-end",
                 gap:8,padding:"6px 8px",
-                paddingBottom:
-                  "calc(6px + env(safe-area-inset-bottom,0px))",
+                paddingBottom: 6,
+                transform: keyboardInset > 0
+                  ? `translateY(-${Math.max(0, keyboardInset - 8)}px)`
+                  : undefined,
                 background:"#f0ece6",
                 borderTop:msgFiles.length>0
                   ?"none":"1px solid #e0d8ce",
@@ -5051,7 +5307,7 @@ export default function TasksApp() {
                 margin:"0 0 14px",
                 fontSize:12,color:"#8a7060",lineHeight:1.5
               }}>
-                Swipe right asks for confirmation. Delete is only available for your recent messages.
+                This cannot be undone. Delete is only available for your recent messages.
               </p>
               <div style={{
                 display:"flex",justifyContent:"flex-end",gap:10
