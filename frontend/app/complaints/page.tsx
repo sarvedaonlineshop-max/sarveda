@@ -25,6 +25,7 @@ type Assignee = {
 type Attachment = {
   id: string; type: string; s3Url: string;
   fileName: string | null;
+  fileSizeBytes?: number | null;
 };
 
 type TaskEvent = {
@@ -213,40 +214,173 @@ function headerTitle(task: Task): string {
   return t.length > 36 ? `${t.slice(0, 36)}…` : t || "Task";
 }
 
-function ChatMedia({ attachments }: { attachments: Attachment[] }) {
+function ChatAttachmentBubble({a}:{a:Attachment}) {
+  const isImage = a.type==="image";
+  const isVideo = a.type==="video";
+  const isAudio = a.type==="audio";
+  const isDoc = a.type==="document"||a.type==="file";
+  const [imgErr, setImgErr] = useState(false);
+
+  if (isImage && !imgErr) return (
+    <div style={{
+      borderRadius:10,overflow:"hidden",
+      maxWidth:220,cursor:"pointer",
+      position:"relative"
+    }}>
+      <img
+        src={a.s3Url}
+        alt={a.fileName??"image"}
+        onError={()=>setImgErr(true)}
+        onClick={()=>window.open(
+          a.s3Url,"_blank","noopener"
+        )}
+        style={{
+          width:"100%",maxHeight:200,
+          objectFit:"cover",display:"block",
+          borderRadius:10
+        }}
+      />
+      <a href={a.s3Url} download={a.fileName??"image"}
+        onClick={e=>e.stopPropagation()}
+        style={{
+          position:"absolute",bottom:6,right:6,
+          background:"rgba(0,0,0,.5)",
+          borderRadius:"50%",width:28,height:28,
+          display:"flex",alignItems:"center",
+          justifyContent:"center",
+          color:"#fff",fontSize:14,
+          textDecoration:"none"
+        }}>⬇</a>
+    </div>
+  );
+
+  if (isVideo) return (
+    <div style={{
+      borderRadius:10,overflow:"hidden",
+      maxWidth:240,position:"relative"
+    }}>
+      <video
+        src={a.s3Url}
+        controls
+        playsInline
+        style={{
+          width:"100%",maxHeight:200,
+          borderRadius:10,display:"block",
+          background:"#000"
+        }}
+      />
+      <a href={a.s3Url} download={a.fileName??"video"}
+        style={{
+          position:"absolute",top:6,right:6,
+          background:"rgba(0,0,0,.5)",
+          borderRadius:"50%",width:28,height:28,
+          display:"flex",alignItems:"center",
+          justifyContent:"center",
+          color:"#fff",fontSize:14,
+          textDecoration:"none"
+        }}>⬇</a>
+    </div>
+  );
+
+  if (isAudio) return (
+    <div style={{
+      display:"flex",alignItems:"center",
+      gap:10,padding:"10px 14px",
+      background:"rgba(0,0,0,.05)",
+      borderRadius:20,maxWidth:240
+    }}>
+      <button
+        type="button"
+        onClick={()=>{
+          const audio = new window.Audio(a.s3Url);
+          audio.play().catch(()=>{});
+        }}
+        style={{
+          width:36,height:36,borderRadius:"50%",
+          background:"#075E54",border:"none",
+          color:"#fff",fontSize:16,cursor:"pointer",
+          display:"flex",alignItems:"center",
+          justifyContent:"center",flexShrink:0
+        }}>▶</button>
+      <div style={{
+        flex:1,display:"flex",alignItems:"center",
+        gap:2,height:24
+      }}>
+        {Array.from({length:20},(_,i)=>(
+          <div key={i} style={{
+            width:2,borderRadius:2,
+            background:"#075E54",
+            height:`${Math.max(30,
+              Math.sin(i*0.8)*50+50
+            )}%`,
+            opacity:0.7
+          }}/>
+        ))}
+      </div>
+      <a href={a.s3Url} download={a.fileName??"audio"}
+        style={{
+          color:"#075E54",fontSize:14,
+          textDecoration:"none",flexShrink:0
+        }}>⬇</a>
+    </div>
+  );
+
+  return (
+    <div style={{
+      display:"flex",alignItems:"center",
+      gap:10,padding:"10px 12px",
+      background:"rgba(0,0,0,.05)",
+      borderRadius:10,maxWidth:240
+    }}>
+      <div style={{
+        width:36,height:36,borderRadius:8,
+        background:"#1e3a2f",color:"#f5d88a",
+        display:"flex",alignItems:"center",
+        justifyContent:"center",
+        fontSize:18,flexShrink:0
+      }}>
+        {isDoc?"📄":"📎"}
+      </div>
+      <div style={{flex:1,minWidth:0}}>
+        <p style={{
+          fontSize:12,fontWeight:600,
+          color:"#1a1614",margin:0,
+          overflow:"hidden",textOverflow:"ellipsis",
+          whiteSpace:"nowrap"
+        }}>
+          {a.fileName??"Attachment"}
+        </p>
+        {a.fileSizeBytes!=null&&a.fileSizeBytes>0&&(
+          <p style={{
+            fontSize:10,color:"#8a7060",margin:"2px 0 0"
+          }}>
+            {(a.fileSizeBytes/1024).toFixed(1)} KB
+          </p>
+        )}
+      </div>
+      <a href={a.s3Url}
+        download={a.fileName??"file"}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          color:"#075E54",fontSize:18,
+          textDecoration:"none",flexShrink:0
+        }}>⬇</a>
+    </div>
+  );
+}
+
+function ChatMedia({
+  attachments
+}: { attachments: Attachment[] }) {
   if (!attachments.length) return null;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
-      {attachments.map((a) => (
-        <button
-          key={a.id}
-          type="button"
-          onClick={() => window.open(a.s3Url, "_blank", "noopener,noreferrer")}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "10px 12px",
-            borderRadius: 10,
-            background: "rgba(0,0,0,.06)",
-            color: "#075E54",
-            fontWeight: 600,
-            fontSize: 13,
-            border: "none",
-            cursor: "pointer",
-            textAlign: "left",
-            width: "100%"
-          }}
-        >
-          <span>{attachmentIcon(a.type)}</span>
-          <span style={{
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap"
-          }}>
-            {a.fileName ?? "Attachment"}
-          </span>
-        </button>
+    <div style={{
+      display:"flex",flexDirection:"column",
+      gap:6,marginTop:6
+    }}>
+      {attachments.map(a=>(
+        <ChatAttachmentBubble key={a.id} a={a}/>
       ))}
     </div>
   );
@@ -424,6 +558,13 @@ export default function TasksApp() {
   const [msgInput,setMsgInput] = useState("");
   const [msgFiles,setMsgFiles] = useState<File[]>([]);
   const [querySending,setQuerySending] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [audioBlob, setAudioBlob] = useState<Blob|null>(null);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder|null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval>|null>(null);
 
   // WhatsApp UI state
   const [rememberMe,setRememberMe] = useState(false);
@@ -826,6 +967,13 @@ export default function TasksApp() {
   }, [showMemberPicker]);
 
   useEffect(() => {
+    if (!showAttachMenu) return;
+    const close = () => setShowAttachMenu(false);
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [showAttachMenu]);
+
+  useEffect(() => {
     if (view === "detail") scrollChatToBottom();
   }, [view, selected?.id, subtaskPanel?.id, selected?.events?.length, subtaskPanel?.events?.length]);
 
@@ -1023,6 +1171,90 @@ export default function TasksApp() {
       scrollChatToBottom();
     } catch(err:any) {
       alert(err.message??"Could not send message. Try again.");
+    } finally { setQuerySending(false); }
+  }
+
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices
+        .getUserMedia({audio:true});
+      const mr = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+      mr.ondataavailable = e => {
+        if (e.data.size>0)
+          audioChunksRef.current.push(e.data);
+      };
+      mr.onstop = () => {
+        const blob = new Blob(
+          audioChunksRef.current,
+          {type:"audio/webm"}
+        );
+        setAudioBlob(blob);
+        stream.getTracks().forEach(t=>t.stop());
+      };
+      mr.start();
+      mediaRecorderRef.current = mr;
+      setIsRecording(true);
+      setRecordingSeconds(0);
+      recordingTimerRef.current = setInterval(()=>{
+        setRecordingSeconds(s=>s+1);
+      },1000);
+    } catch {
+      alert("Microphone permission denied");
+    }
+  }
+
+  function stopRecording() {
+    mediaRecorderRef.current?.stop();
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+    }
+    setIsRecording(false);
+    setRecordingSeconds(0);
+  }
+
+  function cancelRecording() {
+    mediaRecorderRef.current?.stop();
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+    }
+    setIsRecording(false);
+    setRecordingSeconds(0);
+    audioChunksRef.current = [];
+    setAudioBlob(null);
+  }
+
+  async function sendVoiceNote() {
+    if (!audioBlob) return;
+    const file = new File(
+      [audioBlob],
+      `voice-${Date.now()}.webm`,
+      {type:"audio/webm"}
+    );
+    setMsgFiles(f=>[...f,file]);
+    setAudioBlob(null);
+    const fd = new FormData();
+    fd.append("message","");
+    fd.append("files",file);
+    const active = subtaskPanel ?? selected;
+    if (!active||!token) return;
+    setQuerySending(true);
+    try {
+      const r = await fetch(
+        `${API}/complaints/${active.id}/comment`,{
+        method:"POST",
+        headers:{Authorization:`Bearer ${token}`},
+        body:fd,
+      });
+      if (!r.ok) throw new Error("Failed");
+      setMsgFiles([]);
+      if (subtaskPanel)
+        await loadSubtaskPanel(active.id);
+      else
+        await loadDetail(active.id);
+      scrollChatToBottom();
+    } catch(err:any) {
+      alert(err.message??"Could not send voice note");
     } finally { setQuerySending(false); }
   }
 
@@ -1395,6 +1627,7 @@ export default function TasksApp() {
     @keyframes slideInRight{
       from{transform:translateX(100%)}
       to{transform:translateX(0)}}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
   `;
 
   function MainHeader() {
@@ -3363,103 +3596,360 @@ export default function TasksApp() {
           </div>
           )
         ):(
-          <form onSubmit={e=>void handleAddQuery(e)}
-            style={{
-              display:"flex",alignItems:"flex-end",
-              gap:"6px",padding:"8px 10px",
-              paddingBottom:
-                "calc(8px + env(safe-area-inset-bottom,0px))",
-              background:"#f0ece6",
+          <>
+          {/* Hidden file inputs */}
+          <input ref={msgFileRef} type="file"
+            accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
+            multiple hidden
+            onChange={e=>{
+              if (e.target.files) {
+                setMsgFiles(f=>[
+                  ...f,...Array.from(e.target.files!)
+                ]);
+                e.target.value="";
+              }
+            }}/>
+          <input id="wa-cam-input" type="file"
+            accept="image/*,video/*"
+            capture="environment"
+            hidden
+            onChange={e=>{
+              if (e.target.files) {
+                setMsgFiles(f=>[
+                  ...f,...Array.from(e.target.files!)
+                ]);
+                e.target.value="";
+              }
+            }}/>
+          <input id="wa-doc-input" type="file"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
+            multiple hidden
+            onChange={e=>{
+              if (e.target.files) {
+                setMsgFiles(f=>[
+                  ...f,...Array.from(e.target.files!)
+                ]);
+                e.target.value="";
+              }
+            }}/>
+          <input id="wa-audio-input" type="file"
+            accept="audio/*"
+            hidden
+            onChange={e=>{
+              if (e.target.files?.[0]) {
+                setMsgFiles(f=>[...f,e.target.files![0]]);
+                e.target.value="";
+              }
+            }}/>
+
+          {/* Attachment popup menu (WhatsApp style) */}
+          {showAttachMenu&&(
+            <div
+              onPointerDown={e=>e.stopPropagation()}
+              style={{
+                position:"absolute",
+                bottom:"72px",left:"10px",
+                background:"#fff",
+                borderRadius:16,
+                boxShadow:"0 4px 24px rgba(0,0,0,.18)",
+                padding:"8px 0",
+                zIndex:200,minWidth:180,
+                border:"1px solid #f0ece6"
+              }}>
+              {[
+                {icon:"📄",label:"Document",color:"#7c5cbf",
+                 action:()=>{
+                   document.getElementById("wa-doc-input")
+                     ?.click();
+                   setShowAttachMenu(false);
+                 }},
+                {icon:"🖼",label:"Photos & Videos",
+                 color:"#2196F3",
+                 action:()=>{
+                   msgFileRef.current?.click();
+                   setShowAttachMenu(false);
+                 }},
+                {icon:"📷",label:"Camera",color:"#F44336",
+                 action:()=>{
+                   document.getElementById("wa-cam-input")
+                     ?.click();
+                   setShowAttachMenu(false);
+                 }},
+                {icon:"🎤",label:"Audio",color:"#FF9800",
+                 action:()=>{
+                   document.getElementById("wa-audio-input")
+                     ?.click();
+                   setShowAttachMenu(false);
+                 }},
+              ].map(item=>(
+                <button key={item.label}
+                  onClick={item.action}
+                  style={{
+                    width:"100%",padding:"12px 16px",
+                    border:"none",background:"transparent",
+                    cursor:"pointer",display:"flex",
+                    alignItems:"center",gap:14,
+                    fontSize:14,color:"#1a1614",
+                    textAlign:"left"
+                  }}>
+                  <div style={{
+                    width:38,height:38,borderRadius:"50%",
+                    background:item.color+"18",
+                    display:"flex",alignItems:"center",
+                    justifyContent:"center",
+                    fontSize:18,flexShrink:0
+                  }}>
+                    {item.icon}
+                  </div>
+                  <span style={{fontWeight:500}}>
+                    {item.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Voice recording UI */}
+          {isRecording&&(
+            <div style={{
+              display:"flex",alignItems:"center",gap:12,
+              padding:"10px 14px",
+              background:"#fff",
               borderTop:"1px solid #e0d8ce"
             }}>
-            <button type="button"
-              onClick={()=>msgFileRef.current?.click()}
-              style={{
-                display:"flex",alignItems:"center",
-                justifyContent:"center",
-                width:44,height:44,borderRadius:"50%",
-                background:"#fff",cursor:"pointer",
-                flexShrink:0,fontSize:"22px",
-                border:"1px solid #e0d8ce"
-              }} aria-label="Attach file">📎</button>
-            <input ref={msgFileRef} type="file"
-              accept="image/*,video/*,audio/*,.pdf,.doc,.docx,application/pdf"
-              multiple hidden
-              onChange={e=>{
-                if (e.target.files) {
-                  setMsgFiles(f=>[
-                    ...f,
-                    ...Array.from(e.target.files!)
-                  ]);
-                  e.target.value="";
-                }
-              }}/>
-            <div style={{
-              flex:1,background:"#fff",
-              borderRadius:"24px",
-              padding:"8px 14px",
-              display:"flex",flexDirection:"column",
-              gap:"4px"
-            }}>
-              <input
-                value={msgInput}
-                onChange={e=>setMsgInput(e.target.value)}
-                onKeyDown={e=>{
-                  if (e.key==="Enter"&&!e.shiftKey) {
-                    e.preventDefault();
-                    if (msgInput.trim()||msgFiles.length>0)
-                      void handleAddQuery(e as any);
-                  }
-                }}
-                placeholder="Type a message..."
-                style={{
-                  border:"none",outline:"none",
-                  fontSize:"14px",color:"#1a1614",
-                  background:"transparent",
-                  fontFamily:"inherit",width:"100%"
-                }}/>
-              {msgFiles.length>0&&(
+              <button onClick={cancelRecording} style={{
+                background:"none",border:"none",
+                color:"#dc2626",fontSize:13,
+                fontWeight:600,cursor:"pointer",padding:0
+              }}>✕ Cancel</button>
+              <div style={{
+                flex:1,display:"flex",alignItems:"center",
+                gap:8
+              }}>
                 <div style={{
-                  display:"flex",gap:"4px",flexWrap:"wrap"
+                  width:10,height:10,borderRadius:"50%",
+                  background:"#dc2626",
+                  animation:"pulse 1s ease infinite"
+                }}/>
+                <div style={{
+                  display:"flex",alignItems:"center",
+                  gap:2,flex:1,height:28
                 }}>
-                  {msgFiles.map((f,i)=>(
-                    <span key={i} style={{
-                      fontSize:"10px",color:"#8a7060",
-                      background:"#f0ece6",
-                      padding:"2px 8px",
-                      borderRadius:"999px",
-                      display:"flex",alignItems:"center",gap:"4px"
-                    }}>
-                      {f.name.slice(0,20)}
-                      <button type="button"
-                        onClick={()=>setMsgFiles(
-                          msgFiles.filter((_,j)=>j!==i)
-                        )}
-                        style={{
-                          background:"none",border:"none",
-                          color:"#dc2626",cursor:"pointer",
-                          fontSize:"12px",padding:0
-                        }}>×</button>
-                    </span>
+                  {Array.from({length:24},(_,i)=>(
+                    <div key={i} style={{
+                      width:2,borderRadius:2,
+                      background:"#075E54",
+                      height:`${
+                        30+Math.abs(
+                          Math.sin(
+                            Date.now()/200+i*0.5
+                          )*50
+                        )
+                      }%`,
+                      transition:"height .15s ease"
+                    }}/>
                   ))}
                 </div>
-              )}
-            </div>
-            <button type="submit"
-              disabled={querySending||
-                (!msgInput.trim()&&msgFiles.length===0)}
-              style={{
+                <span style={{
+                  fontSize:14,fontWeight:600,
+                  color:"#dc2626",flexShrink:0
+                }}>
+                  {String(Math.floor(recordingSeconds/60))
+                    .padStart(2,"0")}:
+                  {String(recordingSeconds%60)
+                    .padStart(2,"0")}
+                </span>
+              </div>
+              <button onClick={()=>{
+                stopRecording();
+                setTimeout(()=>void sendVoiceNote(),300);
+              }} style={{
                 width:44,height:44,borderRadius:"50%",
-                border:"none",background:"#25D366",
-                color:"#fff",fontSize:"20px",
-                cursor:"pointer",flexShrink:0,
+                background:"#25D366",border:"none",
+                color:"#fff",fontSize:20,cursor:"pointer",
                 display:"flex",alignItems:"center",
-                justifyContent:"center",
-                opacity:querySending?0.6:1
+                justifyContent:"center"
+              }}>➤</button>
+            </div>
+          )}
+
+          {/* Preview strip for selected files */}
+          {!isRecording&&msgFiles.length>0&&(
+            <div style={{
+              display:"flex",gap:8,padding:"8px 12px",
+              background:"#f0ece6",
+              overflowX:"auto",
+              borderTop:"1px solid #e0d8ce"
+            }}>
+              {msgFiles.map((f,i)=>{
+                const isImg = f.type.startsWith("image");
+                const isVid = f.type.startsWith("video");
+                const isAud = f.type.startsWith("audio");
+                const previewUrl = (isImg||isVid)
+                  ?URL.createObjectURL(f):null;
+                return (
+                  <div key={i} style={{
+                    position:"relative",flexShrink:0
+                  }}>
+                    {isImg&&previewUrl?(
+                      <img src={previewUrl}
+                        alt={f.name}
+                        style={{
+                          width:60,height:60,
+                          objectFit:"cover",
+                          borderRadius:8,display:"block"
+                        }}/>
+                    ):isVid&&previewUrl?(
+                      <video src={previewUrl}
+                        style={{
+                          width:60,height:60,
+                          objectFit:"cover",
+                          borderRadius:8,display:"block"
+                        }}/>
+                    ):(
+                      <div style={{
+                        width:60,height:60,
+                        borderRadius:8,
+                        background:"#fff",
+                        border:"1px solid #e0d8ce",
+                        display:"flex",
+                        flexDirection:"column",
+                        alignItems:"center",
+                        justifyContent:"center",
+                        fontSize:20,gap:2
+                      }}>
+                        {isAud?"🎤":"📄"}
+                        <span style={{
+                          fontSize:8,color:"#8a7060",
+                          padding:"0 2px",
+                          overflow:"hidden",
+                          textOverflow:"ellipsis",
+                          whiteSpace:"nowrap",
+                          width:"100%",textAlign:"center"
+                        }}>
+                          {f.name.split(".").pop()
+                            ?.toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    <button
+                      onClick={()=>setMsgFiles(
+                        msgFiles.filter((_,j)=>j!==i)
+                      )}
+                      style={{
+                        position:"absolute",top:-6,right:-6,
+                        width:18,height:18,borderRadius:"50%",
+                        background:"#dc2626",border:"2px solid #fff",
+                        color:"#fff",fontSize:10,
+                        cursor:"pointer",display:"flex",
+                        alignItems:"center",
+                        justifyContent:"center",padding:0,
+                        lineHeight:1
+                      }}>✕</button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Main input bar */}
+          {!isRecording&&(
+            <form onSubmit={e=>void handleAddQuery(e)}
+              onPointerDown={e=>e.stopPropagation()}
+              style={{
+                display:"flex",alignItems:"center",
+                gap:8,padding:"8px 10px",
+                paddingBottom:
+                  "calc(8px + env(safe-area-inset-bottom,0px))",
+                background:"#f0ece6",
+                borderTop:msgFiles.length>0
+                  ?"none":"1px solid #e0d8ce",
+                position:"relative"
               }}>
-              {querySending?"…":"➤"}
-            </button>
-          </form>
+
+              <button type="button"
+                onClick={()=>setShowAttachMenu(p=>!p)}
+                style={{
+                  width:40,height:40,borderRadius:"50%",
+                  background:"transparent",border:"none",
+                  color:"#8a7060",fontSize:24,
+                  cursor:"pointer",flexShrink:0,
+                  display:"flex",alignItems:"center",
+                  justifyContent:"center"
+                }}>
+                📎
+              </button>
+
+              <div style={{
+                flex:1,background:"#fff",
+                borderRadius:24,
+                padding:"8px 14px",
+                display:"flex",alignItems:"center"
+              }}>
+                <input
+                  value={msgInput}
+                  onChange={e=>{
+                    setMsgInput(e.target.value);
+                    setShowAttachMenu(false);
+                  }}
+                  onKeyDown={e=>{
+                    if (e.key==="Enter"&&!e.shiftKey) {
+                      e.preventDefault();
+                      if (msgInput.trim()||msgFiles.length>0)
+                        void handleAddQuery(e as any);
+                    }
+                  }}
+                  placeholder="Type a message..."
+                  style={{
+                    border:"none",outline:"none",
+                    fontSize:15,color:"#1a1614",
+                    background:"transparent",
+                    fontFamily:"inherit",width:"100%"
+                  }}/>
+              </div>
+
+              {(msgInput.trim()||msgFiles.length>0)?(
+                <button type="submit"
+                  disabled={querySending}
+                  style={{
+                    width:44,height:44,borderRadius:"50%",
+                    border:"none",background:"#25D366",
+                    color:"#fff",fontSize:20,
+                    cursor:"pointer",flexShrink:0,
+                    display:"flex",alignItems:"center",
+                    justifyContent:"center",
+                    opacity:querySending?0.6:1
+                  }}>
+                  {querySending?"…":"➤"}
+                </button>
+              ):(
+                <button type="button"
+                  onPointerDown={()=>void startRecording()}
+                  onPointerUp={()=>{
+                    if (isRecording) {
+                      stopRecording();
+                      setTimeout(
+                        ()=>void sendVoiceNote(),300
+                      );
+                    }
+                  }}
+                  style={{
+                    width:44,height:44,borderRadius:"50%",
+                    border:"none",
+                    background:isRecording
+                      ?"#dc2626":"#075E54",
+                    color:"#fff",fontSize:22,
+                    cursor:"pointer",flexShrink:0,
+                    display:"flex",alignItems:"center",
+                    justifyContent:"center",
+                    transition:"background .2s"
+                  }}>
+                  🎤
+                </button>
+              )}
+            </form>
+          )}
+          </>
         )}
         </div>
         </div>
