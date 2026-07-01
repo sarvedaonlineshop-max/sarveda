@@ -508,6 +508,9 @@ router.post("/", verifyComplaintAuth, upload.array("files", 5), async (req, res,
     };
     const files = (req.files as Express.Multer.File[] | undefined) ?? [];
     const assigneeEmails = parseAssigneeEmails(body);
+    const actorEmail = req.complaintUser!.email.toLowerCase();
+    const resolvedAssignees =
+      assigneeEmails.length > 0 ? assigneeEmails : [actorEmail];
     const dueDateRaw = typeof body.dueDate === "string" ? body.dueDate.trim() : undefined;
     const dueDate = dueDateRaw ? new Date(dueDateRaw) : null;
 
@@ -575,14 +578,14 @@ router.post("/", verifyComplaintAuth, upload.array("files", 5), async (req, res,
       }
     });
 
-    if (assigneeEmails.length > 0) {
+    if (resolvedAssignees.length > 0) {
       const actor = req.complaintUser!;
-      const names = await assigneeNameMap(assigneeEmails);
-      const assigneeDisplayNames = assigneeEmails
+      const names = await assigneeNameMap(resolvedAssignees);
+      const assigneeDisplayNames = resolvedAssignees
         .filter((email) => email !== actor.email)
         .map((email) => names.get(email) ?? email.split("@")[0]);
       await prisma.taskAssignee.createMany({
-        data: assigneeEmails.map((email) => ({
+        data: resolvedAssignees.map((email) => ({
           taskId: complaint.id,
           assigneeEmail: email,
           assigneeName: names.get(email) ?? null,
@@ -592,7 +595,7 @@ router.post("/", verifyComplaintAuth, upload.array("files", 5), async (req, res,
       });
 
       await prisma.taskNotification.createMany({
-        data: assigneeEmails
+        data: resolvedAssignees
           .filter((e) => e !== actor.email)
           .map((email) => ({
             recipientEmail: email,
@@ -607,7 +610,7 @@ router.post("/", verifyComplaintAuth, upload.array("files", 5), async (req, res,
         await postSystemChat(complaint.id, actor.email, startPromptMessage(assigneeDisplayNames));
       }
 
-      for (const email of assigneeEmails) {
+      for (const email of resolvedAssignees) {
         if (email === actor.email) continue;
         const html = `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto">

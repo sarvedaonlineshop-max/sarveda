@@ -92,6 +92,67 @@ function taskMatchesFilter(
   return u === filter;
 }
 
+type PriorityFilter = Priority | "ALL";
+
+function taskListStatus(
+  task: Task,
+  email: string,
+  usePerUserStatus: boolean
+): ApiStatus {
+  return apiStatus(viewerListStatus(task, email, usePerUserStatus));
+}
+
+function matchesListFilters(
+  task: Task,
+  statusFilter: "NEW"|"IN_PROGRESS"|"CLOSED",
+  priorityFilter: PriorityFilter,
+  email: string,
+  usePerUserStatus: boolean
+): boolean {
+  if (task.parentId) return false;
+  if (!taskMatchesFilter(taskListStatus(task, email, usePerUserStatus), statusFilter)) {
+    return false;
+  }
+  if (priorityFilter !== "ALL" && task.priority !== priorityFilter) return false;
+  return true;
+}
+
+function countTasksByStatus(
+  tasks: Task[],
+  email: string,
+  usePerUserStatus: boolean
+): Record<"NEW"|"IN_PROGRESS"|"CLOSED", number> {
+  const roots = rootTasksOnly(tasks);
+  return {
+    NEW: roots.filter((t) =>
+      taskMatchesFilter(taskListStatus(t, email, usePerUserStatus), "NEW")
+    ).length,
+    IN_PROGRESS: roots.filter((t) =>
+      taskMatchesFilter(taskListStatus(t, email, usePerUserStatus), "IN_PROGRESS")
+    ).length,
+    CLOSED: roots.filter((t) =>
+      taskMatchesFilter(taskListStatus(t, email, usePerUserStatus), "CLOSED")
+    ).length,
+  };
+}
+
+function countTasksByPriority(
+  tasks: Task[],
+  statusFilter: "NEW"|"IN_PROGRESS"|"CLOSED",
+  email: string,
+  usePerUserStatus: boolean
+): Record<PriorityFilter, number> {
+  const roots = rootTasksOnly(tasks).filter((t) =>
+    taskMatchesFilter(taskListStatus(t, email, usePerUserStatus), statusFilter)
+  );
+  return {
+    ALL: roots.length,
+    HIGH: roots.filter((t) => t.priority === "HIGH").length,
+    MEDIUM: roots.filter((t) => t.priority === "MEDIUM").length,
+    LOW: roots.filter((t) => t.priority === "LOW").length,
+  };
+}
+
 function rootTasksOnly(tasks: Task[]): Task[] {
   return tasks.filter((t) => !t.parentId);
 }
@@ -335,6 +396,8 @@ export default function TasksApp() {
   // Filter state
   const [statusFilter,setStatusFilter] =
     useState<"NEW"|"IN_PROGRESS"|"CLOSED">("NEW");
+  const [priorityFilter,setPriorityFilter] =
+    useState<PriorityFilter>("ALL");
 
   // New task state
   const [ntTitle,setNtTitle] = useState("");
@@ -856,7 +919,7 @@ export default function TasksApp() {
       setNtMsg("❌ Please describe the task"); return;
     }
     if (ntAssignees.length===0) {
-      setNtMsg("❌ Please add at least one person in To field"); return;
+      setNtMsg("❌ Please add at least one person or tap “To me”"); return;
     }
     setNtSubmitting(true);setNtMsg("");
     const filesToUpload = [...ntFiles];
@@ -1475,37 +1538,90 @@ export default function TasksApp() {
     );
   }
 
-  function StatusTabs() {
-    const tabs = [
-      {v:"NEW",label:"New"},
-      {v:"IN_PROGRESS",label:"In Progress"},
-      {v:"CLOSED",label:"Closed"},
-    ] as const;
+  function StatusTabs({
+    tasks,
+    usePerUserStatus,
+  }: {
+    tasks: Task[];
+    usePerUserStatus: boolean;
+  }) {
+    const statusTabs = [
+      { v: "NEW" as const, label: "New" },
+      { v: "IN_PROGRESS" as const, label: "In Progress" },
+      { v: "CLOSED" as const, label: "Closed" },
+    ];
+    const priorityTabs = [
+      { v: "ALL" as const, label: "All" },
+      { v: "HIGH" as const, label: "High" },
+      { v: "MEDIUM" as const, label: "Medium" },
+      { v: "LOW" as const, label: "Low" },
+    ];
+    const statusCounts = countTasksByStatus(tasks, myEmail, usePerUserStatus);
+    const priorityCounts = countTasksByPriority(
+      tasks,
+      statusFilter,
+      myEmail,
+      usePerUserStatus
+    );
+    const tabBtn = (
+      active: boolean,
+      onClick: () => void,
+      label: string,
+      count: number
+    ) => (
+      <button
+        type="button"
+        onClick={onClick}
+        style={{
+          padding: "6px 14px",
+          borderRadius: "999px",
+          border: "none",
+          background: active ? "#fff" : "rgba(255,255,255,.2)",
+          color: active ? "#075E54" : "#fff",
+          fontSize: "12px",
+          fontWeight: 700,
+          cursor: "pointer",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {label} ({count})
+      </button>
+    );
     return (
-      <div style={{
-        display:"flex",gap:"6px",
-        padding:"8px 16px",
-        background:"#075E54",
-        overflowX:"auto"
-      }}>
-        {tabs.map(t=>(
-          <button key={t.v}
-            onClick={()=>setStatusFilter(t.v)}
-            style={{
-              padding:"6px 16px",
-              borderRadius:"999px",
-              border:"none",
-              background:statusFilter===t.v
-                ?"#fff"
-                :"rgba(255,255,255,.2)",
-              color:statusFilter===t.v
-                ?"#075E54":"#fff",
-              fontSize:"12px",fontWeight:700,
-              cursor:"pointer",whiteSpace:"nowrap"
-            }}>
-            {t.label}
-          </button>
-        ))}
+      <div style={{ background: "#075E54" }}>
+        <div style={{
+          display: "flex",
+          gap: "6px",
+          padding: "8px 16px 4px",
+          overflowX: "auto",
+        }}>
+          {statusTabs.map((t) =>
+            tabBtn(
+              statusFilter === t.v,
+              () => {
+                setStatusFilter(t.v);
+                setPriorityFilter("ALL");
+              },
+              t.label,
+              statusCounts[t.v]
+            )
+          )}
+        </div>
+        <div style={{
+          display: "flex",
+          gap: "6px",
+          padding: "4px 16px 8px",
+          overflowX: "auto",
+        }}>
+          {priorityTabs.map((t) =>
+            tabBtn(
+              priorityFilter === t.v,
+              () => setPriorityFilter(t.v),
+              t.label,
+              priorityCounts[t.v]
+            )
+          )}
+        </div>
       </div>
     );
   }
@@ -1640,8 +1756,16 @@ export default function TasksApp() {
   }
 
   function ListShell({
-    children,showFab
-  }:{children:React.ReactNode;showFab?:boolean}) {
+    children,
+    showFab,
+    listTasks,
+    usePerUserStatus,
+  }: {
+    children: React.ReactNode;
+    showFab?: boolean;
+    listTasks: Task[];
+    usePerUserStatus: boolean;
+  }) {
     const pull = pullHandlers(refreshCurrentView);
     return (
       <div style={{
@@ -1654,7 +1778,7 @@ export default function TasksApp() {
       }}>
         <div style={{flexShrink:0}}>
           <MainHeader/>
-          <StatusTabs/>
+          <StatusTabs tasks={listTasks} usePerUserStatus={usePerUserStatus}/>
         </div>
         <div style={{
           flex:1,minHeight:0,overflowY:"auto",
@@ -1914,7 +2038,7 @@ export default function TasksApp() {
   if (view==="home") return (
     <>
       <style>{CSS}</style>
-      <ListShell showFab>
+      <ListShell showFab listTasks={myTasks} usePerUserStatus>
         {myTasks.length===0?(
           <div style={{
             textAlign:"center",padding:"60px 16px",
@@ -1928,15 +2052,13 @@ export default function TasksApp() {
               color:"#2c2420",marginBottom:"4px"
             }}>No tasks yet</p>
             <p style={{fontSize:"13px"}}>
-              Tap + to create your first task
+              Tap + to add a task for yourself or others
             </p>
           </div>
         ):(
           myTasks
-            .filter(t=>!t.parentId)
-            .filter(t=>taskMatchesFilter(
-              apiStatus(viewerListStatus(t,myEmail,true)),
-              statusFilter
+            .filter((t) => matchesListFilters(
+              t, statusFilter, priorityFilter, myEmail, true
             ))
             .map(t=>(
               <TaskCard key={t.id} task={t}
@@ -1951,7 +2073,7 @@ export default function TasksApp() {
   if (view==="assigned") return (
     <>
       <style>{CSS}</style>
-      <ListShell showFab>
+      <ListShell showFab listTasks={myAssignments} usePerUserStatus>
         {myAssignments.length===0?(
           <div style={{
             textAlign:"center",padding:"60px 16px",
@@ -1965,15 +2087,13 @@ export default function TasksApp() {
               color:"#2c2420",marginBottom:"4px"
             }}>No assignments yet</p>
             <p style={{fontSize:"13px"}}>
-              Tap + to assign a task to a team member
+              Tap + to assign a task to yourself or a team member
             </p>
           </div>
         ):(
           myAssignments
-            .filter(t=>!t.parentId)
-            .filter(t=>taskMatchesFilter(
-              apiStatus(viewerListStatus(t,myEmail,true)),
-              statusFilter
+            .filter((t) => matchesListFilters(
+              t, statusFilter, priorityFilter, myEmail, true
             ))
             .map(t=>(
               <TaskCard key={t.id} task={t}
@@ -2028,7 +2148,7 @@ export default function TasksApp() {
               </div>
             ))}
           </div>
-          <StatusTabs/>
+          <StatusTabs tasks={dashTasks} usePerUserStatus={false}/>
         </div>
         <div style={{
           flex:1,minHeight:0,overflowY:"auto",
@@ -2063,8 +2183,9 @@ export default function TasksApp() {
             </div>
           ):(
             dashTasks
-              .filter(t=>!t.parentId)
-              .filter(t=>taskMatchesFilter(t.status,statusFilter))
+              .filter((t) => matchesListFilters(
+                t, statusFilter, priorityFilter, myEmail, false
+              ))
               .map(t=>(
                 <TaskCard key={t.id} task={t}
                   onClick={()=>void openTaskDetail(t.id,"alltasks")}/>
@@ -2165,6 +2286,28 @@ export default function TasksApp() {
                   );
                 })}
                 <button type="button"
+                  onClick={()=>{
+                    if (!ntAssignees.includes(myEmail)) {
+                      setNtAssignees([...ntAssignees, myEmail]);
+                    }
+                    setShowMemberPicker(false);
+                  }}
+                  style={{
+                    background: ntAssignees.includes(myEmail)
+                      ? "#075E54" : "rgba(37,211,102,.15)",
+                    border: "none",
+                    borderRadius: "999px",
+                    color: ntAssignees.includes(myEmail) ? "#fff" : "#075E54",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    padding: "6px 12px",
+                    marginRight: "6px",
+                  }}
+                >
+                  To me
+                </button>
+                <button type="button"
                   onClick={()=>setShowMemberPicker(!showMemberPicker)}
                   style={{
                     background:"none",border:"none",
@@ -2203,9 +2346,17 @@ export default function TasksApp() {
                       fontSize:"18px",lineHeight:1,padding:"0 4px"
                     }}>×</button>
                 </div>
-                {members
-                  .filter(m=>m.email!==myEmail)
-                  .map(m=>{
+                {[
+                  {
+                    email: myEmail,
+                    name: myName || "You",
+                    avatarUrl: myAvatarUrl,
+                    isSelf: true,
+                  },
+                  ...members
+                    .filter((m) => m.email.toLowerCase() !== myEmail.toLowerCase())
+                    .map((m) => ({ ...m, isSelf: false })),
+                ].map((m) => {
                     const sel = ntAssignees.includes(m.email);
                     return (
                       <div key={m.email}
@@ -2220,13 +2371,17 @@ export default function TasksApp() {
                           cursor:"pointer",
                           background:sel?"#e7f8ef":"transparent"
                         }}>
-                        <Avatar name={m.name} email={m.email} size={32}/>
+                        <Avatar
+                          name={m.name} email={m.email} size={32}
+                          avatarUrl={m.avatarUrl ?? undefined}/>
                         <div style={{flex:1}}>
                           <p style={{
                             fontSize:"13px",fontWeight:600,
                             color:"#1a1614",margin:0
                           }}>
-                            {m.name??m.email.split("@")[0]}
+                            {m.isSelf
+                              ? `${m.name ?? "You"} (You)`
+                              : (m.name ?? m.email.split("@")[0])}
                           </p>
                           <p style={{
                             fontSize:"11px",color:"#8a7060",margin:0
@@ -2236,7 +2391,7 @@ export default function TasksApp() {
                       </div>
                     );
                   })}
-                {members.filter(m=>m.email!==myEmail).length===0&&(
+                {members.filter(m=>m.email.toLowerCase()!==myEmail.toLowerCase()).length===0&&(
                   <p style={{
                     padding:"16px",textAlign:"center",
                     color:"#8a7060",fontSize:"13px"
