@@ -647,7 +647,7 @@ function ChatAttachmentBubble({
 }: {
   a: Attachment;
   canDelete?: boolean;
-  onDelete?: () => void;
+  onDelete?: (attachment: Attachment) => void;
 }) {
   const isImage = a.type==="image";
   const isVideo = a.type==="video";
@@ -701,7 +701,7 @@ function ChatAttachmentBubble({
       open={menuOpen}
       onClose={()=>setMenuOpen(false)}
       onDownload={download}
-      onDelete={onDelete}
+      onDelete={onDelete ? ()=>onDelete(a) : undefined}
       canDelete={canDelete}
     />
   );
@@ -784,7 +784,7 @@ function ChatMedia({
 }: {
   attachments: Attachment[];
   canDelete?: boolean;
-  onDeleteMessage?: () => void;
+  onDeleteMessage?: (attachment: Attachment) => void;
 }) {
   if (!attachments.length) return null;
   return (
@@ -822,6 +822,39 @@ function timeAgo(d: string) {
   const h = Math.floor(m/60);
   if (h<24) return `${h}h ago`;
   return `${Math.floor(h/24)}d ago`;
+}
+
+function renderLinkedText(
+  text: string,
+  linkColor = "#0b57d0"
+): React.ReactNode {
+  const parts = text.split(/(https?:\/\/[^\s]+|www\.[^\s]+)/gi);
+  return parts.map((part, idx) => {
+    const isUrl = /^(https?:\/\/|www\.)/i.test(part);
+    if (!isUrl) {
+      return (
+        <span key={idx} style={{ whiteSpace: "pre-wrap" }}>
+          {part}
+        </span>
+      );
+    }
+    const href = /^https?:\/\//i.test(part) ? part : `https://${part}`;
+    return (
+      <a
+        key={idx}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          color: linkColor,
+          textDecoration: "underline",
+          wordBreak: "break-word",
+        }}
+      >
+        {part}
+      </a>
+    );
+  });
 }
 
 function TimeAgo({date}:{date:string}) {
@@ -1061,7 +1094,10 @@ export default function TasksApp() {
   const [membersDraft,setMembersDraft] = useState<string[]>([]);
   const [membersSaving,setMembersSaving] = useState(false);
   const [msgMenuId,setMsgMenuId] = useState<string|null>(null);
-  const [selectedMsgId,setSelectedMsgId] = useState<string|null>(null);
+  const [selectedDelete,setSelectedDelete] = useState<{
+    kind: "message" | "task-attachment";
+    id: string;
+  } | null>(null);
   const [keyboardInset,setKeyboardInset] = useState(0);
   const [myAvatarUrl,setMyAvatarUrl] = useState<string|null>(null);
   const [hasPassword,setHasPassword] = useState(true);
@@ -2301,12 +2337,34 @@ export default function TasksApp() {
         alert(d.error??"Cannot delete message");
         return;
       }
-      setSelectedMsgId(null);
+      setSelectedDelete(null);
       if (subtaskPanel) await loadSubtaskPanel(active.id);
       else await loadDetail(active.id);
       scrollChatToBottom();
     } catch {
       alert("Failed to delete message.");
+    }
+  }
+
+  async function handleDeleteTaskAttachment(attachmentId: string) {
+    const active = subtaskPanel ?? selected;
+    if (!active) return;
+    try {
+      const r = await fetch(
+        `${API}/complaints/${active.id}/attachments/${attachmentId}`,{
+        method:"DELETE",
+        headers:{Authorization:`Bearer ${token}`},
+      });
+      if (!r.ok) {
+        const d = await r.json() as any;
+        alert(d.error??"Cannot delete attachment");
+        return;
+      }
+      if (subtaskPanel) await loadSubtaskPanel(active.id);
+      else await loadDetail(active.id);
+      scrollChatToBottom();
+    } catch {
+      alert("Failed to delete attachment.");
     }
   }
 
@@ -4285,10 +4343,19 @@ export default function TasksApp() {
                 <p style={{
                   fontSize:"14px",color:"#1a1614",
                   lineHeight:1.5,margin:0
-                }}>{activeTask.description}</p>
+                }}>{renderLinkedText(activeTask.description)}</p>
               )}
               {activeTask.attachments.length>0&&(
-                <ChatMedia attachments={activeTask.attachments}/>
+                <ChatMedia
+                  attachments={activeTask.attachments}
+                  canDelete={canAct}
+                  onDeleteMessage={(attachment)=>{
+                    setSelectedDelete({
+                      kind: "task-attachment",
+                      id: attachment.id,
+                    });
+                  }}
+                />
               )}
               <p style={{
                 fontSize:"10px",color:"#8a7060",
@@ -4316,7 +4383,7 @@ export default function TasksApp() {
                     borderRadius:"999px",
                     fontWeight:600
                   }}>
-                    🔄 {ev.message}
+                    🔄 {ev.message ? renderLinkedText(ev.message, "#8a7060") : null}
                   </span>
                   <p style={{
                     fontSize:"10px",color:"#b8a898",
@@ -4340,12 +4407,15 @@ export default function TasksApp() {
                     lineHeight:1.5,display:"inline-block",
                     maxWidth:"90%"
                   }}>
-                    {systemMessageText(
-                      ev.message,
-                      myEmail,
-                      activeTask,
-                      members,
-                      myName
+                    {renderLinkedText(
+                      systemMessageText(
+                        ev.message,
+                        myEmail,
+                        activeTask,
+                        members,
+                        myName
+                      ),
+                      "#4a3f38"
                     )}
                   </span>
                   <p style={{
@@ -4423,7 +4493,10 @@ export default function TasksApp() {
                       <button type="button"
                         onClick={()=>{
                           setMsgMenuId(null);
-                          setSelectedMsgId(ev.id);
+                          setSelectedDelete({
+                            kind: "message",
+                            id: ev.id,
+                          });
                         }}
                         style={{
                           width:"100%",padding:"12px 14px",
@@ -4450,14 +4523,17 @@ export default function TasksApp() {
                       fontSize:"14px",color:"#1a1614",
                       lineHeight:1.5,margin:0,
                       paddingRight:canDel?18:0
-                    }}>{ev.message}</p>
+                    }}>{renderLinkedText(ev.message)}</p>
                   )}
                   {ev.attachments&&ev.attachments.length>0&&(
                     <ChatMedia
                       attachments={ev.attachments}
                       canDelete={canDel}
                       onDeleteMessage={()=>{
-                        setSelectedMsgId(ev.id);
+                        setSelectedDelete({
+                          kind: "message",
+                          id: ev.id,
+                        });
                       }}
                     />
                   )}
@@ -5273,11 +5349,11 @@ export default function TasksApp() {
           </div>
         )}
 
-        {selectedMsgId&&(
+        {selectedDelete&&(
           <>
             <div
               aria-hidden
-              onClick={()=>setSelectedMsgId(null)}
+              onClick={()=>setSelectedDelete(null)}
               style={{
                 position:"fixed",inset:0,
                 background:"rgba(0,0,0,.35)",
@@ -5301,20 +5377,24 @@ export default function TasksApp() {
                 margin:"0 0 12px",
                 fontSize:15,fontWeight:700,color:"#1a1614"
               }}>
-                Delete this message?
+                {selectedDelete.kind === "message"
+                  ? "Delete this message?"
+                  : "Delete this attachment?"}
               </p>
               <p style={{
                 margin:"0 0 14px",
                 fontSize:12,color:"#8a7060",lineHeight:1.5
               }}>
-                This cannot be undone. Delete is only available for your recent messages.
+                {selectedDelete.kind === "message"
+                  ? "This cannot be undone. Delete is only available for your recent messages."
+                  : "This cannot be undone."}
               </p>
               <div style={{
                 display:"flex",justifyContent:"flex-end",gap:10
               }}>
                 <button
                   type="button"
-                  onClick={()=>setSelectedMsgId(null)}
+                  onClick={()=>setSelectedDelete(null)}
                   style={{
                     padding:"10px 14px",borderRadius:999,
                     border:"1px solid #d7cec3",background:"#fff",
@@ -5325,7 +5405,11 @@ export default function TasksApp() {
                 </button>
                 <button
                   type="button"
-                  onClick={()=>void handleDeleteMessage(selectedMsgId)}
+                  onClick={()=>void (
+                    selectedDelete.kind === "message"
+                      ? handleDeleteMessage(selectedDelete.id)
+                      : handleDeleteTaskAttachment(selectedDelete.id)
+                  )}
                   style={{
                     padding:"10px 14px",borderRadius:999,
                     border:"none",background:"#dc2626",

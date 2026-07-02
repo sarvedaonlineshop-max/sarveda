@@ -1279,6 +1279,35 @@ router.post("/:id/attachments", verifyComplaintAuth, upload.array("files", 20), 
   }
 });
 
+router.delete("/:id/attachments/:attachmentId", verifyComplaintAuth, async (req, res, next) => {
+  try {
+    const actor = req.complaintUser!;
+    const task = await findTaskForParticipant(req.params.id, actor.email);
+    if (!task) {
+      res.status(404).json({ success: false, error: "Not found or not authorized", code: "FORBIDDEN" });
+      return;
+    }
+
+    const attachment = await prisma.complaintAttachment.findFirst({
+      where: {
+        id: req.params.attachmentId,
+        complaintId: req.params.id
+      }
+    });
+    if (!attachment) {
+      res.status(404).json({ success: false, error: "Attachment not found", code: "NOT_FOUND" });
+      return;
+    }
+
+    await prisma.complaintAttachment.delete({
+      where: { id: attachment.id }
+    });
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post("/:id/comment", verifyComplaintAuth, upload.array("files", 20), async (req, res, next) => {
   try {
     const { message } = req.body as { message?: string };
