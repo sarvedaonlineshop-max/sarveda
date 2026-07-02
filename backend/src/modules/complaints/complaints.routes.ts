@@ -8,6 +8,7 @@ import { logger } from "../../config/logger";
 import { uploadComplaintMedia, getSignedComplaintMediaUrl, deleteComplaintMedia } from "../../config/s3-complaints";
 import { requireAdmin } from "../../middleware/admin";
 import { sendMail } from "../notifications/email";
+import { sendPushToEmails } from "../../config/firebase";
 import { verifyAccessToken, signAccessToken } from "../../utils/jwt";
 import {
   loginComplaintWithPassword,
@@ -241,6 +242,10 @@ async function notifyTaskTeam(
       type,
       message
     }))
+  });
+  void sendPushToEmails(emails, task.title, message, {
+    taskId: task.id,
+    type
   });
 }
 
@@ -632,6 +637,12 @@ router.post("/", verifyComplaintAuth, upload.array("files", 20), async (req, res
             message: `${actor.name ?? actor.email} assigned you a task: "${complaint.title}"`
           }))
       });
+      void sendPushToEmails(
+        resolvedAssignees.filter((e) => e !== actor.email),
+        complaint.title,
+        `${actor.name ?? actor.email} assigned you a task: "${complaint.title}"`,
+        { taskId: complaint.id, type: "ASSIGNED" }
+      );
 
       if (assigneeDisplayNames.length > 0) {
         await postSystemChat(
@@ -1210,6 +1221,12 @@ router.patch("/:id/assignees", verifyComplaintAuth, async (req, res, next) => {
             message: `${actor.name ?? actor.email} added you to task "${task.title}"`
           }
         });
+        void sendPushToEmails(
+          [e],
+          task.title,
+          `${actor.name ?? actor.email} added you to task "${task.title}"`,
+          { taskId: task.id, type: "ASSIGNED" }
+        );
       }
     }
 
@@ -1408,6 +1425,12 @@ router.post("/:id/comment", verifyComplaintAuth, upload.array("files", 20), asyn
             message: `${actor.name ?? actor.email} replied on "${task.title}"`
           }))
         });
+        void sendPushToEmails(
+          notifyEmails,
+          task.title,
+          `${actor.name ?? actor.email} replied on "${task.title}"`,
+          { taskId: task.id, type: "REPLIED" }
+        );
 
         const replyPreview = message?.trim() ?? "(attachment)";
         for (const email of notifyEmails) {
@@ -1607,6 +1630,12 @@ router.patch("/:id/status", verifyComplaintAuth, async (req, res, next) => {
             message: `Task "${task.title}" was marked as resolved`
           }))
         });
+        void sendPushToEmails(
+          notifyEmails,
+          task.title,
+          `Task "${task.title}" was marked as resolved`,
+          { taskId: task.id, type: "CLOSED" }
+        );
       }
     }
 
@@ -1785,6 +1814,12 @@ router.post("/:id/assignees/me/deny", verifyComplaintAuth, async (req, res, next
         message: `${name} denied the task "${task.title}". Approve removal or reject the denial.`
       }
     });
+    void sendPushToEmails(
+      [task.raisedByEmail],
+      task.title,
+      `${name} denied the task "${task.title}". Approve removal or reject the denial.`,
+      { taskId: task.id, type: "DENIAL_PENDING" }
+    );
     res.json({ success: true });
   } catch (err) {
     next(err);
@@ -1922,6 +1957,12 @@ router.post("/:id/deadline-extension", verifyComplaintAuth, async (req, res, nex
         message: `${requesterName} requested deadline extension to ${label} on "${task.title}"`
       }
     });
+    void sendPushToEmails(
+      [task.raisedByEmail],
+      task.title,
+      `${requesterName} requested deadline extension to ${label} on "${task.title}"`,
+      { taskId: task.id, type: "DEADLINE_EXTENSION" }
+    );
     res.json({ success: true });
   } catch (err) {
     next(err);

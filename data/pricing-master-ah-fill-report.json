@@ -1,0 +1,204 @@
+{
+  "db_variant_count": 783,
+  "excel_rows_with_sku": 625,
+  "filled_ah": 592,
+  "already_had_matching_price": 0,
+  "rows_without_sku": 205,
+  "sku_not_in_db_count": 33,
+  "sku_not_in_db": [
+    {
+      "row": 57,
+      "sku": "MI-Ch-BS-25"
+    },
+    {
+      "row": 159,
+      "sku": "MI-SB-HH-4"
+    },
+    {
+      "row": 160,
+      "sku": "MI-SB-HH-D-5.5"
+    },
+    {
+      "row": 161,
+      "sku": "MI-SB-HH-5.5"
+    },
+    {
+      "row": 173,
+      "sku": "MI-G-ET-7C-32"
+    },
+    {
+      "row": 174,
+      "sku": "MI-G-ET-7C-40"
+    },
+    {
+      "row": 175,
+      "sku": "MI-G-ET-MT-18"
+    },
+    {
+      "row": 176,
+      "sku": "MI-G-ET-MT-20"
+    },
+    {
+      "row": 177,
+      "sku": "MI-G-ET-MT-22"
+    },
+    {
+      "row": 178,
+      "sku": "MI-G-ET-MT-24"
+    },
+    {
+      "row": 179,
+      "sku": "MI-G-ET-MT-28"
+    },
+    {
+      "row": 180,
+      "sku": "MI-G-ET-MT-32"
+    },
+    {
+      "row": 181,
+      "sku": "MI-G-ET-MT-40"
+    },
+    {
+      "row": 182,
+      "sku": "MI-G-ET-BM-18"
+    },
+    {
+      "row": 183,
+      "sku": "MI-G-ET-BM-20"
+    },
+    {
+      "row": 184,
+      "sku": "MI-G-ET-BM-22"
+    },
+    {
+      "row": 185,
+      "sku": "MI-G-ET-BM-24"
+    },
+    {
+      "row": 186,
+      "sku": "MI-G-ET-BM-28"
+    },
+    {
+      "row": 187,
+      "sku": "MI-G-ET-BM-32"
+    },
+    {
+      "row": 188,
+      "sku": "MI-G-ET-BM-40"
+    },
+    {
+      "row": 227,
+      "sku": "MI-SB-H-ET-DJ-6"
+    },
+    {
+      "row": 453,
+      "sku": "MI-KR-S-L"
+    },
+    {
+      "row": 474,
+      "sku": "CO-MI-CS-SRE"
+    },
+    {
+      "row": 491,
+      "sku": "MI-OD-D-30"
+    },
+    {
+      "row": 492,
+      "sku": "MI-OD-D-35"
+    },
+    {
+      "row": 493,
+      "sku": "MI-OD-D-40"
+    },
+    {
+      "row": 570,
+      "sku": "MI-SH-S"
+    },
+    {
+      "row": 571,
+      "sku": "MI-SH-M"
+    },
+    {
+      "row": 572,
+      "sku": "MI-SH-L"
+    },
+    {
+      "row": 697,
+      "sku": "MI-XP-W-15"
+    },
+    {
+      "row": 760,
+      "sku": "Mi-SB-Z-8"
+    },
+    {
+      "row": 761,
+      "sku": "Mi-SB-Z-10"
+    },
+    {
+      "row": 762,
+      "sku": "Mi-SB-Z-9"
+    }
+  ],
+  "conflicts_count": 0,
+  "conflicts": [],
+  "excel_duplicate_sku_count": 14,
+  "excel_duplicate_skus": {
+    "MI-TF-CG-W": [
+      100,
+      101
+    ],
+    "CB-CP-B": [
+      143,
+      377
+    ],
+    "CB-CP": [
+      144,
+      380
+    ],
+    "CB-CV-B": [
+      145,
+      384
+    ],
+    "CB-CV": [
+      146,
+      383
+    ],
+    "CB-CDG": [
+      147,
+      378
+    ],
+    "CB-CVDG": [
+      148,
+      385
+    ],
+    "CB-CVH-B": [
+      149,
+      388
+    ],
+    "CB-CVH": [
+      150,
+      387
+    ],
+    "MI-G-ET-7C-18": [
+      168,
+      270
+    ],
+    "MI-G-ET-7C-20": [
+      169,
+      271
+    ],
+    "MI-G-ET-7C-22": [
+      170,
+      272
+    ],
+    "MI-G-ET-7C-24": [
+      171,
+      273
+    ],
+    "MI-G-ET-7C-28": [
+      172,
+      275
+    ]
+  },
+  "db_duplicate_sku_with_different_prices": {}
+}

@@ -249,6 +249,23 @@ authRouter.post(
   })
 );
 
+authRouter.post(
+  "/fcm-token",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const { token } = req.body as { token?: string };
+    if (!token) {
+      res.status(400).json({ error: "Token required" });
+      return;
+    }
+    await prisma.user.update({
+      where: { id: req.authUser!.id },
+      data: { fcmToken: token }
+    });
+    res.json({ success: true });
+  })
+);
+
 authRouter.get(
   "/me/addresses",
   requireAuth,
