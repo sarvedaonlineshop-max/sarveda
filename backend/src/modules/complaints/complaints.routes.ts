@@ -722,7 +722,7 @@ router.get("/dashboard", verifyComplaintAuth, async (req, res, next) => {
       include: {
         assignees: true,
         attachments: true,
-        _count: { select: { events: true } }
+        _count: { select: { children: true, events: true } }
       },
       orderBy: { updatedAt: "desc" },
       take: 50
@@ -752,7 +752,7 @@ router.get("/assigned-to-me", verifyComplaintAuth, async (req, res, next) => {
       include: {
         assignees: true,
         attachments: true,
-        _count: { select: { events: true } }
+        _count: { select: { children: true, events: true } }
       },
       orderBy: { updatedAt: "desc" }
     });
@@ -770,7 +770,7 @@ router.get("/assigned-by-me", verifyComplaintAuth, async (req, res, next) => {
       include: {
         assignees: true,
         attachments: true,
-        _count: { select: { events: true } }
+        _count: { select: { children: true, events: true } }
       },
       orderBy: { updatedAt: "desc" }
     });
