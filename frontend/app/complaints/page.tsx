@@ -57,6 +57,7 @@ type Task = {
   pendingDeadlineDate?: string | null;
   pendingDeadlineRequestedBy?: string | null;
   _count?: { events: number };
+  unreadCount?: number;
 };
 
 type Notification = {
@@ -170,6 +171,7 @@ function normalizeTask(task: Task): Task {
     assignees: task.assignees ?? [],
     attachments: task.attachments ?? [],
     children: task.children?.map(normalizeTask),
+    unreadCount: task.unreadCount ?? 0,
   };
 }
 
@@ -1379,15 +1381,30 @@ export default function TasksApp() {
     return null;
   },[token]);
 
+  const markTaskRead = useCallback(async (taskId: string, t?: string) => {
+    const tk = t ?? token;
+    if (!tk) return;
+    await fetch(`${API}/complaints/${taskId}/read`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${tk}` },
+    }).catch(() => null);
+  }, [token]);
+
   const openTaskDetail = useCallback(async (taskId: string, from: View) => {
     viewStack.current = [from, "detail"];
     writeHistory(viewStack.current, "push");
     setSubtaskPanel(null);
     await loadDetail(taskId);
+    await markTaskRead(taskId);
+    void loadNotifications();
+    if (from === "home") void loadMyTasks();
+    if (from === "assigned") void loadMyAssignments();
+    if (from === "alltasks") void loadDashboard();
+    if (from === "notifications") void loadNotifications();
     setView("detail");
     scrollChatToBottom();
     window.setTimeout(scrollChatToBottom, 200);
-  }, [loadDetail, writeHistory]);
+  }, [loadDashboard, loadDetail, loadMyAssignments, loadMyTasks, loadNotifications, markTaskRead, writeHistory]);
 
   const loadSubtaskPanel = useCallback(async (id:string) => {
     const tk = token; if (!tk) return;
@@ -1460,8 +1477,13 @@ export default function TasksApp() {
 
   const openSubtaskPanel = useCallback((id: string) => {
     writeHistory(viewStack.current, "push", id);
+    void markTaskRead(id);
+    void loadNotifications();
+    void loadMyTasks();
+    void loadMyAssignments();
+    void loadDashboard();
     void loadSubtaskPanel(id);
-  }, [loadSubtaskPanel, writeHistory]);
+  }, [loadDashboard, loadMyAssignments, loadMyTasks, loadNotifications, loadSubtaskPanel, markTaskRead, writeHistory]);
 
   async function uploadTaskAttachments(
     taskId: string,
@@ -3057,6 +3079,23 @@ export default function TasksApp() {
               display:"flex",alignItems:"center",
               gap:"6px",flexShrink:0,marginLeft:"8px"
             }}>
+              {(task.unreadCount ?? 0) > 0 && (
+                <span style={{
+                  minWidth: 18,
+                  height: 18,
+                  padding: "0 6px",
+                  borderRadius: 999,
+                  background: "#25D366",
+                  color: "#fff",
+                  fontSize: 10,
+                  fontWeight: 800,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}>
+                  {(task.unreadCount ?? 0) > 99 ? "99+" : task.unreadCount}
+                </span>
+              )}
               {(task._count?.events||0)>0&&(
                 <span style={{
                   fontSize:"11px",color:"#8a7060"

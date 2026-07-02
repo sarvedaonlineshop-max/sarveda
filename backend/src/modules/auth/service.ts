@@ -1,11 +1,10 @@
 import type { Response } from "express";
 import type { User } from "@prisma/client";
-import sgMail from "@sendgrid/mail";
 import { z } from "zod";
 
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
-import { sendWelcomeEmail } from "../notifications/email";
+import { sendMail, sendWelcomeEmail } from "../notifications/email";
 import { hashPassword, verifyPassword } from "../../utils/hash";
 import { clearAuthCookie, setAuthCookie } from "../../utils/jwt";
 import { syncComplaintPassword } from "../complaints/whitelist-auth";
@@ -73,9 +72,11 @@ function otpCode(): string {
 }
 
 async function deliverEmailOtp(target: string, code: string) {
-  const key = process.env.SENDGRID_API_KEY;
-  const from = process.env.SENDGRID_FROM_EMAIL ?? "hello@sarveda.com";
-  if (!key) {
+  const sesConfigured =
+    process.env.AWS_SES_SMTP_HOST?.trim() &&
+    process.env.AWS_SES_SMTP_USER?.trim() &&
+    process.env.AWS_SES_SMTP_PASS?.trim();
+  if (!sesConfigured) {
     if (process.env.NODE_ENV === "production") {
       throw httpError(503, "Email delivery is not configured", "OTP_DELIVERY_UNAVAILABLE");
     }
@@ -83,13 +84,13 @@ async function deliverEmailOtp(target: string, code: string) {
     logger.info("otp_dev_code_email", { target, code });
     return;
   }
-  sgMail.setApiKey(key);
-  await sgMail.send({
-    to: target,
-    from,
-    subject: "Your Sarveda verification code",
-    text: `Your Sarveda verification code is ${code}. It expires in 10 minutes.`
-  });
+  const text = `Your Sarveda verification code is ${code}. It expires in 10 minutes.`;
+  await sendMail(
+    target,
+    "Your Sarveda verification code",
+    `<p>${text}</p>`,
+    text
+  );
 }
 
 async function deliverPhoneOtp(target: string, code: string) {

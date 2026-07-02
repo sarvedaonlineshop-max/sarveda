@@ -137,22 +137,38 @@ async function phoneForEmail(email: string): Promise<string | null> {
 
 async function enrichComplaintList<
   T extends {
+    id: string;
     raisedByEmail: string;
     raisedByName: string | null;
     children?: Array<{ id: string }>;
     _count?: { children: number };
   }
->(rows: T[]) {
+>(rows: T[], viewerEmail?: string) {
   const emails = [...new Set(rows.map((r) => r.raisedByEmail.toLowerCase()))];
   const users = await prisma.user.findMany({
     where: { email: { in: emails } },
     select: { email: true, phone: true }
   });
   const phoneMap = new Map(users.map((u) => [u.email.toLowerCase(), u.phone]));
+  const unreadMap = new Map<string, number>();
+  if (viewerEmail && rows.length > 0) {
+    const unread = await prisma.taskNotification.findMany({
+      where: {
+        recipientEmail: viewerEmail,
+        isRead: false,
+        taskId: { in: rows.map((r) => r.id) }
+      },
+      select: { taskId: true }
+    });
+    for (const row of unread) {
+      unreadMap.set(row.taskId, (unreadMap.get(row.taskId) ?? 0) + 1);
+    }
+  }
   return rows.map((row) => ({
     ...row,
     raisedByPhone: phoneMap.get(row.raisedByEmail.toLowerCase()) ?? null,
-    childCount: row._count?.children ?? row.children?.length ?? 0
+    childCount: row._count?.children ?? row.children?.length ?? 0,
+    unreadCount: unreadMap.get(row.id) ?? 0
   }));
 }
 
@@ -719,7 +735,7 @@ router.get("/dashboard", verifyComplaintAuth, async (req, res, next) => {
       total: tasks.length
     };
 
-    res.json({ success: true, tasks, stats });
+    res.json({ success: true, tasks: await enrichComplaintList(tasks, email), stats });
   } catch (err) {
     next(err);
   }
@@ -740,7 +756,7 @@ router.get("/assigned-to-me", verifyComplaintAuth, async (req, res, next) => {
       },
       orderBy: { updatedAt: "desc" }
     });
-    res.json({ success: true, tasks });
+    res.json({ success: true, tasks: await enrichComplaintList(tasks, email) });
   } catch (err) {
     next(err);
   }
@@ -758,7 +774,7 @@ router.get("/assigned-by-me", verifyComplaintAuth, async (req, res, next) => {
       },
       orderBy: { updatedAt: "desc" }
     });
-    res.json({ success: true, tasks });
+    res.json({ success: true, tasks: await enrichComplaintList(tasks, email) });
   } catch (err) {
     next(err);
   }
@@ -922,6 +938,28 @@ router.patch("/notifications/read-all", verifyComplaintAuth, async (req, res, ne
   }
 });
 
+router.patch("/:id/read", verifyComplaintAuth, async (req, res, next) => {
+  try {
+    const email = req.complaintUser!.email;
+    const task = await findTaskForParticipant(req.params.id, email);
+    if (!task) {
+      res.status(404).json({ success: false, error: "Not found or not authorized", code: "FORBIDDEN" });
+      return;
+    }
+    await prisma.taskNotification.updateMany({
+      where: {
+        recipientEmail: email,
+        taskId: req.params.id,
+        isRead: false
+      },
+      data: { isRead: true }
+    });
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/all", verifyComplaintAuth, async (req, res, next) => {
   try {
     const email = req.complaintUser!.email;
@@ -943,7 +981,7 @@ router.get("/all", verifyComplaintAuth, async (req, res, next) => {
         _count: { select: { children: true, events: true } }
       }
     });
-    res.json({ success: true, complaints: await enrichComplaintList(complaints) });
+    res.json({ success: true, complaints: await enrichComplaintList(complaints, email) });
   } catch (err) {
     next(err);
   }
@@ -966,7 +1004,7 @@ router.get("/my", verifyComplaintAuth, async (req, res, next) => {
         _count: { select: { children: true, events: true } }
       }
     });
-    res.json({ success: true, complaints: await enrichComplaintList(complaints) });
+    res.json({ success: true, complaints: await enrichComplaintList(complaints, req.complaintUser!.email) });
   } catch (err) {
     next(err);
   }
