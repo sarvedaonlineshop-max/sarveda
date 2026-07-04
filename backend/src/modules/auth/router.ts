@@ -262,6 +262,9 @@ authRouter.post(
       where: { id: req.authUser!.id },
       data: { fcmToken: token }
     });
+    console.log(
+      `[FCM] Token saved for ${req.authUser!.email} (${token.slice(0, 12)}...)`
+    );
     res.json({ success: true });
   })
 );

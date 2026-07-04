@@ -1,28 +1,45 @@
 import { Queue, Worker } from "bullmq";
 
 import { prisma } from "../config/db";
+import { sendPushToEmails } from "../config/firebase";
 import { logger } from "../config/logger";
 import { getRedisConnection } from "../config/redisConnection";
-import { sendMail } from "../modules/notifications/email";
 
 const QUEUE_NAME = "task-due-reminders";
+const CHECK_WINDOW_MS = 90 * 1000;
+const INTERVAL_MS = 30 * 1000;
 
 let queue: Queue | null = null;
 let worker: Worker | null = null;
+let intervalHandle: ReturnType<typeof setInterval> | null = null;
+let started = false;
 
-function tasksAppUrl(): string {
-  const raw =
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    process.env.FRONTEND_URL?.split(",")[0]?.trim() ||
-    "http://localhost:3000";
-  return `${raw.replace(/\/$/, "")}/complaints`;
+async function notificationExists(
+  taskId: string,
+  recipientEmail: string,
+  message: string
+): Promise<boolean> {
+  const existing = await prisma.taskNotification.findFirst({
+    where: { taskId, recipientEmail, message }
+  });
+  return existing != null;
 }
 
-function htmlToPlainText(html: string): string {
-  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+function recipientEmails(task: {
+  assignees: { assigneeEmail: string }[];
+  raisedByEmail: string;
+  assignedByEmail: string | null;
+}): string[] {
+  const emails = new Set<string>();
+  for (const a of task.assignees) {
+    emails.add(a.assigneeEmail);
+  }
+  if (task.raisedByEmail) emails.add(task.raisedByEmail);
+  if (task.assignedByEmail) emails.add(task.assignedByEmail);
+  return Array.from(emails);
 }
 
-async function checkDueDateReminders(): Promise<void> {
+export async function checkDueDateReminders(): Promise<void> {
   const now = new Date();
 
   const tasks = await prisma.complaint.findMany({
@@ -39,62 +56,48 @@ async function checkDueDateReminders(): Promise<void> {
     const total = task.dueDate.getTime() - task.createdAt.getTime();
     if (total <= 0) continue;
 
-    const elapsed = now.getTime() - task.createdAt.getTime();
-    const ratio = elapsed / total;
-
     const milestones = [
-      { ratio: 0.25, pct: "25%" },
       { ratio: 0.5, pct: "50%" },
-      { ratio: 0.75, pct: "75%" },
       { ratio: 1.0, pct: "100%" }
     ];
 
     for (const ms of milestones) {
       const msTime = task.createdAt.getTime() + total * ms.ratio;
-      const oneHour = 60 * 60 * 1000;
 
-      if (msTime > now.getTime() - oneHour && msTime <= now.getTime()) {
-        for (const assignee of task.assignees) {
+      if (
+        msTime > now.getTime() - CHECK_WINDOW_MS &&
+        msTime <= now.getTime()
+      ) {
+        const message =
+          ms.ratio >= 1
+            ? `⚠️ OVERDUE: "${task.title}" has passed its due date!`
+            : `⏰ "${task.title}" is ${ms.pct} through its deadline`;
+
+        const recipients = recipientEmails(task);
+
+        for (const email of recipients) {
+          if (
+            await notificationExists(task.id, email, message)
+          ) {
+            continue;
+          }
+
           await prisma.taskNotification.create({
             data: {
-              recipientEmail: assignee.assigneeEmail,
+              recipientEmail: email,
               taskId: task.id,
               taskTitle: task.title,
               type: "DUE_DATE_REMINDER",
-              message:
-                ms.ratio >= 1
-                  ? `⚠️ OVERDUE: "${task.title}" has passed its due date!`
-                  : `⏰ "${task.title}" is ${ms.pct} through its deadline`
+              message
             }
           });
 
-          const html = `
-              <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-                <div style="background:${ms.ratio >= 1 ? "#dc2626" : "#c8960a"};padding:20px;border-radius:12px 12px 0 0">
-                  <h2 style="color:#fff;margin:0">
-                    ${ms.ratio >= 1 ? "⚠️ Task Overdue!" : `⏰ ${ms.pct} of deadline reached`}
-                  </h2>
-                </div>
-                <div style="background:#fff;padding:20px;border:1px solid #e0d8ce;border-top:none;border-radius:0 0 12px 12px">
-                  <p style="color:#2c2420;font-size:16px;font-weight:700">${task.title}</p>
-                  <p style="color:#8a7060;font-size:14px">Due: ${task.dueDate.toLocaleDateString("en-IN")}</p>
-                  <p style="color:#4a3f38;font-size:14px;margin-top:12px">
-                    ${
-                      ms.ratio >= 1
-                        ? "This task is past its due date. Please update the status or contact your manager."
-                        : `You have used ${ms.pct} of the allocated time for this task.`
-                    }
-                  </p>
-                  <a href="${tasksAppUrl()}" style="display:inline-block;background:#1e3a2f;color:#f5d88a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;margin-top:16px">View Task →</a>
-                </div>
-              </div>`;
-
-          void sendMail(
-            assignee.assigneeEmail,
-            ms.ratio >= 1 ? `⚠️ OVERDUE: ${task.title}` : `⏰ Task ${ms.pct} deadline: ${task.title}`,
-            html,
-            htmlToPlainText(html)
-          ).catch((err) => logger.error("due_date_email_failed", { err, taskId: task.id }));
+          void sendPushToEmails(
+            [email],
+            ms.ratio >= 1 ? "⚠️ Task Overdue" : "⏰ Deadline Reminder",
+            message,
+            { taskId: task.id, type: "DUE_DATE_REMINDER" }
+          );
         }
 
         if (ms.ratio >= 1 && task.priority === "HIGH" && task.assignedByEmail) {
@@ -102,39 +105,32 @@ async function checkDueDateReminders(): Promise<void> {
             .map((a) => a.assigneeName ?? a.assigneeEmail.split("@")[0])
             .join(", ");
 
-          await prisma.taskNotification.create({
-            data: {
-              recipientEmail: task.assignedByEmail,
-              taskId: task.id,
-              taskTitle: task.title,
-              type: "HIGH_PRIORITY_OVERDUE",
-              message: `🔴 HIGH PRIORITY OVERDUE: "${task.title}" assigned to ${assigneeNames} is past due!`
-            }
-          });
+          const hpMessage = `🔴 HIGH PRIORITY OVERDUE: "${task.title}" assigned to ${assigneeNames} is past due!`;
 
-          const html = `
-              <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-                <div style="background:#dc2626;padding:20px;border-radius:12px 12px 0 0">
-                  <h2 style="color:#fff;margin:0">🔴 High Priority Task Overdue</h2>
-                </div>
-                <div style="background:#fff;padding:20px;border:1px solid #e0d8ce;border-top:none;border-radius:0 0 12px 12px">
-                  <p style="color:#2c2420;font-weight:700;font-size:16px">${task.title}</p>
-                  <p style="color:#4a3f38;margin-top:8px">
-                    Assigned to: <strong>${task.assignees.map((a) => a.assigneeName ?? a.assigneeEmail).join(", ")}</strong>
-                  </p>
-                  <p style="color:#dc2626;font-weight:700;margin-top:8px">
-                    This HIGH PRIORITY task is overdue and not yet completed.
-                  </p>
-                  <a href="${tasksAppUrl()}" style="display:inline-block;background:#dc2626;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;margin-top:16px">View Task →</a>
-                </div>
-              </div>`;
+          if (
+            !(await notificationExists(
+              task.id,
+              task.assignedByEmail,
+              hpMessage
+            ))
+          ) {
+            await prisma.taskNotification.create({
+              data: {
+                recipientEmail: task.assignedByEmail,
+                taskId: task.id,
+                taskTitle: task.title,
+                type: "HIGH_PRIORITY_OVERDUE",
+                message: hpMessage
+              }
+            });
 
-          void sendMail(
-            task.assignedByEmail,
-            `🔴 HIGH PRIORITY OVERDUE: ${task.title}`,
-            html,
-            htmlToPlainText(html)
-          ).catch((err) => logger.error("high_priority_overdue_email", { err }));
+            void sendPushToEmails(
+              [task.assignedByEmail],
+              "🔴 High Priority Overdue",
+              hpMessage,
+              { taskId: task.id, type: "HIGH_PRIORITY_OVERDUE" }
+            );
+          }
         }
       }
     }
@@ -143,13 +139,30 @@ async function checkDueDateReminders(): Promise<void> {
   logger.info("due_date_check_complete", { tasksChecked: tasks.length });
 }
 
+function startIntervalFallback(): void {
+  if (intervalHandle) return;
+  logger.warn("task_due_date_worker_interval_fallback", {
+    reason: "REDIS unavailable — using setInterval"
+  });
+  void checkDueDateReminders();
+  intervalHandle = setInterval(() => {
+    void checkDueDateReminders().catch((err) => {
+      logger.error("task_due_date_interval_failed", {
+        error: err instanceof Error ? err.message : String(err)
+      });
+    });
+  }, INTERVAL_MS);
+}
+
 export function startDueDateReminderWorker(): void {
+  if (started) return;
+  started = true;
+
   const conn = getRedisConnection();
   if (!conn) {
-    logger.warn("task_due_date_worker_skipped", { reason: "REDIS_URL not set" });
+    startIntervalFallback();
     return;
   }
-  if (worker) return;
 
   if (!queue) {
     queue = new Queue(QUEUE_NAME, { connection: conn });
@@ -159,8 +172,8 @@ export function startDueDateReminderWorker(): void {
     "check",
     {},
     {
-      repeat: { every: 60 * 60 * 1000 },
-      jobId: "task-due-reminders-hourly"
+      repeat: { every: INTERVAL_MS },
+      jobId: "task-due-reminders-30s"
     }
   );
 
@@ -180,6 +193,12 @@ export function startDueDateReminderWorker(): void {
 
   worker.on("failed", (job, err) => {
     logger.error("task_due_date_worker_failed", { jobId: job?.id, err });
+  });
+
+  worker.on("error", () => {
+    if (!intervalHandle) {
+      startIntervalFallback();
+    }
   });
 
   logger.info("task_due_date_worker_started");

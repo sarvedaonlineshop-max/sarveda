@@ -1,5 +1,6 @@
 import { app } from "./app";
 import { initSentry } from "./config/sentry";
+import { validateFirebaseConfig } from "./config/firebase";
 import { startEmailWorker } from "./jobs/emailQueue";
 import { startAbandonedNotificationWorker } from "./jobs/abandonedNotificationJob";
 import { startCartCleanupWorker } from "./jobs/cartCleanupJob";
@@ -15,6 +16,7 @@ const port = Number(process.env.PORT ?? 5000);
 
 app.listen(port, () => {
   process.stdout.write(`Sarveda backend running on http://localhost:${port}\n`);
+  validateFirebaseConfig();
   startPaymentTimeoutWorker();
   startDueDateReminderWorker();
   startShippingRetryWorker();
