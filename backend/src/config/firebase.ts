@@ -110,6 +110,19 @@ export async function sendPushNotification(
       error: message,
       tokenPrefix: fcmToken.slice(0, 12)
     });
+    if (
+      message.includes("registration-token-not-registered") ||
+      message.includes("InvalidRegistration") ||
+      message.includes("NotRegistered")
+    ) {
+      await prisma.user.updateMany({
+        where: { fcmToken },
+        data: { fcmToken: null }
+      });
+      logger.warn("fcm_token_cleared_stale", {
+        tokenPrefix: fcmToken.slice(0, 12)
+      });
+    }
     return false;
   }
 }
