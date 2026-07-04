@@ -17,6 +17,7 @@ import {
   loginComplaintWithPassword,
   provisionWhitelistCredentials
 } from "./whitelist-auth";
+import { updateNotificationPreferences } from "../auth/service";
 
 const router = Router();
 const upload = multer({
@@ -825,6 +826,66 @@ router.post("/profile/avatar", verifyComplaintAuth, upload.single("avatar"), asy
     });
     const signed = await getSignedComplaintMediaUrl(s3Key);
     res.json({ success: true, avatarUrl: signed });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/profile/notification-preferences", verifyComplaintAuth, async (req, res, next) => {
+  try {
+    const actor = req.complaintUser!;
+    const user = await prisma.user.findUnique({
+      where: { id: actor.id },
+      select: {
+        emailNotificationsEnabled: true,
+        pushNotificationsEnabled: true
+      }
+    });
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        error: "User not found",
+        code: "NOT_FOUND"
+      });
+      return;
+    }
+    res.json({
+      success: true,
+      data: {
+        emailNotificationsEnabled: user.emailNotificationsEnabled,
+        pushNotificationsEnabled: user.pushNotificationsEnabled
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch("/profile/notification-preferences", verifyComplaintAuth, async (req, res, next) => {
+  try {
+    const {
+      emailNotificationsEnabled,
+      pushNotificationsEnabled
+    } = req.body as {
+      emailNotificationsEnabled?: boolean;
+      pushNotificationsEnabled?: boolean;
+    };
+    if (
+      emailNotificationsEnabled === undefined &&
+      pushNotificationsEnabled === undefined
+    ) {
+      res.status(400).json({
+        success: false,
+        error: "No preferences to update",
+        code: "BAD_REQUEST"
+      });
+      return;
+    }
+    const user = await updateNotificationPreferences(
+      req.complaintUser!.id,
+      { emailNotificationsEnabled, pushNotificationsEnabled }
+    );
+    res.json({ success: true, data: { user } });
   } catch (err) {
     next(err);
   }
