@@ -33,7 +33,9 @@ model User {
   passwordResetTokens PasswordResetToken[]
   enquiryThreads      EnquiryThread[]
   enquiryAdminMessages EnquiryMessage[] @relation("EnquiryAdminMessages")
-  fcmToken             String?
+  fcmToken                    String?
+  emailNotificationsEnabled   Boolean  @default(true)
+  pushNotificationsEnabled    Boolean  @default(true)
 }
 
 enum Role {

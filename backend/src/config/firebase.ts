@@ -139,7 +139,8 @@ export async function sendPushToEmails(
   const users = await prisma.user.findMany({
     where: {
       email: { in: list },
-      fcmToken: { not: null }
+      fcmToken: { not: null },
+      pushNotificationsEnabled: true
     },
     select: { email: true, fcmToken: true }
   });

@@ -7,8 +7,11 @@ import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { uploadComplaintMedia, getSignedComplaintMediaUrl, deleteComplaintMedia } from "../../config/s3-complaints";
 import { requireAdmin } from "../../middleware/admin";
-import { sendMail } from "../notifications/email";
 import { sendPushToEmails } from "../../config/firebase";
+import {
+  sendTaskEmails,
+  taskEmailHtml
+} from "./task-notification-delivery";
 import { verifyAccessToken, signAccessToken } from "../../utils/jwt";
 import {
   loginComplaintWithPassword,
@@ -303,11 +306,7 @@ async function emailTaskTeam(
       (e): e is string => !!e && e.toLowerCase() !== excludeEmail?.toLowerCase()
     )
   );
-  for (const email of emails) {
-    void sendMail(email, subject, bodyHtml, htmlToPlainText(bodyHtml)).catch((err) =>
-      logger.error("task_team_email_failed", { err, email })
-    );
-  }
+  await sendTaskEmails(emails, subject, bodyHtml);
 }
 
 async function signedAvatarUrl(
@@ -322,18 +321,6 @@ async function signedAvatarUrl(
     }
   }
   return avatarUrl ?? null;
-}
-
-function tasksAppUrl(): string {
-  const raw =
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    process.env.FRONTEND_URL?.split(",")[0]?.trim() ||
-    "http://localhost:3000";
-  return `${raw.replace(/\/$/, "")}/complaints`;
-}
-
-function htmlToPlainText(html: string): string {
-  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
 // ─── ADMIN ROUTES (before /:id) ─────────────────────────────────────────────
@@ -657,17 +644,9 @@ router.post("/", verifyComplaintAuth, upload.array("files", 20), async (req, res
 
       for (const email of resolvedAssignees) {
         if (email === actor.email) continue;
-        const html = `
-        <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-          <div style="background:#1e3a2f;padding:20px;border-radius:12px 12px 0 0">
-            <h2 style="color:#f5d88a;margin:0">Sarveda Tasks</h2>
-          </div>
-          <div style="background:#fff;padding:20px;border:1px solid #e0d8ce;border-top:none;border-radius:0 0 12px 12px">
-            <p style="color:#2c2420">
-              Hi, you have been assigned a new task by
-              <strong>${actor.name ?? actor.email}</strong>:
-            </p>
-            <div style="background:#f0fdf4;border-left:4px solid #1e3a2f;padding:14px;border-radius:8px;margin:16px 0">
+        const html = taskEmailHtml(
+          `Hi, you have been assigned a new task by <strong>${actor.name ?? actor.email}</strong>:`,
+          `<div style="background:#f0fdf4;border-left:4px solid #1e3a2f;padding:14px;border-radius:8px;margin:16px 0">
               <p style="font-size:16px;font-weight:700;color:#1a1614;margin:0 0 6px">${complaint.title}</p>
               ${
                 complaint.description
@@ -675,16 +654,14 @@ router.post("/", verifyComplaintAuth, upload.array("files", 20), async (req, res
                   : ""
               }
             </div>
-            <p style="color:#8a7060;font-size:13px">Priority: <strong>${complaint.priority}</strong></p>
-            <a href="${tasksAppUrl()}" style="display:inline-block;background:#1e3a2f;color:#f5d88a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;margin-top:16px">Open task and press Start →</a>
-          </div>
-        </div>`;
-        void sendMail(
-          email,
+            <p style="color:#8a7060;font-size:13px">Priority: <strong>${complaint.priority}</strong></p>`,
+          "Open task and press Start →"
+        );
+        void sendTaskEmails(
+          [email],
           `New task assigned: ${complaint.title}`,
-          html,
-          htmlToPlainText(html)
-        ).catch((err) => logger.error("task_assignment_email_failed", { err, email }));
+          html
+        );
       }
     }
 
@@ -1212,20 +1189,33 @@ router.patch("/:id/assignees", verifyComplaintAuth, async (req, res, next) => {
 
       for (const e of toAdd) {
         if (e === actor.email) continue;
+        const addMsg =
+          `${actor.name ?? actor.email} added you to task "${task.title}"`;
         await prisma.taskNotification.create({
           data: {
             recipientEmail: e,
             taskId: task.id,
             taskTitle: task.title,
             type: "ASSIGNED",
-            message: `${actor.name ?? actor.email} added you to task "${task.title}"`
+            message: addMsg
           }
         });
         void sendPushToEmails(
           [e],
           task.title,
-          `${actor.name ?? actor.email} added you to task "${task.title}"`,
+          addMsg,
           { taskId: task.id, type: "ASSIGNED" }
+        );
+        const html = taskEmailHtml(
+          `<strong>${actor.name ?? actor.email}</strong> added you to a task:`,
+          `<div style="background:#f0fdf4;border-left:4px solid #1e3a2f;padding:14px;border-radius:8px;margin:16px 0">
+              <p style="font-size:16px;font-weight:700;color:#1a1614;margin:0">${task.title}</p>
+            </div>`
+        );
+        void sendTaskEmails(
+          [e],
+          `Added to task: ${task.title}`,
+          html
         );
       }
     }
@@ -1433,31 +1423,19 @@ router.post("/:id/comment", verifyComplaintAuth, upload.array("files", 20), asyn
         );
 
         const replyPreview = message?.trim() ?? "(attachment)";
-        for (const email of notifyEmails) {
-          const html = `
-        <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-          <div style="background:#1e3a2f;padding:20px;border-radius:12px 12px 0 0">
-            <h2 style="color:#f5d88a;margin:0">Sarveda Tasks</h2>
-          </div>
-          <div style="background:#fff;padding:20px;border:1px solid #e0d8ce;border-top:none;border-radius:0 0 12px 12px">
-            <p style="color:#2c2420">
-              <strong>${actor.name ?? actor.email.split("@")[0]}</strong>
-              replied on a task you are involved in:
-            </p>
-            <div style="background:#f9f7f4;border-left:4px solid #c8960a;padding:14px;border-radius:8px;margin:16px 0">
+        const html = taskEmailHtml(
+          `<strong>${actor.name ?? actor.email.split("@")[0]}</strong> replied on a task you are involved in:`,
+          `<div style="background:#f9f7f4;border-left:4px solid #c8960a;padding:14px;border-radius:8px;margin:16px 0">
               <p style="font-weight:700;color:#1a1614;margin:0 0 6px">${task.title}</p>
               <p style="color:#4a3f38;font-size:14px;margin:0">"${replyPreview}"</p>
-            </div>
-            <a href="${tasksAppUrl()}" style="display:inline-block;background:#1e3a2f;color:#f5d88a;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;margin-top:16px">View Conversation →</a>
-          </div>
-        </div>`;
-          void sendMail(
-            email,
-            `New reply on task: ${task.title}`,
-            html,
-            htmlToPlainText(html)
-          ).catch((err) => logger.error("task_reply_email_failed", { err, email }));
-        }
+            </div>`,
+          "View Conversation →"
+        );
+        void sendTaskEmails(
+          notifyEmails,
+          `New reply on task: ${task.title}`,
+          html
+        );
       }
     }
 
@@ -1635,6 +1613,15 @@ router.patch("/:id/status", verifyComplaintAuth, async (req, res, next) => {
           task.title,
           `Task "${task.title}" was marked as resolved`,
           { taskId: task.id, type: "CLOSED" }
+        );
+        const closedHtml = taskEmailHtml(
+          `Task <strong>"${task.title}"</strong> was marked as resolved.`,
+          `<p style="color:#4a3f38;font-size:14px;margin:0">Open Sarveda Tasks to review the completed task.</p>`
+        );
+        void sendTaskEmails(
+          notifyEmails,
+          `Task resolved: ${task.title}`,
+          closedHtml
         );
       }
     }
@@ -2003,7 +1990,10 @@ router.post("/:id/deadline-extension/approve", verifyComplaintAuth, async (req, 
     const msg = `✅ ${ownerName} approved the deadline extension to ${label} (requested by ${requesterName})`;
     await postSystemChat(task.id, actor.email, msg);
     await notifyTaskTeam(updated, actor.email, msg, "DUE_DATE_REMINDER");
-    const html = `<div style="font-family:sans-serif"><p>${msg}</p><a href="${tasksAppUrl()}">Open task</a></div>`;
+    const html = taskEmailHtml(
+      msg,
+      `<p style="color:#4a3f38;font-size:14px;margin:0">The task deadline has been updated.</p>`
+    );
     await emailTaskTeam(updated, `Deadline updated: ${task.title}`, html, actor.email);
     res.json({ success: true, task: updated });
   } catch (err) {

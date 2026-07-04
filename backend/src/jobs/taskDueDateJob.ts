@@ -4,6 +4,10 @@ import { prisma } from "../config/db";
 import { sendPushToEmails } from "../config/firebase";
 import { logger } from "../config/logger";
 import { getRedisConnection } from "../config/redisConnection";
+import {
+  sendTaskEmails,
+  taskEmailHtml
+} from "../modules/complaints/task-notification-delivery";
 
 const QUEUE_NAME = "task-due-reminders";
 const CHECK_WINDOW_MS = 90 * 1000;
@@ -98,6 +102,18 @@ export async function checkDueDateReminders(): Promise<void> {
             message,
             { taskId: task.id, type: "DUE_DATE_REMINDER" }
           );
+
+          const deadlineHtml = taskEmailHtml(
+            message,
+            `<p style="color:#4a3f38;font-size:14px;margin:0">Task: <strong>${task.title}</strong></p>`
+          );
+          void sendTaskEmails(
+            [email],
+            ms.ratio >= 1
+              ? `Task overdue: ${task.title}`
+              : `Deadline reminder: ${task.title}`,
+            deadlineHtml
+          );
         }
 
         if (ms.ratio >= 1 && task.priority === "HIGH" && task.assignedByEmail) {
@@ -129,6 +145,16 @@ export async function checkDueDateReminders(): Promise<void> {
               "🔴 High Priority Overdue",
               hpMessage,
               { taskId: task.id, type: "HIGH_PRIORITY_OVERDUE" }
+            );
+
+            const hpHtml = taskEmailHtml(
+              hpMessage,
+              `<p style="color:#4a3f38;font-size:14px;margin:0">Task: <strong>${task.title}</strong></p>`
+            );
+            void sendTaskEmails(
+              [task.assignedByEmail],
+              `High priority overdue: ${task.title}`,
+              hpHtml
             );
           }
         }

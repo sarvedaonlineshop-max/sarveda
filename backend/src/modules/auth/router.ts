@@ -25,7 +25,8 @@ import {
   updateProfile,
   verifyOtpAndLogin,
   changePassword,
-  setPassword
+  setPassword,
+  updateNotificationPreferences
 } from "./service";
 import { requestPasswordReset, resetPassword } from "./passwordReset.service";
 import {
@@ -35,7 +36,8 @@ import {
   updateProfileSchema,
   verifyOtpSchema,
   changePasswordSchema,
-  setPasswordSchema
+  setPasswordSchema,
+  notificationPreferencesSchema
 } from "./schemas";
 
 function asyncHandler(
@@ -225,6 +227,19 @@ authRouter.patch(
   validateBody(updateProfileSchema),
   asyncHandler(async (req, res) => {
     const user = await updateProfile(req.authUser!.id, req.body);
+    res.json({ success: true, data: { user } });
+  })
+);
+
+authRouter.patch(
+  "/me/notification-preferences",
+  requireAuth,
+  validateBody(notificationPreferencesSchema),
+  asyncHandler(async (req, res) => {
+    const user = await updateNotificationPreferences(
+      req.authUser!.id,
+      req.body
+    );
     res.json({ success: true, data: { user } });
   })
 );

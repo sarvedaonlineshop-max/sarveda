@@ -135,6 +135,8 @@ function publicUser(u: {
   createdAt: Date;
   passwordHash?: string | null;
   complaintRole?: string | null;
+  emailNotificationsEnabled?: boolean;
+  pushNotificationsEnabled?: boolean;
 }) {
   return {
     id: u.id,
@@ -146,7 +148,9 @@ function publicUser(u: {
     role: u.role,
     complaintRole: u.complaintRole ?? null,
     isVerified: u.isVerified,
-    createdAt: u.createdAt
+    createdAt: u.createdAt,
+    emailNotificationsEnabled: u.emailNotificationsEnabled ?? true,
+    pushNotificationsEnabled: u.pushNotificationsEnabled ?? true
   };
 }
 
@@ -445,4 +449,39 @@ export async function upsertGoogleUser(profile: GoogleLikeProfile) {
 
   const effective = await applyAdminBootstrapIfNeeded(user);
   return publicUser(effective);
+}
+
+export async function updateNotificationPreferences(
+  userId: string,
+  body: {
+    emailNotificationsEnabled?: boolean;
+    pushNotificationsEnabled?: boolean;
+  }
+) {
+  const data: {
+    emailNotificationsEnabled?: boolean;
+    pushNotificationsEnabled?: boolean;
+    fcmToken?: null;
+  } = {};
+
+  if (body.emailNotificationsEnabled !== undefined) {
+    data.emailNotificationsEnabled = body.emailNotificationsEnabled;
+  }
+  if (body.pushNotificationsEnabled !== undefined) {
+    data.pushNotificationsEnabled = body.pushNotificationsEnabled;
+    if (!body.pushNotificationsEnabled) {
+      data.fcmToken = null;
+    }
+  }
+
+  if (Object.keys(data).length === 0) {
+    throw httpError(400, "No preferences to update", "BAD_REQUEST");
+  }
+
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data
+  });
+
+  return publicUser(user);
 }
