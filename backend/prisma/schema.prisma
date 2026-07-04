@@ -1021,3 +1021,18 @@ model ComplaintWhitelist {
   addedAt      DateTime         @default(now())
   isActive     Boolean          @default(true)
 }
+
+model AppVersion {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  platform     String   @default("android")
+  version      String
+  versionCode  Int
+  apkUrl       String
+  mandatory    Boolean  @default(false)
+  releaseNotes String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([platform, isActive])
+}
