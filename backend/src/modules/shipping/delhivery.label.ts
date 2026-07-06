@@ -39,6 +39,12 @@ export type LabelLineItem = {
   lineTotal: number;
 };
 
+export type LabelMpsContext = {
+  boxCount: number;
+  role: "master" | "child" | "single";
+  masterWaybill: string;
+};
+
 export type LabelRenderOptions = {
   lineItems?: LabelLineItem[];
   sarvedaLogoDataUri?: string;
@@ -48,7 +54,29 @@ export type LabelRenderOptions = {
   returnAddress?: string;
   /** Fallback order invoice value when Delhivery returns rs/cod 0 (Pre-paid). */
   declaredAmountRupees?: number;
+  /** Multi-piece shipment (parent + child AWBs). */
+  mps?: LabelMpsContext;
 };
+
+function isMpsLabel(mps?: LabelMpsContext): boolean {
+  return !!mps && mps.boxCount > 1 && mps.role !== "single";
+}
+
+function awbHeading(mps: LabelMpsContext | undefined, awb: string): string {
+  if (!isMpsLabel(mps)) return `AWB# ${awb}`;
+  if (mps!.role === "master") return `Master AWB# ${awb}`;
+  return `Child AWB# ${awb}`;
+}
+
+function renderMpsHeader(mps: LabelMpsContext | undefined): string {
+  if (!isMpsLabel(mps)) return "";
+  const left = `<span class="mps-box-count">Box Count: ${esc(mps!.boxCount)}</span>`;
+  const right =
+    mps!.role === "child"
+      ? `<span class="mps-master-ref">Master AWB-${esc(mps!.masterWaybill)}</span>`
+      : `<span class="mps-master-ref"></span>`;
+  return `<div class="mps-header">${left}${right}</div>`;
+}
 
 function resolveLabelAmount(pkg: DelhiveryPackingSlipPackage, options?: LabelRenderOptions): number {
   const fromDelhivery = Number(pkg.cod ?? pkg.rs ?? 0) || 0;
@@ -56,6 +84,7 @@ function resolveLabelAmount(pkg: DelhiveryPackingSlipPackage, options?: LabelRen
   if (options?.declaredAmountRupees != null && options.declaredAmountRupees > 0) {
     return options.declaredAmountRupees;
   }
+  if (options?.mps?.role === "child") return 0.1;
   if (options?.lineItems?.length) {
     return options.lineItems.reduce((sum, it) => sum + it.lineTotal, 0);
   }
@@ -176,6 +205,9 @@ function renderSlip(pkg: DelhiveryPackingSlipPackage, options?: LabelRenderOptio
   const awb = String(pkg.wbn ?? "");
   const pin = String(pkg.pin ?? "");
   const sortCode = String(pkg.sort_code ?? "");
+  const mps = options?.mps;
+  const mpsActive = isMpsLabel(mps);
+  const awbLabel = awbHeading(mps, awb);
   const amount = resolveLabelAmount(pkg, options);
   const { sellerName, sellerAddress, gst, returnAddr } = resolveSellerReturn(pkg, options);
   const sellerAddrDisplay = truncateAddress(sellerAddress);
@@ -197,11 +229,12 @@ function renderSlip(pkg: DelhiveryPackingSlipPackage, options?: LabelRenderOptio
       ${delLogo}
     </header>
 
-    <div class="awb-title">AWB# ${esc(awb)}</div>
+    ${renderMpsHeader(mps)}
+    ${mpsActive ? "" : `<div class="awb-title">${esc(awbLabel)}</div>`}
     <div class="barcode-wrap">${awbBarcode}</div>
     <div class="awb-meta">
       <span>${esc(pin)}</span>
-      <span class="awb-meta-center">AWB# ${esc(awb)}</span>
+      <span class="awb-meta-center awb-meta-bold">${esc(awbLabel)}</span>
       <span class="awb-meta-right">${esc(sortCode)}</span>
     </div>
 
@@ -324,6 +357,16 @@ export function renderDelhiveryPackingSlipHtml(
     .logo-del-text { font-size: 11px; font-weight: 900; letter-spacing: 0.06em; }
     .logo-del-accent { color: #e11; font-size: 8px; vertical-align: super; }
     .awb-title { font-size: 9px; margin-bottom: 1mm; }
+    .mps-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 2mm;
+      font-size: 9px;
+      margin-bottom: 1mm;
+    }
+    .mps-box-count { font-weight: 400; }
+    .mps-master-ref { font-weight: 400; text-align: right; }
     .barcode-wrap { text-align: center; margin: 1mm 0 1.5mm; padding: 0 1mm; }
     .barcode-main { width: 100%; max-height: 24mm; min-height: 20mm; object-fit: contain; image-rendering: crisp-edges; }
     .barcode-oid { width: 48mm; max-height: 16mm; min-height: 12mm; object-fit: contain; display: block; margin-top: 1mm; margin-left: auto; image-rendering: crisp-edges; }
@@ -337,6 +380,7 @@ export function renderDelhiveryPackingSlipHtml(
       border-bottom: 1px solid #111;
     }
     .awb-meta-center { text-align: center; }
+    .awb-meta-bold { font-weight: 700; }
     .awb-meta-right { text-align: right; }
     .section { border-bottom: 1px solid #111; padding: 2mm 0; }
     .ship-block { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 2mm; }

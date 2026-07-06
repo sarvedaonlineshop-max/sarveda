@@ -6,8 +6,11 @@ import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 
 import * as delhivery from "./delhivery";
-import type { LabelRenderOptions } from "./delhivery.label";
-import { formatPickupReturnAddress, getLabelAddressDefaults } from "./labelAssets";
+import {
+  buildLabelRenderOptions,
+  findShipmentForLabelWaybill,
+  resolvePickupReturnAddress
+} from "./shipment-label-context";
 import { assertOrderEligibleForTrackingSync } from "./router";
 import { orderBlocksCarrierSync, syncTrackingByWaybill } from "./orderLifecycle";
 import * as shiprocket from "./shiprocket";
@@ -517,72 +520,9 @@ export async function getAdminLabel(req: Request, res: Response, next: NextFunct
       return;
     }
 
-    const shipment = await prisma.shipment.findFirst({
-      where: { awb: waybill },
-      include: {
-        pickupLocation: true,
-        order: {
-          include: {
-            items: { orderBy: { id: "asc" } }
-          }
-        }
-      }
-    });
-
-    const defaults = getLabelAddressDefaults();
-    let pickupReturn = defaults.returnAddress;
-    if (shipment?.pickupLocation) {
-      const formatted = formatPickupReturnAddress(shipment.pickupLocation);
-      if (formatted) pickupReturn = formatted;
-    } else {
-      const primary = await prisma.pickupLocation.findFirst({
-        where: { isActive: true, isPrimary: true }
-      });
-      if (primary) {
-        const formatted = formatPickupReturnAddress(primary);
-        if (formatted) pickupReturn = formatted;
-      }
-    }
-
-    const renderOptions: LabelRenderOptions = {
-      sellerName: defaults.sellerName,
-      sellerAddress: defaults.sellerAddress,
-      sellerGst: defaults.sellerGst,
-      returnAddress: pickupReturn
-    };
-
-    const productLines =
-      shipment?.order?.items.map((it) => ({
-        name: it.nameSnapshot,
-        sku: it.skuSnapshot,
-        qty: it.qtyOrdered,
-        unitPrice: it.unitPriceInPaise / 100,
-        lineTotal: it.lineTotalInPaise / 100
-      })) ?? [];
-
-    if (productLines.length && shipment?.order) {
-      const grandTotal = shipment.order.grandTotalInPaise / 100;
-      const sumProducts = productLines.reduce((s, it) => s + it.lineTotal, 0);
-      const shippingRupees = (shipment.order.shippingInPaise ?? 0) / 100;
-      const shippingLine =
-        shippingRupees > 0
-          ? shippingRupees
-          : Math.round(Math.max(0, grandTotal - sumProducts) * 100) / 100;
-
-      if (shippingLine > 0.009) {
-        productLines.push({
-          name: "Shipping Charges",
-          sku: "",
-          qty: 1,
-          unitPrice: shippingLine,
-          lineTotal: shippingLine
-        });
-      }
-      renderOptions.lineItems = productLines;
-      renderOptions.declaredAmountRupees = grandTotal;
-    } else if (shipment?.order) {
-      renderOptions.declaredAmountRupees = shipment.order.grandTotalInPaise / 100;
-    }
+    const shipment = await findShipmentForLabelWaybill(waybill);
+    const pickupReturn = await resolvePickupReturnAddress(shipment);
+    const renderOptions = buildLabelRenderOptions(shipment, waybill, pickupReturn);
 
     const result = await delhivery.fetchPackingSlip(waybill, renderOptions);
     if (!result.success) {

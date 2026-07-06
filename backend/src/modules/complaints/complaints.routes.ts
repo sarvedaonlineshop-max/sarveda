@@ -18,6 +18,13 @@ import {
   provisionWhitelistCredentials
 } from "./whitelist-auth";
 import { updateNotificationPreferences } from "../auth/service";
+import {
+  computeIsPrivate,
+  filterTasksVisibleToViewer,
+  isPrivateToOwner,
+  normComplaintEmail,
+  privateTaskWhere
+} from "./complaint-visibility";
 
 const router = Router();
 const upload = multer({
@@ -81,11 +88,6 @@ async function verifyComplaintAuth(req: Request, res: Response, next: NextFuncti
   } catch {
     res.status(401).json({ success: false, error: "Authentication failed", code: "UNAUTHORIZED" });
   }
-}
-
-function computeIsPrivate(raisedByEmail: string, assigneeEmails: string[]): boolean {
-  const owner = raisedByEmail.toLowerCase();
-  return assigneeEmails.length === 1 && assigneeEmails[0] === owner;
 }
 
 async function findTaskForParticipant(taskId: string, email: string) {
@@ -558,13 +560,16 @@ router.post("/", verifyComplaintAuth, upload.array("files", 20), async (req, res
     const complaint = await prisma.complaint.create({
       data: {
         parentId: parentId ?? null,
-        raisedByEmail: req.complaintUser!.email,
+        raisedByEmail: normComplaintEmail(req.complaintUser!.email),
         raisedByName: req.complaintUser!.name ?? null,
+        assignedByEmail: normComplaintEmail(req.complaintUser!.email),
+        assignedByName: req.complaintUser!.name ?? null,
         title: title.trim(),
         description: description?.trim() ?? null,
         priority,
         status: "OPEN",
-        dueDate: dueDate && !Number.isNaN(dueDate.getTime()) ? dueDate : null
+        dueDate: dueDate && !Number.isNaN(dueDate.getTime()) ? dueDate : null,
+        isPrivate: computeIsPrivate(req.complaintUser!.email, resolvedAssignees)
       }
     });
 
@@ -669,12 +674,7 @@ router.post("/", verifyComplaintAuth, upload.array("files", 20), async (req, res
     const updated = await prisma.complaint.update({
       where: { id: complaint.id },
       data: {
-        assignedByEmail: req.complaintUser!.email,
-        assignedByName: req.complaintUser!.name ?? null,
-        isPrivate: computeIsPrivate(
-          req.complaintUser!.email,
-          resolvedAssignees
-        )
+        isPrivate: computeIsPrivate(req.complaintUser!.email, resolvedAssignees)
       },
       include: { assignees: true, attachments: true }
     });
@@ -702,10 +702,15 @@ router.get("/dashboard", verifyComplaintAuth, async (req, res, next) => {
     const tasks = await prisma.complaint.findMany({
       where: {
         parentId: null,
-        OR: [
-          { assignedByEmail: email },
-          { assignees: { some: { assigneeEmail: email } } },
-          { raisedByEmail: email }
+        AND: [
+          privateTaskWhere(email),
+          {
+            OR: [
+              { assignedByEmail: { equals: email, mode: "insensitive" } },
+              { assignees: { some: { assigneeEmail: { equals: email, mode: "insensitive" } } } },
+              { raisedByEmail: { equals: email, mode: "insensitive" } }
+            ]
+          }
         ]
       },
       include: {
@@ -717,14 +722,16 @@ router.get("/dashboard", verifyComplaintAuth, async (req, res, next) => {
       take: 50
     });
 
+    const visible = filterTasksVisibleToViewer(tasks, email);
+
     const stats = {
-      open: tasks.filter((t) => t.status === "OPEN").length,
-      inProgress: tasks.filter((t) => t.status === "IN_PROGRESS").length,
-      resolved: tasks.filter((t) => t.status === "RESOLVED").length,
-      total: tasks.length
+      open: visible.filter((t) => t.status === "OPEN").length,
+      inProgress: visible.filter((t) => t.status === "IN_PROGRESS").length,
+      resolved: visible.filter((t) => t.status === "RESOLVED").length,
+      total: visible.length
     };
 
-    res.json({ success: true, tasks: await enrichComplaintList(tasks, email), stats });
+    res.json({ success: true, tasks: await enrichComplaintList(visible, email), stats });
   } catch (err) {
     next(err);
   }
@@ -736,7 +743,10 @@ router.get("/assigned-to-me", verifyComplaintAuth, async (req, res, next) => {
     const tasks = await prisma.complaint.findMany({
       where: {
         parentId: null,
-        assignees: { some: { assigneeEmail: email } }
+        AND: [
+          privateTaskWhere(email),
+          { assignees: { some: { assigneeEmail: { equals: email, mode: "insensitive" } } } }
+        ]
       },
       include: {
         assignees: true,
@@ -745,7 +755,8 @@ router.get("/assigned-to-me", verifyComplaintAuth, async (req, res, next) => {
       },
       orderBy: { updatedAt: "desc" }
     });
-    res.json({ success: true, tasks: await enrichComplaintList(tasks, email) });
+    const visible = filterTasksVisibleToViewer(tasks, email);
+    res.json({ success: true, tasks: await enrichComplaintList(visible, email) });
   } catch (err) {
     next(err);
   }
@@ -755,7 +766,11 @@ router.get("/assigned-by-me", verifyComplaintAuth, async (req, res, next) => {
   try {
     const email = req.complaintUser!.email;
     const tasks = await prisma.complaint.findMany({
-      where: { assignedByEmail: email, parentId: null },
+      where: {
+        assignedByEmail: { equals: email, mode: "insensitive" },
+        parentId: null,
+        AND: [privateTaskWhere(email)]
+      },
       include: {
         assignees: true,
         attachments: true,
@@ -763,7 +778,8 @@ router.get("/assigned-by-me", verifyComplaintAuth, async (req, res, next) => {
       },
       orderBy: { updatedAt: "desc" }
     });
-    res.json({ success: true, tasks: await enrichComplaintList(tasks, email) });
+    const visible = filterTasksVisibleToViewer(tasks, email);
+    res.json({ success: true, tasks: await enrichComplaintList(visible, email) });
   } catch (err) {
     next(err);
   }
@@ -1018,10 +1034,7 @@ router.get("/all", verifyComplaintAuth, async (req, res, next) => {
       where: {
         parentId: null,
         ...(statuses ? { status: { in: statuses } } : {}),
-        OR: [
-          { isPrivate: false },
-          { isPrivate: true, raisedByEmail: email }
-        ]
+        AND: [privateTaskWhere(email)]
       },
       orderBy: { updatedAt: "desc" },
       include: {
@@ -1030,7 +1043,8 @@ router.get("/all", verifyComplaintAuth, async (req, res, next) => {
         _count: { select: { children: true, events: true } }
       }
     });
-    res.json({ success: true, complaints: await enrichComplaintList(complaints, email) });
+    const visible = filterTasksVisibleToViewer(complaints, email);
+    res.json({ success: true, complaints: await enrichComplaintList(visible, email) });
   } catch (err) {
     next(err);
   }
@@ -1320,10 +1334,10 @@ router.get("/:id", verifyComplaintAuth, async (req, res, next) => {
       res.status(404).json({ success: false, error: "Not found", code: "NOT_FOUND" });
       return;
     }
-    const viewerEmail = req.complaintUser!.email.toLowerCase();
+    const viewerEmail = normComplaintEmail(req.complaintUser!.email);
     if (
-      complaint.isPrivate &&
-      complaint.raisedByEmail.toLowerCase() !== viewerEmail
+      isPrivateToOwner(complaint) &&
+      normComplaintEmail(complaint.raisedByEmail) !== viewerEmail
     ) {
       res.status(403).json({
         success: false,
