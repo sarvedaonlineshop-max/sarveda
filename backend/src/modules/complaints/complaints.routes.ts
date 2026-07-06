@@ -21,9 +21,11 @@ import { updateNotificationPreferences } from "../auth/service";
 import {
   computeIsPrivate,
   filterTasksVisibleToViewer,
+  filterTeamBoardTasks,
   isPrivateToOwner,
   normComplaintEmail,
-  privateTaskWhere
+  privateTaskWhere,
+  teamBoardTaskWhere
 } from "./complaint-visibility";
 
 const router = Router();
@@ -1034,7 +1036,7 @@ router.get("/all", verifyComplaintAuth, async (req, res, next) => {
       where: {
         parentId: null,
         ...(statuses ? { status: { in: statuses } } : {}),
-        AND: [privateTaskWhere(email)]
+        AND: [teamBoardTaskWhere()]
       },
       orderBy: { updatedAt: "desc" },
       include: {
@@ -1043,7 +1045,7 @@ router.get("/all", verifyComplaintAuth, async (req, res, next) => {
         _count: { select: { children: true, events: true } }
       }
     });
-    const visible = filterTasksVisibleToViewer(complaints, email);
+    const visible = filterTeamBoardTasks(complaints);
     res.json({ success: true, complaints: await enrichComplaintList(visible, email) });
   } catch (err) {
     next(err);

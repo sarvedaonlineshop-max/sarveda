@@ -4,10 +4,11 @@ export function normComplaintEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
-/** Self-created task with only the creator as assignee — visible to owner only. */
+/** Self-created personal task — visible to owner only (Home / assigned-to-me), not team All Tasks. */
 export function computeIsPrivate(raisedByEmail: string, assigneeEmails: string[]): boolean {
   const owner = normComplaintEmail(raisedByEmail);
   const assignees = assigneeEmails.map(normComplaintEmail).filter(Boolean);
+  if (assignees.length === 0) return true;
   return assignees.length === 1 && assignees[0] === owner;
 }
 
@@ -18,6 +19,7 @@ export function isSelfOnlyTask(task: {
   assignees: TaskAssigneeLike[];
 }): boolean {
   const assignees = task.assignees ?? [];
+  if (assignees.length === 0) return true;
   if (assignees.length !== 1) return false;
   return normComplaintEmail(assignees[0]!.assigneeEmail) === normComplaintEmail(task.raisedByEmail);
 }
@@ -55,7 +57,7 @@ export function filterTasksVisibleToViewer<
   return tasks.filter((t) => canViewerSeeTaskInMemberList(t, viewerEmail));
 }
 
-/** Prisma filter for member list endpoints (All Tasks, etc.). */
+/** Prisma filter for personal views (Home, assigned-to-me) — owner still sees own private tasks. */
 export function privateTaskWhere(viewerEmail: string): Prisma.ComplaintWhereInput {
   const viewer = normComplaintEmail(viewerEmail);
   return {
@@ -64,4 +66,19 @@ export function privateTaskWhere(viewerEmail: string): Prisma.ComplaintWhereInpu
       { isPrivate: true, raisedByEmail: { equals: viewer, mode: "insensitive" } }
     ]
   };
+}
+
+/** Team board (All Tasks) — never includes personal/private tasks, even for the owner. */
+export function teamBoardTaskWhere(): Prisma.ComplaintWhereInput {
+  return { isPrivate: false };
+}
+
+export function filterTeamBoardTasks<
+  T extends {
+    raisedByEmail: string;
+    isPrivate: boolean;
+    assignees: TaskAssigneeLike[];
+  }
+>(tasks: T[]): T[] {
+  return tasks.filter((t) => !isPrivateToOwner(t));
 }
