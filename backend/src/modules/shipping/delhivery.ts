@@ -271,6 +271,7 @@ export async function fetchBulkWaybills(count: number): Promise<ApiOk<{ waybills
   try {
     const url = `${baseUrl()}/waybill/api/bulk/json/`;
     const res = await axios.get(url, {
+      headers: { Authorization: `Token ${token}`, Accept: "application/json" },
       params: { cl: client, token, count: n },
       timeout: 25_000,
       validateStatus: () => true
@@ -278,16 +279,14 @@ export async function fetchBulkWaybills(count: number): Promise<ApiOk<{ waybills
     if (res.status >= 400) {
       return mapAxiosError({ response: res, message: "bulk waybill fetch failed" }, "DELHIVERY_WAYBILL");
     }
-    const raw = res.data;
-    let waybills: string[] = [];
-    if (Array.isArray(raw)) {
-      waybills = raw.map((w) => String(w)).filter(Boolean);
-    } else if (raw && typeof raw === "object") {
-      const o = raw as Record<string, unknown>;
-      const list = o.waybills ?? o.wbns ?? o.data;
-      if (Array.isArray(list)) waybills = list.map((w) => String(w)).filter(Boolean);
-    }
+    const waybills = parseBulkWaybillResponse(res.data);
     if (waybills.length < n) {
+      logger.warn("Delhivery bulk waybill returned too few", {
+        needed: n,
+        got: waybills.length,
+        rawType: typeof res.data,
+        rawSnippet: String(typeof res.data === "object" ? JSON.stringify(res.data) : res.data).slice(0, 300)
+      });
       return {
         success: false,
         error: `Delhivery returned ${waybills.length} waybill(s), needed ${n}`,
@@ -298,6 +297,42 @@ export async function fetchBulkWaybills(count: number): Promise<ApiOk<{ waybills
   } catch (err) {
     return mapAxiosError(err, "DELHIVERY_WAYBILL");
   }
+}
+
+/**
+ * Delhivery's bulk waybill endpoint returns the AWBs as a comma-separated
+ * string (e.g. "33110110012345,33110110012346"), but can also return a JSON
+ * array or an object wrapping the list. Normalise all shapes to string[].
+ */
+export function parseBulkWaybillResponse(raw: unknown): string[] {
+  const splitString = (val: string): string[] =>
+    val
+      .split(/[\s,]+/)
+      .map((w) => w.trim())
+      .filter(Boolean);
+
+  const fromList = (list: unknown): string[] => {
+    if (!Array.isArray(list)) return [];
+    return list
+      .map((w) => {
+        if (w && typeof w === "object") {
+          const o = w as Record<string, unknown>;
+          return String(o.waybill ?? o.wbn ?? o.awb ?? "").trim();
+        }
+        return String(w).trim();
+      })
+      .filter(Boolean);
+  };
+
+  if (Array.isArray(raw)) return fromList(raw);
+  if (typeof raw === "string") return splitString(raw);
+  if (raw && typeof raw === "object") {
+    const o = raw as Record<string, unknown>;
+    const list = o.waybills ?? o.wbns ?? o.data ?? o.packages;
+    if (Array.isArray(list)) return fromList(list);
+    if (typeof list === "string") return splitString(list);
+  }
+  return [];
 }
 
 export type DelhiveryShippingEstimateInput = {
