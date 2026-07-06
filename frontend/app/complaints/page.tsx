@@ -78,6 +78,20 @@ const NAV_BAR_H = 58;
 const SCROLL_BOTTOM_PAD =
   `calc(${NAV_BAR_H}px + env(safe-area-inset-bottom, 8px) + 12px)`;
 
+const FETCH_NO_CACHE: RequestInit = { cache: "no-store" };
+
+function isJwtExpired(token: string): boolean {
+  try {
+    const part = token.split(".")[1];
+    if (!part) return true;
+    const payload = JSON.parse(atob(part)) as { exp?: number };
+    if (typeof payload.exp !== "number") return false;
+    return Date.now() >= payload.exp * 1000;
+  } catch {
+    return true;
+  }
+}
+
 function uiStatus(raw: ApiStatus | Status): Status {
   if (raw === "OPEN") return "NEW";
   if (raw === "RESOLVED") return "CLOSED";
@@ -1291,19 +1305,35 @@ export default function TasksApp() {
     setMyName(name);setMyPhone(phone);
   }
 
-  function logout() {
+  function logout(message?: string) {
     ["sv_token","sv_email","sv_name","sv_phone","sv_expiry"]
       .forEach(k=>localStorage.removeItem(k));
     if (pollRef.current) clearInterval(pollRef.current);
-      setToken(null);setView("login");
+    setToken(null);
+    setView("login");
+    setDashTasks([]);
+    setMyTasks([]);
+    setMyAssignments([]);
+    setDashStats({ open: 0, inProgress: 0, resolved: 0, total: 0 });
+    if (message) setLErr(message);
+  }
+
+  function authFailed(message: string) {
+    logout(message);
   }
 
   // ── Data loading ─────────────────────────────────────
   const loadDashboard = useCallback(async (t?:string) => {
     const tk = t??token;
     if (!tk) return;
-    const r = await fetch(`${API}/complaints/all`,
-      {headers:{Authorization:`Bearer ${tk}`}});
+    const r = await fetch(`${API}/complaints/all`, {
+      ...FETCH_NO_CACHE,
+      headers:{Authorization:`Bearer ${tk}`},
+    });
+    if (r.status === 401 || r.status === 403) {
+      authFailed("Session expired. Please sign in again.");
+      return;
+    }
     if (r.ok) {
       const d = await r.json() as any;
       const tasks = normalizeTasks(d.complaints??d.tasks??[]);
@@ -1319,8 +1349,14 @@ export default function TasksApp() {
 
   const loadMyTasks = useCallback(async (t?:string) => {
     const tk = t??token; if (!tk) return;
-    const r = await fetch(`${API}/complaints/assigned-to-me`,
-      {headers:{Authorization:`Bearer ${tk}`}});
+    const r = await fetch(`${API}/complaints/assigned-to-me`, {
+      ...FETCH_NO_CACHE,
+      headers:{Authorization:`Bearer ${tk}`},
+    });
+    if (r.status === 401 || r.status === 403) {
+      authFailed("Session expired. Please sign in again.");
+      return;
+    }
     if (r.ok) {
       const d = await r.json() as any;
       setMyTasks(normalizeTasks(d.tasks??[]));
@@ -1329,8 +1365,14 @@ export default function TasksApp() {
 
   const loadMyAssignments = useCallback(async (t?:string) => {
     const tk = t??token; if (!tk) return;
-    const r = await fetch(`${API}/complaints/assigned-by-me`,
-      {headers:{Authorization:`Bearer ${tk}`}});
+    const r = await fetch(`${API}/complaints/assigned-by-me`, {
+      ...FETCH_NO_CACHE,
+      headers:{Authorization:`Bearer ${tk}`},
+    });
+    if (r.status === 401 || r.status === 403) {
+      authFailed("Session expired. Please sign in again.");
+      return;
+    }
     if (r.ok) {
       const d = await r.json() as any;
       setMyAssignments(normalizeTasks(d.tasks??[]));
@@ -1565,7 +1607,12 @@ export default function TasksApp() {
     if (t&&e) {
       const expiry = localStorage.getItem("sv_expiry");
       if (expiry && Date.now() > Number(expiry)) {
-        logout(); return;
+        logout("Session expired. Please sign in again.");
+        return;
+      }
+      if (isJwtExpired(t)) {
+        logout("Session expired. Please sign in again.");
+        return;
       }
       setToken(t);setMyEmail(e.toLowerCase());
       setMyName(n??"");setMyPhone(p??"");
@@ -1582,6 +1629,26 @@ export default function TasksApp() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
+
+  // iOS PWA: refetch when app returns from background or bfcache
+  useEffect(() => {
+    const onPageShow = (ev: PageTransitionEvent) => {
+      const t = localStorage.getItem("sv_token");
+      if (!t || isJwtExpired(t)) return;
+      if (ev.persisted) void loadAll(t);
+    };
+    const onVisible = () => {
+      const t = localStorage.getItem("sv_token");
+      if (!t || isJwtExpired(t)) return;
+      if (document.visibilityState === "visible") void loadAll(t);
+    };
+    window.addEventListener("pageshow", onPageShow);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("pageshow", onPageShow);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [loadAll]);
 
   useEffect(() => {
     if (!showTaskMenu) return;
