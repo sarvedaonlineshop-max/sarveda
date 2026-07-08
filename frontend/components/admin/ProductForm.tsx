@@ -63,27 +63,8 @@ type VariantForm = {
   attributes: VariantAttributeForm[];
 };
 
-type ImageForm = { url: string; altText: string; isPrimary: boolean; variantKey: string };
+type ImageForm = { url: string; altText: string; isPrimary: boolean };
 type AccordionForm = { title: string; content: string };
-
-function variantKeyForForm(v: VariantForm): string {
-  if (v.id) return v.id;
-  const sku = v.sku.trim();
-  return sku ? `sku:${sku}` : "";
-}
-
-function imageVariantPayload(
-  variantKey: string,
-  variants: VariantForm[]
-): { variantId?: string | null; variantSku?: string | null } {
-  if (!variantKey) return { variantId: null, variantSku: null };
-  const match = variants.find((v) => v.id === variantKey);
-  if (match?.id) return { variantId: match.id, variantSku: null };
-  if (variantKey.startsWith("sku:")) {
-    return { variantId: null, variantSku: variantKey.slice(4) };
-  }
-  return { variantId: null, variantSku: variantKey };
-}
 
 function slugify(s: string) {
   return s
@@ -228,7 +209,7 @@ export function ProductForm({ productId }: { productId?: string }) {
     { name: "Size", slug: "size" }
   ]);
   const [images, setImages] = useState<ImageForm[]>([
-    { url: "", altText: "", isPrimary: true, variantKey: "" }
+    { url: "", altText: "", isPrimary: true }
   ]);
   const [toast, setToast] = useState<{ message: string; error?: boolean } | null>(null);
   const [seoAiLoading, setSeoAiLoading] = useState(false);
@@ -360,10 +341,9 @@ export function ProductForm({ productId }: { productId?: string }) {
           ? sharedImgs.map((im) => ({
               url: String(im.url),
               altText: String(im.altText ?? ""),
-              isPrimary: Boolean(im.isPrimary),
-              variantKey: ""
+              isPrimary: Boolean(im.isPrimary)
             }))
-          : [{ url: "", altText: "", isPrimary: true, variantKey: "" }]
+          : [{ url: "", altText: "", isPrimary: true }]
       );
 
       const acc = (p.accordionItems as Array<Record<string, unknown>>) ?? [];
@@ -509,7 +489,7 @@ export function ProductForm({ productId }: { productId?: string }) {
       const removed = prev[index];
       const next = prev.filter((_, i) => i !== index);
       if (next.length === 0) {
-        return [{ url: "", altText: "", isPrimary: true, variantKey: "" }];
+        return [{ url: "", altText: "", isPrimary: true }];
       }
       if (removed?.isPrimary) {
         return next.map((im, i) => ({ ...im, isPrimary: i === 0 }));
@@ -521,7 +501,7 @@ export function ProductForm({ productId }: { productId?: string }) {
   function addImageRow() {
     setImages((prev) => [
       ...prev,
-      { url: "", altText: "", isPrimary: prev.length === 0 && !prev.some((im) => im.isPrimary), variantKey: "" }
+      { url: "", altText: "", isPrimary: prev.length === 0 && !prev.some((im) => im.isPrimary) }
     ]);
   }
 
@@ -535,7 +515,7 @@ export function ProductForm({ productId }: { productId?: string }) {
     );
   }
 
-  const showVariantAxes = productType === "VARIABLE" && variants.length > 0;
+  const showVariantAxes = variants.length > 1;
 
   async function fillSeoWithAi() {
     setSeoAiLoading(true);
@@ -589,7 +569,7 @@ export function ProductForm({ productId }: { productId?: string }) {
       name: name.trim(),
       description: description.trim() || null,
       shortDescription: shortDescription.trim() || null,
-      productType,
+      productType: variants.length > 1 ? "VARIABLE" : productType,
       status,
       taxClass: taxClassForForm(taxClass.trim() || "standard"),
       hsnCode: hsnCode.trim() || null,
@@ -1103,6 +1083,10 @@ export function ProductForm({ productId }: { productId?: string }) {
 
         {tab === "variants" ? (
           <div className="space-y-6">
+            <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
+              <strong>Variant images &amp; video</strong> are set inside each variant card below (at the
+              top). Shared gallery on the next step is only a fallback when a variant has no images.
+            </div>
             <FieldErr message={fieldErrors.variants} />
             {showVariantAxes ? (
               <VariantOptionAxesEditor axes={optionAxes} onChange={handleOptionAxesChange} />
@@ -1147,7 +1131,24 @@ export function ProductForm({ productId }: { productId?: string }) {
                     ) : null}
                   </div>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <VariantMediaBlock
+                  images={v.images}
+                  videoUrl={v.videoUrl}
+                  fieldPrefix={`variants.${vi}`}
+                  fieldErrors={fieldErrors}
+                  prominent
+                  onImagesChange={(next) =>
+                    setVariants((prev) =>
+                      prev.map((x, i) => (i === vi ? { ...x, images: next } : x))
+                    )
+                  }
+                  onVideoUrlChange={(url) =>
+                    setVariants((prev) =>
+                      prev.map((x, i) => (i === vi ? { ...x, videoUrl: url } : x))
+                    )
+                  }
+                />
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <div>
                     <label className={labelCls}>SKU</label>
                     <input
@@ -1242,27 +1243,12 @@ export function ProductForm({ productId }: { productId?: string }) {
                     setVariants((prev) => prev.map((x, i) => (i === vi ? { ...x, ...next } : x)))
                   }
                 />
-                <VariantMediaBlock
-                  images={v.images}
-                  videoUrl={v.videoUrl}
-                  fieldPrefix={`variants.${vi}`}
-                  fieldErrors={fieldErrors}
-                  onImagesChange={(next) =>
-                    setVariants((prev) =>
-                      prev.map((x, i) => (i === vi ? { ...x, images: next } : x))
-                    )
-                  }
-                  onVideoUrlChange={(url) =>
-                    setVariants((prev) =>
-                      prev.map((x, i) => (i === vi ? { ...x, videoUrl: url } : x))
-                    )
-                  }
-                />
               </div>
             ))}
             <button
               type="button"
-              onClick={() =>
+              onClick={() => {
+                setProductType("VARIABLE");
                 setVariants((prev) => [
                   ...prev.map((x) => ({ ...x, isDefault: false })),
                   {
@@ -1270,8 +1256,8 @@ export function ProductForm({ productId }: { productId?: string }) {
                     isDefault: prev.length === 0,
                     attributes: syncVariantAttributesToAxes([], optionAxes)
                   }
-                ])
-              }
+                ]);
+              }}
               className="text-sm font-medium text-amber-700 hover:underline dark:text-amber-400"
             >
               + Add variant
@@ -1295,7 +1281,6 @@ export function ProductForm({ productId }: { productId?: string }) {
                   url={im.url}
                   altText={im.altText}
                   isPrimary={im.isPrimary}
-                  variantKey=""
                   onUrlChange={(url) =>
                     setImages((prev) => prev.map((x, i) => (i === ii ? { ...x, url } : x)))
                   }
