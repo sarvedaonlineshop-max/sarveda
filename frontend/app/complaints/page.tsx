@@ -5999,7 +5999,7 @@ export default function TasksApp() {
             </form>
           </div>
 
-          <button onClick={logout} style={{
+          <button onClick={() => logout()} style={{
             width:"100%",padding:"14px",
             borderRadius:"12px",
             border:"1.5px solid #fca5a5",
