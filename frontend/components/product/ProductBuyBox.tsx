@@ -3,8 +3,6 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 
-import { DeliveryTimeline } from "@/components/product/DeliveryTimeline";
-import { EstimatedDelivery } from "@/components/product/EstimatedDelivery";
 import { PriceDisplay } from "@/components/product/PriceDisplay";
 import type { Zone } from "@/lib/currency";
 import { stockDisplay, UNTRACKED_STOCK_ON_HAND } from "@/lib/variant-utils";
@@ -57,7 +55,6 @@ export function ProductBuyBox({
   layout = "card"
 }: Props) {
   const stock = variantForStock ? stockDisplay(variantForStock) : null;
-  const preparationDays = "5 - 10 Days";
   const isInline = layout === "inline";
   const [qtyMessage, setQtyMessage] = useState<string | null>(null);
   const stockCap =
@@ -221,27 +218,37 @@ export function ProductBuyBox({
       ) : null}
 
       {!isDigital ? (
-        <div className={isInline ? "text-sm text-stone-600" : "mt-4 space-y-3"}>
+        <div className={isInline ? "space-y-2" : "mt-4 space-y-2"}>
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2">
+              <svg className="h-4 w-4 shrink-0 text-stone-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM20 17a2 2 0 11-4 0 2 2 0 014 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16V6a1 1 0 00-1-1H3m10 11h4m0 0V9a1 1 0 011-1h2.5a1 1 0 01.8.4l1.5 2a1 1 0 01.2.6V16a1 1 0 01-1 1h-1" />
+              </svg>
+              <span className="leading-tight">
+                <span className="block text-[10px] font-semibold uppercase tracking-wider text-stone-500">
+                  Standard (surface)
+                </span>
+                <span className="block text-sm font-semibold text-stone-900">{shippingDays}</span>
+              </span>
+            </span>
+            {showExpressOption ? (
+              <span className="inline-flex items-center gap-2 rounded-lg border border-[#c45a2a]/30 bg-[#fff4ee] px-3 py-2">
+                <svg className="h-4 w-4 shrink-0 text-[#c45a2a]" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M11.3 1.046a1 1 0 01.7 1.19L10.62 8H15a1 1 0 01.78 1.625l-7 8.75A1 1 0 017 17.75L8.38 11H4a1 1 0 01-.78-1.625l7-8.75a1 1 0 011.08-.579z" />
+                </svg>
+                <span className="leading-tight">
+                  <span className="block text-[10px] font-semibold uppercase tracking-wider text-[#c45a2a]">
+                    Express
+                  </span>
+                  <span className="block text-sm font-semibold text-stone-900">{expressDays}</span>
+                </span>
+              </span>
+            ) : null}
+          </div>
           {showExpressOption ? (
-            <div className="space-y-1 text-sm text-stone-600">
-              <p>
-                <span className="font-medium text-stone-800">Standard (surface) shipping:</span>{" "}
-                {shippingDays}
-              </p>
-              <p>
-                <span className="font-medium text-stone-800">Express shipping:</span> {expressDays}
-              </p>
-              <p className="text-xs text-stone-500">Choose shipping speed at checkout.</p>
-            </div>
+            <p className="text-xs text-stone-500">Choose shipping speed at checkout.</p>
           ) : null}
-          {isInline ? (
-            <EstimatedDelivery preparationDays={preparationDays} shippingDays={shippingDays} />
-          ) : (
-            <>
-              <EstimatedDelivery preparationDays={preparationDays} shippingDays={shippingDays} />
-              <DeliveryTimeline preparationDays={preparationDays} shippingDays={shippingDays} />
-            </>
-          )}
         </div>
       ) : null}
 

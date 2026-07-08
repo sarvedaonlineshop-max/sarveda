@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { resolveMediaUrl } from "@/lib/media-cdn";
+import { parseVideoSource, type VideoSource } from "@/lib/video-embed";
 
 type GalleryImage = {
   id: string;
@@ -22,7 +23,7 @@ type Props = {
 
 type MediaItem =
   | { kind: "image"; id: string; url: string; altText: string | null }
-  | { kind: "video"; id: string; url: string; altText: string | null };
+  | { kind: "video"; id: string; url: string; altText: string | null; source: VideoSource };
 
 export function ProductGallery({
   images,
@@ -55,13 +56,15 @@ export function ProductGallery({
       url: resolveMediaUrl(img.url) ?? img.url,
       altText: img.altText
     }));
-    const resolvedVideo = videoUrl ? resolveMediaUrl(videoUrl) ?? videoUrl : null;
-    if (resolvedVideo) {
+    if (videoUrl && videoUrl.trim()) {
+      const source = parseVideoSource(videoUrl.trim());
+      const playUrl = source.type === "file" ? resolveMediaUrl(source.url) ?? source.url : videoUrl.trim();
       items.push({
         kind: "video",
-        id: `video-${resolvedVideo}`,
-        url: resolvedVideo,
-        altText: `${productName} video`
+        id: `video-${videoUrl.trim()}`,
+        url: playUrl,
+        altText: `${productName} video`,
+        source
       });
     }
     return items;
@@ -112,7 +115,16 @@ export function ProductGallery({
         onMouseLeave={() => setZoomActive(false)}
         onMouseMove={onMainPointerMove}
       >
-        {isVideo ? (
+        {isVideo && current.source.type !== "file" ? (
+          <iframe
+            key={current.id}
+            src={current.source.embedUrl}
+            title={current.altText || `${productName} video`}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            className="h-full w-full bg-black"
+          />
+        ) : isVideo ? (
           <video
             key={current.id}
             ref={videoRef}
@@ -200,12 +212,23 @@ export function ProductGallery({
             >
               {item.kind === "video" ? (
                 <>
-                  <video
-                    src={`${item.url}#t=0.1`}
-                    muted
-                    preload="metadata"
-                    className="h-full w-full bg-black object-cover"
-                  />
+                  {item.source.type === "youtube" ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={item.source.thumbnailUrl}
+                      alt=""
+                      className="h-full w-full bg-black object-cover"
+                    />
+                  ) : item.source.type === "file" ? (
+                    <video
+                      src={`${item.url}#t=0.1`}
+                      muted
+                      preload="metadata"
+                      className="h-full w-full bg-black object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center bg-black" />
+                  )}
                   <span className="absolute inset-0 flex items-center justify-center bg-black/25">
                     <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-stone-900">
                       <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">

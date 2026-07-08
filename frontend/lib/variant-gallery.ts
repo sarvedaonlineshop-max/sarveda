@@ -9,17 +9,19 @@ export type GalleryImageRef = {
   isPrimary?: boolean;
 };
 
-/** Variant-specific images first, then shared (no variantId). Falls back to all if none linked. */
+/**
+ * Only this variant's images when it has any. If none are linked to the variant,
+ * fall back to shared images (no variantId), then to all images.
+ */
 export function galleryImagesForVariant<T extends GalleryImageRef>(
   variantId: string,
   images: T[]
 ): T[] {
   if (!images.length) return [];
   const variantImages = images.filter((im) => im.variantId === variantId);
+  if (variantImages.length > 0) return variantImages;
   const shared = images.filter((im) => !im.variantId);
-  if (variantImages.length > 0) {
-    return [...variantImages, ...shared];
-  }
+  if (shared.length > 0) return shared;
   return images;
 }
 
