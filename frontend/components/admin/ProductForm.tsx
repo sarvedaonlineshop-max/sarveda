@@ -26,6 +26,7 @@ import { TAX_CLASS_OPTIONS, taxClassForForm } from "@/lib/tax-classes";
 import type { CategoryNode } from "@/lib/types";
 import {
   deriveOptionAxes,
+  optionsForAxis,
   slugifyAttribute,
   syncVariantAttributesToAxes,
   type OptionAxisForm,
@@ -206,7 +207,7 @@ export function ProductForm({ productId }: { productId?: string }) {
   const [selectedCats, setSelectedCats] = useState<Set<string>>(new Set());
   const [variants, setVariants] = useState<VariantForm[]>([newVariant("product")]);
   const [optionAxes, setOptionAxes] = useState<OptionAxisForm[]>([
-    { name: "Size", slug: "size" }
+    { name: "Size", slug: "size", values: [] }
   ]);
   const [images, setImages] = useState<ImageForm[]>([
     { url: "", altText: "", isPrimary: true }
@@ -323,7 +324,7 @@ export function ProductForm({ productId }: { productId?: string }) {
         setVariants(loadedVariants);
         const axes = deriveOptionAxes(loadedVariants, savedAxisOrder);
         setOptionAxes(
-          axes.length > 0 ? axes : [{ name: "Size", slug: "size" }]
+          axes.length > 0 ? axes : [{ name: "Size", slug: "size", values: [] }]
         );
         if (axes.length > 0) {
           setVariants((prev) =>
@@ -673,7 +674,15 @@ export function ProductForm({ productId }: { productId?: string }) {
       if (typeof d.tab === "string") setTab(d.tab as FormTab);
       if (Array.isArray(d.variants)) setVariants(d.variants as VariantForm[]);
       if (Array.isArray(d.images)) setImages(d.images as ImageForm[]);
-      if (Array.isArray(d.optionAxes)) setOptionAxes(d.optionAxes as OptionAxisForm[]);
+      if (Array.isArray(d.optionAxes)) {
+        setOptionAxes(
+          (d.optionAxes as OptionAxisForm[]).map((a) => ({
+            name: a.name ?? "",
+            slug: a.slug ?? "",
+            values: Array.isArray(a.values) ? a.values : []
+          }))
+        );
+      }
       if (typeof d.videoUrl === "string") setVideoUrl(d.videoUrl);
       if (Array.isArray(d.accordion)) setAccordion(d.accordion as AccordionForm[]);
       if (Array.isArray(d.categoryIds)) setSelectedCats(new Set(d.categoryIds as string[]));
@@ -1209,30 +1218,47 @@ export function ProductForm({ productId }: { productId?: string }) {
                 </div>
                 {showVariantAxes && optionAxes.length > 0 ? (
                   <div className="mb-4 grid gap-3 sm:grid-cols-2">
-                    {v.attributes.map((attr, ai) => (
-                      <div key={`${vi}-${attr.slug}-${ai}`}>
-                        <label className={labelCls}>{attr.name || `Level ${ai + 1}`}</label>
-                        <input
-                          value={attr.value}
-                          onChange={(e) =>
-                            setVariants((prev) =>
-                              prev.map((x, i) =>
-                                i === vi
-                                  ? {
-                                      ...x,
-                                      attributes: x.attributes.map((a, j) =>
-                                        j === ai ? { ...a, value: e.target.value } : a
-                                      )
-                                    }
-                                  : x
-                              )
-                            )
-                          }
-                          placeholder={`e.g. ${attr.name === "Size" ? "Large" : "Plain"}`}
-                          className={inputCls}
-                        />
-                      </div>
-                    ))}
+                    {v.attributes.map((attr, ai) => {
+                      const axis = optionAxes[ai];
+                      const choices = axis ? optionsForAxis(axis, attr.value) : [];
+                      const label = attr.name || axis?.name || `Level ${ai + 1}`;
+                      return (
+                        <div key={`${vi}-${attr.slug}-${ai}`}>
+                          <label className={labelCls}>{label}</label>
+                          {choices.length > 0 ? (
+                            <select
+                              value={attr.value}
+                              onChange={(e) =>
+                                setVariants((prev) =>
+                                  prev.map((x, i) =>
+                                    i === vi
+                                      ? {
+                                          ...x,
+                                          attributes: x.attributes.map((a, j) =>
+                                            j === ai ? { ...a, value: e.target.value } : a
+                                          )
+                                        }
+                                      : x
+                                  )
+                                )
+                              }
+                              className={inputCls}
+                            >
+                              <option value="">Select {label}</option>
+                              {choices.map((opt) => (
+                                <option key={opt} value={opt}>
+                                  {opt}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <p className="mt-1 rounded-lg border border-dashed border-stone-300 bg-stone-50 px-3 py-2 text-xs text-stone-500 dark:border-stone-600 dark:bg-stone-950/50">
+                              Add {label} options in the option levels box above first.
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : null}
                 <VariantPricingShippingTables
