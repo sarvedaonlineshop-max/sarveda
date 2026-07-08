@@ -23,6 +23,7 @@ import { notifyOrderEmail } from "../notifications/email";
 import { onOrderEnteredProcessing } from "../shipping/orderLifecycle";
 import { getZohoStockSyncMeta } from "../zoho/zoho-stock-sync-cache";
 import { auditSarvedaVariant, computeZohoSyncSummary, listZohoOnlyItems } from "../zoho/zoho-sync-audit";
+import { mirrorStockToZohoForSkus } from "../zoho/zoho-items";
 import type { ZohoItemAuditRow } from "../zoho/zoho-sync-types";
 import { shopCatalogProductWhere, shopInventoryWhere } from "../../utils/shop-catalog";
 
@@ -1209,6 +1210,10 @@ export async function patchInventory(req: Request, res: Response, next: NextFunc
       include: inventoryInclude
     });
 
+    if (body.onHand !== undefined && row?.variant?.sku) {
+      await mirrorStockToZohoForSkus([row.variant.sku], "admin_patch_inventory", { variantId });
+    }
+
     if (body.onHand !== undefined && body.onHand > 0) {
       const { notifyStockSubscribersForVariant } = await import(
         "../stock-notifications/stockNotification.service"
@@ -1230,6 +1235,7 @@ export async function bulkPatchInventory(req: Request, res: Response, next: Next
   try {
     const { updates } = req.body as z.infer<typeof bulkInventoryPatchSchema>;
     let updated = 0;
+    const touchedVariantIds = new Set<string>();
 
     for (const u of updates) {
       const data: { onHand?: number; lowStockThreshold?: number } = {};
@@ -1240,6 +1246,19 @@ export async function bulkPatchInventory(req: Request, res: Response, next: Next
         data
       });
       updated += result.count;
+      if (u.onHand !== undefined && result.count > 0) touchedVariantIds.add(u.variantId);
+    }
+
+    if (touchedVariantIds.size > 0) {
+      const variants = await prisma.productVariant.findMany({
+        where: { id: { in: Array.from(touchedVariantIds) } },
+        select: { sku: true }
+      });
+      await mirrorStockToZohoForSkus(
+        variants.map((v) => v.sku),
+        "admin_bulk_patch_inventory",
+        { updated }
+      );
     }
 
     res.json({ success: true, data: { updated, requested: updates.length } });
@@ -1253,6 +1272,7 @@ export async function importInventoryRows(req: Request, res: Response, next: Nex
     const { rows } = req.body as z.infer<typeof inventoryImportSchema>;
     let updated = 0;
     let notFound = 0;
+    const touchedSkus = new Set<string>();
 
     for (const row of rows) {
       const sku = row.sku.trim();
@@ -1273,6 +1293,13 @@ export async function importInventoryRows(req: Request, res: Response, next: Nex
         update: { onHand: row.onHand }
       });
       updated++;
+      touchedSkus.add(sku);
+    }
+
+    if (touchedSkus.size > 0) {
+      await mirrorStockToZohoForSkus(Array.from(touchedSkus), "admin_import_inventory_rows", {
+        updated
+      });
     }
 
     res.json({

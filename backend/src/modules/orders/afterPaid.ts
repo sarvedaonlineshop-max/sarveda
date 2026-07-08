@@ -8,6 +8,7 @@ import { logger } from "../../config/logger";
 import { isDigitalSku } from "../../utils/digitalCart";
 import { createZohoInvoiceForOrder } from "../zoho";
 import { fulfillDigitalPurchases } from "./fulfillDigitalPurchases";
+import { mirrorOrderStockToZoho } from "./orders.service";
 
 function autoFulfillmentEnabled(): boolean {
   const v = (process.env.AUTO_START_FULFILLMENT_ON_PAID ?? "0").trim().toLowerCase();
@@ -43,6 +44,13 @@ export async function afterOrderPaid(orderId: string): Promise<void> {
     console.error("[ZOHO_INVOICE_FAILED]", { orderId, err });
     logger.error("Zoho invoice failed after order paid", { orderId, err });
   }
+
+  // Reconcile Zoho stock to Sarveda onHand after the invoice posts (live read,
+  // so this is a no-op when the invoice already decremented Zoho, and corrects
+  // Zoho otherwise). Non-blocking — never fail order completion on a sync error.
+  void mirrorOrderStockToZoho(orderId, "order_paid").catch((err) => {
+    logger.error("zoho_stock_mirror_after_paid_failed", { orderId, err });
+  });
 
   if (autoFulfillmentEnabled()) {
     const order = await prisma.order.findFirst({

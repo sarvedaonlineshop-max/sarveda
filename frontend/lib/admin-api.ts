@@ -891,6 +891,8 @@ export function syncStockFromZohoAdmin(opts?: {
   productId?: string;
   productName?: string;
   unmatchedOnly?: boolean;
+  /** Set false to actually overwrite Sarveda stock from Zoho (Zoho is master). */
+  auditOnly?: boolean;
 }) {
   return adminFetch<ZohoStockSyncResult & { summary?: ZohoSyncSummary }>("/api/zoho/sync/stock", {
     method: "POST",

@@ -19,7 +19,8 @@ import {
   pullStockFromZohoAdmin,
   pushItemsToZohoAdmin,
   pushStockToZohoAdmin,
-  refreshZohoAuditAdmin
+  refreshZohoAuditAdmin,
+  syncStockFromZohoAdmin
 } from "@/lib/admin-api";
 import {
   buildCategoryFilterOptions,
@@ -435,6 +436,32 @@ export function AdminInventoryWorkspace() {
       setHistoryOpen(true);
     } catch (e) {
       pushToast(e instanceof Error ? e.message : "Zoho audit failed", true);
+    } finally {
+      setZohoSyncing(null);
+    }
+  }
+
+  async function runPullAllFromZoho() {
+    if (
+      !window.confirm(
+        "Overwrite ALL Sarveda stock counts with Zoho's counts? Zoho is the master for stock. This does not change reserved (held) units."
+      )
+    ) {
+      return;
+    }
+    setZohoSyncing("pull_all");
+    try {
+      const result = await syncStockFromZohoAdmin({ auditOnly: false });
+      pushToast(
+        `Synced ${result.synced} SKU${result.synced === 1 ? "" : "s"} from Zoho` +
+          (result.skipped ? ` · ${result.skipped} skipped` : "") +
+          (result.errors ? ` · ${result.errors} errors` : ""),
+        result.errors > 0
+      );
+      await load();
+      setHistoryOpen(true);
+    } catch (e) {
+      pushToast(e instanceof Error ? e.message : "Sync from Zoho failed", true);
     } finally {
       setZohoSyncing(null);
     }
@@ -861,10 +888,20 @@ export function AdminInventoryWorkspace() {
             type="button"
             disabled={zohoSyncing !== null}
             onClick={() => void runZohoAudit()}
-            className="inline-flex items-center gap-2 rounded-md bg-[#1e3a2f] px-4 py-2 text-sm font-semibold text-[#fffbf5] shadow-sm hover:bg-[#2d5240] disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-md border border-[#1e3a2f]/30 bg-white px-4 py-2 text-sm font-semibold text-[#1e3a2f] shadow-sm hover:bg-stone-50 disabled:opacity-60 dark:border-[#2d5240] dark:bg-stone-800 dark:text-[#8fd3b6]"
           >
             <IconRefresh className={`h-4 w-4 ${zohoSyncing === "audit" ? "animate-spin" : ""}`} />
             Refresh Zoho audit
+          </button>
+          <button
+            type="button"
+            disabled={zohoSyncing !== null}
+            onClick={() => void runPullAllFromZoho()}
+            className="inline-flex items-center gap-2 rounded-md bg-[#1e3a2f] px-4 py-2 text-sm font-semibold text-[#fffbf5] shadow-sm hover:bg-[#2d5240] disabled:opacity-60"
+            title="Overwrite all Sarveda stock with Zoho counts (Zoho is master)"
+          >
+            <IconDownload className={`h-4 w-4 ${zohoSyncing === "pull_all" ? "animate-pulse" : ""}`} />
+            Sync all from Zoho
           </button>
         </div>
       </div>

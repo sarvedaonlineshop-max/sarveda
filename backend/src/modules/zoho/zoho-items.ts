@@ -144,10 +144,12 @@ async function adjustZohoStock(itemId: string, quantityAdjusted: number, reason:
   });
 }
 
-async function getZohoStockForItem(itemId: string, sku: string): Promise<number> {
-  const auditMap = await getZohoAuditMap();
-  const cached = auditMap?.get(sku);
-  if (cached?.itemId === itemId) return cached.stockOnHand;
+async function getZohoStockForItem(itemId: string, sku: string, live = false): Promise<number> {
+  if (!live) {
+    const auditMap = await getZohoAuditMap();
+    const cached = auditMap?.get(sku);
+    if (cached?.itemId === itemId) return cached.stockOnHand;
+  }
 
   const res = await zohoGet<{ item: ZohoItemRow }>(`/items/${itemId}`);
   return Math.max(0, res.item?.stock_on_hand ?? 0);
@@ -255,8 +257,13 @@ export async function pushVariantsToZoho(variantIds: string[]): Promise<ZohoActi
   return result;
 }
 
-export async function pushStockToZohoForSkus(skus: string[]): Promise<ZohoActionResult> {
+export async function pushStockToZohoForSkus(
+  skus: string[],
+  opts?: { live?: boolean; reason?: string }
+): Promise<ZohoActionResult> {
   const result: ZohoActionResult = { ok: 0, errors: 0, messages: [] };
+  const live = opts?.live ?? false;
+  const reason = opts?.reason ?? "Sarveda admin stock sync";
 
   if (!zohoConfigured()) {
     result.errors = skus.length;
@@ -286,14 +293,14 @@ export async function pushStockToZohoForSkus(skus: string[]): Promise<ZohoAction
         continue;
       }
 
-      const zohoStock = await getZohoStockForItem(itemId, sku);
+      const zohoStock = await getZohoStockForItem(itemId, sku, live);
       const delta = variant.inventory.onHand - zohoStock;
       if (delta === 0) {
         result.ok++;
         continue;
       }
 
-      await adjustZohoStock(itemId, delta, "Sarveda admin stock sync");
+      await adjustZohoStock(itemId, delta, reason);
       result.ok++;
     } catch (err) {
       result.errors++;
@@ -309,6 +316,40 @@ export async function pushStockToZohoForSkus(skus: string[]): Promise<ZohoAction
   });
 
   return result;
+}
+
+export async function mirrorStockToZohoForSkus(
+  skus: string[],
+  context: string,
+  meta?: Record<string, unknown>,
+  opts?: { live?: boolean }
+): Promise<void> {
+  const unique = Array.from(new Set(skus.map((sku) => sku.trim()).filter(Boolean)));
+  if (unique.length === 0) return;
+
+  try {
+    const result = await pushStockToZohoForSkus(unique, {
+      live: opts?.live ?? false,
+      reason: `Sarveda ${context}`
+    });
+    if (result.errors > 0) {
+      logger.error("zoho_stock_mirror_partial_failure", {
+        context,
+        skus: unique,
+        result,
+        ...meta
+      });
+      return;
+    }
+    logger.info("zoho_stock_mirror_success", { context, skus: unique, ...meta });
+  } catch (err) {
+    logger.error("zoho_stock_mirror_failed", {
+      context,
+      skus: unique,
+      error: err instanceof Error ? err.message : String(err),
+      ...meta
+    });
+  }
 }
 
 export async function markZohoItemsInactiveForSkus(skus: string[]): Promise<ZohoActionResult> {

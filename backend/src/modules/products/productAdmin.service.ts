@@ -1,7 +1,11 @@
 import type { ProductStatus, ProductType } from "@prisma/client";
 
 import { prisma } from "../../config/db";
-import { syncProductVariantsToZoho, type ZohoProductSyncResult } from "../zoho/zoho-items";
+import {
+  mirrorStockToZohoForSkus,
+  syncProductVariantsToZoho,
+  type ZohoProductSyncResult
+} from "../zoho/zoho-items";
 import { normalizeTaxClass } from "../../utils/tax-class";
 import { syncVariantAttributes, type VariantAttributeInput } from "./variant-attributes";
 
@@ -363,6 +367,10 @@ export async function saveProductAdmin(
     if (input.accordionItems) await syncAccordion(productId, input.accordionItems);
 
     const zohoSync = await syncProductVariantsToZoho(productId);
+    const stockSkus = (input.variants ?? [])
+      .filter((v) => v.onHand != null)
+      .map((v) => v.sku);
+    await mirrorStockToZohoForSkus(stockSkus, "product_admin_save", { productId });
     return { id: productId, zohoSync };
   }
 
@@ -423,6 +431,10 @@ export async function saveProductAdmin(
   if (input.accordionItems) await syncAccordion(product.id, input.accordionItems);
 
   const zohoSync = await syncProductVariantsToZoho(product.id);
+  const stockSkus = variants
+    .filter((v) => v.onHand != null)
+    .map((v) => v.sku);
+  await mirrorStockToZohoForSkus(stockSkus, "product_admin_create", { productId: product.id });
   return { id: product.id, zohoSync };
 }
 

@@ -4,7 +4,7 @@ import { logger } from "../../config/logger";
 import { refreshZohoAuditCache } from "./zoho-sync-audit";
 import { getZohoAuditMap } from "./zoho-stock-sync-cache";
 import { appendZohoStockSyncHistory } from "./zoho-stock-sync-history";
-import type { ZohoActionResult, ZohoStockSyncResult } from "./zoho-sync-types";
+import type { ZohoActionResult, ZohoItemAuditRow, ZohoStockSyncResult } from "./zoho-sync-types";
 
 export type { ZohoStockSyncResult };
 
@@ -12,19 +12,66 @@ function emptyResult(): ZohoStockSyncResult {
   return { synced: 0, errors: 0, skipped: 0 };
 }
 
-/** @deprecated Use refreshZohoAuditCache — no longer overwrites Sarveda stock automatically. */
+async function applyZohoRowsToSarveda(
+  rows: ZohoItemAuditRow[],
+  opts?: { limitToProductId?: string }
+): Promise<ZohoStockSyncResult> {
+  const result = emptyResult();
+  for (const row of rows) {
+    const sku = row.sku.trim();
+    if (!sku) continue;
+
+    try {
+      const variant = await prisma.productVariant.findFirst({
+        where: {
+          sku,
+          ...(opts?.limitToProductId ? { productId: opts.limitToProductId } : {})
+        },
+        select: { id: true }
+      });
+      if (!variant) {
+        result.skipped++;
+        continue;
+      }
+
+      await prisma.inventory.upsert({
+        where: { variantId: variant.id },
+        create: { variantId: variant.id, onHand: row.stockOnHand },
+        update: { onHand: row.stockOnHand }
+      });
+      result.synced++;
+    } catch (err) {
+      result.errors++;
+      logger.error("sync_stock_from_zoho_failed", { sku, err });
+    }
+  }
+  return result;
+}
+
 export async function syncStockFromZoho(): Promise<ZohoStockSyncResult> {
-  logger.info("syncStockFromZoho redirected to audit refresh (no auto stock overwrite)");
+  logger.info("sync_stock_from_zoho_started");
   const { zohoSkuCount } = await refreshZohoAuditCache();
-  return { synced: zohoSkuCount, errors: 0, skipped: 0 };
+  const auditMap = await getZohoAuditMap();
+  if (!auditMap) return { synced: 0, errors: 1, skipped: zohoSkuCount };
+  const result = await applyZohoRowsToSarveda(Array.from(auditMap.values()));
+  await appendZohoStockSyncHistory({
+    scope: "full",
+    synced: result.synced,
+    errors: result.errors,
+    skipped: result.skipped
+  });
+  return result;
 }
 
 export async function syncStockForProduct(
   productId: string,
   productName?: string
 ): Promise<ZohoStockSyncResult> {
-  logger.info("Product sync now refreshes full Zoho audit cache", { productId });
-  const result = await syncStockFromZoho();
+  await refreshZohoAuditCache();
+  const auditMap = await getZohoAuditMap();
+  const result = auditMap
+    ? await applyZohoRowsToSarveda(Array.from(auditMap.values()), { limitToProductId: productId })
+    : { synced: 0, errors: 1, skipped: 0 };
   await appendZohoStockSyncHistory({
     scope: "product",
     productId,
@@ -37,7 +84,26 @@ export async function syncStockForProduct(
 }
 
 export async function syncUnmatchedSkusFromZoho(): Promise<ZohoStockSyncResult> {
-  return syncStockFromZoho();
+  await refreshZohoAuditCache();
+  const auditMap = await getZohoAuditMap();
+  if (!auditMap) return { synced: 0, errors: 1, skipped: 0 };
+
+  const localSkus = new Set(
+    (
+      await prisma.productVariant.findMany({
+        select: { sku: true }
+      })
+    ).map((row) => row.sku.trim())
+  );
+  const matchedRows = Array.from(auditMap.values()).filter((row) => localSkus.has(row.sku));
+  const result = await applyZohoRowsToSarveda(matchedRows);
+  await appendZohoStockSyncHistory({
+    scope: "unmatched",
+    synced: result.synced,
+    errors: result.errors,
+    skipped: result.skipped
+  });
+  return result;
 }
 
 export async function pullStockFromZohoForSkus(skus: string[]): Promise<ZohoActionResult> {
