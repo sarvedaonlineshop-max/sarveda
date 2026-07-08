@@ -181,6 +181,7 @@ function normalizeAdminBody(body: CreateProductBody | UpdateProductBody): Produc
     seoDescription: body.seoDescription,
     seoKeyword: body.seoKeyword,
     categoryIds: body.categoryIds,
+    variantAxisOrder: body.variantAxisOrder,
     variants: body.variants,
     images: body.images,
     accordionItems: body.accordionItems
@@ -243,6 +244,10 @@ export async function update(req: Request, res: Response, next: NextFunction) {
       categoryIds:
         body.categoryIds ??
         existing.categories.map((c: { category: { id: string } }) => c.category.id),
+      variantAxisOrder:
+        body.variantAxisOrder ??
+        (existing as { variantAxisOrder?: string[] }).variantAxisOrder ??
+        [],
       variants: body.variants,
       images: body.images,
       accordionItems: body.accordionItems

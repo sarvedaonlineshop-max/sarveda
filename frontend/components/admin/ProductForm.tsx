@@ -16,12 +16,21 @@ import { applyApiError, tabForFieldPath } from "@/lib/admin-errors";
 import { AdminToast } from "@/components/admin/AdminToast";
 import { ProductAudioUpload } from "@/components/admin/ProductAudioUpload";
 import { VariantPricingShippingTables } from "@/components/admin/VariantPricingShippingTables";
+import { VariantMediaBlock, type VariantImageForm } from "@/components/admin/VariantMediaBlock";
+import { VariantOptionAxesEditor } from "@/components/admin/VariantOptionAxesEditor";
 import { ProductImageUpload } from "@/components/admin/ProductImageUpload";
 import { parseNonNegativeNumber, sanitizeNonNegativeInput } from "@/lib/admin-form-numbers";
 import { SeoAnalysisPanel } from "@/components/admin/SeoAnalysisPanel";
 import { fetchCategoryTree } from "@/lib/api";
 import { TAX_CLASS_OPTIONS, taxClassForForm } from "@/lib/tax-classes";
 import type { CategoryNode } from "@/lib/types";
+import {
+  deriveOptionAxes,
+  slugifyAttribute,
+  syncVariantAttributesToAxes,
+  type OptionAxisForm,
+  type VariantAttributeForm
+} from "@/lib/variant-admin";
 
 const ZONES = ["IN", "US", "GB", "OTHER"] as const;
 type Zone = (typeof ZONES)[number];
@@ -49,6 +58,9 @@ type VariantForm = {
   isDefault: boolean;
   status: "ACTIVE" | "INACTIVE";
   shippingRates: ShippingRateForm[];
+  videoUrl: string;
+  images: VariantImageForm[];
+  attributes: VariantAttributeForm[];
 };
 
 type ImageForm = { url: string; altText: string; isPrimary: boolean; variantKey: string };
@@ -125,7 +137,10 @@ function newVariant(skuPrefix: string): VariantForm {
     onHand: "0",
     isDefault: true,
     status: "ACTIVE",
-    shippingRates: emptyShipping()
+    shippingRates: emptyShipping(),
+    videoUrl: "",
+    images: [{ url: "", altText: "", isPrimary: true }],
+    attributes: []
   };
 }
 
@@ -173,8 +188,8 @@ function FieldErr({ message }: { message?: string }) {
 
 const FORM_TABS = [
   { id: "general" as const, label: "General", hint: "Name, slug, categories" },
-  { id: "variants" as const, label: "Variants & shipping", hint: "SKU, prices, delivery" },
-  { id: "media" as const, label: "Images & content", hint: "Gallery, accordion" },
+  { id: "variants" as const, label: "Variants & shipping", hint: "Options, SKU, media" },
+  { id: "media" as const, label: "Content & shared media", hint: "Accordion, shared gallery" },
   { id: "seo" as const, label: "SEO", hint: "Search listing" }
 ];
 type FormTab = (typeof FORM_TABS)[number]["id"];
@@ -209,6 +224,9 @@ export function ProductForm({ productId }: { productId?: string }) {
   const [seoKeyword, setSeoKeyword] = useState("");
   const [selectedCats, setSelectedCats] = useState<Set<string>>(new Set());
   const [variants, setVariants] = useState<VariantForm[]>([newVariant("product")]);
+  const [optionAxes, setOptionAxes] = useState<OptionAxisForm[]>([
+    { name: "Size", slug: "size" }
+  ]);
   const [images, setImages] = useState<ImageForm[]>([
     { url: "", altText: "", isPrimary: true, variantKey: "" }
   ]);
@@ -253,55 +271,97 @@ export function ProductForm({ productId }: { productId?: string }) {
       ).map((x) => x.category.id);
       setSelectedCats(new Set(cats));
 
+      const savedAxisOrder = ((p as { variantAxisOrder?: string[] }).variantAxisOrder ??
+        []) as string[];
+
       const vs = (p.variants as Array<Record<string, unknown>>) ?? [];
+      const allImgs = (p.images as Array<Record<string, unknown>>) ?? [];
+
+      let loadedVariants: VariantForm[] = [];
       if (vs.length) {
-        setVariants(
-          vs.map((v) => {
-            const rates = (v.shippingRates as Array<Record<string, unknown>>) ?? [];
-            const byZone = new Map(rates.map((r) => [String(r.country), r]));
-            return {
-              id: String(v.id),
-              sku: String(v.sku),
-              mrpInr: fromMinor(v.mrpInPaise as number),
-              saleInr: fromMinor(v.saleInPaise as number),
-              mrpUsd: fromMinor(v.mrpUsdCents as number | null),
-              saleUsd: fromMinor(v.saleUsdCents as number | null),
-              mrpGbp: fromMinor(v.mrpGbpPence as number | null),
-              saleGbp: fromMinor(v.saleGbpPence as number | null),
-              weightGrams: String(v.weightGrams ?? 0),
-              onHand: String((v.inventory as { onHand?: number })?.onHand ?? 0),
-              isDefault: Boolean(v.isDefault),
-              status: (v.status as "ACTIVE" | "INACTIVE") ?? "ACTIVE",
-              shippingRates: ZONES.map((country) => {
-                const r = byZone.get(country);
-                const fromShip =
-                  country === "US" || country === "OTHER"
+        loadedVariants = vs.map((v) => {
+          const rates = (v.shippingRates as Array<Record<string, unknown>>) ?? [];
+          const byZone = new Map(rates.map((r) => [String(r.country), r]));
+          const attrRows =
+            (v.attributeValues as Array<{
+              attributeValue: {
+                value: string;
+                slug: string;
+                attribute: { name: string; slug: string };
+              };
+            }>) ?? [];
+          const attributes: VariantAttributeForm[] = attrRows.map((row) => ({
+            name: row.attributeValue.attribute.name,
+            slug: row.attributeValue.attribute.slug,
+            value: row.attributeValue.value
+          }));
+          const vid = String(v.id);
+          const variantImgs = allImgs.filter((im) => im.variantId === vid);
+          return {
+            id: vid,
+            sku: String(v.sku),
+            mrpInr: fromMinor(v.mrpInPaise as number),
+            saleInr: fromMinor(v.saleInPaise as number),
+            mrpUsd: fromMinor(v.mrpUsdCents as number | null),
+            saleUsd: fromMinor(v.saleUsdCents as number | null),
+            mrpGbp: fromMinor(v.mrpGbpPence as number | null),
+            saleGbp: fromMinor(v.saleGbpPence as number | null),
+            weightGrams: String(v.weightGrams ?? 0),
+            onHand: String((v.inventory as { onHand?: number })?.onHand ?? 0),
+            isDefault: Boolean(v.isDefault),
+            status: (v.status as "ACTIVE" | "INACTIVE") ?? "ACTIVE",
+            videoUrl: String((v as { videoUrl?: string | null }).videoUrl ?? ""),
+            attributes,
+            images:
+              variantImgs.length > 0
+                ? variantImgs.map((im) => ({
+                    url: String(im.url),
+                    altText: String(im.altText ?? ""),
+                    isPrimary: Boolean(im.isPrimary)
+                  }))
+                : [{ url: "", altText: "", isPrimary: true }],
+            shippingRates: ZONES.map((country) => {
+              const r = byZone.get(country);
+              const fromShip =
+                country === "US" || country === "OTHER"
+                  ? (n: number | null | undefined) => fromMinor(n)
+                  : country === "GB"
                     ? (n: number | null | undefined) => fromMinor(n)
-                    : country === "GB"
-                      ? (n: number | null | undefined) => fromMinor(n)
-                      : (n: number | null | undefined) => fromMinor(n);
-                return {
-                  country,
-                  standardPerProduct: fromShip(r?.standardPerProduct as number),
-                  standardAdditional: fromShip(r?.standardAdditional as number),
-                  codPerProduct: fromShip(r?.codPerProduct as number | null),
-                  codAdditional: fromShip(r?.codAdditional as number | null),
-                  estimatedDays: String(r?.estimatedDays ?? "")
-                };
-              })
-            };
-          })
+                    : (n: number | null | undefined) => fromMinor(n);
+              return {
+                country,
+                standardPerProduct: fromShip(r?.standardPerProduct as number),
+                standardAdditional: fromShip(r?.standardAdditional as number),
+                codPerProduct: fromShip(r?.codPerProduct as number | null),
+                codAdditional: fromShip(r?.codAdditional as number | null),
+                estimatedDays: String(r?.estimatedDays ?? "")
+              };
+            })
+          };
+        });
+        setVariants(loadedVariants);
+        const axes = deriveOptionAxes(loadedVariants, savedAxisOrder);
+        setOptionAxes(
+          axes.length > 0 ? axes : [{ name: "Size", slug: "size" }]
         );
+        if (axes.length > 0) {
+          setVariants((prev) =>
+            prev.map((v) => ({
+              ...v,
+              attributes: syncVariantAttributesToAxes(v.attributes, axes)
+            }))
+          );
+        }
       }
 
-      const imgs = (p.images as Array<Record<string, unknown>>) ?? [];
+      const sharedImgs = allImgs.filter((im) => !im.variantId);
       setImages(
-        imgs.length
-          ? imgs.map((im) => ({
+        sharedImgs.length
+          ? sharedImgs.map((im) => ({
               url: String(im.url),
               altText: String(im.altText ?? ""),
               isPrimary: Boolean(im.isPrimary),
-              variantKey: im.variantId ? String(im.variantId) : ""
+              variantKey: ""
             }))
           : [{ url: "", altText: "", isPrimary: true, variantKey: "" }]
       );
@@ -465,19 +525,17 @@ export function ProductForm({ productId }: { productId?: string }) {
     ]);
   }
 
-  const variantImageOptions = useMemo(() => {
-    const opts = [{ key: "", label: "All variants (shared gallery)" }];
-    for (let i = 0; i < variants.length; i++) {
-      const v = variants[i]!;
-      opts.push({
-        key: variantKeyForForm(v),
-        label: v.sku.trim() ? `Variant: ${v.sku}` : `Variant ${i + 1}`
-      });
-    }
-    return opts;
-  }, [variants]);
+  function handleOptionAxesChange(axes: OptionAxisForm[]) {
+    setOptionAxes(axes);
+    setVariants((prev) =>
+      prev.map((v) => ({
+        ...v,
+        attributes: syncVariantAttributesToAxes(v.attributes, axes)
+      }))
+    );
+  }
 
-  const showVariantImages = productType === "VARIABLE" && variants.length > 1;
+  const showVariantAxes = productType === "VARIABLE" && variants.length > 0;
 
   async function fillSeoWithAi() {
     setSeoAiLoading(true);
@@ -543,6 +601,7 @@ export function ProductForm({ productId }: { productId?: string }) {
       seoDescription: seoDescription.trim() || null,
       seoKeyword: seoKeyword.trim() || null,
       categoryIds: Array.from(selectedCats),
+      variantAxisOrder: optionAxes.map((a) => a.slug).filter(Boolean),
       variants: variants.map((v) => ({
         id: v.id,
         sku: v.sku.trim(),
@@ -556,6 +615,24 @@ export function ProductForm({ productId }: { productId?: string }) {
         isDefault: v.isDefault,
         status: v.status,
         onHand: parseInt(v.onHand, 10) || 0,
+        videoUrl: v.videoUrl.trim() || null,
+        attributes: v.attributes
+          .filter((a) => a.value.trim())
+          .map((a) => ({
+            name: a.name.trim() || a.slug,
+            slug: a.slug || slugifyAttribute(a.name),
+            value: a.value.trim()
+          })),
+        images: v.images
+          .filter((im) => im.url.trim())
+          .map((im, i) => ({
+            url: im.url.trim(),
+            altText: im.altText.trim() || null,
+            position: i,
+            isPrimary: im.isPrimary,
+            variantId: v.id ?? null,
+            variantSku: v.id ? null : v.sku.trim()
+          })),
         shippingRates: v.shippingRates.map((r) => {
           const toMinor =
             r.country === "US"
@@ -584,7 +661,8 @@ export function ProductForm({ productId }: { productId?: string }) {
           altText: im.altText.trim() || null,
           position: i,
           isPrimary: i === primaryIdx,
-          ...imageVariantPayload(im.variantKey, variants)
+          variantId: null,
+          variantSku: null
         }));
       })(),
       accordionItems: accordion
@@ -615,6 +693,8 @@ export function ProductForm({ productId }: { productId?: string }) {
       if (typeof d.tab === "string") setTab(d.tab as FormTab);
       if (Array.isArray(d.variants)) setVariants(d.variants as VariantForm[]);
       if (Array.isArray(d.images)) setImages(d.images as ImageForm[]);
+      if (Array.isArray(d.optionAxes)) setOptionAxes(d.optionAxes as OptionAxisForm[]);
+      if (typeof d.videoUrl === "string") setVideoUrl(d.videoUrl);
       if (Array.isArray(d.accordion)) setAccordion(d.accordion as AccordionForm[]);
       if (Array.isArray(d.categoryIds)) setSelectedCats(new Set(d.categoryIds as string[]));
     } catch {
@@ -638,6 +718,8 @@ export function ProductForm({ productId }: { productId?: string }) {
             tab,
             variants,
             images,
+            optionAxes,
+            videoUrl,
             accordion,
             categoryIds: Array.from(selectedCats),
             seoTitle,
@@ -1011,19 +1093,6 @@ export function ProductForm({ productId }: { productId?: string }) {
               />
             ) : null}
             <div>
-              <label htmlFor="videoUrl" className={labelCls}>
-                Product video URL
-              </label>
-              <input
-                id="videoUrl"
-                value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value)}
-                placeholder="https://… (MP4 or hosted video)"
-                className={inputCls}
-              />
-              <p className="mt-1 text-xs text-stone-500">Shown as a video thumbnail on the product page.</p>
-            </div>
-            <div>
               <p className={labelCls}>Categories</p>
               <div className="mt-2 max-h-48 overflow-y-auto rounded-lg border border-stone-200 bg-stone-50 p-3 dark:border-stone-600 dark:bg-stone-950/60">
                 <CategoryCheckTree nodes={categoryTree} selected={selectedCats} onToggle={toggleCat} />
@@ -1035,6 +1104,9 @@ export function ProductForm({ productId }: { productId?: string }) {
         {tab === "variants" ? (
           <div className="space-y-6">
             <FieldErr message={fieldErrors.variants} />
+            {showVariantAxes ? (
+              <VariantOptionAxesEditor axes={optionAxes} onChange={handleOptionAxesChange} />
+            ) : null}
             {variants.map((v, vi) => (
               <div
                 key={v.id ?? `new-${vi}`}
@@ -1042,7 +1114,12 @@ export function ProductForm({ productId }: { productId?: string }) {
               >
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                   <p className="font-medium text-stone-800 dark:text-stone-100">
-                    Variant {vi + 1}
+                    {showVariantAxes && v.attributes.some((a) => a.value.trim())
+                      ? v.attributes
+                          .filter((a) => a.value.trim())
+                          .map((a) => a.value)
+                          .join(" / ")
+                      : `Variant ${vi + 1}`}
                     {v.isDefault ? (
                       <span className="ml-2 text-xs text-amber-700 dark:text-amber-400">(default)</span>
                     ) : null}
@@ -1129,12 +1206,56 @@ export function ProductForm({ productId }: { productId?: string }) {
                     <FieldErr message={fieldErrors[`variants.${vi}.weightGrams`]} />
                   </div>
                 </div>
+                {showVariantAxes && optionAxes.length > 0 ? (
+                  <div className="mb-4 grid gap-3 sm:grid-cols-2">
+                    {v.attributes.map((attr, ai) => (
+                      <div key={`${vi}-${attr.slug}-${ai}`}>
+                        <label className={labelCls}>{attr.name || `Level ${ai + 1}`}</label>
+                        <input
+                          value={attr.value}
+                          onChange={(e) =>
+                            setVariants((prev) =>
+                              prev.map((x, i) =>
+                                i === vi
+                                  ? {
+                                      ...x,
+                                      attributes: x.attributes.map((a, j) =>
+                                        j === ai ? { ...a, value: e.target.value } : a
+                                      )
+                                    }
+                                  : x
+                              )
+                            )
+                          }
+                          placeholder={`e.g. ${attr.name === "Size" ? "Large" : "Plain"}`}
+                          className={inputCls}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
                 <VariantPricingShippingTables
                   variant={v}
                   variantIndex={vi}
                   fieldErrors={fieldErrors}
                   onChange={(next) =>
                     setVariants((prev) => prev.map((x, i) => (i === vi ? { ...x, ...next } : x)))
+                  }
+                />
+                <VariantMediaBlock
+                  images={v.images}
+                  videoUrl={v.videoUrl}
+                  fieldPrefix={`variants.${vi}`}
+                  fieldErrors={fieldErrors}
+                  onImagesChange={(next) =>
+                    setVariants((prev) =>
+                      prev.map((x, i) => (i === vi ? { ...x, images: next } : x))
+                    )
+                  }
+                  onVideoUrlChange={(url) =>
+                    setVariants((prev) =>
+                      prev.map((x, i) => (i === vi ? { ...x, videoUrl: url } : x))
+                    )
                   }
                 />
               </div>
@@ -1144,7 +1265,11 @@ export function ProductForm({ productId }: { productId?: string }) {
               onClick={() =>
                 setVariants((prev) => [
                   ...prev.map((x) => ({ ...x, isDefault: false })),
-                  newVariant(slug || "product")
+                  {
+                    ...newVariant(slug || "product"),
+                    isDefault: prev.length === 0,
+                    attributes: syncVariantAttributesToAxes([], optionAxes)
+                  }
                 ])
               }
               className="text-sm font-medium text-amber-700 hover:underline dark:text-amber-400"
@@ -1158,10 +1283,10 @@ export function ProductForm({ productId }: { productId?: string }) {
           <div className="space-y-6">
             <div className="space-y-3">
               <div>
-                <p className={labelCls}>Product images</p>
+                <p className={labelCls}>Shared product images</p>
                 <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
-                  Upload to S3. Mark one primary image. With multiple variants, link each image to a
-                  variant so the gallery switches on the product page.
+                  Used as fallback when a variant has no images of its own. Variant-specific images
+                  are set on the Variants step.
                 </p>
               </div>
               {images.map((im, ii) => (
@@ -1170,17 +1295,7 @@ export function ProductForm({ productId }: { productId?: string }) {
                   url={im.url}
                   altText={im.altText}
                   isPrimary={im.isPrimary}
-                  variantKey={im.variantKey}
-                  variantOptions={showVariantImages ? variantImageOptions : undefined}
-                  onVariantChange={
-                    showVariantImages
-                      ? (variantKey) =>
-                          setImages((prev) =>
-                            prev.map((x, i) => (i === ii ? { ...x, variantKey } : x))
-                          )
-                      : undefined
-                  }
-                  role={im.isPrimary ? "primary" : "secondary"}
+                  variantKey=""
                   onUrlChange={(url) =>
                     setImages((prev) => prev.map((x, i) => (i === ii ? { ...x, url } : x)))
                   }
@@ -1191,6 +1306,7 @@ export function ProductForm({ productId }: { productId?: string }) {
                     setImages((prev) => prev.map((x, i) => ({ ...x, isPrimary: i === ii })))
                   }
                   onRemove={() => removeImage(ii)}
+                  role={im.isPrimary ? "primary" : "secondary"}
                 />
               ))}
               <FieldErr message={fieldErrors[`images.0.url`] || fieldErrors.images} />
@@ -1202,7 +1318,21 @@ export function ProductForm({ productId }: { productId?: string }) {
                 + Add gallery image
               </button>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-3 border-t border-stone-200 pt-6 dark:border-stone-700">
+              <div>
+                <label htmlFor="sharedVideoUrl" className={labelCls}>
+                  Shared product video URL
+                </label>
+                <input
+                  id="sharedVideoUrl"
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  placeholder="https://… (fallback when variant has no video)"
+                  className={inputCls}
+                />
+              </div>
+            </div>
+            <div className="space-y-3 border-t border-stone-200 pt-6 dark:border-stone-700">
               <div>
                 <p className={labelCls}>Product page sections</p>
                 <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">

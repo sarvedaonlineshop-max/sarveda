@@ -21,7 +21,7 @@ import { usePricingZone } from "@/hooks/usePricingZone";
 import { unitSaleMinor, zoneToCurrency } from "@/lib/currency";
 import { resolveMediaUrl } from "@/lib/media-cdn";
 import { formatINRFromPaise, formatMinorFromPaise } from "@/lib/money";
-import { imageIndexForVariant } from "@/lib/variant-image";
+import { galleryImagesForVariant, imageIndexForVariant, resolveVariantVideoUrl } from "@/lib/variant-gallery";
 import {
   availableStock,
   stockDisplay,
@@ -98,9 +98,15 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
     [product.accordionItems]
   );
 
-  const sortedImages = useMemo(
-    () => [...product.images].sort((a, b) => a.position - b.position),
-    [product.images]
+  const sortedImages = useMemo(() => {
+    const all = [...product.images].sort((a, b) => a.position - b.position);
+    if (!variant) return all;
+    return galleryImagesForVariant(variant.id, all);
+  }, [product.images, variant]);
+
+  const activeVideoUrl = useMemo(
+    () => resolveVariantVideoUrl(variant, product),
+    [variant, product]
   );
 
   useEffect(() => {
@@ -169,7 +175,8 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
     variantForStock: variant,
     layout: "inline" as const,
     showPurchaseActions: true,
-    expressShippingEnabled: product.expressShippingEnabled !== false
+    expressShippingEnabled: product.expressShippingEnabled !== false,
+    axisOrder: product.variantAxisOrder
   };
 
   return (
@@ -184,7 +191,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
               activeIndex={galleryIndex}
               onActiveChange={setGalleryIndex}
               enableZoom
-              videoUrl={product.videoUrl}
+              videoUrl={activeVideoUrl}
             />
 
             {categoryTags.length > 0 ? (

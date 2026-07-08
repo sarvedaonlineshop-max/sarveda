@@ -12,6 +12,22 @@ const shippingRateSchema = z.object({
   estimatedDays: z.string().max(64).optional().nullable()
 });
 
+const variantAttributeSchema = z.object({
+  name: z.string().min(1).max(120),
+  slug: z.string().min(1).max(120).optional(),
+  value: z.string().min(1).max(200)
+});
+
+const imageAdminSchema = z.object({
+  id: z.string().uuid().optional(),
+  url: z.string().min(1).max(2000),
+  altText: z.string().max(500).optional().nullable(),
+  position: z.number().int().min(0).optional(),
+  isPrimary: z.boolean().optional(),
+  variantId: z.string().uuid().optional().nullable(),
+  variantSku: z.string().max(120).optional().nullable()
+});
+
 const variantInputSchema = z.object({
   id: z.string().uuid().optional(),
   sku: z.string().min(1).max(120),
@@ -25,17 +41,10 @@ const variantInputSchema = z.object({
   isDefault: z.boolean().optional(),
   status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
   onHand: z.number().int().min(0).optional(),
-  shippingRates: z.array(shippingRateSchema).optional()
-});
-
-const imageAdminSchema = z.object({
-  id: z.string().uuid().optional(),
-  url: z.string().min(1).max(2000),
-  altText: z.string().max(500).optional().nullable(),
-  position: z.number().int().min(0).optional(),
-  isPrimary: z.boolean().optional(),
-  variantId: z.string().uuid().optional().nullable(),
-  variantSku: z.string().max(120).optional().nullable()
+  shippingRates: z.array(shippingRateSchema).optional(),
+  videoUrl: z.union([z.string().url().max(2000), z.literal(""), z.null()]).optional(),
+  attributes: z.array(variantAttributeSchema).optional(),
+  images: z.array(imageAdminSchema).optional()
 });
 
 const accordionAdminSchema = z.object({
@@ -68,6 +77,7 @@ export const createProductSchema = z.object({
   seoKeyword: z.string().max(500).optional().nullable(),
   wooCommerceId: z.number().int().positive().optional().nullable(),
   categoryIds: z.array(z.string().uuid()).optional(),
+  variantAxisOrder: z.array(z.string().min(1).max(120)).optional(),
   variants: z.array(variantInputSchema).optional(),
   images: z.array(imageAdminSchema).optional(),
   accordionItems: z.array(accordionAdminSchema).optional()

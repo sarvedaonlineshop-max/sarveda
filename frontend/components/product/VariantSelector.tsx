@@ -17,6 +17,8 @@ type Props = {
   variants: ProductVariantDetail[];
   selectedVariantId: string;
   onVariantChange: (variantId: string) => void;
+  /** Ordered attribute slugs from product (size before type, etc.) */
+  axisOrder?: string[];
   /** Teal bordered pills matching live sarveda.com storefront */
   pillStyle?: "default" | "storefront";
 };
@@ -46,9 +48,10 @@ export function VariantSelector({
   variants,
   selectedVariantId,
   onVariantChange,
+  axisOrder,
   pillStyle = "default"
 }: Props) {
-  const axes = useMemo(() => buildAttributeAxes(variants), [variants]);
+  const axes = useMemo(() => buildAttributeAxes(variants, axisOrder), [variants, axisOrder]);
   const hasAxes = axes.length > 0;
 
   const selectedVariant = variants.find((v) => v.id === selectedVariantId) ?? pickInitial(variants);

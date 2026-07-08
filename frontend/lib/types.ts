@@ -78,6 +78,7 @@ export type ProductVariantDetail = {
   inventory: { onHand: number; reserved: number; lowStockThreshold?: number } | null;
   attributeValues: VariantAttributeRow[];
   shippingRates?: VariantShippingRate[];
+  videoUrl?: string | null;
 };
 
 export type ProductDetail = {
@@ -95,6 +96,7 @@ export type ProductDetail = {
   seoTitle: string | null;
   seoDescription: string | null;
   seoKeyword: string | null;
+  variantAxisOrder?: string[];
   variants: ProductVariantDetail[];
   images: {
     id: string;
@@ -102,6 +104,7 @@ export type ProductDetail = {
     altText: string | null;
     position: number;
     isPrimary: boolean;
+    variantId?: string | null;
   }[];
   categories: { category: { slug: string; name: string } }[];
   accordionItems: {

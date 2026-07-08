@@ -23,7 +23,10 @@ export function attributeDisplayName(slug: string, fallback: string): string {
   return ATTRIBUTE_LABELS[slug.toLowerCase()] ?? fallback;
 }
 
-export function buildAttributeAxes(variants: ProductVariantDetail[]): AttributeAxis[] {
+export function buildAttributeAxes(
+  variants: ProductVariantDetail[],
+  axisOrder?: string[]
+): AttributeAxis[] {
   const map = new Map<string, { name: string; values: Map<string, string> }>();
 
   for (const variant of variants) {
@@ -37,11 +40,19 @@ export function buildAttributeAxes(variants: ProductVariantDetail[]): AttributeA
     }
   }
 
-  return Array.from(map.entries()).map(([slug, { name, values }]) => ({
+  const axes = Array.from(map.entries()).map(([slug, { name, values }]) => ({
     slug,
     name,
     values: Array.from(values.entries()).map(([valueSlug, value]) => ({ slug: valueSlug, value }))
   }));
+
+  if (!axisOrder?.length) return axes;
+
+  return [...axes].sort((a, b) => {
+    const ai = axisOrder.indexOf(a.slug);
+    const bi = axisOrder.indexOf(b.slug);
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+  });
 }
 
 export function variantAttributeMap(variant: ProductVariantDetail): Map<string, string> {

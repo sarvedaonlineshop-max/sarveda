@@ -29,6 +29,8 @@ type Props = {
   variantForStock: ProductVariantDetail | null;
   showPurchaseActions?: boolean;
   expressShippingEnabled?: boolean;
+  /** Attribute slug order for variant pills on PDP */
+  axisOrder?: string[];
   /** Auroville-style inline PDP vs legacy card sidebar */
   layout?: "card" | "inline";
 };
@@ -51,6 +53,7 @@ export function ProductBuyBox({
   variantForStock,
   showPurchaseActions = true,
   expressShippingEnabled = true,
+  axisOrder,
   layout = "card"
 }: Props) {
   const stock = variantForStock ? stockDisplay(variantForStock) : null;
@@ -85,6 +88,23 @@ export function ProductBuyBox({
     }
     const groups = Array.from(map.entries()).map(([name, values]) => ({ name, values: Array.from(values) }));
     if (groups.length > 0) {
+      if (axisOrder?.length) {
+        const orderKey = (label: string, slug?: string) => {
+          if (slug && axisOrder.includes(slug)) return axisOrder.indexOf(slug);
+          const byName = axisOrder.findIndex(
+            (s) => label.toLowerCase().includes(s.replace(/-/g, " "))
+          );
+          if (byName >= 0) return byName;
+          return 999;
+        };
+        return groups.sort((a, b) => {
+          const p =
+            orderKey(a.name) -
+            orderKey(b.name);
+          if (p !== 0) return p;
+          return a.name.localeCompare(b.name);
+        });
+      }
       const priority = (label: string) => {
         const n = label.toLowerCase();
         if (n.includes("size")) return 0;
@@ -104,7 +124,7 @@ export function ProductBuyBox({
       .map((sku) => sku!.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim());
     const uniqueSkuLabels = Array.from(new Set(skuLabels));
     return uniqueSkuLabels.length > 1 ? [{ name: "Option", values: uniqueSkuLabels }] : [];
-  }, [variants]);
+  }, [variants, axisOrder]);
 
   const selectedAttrValues = useMemo(() => {
     const selected = new Map<string, string>();

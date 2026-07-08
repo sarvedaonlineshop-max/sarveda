@@ -85,6 +85,8 @@ model Product {
   videoUrl         String?
   expressShippingEnabled Boolean    @default(true)
   relatedArticleSlugs String[]      @default([])
+  // Ordered attribute slugs for storefront variant pills (e.g. size before type).
+  variantAxisOrder   String[]        @default([])
   seoTitle         String?
   seoDescription   String?
   seoKeyword       String?
@@ -127,6 +129,7 @@ model ProductVariant {
   isDefault       Boolean                 @default(false)
   status          VariantStatus           @default(ACTIVE)
   zohoItemId      String?                 @db.VarChar(64)
+  videoUrl        String?
   productRel      Product                 @relation(fields: [productId], references: [id])
   inventory       Inventory?
   attributeValues VariantAttributeValue[]

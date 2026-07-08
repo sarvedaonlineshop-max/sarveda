@@ -3,6 +3,7 @@ import type { ProductStatus, ProductType } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { syncProductVariantsToZoho, type ZohoProductSyncResult } from "../zoho/zoho-items";
 import { normalizeTaxClass } from "../../utils/tax-class";
+import { syncVariantAttributes, type VariantAttributeInput } from "./variant-attributes";
 
 function httpError(status: number, message: string, code: string): Error {
   const err = new Error(message) as Error & {
@@ -41,6 +42,9 @@ export type VariantAdminInput = {
   status?: "ACTIVE" | "INACTIVE";
   onHand?: number;
   shippingRates?: ShippingRateInput[];
+  videoUrl?: string | null;
+  attributes?: VariantAttributeInput[];
+  images?: ImageAdminInput[];
 };
 
 export type ImageAdminInput = {
@@ -78,6 +82,7 @@ export type ProductAdminSaveInput = {
   seoDescription?: string | null;
   seoKeyword?: string | null;
   categoryIds?: string[];
+  variantAxisOrder?: string[];
   variants?: VariantAdminInput[];
   images?: ImageAdminInput[];
   accordionItems?: AccordionAdminInput[];
@@ -114,8 +119,12 @@ async function upsertShippingRates(variantId: string, rates: ShippingRateInput[]
   }
 }
 
-async function syncVariants(productId: string, variants: VariantAdminInput[]): Promise<void> {
-  if (variants.length === 0) return;
+async function syncVariants(
+  productId: string,
+  variants: VariantAdminInput[]
+): Promise<Map<string, string>> {
+  const idBySku = new Map<string, string>();
+  if (variants.length === 0) return idBySku;
 
   const existing = await prisma.productVariant.findMany({ where: { productId } });
   const incomingIds = new Set(variants.filter((v) => v.id).map((v) => v.id!));
@@ -135,6 +144,7 @@ async function syncVariants(productId: string, variants: VariantAdminInput[]): P
   for (let i = 0; i < variants.length; i++) {
     const v = variants[i];
     const isDefault = i === primaryIdx;
+    const videoUrl = v.videoUrl === "" ? null : v.videoUrl ?? null;
 
     if (v.id) {
       const clash = await prisma.productVariant.findFirst({
@@ -153,6 +163,7 @@ async function syncVariants(productId: string, variants: VariantAdminInput[]): P
           mrpGbpPence: v.mrpGbpPence ?? null,
           saleGbpPence: v.saleGbpPence ?? null,
           weightGrams: v.weightGrams ?? null,
+          videoUrl,
           isDefault,
           status: v.status ?? "ACTIVE"
         }
@@ -169,6 +180,12 @@ async function syncVariants(productId: string, variants: VariantAdminInput[]): P
       if (v.shippingRates?.length) {
         await upsertShippingRates(v.id, v.shippingRates);
       }
+
+      if (v.attributes) {
+        await syncVariantAttributes(v.id, v.attributes);
+      }
+
+      idBySku.set(v.sku.trim(), v.id);
     } else {
       const clash = await prisma.productVariant.findUnique({ where: { sku: v.sku } });
       if (clash) throw httpError(409, `SKU ${v.sku} already in use`, "SKU_EXISTS");
@@ -184,6 +201,7 @@ async function syncVariants(productId: string, variants: VariantAdminInput[]): P
           mrpGbpPence: v.mrpGbpPence ?? null,
           saleGbpPence: v.saleGbpPence ?? null,
           weightGrams: v.weightGrams ?? null,
+          videoUrl,
           isDefault,
           status: v.status ?? "ACTIVE",
           inventory: { create: { onHand: v.onHand ?? 0 } }
@@ -193,9 +211,16 @@ async function syncVariants(productId: string, variants: VariantAdminInput[]): P
       if (v.shippingRates?.length) {
         await upsertShippingRates(created.id, v.shippingRates);
       }
+
+      if (v.attributes) {
+        await syncVariantAttributes(created.id, v.attributes);
+      }
+
+      idBySku.set(v.sku.trim(), created.id);
     }
   }
 
+  return idBySku;
 }
 
 async function resolveVariantId(
@@ -217,7 +242,11 @@ async function resolveVariantId(
   return null;
 }
 
-async function syncImages(productId: string, images: ImageAdminInput[]): Promise<void> {
+async function syncImages(
+  productId: string,
+  images: ImageAdminInput[],
+  idBySku: Map<string, string>
+): Promise<void> {
   await prisma.productImage.deleteMany({ where: { productId } });
   if (images.length === 0) return;
   let primaryIdx = images.findIndex((im) => im.isPrimary);
@@ -225,7 +254,10 @@ async function syncImages(productId: string, images: ImageAdminInput[]): Promise
   for (let i = 0; i < images.length; i++) {
     const im = images[i];
     if (!im.url.trim()) continue;
-    const variantId = await resolveVariantId(productId, im);
+    let variantId = await resolveVariantId(productId, im);
+    if (!variantId && im.variantSku?.trim()) {
+      variantId = idBySku.get(im.variantSku.trim()) ?? null;
+    }
     await prisma.productImage.create({
       data: {
         productId,
@@ -237,6 +269,27 @@ async function syncImages(productId: string, images: ImageAdminInput[]): Promise
       }
     });
   }
+}
+
+function flattenVariantImages(
+  variants: VariantAdminInput[] | undefined,
+  idBySku: Map<string, string>
+): ImageAdminInput[] {
+  if (!variants?.length) return [];
+  const out: ImageAdminInput[] = [];
+  for (const v of variants) {
+    if (!v.images?.length) continue;
+    const variantId = v.id ?? idBySku.get(v.sku.trim()) ?? null;
+    for (const im of v.images) {
+      if (!im.url.trim()) continue;
+      out.push({
+        ...im,
+        variantId: variantId ?? im.variantId ?? null,
+        variantSku: variantId ? null : v.sku.trim()
+      });
+    }
+  }
+  return out;
 }
 
 async function syncAccordion(productId: string, items: AccordionAdminInput[]): Promise<void> {
@@ -284,6 +337,7 @@ export async function saveProductAdmin(
         videoUrl: input.videoUrl === "" ? null : input.videoUrl,
         expressShippingEnabled: input.expressShippingEnabled ?? undefined,
         relatedArticleSlugs: input.relatedArticleSlugs ?? undefined,
+        variantAxisOrder: input.variantAxisOrder ?? undefined,
         seoTitle: input.seoTitle ?? undefined,
         seoDescription: input.seoDescription ?? undefined,
         seoKeyword: input.seoKeyword ?? undefined,
@@ -296,8 +350,16 @@ export async function saveProductAdmin(
       }
     });
 
-    if (input.variants) await syncVariants(productId, input.variants);
-    if (input.images) await syncImages(productId, input.images);
+    const idBySku = input.variants
+      ? await syncVariants(productId, input.variants)
+      : new Map<string, string>();
+    if (input.images || input.variants?.some((v) => v.images?.length)) {
+      const merged = [
+        ...(input.images ?? []),
+        ...flattenVariantImages(input.variants, idBySku)
+      ];
+      await syncImages(productId, merged, idBySku);
+    }
     if (input.accordionItems) await syncAccordion(productId, input.accordionItems);
 
     const zohoSync = await syncProductVariantsToZoho(productId);
@@ -322,6 +384,7 @@ export async function saveProductAdmin(
       videoUrl: input.videoUrl || undefined,
       expressShippingEnabled: input.expressShippingEnabled ?? true,
       relatedArticleSlugs: input.relatedArticleSlugs ?? [],
+      variantAxisOrder: input.variantAxisOrder ?? [],
       seoTitle: input.seoTitle ?? undefined,
       seoDescription: input.seoDescription ?? undefined,
       seoKeyword: input.seoKeyword ?? undefined,
@@ -349,8 +412,14 @@ export async function saveProductAdmin(
         }
       ];
 
-  await syncVariants(product.id, variants);
-  if (input.images) await syncImages(product.id, input.images);
+  const idBySku = await syncVariants(product.id, variants);
+  if (input.images || input.variants?.some((v) => v.images?.length)) {
+    const merged = [
+      ...(input.images ?? []),
+      ...flattenVariantImages(input.variants, idBySku)
+    ];
+    await syncImages(product.id, merged, idBySku);
+  }
   if (input.accordionItems) await syncAccordion(product.id, input.accordionItems);
 
   const zohoSync = await syncProductVariantsToZoho(product.id);
