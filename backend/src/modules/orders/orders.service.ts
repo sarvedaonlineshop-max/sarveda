@@ -165,16 +165,6 @@ export async function cancelUnpaidOrderWithRelease(
  * Restock inventory when a paid order is cancelled or refunded (reverse confirmStock).
  */
 export async function restockPaidOrderTx(tx: Prisma.TransactionClient, orderId: string): Promise<void> {
-  const order = await tx.order.findFirst({
-    where: { id: orderId },
-    select: { paymentStatus: true, status: true }
-  });
-  if (!order) return;
-  if (order.paymentStatus !== "CAPTURED" && order.status !== "PAID" && order.status !== "PROCESSING" &&
-      order.status !== "PACKED" && order.status !== "SHIPPED" && order.status !== "DELIVERED") {
-    return;
-  }
-
   const items = await tx.orderItem.findMany({
     where: { orderId },
     select: { qtyOrdered: true, variantId: true }
@@ -188,6 +178,23 @@ export async function restockPaidOrderTx(tx: Prisma.TransactionClient, orderId: 
       data: { onHand: { increment: item.qtyOrdered } }
     });
   }
+}
+
+/** Stock was decremented at checkout (online captured, or COD placed as PAID). */
+function orderStockWasConfirmed(order: {
+  status: string;
+  paymentStatus: string;
+  payments: Array<{ status: string; provider: string }>;
+}): boolean {
+  const inPaidPipeline = ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"].includes(order.status);
+  if (!inPaidPipeline) return false;
+
+  if (order.paymentStatus === "CAPTURED") return true;
+  if (order.payments.some((p) => p.status === "CAPTURED")) return true;
+  // COD: stock confirmed at checkout while payment stays PENDING until cash collection.
+  if (order.payments.some((p) => p.provider === "COD")) return true;
+
+  return false;
 }
 
 /** Mark course/event access cancelled when a paid digital order is refunded or cancelled. */
@@ -213,14 +220,14 @@ export async function handlePaidOrderStatusChange(
   await prisma.$transaction(async (tx) => {
     const order = await tx.order.findFirst({
       where: { id: orderId, deletedAt: null },
-      include: { payments: { orderBy: { createdAt: "desc" }, take: 1 } }
+      include: { payments: { orderBy: { createdAt: "desc" } } }
     });
     if (!order) return;
 
     const wasPaidPipeline = ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"].includes(order.status);
-    const paymentCaptured = order.paymentStatus === "CAPTURED" || order.payments[0]?.status === "CAPTURED";
+    const stockWasConfirmed = orderStockWasConfirmed(order);
 
-    if (wasPaidPipeline && paymentCaptured) {
+    if (wasPaidPipeline && stockWasConfirmed) {
       await restockPaidOrderTx(tx, orderId);
       if (toStatus === "REFUNDED" || toStatus === "CANCELLED") {
         await revokeDigitalPurchasesTx(tx, orderId);
