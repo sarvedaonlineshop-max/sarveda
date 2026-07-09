@@ -5,6 +5,7 @@ import { requireAdmin } from "../../middleware/admin";
 
 import { getZohoAccessToken } from "./zoho-auth";
 import { createZohoInvoiceForOrder } from "./zoho-invoices";
+import { recordZohoPaymentForOrder } from "./zoho-financials";
 import {
   pullStockFromZohoForSkus,
   refreshZohoAuditCache,
@@ -181,6 +182,7 @@ zohoRouter.get("/sync/history", requireAdmin, async (req, res, next) => {
 zohoRouter.post("/sync/invoice/:orderId", requireAdmin, async (req, res, next) => {
   try {
     await createZohoInvoiceForOrder(req.params.orderId);
+    await recordZohoPaymentForOrder(req.params.orderId);
     res.json({ success: true });
   } catch (err) {
     console.error("[ZOHO_INVOICE_FAILED]", { orderId: req.params.orderId, err });

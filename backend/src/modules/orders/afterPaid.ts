@@ -7,6 +7,7 @@ import { onOrderEnteredProcessing } from "../shipping/orderLifecycle";
 import { logger } from "../../config/logger";
 import { isDigitalSku } from "../../utils/digitalCart";
 import { createZohoInvoiceForOrder } from "../zoho";
+import { recordZohoPaymentForOrder } from "../zoho/zoho-financials";
 import { fulfillDigitalPurchases } from "./fulfillDigitalPurchases";
 import { mirrorOrderStockToZoho } from "./orders.service";
 
@@ -44,6 +45,10 @@ export async function afterOrderPaid(orderId: string): Promise<void> {
     console.error("[ZOHO_INVOICE_FAILED]", { orderId, err });
     logger.error("Zoho invoice failed after order paid", { orderId, err });
   }
+
+  void recordZohoPaymentForOrder(orderId).catch((err) => {
+    logger.error("zoho_customer_payment_failed", { orderId, err });
+  });
 
   // Reconcile Zoho stock to Sarveda onHand after the invoice posts (live read,
   // so this is a no-op when the invoice already decremented Zoho, and corrects

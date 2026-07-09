@@ -3,6 +3,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { mirrorStockToZohoForSkus } from "../zoho/zoho-items";
+import { voidZohoInvoiceForCancelledOrder } from "../zoho/zoho-financials";
 
 /** Reserve stock when checkout creates an order (increment `reserved` per line qty). */
 export async function reserveStockTx(tx: Prisma.TransactionClient, orderId: string): Promise<void> {
@@ -253,4 +254,7 @@ export async function handlePaidOrderStatusChange(
     });
   });
   await mirrorOrderStockToZoho(orderId, `order_status_${toStatus.toLowerCase()}`);
+  if (toStatus === "CANCELLED") {
+    await voidZohoInvoiceForCancelledOrder(orderId, reason);
+  }
 }
