@@ -248,17 +248,11 @@ export async function createZohoRefundDocumentsForOrder(orderId: string, reason:
     .filter((line) => line.quantity && line.rate != null)
     .map((line) => {
       const row: Record<string, unknown> = {
-        invoice_id: order.zohoInvoiceId,
-        invoice_item_id: line.line_item_id ? String(line.line_item_id) : undefined,
         item_id: line.item_id ? String(line.item_id) : undefined,
-        name: line.name,
-        description: line.description,
+        name: line.name || "Refund item",
         quantity: line.quantity,
         rate: line.rate
       };
-      if (line.tax_id) row.tax_id = String(line.tax_id);
-      if (line.hsn_or_sac != null) row.hsn_or_sac = String(line.hsn_or_sac);
-      if (line.code) row.code = line.code;
       return row;
     });
 
@@ -308,6 +302,15 @@ export async function createZohoRefundDocumentsForOrder(orderId: string, reason:
   }
 
   const refundAmount = order.grandTotalInPaise / 100;
+  await zohoPost(`/creditnotes/${creditNoteId}/invoices`, {
+    invoices: [
+      {
+        invoice_id: order.zohoInvoiceId,
+        amount_applied: refundAmount
+      }
+    ]
+  });
+
   const refundReference =
     order.payments.find((p) => p.status === "REFUNDED")?.providerPaymentId ||
     order.payments.find((p) => p.status === "CAPTURED")?.providerPaymentId ||
