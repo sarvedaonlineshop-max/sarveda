@@ -7,6 +7,27 @@ import { getOrCreateZohoContact } from "./zoho-contacts";
 import { zohoGet, zohoPost } from "./zoho-client";
 
 type JsonRecord = Record<string, unknown>;
+type ZohoInvoiceLine = {
+  line_item_id?: string | number;
+  item_id?: string | number;
+  name?: string;
+  description?: string;
+  quantity?: number;
+  rate?: number;
+  tax_id?: string | number;
+  product_type?: string;
+  hsn_or_sac?: string | number;
+  code?: string;
+};
+type ZohoInvoiceRecord = {
+  customer_id?: string | null;
+  line_items?: ZohoInvoiceLine[];
+  shipping_charge?: number;
+};
+type ZohoChartAccount = {
+  account_id: string;
+  account_name: string;
+};
 
 function paymentModeForProvider(provider: string): string {
   if (provider === "RAZORPAY") return "razorpay";
@@ -52,6 +73,35 @@ async function getZohoInvoiceCustomerId(invoiceId: string): Promise<string | nul
   } catch (err) {
     logger.warn("zoho_invoice_customer_lookup_failed", {
       invoiceId,
+      error: err instanceof Error ? err.message : String(err)
+    });
+    return null;
+  }
+}
+
+async function getZohoInvoice(invoiceId: string): Promise<ZohoInvoiceRecord | null> {
+  try {
+    const res = await zohoGet<{ invoice?: ZohoInvoiceRecord }>(`/invoices/${invoiceId}`);
+    return res.invoice ?? null;
+  } catch (err) {
+    logger.warn("zoho_invoice_lookup_failed", {
+      invoiceId,
+      error: err instanceof Error ? err.message : String(err)
+    });
+    return null;
+  }
+}
+
+async function findZohoAccountIdByName(accountName: string): Promise<string | null> {
+  try {
+    const res = await zohoGet<{ chartofaccounts?: ZohoChartAccount[] }>("/chartofaccounts");
+    const exact = (res.chartofaccounts ?? []).find(
+      (row) => row.account_name.trim().toLowerCase() === accountName.trim().toLowerCase()
+    );
+    return exact?.account_id ?? null;
+  } catch (err) {
+    logger.warn("zoho_account_lookup_failed", {
+      accountName,
       error: err instanceof Error ? err.message : String(err)
     });
     return null;
@@ -157,4 +207,141 @@ export async function voidZohoInvoiceForCancelledOrder(orderId: string, reason: 
       error: err instanceof Error ? err.message : String(err)
     });
   }
+}
+
+function refundModeForProvider(provider: string): string {
+  if (provider === "COD") return "cash";
+  return "banktransfer";
+}
+
+/**
+ * Create a Zoho credit note + refund record for a captured online payment that
+ * was refunded on Sarveda. This keeps Zoho finance docs aligned with gateway
+ * reality, without affecting the already-correct stock sync path.
+ */
+export async function createZohoRefundDocumentsForOrder(orderId: string, reason: string): Promise<void> {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { payments: { orderBy: { createdAt: "desc" } } }
+  });
+  if (!order?.zohoInvoiceId) return;
+
+  const payment = order.payments.find((p) => p.provider !== "COD");
+  if (!payment) return;
+
+  const raw = (payment.rawPayload as JsonRecord | null) ?? {};
+  if (typeof raw.zohoCreditNoteRefundId === "string" && raw.zohoCreditNoteRefundId.trim()) {
+    return;
+  }
+
+  const invoice = await getZohoInvoice(order.zohoInvoiceId);
+  if (!invoice?.customer_id) {
+    logger.warn("zoho_credit_note_skipped_missing_invoice_customer", {
+      orderId,
+      zohoInvoiceId: order.zohoInvoiceId
+    });
+    return;
+  }
+
+  const invoiceLines = invoice.line_items ?? [];
+  const lineItems = invoiceLines
+    .filter((line) => line.quantity && line.rate != null)
+    .map((line) => {
+      const row: Record<string, unknown> = {
+        invoice_id: order.zohoInvoiceId,
+        invoice_item_id: line.line_item_id ? String(line.line_item_id) : undefined,
+        item_id: line.item_id ? String(line.item_id) : undefined,
+        name: line.name,
+        description: line.description,
+        quantity: line.quantity,
+        rate: line.rate,
+        product_type: line.product_type || "goods"
+      };
+      if (line.tax_id) row.tax_id = String(line.tax_id);
+      if (line.hsn_or_sac != null) row.hsn_or_sac = String(line.hsn_or_sac);
+      if (line.code) row.code = line.code;
+      return row;
+    });
+
+  if (lineItems.length === 0) {
+    logger.warn("zoho_credit_note_skipped_no_invoice_lines", {
+      orderId,
+      zohoInvoiceId: order.zohoInvoiceId
+    });
+    return;
+  }
+
+  const shippingCharge = Number(invoice.shipping_charge ?? 0);
+  if (shippingCharge > 0) {
+    const shippingAccountId = await findZohoAccountIdByName("Shipping Charge");
+    if (shippingAccountId) {
+      lineItems.push({
+        account_id: shippingAccountId,
+        name: "Shipping refund",
+        description: `Shipping refund for ${order.orderNumber}`,
+        quantity: 1,
+        rate: shippingCharge,
+        product_type: "services"
+      });
+    } else {
+      logger.warn("zoho_credit_note_shipping_account_missing", {
+        orderId,
+        zohoInvoiceId: order.zohoInvoiceId,
+        shippingCharge
+      });
+    }
+  }
+
+  const creditNoteDate = new Date().toISOString().slice(0, 10);
+  const creditNote = await zohoPost<{
+    creditnote?: { creditnote_id?: string; creditnote_number?: string };
+  }>("/creditnotes", {
+    customer_id: invoice.customer_id,
+    date: creditNoteDate,
+    reference_number: order.orderNumber,
+    notes: reason,
+    line_items: lineItems,
+    is_inclusive_tax: true
+  });
+
+  const creditNoteId = creditNote.creditnote?.creditnote_id;
+  if (!creditNoteId) {
+    throw new Error("Zoho credit note id missing");
+  }
+
+  const refundAmount = order.grandTotalInPaise / 100;
+  const refundReference =
+    order.payments.find((p) => p.status === "REFUNDED")?.providerPaymentId ||
+    order.payments.find((p) => p.status === "CAPTURED")?.providerPaymentId ||
+    order.orderNumber;
+  const fromAccountId = process.env.ZOHO_REFUND_FROM_ACCOUNT_ID?.trim() || undefined;
+  const refundResponse = await zohoPost<{
+    creditnote_refund?: { creditnote_refund_id?: string };
+  }>(`/creditnotes/${creditNoteId}/refunds`, {
+    date: creditNoteDate,
+    refund_mode: refundModeForProvider(payment.provider),
+    reference_number: refundReference,
+    amount: refundAmount,
+    ...(fromAccountId ? { from_account_id: fromAccountId } : {}),
+    description: `Website refund for ${order.orderNumber}`
+  });
+
+  await prisma.payment.update({
+    where: { id: payment.id },
+    data: {
+      rawPayload: mergeJson(payment.rawPayload, {
+        zohoCreditNoteId: creditNoteId,
+        zohoCreditNoteNumber: creditNote.creditnote?.creditnote_number ?? null,
+        zohoCreditNoteRefundId: refundResponse.creditnote_refund?.creditnote_refund_id ?? null
+      }) as Prisma.InputJsonValue
+    }
+  });
+
+  logger.info("zoho_credit_note_refund_recorded", {
+    orderId,
+    paymentId: payment.id,
+    zohoInvoiceId: order.zohoInvoiceId,
+    zohoCreditNoteId: creditNoteId,
+    zohoCreditNoteRefundId: refundResponse.creditnote_refund?.creditnote_refund_id ?? null
+  });
 }
