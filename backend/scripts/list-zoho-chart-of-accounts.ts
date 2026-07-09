@@ -7,9 +7,8 @@
 import dotenv from "dotenv";
 import path from "path";
 
-import { zohoGet } from "../src/modules/zoho/zoho-client";
-
-dotenv.config({ path: path.resolve(process.cwd(), ".env") });
+// Load backend/.env (must run before zoho-client import — use dynamic import below).
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 type CoaRow = {
   account_id: string;
@@ -19,6 +18,8 @@ type CoaRow = {
 };
 
 async function main() {
+  const { zohoGet } = await import("../src/modules/zoho/zoho-client");
+
   const res = await zohoGet<{ chartofaccounts: CoaRow[] }>("/chartofaccounts");
   const rows = res.chartofaccounts ?? [];
 
@@ -28,7 +29,7 @@ async function main() {
   console.log("\n=== Zoho Chart of Accounts (for ZOHO_ADJUSTMENT_ACCOUNT_ID) ===\n");
   console.log("Suggested accounts (inventory / COGS / adjustment):\n");
   if (suggested.length === 0) {
-    console.log("  (none matched by name — pick Cost of Goods Sold or Inventory Adjustment from full list below)\n");
+    console.log("  (none matched by name — pick Cost of Goods Sold from full list below)\n");
   } else {
     for (const r of suggested) {
       console.log(`  ${r.account_id}  |  ${r.account_name}  (${r.account_type})`);
@@ -42,11 +43,11 @@ async function main() {
   }
 
   console.log(`
-Copy one account_id into EC2 backend/.env:
+Copy one account_id into ~/sarveda/backend/.env:
 
   ZOHO_ADJUSTMENT_ACCOUNT_ID=<account_id>
 
-Then: pm2 restart sarveda-backend
+Then: cd ~/sarveda/backend && npm run build && pm2 restart sarveda-backend
 
 Typical choice: "Cost of Goods Sold" or an "Inventory Adjustment" expense account.
 `);
