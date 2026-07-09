@@ -4,7 +4,7 @@ import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 
 import { getOrCreateZohoContact } from "./zoho-contacts";
-import { zohoPost } from "./zoho-client";
+import { zohoGet, zohoPost } from "./zoho-client";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -44,6 +44,20 @@ async function getZohoContactIdForOrder(orderId: string) {
   });
 }
 
+async function getZohoInvoiceCustomerId(invoiceId: string): Promise<string | null> {
+  try {
+    const res = await zohoGet<{ invoice?: { customer_id?: string | null } }>(`/invoices/${invoiceId}`);
+    const customerId = res.invoice?.customer_id?.trim();
+    return customerId || null;
+  } catch (err) {
+    logger.warn("zoho_invoice_customer_lookup_failed", {
+      invoiceId,
+      error: err instanceof Error ? err.message : String(err)
+    });
+    return null;
+  }
+}
+
 /**
  * For online-paid website orders, Zoho needs a Customer Payment entry in addition
  * to the invoice. Without this, the invoice stays "Due Today" even though the
@@ -65,7 +79,11 @@ export async function recordZohoPaymentForOrder(orderId: string): Promise<void> 
     return;
   }
 
-  const customerId = await getZohoContactIdForOrder(orderId);
+  // Use the exact customer attached to the Zoho invoice. Re-resolving by email
+  // can hit a different duplicate contact, and Zoho rejects that payment with
+  // error 24011 ("selected customer for this invoice is incorrect").
+  const customerId =
+    (await getZohoInvoiceCustomerId(order.zohoInvoiceId)) ?? (await getZohoContactIdForOrder(orderId));
   if (!customerId) {
     logger.warn("zoho_payment_skipped_no_customer", { orderId, zohoInvoiceId: order.zohoInvoiceId });
     return;
