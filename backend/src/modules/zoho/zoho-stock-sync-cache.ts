@@ -55,6 +55,48 @@ export async function recordZohoAuditCache(rows: ZohoItemAuditRow[]): Promise<vo
   logger.info("zoho_audit_cache_updated", { skuCount: unique.length });
 }
 
+/**
+ * Merge fresh stock numbers for specific SKUs into the cached audit snapshot,
+ * so the inventory dashboard reflects post-order / post-push counts without a
+ * full "Refresh Zoho audit". No-op if there is no cache yet.
+ */
+export async function patchZohoAuditCache(
+  entries: Array<{ sku: string; itemId: string; stockOnHand: number }>
+): Promise<void> {
+  const redis = getRedisConnection();
+  if (!redis) return;
+  if (entries.length === 0) return;
+
+  const raw = await redis.get(AUDIT_KEY);
+  if (!raw) return;
+
+  let rows: ZohoItemAuditRow[];
+  try {
+    rows = JSON.parse(raw) as ZohoItemAuditRow[];
+  } catch {
+    return;
+  }
+
+  const bySku = new Map<string, ZohoItemAuditRow>();
+  for (const row of rows) {
+    const sku = normalizeSku(row.sku);
+    if (sku) bySku.set(sku, { ...row, sku });
+  }
+  for (const entry of entries) {
+    const sku = normalizeSku(entry.sku);
+    if (!sku) continue;
+    const existing = bySku.get(sku);
+    bySku.set(sku, {
+      sku,
+      name: existing?.name ?? "",
+      itemId: entry.itemId,
+      stockOnHand: entry.stockOnHand
+    });
+  }
+
+  await redis.set(AUDIT_KEY, JSON.stringify(Array.from(bySku.values())));
+}
+
 export async function getZohoAuditMap(): Promise<Map<string, ZohoItemAuditRow> | null> {
   const redis = getRedisConnection();
   if (!redis) return null;

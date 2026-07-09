@@ -2,7 +2,7 @@ import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { gstRatePercent } from "../../utils/gst";
 
-import { getZohoAuditMap } from "./zoho-stock-sync-cache";
+import { getZohoAuditMap, patchZohoAuditCache } from "./zoho-stock-sync-cache";
 import { appendZohoStockSyncHistory } from "./zoho-stock-sync-history";
 import type { ZohoActionResult } from "./zoho-sync-types";
 import { zohoGet, zohoPost, zohoPut } from "./zoho-client";
@@ -28,6 +28,21 @@ function zohoConfigured(): boolean {
       process.env.ZOHO_REFRESH_TOKEN?.trim() &&
       process.env.ZOHO_ORGANIZATION_ID?.trim()
   );
+}
+
+/** True when admin/refund stock pushes to Zoho can run (needs adjustment GL account). */
+export function zohoStockPushConfigured(): boolean {
+  return zohoConfigured() && Boolean(process.env.ZOHO_ADJUSTMENT_ACCOUNT_ID?.trim());
+}
+
+export function warnZohoStockPushConfig(): void {
+  if (!zohoConfigured()) return;
+  if (!process.env.ZOHO_ADJUSTMENT_ACCOUNT_ID?.trim()) {
+    logger.warn("zoho_stock_push_disabled", {
+      reason:
+        "ZOHO_ADJUSTMENT_ACCOUNT_ID is not set — sales invoices still reduce Zoho stock on orders, but refunds and admin stock edits will NOT push to Zoho until this is configured"
+    });
+  }
 }
 
 async function findZohoItemBySku(sku: string): Promise<ZohoItemRow | null> {
@@ -127,7 +142,9 @@ async function upsertVariantToZoho(
 async function adjustZohoStock(itemId: string, quantityAdjusted: number, reason: string): Promise<void> {
   const accountId = process.env.ZOHO_ADJUSTMENT_ACCOUNT_ID?.trim();
   if (!accountId) {
-    throw new Error("ZOHO_ADJUSTMENT_ACCOUNT_ID is not configured");
+    throw new Error(
+      "ZOHO_ADJUSTMENT_ACCOUNT_ID is not configured — set it in backend/.env (Zoho Books → Settings → Chart of Accounts → Inventory Adjustment or Cost of Goods Sold account ID)"
+    );
   }
 
   await zohoPost("/inventoryadjustments", {
@@ -153,6 +170,33 @@ async function getZohoStockForItem(itemId: string, sku: string, live = false): P
 
   const res = await zohoGet<{ item: ZohoItemRow }>(`/items/${itemId}`);
   return Math.max(0, res.item?.stock_on_hand ?? 0);
+}
+
+/**
+ * Live-read Zoho stock for SKUs and merge into the Redis audit cache so the
+ * inventory dashboard shows real Zoho counts (not a stale snapshot).
+ */
+export async function liveRefreshZohoAuditCacheForSkus(skus: string[]): Promise<void> {
+  const unique = Array.from(new Set(skus.map((s) => s.trim()).filter(Boolean)));
+  if (unique.length === 0) return;
+
+  const entries: Array<{ sku: string; itemId: string; stockOnHand: number }> = [];
+  for (const sku of unique) {
+    try {
+      const itemId = await resolveZohoItemIdForSku(sku);
+      if (!itemId) continue;
+      const stockOnHand = await getZohoStockForItem(itemId, sku, true);
+      entries.push({ sku, itemId, stockOnHand });
+    } catch (err) {
+      logger.warn("zoho_audit_live_refresh_sku_failed", {
+        sku,
+        error: err instanceof Error ? err.message : String(err)
+      });
+    }
+  }
+  if (entries.length > 0) {
+    await patchZohoAuditCache(entries);
+  }
 }
 
 /** Push all active variants for a product to Zoho Books as inventory items (SKU = unique key). */
@@ -264,6 +308,7 @@ export async function pushStockToZohoForSkus(
   const result: ZohoActionResult = { ok: 0, errors: 0, messages: [] };
   const live = opts?.live ?? false;
   const reason = opts?.reason ?? "Sarveda admin stock sync";
+  const processedSkus: string[] = [];
 
   if (!zohoConfigured()) {
     result.errors = skus.length;
@@ -274,6 +319,7 @@ export async function pushStockToZohoForSkus(
   for (const raw of skus) {
     const sku = raw.trim();
     if (!sku) continue;
+    processedSkus.push(sku);
 
     try {
       const variant = await prisma.productVariant.findUnique({
@@ -304,8 +350,18 @@ export async function pushStockToZohoForSkus(
       result.ok++;
     } catch (err) {
       result.errors++;
-      result.messages.push(`${sku}: ${err instanceof Error ? err.message : String(err)}`);
+      const msg = err instanceof Error ? err.message : String(err);
+      result.messages.push(`${sku}: ${msg}`);
+      logger.error("zoho_stock_push_sku_failed", { sku, error: msg, reason });
     }
+  }
+
+  // Always refresh cached Zoho counts from live API so the dashboard badge
+  // reflects reality (avoids false "Synced" after a failed refund push).
+  if (processedSkus.length > 0) {
+    await liveRefreshZohoAuditCacheForSkus(processedSkus).catch((err) => {
+      logger.warn("zoho_audit_live_refresh_failed", { err });
+    });
   }
 
   await appendZohoStockSyncHistory({
@@ -326,6 +382,8 @@ export async function mirrorStockToZohoForSkus(
 ): Promise<void> {
   const unique = Array.from(new Set(skus.map((sku) => sku.trim()).filter(Boolean)));
   if (unique.length === 0) return;
+
+  logger.info("zoho_stock_mirror_started", { context, skus: unique, ...meta });
 
   try {
     const result = await pushStockToZohoForSkus(unique, {
