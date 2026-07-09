@@ -254,8 +254,7 @@ export async function createZohoRefundDocumentsForOrder(orderId: string, reason:
         name: line.name,
         description: line.description,
         quantity: line.quantity,
-        rate: line.rate,
-        product_type: line.product_type || "goods"
+        rate: line.rate
       };
       if (line.tax_id) row.tax_id = String(line.tax_id);
       if (line.hsn_or_sac != null) row.hsn_or_sac = String(line.hsn_or_sac);
@@ -280,8 +279,7 @@ export async function createZohoRefundDocumentsForOrder(orderId: string, reason:
         name: "Shipping refund",
         description: `Shipping refund for ${order.orderNumber}`,
         quantity: 1,
-        rate: shippingCharge,
-        product_type: "services"
+        rate: shippingCharge
       });
     } else {
       logger.warn("zoho_credit_note_shipping_account_missing", {
