@@ -172,8 +172,8 @@ export function ProductBuyBox({
     isInline
       ? `rounded-full border px-4 py-2 text-sm font-medium transition ${
           active
-            ? "border-stone-900 bg-stone-900 text-white"
-            : "border-stone-300 bg-white text-stone-800 hover:border-stone-900"
+            ? "border-brand-forest bg-brand-forest text-brand-cream"
+            : "border-brand-forest/20 bg-white text-brand-ink hover:border-brand-forest"
         }`
       : `rounded-md border px-3 py-2 text-sm font-medium transition ${
           active
@@ -191,7 +191,7 @@ export function ProductBuyBox({
             const selected = selectedAttrValues.get(group.name);
             return (
               <div key={group.name}>
-                <p className="mb-2 text-sm font-medium text-stone-800">{group.name}</p>
+                <p className="mb-2 text-sm font-medium text-brand-ink">{group.name}</p>
                 <div className="flex flex-wrap gap-2">
                   {group.values.map((value) => {
                     const active = selected === value;
@@ -220,61 +220,61 @@ export function ProductBuyBox({
       {!isDigital ? (
         <div className={isInline ? "space-y-2" : "mt-4 space-y-2"}>
           <div className="flex flex-wrap gap-2">
-            <span className="inline-flex items-center gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2">
-              <svg className="h-4 w-4 shrink-0 text-stone-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+            <span className="inline-flex items-center gap-2 rounded-xl border border-brand-cream-dark bg-brand-cream px-3 py-2">
+              <svg className="h-4 w-4 shrink-0 text-brand-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM20 17a2 2 0 11-4 0 2 2 0 014 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 16V6a1 1 0 00-1-1H3m10 11h4m0 0V9a1 1 0 011-1h2.5a1 1 0 01.8.4l1.5 2a1 1 0 01.2.6V16a1 1 0 01-1 1h-1" />
               </svg>
               <span className="leading-tight">
-                <span className="block text-[10px] font-semibold uppercase tracking-wider text-stone-500">
+                <span className="block text-[10px] font-semibold uppercase tracking-wider text-brand-muted">
                   Standard (surface)
                 </span>
-                <span className="block text-sm font-semibold text-stone-900">{shippingDays}</span>
+                <span className="block text-sm font-semibold text-brand-ink">{shippingDays}</span>
               </span>
             </span>
             {showExpressOption ? (
-              <span className="inline-flex items-center gap-2 rounded-lg border border-[#c45a2a]/30 bg-[#fff4ee] px-3 py-2">
-                <svg className="h-4 w-4 shrink-0 text-[#c45a2a]" fill="currentColor" viewBox="0 0 20 20">
+              <span className="inline-flex items-center gap-2 rounded-xl border border-brand-terra/30 bg-brand-terra/5 px-3 py-2">
+                <svg className="h-4 w-4 shrink-0 text-brand-terra" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M11.3 1.046a1 1 0 01.7 1.19L10.62 8H15a1 1 0 01.78 1.625l-7 8.75A1 1 0 017 17.75L8.38 11H4a1 1 0 01-.78-1.625l7-8.75a1 1 0 011.08-.579z" />
                 </svg>
                 <span className="leading-tight">
-                  <span className="block text-[10px] font-semibold uppercase tracking-wider text-[#c45a2a]">
+                  <span className="block text-[10px] font-semibold uppercase tracking-wider text-brand-terra">
                     Express
                   </span>
-                  <span className="block text-sm font-semibold text-stone-900">{expressDays}</span>
+                  <span className="block text-sm font-semibold text-brand-ink">{expressDays}</span>
                 </span>
               </span>
             ) : null}
           </div>
           {showExpressOption ? (
-            <p className="text-xs text-stone-500">Choose shipping speed at checkout.</p>
+            <p className="text-xs text-brand-muted">Choose shipping speed at checkout.</p>
           ) : null}
         </div>
       ) : null}
 
       {stock ? (
-        <p className={`text-sm ${stock.inStock ? "text-stone-600" : "text-amber-800"}`}>
-          <span className={`font-semibold ${stock.inStock ? "text-[#108967]" : ""}`}>{stock.label}</span>
+        <p className={`text-sm ${stock.inStock ? "text-brand-muted" : "text-amber-800"}`}>
+          <span className={`font-semibold ${stock.inStock ? "text-brand-sage" : ""}`}>{stock.label}</span>
         </p>
       ) : null}
 
       <div>
-        <p className="mb-2 text-sm font-medium text-stone-800">Quantity</p>
-        <div className="inline-flex items-center rounded-lg border border-stone-300 bg-white">
+        <p className="mb-2 text-sm font-medium text-brand-ink">Quantity</p>
+        <div className="inline-flex items-center rounded-full border border-brand-forest/20 bg-white">
           <button
             type="button"
             disabled={qty <= 1}
-            className="flex h-11 w-11 items-center justify-center text-lg text-stone-700 hover:bg-stone-50 disabled:opacity-40"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-lg text-brand-forest hover:bg-brand-forest/5 disabled:opacity-40"
             aria-label="Decrease quantity"
             onClick={() => changeQty(qty - 1)}
           >
             −
           </button>
-          <span className="min-w-[2.5rem] text-center text-sm font-semibold tabular-nums text-stone-900">{qty}</span>
+          <span className="min-w-[2.5rem] text-center text-sm font-semibold tabular-nums text-brand-ink">{qty}</span>
           <button
             type="button"
             disabled={qty >= qtyLimit}
-            className="flex h-11 w-11 items-center justify-center text-lg text-stone-700 hover:bg-stone-50 disabled:opacity-40"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-lg text-brand-forest hover:bg-brand-forest/5 disabled:opacity-40"
             aria-label="Increase quantity"
             onClick={() => changeQty(qty + 1)}
           >
@@ -294,14 +294,14 @@ export function ProductBuyBox({
 
       {showPurchaseActions ? (
         <div className={isInline ? "space-y-3" : undefined}>
-          <div className={isInline ? "flex flex-col gap-3 sm:flex-row" : undefined}>
+          <div className={isInline ? "flex flex-col gap-3" : undefined}>
           <button
             type="button"
             onClick={onAdd}
             disabled={addDisabled}
             className={
               isInline
-                ? "min-h-[48px] flex-1 rounded-full border border-stone-900 bg-white px-6 text-sm font-semibold uppercase tracking-wide text-stone-900 transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"
+                ? "min-h-[52px] w-full rounded-full bg-brand-forest px-6 text-sm font-semibold uppercase tracking-wide text-brand-cream transition-colors hover:bg-brand-night disabled:cursor-not-allowed disabled:opacity-50"
                 : "mt-4 w-full rounded-lg bg-[#108967] py-3.5 text-sm font-semibold uppercase tracking-wide text-white shadow-sm transition hover:bg-[#0d7353] disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500"
             }
           >
@@ -313,7 +313,7 @@ export function ProductBuyBox({
               type="button"
               onClick={onBuyNow}
               disabled={addDisabled}
-              className="min-h-[48px] flex-1 rounded-full bg-[#c45a2a] px-6 text-sm font-semibold uppercase tracking-wide text-white transition hover:bg-[#a84a22] disabled:cursor-not-allowed disabled:opacity-50"
+              className="min-h-[52px] w-full rounded-full bg-brand-gold px-6 text-sm font-semibold uppercase tracking-wide text-brand-night transition-colors hover:bg-[#a37934] disabled:cursor-not-allowed disabled:opacity-50"
             >
               Buy it now
             </button>
@@ -330,9 +330,53 @@ export function ProductBuyBox({
           </div>
 
           {addedFlash ? (
-            <p className="text-center text-sm font-medium text-emerald-600" role="status">
+            <p className="text-center text-sm font-medium text-brand-sage" role="status">
               Added to cart
             </p>
+          ) : null}
+
+          {isInline ? (
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-brand-cream-dark pt-4 text-xs text-brand-muted">
+              {[
+                {
+                  label: "100% authentic",
+                  icon: (
+                    <>
+                      <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
+                      <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
+                    </>
+                  )
+                },
+                {
+                  label: "Free shipping ₹999+",
+                  icon: (
+                    <>
+                      <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
+                      <path d="M15 18H9" />
+                      <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35a1 1 0 0 0-.78-.38H14" />
+                      <circle cx="17" cy="18" r="2" />
+                      <circle cx="7" cy="18" r="2" />
+                    </>
+                  )
+                },
+                {
+                  label: "Easy returns",
+                  icon: (
+                    <>
+                      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                      <path d="M3 3v5h5" />
+                    </>
+                  )
+                }
+              ].map((item) => (
+                <span key={item.label} className="inline-flex items-center gap-1.5">
+                  <svg viewBox="0 0 24 24" className="h-4 w-4 text-brand-gold" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    {item.icon}
+                  </svg>
+                  {item.label}
+                </span>
+              ))}
+            </div>
           ) : null}
         </div>
       ) : null}

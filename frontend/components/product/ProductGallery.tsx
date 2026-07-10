@@ -97,7 +97,7 @@ export function ProductGallery({
 
   if (!media.length || !current) {
     return (
-      <div className="flex aspect-square w-full items-center justify-center rounded-lg border border-dashed border-stone-200 bg-stone-100 text-stone-500">
+      <div className="flex aspect-square w-full items-center justify-center rounded-2xl border border-dashed border-brand-cream-dark bg-[#EDE4D3] text-brand-muted">
         No media yet
       </div>
     );
@@ -110,7 +110,7 @@ export function ProductGallery({
   return (
     <div className="flex flex-col gap-3">
       <div
-        className="relative aspect-square w-full overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm"
+        className="relative aspect-square w-full overflow-hidden rounded-2xl border border-brand-cream-dark bg-[#EDE4D3] shadow-sm"
         onMouseEnter={() => zoomEnabled && setZoomActive(true)}
         onMouseLeave={() => setZoomActive(false)}
         onMouseMove={onMainPointerMove}
@@ -155,7 +155,7 @@ export function ProductGallery({
         )}
 
         {zoomEnabled ? (
-          <span className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wide text-stone-600 shadow-sm">
+          <span className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-brand-ivory/90 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wide text-brand-muted shadow-sm">
             Hover to zoom
           </span>
         ) : null}
@@ -165,7 +165,7 @@ export function ProductGallery({
             <button
               type="button"
               onClick={() => go(-1)}
-              className="absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-stone-200 bg-white/95 text-stone-700 shadow-md transition hover:bg-white"
+              className="absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-brand-cream-dark bg-brand-ivory/95 text-brand-forest shadow-md transition hover:bg-brand-ivory"
               aria-label="Previous media"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -175,7 +175,7 @@ export function ProductGallery({
             <button
               type="button"
               onClick={() => go(1)}
-              className="absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-stone-200 bg-white/95 text-stone-700 shadow-md transition hover:bg-white"
+              className="absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-brand-cream-dark bg-brand-ivory/95 text-brand-forest shadow-md transition hover:bg-brand-ivory"
               aria-label="Next media"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -191,7 +191,7 @@ export function ProductGallery({
           <button
             type="button"
             onClick={() => go(-1)}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-600 hover:border-[#108967]"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-cream-dark bg-brand-ivory text-brand-forest hover:border-brand-gold"
             aria-label="Previous thumbnail"
           >
             ‹
@@ -204,8 +204,8 @@ export function ProductGallery({
               key={item.id}
               type="button"
               onClick={() => setActive(index)}
-              className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-md border-2 bg-white transition-colors ${
-                index === safeActive ? "border-stone-900" : "border-stone-200 hover:border-[#108967]"
+              className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-[#EDE4D3] transition-colors ${
+                index === safeActive ? "border-brand-forest" : "border-brand-cream-dark hover:border-brand-gold"
               }`}
               aria-label={item.kind === "video" ? "Play video" : `View image ${index + 1}`}
               aria-current={index === safeActive}
@@ -248,7 +248,7 @@ export function ProductGallery({
           <button
             type="button"
             onClick={() => go(1)}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-600 hover:border-[#108967]"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-cream-dark bg-brand-ivory text-brand-forest hover:border-brand-gold"
             aria-label="Next thumbnail"
           >
             ›

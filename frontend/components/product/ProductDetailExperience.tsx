@@ -181,9 +181,9 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
 
   return (
     <>
-      <div className="mx-auto max-w-7xl px-4 py-6 pb-32 sm:px-6 lg:px-8 lg:py-10 lg:pb-12">
+      <div className="mx-auto max-w-7xl px-4 py-8 pb-32 sm:px-6 lg:px-8 lg:py-14 lg:pb-16">
         {/* Primary two-column block — left column sticks while right column scrolls */}
-        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-2 lg:gap-x-10 xl:gap-x-14">
+        <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16">
           <div className={`lg:sticky ${STICKY_TOP} lg:self-start`}>
             <ProductGallery
               images={sortedImages}
@@ -194,20 +194,6 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
               videoUrl={activeVideoUrl}
             />
 
-            {categoryTags.length > 0 ? (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {categoryTags.map((cat) => (
-                  <Link
-                    key={cat.slug}
-                    href={`/product-category/${cat.slug}`}
-                    className="rounded-full border border-stone-200 bg-white px-3 py-1 text-xs font-medium text-stone-700 hover:border-[#c45a2a]/50 hover:text-[#c45a2a]"
-                  >
-                    {cat.name}
-                  </Link>
-                ))}
-              </div>
-            ) : null}
-
             {product.hasAudio && audioUrl ? (
               <div className="mt-5">
                 <ProductAudio audioUrl={audioUrl} variant="storefront" />
@@ -216,15 +202,30 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
           </div>
 
           <div className="min-w-0 space-y-6">
-            <h1 className="font-serif text-2xl font-semibold leading-tight text-stone-900 sm:text-3xl lg:text-[2rem]">
-              {product.name}
-            </h1>
+            <div>
+              {categoryTags.length > 0 ? (
+                <div className="mb-3 flex flex-wrap gap-x-3 gap-y-1">
+                  {categoryTags.map((cat) => (
+                    <Link
+                      key={cat.slug}
+                      href={`/product-category/${cat.slug}`}
+                      className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-gold transition-colors hover:text-brand-forest"
+                    >
+                      {cat.name}
+                    </Link>
+                  ))}
+                </div>
+              ) : null}
+              <h1 className="font-serif text-3xl font-semibold leading-tight text-brand-ink sm:text-4xl">
+                {product.name}
+              </h1>
+            </div>
 
             <ProductOffersBanner />
 
-            <div className="flex items-center gap-1 text-sm text-stone-500" aria-label="No reviews yet">
+            <div className="flex items-center gap-1 text-sm text-brand-muted" aria-label="No reviews yet">
               {Array.from({ length: 5 }).map((_, i) => (
-                <svg key={i} className="h-4 w-4 text-stone-300" fill="currentColor" viewBox="0 0 20 20">
+                <svg key={i} className="h-4 w-4 text-brand-cream-dark" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                 </svg>
               ))}
@@ -233,11 +234,11 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
 
             <div>
               <PriceDisplay variant={variant} variants={product.variants} zone={zone} presentation="storefront" />
-              <p className="mt-1 text-xs text-stone-500">Taxes included. Shipping calculated at checkout.</p>
+              <p className="mt-1 text-xs text-brand-muted">Taxes included. Shipping calculated at checkout.</p>
             </div>
 
             {codAvailable ? (
-              <div className="inline-flex w-fit items-center gap-2 rounded-md border border-[#108967] px-3 py-2 text-sm text-[#108967]">
+              <div className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-forest/25 px-4 py-2 text-sm text-brand-forest">
                 <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path
                     strokeLinecap="round"
@@ -256,18 +257,18 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
             ) : null}
 
             {product.description ? (
-              <div className="border-t border-stone-200 pt-8">
-                <ProductRichText html={product.description} className="max-w-none text-sm leading-relaxed text-stone-700 prose-stone" />
+              <div className="border-t border-brand-cream-dark pt-8">
+                <ProductRichText html={product.description} className="max-w-none text-[15px] leading-7 text-brand-ink/80 prose-stone" />
               </div>
             ) : null}
 
             {product.shortDescription && !product.description ? (
-              <ProductRichText html={product.shortDescription} className="text-sm leading-relaxed text-stone-600" />
+              <ProductRichText html={product.shortDescription} className="text-[15px] leading-7 text-brand-ink/70" />
             ) : null}
 
             {accordionItems.length > 0 ? (
-              <div className="border-t border-stone-200 pt-8">
-                <h2 className="font-serif text-lg font-semibold text-stone-900">Product details</h2>
+              <div className="border-t border-brand-cream-dark pt-8">
+                <h2 className="font-serif text-lg font-semibold text-brand-ink">Product details</h2>
                 <div className="mt-4">
                   <AccordionDescription items={accordionItems} />
                 </div>
@@ -276,18 +277,18 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
           </div>
         </div>
 
-        <div className="mt-14 space-y-14 border-t border-stone-200 pt-12">
+        <div className="mt-16 space-y-16 border-t border-brand-cream-dark pt-14">
           <PairWithRow items={pairWithItems.slice(0, 3)} />
           <ProductReviewsSection productId={product.id} />
         </div>
       </div>
 
       {/* Mobile / tablet sticky purchase bar (desktop uses fixed cart rail at lg+) */}
-      <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-50 border-t border-stone-200 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur-md safe-area-pb lg:hidden">
+      <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-50 border-t border-brand-cream-dark bg-brand-ivory/95 px-4 py-3 shadow-[0_-8px_24px_rgba(28,53,42,0.10)] backdrop-blur-md safe-area-pb lg:hidden">
         {hasCartRail ? (
           <Link
             href="/checkout"
-            className="mx-auto mb-3 flex min-h-[44px] w-full max-w-lg items-center justify-center rounded-lg bg-[#ffd814] text-sm font-semibold text-stone-900 shadow-sm transition hover:bg-[#f7ca00]"
+            className="mx-auto mb-3 flex min-h-[44px] w-full max-w-lg items-center justify-center rounded-full bg-brand-gold text-sm font-semibold text-brand-night transition-colors hover:bg-[#a37934]"
           >
             Proceed to Buy · {formatINRFromPaise(subtotalInPaise)}
             {cartCount > 0 ? ` (${cartCount})` : ""}
@@ -295,8 +296,8 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
         ) : null}
         <div className="mx-auto flex max-w-lg items-center gap-2">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-xs text-stone-500">{product.name}</p>
-            <p className="text-lg font-bold tracking-tight text-[#b85c38]">
+            <p className="truncate text-xs text-brand-muted">{product.name}</p>
+            <p className="text-lg font-bold tracking-tight text-brand-forest">
               {variant ? formatMinorFromPaise(saleMinor, currency) : "—"}
             </p>
           </div>
@@ -304,7 +305,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
             type="button"
             onClick={() => void add()}
             disabled={addDisabled}
-            className="min-h-[44px] rounded-full border border-stone-900 bg-white px-4 text-xs font-semibold uppercase text-stone-900"
+            className="min-h-[44px] rounded-full border border-brand-forest px-4 text-xs font-semibold uppercase text-brand-forest"
           >
             Add
           </button>
@@ -312,7 +313,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
             type="button"
             onClick={() => void buyNow()}
             disabled={addDisabled}
-            className="min-h-[44px] flex-1 rounded-full bg-[#c45a2a] px-4 text-xs font-semibold uppercase text-white"
+            className="min-h-[44px] flex-1 rounded-full bg-brand-forest px-4 text-xs font-semibold uppercase text-brand-cream"
           >
             Buy now
           </button>

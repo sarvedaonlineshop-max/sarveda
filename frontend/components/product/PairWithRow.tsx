@@ -23,7 +23,8 @@ export function PairWithRow({ items }: Props) {
 
   return (
     <section>
-      <h2 className="font-serif text-lg font-semibold text-stone-900">Pair it with</h2>
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">Complete the ritual</p>
+      <h2 className="mt-1 font-serif text-lg font-semibold text-brand-ink">Pair it with</h2>
       <ul className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {items.map((item) => {
           const img = resolveMediaUrl(item.primaryImageUrl) ?? item.primaryImageUrl;
@@ -49,11 +50,11 @@ export function PairWithRow({ items }: Props) {
           return (
             <li
               key={item.id}
-              className="flex min-w-0 gap-3 rounded-lg border border-stone-100 bg-white p-3 shadow-sm"
+              className="flex min-w-0 gap-3 rounded-2xl border border-brand-cream-dark bg-brand-ivory p-3 shadow-card"
             >
               <Link
                 href={`/product/${item.slug}`}
-                className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md bg-stone-100"
+                className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-[#EDE4D3]"
               >
                 {img ? (
                   <Image src={img} alt={item.name} fill className="object-cover" sizes="80px" unoptimized />
@@ -62,10 +63,10 @@ export function PairWithRow({ items }: Props) {
                 )}
               </Link>
               <div className="min-w-0 flex-1">
-                {price ? <p className="whitespace-nowrap text-sm font-semibold text-[#b85c38]">+ {price}</p> : null}
+                {price ? <p className="whitespace-nowrap text-sm font-semibold text-brand-forest">+ {price}</p> : null}
                 <Link
                   href={`/product/${item.slug}`}
-                  className="mt-0.5 line-clamp-2 text-sm font-medium text-stone-800 hover:text-[#108967]"
+                  className="mt-0.5 line-clamp-2 font-serif text-sm font-medium text-brand-ink hover:text-brand-forest"
                 >
                   {item.name}
                 </Link>
@@ -81,14 +82,14 @@ export function PairWithRow({ items }: Props) {
                         })
                         .finally(() => setAddingId(null));
                     }}
-                    className="mt-2 inline-flex min-w-[72px] items-center justify-center rounded border border-[#108967] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#108967] hover:bg-[#108967] hover:text-white disabled:opacity-50"
+                    className="mt-2 inline-flex min-w-[72px] items-center justify-center rounded-full border border-brand-forest px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-forest transition-colors hover:bg-brand-forest hover:text-brand-cream disabled:opacity-50"
                   >
                     {addingId === item.id ? "Adding…" : "Add"}
                   </button>
                 ) : (
                   <Link
                     href={`/product/${item.slug}`}
-                    className="mt-2 inline-block text-xs font-semibold uppercase tracking-wide text-[#108967] hover:underline"
+                    className="mt-2 inline-block text-xs font-semibold uppercase tracking-wide text-brand-forest hover:underline"
                   >
                     View
                   </Link>

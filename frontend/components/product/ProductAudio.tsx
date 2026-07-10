@@ -62,13 +62,59 @@ export function ProductAudio({ audioUrl, title, variant = "default" }: Props) {
 
   const current = progress * duration;
 
+  const seek = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const el = audioRef.current;
+    if (!el || !el.duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+    el.currentTime = ratio * el.duration;
+    syncProgress();
+  };
+
   if (variant === "storefront") {
     return (
-      <div className="rounded-xl border border-[#d8e7df] bg-[#f4f8f2] p-4 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-wide text-[#1e3a2f]">Audio sample</p>
-        <audio ref={audioRef} preload="metadata" src={src} className="mt-3 w-full rounded-md bg-white" controls>
+      <div className="rounded-2xl bg-brand-forest p-5 shadow-card">
+        <audio ref={audioRef} preload="metadata" src={src} className="hidden">
           <track kind="captions" />
         </audio>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-gold">
+          Hear this bowl
+        </p>
+        <div className="mt-4 flex items-center gap-4">
+          <button
+            type="button"
+            onClick={toggle}
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-gold text-brand-night transition-colors hover:bg-[#a37934]"
+            aria-label={playing ? "Pause audio sample" : "Play audio sample"}
+          >
+            {playing ? (
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden>
+                <rect x="6" y="5" width="4" height="14" rx="1" />
+                <rect x="14" y="5" width="4" height="14" rx="1" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" className="ml-0.5 h-5 w-5" fill="currentColor" aria-hidden>
+                <path d="M7.5 5.1a1 1 0 0 1 1.52-.85l11 6.9a1 1 0 0 1 0 1.7l-11 6.9a1 1 0 0 1-1.52-.85V5.1z" />
+              </svg>
+            )}
+          </button>
+          <div className="min-w-0 flex-1">
+            <button
+              type="button"
+              onClick={seek}
+              className="block h-1.5 w-full cursor-pointer overflow-hidden rounded-full bg-brand-cream/20"
+              aria-label="Seek audio"
+            >
+              <span
+                className="block h-full rounded-full bg-brand-gold transition-[width] duration-150"
+                style={{ width: `${Math.round(progress * 100)}%` }}
+              />
+            </button>
+            <p className="mt-2 text-xs tabular-nums text-brand-cream/60">
+              {fmt(current)} / {fmt(duration)}
+            </p>
+          </div>
+        </div>
       </div>
     );
   }

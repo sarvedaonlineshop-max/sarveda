@@ -25,7 +25,7 @@ export function PriceDisplay({
   const isCompact = size === "compact";
   const isStorefront = presentation === "storefront";
   const saleClass = isStorefront
-    ? "text-2xl font-bold text-[#b85c38] sm:text-3xl"
+    ? "text-2xl font-bold text-brand-forest sm:text-3xl"
     : isCompact
       ? "text-lg font-bold tracking-tight text-stone-900"
       : "text-3xl font-semibold tracking-tight text-stone-900 sm:text-4xl";
@@ -60,13 +60,18 @@ export function PriceDisplay({
           {discountPercent}% off
         </span>
       ) : null}
-      <div className={isStorefront ? "flex flex-wrap items-baseline gap-3" : undefined}>
+      <div className={isStorefront ? "flex flex-wrap items-center gap-3" : undefined}>
+        <p className={saleClass}>{formatMinorFromPaise(sale, currency)}</p>
         {mrp > sale && isStorefront ? (
-          <span className="text-lg text-stone-500 line-through">
+          <span className="text-lg text-brand-muted line-through">
             {formatMinorFromPaise(mrp, currency)}
           </span>
         ) : null}
-        <p className={saleClass}>{formatMinorFromPaise(sale, currency)}</p>
+        {discountPercent && isStorefront ? (
+          <span className="inline-flex rounded-full bg-brand-forest px-2.5 py-0.5 text-xs font-semibold text-brand-cream">
+            Save {discountPercent}%
+          </span>
+        ) : null}
       </div>
       {mrp > sale && !isStorefront ? (
         <div className="flex flex-wrap items-center gap-2 text-sm text-stone-500">
