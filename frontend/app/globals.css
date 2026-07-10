@@ -26,6 +26,28 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Micro-interactions: gentle color transitions on every interactive element.
+   Tailwind utility classes (transition-*, duration-*) still override these. */
+@layer base {
+  a,
+  button,
+  summary,
+  [role="button"] {
+    transition-property: color, background-color, border-color, opacity, box-shadow;
+    transition-duration: 180ms;
+    transition-timing-function: ease-out;
+  }
+  details > summary svg {
+    transition: transform 180ms ease-out;
+  }
+}
+
+/* Keyboard accessibility: forest focus ring on all interactive elements. */
+:where(a, button, [role="button"], input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--brand-forest);
+  outline-offset: 2px;
+}
+
 body {
   margin: 0;
   overflow-x: hidden;
