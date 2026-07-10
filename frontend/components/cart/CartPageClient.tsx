@@ -22,11 +22,11 @@ export function CartPageClient() {
 
   if (items.length === 0) {
     return (
-      <div className="mt-6 rounded-none border-y border-stone-200 bg-white p-8 text-center md:mt-10 md:rounded-2xl md:border md:shadow-sm">
-        <p className="text-stone-500">Your cart is empty.</p>
+      <div className="mt-6 rounded-none border-y border-brand-cream-dark bg-white p-8 text-center md:mt-10 md:rounded-2xl md:border md:shadow-card">
+        <p className="text-brand-muted">Your cart is empty.</p>
         <Link
           href="/shop"
-          className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-xl bg-stone-900 px-8 font-semibold text-amber-400 transition-colors hover:bg-amber-700 hover:text-white"
+          className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-full bg-brand-forest px-8 font-semibold text-brand-cream transition-colors hover:bg-brand-night"
         >
           Browse the shop
         </Link>
@@ -38,18 +38,18 @@ export function CartPageClient() {
     <div className="mt-4 md:mt-8">
       <div className="lg:grid lg:grid-cols-12 lg:items-start lg:gap-6 xl:gap-8">
         <div className="min-w-0 lg:col-span-8 xl:col-span-9">
-          <p className="mb-3 hidden text-sm text-stone-500 lg:block">
+          <p className="mb-3 hidden text-sm text-brand-muted lg:block">
             Shopping Cart · {itemCount} {itemCount === 1 ? "item" : "items"}
           </p>
-          <ul className="divide-y divide-stone-200 border-y border-stone-200 bg-white lg:divide-none lg:space-y-4 lg:border-0 lg:bg-transparent">
+          <ul className="divide-y divide-brand-cream-dark border-y border-brand-cream-dark bg-white lg:divide-none lg:space-y-4 lg:border-0 lg:bg-transparent">
             {items.map((line) => (
               <li
                 key={line.variantId}
-                className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start lg:rounded-2xl lg:border lg:border-stone-100 lg:bg-white lg:p-5 lg:shadow-sm"
+                className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start lg:rounded-2xl lg:border lg:border-brand-cream-dark lg:bg-white lg:p-5 lg:shadow-card"
               >
                 <Link
                   href={`/product/${line.productSlug}`}
-                  className="relative mx-auto h-28 w-28 flex-shrink-0 overflow-hidden rounded-xl bg-stone-100 sm:mx-0 lg:h-32 lg:w-32"
+                  className="relative mx-auto h-28 w-28 flex-shrink-0 overflow-hidden rounded-xl bg-[#EDE4D3] sm:mx-0 lg:h-32 lg:w-32"
                 >
                   {line.primaryImageUrl ? (
                     <Image
@@ -67,12 +67,12 @@ export function CartPageClient() {
                 <div className="min-w-0 flex-1">
                   <Link
                     href={`/product/${line.productSlug}`}
-                    className="font-medium text-stone-900 hover:text-amber-800 lg:text-lg"
+                    className="font-serif font-medium text-brand-ink hover:text-brand-forest lg:text-lg"
                   >
                     {line.productName}
                   </Link>
-                  {line.variantLabel ? <p className="mt-1 text-sm text-stone-500">{line.variantLabel}</p> : null}
-                  <p className="mt-2 text-base font-semibold text-[#b85c38]">
+                  {line.variantLabel ? <p className="mt-1 text-sm text-brand-muted">{line.variantLabel}</p> : null}
+                  <p className="mt-2 text-base font-semibold text-brand-forest">
                     {formatINRFromPaise(line.unitPriceInPaise)}
                   </p>
                   <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -81,13 +81,13 @@ export function CartPageClient() {
                       type="button"
                       disabled={isCartMutating}
                       onClick={() => void removeLine(line.variantId)}
-                      className="text-sm font-medium text-stone-500 underline-offset-2 hover:text-stone-900 hover:underline disabled:opacity-50"
+                      className="text-sm font-medium text-brand-muted underline-offset-2 hover:text-brand-ink hover:underline disabled:opacity-50"
                     >
                       Delete
                     </button>
                   </div>
                 </div>
-                <p className="text-right text-base font-semibold text-stone-900 sm:ml-auto sm:self-start lg:min-w-[5rem]">
+                <p className="text-right text-base font-semibold text-brand-ink sm:ml-auto sm:self-start lg:min-w-[5rem]">
                   {formatINRFromPaise(line.unitPriceInPaise * line.quantity)}
                 </p>
               </li>
@@ -100,12 +100,12 @@ export function CartPageClient() {
         </aside>
       </div>
 
-      <div className="mt-6 border-t border-stone-200 bg-white p-4 lg:hidden">
-        <p className="text-sm text-stone-500">{itemCount} items</p>
-        <p className="font-serif text-2xl font-semibold text-amber-800">{formatINRFromPaise(subtotalInPaise)}</p>
+      <div className="mt-6 border-t border-brand-cream-dark bg-brand-cream p-4 lg:hidden">
+        <p className="text-sm text-brand-muted">{itemCount} items</p>
+        <p className="font-serif text-2xl font-semibold text-brand-ink">{formatINRFromPaise(subtotalInPaise)}</p>
         <Link
           href="/checkout"
-          className="mt-4 flex min-h-[52px] w-full items-center justify-center rounded-lg bg-[#ffd814] text-base font-medium text-stone-900"
+          className="mt-4 flex min-h-[52px] w-full items-center justify-center rounded-full bg-brand-gold text-base font-semibold text-brand-night transition-colors hover:bg-[#a37934]"
         >
           Proceed to Buy
         </Link>

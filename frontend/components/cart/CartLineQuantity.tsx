@@ -19,13 +19,13 @@ export function CartLineQuantity({ line, size = "md", showDeleteAtOne = false }:
 
   const btnClass =
     size === "sm"
-      ? "flex h-7 w-7 shrink-0 items-center justify-center text-stone-600 disabled:opacity-50"
-      : "flex h-9 w-9 items-center justify-center text-stone-700 disabled:opacity-50";
+      ? "flex h-7 w-7 shrink-0 items-center justify-center text-brand-forest hover:bg-brand-forest/5 disabled:opacity-50"
+      : "flex h-9 w-9 items-center justify-center text-brand-forest hover:bg-brand-forest/5 disabled:opacity-50";
 
   const shellClass =
     size === "sm"
-      ? "inline-flex max-w-full items-center rounded-full border-2 border-amber-400 bg-white"
-      : "inline-flex items-center rounded-full border-2 border-amber-400 bg-white";
+      ? "inline-flex max-w-full items-center rounded-full border border-brand-forest/25 bg-white"
+      : "inline-flex items-center rounded-full border border-brand-forest/25 bg-white";
 
   const qtyClass =
     size === "sm"

@@ -480,21 +480,22 @@ export function PaymentSelector({
   ]);
 
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm md:p-6">
-      <h2 className="text-xl font-semibold text-stone-900">Order summary</h2>
+    <div className="rounded-2xl border border-brand-cream-dark bg-white p-5 shadow-card md:p-6">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">Your order</p>
+      <h2 className="mt-1 font-serif text-2xl font-semibold text-brand-ink">Order summary</h2>
 
       {cartItems.length > 0 ? (
-        <ul className="mt-4 space-y-2 border-b border-stone-100 pb-4 text-sm">
+        <ul className="mt-4 space-y-2 border-b border-brand-cream-dark pb-4 text-sm">
           {cartItems.map((item) => (
             <li key={item.variantId} className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="font-medium text-stone-900 line-clamp-2">{item.productName}</p>
+                <p className="font-medium text-brand-ink line-clamp-2">{item.productName}</p>
                 {item.variantLabel ? (
-                  <p className="text-xs text-stone-500">{item.variantLabel}</p>
+                  <p className="text-xs text-brand-muted">{item.variantLabel}</p>
                 ) : null}
-                <p className="text-xs text-stone-500">Qty {item.quantity}</p>
+                <p className="text-xs text-brand-muted">Qty {item.quantity}</p>
               </div>
-              <p className="shrink-0 font-medium text-stone-800">
+              <p className="shrink-0 font-medium text-brand-ink">
                 {formatMoney(item.unitPriceInPaise * item.quantity)}
               </p>
             </li>
@@ -502,20 +503,20 @@ export function PaymentSelector({
         </ul>
       ) : null}
 
-      <dl className="mt-4 space-y-2 border-b border-stone-100 pb-4 text-sm">
+      <dl className="mt-4 space-y-2 border-b border-brand-cream-dark pb-4 text-sm">
         <div className="flex justify-between gap-4">
-          <dt className="text-stone-600">Subtotal ({itemCount} items)</dt>
-          <dd className="font-medium text-stone-900">{formatMoney(subtotalInPaise)}</dd>
+          <dt className="text-brand-muted">Subtotal ({itemCount} items)</dt>
+          <dd className="font-medium text-brand-ink">{formatMoney(subtotalInPaise)}</dd>
         </div>
         {discountInPaise > 0 ? (
-          <div className="flex justify-between gap-4 text-emerald-800">
+          <div className="flex justify-between gap-4 text-brand-sage">
             <dt>Coupon discount</dt>
             <dd className="font-medium">−{formatMoney(discountInPaise)}</dd>
           </div>
         ) : null}
         <div className="flex justify-between gap-4">
-          <dt className="text-stone-600">Shipping</dt>
-          <dd className="text-right font-medium text-stone-900">
+          <dt className="text-brand-muted">Shipping</dt>
+          <dd className="text-right font-medium text-brand-ink">
             {isDigitalOnly ? (
               <span className="text-emerald-700">Free (digital)</span>
             ) : shippingLoading ? (
@@ -562,14 +563,14 @@ export function PaymentSelector({
             </p>
           </div>
         ) : null}
-        <div className="flex justify-between gap-4 border-t border-stone-100 pt-3 text-sm">
-          <dt className="font-semibold text-stone-900">Estimated total</dt>
-          <dd className="text-right font-semibold text-stone-900">
+        <div className="flex items-baseline justify-between gap-4 border-t border-brand-cream-dark pt-3">
+          <dt className="text-sm font-semibold text-brand-ink">Estimated total</dt>
+          <dd className="text-right text-lg font-bold text-brand-forest">
             {shippingInPaise != null
               ? formatMoney(estimatedTotal)
               : formatMoney(merchandiseAfterDiscount)}
             {isIndia ? (
-              <span className="mt-0.5 block text-xs font-normal text-stone-500">GST included</span>
+              <span className="mt-0.5 block text-xs font-normal text-brand-muted">GST included</span>
             ) : null}
           </dd>
         </div>
@@ -577,87 +578,93 @@ export function PaymentSelector({
 
       {isIndia ? (
         <fieldset className="mt-4 space-y-2">
-          <legend className="text-sm font-semibold text-stone-800">Payment method</legend>
+          <legend>
+            <span className="block text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">Payment</span>
+            <span className="mt-1 block font-serif text-lg font-semibold text-brand-ink">Payment method</span>
+          </legend>
           <label
             className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${
               paymentMode === "razorpay"
-                ? "border-stone-900 bg-stone-50 ring-1 ring-stone-900"
-                : "border-stone-200 hover:border-stone-300"
+                ? "border-brand-forest bg-brand-cream/60 ring-1 ring-brand-forest"
+                : "border-brand-cream-dark hover:border-brand-forest/40"
             }`}
           >
             <input
               type="radio"
               name="paymentMode"
-              className="mt-1"
+              className="mt-1 accent-[#1c352a]"
               checked={paymentMode === "razorpay"}
               onChange={() => setPaymentMode("razorpay")}
             />
             <span>
-              <span className="font-medium text-stone-900">Pay online now</span>
-              <span className="mt-0.5 block text-xs text-stone-600">UPI, cards, netbanking via Razorpay</span>
+              <span className="font-medium text-brand-ink">Pay online now</span>
+              <span className="mt-0.5 block text-xs text-brand-muted">UPI, cards, netbanking via Razorpay</span>
             </span>
           </label>
           {!isDigitalOnly ? (
           <label
             className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${
               paymentMode === "cod"
-                ? "border-stone-900 bg-stone-50 ring-1 ring-stone-900"
-                : "border-stone-200 hover:border-stone-300"
+                ? "border-brand-forest bg-brand-cream/60 ring-1 ring-brand-forest"
+                : "border-brand-cream-dark hover:border-brand-forest/40"
             }`}
           >
             <input
               type="radio"
               name="paymentMode"
-              className="mt-1"
+              className="mt-1 accent-[#1c352a]"
               checked={paymentMode === "cod"}
               onChange={() => setPaymentMode("cod")}
             />
             <span>
-              <span className="font-medium text-stone-900">Cash on delivery (COD)</span>
-              <span className="mt-0.5 block text-xs text-stone-600">Pay when the courier delivers your order</span>
+              <span className="font-medium text-brand-ink">Cash on delivery (COD)</span>
+              <span className="mt-0.5 block text-xs text-brand-muted">Pay when the courier delivers your order</span>
             </span>
           </label>
           ) : null}
         </fieldset>
       ) : (
         <fieldset className="mt-4 space-y-2">
-          <legend className="text-sm font-semibold text-stone-800">Payment method</legend>
+          <legend>
+            <span className="block text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">Payment</span>
+            <span className="mt-1 block font-serif text-lg font-semibold text-brand-ink">Payment method</span>
+          </legend>
           <label
             className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${
               paymentMode === "stripe"
-                ? "border-stone-900 bg-stone-50 ring-1 ring-stone-900"
-                : "border-stone-200 hover:border-stone-300"
+                ? "border-brand-forest bg-brand-cream/60 ring-1 ring-brand-forest"
+                : "border-brand-cream-dark hover:border-brand-forest/40"
             }`}
           >
             <input
               type="radio"
               name="paymentMode"
-              className="mt-1"
+              className="mt-1 accent-[#1c352a]"
               checked={paymentMode === "stripe"}
               onChange={() => setPaymentMode("stripe")}
             />
             <span>
-              <span className="font-medium text-stone-900">Card (Stripe)</span>
-              <span className="mt-0.5 block text-xs text-stone-600">Visa, Mastercard, Amex — secure checkout</span>
+              <span className="font-medium text-brand-ink">Card (Stripe)</span>
+              <span className="mt-0.5 block text-xs text-brand-muted">Visa, Mastercard, Amex — secure checkout</span>
             </span>
           </label>
           <label
             className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${
               paymentMode === "paypal"
-                ? "border-stone-900 bg-stone-50 ring-1 ring-stone-900"
-                : "border-stone-200 hover:border-stone-300"
+                ? "border-brand-forest bg-brand-cream/60 ring-1 ring-brand-forest"
+                : "border-brand-cream-dark hover:border-brand-forest/40"
             }`}
           >
             <input
               type="radio"
               name="paymentMode"
-              className="mt-1"
+              className="mt-1 accent-[#1c352a]"
               checked={paymentMode === "paypal"}
               onChange={() => setPaymentMode("paypal")}
             />
             <span>
-              <span className="font-medium text-stone-900">PayPal</span>
-              <span className="mt-0.5 block text-xs text-stone-600">Pay with your PayPal balance or linked card</span>
+              <span className="font-medium text-brand-ink">PayPal</span>
+              <span className="mt-0.5 block text-xs text-brand-muted">Pay with your PayPal balance or linked card</span>
             </span>
           </label>
         </fieldset>
@@ -683,7 +690,7 @@ export function PaymentSelector({
           (paymentMode === "razorpay" && !rzpReady && !busy)
         }
         onClick={() => void onSubmit()}
-        className="mt-6 flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-stone-900 py-3.5 text-base font-semibold tracking-wide text-amber-400 shadow-lg transition-colors hover:bg-amber-700 hover:text-white disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600"
+        className="mt-6 flex min-h-[52px] w-full items-center justify-center rounded-full bg-brand-forest py-3.5 text-base font-semibold tracking-wide text-brand-cream shadow-card transition-colors hover:bg-brand-night disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600"
       >
         {busy || processing
           ? "Please wait…"

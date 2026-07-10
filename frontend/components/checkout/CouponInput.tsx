@@ -117,14 +117,14 @@ export function CouponInput({
 
   if (!isLoggedIn) {
     return (
-      <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-4">
-        <p className="text-sm font-semibold text-stone-800">Coupon code</p>
-        <p className="mt-2 text-sm text-stone-600">
+      <div className="rounded-2xl border border-brand-cream-dark bg-white p-4 shadow-card">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">Coupon code</p>
+        <p className="mt-2 text-sm text-brand-muted">
           Sign in to apply coupon codes. Guest checkout is available without coupons.
         </p>
         <Link
           href="/login?next=/checkout"
-          className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-lg border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-800 hover:bg-stone-100"
+          className="mt-3 inline-flex min-h-[44px] items-center justify-center rounded-full border border-brand-forest/25 bg-white px-4 text-sm font-semibold text-brand-forest hover:bg-brand-forest/5"
         >
           Sign in for coupons
         </Link>
@@ -133,9 +133,9 @@ export function CouponInput({
   }
 
   return (
-    <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-4">
-      <p className="text-sm font-semibold text-stone-800">Coupon code</p>
-      <p className="mt-1 text-xs text-stone-500">
+    <div className="rounded-2xl border border-brand-cream-dark bg-white p-4 shadow-card">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">Coupon code</p>
+      <p className="mt-1 text-xs text-brand-muted">
         Coupons are checked against your Sarveda account before they can be applied. Invalid codes are
         rejected here — not silently removed at payment.
       </p>
@@ -147,19 +147,21 @@ export function CouponInput({
       ) : null}
 
       {appliedCode ? (
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50/80 px-3 py-2">
-          <p className="text-sm text-stone-800">
-            <span className="font-mono font-semibold text-emerald-900">{appliedCode}</span>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-brand-forest/20 bg-brand-cream/70 px-3 py-2">
+          <p className="text-sm text-brand-ink">
+            <span className="inline-flex rounded-full border border-brand-cream-dark bg-brand-cream px-2 py-0.5 font-mono text-xs font-semibold text-brand-forest">
+              {appliedCode}
+            </span>
             {discountInPaise > 0 ? (
-              <span className="ml-2 font-medium text-emerald-800">−{formatDiscount}</span>
+              <span className="ml-2 font-medium text-brand-sage">−{formatDiscount}</span>
             ) : null}
-            <span className="mt-0.5 block text-xs font-normal text-emerald-800/90">Applied to this order</span>
+            <span className="mt-1 block text-xs font-normal text-brand-muted">Applied to this order</span>
           </p>
           <button
             type="button"
             disabled={busy}
             onClick={() => void onRemove()}
-            className="shrink-0 rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-stone-800 hover:bg-emerald-50 disabled:opacity-50"
+            className="shrink-0 rounded-full border border-brand-forest/25 bg-white px-3 py-1.5 text-xs font-semibold text-brand-forest hover:bg-brand-forest/5 disabled:opacity-50"
           >
             {busy ? "…" : "Remove"}
           </button>
@@ -168,7 +170,7 @@ export function CouponInput({
         <>
           {!offersLoading && eligibleOffers.length > 0 ? (
             <div className="mt-3">
-              <p className="text-xs font-medium text-stone-600">Available for your account</p>
+              <p className="text-xs font-medium text-brand-muted">Available for your account</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {eligibleOffers.map((offer) => (
                   <button
@@ -177,7 +179,7 @@ export function CouponInput({
                     disabled={busy}
                     title={`Apply ${offer.code}`}
                     onClick={() => void applyCode(offer.code)}
-                    className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1.5 text-left text-xs font-semibold text-amber-950 transition-colors hover:border-amber-500 hover:bg-amber-100 disabled:opacity-50"
+                    className="rounded-full border border-brand-gold/40 bg-brand-gold/10 px-3 py-1.5 text-left text-xs font-semibold text-brand-ink transition-colors hover:border-brand-gold hover:bg-brand-gold/20 disabled:opacity-50"
                   >
                     <span className="font-mono">{offer.code}</span>
                     <span className="ml-1.5 font-normal opacity-90">{offer.label}</span>
@@ -189,17 +191,17 @@ export function CouponInput({
 
           {!offersLoading && ineligibleOffers.length > 0 ? (
             <div className="mt-3">
-              <p className="text-xs font-medium text-stone-600">Not available for your account</p>
+              <p className="text-xs font-medium text-brand-muted">Not available for your account</p>
               <ul className="mt-2 space-y-2">
                 {ineligibleOffers.map((offer) => (
                   <li
                     key={offer.code}
-                    className="rounded-lg border border-stone-200 bg-stone-100/80 px-3 py-2 text-xs text-stone-600"
+                    className="rounded-xl border border-brand-cream-dark bg-brand-cream/60 px-3 py-2 text-xs text-brand-muted"
                   >
-                    <span className="font-mono font-semibold text-stone-700">{offer.code}</span>
+                    <span className="font-mono font-semibold text-brand-ink/70">{offer.code}</span>
                     <span className="ml-1.5">{offer.label}</span>
                     {offer.ineligibleReason ? (
-                      <span className="mt-0.5 block text-stone-500">{offer.ineligibleReason}</span>
+                      <span className="mt-0.5 block text-brand-muted/80">{offer.ineligibleReason}</span>
                     ) : null}
                   </li>
                 ))}
@@ -213,14 +215,14 @@ export function CouponInput({
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
               placeholder="Or type a code"
-              className="min-h-[44px] flex-1 rounded-lg border border-stone-200 bg-white px-3 text-sm uppercase tracking-wide text-stone-900 placeholder:normal-case placeholder:tracking-normal"
+              className="min-h-[44px] flex-1 rounded-xl border border-[#E3D9C8] bg-white px-3 font-mono text-sm uppercase tracking-wide text-brand-ink placeholder:font-sans placeholder:normal-case placeholder:tracking-normal placeholder:text-brand-muted/70 focus:border-brand-forest focus:outline-none focus:ring-2 focus:ring-brand-forest/20"
               aria-label="Coupon code"
             />
             <button
               type="button"
               disabled={busy}
               onClick={() => void onApply()}
-              className="min-h-[44px] rounded-lg border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-800 hover:bg-stone-100 disabled:opacity-50"
+              className="min-h-[44px] rounded-full border border-brand-forest/25 bg-white px-4 text-sm font-semibold text-brand-forest hover:bg-brand-forest/5 disabled:opacity-50"
             >
               {busy ? "Applying…" : "Apply"}
             </button>

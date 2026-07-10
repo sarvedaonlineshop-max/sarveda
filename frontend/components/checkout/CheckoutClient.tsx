@@ -297,7 +297,7 @@ export function CheckoutClient() {
         <p className="text-stone-700">{reorderError}</p>
         <Link
           href="/shop"
-          className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-xl bg-stone-900 px-8 font-semibold text-amber-400 hover:bg-amber-700 hover:text-white"
+          className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-full bg-brand-forest px-8 font-semibold text-brand-cream transition-colors hover:bg-brand-night"
         >
           Continue shopping
         </Link>
@@ -319,7 +319,7 @@ export function CheckoutClient() {
         <p className="text-stone-600">Your cart is empty.</p>
         <Link
           href="/shop"
-          className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-xl bg-stone-900 px-8 font-semibold text-amber-400 hover:bg-amber-700 hover:text-white"
+          className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-full bg-brand-forest px-8 font-semibold text-brand-cream transition-colors hover:bg-brand-night"
         >
           Continue shopping
         </Link>
@@ -336,9 +336,12 @@ export function CheckoutClient() {
       ) : null}
       <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(320px,400px)]">
         <div className="min-w-0 space-y-5">
-          <h2 className="text-xl font-semibold text-stone-900">
-            {isDigitalOnly ? "Billing details" : "Shipping details"}
-          </h2>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">Delivery</p>
+            <h2 className="mt-1 font-serif text-2xl font-semibold text-brand-ink">
+              {isDigitalOnly ? "Billing details" : "Shipping details"}
+            </h2>
+          </div>
           {isDigitalOnly ? (
             <p className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
               Digital purchase — no shipping charge. We will email your confirmation and access details.
@@ -359,23 +362,29 @@ export function CheckoutClient() {
               setForm(next);
             }}
           />
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3">
+          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-brand-cream-dark bg-brand-cream px-4 py-4 transition-colors hover:border-brand-gold/50">
             <input
               type="checkbox"
               checked={giftWrap}
               onChange={(e) => setGiftWrap(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-amber-400 text-amber-600 focus:ring-amber-500"
+              className="mt-1 h-4 w-4 rounded border-brand-cream-dark accent-[#1c352a] focus:ring-brand-forest"
             />
-            <span className="text-sm text-stone-800">
+            <svg viewBox="0 0 24 24" className="mt-0.5 h-5 w-5 shrink-0 text-brand-gold" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <rect x="3" y="8" width="18" height="4" rx="1" />
+              <path d="M12 8v13" />
+              <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" />
+              <path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5" />
+            </svg>
+            <span className="text-sm text-brand-ink">
               <span className="font-semibold">I want this gift wrapped</span>
-              <span className="mt-0.5 block text-xs text-stone-600">
+              <span className="mt-0.5 block text-xs text-brand-muted">
                 Our team will see this on your order and pack it as a gift when possible.
               </span>
             </span>
           </label>
           <div>
-            <label htmlFor="checkout-customer-notes" className="mb-1.5 block text-sm font-medium text-stone-800">
-              Notes for our team <span className="font-normal text-stone-500">(optional)</span>
+            <label htmlFor="checkout-customer-notes" className="mb-1.5 block text-sm font-medium text-brand-ink">
+              Notes for our team <span className="font-normal text-brand-muted">(optional)</span>
             </label>
             <textarea
               id="checkout-customer-notes"
@@ -384,7 +393,7 @@ export function CheckoutClient() {
               rows={3}
               maxLength={2000}
               placeholder="Gift message, delivery instructions, or product preferences…"
-              className="w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900 placeholder:text-stone-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+              className="w-full rounded-xl border border-[#E3D9C8] bg-white px-3 py-2.5 text-sm text-brand-ink placeholder:text-brand-muted/70 focus:border-brand-forest focus:outline-none focus:ring-2 focus:ring-brand-forest/20"
             />
           </div>
         </div>

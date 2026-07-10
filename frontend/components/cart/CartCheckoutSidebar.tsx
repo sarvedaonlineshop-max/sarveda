@@ -17,7 +17,7 @@ type Props = {
 function CompactLine({ line }: { line: CartApiItem }) {
   return (
     <li className="border-b border-stone-100 py-2.5 last:border-0">
-      <p className="text-sm font-semibold leading-tight text-[#b85c38]">
+      <p className="text-sm font-semibold leading-tight text-brand-forest">
         {formatINRFromPaise(line.unitPriceInPaise)}
       </p>
       <div className="mt-1.5 flex gap-2">
@@ -50,15 +50,15 @@ export function CartCheckoutSidebar({ mode, className = "" }: Props) {
 
   return (
     <div className={className}>
-      <div className={`border-stone-200 bg-white ${isRail ? "border-b px-3 py-3" : "rounded-lg border p-4 shadow-sm"}`}>
-        <p className="text-[11px] text-stone-600">
-          Subtotal ({count} {count === 1 ? "item" : "items"}):
+      <div className={`${isRail ? "border-b border-brand-cream-dark bg-white px-3 py-3" : "rounded-2xl border border-brand-cream-dark bg-brand-cream p-5 shadow-card"}`}>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-muted">
+          Subtotal ({count} {count === 1 ? "item" : "items"})
         </p>
-        <p className="mt-0.5 text-lg font-semibold text-stone-900">{formatINRFromPaise(subtotalInPaise)}</p>
+        <p className="mt-1 font-serif text-2xl font-bold text-brand-ink">{formatINRFromPaise(subtotalInPaise)}</p>
 
         <Link
           href="/checkout"
-          className="mt-3 flex min-h-[40px] w-full items-center justify-center rounded-lg bg-[#ffd814] text-sm font-medium text-stone-900 shadow-sm transition hover:bg-[#f7ca00]"
+          className="mt-4 flex min-h-[44px] w-full items-center justify-center rounded-full bg-brand-gold text-sm font-semibold text-brand-night shadow-sm transition-colors hover:bg-[#a37934]"
         >
           Proceed to Buy
         </Link>
@@ -66,13 +66,13 @@ export function CartCheckoutSidebar({ mode, className = "" }: Props) {
         {isRail ? (
           <Link
             href="/cart"
-            className="mt-2 flex min-h-[36px] w-full items-center justify-center rounded-lg border border-stone-300 bg-white text-xs font-medium text-stone-800 hover:bg-stone-50"
+            className="mt-2 flex min-h-[36px] w-full items-center justify-center rounded-full border border-brand-forest/25 bg-white text-xs font-medium text-brand-forest hover:bg-brand-forest/5"
           >
             Go to Cart
           </Link>
         ) : null}
 
-        <p className="mt-2 text-[10px] leading-snug text-stone-500">GST included · Shipping at checkout</p>
+        <p className="mt-2 text-[10px] leading-snug text-brand-muted">GST included · Shipping at checkout</p>
       </div>
 
       {isRail ? (

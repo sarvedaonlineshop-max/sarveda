@@ -59,7 +59,7 @@ function inputClass(state: "idle" | "valid" | "invalid"): string {
   if (state === "invalid") {
     return `${base} border-red-300 bg-red-50/40 focus:border-red-500 focus:ring-red-500/20`;
   }
-  return `${base} border-stone-200 focus:border-amber-700 focus:ring-amber-700/20`;
+  return `${base} border-[#E3D9C8] bg-white focus:border-brand-forest focus:ring-brand-forest/20`;
 }
 
 function ValidatedLabel({
@@ -75,7 +75,7 @@ function ValidatedLabel({
 }) {
   return (
     <label className="relative block">
-      <span className="mb-1 block text-sm font-medium text-stone-700">{label}</span>
+      <span className="mb-1 block text-sm font-medium text-brand-ink">{label}</span>
       <div className="relative">
         {children}
         {state !== "idle" ? (
@@ -135,9 +135,9 @@ export function AddressFields({
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <div className="sm:col-span-2">
-        <span className="mb-1 block text-sm font-medium text-stone-700">Country</span>
+        <span className="mb-1 block text-sm font-medium text-brand-ink">Country</span>
         {indiaCheckoutOnly ? (
-          <div className="min-h-[48px] rounded-xl border border-stone-200 bg-stone-50 px-3 py-3 text-sm text-stone-800">
+          <div className="min-h-[48px] rounded-xl border border-[#E3D9C8] bg-brand-cream px-3 py-3 text-sm text-brand-ink">
             India — domestic delivery only on this site.
           </div>
         ) : (
@@ -198,10 +198,10 @@ export function AddressFields({
       </div>
 
       <div className="sm:col-span-2">
-        <span className="mb-1 block text-sm font-medium text-stone-700">Mobile number</span>
+        <span className="mb-1 block text-sm font-medium text-brand-ink">Mobile number</span>
         <div className="flex gap-2">
           <select
-            className="min-h-[48px] w-28 rounded-xl border border-stone-200 bg-white px-2 text-sm text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+            className="min-h-[48px] w-28 rounded-xl border border-[#E3D9C8] bg-white px-2 text-sm text-brand-ink focus:border-brand-forest focus:outline-none focus:ring-2 focus:ring-brand-forest/20"
             value={form.phoneDial}
             onChange={(event) => patch({ phoneDial: event.target.value })}
             aria-label="Country calling code"
@@ -255,10 +255,10 @@ export function AddressFields({
       </div>
 
       <label className="sm:col-span-2">
-        <span className="mb-1 block text-sm font-medium text-stone-700">Address line 2 (optional)</span>
+        <span className="mb-1 block text-sm font-medium text-brand-ink">Address line 2 (optional)</span>
         <input
           autoComplete="address-line2"
-          className="min-h-[48px] w-full rounded-xl border border-stone-200 px-3 text-stone-900 focus:border-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+          className="min-h-[48px] w-full rounded-xl border border-[#E3D9C8] bg-white px-3 text-brand-ink focus:border-brand-forest focus:outline-none focus:ring-2 focus:ring-brand-forest/20"
           value={form.line2}
           onChange={(event) => patch({ line2: event.target.value })}
         />
@@ -280,7 +280,7 @@ export function AddressFields({
       </div>
 
       <div>
-        <span className="mb-1 block text-sm font-medium text-stone-700">State</span>
+        <span className="mb-1 block text-sm font-medium text-brand-ink">State</span>
         {isIndia ? (
           <select
             required
