@@ -45,14 +45,14 @@ function AnnouncementBar() {
 
 function CartIcon({ count }: { count: number }) {
   return (
-    <span className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl text-brand-gold transition-colors hover:bg-white/10 hover:text-brand-gold-pale">
+    <span className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl text-brand-forest transition-colors hover:bg-brand-forest/5 hover:text-brand-gold">
       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" aria-hidden="true">
         <path strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round"
           d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.25 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
         />
       </svg>
       {count > 0 && (
-        <span className="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-brand-gold px-1 text-[10px] font-bold text-brand-night">
+        <span className="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-brand-forest px-1 text-[10px] font-bold text-brand-cream">
           {count > 99 ? "99+" : count}
         </span>
       )}
@@ -61,7 +61,7 @@ function CartIcon({ count }: { count: number }) {
 }
 
 const navLinkClass =
-  "relative text-sm font-medium tracking-wide text-stone-300 transition-colors hover:text-brand-gold after:absolute after:-bottom-1 after:left-0 after:h-px after:w-0 after:bg-brand-gold after:transition-all hover:after:w-full";
+  "relative text-sm font-medium tracking-wide text-brand-forest transition-colors hover:text-brand-gold after:absolute after:-bottom-1 after:left-0 after:h-px after:w-0 after:bg-brand-gold after:transition-all hover:after:w-full";
 
 export function Header() {
   const pathname = usePathname();
@@ -105,15 +105,15 @@ export function Header() {
       <AnnouncementBar />
 
       {/* Main Header */}
-      <header className="sticky top-0 z-50 border-b border-white/8 shadow-lg"
-        style={{ background: "linear-gradient(180deg, #0f1a14 0%, #111d17 100%)", backdropFilter: "blur(12px)" }}
+      <header className="sticky top-0 z-50 border-b border-brand-forest/10 bg-brand-cream/95 shadow-sm"
+        style={{ backdropFilter: "blur(12px)" }}
       >
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
 
           {/* Mobile menu */}
           <button
             type="button"
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-stone-300 transition-colors hover:bg-white/8 hover:text-brand-gold md:hidden"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-brand-forest transition-colors hover:bg-brand-forest/5 hover:text-brand-gold md:hidden"
             onClick={() => setMenuOpen(true)}
             aria-expanded={menuOpen}
             aria-label="Open menu"
@@ -127,7 +127,7 @@ export function Header() {
           <SarvedaLogo
             showTagline
             iconHeight={34}
-            wordmarkClassName="font-serif text-xl italic leading-tight tracking-wide text-brand-gold transition-colors group-hover:text-brand-gold-pale md:text-2xl"
+            wordmarkClassName="font-serif text-xl italic leading-tight tracking-wide text-brand-forest transition-colors group-hover:text-brand-gold md:text-2xl"
           />
 
           {/* Desktop Nav */}
@@ -149,7 +149,7 @@ export function Header() {
           {/* Search Bar — desktop */}
           <div className="relative hidden min-w-0 flex-1 md:block md:max-w-sm lg:max-w-md">
             <svg
-              className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-stone-500"
+              className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-brand-muted"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -165,7 +165,7 @@ export function Header() {
             <SearchWithSuggestions
               id="desktop-search"
               placeholder="Search Sarveda…"
-              inputClassName="w-full rounded-full border border-white/10 bg-white/6 py-2.5 pl-10 pr-4 text-sm text-stone-100 placeholder:text-stone-500 transition-all focus:border-brand-gold/60 focus:bg-white/10 focus:outline-none focus:ring-1 focus:ring-brand-gold/40"
+              inputClassName="w-full rounded-full border border-brand-forest/15 bg-white/70 py-2.5 pl-10 pr-4 text-sm text-brand-ink placeholder:text-brand-muted transition-all focus:border-brand-gold/60 focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-gold/40"
             />
           </div>
 
@@ -175,7 +175,7 @@ export function Header() {
             {/* Mobile: account shortcut */}
             <Link
               href="/profile"
-              className="inline-flex h-10 items-center justify-center rounded-xl px-3 text-stone-300 transition-colors hover:bg-white/8 hover:text-brand-gold md:hidden"
+              className="inline-flex h-10 items-center justify-center rounded-xl px-3 text-brand-forest transition-colors hover:bg-brand-forest/5 hover:text-brand-gold md:hidden"
               aria-label={displayName ? `You, ${displayName}` : "Account"}
             >
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -187,30 +187,30 @@ export function Header() {
             <div className="hidden items-center gap-3 md:flex">
               {sessionUser ? (
                 <>
-                  <Link href="/profile" className="max-w-[10rem] truncate text-sm font-medium text-stone-300 hover:text-brand-gold transition-colors">
+                  <Link href="/profile" className="max-w-[10rem] truncate text-sm font-medium text-brand-forest hover:text-brand-gold transition-colors">
                     Hello, {displayName}
                   </Link>
                   {isAdminRole(sessionUser.role) && (
-                    <Link href="/admin" className="text-sm text-stone-400 hover:text-brand-gold transition-colors">
+                    <Link href="/admin" className="text-sm text-brand-muted hover:text-brand-gold transition-colors">
                       Admin
                     </Link>
                   )}
                   <button
                     type="button"
                     onClick={() => void handleSignOut()}
-                    className="text-sm text-stone-400 hover:text-brand-gold transition-colors"
+                    className="text-sm text-brand-muted hover:text-brand-gold transition-colors"
                   >
                     Sign out
                   </button>
                 </>
               ) : (
                 <>
-                  <Link href="/login" className="text-sm font-medium text-stone-300 hover:text-brand-gold transition-colors">
+                  <Link href="/login" className="text-sm font-medium text-brand-forest hover:text-brand-gold transition-colors">
                     Sign in
                   </Link>
                   <Link
                     href="/signup"
-                    className="rounded-full border border-brand-gold/40 bg-brand-gold/8 px-4 py-2 text-sm font-semibold text-brand-gold transition-all hover:border-brand-gold hover:bg-brand-gold/15"
+                    className="rounded-full bg-brand-forest px-4 py-2 text-sm font-semibold text-brand-cream transition-colors hover:bg-brand-night"
                   >
                     Sign up
                   </Link>
@@ -234,20 +234,19 @@ export function Header() {
 
     {menuOpen ? (
       <div
-        className="fixed inset-0 z-[60] flex flex-col md:hidden"
+        className="fixed inset-0 z-[60] flex flex-col bg-brand-cream md:hidden"
         role="dialog"
         aria-modal="true"
         aria-label="Navigation"
-        style={{ background: "linear-gradient(180deg, #0f1a14 0%, #111d17 100%)" }}
       >
-        <div className="flex items-center justify-between border-b border-white/8 px-4 py-4">
+        <div className="flex items-center justify-between border-b border-brand-forest/10 px-4 py-4">
           <div className="flex items-center gap-2">
             <Image src="/brand/sarveda-logo.png" alt="" width={18} height={36} className="object-contain" aria-hidden />
-            <span className="font-serif text-xl italic text-brand-gold">Menu</span>
+            <span className="font-serif text-xl italic text-brand-forest">Menu</span>
           </div>
           <button
             type="button"
-            className="flex h-11 min-w-[44px] items-center justify-center rounded-xl text-stone-300 hover:text-brand-gold"
+            className="flex h-11 min-w-[44px] items-center justify-center rounded-xl text-brand-forest hover:text-brand-gold"
             onClick={() => setMenuOpen(false)}
             aria-label="Close menu"
           >
@@ -261,7 +260,7 @@ export function Header() {
             <SearchWithSuggestions
               id="mobile-search"
               placeholder="Search products…"
-              inputClassName="w-full rounded-xl border border-white/10 bg-white/6 py-3 pl-4 pr-4 text-base text-stone-100 placeholder:text-stone-500 focus:border-brand-gold/60 focus:outline-none focus:ring-1 focus:ring-brand-gold/40"
+              inputClassName="w-full rounded-xl border border-brand-forest/15 bg-white/70 py-3 pl-4 pr-4 text-base text-brand-ink placeholder:text-brand-muted focus:border-brand-gold/60 focus:outline-none focus:ring-1 focus:ring-brand-gold/40"
               onNavigate={() => setMenuOpen(false)}
             />
           </div>
@@ -269,18 +268,18 @@ export function Header() {
             <Link
               key={link.href}
               href={link.href}
-              className="min-h-[52px] rounded-xl px-4 py-3 text-lg font-medium text-stone-200 hover:bg-white/6 hover:text-brand-gold"
+              className="min-h-[52px] rounded-xl px-4 py-3 text-lg font-medium text-brand-forest hover:bg-brand-forest/5 hover:text-brand-gold"
               onClick={() => setMenuOpen(false)}
             >
               {link.label}
             </Link>
           ))}
-          <div className="my-2 h-px bg-white/8" />
+          <div className="my-2 h-px bg-brand-forest/10" />
           {sessionUser ? (
             <>
               <Link
                 href="/profile"
-                className="min-h-[52px] rounded-xl px-4 py-3 text-lg font-medium text-brand-gold hover:bg-white/6"
+                className="min-h-[52px] rounded-xl px-4 py-3 text-lg font-medium text-brand-gold hover:bg-brand-forest/5"
                 onClick={() => setMenuOpen(false)}
               >
                 Hello, {displayName}
@@ -288,7 +287,7 @@ export function Header() {
               {isAdminRole(sessionUser.role) ? (
                 <Link
                   href="/admin"
-                  className="min-h-[52px] rounded-xl px-4 py-3 text-lg font-medium text-brand-gold hover:bg-white/6"
+                  className="min-h-[52px] rounded-xl px-4 py-3 text-lg font-medium text-brand-gold hover:bg-brand-forest/5"
                   onClick={() => setMenuOpen(false)}
                 >
                   Admin panel
@@ -296,7 +295,7 @@ export function Header() {
               ) : null}
               <button
                 type="button"
-                className="min-h-[52px] w-full rounded-xl px-4 py-3 text-left text-lg font-medium text-stone-400 hover:bg-white/6"
+                className="min-h-[52px] w-full rounded-xl px-4 py-3 text-left text-lg font-medium text-brand-muted hover:bg-brand-forest/5"
                 onClick={() => void handleSignOut()}
               >
                 Sign out
@@ -306,24 +305,24 @@ export function Header() {
             <>
               <Link
                 href="/login"
-                className="min-h-[52px] rounded-xl px-4 py-3 text-lg font-medium text-stone-300 hover:bg-white/6 hover:text-brand-gold"
+                className="min-h-[52px] rounded-xl px-4 py-3 text-lg font-medium text-brand-forest hover:bg-brand-forest/5 hover:text-brand-gold"
                 onClick={() => setMenuOpen(false)}
               >
                 Sign in
               </Link>
               <Link
                 href="/signup"
-                className="min-h-[52px] rounded-xl px-4 py-3 text-lg font-semibold text-brand-gold hover:bg-white/6"
+                className="min-h-[52px] rounded-xl px-4 py-3 text-lg font-semibold text-brand-gold hover:bg-brand-forest/5"
                 onClick={() => setMenuOpen(false)}
               >
                 Sign up
               </Link>
             </>
           )}
-          <div className="my-2 h-px bg-white/8" />
+          <div className="my-2 h-px bg-brand-forest/10" />
           <button
             type="button"
-            className="min-h-[52px] w-full rounded-xl px-4 py-3 text-left text-lg font-semibold text-brand-gold hover:bg-white/6"
+            className="min-h-[52px] w-full rounded-xl px-4 py-3 text-left text-lg font-semibold text-brand-forest hover:bg-brand-forest/5"
             onClick={() => {
               setMenuOpen(false);
               goToCart();

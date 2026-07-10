@@ -38,15 +38,15 @@ const trustBadges = [
 
 export function SiteFooter() {
   return (
-    <footer className="hidden md:block" style={{ background: "#0f1a14" }}>
+    <footer className="hidden bg-brand-forest md:block">
 
       {/* Trust Bar */}
-      <div className="border-b border-white/8">
-        <div className="mx-auto grid max-w-7xl grid-cols-4 divide-x divide-white/8 px-4 sm:px-6 lg:px-8">
+      <div className="border-b border-brand-cream/10">
+        <div className="mx-auto grid max-w-7xl grid-cols-4 divide-x divide-brand-cream/10 px-4 sm:px-6 lg:px-8">
           {trustBadges.map((b) => (
             <div key={b.text} className="flex items-center justify-center gap-2.5 py-4">
               <span className="text-xl">{b.icon}</span>
-              <span className="text-sm font-medium text-stone-300">{b.text}</span>
+              <span className="text-sm font-medium text-brand-cream/90">{b.text}</span>
             </div>
           ))}
         </div>
@@ -60,10 +60,10 @@ export function SiteFooter() {
           <SarvedaLogo
             iconHeight={44}
             showTagline
-            wordmarkClassName="font-serif text-3xl italic text-brand-gold"
-            taglineClassName="mt-0.5 text-xs tracking-[0.22em] text-brand-sage"
+            wordmarkClassName="font-serif text-3xl italic text-brand-cream"
+            taglineClassName="mt-0.5 text-xs tracking-[0.22em] text-brand-gold"
           />
-          <p className="mt-5 max-w-sm text-sm leading-relaxed text-stone-400">
+          <p className="mt-5 max-w-sm text-sm leading-relaxed text-brand-cream/70">
             Authentic yoga, Ayurveda, and sound healing products — curated with care for practitioners
             across India and worldwide. Every piece chosen for depth of practice.
           </p>
@@ -81,7 +81,7 @@ export function SiteFooter() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={s.label}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-stone-400 transition-colors hover:border-brand-gold/40 hover:text-brand-gold"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-brand-cream/15 text-brand-cream/70 transition-colors hover:border-brand-gold/50 hover:text-brand-gold"
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
                   <path d={s.d} />
@@ -93,11 +93,11 @@ export function SiteFooter() {
 
         {/* Explore */}
         <div>
-          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500">Explore</p>
+          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-gold">Explore</p>
           <ul className="space-y-2.5">
             {footerLinks.explore.map((l) => (
               <li key={l.label}>
-                <Link href={l.href} className="text-sm text-stone-400 transition-colors hover:text-brand-gold">
+                <Link href={l.href} className="text-sm text-brand-cream/70 transition-colors hover:text-brand-gold">
                   {l.label}
                 </Link>
               </li>
@@ -107,11 +107,11 @@ export function SiteFooter() {
 
         {/* Support */}
         <div>
-          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500">Support</p>
+          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-gold">Support</p>
           <ul className="space-y-2.5">
             {footerLinks.support.map((l) => (
               <li key={l.label}>
-                <Link href={l.href} className="text-sm text-stone-400 transition-colors hover:text-brand-gold">
+                <Link href={l.href} className="text-sm text-brand-cream/70 transition-colors hover:text-brand-gold">
                   {l.label}
                 </Link>
               </li>
@@ -121,11 +121,11 @@ export function SiteFooter() {
 
         {/* Legal */}
         <div>
-          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500">Legal</p>
+          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-gold">Legal</p>
           <ul className="space-y-2.5">
             {footerLinks.legal.map((l) => (
               <li key={l.label}>
-                <Link href={l.href} className="text-sm text-stone-400 transition-colors hover:text-brand-gold">
+                <Link href={l.href} className="text-sm text-brand-cream/70 transition-colors hover:text-brand-gold">
                   {l.label}
                 </Link>
               </li>
@@ -135,16 +135,16 @@ export function SiteFooter() {
       </div>
 
       {/* Bottom strip */}
-      <div className="border-t border-white/8">
+      <div className="border-t border-brand-cream/10">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-5 sm:flex-row sm:px-6 lg:px-8">
-          <p className="text-xs text-stone-500">
+          <p className="text-xs text-brand-cream/50">
             © {new Date().getFullYear()} Sarveda. All rights reserved. Made with 🙏 in India.
           </p>
           {/* Payment methods */}
-          <div className="flex items-center gap-2 text-stone-500">
+          <div className="flex items-center gap-2 text-brand-cream/50">
             <span className="text-xs tracking-wide">We accept</span>
             {["Razorpay","UPI","Visa","Mastercard","Stripe","PayPal"].map((p) => (
-              <span key={p} className="rounded border border-white/10 px-1.5 py-0.5 text-[10px] font-medium text-stone-400">
+              <span key={p} className="rounded border border-brand-cream/15 px-1.5 py-0.5 text-[10px] font-medium text-brand-cream/60">
                 {p}
               </span>
             ))}
