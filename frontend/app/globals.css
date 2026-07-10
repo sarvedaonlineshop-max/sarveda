@@ -5,18 +5,18 @@
 /* ─── Sarveda Brand Tokens ────────────────────────────────────── */
 :root {
   color-scheme: light;
-  --brand-night:      #0f1a14;
-  --brand-forest:     #1e3a2f;
-  --brand-sage:       #4a7c59;
-  --brand-gold:       #c8960a;
-  --brand-gold-mid:   #e8b012;
-  --brand-gold-pale:  #f5d88a;
-  --brand-cream:      #fdf6ed;
-  --brand-cream-dark: #f0e6d6;
-  --brand-ivory:      #fffbf5;
-  --brand-terra:      #b85c38;
-  --brand-ink:        #2c2420;
-  --brand-muted:      #8a7060;
+  --brand-night:      #10201a;
+  --brand-forest:     #1c352a;
+  --brand-sage:       #48705a;
+  --brand-gold:       #b98a3e;
+  --brand-gold-mid:   #cfa45c;
+  --brand-gold-pale:  #e9d6ae;
+  --brand-cream:      #faf5ec;
+  --brand-cream-dark: #efe6d6;
+  --brand-ivory:      #fffdf7;
+  --brand-terra:      #b4552d;
+  --brand-ink:        #26251f;
+  --brand-muted:      #7d7263;
   --sarveda-bottom-nav: 4.5rem;
 }
 
@@ -37,7 +37,7 @@ body {
 /* ─── Premium Scrollbar ────────────────────────────────────────── */
 ::-webkit-scrollbar        { width: 5px; }
 ::-webkit-scrollbar-track  { background: var(--brand-cream); }
-::-webkit-scrollbar-thumb  { background: #d4b896; border-radius: 4px; }
+::-webkit-scrollbar-thumb  { background: #d3c19a; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--brand-gold); }
 
 /* ─── Safe Area ────────────────────────────────────────────────── */
@@ -85,10 +85,10 @@ body {
 
   /* Frosted glass card */
   .glass-card {
-    background: rgba(253,246,237,0.72);
+    background: rgba(250,245,236,0.72);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(200,150,10,0.15);
+    border: 1px solid rgba(185,138,62,0.15);
   }
 
   /* Gold divider */
