@@ -53,7 +53,7 @@ export function FreeShippingBar({
       >
         {qualified ? (
           <span>
-            🎉 You qualify for <strong>free shipping!</strong>
+            You qualify for <strong>free shipping!</strong>
           </span>
         ) : (
           <span>

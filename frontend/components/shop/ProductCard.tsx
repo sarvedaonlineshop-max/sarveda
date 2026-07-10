@@ -64,7 +64,7 @@ export function ProductCard({ product, layout = "grid" }: Props) {
       }`}
     >
       <Link href={href} className="flex min-h-0 flex-1 flex-col focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-forest focus-visible:ring-offset-2">
-        <div className="relative aspect-square overflow-hidden bg-brand-cream-dark">
+        <div className="relative aspect-square overflow-hidden bg-[#EDE4D3]">
           {product.primaryImageUrl ? (
             <Image
               src={product.primaryImageUrl}
@@ -97,11 +97,15 @@ export function ProductCard({ product, layout = "grid" }: Props) {
 
           {product.hasAudio ? (
             <span
-              className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full text-sm shadow-md"
+              className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full text-brand-forest shadow-md"
               style={{ background: "rgba(255,253,247,0.95)", backdropFilter: "blur(4px)" }}
               title="Includes audio sample"
             >
-              🎵
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M9 18V5l12-2v13" />
+                <circle cx="6" cy="18" r="3" />
+                <circle cx="18" cy="16" r="3" />
+              </svg>
             </span>
           ) : null}
         </div>

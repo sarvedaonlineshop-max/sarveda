@@ -53,7 +53,12 @@ function ForgotPasswordForm() {
             borderColor: "var(--brand-cream-dark)"
           }}
         >
-          <div className="mb-4 text-4xl">📧</div>
+          <div className="mb-4 flex justify-center text-brand-gold">
+            <svg viewBox="0 0 24 24" className="h-10 w-10" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <rect x="2" y="4" width="20" height="16" rx="2" />
+              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+            </svg>
+          </div>
           <h1
             className="font-serif mb-3 text-2xl font-bold"
             style={{ color: "var(--brand-forest)" }}

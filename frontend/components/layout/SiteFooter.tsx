@@ -29,11 +29,63 @@ const footerLinks = {
   ],
 };
 
+function BadgeIcon({ children }: { children: React.ReactNode }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      {children}
+    </svg>
+  );
+}
+
 const trustBadges = [
-  { icon: "🔒", text: "Secure Checkout"   },
-  { icon: "✅", text: "100% Authentic"    },
-  { icon: "↩️", text: "Easy Returns"      },
-  { icon: "🚚", text: "Pan India Shipping" },
+  {
+    icon: (
+      <BadgeIcon>
+        <rect x="3" y="11" width="18" height="11" rx="2" />
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+      </BadgeIcon>
+    ),
+    text: "Secure Checkout"
+  },
+  {
+    icon: (
+      <BadgeIcon>
+        <circle cx="12" cy="12" r="10" />
+        <path d="m9 12 2 2 4-4" />
+      </BadgeIcon>
+    ),
+    text: "100% Authentic"
+  },
+  {
+    icon: (
+      <BadgeIcon>
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+        <path d="M3 3v5h5" />
+      </BadgeIcon>
+    ),
+    text: "Easy Returns"
+  },
+  {
+    icon: (
+      <BadgeIcon>
+        <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
+        <path d="M15 18H9" />
+        <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35a1 1 0 0 0-.78-.38H14" />
+        <circle cx="17" cy="18" r="2" />
+        <circle cx="7" cy="18" r="2" />
+      </BadgeIcon>
+    ),
+    text: "Pan India Shipping"
+  },
 ];
 
 export function SiteFooter() {
@@ -45,7 +97,7 @@ export function SiteFooter() {
         <div className="mx-auto grid max-w-7xl grid-cols-4 divide-x divide-brand-cream/10 px-4 sm:px-6 lg:px-8">
           {trustBadges.map((b) => (
             <div key={b.text} className="flex items-center justify-center gap-2.5 py-4">
-              <span className="text-xl">{b.icon}</span>
+              <span className="text-brand-gold">{b.icon}</span>
               <span className="text-sm font-medium text-brand-cream/90">{b.text}</span>
             </div>
           ))}
@@ -138,7 +190,7 @@ export function SiteFooter() {
       <div className="border-t border-brand-cream/10">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-5 sm:flex-row sm:px-6 lg:px-8">
           <p className="text-xs text-brand-cream/50">
-            © {new Date().getFullYear()} Sarveda. All rights reserved. Made with 🙏 in India.
+            © {new Date().getFullYear()} Sarveda. All rights reserved. Made with care in India.
           </p>
           {/* Payment methods */}
           <div className="flex items-center gap-2 text-brand-cream/50">

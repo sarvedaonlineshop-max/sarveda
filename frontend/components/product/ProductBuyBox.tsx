@@ -340,13 +340,52 @@ export function ProductBuyBox({
       {!isInline ? (
         <div className="mt-4 grid grid-cols-2 gap-2 rounded-lg bg-[#f4f8f2] p-3 sm:gap-3">
           {[
-            { icon: "🎵", title: "Authentic Craft", subtitle: "Eco-conscious from India" },
-            { icon: "🌍", title: "Global Reach", subtitle: "50+ countries" },
-            { icon: "🛡️", title: "Trusted", subtitle: "Therapists & practitioners" },
-            { icon: "🔒", title: "Secure", subtitle: "Encrypted payments" }
+            {
+              icon: (
+                <>
+                  <path d="M9 18V5l12-2v13" />
+                  <circle cx="6" cy="18" r="3" />
+                  <circle cx="18" cy="16" r="3" />
+                </>
+              ),
+              title: "Authentic Craft",
+              subtitle: "Eco-conscious from India"
+            },
+            {
+              icon: (
+                <>
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+                  <path d="M2 12h20" />
+                </>
+              ),
+              title: "Global Reach",
+              subtitle: "50+ countries"
+            },
+            {
+              icon: (
+                <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+              ),
+              title: "Trusted",
+              subtitle: "Therapists & practitioners"
+            },
+            {
+              icon: (
+                <>
+                  <rect x="3" y="11" width="18" height="11" rx="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </>
+              ),
+              title: "Secure",
+              subtitle: "Encrypted payments"
+            }
           ].map((badge) => (
             <div key={badge.title} className="rounded-md bg-white px-2 py-3 text-center sm:px-3">
-              <p className="text-lg">{badge.icon}</p>
+              <p className="flex justify-center text-brand-gold">
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  {badge.icon}
+                </svg>
+              </p>
               <p className="mt-1 text-[11px] font-semibold leading-snug text-stone-800 sm:text-xs">{badge.title}</p>
               <p className="mt-1 text-[10px] leading-snug text-stone-500">{badge.subtitle}</p>
             </div>

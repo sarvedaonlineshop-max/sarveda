@@ -31,24 +31,66 @@ function websiteJsonLd() {
 }
 
 /* ── Static trust pillars ──────────────────────────────────────── */
+function TrustIcon({ children }: { children: React.ReactNode }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-8 w-8"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      {children}
+    </svg>
+  );
+}
+
 const TRUST = [
   {
-    icon: "🌿",
+    icon: (
+      <TrustIcon>
+        <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
+        <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
+      </TrustIcon>
+    ),
     title: "100% Authentic",
     body: "Every product sourced directly from verified practitioners and artisans."
   },
   {
-    icon: "🙏",
+    icon: (
+      <TrustIcon>
+        <path d="M11 14h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 16" />
+        <path d="m7 20 1.6-1.4c.3-.4.8-.6 1.4-.6h4c1.1 0 2.1-.4 2.8-1.2l4.6-4.4a2 2 0 0 0-2.75-2.91l-4.2 3.9" />
+        <path d="m2 15 6 6" />
+        <path d="M19.5 8.5c.7-.7 1.5-1.6 1.5-2.7A2.73 2.73 0 0 0 16 4a2.78 2.78 0 0 0-5 1.8c0 1.2.8 2 1.5 2.8L16 12Z" />
+      </TrustIcon>
+    ),
     title: "Expert Curated",
     body: "Chosen by yoga teachers, Vaidyas, and sound healers — not algorithms."
   },
   {
-    icon: "🚚",
+    icon: (
+      <TrustIcon>
+        <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
+        <path d="M15 18H9" />
+        <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35a1 1 0 0 0-.78-.38H14" />
+        <circle cx="17" cy="18" r="2" />
+        <circle cx="7" cy="18" r="2" />
+      </TrustIcon>
+    ),
     title: "Free Shipping ₹999+",
     body: "Pan-India delivery. International shipping to US, UK and worldwide."
   },
   {
-    icon: "↩️",
+    icon: (
+      <TrustIcon>
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+        <path d="M3 3v5h5" />
+      </TrustIcon>
+    ),
     title: "Easy Returns",
     body: "Not what you expected? We make returns simple and stress-free."
   },
@@ -225,7 +267,7 @@ export default async function HomePage() {
                 className="flex flex-col items-center rounded-2xl p-5 text-center transition-shadow hover:shadow-card"
                 style={{ background:"#fdf6ed" }}
               >
-                <span className="mb-3 text-3xl">{item.icon}</span>
+                <span className="mb-3 text-brand-gold">{item.icon}</span>
                 <p className="font-serif text-base font-semibold text-brand-ink md:text-lg">
                   {item.title}
                 </p>

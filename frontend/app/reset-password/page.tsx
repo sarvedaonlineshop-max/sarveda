@@ -60,7 +60,12 @@ function ResetForm() {
   if (done) {
     return (
       <div className="text-center">
-        <div className="mb-3 text-4xl">✅</div>
+        <div className="mb-3 flex justify-center text-brand-gold">
+          <svg viewBox="0 0 24 24" className="h-10 w-10" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <circle cx="12" cy="12" r="10" />
+            <path d="m9 12 2 2 4-4" />
+          </svg>
+        </div>
         <p className="font-semibold" style={{ color: "var(--brand-forest)" }}>
           Password reset! Redirecting to login...
         </p>

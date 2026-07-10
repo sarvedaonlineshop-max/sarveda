@@ -26,8 +26,12 @@ export function MobileCartBar() {
           href="/cart"
           className="flex min-h-[48px] flex-[2] items-center justify-center gap-2 rounded-lg bg-stone-800 px-4 text-amber-400 transition-colors hover:bg-stone-700"
         >
-          <span className="text-lg" aria-hidden="true">
-            🛒
+          <span aria-hidden="true">
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="8" cy="21" r="1" />
+              <circle cx="19" cy="21" r="1" />
+              <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
+            </svg>
           </span>
           <span className="font-medium">Cart</span>
           {count > 0 ? (

@@ -12,10 +12,10 @@ import { SarvedaLogo } from "@/components/brand/SarvedaLogo";
 import { MAIN_NAV_LINKS } from "@/lib/main-nav";
 
 const ANNOUNCEMENTS = [
-  "🌿  Free shipping on orders above ₹999",
-  "✨  Use WELCOME10 for 10% off your first order",
-  "🌍  Shipping to India · US · UK · Worldwide",
-  "🎵  Audio samples on all singing bowls",
+  "Free shipping on orders above ₹999",
+  "Use WELCOME10 for 10% off your first order",
+  "Shipping to India · US · UK · Worldwide",
+  "Audio samples on all singing bowls",
 ];
 
 function AnnouncementBar() {
