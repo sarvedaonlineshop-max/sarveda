@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 
+import { PolicyDocument } from "@/components/legal/PolicyDocument";
+import { getLegalPage } from "@/lib/legal-pages";
 import { canonical, isProductionSite } from "@/lib/site";
+
+const page = getLegalPage("terms");
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -14,12 +18,5 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function TermsPage() {
-  return (
-    <main className="min-h-[60vh] bg-stone-50 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-3xl rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
-        <h1 className="font-serif text-3xl font-semibold text-stone-900">Terms of Service</h1>
-        <p className="mt-4 text-stone-600">Content coming soon.</p>
-      </div>
-    </main>
-  );
+  return <PolicyDocument title={page.title} html={page.html} />;
 }

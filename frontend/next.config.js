@@ -93,12 +93,57 @@ const nextConfig = {
         permanent: true
       },
       {
+        source: "/terms-conditions/",
+        destination: "/terms",
+        permanent: true
+      },
+      {
+        source: "/terms-of-use",
+        destination: "/terms",
+        permanent: true
+      },
+      {
+        source: "/terms-of-use/",
+        destination: "/terms",
+        permanent: true
+      },
+      {
         source: "/shipping-policy",
         destination: "/shipping",
         permanent: true
       },
       {
+        source: "/shipping-policy/",
+        destination: "/shipping",
+        permanent: true
+      },
+      {
+        source: "/shipping-and-delivery-policy",
+        destination: "/shipping",
+        permanent: true
+      },
+      {
+        source: "/shipping-and-delivery-policy/",
+        destination: "/shipping",
+        permanent: true
+      },
+      {
         source: "/refund-policy",
+        destination: "/refunds",
+        permanent: true
+      },
+      {
+        source: "/refund-policy/",
+        destination: "/refunds",
+        permanent: true
+      },
+      {
+        source: "/cancellation-and-returns",
+        destination: "/refunds",
+        permanent: true
+      },
+      {
+        source: "/cancellation-and-returns/",
         destination: "/refunds",
         permanent: true
       }
