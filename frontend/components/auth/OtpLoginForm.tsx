@@ -70,7 +70,7 @@ export function OtpLoginForm({ inputClass, onSuccess, initialEmail = "" }: OtpLo
     return (
       <form className="space-y-4" onSubmit={handleVerifyOtp}>
         {info ? (
-          <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm text-amber-100">
+          <p className="rounded-xl border border-brand-gold/40 bg-brand-cream px-3 py-2.5 text-sm text-brand-ink">
             {info}
           </p>
         ) : null}
@@ -93,21 +93,21 @@ export function OtpLoginForm({ inputClass, onSuccess, initialEmail = "" }: OtpLo
           />
         </div>
         {message ? (
-          <p className="text-sm text-red-400" role="alert">
+          <p className="text-sm text-red-600" role="alert">
             {message}
           </p>
         ) : null}
         <button
           type="submit"
           disabled={submitting || code.length !== 6}
-          className="w-full rounded-xl bg-amber-500 py-3 text-sm font-semibold text-stone-900 transition-colors hover:bg-amber-400 disabled:opacity-60"
+          className="w-full rounded-full bg-brand-forest py-3 text-sm font-semibold text-brand-cream transition-colors hover:bg-brand-night disabled:opacity-60"
         >
           {submitting ? "Verifying…" : "Verify & sign in"}
         </button>
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
           <button
             type="button"
-            className="text-stone-400 hover:text-amber-400"
+            className="text-brand-muted hover:text-brand-gold"
             onClick={() => {
               setStep("email");
               setCode("");
@@ -119,7 +119,7 @@ export function OtpLoginForm({ inputClass, onSuccess, initialEmail = "" }: OtpLo
           </button>
           <button
             type="button"
-            className="text-amber-400 hover:text-amber-300 disabled:opacity-60"
+            className="text-brand-gold hover:text-brand-forest disabled:opacity-60"
             disabled={submitting}
             onClick={() => void handleResend()}
           >
@@ -152,14 +152,14 @@ export function OtpLoginForm({ inputClass, onSuccess, initialEmail = "" }: OtpLo
         />
       </div>
       {message ? (
-        <p className="text-sm text-red-400" role="alert">
+        <p className="text-sm text-red-600" role="alert">
           {message}
         </p>
       ) : null}
       <button
         type="submit"
         disabled={submitting}
-        className="w-full rounded-xl bg-amber-500 py-3 text-sm font-semibold text-stone-900 transition-colors hover:bg-amber-400 disabled:opacity-60"
+        className="w-full rounded-full bg-brand-forest py-3 text-sm font-semibold text-brand-cream transition-colors hover:bg-brand-night disabled:opacity-60"
       >
         {submitting ? "Sending…" : "Send OTP"}
       </button>

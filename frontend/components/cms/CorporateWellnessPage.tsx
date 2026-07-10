@@ -45,7 +45,7 @@ function ProgramCard({
     >
       <div className="relative p-6 text-white md:p-8">
         <h3 className="text-2xl font-bold uppercase tracking-wide md:text-3xl">{name}</h3>
-        <span className="mt-3 inline-block rounded-full bg-[#108967] px-4 py-1.5 text-xs font-medium text-white">
+        <span className="mt-3 inline-block rounded-full bg-brand-forest px-4 py-1.5 text-xs font-medium text-white">
           {subtitle}
         </span>
         <p className="mt-4 max-w-md text-sm leading-relaxed text-white/90 md:text-base">{description}</p>
@@ -108,7 +108,7 @@ export function CorporateWellnessPage({ page: _page }: Props) {
             sizes="(max-width: 768px) 100vw, 50vw"
           />
         </div>
-        <div className="flex flex-col justify-center bg-[#108967] px-8 py-12 text-white md:px-14 md:py-16">
+        <div className="flex flex-col justify-center bg-brand-forest px-8 py-12 text-white md:px-14 md:py-16">
           <h2 className="font-sans text-2xl font-semibold md:text-3xl lg:text-4xl">Immersive Wellness Retreats</h2>
           <p className="mt-5 max-w-lg text-sm leading-relaxed text-white/95 md:text-base">
             Recharge with our wellness retreats just outside the city, featuring yoga, meditation, sound healing, and
@@ -116,7 +116,7 @@ export function CorporateWellnessPage({ page: _page }: Props) {
           </p>
           <Link
             href="/retreat"
-            className="mt-8 inline-flex w-fit rounded-full bg-white px-8 py-3 text-sm font-semibold text-[#108967] transition hover:bg-stone-100"
+            className="mt-8 inline-flex w-fit rounded-full bg-white px-8 py-3 text-sm font-semibold text-brand-forest transition hover:bg-stone-100"
           >
             Know More
           </Link>
@@ -257,7 +257,7 @@ export function CorporateWellnessPage({ page: _page }: Props) {
       <section className="px-4 py-14 md:py-20 lg:px-8">
         <div className="mx-auto max-w-6xl overflow-hidden rounded-3xl border border-stone-200 bg-stone-100 shadow-sm">
           <div className="grid md:grid-cols-5">
-            <div className="bg-[#108967] p-8 text-white md:col-span-2 md:p-10">
+            <div className="bg-brand-forest p-8 text-white md:col-span-2 md:p-10">
               <h2 className="text-2xl font-semibold md:text-3xl">Get In Touch With Us</h2>
               <p className="mt-3 text-sm text-white/90">
                 Fill up the form and our Team will get back to you within 24 hours.

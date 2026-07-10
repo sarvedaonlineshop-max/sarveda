@@ -10,8 +10,8 @@ const aboutImageSrc =
 
 export function AboutPageContent() {
   return (
-    <main className="min-h-[60vh] bg-stone-50 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-5xl rounded-2xl border border-stone-200 bg-white p-8 shadow-sm sm:p-10">
+    <main className="min-h-[60vh] bg-brand-cream px-4 py-14 sm:px-6 lg:px-8 md:py-20">
+      <div className="mx-auto max-w-5xl rounded-2xl border border-brand-cream-dark bg-white p-8 shadow-card sm:p-10">
         <div className="grid gap-8 md:grid-cols-[minmax(220px,336px)_1fr] md:items-start">
           <div className="mx-auto w-full max-w-[336px] md:mx-0">
             <Image
@@ -25,8 +25,9 @@ export function AboutPageContent() {
           </div>
 
           <div>
-            <h1 className="font-serif text-3xl font-semibold text-stone-900">{aboutPage.title}</h1>
-            <div className="mt-6 border-t border-stone-100 pt-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">Our story</p>
+            <h1 className="mt-2 font-serif text-3xl font-semibold text-brand-ink">{aboutPage.title}</h1>
+            <div className="mt-6 border-t border-brand-cream-dark/60 pt-6">
               <ProductRichText html={aboutPage.html} />
             </div>
           </div>

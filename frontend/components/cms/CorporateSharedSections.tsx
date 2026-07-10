@@ -44,7 +44,7 @@ export function CorporateExplorePrograms({ excludeSlug }: { excludeSlug?: string
               }}
             >
               <div className="p-5 text-white">
-                <span className="inline-block rounded-full bg-[#108967] px-3 py-1 text-[10px] font-medium uppercase tracking-wide">
+                <span className="inline-block rounded-full bg-brand-forest px-3 py-1 text-[10px] font-medium uppercase tracking-wide">
                   {card.subtitle}
                 </span>
                 <h3 className="mt-3 text-xl font-bold uppercase">{card.name}</h3>
@@ -144,7 +144,7 @@ export function CorporateContact() {
     <section className="px-4 py-14 md:py-20 lg:px-8">
       <div className="mx-auto max-w-6xl overflow-hidden rounded-3xl border border-stone-200 bg-stone-100 shadow-sm">
         <div className="grid md:grid-cols-5">
-          <div className="bg-[#108967] p-8 text-white md:col-span-2 md:p-10">
+          <div className="bg-brand-forest p-8 text-white md:col-span-2 md:p-10">
             <h2 className="text-2xl font-semibold md:text-3xl">Get In Touch With Us</h2>
             <p className="mt-3 text-sm text-white/90">
               Fill up the form and our Team will get back to you within 24 hours.

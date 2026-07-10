@@ -25,7 +25,7 @@ export function AuthShell({
     <div
       className={
         isLight
-          ? "relative min-h-screen overflow-hidden bg-[#fdf6ed] px-4 py-12 sm:px-6 lg:py-16"
+          ? "relative min-h-screen overflow-hidden bg-brand-cream px-4 py-12 sm:px-6 lg:py-16"
           : "relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-stone-900 via-stone-950 to-black px-4 py-12 sm:px-6 lg:py-16"
       }
     >
@@ -60,12 +60,9 @@ export function AuthShell({
           <div className="mt-8">
             <Link
               href="/shop"
-              className="inline-flex min-h-[48px] items-center justify-center rounded-full px-8 text-sm font-bold tracking-wide text-brand-night shadow-gold transition-all hover:shadow-gold-lg hover:opacity-95"
-              style={{
-                background: "linear-gradient(135deg,#e8b012 0%,#f5d88a 50%,#c8960a 100%)"
-              }}
+              className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-brand-gold px-8 text-sm font-bold tracking-wide text-brand-night transition-colors hover:bg-[#a37934]"
             >
-              Shop Now
+              Shop now
             </Link>
           </div>
           <div className="mt-8 flex flex-wrap gap-3">
@@ -74,7 +71,7 @@ export function AuthShell({
                 key={label}
                 className={
                   isLight
-                    ? "rounded-full border border-amber-200 bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-brand-sage"
+                    ? "rounded-full border border-brand-gold/30 bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold"
                     : "rounded-full border border-amber-500/25 bg-amber-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-amber-200"
                 }
               >
@@ -87,7 +84,7 @@ export function AuthShell({
         <div
           className={
             isLight
-              ? "rounded-3xl border border-stone-200 bg-white p-8 shadow-xl shadow-stone-200/60 sm:p-10"
+              ? "rounded-3xl border border-brand-cream-dark bg-white p-8 shadow-card-hover sm:p-10"
               : "rounded-3xl border border-stone-700/80 bg-stone-900/90 p-8 shadow-2xl shadow-black/40 backdrop-blur-sm sm:p-10"
           }
         >
@@ -111,7 +108,7 @@ export function AuthShell({
           {footer ? (
             <div
               className={`mt-8 border-t pt-6 ${
-                isLight ? "border-stone-100" : "border-stone-800"
+                isLight ? "border-brand-cream-dark/60" : "border-stone-800"
               }`}
             >
               {footer}

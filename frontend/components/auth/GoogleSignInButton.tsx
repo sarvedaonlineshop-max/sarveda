@@ -9,7 +9,7 @@ export function GoogleSignInButton({ nextPath, label = "Continue with Google" }:
   return (
     <a
       href={googleSignInUrl(nextPath)}
-      className="inline-flex min-h-[48px] w-full items-center justify-center gap-3 rounded-xl border border-stone-600 bg-stone-950/60 px-4 py-3 text-sm font-semibold text-stone-100 transition-colors hover:border-amber-500/60 hover:bg-stone-900"
+      className="inline-flex min-h-[48px] w-full items-center justify-center gap-3 rounded-xl border border-[#E3D9C8] bg-white px-4 py-3 text-sm font-semibold text-brand-ink transition-colors hover:border-brand-gold/60 hover:bg-brand-cream"
     >
       <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
         <path

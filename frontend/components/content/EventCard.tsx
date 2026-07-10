@@ -17,37 +17,39 @@ export function EventCard({ event, compact = false }: Props) {
   return (
     <Link
       href={`/event/${event.slug}`}
-      className={`group relative block overflow-hidden rounded-sm bg-stone-900 shadow-md transition hover:shadow-xl ${heightClass}`}
+      className={`group relative block overflow-hidden rounded-3xl bg-brand-night shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover ${heightClass}`}
     >
       {event.imageUrl ? (
         <Image
           src={event.imageUrl}
           alt={event.title}
           fill
-          className="object-cover transition duration-500 group-hover:scale-[1.03]"
+          className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           unoptimized
         />
       ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-[#1e3a2f] to-[#0f1a14]" />
+        <div className="absolute inset-0 bg-forest-gradient" />
       )}
 
       <div
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.5) 45%, rgba(0,0,0,0.1) 75%, transparent 100%)"
+            "linear-gradient(to top, rgba(16,32,26,0.9) 0%, rgba(16,32,26,0.5) 45%, rgba(16,32,26,0.1) 75%, transparent 100%)"
         }}
       />
 
-      <div className="absolute inset-x-0 bottom-0 p-5 text-white md:p-6">
-        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#f5d88a]">{typeLabel}</p>
-        <h3 className="mt-2 font-serif text-lg font-semibold leading-snug md:text-xl">{event.title}</h3>
+      <div className="absolute inset-x-0 bottom-0 p-5 text-brand-cream md:p-6">
+        <span className="inline-flex rounded-full border border-brand-gold-pale/30 bg-white/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-gold-pale backdrop-blur-sm">
+          {typeLabel}
+        </span>
+        <h3 className="mt-3 font-serif text-lg font-semibold leading-snug md:text-xl">{event.title}</h3>
         {when ? (
-          <p className="mt-3 whitespace-pre-line text-sm text-white/85">{when}</p>
+          <p className="mt-3 whitespace-pre-line text-sm text-brand-cream/80">{when}</p>
         ) : null}
-        <span className="mt-4 inline-block text-sm font-semibold text-[#f5d88a] group-hover:underline">
-          Explore →
+        <span className="mt-4 inline-flex items-center rounded-full border border-brand-cream/40 px-4 py-1.5 text-xs font-semibold text-brand-cream transition-colors group-hover:border-brand-cream/70 group-hover:bg-brand-cream/10">
+          Explore event
         </span>
       </div>
     </Link>

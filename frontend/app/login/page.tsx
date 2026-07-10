@@ -16,7 +16,7 @@ import {
 } from "@/lib/auth-client";
 
 const inputClass =
-  "w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-stone-900 placeholder:text-stone-400 focus:border-amber-600 focus:outline-none focus:ring-1 focus:ring-amber-600";
+  "w-full rounded-xl border border-[#E3D9C8] bg-white px-3 py-2.5 text-brand-ink placeholder:text-brand-muted/70 focus:border-brand-forest focus:outline-none focus:ring-2 focus:ring-brand-forest/20";
 
 type LoginMode = "password" | "otp";
 
@@ -91,7 +91,7 @@ function LoginForm() {
             New here?{" "}
             <Link
               href={`/signup${next ? `?next=${encodeURIComponent(next)}` : ""}`}
-              className="font-medium text-amber-700 hover:text-amber-800"
+              className="font-medium text-brand-gold hover:text-brand-forest"
             >
               Create an account
             </Link>
@@ -101,13 +101,13 @@ function LoginForm() {
     >
       <GoogleSignInButton nextPath={googleNextPath} />
 
-      <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-stone-400">
-        <span className="h-px flex-1 bg-stone-200" />
+      <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-brand-muted">
+        <span className="h-px flex-1 bg-brand-cream-dark" />
         <span>or sign in with</span>
-        <span className="h-px flex-1 bg-stone-200" />
+        <span className="h-px flex-1 bg-brand-cream-dark" />
       </div>
 
-      <div className="mb-6 flex rounded-xl border border-stone-200 bg-stone-50 p-1">
+      <div className="mb-6 flex rounded-full border border-brand-cream-dark bg-brand-cream p-1">
         <button
           type="button"
           onClick={() => {
@@ -115,10 +115,10 @@ function LoginForm() {
             setMessage("");
             setPasswordExpired(false);
           }}
-          className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+          className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition-colors ${
             mode === "password"
-              ? "bg-amber-500 text-stone-900"
-              : "text-stone-500 hover:text-stone-800"
+              ? "bg-brand-forest text-brand-cream"
+              : "text-brand-muted hover:text-brand-ink"
           }`}
         >
           Login with Password
@@ -130,10 +130,10 @@ function LoginForm() {
             setMessage("");
             setPasswordExpired(false);
           }}
-          className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+          className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition-colors ${
             mode === "otp"
-              ? "bg-amber-500 text-stone-900"
-              : "text-stone-500 hover:text-stone-800"
+              ? "bg-brand-forest text-brand-cream"
+              : "text-brand-muted hover:text-brand-ink"
           }`}
         >
           Login with OTP
@@ -184,25 +184,25 @@ function LoginForm() {
                     ? `/forgot-password?email=${encodeURIComponent(email.trim().toLowerCase())}`
                     : "/forgot-password"
                 }
-                className="text-amber-400 hover:text-amber-300"
+                className="text-brand-gold hover:text-brand-forest"
               >
                 Forgot password?
               </Link>
             </p>
           </div>
           {passwordExpired ? (
-            <p className="text-sm text-red-400" role="alert">
+            <p className="text-sm text-red-600" role="alert">
               Password expired. Please set your new password using{" "}
               <Link
                 href={`/forgot-password?email=${encodeURIComponent(email.trim().toLowerCase())}`}
-                className="font-medium text-amber-400 underline hover:text-amber-300"
+                className="font-medium text-brand-gold underline hover:text-brand-forest"
               >
                 this link
               </Link>{" "}
               or{" "}
               <button
                 type="button"
-                className="font-medium text-amber-400 underline hover:text-amber-300"
+                className="font-medium text-brand-gold underline hover:text-brand-forest"
                 onClick={() => {
                   setMode("otp");
                   setPasswordExpired(false);
@@ -214,14 +214,14 @@ function LoginForm() {
               .
             </p>
           ) : message ? (
-            <p className="text-sm text-red-400" role="alert">
+            <p className="text-sm text-red-600" role="alert">
               {message}
             </p>
           ) : null}
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-xl bg-amber-500 py-3 text-sm font-semibold text-stone-900 transition-colors hover:bg-amber-400 disabled:opacity-60"
+            className="w-full rounded-full bg-brand-forest py-3 text-sm font-semibold text-brand-cream transition-colors hover:bg-brand-night disabled:opacity-60"
           >
             {submitting ? "Signing in…" : "Sign in"}
           </button>
@@ -235,7 +235,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-[#fdf6ed] text-stone-500">
+        <div className="flex min-h-screen items-center justify-center bg-brand-cream text-brand-muted">
           Loading…
         </div>
       }

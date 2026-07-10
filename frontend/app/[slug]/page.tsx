@@ -191,7 +191,7 @@ export default async function SlugContentPage({ params }: Props) {
     return (
       <>
         <JsonLd data={breadcrumbJsonLd(breadcrumbItems)} />
-        <div className="border-b border-stone-100 bg-stone-50">
+        <div className="border-b border-brand-cream-dark/60 bg-white">
           <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-6 lg:px-8">
             <Breadcrumbs items={uiBreadcrumbs} />
           </div>
@@ -207,7 +207,7 @@ export default async function SlugContentPage({ params }: Props) {
     return (
       <>
         <JsonLd data={breadcrumbJsonLd(breadcrumbItems)} />
-        <div className="border-b border-stone-100 bg-stone-50">
+        <div className="border-b border-brand-cream-dark/60 bg-white">
           <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-6 lg:px-8">
             <Breadcrumbs items={uiBreadcrumbs} />
           </div>
@@ -231,41 +231,43 @@ export default async function SlugContentPage({ params }: Props) {
         </div>
       </div>
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {content.kind === "blog" ? (
-          <p className="text-sm font-medium uppercase tracking-wide text-amber-800">
-            <Link href="/insights" className="hover:underline">
-              Insights
-            </Link>
-            {content.publishedAt ? (
-              <>
-                {" "}
-                · {formatPublishedDate(content.publishedAt)}
-              </>
-            ) : null}
-          </p>
-        ) : null}
-        <h1 className="font-serif text-3xl font-semibold tracking-tight text-stone-900 md:text-4xl">
-          {content.title}
-        </h1>
-        {content.kind !== "blog" && content.imageUrl ? (
-          <div className="mt-8 overflow-hidden rounded-2xl border border-stone-200">
-            <div className="relative aspect-[16/9] w-full">
-              <Image
-                src={content.imageUrl}
-                alt={`${content.title} cover image`}
-                fill
-                className="object-cover"
-                sizes="(min-width: 1024px) 896px, 100vw"
-              />
+      <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 md:py-14">
+        <div className={content.kind === "blog" ? "mx-auto max-w-prose" : undefined}>
+          {content.kind === "blog" ? (
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">
+              <Link href="/insights" className="hover:underline">
+                Insights
+              </Link>
+              {content.publishedAt ? (
+                <>
+                  {" "}
+                  · {formatPublishedDate(content.publishedAt)}
+                </>
+              ) : null}
+            </p>
+          ) : null}
+          <h1 className="mt-2 font-serif text-3xl font-semibold tracking-tight text-brand-ink md:text-4xl">
+            {content.title}
+          </h1>
+          {content.kind !== "blog" && content.imageUrl ? (
+            <div className="mt-8 overflow-hidden rounded-2xl border border-brand-cream-dark bg-[#EDE4D3]">
+              <div className="relative aspect-[16/9] w-full">
+                <Image
+                  src={content.imageUrl}
+                  alt={`${content.title} cover image`}
+                  fill
+                  className="object-cover"
+                  sizes="(min-width: 1024px) 896px, 100vw"
+                />
+              </div>
             </div>
-          </div>
-        ) : null}
-        {content.content ? (
-          <div className="mt-10 max-w-3xl">
-            <ProductRichText html={content.content} />
-          </div>
-        ) : null}
+          ) : null}
+          {content.content ? (
+            <div className="mt-10 max-w-prose">
+              <ProductRichText html={content.content} className="leading-8" />
+            </div>
+          ) : null}
+        </div>
       </main>
     </>
   );

@@ -84,7 +84,7 @@ export function CorporateContactForm() {
       <button
         type="submit"
         disabled={loading}
-        className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-stone-900 px-5 text-sm font-semibold text-amber-50 disabled:opacity-60"
+        className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full bg-brand-forest px-5 text-sm font-semibold text-brand-cream transition-colors hover:bg-brand-night disabled:opacity-60"
       >
         {loading ? "Sending…" : "Send enquiry"}
       </button>

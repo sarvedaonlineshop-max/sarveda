@@ -9,7 +9,7 @@ type Props = {
 export function ContentListingSection({ title, children, id }: Props) {
   return (
     <section id={id} className="scroll-mt-24">
-      <h2 className="font-serif text-2xl font-semibold text-stone-900 md:text-3xl">{title}</h2>
+      <h2 className="font-serif text-2xl font-semibold text-brand-ink md:text-3xl">{title}</h2>
       <div className="mt-8">{children}</div>
     </section>
   );
