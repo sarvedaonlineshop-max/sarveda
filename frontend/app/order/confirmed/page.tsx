@@ -106,9 +106,9 @@ function ConfirmedInner() {
 
   if (!orderNumber || !email) {
     return (
-      <div className="mx-auto max-w-3xl rounded-lg border border-stone-200 bg-white p-8 text-center">
+      <div className="mx-auto max-w-3xl rounded-2xl border border-brand-cream-dark bg-white p-8 text-center shadow-card">
         <p className="text-stone-600">Missing order details.</p>
-        <Link href="/shop" className="mt-6 inline-block font-medium text-sky-700 hover:underline">
+        <Link href="/shop" className="mt-6 inline-block font-medium text-brand-forest hover:underline">
           Continue shopping
         </Link>
       </div>
@@ -117,9 +117,9 @@ function ConfirmedInner() {
 
   if (!order && err) {
     return (
-      <div className="mx-auto max-w-3xl rounded-lg border border-stone-200 bg-white p-8 text-center">
+      <div className="mx-auto max-w-3xl rounded-2xl border border-brand-cream-dark bg-white p-8 text-center shadow-card">
         <p className="text-stone-600">{err}</p>
-        <Link href="/shop" className="mt-6 inline-block font-medium text-sky-700 hover:underline">
+        <Link href="/shop" className="mt-6 inline-block font-medium text-brand-forest hover:underline">
           Continue shopping
         </Link>
       </div>
@@ -144,29 +144,49 @@ function ConfirmedInner() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <nav className="text-sm text-stone-500">
-        <Link href="/profile" className="hover:text-sky-700 hover:underline">
+      <nav className="text-sm text-brand-muted">
+        <Link href="/profile" className="hover:text-brand-gold hover:underline">
           Your account
         </Link>
         <span className="mx-2">›</span>
-        <span className="text-stone-800">Order details</span>
+        <span className="text-brand-ink">Order details</span>
       </nav>
 
-      <h1 className="mt-3 text-2xl font-semibold text-stone-900">Order details</h1>
-      <p className="mt-1 text-sm text-stone-600">
-        Order placed {formatPlacedDate(order.placedAt ?? order.createdAt)} · Order number{" "}
-        <span className="font-mono font-medium text-stone-900">{order.orderNumber}</span>
-      </p>
+      {paid || isCod ? (
+        <div className="mt-6 rounded-2xl border border-brand-cream-dark bg-brand-cream p-8 text-center shadow-card">
+          <span className="mx-auto flex h-14 w-14 items-center justify-center text-brand-gold">
+            <svg viewBox="0 0 24 24" className="h-14 w-14" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <circle cx="12" cy="12" r="10" />
+              <path d="m9 12 2 2 4-4" />
+            </svg>
+          </span>
+          <h1 className="mt-4 font-serif text-3xl font-semibold text-brand-ink">Thank you for your order</h1>
+          <p className="mt-2 text-sm text-brand-muted">
+            {statusTitle(order, codFromUrl)} · Placed {formatPlacedDate(order.placedAt ?? order.createdAt)}
+          </p>
+          <span className="mt-3 inline-flex rounded-full border border-brand-cream-dark bg-brand-ivory px-3 py-1 font-mono text-xs font-semibold text-brand-forest">
+            {order.orderNumber}
+          </span>
+        </div>
+      ) : (
+        <>
+          <h1 className="mt-3 font-serif text-2xl font-semibold text-brand-ink">Order details</h1>
+          <p className="mt-1 text-sm text-brand-muted">
+            Order placed {formatPlacedDate(order.placedAt ?? order.createdAt)} · Order number{" "}
+            <span className="font-mono font-medium text-brand-ink">{order.orderNumber}</span>
+          </p>
+        </>
+      )}
 
-      <div className="mt-6 overflow-hidden rounded-lg border border-stone-200 bg-stone-50">
-        <div className="border-b border-stone-200 px-4 py-4">
-          <p className="font-semibold text-stone-900">{statusTitle(order, codFromUrl)}</p>
+      <div className="mt-6 overflow-hidden rounded-2xl border border-brand-cream-dark bg-white shadow-card">
+        <div className="border-b border-brand-cream-dark px-5 py-4">
+          <p className="font-semibold text-brand-ink">{statusTitle(order, codFromUrl)}</p>
           {isCod ? (
-            <p className="mt-1 text-sm text-stone-600">
+            <p className="mt-1 text-sm text-brand-muted">
               Pay in cash when your package arrives. Estimated delivery 5–8 business days after dispatch.
             </p>
           ) : paid ? (
-            <p className="mt-1 text-sm text-stone-600">
+            <p className="mt-1 text-sm text-brand-muted">
               Confirmation sent to <span className="font-medium">{order.email}</span>
             </p>
           ) : cancelledUnpaid ? (
@@ -184,46 +204,46 @@ function ConfirmedInner() {
           )}
         </div>
 
-        <div className="grid gap-4 border-b border-stone-200 p-4 sm:grid-cols-2">
+        <div className="grid gap-4 border-b border-brand-cream-dark p-5 sm:grid-cols-2">
           <div>
-            <p className="text-xs font-semibold uppercase text-stone-500">Payment method</p>
-            <p className="mt-2 text-sm font-medium text-stone-900">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-muted">Payment method</p>
+            <p className="mt-2 text-sm font-medium text-brand-ink">
               {isCod ? "Cash on delivery" : order.paymentProvider ?? "Online payment"}
             </p>
           </div>
           {addr ? (
             <div>
-              <p className="text-xs font-semibold uppercase text-stone-500">Ship to</p>
-              <p className="mt-2 whitespace-pre-line text-sm text-stone-800">{formatAddress(addr)}</p>
-              <p className="mt-2 text-sm text-stone-600">Phone: {addr.phone}</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-muted">Ship to</p>
+              <p className="mt-2 whitespace-pre-line text-sm text-brand-ink">{formatAddress(addr)}</p>
+              <p className="mt-2 text-sm text-brand-muted">Phone: {addr.phone}</p>
             </div>
           ) : null}
         </div>
 
-        <div className="px-4 py-4">
-          <p className="text-xs font-semibold uppercase text-stone-500">Items</p>
-          <ul className="mt-3 divide-y divide-stone-100">
+        <div className="px-5 py-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-muted">Items</p>
+          <ul className="mt-3 divide-y divide-brand-cream-dark/60">
             {order.items.map((i) => (
               <li
                 key={`${i.nameSnapshot}-${i.qtyOrdered}`}
                 className="flex flex-wrap items-start justify-between gap-3 py-3 first:pt-0"
               >
                 <div className="min-w-0">
-                  <p className="font-medium text-stone-900">{i.nameSnapshot}</p>
-                  <p className="mt-1 text-sm text-stone-600">Qty {i.qtyOrdered}</p>
+                  <p className="font-medium text-brand-ink">{i.nameSnapshot}</p>
+                  <p className="mt-1 text-sm text-brand-muted">Qty {i.qtyOrdered}</p>
                 </div>
-                <p className="text-sm font-semibold text-stone-900">{fmt(i.lineTotalInPaise)}</p>
+                <p className="text-sm font-semibold text-brand-ink">{fmt(i.lineTotalInPaise)}</p>
               </li>
             ))}
           </ul>
 
-          <dl className="mt-4 space-y-1 border-t border-stone-200 pt-4 text-sm">
-            <div className="flex justify-between text-stone-600">
+          <dl className="mt-4 space-y-1 border-t border-brand-cream-dark pt-4 text-sm">
+            <div className="flex justify-between text-brand-muted">
               <dt>Item(s) subtotal</dt>
               <dd>{fmt(order.subtotalInPaise)}</dd>
             </div>
             {(order.discountInPaise ?? 0) > 0 ? (
-              <div className="flex justify-between text-emerald-800">
+              <div className="flex justify-between text-brand-sage">
                 <dt>
                   Coupon discount
                   {order.couponCode ? (
@@ -233,16 +253,16 @@ function ConfirmedInner() {
                 <dd>−{fmt(order.discountInPaise)}</dd>
               </div>
             ) : null}
-            <div className="flex justify-between text-stone-600">
+            <div className="flex justify-between text-brand-muted">
               <dt>Shipping</dt>
               <dd>{fmt(order.shippingInPaise)}</dd>
             </div>
-            <div className="flex justify-between border-t border-stone-200 pt-2 font-semibold text-stone-900">
+            <div className="flex justify-between border-t border-brand-cream-dark pt-2 font-semibold text-brand-ink">
               <dt>{isCod ? "Grand total (COD)" : "Grand total"}</dt>
-              <dd>{fmt(order.grandTotalInPaise)}</dd>
+              <dd className="text-brand-forest">{fmt(order.grandTotalInPaise)}</dd>
             </div>
             {isIndia ? (
-              <p className="pt-1 text-xs text-stone-500">
+              <p className="pt-1 text-xs text-brand-muted">
                 GST included: ₹{(gstInPaise / 100).toLocaleString("en-IN")} ({DEFAULT_DISPLAY_GST_RATE}%)
               </p>
             ) : null}
@@ -251,9 +271,9 @@ function ConfirmedInner() {
       </div>
 
       {(order.shipments ?? []).length > 0 ? (
-        <section className="mt-6 rounded-lg border border-stone-200 bg-white p-4 text-sm">
-          <p className="font-semibold text-stone-900">Tracking</p>
-          <ul className="mt-2 space-y-2 text-stone-600">
+        <section className="mt-6 rounded-2xl border border-brand-cream-dark bg-white p-5 text-sm shadow-card">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-muted">Tracking</p>
+          <ul className="mt-2 space-y-2 text-brand-muted">
             {order.shipments.map((s) => (
               <li key={s.id}>
                 {s.courier}
@@ -261,7 +281,7 @@ function ConfirmedInner() {
                   <>
                     {" "}
                     · AWB {s.awb}{" "}
-                    <Link href={`/track/${encodeURIComponent(s.awb)}`} className="font-medium text-sky-700 underline">
+                    <Link href={`/track/${encodeURIComponent(s.awb)}`} className="font-medium text-brand-forest hover:underline">
                       Track package
                     </Link>
                   </>
@@ -282,7 +302,7 @@ function ConfirmedInner() {
         {pendingPayment ? (
           <Link
             href={checkoutResumeHref}
-            className="inline-flex min-h-[40px] items-center justify-center rounded-full bg-stone-900 px-6 text-sm font-semibold text-amber-400 hover:bg-stone-700"
+            className="inline-flex min-h-[40px] items-center justify-center rounded-full bg-brand-forest px-6 text-sm font-semibold text-brand-cream transition-colors hover:bg-brand-night"
           >
             Complete payment
           </Link>
@@ -290,14 +310,14 @@ function ConfirmedInner() {
         {cancelledUnpaid ? (
           <Link
             href={reorderHref}
-            className="inline-flex min-h-[40px] items-center justify-center rounded-full bg-stone-900 px-6 text-sm font-semibold text-amber-400 hover:bg-stone-700"
+            className="inline-flex min-h-[40px] items-center justify-center rounded-full bg-brand-forest px-6 text-sm font-semibold text-brand-cream transition-colors hover:bg-brand-night"
           >
             Reorder same items
           </Link>
         ) : null}
         <Link
           href="/shop"
-          className="inline-flex min-h-[40px] items-center justify-center rounded-full bg-amber-500 px-6 text-sm font-semibold text-stone-900 hover:bg-amber-400"
+          className="inline-flex min-h-[40px] items-center justify-center rounded-full bg-brand-forest px-6 text-sm font-semibold text-brand-cream transition-colors hover:bg-brand-night"
         >
           Continue shopping
         </Link>
@@ -314,14 +334,14 @@ function ConfirmedInner() {
                 })
                 .finally(() => setInvoiceBusy(false));
             }}
-            className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-stone-300 px-6 text-sm font-medium text-stone-800 hover:bg-stone-50 disabled:opacity-60"
+            className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-brand-forest/25 px-6 text-sm font-medium text-brand-forest hover:bg-brand-forest/5 disabled:opacity-60"
           >
             {invoiceBusy ? "Preparing PDF…" : "Download GST invoice"}
           </button>
         ) : null}
         <Link
           href="/profile"
-          className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-stone-300 px-6 text-sm font-medium text-stone-800 hover:bg-stone-50"
+          className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-brand-forest/25 px-6 text-sm font-medium text-brand-forest hover:bg-brand-forest/5"
         >
           Your orders
         </Link>
@@ -332,7 +352,7 @@ function ConfirmedInner() {
 
 export default function OrderConfirmedPage() {
   return (
-    <main className="min-h-screen bg-white px-4 py-8 sm:px-6">
+    <main className="min-h-screen bg-brand-cream px-4 py-8 sm:px-6">
       <Suspense fallback={<p className="text-center text-stone-500">Loading…</p>}>
         <ConfirmedInner />
       </Suspense>

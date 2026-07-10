@@ -52,6 +52,15 @@ function checkoutResumeHref(orderNumber: string, email: string): string {
   return `/checkout?${new URLSearchParams({ orderNumber, email }).toString()}`;
 }
 
+/** Visual-only pill tone for the status headline (maps existing statuses only). */
+function statusPillClass(title: string): string {
+  const t = title.toLowerCase();
+  if (t === "delivered") return "bg-brand-forest text-brand-cream";
+  if (t === "cancelled" || t === "refunded") return "bg-brand-cream-dark text-brand-muted";
+  // Shipped / Processing / Order placed / Payment pending → brass
+  return "border border-brand-gold/40 bg-brand-gold/15 text-[#8a6526]";
+}
+
 function orderAccessEmail(order: OrderSummary, accountEmail?: string): string {
   const raw = order.email?.trim() || accountEmail?.trim() || "";
   return raw.toLowerCase();
@@ -93,49 +102,51 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
   const deliveryPartner = order.deliveryPartner?.trim() || null;
 
   return (
-    <article className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
-      {/* ── Meta strip (removed duplicate "View order details" link) ── */}
-      <div className="grid gap-2 border-b border-stone-200 bg-stone-100 px-4 py-3 text-xs text-stone-600 sm:grid-cols-2 lg:grid-cols-4">
+    <article className="overflow-hidden rounded-2xl border border-brand-cream-dark bg-white shadow-card">
+      {/* ── Meta row (removed duplicate "View order details" link) ── */}
+      <div className="grid gap-2 border-b border-brand-cream-dark px-5 pb-3 pt-4 text-xs sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <p className="font-semibold uppercase tracking-wide text-stone-500">Order placed</p>
-          <p className="mt-0.5 font-medium text-stone-900">
+          <p className="font-semibold uppercase tracking-[0.14em] text-brand-muted">Order placed</p>
+          <p className="mt-0.5 font-medium text-brand-ink">
             {formatPlacedDate(order.placedAt ?? order.createdAt)}
           </p>
         </div>
         <div>
-          <p className="font-semibold uppercase tracking-wide text-stone-500">Total</p>
-          <p className="mt-0.5 font-medium text-stone-900">{totalLabel}</p>
+          <p className="font-semibold uppercase tracking-[0.14em] text-brand-muted">Total</p>
+          <p className="mt-0.5 font-medium text-brand-ink">{totalLabel}</p>
         </div>
         <div>
-          <p className="font-semibold uppercase tracking-wide text-stone-500">Ship to</p>
-          <p className="mt-0.5 font-medium text-stone-900">{shipToLabel(order, accountEmail, shipToName)}</p>
+          <p className="font-semibold uppercase tracking-[0.14em] text-brand-muted">Ship to</p>
+          <p className="mt-0.5 font-medium text-brand-ink">{shipToLabel(order, accountEmail, shipToName)}</p>
         </div>
         <div className="sm:text-right">
-          <p className="font-semibold uppercase tracking-wide text-stone-500">Order #</p>
-          <p className="mt-0.5 font-mono text-stone-900">{order.orderNumber}</p>
+          <p className="font-semibold uppercase tracking-[0.14em] text-brand-muted">Order #</p>
+          <p className="mt-0.5 font-mono text-brand-ink">{order.orderNumber}</p>
           {/* ↑ "View order details" link removed from here — it was duplicated below */}
         </div>
       </div>
 
       {/* ── Body ── */}
-      <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
-          <p className="text-base font-semibold text-stone-900">{title}</p>
-          {sub ? <p className="mt-1 text-sm text-stone-600">{sub}</p> : null}
-          <p className="mt-3 text-sm text-stone-800">
-            <Link href={detailsHref} className="text-sky-700 hover:underline">
+          <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusPillClass(title)}`}>
+            {title}
+          </span>
+          {sub ? <p className="mt-2 text-sm text-brand-muted">{sub}</p> : null}
+          <p className="mt-3 text-sm">
+            <Link href={detailsHref} className="font-medium text-brand-forest hover:underline">
               {order.headline}
             </Link>
           </p>
-          <p className="mt-1 text-xs text-stone-500">
+          <p className="mt-1 text-xs text-brand-muted">
             {order.itemCount} item{order.itemCount === 1 ? "" : "s"}
           </p>
           {canTrackCourier && deliveryPartner ? (
-            <p className="mt-2 text-xs text-stone-600">
+            <p className="mt-2 text-xs text-brand-muted">
               Delivery partner:{" "}
-              <span className="font-semibold text-stone-800">{deliveryPartner}</span>
+              <span className="font-semibold text-brand-ink">{deliveryPartner}</span>
               {order.awb ? (
-                <span className="mt-0.5 block font-mono text-[11px] text-stone-500">AWB {order.awb}</span>
+                <span className="mt-0.5 block font-mono text-[11px] text-brand-muted">AWB {order.awb}</span>
               ) : null}
             </p>
           ) : null}
@@ -147,13 +158,13 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
             <>
               <Link
                 href={payHref}
-                className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-stone-900 px-4 text-sm font-medium text-amber-400 hover:bg-stone-700"
+                className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-brand-forest px-4 text-sm font-medium text-brand-cream transition-colors hover:bg-brand-night"
               >
                 Complete payment
               </Link>
               <Link
                 href={detailsHref}
-                className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-stone-300 bg-white px-4 text-sm font-medium text-stone-800 hover:bg-stone-50"
+                className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-brand-forest/25 bg-white px-4 text-sm font-medium text-brand-forest hover:bg-brand-forest/5"
               >
                 View order details
               </Link>
@@ -167,13 +178,13 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
                   if (!email) return;
                   router.push(checkoutReorderUrl(order.orderNumber, email));
                 }}
-                className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-stone-900 px-4 text-sm font-medium text-amber-400 hover:bg-stone-700 disabled:opacity-60"
+                className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-brand-forest px-4 text-sm font-medium text-brand-cream transition-colors hover:bg-brand-night disabled:opacity-60"
               >
                 Reorder items
               </button>
               <Link
                 href={cancelledDetailsHref}
-                className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-stone-300 bg-white px-4 text-sm font-medium text-stone-800 hover:bg-stone-50"
+                className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full px-4 text-sm text-brand-muted hover:text-brand-forest"
               >
                 Why cancelled?
               </Link>
@@ -185,14 +196,14 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
                   href={courierTrackUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-sky-700 bg-sky-50 px-4 text-sm font-medium text-sky-900 no-underline hover:bg-sky-100"
+                  className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-brand-forest px-4 text-sm font-medium text-brand-cream no-underline transition-colors hover:bg-brand-night"
                 >
                   Track package
                 </a>
               ) : (
                 <Link
                   href={detailsHref}
-                  className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-stone-900 px-4 text-sm font-medium text-white hover:bg-stone-700"
+                  className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-brand-forest/25 bg-white px-4 text-sm font-medium text-brand-forest hover:bg-brand-forest/5"
                 >
                   View order details
                 </Link>
@@ -204,9 +215,9 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
           {paid ? (
             <a
               href={orderInvoiceDownloadUrl(order.orderNumber, email)}
-              className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-stone-300 bg-white px-4 text-sm font-medium text-stone-800 hover:bg-stone-50"
+              className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-brand-forest/25 bg-white px-4 text-sm font-medium text-brand-forest hover:bg-brand-forest/5"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                 <polyline points="14 2 14 8 20 8"/>
                 <line x1="16" y1="13" x2="8" y2="13"/>
@@ -219,7 +230,7 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
           {/* Need help? */}
           <Link
             href={`/contact?orderNumber=${encodeURIComponent(order.orderNumber)}`}
-            className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full px-4 text-sm text-stone-400 hover:text-stone-600"
+            className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full px-4 text-sm text-brand-muted hover:text-brand-forest"
           >
             Need help?
           </Link>
