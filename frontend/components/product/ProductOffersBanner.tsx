@@ -35,14 +35,14 @@ export function ProductOffersBanner() {
       {offers.map((offer) => (
         <div
           key={offer.code}
-          className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-950"
+          className="inline-flex items-center gap-2 rounded-xl border border-brand-gold/40 bg-brand-cream px-3 py-2 text-sm text-brand-ink"
         >
-          <span className="rounded bg-emerald-600 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-white">
+          <span className="rounded-full border border-brand-cream-dark bg-brand-ivory px-2 py-0.5 font-mono text-xs font-semibold text-brand-forest">
             {offer.code}
           </span>
           <span className="font-semibold">{offer.label}</span>
           {offer.description ? (
-            <span className="text-xs text-emerald-800/80">— {offer.description}</span>
+            <span className="text-xs text-brand-muted">— {offer.description}</span>
           ) : null}
         </div>
       ))}

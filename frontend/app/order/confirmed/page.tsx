@@ -180,7 +180,9 @@ function ConfirmedInner() {
 
       <div className="mt-6 overflow-hidden rounded-2xl border border-brand-cream-dark bg-white shadow-card">
         <div className="border-b border-brand-cream-dark px-5 py-4">
-          <p className="font-semibold text-brand-ink">{statusTitle(order, codFromUrl)}</p>
+          <p className="font-semibold text-brand-ink">
+            {paid || isCod ? "Order details" : statusTitle(order, codFromUrl)}
+          </p>
           {isCod ? (
             <p className="mt-1 text-sm text-brand-muted">
               Pay in cash when your package arrives. Estimated delivery 5–8 business days after dispatch.

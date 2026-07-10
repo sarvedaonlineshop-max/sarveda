@@ -104,6 +104,43 @@ body {
   .anim-delay-400 { animation-delay: 400ms; }
 }
 
+/* ─── Product rich text: brass check bullets ───────────────────── */
+.rich-features ul {
+  list-style: none;
+  padding-left: 0;
+}
+.rich-features ul li,
+.rich-features .sarveda-acc-ul .sarveda-acc-li {
+  position: relative;
+  padding-left: 1.75rem;
+  list-style: none;
+}
+.rich-features ul li::before,
+.rich-features .sarveda-acc-ul .sarveda-acc-li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.3em;
+  width: 1rem;
+  height: 1rem;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23B98A3E' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+.rich-features ul li::marker {
+  content: "";
+}
+
+/* ─── Autofill: warm white instead of browser blue ─────────────── */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px #fffdf7 inset;
+  box-shadow: 0 0 0 1000px #fffdf7 inset;
+  -webkit-text-fill-color: var(--brand-ink);
+  caret-color: var(--brand-ink);
+}
+
 /* ─── Keyframes ────────────────────────────────────────────────── */
 @keyframes goldShimmer {
   0%   { background-position: 0% center;   }

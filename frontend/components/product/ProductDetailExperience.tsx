@@ -15,7 +15,7 @@ import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductReviewsSection } from "@/components/product/ProductReviewsSection";
 import { ProductRichText } from "@/components/product/ProductRichText";
 import { PriceDisplay } from "@/components/product/PriceDisplay";
-import { fetchProductBySlug } from "@/lib/api";
+import { fetchProductBySlug, getApiBase } from "@/lib/api";
 import { cartAdd } from "@/lib/cart-api";
 import { usePricingZone } from "@/hooks/usePricingZone";
 import { unitSaleMinor, zoneToCurrency } from "@/lib/currency";
@@ -61,6 +61,24 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
   const [qty, setQty] = useState(1);
   const zone = usePricingZone();
   const [addedFlash, setAddedFlash] = useState(false);
+  const [reviewSummary, setReviewSummary] = useState<{ total: number; average: number } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch(`${getApiBase()}/api/reviews/${product.id}`)
+      .then((res) => res.json())
+      .then((data: { total?: number; average?: number }) => {
+        if (!cancelled) {
+          setReviewSummary({ total: data.total ?? 0, average: data.average ?? 0 });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setReviewSummary(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [product.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -223,13 +241,35 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
 
             <ProductOffersBanner />
 
-            <div className="flex items-center gap-1 text-sm text-brand-muted" aria-label="No reviews yet">
+            <div
+              className="flex items-center gap-1 text-sm text-brand-muted"
+              aria-label={
+                reviewSummary && reviewSummary.total > 0
+                  ? `Rated ${reviewSummary.average.toFixed(1)} out of 5 from ${reviewSummary.total} reviews`
+                  : "No reviews yet"
+              }
+            >
               {Array.from({ length: 5 }).map((_, i) => (
-                <svg key={i} className="h-4 w-4 text-brand-cream-dark" fill="currentColor" viewBox="0 0 20 20">
+                <svg
+                  key={i}
+                  className={`h-4 w-4 ${
+                    reviewSummary && i < Math.round(reviewSummary.average)
+                      ? "text-brand-gold"
+                      : "text-brand-cream-dark"
+                  }`}
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                 </svg>
               ))}
-              <span className="ml-1">0 out of 0 reviews</span>
+              <span className="ml-1">
+                {reviewSummary == null
+                  ? ""
+                  : reviewSummary.total > 0
+                    ? `${reviewSummary.average.toFixed(1)} out of 5 (${reviewSummary.total} review${reviewSummary.total === 1 ? "" : "s"})`
+                    : "No reviews yet"}
+              </span>
             </div>
 
             <div>
@@ -305,7 +345,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
             type="button"
             onClick={() => void add()}
             disabled={addDisabled}
-            className="min-h-[44px] rounded-full border border-brand-forest px-4 text-xs font-semibold uppercase text-brand-forest"
+            className="min-h-[44px] rounded-full border border-brand-forest px-4 text-xs font-semibold text-brand-forest"
           >
             Add
           </button>
@@ -313,7 +353,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
             type="button"
             onClick={() => void buyNow()}
             disabled={addDisabled}
-            className="min-h-[44px] flex-1 rounded-full bg-brand-forest px-4 text-xs font-semibold uppercase text-brand-cream"
+            className="min-h-[44px] flex-1 rounded-full bg-brand-forest px-4 text-xs font-semibold text-brand-cream"
           >
             Buy now
           </button>

@@ -155,7 +155,7 @@ export function ProductGallery({
         )}
 
         {zoomEnabled ? (
-          <span className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-brand-ivory/90 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wide text-brand-muted shadow-sm">
+          <span className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-brand-ivory/85 px-2.5 py-1 text-[9px] font-medium uppercase tracking-[0.18em] text-brand-muted">
             Hover to zoom
           </span>
         ) : null}

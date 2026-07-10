@@ -301,7 +301,7 @@ export function ProductBuyBox({
             disabled={addDisabled}
             className={
               isInline
-                ? "min-h-[52px] w-full rounded-full bg-brand-forest px-6 text-sm font-semibold uppercase tracking-wide text-brand-cream transition-colors hover:bg-brand-night disabled:cursor-not-allowed disabled:opacity-50"
+                ? "min-h-[52px] w-full rounded-full bg-brand-forest px-6 text-sm font-semibold tracking-wide text-brand-cream transition-colors hover:bg-brand-night disabled:cursor-not-allowed disabled:opacity-50"
                 : "mt-4 w-full rounded-lg bg-[#108967] py-3.5 text-sm font-semibold uppercase tracking-wide text-white shadow-sm transition hover:bg-[#0d7353] disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500"
             }
           >
@@ -313,7 +313,7 @@ export function ProductBuyBox({
               type="button"
               onClick={onBuyNow}
               disabled={addDisabled}
-              className="min-h-[52px] w-full rounded-full bg-brand-gold px-6 text-sm font-semibold uppercase tracking-wide text-brand-night transition-colors hover:bg-[#a37934] disabled:cursor-not-allowed disabled:opacity-50"
+              className="min-h-[52px] w-full rounded-full bg-brand-gold px-6 text-sm font-semibold tracking-wide text-brand-night transition-colors hover:bg-[#a37934] disabled:cursor-not-allowed disabled:opacity-50"
             >
               Buy it now
             </button>

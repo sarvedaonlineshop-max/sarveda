@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { getApiBase } from "@/lib/api";
+import { decodeHtmlEntities } from "@/lib/sanitize-html";
 import { fetchMe, type PublicUser } from "@/lib/auth-client";
 import { countryDisplayName, countryFlagEmoji, countryFlagImageUrl } from "@/lib/country-flag";
 import { zoneToReviewerCountry } from "@/lib/currency";
@@ -46,7 +47,7 @@ function Stars({
             onMouseLeave={() => interactive && setHover(0)}
             style={{
               fontSize: interactive ? "24px" : "16px",
-              color: filled ? "#c8960a" : "#e0d8ce",
+              color: filled ? "var(--brand-gold)" : "var(--brand-cream-dark)",
               cursor: interactive ? "pointer" : "default",
               transition: "color 0.1s"
             }}
@@ -258,8 +259,9 @@ export function ProductReviewsSection({ productId }: Props) {
                       style={{
                         fontSize: "10px",
                         fontWeight: 600,
-                        color: "#166534",
-                        background: "#dcfce7",
+                        color: "var(--brand-forest)",
+                        background: "rgba(28,53,42,0.08)",
+                        border: "1px solid rgba(28,53,42,0.15)",
                         padding: "2px 7px",
                         borderRadius: "999px",
                         marginLeft: "8px"
@@ -287,7 +289,7 @@ export function ProductReviewsSection({ productId }: Props) {
                     marginTop: "6px"
                   }}
                 >
-                  {r.title}
+                  {decodeHtmlEntities(r.title)}
                 </p>
               )}
               {r.body && (
@@ -299,7 +301,7 @@ export function ProductReviewsSection({ productId }: Props) {
                     lineHeight: 1.65
                   }}
                 >
-                  {r.body}
+                  {decodeHtmlEntities(r.body)}
                 </p>
               )}
             </article>
@@ -328,7 +330,7 @@ export function ProductReviewsSection({ productId }: Props) {
             marginBottom: "14px"
           }}
         >
-          Write a Review
+          Write a review
         </h3>
 
         {!sessionChecked ? (
@@ -359,13 +361,13 @@ export function ProductReviewsSection({ productId }: Props) {
         ) : submitted ? (
           <div
             style={{
-              background: "#dcfce7",
-              border: "1px solid #bbf7d0",
+              background: "rgba(28,53,42,0.07)",
+              border: "1px solid rgba(28,53,42,0.15)",
               borderRadius: "8px",
               padding: "12px 16px"
             }}
           >
-            <p style={{ fontSize: "13px", color: "#166534", fontWeight: 600 }}>
+            <p style={{ fontSize: "13px", color: "var(--brand-forest)", fontWeight: 600 }}>
               Thank you for your review!
             </p>
           </div>
@@ -449,7 +451,7 @@ export function ProductReviewsSection({ productId }: Props) {
                 opacity: submitting ? 0.6 : 1
               }}
             >
-              {submitting ? "Submitting..." : "Submit Review"}
+              {submitting ? "Submitting…" : "Submit review"}
             </button>
           </form>
         )}

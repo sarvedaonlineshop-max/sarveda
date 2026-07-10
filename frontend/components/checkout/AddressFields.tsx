@@ -27,16 +27,7 @@ function FieldFeedback({
   message?: string | null;
   state: "idle" | "valid" | "invalid";
 }) {
-  if (state === "valid") {
-    return (
-      <p className="mt-1 flex items-center gap-1.5 text-xs text-emerald-700" role="status">
-        <span aria-hidden className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold">
-          ✓
-        </span>
-        Looks good
-      </p>
-    );
-  }
+  // Valid fields show only the inline ✓ suffix — no "Looks good" text row.
   if (state === "invalid" && message) {
     return (
       <p className="mt-1 flex items-start gap-1.5 text-xs text-red-600" role="alert">
