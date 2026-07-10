@@ -5,6 +5,7 @@ import { whatsAppSiteUrl } from "@/lib/enquiry";
 
 const footerLinks = {
   explore: [
+    { label: "About",        href: "/about"     },
     { label: "Shop All",     href: "/shop"      },
     { label: "Courses", href: "/courses" },
     { label: "Events", href: "/events" },

@@ -27,7 +27,6 @@ function rewriteLinks(html: string): string {
     .replace(/<span style="color: #e87e04;">/gi, "")
     .replace(/<\/span>/gi, "")
     .replace(/⸻/g, "<hr />")
-    .replace(/Join Our Email List[\s\S]*$/i, "")
     .trim();
 }
 
