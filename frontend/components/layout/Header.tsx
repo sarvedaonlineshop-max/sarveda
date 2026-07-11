@@ -89,6 +89,9 @@ export function Header() {
   ) return null;
 
   const hideOnMobile = pathname ? immersiveMobileRoutes.has(pathname) : false;
+  // Shop/category pages use a fixed app-shell layout: the announcement bar stays
+  // pinned instead of scrolling away, so only the product grid area scrolls.
+  const isShopPage = pathname === "/shop" || (pathname?.startsWith("/product-category/") ?? false);
   const displayName  = sessionUser?.name?.trim() || sessionUser?.email?.split("@")[0];
 
   async function handleSignOut() {
@@ -102,14 +105,16 @@ export function Header() {
     <>
     {/* Announcement Bar — wrapped separately so it doesn't share a (short) containing
         block with the sticky header below; a sticky element can never stay pinned past
-        the point where its own parent box has scrolled out of view. */}
-    <div className={hideOnMobile ? "hidden md:block" : ""}>
+        the point where its own parent box has scrolled out of view. On shop pages it
+        stays pinned too (via its own independent sticky, still a sibling of header so
+        neither one's stickiness is constrained by the other's box). */}
+    <div className={`${hideOnMobile ? "hidden md:block" : ""} ${isShopPage ? "sticky top-0 z-50" : ""}`}>
       <AnnouncementBar />
     </div>
 
     {/* Main Header */}
     <header
-      className={`sticky top-0 z-50 border-b border-brand-forest/10 bg-brand-cream/95 shadow-sm ${hideOnMobile ? "hidden md:block" : ""}`}
+      className={`sticky z-50 border-b border-brand-forest/10 bg-brand-cream/95 shadow-sm ${isShopPage ? "top-8" : "top-0"} ${hideOnMobile ? "hidden md:block" : ""}`}
       style={{ backdropFilter: "blur(12px)" }}
     >
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">

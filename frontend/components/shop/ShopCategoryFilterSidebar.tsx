@@ -20,16 +20,12 @@ export function ShopCategoryFilterSidebar({ categories, selectedSlug, onSelect }
     defaultOpenBranchSlug(sorted, selectedSlug)
   );
 
-  function toggle(slug: string) {
-    setOpenSlug((prev) => (prev === slug ? null : slug));
-  }
-
   function open(slug: string) {
     setOpenSlug(slug);
   }
 
   return (
-    <aside className="flex max-h-[calc(100dvh-8rem)] flex-col overflow-hidden rounded-2xl border border-brand-cream-dark bg-white shadow-card">
+    <aside className="flex h-full flex-col overflow-hidden rounded-2xl border border-brand-cream-dark bg-white shadow-card">
       <div className="flex-shrink-0 border-b border-brand-cream-dark/60 p-5 pb-3">
         <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-gold">Browse</p>
         <h2 className="mt-1 font-serif text-lg font-semibold text-brand-ink">Categories</h2>
@@ -57,7 +53,6 @@ export function ShopCategoryFilterSidebar({ categories, selectedSlug, onSelect }
           depth={0}
           onSelect={onSelect}
           openSlug={openSlug}
-          onToggle={toggle}
           onOpen={open}
         />
       </div>

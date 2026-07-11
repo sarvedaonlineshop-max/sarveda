@@ -8,20 +8,14 @@ type Props = {
   nodes: CategoryNode[];
   selectedSlug: string | undefined;
   depth: number;
-  showActiveDot?: boolean;
   onNavigate?: () => void;
   /** Client-side category switch — keeps header/sidebar/footer mounted, no full page reload. */
   onSelect?: (slug: string | undefined) => void;
   /** Accordion: which top-level slug is currently open (only one at a time). */
   openSlug?: string | null;
-  /** Chevron click — toggles open/closed. */
-  onToggle?: (slug: string) => void;
-  /** Category name click — always opens its own branch (closing siblings). */
+  /** Fires on any category click — opens its own branch (closing siblings). */
   onOpen?: (slug: string) => void;
 };
-
-const linkBase =
-  "block min-h-[30px] rounded-md py-1 pl-2 pr-2 text-sm leading-snug transition-colors duration-150";
 
 /** A handful of real subcategories are literally named "All" — the parent category
  *  link already shows everything, so this redundant child is hidden from the tree. */
@@ -33,11 +27,9 @@ export function CategoryNavTree({
   nodes,
   selectedSlug,
   depth,
-  showActiveDot = true,
   onNavigate,
   onSelect,
   openSlug,
-  onToggle,
   onOpen
 }: Props) {
   const visible = depth === 0 ? nodes : visibleChildren(nodes);
@@ -47,7 +39,7 @@ export function CategoryNavTree({
       className={
         depth === 0
           ? "space-y-0.5"
-          : "ml-1 mt-0.5 space-y-0 border-l-2 border-brand-cream-dark pl-3"
+          : "ml-3 mt-0.5 space-y-0 border-l-2 border-brand-cream-dark pl-3"
       }
     >
       {visible.map((cat) => {
@@ -56,64 +48,34 @@ export function CategoryNavTree({
         const hasChildren = children.length > 0;
         const isParent = depth === 0;
         const isOpen = isParent ? openSlug === cat.slug : true;
+        const showAsOpenBranch = isParent && hasChildren && isOpen && !active;
 
         return (
           <li key={cat.id}>
-            <div className="flex items-stretch gap-0.5">
-              {hasChildren && isParent ? (
-                <button
-                  type="button"
-                  onClick={() => onToggle?.(cat.slug)}
-                  className="flex w-6 shrink-0 items-center justify-center rounded-md text-brand-muted transition-colors duration-150 hover:bg-brand-cream hover:text-brand-forest"
-                  aria-expanded={isOpen}
-                  aria-label={isOpen ? `Collapse ${cat.name}` : `Expand ${cat.name}`}
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    className={`h-3.5 w-3.5 transition-transform duration-200 ease-out ${isOpen ? "rotate-90" : ""}`}
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden
-                  >
-                    <path d="m9 18 6-6-6-6" />
-                  </svg>
-                </button>
-              ) : (
-                <span className="w-6 shrink-0" aria-hidden />
-              )}
-              <Link
-                href={`/product-category/${encodeURIComponent(cat.slug)}`}
-                onClick={(e) => {
-                  if (onSelect) {
-                    e.preventDefault();
-                    onSelect(cat.slug);
-                  }
-                  if (isParent && hasChildren) onOpen?.(cat.slug);
-                  onNavigate?.();
-                }}
-                className={`${linkBase} flex-1 ${
-                  isParent
-                    ? active
-                      ? "bg-brand-forest/10 font-bold text-brand-forest"
+            <Link
+              href={`/product-category/${encodeURIComponent(cat.slug)}`}
+              onClick={(e) => {
+                if (onSelect) {
+                  e.preventDefault();
+                  onSelect(cat.slug);
+                }
+                if (isParent && hasChildren) onOpen?.(cat.slug);
+                onNavigate?.();
+              }}
+              className={`block min-h-[30px] rounded-md px-2.5 py-1 text-sm leading-snug transition-colors duration-150 ${
+                isParent
+                  ? active
+                    ? "bg-brand-forest font-semibold text-brand-cream"
+                    : showAsOpenBranch
+                      ? "bg-brand-cream font-semibold text-brand-forest"
                       : "font-semibold text-brand-forest hover:bg-brand-cream"
-                    : active
-                      ? "bg-brand-forest/5 font-medium text-brand-forest"
-                      : "text-brand-muted hover:bg-brand-cream hover:text-brand-ink"
-                }`}
-              >
-                <span className="flex items-start gap-1.5">
-                  {active && showActiveDot ? (
-                    <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-brand-gold" aria-hidden />
-                  ) : (
-                    <span className="mt-1.5 w-1.5 flex-shrink-0" aria-hidden />
-                  )}
-                  <span>{cat.name}</span>
-                </span>
-              </Link>
-            </div>
+                  : active
+                    ? "bg-brand-forest/10 font-medium text-brand-forest"
+                    : "text-brand-muted hover:bg-brand-cream hover:text-brand-ink"
+              }`}
+            >
+              {cat.name}
+            </Link>
             {hasChildren ? (
               <div
                 className="grid overflow-hidden transition-[grid-template-rows] duration-200 ease-out"
@@ -124,7 +86,6 @@ export function CategoryNavTree({
                     nodes={children}
                     selectedSlug={selectedSlug}
                     depth={depth + 1}
-                    showActiveDot={showActiveDot}
                     onNavigate={onNavigate}
                     onSelect={onSelect}
                     onOpen={onOpen}

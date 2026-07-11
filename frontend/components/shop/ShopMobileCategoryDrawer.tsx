@@ -22,10 +22,6 @@ export function ShopMobileCategoryDrawer({ categories, selectedSlug, onSelect }:
     defaultOpenBranchSlug(sorted, selectedSlug)
   );
 
-  function toggle(slug: string) {
-    setOpenSlug((prev) => (prev === slug ? null : slug));
-  }
-
   function openBranch(slug: string) {
     setOpenSlug(slug);
   }
@@ -81,7 +77,6 @@ export function ShopMobileCategoryDrawer({ categories, selectedSlug, onSelect }:
               onSelect={onSelect}
               onNavigate={() => setOpen(false)}
               openSlug={openSlug}
-              onToggle={toggle}
               onOpen={openBranch}
             />
           </div>

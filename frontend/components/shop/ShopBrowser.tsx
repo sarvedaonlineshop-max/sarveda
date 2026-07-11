@@ -119,7 +119,7 @@ export function ShopBrowser({
   const activeCategoryName = categorySlug ? categoryNames.get(categorySlug) ?? categorySlug : null;
 
   return (
-    <main className="mx-auto max-w-7xl pb-16 pt-4 md:px-4 md:pb-14 md:pt-6 lg:px-8">
+    <main className="mx-auto max-w-7xl pb-16 pt-4 md:px-4 md:pb-0 md:pt-0 lg:px-8">
       <h1 className="sr-only">{activeCategoryName ?? "Shop"}</h1>
       <ShopMobileCategoryDrawer
         categories={categories}
@@ -127,8 +127,12 @@ export function ShopBrowser({
         onSelect={handleSelectCategory}
       />
 
-      <div className="flex flex-col lg:flex-row lg:items-start lg:gap-10">
-        <div className="hidden lg:block lg:sticky lg:top-24 lg:w-72 lg:flex-shrink-0 lg:self-start">
+      {/* Below lg: normal page scroll, toolbar stays sticky as the page moves.
+          At lg+: a fixed app shell — this row is bounded to the viewport (minus
+          the pinned announcement bar + header + slim footer), so only the
+          sidebar and product grid scroll internally; header/toolbar never move. */}
+      <div className="flex flex-col lg:h-[calc(100dvh-140px)] lg:flex-row lg:items-stretch lg:gap-10 lg:py-6">
+        <div className="hidden lg:flex lg:h-full lg:w-72 lg:flex-shrink-0 lg:flex-col lg:overflow-hidden">
           <ShopCategoryFilterSidebar
             categories={categories}
             selectedSlug={categorySlug}
@@ -136,10 +140,10 @@ export function ShopBrowser({
           />
         </div>
 
-        <div className="min-w-0 flex-1">
-          {/* Sticky toolbar: search + active filter pills + result count stay pinned
-              just below the header while the grid below scrolls. */}
-          <div className="sticky top-16 z-30 border-b border-brand-cream-dark/60 bg-brand-cream/95 px-3 pb-2 pt-2 backdrop-blur md:top-24 md:rounded-t-2xl md:px-0">
+        <div className="min-w-0 flex-1 lg:flex lg:h-full lg:flex-col lg:overflow-hidden">
+          {/* Toolbar: sticky while the mobile page scrolls; a fixed, non-scrolling
+              header of the column once the lg+ shell takes over. */}
+          <div className="sticky top-16 z-30 border-b border-brand-cream-dark/60 bg-brand-cream/95 px-3 pb-2 pt-2 backdrop-blur md:top-24 md:rounded-t-2xl md:px-0 lg:static lg:top-auto lg:shrink-0 lg:z-auto">
             <ShopSearchBar value={searchQ} onSearch={handleSearch} />
 
             <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
@@ -185,7 +189,7 @@ export function ShopBrowser({
             </div>
           </div>
 
-          <div className="pt-3">
+          <div className="pt-3 lg:flex-1 lg:overflow-y-auto lg:pb-8 lg:pt-4">
             <ShopInfiniteProductGrid
               initialItems={products.items}
               initialPage={products.page}
