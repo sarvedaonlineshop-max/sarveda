@@ -28,11 +28,11 @@ export function ShopFiltersBar({ categorySlug }: Props) {
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder="Search products…"
-        className="min-h-[40px] flex-1 rounded-lg border border-stone-200 bg-white px-3 text-sm text-stone-900 focus:border-amber-600 focus:outline-none focus:ring-1 focus:ring-amber-600"
+        className="min-h-[40px] flex-1 rounded-full border border-[#E3D9C8] bg-white px-4 text-sm text-brand-ink placeholder:text-brand-muted/70 focus:border-brand-forest focus:outline-none focus:ring-2 focus:ring-brand-forest/20"
       />
       <button
         type="submit"
-        className="rounded-lg bg-brand-forest px-4 py-2 text-sm font-semibold text-amber-50 hover:opacity-90"
+        className="rounded-full bg-brand-forest px-4 py-2 text-sm font-semibold text-brand-cream transition-colors hover:bg-brand-night"
       >
         Filter
       </button>
@@ -43,7 +43,7 @@ export function ShopFiltersBar({ categorySlug }: Props) {
             setQ("");
             router.push("/shop");
           }}
-          className="text-sm font-medium text-amber-700 underline"
+          className="text-sm font-medium text-brand-gold underline hover:text-brand-forest"
         >
           Clear
         </button>

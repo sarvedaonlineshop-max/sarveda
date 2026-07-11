@@ -14,17 +14,18 @@ export function ShopCategoryFilterSidebar({ categories, selectedSlug }: Props) {
   const sorted = sortShopCategories(categories);
 
   return (
-    <aside className="sticky top-24 flex max-h-[calc(100dvh-9rem)] flex-col overflow-hidden rounded-2xl border border-stone-100 bg-white shadow-sm lg:static lg:top-auto lg:max-h-none lg:h-full">
-      <div className="flex-shrink-0 border-b border-stone-100 p-5 pb-3">
-        <h2 className="font-serif text-lg font-semibold text-stone-900">Categories</h2>
+    <aside className="flex max-h-[calc(100dvh-8rem)] flex-col overflow-hidden rounded-2xl border border-brand-cream-dark bg-white shadow-card">
+      <div className="flex-shrink-0 border-b border-brand-cream-dark/60 p-5 pb-3">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-gold">Browse</p>
+        <h2 className="mt-1 font-serif text-lg font-semibold text-brand-ink">Categories</h2>
       </div>
       <div className="flex-1 overflow-y-auto p-5 pt-3">
         <Link
           href="/shop"
           className={`mb-2 flex min-h-[44px] items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
             !selectedSlug
-              ? "bg-amber-50 text-amber-700"
-              : "text-stone-500 hover:bg-stone-50 hover:text-stone-900"
+              ? "bg-brand-forest/10 font-semibold text-brand-forest"
+              : "text-brand-muted hover:bg-brand-cream hover:text-brand-ink"
           }`}
         >
           All products

@@ -21,14 +21,14 @@ export function ShopMobileCategoryDrawer({ categories, selectedSlug }: Props) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-none border-y border-stone-200 bg-white px-4 py-3 text-sm font-medium tracking-wide text-stone-900 transition-colors hover:bg-stone-50"
+        className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-none border-y border-brand-cream-dark bg-white px-4 py-3 text-sm font-medium tracking-wide text-brand-ink transition-colors hover:bg-brand-cream"
       >
-        <svg className="h-5 w-5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <svg className="h-5 w-5 text-brand-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
           <path strokeLinecap="round" strokeWidth={2} d="M3 4h18M3 12h18M3 20h18" />
         </svg>
         Filters & categories
         {selectedSlug ? (
-          <span className="truncate text-stone-500">· {selectedSlug.replace(/-/g, " ")}</span>
+          <span className="truncate text-brand-muted">· {selectedSlug.replace(/-/g, " ")}</span>
         ) : null}
       </button>
 
@@ -47,13 +47,13 @@ export function ShopMobileCategoryDrawer({ categories, selectedSlug }: Props) {
             onClick={() => setOpen(false)}
             className={`mb-3 flex min-h-[48px] items-center rounded-xl border px-4 py-3 text-sm font-medium ${
               !selectedSlug
-                ? "border-amber-700 bg-amber-50 text-amber-700"
-                : "border-stone-100 bg-white text-stone-700 hover:border-amber-300"
+                ? "border-brand-forest bg-brand-forest/10 text-brand-forest"
+                : "border-brand-cream-dark bg-white text-brand-ink hover:border-brand-gold/50"
             }`}
           >
             All products
           </Link>
-          <div className="rounded-2xl border border-stone-100 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-brand-cream-dark bg-white p-4 shadow-card">
             <CategoryNavTree
               nodes={categories}
               selectedSlug={selectedSlug}

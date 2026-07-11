@@ -50,7 +50,10 @@ html {
 
 body {
   margin: 0;
-  overflow-x: hidden;
+  /* No overflow-x here: html's overflow-x:hidden already clips horizontal
+     scroll for the whole page. Setting it here too would make body its own
+     scroll container (distinct from html, the element that actually scrolls),
+     which breaks position:sticky for every descendant (header, sidebars, etc). */
   -webkit-tap-highlight-color: transparent;
   background-color: var(--brand-cream);
   color: var(--brand-ink);
@@ -126,7 +129,32 @@ body {
   .anim-delay-400 { animation-delay: 400ms; }
 }
 
-/* ─── Product rich text: brass check bullets ───────────────────── */
+/* ─── Rich text (PDP, legal, about, blog) ─────────────────────── */
+.rich-features h4,
+.rich-features h5 {
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  color: var(--brand-ink);
+  font-weight: 600;
+  margin-top: 1.75rem;
+  margin-bottom: 0.75rem;
+}
+.rich-features h4 { font-size: 1.125rem; }
+.rich-features h5 { font-size: 1rem; }
+.rich-features p { margin: 0.75rem 0; }
+.rich-features a {
+  color: var(--brand-gold);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.rich-features a:hover { color: var(--brand-forest); }
+.rich-features strong { color: var(--brand-ink); font-weight: 600; }
+.rich-features hr {
+  border: 0;
+  border-top: 1px solid var(--brand-cream-dark);
+  margin: 1.5rem 0;
+}
+
+/* brass check bullets */
 .rich-features ul {
   list-style: none;
   padding-left: 0;

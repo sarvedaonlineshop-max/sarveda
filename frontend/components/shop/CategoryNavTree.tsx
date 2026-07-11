@@ -46,7 +46,7 @@ export function CategoryNavTree({
       className={
         depth === 0
           ? "space-y-1"
-          : "ml-1 mt-0.5 space-y-0.5 border-l-2 border-amber-100 pl-3"
+          : "ml-1 mt-0.5 space-y-0.5 border-l-2 border-brand-cream-dark pl-3"
       }
     >
       {nodes.map((cat) => {
@@ -62,11 +62,22 @@ export function CategoryNavTree({
                 <button
                   type="button"
                   onClick={() => toggle(cat.slug)}
-                  className="flex w-7 shrink-0 items-center justify-center rounded-md text-stone-500 hover:bg-stone-100"
+                  className="flex w-7 shrink-0 items-center justify-center rounded-md text-brand-muted hover:bg-brand-cream hover:text-brand-forest"
                   aria-expanded={isOpen}
                   aria-label={isOpen ? `Collapse ${cat.name}` : `Expand ${cat.name}`}
                 >
-                  {isOpen ? "▾" : "▸"}
+                  <svg
+                    viewBox="0 0 24 24"
+                    className={`h-3.5 w-3.5 transition-transform ${isOpen ? "rotate-90" : ""}`}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d="m9 18 6-6-6-6" />
+                  </svg>
                 </button>
               ) : (
                 <span className="w-7 shrink-0" aria-hidden />
@@ -77,16 +88,16 @@ export function CategoryNavTree({
                 className={`${linkBase} flex-1 ${
                   isParent
                     ? active
-                      ? "bg-amber-100 font-bold text-amber-900"
-                      : "font-semibold text-brand-forest hover:bg-amber-50"
+                      ? "bg-brand-forest/10 font-bold text-brand-forest"
+                      : "font-semibold text-brand-forest hover:bg-brand-cream"
                     : active
-                      ? "bg-amber-50 font-medium text-amber-800"
-                      : "text-stone-600 hover:bg-stone-50 hover:text-stone-900"
+                      ? "bg-brand-forest/5 font-medium text-brand-forest"
+                      : "text-brand-muted hover:bg-brand-cream hover:text-brand-ink"
                 }`}
               >
                 <span className="flex items-start gap-2">
                   {active && showActiveDot ? (
-                    <span className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-amber-700" aria-hidden />
+                    <span className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-brand-gold" aria-hidden />
                   ) : (
                     <span className="mt-1.5 w-2 flex-shrink-0" aria-hidden />
                   )}

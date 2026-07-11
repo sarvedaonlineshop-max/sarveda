@@ -225,7 +225,7 @@ export default async function SlugContentPage({ params }: Props) {
         <ContentHeroBanner src={content.imageUrl} alt={content.title} />
       ) : null}
 
-      <div className="border-b border-stone-100 bg-stone-50">
+      <div className="border-b border-brand-cream-dark/60 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-6 lg:px-8">
           <Breadcrumbs items={uiBreadcrumbs} />
         </div>

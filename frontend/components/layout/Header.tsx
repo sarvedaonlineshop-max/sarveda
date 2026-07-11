@@ -100,14 +100,18 @@ export function Header() {
 
   return (
     <>
+    {/* Announcement Bar — wrapped separately so it doesn't share a (short) containing
+        block with the sticky header below; a sticky element can never stay pinned past
+        the point where its own parent box has scrolled out of view. */}
     <div className={hideOnMobile ? "hidden md:block" : ""}>
-      {/* Announcement Bar */}
       <AnnouncementBar />
+    </div>
 
-      {/* Main Header */}
-      <header className="sticky top-0 z-50 border-b border-brand-forest/10 bg-brand-cream/95 shadow-sm"
-        style={{ backdropFilter: "blur(12px)" }}
-      >
+    {/* Main Header */}
+    <header
+      className={`sticky top-0 z-50 border-b border-brand-forest/10 bg-brand-cream/95 shadow-sm ${hideOnMobile ? "hidden md:block" : ""}`}
+      style={{ backdropFilter: "blur(12px)" }}
+    >
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
 
           {/* Mobile menu */}
@@ -230,7 +234,6 @@ export function Header() {
           </div>
         </div>
       </header>
-    </div>
 
     {menuOpen ? (
       <div

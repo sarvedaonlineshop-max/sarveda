@@ -19,7 +19,7 @@ const footerLinks = {
     { label: "Track Order",  href: "/my-account" },
     { label: "My Account",   href: "/my-account" },
     { label: "Search",       href: "/search"     },
-    { label: "Contact Us",   href: "mailto:hello@sarveda.com" },
+    { label: "Contact Us",   href: "/contact"     },
   ],
   legal: [
     { label: "Privacy Policy",    href: "/privacy"  },

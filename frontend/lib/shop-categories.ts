@@ -31,10 +31,11 @@ export function isSoundCategory(cat: CategoryNode): boolean {
   return SOUND_FIRST.some((k) => slug.includes(k) || name.includes(k));
 }
 
+/** All top-level branches with children start expanded in the shop sidebar. */
 export function defaultExpandedCategorySlugs(categories: CategoryNode[]): Set<string> {
   const expanded = new Set<string>();
   for (const cat of categories) {
-    if (isSoundCategory(cat)) expanded.add(cat.slug);
+    if (cat.children.length > 0) expanded.add(cat.slug);
   }
   return expanded;
 }

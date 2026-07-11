@@ -22,7 +22,8 @@ async function fetchPage(
 ): Promise<{ items: ProductListItem[]; totalPages: number }> {
   const q = new URLSearchParams();
   q.set("page", String(page));
-  q.set("limit", "24");
+  // Must match the server-side initial fetch limit in app/shop/page.tsx.
+  q.set("limit", "48");
   if (categorySlug) q.set("category", categorySlug);
   if (searchQ) q.set("q", searchQ);
   const res = await fetch(`/api/products?${q.toString()}`);
@@ -83,9 +84,9 @@ export function ShopInfiniteProductGrid({
 
   if (items.length === 0) {
     return (
-      <p className="mx-4 rounded-2xl border border-dashed border-stone-200 bg-white p-10 text-center text-stone-500 md:mx-0">
+      <p className="mx-4 rounded-2xl border border-dashed border-brand-cream-dark bg-white p-10 text-center text-brand-muted md:mx-0">
         No products match this filter yet.{" "}
-        <Link href="/shop" className="font-medium text-amber-700 underline hover:text-amber-800">
+        <Link href="/shop" className="font-medium text-brand-gold underline hover:text-brand-forest">
           Clear filters
         </Link>
       </p>
@@ -94,14 +95,14 @@ export function ShopInfiniteProductGrid({
 
   return (
     <>
-      <p className="mb-3 px-4 text-sm text-stone-500 md:mb-6 md:px-0">
-        Showing <span className="font-medium text-stone-800">{items.length}</span> of{" "}
-        <span className="font-medium text-stone-800">{total}</span> products
+      <p className="mb-3 px-4 text-sm text-brand-muted md:mb-6 md:px-0">
+        Showing <span className="font-medium text-brand-ink">{items.length}</span> of{" "}
+        <span className="font-medium text-brand-ink">{total}</span> products
         {categorySlug ? (
           <>
             {" "}
-            <span className="text-stone-400">·</span> filtered by{" "}
-            <span className="font-medium text-stone-700">{categorySlug.replace(/-/g, " ")}</span>
+            <span className="text-brand-muted/60">·</span> filtered by{" "}
+            <span className="font-medium text-brand-ink/80">{categorySlug.replace(/-/g, " ")}</span>
           </>
         ) : null}
       </p>
@@ -114,17 +115,17 @@ export function ShopInfiniteProductGrid({
       </ul>
       <div ref={sentinelRef} className="flex justify-center py-8">
         {loading ? (
-          <p className="text-sm text-stone-500">Loading more…</p>
+          <p className="text-sm text-brand-muted">Loading more…</p>
         ) : page < pages ? (
           <button
             type="button"
             onClick={() => void loadMore()}
-            className="rounded-full border border-stone-300 px-6 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50"
+            className="rounded-full border border-brand-forest/25 px-6 py-2 text-sm font-semibold text-brand-forest hover:bg-brand-forest/5"
           >
             Load more
           </button>
         ) : items.length < total ? null : (
-          <p className="text-xs text-stone-400">All products loaded</p>
+          <p className="text-xs text-brand-muted/70">All products loaded</p>
         )}
       </div>
     </>

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { Breadcrumbs } from "@/components/product/Breadcrumbs";
 import { canonical, isProductionSite } from "@/lib/site";
 import { ShopCategoryFilterSidebar } from "@/components/shop/ShopCategoryFilterSidebar";
 import { ShopFiltersBar } from "@/components/shop/ShopFiltersBar";
@@ -27,7 +26,7 @@ type Props = {
 export default async function ShopPage({ searchParams }: Props) {
   const [categories, list] = await Promise.all([
     fetchCategoryTree({ next: { revalidate: 300 } }),
-    fetchProductList(searchParams, { next: { revalidate: 60 } }, { limit: 24 })
+    fetchProductList(searchParams, { next: { revalidate: 60 } }, { limit: 48 })
   ]);
 
   const sortedCategories = sortShopCategories(categories);
@@ -41,44 +40,29 @@ export default async function ShopPage({ searchParams }: Props) {
         : undefined;
 
   return (
-    <>
-      <div className="sticky top-0 z-30 border-b border-stone-200 bg-white/95 backdrop-blur md:border-stone-100 md:bg-stone-50/95">
-        <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-6 lg:px-8">
-          <div className="hidden md:block">
-            <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Shop" }]} />
-          </div>
-          <h1 className="mt-0 font-serif text-2xl font-semibold tracking-tight text-stone-900 md:mt-6 md:text-4xl">
-            Shop
-          </h1>
-          <p className="mt-2 hidden max-w-2xl text-stone-500 md:block">
-            Instruments, botanicals, and mindful goods — chosen for depth of practice and everyday ritual.
-          </p>
+    <main className="mx-auto max-w-7xl pb-16 pt-4 md:px-4 md:pb-14 md:pt-6 lg:px-8">
+      <h1 className="sr-only">Shop</h1>
+      <ShopMobileCategoryDrawer categories={sortedCategories} selectedSlug={categorySlug} />
+
+      <div className="flex flex-col lg:flex-row lg:items-start lg:gap-10">
+        <div className="hidden lg:block lg:sticky lg:top-24 lg:w-72 lg:flex-shrink-0 lg:self-start">
+          <ShopCategoryFilterSidebar categories={sortedCategories} selectedSlug={categorySlug} />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <Suspense fallback={null}>
+            <ShopFiltersBar categorySlug={categorySlug} />
+          </Suspense>
+          <ShopInfiniteProductGrid
+            initialItems={list.items}
+            initialPage={list.pagination.page}
+            totalPages={list.pagination.totalPages}
+            total={list.pagination.total}
+            categorySlug={categorySlug}
+            searchQ={searchQ}
+          />
         </div>
       </div>
-
-      <main className="mx-auto max-w-7xl md:px-4 lg:px-8">
-        <ShopMobileCategoryDrawer categories={sortedCategories} selectedSlug={categorySlug} />
-
-        <div className="flex flex-col lg:h-[calc(100dvh-8.5rem)] lg:flex-row lg:items-stretch lg:gap-10 lg:overflow-hidden lg:py-8">
-          <div className="hidden lg:flex lg:w-72 lg:flex-shrink-0 lg:flex-col lg:overflow-hidden">
-            <ShopCategoryFilterSidebar categories={sortedCategories} selectedSlug={categorySlug} />
-          </div>
-
-          <div className="min-w-0 flex-1 lg:overflow-y-auto lg:pr-1">
-            <Suspense fallback={null}>
-              <ShopFiltersBar categorySlug={categorySlug} />
-            </Suspense>
-            <ShopInfiniteProductGrid
-              initialItems={list.items}
-              initialPage={list.pagination.page}
-              totalPages={list.pagination.totalPages}
-              total={list.pagination.total}
-              categorySlug={categorySlug}
-              searchQ={searchQ}
-            />
-          </div>
-        </div>
-      </main>
-    </>
+    </main>
   );
 }
