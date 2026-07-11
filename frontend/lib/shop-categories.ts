@@ -31,11 +31,23 @@ export function isSoundCategory(cat: CategoryNode): boolean {
   return SOUND_FIRST.some((k) => slug.includes(k) || name.includes(k));
 }
 
-/** All top-level branches with children start expanded in the shop sidebar. */
-export function defaultExpandedCategorySlugs(categories: CategoryNode[]): Set<string> {
-  const expanded = new Set<string>();
-  for (const cat of categories) {
-    if (cat.children.length > 0) expanded.add(cat.slug);
+/**
+ * Accordion default: only one top-level branch is open at a time. If the
+ * current selection lives under a branch (or is one), open that branch;
+ * otherwise default to Sound & Musical Instruments.
+ */
+export function defaultOpenBranchSlug(
+  categories: CategoryNode[],
+  selectedSlug: string | undefined
+): string | null {
+  const topLevel = categories.filter((c) => c.children.length > 0);
+  if (selectedSlug) {
+    const containing = topLevel.find(
+      (c) => c.slug === selectedSlug || c.children.some((child) => child.slug === selectedSlug)
+    );
+    if (containing) return containing.slug;
   }
-  return expanded;
+  const sound = categories.find(isSoundCategory);
+  if (sound) return sound.slug;
+  return topLevel[0]?.slug ?? null;
 }

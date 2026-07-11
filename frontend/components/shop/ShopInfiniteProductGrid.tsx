@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 import { ProductCard } from "@/components/shop/ProductCard";
+import { fetchShopProductsPage } from "@/lib/shop-products-client";
 import type { ProductListItem } from "@/lib/types";
 
 type Props = {
@@ -13,27 +14,11 @@ type Props = {
   total: number;
   categorySlug?: string;
   searchQ?: string;
+  /** ShopBrowser renders its own sticky "Showing X of Y" + filter pills instead. */
+  hideSummary?: boolean;
 };
 
-async function fetchPage(
-  page: number,
-  categorySlug?: string,
-  searchQ?: string
-): Promise<{ items: ProductListItem[]; totalPages: number }> {
-  const q = new URLSearchParams();
-  q.set("page", String(page));
-  // Must match the server-side initial fetch limit in app/shop/page.tsx.
-  q.set("limit", "48");
-  if (categorySlug) q.set("category", categorySlug);
-  if (searchQ) q.set("q", searchQ);
-  const res = await fetch(`/api/products?${q.toString()}`);
-  const json = await res.json();
-  if (!json.success) throw new Error(json.error ?? "Failed to load products");
-  return {
-    items: json.data.items as ProductListItem[],
-    totalPages: json.data.pagination.totalPages as number
-  };
-}
+const PAGE_SIZE = 48;
 
 export function ShopInfiniteProductGrid({
   initialItems,
@@ -41,7 +26,8 @@ export function ShopInfiniteProductGrid({
   totalPages,
   total,
   categorySlug,
-  searchQ
+  searchQ,
+  hideSummary = false
 }: Props) {
   const [items, setItems] = useState(initialItems);
   const [page, setPage] = useState(initialPage);
@@ -60,7 +46,12 @@ export function ShopInfiniteProductGrid({
     setLoading(true);
     try {
       const next = page + 1;
-      const data = await fetchPage(next, categorySlug, searchQ);
+      const data = await fetchShopProductsPage({
+        page: next,
+        limit: PAGE_SIZE,
+        categorySlug,
+        searchQ
+      });
       setItems((prev) => [...prev, ...data.items]);
       setPage(next);
       setPages(data.totalPages);
@@ -95,18 +86,13 @@ export function ShopInfiniteProductGrid({
 
   return (
     <>
-      <p className="mb-3 px-4 text-sm text-brand-muted md:mb-6 md:px-0">
-        Showing <span className="font-medium text-brand-ink">{items.length}</span> of{" "}
-        <span className="font-medium text-brand-ink">{total}</span> products
-        {categorySlug ? (
-          <>
-            {" "}
-            <span className="text-brand-muted/60">·</span> filtered by{" "}
-            <span className="font-medium text-brand-ink/80">{categorySlug.replace(/-/g, " ")}</span>
-          </>
-        ) : null}
-      </p>
-      <ul className="grid grid-cols-2 gap-3 px-3 md:grid-cols-2 md:gap-6 md:px-0 lg:grid-cols-3 lg:gap-8">
+      {!hideSummary ? (
+        <p className="mb-3 px-4 text-sm text-brand-muted md:mb-6 md:px-0">
+          Showing <span className="font-medium text-brand-ink">{items.length}</span> of{" "}
+          <span className="font-medium text-brand-ink">{total}</span> products
+        </p>
+      ) : null}
+      <ul className="grid grid-cols-2 gap-x-2.5 gap-y-3 px-3 sm:grid-cols-3 md:gap-x-4 md:gap-y-3.5 md:px-0 xl:grid-cols-4">
         {items.map((product) => (
           <li key={product.id}>
             <ProductCard product={product} />
@@ -120,7 +106,7 @@ export function ShopInfiniteProductGrid({
           <button
             type="button"
             onClick={() => void loadMore()}
-            className="rounded-full border border-brand-forest/25 px-6 py-2 text-sm font-semibold text-brand-forest hover:bg-brand-forest/5"
+            className="rounded-full border border-brand-forest/25 px-6 py-2 text-sm font-semibold text-brand-forest transition-colors duration-150 hover:bg-brand-forest/5"
           >
             Load more
           </button>

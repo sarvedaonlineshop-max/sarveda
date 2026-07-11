@@ -1,12 +1,8 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
 import { JsonLd } from "@/components/seo/JsonLd";
-import { ShopCategoryFilterSidebar } from "@/components/shop/ShopCategoryFilterSidebar";
-import { ShopFiltersBar } from "@/components/shop/ShopFiltersBar";
-import { ShopInfiniteProductGrid } from "@/components/shop/ShopInfiniteProductGrid";
-import { ShopMobileCategoryDrawer } from "@/components/shop/ShopMobileCategoryDrawer";
+import { ShopBrowser } from "@/components/shop/ShopBrowser";
 import { fetchCategoryBySlug, fetchCategoryTree, fetchProductList } from "@/lib/api";
 import { breadcrumbJsonLd } from "@/lib/seo-product";
 import { htmlToPlainText } from "@/lib/sanitize-html";
@@ -66,7 +62,6 @@ export default async function ProductCategoryPage({ params, searchParams }: Prop
     fetchCategoryTree({ next: { revalidate: 300 } }),
     fetchProductList(listParams, { next: { revalidate: 60 } }, { limit: 48 })
   ]);
-  const sortedCategories = sortShopCategories(categories);
 
   const searchQ =
     typeof searchParams.q === "string"
@@ -92,32 +87,17 @@ export default async function ProductCategoryPage({ params, searchParams }: Prop
   return (
     <>
       <JsonLd data={breadcrumbJsonLd(breadcrumbItems)} />
-
-      {/* Same app-style shell as /shop — no hero block, shared sidebar/grid/pagination-free layout. */}
-      <main className="mx-auto max-w-7xl pb-16 pt-4 md:px-4 md:pb-14 md:pt-6 lg:px-8">
-        <h1 className="sr-only">{category.name}</h1>
-        <ShopMobileCategoryDrawer categories={sortedCategories} selectedSlug={params.slug} />
-
-        <div className="flex flex-col lg:flex-row lg:items-start lg:gap-10">
-          <div className="hidden lg:block lg:sticky lg:top-24 lg:w-72 lg:flex-shrink-0 lg:self-start">
-            <ShopCategoryFilterSidebar categories={sortedCategories} selectedSlug={params.slug} />
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <Suspense fallback={null}>
-              <ShopFiltersBar categorySlug={params.slug} />
-            </Suspense>
-            <ShopInfiniteProductGrid
-              initialItems={list.items}
-              initialPage={list.pagination.page}
-              totalPages={list.pagination.totalPages}
-              total={list.pagination.total}
-              categorySlug={params.slug}
-              searchQ={searchQ}
-            />
-          </div>
-        </div>
-      </main>
+      <ShopBrowser
+        categories={sortShopCategories(categories)}
+        initialCategorySlug={params.slug}
+        initialSearchQ={searchQ}
+        initialProducts={{
+          items: list.items,
+          page: list.pagination.page,
+          totalPages: list.pagination.totalPages,
+          total: list.pagination.total
+        }}
+      />
     </>
   );
 }

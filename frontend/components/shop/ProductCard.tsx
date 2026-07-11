@@ -110,29 +110,29 @@ export function ProductCard({ product, layout = "grid" }: Props) {
           ) : null}
         </div>
 
-        <div className="flex flex-1 flex-col gap-1.5 p-3 md:gap-2 md:p-4">
+        <div className="flex flex-1 flex-col gap-0.5 p-2 md:p-2.5">
           {primaryCat ? (
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-gold md:text-[11px]">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-brand-gold md:text-[10px]">
               {primaryCat.name}
             </p>
           ) : null}
 
-          <h2 className="line-clamp-2 font-serif text-sm font-medium leading-snug text-brand-ink transition-colors group-hover:text-brand-forest md:text-base">
+          <h2 className="line-clamp-2 font-serif text-sm font-medium leading-snug text-brand-ink transition-colors group-hover:text-brand-forest">
             {product.name}
           </h2>
 
-          <div className="mt-auto flex flex-wrap items-baseline gap-2 pt-2">
+          <div className="mt-auto flex flex-wrap items-baseline gap-1.5 pt-1">
             {priceLabel ? (
-              <p className="text-base font-bold text-brand-forest md:text-lg">{priceLabel}</p>
+              <p className="text-sm font-bold text-brand-forest md:text-base">{priceLabel}</p>
             ) : null}
             {mrpMinor != null && saleMinor != null && mrpMinor > saleMinor ? (
-              <p className="text-xs text-brand-muted line-through md:text-sm">
+              <p className="text-xs text-brand-muted line-through">
                 {formatMinorFromPaise(mrpMinor, currency)}
               </p>
             ) : null}
           </div>
 
-          <span className="mt-3 inline-flex w-fit items-center rounded-full bg-brand-forest px-4 py-2 text-xs font-semibold text-brand-cream transition-colors group-hover:bg-brand-night">
+          <span className="mt-1 inline-flex w-fit items-center rounded-full bg-brand-forest px-3 py-1 text-[11px] font-semibold text-brand-cream transition-colors group-hover:bg-brand-night">
             View product
           </span>
         </div>

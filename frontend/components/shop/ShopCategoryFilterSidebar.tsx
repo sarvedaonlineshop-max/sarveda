@@ -1,17 +1,32 @@
+"use client";
+
 import Link from "next/link";
+import { useMemo, useState } from "react";
 
 import type { CategoryNode } from "@/lib/types";
 
 import { CategoryNavTree } from "./CategoryNavTree";
-import { sortShopCategories } from "@/lib/shop-categories";
+import { defaultOpenBranchSlug, sortShopCategories } from "@/lib/shop-categories";
 
 type Props = {
   categories: CategoryNode[];
   selectedSlug: string | undefined;
+  onSelect?: (slug: string | undefined) => void;
 };
 
-export function ShopCategoryFilterSidebar({ categories, selectedSlug }: Props) {
-  const sorted = sortShopCategories(categories);
+export function ShopCategoryFilterSidebar({ categories, selectedSlug, onSelect }: Props) {
+  const sorted = useMemo(() => sortShopCategories(categories), [categories]);
+  const [openSlug, setOpenSlug] = useState<string | null>(() =>
+    defaultOpenBranchSlug(sorted, selectedSlug)
+  );
+
+  function toggle(slug: string) {
+    setOpenSlug((prev) => (prev === slug ? null : slug));
+  }
+
+  function open(slug: string) {
+    setOpenSlug(slug);
+  }
 
   return (
     <aside className="flex max-h-[calc(100dvh-8rem)] flex-col overflow-hidden rounded-2xl border border-brand-cream-dark bg-white shadow-card">
@@ -22,7 +37,13 @@ export function ShopCategoryFilterSidebar({ categories, selectedSlug }: Props) {
       <div className="flex-1 overflow-y-auto p-5 pt-3">
         <Link
           href="/shop"
-          className={`mb-2 flex min-h-[44px] items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+          onClick={(e) => {
+            if (onSelect) {
+              e.preventDefault();
+              onSelect(undefined);
+            }
+          }}
+          className={`mb-2 flex min-h-[36px] items-center rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-150 ${
             !selectedSlug
               ? "bg-brand-forest/10 font-semibold text-brand-forest"
               : "text-brand-muted hover:bg-brand-cream hover:text-brand-ink"
@@ -30,7 +51,15 @@ export function ShopCategoryFilterSidebar({ categories, selectedSlug }: Props) {
         >
           All products
         </Link>
-        <CategoryNavTree nodes={sorted} selectedSlug={selectedSlug} depth={0} />
+        <CategoryNavTree
+          nodes={sorted}
+          selectedSlug={selectedSlug}
+          depth={0}
+          onSelect={onSelect}
+          openSlug={openSlug}
+          onToggle={toggle}
+          onOpen={open}
+        />
       </div>
     </aside>
   );
