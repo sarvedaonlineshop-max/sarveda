@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
-import { Breadcrumbs } from "@/components/product/Breadcrumbs";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { ShopCategoryFilterSidebar } from "@/components/shop/ShopCategoryFilterSidebar";
+import { ShopFiltersBar } from "@/components/shop/ShopFiltersBar";
+import { ShopInfiniteProductGrid } from "@/components/shop/ShopInfiniteProductGrid";
 import { ShopMobileCategoryDrawer } from "@/components/shop/ShopMobileCategoryDrawer";
-import { ShopPagination } from "@/components/shop/Pagination";
-import { ProductCard } from "@/components/shop/ProductCard";
 import { fetchCategoryBySlug, fetchCategoryTree, fetchProductList } from "@/lib/api";
 import { breadcrumbJsonLd } from "@/lib/seo-product";
 import { htmlToPlainText } from "@/lib/sanitize-html";
+import { sortShopCategories } from "@/lib/shop-categories";
 import { absoluteUrl, canonical, isProductionSite } from "@/lib/site";
 
 function categoryMetaDescription(raw: string | null | undefined, fallback: string): string {
@@ -64,8 +64,16 @@ export default async function ProductCategoryPage({ params, searchParams }: Prop
   const listParams = { ...searchParams, category: params.slug };
   const [categories, list] = await Promise.all([
     fetchCategoryTree({ next: { revalidate: 300 } }),
-    fetchProductList(listParams, { next: { revalidate: 60 } })
+    fetchProductList(listParams, { next: { revalidate: 60 } }, { limit: 48 })
   ]);
+  const sortedCategories = sortShopCategories(categories);
+
+  const searchQ =
+    typeof searchParams.q === "string"
+      ? searchParams.q
+      : typeof searchParams.search === "string"
+        ? searchParams.search
+        : undefined;
 
   const breadcrumbItems = [
     { name: "Home", url: absoluteUrl("/") },
@@ -84,78 +92,29 @@ export default async function ProductCategoryPage({ params, searchParams }: Prop
   return (
     <>
       <JsonLd data={breadcrumbJsonLd(breadcrumbItems)} />
-      <div className="border-b border-stone-200 bg-white md:border-stone-100 md:bg-stone-50">
-        <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-6 lg:px-8">
-          <div className="hidden md:block">
-            <Breadcrumbs
-              items={[
-                { label: "Home", href: "/" },
-                { label: "Shop", href: "/shop" },
-                ...(category.parent
-                  ? [
-                      {
-                        label: category.parent.name,
-                        href: `/product-category/${category.parent.slug}`
-                      }
-                    ]
-                  : []),
-                { label: category.name }
-              ]}
-            />
-          </div>
-          <h1 className="mt-0 font-serif text-2xl font-semibold tracking-tight text-stone-900 md:mt-6 md:text-4xl">
-            {category.name}
-          </h1>
-          {category.description ? (
-            <p className="mt-2 max-w-2xl text-stone-600 md:text-base">{category.description}</p>
-          ) : (
-            <p className="mt-2 hidden max-w-2xl text-stone-500 md:block">
-              Explore {category.name} — curated for practice and everyday ritual.
-            </p>
-          )}
-        </div>
-      </div>
 
-      <main className="mx-auto max-w-7xl md:px-4 md:py-8 lg:px-8">
-        <ShopMobileCategoryDrawer categories={categories} selectedSlug={params.slug} />
+      {/* Same app-style shell as /shop — no hero block, shared sidebar/grid/pagination-free layout. */}
+      <main className="mx-auto max-w-7xl pb-16 pt-4 md:px-4 md:pb-14 md:pt-6 lg:px-8">
+        <h1 className="sr-only">{category.name}</h1>
+        <ShopMobileCategoryDrawer categories={sortedCategories} selectedSlug={params.slug} />
 
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
-          <div className="hidden lg:block lg:w-72 lg:flex-shrink-0">
-            <ShopCategoryFilterSidebar categories={categories} selectedSlug={params.slug} />
+        <div className="flex flex-col lg:flex-row lg:items-start lg:gap-10">
+          <div className="hidden lg:block lg:sticky lg:top-24 lg:w-72 lg:flex-shrink-0 lg:self-start">
+            <ShopCategoryFilterSidebar categories={sortedCategories} selectedSlug={params.slug} />
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="mb-3 px-4 text-sm text-stone-500 md:mb-6 md:px-0">
-              Showing{" "}
-              <span className="font-medium text-stone-800">{list.items.length}</span> of{" "}
-              <span className="font-medium text-stone-800">{list.pagination.total}</span> products
-            </p>
-
-            {list.items.length === 0 ? (
-              <p className="mx-4 rounded-2xl border border-dashed border-stone-200 bg-white p-10 text-center text-stone-500 md:mx-0">
-                No products in this category yet.{" "}
-                <Link href="/shop" className="font-medium text-amber-700 underline hover:text-amber-800">
-                  Browse all products
-                </Link>
-              </p>
-            ) : (
-              <>
-                <ul className="grid grid-cols-2 gap-3 px-3 md:grid-cols-2 md:gap-6 md:px-0 lg:grid-cols-3 lg:gap-8">
-                  {list.items.map((product) => (
-                    <li key={product.id}>
-                      <ProductCard product={product} />
-                    </li>
-                  ))}
-                </ul>
-                <div className="px-4 py-8 md:px-0">
-                  <ShopPagination
-                    page={list.pagination.page}
-                    totalPages={list.pagination.totalPages}
-                    basePath={`/product-category/${params.slug}`}
-                  />
-                </div>
-              </>
-            )}
+            <Suspense fallback={null}>
+              <ShopFiltersBar categorySlug={params.slug} />
+            </Suspense>
+            <ShopInfiniteProductGrid
+              initialItems={list.items}
+              initialPage={list.pagination.page}
+              totalPages={list.pagination.totalPages}
+              total={list.pagination.total}
+              categorySlug={params.slug}
+              searchQ={searchQ}
+            />
           </div>
         </div>
       </main>

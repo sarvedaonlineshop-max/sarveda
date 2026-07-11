@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 type Props = {
@@ -9,16 +9,21 @@ type Props = {
 
 export function ShopFiltersBar({ categorySlug }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const [q, setQ] = useState(searchParams.get("q") ?? searchParams.get("search") ?? "");
+  // Category pages (/product-category/[slug]) already scope results via the route
+  // itself — only /shop needs `category` in the query string.
+  const basePath = pathname || "/shop";
+  const includeCategoryParam = categorySlug && basePath === "/shop";
 
   function applySearch(e: React.FormEvent) {
     e.preventDefault();
     const params = new URLSearchParams();
-    if (categorySlug) params.set("category", categorySlug);
+    if (includeCategoryParam) params.set("category", categorySlug!);
     const term = q.trim();
     if (term) params.set("q", term);
-    router.push(`/shop${params.toString() ? `?${params.toString()}` : ""}`);
+    router.push(`${basePath}${params.toString() ? `?${params.toString()}` : ""}`);
   }
 
   return (
@@ -36,12 +41,12 @@ export function ShopFiltersBar({ categorySlug }: Props) {
       >
         Filter
       </button>
-      {(q || categorySlug) && (
+      {(q || includeCategoryParam) && (
         <button
           type="button"
           onClick={() => {
             setQ("");
-            router.push("/shop");
+            router.push(basePath === "/shop" ? "/shop" : basePath);
           }}
           className="text-sm font-medium text-brand-gold underline hover:text-brand-forest"
         >

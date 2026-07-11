@@ -17,7 +17,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { itemCount, items } = useCartData();
   const onProductPage = pathname?.startsWith("/product/") ?? false;
-  const onShopPage = pathname === "/shop";
+  const onShopPage = pathname === "/shop" || (pathname?.startsWith("/product-category/") ?? false);
   const hasCartItems = itemCount > 0 || items.length > 0;
   const pdpCartRail = onProductPage && hasCartItems;
   const chromeless =
