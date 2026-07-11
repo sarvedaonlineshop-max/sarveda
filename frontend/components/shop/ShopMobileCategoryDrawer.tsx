@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { SlideDrawer } from "@/components/ui/SlideDrawer";
@@ -12,7 +11,7 @@ import { CategoryNavTree } from "./CategoryNavTree";
 type Props = {
   categories: CategoryNode[];
   selectedSlug: string | undefined;
-  onSelect?: (slug: string | undefined) => void;
+  onSelect: (slug: string | undefined) => void;
 };
 
 export function ShopMobileCategoryDrawer({ categories, selectedSlug, onSelect }: Props) {
@@ -52,23 +51,20 @@ export function ShopMobileCategoryDrawer({ categories, selectedSlug, onSelect }:
         panelClassName="max-w-sm"
       >
         <div className="px-4 py-4">
-          <Link
-            href="/shop"
-            onClick={(e) => {
-              if (onSelect) {
-                e.preventDefault();
-                onSelect(undefined);
-              }
+          <button
+            type="button"
+            onClick={() => {
+              onSelect(undefined);
               setOpen(false);
             }}
-            className={`mb-3 flex min-h-[48px] items-center rounded-xl border px-4 py-3 text-sm font-medium transition-colors duration-150 ${
+            className={`mb-3 flex min-h-[48px] w-full items-center rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors duration-150 ${
               !selectedSlug
                 ? "border-brand-forest bg-brand-forest/10 text-brand-forest"
                 : "border-brand-cream-dark bg-white text-brand-ink hover:border-brand-gold/50"
             }`}
           >
             All products
-          </Link>
+          </button>
           <div className="rounded-2xl border border-brand-cream-dark bg-white p-4 shadow-card">
             <CategoryNavTree
               nodes={sorted}

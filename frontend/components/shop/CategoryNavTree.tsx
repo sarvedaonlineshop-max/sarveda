@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-
 import type { CategoryNode } from "@/lib/types";
 
 type Props = {
@@ -10,7 +8,7 @@ type Props = {
   depth: number;
   onNavigate?: () => void;
   /** Client-side category switch — keeps header/sidebar/footer mounted, no full page reload. */
-  onSelect?: (slug: string | undefined) => void;
+  onSelect: (slug: string | undefined) => void;
   /** Accordion: which top-level slug is currently open (only one at a time). */
   openSlug?: string | null;
   /** Fires on any category click — opens its own branch (closing siblings). */
@@ -52,17 +50,19 @@ export function CategoryNavTree({
 
         return (
           <li key={cat.id}>
-            <Link
-              href={`/product-category/${encodeURIComponent(cat.slug)}`}
-              onClick={(e) => {
-                if (onSelect) {
-                  e.preventDefault();
-                  onSelect(cat.slug);
-                }
+            {/* Plain button, not next/link — a category switch here is a pure
+                client-side state+fetch update (see ShopBrowser), and a <Link>'s
+                own internal click/prefetch handling has no business anywhere
+                near it. Crawlable URLs to every category still exist via the
+                breadcrumbs and direct /product-category/[slug] pages. */}
+            <button
+              type="button"
+              onClick={() => {
+                onSelect(cat.slug);
                 if (isParent && hasChildren) onOpen?.(cat.slug);
                 onNavigate?.();
               }}
-              className={`block min-h-[30px] rounded-md px-2.5 py-1 text-sm leading-snug transition-colors duration-150 ${
+              className={`block w-full min-h-[30px] rounded-md px-2.5 py-1 text-left text-sm leading-snug transition-colors duration-150 ${
                 isParent
                   ? active
                     ? "bg-brand-forest font-semibold text-brand-cream"
@@ -75,7 +75,7 @@ export function CategoryNavTree({
               }`}
             >
               {cat.name}
-            </Link>
+            </button>
             {hasChildren ? (
               <div
                 className="grid overflow-hidden transition-[grid-template-rows] duration-200 ease-out"
