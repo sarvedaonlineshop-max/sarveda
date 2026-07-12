@@ -44,6 +44,7 @@
     "import:orders": "tsx scripts/import-orders-wxr.ts",
     "test:shipping": "tsx scripts/test-shipping.ts",
     "test:ses": "ts-node src/scripts/test-ses.ts",
+    "check:ses-dns": "ts-node scripts/check-ses-dns.ts",
     "import:refunds": "tsx scripts/import-refunds-wxr.ts",
     "import:reviews": "tsx scripts/import-reviews-from-products.ts",
     "migrate:may-30": "tsx scripts/migrate-may-30.ts",

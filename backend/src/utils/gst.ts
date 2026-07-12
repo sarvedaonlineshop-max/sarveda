@@ -25,6 +25,26 @@ export function gstFromInclusiveLine(lineTotalMinor: number, ratePercent: number
   return { taxableMinor: lineTotalMinor - taxMinor, taxMinor };
 }
 
+/** Back-calculate GST from GST-inclusive price (minor units). Mirrors frontend/lib/gst.ts */
+export function extractGst(
+  inclusivePriceInPaise: number,
+  gstRatePercent: number
+): { baseInPaise: number; gstInPaise: number } {
+  if (gstRatePercent <= 0) {
+    return {
+      baseInPaise: inclusivePriceInPaise,
+      gstInPaise: 0
+    };
+  }
+  const rate = gstRatePercent / 100;
+  const baseInPaise = Math.round(inclusivePriceInPaise / (1 + rate));
+  const gstInPaise = inclusivePriceInPaise - baseInPaise;
+  return { baseInPaise, gstInPaise };
+}
+
+/** Same default as frontend confirmed page (DEFAULT_DISPLAY_GST_RATE). */
+export const DEFAULT_DISPLAY_GST_RATE = 18;
+
 export function sellerStateCode(): string {
   return (process.env.SELLER_STATE ?? "Karnataka").trim();
 }

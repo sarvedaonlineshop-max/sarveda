@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { SlideDrawer } from "@/components/ui/SlideDrawer";
 import type { CategoryNode } from "@/lib/types";
@@ -21,12 +21,32 @@ export function ShopMobileCategoryDrawer({ categories, selectedSlug, onSelect }:
     defaultOpenBranchSlug(sorted, selectedSlug)
   );
 
+  useEffect(() => {
+    const next = defaultOpenBranchSlug(sorted, selectedSlug);
+    setOpenSlug((current) => (current === next ? current : next));
+  }, [selectedSlug, sorted]);
+
   function openBranch(slug: string) {
     setOpenSlug(slug);
   }
 
+  const activeCategoryName = useMemo(() => {
+    if (!selectedSlug) return null;
+    const walk = (nodes: CategoryNode[]): string | null => {
+      for (const node of nodes) {
+        if (node.slug === selectedSlug) return node.name;
+        if (node.children.length) {
+          const found = walk(node.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    return walk(sorted) ?? selectedSlug.replace(/-/g, " ");
+  }, [selectedSlug, sorted]);
+
   return (
-    <div className="mb-4 lg:hidden">
+    <div className="mb-0 lg:hidden">
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -35,9 +55,9 @@ export function ShopMobileCategoryDrawer({ categories, selectedSlug, onSelect }:
         <svg className="h-5 w-5 text-brand-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
           <path strokeLinecap="round" strokeWidth={2} d="M3 4h18M3 12h18M3 20h18" />
         </svg>
-        Filters & categories
-        {selectedSlug ? (
-          <span className="truncate text-brand-muted">· {selectedSlug.replace(/-/g, " ")}</span>
+        Menu
+        {activeCategoryName ? (
+          <span className="truncate text-brand-muted">· {activeCategoryName}</span>
         ) : null}
       </button>
 
@@ -53,10 +73,7 @@ export function ShopMobileCategoryDrawer({ categories, selectedSlug, onSelect }:
         <div className="px-4 py-4">
           <button
             type="button"
-            onClick={() => {
-              onSelect(undefined);
-              setOpen(false);
-            }}
+            onClick={() => onSelect(undefined)}
             className={`mb-3 flex min-h-[48px] w-full items-center rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors duration-150 ${
               !selectedSlug
                 ? "border-brand-forest bg-brand-forest/10 text-brand-forest"
@@ -71,7 +88,6 @@ export function ShopMobileCategoryDrawer({ categories, selectedSlug, onSelect }:
               selectedSlug={selectedSlug}
               depth={0}
               onSelect={onSelect}
-              onNavigate={() => setOpen(false)}
               openSlug={openSlug}
               onOpen={openBranch}
             />

@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 
+import { ShopProductGrid } from "@/components/shop/ShopProductGrid";
+import { fetchProductList } from "@/lib/api";
 import { canonical, isProductionSite } from "@/lib/site";
-import { ShopBrowser } from "@/components/shop/ShopBrowser";
-import { fetchCategoryTree, fetchProductList } from "@/lib/api";
-import { sortShopCategories } from "@/lib/shop-categories";
 
 export const revalidate = 60;
 
@@ -20,25 +19,10 @@ type Props = {
 };
 
 export default async function ShopPage({ searchParams }: Props) {
-  const [categories, list] = await Promise.all([
-    fetchCategoryTree({ next: { revalidate: 300 } }),
-    fetchProductList(searchParams, { next: { revalidate: 60 } }, { limit: 48 })
-  ]);
-
-  const categorySlug =
-    typeof searchParams.category === "string" ? searchParams.category : undefined;
-  const searchQ =
-    typeof searchParams.q === "string"
-      ? searchParams.q
-      : typeof searchParams.search === "string"
-        ? searchParams.search
-        : undefined;
+  const list = await fetchProductList(searchParams, { next: { revalidate: 60 } }, { limit: 48 });
 
   return (
-    <ShopBrowser
-      categories={sortShopCategories(categories)}
-      initialCategorySlug={categorySlug}
-      initialSearchQ={searchQ}
+    <ShopProductGrid
       initialProducts={{
         items: list.items,
         page: list.pagination.page,

@@ -39,7 +39,7 @@ export function ShopInfiniteProductGrid({
     setItems(initialItems);
     setPage(initialPage);
     setPages(totalPages);
-  }, [initialItems, initialPage, totalPages, categorySlug, searchQ]);
+  }, [initialItems, initialPage, totalPages]);
 
   const loadMore = useCallback(async () => {
     if (loading || page >= pages) return;

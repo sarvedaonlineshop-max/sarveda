@@ -18,29 +18,6 @@ function formatPlacedDate(value: string | null): string {
   });
 }
 
-function statusHeadline(order: OrderSummary): { title: string; sub?: string } {
-  const isCod = order.isCod || order.paymentProvider === "COD";
-  if (order.paymentStatus === "CAPTURED" || order.status === "PAID" || (isCod && order.status !== "CANCELLED")) {
-    if (order.status === "SHIPPED") return { title: "Shipped", sub: "Your package is on the way." };
-    if (order.status === "DELIVERED") return { title: "Delivered", sub: "Your order was delivered." };
-    if (order.status === "PROCESSING" || order.status === "PACKED") {
-      return { title: "Processing", sub: "We are preparing your order." };
-    }
-    if (isCod) return { title: "Order placed", sub: "Pay in cash when your package arrives." };
-    return { title: "Order placed", sub: "Payment received." };
-  }
-  if (order.status === "CANCELLED") {
-    return { title: "Cancelled", sub: "This order was cancelled." };
-  }
-  if (order.status === "PENDING_PAYMENT") {
-    return { title: "Payment pending", sub: "Complete payment to confirm this order." };
-  }
-  if (order.status === "CANCELLED" && order.paymentStatus !== "CAPTURED") {
-    return { title: "Cancelled", sub: "Payment was not completed — you can reorder the same items." };
-  }
-  return { title: order.status.replaceAll("_", " "), sub: undefined };
-}
-
 type Props = {
   order: OrderSummary;
   /** Logged-in account email when order.email is missing from API. */
@@ -52,13 +29,87 @@ function checkoutResumeHref(orderNumber: string, email: string): string {
   return `/checkout?${new URLSearchParams({ orderNumber, email }).toString()}`;
 }
 
-/** Visual-only pill tone for the status headline (maps existing statuses only). */
-function statusPillClass(title: string): string {
-  const t = title.toLowerCase();
-  if (t === "delivered") return "bg-brand-forest text-brand-cream";
-  if (t === "cancelled" || t === "refunded") return "bg-brand-cream-dark text-brand-muted";
-  // Shipped / Processing / Order placed / Payment pending → brass
-  return "border border-brand-gold/40 bg-brand-gold/15 text-[#8a6526]";
+/** Exported so YourOrders can bucket orders into Paid / Cancelled / Refunded tabs. */
+export function orderIsPaid(order: OrderSummary): boolean {
+  if (order.paymentStatus === "CAPTURED" || order.status === "PAID") return true;
+  if (order.isCod || order.paymentProvider === "COD") {
+    return !["PENDING_PAYMENT", "CANCELLED", "REFUNDED"].includes(order.status);
+  }
+  return false;
+}
+
+type StatusKey = "paid" | "cancelled" | "refunded" | "pending" | "other";
+
+/**
+ * Payment-level status shown in the card header.
+ * Literal hex values by design: semantic status layer, separate from brand palette.
+ */
+function orderStatusMeta(order: OrderSummary): {
+  key: StatusKey;
+  label: string;
+  emoji: string;
+  pillClass: string;
+  borderClass: string;
+  headerClass: string;
+} {
+  if (order.status === "REFUNDED") {
+    return {
+      key: "refunded",
+      label: "Refunded",
+      emoji: "💸",
+      pillClass: "bg-[#FAEEDA] text-[#633806]",
+      borderClass: "border-l-[#D99A2B]",
+      headerClass: "bg-[#FAEEDA]/50"
+    };
+  }
+  if (order.status === "CANCELLED") {
+    return {
+      key: "cancelled",
+      label: "Cancelled",
+      emoji: "❌",
+      pillClass: "bg-[#FCEBEB] text-[#791F1F]",
+      borderClass: "border-l-[#C0453F]",
+      headerClass: "bg-[#FCEBEB]/50"
+    };
+  }
+  if (orderIsPaid(order)) {
+    return {
+      key: "paid",
+      label: "Paid",
+      emoji: "✅",
+      pillClass: "bg-[#E1F5EE] text-[#085041]",
+      borderClass: "border-l-[#1D9E75]",
+      headerClass: "bg-[#E1F5EE]/50"
+    };
+  }
+  if (order.status === "PENDING_PAYMENT") {
+    return {
+      key: "pending",
+      label: "Payment pending",
+      emoji: "⏳",
+      pillClass: "bg-[#FAEEDA] text-[#633806]",
+      borderClass: "border-l-[#D99A2B]",
+      headerClass: "bg-[#FAEEDA]/50"
+    };
+  }
+  return {
+    key: "other",
+    label: order.status.replaceAll("_", " "),
+    emoji: "📦",
+    pillClass: "bg-brand-cream-dark text-brand-muted",
+    borderClass: "border-l-brand-cream-dark",
+    headerClass: "bg-brand-cream/50"
+  };
+}
+
+/** Delivery progress line for paid orders without a live tracking link. */
+function deliveryProgress(order: OrderSummary): { emoji: string; text: string } | null {
+  if (order.status === "DELIVERED") return { emoji: "🎉", text: "Your order was delivered." };
+  if (order.status === "SHIPPED") return { emoji: "🚚", text: "Package is on the way." };
+  if (order.status === "PROCESSING" || order.status === "PACKED") {
+    return { emoji: "📦", text: "Package is being prepared." };
+  }
+  return { emoji: "🕓", text: "Item yet to be packed." };
 }
 
 function orderAccessEmail(order: OrderSummary, accountEmail?: string): string {
@@ -73,12 +124,55 @@ function shipToLabel(order: OrderSummary, accountEmail?: string, shipToName?: st
   return email.split("@")[0] ?? "—";
 }
 
-function orderIsPaid(order: OrderSummary): boolean {
-  if (order.paymentStatus === "CAPTURED" || order.status === "PAID") return true;
-  if (order.isCod || order.paymentProvider === "COD") {
-    return !["PENDING_PAYMENT", "CANCELLED", "REFUNDED"].includes(order.status);
-  }
-  return false;
+function InfoRow({
+  emoji,
+  label,
+  children
+}: {
+  emoji: string;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-3 px-5 py-3">
+      <span
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-cream text-base"
+        aria-hidden="true"
+      >
+        {emoji}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-muted">{label}</p>
+        <div className="mt-0.5 text-sm text-brand-ink">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function CostLine({
+  label,
+  amountInPaise,
+  currency,
+  strong,
+  negative
+}: {
+  label: string;
+  amountInPaise: number;
+  currency: string;
+  strong?: boolean;
+  negative?: boolean;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 py-1">
+      <span className={strong ? "text-sm font-semibold text-brand-ink" : "text-sm text-brand-muted"}>
+        {label}
+      </span>
+      <span className={strong ? "text-sm font-semibold text-brand-forest" : "text-sm text-brand-ink"}>
+        {negative ? "− " : ""}
+        {formatMinorFromPaise(Math.abs(amountInPaise), currency)}
+      </span>
+    </div>
+  );
 }
 
 export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
@@ -87,11 +181,11 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
   const paid = orderIsPaid(order);
   const pendingPayment = order.status === "PENDING_PAYMENT" && !paid;
   const cancelledUnpaid = order.status === "CANCELLED" && !paid;
-  const detailsHref = `/order/confirmed?orderNumber=${encodeURIComponent(order.orderNumber)}&email=${encodeURIComponent(email)}`;
   const payHref = checkoutResumeHref(order.orderNumber, email);
   const cancelledDetailsHref = orderCancelledPageUrl(order.orderNumber, email);
-  const { title, sub } = statusHeadline(order);
+  const status = orderStatusMeta(order);
   const totalLabel = formatMinorFromPaise(order.grandTotalInPaise, order.currency);
+  const isCod = order.isCod || order.paymentProvider === "COD";
   const courierTrackUrl =
     order.trackingUrl?.trim() ||
     (order.awb?.trim() ? delhiveryTrackUrl(order.awb.trim()) : null);
@@ -100,142 +194,277 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
     !!courierTrackUrl &&
     ["PROCESSING", "PACKED", "SHIPPED", "DELIVERED"].includes(order.status);
   const deliveryPartner = order.deliveryPartner?.trim() || null;
+  const progress = paid && !canTrackCourier ? deliveryProgress(order) : null;
+
+  const breakdown = order.costBreakdown ?? null;
+  const address = order.shippingAddress ?? null;
+  const lineItems = order.lineItems ?? null;
+  const hasBreakdownData =
+    !!lineItems?.length ||
+    breakdown?.itemsSubtotalInPaise != null ||
+    breakdown?.shippingInPaise != null ||
+    breakdown?.gstIncludedInPaise != null;
+  const hasAddressData = !!(address?.line1 || address?.city || address?.pincode || address?.phone);
+
+  const addressLines = address
+    ? [
+        address.name,
+        address.line1,
+        address.line2,
+        [address.city, address.state, address.pincode].filter(Boolean).join(", "),
+        address.country
+      ].filter((line): line is string => !!line?.trim())
+    : [];
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-brand-cream-dark bg-white shadow-card">
-      {/* ── Meta row (removed duplicate "View order details" link) ── */}
-      <div className="grid gap-2 border-b border-brand-cream-dark px-5 pb-3 pt-4 text-xs sm:grid-cols-2 lg:grid-cols-4">
-        <div>
-          <p className="font-semibold uppercase tracking-[0.14em] text-brand-muted">Order placed</p>
-          <p className="mt-0.5 font-medium text-brand-ink">
-            {formatPlacedDate(order.placedAt ?? order.createdAt)}
+    <article
+      className={`overflow-hidden rounded-r-2xl border border-brand-cream-dark border-l-4 ${status.borderClass} bg-white shadow-card transition-all duration-150 hover:-translate-y-0.5 hover:shadow-lg motion-reduce:transition-none motion-reduce:hover:translate-y-0`}
+    >
+      {/* ── Header: order ID + payment status ── */}
+      <header
+        className={`flex flex-wrap items-center justify-between gap-2 border-b border-brand-cream-dark px-5 py-3 ${status.headerClass}`}
+      >
+        <div className="min-w-0">
+          <p className="text-sm text-brand-ink">
+            <span aria-hidden="true">📦 </span>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-muted">
+              Order ID:
+            </span>{" "}
+            <span className="font-mono font-semibold">{order.orderNumber}</span>
+          </p>
+          <p className="mt-0.5 text-xs text-brand-muted">
+            Placed on {formatPlacedDate(order.placedAt ?? order.createdAt)}
           </p>
         </div>
-        <div>
-          <p className="font-semibold uppercase tracking-[0.14em] text-brand-muted">Total</p>
-          <p className="mt-0.5 font-medium text-brand-ink">{totalLabel}</p>
-        </div>
-        <div>
-          <p className="font-semibold uppercase tracking-[0.14em] text-brand-muted">Ship to</p>
-          <p className="mt-0.5 font-medium text-brand-ink">{shipToLabel(order, accountEmail, shipToName)}</p>
-        </div>
-        <div className="sm:text-right">
-          <p className="font-semibold uppercase tracking-[0.14em] text-brand-muted">Order #</p>
-          <p className="mt-0.5 font-mono text-brand-ink">{order.orderNumber}</p>
-          {/* ↑ "View order details" link removed from here — it was duplicated below */}
-        </div>
-      </div>
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${status.pillClass}`}
+        >
+          <span aria-hidden="true">{status.emoji}</span>
+          {status.label}
+        </span>
+      </header>
 
-      {/* ── Body ── */}
-      <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 flex-1">
-          <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusPillClass(title)}`}>
-            {title}
-          </span>
-          {sub ? <p className="mt-2 text-sm text-brand-muted">{sub}</p> : null}
-          <p className="mt-3 text-sm">
-            <Link href={detailsHref} className="font-medium text-brand-forest hover:underline">
-              {order.headline}
-            </Link>
+      {/* ── Meaningful info rows ── */}
+      <div className="divide-y divide-brand-cream-dark/60">
+        <InfoRow emoji="🛍️" label="Items">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <span className="min-w-0 font-medium">{order.headline}</span>
+            <span className="shrink-0 font-semibold text-brand-forest">{totalLabel}</span>
+          </div>
+          <p className="mt-0.5 text-xs text-brand-muted">
+            {order.itemCount} item{order.itemCount === 1 ? "" : "s"} in this order
           </p>
-          <p className="mt-1 text-xs text-brand-muted">
-            {order.itemCount} item{order.itemCount === 1 ? "" : "s"}
-          </p>
-          {canTrackCourier && deliveryPartner ? (
-            <p className="mt-2 text-xs text-brand-muted">
-              Delivery partner:{" "}
-              <span className="font-semibold text-brand-ink">{deliveryPartner}</span>
-              {order.awb ? (
-                <span className="mt-0.5 block font-mono text-[11px] text-brand-muted">AWB {order.awb}</span>
-              ) : null}
-            </p>
+        </InfoRow>
+
+        <InfoRow emoji={isCod ? "💵" : "💳"} label="Payment mode">
+          {isCod ? "Cash on delivery" : "Paid online"}
+          {status.key === "refunded" ? (
+            <span className="ml-2 text-xs text-[#633806]">— amount refunded to source</span>
           ) : null}
-        </div>
+        </InfoRow>
 
-        {/* ── Actions ── */}
-        <div className="flex shrink-0 flex-col gap-2 sm:w-52">
-          {pendingPayment ? (
-            <>
-              <Link
-                href={payHref}
-                className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-brand-forest px-4 text-sm font-medium text-brand-cream transition-colors hover:bg-brand-night"
-              >
-                Complete payment
-              </Link>
-              <Link
-                href={detailsHref}
-                className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-brand-forest/25 bg-white px-4 text-sm font-medium text-brand-forest hover:bg-brand-forest/5"
-              >
-                View order details
-              </Link>
-            </>
-          ) : cancelledUnpaid ? (
-            <>
-              <button
-                type="button"
-                disabled={!email}
-                onClick={() => {
-                  if (!email) return;
-                  router.push(checkoutReorderUrl(order.orderNumber, email));
-                }}
-                className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-brand-forest px-4 text-sm font-medium text-brand-cream transition-colors hover:bg-brand-night disabled:opacity-60"
-              >
-                Reorder items
-              </button>
-              <Link
-                href={cancelledDetailsHref}
-                className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full px-4 text-sm text-brand-muted hover:text-brand-forest"
-              >
-                Why cancelled?
-              </Link>
-            </>
-          ) : (
-            <>
-              {canTrackCourier ? (
+        {paid ? (
+          <InfoRow emoji="🚚" label="Delivery">
+            {canTrackCourier ? (
+              <div className="flex flex-wrap items-center gap-3">
                 <a
                   href={courierTrackUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-brand-forest px-4 text-sm font-medium text-brand-cream no-underline transition-colors hover:bg-brand-night"
                 >
+                  <span aria-hidden="true">🚚</span>
                   Track package
                 </a>
-              ) : (
-                <Link
-                  href={detailsHref}
-                  className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-brand-forest/25 bg-white px-4 text-sm font-medium text-brand-forest hover:bg-brand-forest/5"
-                >
-                  View order details
-                </Link>
-              )}
-            </>
-          )}
+                {deliveryPartner ? (
+                  <span className="text-xs text-brand-muted">
+                    via <span className="font-semibold text-brand-ink">{deliveryPartner}</span>
+                    {order.awb ? <span className="block font-mono text-[11px]">AWB {order.awb}</span> : null}
+                  </span>
+                ) : null}
+              </div>
+            ) : progress ? (
+              <span>
+                <span aria-hidden="true">{progress.emoji} </span>
+                {progress.text}
+              </span>
+            ) : null}
+          </InfoRow>
+        ) : null}
 
-          {/* Invoice (paid orders only) */}
-          {paid ? (
-            <a
-              href={orderInvoiceDownloadUrl(order.orderNumber, email)}
-              className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-brand-forest/25 bg-white px-4 text-sm font-medium text-brand-forest hover:bg-brand-forest/5"
+        {/* ── Collapsible: cost split + full address ── */}
+        <details className="group">
+          <summary className="flex cursor-pointer list-none items-center gap-3 px-5 py-3 transition-colors hover:bg-brand-cream/40 [&::-webkit-details-marker]:hidden">
+            <span
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-cream text-base"
+              aria-hidden="true"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <line x1="16" y1="13" x2="8" y2="13"/>
-                <line x1="16" y1="17" x2="8" y2="17"/>
-              </svg>
-              Invoice
-            </a>
-          ) : null}
+              🧾
+            </span>
+            <span className="flex-1 text-sm font-medium text-brand-ink">
+              Cost split &amp; delivery address
+            </span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="shrink-0 text-brand-muted transition-transform duration-150 group-open:rotate-180"
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </summary>
 
-          {/* Need help? */}
-          <Link
-            href={`/contact?orderNumber=${encodeURIComponent(order.orderNumber)}`}
-            className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full px-4 text-sm text-brand-muted hover:text-brand-forest"
-          >
-            Need help?
-          </Link>
-        </div>
+          <div className="grid gap-4 px-5 pb-4 pt-1 sm:grid-cols-2">
+            {/* Cost breakdown */}
+            <div className="rounded-xl bg-brand-cream/50 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-muted">
+                Cost breakdown
+              </p>
+              {hasBreakdownData ? (
+                <div className="mt-2">
+                  {lineItems?.length
+                    ? lineItems.map((item, i) => (
+                        <div key={i} className="flex items-baseline justify-between gap-4 py-1">
+                          <span className="min-w-0 text-sm text-brand-ink">
+                            {item.title}
+                            <span className="ml-1.5 text-xs text-brand-muted">× {item.quantity}</span>
+                          </span>
+                          <span className="shrink-0 text-sm text-brand-ink">
+                            {formatMinorFromPaise(item.lineTotalInPaise, order.currency)}
+                          </span>
+                        </div>
+                      ))
+                    : null}
+                  {lineItems?.length ? <div className="my-2 border-t border-brand-cream-dark/60" /> : null}
+                  {breakdown?.itemsSubtotalInPaise != null ? (
+                    <CostLine label="Item(s) subtotal" amountInPaise={breakdown.itemsSubtotalInPaise} currency={order.currency} />
+                  ) : null}
+                  {breakdown?.shippingInPaise != null ? (
+                    <CostLine label="Shipping" amountInPaise={breakdown.shippingInPaise} currency={order.currency} />
+                  ) : null}
+                  {breakdown?.discountInPaise != null && breakdown.discountInPaise !== 0 ? (
+                    <CostLine label="Discount" amountInPaise={breakdown.discountInPaise} currency={order.currency} negative />
+                  ) : null}
+                  <div className="my-2 border-t border-brand-cream-dark/60" />
+                  <CostLine
+                    label={isCod ? "Grand total (COD)" : "Grand total"}
+                    amountInPaise={order.grandTotalInPaise}
+                    currency={order.currency}
+                    strong
+                  />
+                  {breakdown?.gstIncludedInPaise != null ? (
+                    <p className="mt-1 text-xs text-brand-muted">
+                      GST included: {formatMinorFromPaise(breakdown.gstIncludedInPaise, order.currency)}
+                      {breakdown.gstRateLabel ? ` (${breakdown.gstRateLabel})` : ""}
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="mt-2">
+                  <CostLine
+                    label={isCod ? "Grand total (COD)" : "Grand total"}
+                    amountInPaise={order.grandTotalInPaise}
+                    currency={order.currency}
+                    strong
+                  />
+                  <p className="mt-1 text-xs italic text-brand-muted">
+                    Detailed split-up coming soon.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Full address */}
+            <div className="rounded-xl bg-brand-cream/50 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-muted">
+                <span aria-hidden="true">📍 </span>Delivery address
+              </p>
+              {hasAddressData ? (
+                <div className="mt-2 text-sm text-brand-ink">
+                  {addressLines.map((line, i) => (
+                    <p key={i} className={i === 0 ? "font-medium" : "mt-0.5"}>
+                      {line}
+                    </p>
+                  ))}
+                  {address?.phone ? (
+                    <p className="mt-1.5 text-xs text-brand-muted">
+                      <span aria-hidden="true">📞 </span>
+                      {address.phone}
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="mt-2 text-sm">
+                  <p className="font-medium text-brand-ink">{shipToLabel(order, accountEmail, shipToName)}</p>
+                  <p className="mt-0.5 text-xs italic text-brand-muted">Full address details coming soon.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </details>
       </div>
+
+      {/* ── Actions ── */}
+      <footer className="flex flex-wrap items-center gap-2 border-t border-brand-cream-dark bg-brand-cream/40 px-5 py-3">
+        {pendingPayment ? (
+          <Link
+            href={payHref}
+            className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-brand-forest px-4 text-sm font-medium text-brand-cream transition-colors hover:bg-brand-night"
+          >
+            <span aria-hidden="true">⚡</span>
+            Complete payment
+          </Link>
+        ) : null}
+
+        {cancelledUnpaid ? (
+          <button
+            type="button"
+            disabled={!email}
+            onClick={() => {
+              if (!email) return;
+              router.push(checkoutReorderUrl(order.orderNumber, email));
+            }}
+            className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-brand-forest px-4 text-sm font-medium text-brand-cream transition-colors hover:bg-brand-night disabled:opacity-60"
+          >
+            <span aria-hidden="true">🔄</span>
+            Reorder items
+          </button>
+        ) : null}
+
+        {paid ? (
+          <a
+            href={orderInvoiceDownloadUrl(order.orderNumber, email)}
+            className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-brand-forest/25 bg-white px-4 text-sm font-medium text-brand-forest hover:bg-brand-forest/5"
+          >
+            <span aria-hidden="true">📄</span>
+            Invoice
+          </a>
+        ) : null}
+
+        <Link
+          href={`/contact?orderNumber=${encodeURIComponent(order.orderNumber)}`}
+          className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-[#FAEEDA] px-4 text-sm font-semibold text-[#633806] transition-colors hover:bg-[#FAC775]/60"
+        >
+          <span aria-hidden="true">💬</span>
+          Need help?
+        </Link>
+
+        {order.status === "CANCELLED" ? (
+          <Link
+            href={cancelledDetailsHref}
+            className="inline-flex min-h-[36px] items-center justify-center gap-1 rounded-full px-3 text-sm text-[#993C1D] hover:text-[#712B13] hover:underline"
+          >
+            Why cancelled?
+          </Link>
+        ) : null}
+      </footer>
     </article>
   );
 }

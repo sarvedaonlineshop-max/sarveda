@@ -42,9 +42,12 @@ export function defaultOpenBranchSlug(
 ): string | null {
   const topLevel = categories.filter((c) => c.children.length > 0);
   if (selectedSlug) {
-    const containing = topLevel.find(
-      (c) => c.slug === selectedSlug || c.children.some((child) => child.slug === selectedSlug)
-    );
+    const containing = topLevel.find((branch) => {
+      if (branch.slug === selectedSlug) return true;
+      const walk = (nodes: CategoryNode[]): boolean =>
+        nodes.some((n) => n.slug === selectedSlug || (n.children.length > 0 && walk(n.children)));
+      return walk(branch.children);
+    });
     if (containing) return containing.slug;
   }
   const sound = categories.find(isSoundCategory);

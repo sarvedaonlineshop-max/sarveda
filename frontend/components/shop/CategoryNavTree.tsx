@@ -57,7 +57,8 @@ export function CategoryNavTree({
                 breadcrumbs and direct /product-category/[slug] pages. */}
             <button
               type="button"
-              onClick={() => {
+              onClick={(event) => {
+                event.stopPropagation();
                 onSelect(cat.slug);
                 if (isParent && hasChildren) onOpen?.(cat.slug);
                 onNavigate?.();

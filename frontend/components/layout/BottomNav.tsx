@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { useCartData } from "@/components/cart/CartProvider";
+import { MOBILE_MENU_POLICY_LINKS } from "@/lib/policy-links";
+import { isShopBrowsePath } from "@/lib/shop-navigation";
 
 const menuLinks = [
   { href: "/courses", label: "Courses" },
@@ -41,7 +43,9 @@ export function BottomNav() {
     };
   }, [menuOpen]);
 
-  const menuActive = menuLinks.some((l) => pathname?.startsWith(l.href));
+  const menuActive =
+    menuLinks.some((l) => pathname?.startsWith(l.href)) ||
+    MOBILE_MENU_POLICY_LINKS.some((l) => pathname === l.href);
 
   const items: NavItem[] = [
     {
@@ -61,7 +65,7 @@ export function BottomNav() {
       key: "store",
       label: "Store",
       href: "/shop",
-      isActive: pathname?.startsWith("/shop") ?? false,
+      isActive: isShopBrowsePath(pathname),
       icon: (active) => (
         <svg viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" className="h-6 w-6" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={active ? 0 : 1.75}
@@ -123,31 +127,54 @@ export function BottomNav() {
 
       {menuOpen ? (
         <div
-          className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-[70] mx-3 mb-2 overflow-hidden rounded-xl border border-white/10 shadow-xl md:hidden"
+          className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-[70] mx-3 mb-2 max-h-[min(70dvh,32rem)] overflow-hidden rounded-xl border border-white/10 shadow-xl md:hidden"
           style={{ background: "linear-gradient(180deg,#152019 0%,#0f1a14 100%)" }}
           role="dialog"
           aria-label="Explore Sarveda"
         >
-          <div className="border-b border-white/10 px-4 py-3">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-200/80">Explore</p>
+          <div className="max-h-[min(70dvh,32rem)] overflow-y-auto">
+            <div className="border-b border-white/10 px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-200/80">Explore</p>
+            </div>
+            <ul className="py-2">
+              {menuLinks.map((link) => {
+                const active = pathname?.startsWith(link.href);
+                return (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      className={`flex items-center px-4 py-3 text-sm font-medium transition-colors ${
+                        active ? "bg-white/10 text-amber-200" : "text-stone-100 hover:bg-white/5"
+                      }`}
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+
+            <div className="border-t border-white/10 px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-200/80">Policies</p>
+            </div>
+            <ul className="pb-2">
+              {MOBILE_MENU_POLICY_LINKS.map((link) => {
+                const active = pathname === link.href;
+                return (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      className={`flex items-center px-4 py-3 text-sm font-medium transition-colors ${
+                        active ? "bg-white/10 text-amber-200" : "text-stone-100 hover:bg-white/5"
+                      }`}
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
-          <ul className="py-2">
-            {menuLinks.map((link) => {
-              const active = pathname?.startsWith(link.href);
-              return (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className={`flex items-center px-4 py-3 text-sm font-medium transition-colors ${
-                      active ? "bg-white/10 text-amber-200" : "text-stone-100 hover:bg-white/5"
-                    }`}
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
         </div>
       ) : null}
 

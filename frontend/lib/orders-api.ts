@@ -13,6 +13,33 @@ export type OrderShipmentPublic = {
   updatedAt: string;
 };
 
+export type OrderLineItem = {
+  title: string;
+  quantity: number;
+  lineTotalInPaise: number;
+};
+
+export type OrderCostBreakdown = {
+  itemsSubtotalInPaise?: number | null;
+  shippingInPaise?: number | null;
+  discountInPaise?: number | null;
+  /** GST amount already included in the grand total. */
+  gstIncludedInPaise?: number | null;
+  /** e.g. "18%" — label only, no math done client-side. */
+  gstRateLabel?: string | null;
+};
+
+export type OrderShippingAddress = {
+  name?: string | null;
+  line1?: string | null;
+  line2?: string | null;
+  city?: string | null;
+  state?: string | null;
+  pincode?: string | null;
+  country?: string | null;
+  phone?: string | null;
+};
+
 export type OrderPublic = {
   orderNumber: string;
   status: string;
@@ -70,6 +97,9 @@ export type OrderSummary = {
   awb?: string | null;
   trackingUrl?: string | null;
   shipmentStatus?: string | null;
+  lineItems?: OrderLineItem[] | null;
+  costBreakdown?: OrderCostBreakdown | null;
+  shippingAddress?: OrderShippingAddress | null;
 };
 
 export async function fetchOrderPublic(orderNumber: string, email: string): Promise<OrderPublic> {

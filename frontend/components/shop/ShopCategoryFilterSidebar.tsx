@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { CategoryNode } from "@/lib/types";
 
@@ -18,6 +18,11 @@ export function ShopCategoryFilterSidebar({ categories, selectedSlug, onSelect }
   const [openSlug, setOpenSlug] = useState<string | null>(() =>
     defaultOpenBranchSlug(sorted, selectedSlug)
   );
+
+  useEffect(() => {
+    const next = defaultOpenBranchSlug(sorted, selectedSlug);
+    setOpenSlug((current) => (current === next ? current : next));
+  }, [selectedSlug, sorted]);
 
   function open(slug: string) {
     setOpenSlug(slug);

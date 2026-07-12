@@ -44,7 +44,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         rel="noreferrer"
         aria-label="Chat on WhatsApp"
         className={`fixed z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition hover:scale-105 ${
-          onShopPage ? "bottom-32 md:bottom-14" : "bottom-24 md:bottom-6"
+          onShopPage ? "bottom-24 md:bottom-14" : "bottom-24 md:bottom-6"
         } ${pdpCartRail ? `right-4 ${cartSidebarWhatsAppRightClass}` : "right-4"}`}
       >
         <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current" aria-hidden>

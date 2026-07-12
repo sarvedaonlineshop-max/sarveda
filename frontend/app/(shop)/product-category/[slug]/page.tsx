@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { ShopProductGrid } from "@/components/shop/ShopProductGrid";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { ShopBrowser } from "@/components/shop/ShopBrowser";
-import { fetchCategoryBySlug, fetchCategoryTree, fetchProductList } from "@/lib/api";
+import { fetchCategoryBySlug, fetchProductList } from "@/lib/api";
 import { breadcrumbJsonLd } from "@/lib/seo-product";
 import { htmlToPlainText } from "@/lib/sanitize-html";
-import { sortShopCategories } from "@/lib/shop-categories";
 import { absoluteUrl, canonical, isProductionSite } from "@/lib/site";
 
 function categoryMetaDescription(raw: string | null | undefined, fallback: string): string {
@@ -16,7 +15,6 @@ function categoryMetaDescription(raw: string | null | undefined, fallback: strin
   return plain.length > 160 ? `${plain.slice(0, 157)}…` : plain;
 }
 
-/** ISR only — do not combine with generateStaticParams or cache: no-store (causes DYNAMIC_SERVER_USAGE on Vercel). */
 export const revalidate = 60;
 export const dynamicParams = true;
 
@@ -58,17 +56,7 @@ export default async function ProductCategoryPage({ params, searchParams }: Prop
   }
 
   const listParams = { ...searchParams, category: params.slug };
-  const [categories, list] = await Promise.all([
-    fetchCategoryTree({ next: { revalidate: 300 } }),
-    fetchProductList(listParams, { next: { revalidate: 60 } }, { limit: 48 })
-  ]);
-
-  const searchQ =
-    typeof searchParams.q === "string"
-      ? searchParams.q
-      : typeof searchParams.search === "string"
-        ? searchParams.search
-        : undefined;
+  const list = await fetchProductList(listParams, { next: { revalidate: 60 } }, { limit: 48 });
 
   const breadcrumbItems = [
     { name: "Home", url: absoluteUrl("/") },
@@ -87,10 +75,7 @@ export default async function ProductCategoryPage({ params, searchParams }: Prop
   return (
     <>
       <JsonLd data={breadcrumbJsonLd(breadcrumbItems)} />
-      <ShopBrowser
-        categories={sortShopCategories(categories)}
-        initialCategorySlug={params.slug}
-        initialSearchQ={searchQ}
+      <ShopProductGrid
         initialProducts={{
           items: list.items,
           page: list.pagination.page,

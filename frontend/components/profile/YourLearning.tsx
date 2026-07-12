@@ -8,7 +8,14 @@ import { getApiBase } from "@/lib/api";
 type CourseRow = { slug: string; title: string; enrolledAt: string };
 type EventRow = { slug: string; title: string; startDate: string; bookedAt: string };
 
-export function YourLearning() {
+type Props = {
+  /** Which section to render. Defaults to "both" so existing usage is unchanged. */
+  show?: "courses" | "events" | "both";
+  /** Fired once enrollments and bookings load, so the parent can show live counts. */
+  onCounts?: (counts: { courses: number; events: number }) => void;
+};
+
+export function YourLearning({ show = "both", onCounts }: Props) {
   const [courses, setCourses] = useState<CourseRow[]>([]);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,8 +31,11 @@ export function YourLearning() {
         const cJson = (await cRes.json()) as { success?: boolean; data?: CourseRow[] };
         const eJson = (await eRes.json()) as { success?: boolean; data?: EventRow[] };
         if (!cancelled) {
-          setCourses(cJson.success && cJson.data ? cJson.data : []);
-          setEvents(eJson.success && eJson.data ? eJson.data : []);
+          const courseRows = cJson.success && cJson.data ? cJson.data : [];
+          const eventRows = eJson.success && eJson.data ? eJson.data : [];
+          setCourses(courseRows);
+          setEvents(eventRows);
+          onCounts?.({ courses: courseRows.length, events: eventRows.length });
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -34,23 +44,44 @@ export function YourLearning() {
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const showCourses = show === "courses" || show === "both";
+  const showEvents = show === "events" || show === "both";
 
   if (loading) {
     return <p className="text-sm text-stone-500">Loading courses and events…</p>;
   }
 
-  if (courses.length === 0 && events.length === 0) {
+  const coursesEmpty = courses.length === 0;
+  const eventsEmpty = events.length === 0;
+  const visibleEmpty =
+    (show === "courses" && coursesEmpty) ||
+    (show === "events" && eventsEmpty) ||
+    (show === "both" && coursesEmpty && eventsEmpty);
+
+  if (visibleEmpty) {
     return (
       <div className="rounded-xl border border-dashed border-stone-200 bg-stone-50 px-4 py-5 text-sm text-stone-600">
-        <p>No course or event enrollments yet.</p>
+        <p>
+          {show === "courses"
+            ? "No course enrollments yet."
+            : show === "events"
+              ? "No event bookings yet."
+              : "No course or event enrollments yet."}
+        </p>
         <div className="mt-3 flex flex-wrap gap-3">
-          <Link href="/courses" className="font-medium text-amber-800 underline hover:text-amber-900">
-            Browse courses
-          </Link>
-          <Link href="/events" className="font-medium text-amber-800 underline hover:text-amber-900">
-            Browse events
-          </Link>
+          {showCourses ? (
+            <Link href="/courses" className="font-medium text-amber-800 underline hover:text-amber-900">
+              Browse courses
+            </Link>
+          ) : null}
+          {showEvents ? (
+            <Link href="/events" className="font-medium text-amber-800 underline hover:text-amber-900">
+              Browse events
+            </Link>
+          ) : null}
         </div>
       </div>
     );
@@ -58,7 +89,7 @@ export function YourLearning() {
 
   return (
     <div className="space-y-5">
-      {courses.length > 0 ? (
+      {showCourses && courses.length > 0 ? (
         <div>
           <h4 className="text-sm font-semibold text-stone-800">My courses</h4>
           <ul className="mt-2 space-y-2">
@@ -72,7 +103,7 @@ export function YourLearning() {
           </ul>
         </div>
       ) : null}
-      {events.length > 0 ? (
+      {showEvents && events.length > 0 ? (
         <div>
           <h4 className="text-sm font-semibold text-stone-800">My events</h4>
           <ul className="mt-2 space-y-2">

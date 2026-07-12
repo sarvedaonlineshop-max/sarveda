@@ -2,12 +2,105 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 
 import { YourLearning } from "@/components/profile/YourLearning";
 import { YourOrders } from "@/components/profile/YourOrders";
 import type { PublicUser } from "@/lib/auth-client";
 import { fetchMe, isAdminRole, logoutSession, updateProfile } from "@/lib/auth-client";
+
+type TabKey = "details" | "orders" | "courses" | "events";
+
+const tabIconProps = {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: 15,
+  height: 15,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.8,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+  "aria-hidden": true
+};
+
+function TabIcon({ tab }: { tab: TabKey }) {
+  if (tab === "details") {
+    return (
+      <svg {...tabIconProps}>
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+      </svg>
+    );
+  }
+  if (tab === "orders") {
+    return (
+      <svg {...tabIconProps}>
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+        <polyline points="3.29 7 12 12 20.71 7" />
+        <line x1="12" y1="22" x2="12" y2="12" />
+      </svg>
+    );
+  }
+  if (tab === "courses") {
+    return (
+      <svg {...tabIconProps}>
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+      </svg>
+    );
+  }
+  return (
+    <svg {...tabIconProps}>
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  );
+}
+
+function TabButton({
+  tab,
+  label,
+  count,
+  active,
+  onSelect
+}: {
+  tab: TabKey;
+  label: string;
+  count?: number | null;
+  active: boolean;
+  onSelect: (tab: TabKey) => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      id={`profile-tab-${tab}`}
+      aria-selected={active}
+      aria-controls={`profile-panel-${tab}`}
+      onClick={() => onSelect(tab)}
+      className={`inline-flex min-h-[40px] w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2 text-[13px] font-semibold transition-colors sm:gap-2 sm:px-3 sm:text-sm ${
+        active
+          ? "bg-brand-forest text-brand-cream"
+          : "border border-brand-cream-dark bg-white text-brand-ink hover:bg-brand-forest/5"
+      }`}
+    >
+      <TabIcon tab={tab} />
+      {label}
+      {typeof count === "number" ? (
+        <span
+          className={`inline-flex min-w-[20px] items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${
+            active ? "bg-[#FAC775] text-[#633806]" : "bg-brand-cream text-brand-muted"
+          }`}
+        >
+          {count}
+        </span>
+      ) : null}
+    </button>
+  );
+}
 
 export function ProfileClient() {
   const router = useRouter();
@@ -18,6 +111,19 @@ export function ProfileClient() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [activeTab, setActiveTab] = useState<TabKey>("details");
+  const [orderCount, setOrderCount] = useState<number | null>(null);
+  const [courseCount, setCourseCount] = useState<number | null>(null);
+  const [eventCount, setEventCount] = useState<number | null>(null);
+
+  const handleLearningCounts = useCallback(
+    (counts: { courses: number; events: number }) => {
+      setCourseCount(counts.courses);
+      setEventCount(counts.events);
+    },
+    []
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -100,96 +206,141 @@ export function ProfileClient() {
   }
 
   const displayName = user.name?.trim() || user.email.split("@")[0] || "Customer";
+  const initial = displayName.charAt(0).toUpperCase();
+  const learningTabActive = activeTab === "courses" || activeTab === "events";
 
   return (
-    <div className="space-y-6 px-4 md:px-0">
-      <section className="rounded-2xl border border-brand-cream-dark bg-brand-cream p-6 shadow-card">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">Namaste</p>
-        <h2 className="mt-1 font-serif text-2xl font-semibold text-brand-ink">{displayName}</h2>
-        <p className="mt-1 text-sm text-brand-muted">{user.email}</p>
-        <div className="mt-5 flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={() => void handleSignOut()}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-brand-forest/25 px-5 text-sm font-semibold text-brand-forest hover:bg-brand-forest/5"
+    <div
+      className="flex flex-col gap-4 px-4 md:px-0"
+      style={{ height: "calc(100dvh - var(--profile-offset, 10rem))", minHeight: "24rem" }}
+    >
+      {/* ── Greeting (pinned) ── */}
+      <section className="shrink-0 rounded-2xl bg-brand-forest p-5 shadow-card sm:p-6">
+        <div className="flex flex-wrap items-center gap-4">
+          <div
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#FAC775] font-serif text-xl font-semibold text-[#633806] sm:h-14 sm:w-14 sm:text-2xl"
+            aria-hidden="true"
           >
-            Sign out
-          </button>
-          {isAdminRole(user.role) ? (
-            <Link
-              href="/admin"
-              className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-brand-forest/25 px-5 text-sm font-semibold text-brand-forest hover:bg-brand-forest/5"
+            {initial}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#FAC775]">Namaste</p>
+            <h2 className="mt-0.5 truncate font-serif text-xl font-semibold text-brand-cream sm:text-2xl">
+              {displayName}
+            </h2>
+            <p className="mt-0.5 truncate text-sm text-[#9FE1CB]">{user.email}</p>
+          </div>
+          <div className="flex w-full flex-wrap gap-3 sm:w-auto">
+            {isAdminRole(user.role) ? (
+              <Link
+                href="/admin"
+                className="inline-flex min-h-[40px] items-center justify-center rounded-full bg-brand-cream px-5 text-sm font-semibold text-brand-forest transition-colors hover:bg-white"
+              >
+                Admin panel
+              </Link>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => void handleSignOut()}
+              className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-[#5DCAA5]/60 px-5 text-sm font-semibold text-[#E1F5EE] transition-colors hover:bg-white/10"
             >
-              Admin panel
-            </Link>
-          ) : null}
+              Sign out
+            </button>
+          </div>
         </div>
       </section>
 
-      <section className="rounded-2xl border border-brand-cream-dark bg-white p-6 shadow-card">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h3 className="font-serif text-lg font-semibold text-brand-ink">Courses & events</h3>
-        </div>
-        <YourLearning />
-      </section>
+      {/* ── Tab bar (pinned): 2×2 on mobile, 4-across on desktop, no scrollbar ── */}
+      <nav
+        role="tablist"
+        aria-label="Account sections"
+        className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4"
+      >
+        <TabButton tab="details" label="Personal details" active={activeTab === "details"} onSelect={setActiveTab} />
+        <TabButton tab="orders" label="Orders" count={orderCount} active={activeTab === "orders"} onSelect={setActiveTab} />
+        <TabButton tab="courses" label="Courses" count={courseCount} active={activeTab === "courses"} onSelect={setActiveTab} />
+        <TabButton tab="events" label="Events" count={eventCount} active={activeTab === "events"} onSelect={setActiveTab} />
+      </nav>
 
-      <section className="rounded-2xl border border-brand-cream-dark bg-white p-6 shadow-card">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h3 className="font-serif text-lg font-semibold text-brand-ink">Your orders</h3>
-        </div>
-        <YourOrders accountEmail={user.email} />
-      </section>
+      {/* ── Scrollable content ── */}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl">
+        <section
+          role="tabpanel"
+          id="profile-panel-details"
+          aria-labelledby="profile-tab-details"
+          hidden={activeTab !== "details"}
+          className="rounded-2xl border border-brand-cream-dark bg-white p-6 shadow-card"
+        >
+          <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">Your details</h3>
+          <form onSubmit={(event) => void handleSave(event)} className="mt-4 space-y-4">
+            <div>
+              <label htmlFor="profile-name" className="mb-2 block text-sm font-medium text-brand-ink">
+                Name
+              </label>
+              <input
+                id="profile-name"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                className="min-h-[48px] w-full rounded-xl border border-[#E3D9C8] bg-white px-4 text-sm text-brand-ink focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/30"
+                autoComplete="name"
+              />
+            </div>
+            <div>
+              <label htmlFor="profile-email" className="mb-2 block text-sm font-medium text-brand-ink">
+                Email
+              </label>
+              <input
+                id="profile-email"
+                value={user.email}
+                readOnly
+                className="min-h-[48px] w-full rounded-xl border border-[#E3D9C8] bg-brand-cream px-4 text-sm text-brand-muted"
+              />
+            </div>
+            <div>
+              <label htmlFor="profile-phone" className="mb-2 block text-sm font-medium text-brand-ink">
+                Phone
+              </label>
+              <input
+                id="profile-phone"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+                inputMode="tel"
+                className="min-h-[48px] w-full rounded-xl border border-[#E3D9C8] bg-white px-4 text-sm text-brand-ink focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/30"
+                autoComplete="tel"
+              />
+            </div>
+            {error ? <p className="text-sm text-red-600">{error}</p> : null}
+            {message ? <p className="text-sm text-brand-sage">{message}</p> : null}
+            <button
+              type="submit"
+              disabled={saving}
+              className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-brand-forest px-6 text-sm font-semibold text-brand-cream transition-colors hover:bg-brand-night disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500"
+            >
+              {saving ? "Saving…" : "Save changes"}
+            </button>
+          </form>
+        </section>
 
-      <section className="rounded-2xl border border-brand-cream-dark bg-white p-6 shadow-card">
-        <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">Your details</h3>
-        <form onSubmit={(event) => void handleSave(event)} className="mt-4 space-y-4">
-          <div>
-            <label htmlFor="profile-name" className="mb-2 block text-sm font-medium text-brand-ink">
-              Name
-            </label>
-            <input
-              id="profile-name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              className="min-h-[48px] w-full rounded-xl border border-[#E3D9C8] bg-white px-4 text-sm text-brand-ink focus:border-brand-forest focus:outline-none focus:ring-2 focus:ring-brand-forest/20"
-              autoComplete="name"
-            />
-          </div>
-          <div>
-            <label htmlFor="profile-email" className="mb-2 block text-sm font-medium text-brand-ink">
-              Email
-            </label>
-            <input
-              id="profile-email"
-              value={user.email}
-              readOnly
-              className="min-h-[48px] w-full rounded-xl border border-[#E3D9C8] bg-brand-cream px-4 text-sm text-brand-muted"
-            />
-          </div>
-          <div>
-            <label htmlFor="profile-phone" className="mb-2 block text-sm font-medium text-brand-ink">
-              Phone
-            </label>
-            <input
-              id="profile-phone"
-              value={phone}
-              onChange={(event) => setPhone(event.target.value)}
-              inputMode="tel"
-              className="min-h-[48px] w-full rounded-xl border border-[#E3D9C8] bg-white px-4 text-sm text-brand-ink focus:border-brand-forest focus:outline-none focus:ring-2 focus:ring-brand-forest/20"
-              autoComplete="tel"
-            />
-          </div>
-          {error ? <p className="text-sm text-red-600">{error}</p> : null}
-          {message ? <p className="text-sm text-brand-sage">{message}</p> : null}
-          <button
-            type="submit"
-            disabled={saving}
-            className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-brand-forest px-6 text-sm font-semibold text-brand-cream transition-colors hover:bg-brand-night disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500"
-          >
-            {saving ? "Saving…" : "Save changes"}
-          </button>
-        </form>
-      </section>
+        <section
+          role="tabpanel"
+          id="profile-panel-orders"
+          aria-labelledby="profile-tab-orders"
+          hidden={activeTab !== "orders"}
+          className="rounded-2xl border border-brand-cream-dark bg-white p-6 shadow-card"
+        >
+          <YourOrders accountEmail={user.email} onCount={setOrderCount} />
+        </section>
+
+        <section
+          role="tabpanel"
+          id={activeTab === "events" ? "profile-panel-events" : "profile-panel-courses"}
+          aria-labelledby={activeTab === "events" ? "profile-tab-events" : "profile-tab-courses"}
+          hidden={!learningTabActive}
+          className="rounded-2xl border border-brand-cream-dark bg-white p-6 shadow-card"
+        >
+          <YourLearning show={activeTab === "events" ? "events" : "courses"} onCounts={handleLearningCounts} />
+        </section>
+      </div>
     </div>
   );
 }

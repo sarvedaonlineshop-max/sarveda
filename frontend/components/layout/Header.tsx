@@ -1,9 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 
 import { useCartData, useCartUi } from "@/components/cart/CartProvider";
 import { SearchWithSuggestions } from "@/components/search/SearchWithSuggestions";
@@ -25,7 +23,6 @@ const ANNOUNCEMENTS = [
 ];
 
 function AnnouncementBar() {
-  // Duplicate for seamless marquee
   const items = [...ANNOUNCEMENTS, ...ANNOUNCEMENTS];
   return (
     <div className="overflow-hidden bg-brand-forest py-2 text-xs font-medium tracking-wide text-brand-gold-pale">
@@ -69,18 +66,6 @@ export function Header() {
   const { goToCart }             = useCartUi();
   const { itemCount: cartCount } = useCartData();
   const sessionUser              = useStorefrontSession();
-  const [menuOpen, setMenuOpen]  = useState(false);
-
-  useEffect(() => {
-    document.body.style.overflow = menuOpen ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [menuOpen]);
-
-  useEffect(() => {
-    setMenuOpen(false);
-  }, [pathname]);
 
   if (
     pathname?.startsWith("/admin") ||
@@ -89,57 +74,32 @@ export function Header() {
   ) return null;
 
   const hideOnMobile = pathname ? immersiveMobileRoutes.has(pathname) : false;
-  // Shop/category pages use a fixed app-shell layout: the announcement bar stays
-  // pinned instead of scrolling away, so only the product grid area scrolls.
   const isShopPage = pathname === "/shop" || (pathname?.startsWith("/product-category/") ?? false);
   const displayName  = sessionUser?.name?.trim() || sessionUser?.email?.split("@")[0];
 
   async function handleSignOut() {
     await logoutSession();
-    setMenuOpen(false);
     router.push("/");
     router.refresh();
   }
 
   return (
     <>
-    {/* Announcement Bar — wrapped separately so it doesn't share a (short) containing
-        block with the sticky header below; a sticky element can never stay pinned past
-        the point where its own parent box has scrolled out of view. On shop pages it
-        stays pinned too (via its own independent sticky, still a sibling of header so
-        neither one's stickiness is constrained by the other's box). */}
     <div className={`${hideOnMobile ? "hidden md:block" : ""} ${isShopPage ? "sticky top-0 z-50" : ""}`}>
       <AnnouncementBar />
     </div>
 
-    {/* Main Header */}
     <header
       className={`sticky z-50 border-b border-brand-forest/10 bg-brand-cream/95 shadow-sm ${isShopPage ? "top-8" : "top-0"} ${hideOnMobile ? "hidden md:block" : ""}`}
       style={{ backdropFilter: "blur(12px)" }}
     >
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
-
-          {/* Mobile menu */}
-          <button
-            type="button"
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-brand-forest transition-colors hover:bg-brand-forest/5 hover:text-brand-gold md:hidden"
-            onClick={() => setMenuOpen(true)}
-            aria-expanded={menuOpen}
-            aria-label="Open menu"
-          >
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path strokeLinecap="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-
-          {/* Logo */}
           <SarvedaLogo
             showTagline
             iconHeight={34}
             wordmarkClassName="font-serif text-xl italic leading-tight tracking-wide text-brand-forest transition-colors group-hover:text-brand-gold md:text-2xl"
           />
 
-          {/* Desktop Nav */}
           <nav className="hidden items-center gap-6 lg:gap-8 md:flex" aria-label="Main">
             {MAIN_NAV_LINKS.map((link) => (
               <Link key={link.href} href={link.href} className={navLinkClass}>
@@ -155,7 +115,6 @@ export function Header() {
             ))}
           </nav>
 
-          {/* Search Bar — desktop */}
           <div className="relative hidden min-w-0 flex-1 md:block md:max-w-sm lg:max-w-md">
             <svg
               className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-brand-muted"
@@ -178,10 +137,7 @@ export function Header() {
             />
           </div>
 
-          {/* Right actions */}
           <div className="ml-auto flex shrink-0 items-center gap-1 md:gap-2">
-
-            {/* Mobile: account shortcut */}
             <Link
               href="/profile"
               className="inline-flex h-10 items-center justify-center rounded-xl px-3 text-brand-forest transition-colors hover:bg-brand-forest/5 hover:text-brand-gold md:hidden"
@@ -192,7 +148,6 @@ export function Header() {
               </svg>
             </Link>
 
-            {/* Desktop: account */}
             <div className="hidden items-center gap-3 md:flex">
               {sessionUser ? (
                 <>
@@ -227,11 +182,10 @@ export function Header() {
               )}
             </div>
 
-            {/* Cart */}
             <button
               type="button"
               onClick={goToCart}
-              className="inline-flex items-center rounded-xl transition-colors"
+              className="hidden items-center rounded-xl transition-colors md:inline-flex"
               aria-label={`Open cart, ${cartCount} items`}
             >
               <CartIcon count={cartCount} />
@@ -239,108 +193,6 @@ export function Header() {
           </div>
         </div>
       </header>
-
-    {menuOpen ? (
-      <div
-        className="fixed inset-0 z-[60] flex flex-col bg-brand-cream md:hidden"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Navigation"
-      >
-        <div className="flex items-center justify-between border-b border-brand-forest/10 px-4 py-4">
-          <div className="flex items-center gap-2">
-            <Image src="/brand/sarveda-logo.png" alt="" width={18} height={36} className="object-contain" aria-hidden />
-            <span className="font-serif text-xl italic text-brand-forest">Menu</span>
-          </div>
-          <button
-            type="button"
-            className="flex h-11 min-w-[44px] items-center justify-center rounded-xl text-brand-forest hover:text-brand-gold"
-            onClick={() => setMenuOpen(false)}
-            aria-label="Close menu"
-          >
-            <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path strokeLinecap="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-4 py-6" aria-label="Mobile main">
-          <div className="mb-4 px-1">
-            <SearchWithSuggestions
-              id="mobile-search"
-              placeholder="Search products…"
-              inputClassName="w-full rounded-xl border border-brand-forest/15 bg-white/70 py-3 pl-4 pr-4 text-base text-brand-ink placeholder:text-brand-muted focus:border-brand-gold/60 focus:outline-none focus:ring-1 focus:ring-brand-gold/40"
-              onNavigate={() => setMenuOpen(false)}
-            />
-          </div>
-          {MAIN_NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="min-h-[52px] rounded-xl px-4 py-3 text-lg font-medium text-brand-forest hover:bg-brand-forest/5 hover:text-brand-gold"
-              onClick={() => setMenuOpen(false)}
-            >
-              {link.label}
-            </Link>
-          ))}
-          <div className="my-2 h-px bg-brand-forest/10" />
-          {sessionUser ? (
-            <>
-              <Link
-                href="/profile"
-                className="min-h-[52px] rounded-xl px-4 py-3 text-lg font-medium text-brand-gold hover:bg-brand-forest/5"
-                onClick={() => setMenuOpen(false)}
-              >
-                Hello, {displayName}
-              </Link>
-              {isAdminRole(sessionUser.role) ? (
-                <Link
-                  href="/admin"
-                  className="min-h-[52px] rounded-xl px-4 py-3 text-lg font-medium text-brand-gold hover:bg-brand-forest/5"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  Admin panel
-                </Link>
-              ) : null}
-              <button
-                type="button"
-                className="min-h-[52px] w-full rounded-xl px-4 py-3 text-left text-lg font-medium text-brand-muted hover:bg-brand-forest/5"
-                onClick={() => void handleSignOut()}
-              >
-                Sign out
-              </button>
-            </>
-          ) : (
-            <>
-              <Link
-                href="/login"
-                className="min-h-[52px] rounded-xl px-4 py-3 text-lg font-medium text-brand-forest hover:bg-brand-forest/5 hover:text-brand-gold"
-                onClick={() => setMenuOpen(false)}
-              >
-                Sign in
-              </Link>
-              <Link
-                href="/signup"
-                className="min-h-[52px] rounded-xl px-4 py-3 text-lg font-semibold text-brand-gold hover:bg-brand-forest/5"
-                onClick={() => setMenuOpen(false)}
-              >
-                Sign up
-              </Link>
-            </>
-          )}
-          <div className="my-2 h-px bg-brand-forest/10" />
-          <button
-            type="button"
-            className="min-h-[52px] w-full rounded-xl px-4 py-3 text-left text-lg font-semibold text-brand-forest hover:bg-brand-forest/5"
-            onClick={() => {
-              setMenuOpen(false);
-              goToCart();
-            }}
-          >
-            Cart {cartCount > 0 ? `(${cartCount})` : ""}
-          </button>
-        </nav>
-      </div>
-    ) : null}
     </>
   );
 }

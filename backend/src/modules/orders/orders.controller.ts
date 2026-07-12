@@ -11,6 +11,12 @@ import {
 } from "../invoices/invoice.service";
 import { buildOrderInvoicePdf } from "../../utils/invoice";
 import { orderBlocksCarrierSync, syncTrackingByWaybill } from "../shipping/orderLifecycle";
+import {
+  buildOrderSummaryDetails,
+  type OrderCostBreakdownDto,
+  type OrderLineItemDto,
+  type OrderShippingAddressDto
+} from "./order-summary-details";
 
 function serializePublicOrderView(order: {
   orderNumber: string;
@@ -104,11 +110,25 @@ function serializeOrderSummary(order: {
   email: string;
   status: string;
   paymentStatus: string;
-  grandTotalInPaise: number;
   currency: string;
+  subtotalInPaise: number;
+  discountInPaise: number;
+  shippingInPaise: number;
+  grandTotalInPaise: number;
   createdAt: Date;
   placedAt: Date | null;
-  items: Array<{ nameSnapshot: string; qtyOrdered: number }>;
+  items: Array<{ nameSnapshot: string; qtyOrdered: number; lineTotalInPaise: number }>;
+  addresses: Array<{
+    type: string;
+    fullName: string;
+    phone: string;
+    line1: string;
+    line2: string | null;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  }>;
   invoice: { invoiceNo: string } | null;
   payments?: Array<{ provider: string }>;
   shipments?: Array<{
@@ -118,7 +138,28 @@ function serializeOrderSummary(order: {
     status: string;
     carrierMeta?: unknown;
   }>;
-}) {
+}): {
+  orderNumber: string;
+  email: string;
+  status: string;
+  paymentStatus: string;
+  paymentProvider: string | null;
+  isCod: boolean;
+  grandTotalInPaise: number;
+  currency: string;
+  createdAt: Date;
+  placedAt: Date | null;
+  itemCount: number;
+  headline: string;
+  invoiceNo: string | null;
+  deliveryPartner: string | null;
+  awb: string | null;
+  trackingUrl: string | null;
+  shipmentStatus: string | null;
+  lineItems?: OrderLineItemDto[];
+  costBreakdown: OrderCostBreakdownDto;
+  shippingAddress?: OrderShippingAddressDto;
+} {
   const headline = order.items[0]?.nameSnapshot ?? "Order";
   const itemCount = order.items.reduce((sum, row) => sum + row.qtyOrdered, 0);
   const paymentProvider = order.payments?.[0]?.provider ?? null;
@@ -127,6 +168,15 @@ function serializeOrderSummary(order: {
       const meta = s.carrierMeta as { manual?: boolean; direction?: string } | null;
       return s.awb?.trim() && !meta?.manual && meta?.direction !== "REVERSE";
     }) ?? order.shipments?.find((s) => s.awb?.trim());
+  const details = buildOrderSummaryDetails({
+    currency: order.currency,
+    subtotalInPaise: order.subtotalInPaise,
+    discountInPaise: order.discountInPaise,
+    shippingInPaise: order.shippingInPaise,
+    items: order.items,
+    addresses: order.addresses
+  });
+  // Response exposes only mapped lineItems / costBreakdown / shippingAddress — never raw addresses[].
   return {
     orderNumber: order.orderNumber,
     email: order.email,
@@ -144,7 +194,8 @@ function serializeOrderSummary(order: {
     deliveryPartner: trackShipment?.courier ?? null,
     awb: trackShipment?.awb ?? null,
     trackingUrl: trackShipment?.trackingUrl ?? null,
-    shipmentStatus: trackShipment?.status ?? null
+    shipmentStatus: trackShipment?.status ?? null,
+    ...details
   };
 }
 
@@ -161,6 +212,7 @@ export async function listMine(req: Request, res: Response, next: NextFunction) 
       take: 50,
       include: {
         items: { orderBy: { nameSnapshot: "asc" } },
+        addresses: true,
         invoice: true,
         payments: { orderBy: { createdAt: "desc" }, take: 1 },
         shipments: {

@@ -1,6 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 
 import { drawerPanelVariants, drawerTransition, overlayVariants } from "@/lib/motion";
@@ -29,11 +31,27 @@ export function SlideDrawer({
   panelClassName = "max-w-md"
 }: SlideDrawerProps) {
   const reduceMotion = useReducedMotion();
+  const [mounted, setMounted] = useState(false);
 
-  return (
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {open ? (
-        <div className="fixed inset-0 z-[70] flex" aria-hidden={!open}>
+        <div className="fixed inset-0 z-[90] flex" aria-hidden={!open}>
           <motion.button
             type="button"
             className="absolute inset-0 bg-stone-950/45 md:bg-stone-900/50 md:backdrop-blur-[2px]"
@@ -79,6 +97,7 @@ export function SlideDrawer({
           </motion.aside>
         </div>
       ) : null}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

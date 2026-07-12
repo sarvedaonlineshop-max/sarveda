@@ -1,16 +1,23 @@
 import Link from "next/link";
 
-/** Slim fixed footer for app-style pages (/shop). Sits above the mobile bottom nav. */
+import { MOBILE_MENU_POLICY_LINKS } from "@/lib/policy-links";
+
+/** Slim fixed footer for app-style shop pages — desktop only; mobile uses BottomNav menu. */
 export function SlimFooter() {
   return (
-    <footer className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-40 flex items-center justify-center gap-4 border-t border-brand-cream/10 bg-brand-forest px-4 py-1.5 text-[11px] text-brand-cream/80 md:bottom-0 md:py-2">
+    <footer className="fixed inset-x-0 bottom-0 z-40 hidden flex-wrap items-center justify-center gap-x-4 border-t border-brand-cream/10 bg-brand-forest px-3 py-2 text-[11px] text-brand-cream/80 md:flex">
       <p className="whitespace-nowrap">© {new Date().getFullYear()} Sarveda · All rights reserved</p>
-      <Link href="/privacy" className="shrink-0 hover:text-brand-gold">
-        Privacy
-      </Link>
-      <Link href="/terms" className="shrink-0 hover:text-brand-gold">
-        Terms
-      </Link>
+      <nav className="flex flex-wrap items-center justify-center gap-x-4" aria-label="Shop policies">
+        {MOBILE_MENU_POLICY_LINKS.map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            className="shrink-0 font-medium text-brand-gold-pale transition-colors hover:text-brand-gold"
+          >
+            {link.label}
+          </Link>
+        ))}
+      </nav>
     </footer>
   );
 }
