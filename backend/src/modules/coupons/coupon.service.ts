@@ -189,7 +189,7 @@ export function formatCouponOfferLabel(coupon: Coupon): string {
 }
 
 function featuredCouponCodes(): string[] {
-  const raw = process.env.COUPON_CHECKOUT_FEATURED ?? "WELCOME10";
+  const raw = process.env.COUPON_CHECKOUT_FEATURED ?? "WELCOME5";
   return raw
     .split(",")
     .map((c) => normalizeCode(c))
@@ -197,7 +197,7 @@ function featuredCouponCodes(): string[] {
 }
 
 function pdpCouponCodes(): string[] {
-  const raw = process.env.COUPON_PDP_FEATURED ?? process.env.COUPON_CHECKOUT_FEATURED ?? "WELCOME10";
+  const raw = process.env.COUPON_PDP_FEATURED ?? process.env.COUPON_CHECKOUT_FEATURED ?? "WELCOME5";
   return raw
     .split(",")
     .map((c) => normalizeCode(c))

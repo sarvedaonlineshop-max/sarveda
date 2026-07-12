@@ -235,7 +235,7 @@ export default function AdminCouponsPage() {
                 value={form.code}
                 style={inputSt}
                 onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))}
-                placeholder="WELCOME10"
+                placeholder="WELCOME5"
                 disabled={!!editing}
               />
             </label>

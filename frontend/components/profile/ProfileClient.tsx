@@ -8,7 +8,15 @@ import { MobileSubpageHeader } from "@/components/layout/MobileSubpageHeader";
 import { YourLearning } from "@/components/profile/YourLearning";
 import { YourOrders } from "@/components/profile/YourOrders";
 import type { PublicUser } from "@/lib/auth-client";
-import { fetchMe, isAdminRole, logoutSession, updateProfile } from "@/lib/auth-client";
+import {
+  fetchProfileDetails,
+  isAdminRole,
+  logoutSession,
+  updateProfile,
+  type PrimaryAddress
+} from "@/lib/auth-client";
+import { INDIAN_STATES } from "@/lib/indian-states";
+import { validateProfileForm, type ProfileFieldErrors } from "@/lib/profile-validation";
 
 type TabKey = "details" | "orders" | "courses" | "events";
 
@@ -110,6 +118,16 @@ export function ProfileClient() {
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [shippingFullName, setShippingFullName] = useState("");
+  const [addressPhone, setAddressPhone] = useState("");
+  const [line1, setLine1] = useState("");
+  const [line2, setLine2] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [country, setCountry] = useState("IN");
+  const [fieldErrors, setFieldErrors] = useState<ProfileFieldErrors>({});
+  const [showAllErrors, setShowAllErrors] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -127,15 +145,33 @@ export function ProfileClient() {
     []
   );
 
+  function applyPrimaryAddress(addr: PrimaryAddress | null, sessionUser: PublicUser) {
+    if (!addr) return;
+    setShippingFullName(addr.fullName);
+    setAddressPhone(addr.phone.replace(/^\+\d+/, ""));
+    setLine1(addr.line1);
+    setLine2(addr.line2 ?? "");
+    setCity(addr.city);
+    setState(addr.state);
+    setPostalCode(addr.postalCode);
+    setCountry(addr.country || "IN");
+    if (!sessionUser.phone?.trim()) {
+      setPhone(addr.phone.replace(/^\+\d+/, ""));
+    }
+  }
+
   useEffect(() => {
     let cancelled = false;
-    void fetchMe().then((session) => {
-      if (!cancelled) {
-        setUser(session);
-        setName(session?.name?.trim() ?? "");
-        setPhone(session?.phone?.trim() ?? "");
-        setLoading(false);
+    void fetchProfileDetails().then((session) => {
+      if (cancelled || !session) {
+        if (!cancelled) setLoading(false);
+        return;
       }
+      setUser(session.user);
+      setName(session.user.name?.trim() ?? "");
+      setPhone(session.user.phone?.replace(/^\+\d+/, "") ?? "");
+      applyPrimaryAddress(session.primaryAddress, session.user);
+      setLoading(false);
     });
     return () => {
       cancelled = true;
@@ -152,24 +188,80 @@ export function ProfileClient() {
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!user) return;
+
+    const form = {
+      name,
+      phone,
+      email: user.email,
+      shippingFullName: shippingFullName || name,
+      line1,
+      line2,
+      city,
+      state,
+      postalCode,
+      country
+    };
+    const validation = validateProfileForm(form);
+    setShowAllErrors(true);
+    setFieldErrors(validation.fieldErrors);
+    if (validation.message) {
+      setError(validation.message);
+      return;
+    }
+
     setSaving(true);
     setMessage(null);
     setError(null);
     try {
       const updated = await updateProfile({
-        name,
-        phone: phone.trim() ? phone.trim() : null
+        name: form.name,
+        phone: form.phone,
+        address: {
+          fullName: form.shippingFullName,
+          phone: addressPhone.trim() || form.phone,
+          line1: form.line1,
+          line2: form.line2.trim() || null,
+          city: form.city,
+          state: form.state,
+          postalCode: form.postalCode,
+          country: form.country
+        }
       });
-      setUser(updated);
-      setName(updated.name?.trim() ?? "");
-      setPhone(updated.phone?.trim() ?? "");
-      setMessage("Profile updated.");
+      setUser(updated.user);
+      setName(updated.user.name?.trim() ?? "");
+      setPhone(updated.user.phone?.replace(/^\+\d+/, "") ?? "");
+      applyPrimaryAddress(updated.primaryAddress, updated.user);
+      setMessage("Profile and delivery address saved.");
+      setShowAllErrors(false);
+      setFieldErrors({});
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not update profile.");
     } finally {
       setSaving(false);
     }
+  }
+
+  function fieldState(key: keyof ProfileFieldErrors): "idle" | "invalid" {
+    if (!showAllErrors) return "idle";
+    return fieldErrors[key] ? "invalid" : "idle";
+  }
+
+  function fieldClass(key: keyof ProfileFieldErrors): string {
+    const base =
+      "min-h-[44px] w-full rounded-xl border px-4 text-sm text-brand-ink focus:outline-none focus:ring-2";
+    return fieldState(key) === "invalid"
+      ? `${base} border-red-300 bg-red-50/50 focus:border-red-500 focus:ring-red-500/20`
+      : `${base} border-[#E3D9C8] bg-white focus:border-brand-gold focus:ring-brand-gold/30`;
+  }
+
+  function FieldError({ name }: { name: keyof ProfileFieldErrors }) {
+    if (!showAllErrors || !fieldErrors[name]) return null;
+    return (
+      <p className="mt-1 text-xs text-red-600" role="alert">
+        {fieldErrors[name]}
+      </p>
+    );
   }
 
   if (loading) {
@@ -260,21 +352,47 @@ export function ProfileClient() {
           id="profile-panel-details"
           aria-labelledby="profile-tab-details"
           hidden={activeTab !== "details"}
-          className="rounded-2xl border border-brand-cream-dark bg-white p-6 shadow-card"
+          className="rounded-2xl border border-brand-cream-dark bg-white p-6 shadow-card md:p-8"
         >
-          <form onSubmit={(event) => void handleSave(event)} className="space-y-4">
+          <form onSubmit={(event) => void handleSave(event)} className="space-y-6">
             <div>
-              <label htmlFor="profile-name" className="mb-2 block text-sm font-medium text-brand-ink">
-                Name
-              </label>
-              <input
-                id="profile-name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                className="min-h-[48px] w-full rounded-xl border border-[#E3D9C8] bg-white px-4 text-sm text-brand-ink focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/30"
-                autoComplete="name"
-              />
+              <h2 className="font-serif text-xl font-semibold text-brand-ink">Personal details</h2>
+              <p className="mt-1 text-sm text-brand-muted">
+                Used at checkout except email, which stays linked to your account.
+              </p>
             </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label htmlFor="profile-name" className="mb-2 block text-sm font-medium text-brand-ink">
+                  Name
+                </label>
+                <input
+                  id="profile-name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  className={fieldClass("name")}
+                  autoComplete="name"
+                />
+                <FieldError name="name" />
+              </div>
+              <div>
+                <label htmlFor="profile-phone" className="mb-2 block text-sm font-medium text-brand-ink">
+                  Mobile number
+                </label>
+                <input
+                  id="profile-phone"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  inputMode="tel"
+                  className={fieldClass("phone")}
+                  autoComplete="tel"
+                  placeholder="10-digit mobile"
+                />
+                <FieldError name="phone" />
+              </div>
+            </div>
+
             <div>
               <label htmlFor="profile-email" className="mb-2 block text-sm font-medium text-brand-ink">
                 Email
@@ -283,28 +401,131 @@ export function ProfileClient() {
                 id="profile-email"
                 value={user.email}
                 readOnly
-                className="min-h-[48px] w-full rounded-xl border border-[#E3D9C8] bg-brand-cream px-4 text-sm text-brand-muted"
+                className="min-h-[44px] w-full rounded-xl border border-[#E3D9C8] bg-brand-cream px-4 text-sm text-brand-muted"
               />
+              <p className="mt-1 text-xs text-brand-muted">Email cannot be changed here.</p>
             </div>
+
+            <div className="border-t border-brand-cream-dark pt-6">
+              <h3 className="font-serif text-lg font-semibold text-brand-ink">Primary delivery address</h3>
+              <p className="mt-1 text-sm text-brand-muted">
+                Pre-filled from your first order when available. This loads automatically at checkout.
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label htmlFor="profile-recipient" className="mb-2 block text-sm font-medium text-brand-ink">
+                  Recipient name
+                </label>
+                <input
+                  id="profile-recipient"
+                  value={shippingFullName}
+                  onChange={(event) => setShippingFullName(event.target.value)}
+                  className={fieldClass("shippingFullName")}
+                  autoComplete="shipping name"
+                />
+                <FieldError name="shippingFullName" />
+              </div>
+              <div>
+                <label htmlFor="profile-address-phone" className="mb-2 block text-sm font-medium text-brand-ink">
+                  Delivery phone
+                </label>
+                <input
+                  id="profile-address-phone"
+                  value={addressPhone}
+                  onChange={(event) => setAddressPhone(event.target.value)}
+                  inputMode="tel"
+                  className={fieldClass("phone")}
+                  autoComplete="tel"
+                  placeholder="Same as mobile if blank"
+                />
+              </div>
+            </div>
+
             <div>
-              <label htmlFor="profile-phone" className="mb-2 block text-sm font-medium text-brand-ink">
-                Phone
+              <label htmlFor="profile-line1" className="mb-2 block text-sm font-medium text-brand-ink">
+                Address line 1
               </label>
               <input
-                id="profile-phone"
-                value={phone}
-                onChange={(event) => setPhone(event.target.value)}
-                inputMode="tel"
-                className="min-h-[48px] w-full rounded-xl border border-[#E3D9C8] bg-white px-4 text-sm text-brand-ink focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/30"
-                autoComplete="tel"
+                id="profile-line1"
+                value={line1}
+                onChange={(event) => setLine1(event.target.value)}
+                className={fieldClass("line1")}
+                autoComplete="address-line1"
+              />
+              <FieldError name="line1" />
+            </div>
+
+            <div>
+              <label htmlFor="profile-line2" className="mb-2 block text-sm font-medium text-brand-ink">
+                Address line 2 (optional)
+              </label>
+              <input
+                id="profile-line2"
+                value={line2}
+                onChange={(event) => setLine2(event.target.value)}
+                className={fieldClass("line2")}
+                autoComplete="address-line2"
               />
             </div>
-            {error ? <p className="text-sm text-red-600">{error}</p> : null}
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <div>
+                <label htmlFor="profile-city" className="mb-2 block text-sm font-medium text-brand-ink">
+                  City
+                </label>
+                <input
+                  id="profile-city"
+                  value={city}
+                  onChange={(event) => setCity(event.target.value)}
+                  className={fieldClass("city")}
+                  autoComplete="address-level2"
+                />
+                <FieldError name="city" />
+              </div>
+              <div>
+                <label htmlFor="profile-state" className="mb-2 block text-sm font-medium text-brand-ink">
+                  State
+                </label>
+                <select
+                  id="profile-state"
+                  value={state}
+                  onChange={(event) => setState(event.target.value)}
+                  className={fieldClass("state")}
+                  autoComplete="address-level1"
+                >
+                  <option value="">Select state</option>
+                  {INDIAN_STATES.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+                <FieldError name="state" />
+              </div>
+              <div>
+                <label htmlFor="profile-pin" className="mb-2 block text-sm font-medium text-brand-ink">
+                  PIN code
+                </label>
+                <input
+                  id="profile-pin"
+                  value={postalCode}
+                  onChange={(event) => setPostalCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                  inputMode="numeric"
+                  className={fieldClass("postalCode")}
+                  autoComplete="postal-code"
+                />
+                <FieldError name="postalCode" />
+              </div>
+            </div>
+
+            {error ? <p className="text-sm text-red-600" role="alert">{error}</p> : null}
             {message ? <p className="text-sm text-brand-sage">{message}</p> : null}
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-brand-forest px-6 text-sm font-semibold text-brand-cream transition-colors hover:bg-brand-night disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500"
+              className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-brand-forest px-8 text-sm font-semibold text-brand-cream transition-colors hover:bg-brand-night disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500"
             >
               {saving ? "Saving…" : "Save changes"}
             </button>

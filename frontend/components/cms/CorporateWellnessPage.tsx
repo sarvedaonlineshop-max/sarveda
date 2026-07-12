@@ -20,7 +20,7 @@ type Props = { page: CmsPage };
 function SectionTitle({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <h2
-      className={`text-center font-sans text-2xl font-semibold tracking-tight text-stone-900 md:text-3xl lg:text-4xl ${className}`}
+      className={`text-center font-serif text-2xl font-semibold tracking-tight text-stone-900 md:text-3xl lg:text-4xl ${className}`}
     >
       {children}
     </h2>
@@ -109,7 +109,7 @@ export function CorporateWellnessPage({ page: _page }: Props) {
           />
         </div>
         <div className="flex flex-col justify-center bg-brand-forest px-8 py-12 text-white md:px-14 md:py-16">
-          <h2 className="font-sans text-2xl font-semibold md:text-3xl lg:text-4xl">Immersive Wellness Retreats</h2>
+          <h2 className="font-serif text-2xl font-semibold md:text-3xl lg:text-4xl">Immersive Wellness Retreats</h2>
           <p className="mt-5 max-w-lg text-sm leading-relaxed text-white/95 md:text-base">
             Recharge with our wellness retreats just outside the city, featuring yoga, meditation, sound healing, and
             organic meals. Enjoy mindfulness activities, nature hikes, and educational sessions on holistic wellness.
@@ -206,7 +206,7 @@ export function CorporateWellnessPage({ page: _page }: Props) {
       {/* Wellness in Action — masonry-style gallery */}
       <section className="px-4 py-14 md:py-20 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <h2 className="mb-8 font-sans text-2xl font-semibold text-stone-900 md:text-3xl">
+          <h2 className="mb-8 font-serif text-2xl font-semibold text-stone-900 md:text-3xl">
             Our Wellness in Action
           </h2>
           <div className="columns-1 gap-3 sm:columns-2 lg:columns-3">

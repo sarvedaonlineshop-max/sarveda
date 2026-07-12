@@ -12,7 +12,7 @@ const footerLinks = {
     { label: "Corporate Wellness", href: "/corporate-wellness" },
     { label: "Insights", href: "/insights" },
     { label: "Sound Healing", href: "/product-category/sound-musical-instruments" },
-    { label: "Ayurveda", href: "/product-category/ayurveda-herbs" },
+    { label: "Meditation", href: "/product-category/yoga-meditation" },
     { label: "Yoga & Meditation", href: "/product-category/yoga-meditation" },
   ],
   support: [
@@ -116,7 +116,7 @@ export function SiteFooter() {
             taglineClassName="mt-0.5 text-xs tracking-[0.22em] text-brand-gold"
           />
           <p className="mt-5 max-w-sm text-sm leading-relaxed text-brand-cream/70">
-            Authentic yoga, Ayurveda, and sound healing products — curated with care for practitioners
+            Authentic yoga, meditation, and sound healing products — curated with care for practitioners
             across India and worldwide. Every piece chosen for depth of practice.
           </p>
 

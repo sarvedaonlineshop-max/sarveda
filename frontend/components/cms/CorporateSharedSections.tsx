@@ -15,7 +15,7 @@ import { EXPLORE_WELLNESS_CARDS } from "@/lib/corporate-program-pages-data";
 function SectionTitle({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <h2
-      className={`text-center font-sans text-2xl font-semibold tracking-tight text-stone-900 md:text-3xl lg:text-4xl ${className}`}
+      className={`text-center font-serif text-2xl font-semibold tracking-tight text-stone-900 md:text-3xl lg:text-4xl ${className}`}
     >
       {children}
     </h2>
@@ -68,7 +68,7 @@ export function CorporateGallery() {
   return (
     <section className="px-4 py-14 md:py-20 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <h2 className="mb-8 font-sans text-2xl font-semibold text-stone-900 md:text-3xl">
+        <h2 className="mb-8 font-serif text-2xl font-semibold text-stone-900 md:text-3xl">
           Our Wellness in Action
         </h2>
         <div className="columns-1 gap-3 sm:columns-2 lg:columns-3">

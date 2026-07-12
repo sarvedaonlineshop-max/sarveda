@@ -4,6 +4,10 @@ import rateLimit from "express-rate-limit";
 import passport from "passport";
 import type { Profile } from "passport-google-oauth20";
 
+import {
+  getOrSeedPrimaryAddress,
+  serializePrimaryAddress
+} from "./primary-address.service";
 import { prisma } from "../../config/db";
 import { requireAuth } from "../../middleware/auth";
 import { validateBody } from "../../middleware/validate";
@@ -217,7 +221,14 @@ authRouter.get(
     if (jwtRole !== dbRole) {
       setAuthCookie(res, { sub: user.id, email: user.email, role: user.role });
     }
-    res.json({ success: true, data: { user } });
+    const primaryRow = await getOrSeedPrimaryAddress(auth.id, user.email);
+    res.json({
+      success: true,
+      data: {
+        user,
+        primaryAddress: primaryRow ? serializePrimaryAddress(primaryRow) : null
+      }
+    });
   })
 );
 
@@ -227,7 +238,14 @@ authRouter.patch(
   validateBody(updateProfileSchema),
   asyncHandler(async (req, res) => {
     const user = await updateProfile(req.authUser!.id, req.body);
-    res.json({ success: true, data: { user } });
+    const primaryRow = await getOrSeedPrimaryAddress(req.authUser!.id, user.email);
+    res.json({
+      success: true,
+      data: {
+        user,
+        primaryAddress: primaryRow ? serializePrimaryAddress(primaryRow) : null
+      }
+    });
   })
 );
 
@@ -288,6 +306,13 @@ authRouter.get(
   "/me/addresses",
   requireAuth,
   asyncHandler(async (req, res) => {
+    const user = await prisma.user.findUnique({
+      where: { id: req.authUser!.id },
+      select: { id: true, email: true }
+    });
+    if (user) {
+      await getOrSeedPrimaryAddress(user.id, user.email);
+    }
     const rows = await prisma.address.findMany({
       where: { userId: req.authUser!.id },
       orderBy: [{ isDefault: "desc" }, { id: "asc" }]

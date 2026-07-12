@@ -161,7 +161,28 @@ export function CheckoutClient() {
         shippingFullName: current.shippingFullName || user.name?.trim() || current.shippingFullName,
         phone: current.phone || user.phone?.replace(/^\+\d+/, "") || current.phone
       }));
-      void fetchMyAddresses().then(setSavedAddresses);
+      void fetchMyAddresses().then((addrs) => {
+        setSavedAddresses(addrs);
+        if (resumeOrderNumber) return;
+        const primary = addrs.find((a) => a.isDefault) ?? addrs[0];
+        if (!primary) return;
+        setForm((current) => {
+          if (current.line1.trim()) return current;
+          return {
+            ...current,
+            email: current.email || user.email,
+            shippingFullName: primary.fullName,
+            phone: primary.phone.replace(/^\+\d+/, ""),
+            phoneDial: countryByCode(primary.country)?.dial ?? "+91",
+            line1: primary.line1,
+            line2: primary.line2 ?? "",
+            city: primary.city,
+            state: primary.state,
+            postalCode: primary.postalCode,
+            country: primary.country
+          };
+        });
+      });
     });
   }, []);
 

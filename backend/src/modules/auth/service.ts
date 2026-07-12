@@ -9,6 +9,11 @@ import { hashPassword, verifyPassword } from "../../utils/hash";
 import { clearAuthCookie, setAuthCookie } from "../../utils/jwt";
 import { syncComplaintPassword } from "../complaints/whitelist-auth";
 import type { LoginBody, RegisterBody, SendOtpBody, VerifyOtpBody, ChangePasswordBody } from "./schemas";
+import {
+  getOrSeedPrimaryAddress,
+  serializePrimaryAddress,
+  upsertPrimaryAddress
+} from "./primary-address.service";
 
 function httpError(status: number, message: string, code: string): Error {
   const e = new Error(message) as Error & { statusCode: number; code: string };
@@ -331,30 +336,68 @@ function normalizePhoneInput(raw: string | null | undefined): string | null {
   return digits;
 }
 
-export async function updateProfile(userId: string, body: { name: string; phone?: string | null }) {
-  const phone =
-    body.phone !== undefined ? normalizePhoneInput(body.phone) : undefined;
+export async function updateProfile(
+  userId: string,
+  body: {
+    name: string;
+    phone: string;
+    address: {
+      fullName: string;
+      phone: string;
+      line1: string;
+      line2?: string | null;
+      city: string;
+      state: string;
+      postalCode: string;
+      country: string;
+    };
+  }
+) {
+  const phone = normalizePhoneInput(body.phone);
+  if (!phone) {
+    throw httpError(400, "Enter a valid 10-digit mobile number", "INVALID_PHONE");
+  }
 
-  if (phone) {
-    const clash = await prisma.user.findFirst({
-      where: { phone, NOT: { id: userId }, deletedAt: null }
-    });
-    if (clash) {
-      throw httpError(
-        409,
-        "This mobile number is already linked to another account",
-        "PHONE_EXISTS"
-      );
+  const addressPhone = normalizePhoneInput(body.address.phone);
+  if (!addressPhone) {
+    throw httpError(400, "Enter a valid delivery phone number", "INVALID_PHONE");
+  }
+
+  if (body.address.country === "IN") {
+    const pin = body.address.postalCode.replace(/\D/g, "");
+    if (pin.length !== 6) {
+      throw httpError(400, "Enter a valid 6-digit PIN code", "INVALID_POSTAL");
     }
+  }
+
+  const clash = await prisma.user.findFirst({
+    where: { phone, NOT: { id: userId }, deletedAt: null }
+  });
+  if (clash) {
+    throw httpError(
+      409,
+      "This mobile number is already linked to another account",
+      "PHONE_EXISTS"
+    );
   }
 
   const user = await prisma.user.update({
     where: { id: userId },
     data: {
       name: body.name.trim(),
-      ...(phone !== undefined ? { phone } : {})
+      phone
     }
   });
+
+  await upsertPrimaryAddress(userId, {
+    ...body.address,
+    phone: addressPhone,
+    postalCode:
+      body.address.country === "IN"
+        ? body.address.postalCode.replace(/\D/g, "")
+        : body.address.postalCode.trim()
+  });
+
   return publicUser(user);
 }
 

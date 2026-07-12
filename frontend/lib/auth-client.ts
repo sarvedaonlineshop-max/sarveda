@@ -163,44 +163,96 @@ export function isAdminRole(role: string | undefined | null): boolean {
   return ADMIN_ROLES.has(normalized);
 }
 
-export type UpdateProfileInput = {
-  name: string;
-  phone?: string | null;
+export type PrimaryAddress = {
+  id: string;
+  fullName: string;
+  phone: string;
+  line1: string;
+  line2: string | null;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  isDefault: boolean;
 };
 
-export async function updateProfile(input: UpdateProfileInput): Promise<PublicUser> {
-  const res = await fetch(`${getApiBase()}/api/auth/me`, {
-    method: "PATCH",
-    credentials: "include",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({
-      name: input.name.trim(),
-      phone: input.phone?.trim() ? input.phone.trim() : null
-    })
-  });
-  const json = (await res.json()) as
-    | { success: true; data: { user: PublicUser } }
-    | { success: false; error?: string };
-  if (!res.ok || !json.success || !("data" in json)) {
-    throw new Error("error" in json ? String(json.error) : `Profile update failed (${res.status})`);
-  }
-  return json.data.user;
-}
+export type ProfileSession = {
+  user: PublicUser;
+  primaryAddress: PrimaryAddress | null;
+};
 
-/** Current session user, or null if not logged in. */
-export async function fetchMe(): Promise<PublicUser | null> {
+export type UpdateProfileInput = {
+  name: string;
+  phone: string;
+  address: {
+    fullName: string;
+    phone: string;
+    line1: string;
+    line2?: string | null;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
+};
+
+export async function fetchProfileDetails(): Promise<ProfileSession | null> {
   try {
     const res = await fetch(`${getApiBase()}/api/auth/me`, {
       credentials: "include",
       headers: { Accept: "application/json" }
     });
     if (!res.ok) return null;
-    const json = (await res.json()) as { success?: boolean; data?: { user: PublicUser } };
+    const json = (await res.json()) as {
+      success?: boolean;
+      data?: { user: PublicUser; primaryAddress?: PrimaryAddress | null };
+    };
     if (!json.success || !json.data?.user) return null;
-    return json.data.user;
+    return {
+      user: json.data.user,
+      primaryAddress: json.data.primaryAddress ?? null
+    };
   } catch {
     return null;
   }
+}
+
+export async function updateProfile(input: UpdateProfileInput): Promise<ProfileSession> {
+  const res = await fetch(`${getApiBase()}/api/auth/me`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({
+      name: input.name.trim(),
+      phone: input.phone.trim(),
+      address: {
+        fullName: input.address.fullName.trim(),
+        phone: input.address.phone.trim(),
+        line1: input.address.line1.trim(),
+        line2: input.address.line2?.trim() || null,
+        city: input.address.city.trim(),
+        state: input.address.state.trim(),
+        postalCode: input.address.postalCode.trim(),
+        country: input.address.country.trim().toUpperCase() || "IN"
+      }
+    })
+  });
+  const json = (await res.json()) as
+    | { success: true; data: { user: PublicUser; primaryAddress?: PrimaryAddress | null } }
+    | { success: false; error?: string };
+  if (!res.ok || !json.success || !("data" in json)) {
+    throw new Error("error" in json ? String(json.error) : `Profile update failed (${res.status})`);
+  }
+  return {
+    user: json.data.user,
+    primaryAddress: json.data.primaryAddress ?? null
+  };
+}
+
+/** Current session user, or null if not logged in. */
+export async function fetchMe(): Promise<PublicUser | null> {
+  const session = await fetchProfileDetails();
+  return session?.user ?? null;
 }
 
 export type UserAddress = {

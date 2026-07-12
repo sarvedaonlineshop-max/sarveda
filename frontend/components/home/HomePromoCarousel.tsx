@@ -7,7 +7,7 @@ const slides = [
   {
     id: "welcome",
     eyebrow: "New here?",
-    title: "WELCOME10 — 10% off your first ritual order",
+    title: "WELCOME5 — 5% off your first ritual order",
     body: "Apply at checkout. Valid on curated yoga, Ayurveda, and sound pieces.",
     cta: { label: "Start shopping", href: "/shop" },
     tone: "from-amber-600 via-amber-500 to-orange-500"

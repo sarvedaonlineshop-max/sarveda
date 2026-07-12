@@ -56,7 +56,7 @@ export function HomeHero() {
           <ul className="mt-12 flex flex-wrap gap-x-6 gap-y-2 text-sm text-brand-cream/55">
             <li>169+ curated products</li>
             <li>India · US · UK · worldwide</li>
-            <li>Free shipping ₹999+ in India</li>
+            <li>💳 Visa · Mastercard · PayPal · Stripe</li>
             <li>Audio samples on singing bowls</li>
           </ul>
         </div>

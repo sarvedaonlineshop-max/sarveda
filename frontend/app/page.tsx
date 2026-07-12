@@ -80,8 +80,8 @@ const TRUST = [
         <circle cx="7" cy="18" r="2" />
       </TrustIcon>
     ),
-    title: "Free Shipping ₹999+",
-    body: "Pan-India delivery. International shipping to US, UK and worldwide."
+    title: "Secure payments",
+    body: "Visa, Mastercard, PayPal, Stripe and Razorpay accepted worldwide."
   },
   {
     icon: (

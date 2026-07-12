@@ -14,7 +14,7 @@ function ContentBlock({
 }: CorporateProgramPageData["sections"][number]) {
   const textCol = (
     <div className="flex flex-col justify-center">
-      <h2 className="font-sans text-xl font-semibold text-stone-900 md:text-2xl lg:text-3xl">{title}</h2>
+      <h2 className="font-serif text-xl font-semibold text-stone-900 md:text-2xl lg:text-3xl">{title}</h2>
       <p className="mt-4 text-sm leading-relaxed text-stone-600 md:text-base">{body}</p>
     </div>
   );
@@ -56,7 +56,7 @@ export function CorporateProgramPage({ data }: Props) {
         }}
       >
         <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-          <h1 className="max-w-4xl font-sans text-4xl font-bold uppercase tracking-wide text-white md:text-5xl lg:text-6xl">
+          <h1 className="max-w-4xl font-serif text-4xl font-bold uppercase tracking-wide text-white md:text-5xl lg:text-6xl">
             {data.title}
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-relaxed text-white/95 md:text-lg">{data.hero.subtitle}</p>
@@ -100,7 +100,7 @@ export function CorporateProgramPage({ data }: Props) {
       {data.quoteBlock ? (
         <section className="bg-white px-4 py-12 md:py-16 lg:px-8">
           <div className="mx-auto grid max-w-7xl items-start gap-8 md:grid-cols-2 md:gap-12">
-            <h2 className="font-sans text-xl font-semibold leading-snug text-stone-900 md:text-2xl lg:text-3xl">
+            <h2 className="font-serif text-xl font-semibold leading-snug text-stone-900 md:text-2xl lg:text-3xl">
               {data.quoteBlock.title}
             </h2>
             <div className="space-y-4">

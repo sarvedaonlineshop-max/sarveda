@@ -10,7 +10,7 @@ import { submitEnquiry } from "@/lib/enquiry-api";
 import { ENQUIRY_SUBJECT_OPTIONS, type EnquirySubjectValue } from "@/lib/enquiry-subjects";
 
 const inputCls =
-  "min-h-[48px] w-full rounded-xl border border-brand-cream-dark bg-brand-ivory px-4 text-sm text-brand-ink focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/25";
+  "min-h-[42px] w-full rounded-xl border border-brand-cream-dark bg-brand-ivory px-3 text-sm text-brand-ink focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/25";
 
 function ContactFormInner() {
   const search = useSearchParams();
@@ -96,7 +96,7 @@ function ContactFormInner() {
   }
 
   return (
-    <form onSubmit={(event) => void onSubmit(event)} className="space-y-5">
+    <form onSubmit={(event) => void onSubmit(event)} className="space-y-4">
       {presetOrder ? (
         <p className="rounded-xl border border-brand-gold-pale/60 bg-brand-cream px-4 py-3 text-sm text-brand-ink">
           Order reference: <span className="font-mono font-medium">{presetOrder}</span>
@@ -121,7 +121,7 @@ function ContactFormInner() {
         </select>
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="contact-name" className="mb-2 block text-sm font-medium text-brand-ink">
             Name
@@ -151,7 +151,7 @@ function ContactFormInner() {
         </div>
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="contact-phone" className="mb-2 block text-sm font-medium text-brand-ink">
             Phone (optional)
@@ -188,7 +188,7 @@ function ContactFormInner() {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           required
-          rows={5}
+          rows={4}
           placeholder="Tell us how we can help…"
           className="w-full resize-y rounded-xl border border-brand-cream-dark bg-brand-ivory px-4 py-3 text-sm text-brand-ink focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/25"
         />
@@ -228,26 +228,33 @@ export function ContactPageClient() {
   return (
     <>
       <div className="border-b border-brand-cream-dark/60 bg-white">
-        <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8 md:py-16">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">Support</p>
-          <h1 className="mt-2 font-serif text-3xl font-semibold tracking-tight text-brand-ink md:text-4xl">
-            Need help?
+        <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6 md:py-8">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-gold">Support</p>
+          <h1 className="mt-1 font-serif text-2xl font-semibold tracking-tight text-brand-ink md:text-[1.65rem]">
+            💬 Need help?
           </h1>
-          <p className="mt-3 max-w-2xl text-brand-muted">
-            Questions about an order, delivery, or a product? Our team replies by email — usually within 1–2
-            business days.
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-brand-muted">
+            📧 Questions about an order, delivery, or a product? Email us at{" "}
+            <a href="mailto:care@sarveda.com" className="font-medium text-brand-gold hover:text-brand-forest">
+              care@sarveda.com
+            </a>{" "}
+            — we usually reply within 1–2 business days. 📞 Call or WhatsApp{" "}
+            <a href="tel:+919535975075" className="font-medium text-brand-gold hover:text-brand-forest">
+              +91 95359 75075
+            </a>
+            .
           </p>
         </div>
       </div>
 
-      <main className="bg-brand-cream px-4 py-14 sm:px-6 lg:px-8 md:py-20">
-        <div className="mx-auto max-w-2xl rounded-2xl border border-brand-cream-dark bg-white p-6 shadow-card sm:p-8">
+      <main className="bg-brand-cream px-4 py-6 sm:px-6 md:py-8">
+        <div className="mx-auto max-w-3xl rounded-2xl border border-brand-cream-dark bg-white p-5 shadow-card sm:p-6">
           <Suspense fallback={<p className="text-sm text-brand-muted">Loading form…</p>}>
             <ContactFormInner />
           </Suspense>
         </div>
 
-        <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-brand-muted">
+        <p className="mx-auto mt-4 max-w-3xl text-center text-xs text-brand-muted">
           Prefer email?{" "}
           <a href="mailto:care@sarveda.com" className="font-medium text-brand-gold hover:text-brand-forest">
             care@sarveda.com

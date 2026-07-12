@@ -9,7 +9,7 @@ export const metadata = {
 export default function ProfilePage() {
   return (
     <div className="min-h-[60vh] bg-brand-cream md:py-10">
-      <div className="mx-auto max-w-2xl py-4 md:rounded-3xl md:border md:border-brand-cream-dark md:bg-white md:p-8">
+      <div className="mx-auto max-w-5xl px-4 py-4 md:rounded-3xl md:border md:border-brand-cream-dark md:bg-white md:p-8 lg:max-w-6xl">
         <ProfileClient />
       </div>
     </div>

@@ -9,7 +9,7 @@ import type { ProductListItem } from "@/lib/types";
 type Props = { products: ProductListItem[] };
 
 const promos = [
-  { badge: "WELCOME10",          headline: "10% off your first order",            sub: "Start your practice with intention" },
+  { badge: "WELCOME5",          headline: "5% off your first order",            sub: "Start your practice with intention" },
   { badge: "Trusted by thousands", headline: "Thousands return, season after season", sub: "Quality that practitioners recognise" },
   { badge: "Ships worldwide",    headline: "India · US · UK · Worldwide",          sub: "Delivered with care to your door" },
   { badge: "Hear before you buy",headline: "Audio samples on all singing bowls",   sub: "Know the sound before it finds you" },
