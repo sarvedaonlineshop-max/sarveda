@@ -6,6 +6,10 @@ import { useCallback, useEffect, useState } from "react";
 
 import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
 import {
+  AdminOrderServiceRequests,
+  type AdminServiceRequestRow
+} from "@/components/admin/AdminOrderServiceRequests";
+import {
   adminCancelWaybill,
   adminCreateReverseShipment,
   adminCreateShipmentForOrder,
@@ -196,6 +200,7 @@ type OrderLoaded = {
   shippingZone?: string | null;
   wooCommerceId?: number | null;
   wooImportNote?: string | null;
+  serviceRequests?: AdminServiceRequestRow[];
 };
 
 function RefundCancelPanel({
@@ -383,6 +388,24 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
     }))
   }));
   const legacy = raw.wooLegacyMeta as { lineItemsNote?: string } | null | undefined;
+  const serviceRequests = ((raw.serviceRequests as Array<Record<string, unknown>>) ?? []).map((r) => ({
+    id: String(r.id),
+    type: String(r.type),
+    status: String(r.status),
+    reasonLabel: String(r.reasonLabel),
+    otherMessage: r.otherMessage != null ? String(r.otherMessage) : null,
+    message: r.message != null ? String(r.message) : null,
+    customerEmail: String(r.customerEmail),
+    createdAt: String(r.createdAt),
+    reviewedAt: r.reviewedAt != null ? String(r.reviewedAt) : null,
+    reviewedByEmail: r.reviewedByEmail != null ? String(r.reviewedByEmail) : null,
+    adminNote: r.adminNote != null ? String(r.adminNote) : null,
+    photos: ((r.photos as Array<Record<string, unknown>>) ?? []).map((p) => ({
+      id: String(p.id),
+      s3Url: String(p.s3Url),
+      fileName: p.fileName != null ? String(p.fileName) : null
+    }))
+  }));
   return {
     id: String(raw.id),
     orderNumber: String(raw.orderNumber),
@@ -407,7 +430,8 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
     preferredCourier: raw.preferredCourier != null ? String(raw.preferredCourier) : null,
     shippingZone: raw.shippingZone != null ? String(raw.shippingZone) : null,
     wooCommerceId: raw.wooCommerceId != null ? Number(raw.wooCommerceId) : null,
-    wooImportNote: legacy?.lineItemsNote ?? null
+    wooImportNote: legacy?.lineItemsNote ?? null,
+    serviceRequests
   };
 }
 
@@ -1309,6 +1333,14 @@ export default function AdminOrderDetailPage() {
           </div>
         </div>
       </div>
+
+      {order.serviceRequests?.length ? (
+        <AdminOrderServiceRequests
+          orderId={order.id}
+          requests={order.serviceRequests}
+          onUpdated={() => void load()}
+        />
+      ) : null}
 
       {(invoice || showRefundActions) ? (
       <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900">

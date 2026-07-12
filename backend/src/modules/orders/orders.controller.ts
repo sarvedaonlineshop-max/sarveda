@@ -17,6 +17,7 @@ import {
   type OrderLineItemDto,
   type OrderShippingAddressDto
 } from "./order-summary-details";
+import { canRequestCancel, canRequestRefund } from "./order-service-request.service";
 
 function serializePublicOrderView(order: {
   orderNumber: string;
@@ -138,6 +139,14 @@ function serializeOrderSummary(order: {
     status: string;
     carrierMeta?: unknown;
   }>;
+  serviceRequests?: Array<{
+    id: string;
+    type: "CANCEL_BEFORE_DELIVERY" | "REFUND_AFTER_DELIVERY";
+    status: "PENDING_APPROVAL" | "APPROVED" | "REJECTED";
+    reasonLabel: string;
+    message: string | null;
+    createdAt: Date;
+  }>;
 }): {
   orderNumber: string;
   email: string;
@@ -159,6 +168,16 @@ function serializeOrderSummary(order: {
   lineItems?: OrderLineItemDto[];
   costBreakdown: OrderCostBreakdownDto;
   shippingAddress?: OrderShippingAddressDto;
+  serviceRequest?: {
+    id: string;
+    type: "CANCEL_BEFORE_DELIVERY" | "REFUND_AFTER_DELIVERY";
+    status: "PENDING_APPROVAL" | "APPROVED" | "REJECTED";
+    reasonLabel: string;
+    message: string | null;
+    createdAt: Date;
+  } | null;
+  canCancelRequest?: boolean;
+  canRefundRequest?: boolean;
 } {
   const headline = order.items[0]?.nameSnapshot ?? "Order";
   const itemCount = order.items.reduce((sum, row) => sum + row.qtyOrdered, 0);
@@ -177,6 +196,17 @@ function serializeOrderSummary(order: {
     addresses: order.addresses
   });
   // Response exposes only mapped lineItems / costBreakdown / shippingAddress — never raw addresses[].
+  const latestRequest = order.serviceRequests?.[0] ?? null;
+  const hasPending = latestRequest?.status === "PENDING_APPROVAL";
+  const eligibility = {
+    orderNumber: order.orderNumber,
+    email: order.email,
+    status: order.status,
+    paymentStatus: order.paymentStatus,
+    customerId: null as string | null,
+    payments: order.payments
+  };
+
   return {
     orderNumber: order.orderNumber,
     email: order.email,
@@ -195,6 +225,24 @@ function serializeOrderSummary(order: {
     awb: trackShipment?.awb ?? null,
     trackingUrl: trackShipment?.trackingUrl ?? null,
     shipmentStatus: trackShipment?.status ?? null,
+    serviceRequest: latestRequest
+      ? {
+          id: latestRequest.id,
+          type: latestRequest.type,
+          status: latestRequest.status,
+          reasonLabel: latestRequest.reasonLabel,
+          message: latestRequest.message,
+          createdAt: latestRequest.createdAt
+        }
+      : null,
+    canCancelRequest: canRequestCancel({
+      ...eligibility,
+      status: eligibility.status as import("@prisma/client").OrderStatus
+    }) && !hasPending,
+    canRefundRequest: canRequestRefund({
+      ...eligibility,
+      status: eligibility.status as import("@prisma/client").OrderStatus
+    }) && !hasPending,
     ...details
   };
 }
@@ -219,6 +267,10 @@ export async function listMine(req: Request, res: Response, next: NextFunction) 
           where: { awb: { not: null } },
           orderBy: { createdAt: "desc" },
           take: 3
+        },
+        serviceRequests: {
+          orderBy: { createdAt: "desc" },
+          take: 1
         }
       }
     });

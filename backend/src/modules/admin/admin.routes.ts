@@ -21,6 +21,7 @@ import * as mediaHandlers from "./media.handlers";
 import * as seoSuggest from "./seo-suggest.handlers";
 import { couponAdminRoutes } from "../coupons/coupon.admin.routes";
 import { enquiriesAdminRoutes } from "../enquiries/enquiries.admin.routes";
+import * as serviceRequest from "../orders/order-service-request.controller";
 
 const router = Router();
 router.use(requireAdmin);
@@ -50,6 +51,7 @@ router.get("/enrollments/courses", enrollments.courseEnrollmentsCourses);
 router.get("/enrollments", enrollments.courseEnrollmentsList);
 router.get("/payments/reconciliation", admin.paymentsReconciliation);
 router.get("/orders/export/pdf", admin.ordersExportPdf);
+router.get("/orders/service-requests/pending-count", serviceRequest.adminPendingServiceRequestCount);
 router.get("/orders", admin.ordersList);
 router.get("/orders/:id/invoice/download", admin.downloadOrderInvoice);
 router.get("/orders/:id/invoice", admin.orderInvoice);
@@ -72,6 +74,8 @@ router.patch(
   admin.patchOrderAddress
 );
 router.post("/orders/:id/reconcile-razorpay", admin.reconcileRazorpayOrder);
+router.post("/orders/:orderId/service-requests/:requestId/approve", serviceRequest.adminApproveServiceRequest);
+router.post("/orders/:orderId/service-requests/:requestId/reject", serviceRequest.adminRejectServiceRequest);
 router.post("/orders/:id/refund", admin.refundOrder);
 router.post("/orders/:id/cancel", admin.cancelOrder);
 router.patch(

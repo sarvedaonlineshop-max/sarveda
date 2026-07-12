@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
+import { MobileSubpageHeader } from "@/components/layout/MobileSubpageHeader";
 import { YourLearning } from "@/components/profile/YourLearning";
 import { YourOrders } from "@/components/profile/YourOrders";
 import type { PublicUser } from "@/lib/auth-client";
@@ -205,56 +206,45 @@ export function ProfileClient() {
     );
   }
 
-  const displayName = user.name?.trim() || user.email.split("@")[0] || "Customer";
-  const initial = displayName.charAt(0).toUpperCase();
   const learningTabActive = activeTab === "courses" || activeTab === "events";
+
+  const accountActions = (
+    <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+      {isAdminRole(user.role) ? (
+        <Link
+          href="/admin"
+          className="inline-flex min-h-[36px] items-center justify-center rounded-full bg-brand-cream px-4 text-sm font-semibold text-brand-forest transition-colors hover:bg-white"
+        >
+          Admin panel
+        </Link>
+      ) : null}
+      <button
+        type="button"
+        onClick={() => void handleSignOut()}
+        className="inline-flex min-h-[36px] items-center justify-center rounded-full border border-brand-forest/25 px-4 text-sm font-semibold text-brand-forest transition-colors hover:bg-brand-forest/5"
+      >
+        Sign out
+      </button>
+    </div>
+  );
 
   return (
     <div
-      className="flex flex-col gap-4 px-4 md:px-0"
+      className="flex flex-col gap-4 md:px-0"
       style={{ height: "calc(100dvh - var(--profile-offset, 10rem))", minHeight: "24rem" }}
     >
-      {/* ── Greeting (pinned) ── */}
-      <section className="shrink-0 rounded-2xl bg-brand-forest p-5 shadow-card sm:p-6">
-        <div className="flex flex-wrap items-center gap-4">
-          <div
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#FAC775] font-serif text-xl font-semibold text-[#633806] sm:h-14 sm:w-14 sm:text-2xl"
-            aria-hidden="true"
-          >
-            {initial}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#FAC775]">Namaste</p>
-            <h2 className="mt-0.5 truncate font-serif text-xl font-semibold text-brand-cream sm:text-2xl">
-              {displayName}
-            </h2>
-            <p className="mt-0.5 truncate text-sm text-[#9FE1CB]">{user.email}</p>
-          </div>
-          <div className="flex w-full flex-wrap gap-3 sm:w-auto">
-            {isAdminRole(user.role) ? (
-              <Link
-                href="/admin"
-                className="inline-flex min-h-[40px] items-center justify-center rounded-full bg-brand-cream px-5 text-sm font-semibold text-brand-forest transition-colors hover:bg-white"
-              >
-                Admin panel
-              </Link>
-            ) : null}
-            <button
-              type="button"
-              onClick={() => void handleSignOut()}
-              className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-[#5DCAA5]/60 px-5 text-sm font-semibold text-[#E1F5EE] transition-colors hover:bg-white/10"
-            >
-              Sign out
-            </button>
-          </div>
-        </div>
-      </section>
+      <MobileSubpageHeader title="My account" backHref="/" trailing={accountActions} />
+
+      <div className="hidden items-center justify-between gap-4 px-4 md:flex md:px-0">
+        <h1 className="font-serif text-3xl font-semibold text-brand-ink">My account</h1>
+        {accountActions}
+      </div>
 
       {/* ── Tab bar (pinned): 2×2 on mobile, 4-across on desktop, no scrollbar ── */}
       <nav
         role="tablist"
         aria-label="Account sections"
-        className="grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-4"
+        className="grid shrink-0 grid-cols-2 gap-2 px-4 sm:grid-cols-4 md:px-0"
       >
         <TabButton tab="details" label="Personal details" active={activeTab === "details"} onSelect={setActiveTab} />
         <TabButton tab="orders" label="Orders" count={orderCount} active={activeTab === "orders"} onSelect={setActiveTab} />
@@ -263,7 +253,7 @@ export function ProfileClient() {
       </nav>
 
       {/* ── Scrollable content ── */}
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl px-4 md:px-0">
         <section
           role="tabpanel"
           id="profile-panel-details"
@@ -271,7 +261,16 @@ export function ProfileClient() {
           hidden={activeTab !== "details"}
           className="rounded-2xl border border-brand-cream-dark bg-white p-6 shadow-card"
         >
-          <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">Your details</h3>
+          <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">
+            <span
+              className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-brand-forest/10 text-brand-forest"
+              aria-hidden="true"
+            >
+              <TabIcon tab="details" />
+            </span>
+            Personal details
+          </h3>
+          <p className="mt-1 text-sm text-brand-muted">{user.email}</p>
           <form onSubmit={(event) => void handleSave(event)} className="mt-4 space-y-4">
             <div>
               <label htmlFor="profile-name" className="mb-2 block text-sm font-medium text-brand-ink">

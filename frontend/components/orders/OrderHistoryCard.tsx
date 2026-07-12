@@ -216,6 +216,11 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
       ].filter((line): line is string => !!line?.trim())
     : [];
 
+  const serviceRequest = order.serviceRequest ?? null;
+  const requestPending = serviceRequest?.status === "PENDING_APPROVAL";
+  const showCancel = order.canCancelRequest === true;
+  const showRefund = order.canRefundRequest === true;
+
   return (
     <article
       className={`overflow-hidden rounded-r-2xl border border-brand-cream-dark border-l-4 ${status.borderClass} bg-white shadow-card transition-all duration-150 hover:-translate-y-0.5 hover:shadow-lg motion-reduce:transition-none motion-reduce:hover:translate-y-0`}
@@ -243,6 +248,21 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
           {status.label}
         </span>
       </header>
+
+      {requestPending ? (
+        <div className="border-b border-[#FAEEDA] bg-[#FAEEDA]/60 px-5 py-3 text-sm text-[#633806]">
+          <span aria-hidden="true">⏳ </span>
+          Your refund or cancellation is waiting for approval.
+        </div>
+      ) : serviceRequest?.status === "APPROVED" ? (
+        <div className="border-b border-[#E1F5EE] bg-[#E1F5EE]/50 px-5 py-3 text-sm text-[#085041]">
+          Your {serviceRequest.type === "CANCEL_BEFORE_DELIVERY" ? "cancellation" : "return/refund"} request was approved.
+        </div>
+      ) : serviceRequest?.status === "REJECTED" ? (
+        <div className="border-b border-[#FCEBEB] bg-[#FCEBEB]/50 px-5 py-3 text-sm text-[#791F1F]">
+          Your request was reviewed. Contact us if you need more help.
+        </div>
+      ) : null}
 
       {/* ── Meaningful info rows ── */}
       <div className="divide-y divide-brand-cream-dark/60">
@@ -446,6 +466,26 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
             <span aria-hidden="true">📄</span>
             Invoice
           </a>
+        ) : null}
+
+        {showCancel ? (
+          <Link
+            href={`/profile/orders/${encodeURIComponent(order.orderNumber)}/cancel`}
+            className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-[#C0453F]/30 bg-[#FCEBEB] px-4 text-sm font-semibold text-[#791F1F] transition-colors hover:bg-[#FCEBEB]"
+          >
+            <span aria-hidden="true">✕</span>
+            Cancel order
+          </Link>
+        ) : null}
+
+        {showRefund ? (
+          <Link
+            href={`/profile/orders/${encodeURIComponent(order.orderNumber)}/return`}
+            className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-[#D99A2B]/40 bg-[#FAEEDA] px-4 text-sm font-semibold text-[#633806] transition-colors hover:bg-[#FAC775]/40"
+          >
+            <span aria-hidden="true">↩</span>
+            Return / refund
+          </Link>
         ) : null}
 
         <Link

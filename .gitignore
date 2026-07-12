@@ -23,3 +23,4 @@ data/**/refund.xml
 # May-30 batch: keep README in git; copy full folder to EC2 via SCP (not git)
 data/May-30/*
 !data/May-30/README.md
+frontend/.claude/

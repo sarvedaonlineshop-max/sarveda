@@ -100,6 +100,16 @@ export type OrderSummary = {
   lineItems?: OrderLineItem[] | null;
   costBreakdown?: OrderCostBreakdown | null;
   shippingAddress?: OrderShippingAddress | null;
+  serviceRequest?: {
+    id: string;
+    type: "CANCEL_BEFORE_DELIVERY" | "REFUND_AFTER_DELIVERY";
+    status: "PENDING_APPROVAL" | "APPROVED" | "REJECTED";
+    reasonLabel: string;
+    message: string | null;
+    createdAt: string;
+  } | null;
+  canCancelRequest?: boolean;
+  canRefundRequest?: boolean;
 };
 
 export async function fetchOrderPublic(orderNumber: string, email: string): Promise<OrderPublic> {
