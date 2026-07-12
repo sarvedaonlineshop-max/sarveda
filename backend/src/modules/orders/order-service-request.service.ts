@@ -10,9 +10,34 @@ import {
   type REFUND_AFTER_DELIVERY_REASONS
 } from "./order-service-request.constants";
 import {
+  formatCustomerReasonsSummary,
+  type CancellationCustomerReason
+} from "./order-cancellation-info";
+import {
   notifyServiceRequestReviewed,
   notifyServiceRequestSubmitted
 } from "./order-service-request.emails";
+import { initiatePartialGatewayRefund } from "../payments/refund.service";
+import { handlePaidOrderStatusChange } from "./orders.service";
+
+export function customerReasonsFromApprovedCancel(
+  requests: Array<{
+    type: string;
+    status: string;
+    message: string | null;
+    items?: Array<{ nameSnapshot: string; reasonLabel: string; message: string | null }>;
+  }>
+): CancellationCustomerReason[] | undefined {
+  const approved = requests.find(
+    (r) => r.status === "APPROVED" && r.type === "CANCEL_BEFORE_DELIVERY"
+  );
+  if (!approved?.items?.length) return undefined;
+  return approved.items.map((i) => ({
+    itemName: i.nameSnapshot,
+    reasonLabel: i.reasonLabel,
+    message: i.message
+  }));
+}
 
 type OrderRow = {
   id?: string;
@@ -323,7 +348,7 @@ export async function reviewServiceRequest(opts: {
 }): Promise<OrderServiceRequest & { photos: OrderServiceRequestPhoto[] }> {
   const request = await prisma.orderServiceRequest.findFirst({
     where: { id: opts.requestId, orderId: opts.orderId },
-    include: { photos: true, order: true }
+    include: { photos: true, order: true, items: true }
   });
 
   if (!request) {
@@ -334,48 +359,31 @@ export async function reviewServiceRequest(opts: {
   }
 
   const nextStatus = opts.approve ? "APPROVED" : "REJECTED";
-  const nextOrderStatus =
-    opts.approve && request.type === "CANCEL_BEFORE_DELIVERY"
-      ? "CANCELLED"
-      : opts.approve && request.type === "REFUND_AFTER_DELIVERY"
-        ? "REFUNDED"
-        : null;
+  const customerReasonText = request.items.length
+    ? formatCustomerReasonsSummary(
+        request.items.map((i) => ({
+          itemName: i.nameSnapshot,
+          reasonLabel: i.reasonLabel,
+          message: i.message
+        })),
+        request.message
+      )
+    : request.reasonLabel ?? "Customer request";
 
-  const updated = await prisma.$transaction(async (tx) => {
-    const row = await tx.orderServiceRequest.update({
-      where: { id: request.id },
-      data: {
-        status: nextStatus,
-        reviewedAt: new Date(),
-        reviewedByEmail: opts.adminEmail,
-        adminNote: opts.adminNote?.trim() || null
-      },
-      include: { photos: true }
-    });
-
-    if (nextOrderStatus) {
-      await tx.order.update({
-        where: { id: request.orderId },
-        data: {
-          status: nextOrderStatus,
-          ...(nextOrderStatus === "REFUNDED" ? { paymentStatus: "REFUNDED" } : {})
-        }
-      });
-      await tx.orderStatusHistory.create({
-        data: {
-          orderId: request.orderId,
-          fromStatus: request.order.status,
-          toStatus: nextOrderStatus,
-          reason: opts.approve
-            ? `Service request approved by ${opts.adminEmail}`
-            : `Service request rejected by ${opts.adminEmail}`,
-          changedBy: null
-        }
-      });
-    }
-
-    return row;
+  const updated = await prisma.orderServiceRequest.update({
+    where: { id: request.id },
+    data: {
+      status: nextStatus,
+      reviewedAt: new Date(),
+      reviewedByEmail: opts.adminEmail,
+      adminNote: opts.adminNote?.trim() || null
+    },
+    include: { photos: true, items: { include: { photos: true } } }
   });
+
+  if (opts.approve && request.type === "CANCEL_BEFORE_DELIVERY") {
+    await handlePaidOrderStatusChange(request.orderId, "CANCELLED", customerReasonText);
+  }
 
   void notifyServiceRequestReviewed({
     orderNumber: request.orderNumber,
@@ -386,6 +394,178 @@ export async function reviewServiceRequest(opts: {
   });
 
   return updated;
+}
+
+export type ProcessServiceRequestRefundItem = {
+  requestItemId: string;
+  amountInPaise: number;
+};
+
+export async function processServiceRequestRefund(opts: {
+  orderId: string;
+  requestId: string;
+  adminEmail: string;
+  items: ProcessServiceRequestRefundItem[];
+  codRefundNote?: string;
+}): Promise<{
+  totalRefundedInPaise: number;
+  message: string;
+  refundId?: string;
+}> {
+  if (!opts.items.length) {
+    throw Object.assign(new Error("Select at least one item to refund"), {
+      statusCode: 400,
+      code: "ITEMS_REQUIRED"
+    });
+  }
+
+  const request = await prisma.orderServiceRequest.findFirst({
+    where: { id: opts.requestId, orderId: opts.orderId },
+    include: {
+      items: true,
+      order: {
+        include: {
+          items: true,
+          payments: { orderBy: { createdAt: "desc" } }
+        }
+      }
+    }
+  });
+
+  if (!request) {
+    throw Object.assign(new Error("Request not found"), { statusCode: 404, code: "NOT_FOUND" });
+  }
+  if (request.status !== "APPROVED") {
+    throw Object.assign(new Error("Only approved requests can be refunded"), {
+      statusCode: 400,
+      code: "NOT_APPROVED"
+    });
+  }
+
+  const order = request.order;
+  const lineTotalByOrderItemId = new Map(
+    order.items.map((i) => [i.id, i.lineTotalInPaise])
+  );
+  const requestItemById = new Map(request.items.map((i) => [i.id, i]));
+
+  let totalInPaise = 0;
+  const itemUpdates: Array<{ id: string; amountInPaise: number }> = [];
+
+  for (const row of opts.items) {
+    const reqItem = requestItemById.get(row.requestItemId);
+    if (!reqItem) {
+      throw Object.assign(new Error("Invalid item in refund"), { statusCode: 400, code: "BAD_REQUEST" });
+    }
+    const amount = Math.round(row.amountInPaise);
+    if (amount <= 0) {
+      throw Object.assign(new Error(`Refund amount must be positive for ${reqItem.nameSnapshot}`), {
+        statusCode: 400,
+        code: "INVALID_AMOUNT"
+      });
+    }
+    const lineTotal = lineTotalByOrderItemId.get(reqItem.orderItemId) ?? 0;
+    const alreadyRefunded = reqItem.refundAmountInPaise ?? 0;
+    const remaining = lineTotal - alreadyRefunded;
+    if (amount > remaining) {
+      throw Object.assign(
+        new Error(`Refund for ${reqItem.nameSnapshot} cannot exceed ${remaining / 100} (remaining on line)`),
+        { statusCode: 400, code: "AMOUNT_TOO_HIGH" }
+      );
+    }
+    totalInPaise += amount;
+    itemUpdates.push({ id: reqItem.id, amountInPaise: amount });
+  }
+
+  const capturedPayment = order.payments.find((p) => p.status === "CAPTURED" || p.status === "PARTIALLY_REFUNDED");
+  const isCod = capturedPayment?.provider === "COD" || order.payments.some((p) => p.provider === "COD");
+
+  if (isCod) {
+    const note = opts.codRefundNote?.trim();
+    if (!note) {
+      throw Object.assign(
+        new Error("COD orders need manual refund details (UPI / bank account) saved for your records"),
+        { statusCode: 400, code: "COD_NOTE_REQUIRED" }
+      );
+    }
+
+    const now = new Date();
+    await prisma.$transaction(async (tx) => {
+      for (const upd of itemUpdates) {
+        const existing = requestItemById.get(upd.id)!;
+        await tx.orderServiceRequestItem.update({
+          where: { id: upd.id },
+          data: {
+            refundAmountInPaise: (existing.refundAmountInPaise ?? 0) + upd.amountInPaise,
+            refundedAt: now,
+            refundProviderId: "COD_MANUAL"
+          }
+        });
+      }
+      const prevNote = request.codRefundNote?.trim();
+      const mergedNote = prevNote ? `${prevNote}\n---\n${note}` : note;
+      await tx.orderServiceRequest.update({
+        where: { id: request.id },
+        data: {
+          codRefundNote: mergedNote,
+          refundProcessedAt: now,
+          refundTotalInPaise: (request.refundTotalInPaise ?? 0) + totalInPaise
+        }
+      });
+    });
+
+    return {
+      totalRefundedInPaise: totalInPaise,
+      message:
+        "COD manual refund recorded. Transfer money to the customer using the saved details — no automatic payout."
+    };
+  }
+
+  if (!capturedPayment) {
+    throw Object.assign(new Error("No captured payment to refund"), {
+      statusCode: 400,
+      code: "NO_PAYMENT"
+    });
+  }
+
+  const alreadyRefundedOnPayment = capturedPayment.refundedInPaise ?? 0;
+  const orderRemaining = order.grandTotalInPaise - alreadyRefundedOnPayment;
+  if (totalInPaise > orderRemaining) {
+    throw Object.assign(
+      new Error(`Total refund cannot exceed ${orderRemaining / 100} remaining on this order`),
+      { statusCode: 400, code: "AMOUNT_TOO_HIGH" }
+    );
+  }
+
+  const reason = `Service request refund by ${opts.adminEmail}`;
+  const gateway = await initiatePartialGatewayRefund(order.id, totalInPaise, reason);
+
+  const now = new Date();
+  await prisma.$transaction(async (tx) => {
+    for (const upd of itemUpdates) {
+      const existing = requestItemById.get(upd.id)!;
+      await tx.orderServiceRequestItem.update({
+        where: { id: upd.id },
+        data: {
+          refundAmountInPaise: (existing.refundAmountInPaise ?? 0) + upd.amountInPaise,
+          refundedAt: now,
+          refundProviderId: gateway.refundId ?? null
+        }
+      });
+    }
+    await tx.orderServiceRequest.update({
+      where: { id: request.id },
+      data: {
+        refundProcessedAt: now,
+        refundTotalInPaise: (request.refundTotalInPaise ?? 0) + totalInPaise
+      }
+    });
+  });
+
+  return {
+    totalRefundedInPaise: totalInPaise,
+    message: gateway.message,
+    refundId: gateway.refundId
+  };
 }
 
 export function isValidCancelReason(code: string): code is (typeof CANCEL_BEFORE_DELIVERY_REASONS)[number]["code"] {

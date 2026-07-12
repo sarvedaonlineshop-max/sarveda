@@ -74,7 +74,6 @@ export function Header() {
   ) return null;
 
   const hideOnMobile = pathname ? immersiveMobileRoutes.has(pathname) : false;
-  const isShopPage = pathname === "/shop" || (pathname?.startsWith("/product-category/") ?? false);
   const displayName  = sessionUser?.name?.trim() || sessionUser?.email?.split("@")[0];
 
   async function handleSignOut() {
@@ -83,16 +82,16 @@ export function Header() {
     router.refresh();
   }
 
+  const chromeVisibility = hideOnMobile ? "hidden md:block" : "";
+
   return (
     <>
-    <div className={`${hideOnMobile ? "hidden md:block" : ""} ${isShopPage ? "sticky top-0 z-50" : ""}`}>
-      <AnnouncementBar />
-    </div>
-
-    <header
-      className={`sticky z-50 border-b border-brand-forest/10 bg-brand-cream/95 shadow-sm ${isShopPage ? "top-8" : "top-0"} ${hideOnMobile ? "hidden md:block" : ""}`}
-      style={{ backdropFilter: "blur(12px)" }}
-    >
+      <div className={`fixed inset-x-0 top-0 z-50 bg-brand-cream ${chromeVisibility}`}>
+        <AnnouncementBar />
+        <header
+          className="border-b border-brand-forest/10 bg-brand-cream/95 shadow-sm"
+          style={{ backdropFilter: "blur(12px)" }}
+        >
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <SarvedaLogo
             showTagline
@@ -162,7 +161,7 @@ export function Header() {
                   <button
                     type="button"
                     onClick={() => void handleSignOut()}
-                    className="text-sm text-brand-muted hover:text-brand-gold transition-colors"
+                    className="text-sm font-medium text-red-600 transition-colors hover:text-red-700"
                   >
                     Sign out
                   </button>
@@ -193,6 +192,13 @@ export function Header() {
           </div>
         </div>
       </header>
+      </div>
+      {/* Reserve space so page content is not hidden under the fixed header */}
+      <div
+        className={`shrink-0 ${chromeVisibility}`}
+        style={{ height: "var(--storefront-header-offset)" }}
+        aria-hidden="true"
+      />
     </>
   );
 }

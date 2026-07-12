@@ -559,6 +559,7 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
         title={order.cancellationInfo?.title ?? "Order cancelled"}
         description={order.cancellationInfo?.description ?? "This order was cancelled."}
         occurredAt={order.cancellationInfo?.occurredAt}
+        customerReasons={order.cancellationInfo?.customerReasons}
         onClose={() => setCancelModalOpen(false)}
       />
     </article>

@@ -17,7 +17,11 @@ import {
   type OrderLineItemDto,
   type OrderShippingAddressDto
 } from "./order-summary-details";
-import { canRequestCancel, canRequestRefund } from "./order-service-request.service";
+import {
+  canRequestCancel,
+  canRequestRefund,
+  customerReasonsFromApprovedCancel
+} from "./order-service-request.service";
 import { buildCancellationInfo } from "./order-cancellation-info";
 
 function serializePublicOrderView(order: {
@@ -147,6 +151,7 @@ function serializeOrderSummary(order: {
     reasonLabel: string | null;
     message: string | null;
     createdAt: Date;
+    items?: Array<{ nameSnapshot: string; reasonLabel: string; message: string | null }>;
   }>;
   statusHistory?: Array<{ toStatus: string; reason: string | null; createdAt: Date }>;
 }): {
@@ -203,6 +208,10 @@ function serializeOrderSummary(order: {
   });
   // Response exposes only mapped lineItems / costBreakdown / shippingAddress — never raw addresses[].
   const latestRequest = order.serviceRequests?.[0] ?? null;
+  const customerReasons = customerReasonsFromApprovedCancel(order.serviceRequests ?? []);
+  const approvedCancel = order.serviceRequests?.find(
+    (r) => r.status === "APPROVED" && r.type === "CANCEL_BEFORE_DELIVERY"
+  );
   const hasPending = latestRequest?.status === "PENDING_APPROVAL";
   const eligibility = {
     orderNumber: order.orderNumber,
@@ -250,7 +259,13 @@ function serializeOrderSummary(order: {
       status: eligibility.status as import("@prisma/client").OrderStatus
     }) && !hasPending,
     paymentReference,
-    cancellationInfo: buildCancellationInfo(order.status, order.paymentStatus, order.statusHistory),
+    cancellationInfo: buildCancellationInfo(
+      order.status,
+      order.paymentStatus,
+      order.statusHistory,
+      customerReasons,
+      approvedCancel?.message
+    ),
     ...details
   };
 }
@@ -279,7 +294,11 @@ export async function listMine(req: Request, res: Response, next: NextFunction) 
         },
         serviceRequests: {
           orderBy: { createdAt: "desc" },
-          take: 1
+          include: {
+            items: {
+              select: { nameSnapshot: true, reasonLabel: true, message: true }
+            }
+          }
         }
       }
     });

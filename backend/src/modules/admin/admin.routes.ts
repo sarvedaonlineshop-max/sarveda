@@ -78,6 +78,7 @@ router.patch(
 router.post("/orders/:id/reconcile-razorpay", admin.reconcileRazorpayOrder);
 router.post("/orders/:orderId/service-requests/:requestId/approve", serviceRequest.adminApproveServiceRequest);
 router.post("/orders/:orderId/service-requests/:requestId/reject", serviceRequest.adminRejectServiceRequest);
+router.post("/orders/:orderId/service-requests/:requestId/refund", serviceRequest.adminProcessServiceRequestRefund);
 router.post("/orders/:id/refund", admin.refundOrder);
 router.post("/orders/:id/cancel", admin.cancelOrder);
 router.patch(

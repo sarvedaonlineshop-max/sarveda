@@ -148,3 +148,31 @@ export async function rejectServiceRequest(orderId: string, requestId: string, a
     throw new Error(json.error || "Could not reject request");
   }
 }
+
+export async function processServiceRequestRefund(
+  orderId: string,
+  requestId: string,
+  payload: {
+    items: Array<{ requestItemId: string; amountInPaise: number }>;
+    codRefundNote?: string;
+  }
+): Promise<{ message: string; totalRefundedInPaise: number; refundId?: string }> {
+  const res = await fetch(
+    `${getApiBase()}/api/admin/orders/${encodeURIComponent(orderId)}/service-requests/${encodeURIComponent(requestId)}/refund`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(payload)
+    }
+  );
+  const json = (await res.json()) as {
+    success?: boolean;
+    error?: string;
+    data?: { message: string; totalRefundedInPaise: number; refundId?: string };
+  };
+  if (!res.ok || !json.success || !json.data) {
+    throw new Error(json.error || "Could not process refund");
+  }
+  return json.data;
+}

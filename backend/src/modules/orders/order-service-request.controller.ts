@@ -6,6 +6,7 @@ import {
   isValidCancelReason,
   isValidRefundReason,
   pendingServiceRequestCount,
+  processServiceRequestRefund,
   reviewServiceRequest,
   submitServiceRequest,
   type SubmitServiceRequestItem
@@ -215,6 +216,37 @@ export async function adminRejectServiceRequest(req: Request, res: Response, nex
       adminNote
     });
     res.json({ success: true, data: { request: updated } });
+  } catch (err) {
+    const e = err as Error & { statusCode?: number; code?: string };
+    if (e.statusCode) {
+      res.status(e.statusCode).json({ success: false, error: e.message, code: e.code ?? "ERROR" });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function adminProcessServiceRequestRefund(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const admin = req.authUser!;
+    const { orderId, requestId } = req.params;
+    const body = req.body as {
+      items?: Array<{ requestItemId: string; amountInPaise: number }>;
+      codRefundNote?: string;
+    };
+    const items = body.items ?? [];
+    const result = await processServiceRequestRefund({
+      orderId,
+      requestId,
+      adminEmail: admin.email,
+      items,
+      codRefundNote: body.codRefundNote
+    });
+    res.json({ success: true, data: result });
   } catch (err) {
     const e = err as Error & { statusCode?: number; code?: string };
     if (e.statusCode) {

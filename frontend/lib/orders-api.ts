@@ -119,6 +119,7 @@ export type OrderSummary = {
     category: string;
     occurredAt: string;
     rawReason: string | null;
+    customerReasons?: Array<{ itemName: string; reasonLabel: string; message?: string | null }>;
   } | null;
 };
 

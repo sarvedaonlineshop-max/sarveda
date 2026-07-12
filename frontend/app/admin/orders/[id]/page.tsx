@@ -400,6 +400,9 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
     reviewedAt: r.reviewedAt != null ? String(r.reviewedAt) : null,
     reviewedByEmail: r.reviewedByEmail != null ? String(r.reviewedByEmail) : null,
     adminNote: r.adminNote != null ? String(r.adminNote) : null,
+    codRefundNote: r.codRefundNote != null ? String(r.codRefundNote) : null,
+    refundTotalInPaise: r.refundTotalInPaise != null ? Number(r.refundTotalInPaise) : null,
+    refundProcessedAt: r.refundProcessedAt != null ? String(r.refundProcessedAt) : null,
     photos: ((r.photos as Array<Record<string, unknown>>) ?? []).map((p) => ({
       id: String(p.id),
       s3Url: String(p.s3Url),
@@ -407,12 +410,15 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
     })),
     items: ((r.items as Array<Record<string, unknown>>) ?? []).map((item) => ({
       id: String(item.id),
+      orderItemId: String(item.orderItemId),
       nameSnapshot: String(item.nameSnapshot),
       skuSnapshot: String(item.skuSnapshot),
       qtySelected: Number(item.qtySelected),
       reasonLabel: String(item.reasonLabel),
       message: item.message != null ? String(item.message) : null,
       otherMessage: item.otherMessage != null ? String(item.otherMessage) : null,
+      refundAmountInPaise: item.refundAmountInPaise != null ? Number(item.refundAmountInPaise) : null,
+      refundedAt: item.refundedAt != null ? String(item.refundedAt) : null,
       photos: ((item.photos as Array<Record<string, unknown>>) ?? []).map((p) => ({
         id: String(p.id),
         s3Url: String(p.s3Url),
@@ -1352,6 +1358,17 @@ export default function AdminOrderDetailPage() {
         <AdminOrderServiceRequests
           orderId={order.id}
           requests={order.serviceRequests}
+          orderCtx={{
+            currency: order.currency,
+            grandTotalInPaise: order.grandTotalInPaise,
+            paymentStatus: order.paymentStatus,
+            paymentProvider: order.payments?.[0]?.provider ?? null,
+            paymentRefundedInPaise: order.payments?.[0]?.refundedInPaise ?? 0,
+            orderItems: order.items.map((i) => ({
+              id: i.id ?? "",
+              lineTotalInPaise: i.lineTotalInPaise
+            }))
+          }}
           onUpdated={() => void load()}
         />
       ) : null}

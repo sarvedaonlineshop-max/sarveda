@@ -2,15 +2,29 @@
 
 import { useEffect, useRef } from "react";
 
+export type CancellationCustomerReason = {
+  itemName: string;
+  reasonLabel: string;
+  message?: string | null;
+};
+
 type Props = {
   open: boolean;
   title: string;
   description: string;
   occurredAt?: string | null;
+  customerReasons?: CancellationCustomerReason[];
   onClose: () => void;
 };
 
-export function OrderInfoModal({ open, title, description, occurredAt, onClose }: Props) {
+export function OrderInfoModal({
+  open,
+  title,
+  description,
+  occurredAt,
+  customerReasons,
+  onClose
+}: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -40,7 +54,23 @@ export function OrderInfoModal({ open, title, description, occurredAt, onClose }
           </p>
         ) : null}
       </div>
-      <div className="px-5 py-4 text-sm leading-relaxed text-brand-ink">{description}</div>
+      <div className="px-5 py-4 text-sm leading-relaxed text-brand-ink">
+        {customerReasons?.length ? (
+          <ul className="space-y-3">
+            {customerReasons.map((r, i) => (
+              <li key={`${r.itemName}-${i}`} className="rounded-lg border border-brand-cream-dark/80 bg-brand-cream/30 px-3 py-2.5">
+                <p className="font-semibold text-brand-ink">{r.itemName}</p>
+                <p className="mt-0.5 text-brand-ink/90">{r.reasonLabel}</p>
+                {r.message?.trim() ? (
+                  <p className="mt-1 text-xs text-brand-muted">{r.message.trim()}</p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="whitespace-pre-line">{description}</p>
+        )}
+      </div>
       <div className="flex justify-end border-t border-brand-cream-dark px-5 py-3">
         <button
           type="button"

@@ -1,3 +1,9 @@
+export type CancellationCustomerReason = {
+  itemName: string;
+  reasonLabel: string;
+  message?: string | null;
+};
+
 export type CancellationInfoCategory =
   | "payment_timeout"
   | "customer_checkout"
@@ -11,12 +17,29 @@ export type CancellationInfo = {
   category: CancellationInfoCategory;
   occurredAt: string;
   rawReason: string | null;
+  customerReasons?: CancellationCustomerReason[];
 };
+
+export function formatCustomerReasonsSummary(
+  reasons: CancellationCustomerReason[],
+  overallMessage?: string | null
+): string {
+  const lines = reasons.map((r) => {
+    const note = r.message?.trim() ? ` — ${r.message.trim()}` : "";
+    return `• ${r.itemName}: ${r.reasonLabel}${note}`;
+  });
+  if (overallMessage?.trim()) {
+    lines.push(`• Your note: ${overallMessage.trim()}`);
+  }
+  return lines.join("\n");
+}
 
 export function buildCancellationInfo(
   status: string,
   paymentStatus: string,
-  history: Array<{ toStatus: string; reason: string | null; createdAt: Date }> | undefined
+  history: Array<{ toStatus: string; reason: string | null; createdAt: Date }> | undefined,
+  customerReasons?: CancellationCustomerReason[],
+  serviceRequestMessage?: string | null
 ): CancellationInfo | null {
   if (status !== "CANCELLED") return null;
 
@@ -27,6 +50,17 @@ export function buildCancellationInfo(
   const reason = cancelEntry?.reason?.trim() || null;
   const occurredAt = (cancelEntry?.createdAt ?? new Date()).toISOString();
   const lower = (reason ?? "").toLowerCase();
+
+  if (customerReasons?.length) {
+    return {
+      title: "Cancelled at your request",
+      description: formatCustomerReasonsSummary(customerReasons, serviceRequestMessage),
+      category: "customer_request",
+      occurredAt,
+      rawReason: reason,
+      customerReasons
+    };
+  }
 
   if (
     lower.includes("15 minutes") ||
@@ -54,12 +88,11 @@ export function buildCancellationInfo(
     };
   }
 
-  if (lower.includes("service request approved")) {
+  if (lower.includes("service request approved") || lower.includes("cancellation approved")) {
     return {
       title: "Cancelled at your request",
       description:
-        reason ??
-        "Your cancellation request was reviewed and approved by our team.",
+        "Your cancellation request was approved by our team. Refunds, if applicable, are processed separately.",
       category: "customer_request",
       occurredAt,
       rawReason: reason
@@ -68,9 +101,7 @@ export function buildCancellationInfo(
 
   if (
     lower.startsWith("admin cancelled") ||
-    lower.includes("approved by") ||
-    lower.includes("rejected by") ||
-    lower.includes("admin")
+    (lower.includes("admin") && !lower.includes("service request"))
   ) {
     return {
       title: "Cancelled by Sarveda team",

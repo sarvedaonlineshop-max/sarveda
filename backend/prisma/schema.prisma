@@ -374,6 +374,9 @@ model OrderServiceRequest {
   reviewedAt     DateTime?
   reviewedByEmail String?
   adminNote      String?
+  codRefundNote  String?
+  refundProcessedAt DateTime?
+  refundTotalInPaise Int?
   createdAt      DateTime                  @default(now())
   updatedAt      DateTime                  @updatedAt
   order          Order                     @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -397,6 +400,9 @@ model OrderServiceRequestItem {
   reasonLabel   String
   otherMessage  String?
   message       String?
+  refundAmountInPaise Int?
+  refundedAt    DateTime?
+  refundProviderId String?
   createdAt     DateTime            @default(now())
   request       OrderServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
   photos        OrderServiceRequestPhoto[]
