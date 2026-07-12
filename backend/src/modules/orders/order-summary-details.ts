@@ -13,9 +13,11 @@ type OrderAddressRow = {
 };
 
 type OrderItemRow = {
+  id: string;
   nameSnapshot: string;
   qtyOrdered: number;
   lineTotalInPaise: number;
+  skuSnapshot?: string;
 };
 
 type OrderMoneyRow = {
@@ -28,9 +30,11 @@ type OrderMoneyRow = {
 };
 
 export type OrderLineItemDto = {
+  id: string;
   title: string;
   quantity: number;
   lineTotalInPaise: number;
+  skuSnapshot?: string;
 };
 
 export type OrderCostBreakdownDto = {
@@ -60,9 +64,11 @@ function shippingAddressRow(addresses: OrderAddressRow[]): OrderAddressRow | und
 export function buildOrderLineItems(items: OrderItemRow[]): OrderLineItemDto[] | undefined {
   if (!items.length) return undefined;
   return items.map((item) => ({
+    id: item.id,
     title: item.nameSnapshot,
     quantity: item.qtyOrdered,
-    lineTotalInPaise: item.lineTotalInPaise
+    lineTotalInPaise: item.lineTotalInPaise,
+    skuSnapshot: item.skuSnapshot
   }));
 }
 

@@ -404,6 +404,20 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
       id: String(p.id),
       s3Url: String(p.s3Url),
       fileName: p.fileName != null ? String(p.fileName) : null
+    })),
+    items: ((r.items as Array<Record<string, unknown>>) ?? []).map((item) => ({
+      id: String(item.id),
+      nameSnapshot: String(item.nameSnapshot),
+      skuSnapshot: String(item.skuSnapshot),
+      qtySelected: Number(item.qtySelected),
+      reasonLabel: String(item.reasonLabel),
+      message: item.message != null ? String(item.message) : null,
+      otherMessage: item.otherMessage != null ? String(item.otherMessage) : null,
+      photos: ((item.photos as Array<Record<string, unknown>>) ?? []).map((p) => ({
+        id: String(p.id),
+        s3Url: String(p.s3Url),
+        fileName: p.fileName != null ? String(p.fileName) : null
+      }))
     }))
   }));
   return {

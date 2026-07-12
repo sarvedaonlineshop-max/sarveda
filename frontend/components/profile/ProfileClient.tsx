@@ -87,9 +87,10 @@ function TabButton({
           ? "bg-brand-forest text-brand-cream"
           : "border border-brand-cream-dark bg-white text-brand-ink hover:bg-brand-forest/5"
       }`}
+      title={label}
     >
       <TabIcon tab={tab} />
-      {label}
+      <span className="truncate">{label}</span>
       {typeof count === "number" ? (
         <span
           className={`inline-flex min-w-[20px] items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-semibold ${
@@ -221,7 +222,7 @@ export function ProfileClient() {
       <button
         type="button"
         onClick={() => void handleSignOut()}
-        className="inline-flex min-h-[36px] items-center justify-center rounded-full border border-brand-forest/25 px-4 text-sm font-semibold text-brand-forest transition-colors hover:bg-brand-forest/5"
+        className="inline-flex min-h-[36px] items-center justify-center rounded-full border border-red-600 px-4 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
       >
         Sign out
       </button>
@@ -246,10 +247,10 @@ export function ProfileClient() {
         aria-label="Account sections"
         className="grid shrink-0 grid-cols-2 gap-2 px-4 sm:grid-cols-4 md:px-0"
       >
-        <TabButton tab="details" label="Personal details" active={activeTab === "details"} onSelect={setActiveTab} />
-        <TabButton tab="orders" label="Orders" count={orderCount} active={activeTab === "orders"} onSelect={setActiveTab} />
-        <TabButton tab="courses" label="Courses" count={courseCount} active={activeTab === "courses"} onSelect={setActiveTab} />
-        <TabButton tab="events" label="Events" count={eventCount} active={activeTab === "events"} onSelect={setActiveTab} />
+        <TabButton tab="details" label="My Details" active={activeTab === "details"} onSelect={setActiveTab} />
+        <TabButton tab="orders" label="My Orders" count={orderCount} active={activeTab === "orders"} onSelect={setActiveTab} />
+        <TabButton tab="courses" label="My Courses" count={courseCount} active={activeTab === "courses"} onSelect={setActiveTab} />
+        <TabButton tab="events" label="My Events" count={eventCount} active={activeTab === "events"} onSelect={setActiveTab} />
       </nav>
 
       {/* ── Scrollable content ── */}
@@ -261,17 +262,7 @@ export function ProfileClient() {
           hidden={activeTab !== "details"}
           className="rounded-2xl border border-brand-cream-dark bg-white p-6 shadow-card"
         >
-          <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">
-            <span
-              className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-brand-forest/10 text-brand-forest"
-              aria-hidden="true"
-            >
-              <TabIcon tab="details" />
-            </span>
-            Personal details
-          </h3>
-          <p className="mt-1 text-sm text-brand-muted">{user.email}</p>
-          <form onSubmit={(event) => void handleSave(event)} className="mt-4 space-y-4">
+          <form onSubmit={(event) => void handleSave(event)} className="space-y-4">
             <div>
               <label htmlFor="profile-name" className="mb-2 block text-sm font-medium text-brand-ink">
                 Name

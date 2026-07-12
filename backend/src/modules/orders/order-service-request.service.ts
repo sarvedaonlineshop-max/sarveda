@@ -60,7 +60,7 @@ export function serializeServiceRequest(
     id: row.id,
     type: row.type,
     status: row.status,
-    reasonLabel: row.reasonLabel,
+    reasonLabel: row.reasonLabel ?? "Request submitted",
     message: row.message,
     createdAt: row.createdAt
   };
@@ -81,16 +81,68 @@ export async function pendingServiceRequestCount(): Promise<number> {
   });
 }
 
+export type SubmitServiceRequestItem = {
+  orderItemId: string;
+  reasonCode: string;
+  otherMessage?: string;
+  message?: string;
+};
+
+export function reasonLabelFor(
+  type: "CANCEL_BEFORE_DELIVERY" | "REFUND_AFTER_DELIVERY",
+  reasonCode: string,
+  otherMessage?: string
+): string | undefined {
+  const base =
+    type === "CANCEL_BEFORE_DELIVERY"
+      ? cancelReasonLabel(reasonCode)
+      : refundReasonLabel(reasonCode);
+  if (!base) return undefined;
+  if (reasonCode === "other" && otherMessage?.trim()) {
+    return `${base}: ${otherMessage.trim()}`;
+  }
+  return base;
+}
+
+async function uploadRequestPhotos(
+  requestId: string,
+  files: Array<{ buffer: Buffer; originalname: string; mimetype: string; size: number }>
+) {
+  const rows: Array<{
+    s3Key: string;
+    s3Url: string;
+    fileName: string;
+    fileSizeBytes: number;
+  }> = [];
+  for (const file of files) {
+    const ext = file.originalname.split(".").pop()?.toLowerCase() || "jpg";
+    const key = `order-requests/${requestId}/${randomUUID()}.${ext}`;
+    const url = await uploadAsset(key, file.buffer, file.mimetype);
+    if (!url) {
+      throw Object.assign(new Error("Could not upload photos. Please try again."), {
+        statusCode: 500,
+        code: "UPLOAD_FAILED"
+      });
+    }
+    rows.push({
+      s3Key: key,
+      s3Url: url,
+      fileName: file.originalname,
+      fileSizeBytes: file.size
+    });
+  }
+  return rows;
+}
+
 export async function submitServiceRequest(opts: {
   orderNumber: string;
   userId: string;
   userEmail: string;
   type: "CANCEL_BEFORE_DELIVERY" | "REFUND_AFTER_DELIVERY";
-  reasonCode: string;
-  otherMessage?: string;
   message?: string;
-  photos: Array<{ buffer: Buffer; originalname: string; mimetype: string; size: number }>;
-}): Promise<OrderServiceRequest & { photos: OrderServiceRequestPhoto[] }> {
+  items: SubmitServiceRequestItem[];
+  photosByIndex: Map<number, Array<{ buffer: Buffer; originalname: string; mimetype: string; size: number }>>;
+}): Promise<OrderServiceRequest> {
   const email = opts.userEmail.trim().toLowerCase();
   const order = await prisma.order.findFirst({
     where: {
@@ -98,7 +150,10 @@ export async function submitServiceRequest(opts: {
       deletedAt: null,
       OR: [{ customerId: opts.userId }, { email }]
     },
-    include: { payments: { orderBy: { createdAt: "desc" }, take: 1 } }
+    include: {
+      payments: { orderBy: { createdAt: "desc" }, take: 1 },
+      items: true
+    }
   });
 
   if (!order) {
@@ -128,52 +183,61 @@ export async function submitServiceRequest(opts: {
     });
   }
 
-  let reasonLabel: string | undefined;
-  if (opts.type === "CANCEL_BEFORE_DELIVERY") {
-    reasonLabel = cancelReasonLabel(opts.reasonCode);
-  } else {
-    reasonLabel = refundReasonLabel(opts.reasonCode);
-  }
-  if (!reasonLabel) {
-    throw Object.assign(new Error("Invalid reason"), { statusCode: 400, code: "BAD_REQUEST" });
-  }
-
-  if (opts.reasonCode === "other" && opts.otherMessage?.trim()) {
-    reasonLabel = `${reasonLabel}: ${opts.otherMessage.trim()}`;
-  }
-
-  if (!opts.photos.length) {
-    throw Object.assign(new Error("At least one photo is required"), {
+  if (!opts.items.length) {
+    throw Object.assign(new Error("Select at least one item"), {
       statusCode: 400,
-      code: "PHOTOS_REQUIRED"
+      code: "ITEMS_REQUIRED"
     });
   }
 
-  const requestId = randomUUID();
-  const photoRows: Array<{
-    s3Key: string;
-    s3Url: string;
-    fileName: string;
-    fileSizeBytes: number;
+  const orderItemMap = new Map(order.items.map((i) => [i.id, i]));
+  const parsedItems: Array<{
+    orderItemId: string;
+    nameSnapshot: string;
+    skuSnapshot: string;
+    qtySelected: number;
+    reasonCode: string;
+    reasonLabel: string;
+    otherMessage: string | null;
+    message: string | null;
+    photos: Array<{ buffer: Buffer; originalname: string; mimetype: string; size: number }>;
   }> = [];
 
-  for (const file of opts.photos) {
-    const ext = file.originalname.split(".").pop()?.toLowerCase() || "jpg";
-    const key = `order-requests/${requestId}/${randomUUID()}.${ext}`;
-    const url = await uploadAsset(key, file.buffer, file.mimetype);
-    if (!url) {
-      throw Object.assign(new Error("Could not upload photos. Please try again."), {
-        statusCode: 500,
-        code: "UPLOAD_FAILED"
+  opts.items.forEach((item, index) => {
+    const row = orderItemMap.get(item.orderItemId);
+    if (!row) {
+      throw Object.assign(new Error("Invalid item in request"), { statusCode: 400, code: "BAD_REQUEST" });
+    }
+    const reasonLabel = reasonLabelFor(opts.type, item.reasonCode, item.otherMessage);
+    if (!reasonLabel) {
+      throw Object.assign(new Error("Invalid reason for an item"), { statusCode: 400, code: "BAD_REQUEST" });
+    }
+    const photos = opts.photosByIndex.get(index) ?? [];
+    if (!photos.length) {
+      throw Object.assign(new Error(`Add at least one photo for ${row.nameSnapshot}`), {
+        statusCode: 400,
+        code: "PHOTOS_REQUIRED"
       });
     }
-    photoRows.push({
-      s3Key: key,
-      s3Url: url,
-      fileName: file.originalname,
-      fileSizeBytes: file.size
+    parsedItems.push({
+      orderItemId: row.id,
+      nameSnapshot: row.nameSnapshot,
+      skuSnapshot: row.skuSnapshot,
+      qtySelected: row.qtyOrdered,
+      reasonCode: item.reasonCode,
+      reasonLabel,
+      otherMessage: item.otherMessage?.trim() || null,
+      message: item.message?.trim() || null,
+      photos
     });
-  }
+  });
+
+  const requestId = randomUUID();
+  const summaryLabel =
+    parsedItems.length === 1
+      ? `${parsedItems[0].nameSnapshot} — ${parsedItems[0].reasonLabel}`
+      : `${parsedItems.length} items — mixed reasons`;
+  const summaryCode = parsedItems.length === 1 ? parsedItems[0].reasonCode : "multi";
 
   const created = await prisma.orderServiceRequest.create({
     data: {
@@ -183,31 +247,71 @@ export async function submitServiceRequest(opts: {
       customerId: opts.userId,
       customerEmail: email,
       type: opts.type,
-      reasonCode: opts.reasonCode,
-      reasonLabel,
-      otherMessage: opts.otherMessage?.trim() || null,
+      reasonCode: summaryCode,
+      reasonLabel: summaryLabel,
       message: opts.message?.trim() || null,
-      photos: {
-        create: photoRows.map((p) => ({
-          s3Key: p.s3Key,
-          s3Url: p.s3Url,
-          fileName: p.fileName,
-          fileSizeBytes: p.fileSizeBytes
-        }))
+      items: {
+        create: await Promise.all(
+          parsedItems.map(async (item) => {
+            const itemId = randomUUID();
+            const photoRows = await uploadRequestPhotos(requestId, item.photos);
+            return {
+              id: itemId,
+              orderItemId: item.orderItemId,
+              nameSnapshot: item.nameSnapshot,
+              skuSnapshot: item.skuSnapshot,
+              qtySelected: item.qtySelected,
+              reasonCode: item.reasonCode,
+              reasonLabel: item.reasonLabel,
+              otherMessage: item.otherMessage,
+              message: item.message,
+              photos: {
+                create: photoRows.map((p) => ({
+                  requestId,
+                  s3Key: p.s3Key,
+                  s3Url: p.s3Url,
+                  fileName: p.fileName,
+                  fileSizeBytes: p.fileSizeBytes
+                }))
+              }
+            };
+          })
+        )
       }
     },
-    include: { photos: true }
+    include: { items: { include: { photos: true } }, photos: true }
   });
 
   void notifyServiceRequestSubmitted({
     orderNumber: order.orderNumber,
     customerEmail: email,
     type: opts.type,
-    reasonLabel,
+    reasonLabel: summaryLabel,
     message: opts.message
   });
 
   return created;
+}
+
+export async function getServiceRequestPhotoForAdmin(
+  orderId: string,
+  photoId: string
+): Promise<{ buffer: Buffer; contentType: string; fileName: string } | null> {
+  const photo = await prisma.orderServiceRequestPhoto.findFirst({
+    where: {
+      id: photoId,
+      request: { orderId }
+    }
+  });
+  if (!photo) return null;
+  const { downloadAssetFromS3, assetContentTypeForKey } = await import("../../config/s3");
+  const buffer = await downloadAssetFromS3(photo.s3Key);
+  if (!buffer) return null;
+  return {
+    buffer,
+    contentType: assetContentTypeForKey(photo.s3Key),
+    fileName: photo.fileName ?? `photo-${photo.id}.jpg`
+  };
 }
 
 export async function reviewServiceRequest(opts: {
@@ -262,7 +366,9 @@ export async function reviewServiceRequest(opts: {
           orderId: request.orderId,
           fromStatus: request.order.status,
           toStatus: nextOrderStatus,
-          reason: `Service request ${opts.approve ? "approved" : "rejected"} by ${opts.adminEmail}`,
+          reason: opts.approve
+            ? `Service request approved by ${opts.adminEmail}`
+            : `Service request rejected by ${opts.adminEmail}`,
           changedBy: null
         }
       });

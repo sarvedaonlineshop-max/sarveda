@@ -161,12 +161,20 @@ export function s3KeyFromStoredUrl(url: string): string | null {
 }
 
 export async function downloadPdfFromS3(key: string): Promise<Buffer | null> {
+  return downloadAssetFromS3(key);
+}
+
+export async function downloadAssetFromS3(key: string): Promise<Buffer | null> {
   const c = s3Client();
   const bucket = bucketName();
   if (!c || !bucket) return null;
   const out = await c.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
   const bytes = await out.Body?.transformToByteArray();
   return bytes ? Buffer.from(bytes) : null;
+}
+
+export function assetContentTypeForKey(key: string): string {
+  return contentTypeForKey(key);
 }
 
 export async function uploadPdf(key: string, body: Buffer): Promise<string | null> {

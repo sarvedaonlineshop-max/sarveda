@@ -2,10 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
+import { OrderInfoModal } from "@/components/orders/OrderInfoModal";
 import { formatMinorFromPaise } from "@/lib/money";
+import { copyToClipboard, paymentProviderLabel } from "@/lib/order-display";
 import type { OrderSummary } from "@/lib/orders-api";
-import { orderCancelledPageUrl, orderInvoiceDownloadUrl } from "@/lib/orders-api";
+import { orderInvoiceDownloadUrl } from "@/lib/orders-api";
 import { checkoutReorderUrl } from "@/lib/reorder-cancelled";
 import { delhiveryTrackUrl } from "@/lib/shipment-labels";
 
@@ -177,12 +180,13 @@ function CostLine({
 
 export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
   const router = useRouter();
+  const [awbCopied, setAwbCopied] = useState(false);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const email = orderAccessEmail(order, accountEmail);
   const paid = orderIsPaid(order);
   const pendingPayment = order.status === "PENDING_PAYMENT" && !paid;
   const cancelledUnpaid = order.status === "CANCELLED" && !paid;
   const payHref = checkoutResumeHref(order.orderNumber, email);
-  const cancelledDetailsHref = orderCancelledPageUrl(order.orderNumber, email);
   const status = orderStatusMeta(order);
   const totalLabel = formatMinorFromPaise(order.grandTotalInPaise, order.currency);
   const isCod = order.isCod || order.paymentProvider === "COD";
@@ -260,7 +264,9 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
         </div>
       ) : serviceRequest?.status === "REJECTED" ? (
         <div className="border-b border-[#FCEBEB] bg-[#FCEBEB]/50 px-5 py-3 text-sm text-[#791F1F]">
-          Your request was reviewed. Contact us if you need more help.
+          {serviceRequest.type === "CANCEL_BEFORE_DELIVERY"
+            ? "Your order cannot be cancelled, please contact us for further help."
+            : "Your return/refund request could not be approved. Please contact us for further help."}
         </div>
       ) : null}
 
@@ -277,9 +283,14 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
         </InfoRow>
 
         <InfoRow emoji={isCod ? "💵" : "💳"} label="Payment mode">
-          {isCod ? "Cash on delivery" : "Paid online"}
+          <div>
+            <p>{isCod ? "Cash on delivery" : `Paid online via ${paymentProviderLabel(order.paymentProvider)}`}</p>
+            {!isCod && order.paymentReference ? (
+              <p className="mt-0.5 font-mono text-xs text-brand-muted">Ref: {order.paymentReference}</p>
+            ) : null}
+          </div>
           {status.key === "refunded" ? (
-            <span className="ml-2 text-xs text-[#633806]">— amount refunded to source</span>
+            <span className="mt-1 block text-xs text-[#633806]">Amount refunded to source</span>
           ) : null}
         </InfoRow>
 
@@ -299,7 +310,43 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
                 {deliveryPartner ? (
                   <span className="text-xs text-brand-muted">
                     via <span className="font-semibold text-brand-ink">{deliveryPartner}</span>
-                    {order.awb ? <span className="block font-mono text-[11px]">AWB {order.awb}</span> : null}
+                    {order.awb ? (
+                      <span className="mt-0.5 flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-[11px]">AWB {order.awb}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void copyToClipboard(order.awb!).then((ok) => {
+                              if (ok) {
+                                setAwbCopied(true);
+                                setTimeout(() => setAwbCopied(false), 2000);
+                              }
+                            });
+                          }}
+                          className="rounded-full border border-brand-cream-dark bg-white px-2 py-0.5 text-[10px] font-semibold text-brand-forest hover:bg-brand-cream"
+                        >
+                          {awbCopied ? "Copied" : "Copy"}
+                        </button>
+                      </span>
+                    ) : null}
+                  </span>
+                ) : order.awb ? (
+                  <span className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-brand-muted">
+                    <span className="font-mono text-[11px]">AWB {order.awb}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void copyToClipboard(order.awb!).then((ok) => {
+                          if (ok) {
+                            setAwbCopied(true);
+                            setTimeout(() => setAwbCopied(false), 2000);
+                          }
+                        });
+                      }}
+                      className="rounded-full border border-brand-cream-dark bg-white px-2 py-0.5 text-[10px] font-semibold text-brand-forest hover:bg-brand-cream"
+                    >
+                      {awbCopied ? "Copied" : "Copy"}
+                    </button>
                   </span>
                 ) : null}
               </div>
@@ -496,15 +543,24 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
           Need help?
         </Link>
 
-        {order.status === "CANCELLED" ? (
-          <Link
-            href={cancelledDetailsHref}
-            className="inline-flex min-h-[36px] items-center justify-center gap-1 rounded-full px-3 text-sm text-[#993C1D] hover:text-[#712B13] hover:underline"
+        {order.status === "CANCELLED" && order.cancellationInfo ? (
+          <button
+            type="button"
+            onClick={() => setCancelModalOpen(true)}
+            className="inline-flex min-h-[36px] items-center justify-center gap-1 rounded-full px-3 text-sm text-[#993C1D] hover:bg-[#FCEBEB]/60"
           >
             Why cancelled?
-          </Link>
+          </button>
         ) : null}
       </footer>
+
+      <OrderInfoModal
+        open={cancelModalOpen}
+        title={order.cancellationInfo?.title ?? "Order cancelled"}
+        description={order.cancellationInfo?.description ?? "This order was cancelled."}
+        occurredAt={order.cancellationInfo?.occurredAt}
+        onClose={() => setCancelModalOpen(false)}
+      />
     </article>
   );
 }

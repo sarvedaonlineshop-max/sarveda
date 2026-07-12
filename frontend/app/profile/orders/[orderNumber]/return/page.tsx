@@ -19,6 +19,10 @@ export default function ReturnOrderRequestPage() {
   const orderNumber = String(params.orderNumber ?? "");
   const [ready, setReady] = useState(false);
   const [blocked, setBlocked] = useState<string | null>(null);
+  const [lineItems, setLineItems] = useState<
+    Array<{ id: string; title: string; quantity: number; lineTotalInPaise: number; skuSnapshot?: string }>
+  >([]);
+  const [currency, setCurrency] = useState("INR");
 
   useEffect(() => {
     let cancelled = false;
@@ -44,7 +48,15 @@ export default function ReturnOrderRequestPage() {
         }
         return;
       }
-      if (!cancelled) setReady(true);
+      if (!order.lineItems?.length) {
+        if (!cancelled) setBlocked("Order items could not be loaded. Please try again later.");
+        return;
+      }
+      if (!cancelled) {
+        setLineItems(order.lineItems);
+        setCurrency(order.currency);
+        setReady(true);
+      }
     })();
     return () => {
       cancelled = true;
@@ -65,10 +77,12 @@ export default function ReturnOrderRequestPage() {
         ) : ready ? (
           <OrderServiceRequestForm
             orderNumber={orderNumber}
+            currency={currency}
             kind="refund"
             title="Return or refund"
-            subtitle="Your order was delivered. Share details and photos so we can help."
+            subtitle="Select delivered item(s), share a reason and photos for each."
             reasons={REFUND_AFTER_DELIVERY_REASONS}
+            lineItems={lineItems}
             backHref="/profile"
             onSubmit={(payload) => submitOrderRefundRequest(orderNumber, payload)}
           />

@@ -14,9 +14,11 @@ export type OrderShipmentPublic = {
 };
 
 export type OrderLineItem = {
+  id: string;
   title: string;
   quantity: number;
   lineTotalInPaise: number;
+  skuSnapshot?: string;
 };
 
 export type OrderCostBreakdown = {
@@ -110,6 +112,14 @@ export type OrderSummary = {
   } | null;
   canCancelRequest?: boolean;
   canRefundRequest?: boolean;
+  paymentReference?: string | null;
+  cancellationInfo?: {
+    title: string;
+    description: string;
+    category: string;
+    occurredAt: string;
+    rawReason: string | null;
+  } | null;
 };
 
 export async function fetchOrderPublic(orderNumber: string, email: string): Promise<OrderPublic> {

@@ -18,6 +18,7 @@ import {
   type OrderShippingAddressDto
 } from "./order-summary-details";
 import { canRequestCancel, canRequestRefund } from "./order-service-request.service";
+import { buildCancellationInfo } from "./order-cancellation-info";
 
 function serializePublicOrderView(order: {
   orderNumber: string;
@@ -118,7 +119,7 @@ function serializeOrderSummary(order: {
   grandTotalInPaise: number;
   createdAt: Date;
   placedAt: Date | null;
-  items: Array<{ nameSnapshot: string; qtyOrdered: number; lineTotalInPaise: number }>;
+  items: Array<{ id: string; nameSnapshot: string; qtyOrdered: number; lineTotalInPaise: number; skuSnapshot: string }>;
   addresses: Array<{
     type: string;
     fullName: string;
@@ -131,7 +132,7 @@ function serializeOrderSummary(order: {
     country: string;
   }>;
   invoice: { invoiceNo: string } | null;
-  payments?: Array<{ provider: string }>;
+  payments?: Array<{ provider: string; providerPaymentId?: string | null; providerOrderId?: string | null }>;
   shipments?: Array<{
     courier: string;
     awb: string | null;
@@ -143,10 +144,11 @@ function serializeOrderSummary(order: {
     id: string;
     type: "CANCEL_BEFORE_DELIVERY" | "REFUND_AFTER_DELIVERY";
     status: "PENDING_APPROVAL" | "APPROVED" | "REJECTED";
-    reasonLabel: string;
+    reasonLabel: string | null;
     message: string | null;
     createdAt: Date;
   }>;
+  statusHistory?: Array<{ toStatus: string; reason: string | null; createdAt: Date }>;
 }): {
   orderNumber: string;
   email: string;
@@ -178,10 +180,14 @@ function serializeOrderSummary(order: {
   } | null;
   canCancelRequest?: boolean;
   canRefundRequest?: boolean;
+  paymentReference?: string | null;
+  cancellationInfo?: ReturnType<typeof buildCancellationInfo>;
 } {
   const headline = order.items[0]?.nameSnapshot ?? "Order";
   const itemCount = order.items.reduce((sum, row) => sum + row.qtyOrdered, 0);
-  const paymentProvider = order.payments?.[0]?.provider ?? null;
+  const payment = order.payments?.[0];
+  const paymentProvider = payment?.provider ?? null;
+  const paymentReference = payment?.providerPaymentId?.trim() || payment?.providerOrderId?.trim() || null;
   const trackShipment =
     order.shipments?.find((s) => {
       const meta = s.carrierMeta as { manual?: boolean; direction?: string } | null;
@@ -230,7 +236,7 @@ function serializeOrderSummary(order: {
           id: latestRequest.id,
           type: latestRequest.type,
           status: latestRequest.status,
-          reasonLabel: latestRequest.reasonLabel,
+          reasonLabel: latestRequest.reasonLabel ?? "Request submitted",
           message: latestRequest.message,
           createdAt: latestRequest.createdAt
         }
@@ -243,6 +249,8 @@ function serializeOrderSummary(order: {
       ...eligibility,
       status: eligibility.status as import("@prisma/client").OrderStatus
     }) && !hasPending,
+    paymentReference,
+    cancellationInfo: buildCancellationInfo(order.status, order.paymentStatus, order.statusHistory),
     ...details
   };
 }
@@ -263,6 +271,7 @@ export async function listMine(req: Request, res: Response, next: NextFunction) 
         addresses: true,
         invoice: true,
         payments: { orderBy: { createdAt: "desc" }, take: 1 },
+        statusHistory: { orderBy: { createdAt: "desc" }, take: 12 },
         shipments: {
           where: { awb: { not: null } },
           orderBy: { createdAt: "desc" },

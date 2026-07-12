@@ -796,7 +796,10 @@ export async function orderDetail(req: Request, res: Response, next: NextFunctio
         customer: { select: { id: true, email: true, name: true } },
         serviceRequests: {
           orderBy: { createdAt: "desc" },
-          include: { photos: true }
+          include: {
+            photos: true,
+            items: { include: { photos: true } }
+          }
         }
       }
     });

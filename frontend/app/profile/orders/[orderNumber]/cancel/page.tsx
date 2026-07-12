@@ -19,6 +19,10 @@ export default function CancelOrderRequestPage() {
   const orderNumber = String(params.orderNumber ?? "");
   const [ready, setReady] = useState(false);
   const [blocked, setBlocked] = useState<string | null>(null);
+  const [lineItems, setLineItems] = useState<
+    Array<{ id: string; title: string; quantity: number; lineTotalInPaise: number; skuSnapshot?: string }>
+  >([]);
+  const [currency, setCurrency] = useState("INR");
 
   useEffect(() => {
     let cancelled = false;
@@ -44,7 +48,15 @@ export default function CancelOrderRequestPage() {
         }
         return;
       }
-      if (!cancelled) setReady(true);
+      if (!order.lineItems?.length) {
+        if (!cancelled) setBlocked("Order items could not be loaded. Please try again later.");
+        return;
+      }
+      if (!cancelled) {
+        setLineItems(order.lineItems);
+        setCurrency(order.currency);
+        setReady(true);
+      }
     })();
     return () => {
       cancelled = true;
@@ -65,10 +77,12 @@ export default function CancelOrderRequestPage() {
         ) : ready ? (
           <OrderServiceRequestForm
             orderNumber={orderNumber}
+            currency={currency}
             kind="cancel"
             title="Cancel this order"
-            subtitle="Tell us why you would like to cancel before delivery. Our team will review your request."
+            subtitle="Tell us which items to cancel before delivery. Our team will review your request."
             reasons={CANCEL_BEFORE_DELIVERY_REASONS}
+            lineItems={lineItems}
             backHref="/profile"
             onSubmit={(payload) => submitOrderCancelRequest(orderNumber, payload)}
           />

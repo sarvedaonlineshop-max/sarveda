@@ -3,7 +3,23 @@
 import Image from "next/image";
 import { useState } from "react";
 
-import { approveServiceRequest, rejectServiceRequest } from "@/lib/order-service-request";
+import {
+  adminServiceRequestPhotoDownloadUrl,
+  adminServiceRequestPhotoViewUrl,
+  approveServiceRequest,
+  rejectServiceRequest
+} from "@/lib/order-service-request";
+
+export type AdminServiceRequestItemRow = {
+  id: string;
+  nameSnapshot: string;
+  skuSnapshot: string;
+  qtySelected: number;
+  reasonLabel: string;
+  message?: string | null;
+  otherMessage?: string | null;
+  photos?: Array<{ id: string; s3Url: string; fileName?: string | null }>;
+};
 
 export type AdminServiceRequestRow = {
   id: string;
@@ -18,7 +34,37 @@ export type AdminServiceRequestRow = {
   reviewedByEmail?: string | null;
   adminNote?: string | null;
   photos?: Array<{ id: string; s3Url: string; fileName?: string | null }>;
+  items?: AdminServiceRequestItemRow[];
 };
+
+function PhotoThumb({
+  orderId,
+  photo
+}: {
+  orderId: string;
+  photo: { id: string; fileName?: string | null };
+}) {
+  const viewUrl = adminServiceRequestPhotoViewUrl(orderId, photo.id);
+  const downloadUrl = adminServiceRequestPhotoDownloadUrl(orderId, photo.id);
+  return (
+    <li className="space-y-1">
+      <a
+        href={viewUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="relative block h-20 w-20 overflow-hidden rounded-md border border-stone-200"
+      >
+        <Image src={viewUrl} alt={photo.fileName || "Request photo"} fill className="object-cover" unoptimized />
+      </a>
+      <a
+        href={downloadUrl}
+        className="block text-center text-[10px] font-semibold text-amber-800 underline dark:text-amber-300"
+      >
+        Download
+      </a>
+    </li>
+  );
+}
 
 export function AdminOrderServiceRequests({
   orderId,
@@ -91,39 +137,49 @@ export function AdminOrderServiceRequests({
               </div>
               {req.message ? (
                 <p className="mt-2 text-sm text-stone-700 dark:text-stone-300">
-                  <strong>Message:</strong> {req.message}
+                  <strong>Overall message:</strong> {req.message}
                 </p>
               ) : null}
-              {req.otherMessage ? (
-                <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
-                  <strong>Other:</strong> {req.otherMessage}
-                </p>
+
+              {req.items?.length ? (
+                <ul className="mt-3 space-y-3">
+                  {req.items.map((item) => (
+                    <li key={item.id} className="rounded-lg border border-stone-100 bg-stone-50 p-3 dark:border-stone-800 dark:bg-stone-950">
+                      <p className="font-medium text-stone-900 dark:text-stone-100">
+                        {item.nameSnapshot}{" "}
+                        <span className="text-xs font-normal text-stone-500">
+                          × {item.qtySelected} · {item.skuSnapshot}
+                        </span>
+                      </p>
+                      <p className="mt-1 text-sm text-stone-700 dark:text-stone-300">
+                        <strong>Reason:</strong> {item.reasonLabel}
+                      </p>
+                      {item.message ? (
+                        <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">{item.message}</p>
+                      ) : null}
+                      {item.photos?.length ? (
+                        <ul className="mt-2 flex flex-wrap gap-2">
+                          {item.photos.map((photo) => (
+                            <PhotoThumb key={photo.id} orderId={orderId} photo={photo} />
+                          ))}
+                        </ul>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
               ) : null}
-              {req.photos?.length ? (
+
+              {!req.items?.length && req.photos?.length ? (
                 <div className="mt-3">
                   <p className="text-xs font-semibold uppercase text-stone-500">Photos</p>
                   <ul className="mt-2 flex flex-wrap gap-2">
                     {req.photos.map((photo) => (
-                      <li key={photo.id}>
-                        <a
-                          href={photo.s3Url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="relative block h-20 w-20 overflow-hidden rounded-md border border-stone-200"
-                        >
-                          <Image
-                            src={photo.s3Url}
-                            alt={photo.fileName || "Request photo"}
-                            fill
-                            className="object-cover"
-                            unoptimized
-                          />
-                        </a>
-                      </li>
+                      <PhotoThumb key={photo.id} orderId={orderId} photo={photo} />
                     ))}
                   </ul>
                 </div>
               ) : null}
+
               {req.reviewedAt ? (
                 <p className="mt-2 text-xs text-stone-500">
                   Reviewed {new Date(req.reviewedAt).toLocaleString("en-IN")}

@@ -366,8 +366,8 @@ model OrderServiceRequest {
   customerId     String?                   @db.Uuid
   customerEmail  String
   type           OrderServiceRequestType
-  reasonCode     String
-  reasonLabel    String
+  reasonCode     String?
+  reasonLabel    String?
   otherMessage   String?
   message        String?
   status         OrderServiceRequestStatus @default(PENDING_APPROVAL)
@@ -378,6 +378,7 @@ model OrderServiceRequest {
   updatedAt      DateTime                  @updatedAt
   order          Order                     @relation(fields: [orderId], references: [id], onDelete: Cascade)
   photos         OrderServiceRequestPhoto[]
+  items          OrderServiceRequestItem[]
 
   @@index([orderId])
   @@index([status])
@@ -385,17 +386,39 @@ model OrderServiceRequest {
   @@index([customerEmail])
 }
 
-model OrderServiceRequestPhoto {
+model OrderServiceRequestItem {
   id            String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   requestId     String              @db.Uuid
+  orderItemId   String              @db.Uuid
+  nameSnapshot  String
+  skuSnapshot   String
+  qtySelected   Int
+  reasonCode    String
+  reasonLabel   String
+  otherMessage  String?
+  message       String?
+  createdAt     DateTime            @default(now())
+  request       OrderServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  photos        OrderServiceRequestPhoto[]
+
+  @@index([requestId])
+  @@index([orderItemId])
+}
+
+model OrderServiceRequestPhoto {
+  id            String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId     String                   @db.Uuid
+  requestItemId String?                  @db.Uuid
   s3Key         String
   s3Url         String
   fileName      String?
   fileSizeBytes Int?
-  createdAt     DateTime            @default(now())
-  request       OrderServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  createdAt     DateTime                 @default(now())
+  request       OrderServiceRequest      @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  requestItem   OrderServiceRequestItem? @relation(fields: [requestItemId], references: [id], onDelete: Cascade)
 
   @@index([requestId])
+  @@index([requestItemId])
 }
 
 model OrderItem {

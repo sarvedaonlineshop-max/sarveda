@@ -35,14 +35,24 @@ export type OrderServiceRequestPublic = {
 
 export async function submitOrderCancelRequest(
   orderNumber: string,
-  payload: { reasonCode: string; otherMessage?: string; message?: string; photos: File[] }
+  payload: {
+    items: Array<{
+      orderItemId: string;
+      reasonCode: string;
+      otherMessage?: string;
+      message?: string;
+    }>;
+    message?: string;
+    photosByIndex: Map<number, File[]>;
+  }
 ): Promise<void> {
   const form = new FormData();
-  form.set("reasonCode", payload.reasonCode);
-  if (payload.otherMessage?.trim()) form.set("otherMessage", payload.otherMessage.trim());
+  form.set("items", JSON.stringify(payload.items));
   if (payload.message?.trim()) form.set("message", payload.message.trim());
-  for (const file of payload.photos) {
-    form.append("photos", file);
+  for (const [index, files] of Array.from(payload.photosByIndex.entries())) {
+    for (const file of files) {
+      form.append(`photo_${index}`, file);
+    }
   }
 
   const res = await fetch(`${getApiBase()}/api/orders/${encodeURIComponent(orderNumber)}/cancel-request`, {
@@ -58,14 +68,24 @@ export async function submitOrderCancelRequest(
 
 export async function submitOrderRefundRequest(
   orderNumber: string,
-  payload: { reasonCode: string; otherMessage?: string; message?: string; photos: File[] }
+  payload: {
+    items: Array<{
+      orderItemId: string;
+      reasonCode: string;
+      otherMessage?: string;
+      message?: string;
+    }>;
+    message?: string;
+    photosByIndex: Map<number, File[]>;
+  }
 ): Promise<void> {
   const form = new FormData();
-  form.set("reasonCode", payload.reasonCode);
-  if (payload.otherMessage?.trim()) form.set("otherMessage", payload.otherMessage.trim());
+  form.set("items", JSON.stringify(payload.items));
   if (payload.message?.trim()) form.set("message", payload.message.trim());
-  for (const file of payload.photos) {
-    form.append("photos", file);
+  for (const [index, files] of Array.from(payload.photosByIndex.entries())) {
+    for (const file of files) {
+      form.append(`photo_${index}`, file);
+    }
   }
 
   const res = await fetch(`${getApiBase()}/api/orders/${encodeURIComponent(orderNumber)}/refund-request`, {
@@ -77,6 +97,14 @@ export async function submitOrderRefundRequest(
   if (!res.ok || !json.success) {
     throw new Error(json.error || "Could not submit return/refund request");
   }
+}
+
+export function adminServiceRequestPhotoViewUrl(orderId: string, photoId: string): string {
+  return `${getApiBase()}/api/admin/orders/${encodeURIComponent(orderId)}/service-requests/photos/${encodeURIComponent(photoId)}/view`;
+}
+
+export function adminServiceRequestPhotoDownloadUrl(orderId: string, photoId: string): string {
+  return `${getApiBase()}/api/admin/orders/${encodeURIComponent(orderId)}/service-requests/photos/${encodeURIComponent(photoId)}/download`;
 }
 
 export async function fetchPendingServiceRequestCount(): Promise<number> {
