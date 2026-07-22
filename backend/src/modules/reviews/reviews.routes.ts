@@ -71,14 +71,67 @@ router.get("/:productId", optionalAuth, async (req, res, next) => {
         isVerified: true,
         createdAt: true,
         reviewerCountry: true,
+        userId: true,
         user: { select: { name: true } }
       }
     });
 
-    const total = reviews.length;
-    const average = total > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / total : 0;
+    const missingCountryUserIds = Array.from(
+      new Set(
+        reviews
+          .filter((r) => !r.reviewerCountry)
+          .map((r) => r.userId)
+          .filter(Boolean)
+      )
+    );
 
-    res.json({ reviews, total, average });
+    const countryByUserId = new Map<string, string>();
+    if (missingCountryUserIds.length) {
+      const [addresses, orderAddresses] = await Promise.all([
+        prisma.address.findMany({
+          where: { userId: { in: missingCountryUserIds } },
+          orderBy: [{ isDefault: "desc" }, { id: "asc" }],
+          select: { userId: true, country: true }
+        }),
+        prisma.orderAddress.findMany({
+          where: {
+            type: "SHIPPING",
+            order: {
+              customerId: { in: missingCountryUserIds },
+              deletedAt: null
+            }
+          },
+          orderBy: { order: { createdAt: "desc" } },
+          select: { country: true, order: { select: { customerId: true } } }
+        })
+      ]);
+
+      for (const addr of addresses) {
+        const code = addr.country?.trim().toUpperCase();
+        if (code?.length === 2 && !countryByUserId.has(addr.userId)) {
+          countryByUserId.set(addr.userId, code);
+        }
+      }
+      for (const row of orderAddresses) {
+        const userId = row.order.customerId;
+        if (!userId || countryByUserId.has(userId)) continue;
+        const code = row.country?.trim().toUpperCase();
+        if (code?.length === 2) countryByUserId.set(userId, code);
+      }
+    }
+
+    const enriched = reviews.map(({ userId, ...r }) => ({
+      ...r,
+      reviewerCountry:
+        r.reviewerCountry?.toUpperCase() ||
+        (userId ? countryByUserId.get(userId) ?? null : null) ||
+        "IN"
+    }));
+
+    const total = enriched.length;
+    const average = total > 0 ? enriched.reduce((sum, r) => sum + r.rating, 0) / total : 0;
+
+    res.json({ reviews: enriched, total, average });
   } catch (err) {
     next(err);
   }

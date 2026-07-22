@@ -247,6 +247,144 @@ export async function listProducts(query: ListProductsQuery) {
   };
 }
 
+const RELATION_TYPE_ORDER: Record<string, number> = {
+  PAIR_WITH: 0,
+  UPSELL: 1,
+  CROSS_SELL: 2
+};
+
+function mapProductListRow(p: {
+  id: string;
+  slug: string;
+  name: string;
+  shortDescription: string | null;
+  status: ProductStatus;
+  productType: ProductType;
+  hasAudio: boolean;
+  images: Array<{ url: string }>;
+  variants: Array<{
+    id: string;
+    saleInPaise: number;
+    mrpInPaise: number;
+    saleUsdCents: number | null;
+    mrpUsdCents: number | null;
+    saleGbpPence: number | null;
+    mrpGbpPence: number | null;
+  }>;
+  categories: Array<{ category: { slug: string; name: string } }>;
+}) {
+  const img = p.images[0]?.url ?? null;
+  const v = p.variants[0];
+  return {
+    id: p.id,
+    slug: p.slug,
+    name: p.name,
+    shortDescription: p.shortDescription,
+    status: p.status,
+    productType: p.productType,
+    hasAudio: p.hasAudio,
+    primaryImageUrl: img,
+    fromPriceInPaise: v?.saleInPaise ?? null,
+    fromMrpInPaise: v?.mrpInPaise ?? null,
+    fromSaleUsdCents: v?.saleUsdCents ?? null,
+    fromMrpUsdCents: v?.mrpUsdCents ?? null,
+    fromSaleGbpPence: v?.saleGbpPence ?? null,
+    fromMrpGbpPence: v?.mrpGbpPence ?? null,
+    defaultVariantId: v?.id ?? null,
+    categories: p.categories.map((pc) => ({
+      slug: pc.category.slug,
+      name: pc.category.name
+    }))
+  };
+}
+
+const listInclude = {
+  images: {
+    where: { isPrimary: true },
+    take: 1
+  },
+  variants: {
+    where: { status: "ACTIVE" as const },
+    orderBy: [{ isDefault: "desc" as const }, { saleInPaise: "asc" as const }],
+    take: 1
+  },
+  categories: {
+    include: { category: true },
+    take: 3
+  }
+};
+
+/** Curated pair-with / upsell first; category fallback when empty. */
+export async function listRelatedProducts(slug: string, limit = 4) {
+  const take = Math.min(8, Math.max(1, limit));
+  const product = await prisma.product.findFirst({
+    where: { slug, deletedAt: null, status: "ACTIVE" },
+    select: {
+      id: true,
+      categories: { select: { category: { select: { slug: true } } }, take: 1 }
+    }
+  });
+  if (!product) {
+    throw httpError(404, "Product not found", "NOT_FOUND");
+  }
+
+  const relations = await prisma.productRelation.findMany({
+    where: { fromProductId: product.id },
+    orderBy: [{ position: "asc" }],
+    include: {
+      toProduct: {
+        include: listInclude
+      }
+    }
+  });
+
+  relations.sort((a, b) => {
+    const ta = RELATION_TYPE_ORDER[a.type] ?? 9;
+    const tb = RELATION_TYPE_ORDER[b.type] ?? 9;
+    if (ta !== tb) return ta - tb;
+    return a.position - b.position;
+  });
+
+  const seen = new Set<string>();
+  const curated = [];
+  for (const rel of relations) {
+    const p = rel.toProduct;
+    if (p.deletedAt || p.status !== "ACTIVE" || p.catalogHidden) continue;
+    if (seen.has(p.id)) continue;
+    seen.add(p.id);
+    curated.push(mapProductListRow(p));
+    if (curated.length >= take) break;
+  }
+
+  if (curated.length >= take) {
+    return { items: curated, source: "curated" as const };
+  }
+
+  const categorySlug = product.categories[0]?.category.slug;
+  const where: Prisma.ProductWhereInput = {
+    deletedAt: null,
+    status: "ACTIVE",
+    catalogHidden: false,
+    id: { not: product.id, notIn: [...seen] }
+  };
+  if (categorySlug) {
+    const slugs = await getCategorySlugScope(categorySlug);
+    where.categories = { some: { category: { slug: { in: slugs } } } };
+  }
+
+  const fallbackRows = await prisma.product.findMany({
+    where,
+    take: take - curated.length,
+    orderBy: { updatedAt: "desc" },
+    include: listInclude
+  });
+
+  return {
+    items: [...curated, ...fallbackRows.map(mapProductListRow)],
+    source: curated.length ? ("mixed" as const) : ("category" as const)
+  };
+}
+
 export async function suggestProducts(q: string, limit = 8) {
   const term = q.trim();
   if (term.length < 2) {

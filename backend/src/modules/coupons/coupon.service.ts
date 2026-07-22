@@ -235,27 +235,46 @@ export type PdpCouponOffer = {
   description: string | null;
 };
 
-/** Active PDP coupon badges (e.g. Welcome 10) — hides expired/inactive. */
+/** Active PDP coupon badges — WELCOME5 preferred; never surfaces WELCOME10. */
 export async function listActivePdpCouponOffers(): Promise<PdpCouponOffer[]> {
   const codes = pdpCouponCodes();
-  if (!codes.length) return [];
+  const preferred = codes.length ? codes : ["WELCOME5"];
 
   const coupons = await prisma.coupon.findMany({
-    where: { code: { in: codes } },
+    where: { code: { in: preferred } },
     orderBy: { createdAt: "desc" }
   });
   const byCode = new Map(coupons.map((c) => [c.code, c]));
   const offers: PdpCouponOffer[] = [];
 
-  for (const code of codes) {
+  for (const code of preferred) {
+    if (code === "WELCOME10") continue;
     const coupon = byCode.get(code);
-    if (!coupon || !isCouponCurrentlyValid(coupon)) continue;
+    if (coupon && isCouponCurrentlyValid(coupon)) {
+      offers.push({
+        code: coupon.code,
+        label: formatCouponOfferLabel(coupon),
+        description: coupon.description ?? null
+      });
+      continue;
+    }
+    if (code === "WELCOME5") {
+      offers.push({
+        code: "WELCOME5",
+        label: "5% off",
+        description: "Welcome 5% off your first order"
+      });
+    }
+  }
+
+  if (!offers.length) {
     offers.push({
-      code: coupon.code,
-      label: formatCouponOfferLabel(coupon),
-      description: coupon.description ?? null
+      code: "WELCOME5",
+      label: "5% off",
+      description: "Welcome 5% off your first order"
     });
   }
+
   return offers;
 }
 

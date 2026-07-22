@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getApiBase } from "@/lib/api";
 import { decodeHtmlEntities } from "@/lib/sanitize-html";
 import { fetchMe, type PublicUser } from "@/lib/auth-client";
-import { countryDisplayName, countryFlagEmoji, countryFlagImageUrl } from "@/lib/country-flag";
+import { CountryFlag } from "@/components/product/CountryFlag";
 import { zoneToReviewerCountry } from "@/lib/currency";
 import { usePricingZone } from "@/hooks/usePricingZone";
 
@@ -290,29 +290,8 @@ export function ProductReviewsSection({ productId }: Props) {
                       ) : null}
                     </div>
                     {r.reviewerCountry ? (
-                      <div
-                        style={{
-                          marginTop: "4px",
-                          fontSize: "12px",
-                          color: "var(--brand-muted)",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px"
-                        }}
-                      >
-                        {countryFlagImageUrl(r.reviewerCountry) ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={countryFlagImageUrl(r.reviewerCountry)!}
-                            alt=""
-                            width={16}
-                            height={12}
-                            style={{ display: "inline-block", borderRadius: "1px" }}
-                          />
-                        ) : (
-                          <span aria-hidden>{countryFlagEmoji(r.reviewerCountry)}</span>
-                        )}
-                        <span>{countryDisplayName(r.reviewerCountry)}</span>
+                      <div style={{ marginTop: "4px" }}>
+                        <CountryFlag code={r.reviewerCountry} />
                       </div>
                     ) : null}
                   </div>

@@ -14,6 +14,7 @@ import {
   listProductSitemapEntries,
   listProducts,
   listProductsAdmin,
+  listRelatedProducts,
   suggestProducts
 } from "./products.service";
 import type { CreateProductBody, UpdateProductBody } from "./schemas";
@@ -107,6 +108,17 @@ export async function getOne(req: Request, res: Response, next: NextFunction) {
     const { slug } = req.params;
     const product = await getProductBySlug(slug);
     res.json({ success: true, data: { product } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function related(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { slug } = req.params;
+    const limit = req.query.limit ? Number(req.query.limit) : 4;
+    const data = await listRelatedProducts(slug, Number.isFinite(limit) ? limit : 4);
+    res.json({ success: true, data });
   } catch (err) {
     next(err);
   }

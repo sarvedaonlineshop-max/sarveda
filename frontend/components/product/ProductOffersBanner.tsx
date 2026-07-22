@@ -10,25 +10,32 @@ type Offer = {
   description: string | null;
 };
 
+/** Shown when API has no active featured coupon yet (e.g. migration pending). */
+const FALLBACK_OFFER: Offer = {
+  code: "WELCOME5",
+  label: "5% off",
+  description: null
+};
+
 export function ProductOffersBanner() {
-  const [offers, setOffers] = useState<Offer[]>([]);
+  const [offers, setOffers] = useState<Offer[]>([FALLBACK_OFFER]);
 
   useEffect(() => {
     let cancelled = false;
     void fetch(`${getApiBase()}/api/coupons/offers`, { cache: "no-store" })
       .then((res) => res.json())
       .then((json: { data?: { offers?: Offer[] } }) => {
-        if (!cancelled) setOffers(json.data?.offers ?? []);
+        if (cancelled) return;
+        const fromApi = (json.data?.offers ?? []).filter((o) => o.code !== "WELCOME10");
+        setOffers(fromApi.length ? fromApi : [FALLBACK_OFFER]);
       })
       .catch(() => {
-        if (!cancelled) setOffers([]);
+        if (!cancelled) setOffers([FALLBACK_OFFER]);
       });
     return () => {
       cancelled = true;
     };
   }, []);
-
-  if (!offers.length) return null;
 
   return (
     <div className="flex flex-wrap gap-2">

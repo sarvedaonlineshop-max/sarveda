@@ -256,6 +256,9 @@ export function ProductBuyBox({
               </span>
             ) : null}
           </div>
+          {showExpressOption ? (
+            <p className="text-xs text-brand-muted">Choose shipping speed at checkout.</p>
+          ) : null}
         </div>
       ) : null}
 
