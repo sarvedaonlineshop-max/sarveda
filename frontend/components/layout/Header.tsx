@@ -83,8 +83,8 @@ function NavIcon({ label }: { label: string }) {
 
 function CartIcon({ count }: { count: number }) {
   return (
-    <span className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-brand-forest/15 bg-white text-brand-forest shadow-sm transition-all hover:border-brand-gold/50 hover:text-brand-gold">
-      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" aria-hidden>
+    <span className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-brand-forest/15 bg-white text-brand-forest transition-all hover:border-brand-gold/50 hover:text-brand-gold">
+      <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" aria-hidden>
         <path
           strokeWidth={1.75}
           strokeLinecap="round"
@@ -93,7 +93,7 @@ function CartIcon({ count }: { count: number }) {
         />
       </svg>
       {count > 0 ? (
-        <span className="absolute -right-1 -top-1 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-brand-forest px-1 text-[10px] font-bold text-brand-cream">
+        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-brand-forest px-1 text-[9px] font-bold text-brand-cream">
           {count > 99 ? "99+" : count}
         </span>
       ) : null}
@@ -104,6 +104,23 @@ function CartIcon({ count }: { count: number }) {
 function isNavActive(pathname: string | null, href: string): boolean {
   if (!pathname) return false;
   if (href === "/") return pathname === "/";
+  if (href === "/shop") {
+    return (
+      pathname === "/shop" ||
+      pathname.startsWith("/shop/") ||
+      pathname.startsWith("/product/") ||
+      pathname.startsWith("/product-category/")
+    );
+  }
+  if (href === "/courses") {
+    return pathname === "/courses" || pathname.startsWith("/courses/") || pathname.startsWith("/course/");
+  }
+  if (href === "/events") {
+    return pathname === "/events" || pathname.startsWith("/events/") || pathname.startsWith("/event/");
+  }
+  if (href === "/insights") {
+    return pathname === "/insights" || pathname.startsWith("/insights/");
+  }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -137,18 +154,17 @@ export function Header() {
       <div className={`fixed inset-x-0 top-0 z-50 ${chromeVisibility}`}>
         <AnnouncementBar />
 
-        <header className="border-b border-brand-forest/10 bg-white shadow-[0_8px_24px_rgba(16,32,26,0.06)]">
+        <header className="border-b border-brand-forest/10 bg-white shadow-[0_4px_16px_rgba(16,32,26,0.05)]">
           {/* ── Layer 1: brand + primary nav ───────────────────────── */}
-          <div className="border-b border-brand-cream-dark/70 bg-white">
-            <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
+          <div className="border-b border-brand-cream-dark/60 bg-white">
+            <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-1.5 sm:px-6 lg:px-8">
               <SarvedaLogo
                 showTagline
-                iconHeight={36}
-                wordmarkClassName="font-serif text-xl italic leading-tight tracking-wide text-brand-forest transition-colors group-hover:text-brand-gold md:text-2xl"
+                iconHeight={30}
               />
 
               <nav
-                className="ml-2 hidden flex-1 items-center justify-center gap-1 lg:gap-2 md:flex"
+                className="ml-1 hidden flex-1 items-center justify-center gap-0.5 lg:gap-1 md:flex"
                 aria-label="Main"
               >
                 {MAIN_NAV_LINKS.map((link) => {
@@ -157,15 +173,16 @@ export function Header() {
                     <Link
                       key={link.href}
                       href={link.href}
-                      className={`group flex min-h-[44px] items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium tracking-wide transition-all ${
+                      aria-current={active ? "page" : undefined}
+                      className={`group relative flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] font-semibold tracking-wide transition-colors ${
                         active
-                          ? "bg-brand-forest/8 text-brand-forest"
-                          : "text-brand-forest/80 hover:bg-brand-cream hover:text-brand-forest"
+                          ? "bg-brand-forest text-brand-cream"
+                          : "text-brand-forest/75 hover:bg-brand-cream hover:text-brand-forest"
                       }`}
                     >
                       <span
                         className={`transition-colors ${
-                          active ? "text-brand-gold" : "text-brand-sage group-hover:text-brand-gold"
+                          active ? "text-brand-gold-pale" : "text-brand-sage group-hover:text-brand-gold"
                         }`}
                       >
                         <NavIcon label={link.label} />
@@ -185,38 +202,29 @@ export function Header() {
                 })}
               </nav>
 
-              <div className="ml-auto flex shrink-0 items-center gap-2 md:ml-0">
-                <Link
-                  href="/shop"
-                  className="hidden min-h-[42px] items-center justify-center rounded-full bg-brand-forest px-5 text-xs font-bold uppercase tracking-[0.12em] text-brand-cream shadow-sm transition-colors hover:bg-brand-night md:inline-flex"
-                >
-                  Shop now
-                </Link>
-
-                <Link
-                  href="/profile"
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-brand-forest/10 bg-brand-cream text-brand-forest transition-colors hover:border-brand-gold/40 hover:text-brand-gold md:hidden"
-                  aria-label={displayName ? `You, ${displayName}` : "Account"}
-                >
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.75}
-                      d="M15.75 7.5a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM5.25 19.5a7.5 7.5 0 0113.5 0"
-                    />
-                  </svg>
-                </Link>
-              </div>
+              <Link
+                href="/profile"
+                className="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-full border border-brand-forest/10 bg-brand-cream text-brand-forest transition-colors hover:border-brand-gold/40 hover:text-brand-gold md:hidden"
+                aria-label={displayName ? `You, ${displayName}` : "Account"}
+              >
+                <svg className="h-[18px] w-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.75}
+                    d="M15.75 7.5a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM5.25 19.5a7.5 7.5 0 0113.5 0"
+                  />
+                </svg>
+              </Link>
             </div>
           </div>
 
           {/* ── Layer 2: search + account tools ────────────────────── */}
-          <div className="hidden bg-brand-cream/90 md:block" style={{ backdropFilter: "blur(10px)" }}>
-            <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-2.5 sm:px-6 lg:px-8">
+          <div className="hidden bg-brand-cream/95 md:block">
+            <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-1.5 sm:px-6 lg:px-8">
               <div className="relative min-w-0 flex-1">
                 <svg
-                  className="pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-brand-muted"
+                  className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-3.5 w-3.5 -translate-y-1/2 text-brand-muted"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -232,26 +240,32 @@ export function Header() {
                 <SearchWithSuggestions
                   id="desktop-search"
                   placeholder="Search products, courses, insights…"
-                  inputClassName="w-full rounded-full border border-brand-forest/12 bg-white py-2.5 pl-11 pr-4 text-sm text-brand-ink shadow-sm placeholder:text-brand-muted transition-all focus:border-brand-gold/50 focus:outline-none focus:ring-2 focus:ring-brand-gold/25"
+                  inputClassName="w-full rounded-full border border-brand-forest/12 bg-white py-1.5 pl-10 pr-3 text-sm text-brand-ink placeholder:text-brand-muted transition-all focus:border-brand-gold/50 focus:outline-none focus:ring-1 focus:ring-brand-gold/30"
                 />
               </div>
 
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex shrink-0 items-center gap-1.5">
                 {sessionUser ? (
                   <>
                     <Link
                       href="/profile"
-                      className="inline-flex max-w-[12rem] items-center gap-2 rounded-full border border-brand-forest/10 bg-white px-3.5 py-2 text-sm font-medium text-brand-forest shadow-sm transition-all hover:border-brand-gold/40 hover:text-brand-gold"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-brand-forest/12 bg-white text-brand-forest transition-all hover:border-brand-gold/45 hover:text-brand-gold"
+                      aria-label={displayName ? `Account, ${displayName}` : "Account"}
+                      title={displayName ? `Hello, ${displayName}` : "Account"}
                     >
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-forest/10 text-[11px] font-bold uppercase text-brand-forest">
-                        {(displayName || "U").slice(0, 1)}
-                      </span>
-                      <span className="truncate">Hello, {displayName}</span>
+                      <svg className="h-[18px] w-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.75}
+                          d="M15.75 7.5a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM5.25 19.5a7.5 7.5 0 0113.5 0"
+                        />
+                      </svg>
                     </Link>
                     {isAdminRole(sessionUser.role) ? (
                       <Link
                         href="/admin"
-                        className="inline-flex items-center rounded-full border border-brand-forest/10 bg-white px-3.5 py-2 text-sm font-medium text-brand-muted shadow-sm transition-all hover:border-brand-gold/40 hover:text-brand-gold"
+                        className="inline-flex items-center rounded-full border border-brand-forest/10 bg-white px-2.5 py-1.5 text-xs font-medium text-brand-muted transition-all hover:border-brand-gold/40 hover:text-brand-gold"
                       >
                         Admin
                       </Link>
@@ -259,7 +273,7 @@ export function Header() {
                     <button
                       type="button"
                       onClick={() => void handleSignOut()}
-                      className="inline-flex items-center rounded-full border border-brand-terra/20 bg-white px-3.5 py-2 text-sm font-semibold text-brand-terra shadow-sm transition-all hover:bg-brand-terra/5"
+                      className="inline-flex items-center rounded-full border border-brand-terra/20 bg-white px-2.5 py-1.5 text-xs font-semibold text-brand-terra transition-all hover:bg-brand-terra/5"
                     >
                       Sign out
                     </button>
@@ -268,13 +282,22 @@ export function Header() {
                   <>
                     <Link
                       href="/login"
-                      className="inline-flex items-center rounded-full border border-brand-forest/10 bg-white px-4 py-2 text-sm font-medium text-brand-forest shadow-sm transition-all hover:border-brand-gold/40 hover:text-brand-gold"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-brand-forest/12 bg-white text-brand-forest transition-all hover:border-brand-gold/45 hover:text-brand-gold"
+                      aria-label="Sign in"
+                      title="Sign in"
                     >
-                      Sign in
+                      <svg className="h-[18px] w-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.75}
+                          d="M15.75 7.5a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM5.25 19.5a7.5 7.5 0 0113.5 0"
+                        />
+                      </svg>
                     </Link>
                     <Link
                       href="/signup"
-                      className="inline-flex items-center rounded-full bg-brand-gold px-4 py-2 text-sm font-semibold text-brand-night shadow-sm transition-colors hover:bg-[#a37934]"
+                      className="inline-flex items-center rounded-full bg-brand-gold px-3 py-1.5 text-xs font-semibold text-brand-night transition-colors hover:bg-[#a37934]"
                     >
                       Sign up
                     </Link>
