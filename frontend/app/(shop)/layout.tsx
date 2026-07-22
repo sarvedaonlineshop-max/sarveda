@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 
 import { ShopShell } from "@/components/shop/ShopShell";
-import { ShopProductsSkeleton } from "@/components/shop/ShopProductsSkeleton";
 import { fetchCategoryTree } from "@/lib/api";
 import { sortShopCategories } from "@/lib/shop-categories";
 
@@ -18,9 +17,13 @@ export default async function ShopBrowseLayout({ children }: { children: React.R
 
   return (
     <Suspense fallback={<ShopBrowseFallback />}>
-      <ShopShell categories={sortShopCategories(categories)}>
-        <Suspense fallback={<ShopProductsSkeleton />}>{children}</Suspense>
-      </ShopShell>
+      {/*
+        Do NOT wrap `{children}` in Suspense with a product-grid skeleton.
+        Next.js Link navigations run inside React transitions; a Suspense fallback
+        here can stick forever when arriving from PDP (or other non-shop routes).
+        Category switches use `useShopNavigate` + `isPending` in ShopShell instead.
+      */}
+      <ShopShell categories={sortShopCategories(categories)}>{children}</ShopShell>
     </Suspense>
   );
 }

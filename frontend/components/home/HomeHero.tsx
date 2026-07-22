@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { SarvedaLogoWatermark } from "@/components/brand/SarvedaLogo";
+import heroBg from "../../../data/bg.png";
 
 /**
  * Static homepage hero — single brand panel (~70vh), no product carousel.
@@ -9,11 +10,15 @@ export function HomeHero() {
   return (
     <section
       className="relative flex min-h-[70vh] flex-col justify-end overflow-hidden border-b border-white/10"
-      style={{ background: "linear-gradient(160deg, #10201a 0%, #1c352a 45%, #10201a 100%)" }}
+      style={{
+        backgroundImage: `linear-gradient(90deg, rgba(10, 22, 18, 0.82) 0%, rgba(15, 31, 24, 0.7) 38%, rgba(18, 34, 27, 0.55) 100%), url(${heroBg.src})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center center"
+      }}
       aria-label="Welcome to Sarveda"
     >
       <div
-        className="pointer-events-none absolute inset-0 opacity-25"
+        className="pointer-events-none absolute inset-0 opacity-20"
         style={{
           backgroundImage:
             "radial-gradient(circle at 20% 30%, rgba(185,138,62,0.22) 0%, transparent 45%), radial-gradient(circle at 80% 70%, rgba(111,153,127,0.16) 0%, transparent 40%)"

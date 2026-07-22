@@ -85,7 +85,14 @@ export function ShopShell({ categories, children }: Props) {
                 onClearCategory={clearCategory}
                 onClearSearch={clearSearch}
               />
-              <div className="relative z-0 lg:flex-1 lg:overflow-y-auto">{children}</div>
+              <div
+                className={`relative z-0 lg:flex-1 lg:overflow-y-auto ${
+                  isPending ? "pointer-events-none opacity-50 transition-opacity duration-150" : ""
+                }`}
+                aria-busy={isPending}
+              >
+                {children}
+              </div>
             </div>
           </div>
         </main>

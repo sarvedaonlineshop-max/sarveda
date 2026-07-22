@@ -2,16 +2,33 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
 
 import { isShopBrowsePath } from "@/lib/shop-navigation";
 import { pageTransition, pageVariants } from "@/lib/motion";
 
+function skipPageMotion(pathname: string | null | undefined): boolean {
+  if (!pathname) return false;
+  // Shared shop shell — fade would remount sidebar/toolbar.
+  if (isShopBrowsePath(pathname)) return true;
+  // PDP category/Shop links must not exit through AnimatePresence mode="wait",
+  // which can leave the next route's children unmounted / stuck on a Suspense fallback.
+  if (pathname.startsWith("/product/")) return true;
+  return false;
+}
+
 export function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
+  const prevPathnameRef = useRef(pathname);
+  const previousPathname = prevPathnameRef.current;
 
-  // Shop category/search navigation keeps a shared layout — page fade would remount sidebar + toolbar.
-  if (isShopBrowsePath(pathname)) {
+  useEffect(() => {
+    prevPathnameRef.current = pathname;
+  }, [pathname]);
+
+  // Skip motion when either side of the navigation is shop/PDP (covers PDP → shop).
+  if (skipPageMotion(pathname) || skipPageMotion(previousPathname)) {
     return <>{children}</>;
   }
 
