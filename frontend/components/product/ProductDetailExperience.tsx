@@ -7,7 +7,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useCartData } from "@/components/cart/CartProvider";
 import { AccordionDescription } from "@/components/product/AccordionDescription";
 import { NotifyMeButton } from "@/components/product/NotifyMeButton";
-import { PairWithRow } from "@/components/product/PairWithRow";
 import { ProductAudio } from "@/components/product/ProductAudio";
 import { ProductBuyBox } from "@/components/product/ProductBuyBox";
 import { ProductOffersBanner } from "@/components/product/ProductOffersBanner";
@@ -194,7 +193,8 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
     layout: "inline" as const,
     showPurchaseActions: true,
     expressShippingEnabled: product.expressShippingEnabled !== false,
-    axisOrder: product.variantAxisOrder
+    axisOrder: product.variantAxisOrder,
+    pairWithItems
   };
 
   return (
@@ -318,7 +318,6 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
         </div>
 
         <div className="mt-16 space-y-16 border-t border-brand-cream-dark pt-14">
-          <PairWithRow items={pairWithItems.slice(0, 3)} />
           <ProductReviewsSection productId={product.id} />
         </div>
       </div>

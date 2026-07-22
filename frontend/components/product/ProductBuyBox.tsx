@@ -3,10 +3,11 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 
+import { PairWithRow } from "@/components/product/PairWithRow";
 import { PriceDisplay } from "@/components/product/PriceDisplay";
 import type { Zone } from "@/lib/currency";
 import { stockDisplay, UNTRACKED_STOCK_ON_HAND } from "@/lib/variant-utils";
-import type { ProductVariantDetail } from "@/lib/types";
+import type { ProductListItem, ProductVariantDetail } from "@/lib/types";
 
 type Props = {
   variant: ProductVariantDetail | null;
@@ -31,6 +32,8 @@ type Props = {
   axisOrder?: string[];
   /** Auroville-style inline PDP vs legacy card sidebar */
   layout?: "card" | "inline";
+  /** Compact "Complete your journey" items above purchase buttons */
+  pairWithItems?: ProductListItem[];
 };
 
 export function ProductBuyBox({
@@ -52,7 +55,8 @@ export function ProductBuyBox({
   showPurchaseActions = true,
   expressShippingEnabled = true,
   axisOrder,
-  layout = "card"
+  layout = "card",
+  pairWithItems = []
 }: Props) {
   const stock = variantForStock ? stockDisplay(variantForStock) : null;
   const isInline = layout === "inline";
@@ -220,35 +224,38 @@ export function ProductBuyBox({
       {!isDigital ? (
         <div className={isInline ? "space-y-2" : "mt-4 space-y-2"}>
           <div className="flex flex-wrap gap-2">
-            <span className="inline-flex items-center gap-2 rounded-xl border border-brand-cream-dark bg-brand-cream px-3 py-2">
+            <span
+              title="Choose shipping speed at checkout"
+              className="inline-flex cursor-help items-center gap-2 rounded-xl border border-brand-cream-dark bg-brand-cream px-3 py-2"
+            >
               <svg className="h-4 w-4 shrink-0 text-brand-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM20 17a2 2 0 11-4 0 2 2 0 014 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 16V6a1 1 0 00-1-1H3m10 11h4m0 0V9a1 1 0 011-1h2.5a1 1 0 01.8.4l1.5 2a1 1 0 01.2.6V16a1 1 0 01-1 1h-1" />
               </svg>
               <span className="leading-tight">
                 <span className="block text-[10px] font-semibold uppercase tracking-wider text-brand-muted">
-                  Standard (surface)
+                  Standard Shipping
                 </span>
                 <span className="block text-sm font-semibold text-brand-ink">{shippingDays}</span>
               </span>
             </span>
             {showExpressOption ? (
-              <span className="inline-flex items-center gap-2 rounded-xl border border-brand-terra/30 bg-brand-terra/5 px-3 py-2">
+              <span
+                title="Choose shipping speed at checkout"
+                className="inline-flex cursor-help items-center gap-2 rounded-xl border border-brand-terra/30 bg-brand-terra/5 px-3 py-2"
+              >
                 <svg className="h-4 w-4 shrink-0 text-brand-terra" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M11.3 1.046a1 1 0 01.7 1.19L10.62 8H15a1 1 0 01.78 1.625l-7 8.75A1 1 0 017 17.75L8.38 11H4a1 1 0 01-.78-1.625l7-8.75a1 1 0 011.08-.579z" />
                 </svg>
                 <span className="leading-tight">
                   <span className="block text-[10px] font-semibold uppercase tracking-wider text-brand-terra">
-                    Express
+                    Express Shipping
                   </span>
                   <span className="block text-sm font-semibold text-brand-ink">{expressDays}</span>
                 </span>
               </span>
             ) : null}
           </div>
-          {showExpressOption ? (
-            <p className="text-xs text-brand-muted">Choose shipping speed at checkout.</p>
-          ) : null}
         </div>
       ) : null}
 
@@ -294,14 +301,15 @@ export function ProductBuyBox({
 
       {showPurchaseActions ? (
         <div className={isInline ? "space-y-3" : undefined}>
-          <div className={isInline ? "flex flex-col gap-3" : undefined}>
+          {isInline && pairWithItems.length > 0 ? <PairWithRow items={pairWithItems} compact /> : null}
+          <div className={isInline ? "flex gap-2" : undefined}>
           <button
             type="button"
             onClick={onAdd}
             disabled={addDisabled}
             className={
               isInline
-                ? "min-h-[52px] w-full rounded-full bg-brand-forest px-6 text-sm font-semibold tracking-wide text-brand-cream transition-colors hover:bg-brand-night disabled:cursor-not-allowed disabled:opacity-50"
+                ? "min-h-[44px] flex-1 rounded-full bg-brand-forest px-3 text-xs font-semibold tracking-wide text-brand-cream transition-colors hover:bg-brand-night disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
                 : "mt-4 w-full rounded-lg bg-[#108967] py-3.5 text-sm font-semibold uppercase tracking-wide text-white shadow-sm transition hover:bg-[#0d7353] disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500"
             }
           >
@@ -313,7 +321,7 @@ export function ProductBuyBox({
               type="button"
               onClick={onBuyNow}
               disabled={addDisabled}
-              className="min-h-[52px] w-full rounded-full bg-brand-gold px-6 text-sm font-semibold tracking-wide text-brand-night transition-colors hover:bg-[#a37934] disabled:cursor-not-allowed disabled:opacity-50"
+              className="min-h-[44px] flex-1 rounded-full bg-brand-gold px-3 text-xs font-semibold tracking-wide text-brand-night transition-colors hover:bg-[#a37934] disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
             >
               Buy it now
             </button>

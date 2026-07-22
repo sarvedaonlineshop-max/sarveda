@@ -128,6 +128,13 @@ async function assertCouponUsable(
     );
   }
 
+  if (normalizeCode(coupon.code) === "WELCOME10") {
+    throw couponError(
+      "WELCOME10 is no longer available. Use WELCOME5 for 5% off your first order.",
+      "COUPON_INACTIVE"
+    );
+  }
+
   if (!coupon.isActive) {
     throw couponError("This coupon is no longer active.", "COUPON_INACTIVE");
   }
@@ -193,7 +200,7 @@ function featuredCouponCodes(): string[] {
   return raw
     .split(",")
     .map((c) => normalizeCode(c))
-    .filter(Boolean);
+    .filter((c) => c && c !== "WELCOME10");
 }
 
 function pdpCouponCodes(): string[] {
@@ -201,7 +208,7 @@ function pdpCouponCodes(): string[] {
   return raw
     .split(",")
     .map((c) => normalizeCode(c))
-    .filter(Boolean);
+    .filter((c) => c && c !== "WELCOME10");
 }
 
 function isCouponCurrentlyValid(coupon: Coupon, now = new Date()): boolean {

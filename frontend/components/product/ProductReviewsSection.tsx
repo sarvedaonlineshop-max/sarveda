@@ -24,6 +24,13 @@ type Review = {
 
 type Props = { productId: string };
 
+function reviewerInitials(name: string | null | undefined): string {
+  const parts = (name ?? "Customer").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "C";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
+}
+
 function Stars({
   value,
   interactive = false,
@@ -208,11 +215,14 @@ export function ProductReviewsSection({ productId }: Props) {
         <p style={{ fontSize: "13px", color: "var(--brand-muted)" }}>Loading reviews...</p>
       ) : reviews.length > 0 ? (
         <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
-          {reviews.map((r, i) => (
+          {reviews.map((r, i) => {
+            const displayName = r.user?.name?.trim() || "Customer";
+            const initials = reviewerInitials(displayName);
+            return (
             <article
               key={r.id}
               style={{
-                padding: "16px 0",
+                padding: "18px 0",
                 borderBottom: i < reviews.length - 1 ? "1px solid var(--brand-cream-dark)" : "none"
               }}
             >
@@ -221,83 +231,121 @@ export function ProductReviewsSection({ productId }: Props) {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "flex-start",
-                  marginBottom: "6px"
+                  gap: "12px",
+                  marginBottom: "8px"
                 }}
               >
-                <div>
-                  <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--brand-ink)" }}>
-                    {r.user?.name ?? "Customer"}
-                  </span>
-                  {r.reviewerCountry ? (
-                    <span
+                <div style={{ display: "flex", gap: "12px", minWidth: 0 }}>
+                  <div style={{ position: "relative", flexShrink: 0 }}>
+                    <div
                       style={{
-                        fontSize: "12px",
-                        color: "var(--brand-muted)",
-                        marginLeft: "8px",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "4px"
-                      }}
-                    >
-                      {countryFlagImageUrl(r.reviewerCountry) ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={countryFlagImageUrl(r.reviewerCountry)!}
-                          alt=""
-                          width={16}
-                          height={12}
-                          style={{ display: "inline-block", borderRadius: "1px" }}
-                        />
-                      ) : (
-                        countryFlagEmoji(r.reviewerCountry)
-                      )}
-                      {countryDisplayName(r.reviewerCountry)}
-                    </span>
-                  ) : null}
-                  {r.isVerified && (
-                    <span
-                      style={{
-                        fontSize: "10px",
-                        fontWeight: 600,
-                        color: "var(--brand-forest)",
-                        background: "rgba(28,53,42,0.08)",
-                        border: "1px solid rgba(28,53,42,0.15)",
-                        padding: "2px 7px",
+                        width: 40,
+                        height: 40,
                         borderRadius: "999px",
-                        marginLeft: "8px"
+                        background: "var(--brand-forest)",
+                        color: "var(--brand-cream)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "13px",
+                        fontWeight: 700
                       }}
+                      aria-hidden
                     >
-                      ✓ Verified purchase
-                    </span>
-                  )}
+                      {initials}
+                    </div>
+                    {r.isVerified ? (
+                      <span
+                        style={{
+                          position: "absolute",
+                          right: -2,
+                          bottom: -2,
+                          width: 16,
+                          height: 16,
+                          borderRadius: "999px",
+                          background: "#16a34a",
+                          color: "#fff",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "10px",
+                          border: "2px solid #fff"
+                        }}
+                        title="Verified buyer"
+                        aria-label="Verified buyer"
+                      >
+                        ✓
+                      </span>
+                    ) : null}
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px" }}>
+                      <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--brand-ink)" }}>
+                        {displayName}
+                      </span>
+                      {r.isVerified ? (
+                        <span style={{ fontSize: "12px", fontWeight: 600, color: "#16a34a" }}>
+                          Verified Buyer
+                        </span>
+                      ) : null}
+                    </div>
+                    {r.reviewerCountry ? (
+                      <div
+                        style={{
+                          marginTop: "4px",
+                          fontSize: "12px",
+                          color: "var(--brand-muted)",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px"
+                        }}
+                      >
+                        {countryFlagImageUrl(r.reviewerCountry) ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={countryFlagImageUrl(r.reviewerCountry)!}
+                            alt=""
+                            width={16}
+                            height={12}
+                            style={{ display: "inline-block", borderRadius: "1px" }}
+                          />
+                        ) : (
+                          <span aria-hidden>{countryFlagEmoji(r.reviewerCountry)}</span>
+                        )}
+                        <span>{countryDisplayName(r.reviewerCountry)}</span>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
-                <span style={{ fontSize: "11px", color: "var(--brand-muted)" }}>
+                <span style={{ fontSize: "12px", color: "var(--brand-muted)", whiteSpace: "nowrap" }}>
                   {new Date(r.createdAt).toLocaleDateString("en-IN", {
-                    day: "numeric",
-                    month: "short",
+                    day: "2-digit",
+                    month: "2-digit",
                     year: "numeric"
                   })}
                 </span>
               </div>
-              <Stars value={r.rating} />
-              {r.title && (
-                <p
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "var(--brand-ink)",
-                    marginTop: "6px"
-                  }}
-                >
-                  {decodeHtmlEntities(r.title)}
-                </p>
-              )}
+              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px" }}>
+                <Stars value={r.rating} />
+                {r.title ? (
+                  <p
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: 700,
+                      color: "var(--brand-ink)",
+                      margin: 0
+                    }}
+                  >
+                    {decodeHtmlEntities(r.title)}
+                  </p>
+                ) : null}
+              </div>
               {r.body && (
                 <p
                   style={{
                     fontSize: "13px",
-                    color: "var(--brand-muted)",
-                    marginTop: "4px",
+                    color: "var(--brand-ink)",
+                    marginTop: "8px",
                     lineHeight: 1.65
                   }}
                 >
@@ -305,7 +353,8 @@ export function ProductReviewsSection({ productId }: Props) {
                 </p>
               )}
             </article>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <p style={{ fontSize: "13px", color: "var(--brand-muted)", padding: "16px 0" }}>

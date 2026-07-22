@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+
 import { decodeHtmlEntities, htmlToPlainText, sanitizeProductHtml } from "@/lib/sanitize-html";
 
 type Item = {
@@ -14,8 +18,6 @@ function RichContent({ html, title }: { html: string; title?: string }) {
   const cleaned = sanitizeProductHtml(html);
   const looksHtml = /<[a-z][\s\S]*>/i.test(cleaned.trim());
 
-  // "Key features" renders as a styled list with brass check icons, regardless of
-  // whether the source is <br>-separated HTML or plain-text lines.
   if (title && /key\s*features?/i.test(title)) {
     const lines = htmlToPlainText(cleaned)
       .split("\n")
@@ -64,30 +66,40 @@ function RichContent({ html, title }: { html: string; title?: string }) {
 }
 
 export function AccordionDescription({ items }: Props) {
+  const [openId, setOpenId] = useState<string | null>(items[0]?.id ?? null);
+
   if (items.length === 0) return null;
 
   return (
     <div className="divide-y divide-brand-cream-dark/60 rounded-2xl border border-brand-cream-dark bg-white shadow-card">
-      {items.map((item) => (
-        <details key={item.id} className="group">
-          <summary className="flex min-h-[52px] cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 font-serif font-medium text-brand-ink transition-colors marker:content-none hover:bg-brand-cream [&::-webkit-details-marker]:hidden group-first:hover:rounded-t-2xl group-last:hover:rounded-b-2xl">
-            <span>{item.title}</span>
-            <svg
-              viewBox="0 0 24 24"
-              className="h-4 w-4 shrink-0 text-brand-gold transition-transform group-open:rotate-180"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.75}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
+      {items.map((item) => {
+        const open = openId === item.id;
+        return (
+          <div key={item.id} className="group">
+            <button
+              type="button"
+              aria-expanded={open}
+              onClick={() => setOpenId((current) => (current === item.id ? null : item.id))}
+              className="flex min-h-[52px] w-full cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-left font-serif font-medium text-brand-ink transition-colors hover:bg-brand-cream"
             >
-              <path d="m6 9 6 6 6-6" />
-            </svg>
-          </summary>
-          <RichContent html={item.content} title={item.title} />
-        </details>
-      ))}
+              <span>{item.title}</span>
+              <svg
+                viewBox="0 0 24 24"
+                className={`h-4 w-4 shrink-0 text-brand-gold transition-transform ${open ? "rotate-180" : ""}`}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.75}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+            {open ? <RichContent html={item.content} title={item.title} /> : null}
+          </div>
+        );
+      })}
     </div>
   );
 }
