@@ -49,7 +49,7 @@ export function ShopProductToolbar({
   return (
   <>
     <div className="lg:contents">
-      <div className="fixed inset-x-0 top-24 z-40 border-b border-brand-cream-dark/60 bg-brand-cream/95 shadow-sm lg:static lg:z-auto lg:border-b-0 lg:bg-transparent lg:shadow-none">
+      <div className="fixed inset-x-0 top-[var(--storefront-header-offset)] z-40 border-b border-brand-cream-dark/60 bg-brand-cream/95 shadow-sm lg:static lg:z-auto lg:border-b-0 lg:bg-transparent lg:shadow-none">
         <div className="lg:hidden">
           <ShopMobileCategoryDrawer
             categories={categories}

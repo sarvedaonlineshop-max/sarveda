@@ -39,7 +39,7 @@ type Props = {
   pairWithItems: ProductListItem[];
 };
 
-const STICKY_TOP = "top-24 lg:top-28";
+const STICKY_TOP = "top-[var(--storefront-header-offset)]";
 
 /**
  * Two-column PDP (Auroville-style) + Amazon fixed cart rail on desktop when cart has items.
