@@ -318,11 +318,13 @@ export async function getByOrderNumber(req: Request, res: Response, next: NextFu
   try {
     const { orderNumber } = req.params;
     const email = typeof req.query.email === "string" ? req.query.email.trim().toLowerCase() : "";
+    const phoneRaw = typeof req.query.phone === "string" ? req.query.phone.trim() : "";
+    const phoneDigits = phoneRaw.replace(/\D/g, "");
 
-    if (!orderNumber || !email) {
+    if (!orderNumber || (!email && !phoneDigits)) {
       res.status(400).json({
         success: false,
-        error: "orderNumber and email query required",
+        error: "orderNumber and email or phone query required",
         code: "BAD_REQUEST"
       });
       return;
@@ -344,7 +346,21 @@ export async function getByOrderNumber(req: Request, res: Response, next: NextFu
       return;
     }
 
-    if (order.email !== email) {
+    let allowed = false;
+    if (email && order.email === email) {
+      allowed = true;
+    } else if (phoneDigits) {
+      const orderPhone = (order.phone || "").replace(/\D/g, "");
+      const addrMatch = order.addresses.some((a) => {
+        const d = (a.phone || "").replace(/\D/g, "");
+        return d.length >= 8 && (d.endsWith(phoneDigits) || phoneDigits.endsWith(d));
+      });
+      const orderPhoneMatch =
+        orderPhone.length >= 8 && (orderPhone.endsWith(phoneDigits) || phoneDigits.endsWith(orderPhone));
+      allowed = addrMatch || orderPhoneMatch;
+    }
+
+    if (!allowed) {
       res.status(403).json({ success: false, error: "Forbidden", code: "FORBIDDEN" });
       return;
     }

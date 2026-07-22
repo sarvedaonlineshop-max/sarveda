@@ -132,7 +132,13 @@ export function ProfileClient() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<TabKey>("details");
+  const [activeTab, setActiveTab] = useState<TabKey>(() => {
+    if (typeof window === "undefined") return "details";
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    return tab === "orders" || tab === "courses" || tab === "events" || tab === "details"
+      ? tab
+      : "details";
+  });
   const [orderCount, setOrderCount] = useState<number | null>(null);
   const [courseCount, setCourseCount] = useState<number | null>(null);
   const [eventCount, setEventCount] = useState<number | null>(null);
@@ -314,7 +320,7 @@ export function ProfileClient() {
       <button
         type="button"
         onClick={() => void handleSignOut()}
-        className="inline-flex min-h-[36px] items-center justify-center rounded-full border border-red-600 px-4 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
+        className="inline-flex min-h-[36px] items-center justify-center rounded-full bg-brand-terra px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#9a4825]"
       >
         Sign out
       </button>

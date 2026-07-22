@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState, useTransition } from "react";
 
 import { useCartData } from "@/components/cart/CartProvider";
 import { MOBILE_MENU_POLICY_LINKS } from "@/lib/policy-links";
@@ -27,11 +27,15 @@ type NavItem = {
 
 export function BottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const { itemCount } = useCartData();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
 
   useEffect(() => {
     setMenuOpen(false);
+    setPendingHref(null);
   }, [pathname]);
 
   useEffect(() => {
@@ -43,16 +47,25 @@ export function BottomNav() {
     };
   }, [menuOpen]);
 
+  const activePath = pendingHref ?? pathname;
+
   const menuActive =
-    menuLinks.some((l) => pathname?.startsWith(l.href)) ||
-    MOBILE_MENU_POLICY_LINKS.some((l) => pathname === l.href);
+    menuLinks.some((l) => activePath?.startsWith(l.href)) ||
+    MOBILE_MENU_POLICY_LINKS.some((l) => activePath === l.href);
+
+  function go(href: string) {
+    setPendingHref(href);
+    startTransition(() => {
+      router.push(href);
+    });
+  }
 
   const items: NavItem[] = [
     {
       key: "home",
       label: "Home",
       href: "/",
-      isActive: pathname === "/",
+      isActive: activePath === "/",
       icon: (active) => (
         <svg viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" className="h-6 w-6" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={active ? 0 : 1.75}
@@ -65,7 +78,7 @@ export function BottomNav() {
       key: "store",
       label: "Store",
       href: "/shop",
-      isActive: isShopBrowsePath(pathname),
+      isActive: isShopBrowsePath(activePath),
       icon: (active) => (
         <svg viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" className="h-6 w-6" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={active ? 0 : 1.75}
@@ -78,7 +91,7 @@ export function BottomNav() {
       key: "cart",
       label: "Cart",
       href: "/cart",
-      isActive: pathname === "/cart",
+      isActive: activePath === "/cart",
       badge: itemCount,
       icon: (active) => (
         <svg viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" className="h-6 w-6" aria-hidden="true">
@@ -92,7 +105,7 @@ export function BottomNav() {
       key: "profile",
       label: "Profile",
       href: "/profile",
-      isActive: pathname?.startsWith("/profile") ?? false,
+      isActive: activePath?.startsWith("/profile") ?? false,
       icon: (active) => (
         <svg viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" className="h-6 w-6" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={active ? 0 : 1.75}
@@ -228,6 +241,10 @@ export function BottomNav() {
                 key={item.key}
                 href={item.href!}
                 aria-current={active ? "page" : undefined}
+                onClick={(e) => {
+                  e.preventDefault();
+                  go(item.href!);
+                }}
                 className="relative flex flex-col items-center justify-center gap-1 transition-opacity active:opacity-70"
               >
                 {inner}

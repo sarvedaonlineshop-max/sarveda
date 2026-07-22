@@ -123,8 +123,20 @@ export type OrderSummary = {
   } | null;
 };
 
-export async function fetchOrderPublic(orderNumber: string, email: string): Promise<OrderPublic> {
-  const q = new URLSearchParams({ email: email.trim().toLowerCase() });
+export async function fetchOrderPublic(
+  orderNumber: string,
+  emailOrContact: string,
+  phone?: string
+): Promise<OrderPublic> {
+  const q = new URLSearchParams();
+  const contact = emailOrContact.trim();
+  if (phone?.trim()) {
+    q.set("phone", phone.trim());
+  } else if (contact.includes("@")) {
+    q.set("email", contact.toLowerCase());
+  } else {
+    q.set("phone", contact);
+  }
   const res = await fetch(
     `${getApiBase()}/api/orders/public/${encodeURIComponent(orderNumber)}?${q.toString()}`,
     { credentials: "include" }

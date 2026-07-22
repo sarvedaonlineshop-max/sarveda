@@ -18,14 +18,16 @@
   --brand-ink:        #26251f;
   --brand-muted:      #7d7263;
   --sarveda-bottom-nav: 4.5rem;
-  /* Mobile: announcement + brand row. Desktop: + compact search/account row. */
-  --storefront-header-offset: 5.25rem;
+  /* Mobile: announcement + brand row. Desktop: + search row. */
+  --storefront-header-offset: 5.5rem;
+  --storefront-header-offset-scrolled: 4.75rem;
   --storefront-slim-footer-offset: 2.5rem;
 }
 
 @media (min-width: 768px) {
   :root {
-    --storefront-header-offset: 7.75rem;
+    --storefront-header-offset: 8.1rem;
+    --storefront-header-offset-scrolled: 6.6rem;
   }
 }
 
