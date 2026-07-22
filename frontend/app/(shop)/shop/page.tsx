@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { ShopProductGrid } from "@/components/shop/ShopProductGrid";
 import { fetchProductList } from "@/lib/api";
+import type { ProductListResponse } from "@/lib/types";
 import { canonical, isProductionSite } from "@/lib/site";
 
 export const revalidate = 60;
@@ -18,8 +19,18 @@ type Props = {
   searchParams: Record<string, string | string[] | undefined>;
 };
 
+const emptyList: ProductListResponse = {
+  items: [],
+  pagination: { page: 1, limit: 48, total: 0, totalPages: 0 }
+};
+
 export default async function ShopPage({ searchParams }: Props) {
-  const list = await fetchProductList(searchParams, { next: { revalidate: 60 } }, { limit: 48 });
+  let list = emptyList;
+  try {
+    list = await fetchProductList(searchParams, { next: { revalidate: 60 } }, { limit: 48 });
+  } catch {
+    /* Build/ISR must not fail when EC2 is down — page revalidates on next request */
+  }
 
   return (
     <ShopProductGrid

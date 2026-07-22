@@ -24,7 +24,12 @@ type Props = {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const category = await fetchCategoryBySlug(params.slug, { next: { revalidate: 300 } });
+  let category: Awaited<ReturnType<typeof fetchCategoryBySlug>> = null;
+  try {
+    category = await fetchCategoryBySlug(params.slug, { next: { revalidate: 300 } });
+  } catch {
+    return { title: "Category" };
+  }
   if (!category) {
     return { title: "Category" };
   }
@@ -50,13 +55,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ProductCategoryPage({ params, searchParams }: Props) {
-  const category = await fetchCategoryBySlug(params.slug, { next: { revalidate: 300 } });
+  let category: Awaited<ReturnType<typeof fetchCategoryBySlug>> = null;
+  try {
+    category = await fetchCategoryBySlug(params.slug, { next: { revalidate: 300 } });
+  } catch {
+    /* EC2 unreachable during build */
+  }
   if (!category) {
     notFound();
   }
 
   const listParams = { ...searchParams, category: params.slug };
-  const list = await fetchProductList(listParams, { next: { revalidate: 60 } }, { limit: 48 });
+  let list = {
+    items: [] as Awaited<ReturnType<typeof fetchProductList>>["items"],
+    pagination: { page: 1, limit: 48, total: 0, totalPages: 0 }
+  };
+  try {
+    list = await fetchProductList(listParams, { next: { revalidate: 60 } }, { limit: 48 });
+  } catch {
+    /* Keep build green; ISR will refill when API is back */
+  }
 
   const breadcrumbItems = [
     { name: "Home", url: absoluteUrl("/") },

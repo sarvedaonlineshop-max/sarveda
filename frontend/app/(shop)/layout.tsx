@@ -13,7 +13,12 @@ function ShopBrowseFallback() {
 }
 
 export default async function ShopBrowseLayout({ children }: { children: React.ReactNode }) {
-  const categories = await fetchCategoryTree({ next: { revalidate: 300 } });
+  let categories: Awaited<ReturnType<typeof fetchCategoryTree>> = [];
+  try {
+    categories = await fetchCategoryTree({ next: { revalidate: 300 } });
+  } catch {
+    /* Keep Vercel builds green when EC2 is briefly unreachable */
+  }
 
   return (
     <Suspense fallback={<ShopBrowseFallback />}>
