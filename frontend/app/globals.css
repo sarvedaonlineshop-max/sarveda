@@ -21,6 +21,8 @@
   /* Mobile: announcement + brand row. Desktop: + search row. */
   --storefront-header-offset: 5.5rem;
   --storefront-header-offset-scrolled: 4.75rem;
+  /* Live sticky top — Header syncs this when the marquee hides on scroll. */
+  --storefront-header-live-offset: var(--storefront-header-offset);
   --storefront-slim-footer-offset: 2.5rem;
 }
 
@@ -29,6 +31,15 @@
     --storefront-header-offset: 8.1rem;
     --storefront-header-offset-scrolled: 6.6rem;
   }
+}
+
+html[data-header-scrolled="true"] {
+  --storefront-header-live-offset: var(--storefront-header-offset-scrolled);
+}
+
+/* Profile: no announcement marquee — always use the compact header height. */
+html[data-header-no-marquee="true"] {
+  --storefront-header-live-offset: var(--storefront-header-offset-scrolled);
 }
 
 /* ─── Base ─────────────────────────────────────────────────────── */

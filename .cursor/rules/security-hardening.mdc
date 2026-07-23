@@ -1,0 +1,33 @@
+---
+description: Security hardening lessons from Jul 2026 WordPress compromise — apply to Node/Next stack
+alwaysApply: true
+---
+
+# Sarveda security hardening (always on)
+
+## Incident context (Jul 2026 — live WordPress on DigitalOcean)
+
+Live `sarveda.com` (WordPress) was compromised by **automated malware** (not SSH password cracking):
+
+- Fake plugin `galex_*`, PHP webshells, infected root `index.php` cloaking **Googlebot** with Japanese spam while humans saw the real shop
+- Files owned by `www-data` → injected via the **web app**, not DO root SSH
+- Fix: quarantine shells + restore clean `index.php`; rotate all credentials; remove leftover backdoors
+
+**This repo (Next.js + Express + Prisma) is the replacement.** Do not assume “password on server = safe.” Harden app and deploy paths whenever touching auth, uploads, admin, env, or server config.
+
+## Hard rules for this codebase
+
+1. **Never execute user uploads.** Media goes to S3 only. Do not serve or `eval`/require uploaded files as code from disk.
+2. **No dynamic code loading from writable dirs.** Avoid `eval`, `Function()`, runtime `require` of user paths, or writing executable files into the app tree.
+3. **Secrets stay out of git.** `.env`, keys, PEM files never committed. Flag accidental secret commits immediately.
+4. **Validate all inputs with Zod** on API routes; never trust query/body/headers for auth or file paths.
+5. **Admin and auth are high risk.** Rate-limit login/OTP; JWT httpOnly cookies; no weak default admins; protect `/admin` and mutation APIs.
+6. **Dependency hygiene.** Prefer maintained packages; avoid abandoned “file manager”–style tools; review new deps before add.
+7. **Least privilege on EC2.** App runs as non-root where possible; SSH key-only; no world-writable app dirs; don’t chmod 666 bootstrap files.
+8. **CORS / origins locked** to known frontends (`FRONTEND_URL`, `CORS_ORIGINS`) — no `*` in production.
+9. **When adding features, ask:** “Could this let an attacker write or run code, or steal sessions/secrets?” If yes, close the hole before shipping.
+10. **Proactively fix loopholes** when found in auth, uploads, webhooks, admin, SSRF, path traversal, or exposed debug endpoints — don’t defer security “until later” if the fix is small and clear.
+
+## Not the same as WordPress
+
+Classic WP bots (drop `.php` in `uploads`, fake plugins, glue malware onto `index.php`) do **not** map 1:1 here. Still treat credential theft, vulnerable npm packages, open admin APIs, and EC2 compromise as real risks.

@@ -187,7 +187,7 @@ export function ProfileClient() {
   async function handleSignOut() {
     await logoutSession();
     setUser(null);
-    router.replace("/login?next=/profile");
+    router.replace("/");
     router.refresh();
   }
 

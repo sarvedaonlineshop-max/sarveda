@@ -6,6 +6,7 @@ import { useEffect, useState, useTransition } from "react";
 
 import { useCartData, useCartUi } from "@/components/cart/CartProvider";
 import { SearchWithSuggestions } from "@/components/search/SearchWithSuggestions";
+import { OPEN_SHOP_MENU_EVENT } from "@/components/shop/ShopMobileCategoryDrawer";
 import { isAdminRole } from "@/lib/auth-client";
 import { isMainNavActive, MAIN_NAV_LINKS } from "@/lib/main-nav";
 
@@ -121,6 +122,40 @@ function ProfileIcon() {
   );
 }
 
+function TrackOrderButton({ onClick, compact }: { onClick: () => void; compact?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        compact
+          ? "inline-flex min-h-[36px] max-w-[9.5rem] items-center gap-1 rounded-full bg-brand-sage px-2.5 text-[11px] font-semibold leading-tight text-white shadow-sm transition-colors hover:bg-brand-forest"
+          : "inline-flex min-h-[36px] shrink-0 items-center gap-1.5 rounded-full bg-brand-sage px-4 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-brand-forest"
+      }
+    >
+      <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" aria-hidden>
+        <path
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0zM13 16V6l6-2v10M5 16V8l6-2"
+        />
+      </svg>
+      {compact ? "Track order" : "Track my order"}
+    </button>
+  );
+}
+
+function isShopListingPath(pathname: string | null): boolean {
+  if (!pathname) return false;
+  return pathname === "/shop" || pathname.startsWith("/shop/") || pathname.startsWith("/product-category");
+}
+
+function isProfilePath(pathname: string | null): boolean {
+  if (!pathname) return false;
+  return pathname === "/profile" || pathname.startsWith("/profile/") || pathname === "/my-account";
+}
+
 export function Header() {
   const pathname = usePathname();
   const router = useRouter();
@@ -133,16 +168,34 @@ export function Header() {
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [trackOpen, setTrackOpen] = useState(false);
 
+  const hideMarquee = isProfilePath(pathname);
+  const isShopPage = isShopListingPath(pathname);
+  const headerCompact = hideMarquee || marqueeHidden;
+
   useEffect(() => {
     setPendingHref(null);
   }, [pathname]);
 
   useEffect(() => {
+    if (hideMarquee) {
+      setMarqueeHidden(true);
+      return;
+    }
     const onScroll = () => setMarqueeHidden(window.scrollY > 24);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [hideMarquee]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.headerScrolled = headerCompact ? "true" : "false";
+    root.dataset.headerNoMarquee = hideMarquee ? "true" : "false";
+    return () => {
+      delete root.dataset.headerScrolled;
+      delete root.dataset.headerNoMarquee;
+    };
+  }, [headerCompact, hideMarquee]);
 
   if (
     pathname?.startsWith("/admin") ||
@@ -174,14 +227,18 @@ export function Header() {
     setTrackOpen(true);
   }
 
-  const spacerHeight = marqueeHidden
+  function openShopMenu() {
+    window.dispatchEvent(new Event(OPEN_SHOP_MENU_EVENT));
+  }
+
+  const spacerHeight = headerCompact
     ? "var(--storefront-header-offset-scrolled)"
     : "var(--storefront-header-offset)";
 
   return (
     <>
       <div className={`fixed inset-x-0 top-0 z-50 ${chromeVisibility}`}>
-        <AnnouncementBar hidden={marqueeHidden} />
+        {hideMarquee ? null : <AnnouncementBar hidden={marqueeHidden} />}
 
         <header className="border-b border-brand-forest/10 bg-white shadow-[0_4px_16px_rgba(16,32,26,0.05)]">
           {/* Layer 1: logo + nav + auth/cart */}
@@ -234,14 +291,14 @@ export function Header() {
                 })}
               </nav>
 
-              {/* Auth + cart — layer 1 */}
-              <div className="ml-auto flex shrink-0 items-center gap-1.5 md:ml-0">
+              {/* Desktop: auth + cart */}
+              <div className="ml-auto hidden shrink-0 items-center gap-1.5 md:flex">
                 {sessionUser ? (
                   <>
                     {isAdminRole(sessionUser.role) ? (
                       <Link
                         href="/admin"
-                        className="hidden items-center rounded-full border border-brand-forest/10 bg-white px-2.5 py-1.5 text-xs font-medium text-brand-muted transition-all hover:border-brand-gold/40 hover:text-brand-gold md:inline-flex"
+                        className="inline-flex items-center rounded-full border border-brand-forest/10 bg-white px-2.5 py-1.5 text-xs font-medium text-brand-muted transition-all hover:border-brand-gold/40 hover:text-brand-gold"
                       >
                         Admin
                       </Link>
@@ -285,44 +342,56 @@ export function Header() {
                   <CartIcon count={cartCount} />
                 </button>
               </div>
+
+              {/* Mobile: Track order (+ store category menu) — profile/cart live in bottom nav */}
+              <div className="ml-auto flex shrink-0 items-center gap-1.5 md:hidden">
+                <TrackOrderButton onClick={onTrackClick} compact />
+                {isShopPage ? (
+                  <button
+                    type="button"
+                    onClick={openShopMenu}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-brand-forest/12 bg-white text-brand-forest transition-all hover:border-brand-gold/45 hover:bg-brand-gold/10"
+                    aria-label="Open store categories"
+                  >
+                    <svg className="h-5 w-5 text-brand-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+                      <path strokeLinecap="round" strokeWidth={2} d="M3 4h18M3 12h18M3 20h18" />
+                    </svg>
+                  </button>
+                ) : null}
+              </div>
             </div>
           </div>
 
-          {/* Layer 2: search + track order */}
+          {/* Layer 2: search + track order (desktop). Hide global search on store — shop has its own. */}
           <div className="hidden bg-brand-cream/95 md:block">
             <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-1.5 sm:px-6 lg:px-8">
-              <div className="relative min-w-0 flex-1">
-                <svg
-                  className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-3.5 w-3.5 -translate-y-1/2 text-brand-muted"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-4.35-4.35M16.5 10.5a6 6 0 11-12 0 6 6 0 0112 0z"
+              {isShopPage ? (
+                <div className="min-w-0 flex-1" aria-hidden />
+              ) : (
+                <div className="relative z-[60] min-w-0 flex-1">
+                  <svg
+                    className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-3.5 w-3.5 -translate-y-1/2 text-brand-muted"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-4.35-4.35M16.5 10.5a6 6 0 11-12 0 6 6 0 0112 0z"
+                    />
+                  </svg>
+                  <SearchWithSuggestions
+                    id="desktop-search"
+                    placeholder="Search products, courses, insights…"
+                    inputClassName="w-full rounded-full border border-brand-forest/12 bg-white py-1.5 pl-10 pr-3 text-sm text-brand-ink placeholder:text-brand-muted transition-all focus:border-brand-gold/50 focus:outline-none focus:ring-1 focus:ring-brand-gold/30"
                   />
-                </svg>
-                <SearchWithSuggestions
-                  id="desktop-search"
-                  placeholder="Search products, courses, insights…"
-                  inputClassName="w-full rounded-full border border-brand-forest/12 bg-white py-1.5 pl-10 pr-3 text-sm text-brand-ink placeholder:text-brand-muted transition-all focus:border-brand-gold/50 focus:outline-none focus:ring-1 focus:ring-brand-gold/30"
-                />
-              </div>
+                </div>
+              )}
 
-              <button
-                type="button"
-                onClick={onTrackClick}
-                className="inline-flex min-h-[36px] shrink-0 items-center gap-1.5 rounded-full bg-brand-sage px-4 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-brand-forest"
-              >
-                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" aria-hidden>
-                  <path strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0zM13 16V6l6-2v10M5 16V8l6-2" />
-                </svg>
-                Track my order
-              </button>
+              <TrackOrderButton onClick={onTrackClick} />
             </div>
           </div>
         </header>

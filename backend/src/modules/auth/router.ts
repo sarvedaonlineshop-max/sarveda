@@ -372,9 +372,9 @@ authRouter.get("/google", (req, res, next) => {
     return;
   }
   const nextPath =
-    typeof req.query.next === "string" ? req.query.next : "/my-account";
+    typeof req.query.next === "string" ? req.query.next : "/";
   const secure = process.env.NODE_ENV === "production";
-  res.cookie(OAUTH_NEXT_COOKIE, safeRelativeRedirect(nextPath, "/my-account"), {
+  res.cookie(OAUTH_NEXT_COOKIE, safeRelativeRedirect(nextPath, "/"), {
     httpOnly: true,
     secure,
     sameSite: "lax",

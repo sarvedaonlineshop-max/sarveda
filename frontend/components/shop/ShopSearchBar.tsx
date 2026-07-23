@@ -10,8 +10,7 @@ type Props = {
   onSearch: (term: string) => void;
 };
 
-/** Shop-local search: same suggestion dropdown as the header search, but Enter/Filter
- *  filters the current shop/category listing in place instead of navigating to /search. */
+/** Shop-local search: filters the current shop/category listing in place (no /search nav). */
 export function ShopSearchBar({ value, onSearch }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState(value);
@@ -58,7 +57,7 @@ export function ShopSearchBar({ value, onSearch }: Props) {
   }
 
   return (
-    <div ref={wrapRef} className="relative z-50 flex-1">
+    <div ref={wrapRef} className="relative z-20 flex-1">
       <form onSubmit={submit} role="search" className="flex flex-1 items-center gap-2">
         <label htmlFor="shop-search" className="sr-only">
           Search products
@@ -82,7 +81,7 @@ export function ShopSearchBar({ value, onSearch }: Props) {
           type="submit"
           className="shrink-0 rounded-full bg-brand-forest px-4 py-2 text-sm font-semibold text-brand-cream transition-colors duration-150 hover:bg-brand-night"
         >
-          Filter
+          Search
         </button>
       </form>
 
@@ -90,7 +89,7 @@ export function ShopSearchBar({ value, onSearch }: Props) {
         <ul
           id="shop-search-suggestions"
           role="listbox"
-          className="absolute left-0 right-0 top-[calc(100%+6px)] z-[100] max-h-80 overflow-y-auto rounded-xl border border-brand-cream-dark bg-white py-1 shadow-card-hover"
+          className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 max-h-80 overflow-y-auto rounded-xl border border-brand-cream-dark bg-white py-1 shadow-card-hover"
         >
           {suggestions.map((item) => (
             <li key={`${item.type}-${item.slug}`} role="option" aria-selected={false}>

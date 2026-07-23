@@ -1,13 +1,18 @@
 # SARVEDA — Cursor Project Memory File
 # Read this FULLY before every single response.
 # This is the complete source of truth for the entire project.
-# Last updated: May 19, 2026 (migration sprint + PDP fine-tune)
+# Last updated: Jul 23, 2026 (WP malware incident note + security hardening)
 
 ---
 
 ## 0. CURRENT FOCUS & NEW MACHINE HANDOFF
 
 **Read this section first on every new machine or new Cursor chat.**
+
+### Security note (Jul 23, 2026) — live WordPress was hacked
+- Live `sarveda.com` on DigitalOcean WordPress was hit by **automated malware** (Googlebot cloaking / spam). Root cause: web-layer compromise (`www-data`), **not** cracked DO SSH password. Infected `index.php` + fake plugin/shells. Quarantined; clean `index.php` restored; Googlebot title back to real Store.
+- **Lesson for this Node/Next stack:** password ≠ safe. Close loopholes in auth, uploads (S3 only, never execute), admin, secrets, deps, EC2 hardening whenever we touch those areas. Cursor rule: `.cursor/rules/security-hardening.mdc`.
+- WP cleanup still ongoing on DO (remaining backdoors + credential rotation). Unrelated to staging `sarveda-demo.xyz` Next deploy.
 
 ### Active work (May 19, 2026)
 - **Product PDP fine-tune** — match live sarveda.com / Amazon-style layout:
@@ -1086,6 +1091,7 @@ Templates must be warm, professional, in English
 - SQL injection prevention (Prisma handles)
 - XSS prevention (React handles + CSP headers)
 - CORS: allow listed origins (`FRONTEND_URL` comma-separated + optional `CORS_ORIGINS`) — staging `https://sarveda-demo.xyz`, Vercel preview/production hosts
+- **Post–WP breach (Jul 2026):** treat app-layer holes as the real risk (same class as WP bots). Never execute uploads; no writable-code paths; lock admin/auth; keep secrets off disk in git; harden EC2 (SSH keys, no world-writable bootstrap); flag/fix security loopholes when found — see `.cursor/rules/security-hardening.mdc`
 
 ### Performance Targets
 - Lighthouse score: 90+ on mobile
