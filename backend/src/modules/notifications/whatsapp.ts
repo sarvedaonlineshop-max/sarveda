@@ -82,11 +82,16 @@ function isExotelConfigured(): boolean {
 }
 
 function messagesUrl(): string {
+  const sid = process.env.EXOTEL_ACCOUNT_SID!.trim();
+  const host = (process.env.EXOTEL_API_HOST?.trim() || "api.exotel.com").replace(/^https?:\/\//, "").replace(/\/$/, "");
+  return `https://${host}/v2/accounts/${encodeURIComponent(sid)}/messages`;
+}
+
+function exotelBasicAuthHeader(): string {
   const key = process.env.EXOTEL_API_KEY!.trim();
   const token = process.env.EXOTEL_API_TOKEN!.trim();
-  const sid = process.env.EXOTEL_ACCOUNT_SID!.trim();
-  const host = (process.env.EXOTEL_API_HOST?.trim() || "api.exotel.com").replace(/^@/, "");
-  return `https://${encodeURIComponent(key)}:${encodeURIComponent(token)}@${host}/v2/accounts/${encodeURIComponent(sid)}/messages`;
+  // Node fetch (undici) rejects URLs with embedded user:pass@ — use Basic auth header instead.
+  return `Basic ${Buffer.from(`${key}:${token}`, "utf8").toString("base64")}`;
 }
 
 async function sendWhatsAppTemplate(toE164: string, templateName: string, bodyParams: TemplateParams): Promise<void> {
@@ -114,7 +119,11 @@ async function sendWhatsAppTemplate(toE164: string, templateName: string, bodyPa
 
   const res = await fetch(messagesUrl(), {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      Authorization: exotelBasicAuthHeader()
+    },
     body: JSON.stringify(payload)
   });
 
