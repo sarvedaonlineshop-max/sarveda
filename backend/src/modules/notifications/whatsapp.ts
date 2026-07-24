@@ -147,12 +147,12 @@ async function sendWhatsAppTemplate(toE164: string, templateName: string, bodyPa
   }
 
   // Exotel sometimes returns HTTP 200 with per-message failure in the body.
-  const msg0 =
-    parsed &&
-    typeof parsed === "object" &&
-    "response" in parsed &&
-    (parsed as { response?: { whatsapp?: { messages?: Array<{ status?: string; error_data?: unknown }> } } })
-      .response?.whatsapp?.messages?.[0];
+  type ExotelMsg = { status?: string; error_data?: unknown };
+  let msg0: ExotelMsg | undefined;
+  if (parsed && typeof parsed === "object" && "response" in parsed) {
+    const response = (parsed as { response?: { whatsapp?: { messages?: ExotelMsg[] } } }).response;
+    msg0 = response?.whatsapp?.messages?.[0];
+  }
   if (msg0?.status === "failure") {
     throw new Error(`Exotel WhatsApp message failure: ${JSON.stringify(msg0).slice(0, 800)}`);
   }
