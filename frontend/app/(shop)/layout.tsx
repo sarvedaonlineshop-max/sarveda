@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { ShopShell } from "@/components/shop/ShopShell";
 import { fetchCategoryTree } from "@/lib/api";
 import { sortShopCategories } from "@/lib/shop-categories";
@@ -11,10 +13,15 @@ export default async function ShopBrowseLayout({ children }: { children: React.R
   }
 
   /*
-   * Do NOT wrap ShopShell in <Suspense fallback="Loading shop…">.
-   * ShopShell uses useSearchParams(); with Link / startTransition navigations,
-   * that Suspense fallback can stick forever (blank cream page with only the text).
-   * Category switches use useShopNavigate + isPending opacity instead.
+   * Next.js requires a Suspense boundary around useSearchParams() for static generation
+   * (Vercel build fails otherwise on /shop).
+   *
+   * Use fallback={null} — NOT “Loading shop…” text. A full-page text fallback can stick
+   * forever during Link / startTransition soft-nav. Category switches use isPending opacity.
    */
-  return <ShopShell categories={sortShopCategories(categories)}>{children}</ShopShell>;
+  return (
+    <Suspense fallback={null}>
+      <ShopShell categories={sortShopCategories(categories)}>{children}</ShopShell>
+    </Suspense>
+  );
 }
