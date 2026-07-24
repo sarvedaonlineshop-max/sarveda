@@ -98,22 +98,29 @@ async function sendWhatsAppTemplate(toE164: string, templateName: string, bodyPa
   const from = process.env.EXOTEL_WHATSAPP_FROM!.trim();
   const lang = process.env.EXOTEL_WHATSAPP_LANG?.trim() || "en";
 
+  // Exotel v2 Send Message requires a channel object (`whatsapp`), not top-level from/to.
   const payload = {
-    from,
-    to: toE164,
-    content: {
-      recipient_type: "individual",
-      type: "template",
-      template: {
-        name: templateName,
-        language: { code: lang, policy: "deterministic" },
-        components: [
-          {
-            type: "body",
-            parameters: bodyParams.map((text) => ({ type: "text", text: text.slice(0, 1024) }))
+    whatsapp: {
+      messages: [
+        {
+          from,
+          to: toE164,
+          content: {
+            recipient_type: "individual",
+            type: "template",
+            template: {
+              name: templateName,
+              language: { code: lang, policy: "deterministic" },
+              components: [
+                {
+                  type: "body",
+                  parameters: bodyParams.map((text) => ({ type: "text", text: text.slice(0, 1024) }))
+                }
+              ]
+            }
           }
-        ]
-      }
+        }
+      ]
     }
   };
 
@@ -136,7 +143,18 @@ async function sendWhatsAppTemplate(toE164: string, templateName: string, bodyPa
   }
 
   if (!res.ok) {
-    throw new Error(`Exotel WhatsApp HTTP ${res.status}: ${raw.slice(0, 500)}`);
+    throw new Error(`Exotel WhatsApp HTTP ${res.status}: ${raw.slice(0, 800)}`);
+  }
+
+  // Exotel sometimes returns HTTP 200 with per-message failure in the body.
+  const msg0 =
+    parsed &&
+    typeof parsed === "object" &&
+    "response" in parsed &&
+    (parsed as { response?: { whatsapp?: { messages?: Array<{ status?: string; error_data?: unknown }> } } })
+      .response?.whatsapp?.messages?.[0];
+  if (msg0?.status === "failure") {
+    throw new Error(`Exotel WhatsApp message failure: ${JSON.stringify(msg0).slice(0, 800)}`);
   }
 
   logger.info("whatsapp_template_sent", { to: toE164, templateName, response: parsed });
