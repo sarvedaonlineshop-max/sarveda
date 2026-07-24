@@ -152,7 +152,7 @@ function formatOrderTotal(minor: number, currency: string): string {
 
 function orderViewUrl(orderNumber: string, email: string): string {
   const q = new URLSearchParams({ email: email.trim().toLowerCase() });
-  return `${siteBaseUrl()}/order/confirmed?orderNumber=${encodeURIComponent(orderNumber)}&${q.toString()}`;
+  return `${siteBaseUrl()}/order/details?orderNumber=${encodeURIComponent(orderNumber)}&${q.toString()}`;
 }
 
 function orderCancelledUrl(orderNumber: string, email: string): string {

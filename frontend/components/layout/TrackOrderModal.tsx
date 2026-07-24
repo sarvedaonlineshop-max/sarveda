@@ -38,7 +38,7 @@ export function TrackOrderModal({ open, onClose }: Props) {
         email: order.email
       });
       onClose();
-      router.push(`/order/confirmed?${q.toString()}`);
+      router.push(`/order/details?${q.toString()}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not find that order. Check your details.");
     } finally {
