@@ -352,4 +352,13 @@ export function notifyOrderEmail(orderId: string, event: OrderEmailEvent): void 
   ).catch((err) => {
     logger.error("email_enqueue_failed", { orderId, event, err });
   });
+
+  // Same shopper events as email → WhatsApp (Exotel). Complaints/tasks use sendMail only.
+  void import("./whatsapp")
+    .then(({ notifyOrderWhatsApp }) => {
+      notifyOrderWhatsApp(orderId, event);
+    })
+    .catch((err) => {
+      logger.error("whatsapp_import_failed", { orderId, event, err });
+    });
 }
