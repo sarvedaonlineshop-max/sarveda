@@ -8,6 +8,7 @@ import { OrderPublicDetailCard } from "@/components/orders/OrderPublicDetailCard
 import type { OrderPublic } from "@/lib/orders-api";
 import { fetchOrderPublic } from "@/lib/orders-api";
 
+/** Public order view for WhatsApp / email / Track order links. */
 function DetailsInner() {
   const search = useSearchParams();
   const orderNumber = search.get("orderNumber") ?? "";
