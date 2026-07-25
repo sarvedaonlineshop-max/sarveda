@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminNotificationsBell } from "@/components/admin/AdminNotificationsBell";
+import { AdminProfileMenu } from "@/components/admin/AdminProfileMenu";
 
 const THEME_KEY = "sarveda-admin-theme";
 
@@ -21,8 +22,12 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/chats": "Chats",
   "/admin/customers": "Customers",
   "/admin/reconciliation": "Reconciliation",
+  "/admin/reports": "Reports",
+  "/admin/reviews": "Reviews",
+  "/admin/coupons": "Coupons",
   "/admin/products": "Products",
   "/admin/courses": "Courses",
+  "/admin/enrollments": "Enrollments",
   "/admin/mentors": "Mentors",
   "/admin/content": "Content",
   "/admin/catalog-gaps": "Catalog Gaps",
@@ -174,28 +179,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               )}
             </button>
 
-            {/* Admin profile pill */}
-            <div style={{
-              display: "flex", alignItems: "center", gap: "10px",
-              padding: "6px 12px 6px 6px", borderRadius: "10px",
-              background: inputBg, border: `1px solid ${inputBorder}`,
-              cursor: "pointer"
-            }}>
-              <div style={{
-                width: "30px", height: "30px", borderRadius: "8px",
-                background: "linear-gradient(135deg, #1e3a2f, #4a7c59)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                flexShrink: 0
-              }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                </svg>
-              </div>
-              <div>
-                <p style={{ fontSize: "12px", fontWeight: 600, color: titleColor, lineHeight: 1.2 }}>Admin</p>
-                <p style={{ fontSize: "10px", color: mutedColor, lineHeight: 1.2 }}>Store ops</p>
-              </div>
-            </div>
+            {/* Admin profile + login history */}
+            <AdminProfileMenu
+              inputBg={inputBg}
+              inputBorder={inputBorder}
+              mutedColor={mutedColor}
+              titleColor={titleColor}
+            />
           </header>
 
           {/* Page content */}

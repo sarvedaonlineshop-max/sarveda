@@ -10,7 +10,6 @@ import { YourOrders } from "@/components/profile/YourOrders";
 import type { PublicUser } from "@/lib/auth-client";
 import {
   fetchProfileDetails,
-  isAdminRole,
   logoutSession,
   updateProfile,
   type PrimaryAddress
@@ -309,14 +308,6 @@ export function ProfileClient() {
 
   const accountActions = (
     <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-      {isAdminRole(user.role) ? (
-        <Link
-          href="/admin"
-          className="inline-flex min-h-[36px] items-center justify-center rounded-full bg-brand-cream px-4 text-sm font-semibold text-brand-forest transition-colors hover:bg-white"
-        >
-          Admin panel
-        </Link>
-      ) : null}
       <button
         type="button"
         onClick={() => void handleSignOut()}

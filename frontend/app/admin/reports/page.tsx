@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import type { DashboardData } from "@/lib/admin-api";
-import { fetchAdminDashboard } from "@/lib/admin-api";
+import type { AdminReportPeriod, AdminReportType, DashboardData } from "@/lib/admin-api";
+import { downloadAdminReportExcel, fetchAdminDashboard } from "@/lib/admin-api";
 import { formatINRFromPaise } from "@/lib/money";
 
 const card: React.CSSProperties = {
@@ -15,76 +14,84 @@ const card: React.CSSProperties = {
   padding: "20px 24px"
 };
 
-function MiniBar({
-  label,
-  value,
-  max,
-  color
-}: {
-  label: string;
-  value: number;
-  max: number;
-  color: string;
-}) {
-  const pct = max > 0 ? (value / max) * 100 : 0;
-  return (
-    <div style={{ marginBottom: "10px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-        <span
-          style={{
-            fontSize: "12px",
-            color: "#4a3f38",
-            maxWidth: "200px",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap"
-          }}
-        >
-          {label}
-        </span>
-        <span
-          style={{
-            fontSize: "12px",
-            fontWeight: 700,
-            color: "#2c2420",
-            marginLeft: "8px",
-            flexShrink: 0
-          }}
-        >
-          {value}
-        </span>
-      </div>
-      <div
-        style={{
-          height: "6px",
-          borderRadius: "999px",
-          background: "#f0ece6",
-          overflow: "hidden"
-        }}
-      >
-        <div
-          style={{
-            height: "100%",
-            width: `${pct}%`,
-            background: color,
-            borderRadius: "999px",
-            transition: "width 0.4s ease"
-          }}
-        />
-      </div>
-    </div>
-  );
-}
+const PERIODS: Array<{ id: AdminReportPeriod; label: string }> = [
+  { id: "daily", label: "Daily" },
+  { id: "weekly", label: "Weekly" },
+  { id: "monthly", label: "Monthly" },
+  { id: "financial_year", label: "Financial year" }
+];
+
+const REPORTS: Array<{
+  type: AdminReportType;
+  title: string;
+  blurb: string;
+}> = [
+  {
+    type: "sales",
+    title: "Sales",
+    blurb: "Paid orders with totals, coupons, and gateway IDs."
+  },
+  {
+    type: "products",
+    title: "Products",
+    blurb: "Units sold and revenue by SKU in the selected period."
+  },
+  {
+    type: "customers",
+    title: "Customers",
+    blurb: "Customer accounts with period and lifetime order totals."
+  },
+  {
+    type: "vendors",
+    title: "Vendor / warehouse",
+    blurb: "Pickup locations with units dispatched and revenue."
+  },
+  {
+    type: "razorpay",
+    title: "Razorpay revenue",
+    blurb: "Captured Razorpay payments from our Payment records."
+  },
+  {
+    type: "paypal",
+    title: "PayPal revenue",
+    blurb: "Captured PayPal payments from our Payment records."
+  },
+  {
+    type: "stripe",
+    title: "Stripe revenue",
+    blurb: "Captured Stripe payments from our Payment records."
+  },
+  {
+    type: "gateways",
+    title: "All gateways",
+    blurb: "Combined Razorpay + PayPal + Stripe payment ledger."
+  }
+];
 
 export default function AdminReportsPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [period, setPeriod] = useState<AdminReportPeriod>("monthly");
+  const [busy, setBusy] = useState<AdminReportType | null>(null);
+  const [downloadErr, setDownloadErr] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAdminDashboard()
       .then(setData)
       .catch((e) => setErr(e instanceof Error ? e.message : "Failed"));
   }, []);
+
+  async function onDownload(type: AdminReportType) {
+    setDownloadErr(null);
+    setBusy(type);
+    try {
+      await downloadAdminReportExcel(type, period);
+    } catch (e) {
+      setDownloadErr(e instanceof Error ? e.message : "Download failed");
+    } finally {
+      setBusy(null);
+    }
+  }
 
   if (err) return <p style={{ color: "#dc2626" }}>{err}</p>;
   if (!data) return <p style={{ color: "#8a7060" }}>Loading reports...</p>;
@@ -107,15 +114,107 @@ export default function AdminReportsPage() {
       ? data.revenueInPaise.thisMonth / data.ordersCount.thisMonth
       : 0;
 
-  const maxRevenue = Math.max(...data.revenueByDayLast30.map((r) => r.revenueInPaise), 1);
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       <div>
         <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#2c2420" }}>Revenue Reports</h1>
         <p style={{ fontSize: "13px", color: "#8a7060", marginTop: "4px" }}>
-          Based on paid orders only
+          Snapshot below is paid orders only. Excel exports use Asia/Kolkata dates; financial year is
+          Apr–Mar.
         </p>
+      </div>
+
+      <div style={card}>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "12px",
+            marginBottom: "16px"
+          }}
+        >
+          <div>
+            <h2 style={{ fontSize: "15px", fontWeight: 700, color: "#2c2420" }}>Download Excel</h2>
+            <p style={{ fontSize: "12px", color: "#8a7060", marginTop: "4px" }}>
+              Gateway sheets use captured payments stored in Sarveda (Razorpay / PayPal / Stripe).
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+            {PERIODS.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setPeriod(p.id)}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: "6px",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  border: "1px solid",
+                  borderColor: period === p.id ? "#1e3a2f" : "#e0d8ce",
+                  background: period === p.id ? "#1e3a2f" : "#fff",
+                  color: period === p.id ? "#fffbf5" : "#6b5c52"
+                }}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {downloadErr ? (
+          <p style={{ color: "#dc2626", fontSize: "13px", marginBottom: "12px" }} role="alert">
+            {downloadErr}
+          </p>
+        ) : null}
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: "12px"
+          }}
+        >
+          {REPORTS.map((r) => (
+            <div
+              key={r.type}
+              style={{
+                border: "1px solid #f0ece6",
+                borderRadius: "10px",
+                padding: "14px 16px",
+                background: "#faf8f5"
+              }}
+            >
+              <p style={{ fontSize: "14px", fontWeight: 700, color: "#2c2420" }}>{r.title}</p>
+              <p style={{ fontSize: "12px", color: "#8a7060", marginTop: "4px", minHeight: "36px" }}>
+                {r.blurb}
+              </p>
+              <button
+                type="button"
+                disabled={busy !== null}
+                onClick={() => void onDownload(r.type)}
+                style={{
+                  marginTop: "12px",
+                  height: "36px",
+                  padding: "0 14px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: busy === r.type ? "#4a7c59" : "#1e3a2f",
+                  color: "#fffbf5",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: busy !== null ? "wait" : "pointer",
+                  opacity: busy !== null && busy !== r.type ? 0.55 : 1
+                }}
+              >
+                {busy === r.type ? "Preparing…" : "Download .xlsx"}
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div
@@ -188,130 +287,6 @@ export default function AdminReportsPage() {
           </p>
         </div>
       </div>
-
-      <div style={card}>
-        <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#2c2420", marginBottom: "16px" }}>
-          Daily Revenue — Last 30 Days
-        </h3>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: "3px", height: "120px" }}>
-          {data.revenueByDayLast30.map((r, i) => {
-            const h = maxRevenue > 0 ? (r.revenueInPaise / maxRevenue) * 100 : 0;
-            return (
-              <div
-                key={i}
-                title={`${r.date}: ${formatINRFromPaise(r.revenueInPaise)}`}
-                style={{
-                  flex: 1,
-                  height: `${Math.max(h, 2)}%`,
-                  background: h > 0 ? "#1e3a2f" : "#f0ece6",
-                  borderRadius: "2px 2px 0 0",
-                  minWidth: "4px",
-                  transition: "height 0.3s ease",
-                  cursor: "pointer"
-                }}
-              />
-            );
-          })}
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: "6px" }}>
-          <span style={{ fontSize: "10px", color: "#8a7060" }}>
-            {data.revenueByDayLast30[0]?.date.slice(5)}
-          </span>
-          <span style={{ fontSize: "10px", color: "#8a7060" }}>
-            {data.revenueByDayLast30[data.revenueByDayLast30.length - 1]?.date.slice(5)}
-          </span>
-        </div>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-        <div style={card}>
-          <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#2c2420", marginBottom: "14px" }}>
-            Top Sellers (30 days)
-          </h3>
-          {data.insights.fastMovers.length === 0 ? (
-            <p style={{ fontSize: "13px", color: "#8a7060" }}>No data yet</p>
-          ) : (
-            data.insights.fastMovers.map((p) => (
-              <MiniBar
-                key={p.productId}
-                label={p.name}
-                value={p.unitsSold}
-                max={data.insights.fastMovers[0].unitsSold}
-                color="#1e3a2f"
-              />
-            ))
-          )}
-        </div>
-        <div style={card}>
-          <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#2c2420", marginBottom: "14px" }}>
-            Needs Attention
-          </h3>
-          {data.insights.slowMovers.length === 0 ? (
-            <p style={{ fontSize: "13px", color: "#8a7060" }}>All products moving well</p>
-          ) : (
-            data.insights.slowMovers.map((p) => (
-              <MiniBar
-                key={p.productId}
-                label={p.name}
-                value={p.unitsSold}
-                max={5}
-                color="#c8960a"
-              />
-            ))
-          )}
-        </div>
-      </div>
-
-      <div style={card}>
-        <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#2c2420", marginBottom: "14px" }}>
-          Product Inventory Health
-        </h3>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))",
-            gap: "12px"
-          }}
-        >
-          {[
-            { label: "Active", value: data.productsByStatus.active, color: "#166534", bg: "#dcfce7" },
-            { label: "Draft", value: data.productsByStatus.draft, color: "#92400e", bg: "#fef3c7" },
-            { label: "Archived", value: data.productsByStatus.archived, color: "#6b7280", bg: "#f3f4f6" },
-            { label: "Low stock", value: data.lowStockAlerts.length, color: "#991b1b", bg: "#fee2e2" }
-          ].map((s) => (
-            <div
-              key={s.label}
-              style={{
-                background: s.bg,
-                borderRadius: "8px",
-                padding: "12px 16px"
-              }}
-            >
-              <p
-                style={{
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  color: s.color,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  marginBottom: "4px"
-                }}
-              >
-                {s.label}
-              </p>
-              <p style={{ fontSize: "1.5rem", fontWeight: 700, color: s.color }}>{s.value}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <p style={{ fontSize: "12px", color: "#8a7060", textAlign: "center" }}>
-        For detailed GST reports, export orders from the{" "}
-        <Link href="/admin/orders" style={{ color: "#c8960a" }}>
-          Orders page
-        </Link>
-        .
-      </p>
     </div>
   );
 }

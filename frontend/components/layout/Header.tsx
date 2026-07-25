@@ -7,7 +7,6 @@ import { useEffect, useState, useTransition } from "react";
 import { useCartData, useCartUi } from "@/components/cart/CartProvider";
 import { SearchWithSuggestions } from "@/components/search/SearchWithSuggestions";
 import { OPEN_SHOP_MENU_EVENT } from "@/components/shop/ShopMobileCategoryDrawer";
-import { isAdminRole } from "@/lib/auth-client";
 import { isMainNavActive, MAIN_NAV_LINKS } from "@/lib/main-nav";
 
 import { SarvedaLogo } from "@/components/brand/SarvedaLogo";
@@ -295,14 +294,6 @@ export function Header() {
               <div className="ml-auto hidden shrink-0 items-center gap-1.5 md:flex">
                 {sessionUser ? (
                   <>
-                    {isAdminRole(sessionUser.role) ? (
-                      <Link
-                        href="/admin"
-                        className="inline-flex items-center rounded-full border border-brand-forest/10 bg-white px-2.5 py-1.5 text-xs font-medium text-brand-muted transition-all hover:border-brand-gold/40 hover:text-brand-gold"
-                      >
-                        Admin
-                      </Link>
-                    ) : null}
                     <Link
                       href="/profile"
                       onClick={(e) => {

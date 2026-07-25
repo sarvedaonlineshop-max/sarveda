@@ -9,10 +9,11 @@ import {
   serializePrimaryAddress
 } from "./primary-address.service";
 import { prisma } from "../../config/db";
-import { requireAuth } from "../../middleware/auth";
+import { optionalAuth, requireAuth } from "../../middleware/auth";
 import { validateBody } from "../../middleware/validate";
 import { setAuthCookie, signAccessToken } from "../../utils/jwt";
 import { googleOAuthConfigured } from "./passport";
+import { recordAdminLogin, recordAdminLogout } from "./admin-session";
 import {
   getPrimaryFrontendBase,
   OAUTH_NEXT_COOKIE,
@@ -130,6 +131,7 @@ authRouter.post(
   },
   asyncHandler(async (req, res) => {
     const user = await loginUser(res, req.body);
+    await recordAdminLogin(user.id, user.role, req);
     const token = signAccessToken({
       sub: user.id,
       email: user.email,
@@ -139,10 +141,17 @@ authRouter.post(
   })
 );
 
-authRouter.post("/logout", (_req, res) => {
-  logoutUser(res);
-  res.json({ success: true, message: "Logged out" });
-});
+authRouter.post(
+  "/logout",
+  optionalAuth,
+  asyncHandler(async (req, res) => {
+    if (req.authUser?.id) {
+      await recordAdminLogout(req.authUser.id, req.authUser.role);
+    }
+    logoutUser(res);
+    res.json({ success: true, message: "Logged out" });
+  })
+);
 
 authRouter.post(
   "/send-otp",
@@ -160,6 +169,7 @@ authRouter.post(
   validateBody(verifyOtpSchema),
   asyncHandler(async (req, res) => {
     const user = await verifyOtpAndLogin(res, req.body);
+    await recordAdminLogin(user.id, user.role, req);
     const token = signAccessToken({
       sub: user.id,
       email: user.email,
@@ -407,6 +417,7 @@ authRouter.get(
       displayName: profile.displayName ?? undefined
     });
     setAuthCookie(res, { sub: user.id, email: user.email, role: user.role });
+    await recordAdminLogin(user.id, user.role, req);
     const rawNext = req.cookies?.[OAUTH_NEXT_COOKIE] as string | undefined;
     res.clearCookie(OAUTH_NEXT_COOKIE, { path: "/" });
     const destination = postOAuthFrontendPath(user.role, rawNext);

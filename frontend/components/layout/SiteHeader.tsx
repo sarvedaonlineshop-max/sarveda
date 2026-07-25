@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 
 import { useCartData, useCartUi } from "@/components/cart/CartProvider";
 import type { PublicUser } from "@/lib/auth-client";
-import { fetchMe, isAdminRole, logoutSession } from "@/lib/auth-client";
+import { fetchMe, logoutSession } from "@/lib/auth-client";
 import { SarvedaLogo } from "@/components/brand/SarvedaLogo";
 import { MAIN_NAV_LINKS } from "@/lib/main-nav";
 
@@ -129,10 +129,7 @@ export function SiteHeader() {
           <div className="hidden shrink-0 items-center gap-4 md:flex" aria-label="Account">
             {sessionUser ? (
               <>
-                {isAdminRole(sessionUser.role)
-                  ? <Link href="/admin"      className={sessionLinkClass}>Admin panel</Link>
-                  : <Link href="/my-account" className={sessionLinkClass}>My account</Link>
-                }
+                <Link href="/my-account" className={sessionLinkClass}>My account</Link>
                 <button type="button" onClick={() => void handleSignOut()} className={sessionLinkClass}>Sign out</button>
               </>
             ) : (
@@ -167,9 +164,7 @@ export function SiteHeader() {
               <Link key={l.href} href={l.href} className="min-h-[52px] rounded-xl px-4 py-3 text-lg font-medium text-stone-200 hover:bg-white/6 hover:text-amber-400" onClick={() => setMenuOpen(false)}>{l.label}</Link>
             ))}
             <div className="my-2 h-px" style={{ background:"rgba(255,255,255,0.08)" }} />
-            {isAdminRole(sessionUser?.role) ? (
-              <Link href="/admin" className="min-h-[52px] rounded-xl px-4 py-3 text-lg font-medium text-amber-400 hover:bg-white/6" onClick={() => setMenuOpen(false)}>Admin panel</Link>
-            ) : sessionUser ? (
+            {sessionUser ? (
               <Link href="/my-account" className="min-h-[52px] rounded-xl px-4 py-3 text-lg font-medium text-amber-400 hover:bg-white/6" onClick={() => setMenuOpen(false)}>My account</Link>
             ) : null}
             {sessionUser ? (

@@ -106,6 +106,61 @@ export async function downloadAdminOrdersPdf(range: "today" | "week" | "month" |
   URL.revokeObjectURL(href);
 }
 
+export type AdminReportType =
+  | "sales"
+  | "products"
+  | "customers"
+  | "vendors"
+  | "razorpay"
+  | "paypal"
+  | "stripe"
+  | "gateways";
+
+export type AdminReportPeriod = "daily" | "weekly" | "monthly" | "financial_year";
+
+export async function downloadAdminReportExcel(type: AdminReportType, period: AdminReportPeriod) {
+  const q = new URLSearchParams({ type, period });
+  const url = `${getApiBase()}/api/admin/reports/export?${q.toString()}`;
+  const res = await fetch(url, { credentials: "include" });
+  if (!res.ok) {
+    let msg = `Export failed (${res.status})`;
+    try {
+      const j = (await res.json()) as { error?: string };
+      if (j.error) msg = j.error;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(msg);
+  }
+  const blob = await res.blob();
+  const cd = res.headers.get("Content-Disposition") ?? "";
+  const match = /filename="([^"]+)"/i.exec(cd);
+  const filename = match?.[1] ?? `sarveda-${type}-${period}.xlsx`;
+  const href = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = href;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(href);
+}
+
+export type AdminSessionRow = {
+  id: string;
+  loginAt: string;
+  logoutAt: string | null;
+  ip: string | null;
+  userAgent: string | null;
+};
+
+export type AdminMeSessionsData = {
+  user: { id: string; name: string | null; email: string; role: string };
+  sessions: AdminSessionRow[];
+};
+
+export function fetchAdminMeSessions() {
+  return adminFetch<AdminMeSessionsData>("/api/admin/me/sessions");
+}
+
 export type OrdersListData = {
   items: Array<{
     id: string;

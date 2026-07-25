@@ -9,6 +9,7 @@ import { createProductSchema, updateProductSchema } from "../products/schemas";
 
 import * as admin from "./admin.handlers";
 import * as enrollments from "./enrollments.handlers";
+import * as reports from "./reports.handlers";
 import {
   orderAddressPatchSchema,
   orderItemWarehousesSchema,
@@ -43,6 +44,8 @@ router.delete("/pickup-locations/:id", pickupLocations.deletePickupLocation);
 router.use("/coupons", couponAdminRoutes);
 
 router.get("/dashboard", admin.dashboard);
+router.get("/reports/export", reports.exportAdminReport);
+router.get("/me/sessions", reports.adminMeSessions);
 router.get("/notifications", admin.adminNotifications);
 router.use("/enquiries", enquiriesAdminRoutes);
 router.post("/jobs/cart-cleanup", admin.triggerCartCleanup);

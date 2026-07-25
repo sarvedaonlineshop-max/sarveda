@@ -33,9 +33,23 @@ model User {
   passwordResetTokens PasswordResetToken[]
   enquiryThreads      EnquiryThread[]
   enquiryAdminMessages EnquiryMessage[] @relation("EnquiryAdminMessages")
+  adminSessions       AdminSession[]
   fcmToken                    String?
   emailNotificationsEnabled   Boolean  @default(true)
   pushNotificationsEnabled    Boolean  @default(true)
+}
+
+/// Admin login/logout audit for the admin header history panel.
+model AdminSession {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @db.Uuid
+  loginAt   DateTime  @default(now())
+  logoutAt  DateTime?
+  ip        String?
+  userAgent String?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, loginAt(sort: Desc)])
 }
 
 enum Role {
