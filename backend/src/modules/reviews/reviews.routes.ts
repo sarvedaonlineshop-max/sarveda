@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { prisma } from "../../config/db";
 import { requireAdmin } from "../../middleware/admin";
+import { logAdminMutations } from "../../middleware/adminActivity";
 import { requireAuth } from "../../middleware/auth";
 import { optionalAuth } from "../../middleware/optionalAuth";
 
@@ -33,7 +34,7 @@ router.get("/admin/pending", requireAdmin, async (_req, res, next) => {
   }
 });
 
-router.patch("/admin/:id/approve", requireAdmin, async (req, res, next) => {
+router.patch("/admin/:id/approve", requireAdmin, logAdminMutations, async (req, res, next) => {
   try {
     await prisma.review.update({
       where: { id: req.params.id },
@@ -45,7 +46,7 @@ router.patch("/admin/:id/approve", requireAdmin, async (req, res, next) => {
   }
 });
 
-router.delete("/admin/:id", requireAdmin, async (req, res, next) => {
+router.delete("/admin/:id", requireAdmin, logAdminMutations, async (req, res, next) => {
   try {
     await prisma.review.delete({ where: { id: req.params.id } });
     res.json({ success: true });

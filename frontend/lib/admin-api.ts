@@ -161,6 +161,70 @@ export function fetchAdminMeSessions() {
   return adminFetch<AdminMeSessionsData>("/api/admin/me/sessions");
 }
 
+export type AdminActivityItem = {
+  id: string;
+  actorUserId: string;
+  actorEmail: string;
+  actorName: string | null;
+  action: string;
+  resource: string;
+  summary: string;
+  method: string | null;
+  path: string | null;
+  entityId: string | null;
+  metadata: unknown;
+  ip: string | null;
+  createdAt: string;
+};
+
+export type AdminActivityListData = {
+  items: AdminActivityItem[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+};
+
+export type AdminActivityDashboardData = {
+  days: number;
+  total: number;
+  byAction: Array<{ action: string; count: number }>;
+  byResource: Array<{ resource: string; count: number }>;
+  byActor: Array<{ userId: string; email: string; name: string | null; count: number }>;
+  recent: Array<{
+    id: string;
+    actorEmail: string;
+    actorName: string | null;
+    action: string;
+    resource: string;
+    summary: string;
+    createdAt: string;
+  }>;
+  admins: Array<{ id: string; email: string; name: string | null; role: string }>;
+};
+
+export function fetchAdminActivityDashboard(days = 7) {
+  return adminFetch<AdminActivityDashboardData>(
+    `/api/admin/activity/dashboard?days=${encodeURIComponent(String(days))}`
+  );
+}
+
+export function fetchAdminActivityList(params: {
+  page?: number;
+  limit?: number;
+  actorUserId?: string;
+  resource?: string;
+  action?: string;
+  q?: string;
+}) {
+  const q = new URLSearchParams();
+  if (params.page) q.set("page", String(params.page));
+  if (params.limit) q.set("limit", String(params.limit));
+  if (params.actorUserId) q.set("actorUserId", params.actorUserId);
+  if (params.resource) q.set("resource", params.resource);
+  if (params.action) q.set("action", params.action);
+  if (params.q?.trim()) q.set("q", params.q.trim());
+  const qs = q.toString();
+  return adminFetch<AdminActivityListData>(`/api/admin/activity${qs ? `?${qs}` : ""}`);
+}
+
 export type OrdersListData = {
   items: Array<{
     id: string;

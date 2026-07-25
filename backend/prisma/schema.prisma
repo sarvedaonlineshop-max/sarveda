@@ -34,6 +34,7 @@ model User {
   enquiryThreads      EnquiryThread[]
   enquiryAdminMessages EnquiryMessage[] @relation("EnquiryAdminMessages")
   adminSessions       AdminSession[]
+  adminActivities     AdminActivityLog[] @relation("AdminActivityActor")
   fcmToken                    String?
   emailNotificationsEnabled   Boolean  @default(true)
   pushNotificationsEnabled    Boolean  @default(true)
@@ -50,6 +51,30 @@ model AdminSession {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, loginAt(sort: Desc)])
+}
+
+/// Super-admin audit trail of admin backend CRUD + auth events.
+model AdminActivityLog {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actorUserId String   @db.Uuid
+  actorEmail  String
+  actorName   String?
+  action      String
+  resource    String
+  summary     String
+  method      String?
+  path        String?
+  entityId    String?
+  metadata    Json?
+  ip          String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  actor       User     @relation("AdminActivityActor", fields: [actorUserId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt(sort: Desc)])
+  @@index([actorUserId, createdAt(sort: Desc)])
+  @@index([resource, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
 }
 
 enum Role {

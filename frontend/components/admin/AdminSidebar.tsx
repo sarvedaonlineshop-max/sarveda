@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { logoutSession } from "@/lib/auth-client";
 import { AdminChatsSidebarLink } from "@/components/admin/AdminChatsSidebarLink";
 import { AdminOrdersSidebarLink } from "@/components/admin/AdminOrdersSidebarLink";
+import { useIsSuperAdmin } from "@/components/admin/AdminUserContext";
 
 type NavItem = {
   href: string;
@@ -113,6 +114,13 @@ const icon = {
       <line x1="11" y1="8" x2="11" y2="14" />
       <line x1="8" y1="11" x2="14" y2="11" />
     </svg>
+  ),
+  activity: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 20V10" />
+      <path d="M18 20V4" />
+      <path d="M6 20v-4" />
+    </svg>
   )
 };
 
@@ -138,6 +146,10 @@ const secondaryNav: NavItem[] = [
 const opsNav: NavItem[] = [
   { href: "/admin/settings/pickup-locations", label: "Pickup Locations", icon: icon.pickup },
   { href: "/admin/catalog-gaps", label: "Catalog Gaps", icon: icon.catalogGaps }
+];
+
+const superAdminNav: NavItem[] = [
+  { href: "/admin/activity", label: "Admin activity", icon: icon.activity }
 ];
 
 function NavLink({
@@ -195,6 +207,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const contentType = searchParams.get("type");
+  const isSuper = useIsSuperAdmin();
 
   return (
     <>
@@ -227,6 +240,14 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />
         ))}
       </NavGroup>
+
+      {isSuper ? (
+        <NavGroup label="Super admin">
+          {superAdminNav.map((item) => (
+            <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />
+          ))}
+        </NavGroup>
+      ) : null}
     </>
   );
 }

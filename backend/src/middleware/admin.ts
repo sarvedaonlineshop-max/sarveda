@@ -16,7 +16,7 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
     const payload = verifyAccessToken(token);
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { id: true, email: true, role: true, deletedAt: true }
+      select: { id: true, email: true, role: true, name: true, deletedAt: true }
     });
     if (!user || user.deletedAt) {
       return res.status(401).json({
@@ -32,7 +32,7 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
         code: "FORBIDDEN"
       });
     }
-    req.authUser = { id: user.id, email: user.email, role: user.role };
+    req.authUser = { id: user.id, email: user.email, role: user.role, name: user.name ?? undefined };
     next();
   } catch {
     return res.status(401).json({

@@ -3,11 +3,13 @@ import { Router } from "express";
 import { z } from "zod";
 
 import { requireAdmin } from "../../middleware/admin";
+import { logAdminMutations, requireSuperAdmin } from "../../middleware/adminActivity";
 import { validateBody } from "../../middleware/validate";
 import * as productsController from "../products/products.controller";
 import { createProductSchema, updateProductSchema } from "../products/schemas";
 
 import * as admin from "./admin.handlers";
+import * as activity from "./activity.handlers";
 import * as enrollments from "./enrollments.handlers";
 import * as reports from "./reports.handlers";
 import {
@@ -26,6 +28,10 @@ import * as serviceRequest from "../orders/order-service-request.controller";
 
 const router = Router();
 router.use(requireAdmin);
+router.use(logAdminMutations);
+
+router.get("/activity/dashboard", requireSuperAdmin, activity.activityDashboard);
+router.get("/activity", requireSuperAdmin, activity.activityList);
 
 router.get("/pickup-locations", pickupLocations.listPickupLocations);
 router.get("/pickup-locations/:id", pickupLocations.getPickupLocation);

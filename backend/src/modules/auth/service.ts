@@ -39,10 +39,30 @@ function adminBootstrapEmailSet(): Set<string> {
   );
 }
 
+/** Comma-separated emails forced to SUPER_ADMIN on login (default: partha@sarveda.com). */
+function superAdminBootstrapEmailSet(): Set<string> {
+  const raw = process.env.SUPER_ADMIN_EMAILS ?? "partha@sarveda.com";
+  return new Set(
+    raw
+      .split(",")
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean)
+  );
+}
+
 async function applyAdminBootstrapIfNeeded(user: User): Promise<User> {
+  const email = user.email.toLowerCase();
+  const superAllow = superAdminBootstrapEmailSet();
+  if (superAllow.has(email) && user.role !== "SUPER_ADMIN") {
+    return prisma.user.update({
+      where: { id: user.id },
+      data: { role: "SUPER_ADMIN" }
+    });
+  }
+
   const allow = adminBootstrapEmailSet();
   if (allow.size === 0) return user;
-  if (!allow.has(user.email.toLowerCase())) return user;
+  if (!allow.has(email)) return user;
   if (user.role !== "CUSTOMER") return user;
   return prisma.user.update({
     where: { id: user.id },

@@ -3,6 +3,7 @@ import { Role } from "@prisma/client";
 
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
+import { writeAdminActivity } from "../../middleware/adminActivity";
 
 function isAdminRole(role: string | Role | undefined | null): boolean {
   return role === "ADMIN" || role === "SUPER_ADMIN";
@@ -33,6 +34,24 @@ export async function recordAdminLogin(
         userAgent: meta.userAgent
       }
     });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, name: true }
+    });
+    if (user) {
+      await writeAdminActivity({
+        actorUserId: userId,
+        actorEmail: user.email,
+        actorName: user.name,
+        action: "LOGIN",
+        resource: "auth",
+        summary: `Logged in to admin (${user.email})`,
+        method: "POST",
+        path: "/api/auth/login",
+        ip: meta.ip,
+        userAgent: meta.userAgent
+      });
+    }
   } catch (err) {
     logger.warn("admin_session_login_record_failed", {
       userId,
@@ -49,11 +68,28 @@ export async function recordAdminLogout(userId: string, role?: string | Role | n
       where: { userId, logoutAt: null },
       orderBy: { loginAt: "desc" }
     });
-    if (!open) return;
-    await prisma.adminSession.update({
-      where: { id: open.id },
-      data: { logoutAt: new Date() }
+    if (open) {
+      await prisma.adminSession.update({
+        where: { id: open.id },
+        data: { logoutAt: new Date() }
+      });
+    }
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, name: true, role: true }
     });
+    if (user && isAdminRole(user.role)) {
+      await writeAdminActivity({
+        actorUserId: userId,
+        actorEmail: user.email,
+        actorName: user.name,
+        action: "LOGOUT",
+        resource: "auth",
+        summary: `Logged out of admin (${user.email})`,
+        method: "POST",
+        path: "/api/auth/logout"
+      });
+    }
   } catch (err) {
     logger.warn("admin_session_logout_record_failed", {
       userId,

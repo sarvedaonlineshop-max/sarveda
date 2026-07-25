@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { fetchMe, isAdminRole } from "@/lib/auth-client";
+import { AdminUserProvider } from "@/components/admin/AdminUserContext";
+import { fetchMe, isAdminRole, type PublicUser } from "@/lib/auth-client";
 
 type Props = {
   children: React.ReactNode;
@@ -14,20 +15,22 @@ type Props = {
  */
 export function AdminAuthBoundary({ children }: Props) {
   const router = useRouter();
+  const [user, setUser] = useState<PublicUser | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    void fetchMe().then((user) => {
+    void fetchMe().then((me) => {
       if (cancelled) return;
-      if (!user) {
+      if (!me) {
         router.replace(`/login?next=${encodeURIComponent("/admin")}&reason=reauth`);
         return;
       }
-      if (!isAdminRole(user.role)) {
+      if (!isAdminRole(me.role)) {
         router.replace("/");
         return;
       }
+      setUser(me);
       setReady(true);
     });
     return () => {
@@ -48,5 +51,5 @@ export function AdminAuthBoundary({ children }: Props) {
     );
   }
 
-  return <>{children}</>;
+  return <AdminUserProvider user={user}>{children}</AdminUserProvider>;
 }
