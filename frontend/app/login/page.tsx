@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
 import { AuthShell } from "@/components/auth/AuthShell";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
@@ -11,8 +11,10 @@ import { PasswordInput } from "@/components/auth/PasswordInput";
 import type { PublicUser } from "@/lib/auth-client";
 import {
   AuthError,
+  fetchMe,
+  isAdminRole,
   loginWithPassword,
-  resolvePostLoginPath
+  navigateAfterAuth
 } from "@/lib/auth-client";
 
 const inputClass =
@@ -30,7 +32,7 @@ function LoginForm() {
     () => Boolean(next?.startsWith("/admin") || searchParams.get("admin") === "1"),
     [next, searchParams]
   );
-  /** Stored in OAuth cookie — backend also applies role-based landing. */
+  /** Stored in OAuth cookie — backend also forces /admin for admin roles. */
   const googleNextPath = next ?? (adminOnly ? "/admin" : "/");
 
   const [mode, setMode] = useState<LoginMode>("password");
@@ -46,10 +48,28 @@ function LoginForm() {
     return "";
   });
 
+  // Already signed in as admin → go straight to admin (never stay on storefront login).
+  useEffect(() => {
+    let cancelled = false;
+    void fetchMe().then((user) => {
+      if (cancelled || !user || !isAdminRole(user.role)) return;
+      window.location.assign(next?.startsWith("/admin") ? next : "/admin");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [next]);
+
   function finishLogin(user: PublicUser) {
-    const destination = resolvePostLoginPath(user, next, { adminOnly });
-    router.replace(destination);
-    router.refresh();
+    void navigateAfterAuth(user, next, {
+      adminOnly,
+      softNavigate: (path) => {
+        router.replace(path);
+        router.refresh();
+      }
+    }).catch((ex) => {
+      setMessage(ex instanceof Error ? ex.message : "Sign-in failed");
+    });
   }
 
   async function handlePasswordSubmit(e: React.FormEvent) {

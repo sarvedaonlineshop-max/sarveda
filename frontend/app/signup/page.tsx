@@ -7,7 +7,7 @@ import { Suspense, useMemo, useState } from "react";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { PasswordInput } from "@/components/auth/PasswordInput";
-import { loginWithPassword, registerAccount } from "@/lib/auth-client";
+import { loginWithPassword, navigateAfterAuth, registerAccount } from "@/lib/auth-client";
 
 const inputClass =
   "w-full rounded-xl border border-[#E3D9C8] bg-white px-3 py-2.5 text-brand-ink placeholder:text-brand-muted/70 focus:border-brand-forest focus:outline-none focus:ring-2 focus:ring-brand-forest/20";
@@ -44,12 +44,15 @@ function SignupForm() {
     }
     try {
       await registerAccount({ name, email, password, confirmPassword });
-      await loginWithPassword(email, password);
+      const user = await loginWithPassword(email, password);
       setSuccess(true);
       window.setTimeout(() => {
-        const destination = next?.startsWith("/") ? next : "/shop";
-        router.replace(destination);
-        router.refresh();
+        void navigateAfterAuth(user, next, {
+          softNavigate: (path) => {
+            router.replace(path);
+            router.refresh();
+          }
+        });
       }, 2000);
     } catch (ex) {
       setMessage(ex instanceof Error ? ex.message : "Sign up failed");

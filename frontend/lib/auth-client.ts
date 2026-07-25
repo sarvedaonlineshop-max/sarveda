@@ -80,6 +80,30 @@ export function resolvePostLoginPath(
   return "/";
 }
 
+/**
+ * Send the user to the right app after login.
+ * Admins always hard-navigate to `/admin` so they never stay on the storefront shell.
+ * Re-reads `/me` when possible so role matches the DB (e.g. bootstrap promotions).
+ */
+export async function navigateAfterAuth(
+  user: PublicUser,
+  next: string | null,
+  options?: { adminOnly?: boolean; softNavigate?: (path: string) => void }
+): Promise<void> {
+  const fresh = (await fetchMe().catch(() => null)) ?? user;
+  const destination = resolvePostLoginPath(fresh, next, options);
+  if (typeof window === "undefined") return;
+  if (isAdminRole(fresh.role)) {
+    window.location.assign(destination);
+    return;
+  }
+  if (options?.softNavigate) {
+    options.softNavigate(destination);
+    return;
+  }
+  window.location.assign(destination);
+}
+
 async function completeAuthSession(user: PublicUser): Promise<PublicUser> {
   await mergeGuestCartSession();
   await syncPricingZoneFromGeo();
