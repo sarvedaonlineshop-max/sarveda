@@ -1,4 +1,6 @@
 import ExcelJS from "exceljs";
+import fs from "fs";
+import path from "path";
 import type { NextFunction, Request, Response } from "express";
 import { OrderStatus, PaymentProvider, PaymentStatus, Role } from "@prisma/client";
 import { z } from "zod";
@@ -10,6 +12,43 @@ import {
   startOfMonthKolkata
 } from "../../utils/reporting-time";
 import { listAdminSessions } from "../auth/admin-session";
+import { logger } from "../../config/logger";
+
+type DumpTopItem = {
+  sku: string;
+  productName: string;
+  slug: string;
+  unitsSold: number;
+  revenueInr: number;
+  revenueInPaise: number;
+};
+
+function loadWooDumpTopItems(): { topItems: DumpTopItem[]; units: number } {
+  const candidates = [
+    path.join(process.cwd(), "data", "woo-dump-top-items.json"),
+    path.join(__dirname, "..", "..", "..", "data", "woo-dump-top-items.json")
+  ];
+  for (const file of candidates) {
+    try {
+      if (!fs.existsSync(file)) continue;
+      const raw = JSON.parse(fs.readFileSync(file, "utf8")) as {
+        topItems?: DumpTopItem[];
+        totals?: { units?: number };
+      };
+      const topItems = Array.isArray(raw.topItems) ? raw.topItems : [];
+      return {
+        topItems,
+        units: raw.totals?.units ?? topItems.reduce((s, i) => s + (i.unitsSold || 0), 0)
+      };
+    } catch (err) {
+      logger.warn("Failed reading woo dump top-items file", {
+        file,
+        error: err instanceof Error ? err.message : String(err)
+      });
+    }
+  }
+  return { topItems: [], units: 0 };
+}
 
 const periodSchema = z.enum(["daily", "weekly", "monthly", "financial_year"]);
 const reportTypeSchema = z.enum([
@@ -360,70 +399,42 @@ async function gatewayRows(from: Date, to: Date, provider?: PaymentProvider) {
 
 export async function adminReportAnalytics(req: Request, res: Response, next: NextFunction) {
   try {
-    const [items, orders] = await Promise.all([
-      prisma.orderItem.findMany({
-        where: { order: ANALYTICS_WOO_DELIVERED_WHERE },
-        select: {
-          skuSnapshot: true,
-          nameSnapshot: true,
-          qtyOrdered: true,
-          lineTotalInPaise: true,
-          variant: {
-            select: {
-              sku: true,
-              productRel: { select: { name: true, slug: true } }
-            }
-          }
-        }
-      }),
-      prisma.order.findMany({
-        where: ANALYTICS_WOO_DELIVERED_WHERE,
-        orderBy: { placedAt: "desc" },
-        select: {
-          id: true,
-          orderNumber: true,
-          email: true,
-          phone: true,
-          status: true,
-          currency: true,
-          grandTotalInPaise: true,
-          reportingTotalInInrPaise: true,
-          placedAt: true,
-          createdAt: true,
-          addresses: {
-            select: {
-              type: true,
-              fullName: true,
-              city: true,
-              state: true,
-              country: true
-            }
-          }
-        }
-      })
-    ]);
+    const dumpTop = loadWooDumpTopItems();
 
-    const topItemsMap = new Map<
-      string,
-      { sku: string; productName: string; slug: string; unitsSold: number; revenueInPaise: number }
-    >();
-    for (const it of items) {
-      const sku = it.variant?.sku || it.skuSnapshot || "unknown";
-      const row = topItemsMap.get(sku) ?? {
-        sku,
-        productName: it.variant?.productRel.name || it.nameSnapshot,
-        slug: it.variant?.productRel.slug ?? "",
-        unitsSold: 0,
-        revenueInPaise: 0
-      };
-      row.unitsSold += it.qtyOrdered;
-      row.revenueInPaise += it.lineTotalInPaise;
-      topItemsMap.set(sku, row);
-    }
-    const topItems = [...topItemsMap.values()]
-      .sort((a, b) => b.unitsSold - a.unitsSold || b.revenueInPaise - a.revenueInPaise)
-      .slice(0, 10)
-      .map((r) => ({ ...r, revenueInr: paiseToInr(r.revenueInPaise) }));
+    const orders = await prisma.order.findMany({
+      where: ANALYTICS_WOO_DELIVERED_WHERE,
+      orderBy: { placedAt: "desc" },
+      select: {
+        id: true,
+        orderNumber: true,
+        email: true,
+        phone: true,
+        status: true,
+        currency: true,
+        grandTotalInPaise: true,
+        reportingTotalInInrPaise: true,
+        placedAt: true,
+        createdAt: true,
+        addresses: {
+          select: {
+            type: true,
+            fullName: true,
+            city: true,
+            state: true,
+            country: true
+          }
+        }
+      }
+    });
+
+    const topItems = dumpTop.topItems.map((r) => ({
+      sku: r.sku,
+      productName: r.productName,
+      slug: r.slug || "",
+      unitsSold: r.unitsSold,
+      revenueInPaise: r.revenueInPaise,
+      revenueInr: r.revenueInr
+    }));
 
     const repeatCustomersMap = new Map<
       string,
@@ -515,8 +526,12 @@ export async function adminReportAnalytics(req: Request, res: Response, next: Ne
     res.json({
       success: true,
       data: {
-        label: "all-time-woo-delivered",
-        totals: { orders: orders.length, units: items.reduce((sum, it) => sum + it.qtyOrdered, 0) },
+        label: "woo-dump-top-items+db-delivered-orders",
+        totals: {
+          orders: orders.length,
+          units: dumpTop.units
+        },
+        topItemsSource: "woo-dump",
         topItems,
         repeatCustomers,
         topPlaces,

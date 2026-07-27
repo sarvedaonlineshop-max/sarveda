@@ -121,6 +121,7 @@ export type AdminReportPeriod = "daily" | "weekly" | "monthly" | "financial_year
 export type AdminReportsAnalytics = {
   label: string;
   totals: { orders: number; units: number };
+  topItemsSource?: "woo-dump" | "database";
   topItems: Array<{
     sku: string;
     productName: string;

@@ -184,21 +184,15 @@ export default function AdminReportsPage() {
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       <div>
         <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#2c2420" }}>Reports</h1>
-        <p style={{ fontSize: "13px", color: "#8a7060", marginTop: "4px" }}>
-          Order statistics first, report downloads second. Excel exports use Asia/Kolkata dates; financial year
-          is Apr-Mar.
-        </p>
       </div>
 
       <div style={card}>
         {sectionTitle(
           "Order analytics",
-          analytics ? `${analytics.totals.orders} delivered Woo orders · ${analytics.totals.units} units` : undefined
+          analytics
+            ? `${analytics.totals.orders} delivered Woo orders · top items from Woo dump`
+            : undefined
         )}
-        <p style={{ fontSize: "12px", color: "#8a7060", marginTop: "4px" }}>
-          These stats use only imported WooCommerce orders with `DELIVERED` status. Item ranking needs Woo
-          line items; your current import appears to have order headers but not historical line items yet.
-        </p>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "16px", marginBottom: "18px" }}>
           {[
             { id: "items" as const, label: "Top 10 items sold" },
@@ -253,7 +247,7 @@ export default function AdminReportsPage() {
                     String(item.unitsSold),
                     formatINRFromPaise(Math.round(item.revenueInr * 100))
                   ]),
-                  "No historical Woo line items are imported yet."
+                  "No dump top-items file found on server."
                 )
               : null}
             {activeStatTab === "customers"

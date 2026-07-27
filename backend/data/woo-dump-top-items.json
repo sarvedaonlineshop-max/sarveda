@@ -1,0 +1,103 @@
+{
+  "source": "woo-mysql-dump-snapshot",
+  "dumpFile": "backups/woo-do-20260727/sarveda_wp_new_1_20260727_073254.sql.gz",
+  "filter": "wc-completed line_item only; aggregated by order_item_name",
+  "generatedAt": "2026-07-27T08:42:50.477034+00:00",
+  "note": "Analytics-only snapshot for Top 10 items. No Woo data imported into Sarveda DB.",
+  "topItems": [
+    {
+      "sku": "MI-PS",
+      "productName": "Pangi Seed Shell Rattle",
+      "slug": "",
+      "unitsSold": 252,
+      "revenueInr": 469825.94,
+      "revenueInPaise": 46982594,
+      "lineRows": 236
+    },
+    {
+      "sku": "MI-KR-S-L",
+      "productName": "Kenari Seed Shell Shakers - Large",
+      "slug": "",
+      "unitsSold": 149,
+      "revenueInr": 284284.59,
+      "revenueInPaise": 28428459,
+      "lineRows": 146
+    },
+    {
+      "sku": "Yo-P-E-RE-1",
+      "productName": "Eye Shaped Natural Lavender Scented Eye Pillows - Rose",
+      "slug": "",
+      "unitsSold": 147,
+      "revenueInr": 47550.73,
+      "revenueInPaise": 4755073,
+      "lineRows": 77
+    },
+    {
+      "sku": "MI-RS-B-1M",
+      "productName": "Bamboo Rainstick - 1m",
+      "slug": "",
+      "unitsSold": 119,
+      "revenueInr": 277089.06,
+      "revenueInPaise": 27708906,
+      "lineRows": 116
+    },
+    {
+      "sku": "MI-RS-N",
+      "productName": "Bamboo Rainstick",
+      "slug": "",
+      "unitsSold": 96,
+      "revenueInr": 252578.12,
+      "revenueInPaise": 25257812,
+      "lineRows": 96
+    },
+    {
+      "sku": "MI-RS-B-40",
+      "productName": "Bamboo Rainstick - 40cms",
+      "slug": "",
+      "unitsSold": 89,
+      "revenueInr": 120153.24,
+      "revenueInPaise": 12015324,
+      "lineRows": 85
+    },
+    {
+      "sku": "MI-SC-9",
+      "productName": "Swinging Chimes - 9 Bars",
+      "slug": "",
+      "unitsSold": 87,
+      "revenueInr": 672543.49,
+      "revenueInPaise": 67254349,
+      "lineRows": 86
+    },
+    {
+      "sku": "MI-RS-B-80",
+      "productName": "Bamboo Rainstick - 80cms",
+      "slug": "",
+      "unitsSold": 72,
+      "revenueInr": 141607.06,
+      "revenueInPaise": 14160706,
+      "lineRows": 71
+    },
+    {
+      "sku": "MI-RS-B-60",
+      "productName": "Bamboo Rainstick - 60cms",
+      "slug": "",
+      "unitsSold": 65,
+      "revenueInr": 116641.22,
+      "revenueInPaise": 11664122,
+      "lineRows": 65
+    },
+    {
+      "sku": "Yo-P-E-SE-1",
+      "productName": "Eye Shaped Natural Lavender Scented Eye Pillows - Sage",
+      "slug": "",
+      "unitsSold": 63,
+      "revenueInr": 20438.7,
+      "revenueInPaise": 2043870,
+      "lineRows": 30
+    }
+  ],
+  "totals": {
+    "units": 1139,
+    "items": 10
+  }
+}
