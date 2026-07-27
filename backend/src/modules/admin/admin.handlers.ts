@@ -26,6 +26,10 @@ import { auditSarvedaVariant, computeZohoSyncSummary, listZohoOnlyItems } from "
 import { mirrorStockToZohoForSkus } from "../zoho/zoho-items";
 import type { ZohoItemAuditRow } from "../zoho/zoho-sync-types";
 import { shopCatalogProductWhere, shopInventoryWhere } from "../../utils/shop-catalog";
+import {
+  dashboardInsightsFromWooDump,
+  loadWooDumpAnalytics
+} from "./woo-dump-analytics";
 
 const revenueStatuses: OrderStatus[] = [
   "PAID",
@@ -169,9 +173,7 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
       recentOrders,
       ordersForChart7,
       ordersForChart30,
-      ordersForChart12m,
-      velocityItems,
-      activeProductSample
+      ordersForChart12m
     ] = await Promise.all([
       prisma.order.aggregate({
         where: revenueWhere,
@@ -227,26 +229,6 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
       prisma.order.findMany({
         where: { ...revenueWhere, placedAt: { gte: chart12mStart } },
         select: { reportingTotalInInrPaise: true, placedAt: true, createdAt: true }
-      }),
-      prisma.orderItem.findMany({
-        where: {
-          order: {
-            deletedAt: null,
-            status: { in: revenueStatuses },
-            createdAt: { gte: addUtcDays(today, -30) }
-          },
-          variant: { productRel: { deletedAt: null } }
-        },
-        select: {
-          qtyOrdered: true,
-          variant: { select: { productRel: { select: { id: true, name: true } } } }
-        },
-        take: 12_000
-      }),
-      prisma.product.findMany({
-        where: { deletedAt: null, status: "ACTIVE" },
-        select: { id: true, name: true },
-        take: 400
       })
     ]);
 
@@ -273,47 +255,11 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
     const revenueByDayLast30 = buildDailySeriesKolkata(chart30Start, 30, ordersForChart30);
     const revenueByMonthLast12 = buildMonthlySeriesKolkata(now, 12, ordersForChart12m);
 
-    const byProduct = new Map<string, { name: string; units: number }>();
-    for (const it of velocityItems) {
-      const p = it.variant?.productRel;
-      if (!p) continue;
-      const cur = byProduct.get(p.id) ?? { name: p.name, units: 0 };
-      cur.units += it.qtyOrdered;
-      byProduct.set(p.id, cur);
-    }
-    const ranked = [...byProduct.entries()].sort((a, b) => b[1].units - a[1].units);
-    const fastMovers = ranked.slice(0, 6).map(([productId, v]) => ({
-      productId,
-      name: v.name,
-      unitsSold: v.units
-    }));
-    const slowMovers = activeProductSample
-      .filter((p) => (byProduct.get(p.id)?.units ?? 0) < 2)
-      .slice(0, 6)
-      .map((p) => ({
-        productId: p.id,
-        name: p.name,
-        unitsSold: byProduct.get(p.id)?.units ?? 0
-      }));
-
-    const insightTips: string[] = [];
+    const wooInsights = dashboardInsightsFromWooDump();
     if (lowStock.length) {
-      insightTips.push(
+      wooInsights.tips.unshift(
         `${lowStock.length} active SKU${lowStock.length === 1 ? "" : "s"} ${lowStock.length === 1 ? "is" : "are"} at or below the low-stock threshold — prioritize replenishment.`
       );
-    }
-    if (fastMovers[0]) {
-      insightTips.push(
-        `${fastMovers[0].name} led unit sales in the last 30 days — keep buffer stock and spotlight it on the homepage.`
-      );
-    }
-    if (slowMovers[0]) {
-      insightTips.push(
-        `${slowMovers[0].name} moved fewer than 2 units in the last 30 days — review pricing, merchandising, or bundle it with a fast mover.`
-      );
-    }
-    if (insightTips.length === 0) {
-      insightTips.push("Sales signals look balanced — continue monitoring weekly velocity and inventory coverage.");
     }
 
     const productsByStatus = {
@@ -355,13 +301,18 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
         revenueByDayLast7,
         revenueByDayLast30,
         revenueByMonthLast12,
-        insights: {
-          fastMovers,
-          slowMovers,
-          tips: insightTips
-        }
+        insights: wooInsights
       }
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** Woo dump product analytics (no DB import) — most/least sold, PO, drop. */
+export async function wooProductAnalytics(_req: Request, res: Response, next: NextFunction) {
+  try {
+    res.json({ success: true, data: loadWooDumpAnalytics() });
   } catch (err) {
     next(err);
   }

@@ -2,7 +2,7 @@
   "source": "woo-mysql-dump-snapshot",
   "dumpFile": "backups/woo-do-20260727/sarveda_wp_new_1_20260727_073254.sql.gz",
   "filter": "wc-completed line_item only; aggregated by order_item_name",
-  "generatedAt": "2026-07-27T08:42:50.477034+00:00",
+  "generatedAt": "2026-07-27T12:43:00.113822+00:00",
   "note": "Analytics-only snapshot for Top 10 items. No Woo data imported into Sarveda DB.",
   "topItems": [
     {

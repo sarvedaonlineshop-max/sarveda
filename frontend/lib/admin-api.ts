@@ -74,14 +74,62 @@ export type DashboardData = {
   revenueByDayLast30: Array<{ date: string; revenueInPaise: number }>;
   revenueByMonthLast12: Array<{ month: string; revenueInPaise: number }>;
   insights: {
-    fastMovers: Array<{ productId: string; name: string; unitsSold: number }>;
-    slowMovers: Array<{ productId: string; name: string; unitsSold: number }>;
+    source?: "woo-dump";
+    periodLabel?: string;
+    mostSoldThisMonthTop5?: Array<{ sku: string; name: string; unitsSold: number }>;
+    purchaseOrderNeededCount?: number;
+    dropCandidatesCount?: number;
+    leastSoldThisMonthCount?: number;
     tips: string[];
+    /** @deprecated empty when using woo-dump */
+    fastMovers: Array<{ productId: string; name: string; unitsSold: number }>;
+    /** @deprecated empty when using woo-dump */
+    slowMovers: Array<{ productId: string; name: string; unitsSold: number }>;
   };
 };
 
 export function fetchAdminDashboard() {
   return adminFetch<DashboardData>("/api/admin/dashboard");
+}
+
+export type WooDumpProductRow = {
+  sku: string;
+  productName: string;
+  slug: string;
+  unitsSold: number;
+  revenueInr: number;
+  revenueInPaise: number;
+  lineRows?: number;
+};
+
+export type AdminWooProductAnalytics = {
+  source: string;
+  dumpFile: string;
+  period: { label: string; from: string; to: string; timezoneNote?: string };
+  generatedAt: string;
+  note: string;
+  rules: {
+    mostSold: string;
+    leastSold: string;
+    purchaseOrderNeeded: string;
+    dropCandidates: string;
+  };
+  mostSoldThisMonth: WooDumpProductRow[];
+  leastSoldThisMonth: WooDumpProductRow[];
+  purchaseOrderNeeded: WooDumpProductRow[];
+  dropCandidates: WooDumpProductRow[];
+  allTimeTopItems: WooDumpProductRow[];
+  counts: {
+    mostSoldThisMonth: number;
+    leastSoldThisMonth: number;
+    purchaseOrderNeeded: number;
+    dropCandidates: number;
+    allTimeTopItems: number;
+  };
+};
+
+export function fetchAdminWooAnalytics() {
+  return adminFetch<AdminWooProductAnalytics>("/api/admin/analytics/woo-products");
 }
 
 export async function downloadAdminOrdersPdf(range: "today" | "week" | "month" | "year") {

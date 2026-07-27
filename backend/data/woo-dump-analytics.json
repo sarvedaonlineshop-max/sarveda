@@ -1,0 +1,836 @@
+{
+  "source": "woo-mysql-dump-snapshot",
+  "dumpFile": "backups/woo-do-20260727/sarveda_wp_new_1_20260727_073254.sql.gz",
+  "period": {
+    "label": "July 2026",
+    "from": "2026-07-01",
+    "to": "2026-07-31",
+    "timezoneNote": "Woo post_date local store time"
+  },
+  "generatedAt": "2026-07-27T12:43:00.113822+00:00",
+  "note": "Analytics-only from Woo completed orders. No data imported into Sarveda DB.",
+  "rules": {
+    "mostSold": "Top 10 by units in period (wc-completed line items)",
+    "leastSold": "Bottom 10 by units among items that sold at least 1 unit in period",
+    "purchaseOrderNeeded": "High demand this month: units >= 5 (raise PO / replenish)",
+    "dropCandidates": "Very slow over Apr-Jul 2026: total units 1-2 only"
+  },
+  "mostSoldThisMonth": [
+    {
+      "sku": "MI-RS-N",
+      "productName": "Bamboo Rainstick",
+      "slug": "",
+      "unitsSold": 25,
+      "revenueInr": 74199.92,
+      "revenueInPaise": 7419992,
+      "lineRows": 25
+    },
+    {
+      "sku": "MI-KR-S-L",
+      "productName": "Kenari Seed Shell Shakers - Large",
+      "slug": "",
+      "unitsSold": 16,
+      "revenueInr": 34240.02,
+      "revenueInPaise": 3424002,
+      "lineRows": 16
+    },
+    {
+      "sku": "MI-PS",
+      "productName": "Pangi Seed Shell Rattle",
+      "slug": "",
+      "unitsSold": 12,
+      "revenueInr": 27064.74,
+      "revenueInPaise": 2706474,
+      "lineRows": 12
+    },
+    {
+      "sku": "MI-Ch-KS",
+      "productName": "Elemental Chimes",
+      "slug": "",
+      "unitsSold": 9,
+      "revenueInr": 32080.98,
+      "revenueInPaise": 3208098,
+      "lineRows": 9
+    },
+    {
+      "sku": "unknown",
+      "productName": "Bird Flute - Brown, Single",
+      "slug": "",
+      "unitsSold": 8,
+      "revenueInr": 2068.55,
+      "revenueInPaise": 206855,
+      "lineRows": 7
+    },
+    {
+      "sku": "MI-SC-9",
+      "productName": "Swinging Chimes - 9 Bars",
+      "slug": "",
+      "unitsSold": 7,
+      "revenueInr": 46245.72,
+      "revenueInPaise": 4624572,
+      "lineRows": 7
+    },
+    {
+      "sku": "MI-SB-Bag-M",
+      "productName": "Singing Bowl Bags - Standard",
+      "slug": "",
+      "unitsSold": 7,
+      "revenueInr": 11129.65,
+      "revenueInPaise": 1112965,
+      "lineRows": 6
+    },
+    {
+      "sku": "unknown",
+      "productName": "Hanging Bowls/Zen Drops - Set of 3",
+      "slug": "",
+      "unitsSold": 6,
+      "revenueInr": 49437.14,
+      "revenueInPaise": 4943714,
+      "lineRows": 6
+    },
+    {
+      "sku": "Yo-P-E-RE-1",
+      "productName": "Eye Shaped Natural Lavender Scented Eye Pillows - Rose",
+      "slug": "",
+      "unitsSold": 6,
+      "revenueInr": 2008.47,
+      "revenueInPaise": 200847,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "Singing Bowls Silk Ring Cushion Accessories - Combo of 7",
+      "slug": "",
+      "unitsSold": 4,
+      "revenueInr": 8231.44,
+      "revenueInPaise": 823144,
+      "lineRows": 4
+    }
+  ],
+  "leastSoldThisMonth": [
+    {
+      "sku": "unknown",
+      "productName": "Heart Chakra Singing Bowl",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 111.43,
+      "revenueInPaise": 11143,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "Tuning Fork Activators - Activator",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 127.12,
+      "revenueInPaise": 12712,
+      "lineRows": 1
+    },
+    {
+      "sku": "TC-R-1",
+      "productName": "Copper Tongue Cleaner - Pack of 1, Straight",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 157.14,
+      "revenueInPaise": 15714,
+      "lineRows": 1
+    },
+    {
+      "sku": "NP-LY-185",
+      "productName": "Jala Neti Pot - Ceramic 185 ml - Lemon Yellow",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 186.44,
+      "revenueInPaise": 18644,
+      "lineRows": 1
+    },
+    {
+      "sku": "MI-SB-C-G-10",
+      "productName": "Singing Bowls Silk Ring Cushion Accessories - 10 cms, Green",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 221.9,
+      "revenueInPaise": 22190,
+      "lineRows": 1
+    },
+    {
+      "sku": "MI-SB-M-R-Wd-4.5",
+      "productName": "Wooden Mallets for Singing Bowls - Thick Wide, Red",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 271.43,
+      "revenueInPaise": 27143,
+      "lineRows": 1
+    },
+    {
+      "sku": "Yo-P-E-SE-1",
+      "productName": "Eye Shaped Natural Lavender Scented Eye Pillows - Sage",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 317.8,
+      "revenueInPaise": 31780,
+      "lineRows": 1
+    },
+    {
+      "sku": "Yo-P-E-DG-1",
+      "productName": "Eye Shaped Natural Lavender Scented Eye Pillows - Dark Grey",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 317.8,
+      "revenueInPaise": 31780,
+      "lineRows": 1
+    },
+    {
+      "sku": "Yo-P-E-NB-1",
+      "productName": "Eye Shaped Natural Lavender Scented Eye Pillows - Navy Blue",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 317.8,
+      "revenueInPaise": 31780,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "Tuning Fork Extensions - Extender",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 381.36,
+      "revenueInPaise": 38136,
+      "lineRows": 1
+    }
+  ],
+  "purchaseOrderNeeded": [
+    {
+      "sku": "MI-RS-N",
+      "productName": "Bamboo Rainstick",
+      "slug": "",
+      "unitsSold": 25,
+      "revenueInr": 74199.92,
+      "revenueInPaise": 7419992,
+      "lineRows": 25
+    },
+    {
+      "sku": "MI-KR-S-L",
+      "productName": "Kenari Seed Shell Shakers - Large",
+      "slug": "",
+      "unitsSold": 16,
+      "revenueInr": 34240.02,
+      "revenueInPaise": 3424002,
+      "lineRows": 16
+    },
+    {
+      "sku": "MI-PS",
+      "productName": "Pangi Seed Shell Rattle",
+      "slug": "",
+      "unitsSold": 12,
+      "revenueInr": 27064.74,
+      "revenueInPaise": 2706474,
+      "lineRows": 12
+    },
+    {
+      "sku": "MI-Ch-KS",
+      "productName": "Elemental Chimes",
+      "slug": "",
+      "unitsSold": 9,
+      "revenueInr": 32080.98,
+      "revenueInPaise": 3208098,
+      "lineRows": 9
+    },
+    {
+      "sku": "unknown",
+      "productName": "Bird Flute - Brown, Single",
+      "slug": "",
+      "unitsSold": 8,
+      "revenueInr": 2068.55,
+      "revenueInPaise": 206855,
+      "lineRows": 7
+    },
+    {
+      "sku": "MI-SC-9",
+      "productName": "Swinging Chimes - 9 Bars",
+      "slug": "",
+      "unitsSold": 7,
+      "revenueInr": 46245.72,
+      "revenueInPaise": 4624572,
+      "lineRows": 7
+    },
+    {
+      "sku": "MI-SB-Bag-M",
+      "productName": "Singing Bowl Bags - Standard",
+      "slug": "",
+      "unitsSold": 7,
+      "revenueInr": 11129.65,
+      "revenueInPaise": 1112965,
+      "lineRows": 6
+    },
+    {
+      "sku": "unknown",
+      "productName": "Hanging Bowls/Zen Drops - Set of 3",
+      "slug": "",
+      "unitsSold": 6,
+      "revenueInr": 49437.14,
+      "revenueInPaise": 4943714,
+      "lineRows": 6
+    },
+    {
+      "sku": "Yo-P-E-RE-1",
+      "productName": "Eye Shaped Natural Lavender Scented Eye Pillows - Rose",
+      "slug": "",
+      "unitsSold": 6,
+      "revenueInr": 2008.47,
+      "revenueInPaise": 200847,
+      "lineRows": 1
+    }
+  ],
+  "dropCandidates": [
+    {
+      "sku": "unknown",
+      "productName": "11 Note Tongue Drum - Blue, 10 inches",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 5906.25,
+      "revenueInPaise": 590625,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "11 Note Tongue Drum - Blue, 8 inches",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 5424.11,
+      "revenueInPaise": 542411,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "11 Note Tongue Drum - White, 12 inches",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 7008.93,
+      "revenueInPaise": 700893,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "11 Note Tongue Drum - White, 6 inches",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 4700.89,
+      "revenueInPaise": 470089,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "7 Chakra Morchang Set - A Tune",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 2385.0,
+      "revenueInPaise": 238500,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "7 Chakras Yoga Mats - Moderate, Yellow",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 1534.29,
+      "revenueInPaise": 153429,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "7 Chakras Yoga Mats - Superior, Teal",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 1895.24,
+      "revenueInPaise": 189524,
+      "lineRows": 1
+    },
+    {
+      "sku": "MI-HP",
+      "productName": "9/10 Notes Handpan Drum - Handcrafted to Precision - D Celtic Minor 9",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 81500.0,
+      "revenueInPaise": 8150000,
+      "lineRows": 1
+    },
+    {
+      "sku": "MI-HP",
+      "productName": "9/10 Notes Handpan Drum - Handcrafted to Precision - D Kurd 10",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 91500.0,
+      "revenueInPaise": 9150000,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "Angel Tuning Forks - 4096 Hz",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 2350.0,
+      "revenueInPaise": 235000,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "Ankh Sound Healing Instrument - Medium",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 297.0,
+      "revenueInPaise": 29700,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "Ankh Sound Healing Instrument - Small",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 279.0,
+      "revenueInPaise": 27900,
+      "lineRows": 1
+    },
+    {
+      "sku": "MI-AS",
+      "productName": "Asalato/Aslatau or Kashaka Shaker - Painted, Single",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 1332.38,
+      "revenueInPaise": 133238,
+      "lineRows": 1
+    },
+    {
+      "sku": "MI-AS",
+      "productName": "Asalato/Aslatau or Kashaka Shaker - Plain, Pair",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 2333.33,
+      "revenueInPaise": 233333,
+      "lineRows": 1
+    },
+    {
+      "sku": "MI-AS",
+      "productName": "Asalato/Aslatau or Kashaka Shaker - Plain, Single",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 1217.14,
+      "revenueInPaise": 121714,
+      "lineRows": 1
+    },
+    {
+      "sku": "CB-BJ",
+      "productName": "Ayurvedic Copper Bedroom Jar",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 1066.67,
+      "revenueInPaise": 106667,
+      "lineRows": 1
+    },
+    {
+      "sku": "MI-CN-B",
+      "productName": "Bamboo Castanet",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 709.52,
+      "revenueInPaise": 70952,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "Belly Bowls",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 9900.0,
+      "revenueInPaise": 990000,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "Bird Flute - Green, Pair",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 619.05,
+      "revenueInPaise": 61905,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "Box Tanpura - Female Tanpura",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 10848.21,
+      "revenueInPaise": 1084821,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "Box Tanpura - Male Tanpura",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 10848.21,
+      "revenueInPaise": 1084821,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "Classic Morchang Set - Middle",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 2350.0,
+      "revenueInPaise": 235000,
+      "lineRows": 1
+    },
+    {
+      "sku": "MI-CM",
+      "productName": "Coconut Maracas Shakers - Painted",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 1015.24,
+      "revenueInPaise": 101524,
+      "lineRows": 1
+    },
+    {
+      "sku": "TC-R-1",
+      "productName": "Copper Tongue Cleaner - Pack of 1, Straight",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 157.14,
+      "revenueInPaise": 15714,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "Crescent Zafu Cushion - Compact - Dark Grey",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 873.73,
+      "revenueInPaise": 87373,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "Crystal Bowl Mallets - Rimming Mallet",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 1476.19,
+      "revenueInPaise": 147619,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "Crystal Bowl Mallets - Silicon Mallet",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 1523.81,
+      "revenueInPaise": 152381,
+      "lineRows": 1
+    },
+    {
+      "sku": "MI-CB-W-12",
+      "productName": "Crystal Bowls - 12 in",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 12415.25,
+      "revenueInPaise": 1241525,
+      "lineRows": 1
+    },
+    {
+      "sku": "MI-CB-W-14",
+      "productName": "Crystal Bowls - 14 in",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 15063.56,
+      "revenueInPaise": 1506356,
+      "lineRows": 1
+    },
+    {
+      "sku": "MI-CB-W-8",
+      "productName": "Crystal Bowls - 8 in",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 8855.93,
+      "revenueInPaise": 885593,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "Djembe Drums - Mahogany, 12in",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 5715.0,
+      "revenueInPaise": 571500,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "Djembe Drums - Mahogany, 14in",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 6705.0,
+      "revenueInPaise": 670500,
+      "lineRows": 1
+    },
+    {
+      "sku": "MI-ES-H",
+      "productName": "Egg Shaker with Handle",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 766.67,
+      "revenueInPaise": 76667,
+      "lineRows": 1
+    },
+    {
+      "sku": "MI-SB-H-ET-B-6",
+      "productName": "Etched Handmade Singing Bowls - Buddha, 6 in",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 9500.0,
+      "revenueInPaise": 950000,
+      "lineRows": 1
+    },
+    {
+      "sku": "MI-G-ET-7C-18",
+      "productName": "Etched Plain/Wind Gong - 7 Chakras, 18 in",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 16242.86,
+      "revenueInPaise": 1624286,
+      "lineRows": 1
+    },
+    {
+      "sku": "MI-G-ET-M-18",
+      "productName": "Etched Plain/Wind Gong - Mandala, 18 in",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 16242.86,
+      "revenueInPaise": 1624286,
+      "lineRows": 1
+    },
+    {
+      "sku": "Mi-SB-MD-P-22",
+      "productName": "Extra Large Meridian Singing Bowls - Plain, 22 In",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 75714.29,
+      "revenueInPaise": 7571429,
+      "lineRows": 1
+    },
+    {
+      "sku": "MI-SB-RFL-B-10.5",
+      "productName": "Flower of Life with Sacred Symbols Singing Bowls - Blue, 10.5 in",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 1877.14,
+      "revenueInPaise": 187714,
+      "lineRows": 1
+    },
+    {
+      "sku": "MI-SB-RFL-B-8",
+      "productName": "Flower of Life with Sacred Symbols Singing Bowls - Blue, 8 in",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 1476.19,
+      "revenueInPaise": 147619,
+      "lineRows": 1
+    },
+    {
+      "sku": "MI-SB-RFL-G-10.5",
+      "productName": "Flower of Life with Sacred Symbols Singing Bowls - Green, 10.5 in",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 2085.71,
+      "revenueInPaise": 208571,
+      "lineRows": 1
+    },
+    {
+      "sku": "MI-SB-H-FM-10",
+      "productName": "Full Moon Singing Bowls - All Sizes - 10 Inches",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 11857.14,
+      "revenueInPaise": 1185714,
+      "lineRows": 1
+    },
+    {
+      "sku": "MI-SB-H-FM-11",
+      "productName": "Full Moon Singing Bowls - All Sizes - 11 Inches",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 11785.71,
+      "revenueInPaise": 1178571,
+      "lineRows": 1
+    },
+    {
+      "sku": "MI-Gg-Bag-L",
+      "productName": "Gong Bags - Large",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 1991.53,
+      "revenueInPaise": 199153,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "Gong Stand - Dark, Extra Large",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 7232.14,
+      "revenueInPaise": 723214,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "Gong Stand - Dark, Medium",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 5986.61,
+      "revenueInPaise": 598661,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "Gong Stand - Dark, Small",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 6116.07,
+      "revenueInPaise": 611607,
+      "lineRows": 1
+    },
+    {
+      "sku": "unknown",
+      "productName": "Gong Stand - Light, Small",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 5504.46,
+      "revenueInPaise": 550446,
+      "lineRows": 1
+    },
+    {
+      "sku": "MI-SB-7C Set-L-M",
+      "productName": "Handcrafted Set of 7 Bowls for Sound Therapy - Large-Octave 2, Matte",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 78571.43,
+      "revenueInPaise": 7857143,
+      "lineRows": 1
+    },
+    {
+      "sku": "MI-SB-7C Set-S-FM",
+      "productName": "Handcrafted Set of 7 Bowls for Sound Therapy - Standard-Octave 3, Full Moon",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 856.19,
+      "revenueInPaise": 85619,
+      "lineRows": 1
+    },
+    {
+      "sku": "MI-CS-H",
+      "productName": "Handheld Natural Coconut Shaker",
+      "slug": "",
+      "unitsSold": 1,
+      "revenueInr": 900.0,
+      "revenueInPaise": 90000,
+      "lineRows": 1
+    }
+  ],
+  "allTimeTopItems": [
+    {
+      "sku": "MI-PS",
+      "productName": "Pangi Seed Shell Rattle",
+      "slug": "",
+      "unitsSold": 252,
+      "revenueInr": 469825.94,
+      "revenueInPaise": 46982594,
+      "lineRows": 236
+    },
+    {
+      "sku": "MI-KR-S-L",
+      "productName": "Kenari Seed Shell Shakers - Large",
+      "slug": "",
+      "unitsSold": 149,
+      "revenueInr": 284284.59,
+      "revenueInPaise": 28428459,
+      "lineRows": 146
+    },
+    {
+      "sku": "Yo-P-E-RE-1",
+      "productName": "Eye Shaped Natural Lavender Scented Eye Pillows - Rose",
+      "slug": "",
+      "unitsSold": 147,
+      "revenueInr": 47550.73,
+      "revenueInPaise": 4755073,
+      "lineRows": 77
+    },
+    {
+      "sku": "MI-RS-B-1M",
+      "productName": "Bamboo Rainstick - 1m",
+      "slug": "",
+      "unitsSold": 119,
+      "revenueInr": 277089.06,
+      "revenueInPaise": 27708906,
+      "lineRows": 116
+    },
+    {
+      "sku": "MI-RS-N",
+      "productName": "Bamboo Rainstick",
+      "slug": "",
+      "unitsSold": 96,
+      "revenueInr": 252578.12,
+      "revenueInPaise": 25257812,
+      "lineRows": 96
+    },
+    {
+      "sku": "MI-RS-B-40",
+      "productName": "Bamboo Rainstick - 40cms",
+      "slug": "",
+      "unitsSold": 89,
+      "revenueInr": 120153.24,
+      "revenueInPaise": 12015324,
+      "lineRows": 85
+    },
+    {
+      "sku": "MI-SC-9",
+      "productName": "Swinging Chimes - 9 Bars",
+      "slug": "",
+      "unitsSold": 87,
+      "revenueInr": 672543.49,
+      "revenueInPaise": 67254349,
+      "lineRows": 86
+    },
+    {
+      "sku": "MI-RS-B-80",
+      "productName": "Bamboo Rainstick - 80cms",
+      "slug": "",
+      "unitsSold": 72,
+      "revenueInr": 141607.06,
+      "revenueInPaise": 14160706,
+      "lineRows": 71
+    },
+    {
+      "sku": "MI-RS-B-60",
+      "productName": "Bamboo Rainstick - 60cms",
+      "slug": "",
+      "unitsSold": 65,
+      "revenueInr": 116641.22,
+      "revenueInPaise": 11664122,
+      "lineRows": 65
+    },
+    {
+      "sku": "Yo-P-E-SE-1",
+      "productName": "Eye Shaped Natural Lavender Scented Eye Pillows - Sage",
+      "slug": "",
+      "unitsSold": 63,
+      "revenueInr": 20438.7,
+      "revenueInPaise": 2043870,
+      "lineRows": 30
+    }
+  ],
+  "counts": {
+    "mostSoldThisMonth": 10,
+    "leastSoldThisMonth": 10,
+    "purchaseOrderNeeded": 9,
+    "dropCandidates": 50,
+    "allTimeTopItems": 10
+  }
+}

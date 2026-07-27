@@ -136,6 +136,7 @@ const primaryNav: NavItem[] = [
 ];
 
 const secondaryNav: NavItem[] = [
+  { href: "/admin/analytics", label: "Analytics", icon: icon.reports },
   { href: "/admin/reports", label: "Reports", icon: icon.reports },
   { href: "/admin/coupons", label: "Coupons", icon: icon.coupons },
   { href: "/admin/mentors", label: "Mentors", icon: icon.mentors },

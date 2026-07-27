@@ -50,6 +50,7 @@ router.delete("/pickup-locations/:id", pickupLocations.deletePickupLocation);
 router.use("/coupons", couponAdminRoutes);
 
 router.get("/dashboard", admin.dashboard);
+router.get("/analytics/woo-products", admin.wooProductAnalytics);
 router.get("/reports/export", reports.exportAdminReport);
 router.get("/reports/analytics", reports.adminReportAnalytics);
 router.get("/me/sessions", reports.adminMeSessions);
