@@ -44,6 +44,46 @@ async function adminFetch<T>(
   return json.data as T;
 }
 
+export type DashboardData = {
+  totalRevenueInPaise: number;
+  revenueInPaise: {
+    today: number;
+    last7Days: number;
+    thisMonth: number;
+  };
+  ordersCount: { today: number; thisWeek: number; thisMonth: number };
+  productsByStatus: { active: number; draft: number; archived: number };
+  recentOrders: Array<{
+    id: string;
+    orderNumber: string;
+    email: string;
+    status: string;
+    grandTotalInPaise: number;
+    createdAt: string;
+  }>;
+  lowStockAlerts: Array<{
+    variantId: string;
+    sku: string;
+    onHand: number;
+    reserved: number;
+    lowStockThreshold: number;
+    productName: string;
+    productSlug: string;
+  }>;
+  revenueByDayLast7: Array<{ date: string; revenueInPaise: number }>;
+  revenueByDayLast30: Array<{ date: string; revenueInPaise: number }>;
+  revenueByMonthLast12: Array<{ month: string; revenueInPaise: number }>;
+  insights: {
+    fastMovers: Array<{ productId: string; name: string; unitsSold: number }>;
+    slowMovers: Array<{ productId: string; name: string; unitsSold: number }>;
+    tips: string[];
+  };
+};
+
+export function fetchAdminDashboard() {
+  return adminFetch<DashboardData>("/api/admin/dashboard");
+}
+
 export async function downloadAdminOrdersPdf(range: "today" | "week" | "month" | "year") {
   const url = `${getApiBase()}/api/admin/orders/export/pdf?range=${encodeURIComponent(range)}`;
   const res = await fetch(url, { credentials: "include" });
