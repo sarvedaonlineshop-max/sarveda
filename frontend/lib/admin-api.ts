@@ -187,10 +187,8 @@ export async function downloadAdminReportExcel(type: AdminReportType, period: Ad
   URL.revokeObjectURL(href);
 }
 
-export function fetchAdminReportAnalytics(period: AdminReportPeriod) {
-  return adminFetch<AdminReportsAnalytics>(
-    `/api/admin/reports/analytics?period=${encodeURIComponent(period)}`
-  );
+export function fetchAdminReportAnalytics() {
+  return adminFetch<AdminReportsAnalytics>(`/api/admin/reports/analytics`);
 }
 
 export type AdminSessionRow = {

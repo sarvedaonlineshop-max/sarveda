@@ -94,10 +94,10 @@ export default function AdminReportsPage() {
 
   useEffect(() => {
     setAnalyticsErr(null);
-    fetchAdminReportAnalytics(period)
+    fetchAdminReportAnalytics()
       .then(setAnalytics)
       .catch((e) => setAnalyticsErr(e instanceof Error ? e.message : "Failed to load analytics"));
-  }, [period]);
+  }, []);
 
   async function onDownload(type: AdminReportType) {
     setDownloadErr(null);
@@ -114,23 +114,7 @@ export default function AdminReportsPage() {
   if (err) return <p style={{ color: "#dc2626" }}>{err}</p>;
   if (!data) return <p style={{ color: "#8a7060" }}>Loading reports...</p>;
 
-  const revenueRows = [
-    { label: "Today", value: data.revenueInPaise.today },
-    { label: "This week", value: data.revenueInPaise.last7Days },
-    { label: "This month", value: data.revenueInPaise.thisMonth },
-    { label: "Lifetime", value: data.totalRevenueInPaise }
-  ];
-
-  const orderRows = [
-    { label: "Today", value: data.ordersCount.today },
-    { label: "This week", value: data.ordersCount.thisWeek },
-    { label: "This month", value: data.ordersCount.thisMonth }
-  ];
-
-  const avgOrder =
-    data.ordersCount.thisMonth > 0
-      ? data.revenueInPaise.thisMonth / data.ordersCount.thisMonth
-      : 0;
+  void data;
 
   function formatWhen(iso: string) {
     return new Date(iso).toLocaleString("en-IN", {
@@ -421,76 +405,6 @@ export default function AdminReportsPage() {
         )}
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
-          gap: "14px"
-        }}
-      >
-        {revenueRows.map((r) => (
-          <div key={r.label} style={{ ...card, padding: "16px 18px" }}>
-            <p
-              style={{
-                fontSize: "11px",
-                fontWeight: 700,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: "#8a7060",
-                marginBottom: "6px"
-              }}
-            >
-              {r.label}
-            </p>
-            <p style={{ fontSize: "1.4rem", fontWeight: 700, color: "#2c2420" }}>
-              {formatINRFromPaise(r.value)}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
-          gap: "14px"
-        }}
-      >
-        {orderRows.map((r) => (
-          <div key={r.label} style={{ ...card, padding: "16px 18px" }}>
-            <p
-              style={{
-                fontSize: "11px",
-                fontWeight: 700,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: "#8a7060",
-                marginBottom: "6px"
-              }}
-            >
-              Orders {r.label}
-            </p>
-            <p style={{ fontSize: "1.4rem", fontWeight: 700, color: "#2c2420" }}>{r.value}</p>
-          </div>
-        ))}
-        <div style={{ ...card, padding: "16px 18px" }}>
-          <p
-            style={{
-              fontSize: "11px",
-              fontWeight: 700,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              color: "#8a7060",
-              marginBottom: "6px"
-            }}
-          >
-            Avg Order (month)
-          </p>
-          <p style={{ fontSize: "1.4rem", fontWeight: 700, color: "#2c2420" }}>
-            {formatINRFromPaise(Math.round(avgOrder))}
-          </p>
-        </div>
-      </div>
     </div>
   );
 }

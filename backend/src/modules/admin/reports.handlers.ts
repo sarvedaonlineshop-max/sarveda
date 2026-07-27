@@ -28,6 +28,12 @@ export type ReportType = z.infer<typeof reportTypeSchema>;
 
 const REPORT_ORDER_STATUSES: OrderStatus[] = ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"];
 
+const ANALYTICS_WOO_DELIVERED_WHERE = {
+  deletedAt: null as Date | null,
+  status: "DELIVERED" as OrderStatus,
+  orderNumber: { startsWith: "WOO-" }
+};
+
 /** Indian financial year: 1 Apr → 31 Mar (Asia/Kolkata). */
 export function resolveReportRange(period: ReportPeriod, now = new Date()): { from: Date; to: Date; label: string } {
   const todayStart = startOfDayKolkata(now);
@@ -354,28 +360,9 @@ async function gatewayRows(from: Date, to: Date, provider?: PaymentProvider) {
 
 export async function adminReportAnalytics(req: Request, res: Response, next: NextFunction) {
   try {
-    const parsed = z.object({ period: periodSchema.default("monthly") }).safeParse(req.query);
-    if (!parsed.success) {
-      res.status(400).json({
-        success: false,
-        error: "period is invalid",
-        code: "VALIDATION_ERROR"
-      });
-      return;
-    }
-
-    const { period } = parsed.data;
-    const { from, to, label } = resolveReportRange(period);
-
     const [items, orders] = await Promise.all([
       prisma.orderItem.findMany({
-        where: {
-          order: {
-            deletedAt: null,
-            placedAt: { gte: from, lt: to },
-            status: { in: REPORT_ORDER_STATUSES }
-          }
-        },
+        where: { order: ANALYTICS_WOO_DELIVERED_WHERE },
         select: {
           skuSnapshot: true,
           nameSnapshot: true,
@@ -390,11 +377,7 @@ export async function adminReportAnalytics(req: Request, res: Response, next: Ne
         }
       }),
       prisma.order.findMany({
-        where: {
-          deletedAt: null,
-          placedAt: { gte: from, lt: to },
-          status: { in: REPORT_ORDER_STATUSES }
-        },
+        where: ANALYTICS_WOO_DELIVERED_WHERE,
         orderBy: { placedAt: "desc" },
         select: {
           id: true,
@@ -532,9 +515,7 @@ export async function adminReportAnalytics(req: Request, res: Response, next: Ne
     res.json({
       success: true,
       data: {
-        period,
-        label,
-        range: { from: from.toISOString(), to: to.toISOString() },
+        label: "all-time-woo-delivered",
         totals: { orders: orders.length, units: items.reduce((sum, it) => sum + it.qtyOrdered, 0) },
         topItems,
         repeatCustomers,
