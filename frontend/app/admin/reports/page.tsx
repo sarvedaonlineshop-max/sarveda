@@ -5,14 +5,9 @@ import { useEffect, useState } from "react";
 import type {
   AdminReportPeriod,
   AdminReportType,
-  AdminReportsAnalytics,
-  DashboardData
+  AdminReportsAnalytics
 } from "@/lib/admin-api";
-import {
-  downloadAdminReportExcel,
-  fetchAdminDashboard,
-  fetchAdminReportAnalytics
-} from "@/lib/admin-api";
+import { downloadAdminReportExcel, fetchAdminReportAnalytics } from "@/lib/admin-api";
 import { formatINRFromPaise } from "@/lib/money";
 
 const card: React.CSSProperties = {
@@ -78,19 +73,14 @@ const REPORTS: Array<{
 ];
 
 export default function AdminReportsPage() {
-  const [data, setData] = useState<DashboardData | null>(null);
   const [analytics, setAnalytics] = useState<AdminReportsAnalytics | null>(null);
-  const [err, setErr] = useState<string | null>(null);
   const [period, setPeriod] = useState<AdminReportPeriod>("monthly");
   const [busy, setBusy] = useState<AdminReportType | null>(null);
   const [downloadErr, setDownloadErr] = useState<string | null>(null);
   const [analyticsErr, setAnalyticsErr] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchAdminDashboard()
-      .then(setData)
-      .catch((e) => setErr(e instanceof Error ? e.message : "Failed"));
-  }, []);
+  const [activeStatTab, setActiveStatTab] = useState<
+    "items" | "customers" | "places" | "orders"
+  >("items");
 
   useEffect(() => {
     setAnalyticsErr(null);
@@ -110,11 +100,6 @@ export default function AdminReportsPage() {
       setBusy(null);
     }
   }
-
-  if (err) return <p style={{ color: "#dc2626" }}>{err}</p>;
-  if (!data) return <p style={{ color: "#8a7060" }}>Loading reports...</p>;
-
-  void data;
 
   function formatWhen(iso: string) {
     return new Date(iso).toLocaleString("en-IN", {
@@ -198,11 +183,130 @@ export default function AdminReportsPage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       <div>
-        <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#2c2420" }}>Revenue Reports</h1>
+        <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#2c2420" }}>Reports</h1>
         <p style={{ fontSize: "13px", color: "#8a7060", marginTop: "4px" }}>
-          Snapshot below is paid orders only. Excel exports use Asia/Kolkata dates; financial year is
-          Apr–Mar.
+          Order statistics first, report downloads second. Excel exports use Asia/Kolkata dates; financial year
+          is Apr-Mar.
         </p>
+      </div>
+
+      <div style={card}>
+        {sectionTitle(
+          "Order analytics",
+          analytics ? `${analytics.totals.orders} delivered Woo orders · ${analytics.totals.units} units` : undefined
+        )}
+        <p style={{ fontSize: "12px", color: "#8a7060", marginTop: "4px" }}>
+          These stats use only imported WooCommerce orders with `DELIVERED` status. Item ranking needs Woo
+          line items; your current import appears to have order headers but not historical line items yet.
+        </p>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "16px", marginBottom: "18px" }}>
+          {[
+            { id: "items" as const, label: "Top 10 items sold" },
+            { id: "customers" as const, label: "Repeat customers" },
+            { id: "places" as const, label: "Top places" },
+            { id: "orders" as const, label: "Highest orders" }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveStatTab(tab.id)}
+              style={{
+                padding: "8px 14px",
+                borderRadius: "8px",
+                fontSize: "13px",
+                fontWeight: 700,
+                cursor: "pointer",
+                border: "1px solid",
+                borderColor: activeStatTab === tab.id ? "#1e3a2f" : "#e0d8ce",
+                background: activeStatTab === tab.id ? "#1e3a2f" : "#fff",
+                color: activeStatTab === tab.id ? "#fffbf5" : "#6b5c52"
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {analyticsErr ? (
+          <p style={{ color: "#dc2626", fontSize: "13px", marginTop: "10px" }}>{analyticsErr}</p>
+        ) : null}
+        {!analytics ? (
+          <p style={{ color: "#8a7060", fontSize: "13px", marginTop: "12px" }}>Loading analytics...</p>
+        ) : (
+          <div
+            style={{
+              border: "1px solid #f0ece6",
+              borderRadius: "10px",
+              padding: "14px 16px",
+              background: "#faf8f5"
+            }}
+          >
+            {activeStatTab === "items"
+              ? renderMiniTable(
+                  ["Item", "SKU", "Units", "Revenue"],
+                  analytics.topItems.map((item) => [
+                    <div key={`${item.sku}-name`}>
+                      <div style={{ fontWeight: 600 }}>{item.productName}</div>
+                      {item.slug ? <div style={{ color: "#8a7060", fontSize: "12px" }}>{item.slug}</div> : null}
+                    </div>,
+                    item.sku,
+                    String(item.unitsSold),
+                    formatINRFromPaise(Math.round(item.revenueInr * 100))
+                  ]),
+                  "No historical Woo line items are imported yet."
+                )
+              : null}
+            {activeStatTab === "customers"
+              ? renderMiniTable(
+                  ["Customer", "Orders", "City", "Spend"],
+                  analytics.repeatCustomers.map((customer) => [
+                    <div key={`${customer.email}-name`}>
+                      <div style={{ fontWeight: 600 }}>{customer.name}</div>
+                      <div style={{ color: "#8a7060", fontSize: "12px" }}>{customer.email}</div>
+                    </div>,
+                    String(customer.orderCount),
+                    customer.city || "—",
+                    formatINRFromPaise(Math.round(customer.totalSpendInr * 100))
+                  ]),
+                  "No repeat customers found."
+                )
+              : null}
+            {activeStatTab === "places"
+              ? renderMiniTable(
+                  ["Place", "Orders", "Revenue"],
+                  analytics.topPlaces.map((place) => [
+                    <div key={`${place.city}-${place.state}-${place.country}`}>
+                      <div style={{ fontWeight: 600 }}>{place.city}</div>
+                      <div style={{ color: "#8a7060", fontSize: "12px" }}>
+                        {[place.state, place.country].filter(Boolean).join(", ") || "—"}
+                      </div>
+                    </div>,
+                    String(place.orderCount),
+                    formatINRFromPaise(Math.round(place.totalInr * 100))
+                  ]),
+                  "No place data found."
+                )
+              : null}
+            {activeStatTab === "orders"
+              ? renderMiniTable(
+                  ["Order", "Customer", "Status", "Total"],
+                  analytics.highestOrders.map((order) => [
+                    <div key={order.orderNumber}>
+                      <div style={{ fontWeight: 600 }}>{order.orderNumber}</div>
+                      <div style={{ color: "#8a7060", fontSize: "12px" }}>{formatWhen(order.placedAt)}</div>
+                    </div>,
+                    <div key={`${order.orderNumber}-customer`}>
+                      <div>{order.customerName}</div>
+                      <div style={{ color: "#8a7060", fontSize: "12px" }}>{order.email}</div>
+                    </div>,
+                    order.status,
+                    formatINRFromPaise(order.totalInPaise)
+                  ]),
+                  "No orders found."
+                )
+              : null}
+          </div>
+        )}
       </div>
 
       <div style={card}>
@@ -291,118 +395,11 @@ export default function AdminReportsPage() {
                   opacity: busy !== null && busy !== r.type ? 0.55 : 1
                 }}
               >
-                {busy === r.type ? "Preparing…" : "Download .xlsx"}
+                {busy === r.type ? "Preparing..." : "Download .xlsx"}
               </button>
             </div>
           ))}
         </div>
-      </div>
-
-      <div style={card}>
-        {sectionTitle(
-          "Order analytics",
-          analytics
-            ? `${analytics.totals.orders} orders · ${analytics.totals.units} units · ${period.replace("_", " ")}`
-            : undefined
-        )}
-        <p style={{ fontSize: "12px", color: "#8a7060", marginTop: "4px" }}>
-          Top 10 lists are calculated from paid / processing / shipped / delivered orders in the selected period.
-        </p>
-        {analyticsErr ? (
-          <p style={{ color: "#dc2626", fontSize: "13px", marginTop: "10px" }}>{analyticsErr}</p>
-        ) : null}
-        {!analytics ? (
-          <p style={{ color: "#8a7060", fontSize: "13px", marginTop: "12px" }}>Loading analytics...</p>
-        ) : (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
-              gap: "16px",
-              marginTop: "16px"
-            }}
-          >
-            <div
-              style={{ border: "1px solid #f0ece6", borderRadius: "10px", padding: "14px 16px", background: "#faf8f5" }}
-            >
-              {sectionTitle("Top 10 items sold")}
-              {renderMiniTable(
-                ["Item", "SKU", "Units", "Revenue"],
-                analytics.topItems.map((item) => [
-                  <div key={`${item.sku}-name`}>
-                    <div style={{ fontWeight: 600 }}>{item.productName}</div>
-                    {item.slug ? <div style={{ color: "#8a7060", fontSize: "12px" }}>{item.slug}</div> : null}
-                  </div>,
-                  item.sku,
-                  String(item.unitsSold),
-                  formatINRFromPaise(Math.round(item.revenueInr * 100))
-                ]),
-                "No order items in this period."
-              )}
-            </div>
-
-            <div
-              style={{ border: "1px solid #f0ece6", borderRadius: "10px", padding: "14px 16px", background: "#faf8f5" }}
-            >
-              {sectionTitle("Top 10 repeat customers")}
-              {renderMiniTable(
-                ["Customer", "Orders", "City", "Spend"],
-                analytics.repeatCustomers.map((customer) => [
-                  <div key={`${customer.email}-name`}>
-                    <div style={{ fontWeight: 600 }}>{customer.name}</div>
-                    <div style={{ color: "#8a7060", fontSize: "12px" }}>{customer.email}</div>
-                  </div>,
-                  String(customer.orderCount),
-                  customer.city || "—",
-                  formatINRFromPaise(Math.round(customer.totalSpendInr * 100))
-                ]),
-                "No repeat customers in this period."
-              )}
-            </div>
-
-            <div
-              style={{ border: "1px solid #f0ece6", borderRadius: "10px", padding: "14px 16px", background: "#faf8f5" }}
-            >
-              {sectionTitle("Top places orders are placed")}
-              {renderMiniTable(
-                ["Place", "Orders", "Revenue"],
-                analytics.topPlaces.map((place) => [
-                  <div key={`${place.city}-${place.state}-${place.country}`}>
-                    <div style={{ fontWeight: 600 }}>{place.city}</div>
-                    <div style={{ color: "#8a7060", fontSize: "12px" }}>
-                      {[place.state, place.country].filter(Boolean).join(", ") || "—"}
-                    </div>
-                  </div>,
-                  String(place.orderCount),
-                  formatINRFromPaise(Math.round(place.totalInr * 100))
-                ]),
-                "No place data in this period."
-              )}
-            </div>
-
-            <div
-              style={{ border: "1px solid #f0ece6", borderRadius: "10px", padding: "14px 16px", background: "#faf8f5" }}
-            >
-              {sectionTitle("Top 10 highest-value orders")}
-              {renderMiniTable(
-                ["Order", "Customer", "Status", "Total"],
-                analytics.highestOrders.map((order) => [
-                  <div key={order.orderNumber}>
-                    <div style={{ fontWeight: 600 }}>{order.orderNumber}</div>
-                    <div style={{ color: "#8a7060", fontSize: "12px" }}>{formatWhen(order.placedAt)}</div>
-                  </div>,
-                  <div key={`${order.orderNumber}-customer`}>
-                    <div>{order.customerName}</div>
-                    <div style={{ color: "#8a7060", fontSize: "12px" }}>{order.email}</div>
-                  </div>,
-                  order.status,
-                  formatINRFromPaise(order.totalInPaise)
-                ]),
-                "No orders in this period."
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
     </div>
