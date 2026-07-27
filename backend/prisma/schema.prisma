@@ -953,6 +953,7 @@ enum EnquirySource {
   COURSE
   EVENT
   INSIGHTS
+  WHATSAPP
 }
 
 enum EnquirySubjectCategory {
@@ -988,6 +989,10 @@ model EnquiryThread {
   status          EnquiryThreadStatus     @default(OPEN)
   unreadByAdmin   Boolean                 @default(true)
   lastMessageAt   DateTime                @default(now())
+  /// WhatsApp inbox: customer number in E.164; set only for source WHATSAPP.
+  waPhone         String?
+  /// Last inbound customer message time — enforces the WhatsApp 24h reply window.
+  lastCustomerMessageAt DateTime?
   createdAt       DateTime                @default(now())
   updatedAt       DateTime                @updatedAt
   user            User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -996,6 +1001,7 @@ model EnquiryThread {
   @@index([unreadByAdmin, lastMessageAt(sort: Desc)])
   @@index([customerEmail])
   @@index([source])
+  @@index([waPhone])
 }
 
 model EnquiryMessage {
@@ -1006,6 +1012,10 @@ model EnquiryMessage {
   authorName  String
   authorEmail String
   body        String
+  /// Provider (Exotel) message sid — idempotency for inbound, delivery tracking for outbound.
+  waMessageSid String?             @unique
+  /// WhatsApp delivery status for outbound: sent | delivered | read | failed.
+  waStatus    String?
   createdAt   DateTime             @default(now())
   thread      EnquiryThread        @relation(fields: [threadId], references: [id], onDelete: Cascade)
   adminUser   User?                @relation("EnquiryAdminMessages", fields: [adminUserId], references: [id], onDelete: SetNull)

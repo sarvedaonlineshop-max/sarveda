@@ -11,7 +11,8 @@ export const SOURCE_LABELS: Record<EnquirySource, string> = {
   CORPORATE: "Corporate wellness",
   COURSE: "Course enquiry",
   EVENT: "Event enquiry",
-  INSIGHTS: "Insights"
+  INSIGHTS: "Insights",
+  WHATSAPP: "WhatsApp"
 };
 
 export const SUBJECT_LABELS: Record<EnquirySubjectCategory, string> = {

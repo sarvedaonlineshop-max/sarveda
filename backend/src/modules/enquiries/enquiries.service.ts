@@ -10,6 +10,11 @@ import { prisma } from "../../config/db";
 import { getPublicMediaUrl, presignPutUploadUrl, uploadAsset } from "../../config/s3";
 import { logger } from "../../config/logger";
 import { sendMail } from "../notifications/email";
+import { toWhatsAppE164 } from "../notifications/whatsapp";
+import {
+  sendWhatsAppSessionText,
+  WA_SESSION_WINDOW_MS
+} from "../whatsapp/whatsapp-inbox.service";
 import {
   CARE_INBOX_EMAIL,
   MAX_ATTACHMENT_BYTES,
@@ -311,12 +316,55 @@ export async function replyToEnquiryThread(
   const thread = await prisma.enquiryThread.findUnique({ where: { id: threadId } });
   if (!thread) return null;
 
-  const uploaded = await uploadEnquiryFiles(attachments);
   const adminName = admin.name?.trim() || admin.email.split("@")[0] || "Sarveda Team";
   const trimmed = body.trim();
   if (!trimmed) {
     throw new Error("Reply message is required");
   }
+
+  // WhatsApp threads: deliver via Exotel session message, not email.
+  if (thread.source === "WHATSAPP") {
+    if (attachments.length > 0) {
+      throw new Error("Attachments are not supported on WhatsApp replies yet — send text only.");
+    }
+    const to = thread.waPhone || toWhatsAppE164(thread.customerPhone);
+    if (!to) {
+      throw new Error("This WhatsApp thread has no customer number.");
+    }
+    const last = thread.lastCustomerMessageAt;
+    if (!last || Date.now() - last.getTime() > WA_SESSION_WINDOW_MS) {
+      throw new Error(
+        "WhatsApp 24-hour reply window has closed. The customer must message again before you can reply here."
+      );
+    }
+
+    const sid = await sendWhatsAppSessionText(to, trimmed);
+
+    const waNow = new Date();
+    const message = await prisma.enquiryMessage.create({
+      data: {
+        threadId,
+        authorType: "ADMIN" as EnquiryMessageAuthor,
+        adminUserId: admin.id,
+        authorName: adminName,
+        authorEmail: admin.email,
+        body: trimmed,
+        waMessageSid: sid,
+        waStatus: "sent"
+      },
+      include: { attachments: true }
+    });
+
+    await prisma.enquiryThread.update({
+      where: { id: threadId },
+      data: { lastMessageAt: waNow, status: "OPEN", unreadByAdmin: false }
+    });
+
+    logger.info("enquiry_whatsapp_replied", { threadId, adminId: admin.id, sid });
+    return message;
+  }
+
+  const uploaded = await uploadEnquiryFiles(attachments);
 
   const now = new Date();
   const message = await prisma.enquiryMessage.create({

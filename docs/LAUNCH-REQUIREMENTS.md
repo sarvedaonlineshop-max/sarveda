@@ -4,6 +4,8 @@
 **Last reviewed:** 2026-05-16  
 **Staging:** https://sarveda-demo.xyz · **Production target:** https://sarveda.com  
 
+**Before production cutover (~2026-08-05 reminder):** complete credential rotation in [`PRODUCTION-GO-LIVE-CREDENTIAL-ROTATION.md`](./PRODUCTION-GO-LIVE-CREDENTIAL-ROTATION.md).
+
 ### Status legend
 
 | Symbol | Meaning |

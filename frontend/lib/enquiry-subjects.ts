@@ -13,14 +13,16 @@ export type EnquirySource =
   | "CORPORATE"
   | "COURSE"
   | "EVENT"
-  | "INSIGHTS";
+  | "INSIGHTS"
+  | "WHATSAPP";
 
 export const ENQUIRY_SOURCE_LABELS: Record<EnquirySource, string> = {
   CONTACT: "Contact",
   CORPORATE: "Corporate wellness",
   COURSE: "Course",
   EVENT: "Event",
-  INSIGHTS: "Insights"
+  INSIGHTS: "Insights",
+  WHATSAPP: "WhatsApp"
 };
 
 export const ACCEPTED_ENQUIRY_FILE_TYPES =

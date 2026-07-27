@@ -13,6 +13,11 @@ public/workbox-*.js.map
 .DS_Store
 .pem
 
+# Database dumps — never commit (customer PII, orders)
+backups/
+*.dump
+*.sql.gz
+
 # WooCommerce exports — never commit (Stripe/Razorpay keys in orders, customer PII)
 data/orders.xml
 data/users.csv

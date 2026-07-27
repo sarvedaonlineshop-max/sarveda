@@ -118,6 +118,49 @@ export type AdminReportType =
 
 export type AdminReportPeriod = "daily" | "weekly" | "monthly" | "financial_year";
 
+export type AdminReportsAnalytics = {
+  period: AdminReportPeriod;
+  label: string;
+  range: { from: string; to: string };
+  totals: { orders: number; units: number };
+  topItems: Array<{
+    sku: string;
+    productName: string;
+    slug: string;
+    unitsSold: number;
+    revenueInPaise: number;
+    revenueInr: number;
+  }>;
+  repeatCustomers: Array<{
+    email: string;
+    name: string;
+    city: string;
+    orderCount: number;
+    totalSpendInPaise: number;
+    totalSpendInr: number;
+    lastOrderedAt: string;
+  }>;
+  topPlaces: Array<{
+    city: string;
+    state: string;
+    country: string;
+    orderCount: number;
+    totalInPaise: number;
+    totalInr: number;
+  }>;
+  highestOrders: Array<{
+    id: string;
+    orderNumber: string;
+    email: string;
+    customerName: string;
+    city: string;
+    status: string;
+    placedAt: string;
+    totalInPaise: number;
+    totalInr: number;
+  }>;
+};
+
 export async function downloadAdminReportExcel(type: AdminReportType, period: AdminReportPeriod) {
   const q = new URLSearchParams({ type, period });
   const url = `${getApiBase()}/api/admin/reports/export?${q.toString()}`;
@@ -142,6 +185,12 @@ export async function downloadAdminReportExcel(type: AdminReportType, period: Ad
   a.download = filename;
   a.click();
   URL.revokeObjectURL(href);
+}
+
+export function fetchAdminReportAnalytics(period: AdminReportPeriod) {
+  return adminFetch<AdminReportsAnalytics>(
+    `/api/admin/reports/analytics?period=${encodeURIComponent(period)}`
+  );
 }
 
 export type AdminSessionRow = {
@@ -1162,10 +1211,16 @@ export type EnquiryMessageRow = {
   createdAt: string;
   attachments: EnquiryAttachmentRow[];
   adminUser?: { id: string; name: string | null; email: string } | null;
+  /** WhatsApp delivery status for outbound messages: sent | delivered | read | failed. */
+  waStatus?: string | null;
 };
 
 export type EnquiryThreadDetail = Omit<EnquiryThreadListItem, "messages"> & {
   contextUrl: string | null;
+  /** WhatsApp threads: customer number in E.164. */
+  waPhone?: string | null;
+  /** Last inbound customer message — WhatsApp replies allowed within 24h of this. */
+  lastCustomerMessageAt?: string | null;
   messages: EnquiryMessageRow[];
 };
 

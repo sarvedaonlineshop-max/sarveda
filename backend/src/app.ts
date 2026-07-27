@@ -32,6 +32,7 @@ import { stripeWebhookHandler } from "./modules/payments/stripe.webhook";
 import { paypalWebhookHandler } from "./modules/payments/paypal.webhook";
 import { delhiveryWebhookHandler } from "./modules/shipping/delhivery.webhook";
 import { shiprocketWebhookHandler } from "./modules/shipping/shiprocket.webhook";
+import { whatsappWebhookHandler } from "./modules/whatsapp/whatsapp.webhook";
 import { adminRoutes } from "./modules/admin";
 import { productsRoutes } from "./modules/products/products.routes";
 import { shippingRoutes } from "./modules/shipping";
@@ -175,6 +176,11 @@ app.post("/api/shipping/delhivery/webhook", delhiveryWebhookRaw, (req, res, next
 
 app.post("/api/zoho/webhook", express.json(), (req: Request, res: Response, next: NextFunction) => {
   void handleZohoWebhook(req, res).catch(next);
+});
+
+// Exotel WhatsApp inbound messages + delivery receipts (token-authenticated)
+app.post("/api/whatsapp/webhook", express.json({ limit: "2mb" }), (req: Request, res: Response, next: NextFunction) => {
+  void whatsappWebhookHandler(req, res).catch(next);
 });
 
 // Base64 uploads (images/audio) need headroom; default 1mb causes "request entity too large"

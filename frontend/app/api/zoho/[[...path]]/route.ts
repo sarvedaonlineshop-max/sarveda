@@ -1,14 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 /**
- * Server-side proxy for /api/zoho/* → EC2 Express.
+ * Server-side proxy for /api/zoho/* → Lightsail Express (nginx).
  * Route handlers take precedence over rewrites on Vercel and forward cookies/headers as-is.
  * Express applies requireAdmin only on specific Zoho routes (e.g. POST /sync/stock).
  */
 function backendBase(): string {
   return (
     process.env.BACKEND_PROXY_URL ||
-    (process.env.VERCEL ? "http://13.206.192.106:5000" : "http://127.0.0.1:5000")
+    (process.env.VERCEL ? "http://13.204.112.165" : "http://127.0.0.1:5000")
   ).replace(/\/$/, "");
 }
 

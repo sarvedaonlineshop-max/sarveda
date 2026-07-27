@@ -28,6 +28,13 @@ function formatMsgTime(iso: string) {
   });
 }
 
+const WA_STATUS_LABELS: Record<string, string> = {
+  sent: "✓ sent",
+  delivered: "✓✓ delivered",
+  read: "✓✓ read",
+  failed: "✗ failed"
+};
+
 function MessageBubble({ message }: { message: EnquiryMessageRow }) {
   const isAdmin = message.authorType === "ADMIN";
   return (
@@ -62,6 +69,11 @@ function MessageBubble({ message }: { message: EnquiryMessageRow }) {
           }`}
         >
           {isAdmin ? message.authorName : message.authorName} · {formatMsgTime(message.createdAt)}
+          {isAdmin && message.waStatus ? (
+            <span className={message.waStatus === "failed" ? " text-red-400" : ""}>
+              {" "}· {WA_STATUS_LABELS[message.waStatus] ?? message.waStatus}
+            </span>
+          ) : null}
         </p>
       </div>
     </div>
@@ -141,6 +153,14 @@ export default function AdminChatDetailPage() {
     );
   }
 
+  const isWhatsApp = thread.source === "WHATSAPP";
+  const waWindowOpen =
+    isWhatsApp &&
+    Boolean(
+      thread.lastCustomerMessageAt &&
+        Date.now() - new Date(thread.lastCustomerMessageAt).getTime() < 24 * 60 * 60 * 1000
+    );
+
   return (
     <div className="mx-auto flex h-[calc(100vh-4rem)] max-w-4xl flex-col px-4 py-4 sm:px-6">
       <div className="shrink-0 border-b border-stone-200 pb-4 dark:border-stone-700">
@@ -153,8 +173,9 @@ export default function AdminChatDetailPage() {
               {thread.customerName}
             </h1>
             <p className="text-sm text-stone-500">
-              {thread.customerEmail}
-              {thread.customerPhone ? ` · ${thread.customerPhone}` : ""}
+              {isWhatsApp
+                ? thread.customerPhone ?? thread.waPhone ?? ""
+                : `${thread.customerEmail}${thread.customerPhone ? ` · ${thread.customerPhone}` : ""}`}
             </p>
             <p className="mt-1 text-xs text-stone-500">
               {ENQUIRY_SOURCE_LABELS[thread.source as EnquirySource] ?? thread.source}
@@ -180,9 +201,23 @@ export default function AdminChatDetailPage() {
       </div>
 
       <div className="shrink-0 border-t border-stone-200 pt-4 dark:border-stone-700">
-        <p className="mb-2 text-xs text-stone-500">
-          Reply goes to <strong>{thread.customerEmail}</strong> via email and appears in this thread.
-        </p>
+        {isWhatsApp ? (
+          waWindowOpen ? (
+            <p className="mb-2 text-xs text-stone-500">
+              Reply goes to <strong>{thread.customerPhone ?? thread.waPhone}</strong> on{" "}
+              <strong className="text-green-700">WhatsApp</strong> and appears in this thread.
+            </p>
+          ) : (
+            <p className="mb-2 rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+              The WhatsApp 24-hour reply window has closed. You can reply here again after the
+              customer sends a new message.
+            </p>
+          )
+        ) : (
+          <p className="mb-2 text-xs text-stone-500">
+            Reply goes to <strong>{thread.customerEmail}</strong> via email and appears in this thread.
+          </p>
+        )}
         <textarea
           value={reply}
           onChange={(e) => setReply(e.target.value)}
@@ -203,13 +238,15 @@ export default function AdminChatDetailPage() {
               e.target.value = "";
             }}
           />
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            className="rounded-lg border border-stone-300 px-3 py-2 text-xs font-medium dark:border-stone-600"
-          >
-            Attach files
-          </button>
+          {!isWhatsApp ? (
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="rounded-lg border border-stone-300 px-3 py-2 text-xs font-medium dark:border-stone-600"
+            >
+              Attach files
+            </button>
+          ) : null}
           {files.map((f, i) => (
             <span key={`${f.name}-${i}`} className="text-xs text-stone-500">
               {f.name}{" "}
@@ -220,11 +257,11 @@ export default function AdminChatDetailPage() {
           ))}
           <button
             type="button"
-            disabled={sending || !reply.trim()}
+            disabled={sending || !reply.trim() || (isWhatsApp && !waWindowOpen)}
             onClick={() => void sendReply()}
             className="ml-auto rounded-lg bg-stone-900 px-4 py-2 text-sm font-semibold text-amber-50 disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
           >
-            {sending ? "Sending…" : "Send reply"}
+            {sending ? "Sending…" : isWhatsApp ? "Send on WhatsApp" : "Send reply"}
           </button>
         </div>
         {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}

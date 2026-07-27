@@ -51,6 +51,7 @@ router.use("/coupons", couponAdminRoutes);
 
 router.get("/dashboard", admin.dashboard);
 router.get("/reports/export", reports.exportAdminReport);
+router.get("/reports/analytics", reports.adminReportAnalytics);
 router.get("/me/sessions", reports.adminMeSessions);
 router.get("/notifications", admin.adminNotifications);
 router.use("/enquiries", enquiriesAdminRoutes);

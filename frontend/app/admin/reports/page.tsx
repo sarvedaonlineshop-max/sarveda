@@ -2,8 +2,17 @@
 
 import { useEffect, useState } from "react";
 
-import type { AdminReportPeriod, AdminReportType, DashboardData } from "@/lib/admin-api";
-import { downloadAdminReportExcel, fetchAdminDashboard } from "@/lib/admin-api";
+import type {
+  AdminReportPeriod,
+  AdminReportType,
+  AdminReportsAnalytics,
+  DashboardData
+} from "@/lib/admin-api";
+import {
+  downloadAdminReportExcel,
+  fetchAdminDashboard,
+  fetchAdminReportAnalytics
+} from "@/lib/admin-api";
 import { formatINRFromPaise } from "@/lib/money";
 
 const card: React.CSSProperties = {
@@ -70,16 +79,25 @@ const REPORTS: Array<{
 
 export default function AdminReportsPage() {
   const [data, setData] = useState<DashboardData | null>(null);
+  const [analytics, setAnalytics] = useState<AdminReportsAnalytics | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [period, setPeriod] = useState<AdminReportPeriod>("monthly");
   const [busy, setBusy] = useState<AdminReportType | null>(null);
   const [downloadErr, setDownloadErr] = useState<string | null>(null);
+  const [analyticsErr, setAnalyticsErr] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAdminDashboard()
       .then(setData)
       .catch((e) => setErr(e instanceof Error ? e.message : "Failed"));
   }, []);
+
+  useEffect(() => {
+    setAnalyticsErr(null);
+    fetchAdminReportAnalytics(period)
+      .then(setAnalytics)
+      .catch((e) => setAnalyticsErr(e instanceof Error ? e.message : "Failed to load analytics"));
+  }, [period]);
 
   async function onDownload(type: AdminReportType) {
     setDownloadErr(null);
@@ -113,6 +131,85 @@ export default function AdminReportsPage() {
     data.ordersCount.thisMonth > 0
       ? data.revenueInPaise.thisMonth / data.ordersCount.thisMonth
       : 0;
+
+  function formatWhen(iso: string) {
+    return new Date(iso).toLocaleString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
+
+  function sectionTitle(title: string, meta?: string) {
+    return (
+      <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+        <h2 style={{ fontSize: "15px", fontWeight: 700, color: "#2c2420" }}>{title}</h2>
+        {meta ? <p style={{ fontSize: "12px", color: "#8a7060" }}>{meta}</p> : null}
+      </div>
+    );
+  }
+
+  function renderMiniTable(
+    headers: string[],
+    rows: React.ReactNode[][],
+    empty: string
+  ) {
+    return (
+      <div style={{ overflowX: "auto", marginTop: "14px" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+          <thead>
+            <tr>
+              {headers.map((h) => (
+                <th
+                  key={h}
+                  style={{
+                    textAlign: "left",
+                    padding: "10px 12px",
+                    color: "#8a7060",
+                    fontSize: "11px",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    borderBottom: "1px solid #eee6dc"
+                  }}
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={headers.length} style={{ padding: "16px 12px", color: "#8a7060" }}>
+                  {empty}
+                </td>
+              </tr>
+            ) : (
+              rows.map((row, i) => (
+                <tr key={i}>
+                  {row.map((cell, j) => (
+                    <td
+                      key={j}
+                      style={{
+                        padding: "10px 12px",
+                        borderBottom: "1px solid #f4efe8",
+                        verticalAlign: "top",
+                        color: "#2c2420"
+                      }}
+                    >
+                      {cell}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -215,6 +312,113 @@ export default function AdminReportsPage() {
             </div>
           ))}
         </div>
+      </div>
+
+      <div style={card}>
+        {sectionTitle(
+          "Order analytics",
+          analytics
+            ? `${analytics.totals.orders} orders · ${analytics.totals.units} units · ${period.replace("_", " ")}`
+            : undefined
+        )}
+        <p style={{ fontSize: "12px", color: "#8a7060", marginTop: "4px" }}>
+          Top 10 lists are calculated from paid / processing / shipped / delivered orders in the selected period.
+        </p>
+        {analyticsErr ? (
+          <p style={{ color: "#dc2626", fontSize: "13px", marginTop: "10px" }}>{analyticsErr}</p>
+        ) : null}
+        {!analytics ? (
+          <p style={{ color: "#8a7060", fontSize: "13px", marginTop: "12px" }}>Loading analytics...</p>
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
+              gap: "16px",
+              marginTop: "16px"
+            }}
+          >
+            <div
+              style={{ border: "1px solid #f0ece6", borderRadius: "10px", padding: "14px 16px", background: "#faf8f5" }}
+            >
+              {sectionTitle("Top 10 items sold")}
+              {renderMiniTable(
+                ["Item", "SKU", "Units", "Revenue"],
+                analytics.topItems.map((item) => [
+                  <div key={`${item.sku}-name`}>
+                    <div style={{ fontWeight: 600 }}>{item.productName}</div>
+                    {item.slug ? <div style={{ color: "#8a7060", fontSize: "12px" }}>{item.slug}</div> : null}
+                  </div>,
+                  item.sku,
+                  String(item.unitsSold),
+                  formatINRFromPaise(Math.round(item.revenueInr * 100))
+                ]),
+                "No order items in this period."
+              )}
+            </div>
+
+            <div
+              style={{ border: "1px solid #f0ece6", borderRadius: "10px", padding: "14px 16px", background: "#faf8f5" }}
+            >
+              {sectionTitle("Top 10 repeat customers")}
+              {renderMiniTable(
+                ["Customer", "Orders", "City", "Spend"],
+                analytics.repeatCustomers.map((customer) => [
+                  <div key={`${customer.email}-name`}>
+                    <div style={{ fontWeight: 600 }}>{customer.name}</div>
+                    <div style={{ color: "#8a7060", fontSize: "12px" }}>{customer.email}</div>
+                  </div>,
+                  String(customer.orderCount),
+                  customer.city || "—",
+                  formatINRFromPaise(Math.round(customer.totalSpendInr * 100))
+                ]),
+                "No repeat customers in this period."
+              )}
+            </div>
+
+            <div
+              style={{ border: "1px solid #f0ece6", borderRadius: "10px", padding: "14px 16px", background: "#faf8f5" }}
+            >
+              {sectionTitle("Top places orders are placed")}
+              {renderMiniTable(
+                ["Place", "Orders", "Revenue"],
+                analytics.topPlaces.map((place) => [
+                  <div key={`${place.city}-${place.state}-${place.country}`}>
+                    <div style={{ fontWeight: 600 }}>{place.city}</div>
+                    <div style={{ color: "#8a7060", fontSize: "12px" }}>
+                      {[place.state, place.country].filter(Boolean).join(", ") || "—"}
+                    </div>
+                  </div>,
+                  String(place.orderCount),
+                  formatINRFromPaise(Math.round(place.totalInr * 100))
+                ]),
+                "No place data in this period."
+              )}
+            </div>
+
+            <div
+              style={{ border: "1px solid #f0ece6", borderRadius: "10px", padding: "14px 16px", background: "#faf8f5" }}
+            >
+              {sectionTitle("Top 10 highest-value orders")}
+              {renderMiniTable(
+                ["Order", "Customer", "Status", "Total"],
+                analytics.highestOrders.map((order) => [
+                  <div key={order.orderNumber}>
+                    <div style={{ fontWeight: 600 }}>{order.orderNumber}</div>
+                    <div style={{ color: "#8a7060", fontSize: "12px" }}>{formatWhen(order.placedAt)}</div>
+                  </div>,
+                  <div key={`${order.orderNumber}-customer`}>
+                    <div>{order.customerName}</div>
+                    <div style={{ color: "#8a7060", fontSize: "12px" }}>{order.email}</div>
+                  </div>,
+                  order.status,
+                  formatINRFromPaise(order.totalInPaise)
+                ]),
+                "No orders in this period."
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <div

@@ -6,20 +6,20 @@ const withPWA = require("next-pwa")({
 });
 
 /** @type {import('next').NextConfig} */
-// On Vercel, proxy /api → EC2 Express. Locally, default to localhost unless BACKEND_PROXY_URL is set.
+// On Vercel, proxy /api → Lightsail Express (nginx :80). Override with BACKEND_PROXY_URL.
 const backendBase =
   process.env.BACKEND_PROXY_URL ||
   process.env.INTERNAL_API_URL ||
-  (process.env.VERCEL ? "http://13.206.192.106:5000" : "http://127.0.0.1:5000");
+  (process.env.VERCEL ? "http://13.204.112.165" : "http://127.0.0.1:5000");
 
 const nextConfig = {
   reactStrictMode: true,
   async rewrites() {
     const dest = String(backendBase).replace(/\/$/, "");
     return [
-      // Geo zone runs on Vercel edge (uses request.geo); must not proxy to EC2.
+      // Geo zone runs on Vercel edge (uses request.geo); must not proxy to the API host.
       // Next.js route handlers win over rewrites, but this documents intent.
-      // Zoho Books — explicit proxy to EC2 (auth handled per-route on Express).
+      // Zoho Books — explicit proxy to API host (auth handled per-route on Express).
       {
         source: "/api/zoho/:path*",
         destination: `${dest}/api/zoho/:path*`,

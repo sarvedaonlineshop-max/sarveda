@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import type { NextFunction, Request, Response } from "express";
-import { PaymentProvider, PaymentStatus, Role } from "@prisma/client";
+import { OrderStatus, PaymentProvider, PaymentStatus, Role } from "@prisma/client";
 import { z } from "zod";
 
 import { prisma } from "../../config/db";
@@ -25,6 +25,8 @@ const reportTypeSchema = z.enum([
 
 export type ReportPeriod = z.infer<typeof periodSchema>;
 export type ReportType = z.infer<typeof reportTypeSchema>;
+
+const REPORT_ORDER_STATUSES: OrderStatus[] = ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"];
 
 /** Indian financial year: 1 Apr → 31 Mar (Asia/Kolkata). */
 export function resolveReportRange(period: ReportPeriod, now = new Date()): { from: Date; to: Date; label: string } {
@@ -82,7 +84,7 @@ async function salesRows(from: Date, to: Date) {
     where: {
       deletedAt: null,
       placedAt: { gte: from, lt: to },
-      status: { in: ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"] }
+      status: { in: REPORT_ORDER_STATUSES }
     },
     orderBy: { placedAt: "desc" },
     take: 8000,
@@ -136,7 +138,7 @@ async function productRows(from: Date, to: Date) {
       order: {
         deletedAt: null,
         placedAt: { gte: from, lt: to },
-        status: { in: ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"] }
+        status: { in: REPORT_ORDER_STATUSES }
       }
     },
     take: 20000,
@@ -192,7 +194,7 @@ async function customerRows(from: Date, to: Date) {
             some: {
               deletedAt: null,
               placedAt: { gte: from, lt: to },
-              status: { in: ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"] }
+              status: { in: REPORT_ORDER_STATUSES }
             }
           }
         }
@@ -208,7 +210,7 @@ async function customerRows(from: Date, to: Date) {
       orders: {
         where: {
           deletedAt: null,
-          status: { in: ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"] }
+          status: { in: REPORT_ORDER_STATUSES }
         },
         select: {
           reportingTotalInInrPaise: true,
@@ -267,7 +269,7 @@ async function vendorRows(from: Date, to: Date) {
       order: {
         deletedAt: null,
         placedAt: { gte: from, lt: to },
-        status: { in: ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"] }
+        status: { in: REPORT_ORDER_STATUSES }
       }
     },
     select: {
@@ -348,6 +350,201 @@ async function gatewayRows(from: Date, to: Date, provider?: PaymentProvider) {
     createdAt: p.createdAt.toISOString(),
     reportingInr: paiseToInr(p.order.reportingTotalInInrPaise ?? p.amountInPaise)
   }));
+}
+
+export async function adminReportAnalytics(req: Request, res: Response, next: NextFunction) {
+  try {
+    const parsed = z.object({ period: periodSchema.default("monthly") }).safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({
+        success: false,
+        error: "period is invalid",
+        code: "VALIDATION_ERROR"
+      });
+      return;
+    }
+
+    const { period } = parsed.data;
+    const { from, to, label } = resolveReportRange(period);
+
+    const [items, orders] = await Promise.all([
+      prisma.orderItem.findMany({
+        where: {
+          order: {
+            deletedAt: null,
+            placedAt: { gte: from, lt: to },
+            status: { in: REPORT_ORDER_STATUSES }
+          }
+        },
+        select: {
+          skuSnapshot: true,
+          nameSnapshot: true,
+          qtyOrdered: true,
+          lineTotalInPaise: true,
+          variant: {
+            select: {
+              sku: true,
+              productRel: { select: { name: true, slug: true } }
+            }
+          }
+        }
+      }),
+      prisma.order.findMany({
+        where: {
+          deletedAt: null,
+          placedAt: { gte: from, lt: to },
+          status: { in: REPORT_ORDER_STATUSES }
+        },
+        orderBy: { placedAt: "desc" },
+        select: {
+          id: true,
+          orderNumber: true,
+          email: true,
+          phone: true,
+          status: true,
+          currency: true,
+          grandTotalInPaise: true,
+          reportingTotalInInrPaise: true,
+          placedAt: true,
+          createdAt: true,
+          addresses: {
+            select: {
+              type: true,
+              fullName: true,
+              city: true,
+              state: true,
+              country: true
+            }
+          }
+        }
+      })
+    ]);
+
+    const topItemsMap = new Map<
+      string,
+      { sku: string; productName: string; slug: string; unitsSold: number; revenueInPaise: number }
+    >();
+    for (const it of items) {
+      const sku = it.variant?.sku || it.skuSnapshot || "unknown";
+      const row = topItemsMap.get(sku) ?? {
+        sku,
+        productName: it.variant?.productRel.name || it.nameSnapshot,
+        slug: it.variant?.productRel.slug ?? "",
+        unitsSold: 0,
+        revenueInPaise: 0
+      };
+      row.unitsSold += it.qtyOrdered;
+      row.revenueInPaise += it.lineTotalInPaise;
+      topItemsMap.set(sku, row);
+    }
+    const topItems = [...topItemsMap.values()]
+      .sort((a, b) => b.unitsSold - a.unitsSold || b.revenueInPaise - a.revenueInPaise)
+      .slice(0, 10)
+      .map((r) => ({ ...r, revenueInr: paiseToInr(r.revenueInPaise) }));
+
+    const repeatCustomersMap = new Map<
+      string,
+      {
+        email: string;
+        name: string;
+        city: string;
+        orderCount: number;
+        totalSpendInPaise: number;
+        lastOrderedAt: string;
+      }
+    >();
+    const topPlacesMap = new Map<
+      string,
+      { city: string; state: string; country: string; orderCount: number; totalInPaise: number }
+    >();
+
+    for (const order of orders) {
+      const shipping =
+        order.addresses.find((a) => a.type === "SHIPPING") ??
+        order.addresses.find((a) => a.type === "BILLING") ??
+        null;
+      const totalInPaise = order.reportingTotalInInrPaise ?? order.grandTotalInPaise;
+      const email = order.email.trim().toLowerCase();
+      const customer = repeatCustomersMap.get(email) ?? {
+        email,
+        name: shipping?.fullName?.trim() || email,
+        city: shipping?.city?.trim() || "",
+        orderCount: 0,
+        totalSpendInPaise: 0,
+        lastOrderedAt: (order.placedAt ?? order.createdAt).toISOString()
+      };
+      customer.orderCount += 1;
+      customer.totalSpendInPaise += totalInPaise;
+      customer.lastOrderedAt = (order.placedAt ?? order.createdAt).toISOString();
+      if (!customer.name && shipping?.fullName?.trim()) customer.name = shipping.fullName.trim();
+      if (!customer.city && shipping?.city?.trim()) customer.city = shipping.city.trim();
+      repeatCustomersMap.set(email, customer);
+
+      const city = shipping?.city?.trim() || "Unknown";
+      const state = shipping?.state?.trim() || "";
+      const country = shipping?.country?.trim() || "";
+      const key = `${city}|${state}|${country}`.toLowerCase();
+      const place = topPlacesMap.get(key) ?? {
+        city,
+        state,
+        country,
+        orderCount: 0,
+        totalInPaise: 0
+      };
+      place.orderCount += 1;
+      place.totalInPaise += totalInPaise;
+      topPlacesMap.set(key, place);
+    }
+
+    const repeatCustomers = [...repeatCustomersMap.values()]
+      .filter((c) => c.orderCount > 1)
+      .sort((a, b) => b.orderCount - a.orderCount || b.totalSpendInPaise - a.totalSpendInPaise)
+      .slice(0, 10)
+      .map((c) => ({ ...c, totalSpendInr: paiseToInr(c.totalSpendInPaise) }));
+
+    const topPlaces = [...topPlacesMap.values()]
+      .sort((a, b) => b.orderCount - a.orderCount || b.totalInPaise - a.totalInPaise)
+      .slice(0, 10)
+      .map((p) => ({ ...p, totalInr: paiseToInr(p.totalInPaise) }));
+
+    const highestOrders = orders
+      .map((o) => {
+        const shipping =
+          o.addresses.find((a) => a.type === "SHIPPING") ??
+          o.addresses.find((a) => a.type === "BILLING") ??
+          null;
+        const totalInPaise = o.reportingTotalInInrPaise ?? o.grandTotalInPaise;
+        return {
+          id: o.id,
+          orderNumber: o.orderNumber,
+          email: o.email,
+          customerName: shipping?.fullName?.trim() || o.email,
+          city: shipping?.city?.trim() || "",
+          status: o.status,
+          placedAt: (o.placedAt ?? o.createdAt).toISOString(),
+          totalInPaise,
+          totalInr: paiseToInr(totalInPaise)
+        };
+      })
+      .sort((a, b) => b.totalInPaise - a.totalInPaise)
+      .slice(0, 10);
+
+    res.json({
+      success: true,
+      data: {
+        period,
+        label,
+        range: { from: from.toISOString(), to: to.toISOString() },
+        totals: { orders: orders.length, units: items.reduce((sum, it) => sum + it.qtyOrdered, 0) },
+        topItems,
+        repeatCustomers,
+        topPlaces,
+        highestOrders
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
 }
 
 export async function exportAdminReport(req: Request, res: Response, next: NextFunction) {

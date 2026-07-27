@@ -11,6 +11,7 @@ import { ENQUIRY_SOURCE_LABELS, type EnquirySource } from "@/lib/enquiry-subject
 
 const SOURCE_FILTERS: Array<{ value: string; label: string }> = [
   { value: "", label: "All" },
+  { value: "WHATSAPP", label: "WhatsApp" },
   { value: "CONTACT", label: "Contact" },
   { value: "CORPORATE", label: "Corporate" },
   { value: "COURSE", label: "Course" },
@@ -138,7 +139,11 @@ export default function AdminChatsPage() {
                       <span className="font-semibold text-stone-900 dark:text-stone-100">
                         {thread.customerName}
                       </span>
-                      <span className="text-xs text-stone-500">{thread.customerEmail}</span>
+                      <span className="text-xs text-stone-500">
+                        {thread.source === "WHATSAPP"
+                          ? thread.customerPhone ?? ""
+                          : thread.customerEmail}
+                      </span>
                       <span className="rounded-md bg-stone-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-stone-600 dark:bg-stone-800 dark:text-stone-300">
                         {ENQUIRY_SOURCE_LABELS[thread.source as EnquirySource] ?? thread.source}
                       </span>

@@ -1,13 +1,18 @@
 # SARVEDA — Cursor Project Memory File
 # Read this FULLY before every single response.
 # This is the complete source of truth for the entire project.
-# Last updated: Jul 23, 2026 (WP malware incident note + security hardening)
+# Last updated: Jul 26, 2026 (Lightsail DB cutover + go-live credential reminder)
 
 ---
 
 ## 0. CURRENT FOCUS & NEW MACHINE HANDOFF
 
 **Read this section first on every new machine or new Cursor chat.**
+
+### REMINDER — production go-live credential rotation (~2026-08-05)
+- **Before cutting DNS to `sarveda.com`**, run the full checklist: [`docs/PRODUCTION-GO-LIVE-CREDENTIAL-ROTATION.md`](docs/PRODUCTION-GO-LIVE-CREDENTIAL-ROTATION.md)
+- Rotate DB password, `JWT_SECRET`, payments, AWS keys, OAuth, etc. Do **not** paste secrets into chat.
+- Staging infra (Jul 26, 2026): Vercel frontend + Lightsail API (`13.204.112.165`) + **Lightsail Postgres** (not RDS). S3 `sarveda-media` stays.
 
 ### Security note (Jul 23, 2026) — live WordPress was hacked
 - Live `sarveda.com` on DigitalOcean WordPress was hit by **automated malware** (Googlebot cloaking / spam). Root cause: web-layer compromise (`www-data`), **not** cracked DO SSH password. Infected `index.php` + fake plugin/shells. Quarantined; clean `index.php` restored; Googlebot title back to real Store.
