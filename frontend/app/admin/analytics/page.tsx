@@ -73,15 +73,11 @@ function BarChart({
   );
 }
 
-function MiniTable({
-  headers,
-  rows,
-  empty
-}: {
-  headers: string[];
-  rows: React.ReactNode[][];
-  empty: string;
-}) {
+function renderMiniTable(
+  headers: string[],
+  rows: React.ReactNode[][],
+  empty: string
+) {
   return (
     <div style={{ overflowX: "auto" }}>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
@@ -200,7 +196,7 @@ export default function AdminAnalyticsPage() {
   const rangeLabel = useMemo(() => {
     if (!data) return "";
     const a = data.meta.appliedRange;
-    return `${a.from} → ${a.to}`;
+    return `${a.from} to ${a.to}`;
   }, [data]);
 
   if (err) return <p style={{ color: "#dc2626" }}>{err}</p>;
@@ -401,35 +397,35 @@ export default function AdminAnalyticsPage() {
                   ))}
                 </div>
                 {productSub === "most"
-                  ? MiniTable(
+                  ? renderMiniTable(
                       ["#", "Item", "SKU", "Units", "Revenue"],
                       productRows(data.products.mostSold),
                       "No products sold in this range."
                     )
                   : null}
                 {productSub === "least"
-                  ? MiniTable(
+                  ? renderMiniTable(
                       ["#", "Item", "SKU", "Units", "Revenue"],
                       productRows(data.products.leastSold),
                       "No products sold in this range."
                     )
                   : null}
                 {productSub === "po"
-                  ? MiniTable(
+                  ? renderMiniTable(
                       ["#", "Item", "SKU", "Units", "Revenue"],
                       productRows(data.products.purchaseOrderNeeded),
                       "No PO candidates (need ≥5 units in range)."
                     )
                   : null}
                 {productSub === "drop"
-                  ? MiniTable(
+                  ? renderMiniTable(
                       ["#", "Item", "SKU", "Units", "Revenue"],
                       productRows(data.products.dropCandidates),
                       "No drop candidates (1–2 units) in range."
                     )
                   : null}
                 {productSub === "places"
-                  ? MiniTable(
+                  ? renderMiniTable(
                       ["Place", "Orders", "Revenue"],
                       data.products.topPlaces.map((p) => [
                         `${p.city}${p.state ? `, ${p.state}` : ""}${p.country ? `, ${p.country}` : ""}`,
@@ -440,7 +436,7 @@ export default function AdminAnalyticsPage() {
                     )
                   : null}
                 {productSub === "orders"
-                  ? MiniTable(
+                  ? renderMiniTable(
                       ["Order", "Customer", "City", "Total"],
                       data.products.highestOrders.map((o) => [
                         o.orderNumber,
@@ -455,7 +451,7 @@ export default function AdminAnalyticsPage() {
                     )
                   : null}
                 {productSub === "repeat"
-                  ? MiniTable(
+                  ? renderMiniTable(
                       ["Customer", "Orders", "City", "Spend"],
                       data.products.repeatCustomers.map((c) => [
                         <div key={c.email}>
@@ -476,7 +472,7 @@ export default function AdminAnalyticsPage() {
               <div style={{ display: "grid", gap: "20px" }}>
                 <div>
                   <h3 style={{ fontSize: "14px", fontWeight: 700, marginBottom: "10px" }}>Orders by status</h3>
-                  <MiniTable(
+                  {renderMiniTable(
                     ["Status", "Count"],
                     Object.entries(data.orders.byStatus)
                       .sort((a, b) => b[1] - a[1])
@@ -490,7 +486,7 @@ export default function AdminAnalyticsPage() {
                 </div>
                 <div>
                   <h3 style={{ fontSize: "14px", fontWeight: 700, marginBottom: "10px" }}>Top places</h3>
-                  <MiniTable(
+                  {renderMiniTable(
                     ["Place", "Orders", "Revenue"],
                     data.orders.topPlaces.map((p) => [
                       `${p.city}${p.state ? `, ${p.state}` : ""}`,
@@ -502,7 +498,7 @@ export default function AdminAnalyticsPage() {
                 </div>
                 <div>
                   <h3 style={{ fontSize: "14px", fontWeight: 700, marginBottom: "10px" }}>Highest orders</h3>
-                  <MiniTable(
+                  {renderMiniTable(
                     ["Order", "Customer", "Total"],
                     data.orders.highestOrders.map((o) => [o.orderNumber, o.customerName, money(o.totalInr)]),
                     "No orders."
@@ -510,7 +506,7 @@ export default function AdminAnalyticsPage() {
                 </div>
                 <div>
                   <h3 style={{ fontSize: "14px", fontWeight: 700, marginBottom: "10px" }}>Repeat customers</h3>
-                  <MiniTable(
+                  {renderMiniTable(
                     ["Customer", "Orders", "Spend"],
                     data.orders.repeatCustomers.map((c) => [c.name, String(c.orderCount), money(c.totalSpendInr)]),
                     "No repeat customers."
@@ -547,7 +543,7 @@ export default function AdminAnalyticsPage() {
                 </div>
                 <div>
                   <h3 style={{ fontSize: "14px", fontWeight: 700, marginBottom: "10px" }}>Items returned</h3>
-                  <MiniTable(
+                  {renderMiniTable(
                     ["Item", "SKU", "Units", "Value"],
                     data.returns.returnedItems
                       .slice(0, 30)
@@ -559,7 +555,7 @@ export default function AdminAnalyticsPage() {
                   <h3 style={{ fontSize: "14px", fontWeight: 700, marginBottom: "10px" }}>
                     Returns by customer
                   </h3>
-                  <MiniTable(
+                  {renderMiniTable(
                     ["Customer", "Email", "Units", "Lines"],
                     data.returns.returnsByCustomer.map((c) => [
                       c.customerName,
@@ -581,7 +577,7 @@ export default function AdminAnalyticsPage() {
                 </div>
                 <div>
                   <h3 style={{ fontSize: "14px", fontWeight: 700, marginBottom: "10px" }}>Refund reasons</h3>
-                  <MiniTable(
+                  {renderMiniTable(
                     ["Reason", "Count"],
                     data.refunds.refundReasons.map((r) => [r.reason, String(r.count)]),
                     "No refund reasons."
@@ -589,7 +585,7 @@ export default function AdminAnalyticsPage() {
                 </div>
                 <div>
                   <h3 style={{ fontSize: "14px", fontWeight: 700, marginBottom: "10px" }}>Refunds by customer</h3>
-                  <MiniTable(
+                  {renderMiniTable(
                     ["Customer", "Count", "Amount"],
                     data.refunds.refundsByCustomer.map((c) => [
                       c.customerName,
@@ -601,7 +597,7 @@ export default function AdminAnalyticsPage() {
                 </div>
                 <div>
                   <h3 style={{ fontSize: "14px", fontWeight: 700, marginBottom: "10px" }}>Refund list</h3>
-                  <MiniTable(
+                  {renderMiniTable(
                     ["Date", "Order", "Customer", "Amount", "Reason"],
                     data.refunds.list.map((r) => [
                       r.date,
@@ -626,7 +622,7 @@ export default function AdminAnalyticsPage() {
                   <h3 style={{ fontSize: "14px", fontWeight: 700, marginBottom: "10px" }}>
                     Most visited (last active)
                   </h3>
-                  <MiniTable(
+                  {renderMiniTable(
                     ["Customer", "Email", "Last active", "City"],
                     data.customers.mostVisited.map((c) => [
                       c.name || "—",
@@ -641,7 +637,7 @@ export default function AdminAnalyticsPage() {
                   <h3 style={{ fontSize: "14px", fontWeight: 700, marginBottom: "10px" }}>
                     Most bought / repeating
                   </h3>
-                  <MiniTable(
+                  {renderMiniTable(
                     ["Customer", "Orders", "Spend", "Last order"],
                     data.customers.mostBought.map((c) => [
                       <div key={c.email}>
