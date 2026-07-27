@@ -89,9 +89,9 @@ export default function AdminReportsPage() {
       <div>
         <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#2c2420" }}>Reports</h1>
         <p style={{ fontSize: "13px", color: "#8a7060", marginTop: "4px" }}>
-          Excel exports only. Product sales analytics moved to{" "}
-          <a href="/admin/analytics" style={{ color: "#1e3a2f", fontWeight: 600 }}>
-            Analytics
+          Excel exports only. Sales analytics live on the{" "}
+          <a href="/admin" style={{ color: "#1e3a2f", fontWeight: 600 }}>
+            Dashboard
           </a>
           .
         </p>

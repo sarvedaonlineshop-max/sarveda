@@ -132,20 +132,15 @@ export type AdminWooAnalyticsOverview = {
 export type AdminWooProductAnalytics = {
   meta: AdminWooAnalyticsMeta;
   overview: AdminWooAnalyticsOverview;
-  tab: "products" | "orders" | "returns" | "refunds" | "customers";
+  tab: "products" | "orders" | "places" | "returns" | "refunds" | "customers";
   products?: {
     mostSold: WooDumpProductRow[];
     leastSold: WooDumpProductRow[];
     purchaseOrderNeeded: WooDumpProductRow[];
     dropCandidates: WooDumpProductRow[];
-    topPlaces: Array<{
-      city: string;
-      state: string;
-      country: string;
-      orderCount: number;
-      totalInr: number;
-      totalInPaise: number;
-    }>;
+  };
+  orders?: {
+    byStatus: Record<string, number>;
     highestOrders: Array<{
       orderNumber: string;
       email: string;
@@ -156,22 +151,17 @@ export type AdminWooProductAnalytics = {
       totalInr: number;
       totalInPaise: number;
     }>;
-    repeatCustomers: Array<{
-      email: string;
-      name: string;
-      city: string;
-      orderCount: number;
-      totalSpendInr: number;
-      totalSpendInPaise: number;
-      lastOrderedAt: string;
-    }>;
-  };
-  orders?: {
-    byStatus: Record<string, number>;
-    highestOrders: NonNullable<AdminWooProductAnalytics["products"]>["highestOrders"];
-    topPlaces: NonNullable<AdminWooProductAnalytics["products"]>["topPlaces"];
-    repeatCustomers: NonNullable<AdminWooProductAnalytics["products"]>["repeatCustomers"];
     orderTrend: Array<{ month: string; orders: number; revenueInr: number }>;
+  };
+  places?: {
+    topPlaces: Array<{
+      city: string;
+      state: string;
+      country: string;
+      orderCount: number;
+      totalInr: number;
+      totalInPaise: number;
+    }>;
   };
   returns?: {
     returnedItems: WooDumpProductRow[];
@@ -219,7 +209,15 @@ export type AdminWooProductAnalytics = {
       totalSpendInr: number;
       lastOrderedAt: string;
     }>;
-    repeatCustomers: NonNullable<AdminWooProductAnalytics["products"]>["repeatCustomers"];
+    repeatCustomers: Array<{
+      email: string;
+      name: string;
+      city: string;
+      orderCount: number;
+      totalSpendInr: number;
+      totalSpendInPaise: number;
+      lastOrderedAt: string;
+    }>;
     newCustomers: number;
     note: string;
   };

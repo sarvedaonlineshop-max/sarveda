@@ -317,6 +317,7 @@ export async function wooProductAnalytics(req: Request, res: Response, next: Nex
     const tabRaw = typeof req.query.tab === "string" ? req.query.tab : "products";
     const tab =
       tabRaw === "orders" ||
+      tabRaw === "places" ||
       tabRaw === "returns" ||
       tabRaw === "refunds" ||
       tabRaw === "customers" ||

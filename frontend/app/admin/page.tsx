@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { AdminDashboardAnalytics } from "@/components/admin/AdminDashboardAnalytics";
 import type { DashboardData } from "@/lib/admin-api";
 import { fetchAdminDashboard } from "@/lib/admin-api";
 import { formatINRFromPaise } from "@/lib/money";
@@ -104,9 +105,9 @@ export default function AdminDashboardPage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       <div>
-        <h2 style={{ fontSize: "22px", fontWeight: 700, color: "#2c2420" }}>Welcome back</h2>
+        <h2 style={{ fontSize: "22px", fontWeight: 700, color: "#2c2420" }}>Dashboard</h2>
         <p style={{ fontSize: "13px", color: "#8a7060", marginTop: "4px" }}>
-          {"Here's what's happening with Sarveda today."}
+          Store ops snapshot plus WooCommerce dump analytics for the selected date range.
         </p>
       </div>
 
@@ -142,6 +143,13 @@ export default function AdminDashboardPage() {
             <p style={{ fontSize: "1.4rem", fontWeight: 700, color: "#2c2420" }}>{item.value}</p>
           </div>
         ))}
+      </div>
+
+      <div>
+        <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#2c2420", marginBottom: "12px" }}>
+          Analytics
+        </h3>
+        <AdminDashboardAnalytics />
       </div>
 
       <div style={cardStyle}>
@@ -226,153 +234,6 @@ export default function AdminDashboardPage() {
             ))}
           </div>
         )}
-      </div>
-
-      <div
-        style={{
-          ...cardStyle,
-          background: "linear-gradient(135deg, #f9f7f0, #fffbf5)",
-          borderColor: "#e0d4b0"
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "12px",
-            flexWrap: "wrap",
-            marginBottom: "14px"
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#2c2420" }}>Woo product analytics</h3>
-            <span
-              style={{
-                background: "#fef3c7",
-                color: "#92400e",
-                fontSize: "10px",
-                fontWeight: 700,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                padding: "3px 8px",
-                borderRadius: "999px"
-              }}
-            >
-              {data.insights.periodLabel || "Dump snapshot"}
-            </span>
-          </div>
-          <Link
-            href="/admin/analytics"
-            style={{
-              fontSize: "12px",
-              fontWeight: 700,
-              color: "#fffbf5",
-              background: "#1e3a2f",
-              textDecoration: "none",
-              padding: "8px 14px",
-              borderRadius: "8px"
-            }}
-          >
-            Open analytics
-          </Link>
-        </div>
-        <ul style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "16px" }}>
-          {data.insights.tips.map((t) => (
-            <li key={t} style={{ display: "flex", gap: "10px", fontSize: "13px", color: "#4a3f38" }}>
-              <span style={{ color: "#c8960a", flexShrink: 0 }}>✦</span>
-              {t}
-            </li>
-          ))}
-        </ul>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-            gap: "12px",
-            marginBottom: "16px"
-          }}
-        >
-          {[
-            { label: "Raise PO", value: data.insights.purchaseOrderNeededCount ?? 0 },
-            { label: "Drop candidates", value: data.insights.dropCandidatesCount ?? 0 },
-            { label: "Least sold (month)", value: data.insights.leastSoldThisMonthCount ?? 0 }
-          ].map((c) => (
-            <div
-              key={c.label}
-              style={{
-                border: "1px solid #f0ece6",
-                borderRadius: "10px",
-                padding: "12px 14px",
-                background: "#fff"
-              }}
-            >
-              <p
-                style={{
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  color: "#8a7060",
-                  marginBottom: "6px"
-                }}
-              >
-                {c.label}
-              </p>
-              <p style={{ fontSize: "1.35rem", fontWeight: 700, color: "#2c2420" }}>{c.value}</p>
-            </div>
-          ))}
-        </div>
-        <div>
-          <p
-            style={{
-              fontSize: "11px",
-              fontWeight: 700,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              color: "#8a7060",
-              marginBottom: "8px"
-            }}
-          >
-            Most sold this month (top 5)
-          </p>
-          {(data.insights.mostSoldThisMonthTop5 ?? []).length === 0 ? (
-            <p style={{ fontSize: "12px", color: "#b8a898" }}>No dump data yet</p>
-          ) : (
-            <ul style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              {(data.insights.mostSoldThisMonthTop5 ?? []).map((p) => (
-                <li
-                  key={`${p.sku}-${p.name}`}
-                  style={{ display: "flex", justifyContent: "space-between", gap: "8px", fontSize: "13px" }}
-                >
-                  <span
-                    style={{
-                      color: "#4a3f38",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap"
-                    }}
-                  >
-                    {p.name}
-                    {p.sku ? (
-                      <span style={{ color: "#8a7060", fontSize: "12px" }}> · {p.sku}</span>
-                    ) : null}
-                  </span>
-                  <span
-                    style={{
-                      fontFamily: "monospace",
-                      fontSize: "12px",
-                      color: "#8a7060",
-                      flexShrink: 0
-                    }}
-                  >
-                    {p.unitsSold}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
       </div>
 
       <div style={cardStyle}>
