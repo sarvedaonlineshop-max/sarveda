@@ -27,9 +27,9 @@ import { mirrorStockToZohoForSkus } from "../zoho/zoho-items";
 import type { ZohoItemAuditRow } from "../zoho/zoho-sync-types";
 import { shopCatalogProductWhere, shopInventoryWhere } from "../../utils/shop-catalog";
 import {
-  dashboardInsightsFromWooDump,
-  loadWooDumpAnalytics
-} from "./woo-dump-analytics";
+  buildWooCommerceAnalytics,
+  dashboardInsightsFromWarehouse
+} from "./woo-commerce-analytics";
 
 const revenueStatuses: OrderStatus[] = [
   "PAID",
@@ -255,7 +255,7 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
     const revenueByDayLast30 = buildDailySeriesKolkata(chart30Start, 30, ordersForChart30);
     const revenueByMonthLast12 = buildMonthlySeriesKolkata(now, 12, ordersForChart12m);
 
-    const wooInsights = dashboardInsightsFromWooDump();
+    const wooInsights = dashboardInsightsFromWarehouse();
     if (lowStock.length) {
       wooInsights.tips.unshift(
         `${lowStock.length} active SKU${lowStock.length === 1 ? "" : "s"} ${lowStock.length === 1 ? "is" : "are"} at or below the low-stock threshold — prioritize replenishment.`
@@ -309,10 +309,24 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
   }
 }
 
-/** Woo dump product analytics (no DB import) — most/least sold, PO, drop. */
-export async function wooProductAnalytics(_req: Request, res: Response, next: NextFunction) {
+/** Woo dump commerce analytics (filterable; no DB import). */
+export async function wooProductAnalytics(req: Request, res: Response, next: NextFunction) {
   try {
-    res.json({ success: true, data: loadWooDumpAnalytics() });
+    const from = typeof req.query.from === "string" ? req.query.from : undefined;
+    const to = typeof req.query.to === "string" ? req.query.to : undefined;
+    const tabRaw = typeof req.query.tab === "string" ? req.query.tab : "products";
+    const tab =
+      tabRaw === "orders" ||
+      tabRaw === "returns" ||
+      tabRaw === "refunds" ||
+      tabRaw === "customers" ||
+      tabRaw === "products"
+        ? tabRaw
+        : "products";
+    res.json({
+      success: true,
+      data: buildWooCommerceAnalytics({ from, to, tab })
+    });
   } catch (err) {
     next(err);
   }

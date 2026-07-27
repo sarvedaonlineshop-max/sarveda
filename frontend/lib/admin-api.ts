@@ -95,41 +95,149 @@ export function fetchAdminDashboard() {
 export type WooDumpProductRow = {
   sku: string;
   productName: string;
-  slug: string;
+  slug?: string;
   unitsSold: number;
   revenueInr: number;
   revenueInPaise: number;
+  orderCount?: number;
   lineRows?: number;
 };
 
-export type AdminWooProductAnalytics = {
+export type AdminWooAnalyticsMeta = {
   source: string;
   dumpFile: string;
-  period: { label: string; from: string; to: string; timezoneNote?: string };
   generatedAt: string;
+  availableRange: { minDate: string; maxDate: string };
+  appliedRange: { from: string; to: string };
   note: string;
-  rules: {
-    mostSold: string;
-    leastSold: string;
-    purchaseOrderNeeded: string;
-    dropCandidates: string;
+};
+
+export type AdminWooAnalyticsOverview = {
+  kpis: {
+    orders: number;
+    revenueInr: number;
+    aovInr: number;
+    units: number;
+    refundAmountInr: number;
+    refundCount: number;
+    returnUnits: number;
+    repeatCustomerCount: number;
+    uniqueCustomers: number;
+    newCustomers: number;
   };
-  mostSoldThisMonth: WooDumpProductRow[];
-  leastSoldThisMonth: WooDumpProductRow[];
-  purchaseOrderNeeded: WooDumpProductRow[];
-  dropCandidates: WooDumpProductRow[];
-  allTimeTopItems: WooDumpProductRow[];
-  counts: {
-    mostSoldThisMonth: number;
-    leastSoldThisMonth: number;
-    purchaseOrderNeeded: number;
-    dropCandidates: number;
-    allTimeTopItems: number;
+  orderTrend: Array<{ month: string; orders: number; revenueInr: number }>;
+  tips: string[];
+};
+
+export type AdminWooProductAnalytics = {
+  meta: AdminWooAnalyticsMeta;
+  overview: AdminWooAnalyticsOverview;
+  tab: "products" | "orders" | "returns" | "refunds" | "customers";
+  products?: {
+    mostSold: WooDumpProductRow[];
+    leastSold: WooDumpProductRow[];
+    purchaseOrderNeeded: WooDumpProductRow[];
+    dropCandidates: WooDumpProductRow[];
+    topPlaces: Array<{
+      city: string;
+      state: string;
+      country: string;
+      orderCount: number;
+      totalInr: number;
+      totalInPaise: number;
+    }>;
+    highestOrders: Array<{
+      orderNumber: string;
+      email: string;
+      customerName: string;
+      city: string;
+      status: string;
+      placedAt: string;
+      totalInr: number;
+      totalInPaise: number;
+    }>;
+    repeatCustomers: Array<{
+      email: string;
+      name: string;
+      city: string;
+      orderCount: number;
+      totalSpendInr: number;
+      totalSpendInPaise: number;
+      lastOrderedAt: string;
+    }>;
+  };
+  orders?: {
+    byStatus: Record<string, number>;
+    highestOrders: NonNullable<AdminWooProductAnalytics["products"]>["highestOrders"];
+    topPlaces: NonNullable<AdminWooProductAnalytics["products"]>["topPlaces"];
+    repeatCustomers: NonNullable<AdminWooProductAnalytics["products"]>["repeatCustomers"];
+    orderTrend: Array<{ month: string; orders: number; revenueInr: number }>;
+  };
+  returns?: {
+    returnedItems: WooDumpProductRow[];
+    returnsByCustomer: Array<{ email: string; customerName: string; units: number; lines: number }>;
+    returnTrend: Array<{ month: string; units: number; lines: number }>;
+    returnItemTrend: Array<{
+      productName: string;
+      sku: string;
+      months: Array<{ month: string; units: number }>;
+    }>;
+    note: string;
+  };
+  refunds?: {
+    list: Array<{
+      refundId: number;
+      orderNumber: string;
+      date: string;
+      amountInr: number;
+      reason: string;
+      email: string;
+      customerName: string;
+    }>;
+    refundTrend: Array<{ month: string; count: number; amountInr: number }>;
+    refundsByCustomer: Array<{
+      email: string;
+      customerName: string;
+      count: number;
+      amountInr: number;
+    }>;
+    refundReasons: Array<{ reason: string; count: number }>;
+  };
+  customers?: {
+    mostVisited: Array<{
+      email: string;
+      name: string;
+      lastActive: string;
+      city: string;
+      registered: string;
+    }>;
+    mostBought: Array<{
+      email: string;
+      name: string;
+      city: string;
+      orderCount: number;
+      totalSpendInr: number;
+      lastOrderedAt: string;
+    }>;
+    repeatCustomers: NonNullable<AdminWooProductAnalytics["products"]>["repeatCustomers"];
+    newCustomers: number;
+    note: string;
   };
 };
 
-export function fetchAdminWooAnalytics() {
-  return adminFetch<AdminWooProductAnalytics>("/api/admin/analytics/woo-products");
+export function fetchAdminWooAnalytics(params?: {
+  from?: string;
+  to?: string;
+  tab?: AdminWooProductAnalytics["tab"];
+}) {
+  const q = new URLSearchParams();
+  if (params?.from) q.set("from", params.from);
+  if (params?.to) q.set("to", params.to);
+  if (params?.tab) q.set("tab", params.tab);
+  const qs = q.toString();
+  return adminFetch<AdminWooProductAnalytics>(
+    `/api/admin/analytics/woo-products${qs ? `?${qs}` : ""}`
+  );
 }
 
 export async function downloadAdminOrdersPdf(range: "today" | "week" | "month" | "year") {
