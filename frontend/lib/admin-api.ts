@@ -1369,7 +1369,8 @@ export function fetchMarketplaceListings(params?: {
 
 export function upsertMarketplaceListing(input: {
   channelCode: MarketplaceChannelCode;
-  variantId: string;
+  variantId?: string;
+  sku?: string;
   listingId?: string | null;
   externalSku?: string | null;
   sellerSku?: string | null;

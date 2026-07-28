@@ -26,13 +26,16 @@ export const marketplaceReturnStatusSchema = z.enum(["REQUESTED", "RECEIVED", "R
 
 export const marketplaceListingUpsertSchema = z.object({
   channelCode: marketplaceChannelCodeSchema,
-  variantId: z.string().uuid(),
+  variantId: z.string().uuid().optional(),
+  sku: z.string().trim().min(1).max(120).optional(),
   listingId: z.string().trim().max(200).optional().nullable(),
   externalSku: z.string().trim().max(200).optional().nullable(),
   sellerSku: z.string().trim().max(200).optional().nullable(),
   status: marketplaceListingStatusSchema.optional(),
   isTracked: z.boolean().optional(),
   notes: z.string().trim().max(2000).optional().nullable()
+}).refine((v) => Boolean(v.variantId || v.sku), {
+  message: "Provide variantId or sku"
 });
 
 export const marketplaceListingPatchSchema = z

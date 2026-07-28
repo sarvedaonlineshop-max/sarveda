@@ -5,7 +5,6 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 
 import type {
   InventoryRow,
-  MarketplaceChannelCode,
   ZohoOnlyItem,
   ZohoStockSyncHistoryEntry,
   ZohoSyncSummary
@@ -21,8 +20,7 @@ import {
   pushItemsToZohoAdmin,
   pushStockToZohoAdmin,
   refreshZohoAuditAdmin,
-  syncStockFromZohoAdmin,
-  upsertMarketplaceListing
+  syncStockFromZohoAdmin
 } from "@/lib/admin-api";
 import {
   buildCategoryFilterOptions,
@@ -184,16 +182,6 @@ function ZohoBadge({
   return <span className="text-xs text-stone-400">Unknown</span>;
 }
 
-const MARKETPLACE_OPTIONS: Array<{ code: MarketplaceChannelCode; label: string }> = [
-  { code: "AMAZON", label: "Amazon" },
-  { code: "FLIPKART", label: "Flipkart" },
-  { code: "ETSY", label: "Etsy" },
-  { code: "AMALA", label: "Amala" },
-  { code: "FIRSTCRY", label: "FirstCry" },
-  { code: "TATA_1MG", label: "Tata 1mg" },
-  { code: "SARVEDA", label: "Sarveda" }
-];
-
 function MarketplaceBadge({
   label,
   status,
@@ -256,7 +244,6 @@ export function AdminInventoryWorkspace() {
   const [sortKey, setSortKey] = useState<SortKey>("product");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
-  const [openMarketplaceEditor, setOpenMarketplaceEditor] = useState<string | null>(null);
 
   const [busy, setBusy] = useState<string | null>(null);
   const [bulkSaving, setBulkSaving] = useState(false);
@@ -679,34 +666,6 @@ export function AdminInventoryWorkspace() {
     return null;
   }
 
-  async function saveMarketplaceListing(
-    row: InventoryRow,
-    channelCode: MarketplaceChannelCode,
-    patch: {
-      status: "ACTIVE" | "PAUSED" | "DELISTED";
-      isTracked: boolean;
-      listingId?: string | null;
-      externalSku?: string | null;
-      sellerSku?: string | null;
-      notes?: string | null;
-    }
-  ) {
-    setBusy(`market:${row.variantId}:${channelCode}`);
-    try {
-      await upsertMarketplaceListing({
-        channelCode,
-        variantId: row.variantId,
-        ...patch
-      });
-      pushToast(`${row.sku} updated for ${channelCode.replace(/_/g, " ")}`);
-      await load();
-    } catch (e) {
-      pushToast(e instanceof Error ? e.message : "Marketplace save failed", true);
-    } finally {
-      setBusy(null);
-    }
-  }
-
   function renderMarketplaceSummary(r: InventoryRow) {
     if (r.marketplaceListings.length === 0) {
       return <span className="text-xs text-stone-400">Not listed</span>;
@@ -727,107 +686,6 @@ export function AdminInventoryWorkspace() {
           </span>
         ) : null}
       </div>
-    );
-  }
-
-  function renderMarketplaceEditorRow(r: InventoryRow) {
-    if (openMarketplaceEditor !== r.variantId) return null;
-
-    return (
-      <tr className="border-t border-stone-100 bg-stone-50/60 dark:border-stone-800 dark:bg-stone-950/20">
-        <td className="px-4 py-3" />
-        <td colSpan={7} className="px-4 py-3">
-          <div className="rounded-lg border border-stone-200 bg-white p-4 dark:border-stone-700 dark:bg-stone-900">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">
-                  Marketplace controls for {r.sku}
-                </p>
-                <p className="text-xs text-stone-500">
-                  Zoho available {r.available} · 30d marketplace sold {r.recentMarketplaceSoldQty} · risk{" "}
-                  {r.marketplaceStockRisk}
-                </p>
-              </div>
-              <Link href="/admin/marketplaces" className="text-xs font-medium text-amber-800 dark:text-amber-400">
-                Open full marketplace ops
-              </Link>
-            </div>
-            <div className="grid gap-3 lg:grid-cols-2">
-              {MARKETPLACE_OPTIONS.map((channel) => {
-                const listing = r.marketplaceListings.find((item) => item.code === channel.code);
-                const busyKey = `market:${r.variantId}:${channel.code}`;
-                return (
-                  <div key={channel.code} className="rounded-lg border border-stone-200 p-3 dark:border-stone-700">
-                    <div className="mb-2 flex items-center justify-between gap-2">
-                      <p className="font-medium text-stone-900 dark:text-stone-100">{channel.label}</p>
-                      <MarketplaceBadge
-                        label={channel.label}
-                        status={listing?.status ?? "PAUSED"}
-                        risk={r.marketplaceStockRisk}
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <input
-                        defaultValue={listing?.listingId ?? ""}
-                        placeholder="Listing ID"
-                        className="rounded border border-stone-200 px-2 py-1 text-sm dark:border-stone-700 dark:bg-stone-950"
-                        id={`${r.variantId}-${channel.code}-listingId`}
-                      />
-                      <input
-                        defaultValue={listing?.externalSku ?? ""}
-                        placeholder="External SKU"
-                        className="rounded border border-stone-200 px-2 py-1 text-sm dark:border-stone-700 dark:bg-stone-950"
-                        id={`${r.variantId}-${channel.code}-externalSku`}
-                      />
-                      <input
-                        defaultValue={listing?.sellerSku ?? ""}
-                        placeholder="Seller SKU"
-                        className="rounded border border-stone-200 px-2 py-1 text-sm dark:border-stone-700 dark:bg-stone-950"
-                        id={`${r.variantId}-${channel.code}-sellerSku`}
-                      />
-                      <textarea
-                        defaultValue={listing?.notes ?? ""}
-                        placeholder="Notes"
-                        rows={2}
-                        className="rounded border border-stone-200 px-2 py-1 text-sm dark:border-stone-700 dark:bg-stone-950"
-                        id={`${r.variantId}-${channel.code}-notes`}
-                      />
-                      <div className="flex flex-wrap gap-2">
-                        {(["ACTIVE", "PAUSED", "DELISTED"] as const).map((status) => (
-                          <button
-                            key={status}
-                            type="button"
-                            disabled={busy === busyKey}
-                            onClick={() => {
-                              const listingIdEl = document.getElementById(`${r.variantId}-${channel.code}-listingId`) as HTMLInputElement | null;
-                              const externalSkuEl = document.getElementById(`${r.variantId}-${channel.code}-externalSku`) as HTMLInputElement | null;
-                              const sellerSkuEl = document.getElementById(`${r.variantId}-${channel.code}-sellerSku`) as HTMLInputElement | null;
-                              const notesEl = document.getElementById(`${r.variantId}-${channel.code}-notes`) as HTMLTextAreaElement | null;
-                              void saveMarketplaceListing(r, channel.code, {
-                                status,
-                                isTracked: status !== "DELISTED",
-                                listingId: listingIdEl?.value || null,
-                                externalSku: externalSkuEl?.value || null,
-                                sellerSku: sellerSkuEl?.value || null,
-                                notes: notesEl?.value || null
-                              });
-                            }}
-                            className={`rounded-md px-2 py-1 text-[11px] font-semibold ${
-                              listing?.status === status ? actionForest : actionOutline
-                            }`}
-                          >
-                            {busy === busyKey ? "Saving..." : status}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </td>
-      </tr>
     );
   }
 
@@ -937,15 +795,14 @@ export function AdminInventoryWorkspace() {
           </td>
           <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
             <div className="flex flex-col items-end gap-1">
-              <button
-                type="button"
-                onClick={() =>
-                  setOpenMarketplaceEditor((current) => (current === r.variantId ? null : r.variantId))
-                }
+              <Link
+                href={`/admin/marketplaces?channel=${encodeURIComponent(
+                  r.marketplaceListings[0]?.code ?? "AMAZON"
+                )}&sku=${encodeURIComponent(r.sku)}`}
                 className={actionOutline}
               >
-                {openMarketplaceEditor === r.variantId ? "Hide marketplaces" : "Manage marketplaces"}
-              </button>
+                Open marketplaces
+              </Link>
               {renderZohoRowActions(r)}
               <button
                 type="button"
@@ -958,7 +815,6 @@ export function AdminInventoryWorkspace() {
             </div>
           </td>
         </tr>
-        {renderMarketplaceEditorRow(r)}
       </Fragment>
     );
   }

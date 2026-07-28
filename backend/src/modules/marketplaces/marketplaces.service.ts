@@ -445,6 +445,20 @@ export async function listMarketplaceListings(params?: {
 
 export async function upsertMarketplaceListing(input: MarketplaceListingInput) {
   const channel = await getChannelByCode(input.channelCode);
+  const variantId =
+    input.variantId ??
+    (
+      await prisma.productVariant.findUnique({
+        where: { sku: String(input.sku).trim() },
+        select: { id: true }
+      })
+    )?.id;
+  if (!variantId) {
+    throw Object.assign(new Error(`Variant not found for SKU ${input.sku ?? input.variantId}`), {
+      statusCode: 404,
+      code: "NOT_FOUND"
+    });
+  }
   const data = {
     listingId: normalizeText(input.listingId),
     externalSku: normalizeText(input.externalSku),
@@ -458,12 +472,12 @@ export async function upsertMarketplaceListing(input: MarketplaceListingInput) {
     where: {
       channelId_variantId: {
         channelId: channel.id,
-        variantId: input.variantId
+        variantId
       }
     },
     create: {
       channelId: channel.id,
-      variantId: input.variantId,
+      variantId,
       ...data
     },
     update: data,
