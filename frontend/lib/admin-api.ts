@@ -1085,6 +1085,23 @@ export type InventoryRow = {
   inZohoBooks: boolean | null;
   zohoStockOnHand: number | null;
   zohoSyncScenario: ZohoSyncScenario | null;
+  recentMarketplaceSoldQty: number;
+  recentMarketplaceReturnQty: number;
+  marketplaceStockRisk: "ok" | "watch" | "high" | "out";
+  marketplaceListings: Array<{
+    id: string;
+    channelId: string;
+    code: "AMAZON" | "FLIPKART" | "ETSY" | "AMALA" | "FIRSTCRY" | "TATA_1MG" | "SARVEDA";
+    displayName: string;
+    isChannelActive: boolean;
+    listingId: string | null;
+    externalSku: string | null;
+    sellerSku: string | null;
+    status: "ACTIVE" | "PAUSED" | "DELISTED";
+    isTracked: boolean;
+    notes: string | null;
+    lastSyncedAt: string | null;
+  }>;
 };
 
 export type InventoryListData = {
@@ -1157,6 +1174,368 @@ export function importAdminInventoryCsv(rows: Array<{ sku: string; onHand: numbe
       body: JSON.stringify({ rows })
     }
   );
+}
+
+export type MarketplaceChannelCode =
+  | "AMAZON"
+  | "FLIPKART"
+  | "ETSY"
+  | "AMALA"
+  | "FIRSTCRY"
+  | "TATA_1MG"
+  | "SARVEDA";
+
+export type MarketplaceListingStatus = "ACTIVE" | "PAUSED" | "DELISTED";
+export type MarketplaceOrderStatus =
+  | "RECEIVED"
+  | "CONFIRMED"
+  | "DISPATCHED"
+  | "DELIVERED"
+  | "CANCELLED"
+  | "RETURN_REQUESTED"
+  | "RETURNED"
+  | "REFUNDED";
+export type MarketplaceReturnStatus = "REQUESTED" | "RECEIVED" | "REFUNDED" | "REJECTED";
+export type MarketplaceDataSource = "MANUAL" | "CSV_IMPORT" | "EMAIL" | "API";
+
+export type MarketplaceOverviewData = {
+  channels: Array<{
+    id: string;
+    code: MarketplaceChannelCode;
+    displayName: string;
+    isActive: boolean;
+    listingCount: number;
+    activeListingCount: number;
+    orderCount: number;
+    dispatchPending: number;
+    highRiskCount: number;
+  }>;
+  totals: {
+    channels: number;
+    listings: number;
+    orders: number;
+    returns: number;
+  };
+  recentOrders: MarketplaceOrderRow[];
+  recentReturns: MarketplaceReturnRow[];
+};
+
+export type MarketplaceListingRow = {
+  id: string;
+  channel: {
+    id: string;
+    code: MarketplaceChannelCode;
+    displayName: string;
+    isActive: boolean;
+  };
+  variant: {
+    id: string;
+    sku: string;
+    productId: string;
+    productName: string;
+    productSlug: string;
+  };
+  listingId: string | null;
+  externalSku: string | null;
+  sellerSku: string | null;
+  status: MarketplaceListingStatus;
+  isTracked: boolean;
+  notes: string | null;
+  lastSyncedAt: string | null;
+  zohoOnHand: number;
+  zohoReserved: number;
+  available: number;
+  recentSoldQty: number;
+  recentReturnQty: number;
+  stockRisk: "ok" | "watch" | "high" | "out";
+  updatedAt: string;
+};
+
+export type MarketplaceOrderRow = {
+  id: string;
+  channel: { id: string; code: MarketplaceChannelCode; displayName: string };
+  externalOrderId: string;
+  orderDate: string;
+  customerName: string | null;
+  customerEmail: string | null;
+  customerPhone: string | null;
+  shipToCity: string | null;
+  shipToState: string | null;
+  shipToCountry: string | null;
+  shipToPostalCode: string | null;
+  status: MarketplaceOrderStatus;
+  source: MarketplaceDataSource;
+  notes: string | null;
+  items: Array<{
+    id: string;
+    skuSnapshot: string;
+    productNameSnapshot: string | null;
+    quantity: number;
+    unitPriceInPaise: number | null;
+    lineTotalInPaise: number | null;
+    variantId: string | null;
+    variantSku: string | null;
+    productName: string | null;
+  }>;
+  returns: Array<{
+    id: string;
+    quantity: number;
+    status: MarketplaceReturnStatus;
+    refundedAmountInPaise: number | null;
+    restockedToZoho: boolean;
+    createdAt: string;
+  }>;
+  totalItems: number;
+  totalValueInPaise: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type MarketplaceReturnRow = {
+  id: string;
+  marketplaceOrderId: string;
+  marketplaceOrderItemId: string | null;
+  channel: { id: string; code: MarketplaceChannelCode; displayName: string };
+  externalOrderId: string;
+  sku: string | null;
+  productName: string | null;
+  quantity: number;
+  reason: string | null;
+  status: MarketplaceReturnStatus;
+  receivedAt: string | null;
+  refundedAmountInPaise: number | null;
+  restockedToZoho: boolean;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type MarketplaceAnalyticsData = {
+  totals: {
+    orders: number;
+    returns: number;
+    unitsSold: number;
+    refundValueInPaise: number;
+  };
+  byChannel: Array<{
+    channelId: string;
+    code: MarketplaceChannelCode;
+    displayName: string;
+    orders: number;
+    unitsSold: number;
+    orderValueInPaise: number;
+    returns: number;
+    returnQty: number;
+    refundValueInPaise: number;
+    pendingDispatch: number;
+  }>;
+  topSkus: Array<{
+    sku: string;
+    productName: string | null;
+    unitsSold: number;
+    orderValueInPaise: number;
+  }>;
+};
+
+export type MarketplaceInboxEvent = {
+  id: string;
+  channel: { id: string; code: MarketplaceChannelCode; displayName: string };
+  eventType: string;
+  source: MarketplaceDataSource;
+  dedupeKey: string | null;
+  processedAt: string | null;
+  createdAt: string;
+  rawPayload: unknown;
+};
+
+export function fetchMarketplaceOverview() {
+  return adminFetch<MarketplaceOverviewData>("/api/admin/marketplaces/overview");
+}
+
+export function fetchMarketplaceListings(params?: {
+  channelCode?: MarketplaceChannelCode;
+  status?: MarketplaceListingStatus;
+  search?: string;
+}) {
+  const q = new URLSearchParams();
+  if (params?.channelCode) q.set("channelCode", params.channelCode);
+  if (params?.status) q.set("status", params.status);
+  if (params?.search) q.set("search", params.search);
+  const qs = q.toString();
+  return adminFetch<{ items: MarketplaceListingRow[] }>(
+    `/api/admin/marketplaces/listings${qs ? `?${qs}` : ""}`
+  );
+}
+
+export function upsertMarketplaceListing(input: {
+  channelCode: MarketplaceChannelCode;
+  variantId: string;
+  listingId?: string | null;
+  externalSku?: string | null;
+  sellerSku?: string | null;
+  status?: MarketplaceListingStatus;
+  isTracked?: boolean;
+  notes?: string | null;
+}) {
+  return adminFetch<MarketplaceListingRow>("/api/admin/marketplaces/listings", {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
+}
+
+export function patchMarketplaceListing(
+  listingId: string,
+  input: {
+    listingId?: string | null;
+    externalSku?: string | null;
+    sellerSku?: string | null;
+    status?: MarketplaceListingStatus;
+    isTracked?: boolean;
+    notes?: string | null;
+  }
+) {
+  return adminFetch<MarketplaceListingRow>(`/api/admin/marketplaces/listings/${encodeURIComponent(listingId)}`, {
+    method: "PATCH",
+    body: JSON.stringify(input)
+  });
+}
+
+export function fetchMarketplaceOrders(params?: {
+  channelCode?: MarketplaceChannelCode;
+  status?: MarketplaceOrderStatus;
+  search?: string;
+  from?: string;
+  to?: string;
+}) {
+  const q = new URLSearchParams();
+  if (params?.channelCode) q.set("channelCode", params.channelCode);
+  if (params?.status) q.set("status", params.status);
+  if (params?.search) q.set("search", params.search);
+  if (params?.from) q.set("from", params.from);
+  if (params?.to) q.set("to", params.to);
+  const qs = q.toString();
+  return adminFetch<{ items: MarketplaceOrderRow[] }>(`/api/admin/marketplaces/orders${qs ? `?${qs}` : ""}`);
+}
+
+export function createMarketplaceOrder(input: {
+  channelCode: MarketplaceChannelCode;
+  externalOrderId: string;
+  orderDate: string;
+  customerName?: string | null;
+  customerEmail?: string | null;
+  customerPhone?: string | null;
+  shipToCity?: string | null;
+  shipToState?: string | null;
+  shipToCountry?: string | null;
+  shipToPostalCode?: string | null;
+  status?: MarketplaceOrderStatus;
+  source?: MarketplaceDataSource;
+  notes?: string | null;
+  rawPayload?: Record<string, unknown> | null;
+  items: Array<{
+    sku: string;
+    quantity: number;
+    unitPriceInPaise?: number | null;
+    productName?: string | null;
+  }>;
+}) {
+  return adminFetch<MarketplaceOrderRow>("/api/admin/marketplaces/orders", {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
+}
+
+export function importMarketplaceOrdersCsv(input: { channelCode: MarketplaceChannelCode; csvText: string }) {
+  return adminFetch<{
+    parsedRows: number;
+    importedOrders: number;
+    duplicateOrders: number;
+    unresolvedItems: number;
+  }>("/api/admin/marketplaces/orders/import", {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
+}
+
+export function fetchMarketplaceReturns(params?: {
+  channelCode?: MarketplaceChannelCode;
+  status?: MarketplaceReturnStatus;
+  search?: string;
+  from?: string;
+  to?: string;
+}) {
+  const q = new URLSearchParams();
+  if (params?.channelCode) q.set("channelCode", params.channelCode);
+  if (params?.status) q.set("status", params.status);
+  if (params?.search) q.set("search", params.search);
+  if (params?.from) q.set("from", params.from);
+  if (params?.to) q.set("to", params.to);
+  const qs = q.toString();
+  return adminFetch<{ items: MarketplaceReturnRow[] }>(`/api/admin/marketplaces/returns${qs ? `?${qs}` : ""}`);
+}
+
+export function createMarketplaceReturn(input: {
+  marketplaceOrderId: string;
+  marketplaceOrderItemId?: string | null;
+  quantity: number;
+  reason?: string | null;
+  status?: MarketplaceReturnStatus;
+  receivedAt?: string | null;
+  refundedAmountInPaise?: number | null;
+  restockedToZoho?: boolean;
+  notes?: string | null;
+  rawPayload?: Record<string, unknown> | null;
+}) {
+  return adminFetch<MarketplaceReturnRow>("/api/admin/marketplaces/returns", {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
+}
+
+export function fetchMarketplaceAnalytics(params?: {
+  channelCode?: MarketplaceChannelCode;
+  from?: string;
+  to?: string;
+}) {
+  const q = new URLSearchParams();
+  if (params?.channelCode) q.set("channelCode", params.channelCode);
+  if (params?.from) q.set("from", params.from);
+  if (params?.to) q.set("to", params.to);
+  const qs = q.toString();
+  return adminFetch<MarketplaceAnalyticsData>(
+    `/api/admin/marketplaces/analytics${qs ? `?${qs}` : ""}`
+  );
+}
+
+export function fetchMarketplaceInbox(params?: { channelCode?: MarketplaceChannelCode; limit?: number }) {
+  const q = new URLSearchParams();
+  if (params?.channelCode) q.set("channelCode", params.channelCode);
+  if (params?.limit) q.set("limit", String(params.limit));
+  const qs = q.toString();
+  return adminFetch<{ items: MarketplaceInboxEvent[] }>(
+    `/api/admin/marketplaces/inbox${qs ? `?${qs}` : ""}`
+  );
+}
+
+export function createMarketplaceEmailIngest(input: {
+  channelCode: MarketplaceChannelCode;
+  subject: string;
+  bodyText: string;
+  dedupeKey?: string | null;
+  metadata?: Record<string, unknown> | null;
+}) {
+  return adminFetch<{
+    id: string;
+    channelCode: MarketplaceChannelCode;
+    eventType: string;
+    source: MarketplaceDataSource;
+    dedupeKey: string | null;
+    processedAt: string | null;
+    createdAt: string;
+  }>("/api/admin/marketplaces/email-ingest", {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
 }
 
 export type ZohoStockSyncResult = {

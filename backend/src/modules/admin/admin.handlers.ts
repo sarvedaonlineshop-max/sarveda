@@ -1,4 +1,4 @@
-import { AddressType, OrderStatus } from "@prisma/client";
+import { AddressType, OrderStatus, Prisma } from "@prisma/client";
 import type { NextFunction, Request, Response } from "express";
 import PDFDocument from "pdfkit";
 import { z } from "zod";
@@ -1013,18 +1013,25 @@ const inventoryInclude = {
             include: { attribute: true }
           }
         }
+      },
+      marketplaceListings: {
+        include: {
+          channel: {
+            select: { id: true, code: true, displayName: true, isActive: true }
+          }
+        },
+        orderBy: [{ channel: { displayName: "asc" } }]
       }
     }
   }
-} as const;
+} satisfies Prisma.InventoryInclude;
 
-type InventoryRowDb = Awaited<
-  ReturnType<typeof prisma.inventory.findMany<{ include: typeof inventoryInclude }>>
->[number];
+type InventoryRowDb = Prisma.InventoryGetPayload<{ include: typeof inventoryInclude }>;
 
 function mapInventoryRow(
   inv: InventoryRowDb,
-  auditMap: Map<string, ZohoItemAuditRow> | null
+  auditMap: Map<string, ZohoItemAuditRow> | null,
+  marketplaceStats?: Map<string, { recentMarketplaceSoldQty: number; recentMarketplaceReturnQty: number }>
 ) {
   const labels = inv.variant.attributeValues
     .map((av) => `${av.attributeValue.attribute.name}: ${av.attributeValue.value}`)
@@ -1040,6 +1047,18 @@ function mapInventoryRow(
     .sort((a, b) => a.position - b.position || a.name.localeCompare(b.name));
 
   const audit = auditSarvedaVariant(inv.variant.sku, inv.onHand, auditMap);
+  const marketStats = marketplaceStats?.get(inv.variantId) ?? {
+    recentMarketplaceSoldQty: 0,
+    recentMarketplaceReturnQty: 0
+  };
+  const marketplaceStockRisk =
+    inv.onHand <= 0
+      ? "out"
+      : marketStats.recentMarketplaceSoldQty >= Math.max(1, available)
+        ? "high"
+        : marketStats.recentMarketplaceSoldQty >= Math.max(1, Math.floor(available / 2))
+          ? "watch"
+          : "ok";
 
   return {
     inventoryId: inv.id,
@@ -1061,7 +1080,24 @@ function mapInventoryRow(
     low,
     inZohoBooks: audit.inZohoBooks,
     zohoStockOnHand: audit.zohoStockOnHand,
-    zohoSyncScenario: audit.scenario
+    zohoSyncScenario: audit.scenario,
+    recentMarketplaceSoldQty: marketStats.recentMarketplaceSoldQty,
+    recentMarketplaceReturnQty: marketStats.recentMarketplaceReturnQty,
+    marketplaceStockRisk,
+    marketplaceListings: inv.variant.marketplaceListings.map((listing) => ({
+      id: listing.id,
+      channelId: listing.channelId,
+      code: listing.channel.code,
+      displayName: listing.channel.displayName,
+      isChannelActive: listing.channel.isActive,
+      listingId: listing.listingId,
+      externalSku: listing.externalSku,
+      sellerSku: listing.sellerSku,
+      status: listing.status,
+      isTracked: listing.isTracked,
+      notes: listing.notes,
+      lastSyncedAt: listing.lastSyncedAt?.toISOString() ?? null
+    }))
   };
 }
 
@@ -1097,7 +1133,55 @@ export async function inventoryList(req: Request, res: Response, next: NextFunct
         listZohoOnlyItems()
       ]);
 
-    const items = rows.map((inv) => mapInventoryRow(inv, auditMap));
+    const variantIds = rows.map((row) => row.variantId);
+    const since = new Date();
+    since.setUTCDate(since.getUTCDate() - 30);
+    const [marketplaceOrderItems, marketplaceReturns] =
+      variantIds.length === 0
+        ? [[], []]
+        : await Promise.all([
+            prisma.marketplaceOrderItem.findMany({
+              where: {
+                variantId: { in: variantIds },
+                marketplaceOrder: {
+                  orderDate: { gte: since },
+                  status: { not: "CANCELLED" }
+                }
+              },
+              select: { variantId: true, quantity: true }
+            }),
+            prisma.marketplaceReturn.findMany({
+              where: {
+                marketplaceOrderItem: {
+                  variantId: { in: variantIds }
+                },
+                marketplaceOrder: {
+                  orderDate: { gte: since }
+                }
+              },
+              select: {
+                quantity: true,
+                marketplaceOrderItem: { select: { variantId: true } }
+              }
+            })
+          ]);
+    const marketplaceStats = new Map<string, { recentMarketplaceSoldQty: number; recentMarketplaceReturnQty: number }>();
+    for (const variantId of variantIds) {
+      marketplaceStats.set(variantId, { recentMarketplaceSoldQty: 0, recentMarketplaceReturnQty: 0 });
+    }
+    for (const item of marketplaceOrderItems) {
+      if (!item.variantId) continue;
+      const cur = marketplaceStats.get(item.variantId);
+      if (cur) cur.recentMarketplaceSoldQty += item.quantity;
+    }
+    for (const ret of marketplaceReturns) {
+      const variantId = ret.marketplaceOrderItem?.variantId;
+      if (!variantId) continue;
+      const cur = marketplaceStats.get(variantId);
+      if (cur) cur.recentMarketplaceReturnQty += ret.quantity;
+    }
+
+    const items = rows.map((inv) => mapInventoryRow(inv, auditMap, marketplaceStats));
 
     const totalPages = loadAll ? 1 : Math.max(1, Math.ceil(total / limit));
     res.json({

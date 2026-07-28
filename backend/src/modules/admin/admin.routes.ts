@@ -24,6 +24,7 @@ import * as mediaHandlers from "./media.handlers";
 import * as seoSuggest from "./seo-suggest.handlers";
 import { couponAdminRoutes } from "../coupons/coupon.admin.routes";
 import { enquiriesAdminRoutes } from "../enquiries/enquiries.admin.routes";
+import { marketplaceAdminRoutes } from "../marketplaces/marketplaces.routes";
 import * as serviceRequest from "../orders/order-service-request.controller";
 
 const router = Router();
@@ -106,6 +107,7 @@ router.post("/courses/seo-suggest", seoSuggest.suggestCourseSeo);
 router.post("/mentors/seo-suggest", seoSuggest.suggestMentorSeo);
 
 router.get("/inventory", admin.inventoryList);
+router.use("/marketplaces", marketplaceAdminRoutes);
 router.post(
   "/inventory/bulk",
   validateBody(admin.bulkInventoryPatchSchema),

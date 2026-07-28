@@ -5,6 +5,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 
 import type {
   InventoryRow,
+  MarketplaceChannelCode,
   ZohoOnlyItem,
   ZohoStockSyncHistoryEntry,
   ZohoSyncSummary
@@ -20,7 +21,8 @@ import {
   pushItemsToZohoAdmin,
   pushStockToZohoAdmin,
   refreshZohoAuditAdmin,
-  syncStockFromZohoAdmin
+  syncStockFromZohoAdmin,
+  upsertMarketplaceListing
 } from "@/lib/admin-api";
 import {
   buildCategoryFilterOptions,
@@ -182,6 +184,41 @@ function ZohoBadge({
   return <span className="text-xs text-stone-400">Unknown</span>;
 }
 
+const MARKETPLACE_OPTIONS: Array<{ code: MarketplaceChannelCode; label: string }> = [
+  { code: "AMAZON", label: "Amazon" },
+  { code: "FLIPKART", label: "Flipkart" },
+  { code: "ETSY", label: "Etsy" },
+  { code: "AMALA", label: "Amala" },
+  { code: "FIRSTCRY", label: "FirstCry" },
+  { code: "TATA_1MG", label: "Tata 1mg" },
+  { code: "SARVEDA", label: "Sarveda" }
+];
+
+function MarketplaceBadge({
+  label,
+  status,
+  risk
+}: {
+  label: string;
+  status: "ACTIVE" | "PAUSED" | "DELISTED";
+  risk?: InventoryRow["marketplaceStockRisk"];
+}) {
+  const base =
+    status === "ACTIVE"
+      ? "bg-emerald-50 text-emerald-800 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-900"
+      : status === "PAUSED"
+        ? "bg-amber-50 text-amber-900 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-900"
+        : "bg-stone-100 text-stone-700 ring-stone-200 dark:bg-stone-800 dark:text-stone-200 dark:ring-stone-700";
+  const riskText =
+    risk === "high" ? "risk high" : risk === "watch" ? "risk watch" : risk === "out" ? "out" : null;
+  return (
+    <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${base}`}>
+      {label}
+      {riskText ? ` · ${riskText}` : ""}
+    </span>
+  );
+}
+
 function scopeLabel(entry: ZohoStockSyncHistoryEntry): string {
   if (entry.scope === "audit") return "Refresh audit";
   if (entry.scope === "pull") return "Pull stock (Zoho → Sarveda)";
@@ -219,6 +256,7 @@ export function AdminInventoryWorkspace() {
   const [sortKey, setSortKey] = useState<SortKey>("product");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
+  const [openMarketplaceEditor, setOpenMarketplaceEditor] = useState<string | null>(null);
 
   const [busy, setBusy] = useState<string | null>(null);
   const [bulkSaving, setBulkSaving] = useState(false);
@@ -641,6 +679,158 @@ export function AdminInventoryWorkspace() {
     return null;
   }
 
+  async function saveMarketplaceListing(
+    row: InventoryRow,
+    channelCode: MarketplaceChannelCode,
+    patch: {
+      status: "ACTIVE" | "PAUSED" | "DELISTED";
+      isTracked: boolean;
+      listingId?: string | null;
+      externalSku?: string | null;
+      sellerSku?: string | null;
+      notes?: string | null;
+    }
+  ) {
+    setBusy(`market:${row.variantId}:${channelCode}`);
+    try {
+      await upsertMarketplaceListing({
+        channelCode,
+        variantId: row.variantId,
+        ...patch
+      });
+      pushToast(`${row.sku} updated for ${channelCode.replace(/_/g, " ")}`);
+      await load();
+    } catch (e) {
+      pushToast(e instanceof Error ? e.message : "Marketplace save failed", true);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function renderMarketplaceSummary(r: InventoryRow) {
+    if (r.marketplaceListings.length === 0) {
+      return <span className="text-xs text-stone-400">Not listed</span>;
+    }
+    return (
+      <div className="flex flex-wrap gap-1">
+        {r.marketplaceListings.map((listing) => (
+          <MarketplaceBadge
+            key={listing.id}
+            label={listing.displayName}
+            status={listing.status}
+            risk={r.marketplaceStockRisk}
+          />
+        ))}
+        {r.recentMarketplaceSoldQty > 0 || r.recentMarketplaceReturnQty > 0 ? (
+          <span className="block w-full pt-1 text-[10px] text-stone-500">
+            30d sold {r.recentMarketplaceSoldQty} · returns {r.recentMarketplaceReturnQty}
+          </span>
+        ) : null}
+      </div>
+    );
+  }
+
+  function renderMarketplaceEditorRow(r: InventoryRow) {
+    if (openMarketplaceEditor !== r.variantId) return null;
+
+    return (
+      <tr className="border-t border-stone-100 bg-stone-50/60 dark:border-stone-800 dark:bg-stone-950/20">
+        <td className="px-4 py-3" />
+        <td colSpan={7} className="px-4 py-3">
+          <div className="rounded-lg border border-stone-200 bg-white p-4 dark:border-stone-700 dark:bg-stone-900">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">
+                  Marketplace controls for {r.sku}
+                </p>
+                <p className="text-xs text-stone-500">
+                  Zoho available {r.available} · 30d marketplace sold {r.recentMarketplaceSoldQty} · risk{" "}
+                  {r.marketplaceStockRisk}
+                </p>
+              </div>
+              <Link href="/admin/marketplaces" className="text-xs font-medium text-amber-800 dark:text-amber-400">
+                Open full marketplace ops
+              </Link>
+            </div>
+            <div className="grid gap-3 lg:grid-cols-2">
+              {MARKETPLACE_OPTIONS.map((channel) => {
+                const listing = r.marketplaceListings.find((item) => item.code === channel.code);
+                const busyKey = `market:${r.variantId}:${channel.code}`;
+                return (
+                  <div key={channel.code} className="rounded-lg border border-stone-200 p-3 dark:border-stone-700">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <p className="font-medium text-stone-900 dark:text-stone-100">{channel.label}</p>
+                      <MarketplaceBadge
+                        label={channel.label}
+                        status={listing?.status ?? "PAUSED"}
+                        risk={r.marketplaceStockRisk}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <input
+                        defaultValue={listing?.listingId ?? ""}
+                        placeholder="Listing ID"
+                        className="rounded border border-stone-200 px-2 py-1 text-sm dark:border-stone-700 dark:bg-stone-950"
+                        id={`${r.variantId}-${channel.code}-listingId`}
+                      />
+                      <input
+                        defaultValue={listing?.externalSku ?? ""}
+                        placeholder="External SKU"
+                        className="rounded border border-stone-200 px-2 py-1 text-sm dark:border-stone-700 dark:bg-stone-950"
+                        id={`${r.variantId}-${channel.code}-externalSku`}
+                      />
+                      <input
+                        defaultValue={listing?.sellerSku ?? ""}
+                        placeholder="Seller SKU"
+                        className="rounded border border-stone-200 px-2 py-1 text-sm dark:border-stone-700 dark:bg-stone-950"
+                        id={`${r.variantId}-${channel.code}-sellerSku`}
+                      />
+                      <textarea
+                        defaultValue={listing?.notes ?? ""}
+                        placeholder="Notes"
+                        rows={2}
+                        className="rounded border border-stone-200 px-2 py-1 text-sm dark:border-stone-700 dark:bg-stone-950"
+                        id={`${r.variantId}-${channel.code}-notes`}
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        {(["ACTIVE", "PAUSED", "DELISTED"] as const).map((status) => (
+                          <button
+                            key={status}
+                            type="button"
+                            disabled={busy === busyKey}
+                            onClick={() => {
+                              const listingIdEl = document.getElementById(`${r.variantId}-${channel.code}-listingId`) as HTMLInputElement | null;
+                              const externalSkuEl = document.getElementById(`${r.variantId}-${channel.code}-externalSku`) as HTMLInputElement | null;
+                              const sellerSkuEl = document.getElementById(`${r.variantId}-${channel.code}-sellerSku`) as HTMLInputElement | null;
+                              const notesEl = document.getElementById(`${r.variantId}-${channel.code}-notes`) as HTMLTextAreaElement | null;
+                              void saveMarketplaceListing(r, channel.code, {
+                                status,
+                                isTracked: status !== "DELISTED",
+                                listingId: listingIdEl?.value || null,
+                                externalSku: externalSkuEl?.value || null,
+                                sellerSku: sellerSkuEl?.value || null,
+                                notes: notesEl?.value || null
+                              });
+                            }}
+                            className={`rounded-md px-2 py-1 text-[11px] font-semibold ${
+                              listing?.status === status ? actionForest : actionOutline
+                            }`}
+                          >
+                            {busy === busyKey ? "Saving..." : status}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </td>
+      </tr>
+    );
+  }
+
   function renderProductSummaryRow(g: ProductInventoryGroup) {
     const expanded = expandedProducts.has(g.productId);
     const productSyncing = zohoSyncing === g.productId;
@@ -673,6 +863,10 @@ export function AdminInventoryWorkspace() {
           )}
         </td>
         <td className="px-4 py-3 text-right font-mono font-semibold tabular-nums">{g.totalAvailable}</td>
+        <td className="px-4 py-3 text-xs text-stone-500">
+          {g.rows.reduce((sum, row) => sum + row.marketplaceListings.length, 0)} listing
+          {g.rows.reduce((sum, row) => sum + row.marketplaceListings.length, 0) === 1 ? "" : "s"}
+        </td>
         <td className="px-4 py-3 text-right text-stone-400">—</td>
         <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
           <div className="flex flex-wrap justify-end gap-1.5">
@@ -700,60 +894,72 @@ export function AdminInventoryWorkspace() {
   function renderVariantRow(r: InventoryRow) {
     const thresholdDirty = thresholdChanges.some((c) => c.variantId === r.variantId);
     return (
-      <tr
-        key={r.variantId}
-        className={`border-t border-stone-100 bg-white dark:border-stone-800 dark:bg-stone-900/40 ${
-          r.low ? "bg-red-50/40 dark:bg-red-950/10" : ""
-        } ${thresholdDirty ? "bg-amber-50/30 dark:bg-amber-950/10" : ""}`}
-      >
-        <td className="px-3 py-2.5" />
-        <td className="px-4 py-2.5 pl-8 text-sm text-stone-600 dark:text-stone-400">
-          {r.variantLabel ?? "Default"}
-          {r.low ? (
-            <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-red-800 dark:bg-red-900/60 dark:text-red-100">
-              Low
-            </span>
-          ) : null}
-        </td>
-        <td className="px-4 py-2.5 font-mono text-xs text-stone-500">{r.sku}</td>
-        <td className="px-4 py-2.5">
-          <ZohoBadge row={r} auditAvailable={zohoAuditAvailable} />
-        </td>
-        <td className="px-4 py-2.5 text-right font-mono font-medium tabular-nums">
-          {r.available}
-          {r.zohoStockOnHand !== null && effectiveZohoScenario(r) === 2 ? (
-            <span className="block text-[10px] font-normal text-stone-400">Zoho: {r.zohoStockOnHand}</span>
-          ) : null}
-          {r.reserved > 0 ? (
-            <span className="block text-[10px] font-normal text-stone-400">{r.reserved} held</span>
-          ) : null}
-        </td>
-        <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
-          <input
-            type="number"
-            min={0}
-            aria-label={`Threshold ${r.sku}`}
-            value={thresholdDrafts[r.variantId] ?? ""}
-            onChange={(e) =>
-              setThresholdDrafts((d) => ({ ...d, [r.variantId]: e.target.value }))
-            }
-            className="w-14 rounded border border-stone-200 px-2 py-1 text-right font-mono text-sm dark:border-stone-600 dark:bg-stone-950"
-          />
-        </td>
-        <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
-          <div className="flex flex-col items-end gap-1">
-            {renderZohoRowActions(r)}
-            <button
-              type="button"
-              disabled={busy === r.variantId || !thresholdDirty}
-              onClick={() => void saveThreshold(r.variantId)}
-              className="text-xs font-medium text-amber-800 disabled:opacity-30 dark:text-amber-400"
-            >
-              {busy === r.variantId ? "…" : "Save threshold"}
-            </button>
-          </div>
-        </td>
-      </tr>
+      <Fragment key={r.variantId}>
+        <tr
+          className={`border-t border-stone-100 bg-white dark:border-stone-800 dark:bg-stone-900/40 ${
+            r.low ? "bg-red-50/40 dark:bg-red-950/10" : ""
+          } ${thresholdDirty ? "bg-amber-50/30 dark:bg-amber-950/10" : ""}`}
+        >
+          <td className="px-3 py-2.5" />
+          <td className="px-4 py-2.5 pl-8 text-sm text-stone-600 dark:text-stone-400">
+            {r.variantLabel ?? "Default"}
+            {r.low ? (
+              <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-red-800 dark:bg-red-900/60 dark:text-red-100">
+                Low
+              </span>
+            ) : null}
+          </td>
+          <td className="px-4 py-2.5 font-mono text-xs text-stone-500">{r.sku}</td>
+          <td className="px-4 py-2.5">
+            <ZohoBadge row={r} auditAvailable={zohoAuditAvailable} />
+          </td>
+          <td className="px-4 py-2.5 text-right font-mono font-medium tabular-nums">
+            {r.available}
+            {r.zohoStockOnHand !== null && effectiveZohoScenario(r) === 2 ? (
+              <span className="block text-[10px] font-normal text-stone-400">Zoho: {r.zohoStockOnHand}</span>
+            ) : null}
+            {r.reserved > 0 ? (
+              <span className="block text-[10px] font-normal text-stone-400">{r.reserved} held</span>
+            ) : null}
+          </td>
+          <td className="px-4 py-2.5">{renderMarketplaceSummary(r)}</td>
+          <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
+            <input
+              type="number"
+              min={0}
+              aria-label={`Threshold ${r.sku}`}
+              value={thresholdDrafts[r.variantId] ?? ""}
+              onChange={(e) =>
+                setThresholdDrafts((d) => ({ ...d, [r.variantId]: e.target.value }))
+              }
+              className="w-14 rounded border border-stone-200 px-2 py-1 text-right font-mono text-sm dark:border-stone-600 dark:bg-stone-950"
+            />
+          </td>
+          <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col items-end gap-1">
+              <button
+                type="button"
+                onClick={() =>
+                  setOpenMarketplaceEditor((current) => (current === r.variantId ? null : r.variantId))
+                }
+                className={actionOutline}
+              >
+                {openMarketplaceEditor === r.variantId ? "Hide marketplaces" : "Manage marketplaces"}
+              </button>
+              {renderZohoRowActions(r)}
+              <button
+                type="button"
+                disabled={busy === r.variantId || !thresholdDirty}
+                onClick={() => void saveThreshold(r.variantId)}
+                className="text-xs font-medium text-amber-800 disabled:opacity-30 dark:text-amber-400"
+              >
+                {busy === r.variantId ? "…" : "Save threshold"}
+              </button>
+            </div>
+          </td>
+        </tr>
+        {renderMarketplaceEditorRow(r)}
+      </Fragment>
     );
   }
 
@@ -1149,6 +1355,7 @@ export function AdminInventoryWorkspace() {
                   <th className={thClass}>SKU</th>
                   <th className={thClass}>Zoho</th>
                   <th className={`${thClass} text-right`}>Available</th>
+                  <th className={thClass}>Marketplaces</th>
                   <th className={`${thClass} text-right`}>Low-stock at</th>
                   <th className={`${thClass} text-right`}>Actions</th>
                 </tr>
