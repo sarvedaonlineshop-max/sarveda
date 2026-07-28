@@ -28,5 +28,6 @@ router.get("/inbox", controller.inbox);
 router.post("/email-ingest", validateBody(marketplaceEmailIngestSchema), controller.ingestEmail);
 router.get("/amazon/connection", controller.amazonConnection);
 router.post("/amazon/sync-orders", validateBody(amazonOrdersSyncSchema), controller.amazonSyncOrders);
+router.post("/amazon/sync-all", validateBody(amazonOrdersSyncSchema), controller.amazonSyncAll);
 
 export { router as marketplaceAdminRoutes };

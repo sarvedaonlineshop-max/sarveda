@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 
-import { getAmazonConnectionStatus, syncAmazonOrders } from "./amazon/amazon-orders-sync";
+import { getAmazonConnectionStatus, syncAmazonMarketplace, syncAmazonOrders } from "./amazon/amazon-orders-sync";
 import * as service from "./marketplaces.service";
 
 type ChannelCode = Parameters<typeof service.listMarketplaceListings>[0] extends infer T
@@ -175,6 +175,14 @@ export async function amazonConnection(_req: Request, res: Response, next: NextF
 export async function amazonSyncOrders(req: Request, res: Response, next: NextFunction) {
   try {
     res.json({ success: true, data: await syncAmazonOrders(req.body ?? {}) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function amazonSyncAll(req: Request, res: Response, next: NextFunction) {
+  try {
+    res.json({ success: true, data: await syncAmazonMarketplace(req.body ?? {}) });
   } catch (err) {
     next(err);
   }

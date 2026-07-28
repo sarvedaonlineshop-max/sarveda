@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import type {
+  AmazonSyncAllResult,
   AmazonSpConnectionStatus,
   MarketplaceAnalyticsData,
   MarketplaceChannelCode,
@@ -26,7 +27,7 @@ import {
   fetchMarketplaceReturns,
   importMarketplaceOrdersCsv,
   patchMarketplaceListing,
-  syncAmazonMarketplaceOrders,
+  syncAmazonMarketplaceAll,
   upsertMarketplaceListing
 } from "@/lib/admin-api";
 import { formatINRFromPaise } from "@/lib/money";
@@ -161,8 +162,9 @@ export function MarketplaceOpsWorkspace() {
     dedupeKey: ""
   });
   const [amazonConnection, setAmazonConnection] = useState<AmazonSpConnectionStatus | null>(null);
-  const [amazonDaysBack, setAmazonDaysBack] = useState("14");
+  const [amazonDaysBack, setAmazonDaysBack] = useState("30");
   const [amazonIncludeShipped, setAmazonIncludeShipped] = useState(false);
+  const [amazonLastSync, setAmazonLastSync] = useState<AmazonSyncAllResult | null>(null);
 
   useEffect(() => {
     void loadOverview();
@@ -265,14 +267,13 @@ export function MarketplaceOpsWorkspace() {
     setBusy("amazon-sync");
     setError(null);
     try {
-      const result = await syncAmazonMarketplaceOrders({
-        daysBack: Number(amazonDaysBack) || 14,
+      const result = await syncAmazonMarketplaceAll({
+        daysBack: Number(amazonDaysBack) || 30,
         includeShipped: amazonIncludeShipped
       });
+      setAmazonLastSync(result);
       setToast(
-        `Amazon sync: fetched ${result.fetched} · created ${result.created} · updated ${result.updated}` +
-          (result.unresolvedItems ? ` · ${result.unresolvedItems} unmatched SKUs` : "") +
-          (result.errors ? ` · ${result.errors} errors` : "")
+        `Amazon sync: ${result.orders.fetched} orders, ${result.listings.rows} listings, ${result.returns.rows} returns scanned`
       );
       await refreshActiveChannel();
       await loadAmazonConnection();
@@ -496,8 +497,8 @@ export function MarketplaceOpsWorkspace() {
             >
               <div className="space-y-3 text-sm text-stone-600 dark:text-stone-300">
                 <p>
-                  Pulls open Amazon orders into this tab (default: Unshipped / PartiallyShipped / Pending). Match Seller SKU to
-                  Sarveda SKU or listing seller SKU. Buyer address may be blank until Restricted Data Token is enabled.
+                  Pulls Amazon orders, listed products, and returns into this tab. Orders use the live Orders API; listings
+                  and returns use Amazon reports. Buyer address may still be blank until Restricted Data Token is enabled.
                 </p>
                 {amazonConnection && !amazonConnection.configured ? (
                   <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
@@ -520,7 +521,7 @@ export function MarketplaceOpsWorkspace() {
                       checked={amazonIncludeShipped}
                       onChange={(e) => setAmazonIncludeShipped(e.target.checked)}
                     />
-                    Include shipped / all statuses
+                    Include shipped / full sales history window
                   </label>
                   <button
                     type="button"
@@ -528,9 +529,47 @@ export function MarketplaceOpsWorkspace() {
                     onClick={() => void syncAmazon()}
                     className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
                   >
-                    {busy === "amazon-sync" ? "Syncing…" : "Sync from Amazon"}
+                    {busy === "amazon-sync" ? "Syncing…" : "Sync orders, listings, returns"}
                   </button>
                 </div>
+                <div className="grid gap-3 md:grid-cols-3">
+                  <MetricCard
+                    label="Auto sync"
+                    value={amazonConnection?.autoSyncEnabled ? "On" : "Off"}
+                    sub="Backend refreshes Amazon periodically"
+                  />
+                  <MetricCard
+                    label="Sales window"
+                    value={`${Number(amazonDaysBack) || 30}d`}
+                    sub="Orders can go wider; reports cap at 60 days"
+                  />
+                  <MetricCard
+                    label="Last sync"
+                    value={
+                      amazonLastSync
+                        ? `${amazonLastSync.orders.fetched}/${amazonLastSync.listings.rows}/${amazonLastSync.returns.rows}`
+                        : "Not run"
+                    }
+                    sub="orders / listings / returns scanned"
+                  />
+                </div>
+                {amazonLastSync ? (
+                  <div className="rounded-lg border border-stone-200 bg-stone-50 p-3 text-xs dark:border-stone-700 dark:bg-stone-950">
+                    <p className="font-semibold text-stone-900 dark:text-stone-100">Latest Amazon sync</p>
+                    <p className="mt-1">
+                      Orders: created {amazonLastSync.orders.created}, updated {amazonLastSync.orders.updated}, unmatched SKUs{" "}
+                      {amazonLastSync.orders.unresolvedItems}, errors {amazonLastSync.orders.errors}
+                    </p>
+                    <p className="mt-1">
+                      Listings: created {amazonLastSync.listings.created}, updated {amazonLastSync.listings.updated}, unresolved{" "}
+                      {amazonLastSync.listings.unresolved}
+                    </p>
+                    <p className="mt-1">
+                      Returns: created {amazonLastSync.returns.created}, updated {amazonLastSync.returns.updated}, unresolved{" "}
+                      {amazonLastSync.returns.unresolved}
+                    </p>
+                  </div>
+                ) : null}
               </div>
             </SectionCard>
           ) : null}

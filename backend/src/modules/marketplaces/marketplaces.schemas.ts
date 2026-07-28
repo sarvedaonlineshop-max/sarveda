@@ -133,8 +133,8 @@ export const amazonOrdersSyncSchema = z.preprocess(
     /** ISO datetime; defaults to now - daysBack. */
     createdAfter: z.string().datetime().optional(),
     createdBefore: z.string().datetime().optional(),
-    /** Used when createdAfter omitted (1–60). Default 14. */
-    daysBack: z.number().int().min(1).max(60).optional(),
+    /** Used when createdAfter omitted. Orders can go broader than report-based listings/returns. */
+    daysBack: z.number().int().min(1).max(730).optional(),
     /** Amazon OrderStatuses; default open: Unshipped, PartiallyShipped, Pending. */
     orderStatuses: z.array(z.string().trim().min(1).max(40)).max(10).optional(),
     /** When true and orderStatuses omitted, fetch all statuses in the window. */

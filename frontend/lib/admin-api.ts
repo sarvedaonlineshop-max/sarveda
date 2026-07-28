@@ -1543,6 +1543,7 @@ export type AmazonSpConnectionStatus = {
   configured: boolean;
   marketplaceId: string;
   region: string;
+  autoSyncEnabled: boolean;
   missing: string[];
 };
 
@@ -1558,6 +1559,22 @@ export type AmazonOrdersSyncResult = {
   messages: string[];
 };
 
+export type AmazonSyncAllResult = {
+  orders: AmazonOrdersSyncResult;
+  listings: {
+    rows: number;
+    created: number;
+    updated: number;
+    unresolved: number;
+  };
+  returns: {
+    rows: number;
+    created: number;
+    updated: number;
+    unresolved: number;
+  };
+};
+
 export function fetchAmazonSpConnection() {
   return adminFetch<AmazonSpConnectionStatus>("/api/admin/marketplaces/amazon/connection");
 }
@@ -1571,6 +1588,20 @@ export function syncAmazonMarketplaceOrders(input?: {
   maxPages?: number;
 }) {
   return adminFetch<AmazonOrdersSyncResult>("/api/admin/marketplaces/amazon/sync-orders", {
+    method: "POST",
+    body: JSON.stringify(input ?? {})
+  });
+}
+
+export function syncAmazonMarketplaceAll(input?: {
+  daysBack?: number;
+  createdAfter?: string;
+  createdBefore?: string;
+  orderStatuses?: string[];
+  includeShipped?: boolean;
+  maxPages?: number;
+}) {
+  return adminFetch<AmazonSyncAllResult>("/api/admin/marketplaces/amazon/sync-all", {
     method: "POST",
     body: JSON.stringify(input ?? {})
   });

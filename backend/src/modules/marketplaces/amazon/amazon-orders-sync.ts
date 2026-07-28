@@ -6,6 +6,7 @@ import { prisma } from "../../../config/db";
 import { logger } from "../../../config/logger";
 import type { amazonOrdersSyncSchema } from "../marketplaces.schemas";
 import { listAllAmazonOrders, listAmazonOrderItems, type AmazonOrder, type AmazonOrderItem } from "./amazon-sp-client";
+import { syncAmazonListingsReport, syncAmazonReturnsReport } from "./amazon-reports";
 
 type SyncInput = z.infer<typeof amazonOrdersSyncSchema>;
 
@@ -185,6 +186,7 @@ export function getAmazonConnectionStatus() {
     configured: isAmazonSpConfigured(),
     marketplaceId: amazonEnv.AMAZON_SP_MARKETPLACE_ID,
     region: amazonEnv.AMAZON_SP_REGION,
+    autoSyncEnabled: true,
     missing: [
       !amazonEnv.AMAZON_SP_CLIENT_ID ? "AMAZON_SP_CLIENT_ID" : null,
       !amazonEnv.AMAZON_SP_CLIENT_SECRET ? "AMAZON_SP_CLIENT_SECRET" : null,
@@ -287,4 +289,11 @@ export async function syncAmazonOrders(input: SyncInput = {}) {
     errors,
     messages: messages.slice(0, 20)
   };
+}
+
+export async function syncAmazonMarketplace(input: SyncInput = {}) {
+  const orders = await syncAmazonOrders(input);
+  const listings = await syncAmazonListingsReport(input.daysBack ?? 30);
+  const returns = await syncAmazonReturnsReport(input.daysBack ?? 30);
+  return { orders, listings, returns };
 }

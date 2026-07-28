@@ -4,6 +4,7 @@ import { validateFirebaseConfig } from "./config/firebase";
 import { startEmailWorker } from "./jobs/emailQueue";
 import { startAbandonedNotificationWorker } from "./jobs/abandonedNotificationJob";
 import { startCartCleanupWorker } from "./jobs/cartCleanupJob";
+import { startAmazonMarketplaceSyncJob } from "./jobs/amazonMarketplaceSyncJob";
 import { startPaymentTimeoutWorker } from "./jobs/paymentTimeoutJob";
 import { startDueDateReminderWorker } from "./jobs/taskDueDateJob";
 import { startShippingRetryWorker } from "./jobs/shippingRetryJob";
@@ -23,6 +24,7 @@ app.listen(port, () => {
   startShippingRetryWorker();
   startEmailWorker();
   startAbandonedNotificationWorker();
+  startAmazonMarketplaceSyncJob();
   void startTrackingSyncWorker();
   void startZohoStockSyncWorker();
   void startCartCleanupWorker();
