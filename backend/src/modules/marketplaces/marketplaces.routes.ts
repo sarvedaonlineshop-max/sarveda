@@ -3,6 +3,7 @@ import { Router } from "express";
 import { validateBody } from "../../middleware/validate";
 import * as controller from "./marketplaces.controller";
 import {
+  amazonOrdersSyncSchema,
   marketplaceEmailIngestSchema,
   marketplaceListingPatchSchema,
   marketplaceListingUpsertSchema,
@@ -25,5 +26,7 @@ router.get("/returns", controller.returnsList);
 router.post("/returns", validateBody(marketplaceReturnCreateSchema), controller.createReturn);
 router.get("/inbox", controller.inbox);
 router.post("/email-ingest", validateBody(marketplaceEmailIngestSchema), controller.ingestEmail);
+router.get("/amazon/connection", controller.amazonConnection);
+router.post("/amazon/sync-orders", validateBody(amazonOrdersSyncSchema), controller.amazonSyncOrders);
 
 export { router as marketplaceAdminRoutes };

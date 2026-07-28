@@ -126,4 +126,21 @@ export const marketplaceOrdersImportSchema = z.object({
   csvText: z.string().min(1).max(2_000_000)
 });
 
+/** Amazon SP-API order pull into marketplace ledger. */
+export const amazonOrdersSyncSchema = z.preprocess(
+  (v) => (v == null || typeof v !== "object" ? {} : v),
+  z.object({
+    /** ISO datetime; defaults to now - daysBack. */
+    createdAfter: z.string().datetime().optional(),
+    createdBefore: z.string().datetime().optional(),
+    /** Used when createdAfter omitted (1–60). Default 14. */
+    daysBack: z.number().int().min(1).max(60).optional(),
+    /** Amazon OrderStatuses; default open: Unshipped, PartiallyShipped, Pending. */
+    orderStatuses: z.array(z.string().trim().min(1).max(40)).max(10).optional(),
+    /** When true and orderStatuses omitted, fetch all statuses in the window. */
+    includeShipped: z.boolean().optional(),
+    maxPages: z.number().int().min(1).max(50).optional()
+  })
+);
+
 export type MarketplaceChannelCodeInput = z.infer<typeof marketplaceChannelCodeSchema>;

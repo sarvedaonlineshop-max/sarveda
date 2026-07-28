@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import type {
+  AmazonSpConnectionStatus,
   MarketplaceAnalyticsData,
   MarketplaceChannelCode,
   MarketplaceInboxEvent,
@@ -16,6 +17,7 @@ import {
   createMarketplaceEmailIngest,
   createMarketplaceOrder,
   createMarketplaceReturn,
+  fetchAmazonSpConnection,
   fetchMarketplaceAnalytics,
   fetchMarketplaceInbox,
   fetchMarketplaceListings,
@@ -24,6 +26,7 @@ import {
   fetchMarketplaceReturns,
   importMarketplaceOrdersCsv,
   patchMarketplaceListing,
+  syncAmazonMarketplaceOrders,
   upsertMarketplaceListing
 } from "@/lib/admin-api";
 import { formatINRFromPaise } from "@/lib/money";
@@ -41,8 +44,8 @@ const CHANNELS: Array<{ code: MarketplaceChannelCode; label: string }> = [
 ];
 
 function tone(label: string) {
-  if (label.includes("DELIVER") || label === "ACTIVE" || label === "ok") return "emerald";
-  if (label.includes("RETURN") || label.includes("REFUND") || label === "watch") return "amber";
+  if (label.includes("DELIVER") || label === "ACTIVE" || label === "ok" || label === "CONNECTED") return "emerald";
+  if (label.includes("RETURN") || label.includes("REFUND") || label === "watch" || label === "NOT CONFIGURED") return "amber";
   if (label.includes("CANCEL") || label === "DELISTED" || label === "out" || label === "high") return "red";
   return "stone";
 }
@@ -157,6 +160,9 @@ export function MarketplaceOpsWorkspace() {
     bodyText: "",
     dedupeKey: ""
   });
+  const [amazonConnection, setAmazonConnection] = useState<AmazonSpConnectionStatus | null>(null);
+  const [amazonDaysBack, setAmazonDaysBack] = useState("14");
+  const [amazonIncludeShipped, setAmazonIncludeShipped] = useState(false);
 
   useEffect(() => {
     void loadOverview();
@@ -166,6 +172,14 @@ export function MarketplaceOpsWorkspace() {
     if (!activeChannel) return;
     void Promise.all([loadListings(activeChannel), loadOrders(activeChannel), loadReturns(activeChannel), loadAnalytics(activeChannel), loadInbox(activeChannel)]);
   }, [activeChannel, search, from, to]);
+
+  useEffect(() => {
+    if (activeChannel !== "AMAZON") {
+      setAmazonConnection(null);
+      return;
+    }
+    void loadAmazonConnection();
+  }, [activeChannel]);
 
   useEffect(() => {
     if (!toast) return;
@@ -233,9 +247,40 @@ export function MarketplaceOpsWorkspace() {
     setInbox(data.items);
   }
 
+  async function loadAmazonConnection() {
+    try {
+      setAmazonConnection(await fetchAmazonSpConnection());
+    } catch (e) {
+      setAmazonConnection(null);
+      setError(e instanceof Error ? e.message : "Failed to load Amazon connection status");
+    }
+  }
+
   async function refreshActiveChannel() {
     if (!activeChannel) return;
     await Promise.all([loadListings(activeChannel), loadOrders(activeChannel), loadReturns(activeChannel), loadAnalytics(activeChannel), loadInbox(activeChannel), loadOverview()]);
+  }
+
+  async function syncAmazon() {
+    setBusy("amazon-sync");
+    setError(null);
+    try {
+      const result = await syncAmazonMarketplaceOrders({
+        daysBack: Number(amazonDaysBack) || 14,
+        includeShipped: amazonIncludeShipped
+      });
+      setToast(
+        `Amazon sync: fetched ${result.fetched} · created ${result.created} · updated ${result.updated}` +
+          (result.unresolvedItems ? ` · ${result.unresolvedItems} unmatched SKUs` : "") +
+          (result.errors ? ` · ${result.errors} errors` : "")
+      );
+      await refreshActiveChannel();
+      await loadAmazonConnection();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Amazon sync failed");
+    } finally {
+      setBusy(null);
+    }
   }
 
   async function createListing() {
@@ -439,6 +484,56 @@ export function MarketplaceOpsWorkspace() {
               <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm dark:border-stone-700 dark:bg-stone-950" />
             </div>
           </div>
+
+          {activeChannel === "AMAZON" ? (
+            <SectionCard
+              title="Amazon SP-API sync"
+              right={
+                amazonConnection ? (
+                  <StatusPill label={amazonConnection.configured ? "CONNECTED" : "NOT CONFIGURED"} />
+                ) : null
+              }
+            >
+              <div className="space-y-3 text-sm text-stone-600 dark:text-stone-300">
+                <p>
+                  Pulls open Amazon orders into this tab (default: Unshipped / PartiallyShipped / Pending). Match Seller SKU to
+                  Sarveda SKU or listing seller SKU. Buyer address may be blank until Restricted Data Token is enabled.
+                </p>
+                {amazonConnection && !amazonConnection.configured ? (
+                  <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+                    Missing on backend: {amazonConnection.missing.join(", ") || "credentials"}. Add them to backend{" "}
+                    <code className="text-xs">.env</code> (see <code className="text-xs">backend/.env.example</code>), restart API, then sync.
+                  </p>
+                ) : null}
+                <div className="flex flex-wrap items-end gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">Days back</label>
+                    <input
+                      value={amazonDaysBack}
+                      onChange={(e) => setAmazonDaysBack(e.target.value)}
+                      className="w-24 rounded-lg border border-stone-200 px-3 py-2 text-sm dark:border-stone-700 dark:bg-stone-950"
+                    />
+                  </div>
+                  <label className="inline-flex items-center gap-2 pb-2 text-sm text-stone-700 dark:text-stone-200">
+                    <input
+                      type="checkbox"
+                      checked={amazonIncludeShipped}
+                      onChange={(e) => setAmazonIncludeShipped(e.target.checked)}
+                    />
+                    Include shipped / all statuses
+                  </label>
+                  <button
+                    type="button"
+                    disabled={busy === "amazon-sync" || amazonConnection?.configured === false}
+                    onClick={() => void syncAmazon()}
+                    className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
+                  >
+                    {busy === "amazon-sync" ? "Syncing…" : "Sync from Amazon"}
+                  </button>
+                </div>
+              </div>
+            </SectionCard>
+          ) : null}
 
           <div className="grid gap-5 xl:grid-cols-[1.3fr_0.7fr]">
             <SectionCard title={`${activeChannelLabel} listings`} right={<p className="text-xs text-stone-500">{listings.length} tracked</p>}>

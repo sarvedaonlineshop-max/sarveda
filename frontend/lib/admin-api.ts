@@ -1539,6 +1539,43 @@ export function createMarketplaceEmailIngest(input: {
   });
 }
 
+export type AmazonSpConnectionStatus = {
+  configured: boolean;
+  marketplaceId: string;
+  region: string;
+  missing: string[];
+};
+
+export type AmazonOrdersSyncResult = {
+  configured: boolean;
+  createdAfter: string;
+  orderStatuses: string[] | null;
+  fetched: number;
+  created: number;
+  updated: number;
+  unresolvedItems: number;
+  errors: number;
+  messages: string[];
+};
+
+export function fetchAmazonSpConnection() {
+  return adminFetch<AmazonSpConnectionStatus>("/api/admin/marketplaces/amazon/connection");
+}
+
+export function syncAmazonMarketplaceOrders(input?: {
+  daysBack?: number;
+  createdAfter?: string;
+  createdBefore?: string;
+  orderStatuses?: string[];
+  includeShipped?: boolean;
+  maxPages?: number;
+}) {
+  return adminFetch<AmazonOrdersSyncResult>("/api/admin/marketplaces/amazon/sync-orders", {
+    method: "POST",
+    body: JSON.stringify(input ?? {})
+  });
+}
+
 export type ZohoStockSyncResult = {
   synced: number;
   errors: number;
