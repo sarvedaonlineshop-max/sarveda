@@ -277,16 +277,22 @@ function VerticalBarChart({
       {rows.length === 0 ? (
         <EmptyState message="No data in this range." />
       ) : (
-        <div className="flex h-56 items-end justify-around gap-2 px-2 pt-4">
+        <div className="flex h-56 items-end justify-around gap-1.5 overflow-x-auto px-1 pt-4">
           {rows.map((row, idx) => {
-            const height = Math.max(8, Math.round((row.value / max) * 180));
+            const height = row.value <= 0 ? 6 : Math.max(10, Math.round((row.value / max) * 180));
             const color = row.color || CHART_COLORS[idx % CHART_COLORS.length];
             return (
-              <div key={`${title}:${row.label}`} className="flex min-w-0 flex-1 flex-col items-center gap-2">
+              <div key={`${title}:${row.label}`} className="flex min-w-[52px] flex-1 flex-col items-center gap-2">
                 <span className="text-[11px] font-semibold text-stone-700 dark:text-stone-200">{valueFormatter(row.value)}</span>
                 <div
-                  className="w-full max-w-[48px] rounded-t-lg shadow-sm transition-all duration-500"
-                  style={{ height, background: `linear-gradient(180deg, ${color} 0%, ${color}cc 100%)` }}
+                  className="w-full max-w-[40px] rounded-t-lg shadow-sm transition-all duration-500"
+                  style={{
+                    height,
+                    background:
+                      row.value <= 0
+                        ? "linear-gradient(180deg, #d6d3d1 0%, #e7e5e4 100%)"
+                        : `linear-gradient(180deg, ${color} 0%, ${color}cc 100%)`
+                  }}
                   title={`${row.label}: ${valueFormatter(row.value)}`}
                 />
                 <span className="max-w-full truncate text-center text-[10px] font-medium text-stone-500">{row.label}</span>
@@ -299,52 +305,63 @@ function VerticalBarChart({
   );
 }
 
-function PieChartCard({
+function SalesVsReturnsChart({
   title,
-  slices
+  rows
 }: {
   title: string;
-  slices: Array<{ label: string; value: number; color: string }>;
+  rows: Array<{ label: string; sales: number; returns: number }>;
 }) {
-  const total = slices.reduce((sum, s) => sum + s.value, 0);
-  let cursor = 0;
-  const gradients = slices
-    .filter((s) => s.value > 0)
-    .map((s) => {
-      const start = cursor;
-      const pct = total > 0 ? (s.value / total) * 100 : 0;
-      cursor += pct;
-      return `${s.color} ${start}% ${cursor}%`;
-    });
-
+  const max = Math.max(1, ...rows.flatMap((row) => [row.sales, row.returns]));
   return (
-    <SectionCard title={title}>
-      {total === 0 ? (
-        <EmptyState message="No returns or refunds in this range." />
-      ) : (
-        <div className="flex flex-wrap items-center gap-6">
-          <div
-            className="h-40 w-40 shrink-0 rounded-full shadow-inner ring-4 ring-white dark:ring-stone-900"
-            style={{ background: `conic-gradient(${gradients.join(", ")})` }}
-          />
-          <div className="min-w-0 flex-1 space-y-2">
-            {slices.map((slice) => (
-              <div key={slice.label} className="flex items-center justify-between gap-3 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: slice.color }} />
-                  <span className="text-stone-600 dark:text-stone-300">{slice.label}</span>
-                </div>
-                <span className="font-semibold text-stone-900 dark:text-stone-100">
-                  {slice.value}
-                  {total > 0 ? ` (${Math.round((slice.value / total) * 100)}%)` : ""}
-                </span>
-              </div>
-            ))}
-          </div>
+    <SectionCard
+      title={title}
+      right={
+        <div className="flex items-center gap-3 text-[11px] text-stone-500">
+          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-teal-500" /> Sales (orders)</span>
+          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-rose-500" /> Returns (units)</span>
         </div>
-      )}
+      }
+    >
+      <div className="flex h-60 items-end justify-around gap-2 overflow-x-auto px-1 pt-4">
+        {rows.map((row) => {
+          const salesH = row.sales <= 0 ? 6 : Math.max(10, Math.round((row.sales / max) * 190));
+          const returnsH = row.returns <= 0 ? 6 : Math.max(10, Math.round((row.returns / max) * 190));
+          return (
+            <div key={row.label} className="flex min-w-[64px] flex-1 flex-col items-center gap-2">
+              <div className="flex items-end gap-1">
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-[10px] font-semibold text-teal-700 dark:text-teal-300">{row.sales}</span>
+                  <div
+                    className="w-5 rounded-t-md bg-gradient-to-b from-teal-400 to-teal-600 shadow-sm"
+                    style={{ height: salesH }}
+                    title={`${row.label} sales: ${row.sales}`}
+                  />
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-[10px] font-semibold text-rose-700 dark:text-rose-300">{row.returns}</span>
+                  <div
+                    className="w-5 rounded-t-md bg-gradient-to-b from-rose-400 to-rose-600 shadow-sm"
+                    style={{ height: returnsH }}
+                    title={`${row.label} returns: ${row.returns}`}
+                  />
+                </div>
+              </div>
+              <span className="max-w-full truncate text-center text-[10px] font-medium text-stone-500">{row.label}</span>
+            </div>
+          );
+        })}
+      </div>
     </SectionCard>
   );
+}
+
+function focusTone(action: string) {
+  if (action === "SCALE") return "bg-emerald-50 text-emerald-800 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:ring-emerald-900";
+  if (action === "FIX RETURNS") return "bg-rose-50 text-rose-800 ring-rose-200 dark:bg-rose-950/40 dark:text-rose-200 dark:ring-rose-900";
+  if (action === "CLEAR BACKLOG") return "bg-amber-50 text-amber-900 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-900";
+  if (action === "INTEGRATE") return "bg-sky-50 text-sky-800 ring-sky-200 dark:bg-sky-950/40 dark:text-sky-200 dark:ring-sky-900";
+  return "bg-stone-100 text-stone-700 ring-stone-200 dark:bg-stone-800 dark:text-stone-200 dark:ring-stone-700";
 }
 
 function ChartBars({
@@ -764,38 +781,195 @@ export function MarketplaceOpsWorkspace() {
   const listingsByChannelChart = useMemo(() => {
     const map = new Map<string, number>();
     for (const row of globalListings) {
-      const label = row.channel.displayName;
-      map.set(label, (map.get(label) ?? 0) + 1);
+      map.set(row.channel.code, (map.get(row.channel.code) ?? 0) + 1);
     }
-    return Array.from(map.entries())
-      .map(([label, value]) => ({ label, value }))
-      .sort((a, b) => b.value - a.value);
+    return CHANNELS.map((ch, idx) => ({
+      label: ch.label,
+      value: map.get(ch.code) ?? 0,
+      color: CHART_COLORS[idx % CHART_COLORS.length]
+    }));
   }, [globalListings]);
 
   const pendingDispatchChart = useMemo(() => {
     const map = new Map<string, number>();
     for (const row of mainFilteredOrders) {
       if (!["RECEIVED", "CONFIRMED"].includes(row.status)) continue;
-      const label = row.channel.displayName;
-      map.set(label, (map.get(label) ?? 0) + 1);
+      map.set(row.channel.code, (map.get(row.channel.code) ?? 0) + 1);
     }
-    return Array.from(map.entries())
-      .map(([label, value]) => ({ label, value }))
-      .sort((a, b) => b.value - a.value);
+    return CHANNELS.map((ch, idx) => ({
+      label: ch.label,
+      value: map.get(ch.code) ?? 0,
+      color: CHART_COLORS[idx % CHART_COLORS.length]
+    }));
   }, [mainFilteredOrders]);
 
-  const returnsRefundsPie = useMemo(() => {
-    let openReturns = 0;
-    let refunded = 0;
+  const returnsByChannelChart = useMemo(() => {
+    const map = new Map<string, number>();
     for (const row of mainFilteredReturns) {
-      if (row.status === "REFUNDED") refunded += row.quantity;
-      else openReturns += row.quantity;
+      if (row.status === "REFUNDED") continue;
+      map.set(row.channel.code, (map.get(row.channel.code) ?? 0) + row.quantity);
     }
-    return [
-      { label: "Open returns", value: openReturns, color: "#f59e0b" },
-      { label: "Refunded", value: refunded, color: "#ec4899" }
-    ];
+    return CHANNELS.map((ch, idx) => ({
+      label: ch.label,
+      value: map.get(ch.code) ?? 0,
+      color: CHART_COLORS[idx % CHART_COLORS.length]
+    }));
   }, [mainFilteredReturns]);
+
+  const refundsByChannelChart = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const row of mainFilteredReturns) {
+      if (row.status !== "REFUNDED") continue;
+      map.set(row.channel.code, (map.get(row.channel.code) ?? 0) + row.quantity);
+    }
+    return CHANNELS.map((ch, idx) => ({
+      label: ch.label,
+      value: map.get(ch.code) ?? 0,
+      color: CHART_COLORS[(idx + 3) % CHART_COLORS.length]
+    }));
+  }, [mainFilteredReturns]);
+
+  const salesVsReturnsChart = useMemo(() => {
+    const sales = new Map<string, number>();
+    const rets = new Map<string, number>();
+    for (const row of mainFilteredOrders) {
+      sales.set(row.channel.code, (sales.get(row.channel.code) ?? 0) + 1);
+    }
+    for (const row of mainFilteredReturns) {
+      rets.set(row.channel.code, (rets.get(row.channel.code) ?? 0) + row.quantity);
+    }
+    return CHANNELS.map((ch) => ({
+      label: ch.label,
+      sales: sales.get(ch.code) ?? 0,
+      returns: rets.get(ch.code) ?? 0
+    }));
+  }, [mainFilteredOrders, mainFilteredReturns]);
+
+  const marketplaceFocus = useMemo(() => {
+    const unitsSold = new Map<string, number>();
+    const orderCount = new Map<string, number>();
+    const pending = new Map<string, number>();
+    const returnUnits = new Map<string, number>();
+    const refundUnits = new Map<string, number>();
+    const listings = new Map<string, number>();
+
+    for (const row of globalListings) {
+      listings.set(row.channel.code, (listings.get(row.channel.code) ?? 0) + 1);
+    }
+    for (const row of mainFilteredOrders) {
+      orderCount.set(row.channel.code, (orderCount.get(row.channel.code) ?? 0) + 1);
+      if (["RECEIVED", "CONFIRMED"].includes(row.status)) {
+        pending.set(row.channel.code, (pending.get(row.channel.code) ?? 0) + 1);
+      }
+      for (const item of row.items) {
+        unitsSold.set(row.channel.code, (unitsSold.get(row.channel.code) ?? 0) + item.quantity);
+      }
+    }
+    for (const row of mainFilteredReturns) {
+      if (row.status === "REFUNDED") {
+        refundUnits.set(row.channel.code, (refundUnits.get(row.channel.code) ?? 0) + row.quantity);
+      } else {
+        returnUnits.set(row.channel.code, (returnUnits.get(row.channel.code) ?? 0) + row.quantity);
+      }
+    }
+
+    const rows = CHANNELS.map((ch) => {
+      const orders = orderCount.get(ch.code) ?? 0;
+      const sold = unitsSold.get(ch.code) ?? 0;
+      const openReturns = returnUnits.get(ch.code) ?? 0;
+      const refunded = refundUnits.get(ch.code) ?? 0;
+      const totalReturns = openReturns + refunded;
+      const listingCount = listings.get(ch.code) ?? 0;
+      const pendingCount = pending.get(ch.code) ?? 0;
+      const returnRate = sold > 0 ? totalReturns / sold : orders > 0 ? totalReturns / orders : 0;
+      const isLive = listingCount > 0 || orders > 0 || totalReturns > 0;
+
+      let action: "SCALE" | "FIX RETURNS" | "CLEAR BACKLOG" | "INTEGRATE" | "MONITOR" = "MONITOR";
+      let reason = "Stable activity — keep watching weekly.";
+      let priority = 50;
+
+      if (!isLive) {
+        action = "INTEGRATE";
+        reason = "No listings/orders yet — finish API connect to unlock this channel.";
+        priority = 35;
+      } else if (pendingCount >= 5 && pendingCount >= Math.max(2, Math.round(orders * 0.15))) {
+        action = "CLEAR BACKLOG";
+        reason = `${pendingCount} orders waiting dispatch — ops bottleneck before growth.`;
+        priority = 90 + pendingCount;
+      } else if (sold >= 5 && returnRate >= 0.2) {
+        action = "FIX RETURNS";
+        reason = `${Math.round(returnRate * 100)}% return rate — fix listing quality before spending more on ads.`;
+        priority = 85 + Math.round(returnRate * 100);
+      } else if (orders >= 20 && returnRate < 0.12) {
+        action = "SCALE";
+        reason = `Strong sales (${orders} orders) with healthy returns — increase inventory & ads here first.`;
+        priority = 70 + orders;
+      } else if (orders > 0 && returnRate >= 0.15) {
+        action = "FIX RETURNS";
+        reason = `Return pressure rising (${Math.round(returnRate * 100)}%) — review top returned SKUs.`;
+        priority = 65 + Math.round(returnRate * 40);
+      } else if (orders > 0) {
+        action = "MONITOR";
+        reason = `${orders} orders in range — solid baseline, no urgent action.`;
+        priority = 40 + orders;
+      }
+
+      return {
+        code: ch.code,
+        label: ch.label,
+        orders,
+        sold,
+        openReturns,
+        refunded,
+        totalReturns,
+        returnRate,
+        pendingCount,
+        listingCount,
+        action,
+        reason,
+        priority,
+        predictedNextMonthOrders: Math.max(0, Math.round(orders * (returnRate > 0.2 ? 0.85 : returnRate < 0.1 ? 1.15 : 1.0)))
+      };
+    }).sort((a, b) => b.priority - a.priority);
+
+    const scale = rows.filter((r) => r.action === "SCALE");
+    const fix = rows.filter((r) => r.action === "FIX RETURNS");
+    const backlog = rows.filter((r) => r.action === "CLEAR BACKLOG");
+    const integrate = rows.filter((r) => r.action === "INTEGRATE");
+    const topSales = [...rows].sort((a, b) => b.orders - a.orders)[0];
+    const worstReturns = [...rows].filter((r) => r.sold > 0 || r.orders > 0).sort((a, b) => b.returnRate - a.returnRate)[0];
+
+    const conclusions: string[] = [];
+    if (topSales && topSales.orders > 0) {
+      conclusions.push(
+        `${topSales.label} is the sales engine in this period (${topSales.orders} orders, ${topSales.sold} units). Predicted next-month volume ≈ ${topSales.predictedNextMonthOrders} orders if current trend holds.`
+      );
+    } else {
+      conclusions.push("No marketplace has material sales in this range yet — prioritize finishing integrations and first syncs.");
+    }
+    if (worstReturns && worstReturns.returnRate >= 0.15) {
+      conclusions.push(
+        `${worstReturns.label} has the weakest quality signal: ${Math.round(worstReturns.returnRate * 100)}% returns (${worstReturns.totalReturns} units). Do not scale ads there until return rate drops below 12%.`
+      );
+    } else if (topSales && topSales.orders > 0) {
+      conclusions.push("Return rates look manageable across live channels — safe to protect margin while growing the top seller.");
+    }
+    if (backlog[0]) {
+      conclusions.push(`Immediate ops focus: clear ${backlog[0].label} dispatch backlog (${backlog[0].pendingCount} pending) before it hurts ratings.`);
+    }
+    if (scale[0]) {
+      conclusions.push(`Best channel to invest in next: ${scale[0].label} — ${scale[0].reason}`);
+    } else if (fix[0]) {
+      conclusions.push(`Hold growth spend on ${fix[0].label} until returns cool down.`);
+    }
+    if (integrate.length > 0) {
+      conclusions.push(
+        `Still offline (${integrate.map((r) => r.label).join(", ")}): integrate in this order — Flipkart → Amala/FirstCry/Tata 1mg → Sarveda — so the comparison board fills with real data.`
+      );
+    }
+
+    return { rows, conclusions };
+  }, [globalListings, mainFilteredOrders, mainFilteredReturns]);
 
   const topSellingRows = useMemo(() => {
     const stats = new Map<string, { key: string; label: string; productName: string; variantName: string; units: number; returns: number; revenue: number }>();
@@ -951,11 +1125,73 @@ export function MarketplaceOpsWorkspace() {
             />
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-3">
+          <div className="grid gap-4 xl:grid-cols-2">
             <VerticalBarChart title="Listings by channel" rows={listingsByChannelChart} />
-            <PieChartCard title="Returns & refunds" slices={returnsRefundsPie} />
             <VerticalBarChart title="Pending dispatch" rows={pendingDispatchChart} />
+            <VerticalBarChart title="Returns by channel (open)" rows={returnsByChannelChart} />
+            <VerticalBarChart title="Refunds by channel" rows={refundsByChannelChart} />
           </div>
+
+          <SalesVsReturnsChart title="Sales vs returns by marketplace" rows={salesVsReturnsChart} />
+
+          <SectionCard title="Focus & prediction">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                {marketplaceFocus.conclusions.map((line) => (
+                  <div
+                    key={line}
+                    className="rounded-lg border border-stone-200 bg-gradient-to-r from-teal-50/80 via-white to-rose-50/60 px-4 py-3 text-sm text-stone-700 dark:border-stone-700 dark:from-teal-950/20 dark:via-stone-900 dark:to-rose-950/20 dark:text-stone-200"
+                  >
+                    {line}
+                  </div>
+                ))}
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="border-b border-stone-200 bg-stone-50 dark:border-stone-700 dark:bg-stone-800/60">
+                    <tr>
+                      {[
+                        "Marketplace",
+                        "Orders",
+                        "Units sold",
+                        "Open returns",
+                        "Refunded",
+                        "Return rate",
+                        "Pending",
+                        "Next-month forecast",
+                        "Focus"
+                      ].map((h) => (
+                        <th key={h} className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {marketplaceFocus.rows.map((row) => (
+                      <tr key={row.code} className="border-b border-stone-100 dark:border-stone-800">
+                        <td className="px-3 py-3 font-semibold text-stone-900 dark:text-stone-100">{row.label}</td>
+                        <td className="px-3 py-3">{row.orders}</td>
+                        <td className="px-3 py-3">{row.sold}</td>
+                        <td className="px-3 py-3 text-amber-700 dark:text-amber-300">{row.openReturns}</td>
+                        <td className="px-3 py-3 text-rose-700 dark:text-rose-300">{row.refunded}</td>
+                        <td className="px-3 py-3">{row.sold > 0 || row.orders > 0 ? `${Math.round(row.returnRate * 100)}%` : "—"}</td>
+                        <td className="px-3 py-3">{row.pendingCount}</td>
+                        <td className="px-3 py-3">{row.predictedNextMonthOrders}</td>
+                        <td className="px-3 py-3">
+                          <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${focusTone(row.action)}`}>
+                            {row.action}
+                          </span>
+                          <p className="mt-1 max-w-[240px] text-[11px] leading-snug text-stone-500">{row.reason}</p>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </SectionCard>
 
           <SectionCard title="Marketplace snapshot">
             <div className="grid gap-3 lg:grid-cols-3">
