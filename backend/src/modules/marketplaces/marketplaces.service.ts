@@ -26,7 +26,16 @@ const marketplaceListingInclude = {
   variant: {
     include: {
       productRel: true,
-      inventory: true
+      inventory: true,
+      attributeValues: {
+        include: {
+          attributeValue: {
+            include: {
+              attribute: true
+            }
+          }
+        }
+      }
     }
   }
 } satisfies Prisma.MarketplaceListingInclude;
@@ -38,7 +47,16 @@ const marketplaceOrderInclude = {
       variant: {
         include: {
           productRel: true,
-          inventory: true
+          inventory: true,
+          attributeValues: {
+            include: {
+              attributeValue: {
+                include: {
+                  attribute: true
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -56,7 +74,16 @@ const marketplaceReturnInclude = {
     include: {
       variant: {
         include: {
-          productRel: true
+          productRel: true,
+          attributeValues: {
+            include: {
+              attributeValue: {
+                include: {
+                  attribute: true
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -103,6 +130,26 @@ function endToDate(to?: string): Date | undefined {
   return Number.isNaN(d.getTime()) ? undefined : d;
 }
 
+function variantDisplayName(row: {
+  attributeValues?: Array<{
+    attributeValue: {
+      value: string;
+    };
+  }>;
+  sku?: string;
+}) {
+  const values = row.attributeValues?.map((entry) => entry.attributeValue.value).filter(Boolean) ?? [];
+  return values.length ? values.join(" / ") : row.sku ?? "Default";
+}
+
+function listingPriceFromNotes(notes?: string | null): number | null {
+  if (!notes) return null;
+  const match = notes.match(/price\s+([0-9]+(?:\.[0-9]+)?)/i);
+  if (!match) return null;
+  const amount = Number.parseFloat(match[1]);
+  return Number.isFinite(amount) ? Math.round(amount * 100) : null;
+}
+
 function mapListing(row: ListingRow, stats?: { soldQty: number; returnQty: number }) {
   const available = Math.max(0, (row.variant.inventory?.onHand ?? 0) - (row.variant.inventory?.reserved ?? 0));
   const recentSold = stats?.soldQty ?? 0;
@@ -127,6 +174,7 @@ function mapListing(row: ListingRow, stats?: { soldQty: number; returnQty: numbe
     variant: {
       id: row.variant.id,
       sku: row.variant.sku,
+      variantName: variantDisplayName(row.variant),
       productId: row.variant.productRel.id,
       productName: row.variant.productRel.name,
       productSlug: row.variant.productRel.slug
@@ -141,6 +189,7 @@ function mapListing(row: ListingRow, stats?: { soldQty: number; returnQty: numbe
     zohoOnHand: row.variant.inventory?.onHand ?? 0,
     zohoReserved: row.variant.inventory?.reserved ?? 0,
     available,
+    priceInPaise: listingPriceFromNotes(row.notes),
     recentSoldQty: recentSold,
     recentReturnQty: recentReturns,
     stockRisk,
@@ -173,10 +222,12 @@ function mapOrder(row: OrderRow) {
     status: row.status,
     source: row.source,
     notes: row.notes,
+    rawPayload: row.rawPayload,
     items: row.items.map((item) => ({
       id: item.id,
       skuSnapshot: item.skuSnapshot,
       productNameSnapshot: item.productNameSnapshot,
+      variantName: item.variant ? variantDisplayName(item.variant) : null,
       quantity: item.quantity,
       unitPriceInPaise: item.unitPriceInPaise,
       lineTotalInPaise: item.lineTotalInPaise,
@@ -215,6 +266,7 @@ function mapReturn(row: ReturnRow) {
       row.marketplaceOrderItem?.variant?.productRel.name ??
       row.marketplaceOrderItem?.productNameSnapshot ??
       null,
+    variantName: row.marketplaceOrderItem?.variant ? variantDisplayName(row.marketplaceOrderItem.variant) : null,
     quantity: row.quantity,
     reason: row.reason,
     status: row.status,

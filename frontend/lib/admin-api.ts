@@ -1231,6 +1231,7 @@ export type MarketplaceListingRow = {
   variant: {
     id: string;
     sku: string;
+    variantName: string;
     productId: string;
     productName: string;
     productSlug: string;
@@ -1245,6 +1246,7 @@ export type MarketplaceListingRow = {
   zohoOnHand: number;
   zohoReserved: number;
   available: number;
+  priceInPaise: number | null;
   recentSoldQty: number;
   recentReturnQty: number;
   stockRisk: "ok" | "watch" | "high" | "out";
@@ -1266,10 +1268,12 @@ export type MarketplaceOrderRow = {
   status: MarketplaceOrderStatus;
   source: MarketplaceDataSource;
   notes: string | null;
+  rawPayload?: Record<string, unknown> | null;
   items: Array<{
     id: string;
     skuSnapshot: string;
     productNameSnapshot: string | null;
+    variantName: string | null;
     quantity: number;
     unitPriceInPaise: number | null;
     lineTotalInPaise: number | null;
@@ -1299,6 +1303,7 @@ export type MarketplaceReturnRow = {
   externalOrderId: string;
   sku: string | null;
   productName: string | null;
+  variantName: string | null;
   quantity: number;
   reason: string | null;
   status: MarketplaceReturnStatus;
