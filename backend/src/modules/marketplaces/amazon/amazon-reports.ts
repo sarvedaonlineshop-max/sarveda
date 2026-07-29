@@ -171,10 +171,53 @@ function isoNowEndOfDay() {
   return d.toISOString();
 }
 
-export async function syncAmazonListingsReport(daysBack = 30) {
+/** Calendar-month windows (oldest first) for report/order pagination. */
+export function buildAmazonMonthWindows(monthsBack: number): Array<{
+  label: string;
+  dataStartTime: string;
+  dataEndTime: string;
+}> {
+  const windows: Array<{ label: string; dataStartTime: string; dataEndTime: string }> = [];
+  const now = new Date();
+  const count = Math.max(1, Math.min(36, monthsBack));
+  for (let i = count - 1; i >= 0; i--) {
+    const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1, 0, 0, 0));
+    const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i + 1, 0, 23, 59, 59, 999));
+    if (end.getTime() > now.getTime()) end.setTime(now.getTime());
+    windows.push({
+      label: `${start.getUTCFullYear()}-${String(start.getUTCMonth() + 1).padStart(2, "0")}`,
+      dataStartTime: start.toISOString(),
+      dataEndTime: end.toISOString()
+    });
+  }
+  return windows;
+}
+
+/** Parse Amazon report dates (ISO, YYYY-MM-DD, or MM/DD/YYYY). */
+export function parseAmazonReportDate(value?: string | null): Date | null {
+  if (!value?.trim()) return null;
+  const raw = value.trim();
+  const ms = Date.parse(raw);
+  if (Number.isFinite(ms)) return new Date(ms);
+
+  const ymd = raw.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if (ymd) {
+    return new Date(Date.UTC(Number(ymd[1]), Number(ymd[2]) - 1, Number(ymd[3])));
+  }
+
+  const mdy = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (mdy) {
+    return new Date(Date.UTC(Number(mdy[3]), Number(mdy[1]) - 1, Number(mdy[2])));
+  }
+
+  return null;
+}
+
+export async function syncAmazonListingsReport(_daysBack = 30) {
+  // Listings report is a merchant snapshot; short start window is enough for SP-API.
   const rows = await runFlatFileReport(
     "GET_MERCHANT_LISTINGS_ALL_DATA",
-    isoDaysAgo(Math.max(1, Math.min(60, daysBack))),
+    isoDaysAgo(30),
     isoNowEndOfDay()
   );
   const channel = await prisma.marketplaceChannel.findUnique({ where: { code: "AMAZON" } });
@@ -251,11 +294,11 @@ export async function syncAmazonListingsReport(daysBack = 30) {
   return { rows: rows.length, created, updated, unresolved };
 }
 
-export async function syncAmazonReturnsReport(daysBack = 30) {
+export async function syncAmazonReturnsReportWindow(dataStartTime: string, dataEndTime: string) {
   const rows = await runFlatFileReport(
     "GET_FLAT_FILE_RETURNS_DATA_BY_RETURN_DATE",
-    isoDaysAgo(Math.max(1, Math.min(60, daysBack))),
-    isoNowEndOfDay()
+    dataStartTime,
+    dataEndTime
   );
   const channel = await prisma.marketplaceChannel.findUnique({ where: { code: "AMAZON" } });
   if (!channel) throw new Error("Amazon marketplace channel not seeded");
@@ -282,20 +325,38 @@ export async function syncAmazonReturnsReport(daysBack = 30) {
       continue;
     }
 
-    const sellerSku = row.merchant_sku || row.seller_sku;
-    const quantity = intValue(row.return_quantity) ?? 1;
+    const sellerSku = row.merchant_sku || row.seller_sku || row.sku;
+    const itemName = (row.item_name || row.product_name || "").trim();
+    const quantity = intValue(row.return_quantity) ?? intValue(row.quantity) ?? 1;
     const orderItem =
-      order.items.find((item) => item.skuSnapshot === sellerSku) ??
+      order.items.find((item) => sellerSku && item.skuSnapshot === sellerSku) ??
       order.items.find((item) => row.asin && item.skuSnapshot === row.asin) ??
-      null;
-    const dedupe = row.rma_id || row.amazon_rma_id || `${externalOrderId}:${sellerSku}:${row.return_request_date}`;
-    const statusText = (row.return_request_status || row.return_request_status_ || "").toLowerCase();
-    const status: MarketplaceReturnStatus =
-      statusText.includes("refunded")
-        ? "REFUNDED"
-        : statusText.includes("received") || statusText.includes("approved")
-          ? "RECEIVED"
-          : "REQUESTED";
+      order.items.find(
+        (item) =>
+          itemName &&
+          item.productNameSnapshot &&
+          item.productNameSnapshot.toLowerCase() === itemName.toLowerCase()
+      ) ??
+      (order.items.length === 1 ? order.items[0] : null);
+
+    const returnDate =
+      parseAmazonReportDate(row.return_request_date) ??
+      parseAmazonReportDate(row.return_date) ??
+      parseAmazonReportDate(row.refund_date) ??
+      parseAmazonReportDate(row.order_date) ??
+      order.orderDate;
+
+    const dedupe =
+      row.rma_id ||
+      row.amazon_rma_id ||
+      `${externalOrderId}:${sellerSku || orderItem?.skuSnapshot || "item"}:${returnDate.toISOString().slice(0, 10)}`;
+
+    const statusText = (row.return_request_status || row.return_request_status_ || row.status || "").toLowerCase();
+    const status: MarketplaceReturnStatus = statusText.includes("refund")
+      ? "REFUNDED"
+      : statusText.includes("received") || statusText.includes("approved") || statusText.includes("completed")
+        ? "RECEIVED"
+        : "REQUESTED";
 
     const existing = await prisma.marketplaceReturn.findFirst({
       where: {
@@ -308,10 +369,10 @@ export async function syncAmazonReturnsReport(daysBack = 30) {
       marketplaceOrderId: order.id,
       marketplaceOrderItemId: orderItem?.id ?? null,
       quantity,
-      reason: row.return_reason || row.return_reason_code || null,
+      reason: row.return_reason || row.return_reason_code || itemName || null,
       status,
-      receivedAt: row.return_request_date ? new Date(row.return_request_date) : null,
-      refundedAmountInPaise: amountToPaise(row.refund_amount),
+      receivedAt: returnDate,
+      refundedAmountInPaise: amountToPaise(row.refund_amount || row.refunded_amount),
       restockedToZoho: false,
       notes: `Amazon RMA ${dedupe}`,
       rawPayload: row as Prisma.InputJsonValue
@@ -329,17 +390,71 @@ export async function syncAmazonReturnsReport(daysBack = 30) {
     }
   }
 
+  logger.info("Amazon returns window sync completed", {
+    dataStartTime,
+    dataEndTime,
+    rows: rows.length,
+    created,
+    updated,
+    unresolved
+  });
+
+  return { rows: rows.length, created, updated, unresolved, dataStartTime, dataEndTime };
+}
+
+/** Month-by-month returns sync — Amazon return reports are unreliable for long ranges. */
+export async function syncAmazonReturnsReport(monthsBack = 24) {
+  const channel = await prisma.marketplaceChannel.findUnique({ where: { code: "AMAZON" } });
+  if (!channel) throw new Error("Amazon marketplace channel not seeded");
+
+  const windows = buildAmazonMonthWindows(monthsBack);
+  let rows = 0;
+  let created = 0;
+  let updated = 0;
+  let unresolved = 0;
+  const months: Array<{ month: string; rows: number; created: number; updated: number; unresolved: number; error?: string }> =
+    [];
+
+  for (const window of windows) {
+    try {
+      const result = await syncAmazonReturnsReportWindow(window.dataStartTime, window.dataEndTime);
+      rows += result.rows;
+      created += result.created;
+      updated += result.updated;
+      unresolved += result.unresolved;
+      months.push({
+        month: window.label,
+        rows: result.rows,
+        created: result.created,
+        updated: result.updated,
+        unresolved: result.unresolved
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      logger.error("Amazon returns month window failed", { month: window.label, err: message });
+      months.push({
+        month: window.label,
+        rows: 0,
+        created: 0,
+        updated: 0,
+        unresolved: 0,
+        error: message
+      });
+    }
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+  }
+
   await prisma.marketplaceEventLog.create({
     data: {
       channelId: channel.id,
       eventType: "amazon.returns.sync",
       source: "API",
       dedupeKey: `amazon-returns:${Date.now()}`,
-      rawPayload: { rows: rows.length, created, updated, unresolved },
+      rawPayload: { monthsBack, rows, created, updated, unresolved, months },
       processedAt: new Date()
     }
   });
 
-  logger.info("Amazon returns sync completed", { rows: rows.length, created, updated, unresolved });
-  return { rows: rows.length, created, updated, unresolved };
+  logger.info("Amazon returns sync completed", { monthsBack, rows, created, updated, unresolved });
+  return { rows, created, updated, unresolved, months };
 }

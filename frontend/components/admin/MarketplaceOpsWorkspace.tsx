@@ -696,9 +696,18 @@ export function MarketplaceOpsWorkspace() {
   async function runAmazonManualSync() {
     setBusy("amazon-sync");
     setError(null);
+    setNotice(null);
     try {
-      const result = await syncAmazonMarketplaceAll({ daysBack: 30, includeShipped: true, maxPages: 25 });
+      const result = await syncAmazonMarketplaceAll({
+        monthsBack: 24,
+        includeShipped: true,
+        maxPagesPerMonth: 10
+      });
       setAmazonLastSync(result);
+      setNotice(
+        result.message ||
+          "Amazon sync started in the background (month by month). Refresh Listings/Orders/Returns in a few minutes."
+      );
       if (activeChannel) {
         await Promise.all([loadListings(activeChannel), loadOrders(activeChannel), loadReturns(activeChannel)]);
       }
@@ -1284,7 +1293,7 @@ export function MarketplaceOpsWorkspace() {
                       {line}
                     </div>
                   ))}
-                  {amazonLastSync ? (
+                  {amazonLastSync?.orders && amazonLastSync.listings && amazonLastSync.returns ? (
                     <div className="rounded-lg border border-stone-200 px-4 py-3 text-xs text-stone-500 dark:border-stone-700">
                       Last manual sync scanned {amazonLastSync.orders.fetched} orders, {amazonLastSync.listings.rows} listings, and {amazonLastSync.returns.rows} returns.
                     </div>

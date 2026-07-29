@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 
-import { getAmazonConnectionStatus, syncAmazonMarketplace, syncAmazonOrders } from "./amazon/amazon-orders-sync";
+import { getAmazonConnectionStatus, startAmazonMarketplaceSync, syncAmazonOrders } from "./amazon/amazon-orders-sync";
 import { getEtsyConnectionStatus, startEtsyMarketplaceSync } from "./etsy/etsy-sync";
 import { getFlipkartConnectionStatus, syncFlipkartMarketplace } from "./flipkart/flipkart-sync";
 import * as service from "./marketplaces.service";
@@ -184,7 +184,36 @@ export async function amazonSyncOrders(req: Request, res: Response, next: NextFu
 
 export async function amazonSyncAll(req: Request, res: Response, next: NextFunction) {
   try {
-    res.json({ success: true, data: await syncAmazonMarketplace(req.body ?? {}) });
+    const body = (req.body ?? {}) as {
+      monthsBack?: number;
+      daysBack?: number;
+      maxPagesPerMonth?: number;
+      maxPages?: number;
+      includeShipped?: boolean;
+      orderStatuses?: string[];
+    };
+    const monthsBack =
+      typeof body.monthsBack === "number"
+        ? body.monthsBack
+        : typeof body.daysBack === "number"
+          ? Math.max(1, Math.ceil(body.daysBack / 30))
+          : 24;
+    const maxPagesPerMonth =
+      typeof body.maxPagesPerMonth === "number"
+        ? body.maxPagesPerMonth
+        : typeof body.maxPages === "number"
+          ? body.maxPages
+          : 10;
+    // Background sync avoids Vercel/proxy 504 while month batches run.
+    res.json({
+      success: true,
+      data: startAmazonMarketplaceSync({
+        monthsBack,
+        maxPagesPerMonth,
+        includeShipped: body.includeShipped ?? true,
+        orderStatuses: body.orderStatuses
+      })
+    });
   } catch (err) {
     next(err);
   }

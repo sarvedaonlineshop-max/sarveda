@@ -314,24 +314,42 @@ function mapReturn(row: ReturnRow) {
     created_timestamp?: number;
     title?: string;
     reason?: string;
+    item_name?: string;
+    product_name?: string;
+    return_request_date?: string;
+    return_date?: string;
+    refund_date?: string;
+    order_date?: string;
   };
   const receiptPayload = (row.marketplaceOrder.rawPayload ?? {}) as {
     receipt?: { created_timestamp?: number; updated_timestamp?: number };
   };
 
+  const parseLooseDate = (value?: string | null) => {
+    if (!value?.trim()) return null;
+    const ms = Date.parse(value.trim());
+    return Number.isFinite(ms) ? new Date(ms) : null;
+  };
+
   const payloadDate =
     raw.created_timestamp != null
       ? new Date(raw.created_timestamp * 1000)
-      : receiptPayload.receipt?.updated_timestamp != null
-        ? new Date(receiptPayload.receipt.updated_timestamp * 1000)
-        : receiptPayload.receipt?.created_timestamp != null
-          ? new Date(receiptPayload.receipt.created_timestamp * 1000)
-          : null;
+      : parseLooseDate(raw.return_request_date) ??
+        parseLooseDate(raw.return_date) ??
+        parseLooseDate(raw.refund_date) ??
+        parseLooseDate(raw.order_date) ??
+        (receiptPayload.receipt?.updated_timestamp != null
+          ? new Date(receiptPayload.receipt.updated_timestamp * 1000)
+          : receiptPayload.receipt?.created_timestamp != null
+            ? new Date(receiptPayload.receipt.created_timestamp * 1000)
+            : null);
 
   const returnDate = row.receivedAt ?? payloadDate ?? row.marketplaceOrder.orderDate ?? row.createdAt;
 
   const productFromPayload =
-    typeof raw.title === "string" && raw.title.trim() ? raw.title.trim() : null;
+    (typeof raw.title === "string" && raw.title.trim() ? raw.title.trim() : null) ||
+    (typeof raw.item_name === "string" && raw.item_name.trim() ? raw.item_name.trim() : null) ||
+    (typeof raw.product_name === "string" && raw.product_name.trim() ? raw.product_name.trim() : null);
 
   return {
     id: row.id,

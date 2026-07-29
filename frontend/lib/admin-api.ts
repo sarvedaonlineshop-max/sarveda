@@ -1553,12 +1553,14 @@ export type AmazonSpConnectionStatus = {
   marketplaceId: string;
   region: string;
   autoSyncEnabled: boolean;
+  syncRunning?: boolean;
   missing: string[];
 };
 
 export type AmazonOrdersSyncResult = {
   configured: boolean;
   createdAfter: string;
+  createdBefore?: string | null;
   orderStatuses: string[] | null;
   fetched: number;
   created: number;
@@ -1566,17 +1568,22 @@ export type AmazonOrdersSyncResult = {
   unresolvedItems: number;
   errors: number;
   messages: string[];
+  monthsProcessed?: number;
 };
 
 export type AmazonSyncAllResult = {
-  orders: AmazonOrdersSyncResult;
-  listings: {
+  started?: boolean;
+  message?: string;
+  monthsBack?: number;
+  maxPagesPerMonth?: number;
+  orders?: AmazonOrdersSyncResult;
+  listings?: {
     rows: number;
     created: number;
     updated: number;
     unresolved: number;
   };
-  returns: {
+  returns?: {
     rows: number;
     created: number;
     updated: number;
@@ -1604,11 +1611,13 @@ export function syncAmazonMarketplaceOrders(input?: {
 
 export function syncAmazonMarketplaceAll(input?: {
   daysBack?: number;
+  monthsBack?: number;
   createdAfter?: string;
   createdBefore?: string;
   orderStatuses?: string[];
   includeShipped?: boolean;
   maxPages?: number;
+  maxPagesPerMonth?: number;
 }) {
   return adminFetch<AmazonSyncAllResult>("/api/admin/marketplaces/amazon/sync-all", {
     method: "POST",

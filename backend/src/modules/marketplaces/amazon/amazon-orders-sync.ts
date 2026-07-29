@@ -6,11 +6,18 @@ import { prisma } from "../../../config/db";
 import { logger } from "../../../config/logger";
 import type { amazonOrdersSyncSchema } from "../marketplaces.schemas";
 import { listAllAmazonOrders, listAmazonOrderItems, getRestrictedDataToken, getOrderWithPII, type AmazonOrder, type AmazonOrderItem } from "./amazon-sp-client";
-import { syncAmazonListingsReport, syncAmazonReturnsReport } from "./amazon-reports";
+import {
+  buildAmazonMonthWindows,
+  syncAmazonListingsReport,
+  syncAmazonReturnsReportWindow
+} from "./amazon-reports";
 
 type SyncInput = z.infer<typeof amazonOrdersSyncSchema>;
 
 const DEFAULT_OPEN_STATUSES = ["Unshipped", "PartiallyShipped", "Pending"];
+let syncRunning = false;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function mapAmazonStatus(orderStatus?: string): MarketplaceOrderStatus {
   switch ((orderStatus ?? "").toLowerCase()) {
@@ -187,6 +194,7 @@ export function getAmazonConnectionStatus() {
     marketplaceId: amazonEnv.AMAZON_SP_MARKETPLACE_ID,
     region: amazonEnv.AMAZON_SP_REGION,
     autoSyncEnabled: true,
+    syncRunning,
     missing: [
       !amazonEnv.AMAZON_SP_CLIENT_ID ? "AMAZON_SP_CLIENT_ID" : null,
       !amazonEnv.AMAZON_SP_CLIENT_SECRET ? "AMAZON_SP_CLIENT_SECRET" : null,
@@ -279,6 +287,7 @@ export async function syncAmazonOrders(input: SyncInput = {}) {
       dedupeKey: `amazon-sync:${createdAfter}:${Date.now()}`,
       rawPayload: {
         createdAfter,
+        createdBefore: input.createdBefore ?? null,
         orderStatuses: orderStatuses ?? "ALL",
         fetched: amazonOrders.length,
         created,
@@ -296,12 +305,15 @@ export async function syncAmazonOrders(input: SyncInput = {}) {
     created,
     updated,
     unresolvedItems,
-    errors
+    errors,
+    createdAfter,
+    createdBefore: input.createdBefore ?? null
   });
 
   return {
     configured: true,
     createdAfter,
+    createdBefore: input.createdBefore ?? null,
     orderStatuses: orderStatuses ?? null,
     fetched: amazonOrders.length,
     created,
@@ -312,9 +324,164 @@ export async function syncAmazonOrders(input: SyncInput = {}) {
   };
 }
 
+/**
+ * Full marketplace sync: listings once, then orders+returns month-by-month
+ * to avoid SP-API 504 / quota failures on wide date ranges.
+ */
 export async function syncAmazonMarketplace(input: SyncInput = {}) {
-  const orders = await syncAmazonOrders(input);
-  const listings = await syncAmazonListingsReport(input.daysBack ?? 730);
-  const returns = await syncAmazonReturnsReport(input.daysBack ?? 730);
-  return { orders, listings, returns };
+  const monthsBack =
+    input.monthsBack ??
+    (input.daysBack != null ? Math.max(1, Math.ceil(input.daysBack / 30)) : 24);
+  const maxPagesPerMonth = input.maxPagesPerMonth ?? input.maxPages ?? 10;
+  const includeShipped = input.includeShipped ?? true;
+  const windows = buildAmazonMonthWindows(monthsBack);
+
+  logger.info("Amazon marketplace sync starting (month-by-month)", {
+    monthsBack,
+    maxPagesPerMonth,
+    windows: windows.length
+  });
+
+  const listings = await syncAmazonListingsReport();
+
+  const months: Array<{
+    month: string;
+    ordersFetched: number;
+    ordersCreated: number;
+    ordersUpdated: number;
+    ordersErrors: number;
+    returnsRows: number;
+    returnsCreated: number;
+    returnsUpdated: number;
+    returnsUnresolved: number;
+    error?: string;
+  }> = [];
+
+  for (const window of windows) {
+    try {
+      const orders = await syncAmazonOrders({
+        createdAfter: window.dataStartTime,
+        createdBefore: window.dataEndTime,
+        includeShipped,
+        orderStatuses: input.orderStatuses,
+        maxPages: maxPagesPerMonth
+      });
+      await sleep(2000);
+      const returns = await syncAmazonReturnsReportWindow(window.dataStartTime, window.dataEndTime);
+      months.push({
+        month: window.label,
+        ordersFetched: orders.fetched,
+        ordersCreated: orders.created,
+        ordersUpdated: orders.updated,
+        ordersErrors: orders.errors,
+        returnsRows: returns.rows,
+        returnsCreated: returns.created,
+        returnsUpdated: returns.updated,
+        returnsUnresolved: returns.unresolved
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      logger.error("Amazon month window failed", { month: window.label, err: message });
+      months.push({
+        month: window.label,
+        ordersFetched: 0,
+        ordersCreated: 0,
+        ordersUpdated: 0,
+        ordersErrors: 1,
+        returnsRows: 0,
+        returnsCreated: 0,
+        returnsUpdated: 0,
+        returnsUnresolved: 0,
+        error: message
+      });
+    }
+    await sleep(2500);
+  }
+
+  const orders = {
+    configured: true as const,
+    createdAfter: windows[0]?.dataStartTime ?? new Date().toISOString(),
+    createdBefore: windows[windows.length - 1]?.dataEndTime ?? null,
+    orderStatuses: null as string[] | null,
+    fetched: months.reduce((sum, m) => sum + m.ordersFetched, 0),
+    created: months.reduce((sum, m) => sum + m.ordersCreated, 0),
+    updated: months.reduce((sum, m) => sum + m.ordersUpdated, 0),
+    unresolvedItems: 0,
+    errors: months.reduce((sum, m) => sum + m.ordersErrors, 0),
+    messages: months.filter((m) => m.error).map((m) => `${m.month}: ${m.error}`).slice(0, 20),
+    monthsProcessed: months.length
+  };
+
+  const returns = {
+    rows: months.reduce((sum, m) => sum + m.returnsRows, 0),
+    created: months.reduce((sum, m) => sum + m.returnsCreated, 0),
+    updated: months.reduce((sum, m) => sum + m.returnsUpdated, 0),
+    unresolved: months.reduce((sum, m) => sum + m.returnsUnresolved, 0),
+    monthsProcessed: months.length
+  };
+
+  const channel = await prisma.marketplaceChannel.findUnique({ where: { code: "AMAZON" } });
+  if (channel) {
+    await prisma.marketplaceEventLog.create({
+      data: {
+        channelId: channel.id,
+        eventType: "amazon.marketplace.sync",
+        source: "API",
+        dedupeKey: `amazon-marketplace:${Date.now()}`,
+        rawPayload: { monthsBack, maxPagesPerMonth, listings, orders, returns, months },
+        processedAt: new Date()
+      }
+    });
+  }
+
+  logger.info("Amazon marketplace sync completed", {
+    monthsBack,
+    ordersFetched: orders.fetched,
+    returnsRows: returns.rows,
+    monthErrors: months.filter((m) => m.error).length
+  });
+
+  return { listings, orders, returns, months };
+}
+
+/** Fire-and-forget sync so admin UI does not hit gateway timeout. */
+export function startAmazonMarketplaceSync(input: SyncInput = {}) {
+  if (syncRunning) {
+    return { started: false, message: "Amazon sync already running in the background." };
+  }
+  if (!isAmazonSpConfigured()) {
+    throw Object.assign(
+      new Error(
+        "Amazon SP-API is not configured. Set AMAZON_SP_CLIENT_ID, AMAZON_SP_CLIENT_SECRET, and AMAZON_SP_REFRESH_TOKEN on the backend."
+      ),
+      { statusCode: 503, code: "AMAZON_NOT_CONFIGURED" }
+    );
+  }
+
+  const monthsBack =
+    input.monthsBack ??
+    (input.daysBack != null ? Math.max(1, Math.ceil(input.daysBack / 30)) : 24);
+
+  syncRunning = true;
+  void (async () => {
+    try {
+      await syncAmazonMarketplace(input);
+    } catch (err) {
+      logger.error("amazon_background_sync_failed", { err });
+    } finally {
+      syncRunning = false;
+    }
+  })();
+
+  return {
+    started: true,
+    message:
+      "Amazon sync started in the background (month by month). Refresh Listings/Orders/Returns in a few minutes.",
+    monthsBack,
+    maxPagesPerMonth: input.maxPagesPerMonth ?? input.maxPages ?? 10
+  };
+}
+
+export function isAmazonMarketplaceSyncRunning() {
+  return syncRunning;
 }

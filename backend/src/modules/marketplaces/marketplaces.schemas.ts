@@ -130,16 +130,19 @@ export const marketplaceOrdersImportSchema = z.object({
 export const amazonOrdersSyncSchema = z.preprocess(
   (v) => (v == null || typeof v !== "object" ? {} : v),
   z.object({
-    /** ISO datetime; defaults to now - daysBack. */
+    /** ISO datetime; defaults to now - daysBack (single-window sync only). */
     createdAfter: z.string().datetime().optional(),
     createdBefore: z.string().datetime().optional(),
-    /** Used when createdAfter omitted. Orders can go broader than report-based listings/returns. */
+    /** Used when createdAfter omitted for a single window. Prefer monthsBack for full marketplace sync. */
     daysBack: z.number().int().min(1).max(730).optional(),
+    /** Month-by-month sync depth for sync-all (avoids SP-API timeouts). */
+    monthsBack: z.number().int().min(1).max(36).optional(),
     /** Amazon OrderStatuses; default open: Unshipped, PartiallyShipped, Pending. */
     orderStatuses: z.array(z.string().trim().min(1).max(40)).max(10).optional(),
     /** When true and orderStatuses omitted, fetch all statuses in the window. */
     includeShipped: z.boolean().optional(),
-    maxPages: z.number().int().min(1).max(50).optional()
+    maxPages: z.number().int().min(1).max(50).optional(),
+    maxPagesPerMonth: z.number().int().min(1).max(20).optional()
   })
 );
 
