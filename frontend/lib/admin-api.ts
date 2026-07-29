@@ -1247,6 +1247,7 @@ export type MarketplaceListingRow = {
   zohoReserved: number;
   available: number;
   priceInPaise: number | null;
+  currency: string;
   recentSoldQty: number;
   recentReturnQty: number;
   stockRisk: "ok" | "watch" | "high" | "out";
@@ -1268,6 +1269,7 @@ export type MarketplaceOrderRow = {
   status: MarketplaceOrderStatus;
   source: MarketplaceDataSource;
   notes: string | null;
+  currency: string;
   rawPayload?: Record<string, unknown> | null;
   items: Array<{
     id: string;
@@ -1308,7 +1310,9 @@ export type MarketplaceReturnRow = {
   reason: string | null;
   status: MarketplaceReturnStatus;
   receivedAt: string | null;
+  returnDate: string;
   refundedAmountInPaise: number | null;
+  currency: string;
   restockedToZoho: boolean;
   notes: string | null;
   createdAt: string;

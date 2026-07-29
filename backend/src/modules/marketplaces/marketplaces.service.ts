@@ -67,7 +67,25 @@ const marketplaceOrderInclude = {
 const marketplaceReturnInclude = {
   marketplaceOrder: {
     include: {
-      channel: true
+      channel: true,
+      items: {
+        include: {
+          variant: {
+            include: {
+              productRel: true,
+              attributeValues: {
+                include: {
+                  attributeValue: {
+                    include: {
+                      attribute: true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   marketplaceOrderItem: {
@@ -150,6 +168,41 @@ function listingPriceFromNotes(notes?: string | null): number | null {
   return Number.isFinite(amount) ? Math.round(amount * 100) : null;
 }
 
+/** Marketplace-native currency for display (retain source marketplace money). */
+function marketplaceCurrency(
+  channelCode: string,
+  rawPayload?: unknown
+): string {
+  const defaults: Record<string, string> = {
+    ETSY: "USD",
+    AMAZON: "INR",
+    FLIPKART: "INR",
+    AMALA: "INR",
+    FIRSTCRY: "INR",
+    TATA_1MG: "INR",
+    SARVEDA: "INR"
+  };
+
+  if (rawPayload && typeof rawPayload === "object") {
+    const payload = rawPayload as Record<string, unknown>;
+    const receipt = (payload.receipt ?? payload.order ?? payload) as Record<string, unknown>;
+    const moneyCandidates = [
+      (receipt?.grandtotal as { currency_code?: string } | undefined)?.currency_code,
+      (receipt?.total_price as { currency_code?: string } | undefined)?.currency_code,
+      ((receipt?.OrderTotal as { CurrencyCode?: string } | undefined)?.CurrencyCode),
+      ((payload.transactions as Array<{ price?: { currency_code?: string } }> | undefined)?.[0]?.price
+        ?.currency_code),
+      ((receipt?.transactions as Array<{ price?: { currency_code?: string } }> | undefined)?.[0]?.price
+        ?.currency_code)
+    ];
+    for (const code of moneyCandidates) {
+      if (typeof code === "string" && code.trim()) return code.trim().toUpperCase();
+    }
+  }
+
+  return defaults[channelCode] ?? "INR";
+}
+
 function mapListing(row: ListingRow, stats?: { soldQty: number; returnQty: number }) {
   const available = Math.max(0, (row.variant.inventory?.onHand ?? 0) - (row.variant.inventory?.reserved ?? 0));
   const recentSold = stats?.soldQty ?? 0;
@@ -190,6 +243,7 @@ function mapListing(row: ListingRow, stats?: { soldQty: number; returnQty: numbe
     zohoReserved: row.variant.inventory?.reserved ?? 0,
     available,
     priceInPaise: listingPriceFromNotes(row.notes),
+    currency: marketplaceCurrency(row.channel.code),
     recentSoldQty: recentSold,
     recentReturnQty: recentReturns,
     stockRisk,
@@ -203,6 +257,7 @@ function mapOrder(row: OrderRow) {
     (sum, item) => sum + (item.lineTotalInPaise ?? (item.unitPriceInPaise ?? 0) * item.quantity),
     0
   );
+  const currency = marketplaceCurrency(row.channel.code, row.rawPayload);
   return {
     id: row.id,
     channel: {
@@ -222,6 +277,7 @@ function mapOrder(row: OrderRow) {
     status: row.status,
     source: row.source,
     notes: row.notes,
+    currency,
     rawPayload: row.rawPayload,
     items: row.items.map((item) => ({
       id: item.id,
@@ -251,6 +307,32 @@ function mapOrder(row: OrderRow) {
 }
 
 function mapReturn(row: ReturnRow) {
+  const fallbackItem = row.marketplaceOrder.items[0] ?? null;
+  const item = row.marketplaceOrderItem ?? fallbackItem;
+
+  const raw = (row.rawPayload ?? {}) as {
+    created_timestamp?: number;
+    title?: string;
+    reason?: string;
+  };
+  const receiptPayload = (row.marketplaceOrder.rawPayload ?? {}) as {
+    receipt?: { created_timestamp?: number; updated_timestamp?: number };
+  };
+
+  const payloadDate =
+    raw.created_timestamp != null
+      ? new Date(raw.created_timestamp * 1000)
+      : receiptPayload.receipt?.updated_timestamp != null
+        ? new Date(receiptPayload.receipt.updated_timestamp * 1000)
+        : receiptPayload.receipt?.created_timestamp != null
+          ? new Date(receiptPayload.receipt.created_timestamp * 1000)
+          : null;
+
+  const returnDate = row.receivedAt ?? payloadDate ?? row.marketplaceOrder.orderDate ?? row.createdAt;
+
+  const productFromPayload =
+    typeof raw.title === "string" && raw.title.trim() ? raw.title.trim() : null;
+
   return {
     id: row.id,
     marketplaceOrderId: row.marketplaceOrderId,
@@ -261,17 +343,17 @@ function mapReturn(row: ReturnRow) {
       displayName: row.marketplaceOrder.channel.displayName
     },
     externalOrderId: row.marketplaceOrder.externalOrderId,
-    sku: row.marketplaceOrderItem?.skuSnapshot ?? null,
+    sku: item?.skuSnapshot ?? null,
     productName:
-      row.marketplaceOrderItem?.variant?.productRel.name ??
-      row.marketplaceOrderItem?.productNameSnapshot ??
-      null,
-    variantName: row.marketplaceOrderItem?.variant ? variantDisplayName(row.marketplaceOrderItem.variant) : null,
+      item?.variant?.productRel.name ?? item?.productNameSnapshot ?? productFromPayload ?? null,
+    variantName: item?.variant ? variantDisplayName(item.variant) : item?.skuSnapshot ?? null,
     quantity: row.quantity,
     reason: row.reason,
     status: row.status,
     receivedAt: row.receivedAt?.toISOString() ?? null,
+    returnDate: returnDate.toISOString(),
     refundedAmountInPaise: row.refundedAmountInPaise,
+    currency: marketplaceCurrency(row.marketplaceOrder.channel.code, row.marketplaceOrder.rawPayload ?? row.rawPayload),
     restockedToZoho: row.restockedToZoho,
     notes: row.notes,
     createdAt: row.createdAt.toISOString(),
@@ -411,7 +493,7 @@ export async function getMarketplaceOverview() {
         include: marketplaceOrderInclude
       }),
       prisma.marketplaceReturn.findMany({
-        orderBy: { createdAt: "desc" },
+        orderBy: [{ receivedAt: "desc" }, { createdAt: "desc" }],
         take: 8,
         include: marketplaceReturnInclude
       }),
@@ -695,14 +777,27 @@ export async function listMarketplaceReturns(params?: {
         : {}),
       ...(params?.from || params?.to
         ? {
-            createdAt: {
-              ...(startFromDate(params.from) ? { gte: startFromDate(params.from) } : {}),
-              ...(endToDate(params.to) ? { lte: endToDate(params.to) } : {})
-            }
+            OR: [
+              {
+                receivedAt: {
+                  ...(startFromDate(params.from) ? { gte: startFromDate(params.from) } : {}),
+                  ...(endToDate(params.to) ? { lte: endToDate(params.to) } : {})
+                }
+              },
+              {
+                receivedAt: null,
+                marketplaceOrder: {
+                  orderDate: {
+                    ...(startFromDate(params.from) ? { gte: startFromDate(params.from) } : {}),
+                    ...(endToDate(params.to) ? { lte: endToDate(params.to) } : {})
+                  }
+                }
+              }
+            ]
           }
         : {})
     },
-    orderBy: [{ createdAt: "desc" }],
+    orderBy: [{ receivedAt: "desc" }, { createdAt: "desc" }],
     include: marketplaceReturnInclude
   });
   return { items: rows.map(mapReturn) };

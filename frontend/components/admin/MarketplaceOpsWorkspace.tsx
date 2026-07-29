@@ -26,11 +26,11 @@ import {
   syncEtsyMarketplaceAll,
   syncFlipkartMarketplaceAll
 } from "@/lib/admin-api";
-import { formatINRFromPaise } from "@/lib/money";
+import { formatMinorFromPaise } from "@/lib/money";
 
 type ViewTab = "overview" | MarketplaceChannelCode;
 type ChannelSubTab = "overview" | "listings" | "orders" | "returns";
-type RangePreset = "today" | "week" | "month" | "all";
+type DateRange = { from: string; to: string };
 type ListingSort =
   | "sold_desc"
   | "sold_asc"
@@ -38,6 +38,17 @@ type ListingSort =
   | "returns_asc"
   | "stock_desc"
   | "stock_asc";
+
+const CHART_COLORS = [
+  "#0d9488",
+  "#2563eb",
+  "#d97706",
+  "#db2777",
+  "#7c3aed",
+  "#059669",
+  "#dc2626",
+  "#0891b2"
+];
 
 const CHANNELS: Array<{ code: MarketplaceChannelCode; label: string }> = [
   { code: "AMAZON", label: "Amazon" },
@@ -119,46 +130,221 @@ function EmptyState({ message }: { message: string }) {
   return <p className="py-8 text-center text-sm text-stone-500 dark:text-stone-400">{message}</p>;
 }
 
-function startOfDay(date: Date) {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
+function toIsoDate(date: Date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
-function daysAgo(days: number) {
-  const d = new Date();
-  d.setDate(d.getDate() - days);
-  return startOfDay(d);
+function currentMonthRange(): DateRange {
+  const now = new Date();
+  return { from: toIsoDate(new Date(now.getFullYear(), now.getMonth(), 1)), to: toIsoDate(now) };
 }
 
-function inRange(dateIso: string, preset: RangePreset) {
-  const when = new Date(dateIso);
-  if (preset === "all") return true;
-  const start =
-    preset === "today"
-      ? startOfDay(new Date())
-      : preset === "week"
-        ? daysAgo(6)
-        : daysAgo(29);
-  return when >= start;
+function lastDaysRange(days: number): DateRange {
+  const to = new Date();
+  const from = new Date();
+  from.setDate(from.getDate() - (days - 1));
+  return { from: toIsoDate(from), to: toIsoDate(to) };
+}
+
+function boundsFromIsoDates(dates: string[]): DateRange {
+  const days = dates.map((d) => d.slice(0, 10)).filter(Boolean).sort();
+  if (days.length === 0) return currentMonthRange();
+  return { from: days[0], to: days[days.length - 1] };
+}
+
+function inDateRange(dateIso: string | null | undefined, range: DateRange) {
+  if (!dateIso) return false;
+  const day = dateIso.slice(0, 10);
+  return day >= range.from && day <= range.to;
+}
+
+function formatDisplayDate(dateIso: string) {
+  return new Date(dateIso).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  });
+}
+
+function formatRangeLabel(range: DateRange) {
+  return `${formatDisplayDate(range.from)} → ${formatDisplayDate(range.to)}`;
+}
+
+function returnEventDate(row: MarketplaceReturnRow) {
+  return row.returnDate || row.receivedAt || row.createdAt;
 }
 
 function truncateLabel(value: string, max = 34) {
   return value.length > max ? `${value.slice(0, max - 1)}…` : value;
 }
 
-function relativeDate(dateIso: string) {
-  const now = Date.now();
-  const then = new Date(dateIso).getTime();
-  const diffMs = now - then;
-  const hours = Math.floor(diffMs / (1000 * 60 * 60));
-  if (hours < 24) return `${Math.max(1, hours)} hours ago`;
-  if (hours < 48) return "Yesterday";
-  return new Date(dateIso).toLocaleDateString("en-IN");
-}
-
 function copyText(value: string) {
   void navigator.clipboard.writeText(value);
+}
+
+function DateRangeFilter({
+  draft,
+  applied,
+  allTimeBounds,
+  onDraftChange,
+  onApply,
+  onQuick
+}: {
+  draft: DateRange;
+  applied: DateRange;
+  allTimeBounds: DateRange;
+  onDraftChange: (next: DateRange) => void;
+  onApply: () => void;
+  onQuick: (next: DateRange) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-end justify-between gap-3 rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm dark:border-stone-700 dark:bg-stone-900">
+      <div className="flex flex-wrap items-end gap-3">
+        <div>
+          <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500">From</label>
+          <input
+            type="date"
+            value={draft.from}
+            onChange={(e) => onDraftChange({ ...draft, from: e.target.value })}
+            className="rounded-lg border border-stone-200 px-3 py-2 text-sm dark:border-stone-700 dark:bg-stone-950"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500">To</label>
+          <input
+            type="date"
+            value={draft.to}
+            onChange={(e) => onDraftChange({ ...draft, to: e.target.value })}
+            className="rounded-lg border border-stone-200 px-3 py-2 text-sm dark:border-stone-700 dark:bg-stone-950"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={onApply}
+          className="rounded-lg bg-stone-900 px-4 py-2 text-xs font-semibold text-white dark:bg-stone-100 dark:text-stone-900"
+        >
+          Filter
+        </button>
+        <div className="flex flex-wrap gap-1.5 pb-0.5">
+          <button
+            type="button"
+            onClick={() => onQuick(currentMonthRange())}
+            className="rounded-full bg-teal-50 px-2.5 py-1 text-[11px] font-medium text-teal-800 ring-1 ring-teal-200 dark:bg-teal-950/40 dark:text-teal-200 dark:ring-teal-900"
+          >
+            This month
+          </button>
+          <button
+            type="button"
+            onClick={() => onQuick(lastDaysRange(7))}
+            className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-medium text-sky-800 ring-1 ring-sky-200 dark:bg-sky-950/40 dark:text-sky-200 dark:ring-sky-900"
+          >
+            Last 7 days
+          </button>
+          <button
+            type="button"
+            onClick={() => onQuick(allTimeBounds)}
+            className="rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-medium text-violet-800 ring-1 ring-violet-200 dark:bg-violet-950/40 dark:text-violet-200 dark:ring-violet-900"
+            title={`All time: ${formatRangeLabel(allTimeBounds)}`}
+          >
+            All time
+          </button>
+        </div>
+      </div>
+      <p className="text-xs text-stone-500">
+        Showing <span className="font-medium text-stone-700 dark:text-stone-300">{formatRangeLabel(applied)}</span>
+        <span className="mx-1.5 text-stone-300 dark:text-stone-600">·</span>
+        All time covers <span className="font-medium text-stone-700 dark:text-stone-300">{formatRangeLabel(allTimeBounds)}</span>
+      </p>
+    </div>
+  );
+}
+
+function VerticalBarChart({
+  title,
+  rows,
+  valueFormatter = (v: number) => String(v)
+}: {
+  title: string;
+  rows: Array<{ label: string; value: number; color?: string }>;
+  valueFormatter?: (v: number) => string;
+}) {
+  const max = Math.max(1, ...rows.map((row) => row.value));
+  return (
+    <SectionCard title={title}>
+      {rows.length === 0 ? (
+        <EmptyState message="No data in this range." />
+      ) : (
+        <div className="flex h-56 items-end justify-around gap-2 px-2 pt-4">
+          {rows.map((row, idx) => {
+            const height = Math.max(8, Math.round((row.value / max) * 180));
+            const color = row.color || CHART_COLORS[idx % CHART_COLORS.length];
+            return (
+              <div key={`${title}:${row.label}`} className="flex min-w-0 flex-1 flex-col items-center gap-2">
+                <span className="text-[11px] font-semibold text-stone-700 dark:text-stone-200">{valueFormatter(row.value)}</span>
+                <div
+                  className="w-full max-w-[48px] rounded-t-lg shadow-sm transition-all duration-500"
+                  style={{ height, background: `linear-gradient(180deg, ${color} 0%, ${color}cc 100%)` }}
+                  title={`${row.label}: ${valueFormatter(row.value)}`}
+                />
+                <span className="max-w-full truncate text-center text-[10px] font-medium text-stone-500">{row.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </SectionCard>
+  );
+}
+
+function PieChartCard({
+  title,
+  slices
+}: {
+  title: string;
+  slices: Array<{ label: string; value: number; color: string }>;
+}) {
+  const total = slices.reduce((sum, s) => sum + s.value, 0);
+  let cursor = 0;
+  const gradients = slices
+    .filter((s) => s.value > 0)
+    .map((s) => {
+      const start = cursor;
+      const pct = total > 0 ? (s.value / total) * 100 : 0;
+      cursor += pct;
+      return `${s.color} ${start}% ${cursor}%`;
+    });
+
+  return (
+    <SectionCard title={title}>
+      {total === 0 ? (
+        <EmptyState message="No returns or refunds in this range." />
+      ) : (
+        <div className="flex flex-wrap items-center gap-6">
+          <div
+            className="h-40 w-40 shrink-0 rounded-full shadow-inner ring-4 ring-white dark:ring-stone-900"
+            style={{ background: `conic-gradient(${gradients.join(", ")})` }}
+          />
+          <div className="min-w-0 flex-1 space-y-2">
+            {slices.map((slice) => (
+              <div key={slice.label} className="flex items-center justify-between gap-3 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: slice.color }} />
+                  <span className="text-stone-600 dark:text-stone-300">{slice.label}</span>
+                </div>
+                <span className="font-semibold text-stone-900 dark:text-stone-100">
+                  {slice.value}
+                  {total > 0 ? ` (${Math.round((slice.value / total) * 100)}%)` : ""}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </SectionCard>
+  );
 }
 
 function ChartBars({
@@ -197,6 +383,26 @@ function ChartBars({
   );
 }
 
+function channelCurrency(code?: string | null): string {
+  switch (code) {
+    case "ETSY":
+      return "USD";
+    case "AMAZON":
+    case "FLIPKART":
+    case "AMALA":
+    case "FIRSTCRY":
+    case "TATA_1MG":
+    case "SARVEDA":
+      return "INR";
+    default:
+      return "INR";
+  }
+}
+
+function money(amount: number | null | undefined, currency?: string | null) {
+  return formatMinorFromPaise(amount, currency || "INR");
+}
+
 function OrderDetailModal({
   order,
   onClose
@@ -204,6 +410,7 @@ function OrderDetailModal({
   order: MarketplaceOrderRow;
   onClose: () => void;
 }) {
+  const currency = order.currency || channelCurrency(order.channel.code);
   const subtotal = order.items.reduce((sum, item) => sum + (item.lineTotalInPaise ?? (item.unitPriceInPaise ?? 0) * item.quantity), 0);
   const rawOrder = (order.rawPayload?.order ?? {}) as { OrderTotal?: { Amount?: string; CurrencyCode?: string } };
   const grandTotal = rawOrder.OrderTotal?.Amount ? Math.round(Number(rawOrder.OrderTotal.Amount) * 100) : order.totalValueInPaise;
@@ -238,7 +445,7 @@ function OrderDetailModal({
                 <p>Status: {order.status}</p>
                 <p>Date: {new Date(order.orderDate).toLocaleString("en-IN")}</p>
                 <p>Item count: {order.totalItems}</p>
-                <p>Order total: {formatINRFromPaise(grandTotal)}</p>
+                <p>Order total: {money(grandTotal, currency)}</p>
               </div>
             </div>
           </div>
@@ -262,8 +469,8 @@ function OrderDetailModal({
                       <td className="px-3 py-3 text-xs text-stone-500">{item.variantName || "Default"}</td>
                       <td className="px-3 py-3 font-mono text-xs">{item.variantSku || item.skuSnapshot}</td>
                       <td className="px-3 py-3">{item.quantity}</td>
-                      <td className="px-3 py-3">{item.unitPriceInPaise ? formatINRFromPaise(item.unitPriceInPaise) : "—"}</td>
-                      <td className="px-3 py-3">{formatINRFromPaise(item.lineTotalInPaise ?? (item.unitPriceInPaise ?? 0) * item.quantity)}</td>
+                      <td className="px-3 py-3">{item.unitPriceInPaise ? money(item.unitPriceInPaise, currency) : "—"}</td>
+                      <td className="px-3 py-3">{money(item.lineTotalInPaise ?? (item.unitPriceInPaise ?? 0) * item.quantity, currency)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -272,12 +479,8 @@ function OrderDetailModal({
           </SectionCard>
 
           <div className="grid gap-3 md:grid-cols-2">
-            <MetricCard label="Items subtotal" value={formatINRFromPaise(subtotal)} />
-            <MetricCard label="Grand total" value={formatINRFromPaise(grandTotal)} sub={delta > 0 ? `Includes approx. ${formatINRFromPaise(delta)} extra charges` : "No separate extra charges visible"} />
-          </div>
-          <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-xs text-stone-600 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-300">
-            GST and shipping are not separately broken out by Amazon in the current payload we receive. If Amazon includes them,
-            they are bundled into the order total unless richer financial APIs are added later.
+            <MetricCard label="Items subtotal" value={money(subtotal, currency)} />
+            <MetricCard label="Grand total" value={money(grandTotal, currency)} sub={delta > 0 ? `Includes approx. ${money(delta, currency)} extra charges` : "No separate extra charges visible"} />
           </div>
         </div>
       </div>
@@ -308,19 +511,34 @@ export function MarketplaceOpsWorkspace() {
 
   const [listingSearch, setListingSearch] = useState("");
   const [listingSort, setListingSort] = useState<ListingSort>("sold_desc");
-  const [ordersPreset, setOrdersPreset] = useState<RangePreset>("week");
-  const [returnsPreset, setReturnsPreset] = useState<RangePreset>("month");
-  const [overviewPreset, setOverviewPreset] = useState<RangePreset>("week");
+  const monthDefault = useMemo(() => currentMonthRange(), []);
+  const [ordersDraft, setOrdersDraft] = useState<DateRange>(monthDefault);
+  const [ordersRange, setOrdersRange] = useState<DateRange>(monthDefault);
+  const [returnsDraft, setReturnsDraft] = useState<DateRange>(monthDefault);
+  const [returnsRange, setReturnsRange] = useState<DateRange>(monthDefault);
+  const [channelOverviewDraft, setChannelOverviewDraft] = useState<DateRange>(monthDefault);
+  const [channelOverviewRange, setChannelOverviewRange] = useState<DateRange>(monthDefault);
+  const [mainOverviewDraft, setMainOverviewDraft] = useState<DateRange>(monthDefault);
+  const [mainOverviewRange, setMainOverviewRange] = useState<DateRange>(monthDefault);
+  const [globalListings, setGlobalListings] = useState<MarketplaceListingRow[]>([]);
+  const [globalOrders, setGlobalOrders] = useState<MarketplaceOrderRow[]>([]);
+  const [globalReturns, setGlobalReturns] = useState<MarketplaceReturnRow[]>([]);
 
   const activeChannel = activeTab === "overview" ? null : activeTab;
   const activeChannelLabel = useMemo(
     () => CHANNELS.find((c) => c.code === activeChannel)?.label ?? "Marketplace",
     [activeChannel]
   );
+  const activeCurrency = channelCurrency(activeChannel);
 
   useEffect(() => {
     void loadOverview();
   }, []);
+
+  useEffect(() => {
+    if (activeTab !== "overview") return;
+    void loadGlobalChartData();
+  }, [activeTab]);
 
   useEffect(() => {
     if (!activeChannel) return;
@@ -346,12 +564,16 @@ export function MarketplaceOpsWorkspace() {
   }, [activeChannel]);
 
   useEffect(() => {
+    const next = currentMonthRange();
     setChannelSubTab("overview");
     setListingSearch("");
     setListingSort("sold_desc");
-    setOrdersPreset("week");
-    setReturnsPreset("month");
-    setOverviewPreset("week");
+    setOrdersDraft(next);
+    setOrdersRange(next);
+    setReturnsDraft(next);
+    setReturnsRange(next);
+    setChannelOverviewDraft(next);
+    setChannelOverviewRange(next);
   }, [activeChannel]);
 
   async function loadOverview() {
@@ -360,6 +582,21 @@ export function MarketplaceOpsWorkspace() {
       setOverview(await fetchMarketplaceOverview());
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load overview");
+    }
+  }
+
+  async function loadGlobalChartData() {
+    try {
+      const [listingsData, ordersData, returnsData] = await Promise.all([
+        fetchMarketplaceListings(),
+        fetchMarketplaceOrders(),
+        fetchMarketplaceReturns()
+      ]);
+      setGlobalListings(listingsData.items);
+      setGlobalOrders(ordersData.items);
+      setGlobalReturns(returnsData.items);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load overview charts");
     }
   }
 
@@ -456,11 +693,31 @@ export function MarketplaceOpsWorkspace() {
     }
   }
 
-  const filteredOrders = useMemo(() => orders.filter((row) => inRange(row.orderDate, ordersPreset)), [orders, ordersPreset]);
-  const filteredReturns = useMemo(() => {
-    const source = returns.filter((row) => inRange(row.createdAt, returnsPreset));
-    return source;
-  }, [returns, returnsPreset]);
+  const channelAllTimeBounds = useMemo(() => {
+    const dates = [
+      ...orders.map((row) => row.orderDate),
+      ...returns.map((row) => returnEventDate(row))
+    ];
+    return boundsFromIsoDates(dates);
+  }, [orders, returns]);
+
+  const mainAllTimeBounds = useMemo(() => {
+    const dates = [
+      ...globalOrders.map((row) => row.orderDate),
+      ...globalReturns.map((row) => returnEventDate(row)),
+      ...globalListings.map((row) => row.updatedAt)
+    ];
+    return boundsFromIsoDates(dates);
+  }, [globalOrders, globalReturns, globalListings]);
+
+  const filteredOrders = useMemo(
+    () => orders.filter((row) => inDateRange(row.orderDate, ordersRange)),
+    [orders, ordersRange]
+  );
+  const filteredReturns = useMemo(
+    () => returns.filter((row) => inDateRange(returnEventDate(row), returnsRange)),
+    [returns, returnsRange]
+  );
 
   const filteredListings = useMemo(() => {
     const needle = listingSearch.trim().toLowerCase();
@@ -486,8 +743,59 @@ export function MarketplaceOpsWorkspace() {
     });
   }, [listings, listingSearch, listingSort]);
 
-  const overviewOrders = useMemo(() => orders.filter((row) => inRange(row.orderDate, overviewPreset)), [orders, overviewPreset]);
-  const overviewReturns = useMemo(() => returns.filter((row) => inRange(row.createdAt, overviewPreset)), [returns, overviewPreset]);
+  const overviewOrders = useMemo(
+    () => orders.filter((row) => inDateRange(row.orderDate, channelOverviewRange)),
+    [orders, channelOverviewRange]
+  );
+  const overviewReturns = useMemo(
+    () => returns.filter((row) => inDateRange(returnEventDate(row), channelOverviewRange)),
+    [returns, channelOverviewRange]
+  );
+
+  const mainFilteredOrders = useMemo(
+    () => globalOrders.filter((row) => inDateRange(row.orderDate, mainOverviewRange)),
+    [globalOrders, mainOverviewRange]
+  );
+  const mainFilteredReturns = useMemo(
+    () => globalReturns.filter((row) => inDateRange(returnEventDate(row), mainOverviewRange)),
+    [globalReturns, mainOverviewRange]
+  );
+
+  const listingsByChannelChart = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const row of globalListings) {
+      const label = row.channel.displayName;
+      map.set(label, (map.get(label) ?? 0) + 1);
+    }
+    return Array.from(map.entries())
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [globalListings]);
+
+  const pendingDispatchChart = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const row of mainFilteredOrders) {
+      if (!["RECEIVED", "CONFIRMED"].includes(row.status)) continue;
+      const label = row.channel.displayName;
+      map.set(label, (map.get(label) ?? 0) + 1);
+    }
+    return Array.from(map.entries())
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [mainFilteredOrders]);
+
+  const returnsRefundsPie = useMemo(() => {
+    let openReturns = 0;
+    let refunded = 0;
+    for (const row of mainFilteredReturns) {
+      if (row.status === "REFUNDED") refunded += row.quantity;
+      else openReturns += row.quantity;
+    }
+    return [
+      { label: "Open returns", value: openReturns, color: "#f59e0b" },
+      { label: "Refunded", value: refunded, color: "#ec4899" }
+    ];
+  }, [mainFilteredReturns]);
 
   const topSellingRows = useMemo(() => {
     const stats = new Map<string, { key: string; label: string; productName: string; variantName: string; units: number; returns: number; revenue: number }>();
@@ -530,7 +838,7 @@ export function MarketplaceOpsWorkspace() {
     highlights.push(
       currentSales === 0
         ? "No orders landed in the selected period. This marketplace needs attention immediately."
-        : `${currentSales} orders were placed in the selected period with ${currentReturns} returned units and ${formatINRFromPaise(refundValue)} in refunds.`
+        : `${currentSales} orders were placed in the selected period with ${currentReturns} returned units and ${money(refundValue, activeCurrency)} in refunds.`
     );
     if (top) {
       highlights.push(`Best seller right now is ${top.productName} (${top.variantName}) with ${top.units} units sold. Consider increasing depth on this variant.`);
@@ -541,7 +849,7 @@ export function MarketplaceOpsWorkspace() {
       highlights.push("No SKU currently shows a severe return-risk pattern in the selected period.");
     }
     return highlights;
-  }, [overviewOrders, overviewReturns, topSellingRows]);
+  }, [overviewOrders, overviewReturns, topSellingRows, activeCurrency]);
 
   const ordersByDay = useMemo(() => {
     const buckets = new Map<string, number>();
@@ -565,7 +873,7 @@ export function MarketplaceOpsWorkspace() {
       buckets.set(d.toLocaleDateString("en-IN", { day: "numeric", month: "short" }), 0);
     }
     for (const ret of overviewReturns) {
-      const key = new Date(ret.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+      const key = new Date(returnEventDate(ret)).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
       if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + ret.quantity);
     }
     return Array.from(buckets.entries()).map(([label, value]) => ({ label, value }));
@@ -579,7 +887,7 @@ export function MarketplaceOpsWorkspace() {
       buckets.set(d.toLocaleDateString("en-IN", { day: "numeric", month: "short" }), 0);
     }
     for (const ret of overviewReturns) {
-      const key = new Date(ret.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+      const key = new Date(returnEventDate(ret)).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
       if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + Math.round((ret.refundedAmountInPaise ?? 0) / 100));
     }
     return Array.from(buckets.entries()).map(([label, value]) => ({ label, value }));
@@ -616,16 +924,47 @@ export function MarketplaceOpsWorkspace() {
 
       {activeTab === "overview" && overview ? (
         <div className="space-y-4">
+          <DateRangeFilter
+            draft={mainOverviewDraft}
+            applied={mainOverviewRange}
+            allTimeBounds={mainAllTimeBounds}
+            onDraftChange={setMainOverviewDraft}
+            onApply={() => setMainOverviewRange(mainOverviewDraft)}
+            onQuick={(next) => {
+              setMainOverviewDraft(next);
+              setMainOverviewRange(next);
+            }}
+          />
+
           <div className="grid gap-3 md:grid-cols-4">
             <MetricCard label="Channels" value={overview.totals.channels} />
             <MetricCard label="Listings" value={overview.totals.listings} />
-            <MetricCard label="Orders tracked" value={overview.totals.orders} />
-            <MetricCard label="Returns tracked" value={overview.totals.returns} />
+            <MetricCard
+              label="Orders in range"
+              value={mainFilteredOrders.length}
+              sub={formatRangeLabel(mainOverviewRange)}
+            />
+            <MetricCard
+              label="Returns in range"
+              value={mainFilteredReturns.length}
+              sub={`${mainFilteredReturns.reduce((sum, row) => sum + row.quantity, 0)} units`}
+            />
           </div>
+
+          <div className="grid gap-4 xl:grid-cols-3">
+            <VerticalBarChart title="Listings by channel" rows={listingsByChannelChart} />
+            <PieChartCard title="Returns & refunds" slices={returnsRefundsPie} />
+            <VerticalBarChart title="Pending dispatch" rows={pendingDispatchChart} />
+          </div>
+
           <SectionCard title="Marketplace snapshot">
             <div className="grid gap-3 lg:grid-cols-3">
-              {overview.channels.map((row) => (
-                <div key={row.id} className="rounded-lg border border-stone-200 p-4 dark:border-stone-700">
+              {overview.channels.map((row, idx) => (
+                <div
+                  key={row.id}
+                  className="rounded-xl border border-stone-200 p-4 dark:border-stone-700"
+                  style={{ background: `linear-gradient(135deg, ${CHART_COLORS[idx % CHART_COLORS.length]}12, transparent)` }}
+                >
                   <div className="flex items-center justify-between gap-2">
                     <p className="font-semibold text-stone-900 dark:text-stone-100">{row.displayName}</p>
                     <StatusPill label={row.isActive ? "ACTIVE" : "PAUSED"} />
@@ -690,25 +1029,17 @@ export function MarketplaceOpsWorkspace() {
 
           {channelSubTab === "overview" ? (
             <div className="space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm dark:border-stone-700 dark:bg-stone-900">
-                <div className="flex flex-wrap items-center gap-2">
-                  {(["today", "week", "month", "all"] as RangePreset[]).map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => setOverviewPreset(preset)}
-                      className={`rounded-full px-3 py-1.5 text-xs font-medium ${overviewPreset === preset ? "bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900" : "bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300"}`}
-                    >
-                      {preset === "week" ? "Last week" : preset === "month" ? "Last month" : preset === "all" ? "All time" : "Today"}
-                    </button>
-                  ))}
-                </div>
-                <div className="text-xs text-stone-500">
-                  Auto sync refresh: orders ~15 min, listings/returns ~3 hours. Amazon does not provide a simple all-events webhook;
-                  production integrations typically rely on SP-API polling or SNS/SQS notifications, so manual sync is kept as a
-                  backstop.
-                </div>
-              </div>
+              <DateRangeFilter
+                draft={channelOverviewDraft}
+                applied={channelOverviewRange}
+                allTimeBounds={channelAllTimeBounds}
+                onDraftChange={setChannelOverviewDraft}
+                onApply={() => setChannelOverviewRange(channelOverviewDraft)}
+                onQuick={(next) => {
+                  setChannelOverviewDraft(next);
+                  setChannelOverviewRange(next);
+                }}
+              />
 
               <SectionCard title={`${activeChannelLabel} weekly conclusion`}>
                 <div className="space-y-3">
@@ -728,20 +1059,43 @@ export function MarketplaceOpsWorkspace() {
               <div className="grid gap-3 md:grid-cols-4">
                 <MetricCard label="Orders" value={overviewOrders.length} />
                 <MetricCard label="Returned units" value={overviewReturns.reduce((sum, row) => sum + row.quantity, 0)} />
-                <MetricCard label="Refund value" value={formatINRFromPaise(overviewReturns.reduce((sum, row) => sum + (row.refundedAmountInPaise ?? 0), 0))} />
-                <MetricCard label="Top seller" value={topSellingRows[0]?.label || "—"} sub={topSellingRows[0] ? truncateLabel(`${topSellingRows[0].productName} / ${topSellingRows[0].variantName}`, 44) : undefined} />
+                <MetricCard label="Refund value" value={money(overviewReturns.reduce((sum, row) => sum + (row.refundedAmountInPaise ?? 0), 0), activeCurrency)} />
+                <div className="rounded-lg border border-stone-200 bg-white px-4 py-3 dark:border-stone-700 dark:bg-stone-900">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-500">Top seller</p>
+                  {topSellingRows[0] ? (
+                    <>
+                      <p className="mt-1 text-base font-bold leading-snug text-stone-900 dark:text-stone-100">
+                        {topSellingRows[0].productName}
+                      </p>
+                      <p className="mt-0.5 text-xs text-stone-500">{topSellingRows[0].variantName}</p>
+                      <button
+                        type="button"
+                        onClick={() => copyText(topSellingRows[0].key)}
+                        className="mt-1.5 inline-flex items-center gap-1 font-mono text-[11px] text-stone-500 underline-offset-2 hover:text-stone-800 hover:underline dark:hover:text-stone-200"
+                        title="Copy SKU"
+                      >
+                        {topSellingRows[0].key}
+                        <span className="rounded bg-stone-100 px-1 py-0.5 text-[9px] font-sans font-semibold uppercase tracking-wide text-stone-600 dark:bg-stone-800 dark:text-stone-300">
+                          Copy
+                        </span>
+                      </button>
+                    </>
+                  ) : (
+                    <p className="mt-1 text-xl font-semibold text-stone-900 dark:text-stone-100">—</p>
+                  )}
+                </div>
               </div>
 
               <div className="grid gap-4 xl:grid-cols-2">
                 <ChartBars title="Orders placed" rows={ordersByDay} />
                 <ChartBars title="Returns" rows={returnsByDay} accent="bg-amber-500" />
-                <ChartBars title="Refunds" rows={refundsByDay} valueFormatter={(v) => `₹${v}`} accent="bg-red-500" />
+                <ChartBars title="Refunds" rows={refundsByDay} valueFormatter={(v) => money(v * 100, activeCurrency)} accent="bg-red-500" />
                 <ChartBars
                   title="Top 10 sellers"
                   rows={topSellingRows.map((row) => ({
-                    label: truncateLabel(row.label, 12),
+                    label: truncateLabel(row.productName, 12),
                     value: row.units,
-                    sub: truncateLabel(`${row.productName} / ${row.variantName}`, 48)
+                    sub: `${row.key} · ${truncateLabel(row.variantName, 36)}`
                   }))}
                   accent="bg-emerald-600"
                 />
@@ -791,7 +1145,7 @@ export function MarketplaceOpsWorkspace() {
                             <td className="px-3 py-3 font-mono text-xs">{row.listingId || "—"}</td>
                             <td className="px-3 py-3">{row.zohoOnHand}</td>
                             <td className="px-3 py-3"><StatusPill label={row.status} /></td>
-                            <td className="px-3 py-3">{row.priceInPaise ? formatINRFromPaise(row.priceInPaise) : "—"}</td>
+                            <td className="px-3 py-3">{row.priceInPaise ? money(row.priceInPaise, row.currency || activeCurrency) : "—"}</td>
                             <td className="px-3 py-3">{row.recentSoldQty}</td>
                             <td className="px-3 py-3">{row.recentReturnQty}</td>
                           </tr>
@@ -806,18 +1160,17 @@ export function MarketplaceOpsWorkspace() {
 
           {channelSubTab === "orders" ? (
             <div className="space-y-4">
-              <div className="flex flex-wrap gap-2 rounded-xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900">
-                {(["today", "week", "month", "all"] as RangePreset[]).map((preset) => (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() => setOrdersPreset(preset)}
-                    className={`rounded-full px-3 py-1.5 text-xs font-medium ${ordersPreset === preset ? "bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900" : "bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300"}`}
-                  >
-                    {preset === "week" ? "Last week" : preset === "month" ? "Last month" : preset === "all" ? "All time" : "Today"}
-                  </button>
-                ))}
-              </div>
+              <DateRangeFilter
+                draft={ordersDraft}
+                applied={ordersRange}
+                allTimeBounds={channelAllTimeBounds}
+                onDraftChange={setOrdersDraft}
+                onApply={() => setOrdersRange(ordersDraft)}
+                onQuick={(next) => {
+                  setOrdersDraft(next);
+                  setOrdersRange(next);
+                }}
+              />
               <SectionCard title="Orders" right={<p className="text-xs text-stone-500">{filteredOrders.length} orders</p>}>
                 {filteredOrders.length === 0 ? (
                   <EmptyState message="No orders in this range." />
@@ -850,9 +1203,9 @@ export function MarketplaceOpsWorkspace() {
                               </button>
                             </td>
                             <td className="px-3 py-3">{row.totalItems}</td>
-                            <td className="px-3 py-3">{formatINRFromPaise(row.totalValueInPaise)}</td>
+                            <td className="px-3 py-3">{money(row.totalValueInPaise, row.currency || activeCurrency)}</td>
                             <td className="px-3 py-3"><StatusPill label={row.status} /></td>
-                            <td className="px-3 py-3 text-xs text-stone-500">{relativeDate(row.orderDate)}</td>
+                            <td className="px-3 py-3 text-xs text-stone-500">{formatDisplayDate(row.orderDate)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -865,18 +1218,17 @@ export function MarketplaceOpsWorkspace() {
 
           {channelSubTab === "returns" ? (
             <div className="space-y-4">
-              <div className="flex flex-wrap gap-2 rounded-xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900">
-                {(["today", "week", "month", "all"] as RangePreset[]).map((preset) => (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() => setReturnsPreset(preset)}
-                    className={`rounded-full px-3 py-1.5 text-xs font-medium ${returnsPreset === preset ? "bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900" : "bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300"}`}
-                  >
-                    {preset === "week" ? "Last week" : preset === "month" ? "Last month" : preset === "all" ? "All time" : "Today"}
-                  </button>
-                ))}
-              </div>
+              <DateRangeFilter
+                draft={returnsDraft}
+                applied={returnsRange}
+                allTimeBounds={channelAllTimeBounds}
+                onDraftChange={setReturnsDraft}
+                onApply={() => setReturnsRange(returnsDraft)}
+                onQuick={(next) => {
+                  setReturnsDraft(next);
+                  setReturnsRange(next);
+                }}
+              />
               <SectionCard title="Returns" right={<p className="text-xs text-stone-500">{filteredReturns.length} returns</p>}>
                 {filteredReturns.length === 0 ? (
                   <EmptyState message="No returns in this range." />
@@ -894,12 +1246,12 @@ export function MarketplaceOpsWorkspace() {
                         {filteredReturns.map((row) => (
                           <tr key={row.id} className="border-b border-stone-100 dark:border-stone-800">
                             <td className="px-3 py-3 font-mono text-xs">{row.externalOrderId}</td>
-                            <td className="px-3 py-3">{row.productName || "Unknown"}</td>
-                            <td className="px-3 py-3 text-xs text-stone-600 dark:text-stone-300">{row.variantName || "Default"}</td>
+                            <td className="px-3 py-3 font-medium">{row.productName || "Unknown"}</td>
+                            <td className="px-3 py-3 text-xs text-stone-600 dark:text-stone-300">{row.variantName || row.sku || "—"}</td>
                             <td className="px-3 py-3">{row.quantity}</td>
-                            <td className="px-3 py-3">{formatINRFromPaise(row.refundedAmountInPaise ?? 0)}</td>
+                            <td className="px-3 py-3">{money(row.refundedAmountInPaise ?? 0, row.currency || activeCurrency)}</td>
                             <td className="px-3 py-3"><StatusPill label={row.status} /></td>
-                            <td className="px-3 py-3 text-xs text-stone-500">{relativeDate(row.createdAt)}</td>
+                            <td className="px-3 py-3 text-xs text-stone-500">{formatDisplayDate(returnEventDate(row))}</td>
                           </tr>
                         ))}
                       </tbody>

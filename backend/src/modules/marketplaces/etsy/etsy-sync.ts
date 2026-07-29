@@ -283,6 +283,30 @@ async function upsertReceiptReturns(channelId: string, receipt: EtsyReceipt) {
   });
   if (!order) return { created: 0, updated: 0 };
 
+  const receiptDate =
+    receipt.created_timestamp != null
+      ? new Date(receipt.created_timestamp * 1000)
+      : order.orderDate;
+
+  const resolveOrderItemId = (refund: EtsyRefund) => {
+    const txns = receipt.transactions ?? [];
+    if (refund.transaction_id != null) {
+      const txn = txns.find((t) => t.transaction_id === refund.transaction_id);
+      const sku = firstSku(txn?.sku);
+      if (sku) {
+        const bySku = order.items.find((item) => item.skuSnapshot === sku);
+        if (bySku) return bySku.id;
+      }
+      if (txn?.title) {
+        const byTitle = order.items.find(
+          (item) => item.productNameSnapshot && item.productNameSnapshot === txn.title
+        );
+        if (byTitle) return byTitle.id;
+      }
+    }
+    return order.items[0]?.id ?? null;
+  };
+
   let created = 0;
   let updated = 0;
   const refunds = receipt.refunds ?? [];
@@ -290,18 +314,25 @@ async function upsertReceiptReturns(channelId: string, receipt: EtsyReceipt) {
   for (const refund of refunds) {
     const dedupe = refund.refund_id
       ? String(refund.refund_id)
-      : `${receiptId}:${refund.transaction_id}:${refund.created_timestamp}`;
+      : `${receiptId}:${refund.transaction_id}:${refund.created_timestamp ?? receipt.created_timestamp}`;
     const existing = await prisma.marketplaceReturn.findFirst({
       where: { marketplaceOrderId: order.id, notes: { contains: dedupe } }
     });
 
+    const eventDate =
+      refund.created_timestamp != null
+        ? new Date(refund.created_timestamp * 1000)
+        : receipt.updated_timestamp != null
+          ? new Date(receipt.updated_timestamp * 1000)
+          : receiptDate;
+
     const payload = {
       marketplaceOrderId: order.id,
-      marketplaceOrderItemId: null,
+      marketplaceOrderItemId: resolveOrderItemId(refund),
       quantity: 1,
       reason: refund.reason?.trim() || "Etsy refund",
       status: mapRefundStatus(refund),
-      receivedAt: refund.created_timestamp ? new Date(refund.created_timestamp * 1000) : null,
+      receivedAt: eventDate,
       refundedAmountInPaise: amountToPaise(refund.amount),
       restockedToZoho: false,
       notes: `Etsy refund ${dedupe}`,
@@ -322,13 +353,17 @@ async function upsertReceiptReturns(channelId: string, receipt: EtsyReceipt) {
     const existing = await prisma.marketplaceReturn.findFirst({
       where: { marketplaceOrderId: order.id, notes: { contains: dedupe } }
     });
+    const eventDate =
+      receipt.updated_timestamp != null
+        ? new Date(receipt.updated_timestamp * 1000)
+        : receiptDate;
     const payload = {
       marketplaceOrderId: order.id,
-      marketplaceOrderItemId: null,
+      marketplaceOrderItemId: order.items[0]?.id ?? null,
       quantity: Math.max(1, order.items.reduce((sum, item) => sum + item.quantity, 0)),
       reason: "Etsy canceled receipt",
       status: "REQUESTED" as MarketplaceReturnStatus,
-      receivedAt: receipt.updated_timestamp ? new Date(receipt.updated_timestamp * 1000) : null,
+      receivedAt: eventDate,
       refundedAmountInPaise: amountToPaise(receipt.grandtotal),
       restockedToZoho: false,
       notes: `Etsy refund ${dedupe}`,
