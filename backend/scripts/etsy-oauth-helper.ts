@@ -21,6 +21,8 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 const CLIENT_ID = (process.env.ETSY_API_KEY || "").trim();
+const SHARED_SECRET = (process.env.ETSY_SHARED_SECRET || "").trim();
+const APP_HEADER = SHARED_SECRET ? `${CLIENT_ID}:${SHARED_SECRET}` : CLIENT_ID;
 const REDIRECT_URI = "http://localhost:3456/callback";
 const SCOPES = [
   "shops_r",
@@ -83,7 +85,7 @@ async function resolveShopId(accessToken: string) {
     headers: {
       Accept: "application/json",
       Authorization: `Bearer ${accessToken}`,
-      "x-api-key": CLIENT_ID
+      "x-api-key": APP_HEADER
     }
   });
   const me = (await meRes.json().catch(() => ({}))) as { user_id?: number; shop_id?: number };
@@ -97,7 +99,7 @@ async function resolveShopId(accessToken: string) {
         headers: {
           Accept: "application/json",
           Authorization: `Bearer ${accessToken}`,
-          "x-api-key": CLIENT_ID
+          "x-api-key": APP_HEADER
         }
       }
     );

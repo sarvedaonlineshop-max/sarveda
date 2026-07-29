@@ -3,6 +3,9 @@ import { logger } from "../../../config/logger";
 import { getEtsyAccessToken } from "./etsy-auth";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const APP_HEADER = etsyEnv.ETSY_SHARED_SECRET
+  ? `${etsyEnv.ETSY_API_KEY}:${etsyEnv.ETSY_SHARED_SECRET}`
+  : etsyEnv.ETSY_API_KEY;
 
 export type EtsyListing = {
   listing_id?: number;
@@ -65,7 +68,7 @@ async function etsyFetch<T>(path: string, query?: Record<string, string | number
       headers: {
         Accept: "application/json",
         Authorization: `Bearer ${token}`,
-        "x-api-key": etsyEnv.ETSY_API_KEY
+        "x-api-key": APP_HEADER
       }
     });
 
