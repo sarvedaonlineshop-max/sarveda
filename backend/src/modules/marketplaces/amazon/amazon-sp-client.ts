@@ -42,11 +42,14 @@ type SpApiErrorBody = {
   errors?: Array<{ code?: string; message?: string; details?: string }>;
 };
 
-async function spGet<T>(path: string, query?: Record<string, string | undefined>): Promise<T> {
-  const token = await getAmazonSpAccessToken();
+async function spFetch<T>(
+  path: string,
+  opts: { query?: Record<string, string | undefined>; accessToken?: string } = {}
+): Promise<T> {
+  const token = opts.accessToken ?? (await getAmazonSpAccessToken());
   const url = new URL(path, getAmazonSpApiBaseUrl());
-  if (query) {
-    for (const [key, value] of Object.entries(query)) {
+  if (opts.query) {
+    for (const [key, value] of Object.entries(opts.query)) {
       if (value !== undefined && value !== "") url.searchParams.set(key, value);
     }
   }
@@ -75,6 +78,71 @@ async function spGet<T>(path: string, query?: Record<string, string | undefined>
     );
   }
   return body;
+}
+
+async function spGet<T>(path: string, query?: Record<string, string | undefined>): Promise<T> {
+  return spFetch<T>(path, { query });
+}
+
+/**
+ * Request a Restricted Data Token for accessing buyer PII on orders.
+ * Returns the RDT access token string, or null if the call fails
+ * (e.g. app doesn't have the role yet).
+ */
+export async function getRestrictedDataToken(orderIds: string[]): Promise<string | null> {
+  try {
+    const token = await getAmazonSpAccessToken();
+    const baseUrl = getAmazonSpApiBaseUrl();
+
+    const restrictedResources = orderIds.map((id) => ({
+      method: "GET" as const,
+      path: `/orders/v0/orders/${id}`,
+      dataElements: ["buyerInfo", "shippingAddress"]
+    }));
+
+    const res = await fetch(new URL("/tokens/2021-03-01/restrictedDataToken", baseUrl).toString(), {
+      method: "POST",
+      headers: {
+        "x-amz-access-token": token,
+        "Content-Type": "application/json",
+        "user-agent": "SarvedaMarketplaceHub/1.0 (Language=Node.js)"
+      },
+      body: JSON.stringify({ restrictedResources })
+    });
+
+    const data = (await res.json().catch(() => ({}))) as {
+      restrictedDataToken?: string;
+      errors?: Array<{ code?: string; message?: string }>;
+    };
+
+    if (!res.ok || !data.restrictedDataToken) {
+      logger.warn("RDT request failed — buyer PII will be unavailable", {
+        status: res.status,
+        error: data.errors?.[0]?.message
+      });
+      return null;
+    }
+
+    return data.restrictedDataToken;
+  } catch (err) {
+    logger.warn("RDT request threw — buyer PII will be unavailable", { err });
+    return null;
+  }
+}
+
+/**
+ * Fetch a single order with RDT token to get buyer PII fields.
+ */
+export async function getOrderWithPII(orderId: string, rdtToken: string): Promise<AmazonOrder | null> {
+  try {
+    const data = await spFetch<{ payload?: AmazonOrder }>(
+      `/orders/v0/orders/${encodeURIComponent(orderId)}`,
+      { accessToken: rdtToken }
+    );
+    return data.payload ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function listAmazonOrders(params: {

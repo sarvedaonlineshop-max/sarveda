@@ -5,7 +5,7 @@ import { isAmazonSpConfigured, amazonEnv } from "../../../config/amazon";
 import { prisma } from "../../../config/db";
 import { logger } from "../../../config/logger";
 import type { amazonOrdersSyncSchema } from "../marketplaces.schemas";
-import { listAllAmazonOrders, listAmazonOrderItems, type AmazonOrder, type AmazonOrderItem } from "./amazon-sp-client";
+import { listAllAmazonOrders, listAmazonOrderItems, getRestrictedDataToken, getOrderWithPII, type AmazonOrder, type AmazonOrderItem } from "./amazon-sp-client";
 import { syncAmazonListingsReport, syncAmazonReturnsReport } from "./amazon-reports";
 
 type SyncInput = z.infer<typeof amazonOrdersSyncSchema>;
@@ -228,6 +228,23 @@ export async function syncAmazonOrders(input: SyncInput = {}) {
     maxPages: input.maxPages ?? 20
   });
 
+  // Enrich orders with buyer PII via Restricted Data Token (batches of 10)
+  const RDT_BATCH = 10;
+  for (let i = 0; i < amazonOrders.length; i += RDT_BATCH) {
+    const batch = amazonOrders.slice(i, i + RDT_BATCH);
+    const ids = batch.map((o) => o.AmazonOrderId);
+    const rdtToken = await getRestrictedDataToken(ids);
+    if (rdtToken) {
+      for (let j = 0; j < batch.length; j++) {
+        const enriched = await getOrderWithPII(batch[j].AmazonOrderId, rdtToken);
+        if (enriched) {
+          if (enriched.BuyerInfo) batch[j].BuyerInfo = enriched.BuyerInfo;
+          if (enriched.ShippingAddress) batch[j].ShippingAddress = enriched.ShippingAddress;
+        }
+      }
+    }
+  }
+
   let created = 0;
   let updated = 0;
   let unresolvedItems = 0;
@@ -236,7 +253,6 @@ export async function syncAmazonOrders(input: SyncInput = {}) {
 
   for (const order of amazonOrders) {
     try {
-      // ShippingAddress / BuyerInfo may be restricted without RDT; still sync order + items.
       const items = await listAmazonOrderItems(order.AmazonOrderId);
       const result = await upsertAmazonOrder(channel.id, order, items);
       if (result.action === "created") created += 1;
