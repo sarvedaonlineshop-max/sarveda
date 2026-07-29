@@ -245,3 +245,103 @@ export async function listAllAmazonOrders(params: {
   }
   return all;
 }
+
+export type AmazonCurrency = {
+  CurrencyCode?: string;
+  CurrencyAmount?: number;
+};
+
+export type AmazonChargeComponent = {
+  ChargeType?: string;
+  ChargeAmount?: AmazonCurrency;
+};
+
+export type AmazonShipmentItem = {
+  SellerSKU?: string;
+  OrderItemId?: string;
+  OrderAdjustmentItemId?: string;
+  QuantityShipped?: number;
+  ItemChargeAdjustmentList?: AmazonChargeComponent[];
+  ItemChargeList?: AmazonChargeComponent[];
+};
+
+export type AmazonShipmentEvent = {
+  AmazonOrderId?: string;
+  SellerOrderId?: string;
+  MarketplaceName?: string;
+  PostedDate?: string;
+  ShipmentItemList?: AmazonShipmentItem[];
+  ShipmentItemAdjustmentList?: AmazonShipmentItem[];
+};
+
+export type AmazonChargeRefundEvent = {
+  PostedDate?: string;
+  ReasonCode?: string;
+  ReasonCodeDescription?: string;
+  ChargeRefundTransactions?: Array<{
+    ChargeAmount?: AmazonCurrency;
+    ChargeType?: string;
+  }>;
+};
+
+/** Finances API — refund / returnless refund events for a posted-date window. */
+export async function listAmazonRefundFinancialEvents(params: {
+  postedAfter: string;
+  postedBefore: string;
+  maxPages?: number;
+}): Promise<{
+  refundEvents: AmazonShipmentEvent[];
+  guaranteeClaimEvents: AmazonShipmentEvent[];
+  chargebackEvents: AmazonShipmentEvent[];
+  chargeRefundEvents: AmazonChargeRefundEvent[];
+}> {
+  const maxPages = params.maxPages ?? 20;
+  const refundEvents: AmazonShipmentEvent[] = [];
+  const guaranteeClaimEvents: AmazonShipmentEvent[] = [];
+  const chargebackEvents: AmazonShipmentEvent[] = [];
+  const chargeRefundEvents: AmazonChargeRefundEvent[] = [];
+  let nextToken: string | undefined;
+  let page = 0;
+
+  do {
+    page += 1;
+    const data = await spGet<{
+      payload?: {
+        FinancialEvents?: {
+          RefundEventList?: AmazonShipmentEvent[];
+          GuaranteeClaimEventList?: AmazonShipmentEvent[];
+          ChargebackEventList?: AmazonShipmentEvent[];
+          ChargeRefundEventList?: AmazonChargeRefundEvent[];
+        };
+        NextToken?: string;
+      };
+    }>("/finances/v0/financialEvents", {
+      PostedAfter: params.postedAfter,
+      PostedBefore: params.postedBefore,
+      MaxResultsPerPage: "100",
+      NextToken: nextToken
+    });
+
+    const events = data.payload?.FinancialEvents;
+    if (events?.RefundEventList?.length) refundEvents.push(...events.RefundEventList);
+    if (events?.GuaranteeClaimEventList?.length) {
+      guaranteeClaimEvents.push(...events.GuaranteeClaimEventList);
+    }
+    if (events?.ChargebackEventList?.length) chargebackEvents.push(...events.ChargebackEventList);
+    if (events?.ChargeRefundEventList?.length) {
+      chargeRefundEvents.push(...events.ChargeRefundEventList);
+    }
+
+    nextToken = data.payload?.NextToken;
+    if (nextToken) await sleep(2000);
+  } while (nextToken && page < maxPages);
+
+  if (nextToken) {
+    logger.warn("Amazon financial events hit page cap", {
+      maxPages,
+      refundEvents: refundEvents.length
+    });
+  }
+
+  return { refundEvents, guaranteeClaimEvents, chargebackEvents, chargeRefundEvents };
+}

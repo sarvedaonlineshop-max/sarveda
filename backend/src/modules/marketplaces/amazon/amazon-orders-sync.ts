@@ -188,13 +188,19 @@ async function upsertAmazonOrder(channelId: string, order: AmazonOrder, items: A
   });
 }
 
-export function getAmazonConnectionStatus() {
+export async function getAmazonConnectionStatus() {
+  const lastSync = await prisma.marketplaceEventLog.findFirst({
+    where: { eventType: "amazon.marketplace.sync" },
+    orderBy: { createdAt: "desc" },
+    select: { createdAt: true, rawPayload: true }
+  });
   return {
     configured: isAmazonSpConfigured(),
     marketplaceId: amazonEnv.AMAZON_SP_MARKETPLACE_ID,
     region: amazonEnv.AMAZON_SP_REGION,
     autoSyncEnabled: true,
     syncRunning,
+    lastMarketplaceSyncAt: lastSync?.createdAt?.toISOString() ?? null,
     missing: [
       !amazonEnv.AMAZON_SP_CLIENT_ID ? "AMAZON_SP_CLIENT_ID" : null,
       !amazonEnv.AMAZON_SP_CLIENT_SECRET ? "AMAZON_SP_CLIENT_SECRET" : null,
