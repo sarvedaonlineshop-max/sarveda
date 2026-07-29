@@ -9,7 +9,8 @@ async function runAutoSync() {
   if (running || !isEtsyConfigured()) return;
   running = true;
   try {
-    await syncEtsyMarketplace({ maxPages: 25 });
+    // Auto sync: recent months only; full history via manual Sync now.
+    await syncEtsyMarketplace({ monthsBack: 3, maxPagesPerMonth: 5 });
   } catch (err) {
     logger.error("etsy_auto_sync_failed", { err });
   } finally {

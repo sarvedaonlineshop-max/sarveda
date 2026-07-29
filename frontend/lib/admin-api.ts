@@ -1635,6 +1635,7 @@ export type EtsyConnectionStatus = {
   configured: boolean;
   shopId: string;
   autoSyncEnabled: boolean;
+  syncRunning?: boolean;
   missing: string[];
 };
 
@@ -1642,8 +1643,13 @@ export function fetchEtsyConnection() {
   return adminFetch<EtsyConnectionStatus>("/api/admin/marketplaces/etsy/connection");
 }
 
-export function syncEtsyMarketplaceAll(input?: { maxPages?: number }) {
-  return adminFetch<{ listings: unknown; orders: unknown; returns: unknown }>("/api/admin/marketplaces/etsy/sync-all", {
+export function syncEtsyMarketplaceAll(input?: { monthsBack?: number; maxPagesPerMonth?: number }) {
+  return adminFetch<{
+    started: boolean;
+    message: string;
+    monthsBack?: number;
+    maxPagesPerMonth?: number;
+  }>("/api/admin/marketplaces/etsy/sync-all", {
     method: "POST",
     body: JSON.stringify(input ?? {})
   });

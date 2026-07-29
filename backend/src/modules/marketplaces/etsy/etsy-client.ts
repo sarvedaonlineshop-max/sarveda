@@ -14,6 +14,12 @@ export type EtsyListing = {
   sku?: string[];
   quantity?: number;
   price?: { amount?: number; divisor?: number } | number | string;
+  inventory?: {
+    products?: Array<{
+      sku?: string | null;
+      offerings?: Array<{ quantity?: number; price?: { amount?: number; divisor?: number } }>;
+    }>;
+  };
 };
 
 export type EtsyReceipt = {
@@ -51,6 +57,12 @@ export type EtsyRefund = {
   reason?: string | null;
   created_timestamp?: number;
   transaction_id?: number | null;
+};
+
+export type MonthWindow = {
+  label: string;
+  minCreated: number;
+  maxCreated: number;
 };
 
 async function etsyFetch<T>(path: string, query?: Record<string, string | number | boolean | undefined>): Promise<T> {
@@ -93,14 +105,31 @@ async function etsyFetch<T>(path: string, query?: Record<string, string | number
   throw new Error(`Etsy API: exhausted retries for ${path}`);
 }
 
-export async function fetchActiveEtsyListings(limit = 100): Promise<EtsyListing[]> {
+/** Build calendar-month windows ending at now, oldest first. */
+export function buildMonthWindows(monthsBack: number): MonthWindow[] {
+  const windows: MonthWindow[] = [];
+  const now = new Date();
+  for (let i = monthsBack - 1; i >= 0; i--) {
+    const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1, 0, 0, 0));
+    const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i + 1, 0, 23, 59, 59));
+    if (end.getTime() > now.getTime()) end.setTime(now.getTime());
+    windows.push({
+      label: `${start.getUTCFullYear()}-${String(start.getUTCMonth() + 1).padStart(2, "0")}`,
+      minCreated: Math.floor(start.getTime() / 1000),
+      maxCreated: Math.floor(end.getTime() / 1000)
+    });
+  }
+  return windows;
+}
+
+export async function fetchEtsyListingsByState(state: string, limit = 100): Promise<EtsyListing[]> {
   const all: EtsyListing[] = [];
   let offset = 0;
 
   while (true) {
-    const data = await etsyFetch<{ results?: EtsyListing[]; count?: number }>(
-      `/shops/${encodeURIComponent(etsyEnv.ETSY_SHOP_ID)}/listings/active`,
-      { limit, offset }
+    const data = await etsyFetch<{ results?: EtsyListing[] }>(
+      `/shops/${encodeURIComponent(etsyEnv.ETSY_SHOP_ID)}/listings`,
+      { state, limit, offset, includes: "Inventory" }
     );
     const rows = data.results ?? [];
     all.push(...rows);
@@ -112,16 +141,67 @@ export async function fetchActiveEtsyListings(limit = 100): Promise<EtsyListing[
   return all;
 }
 
-export async function fetchEtsyReceipts(limit = 100, offset = 0): Promise<EtsyReceipt[]> {
+export async function fetchActiveEtsyListings(limit = 100): Promise<EtsyListing[]> {
+  const states = ["active", "inactive", "sold_out"];
+  const all: EtsyListing[] = [];
+  for (const state of states) {
+    try {
+      const rows = await fetchEtsyListingsByState(state, limit);
+      all.push(...rows);
+    } catch (err) {
+      logger.warn("Etsy listings state fetch failed", {
+        state,
+        err: err instanceof Error ? err.message : String(err)
+      });
+    }
+    await sleep(500);
+  }
+  return all;
+}
+
+export async function fetchEtsyReceipts(opts: {
+  limit?: number;
+  offset?: number;
+  minCreated?: number;
+  maxCreated?: number;
+} = {}): Promise<EtsyReceipt[]> {
   const data = await etsyFetch<{ results?: EtsyReceipt[] }>(
     `/shops/${encodeURIComponent(etsyEnv.ETSY_SHOP_ID)}/receipts`,
     {
-      limit,
-      offset,
-      includes: "transactions,refunds"
+      limit: opts.limit ?? 100,
+      offset: opts.offset ?? 0,
+      min_created: opts.minCreated,
+      max_created: opts.maxCreated,
+      includes: "Transactions,Refunds"
     }
   );
   return data.results ?? [];
+}
+
+export async function fetchEtsyReceiptsForWindow(
+  window: MonthWindow,
+  maxPages = 20
+): Promise<EtsyReceipt[]> {
+  const all: EtsyReceipt[] = [];
+  const limit = 100;
+  let offset = 0;
+  let page = 0;
+
+  while (page < maxPages) {
+    page += 1;
+    const rows = await fetchEtsyReceipts({
+      limit,
+      offset,
+      minCreated: window.minCreated,
+      maxCreated: window.maxCreated
+    });
+    all.push(...rows);
+    if (rows.length < limit) break;
+    offset += limit;
+    await sleep(1200);
+  }
+
+  return all;
 }
 
 export async function fetchAllEtsyReceipts(maxPages = 50): Promise<EtsyReceipt[]> {
@@ -132,7 +212,7 @@ export async function fetchAllEtsyReceipts(maxPages = 50): Promise<EtsyReceipt[]
 
   while (page < maxPages) {
     page += 1;
-    const rows = await fetchEtsyReceipts(limit, offset);
+    const rows = await fetchEtsyReceipts({ limit, offset });
     all.push(...rows);
     if (rows.length < limit) break;
     offset += limit;

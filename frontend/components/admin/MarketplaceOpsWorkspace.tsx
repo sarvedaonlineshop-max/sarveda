@@ -294,6 +294,7 @@ export function MarketplaceOpsWorkspace() {
   );
   const [channelSubTab, setChannelSubTab] = useState<ChannelSubTab>("overview");
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [overview, setOverview] = useState<MarketplaceOverviewData | null>(null);
   const [listings, setListings] = useState<MarketplaceListingRow[]>([]);
   const [orders, setOrders] = useState<MarketplaceOrderRow[]>([]);
@@ -420,8 +421,13 @@ export function MarketplaceOpsWorkspace() {
   async function runEtsyManualSync() {
     setBusy("etsy-sync");
     setError(null);
+    setNotice(null);
     try {
-      await syncEtsyMarketplaceAll({ maxPages: 25 });
+      const result = await syncEtsyMarketplaceAll({ monthsBack: 24, maxPagesPerMonth: 10 });
+      setNotice(
+        result.message ||
+          "Etsy sync started in the background (month by month). Refresh Listings/Orders/Returns in a few minutes."
+      );
       if (activeChannel) {
         await Promise.all([loadListings(activeChannel), loadOrders(activeChannel), loadReturns(activeChannel)]);
       }
@@ -606,6 +612,7 @@ export function MarketplaceOpsWorkspace() {
       </div>
 
       {error ? <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200">{error}</div> : null}
+      {notice ? <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200">{notice}</div> : null}
 
       {activeTab === "overview" && overview ? (
         <div className="space-y-4">

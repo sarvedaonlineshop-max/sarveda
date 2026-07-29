@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 
 import { getAmazonConnectionStatus, syncAmazonMarketplace, syncAmazonOrders } from "./amazon/amazon-orders-sync";
-import { getEtsyConnectionStatus, syncEtsyMarketplace } from "./etsy/etsy-sync";
+import { getEtsyConnectionStatus, startEtsyMarketplaceSync } from "./etsy/etsy-sync";
 import { getFlipkartConnectionStatus, syncFlipkartMarketplace } from "./flipkart/flipkart-sync";
 import * as service from "./marketplaces.service";
 
@@ -216,7 +216,14 @@ export async function etsyConnection(_req: Request, res: Response, next: NextFun
 
 export async function etsySyncAll(req: Request, res: Response, next: NextFunction) {
   try {
-    res.json({ success: true, data: await syncEtsyMarketplace(req.body ?? {}) });
+    const monthsBack = typeof req.body?.monthsBack === "number" ? req.body.monthsBack : 24;
+    const maxPagesPerMonth =
+      typeof req.body?.maxPagesPerMonth === "number" ? req.body.maxPagesPerMonth : 10;
+    // Background sync avoids Vercel/proxy 504 while month batches run.
+    res.json({
+      success: true,
+      data: startEtsyMarketplaceSync({ monthsBack, maxPagesPerMonth })
+    });
   } catch (err) {
     next(err);
   }
