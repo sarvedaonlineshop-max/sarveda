@@ -732,7 +732,7 @@ export function MarketplaceOpsWorkspace() {
                 )}
               </SectionCard>
               <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-xs text-stone-600 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-300">
-                Sarveda SKU is our internal variant identifier. Amazon Seller SKU is Amazon's seller-side listing code. Since our seller SKUs currently mirror Sarveda SKUs, one visible SKU column is enough here.
+                Sarveda SKU is our internal variant identifier. Amazon Seller SKU is Amazon&apos;s seller-side listing code. Since our seller SKUs currently mirror Sarveda SKUs, one visible SKU column is enough here.
               </div>
             </div>
           ) : null}
