@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import type {
   AmazonSpConnectionStatus,
   AmazonSyncAllResult,
+  EtsyConnectionStatus,
   FlipkartConnectionStatus,
   MarketplaceChannelCode,
   MarketplaceListingRow,
@@ -15,12 +16,14 @@ import type {
 } from "@/lib/admin-api";
 import {
   fetchAmazonSpConnection,
+  fetchEtsyConnection,
   fetchFlipkartConnection,
   fetchMarketplaceListings,
   fetchMarketplaceOrders,
   fetchMarketplaceOverview,
   fetchMarketplaceReturns,
   syncAmazonMarketplaceAll,
+  syncEtsyMarketplaceAll,
   syncFlipkartMarketplaceAll
 } from "@/lib/admin-api";
 import { formatINRFromPaise } from "@/lib/money";
@@ -297,6 +300,7 @@ export function MarketplaceOpsWorkspace() {
   const [returns, setReturns] = useState<MarketplaceReturnRow[]>([]);
   const [amazonConnection, setAmazonConnection] = useState<AmazonSpConnectionStatus | null>(null);
   const [amazonLastSync, setAmazonLastSync] = useState<AmazonSyncAllResult | null>(null);
+  const [etsyConnection, setEtsyConnection] = useState<EtsyConnectionStatus | null>(null);
   const [flipkartConnection, setFlipkartConnection] = useState<FlipkartConnectionStatus | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<MarketplaceOrderRow | null>(null);
@@ -332,6 +336,11 @@ export function MarketplaceOpsWorkspace() {
       void loadFlipkartConnection();
     } else {
       setFlipkartConnection(null);
+    }
+    if (activeChannel === "ETSY") {
+      void loadEtsyConnection();
+    } else {
+      setEtsyConnection(null);
     }
   }, [activeChannel]);
 
@@ -384,6 +393,14 @@ export function MarketplaceOpsWorkspace() {
     }
   }
 
+  async function loadEtsyConnection() {
+    try {
+      setEtsyConnection(await fetchEtsyConnection());
+    } catch {
+      setEtsyConnection(null);
+    }
+  }
+
   async function runFlipkartManualSync() {
     setBusy("flipkart-sync");
     setError(null);
@@ -395,6 +412,22 @@ export function MarketplaceOpsWorkspace() {
       await loadFlipkartConnection();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Flipkart sync failed");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function runEtsyManualSync() {
+    setBusy("etsy-sync");
+    setError(null);
+    try {
+      await syncEtsyMarketplaceAll({ maxPages: 25 });
+      if (activeChannel) {
+        await Promise.all([loadListings(activeChannel), loadOrders(activeChannel), loadReturns(activeChannel)]);
+      }
+      await loadEtsyConnection();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Etsy sync failed");
     } finally {
       setBusy(null);
     }
@@ -635,6 +668,15 @@ export function MarketplaceOpsWorkspace() {
                 className="mb-1 rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
               >
                 {busy === "flipkart-sync" ? "Syncing..." : "Sync now"}
+              </button>
+            ) : activeChannel === "ETSY" ? (
+              <button
+                type="button"
+                onClick={() => void runEtsyManualSync()}
+                disabled={busy === "etsy-sync" || etsyConnection?.configured === false}
+                className="mb-1 rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
+              >
+                {busy === "etsy-sync" ? "Syncing..." : "Sync now"}
               </button>
             ) : null}
           </div>

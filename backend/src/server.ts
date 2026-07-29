@@ -5,6 +5,7 @@ import { startEmailWorker } from "./jobs/emailQueue";
 import { startAbandonedNotificationWorker } from "./jobs/abandonedNotificationJob";
 import { startCartCleanupWorker } from "./jobs/cartCleanupJob";
 import { startAmazonMarketplaceSyncJob } from "./jobs/amazonMarketplaceSyncJob";
+import { startEtsyMarketplaceSyncJob } from "./jobs/etsyMarketplaceSyncJob";
 import { startFlipkartMarketplaceSyncJob } from "./jobs/flipkartMarketplaceSyncJob";
 import { startPaymentTimeoutWorker } from "./jobs/paymentTimeoutJob";
 import { startDueDateReminderWorker } from "./jobs/taskDueDateJob";
@@ -26,6 +27,7 @@ app.listen(port, () => {
   startEmailWorker();
   startAbandonedNotificationWorker();
   startAmazonMarketplaceSyncJob();
+  startEtsyMarketplaceSyncJob();
   startFlipkartMarketplaceSyncJob();
   void startTrackingSyncWorker();
   void startZohoStockSyncWorker();

@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 
 import { getAmazonConnectionStatus, syncAmazonMarketplace, syncAmazonOrders } from "./amazon/amazon-orders-sync";
+import { getEtsyConnectionStatus, syncEtsyMarketplace } from "./etsy/etsy-sync";
 import { getFlipkartConnectionStatus, syncFlipkartMarketplace } from "./flipkart/flipkart-sync";
 import * as service from "./marketplaces.service";
 
@@ -200,6 +201,22 @@ export async function flipkartConnection(_req: Request, res: Response, next: Nex
 export async function flipkartSyncAll(req: Request, res: Response, next: NextFunction) {
   try {
     res.json({ success: true, data: await syncFlipkartMarketplace(req.body ?? {}) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function etsyConnection(_req: Request, res: Response, next: NextFunction) {
+  try {
+    res.json({ success: true, data: getEtsyConnectionStatus() });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function etsySyncAll(req: Request, res: Response, next: NextFunction) {
+  try {
+    res.json({ success: true, data: await syncEtsyMarketplace(req.body ?? {}) });
   } catch (err) {
     next(err);
   }

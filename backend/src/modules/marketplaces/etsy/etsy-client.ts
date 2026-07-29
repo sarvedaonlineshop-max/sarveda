@@ -1,0 +1,147 @@
+import { ETSY_API_BASE, etsyEnv } from "../../../config/etsy";
+import { logger } from "../../../config/logger";
+import { getEtsyAccessToken } from "./etsy-auth";
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+export type EtsyListing = {
+  listing_id?: number;
+  title?: string;
+  state?: string;
+  sku?: string[];
+  quantity?: number;
+  price?: { amount?: number; divisor?: number } | number | string;
+};
+
+export type EtsyReceipt = {
+  receipt_id?: number;
+  name?: string;
+  buyer_email?: string | null;
+  first_line?: string | null;
+  second_line?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+  country_iso?: string | null;
+  status?: string | null;
+  is_paid?: boolean;
+  is_shipped?: boolean;
+  created_timestamp?: number;
+  updated_timestamp?: number;
+  grandtotal?: { amount?: number; divisor?: number } | number | string;
+  transactions?: EtsyTransaction[];
+  refunds?: EtsyRefund[];
+};
+
+export type EtsyTransaction = {
+  transaction_id?: number;
+  title?: string | null;
+  listing_id?: number | null;
+  quantity?: number;
+  sku?: string | string[] | null;
+  price?: { amount?: number; divisor?: number } | number | string;
+};
+
+export type EtsyRefund = {
+  refund_id?: number;
+  amount?: { amount?: number; divisor?: number } | number | string;
+  reason?: string | null;
+  created_timestamp?: number;
+  transaction_id?: number | null;
+};
+
+async function etsyFetch<T>(path: string, query?: Record<string, string | number | boolean | undefined>): Promise<T> {
+  const token = await getEtsyAccessToken();
+  const url = new URL(`${ETSY_API_BASE}${path}`);
+  if (query) {
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined && value !== "") url.searchParams.set(key, String(value));
+    }
+  }
+
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const res = await fetch(url.toString(), {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+        "x-api-key": etsyEnv.ETSY_API_KEY
+      }
+    });
+
+    if ((res.status === 429 || res.status === 503) && attempt < 3) {
+      const wait = 2500 * Math.pow(2, attempt);
+      logger.warn("Etsy API throttled, retrying", { path, attempt, waitMs: wait, status: res.status });
+      await sleep(wait);
+      continue;
+    }
+
+    const body = (await res.json().catch(() => ({}))) as T & { error?: string };
+    if (!res.ok) {
+      logger.error("Etsy API request failed", { path, status: res.status, error: body.error });
+      throw Object.assign(new Error(body.error ?? `Etsy API error (${res.status})`), {
+        statusCode: res.status >= 500 ? 502 : 400,
+        code: "ETSY_API_ERROR"
+      });
+    }
+    return body;
+  }
+
+  throw new Error(`Etsy API: exhausted retries for ${path}`);
+}
+
+export async function fetchActiveEtsyListings(limit = 100): Promise<EtsyListing[]> {
+  const all: EtsyListing[] = [];
+  let offset = 0;
+
+  while (true) {
+    const data = await etsyFetch<{ results?: EtsyListing[]; count?: number }>(
+      `/shops/${encodeURIComponent(etsyEnv.ETSY_SHOP_ID)}/listings/active`,
+      { limit, offset }
+    );
+    const rows = data.results ?? [];
+    all.push(...rows);
+    if (rows.length < limit) break;
+    offset += limit;
+    await sleep(800);
+  }
+
+  return all;
+}
+
+export async function fetchEtsyReceipts(limit = 100, offset = 0): Promise<EtsyReceipt[]> {
+  const data = await etsyFetch<{ results?: EtsyReceipt[] }>(
+    `/shops/${encodeURIComponent(etsyEnv.ETSY_SHOP_ID)}/receipts`,
+    {
+      limit,
+      offset,
+      includes: "transactions,refunds"
+    }
+  );
+  return data.results ?? [];
+}
+
+export async function fetchAllEtsyReceipts(maxPages = 50): Promise<EtsyReceipt[]> {
+  const all: EtsyReceipt[] = [];
+  const limit = 100;
+  let offset = 0;
+  let page = 0;
+
+  while (page < maxPages) {
+    page += 1;
+    const rows = await fetchEtsyReceipts(limit, offset);
+    all.push(...rows);
+    if (rows.length < limit) break;
+    offset += limit;
+    await sleep(1000);
+  }
+
+  return all;
+}
+
+export async function fetchReceiptTransactions(receiptId: number): Promise<EtsyTransaction[]> {
+  const data = await etsyFetch<{ results?: EtsyTransaction[] }>(
+    `/shops/${encodeURIComponent(etsyEnv.ETSY_SHOP_ID)}/receipts/${receiptId}/transactions`
+  );
+  return data.results ?? [];
+}

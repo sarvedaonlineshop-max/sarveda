@@ -31,5 +31,7 @@ router.post("/amazon/sync-orders", validateBody(amazonOrdersSyncSchema), control
 router.post("/amazon/sync-all", validateBody(amazonOrdersSyncSchema), controller.amazonSyncAll);
 router.get("/flipkart/connection", controller.flipkartConnection);
 router.post("/flipkart/sync-all", controller.flipkartSyncAll);
+router.get("/etsy/connection", controller.etsyConnection);
+router.post("/etsy/sync-all", controller.etsySyncAll);
 
 export { router as marketplaceAdminRoutes };

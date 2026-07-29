@@ -1631,6 +1631,24 @@ export function syncFlipkartMarketplaceAll(input?: { daysBack?: number; maxPages
   });
 }
 
+export type EtsyConnectionStatus = {
+  configured: boolean;
+  shopId: string;
+  autoSyncEnabled: boolean;
+  missing: string[];
+};
+
+export function fetchEtsyConnection() {
+  return adminFetch<EtsyConnectionStatus>("/api/admin/marketplaces/etsy/connection");
+}
+
+export function syncEtsyMarketplaceAll(input?: { maxPages?: number }) {
+  return adminFetch<{ listings: unknown; orders: unknown; returns: unknown }>("/api/admin/marketplaces/etsy/sync-all", {
+    method: "POST",
+    body: JSON.stringify(input ?? {})
+  });
+}
+
 export type ZohoStockSyncResult = {
   synced: number;
   errors: number;
