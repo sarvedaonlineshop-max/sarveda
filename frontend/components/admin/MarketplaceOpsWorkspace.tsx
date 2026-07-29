@@ -202,8 +202,6 @@ function OrderDetailModal({
   const rawOrder = (order.rawPayload?.order ?? {}) as { OrderTotal?: { Amount?: string; CurrencyCode?: string } };
   const grandTotal = rawOrder.OrderTotal?.Amount ? Math.round(Number(rawOrder.OrderTotal.Amount) * 100) : order.totalValueInPaise;
   const delta = Math.max(0, grandTotal - subtotal);
-  const hasCustomer = Boolean(order.customerName || order.customerEmail || order.customerPhone);
-
   return (
     <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/40 px-4">
       <div className="max-h-[85vh] w-full max-w-3xl overflow-auto rounded-2xl bg-white shadow-2xl dark:bg-stone-900">
@@ -218,13 +216,6 @@ function OrderDetailModal({
         </div>
 
         <div className="space-y-5 p-5 text-sm">
-          {!hasCustomer ? (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
-              Customer details are unknown because Amazon does not expose buyer PII in the basic Orders API response. We need
-              Amazon Restricted Data Token approval to receive full buyer details consistently.
-            </div>
-          ) : null}
-
           <div className="grid gap-4 md:grid-cols-2">
             <div className="rounded-lg border border-stone-200 p-4 dark:border-stone-700">
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">Customer details</p>
@@ -526,7 +517,6 @@ export function MarketplaceOpsWorkspace() {
     <div className="mx-auto max-w-[1440px] space-y-4 pt-2">
       <div className="border-b border-stone-200 pb-3 dark:border-stone-700">
         <h1 className="text-[28px] font-semibold tracking-tight text-stone-900 dark:text-stone-100">Marketplace Operations</h1>
-        <p className="mt-1 text-sm text-stone-500">Marketplace data is auto-pulled into Sarveda. Open a channel and review it tab by tab.</p>
       </div>
 
       <div className="flex flex-wrap gap-5 border-b border-stone-200 dark:border-stone-700">
@@ -582,40 +572,29 @@ export function MarketplaceOpsWorkspace() {
 
       {activeChannel ? (
         <>
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm dark:border-stone-700 dark:bg-stone-900">
-            <div>
-              <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">{activeChannelLabel}</p>
-              <p className="mt-1 text-xs text-stone-500">
-                Review this marketplace in focused tabs. Data starts near the top to avoid long scrolling.
-              </p>
+          <div className="flex items-center justify-between border-b border-stone-200 dark:border-stone-700">
+            <div className="flex flex-wrap gap-4">
+              {SUB_TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setChannelSubTab(tab.id)}
+                  className={`border-b-2 px-1 pb-2 text-sm font-medium ${channelSubTab === tab.id ? "border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100" : "border-transparent text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"}`}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
             {activeChannel === "AMAZON" ? (
-              <div className="flex flex-wrap items-center gap-2">
-                {amazonConnection ? <StatusPill label={amazonConnection.configured ? "CONNECTED" : "NOT CONFIGURED"} /> : null}
-                {amazonConnection?.autoSyncEnabled ? <StatusPill label="AUTO SYNC" /> : null}
-                <button
-                  type="button"
-                  onClick={() => void runAmazonManualSync()}
-                  disabled={busy === "amazon-sync" || amazonConnection?.configured === false}
-                  className="rounded-lg bg-stone-900 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
-                >
-                  {busy === "amazon-sync" ? "Syncing..." : "Manual sync now"}
-                </button>
-              </div>
-            ) : null}
-          </div>
-
-          <div className="flex flex-wrap gap-4 border-b border-stone-200 dark:border-stone-700">
-            {SUB_TABS.map((tab) => (
               <button
-                key={tab.id}
                 type="button"
-                onClick={() => setChannelSubTab(tab.id)}
-                className={`border-b-2 px-1 pb-2 text-sm font-medium ${channelSubTab === tab.id ? "border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100" : "border-transparent text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"}`}
+                onClick={() => void runAmazonManualSync()}
+                disabled={busy === "amazon-sync" || amazonConnection?.configured === false}
+                className="mb-1 rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
               >
-                {tab.label}
+                {busy === "amazon-sync" ? "Syncing..." : "Sync now"}
               </button>
-            ))}
+            ) : null}
           </div>
 
           {channelSubTab === "overview" ? (
@@ -731,9 +710,6 @@ export function MarketplaceOpsWorkspace() {
                   </div>
                 )}
               </SectionCard>
-              <div className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-xs text-stone-600 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-300">
-                Sarveda SKU is our internal variant identifier. Amazon Seller SKU is Amazon&apos;s seller-side listing code. Since our seller SKUs currently mirror Sarveda SKUs, one visible SKU column is enough here.
-              </div>
             </div>
           ) : null}
 
@@ -750,9 +726,6 @@ export function MarketplaceOpsWorkspace() {
                     {preset === "week" ? "Last week" : preset === "month" ? "Last month" : preset === "all" ? "All time" : "Today"}
                   </button>
                 ))}
-              </div>
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
-                Customer details show as unknown when Amazon omits buyer PII from the basic Orders API response. To make this more complete, we need Amazon Restricted Data Token approval.
               </div>
               <SectionCard title="Orders" right={<p className="text-xs text-stone-500">{filteredOrders.length} orders</p>}>
                 {filteredOrders.length === 0 ? (
@@ -821,7 +794,7 @@ export function MarketplaceOpsWorkspace() {
                     <table className="min-w-full text-sm">
                       <thead className="border-b border-stone-200 bg-stone-50 dark:border-stone-700 dark:bg-stone-800/60">
                         <tr>
-                          {["Order", "Product", "Variant", "Qty", "Refund", "Restocked", "Status", "Date"].map((h) => (
+                          {["Order", "Product", "Variant", "Qty", "Refund", "Status", "Date"].map((h) => (
                             <th key={h} className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500">{h}</th>
                           ))}
                         </tr>
@@ -834,7 +807,6 @@ export function MarketplaceOpsWorkspace() {
                             <td className="px-3 py-3 text-xs text-stone-600 dark:text-stone-300">{row.variantName || "Default"}</td>
                             <td className="px-3 py-3">{row.quantity}</td>
                             <td className="px-3 py-3">{formatINRFromPaise(row.refundedAmountInPaise ?? 0)}</td>
-                            <td className="px-3 py-3">{row.restockedToZoho ? "Yes" : "No"}</td>
                             <td className="px-3 py-3"><StatusPill label={row.status} /></td>
                             <td className="px-3 py-3 text-xs text-stone-500">{relativeDate(row.createdAt)}</td>
                           </tr>

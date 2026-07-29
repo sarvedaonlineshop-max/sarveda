@@ -40,7 +40,7 @@ function amountToPaise(amount?: string): number | null {
 
 function createdAfterIso(input: SyncInput): string {
   if (input.createdAfter) return input.createdAfter;
-  const days = input.daysBack ?? 14;
+  const days = input.daysBack ?? 730;
   const d = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
   // Amazon rejects CreatedAfter too close to now sometimes; floor to second.
   d.setMilliseconds(0);
@@ -293,7 +293,7 @@ export async function syncAmazonOrders(input: SyncInput = {}) {
 
 export async function syncAmazonMarketplace(input: SyncInput = {}) {
   const orders = await syncAmazonOrders(input);
-  const listings = await syncAmazonListingsReport(input.daysBack ?? 30);
-  const returns = await syncAmazonReturnsReport(input.daysBack ?? 30);
+  const listings = await syncAmazonListingsReport(input.daysBack ?? 730);
+  const returns = await syncAmazonReturnsReport(input.daysBack ?? 730);
   return { orders, listings, returns };
 }

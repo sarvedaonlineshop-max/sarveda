@@ -32,14 +32,14 @@ export function startAmazonMarketplaceSyncJob() {
   const ordersMinutes = Number(process.env.AMAZON_SYNC_ORDERS_EVERY_MINUTES ?? 15);
   const catalogMinutes = Number(process.env.AMAZON_SYNC_CATALOG_EVERY_MINUTES ?? 180);
 
-  void runAutoSync(30);
+  void runAutoSync(730);
 
   ordersTimer = setInterval(() => {
-    void runAutoSync(30);
+    void runAutoSync(730);
   }, Math.max(5, ordersMinutes) * 60 * 1000);
 
   catalogTimer = setInterval(() => {
-    void runAutoSync(60);
+    void runAutoSync(730);
   }, Math.max(30, catalogMinutes) * 60 * 1000);
 
   logger.info("amazon_auto_sync_started", { ordersMinutes, catalogMinutes });
