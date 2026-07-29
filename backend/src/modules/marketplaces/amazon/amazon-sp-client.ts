@@ -42,9 +42,11 @@ type SpApiErrorBody = {
   errors?: Array<{ code?: string; message?: string; details?: string }>;
 };
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 async function spFetch<T>(
   path: string,
-  opts: { query?: Record<string, string | undefined>; accessToken?: string } = {}
+  opts: { query?: Record<string, string | undefined>; accessToken?: string; retries?: number } = {}
 ): Promise<T> {
   const token = opts.accessToken ?? (await getAmazonSpAccessToken());
   const url = new URL(path, getAmazonSpApiBaseUrl());
@@ -54,30 +56,43 @@ async function spFetch<T>(
     }
   }
 
-  const res = await fetch(url.toString(), {
-    method: "GET",
-    headers: {
-      "x-amz-access-token": token,
-      Accept: "application/json",
-      "user-agent": "SarvedaMarketplaceHub/1.0 (Language=Node.js)"
-    }
-  });
+  const maxRetries = opts.retries ?? 4;
 
-  const body = (await res.json().catch(() => ({}))) as T & SpApiErrorBody;
-  if (!res.ok) {
-    const first = body.errors?.[0];
-    logger.error("Amazon SP-API request failed", {
-      path,
-      status: res.status,
-      code: first?.code,
-      message: first?.message
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const res = await fetch(url.toString(), {
+      method: "GET",
+      headers: {
+        "x-amz-access-token": token,
+        Accept: "application/json",
+        "user-agent": "SarvedaMarketplaceHub/1.0 (Language=Node.js)"
+      }
     });
-    throw Object.assign(
-      new Error(first?.message ?? `Amazon SP-API error (${res.status})`),
-      { statusCode: res.status >= 500 ? 502 : 400, code: first?.code ?? "AMAZON_API_ERROR" }
-    );
+
+    if (res.status === 429 && attempt < maxRetries) {
+      const wait = Math.min(2000 * Math.pow(2, attempt), 30000);
+      logger.warn("Amazon SP-API throttled, retrying", { path, attempt, waitMs: wait });
+      await sleep(wait);
+      continue;
+    }
+
+    const body = (await res.json().catch(() => ({}))) as T & SpApiErrorBody;
+    if (!res.ok) {
+      const first = body.errors?.[0];
+      logger.error("Amazon SP-API request failed", {
+        path,
+        status: res.status,
+        code: first?.code,
+        message: first?.message
+      });
+      throw Object.assign(
+        new Error(first?.message ?? `Amazon SP-API error (${res.status})`),
+        { statusCode: res.status >= 500 ? 502 : 400, code: first?.code ?? "AMAZON_API_ERROR" }
+      );
+    }
+    return body;
   }
-  return body;
+
+  throw new Error(`Amazon SP-API: exhausted retries for ${path}`);
 }
 
 async function spGet<T>(path: string, query?: Record<string, string | undefined>): Promise<T> {
@@ -100,30 +115,41 @@ export async function getRestrictedDataToken(orderIds: string[]): Promise<string
       dataElements: ["buyerInfo", "shippingAddress"]
     }));
 
-    const res = await fetch(new URL("/tokens/2021-03-01/restrictedDataToken", baseUrl).toString(), {
-      method: "POST",
-      headers: {
-        "x-amz-access-token": token,
-        "Content-Type": "application/json",
-        "user-agent": "SarvedaMarketplaceHub/1.0 (Language=Node.js)"
-      },
-      body: JSON.stringify({ restrictedResources })
-    });
-
-    const data = (await res.json().catch(() => ({}))) as {
-      restrictedDataToken?: string;
-      errors?: Array<{ code?: string; message?: string }>;
+    const rdtUrl = new URL("/tokens/2021-03-01/restrictedDataToken", baseUrl).toString();
+    const rdtBody = JSON.stringify({ restrictedResources });
+    const rdtHeaders = {
+      "x-amz-access-token": token,
+      "Content-Type": "application/json",
+      "user-agent": "SarvedaMarketplaceHub/1.0 (Language=Node.js)"
     };
 
-    if (!res.ok || !data.restrictedDataToken) {
-      logger.warn("RDT request failed — buyer PII will be unavailable", {
-        status: res.status,
-        error: data.errors?.[0]?.message
-      });
-      return null;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const res = await fetch(rdtUrl, { method: "POST", headers: rdtHeaders, body: rdtBody });
+
+      if (res.status === 429 && attempt < 3) {
+        const wait = 3000 * Math.pow(2, attempt);
+        logger.warn("RDT throttled, retrying", { attempt, waitMs: wait });
+        await sleep(wait);
+        continue;
+      }
+
+      const data = (await res.json().catch(() => ({}))) as {
+        restrictedDataToken?: string;
+        errors?: Array<{ code?: string; message?: string }>;
+      };
+
+      if (!res.ok || !data.restrictedDataToken) {
+        logger.warn("RDT request failed — buyer PII will be unavailable", {
+          status: res.status,
+          error: data.errors?.[0]?.message
+        });
+        return null;
+      }
+
+      return data.restrictedDataToken;
     }
 
-    return data.restrictedDataToken;
+    return null;
   } catch (err) {
     logger.warn("RDT request threw — buyer PII will be unavailable", { err });
     return null;
@@ -208,6 +234,7 @@ export async function listAllAmazonOrders(params: {
     });
     all.push(...batch.orders);
     nextToken = batch.nextToken;
+    if (nextToken) await sleep(3000);
   } while (nextToken && page < maxPages);
 
   if (nextToken) {

@@ -228,8 +228,10 @@ export async function syncAmazonOrders(input: SyncInput = {}) {
     maxPages: input.maxPages ?? 20
   });
 
-  // Enrich orders with buyer PII via Restricted Data Token (batches of 10)
-  const RDT_BATCH = 10;
+  const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+  // Enrich orders with buyer PII via Restricted Data Token (batches of 5)
+  const RDT_BATCH = 5;
   for (let i = 0; i < amazonOrders.length; i += RDT_BATCH) {
     const batch = amazonOrders.slice(i, i + RDT_BATCH);
     const ids = batch.map((o) => o.AmazonOrderId);
@@ -241,8 +243,10 @@ export async function syncAmazonOrders(input: SyncInput = {}) {
           if (enriched.BuyerInfo) batch[j].BuyerInfo = enriched.BuyerInfo;
           if (enriched.ShippingAddress) batch[j].ShippingAddress = enriched.ShippingAddress;
         }
+        await delay(2000);
       }
     }
+    await delay(3000);
   }
 
   let created = 0;
@@ -258,6 +262,7 @@ export async function syncAmazonOrders(input: SyncInput = {}) {
       if (result.action === "created") created += 1;
       else updated += 1;
       unresolvedItems += result.unresolvedItems;
+      await delay(2000);
     } catch (err) {
       errors += 1;
       const msg = err instanceof Error ? err.message : "unknown error";
