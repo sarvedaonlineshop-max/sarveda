@@ -29,5 +29,7 @@ router.post("/email-ingest", validateBody(marketplaceEmailIngestSchema), control
 router.get("/amazon/connection", controller.amazonConnection);
 router.post("/amazon/sync-orders", validateBody(amazonOrdersSyncSchema), controller.amazonSyncOrders);
 router.post("/amazon/sync-all", validateBody(amazonOrdersSyncSchema), controller.amazonSyncAll);
+router.get("/flipkart/connection", controller.flipkartConnection);
+router.post("/flipkart/sync-all", controller.flipkartSyncAll);
 
 export { router as marketplaceAdminRoutes };

@@ -1612,6 +1612,25 @@ export function syncAmazonMarketplaceAll(input?: {
   });
 }
 
+// --- Flipkart ---
+
+export type FlipkartConnectionStatus = {
+  configured: boolean;
+  autoSyncEnabled: boolean;
+  missing: string[];
+};
+
+export function fetchFlipkartConnection() {
+  return adminFetch<FlipkartConnectionStatus>("/api/admin/marketplaces/flipkart/connection");
+}
+
+export function syncFlipkartMarketplaceAll(input?: { daysBack?: number; maxPages?: number }) {
+  return adminFetch<{ orders: unknown; returns: unknown }>("/api/admin/marketplaces/flipkart/sync-all", {
+    method: "POST",
+    body: JSON.stringify(input ?? {}),
+  });
+}
+
 export type ZohoStockSyncResult = {
   synced: number;
   errors: number;

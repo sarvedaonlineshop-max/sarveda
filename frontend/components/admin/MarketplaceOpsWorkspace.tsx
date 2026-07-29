@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import type {
   AmazonSpConnectionStatus,
   AmazonSyncAllResult,
+  FlipkartConnectionStatus,
   MarketplaceChannelCode,
   MarketplaceListingRow,
   MarketplaceOrderRow,
@@ -14,11 +15,13 @@ import type {
 } from "@/lib/admin-api";
 import {
   fetchAmazonSpConnection,
+  fetchFlipkartConnection,
   fetchMarketplaceListings,
   fetchMarketplaceOrders,
   fetchMarketplaceOverview,
   fetchMarketplaceReturns,
-  syncAmazonMarketplaceAll
+  syncAmazonMarketplaceAll,
+  syncFlipkartMarketplaceAll
 } from "@/lib/admin-api";
 import { formatINRFromPaise } from "@/lib/money";
 
@@ -294,6 +297,7 @@ export function MarketplaceOpsWorkspace() {
   const [returns, setReturns] = useState<MarketplaceReturnRow[]>([]);
   const [amazonConnection, setAmazonConnection] = useState<AmazonSpConnectionStatus | null>(null);
   const [amazonLastSync, setAmazonLastSync] = useState<AmazonSyncAllResult | null>(null);
+  const [flipkartConnection, setFlipkartConnection] = useState<FlipkartConnectionStatus | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<MarketplaceOrderRow | null>(null);
 
@@ -319,11 +323,16 @@ export function MarketplaceOpsWorkspace() {
   }, [activeChannel]);
 
   useEffect(() => {
-    if (activeChannel !== "AMAZON") {
+    if (activeChannel === "AMAZON") {
+      void loadAmazonConnection();
+    } else {
       setAmazonConnection(null);
-      return;
     }
-    void loadAmazonConnection();
+    if (activeChannel === "FLIPKART") {
+      void loadFlipkartConnection();
+    } else {
+      setFlipkartConnection(null);
+    }
   }, [activeChannel]);
 
   useEffect(() => {
@@ -364,6 +373,30 @@ export function MarketplaceOpsWorkspace() {
       setAmazonConnection(await fetchAmazonSpConnection());
     } catch {
       setAmazonConnection(null);
+    }
+  }
+
+  async function loadFlipkartConnection() {
+    try {
+      setFlipkartConnection(await fetchFlipkartConnection());
+    } catch {
+      setFlipkartConnection(null);
+    }
+  }
+
+  async function runFlipkartManualSync() {
+    setBusy("flipkart-sync");
+    setError(null);
+    try {
+      await syncFlipkartMarketplaceAll({ daysBack: 90, maxPages: 25 });
+      if (activeChannel) {
+        await Promise.all([loadListings(activeChannel), loadOrders(activeChannel), loadReturns(activeChannel)]);
+      }
+      await loadFlipkartConnection();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Flipkart sync failed");
+    } finally {
+      setBusy(null);
     }
   }
 
@@ -593,6 +626,15 @@ export function MarketplaceOpsWorkspace() {
                 className="mb-1 rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
               >
                 {busy === "amazon-sync" ? "Syncing..." : "Sync now"}
+              </button>
+            ) : activeChannel === "FLIPKART" ? (
+              <button
+                type="button"
+                onClick={() => void runFlipkartManualSync()}
+                disabled={busy === "flipkart-sync" || flipkartConnection?.configured === false}
+                className="mb-1 rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
+              >
+                {busy === "flipkart-sync" ? "Syncing..." : "Sync now"}
               </button>
             ) : null}
           </div>

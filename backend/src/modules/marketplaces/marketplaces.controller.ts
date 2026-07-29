@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 
 import { getAmazonConnectionStatus, syncAmazonMarketplace, syncAmazonOrders } from "./amazon/amazon-orders-sync";
+import { getFlipkartConnectionStatus, syncFlipkartMarketplace } from "./flipkart/flipkart-sync";
 import * as service from "./marketplaces.service";
 
 type ChannelCode = Parameters<typeof service.listMarketplaceListings>[0] extends infer T
@@ -183,6 +184,22 @@ export async function amazonSyncOrders(req: Request, res: Response, next: NextFu
 export async function amazonSyncAll(req: Request, res: Response, next: NextFunction) {
   try {
     res.json({ success: true, data: await syncAmazonMarketplace(req.body ?? {}) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function flipkartConnection(_req: Request, res: Response, next: NextFunction) {
+  try {
+    res.json({ success: true, data: getFlipkartConnectionStatus() });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function flipkartSyncAll(req: Request, res: Response, next: NextFunction) {
+  try {
+    res.json({ success: true, data: await syncFlipkartMarketplace(req.body ?? {}) });
   } catch (err) {
     next(err);
   }
