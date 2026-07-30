@@ -948,21 +948,20 @@ export function AdminInventoryWorkspace() {
           </button>
           <button
             type="button"
-            disabled={zohoSyncing !== null}
-            onClick={() => void runZohoAudit()}
-            className="inline-flex items-center gap-2 rounded-md border border-[#1e3a2f]/30 bg-white px-4 py-2 text-sm font-semibold text-[#1e3a2f] shadow-sm hover:bg-stone-50 disabled:opacity-60 dark:border-[#2d5240] dark:bg-stone-800 dark:text-[#8fd3b6]"
+            disabled
+            className="inline-flex cursor-not-allowed items-center gap-2 rounded-md border border-[#1e3a2f]/30 bg-white px-4 py-2 text-sm font-semibold text-[#1e3a2f] opacity-50 shadow-sm dark:border-[#2d5240] dark:bg-stone-800 dark:text-[#8fd3b6]"
+            title="Temporarily disabled — Zoho audit refresh is turned off for now"
           >
-            <IconRefresh className={`h-4 w-4 ${zohoSyncing === "audit" ? "animate-spin" : ""}`} />
+            <IconRefresh className="h-4 w-4" />
             Refresh Zoho audit
           </button>
           <button
             type="button"
-            disabled={zohoSyncing !== null}
-            onClick={() => void runPullAllFromZoho()}
-            className="inline-flex items-center gap-2 rounded-md bg-[#1e3a2f] px-4 py-2 text-sm font-semibold text-[#fffbf5] shadow-sm hover:bg-[#2d5240] disabled:opacity-60"
-            title="Overwrite all Sarveda stock with Zoho counts (Zoho is master)"
+            disabled
+            className="inline-flex cursor-not-allowed items-center gap-2 rounded-md bg-[#1e3a2f] px-4 py-2 text-sm font-semibold text-[#fffbf5] opacity-50 shadow-sm"
+            title="Temporarily disabled — bulk Zoho sync is turned off for now"
           >
-            <IconDownload className={`h-4 w-4 ${zohoSyncing === "pull_all" ? "animate-pulse" : ""}`} />
+            <IconDownload className="h-4 w-4" />
             Sync all from Zoho
           </button>
         </div>
