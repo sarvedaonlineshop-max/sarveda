@@ -1,48 +1,49 @@
 import nodemailer from "nodemailer";
 
 import { prisma } from "../../config/db";
+import { isEmailSmtpConfigured, resolveEmailSmtpConfig } from "../../config/email";
 import { enqueueEmail } from "../../jobs/emailQueue";
 import { logger } from "../../config/logger";
 
-if (
-  process.env.NODE_ENV === "production" &&
-  !process.env.AWS_SES_SMTP_HOST?.trim()
-) {
+if (process.env.NODE_ENV === "production" && !isEmailSmtpConfigured()) {
   console.error(
-    "[EMAIL_CONFIG_MISSING] AWS SES SMTP not configured in production. " +
-      "Set AWS_SES_SMTP_HOST, AWS_SES_SMTP_USER, AWS_SES_SMTP_PASS. " +
+    "[EMAIL_CONFIG_MISSING] Transactional email SMTP not configured in production. " +
+      "Set Zoho ZeptoMail (ZEPTOMAIL_SMTP_PASS, ZEPTOMAIL_FROM_EMAIL) " +
+      "or Amazon SES (AWS_SES_SMTP_HOST/USER/PASS/FROM_EMAIL). " +
       "No transactional emails will be sent."
   );
 }
 
 let transporter: nodemailer.Transporter | null = null;
+let transporterProvider: string | null = null;
 
 function getTransporter(): nodemailer.Transporter {
-  if (transporter) return transporter;
-
-  const host = process.env.AWS_SES_SMTP_HOST;
-  const port = Number(process.env.AWS_SES_SMTP_PORT ?? 587);
-  const user = process.env.AWS_SES_SMTP_USER;
-  const pass = process.env.AWS_SES_SMTP_PASS;
-
-  if (!host || !user || !pass) {
+  const config = resolveEmailSmtpConfig();
+  if (!config) {
     throw new Error(
-      "AWS SES SMTP not configured. " +
-        "Set AWS_SES_SMTP_HOST, AWS_SES_SMTP_USER, " +
-        "AWS_SES_SMTP_PASS in .env"
+      "Email SMTP not configured. Set ZEPTOMAIL_SMTP_PASS + ZEPTOMAIL_FROM_EMAIL " +
+        "(preferred) or AWS_SES_SMTP_* credentials."
     );
   }
 
-  transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: false,
-    auth: { user, pass },
-    pool: true,
-    maxConnections: 5,
-  });
+  if (transporter && transporterProvider === config.provider) return transporter;
 
-  logger.info("ses_smtp_transporter_created", { host, port });
+  transporter = nodemailer.createTransport({
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    auth: { user: config.user, pass: config.pass },
+    pool: true,
+    maxConnections: 5
+  });
+  transporterProvider = config.provider;
+
+  logger.info("email_smtp_transporter_created", {
+    provider: config.provider,
+    host: config.host,
+    port: config.port,
+    from: config.fromEmail
+  });
   return transporter;
 }
 
@@ -53,12 +54,15 @@ export async function sendMail(
   text?: string,
   replyToEmail?: string
 ): Promise<void> {
-  const from =
-    process.env.AWS_SES_FROM_EMAIL?.trim() ?? "noreply@sarveda-demo.xyz";
-  const replyTo =
-    replyToEmail?.trim() || process.env.AWS_SES_REPLY_TO?.trim();
+  const config = resolveEmailSmtpConfig();
+  if (!config) {
+    throw new Error("Email SMTP not configured");
+  }
 
-  logger.info("send_mail_attempt", { to, subject });
+  const from = config.fromEmail;
+  const replyTo = replyToEmail?.trim() || config.replyTo;
+
+  logger.info("send_mail_attempt", { to, subject, provider: config.provider });
 
   try {
     const info = await getTransporter().sendMail({
@@ -67,17 +71,18 @@ export async function sendMail(
       subject,
       html,
       text: text ?? html.replace(/<[^>]+>/g, ""),
-      ...(replyTo ? { replyTo } : {}),
+      ...(replyTo ? { replyTo } : {})
     });
 
     logger.info("send_mail_success", {
       to,
       subject,
-      messageId: info.messageId,
+      provider: config.provider,
+      messageId: info.messageId
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    logger.error("send_mail_failed", { to, subject, error: message });
+    logger.error("send_mail_failed", { to, subject, provider: config.provider, error: message });
     throw err;
   }
 }
