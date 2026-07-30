@@ -72,6 +72,7 @@ export async function afterOrderPaid(orderId: string): Promise<void> {
         where: { id: orderId },
         data: { status: "PROCESSING" }
       });
+      notifyOrderEmail(orderId, "order_processing");
       void onOrderEnteredProcessing(orderId);
     }
   }

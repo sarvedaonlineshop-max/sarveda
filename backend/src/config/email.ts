@@ -25,7 +25,8 @@ export function resolveEmailSmtpConfig(): EmailSmtpConfig | null {
     const port = Number(process.env.ZEPTOMAIL_SMTP_PORT ?? 587);
     return {
       provider: "zeptomail",
-      host: trim(process.env.ZEPTOMAIL_SMTP_HOST) || "smtp.zeptomail.com",
+      // India Zoho One / zeptomail.zoho.in uses .in; override with ZEPTOMAIL_SMTP_HOST if needed
+      host: trim(process.env.ZEPTOMAIL_SMTP_HOST) || "smtp.zeptomail.in",
       port: Number.isFinite(port) ? port : 587,
       secure: port === 465,
       user: trim(process.env.ZEPTOMAIL_SMTP_USER) || "emailapikey",

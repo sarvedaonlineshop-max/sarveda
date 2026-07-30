@@ -49,6 +49,7 @@
     "test:shipping": "tsx scripts/test-shipping.ts",
     "test:ses": "ts-node src/scripts/test-ses.ts",
     "test:email": "tsx src/scripts/test-email.ts",
+    "test:order-email": "tsx src/scripts/test-order-email.ts",
     "check:ses-dns": "ts-node scripts/check-ses-dns.ts",
     "import:refunds": "tsx scripts/import-refunds-wxr.ts",
     "import:reviews": "tsx scripts/import-reviews-from-products.ts",

@@ -916,7 +916,14 @@ export async function patchOrderStatus(req: Request, res: Response, next: NextFu
     });
 
     if (status === "PROCESSING" && prevStatus !== "PROCESSING") {
+      notifyOrderEmail(id, "order_processing");
       void onOrderEnteredProcessing(order.id);
+    }
+    if (status === "SHIPPED" && prevStatus !== "SHIPPED" && prevStatus !== "DELIVERED") {
+      notifyOrderEmail(id, "order_shipped");
+    }
+    if (status === "DELIVERED" && prevStatus !== "DELIVERED") {
+      notifyOrderEmail(id, "order_delivered");
     }
 
     res.json({ success: true, data: { order } });
