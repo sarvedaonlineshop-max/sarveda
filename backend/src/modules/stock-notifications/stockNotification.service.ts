@@ -62,12 +62,22 @@ export async function notifyStockSubscribersForVariant(variantId: string): Promi
 
   for (const row of pending) {
     try {
+      const { buildShopEmail } = await import("../notifications/email");
+      const html = buildShopEmail(
+        "Back in stock",
+        [
+          `Good news — <strong>${variant.productRel.name}</strong> is available again.`,
+          "Visit the product page to place your order while stock lasts."
+        ],
+        {
+          banner: "In stock again",
+          ctas: [{ href: productUrl, label: "View product" }]
+        }
+      );
       await sendMail(
         row.email,
         `${variant.productRel.name} is back in stock — Sarveda`,
-        `<p>Good news — <strong>${variant.productRel.name}</strong> is available again.</p>
-<p><a href="${productUrl}">View product and order</a></p>
-<p>Thank you for shopping with Sarveda.</p>`,
+        html,
         `Good news — ${variant.productRel.name} is available again. View: ${productUrl}`
       );
       await prisma.stockNotification.update({

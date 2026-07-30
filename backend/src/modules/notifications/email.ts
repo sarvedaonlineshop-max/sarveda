@@ -195,13 +195,29 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function shopEmailHtml(opts: {
+/** Official spiral mark + wordmark (same assets as website header). */
+function emailLogoMarkUrl(): string {
+  const override = process.env.EMAIL_LOGO_URL?.trim();
+  if (override) return override;
+  return `${siteBaseUrl()}/brand/sarveda-logo.png`;
+}
+
+function emailWordmarkUrl(): string {
+  const override = process.env.EMAIL_WORDMARK_URL?.trim();
+  if (override) return override;
+  return `${siteBaseUrl()}/brand/sarveda-wordmark.png`;
+}
+
+export function shopEmailHtml(opts: {
   banner: string;
   title: string;
   meta?: string;
   bodyHtml: string;
   ctas?: EmailCta[];
 }): string {
+  const mark = emailLogoMarkUrl();
+  const wordmark = emailWordmarkUrl();
+  const home = siteBaseUrl();
   const ctas = (opts.ctas ?? [])
     .map((cta) => {
       if (cta.primary === false) {
@@ -211,28 +227,47 @@ function shopEmailHtml(opts: {
     })
     .join("");
 
-  return `<!DOCTYPE html><html><body style="margin:0;padding:24px;background:${BRAND.bg};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-<div style="max-width:520px;margin:0 auto;background:#fff;border:1px solid ${BRAND.border};border-radius:12px;overflow:hidden">
-  <div style="background:${BRAND.gold};padding:14px 20px">
-    <p style="margin:0;color:#fff;font-size:14px;font-weight:700;letter-spacing:0.2px">${opts.banner}</p>
-  </div>
-  <div style="padding:22px 20px 24px">
-    <h1 style="margin:0 0 8px;font-size:20px;line-height:1.35;color:${BRAND.text}">${opts.title}</h1>
-    ${opts.meta ? `<p style="margin:0 0 14px;font-size:13px;color:${BRAND.muted}">${opts.meta}</p>` : ""}
-    ${opts.bodyHtml}
-    ${ctas ? `<div style="margin-top:18px">${ctas}</div>` : ""}
-    <p style="margin:22px 0 0;font-size:13px;color:${BRAND.muted}">With warmth,<br/><strong style="color:${BRAND.green}">Team Sarveda</strong></p>
-  </div>
-</div>
+  // Logo sits above the title (website lockup). No dark green brand bar — SS2.
+  // Compact single-card table layout reduces Gmail “trimmed / quoted” collapsing.
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:24px;background:${BRAND.bg};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;max-width:520px;margin:0 auto;background:#fff;border:1px solid ${BRAND.border};border-radius:12px">
+  <tr>
+    <td style="padding:20px 20px 12px;background:#fff;border-radius:12px 12px 0 0">
+      <a href="${home}" style="text-decoration:none">
+        <img src="${mark}" alt="" width="32" height="40" style="display:inline-block;vertical-align:middle;height:40px;width:auto;border:0;outline:none" />
+        <img src="${wordmark}" alt="Sarveda" width="140" height="28" style="display:inline-block;vertical-align:middle;height:28px;width:auto;margin-left:10px;border:0;outline:none" />
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td style="background:${BRAND.gold};padding:11px 20px">
+      <p style="margin:0;color:#fff;font-size:14px;font-weight:700;letter-spacing:0.2px">${opts.banner}</p>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:20px 20px 24px">
+      <h1 style="margin:0 0 10px;font-size:20px;line-height:1.35;color:${BRAND.text}">${opts.title}</h1>
+      ${opts.meta ? `<p style="margin:0 0 14px;font-size:14px;color:${BRAND.muted}">${opts.meta}</p>` : ""}
+      ${opts.bodyHtml}
+      ${ctas ? `<div style="margin-top:18px">${ctas}</div>` : ""}
+      <p style="margin:22px 0 0;font-size:13px;color:${BRAND.muted}">With warmth,<br/><strong style="color:${BRAND.green}">Team Sarveda</strong></p>
+    </td>
+  </tr>
+</table>
 </body></html>`;
 }
 
-/** Plain paragraphs inside the shop email shell (legacy-style content). */
-function buildHtml(title: string, lines: string[], opts?: {
-  banner?: string;
-  meta?: string;
-  ctas?: EmailCta[];
-}): string {
+/** Plain paragraphs inside the shop email shell. */
+export function buildShopEmail(
+  title: string,
+  lines: string[],
+  opts?: {
+    banner?: string;
+    meta?: string;
+    ctas?: EmailCta[];
+  }
+): string {
   const body = lines
     .filter(Boolean)
     .map(
@@ -247,6 +282,15 @@ function buildHtml(title: string, lines: string[], opts?: {
     bodyHtml: body,
     ctas: opts?.ctas
   });
+}
+
+/** @deprecated Use buildShopEmail — kept for internal callers during transition. */
+function buildHtml(
+  title: string,
+  lines: string[],
+  opts?: { banner?: string; meta?: string; ctas?: EmailCta[] }
+): string {
+  return buildShopEmail(title, lines, opts);
 }
 
 function moneyRow(label: string, amount: string, strong = false): string {
@@ -300,9 +344,6 @@ function buildOrderConfirmedBody(order: {
     .join("");
 
   return `
-    <p style="margin:0 0 14px;font-size:15px;line-height:1.55;color:${BRAND.text}">
-      Thank you for your order. Here is a summary of what you purchased.
-    </p>
     <div style="background:#faf8f5;border:1px solid ${BRAND.border};border-radius:10px;padding:4px 14px;margin:0 0 14px">
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse">
         ${itemRows}
@@ -340,7 +381,8 @@ export async function sendOrderEmail(
   const awb = order.shipments[0]?.awb;
   const tracking = awb ? trackUrl(awb) : view;
   const checkoutResume = `${siteBaseUrl()}/checkout?orderNumber=${encodeURIComponent(order.orderNumber)}&email=${encodeURIComponent(order.email)}`;
-  const meta = `Order ${order.orderNumber} · ${total}`;
+  const orderIdMeta = `<span style="display:inline-block;vertical-align:middle;margin-right:6px">🧾</span><strong>Order ID:</strong> ${escapeHtml(order.orderNumber)}`;
+  const metaWithTotal = `${orderIdMeta} · ${total}`;
 
   const subject = `${EVENT_SUBJECTS[event]} — ${order.orderNumber}`;
   let html = "";
@@ -350,8 +392,8 @@ export async function sendOrderEmail(
     case "order_confirmed": {
       html = shopEmailHtml({
         banner: "✓ Order confirmed",
-        title: "Thank you for your purchase",
-        meta,
+        title: "Your order is confirmed",
+        meta: orderIdMeta,
         bodyHtml: buildOrderConfirmedBody(order),
         ctas: [
           { href: inv, label: "Download Invoice", primary: true },
@@ -359,11 +401,13 @@ export async function sendOrderEmail(
         ]
       });
       text = [
-        `Order ${order.orderNumber} confirmed. Total ${total}.`,
+        `Your Sarveda order is confirmed.`,
+        `Order ID: ${order.orderNumber}`,
         ...order.items.map(
           (i) =>
             `${i.nameSnapshot} × ${i.qtyOrdered} — ${formatOrderTotal(i.lineTotalInPaise, order.currency)}`
         ),
+        `Total: ${total}`,
         "Tracking ID will be shared as soon as we ship your order.",
         `Invoice: ${inv}`,
         `View order: ${view}`
@@ -380,7 +424,7 @@ export async function sendOrderEmail(
         ],
         {
           banner: "Payment failed",
-          meta,
+          meta: orderIdMeta,
           ctas: [
             {
               href: orderCancelledUrl(order.orderNumber, order.email),
@@ -400,7 +444,7 @@ export async function sendOrderEmail(
         ],
         {
           banner: "⏰ Payment pending",
-          meta,
+          meta: metaWithTotal,
           ctas: [{ href: checkoutResume, label: "Pay now" }]
         }
       );
@@ -415,7 +459,7 @@ export async function sendOrderEmail(
         ],
         {
           banner: "Preparing your order",
-          meta,
+          meta: orderIdMeta,
           ctas: [{ href: view, label: "View order" }]
         }
       );
@@ -423,14 +467,17 @@ export async function sendOrderEmail(
       break;
     case "order_shipped":
       html = buildHtml(
-        "Your order has shipped",
+        "Your tracking ID is ready",
         [
-          `Good news — order <strong>${order.orderNumber}</strong> is on its way.`,
-          awb ? `Tracking ID (AWB): <strong>${awb}</strong>` : "Your shipment is with the courier."
+          `Your order <strong>${order.orderNumber}</strong> has been handed to the courier.`,
+          awb
+            ? `Tracking ID (AWB): <strong style="font-size:16px;letter-spacing:0.5px">${escapeHtml(awb)}</strong>`
+            : "Your shipment is with the courier.",
+          "You can track your package with the button below."
         ].filter(Boolean),
         {
           banner: "📦 Order shipped",
-          meta,
+          meta: orderIdMeta,
           ctas: [
             { href: tracking, label: "Track shipment" },
             { href: view, label: "View order", primary: false }
@@ -448,7 +495,7 @@ export async function sendOrderEmail(
         ],
         {
           banner: "✓ Delivered",
-          meta,
+          meta: orderIdMeta,
           ctas: [{ href: view, label: "View order" }]
         }
       );
@@ -464,7 +511,7 @@ export async function sendOrderEmail(
         ],
         {
           banner: "Returned to origin",
-          meta,
+          meta: orderIdMeta,
           ctas: [{ href: view, label: "View order" }]
         }
       );
@@ -479,7 +526,7 @@ export async function sendOrderEmail(
         ],
         {
           banner: "Refund initiated",
-          meta,
+          meta: orderIdMeta,
           ctas: [{ href: view, label: "View order" }]
         }
       );
@@ -494,7 +541,7 @@ export async function sendOrderEmail(
         ],
         {
           banner: "Order cancelled",
-          meta,
+          meta: orderIdMeta,
           ctas: [{ href: view, label: "View order" }]
         }
       );

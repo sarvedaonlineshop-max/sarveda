@@ -721,6 +721,22 @@ async function persistShipment(
       }
     });
   });
+
+  // Customer email + WhatsApp when a real outbound AWB is assigned.
+  // Deduped via BullMQ job id `order-email:{orderId}:order_shipped` (also covers later SHIPPED status).
+  const wb = waybill.trim();
+  const meta =
+    carrierMeta && typeof carrierMeta === "object" && !Array.isArray(carrierMeta)
+      ? (carrierMeta as Record<string, unknown>)
+      : null;
+  const isReverse =
+    meta?.direction === "REVERSE" || courier.toLowerCase().includes("return");
+  const isStub = wb.toUpperCase().startsWith("STUB-");
+  if (wb && !isReverse && !isStub) {
+    const { notifyOrderEmail } = await import("../notifications/email");
+    notifyOrderEmail(orderId, "order_shipped");
+    logger.info("awb_customer_notify_queued", { orderId, courier, waybill: wb });
+  }
 }
 
 export type ReverseShipmentCreateOptions = {

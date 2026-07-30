@@ -2,7 +2,7 @@ import { randomBytes } from "crypto";
 
 import { prisma } from "../../config/db";
 import { hashPassword } from "../../utils/hash";
-import { sendMail } from "../notifications/email";
+import { buildShopEmail, sendMail } from "../notifications/email";
 
 import { getPrimaryFrontendBase } from "./redirect";
 
@@ -37,24 +37,18 @@ export async function requestPasswordReset(email: string): Promise<void> {
 
   const resetUrl = `${getPrimaryFrontendBase()}/reset-password?token=${token}`;
   const greeting = user.name ?? "there";
-  const html = `
-      <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-        <h2 style="color:#1e3a2f">Reset your password</h2>
-        <p>Hi ${greeting},</p>
-        <p>Click the link below to reset your Sarveda password.
-           This link expires in ${RESET_EXPIRY_MINUTES} minutes.</p>
-        <a href="${resetUrl}"
-           style="display:inline-block;background:#1e3a2f;color:#f5d88a;
-                  padding:12px 24px;text-decoration:none;border-radius:6px;
-                  margin:16px 0">
-          Reset Password
-        </a>
-        <p style="color:#888;font-size:12px">
-          If you did not request this, ignore this email.
-          Your password will not change.
-        </p>
-      </div>
-    `;
+  const html = buildShopEmail(
+    "Reset your password",
+    [
+      `Hi ${greeting},`,
+      `Click the button below to reset your Sarveda password. This link expires in ${RESET_EXPIRY_MINUTES} minutes.`,
+      "If you did not request this, you can ignore this email — your password will not change."
+    ],
+    {
+      banner: "Password reset",
+      ctas: [{ href: resetUrl, label: "Reset Password" }]
+    }
+  );
   const text = `Hi ${greeting},\n\nReset your Sarveda password (expires in ${RESET_EXPIRY_MINUTES} minutes):\n${resetUrl}\n\nIf you did not request this, ignore this email.`;
 
   await sendMail(user.email, "Reset your Sarveda password", html, text);

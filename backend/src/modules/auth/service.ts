@@ -101,7 +101,9 @@ async function deliverEmailOtp(target: string, code: string) {
     process.env.AWS_SES_SMTP_HOST?.trim() &&
     process.env.AWS_SES_SMTP_USER?.trim() &&
     process.env.AWS_SES_SMTP_PASS?.trim();
-  if (!sesConfigured) {
+  const zeptoConfigured =
+    process.env.ZEPTOMAIL_SMTP_PASS?.trim() && process.env.ZEPTOMAIL_FROM_EMAIL?.trim();
+  if (!sesConfigured && !zeptoConfigured) {
     if (process.env.NODE_ENV === "production") {
       throw httpError(503, "Email delivery is not configured", "OTP_DELIVERY_UNAVAILABLE");
     }
@@ -110,12 +112,17 @@ async function deliverEmailOtp(target: string, code: string) {
     return;
   }
   const text = `Your Sarveda verification code is ${code}. It expires in 10 minutes.`;
-  await sendMail(
-    target,
-    "Your Sarveda verification code",
-    `<p>${text}</p>`,
-    text
+  const { buildShopEmail } = await import("../notifications/email");
+  const html = buildShopEmail(
+    "Your verification code",
+    [
+      `Your Sarveda verification code is:`,
+      `<strong style="font-size:28px;letter-spacing:4px">${code}</strong>`,
+      "This code expires in 10 minutes. If you did not request it, you can ignore this email."
+    ],
+    { banner: "Verification code" }
   );
+  await sendMail(target, "Your Sarveda verification code", html, text);
 }
 
 async function deliverPhoneOtp(target: string, code: string) {
