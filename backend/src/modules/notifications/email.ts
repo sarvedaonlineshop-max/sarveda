@@ -4,6 +4,7 @@ import { prisma } from "../../config/db";
 import { isEmailSmtpConfigured, resolveEmailSmtpConfig } from "../../config/email";
 import { enqueueEmail } from "../../jobs/emailQueue";
 import { logger } from "../../config/logger";
+import { gstRatePercent } from "../../utils/gst";
 
 if (process.env.NODE_ENV === "production" && !isEmailSmtpConfigured()) {
   console.error(
@@ -174,11 +175,12 @@ function trackUrl(awb: string): string {
   return `${siteBaseUrl()}/track/${encodeURIComponent(awb)}`;
 }
 
-/** Sarveda shop email shell — same brand language as Tasks (green + mustard). */
+/** Sarveda shop email shell — company first, gold status, greeting, details, gratitude. */
 const BRAND = {
   green: "#1e3a2f",
   mustard: "#f5d88a",
   gold: "#c9a227",
+  tickGreen: "#16a34a",
   border: "#e0d8ce",
   text: "#2c2420",
   muted: "#6b5e54",
@@ -208,9 +210,61 @@ function emailWordmarkUrl(): string {
   return `${siteBaseUrl()}/brand/sarveda-wordmark.png`;
 }
 
+function supportContactConfig(): {
+  email: string;
+  address: string;
+  displayPhone: string;
+  waLink: string;
+} {
+  const email =
+    process.env.SUPPORT_CONTACT_EMAIL?.trim() ||
+    process.env.SELLER_EMAIL?.trim() ||
+    "care@sarveda.com";
+  const address = process.env.SELLER_ADDRESS?.trim() || "";
+  const phoneRaw =
+    process.env.SUPPORT_WHATSAPP_NUMBER?.trim() ||
+    process.env.SELLER_PHONE?.trim() ||
+    "";
+  const digits = phoneRaw.replace(/\D/g, "");
+  const waDigits =
+    digits.length === 10 ? `91${digits}` : digits.startsWith("0") && digits.length === 11
+      ? `91${digits.slice(1)}`
+      : digits;
+  let displayPhone = phoneRaw;
+  if (waDigits.length === 12 && waDigits.startsWith("91")) {
+    displayPhone = `+91 ${waDigits.slice(2, 7)} ${waDigits.slice(7)}`;
+  } else if (digits.length === 10) {
+    displayPhone = `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
+  }
+  return {
+    email,
+    address,
+    displayPhone,
+    waLink: waDigits.length >= 10 ? `https://wa.me/${waDigits}` : ""
+  };
+}
+
+function greenTickHtml(): string {
+  // Solid green disc + white check — readable in major email clients
+  return `<span style="display:inline-block;width:24px;height:24px;border-radius:50%;background:#15803d;text-align:center;line-height:24px;margin-right:10px;vertical-align:middle;box-shadow:0 1px 3px rgba(21,128,61,0.35)"><span style="color:#ffffff;font-size:15px;font-weight:800;line-height:24px">✓</span></span>`;
+}
+
+/** Helps stop Gmail from collapsing body content behind “…” / quoted text. */
+function gmailOpenSpacer(): string {
+  const noise = Array.from({ length: 40 }, (_, i) => `&#8204;${i % 3 === 0 ? "&nbsp;" : ""}`).join("");
+  return `<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#ffffff">${noise}</div>
+<div style="white-space:nowrap;font:15px/0 monospace;color:#ffffff;max-height:0;overflow:hidden;opacity:0">${noise}</div>`;
+}
+
 export function shopEmailHtml(opts: {
+  /** Gold bar status text (green tick added unless showTick is false). */
   banner: string;
-  title: string;
+  showTick?: boolean;
+  /** e.g. Dear Priya, */
+  greeting?: string;
+  /** Short professional intro under greeting. */
+  intro?: string;
+  title?: string;
   meta?: string;
   bodyHtml: string;
   ctas?: EmailCta[];
@@ -218,6 +272,7 @@ export function shopEmailHtml(opts: {
   const mark = emailLogoMarkUrl();
   const wordmark = emailWordmarkUrl();
   const home = siteBaseUrl();
+  const contact = supportContactConfig();
   const ctas = (opts.ctas ?? [])
     .map((cta) => {
       if (cta.primary === false) {
@@ -227,31 +282,64 @@ export function shopEmailHtml(opts: {
     })
     .join("");
 
-  // Logo sits above the title (website lockup). No dark green brand bar — SS2.
-  // Compact single-card table layout reduces Gmail “trimmed / quoted” collapsing.
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+  const bannerInner = `${opts.showTick === false ? "" : greenTickHtml()}<span style="vertical-align:middle;color:#ffffff">${opts.banner}</span>`;
+
+  const addressLine = contact.address
+    ? `<p style="margin:8px 0 0;font-size:12px;line-height:1.5;color:${BRAND.muted}">${escapeHtml(contact.address)}</p>`
+    : "";
+  const emailLine = `<p style="margin:6px 0 0;font-size:12px;line-height:1.5;color:${BRAND.muted}">Email: <a href="mailto:${escapeHtml(contact.email)}" style="color:${BRAND.green};text-decoration:none;font-weight:600">${escapeHtml(contact.email)}</a></p>`;
+  const phoneLine = contact.displayPhone
+    ? `<p style="margin:4px 0 0;font-size:12px;line-height:1.5;color:${BRAND.muted}">Mobile / WhatsApp: <a href="${contact.waLink || "#"}" style="color:${BRAND.green};text-decoration:none;font-weight:600">${escapeHtml(contact.displayPhone)}</a></p>`
+    : "";
+
+  const greetingBlock = opts.greeting
+    ? `<p style="margin:0 0 8px;font-size:15px;line-height:1.55;color:${BRAND.text}">${opts.greeting}</p>`
+    : "";
+  const introBlock = opts.intro
+    ? `<p style="margin:0 0 14px;font-size:15px;line-height:1.55;color:${BRAND.text}">${opts.intro}</p>`
+    : "";
+  const titleBlock = opts.title
+    ? `<h1 style="margin:0 0 10px;font-size:20px;line-height:1.35;color:${BRAND.text}">${opts.title}</h1>`
+    : "";
+
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="x-apple-disable-message-reformatting"></head>
 <body style="margin:0;padding:24px;background:${BRAND.bg};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;max-width:520px;margin:0 auto;background:#fff;border:1px solid ${BRAND.border};border-radius:12px">
+${gmailOpenSpacer()}
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;max-width:520px;margin:0 auto;background:#ffffff;border:1px solid ${BRAND.border};border-radius:12px">
   <tr>
-    <td style="padding:20px 20px 12px;background:#fff;border-radius:12px 12px 0 0">
+    <td style="padding:20px 20px 14px;background:#ffffff">
       <a href="${home}" style="text-decoration:none">
         <img src="${mark}" alt="" width="32" height="40" style="display:inline-block;vertical-align:middle;height:40px;width:auto;border:0;outline:none" />
         <img src="${wordmark}" alt="Sarveda" width="140" height="28" style="display:inline-block;vertical-align:middle;height:28px;width:auto;margin-left:10px;border:0;outline:none" />
       </a>
+      ${addressLine}
+      ${emailLine}
+      ${phoneLine}
     </td>
   </tr>
   <tr>
-    <td style="background:${BRAND.gold};padding:11px 20px">
-      <p style="margin:0;color:#fff;font-size:14px;font-weight:700;letter-spacing:0.2px">${opts.banner}</p>
+    <td style="background:${BRAND.gold};padding:14px 20px">
+      <p style="margin:0;font-size:15px;font-weight:700;letter-spacing:0.2px;color:#ffffff">${bannerInner}</p>
     </td>
   </tr>
   <tr>
-    <td style="padding:20px 20px 24px">
-      <h1 style="margin:0 0 10px;font-size:20px;line-height:1.35;color:${BRAND.text}">${opts.title}</h1>
+    <td style="padding:20px 20px 8px">
+      ${greetingBlock}
+      ${introBlock}
+      ${titleBlock}
       ${opts.meta ? `<p style="margin:0 0 14px;font-size:14px;color:${BRAND.muted}">${opts.meta}</p>` : ""}
       ${opts.bodyHtml}
       ${ctas ? `<div style="margin-top:18px">${ctas}</div>` : ""}
-      <p style="margin:22px 0 0;font-size:13px;color:${BRAND.muted}">With warmth,<br/><strong style="color:${BRAND.green}">Team Sarveda</strong></p>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:8px 20px 22px">
+      <p style="margin:0;font-size:14px;line-height:1.55;color:${BRAND.text}">With gratitude,<br/><strong style="color:${BRAND.green}">Team Sarveda</strong></p>
+      ${
+        contact.waLink
+          ? `<p style="margin:14px 0 0;font-size:12px;line-height:1.5;color:${BRAND.muted}">Need help? <a href="${contact.waLink}" style="color:${BRAND.green};font-weight:600">Chat with us on WhatsApp</a> or email <a href="mailto:${escapeHtml(contact.email)}" style="color:${BRAND.green}">${escapeHtml(contact.email)}</a>.</p>`
+          : `<p style="margin:14px 0 0;font-size:12px;line-height:1.5;color:${BRAND.muted}">Need help? Email us at <a href="mailto:${escapeHtml(contact.email)}" style="color:${BRAND.green}">${escapeHtml(contact.email)}</a>.</p>`
+      }
     </td>
   </tr>
 </table>
@@ -264,6 +352,9 @@ export function buildShopEmail(
   lines: string[],
   opts?: {
     banner?: string;
+    showTick?: boolean;
+    greeting?: string;
+    intro?: string;
     meta?: string;
     ctas?: EmailCta[];
   }
@@ -277,6 +368,9 @@ export function buildShopEmail(
     .join("");
   return shopEmailHtml({
     banner: opts?.banner ?? "Sarveda",
+    showTick: opts?.showTick,
+    greeting: opts?.greeting,
+    intro: opts?.intro,
     title,
     meta: opts?.meta,
     bodyHtml: body,
@@ -284,11 +378,18 @@ export function buildShopEmail(
   });
 }
 
-/** @deprecated Use buildShopEmail — kept for internal callers during transition. */
+/** @deprecated Use buildShopEmail */
 function buildHtml(
   title: string,
   lines: string[],
-  opts?: { banner?: string; meta?: string; ctas?: EmailCta[] }
+  opts?: {
+    banner?: string;
+    showTick?: boolean;
+    greeting?: string;
+    intro?: string;
+    meta?: string;
+    ctas?: EmailCta[];
+  }
 ): string {
   return buildShopEmail(title, lines, opts);
 }
@@ -302,6 +403,15 @@ function moneyRow(label: string, amount: string, strong = false): string {
   </tr>`;
 }
 
+function isIndiaOrder(order: {
+  currency: string;
+  addresses: Array<{ type: string; country: string }>;
+}): boolean {
+  if (order.currency.toUpperCase() === "INR") return true;
+  const ship = order.addresses.find((a) => a.type === "SHIPPING") || order.addresses[0];
+  return (ship?.country || "").toUpperCase() === "IN";
+}
+
 function buildOrderConfirmedBody(order: {
   orderNumber: string;
   currency: string;
@@ -310,21 +420,31 @@ function buildOrderConfirmedBody(order: {
   shippingInPaise: number;
   taxInPaise: number;
   grandTotalInPaise: number;
+  addresses: Array<{ type: string; country: string }>;
   items: Array<{
     nameSnapshot: string;
     qtyOrdered: number;
     unitPriceInPaise: number;
     lineTotalInPaise: number;
+    variant?: { productRel?: { taxClass?: string | null } | null } | null;
   }>;
 }): string {
   const fmt = (n: number) => formatOrderTotal(n, order.currency);
+  const showGst = isIndiaOrder(order);
   const itemRows = order.items
     .map((item) => {
       const name = escapeHtml(item.nameSnapshot);
+      const rate = gstRatePercent(item.variant?.productRel?.taxClass);
+      const gstNote =
+        showGst && rate > 0
+          ? `<br/><span style="color:${BRAND.muted};font-size:12px">Inclusive of ${rate}% GST</span>`
+          : showGst && rate === 0
+            ? `<br/><span style="color:${BRAND.muted};font-size:12px">GST: Nil</span>`
+            : "";
       return `<tr>
         <td style="padding:10px 0;border-bottom:1px solid ${BRAND.border};font-size:14px;color:${BRAND.text};vertical-align:top">
           <strong>${name}</strong><br/>
-          <span style="color:${BRAND.muted};font-size:12px">Qty ${item.qtyOrdered} · ${fmt(item.unitPriceInPaise)} each</span>
+          <span style="color:${BRAND.muted};font-size:12px">Qty ${item.qtyOrdered} · ${fmt(item.unitPriceInPaise)} each</span>${gstNote}
         </td>
         <td style="padding:10px 0;border-bottom:1px solid ${BRAND.border};font-size:14px;color:${BRAND.text};text-align:right;vertical-align:top;white-space:nowrap">${fmt(item.lineTotalInPaise)}</td>
       </tr>`;
@@ -337,7 +457,6 @@ function buildOrderConfirmedBody(order: {
       ? moneyRow("Discount", `−${fmt(order.discountInPaise)}`)
       : "",
     moneyRow("Shipping", order.shippingInPaise > 0 ? fmt(order.shippingInPaise) : "Free"),
-    order.taxInPaise > 0 ? moneyRow("Tax", fmt(order.taxInPaise)) : "",
     moneyRow("Total", fmt(order.grandTotalInPaise), true)
   ]
     .filter(Boolean)
@@ -345,15 +464,15 @@ function buildOrderConfirmedBody(order: {
 
   return `
     <div style="background:#faf8f5;border:1px solid ${BRAND.border};border-radius:10px;padding:4px 14px;margin:0 0 14px">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse">
         ${itemRows}
       </table>
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-top:8px">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;margin-top:8px">
         ${splitRows}
       </table>
     </div>
     <p style="margin:0;padding:12px 14px;background:#fff8e8;border:1px solid #ead9a0;border-radius:8px;font-size:13px;line-height:1.5;color:${BRAND.text}">
-      📦 Tracking ID will be shared as soon as we ship your order.
+      📦 Your tracking ID will be shared as soon as we ship your order.
     </p>`;
 }
 
@@ -361,11 +480,29 @@ async function loadOrderEmailContext(orderId: string) {
   return prisma.order.findFirst({
     where: { id: orderId, deletedAt: null },
     include: {
-      items: true,
+      items: {
+        include: {
+          variant: {
+            include: {
+              productRel: { select: { taxClass: true } }
+            }
+          }
+        }
+      },
       addresses: true,
-      shipments: { orderBy: { createdAt: "desc" }, take: 1 },
-    },
+      shipments: { orderBy: { createdAt: "desc" }, take: 1 }
+    }
   });
+}
+
+function customerFirstName(order: {
+  email: string;
+  addresses: Array<{ type: string; fullName: string }>;
+}): string {
+  const ship = order.addresses.find((a) => a.type === "SHIPPING") || order.addresses[0];
+  const fromName = ship?.fullName?.trim().split(/\s+/)[0];
+  if (fromName) return fromName;
+  return order.email.split("@")[0] || "there";
 }
 
 export async function sendOrderEmail(
@@ -381,7 +518,10 @@ export async function sendOrderEmail(
   const awb = order.shipments[0]?.awb;
   const tracking = awb ? trackUrl(awb) : view;
   const checkoutResume = `${siteBaseUrl()}/checkout?orderNumber=${encodeURIComponent(order.orderNumber)}&email=${encodeURIComponent(order.email)}`;
-  const orderIdMeta = `<span style="display:inline-block;vertical-align:middle;margin-right:6px">🧾</span><strong>Order ID:</strong> ${escapeHtml(order.orderNumber)}`;
+  const firstName = escapeHtml(customerFirstName(order));
+  const greeting = `Dear ${firstName},`;
+  const warmIntro = `Warm greetings from Sarveda.`;
+  const orderIdMeta = `<strong>Order ID:</strong> ${escapeHtml(order.orderNumber)}`;
   const metaWithTotal = `${orderIdMeta} · ${total}`;
 
   const subject = `${EVENT_SUBJECTS[event]} — ${order.orderNumber}`;
@@ -391,8 +531,9 @@ export async function sendOrderEmail(
   switch (event) {
     case "order_confirmed": {
       html = shopEmailHtml({
-        banner: "✓ Order confirmed",
-        title: "Your order is confirmed",
+        banner: "Your order is confirmed",
+        greeting,
+        intro: `${warmIntro} Your order has been confirmed. Please review the details below.`,
         meta: orderIdMeta,
         bodyHtml: buildOrderConfirmedBody(order),
         ctas: [
@@ -401,14 +542,21 @@ export async function sendOrderEmail(
         ]
       });
       text = [
-        `Your Sarveda order is confirmed.`,
+        `Dear ${customerFirstName(order)},`,
+        `Warm greetings from Sarveda. Your order has been confirmed.`,
         `Order ID: ${order.orderNumber}`,
-        ...order.items.map(
-          (i) =>
-            `${i.nameSnapshot} × ${i.qtyOrdered} — ${formatOrderTotal(i.lineTotalInPaise, order.currency)}`
-        ),
+        ...order.items.map((i) => {
+          const rate = gstRatePercent(i.variant?.productRel?.taxClass);
+          const gst =
+            isIndiaOrder(order) && rate > 0
+              ? ` (inclusive of ${rate}% GST)`
+              : isIndiaOrder(order)
+                ? " (GST: Nil)"
+                : "";
+          return `${i.nameSnapshot} × ${i.qtyOrdered} — ${formatOrderTotal(i.lineTotalInPaise, order.currency)}${gst}`;
+        }),
         `Total: ${total}`,
-        "Tracking ID will be shared as soon as we ship your order.",
+        "Your tracking ID will be shared as soon as we ship your order.",
         `Invoice: ${inv}`,
         `View order: ${view}`
       ].join("\n");
@@ -416,14 +564,17 @@ export async function sendOrderEmail(
     }
     case "payment_failed":
       html = buildHtml(
-        "Payment could not be completed",
+        "",
         [
-          `We could not complete payment for order <strong>${order.orderNumber}</strong>.`,
-          "This order has been cancelled and reserved stock has been released.",
-          "You can place a fresh order with the same items."
+          `We were unable to complete payment for order <strong>${escapeHtml(order.orderNumber)}</strong>.`,
+          "This order has been cancelled and any reserved stock has been released.",
+          "You may place a new order with the same items whenever you are ready."
         ],
         {
-          banner: "Payment failed",
+          banner: "Payment could not be completed",
+          showTick: false,
+          greeting,
+          intro: warmIntro,
           meta: orderIdMeta,
           ctas: [
             {
@@ -433,50 +584,59 @@ export async function sendOrderEmail(
           ]
         }
       );
-      text = `Payment failed for ${order.orderNumber}. Order cancelled. Reorder: ${orderCancelledUrl(order.orderNumber, order.email)}`;
+      text = `Dear ${customerFirstName(order)}, payment failed for ${order.orderNumber}. Order cancelled.`;
       break;
     case "payment_reminder":
       html = buildHtml(
-        "Complete your Sarveda order",
+        "",
         [
-          `Your order <strong>${order.orderNumber}</strong> (${total}) is waiting for payment.`,
-          "Complete checkout within a few minutes while stock is reserved."
+          `Your order <strong>${escapeHtml(order.orderNumber)}</strong> (${total}) is still awaiting payment.`,
+          "Please complete checkout shortly while your items remain reserved."
         ],
         {
           banner: "⏰ Payment pending",
+          showTick: false,
+          greeting,
+          intro: warmIntro,
           meta: metaWithTotal,
           ctas: [{ href: checkoutResume, label: "Pay now" }]
         }
       );
-      text = `Complete payment for ${order.orderNumber}: ${checkoutResume}`;
+      text = `Dear ${customerFirstName(order)}, complete payment for ${order.orderNumber}: ${checkoutResume}`;
       break;
     case "order_processing":
       html = buildHtml(
-        "Your order is being prepared",
+        "",
         [
-          `We have started preparing order <strong>${order.orderNumber}</strong>.`,
-          "Tracking ID will be shared as soon as we ship your order."
+          `We have started preparing your order <strong>${escapeHtml(order.orderNumber)}</strong>.`,
+          "Your tracking ID will be shared as soon as we ship your order."
         ],
         {
           banner: "Preparing your order",
+          showTick: false,
+          greeting,
+          intro: warmIntro,
           meta: orderIdMeta,
           ctas: [{ href: view, label: "View order" }]
         }
       );
-      text = `Order ${order.orderNumber} is being prepared. Tracking will follow when shipped.`;
+      text = `Dear ${customerFirstName(order)}, order ${order.orderNumber} is being prepared.`;
       break;
     case "order_shipped":
       html = buildHtml(
-        "Your tracking ID is ready",
+        "",
         [
-          `Your order <strong>${order.orderNumber}</strong> has been handed to the courier.`,
+          `Good news — your order <strong>${escapeHtml(order.orderNumber)}</strong> is on its way.`,
           awb
-            ? `Tracking ID (AWB): <strong style="font-size:16px;letter-spacing:0.5px">${escapeHtml(awb)}</strong>`
-            : "Your shipment is with the courier.",
-          "You can track your package with the button below."
+            ? `📦 Tracking ID (AWB): <strong style="font-size:16px;letter-spacing:0.5px">${escapeHtml(awb)}</strong>`
+            : "Your shipment has been handed over to the courier.",
+          "You can follow your package using the button below."
         ].filter(Boolean),
         {
-          banner: "📦 Order shipped",
+          banner: "📦 Your order has shipped",
+          showTick: false,
+          greeting,
+          intro: warmIntro,
           meta: orderIdMeta,
           ctas: [
             { href: tracking, label: "Track shipment" },
@@ -484,68 +644,79 @@ export async function sendOrderEmail(
           ]
         }
       );
-      text = `Order ${order.orderNumber} shipped.${awb ? ` AWB: ${awb}.` : ""} Track: ${tracking}`;
+      text = `Dear ${customerFirstName(order)}, order ${order.orderNumber} shipped.${awb ? ` AWB: ${awb}.` : ""} Track: ${tracking}`;
       break;
     case "order_delivered":
       html = buildHtml(
-        "Your order was delivered",
+        "",
         [
-          `Your order <strong>${order.orderNumber}</strong> has been delivered.`,
-          "We hope you love your purchase."
+          `Your order <strong>${escapeHtml(order.orderNumber)}</strong> has been delivered.`,
+          "We hope you enjoy your purchase. Thank you for choosing Sarveda."
         ],
         {
-          banner: "✓ Delivered",
+          banner: "Your order was delivered",
+          greeting,
+          intro: warmIntro,
           meta: orderIdMeta,
           ctas: [{ href: view, label: "View order" }]
         }
       );
-      text = `Order ${order.orderNumber} delivered. View: ${view}`;
+      text = `Dear ${customerFirstName(order)}, order ${order.orderNumber} delivered.`;
       break;
     case "order_returned":
       html = buildHtml(
-        "Your order was returned to us",
+        "",
         [
-          `Your order <strong>${order.orderNumber}</strong> was returned to us by the courier (RTO).`,
-          `Please contact <a href="mailto:care@sarveda.com" style="color:${BRAND.green}">care@sarveda.com</a> to arrange re-delivery or a refund.`,
-          "We are sorry for the inconvenience."
+          `Your order <strong>${escapeHtml(order.orderNumber)}</strong> was returned to us by the courier (RTO).`,
+          "Please contact us so we can arrange re-delivery or a refund.",
+          "We apologise for the inconvenience."
         ],
         {
           banner: "Returned to origin",
+          showTick: false,
+          greeting,
+          intro: warmIntro,
           meta: orderIdMeta,
           ctas: [{ href: view, label: "View order" }]
         }
       );
-      text = `Order ${order.orderNumber} returned (RTO). Contact care@sarveda.com.`;
+      text = `Dear ${customerFirstName(order)}, order ${order.orderNumber} returned (RTO).`;
       break;
     case "refund_initiated":
       html = buildHtml(
-        "Refund update for your order",
+        "",
         [
-          `A refund has been initiated for order <strong>${order.orderNumber}</strong> (${total}).`,
-          "It may take 5–10 business days to reflect depending on your bank or card issuer."
+          `A refund has been initiated for order <strong>${escapeHtml(order.orderNumber)}</strong> (${total}).`,
+          "It may take 5–10 business days to appear, depending on your bank or card issuer."
         ],
         {
           banner: "Refund initiated",
+          showTick: false,
+          greeting,
+          intro: warmIntro,
           meta: orderIdMeta,
           ctas: [{ href: view, label: "View order" }]
         }
       );
-      text = `Refund initiated for ${order.orderNumber} (${total}).`;
+      text = `Dear ${customerFirstName(order)}, refund initiated for ${order.orderNumber} (${total}).`;
       break;
     case "order_cancelled":
       html = buildHtml(
-        "Your order was cancelled",
+        "",
         [
-          `Order <strong>${order.orderNumber}</strong> has been cancelled.`,
+          `Order <strong>${escapeHtml(order.orderNumber)}</strong> has been cancelled.`,
           "If you were charged, any refund will follow your payment provider's timeline."
         ],
         {
           banner: "Order cancelled",
+          showTick: false,
+          greeting,
+          intro: warmIntro,
           meta: orderIdMeta,
           ctas: [{ href: view, label: "View order" }]
         }
       );
-      text = `Order ${order.orderNumber} cancelled.`;
+      text = `Dear ${customerFirstName(order)}, order ${order.orderNumber} cancelled.`;
       break;
   }
 
@@ -583,17 +754,24 @@ export async function sendAbandonedCartEmail(userId: string): Promise<boolean> {
   if (!cart?.items.length) return false;
 
   const names = cart.items.map((i) => i.variant.productRel.name).join(", ");
+  const greeting = user.name ? `Dear ${escapeHtml(user.name)},` : "Dear Customer,";
   const lines = [
-    user.name ? `Hi ${escapeHtml(user.name)},` : "Hi there,",
     `You left items in your Sarveda cart: <strong>${escapeHtml(names)}</strong>${cart.items.length > 3 ? " and more" : ""}.`,
-    "Your cart is saved. Continue when you are ready."
+    "Your cart is saved. You can continue whenever you are ready."
   ];
   const subject = "You left something in your cart — Sarveda";
-  const html = buildHtml("Your cart is waiting", lines, {
-    banner: "🛒 Cart reminder",
+  const html = buildHtml("", lines, {
+    banner: "🛒 Your cart is waiting",
+    showTick: false,
+    greeting,
+    intro: "Warm greetings from Sarveda.",
     ctas: [{ href: `${siteBaseUrl()}/cart`, label: "View cart" }]
   });
-  const text = lines.map((l) => l.replace(/<[^>]+>/g, "")).join("\n\n");
+  const text = [
+    greeting.replace(/<[^>]+>/g, ""),
+    `You left items in your cart: ${names}`,
+    `${siteBaseUrl()}/cart`
+  ].join("\n\n");
 
   try {
     await sendMail(user.email, subject, html, text);
@@ -609,16 +787,17 @@ export async function sendWelcomeEmail(email: string, name: string): Promise<voi
   const shopUrl = `${siteBaseUrl()}/shop`;
   const safeName = escapeHtml(name);
   const lines = [
-    `Hi ${safeName},`,
     "Welcome to Sarveda — yoga, Ayurveda, and sound healing from India.",
-    "Your account is ready. Browse the shop and save your favourites."
+    "Your account is ready. Browse the shop and save your favourites whenever you like."
   ];
-  const html = buildHtml("Welcome to Sarveda", lines, {
-    banner: "Welcome",
+  const html = buildHtml("", lines, {
+    banner: "Welcome to Sarveda",
+    greeting: `Dear ${safeName},`,
+    intro: "Warm greetings from Sarveda.",
     ctas: [{ href: shopUrl, label: "Visit Sarveda shop" }]
   });
   const text = [
-    `Hi ${name},`,
+    `Dear ${name},`,
     "Welcome to Sarveda — your account is ready.",
     `Shop: ${shopUrl}`
   ].join("\n\n");

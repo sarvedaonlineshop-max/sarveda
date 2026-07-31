@@ -36,20 +36,22 @@ export async function requestPasswordReset(email: string): Promise<void> {
   });
 
   const resetUrl = `${getPrimaryFrontendBase()}/reset-password?token=${token}`;
-  const greeting = user.name ?? "there";
+  const name = user.name?.trim() || "Customer";
   const html = buildShopEmail(
-    "Reset your password",
+    "",
     [
-      `Hi ${greeting},`,
       `Click the button below to reset your Sarveda password. This link expires in ${RESET_EXPIRY_MINUTES} minutes.`,
       "If you did not request this, you can ignore this email — your password will not change."
     ],
     {
       banner: "Password reset",
+      showTick: false,
+      greeting: `Dear ${name},`,
+      intro: "Warm greetings from Sarveda.",
       ctas: [{ href: resetUrl, label: "Reset Password" }]
     }
   );
-  const text = `Hi ${greeting},\n\nReset your Sarveda password (expires in ${RESET_EXPIRY_MINUTES} minutes):\n${resetUrl}\n\nIf you did not request this, ignore this email.`;
+  const text = `Dear ${name},\n\nReset your Sarveda password (expires in ${RESET_EXPIRY_MINUTES} minutes):\n${resetUrl}\n\nIf you did not request this, ignore this email.`;
 
   await sendMail(user.email, "Reset your Sarveda password", html, text);
 }

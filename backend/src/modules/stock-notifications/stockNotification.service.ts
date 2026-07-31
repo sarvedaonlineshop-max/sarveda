@@ -64,13 +64,15 @@ export async function notifyStockSubscribersForVariant(variantId: string): Promi
     try {
       const { buildShopEmail } = await import("../notifications/email");
       const html = buildShopEmail(
-        "Back in stock",
+        "",
         [
           `Good news — <strong>${variant.productRel.name}</strong> is available again.`,
           "Visit the product page to place your order while stock lasts."
         ],
         {
           banner: "In stock again",
+          greeting: "Dear Customer,",
+          intro: "Warm greetings from Sarveda.",
           ctas: [{ href: productUrl, label: "View product" }]
         }
       );

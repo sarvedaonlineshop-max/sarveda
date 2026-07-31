@@ -114,13 +114,18 @@ async function deliverEmailOtp(target: string, code: string) {
   const text = `Your Sarveda verification code is ${code}. It expires in 10 minutes.`;
   const { buildShopEmail } = await import("../notifications/email");
   const html = buildShopEmail(
-    "Your verification code",
+    "",
     [
       `Your Sarveda verification code is:`,
       `<strong style="font-size:28px;letter-spacing:4px">${code}</strong>`,
       "This code expires in 10 minutes. If you did not request it, you can ignore this email."
     ],
-    { banner: "Verification code" }
+    {
+      banner: "Verification code",
+      showTick: false,
+      greeting: "Dear Customer,",
+      intro: "Warm greetings from Sarveda."
+    }
   );
   await sendMail(target, "Your Sarveda verification code", html, text);
 }

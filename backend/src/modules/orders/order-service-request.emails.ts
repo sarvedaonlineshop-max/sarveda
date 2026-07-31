@@ -36,23 +36,25 @@ export async function notifyServiceRequestSubmitted(opts: {
   const message = opts.message?.trim() ? escapeHtml(opts.message.trim()) : "";
 
   const customerHtml = buildShopEmail(
-    `${kind} request received`,
+    "",
     [
-      `Hi${name ? ` ${name}` : ""},`,
       `We received your <strong>${kind.toLowerCase()}</strong> request for order <strong>${escapeHtml(opts.orderNumber)}</strong>.`,
       `<strong>Reason:</strong> ${reason}`,
       message ? `<strong>Message:</strong> ${message}` : "",
-      "Your refund or cancellation is waiting for approval. We will email you once our team reviews it."
+      "Your request is awaiting approval. We will email you once our team has reviewed it."
     ].filter(Boolean),
     {
-      banner: "Request received",
-      meta: `Order ${escapeHtml(opts.orderNumber)}`,
+      banner: `${kind} request received`,
+      showTick: false,
+      greeting: name ? `Dear ${name},` : "Dear Customer,",
+      intro: "Warm greetings from Sarveda.",
+      meta: `<strong>Order ID:</strong> ${escapeHtml(opts.orderNumber)}`,
       ctas: [{ href: profileUrl, label: "View your orders" }]
     }
   );
 
   const adminHtml = buildShopEmail(
-    `[Admin] ${kind} request`,
+    "",
     [
       `New <strong>${kind}</strong> request on order <strong>${escapeHtml(opts.orderNumber)}</strong>.`,
       `Customer: ${escapeHtml(opts.customerEmail)}`,
@@ -61,7 +63,10 @@ export async function notifyServiceRequestSubmitted(opts: {
     ].filter(Boolean),
     {
       banner: "Admin alert",
-      meta: `Order ${escapeHtml(opts.orderNumber)}`,
+      showTick: false,
+      greeting: "Dear Team,",
+      intro: "A customer service request needs your attention.",
+      meta: `<strong>Order ID:</strong> ${escapeHtml(opts.orderNumber)}`,
       ctas: [{ href: adminUrl, label: "Open admin orders" }]
     }
   );
@@ -101,33 +106,38 @@ export async function notifyServiceRequestReviewed(opts: {
   const orderNo = escapeHtml(opts.orderNumber);
 
   const customerHtml = buildShopEmail(
-    opts.approved ? `${kind} approved` : `${kind} request update`,
+    "",
     [
-      `Hi${name ? ` ${name}` : ""},`,
       opts.approved
         ? `Good news — your <strong>${kind.toLowerCase()}</strong> request for order <strong>${orderNo}</strong> has been <strong>approved</strong>.`
         : `Your <strong>${kind.toLowerCase()}</strong> request for order <strong>${orderNo}</strong> was reviewed. Unfortunately we could not approve it at this time.`,
       note ? `<strong>Note from Sarveda:</strong> ${note}` : "",
       opts.approved
         ? "If a refund applies, it will follow your payment provider's timeline."
-        : "If you have questions, reply to this email or write to care@sarveda.com."
+        : "If you have questions, please reply to this email or contact us on WhatsApp."
     ].filter(Boolean),
     {
-      banner: opts.approved ? "✓ Request approved" : "Request update",
-      meta: `Order ${orderNo}`,
+      banner: opts.approved ? "Request approved" : "Request update",
+      showTick: opts.approved,
+      greeting: name ? `Dear ${name},` : "Dear Customer,",
+      intro: "Warm greetings from Sarveda.",
+      meta: `<strong>Order ID:</strong> ${orderNo}`,
       ctas: [{ href: profileUrl, label: "View your orders" }]
     }
   );
 
   const adminHtml = buildShopEmail(
-    `[Admin] ${kind} ${decision}`,
+    "",
     [
       `You ${decision} the ${kind.toLowerCase()} request for <strong>${orderNo}</strong> (${escapeHtml(opts.customerEmail)}).`,
       note ? `<strong>Note:</strong> ${note}` : ""
     ].filter(Boolean),
     {
       banner: "Admin alert",
-      meta: `Order ${orderNo}`
+      showTick: false,
+      greeting: "Dear Team,",
+      intro: "A service request decision was recorded.",
+      meta: `<strong>Order ID:</strong> ${orderNo}`
     }
   );
 
