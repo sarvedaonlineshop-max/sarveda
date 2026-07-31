@@ -1,5 +1,6 @@
 import PDFDocument from "pdfkit";
 
+import { resolveCustomerWhatsApp, resolveSupportContactEmail } from "./customerContact";
 import { amountInCurrencyWords } from "./numberWords";
 
 type InvoiceAddress = {
@@ -113,13 +114,14 @@ function sellerBlock(): {
 } {
   const address = process.env.SELLER_ADDRESS?.trim() ||
     "Plot No. B, Part 2, RASUDHI WAREHOUSE\nKIADB Industrial Housing Layout, Hebbal 2nd stage\nMysore Karnataka 570016\nIndia";
+  const wa = resolveCustomerWhatsApp();
   return {
     name:         process.env.SELLER_LEGAL_NAME?.trim() || "Sarveda Life Private Limited",
     companyId:    "",
     addressLines: address.split(/\n+/).map((l) => l.trim()).filter(Boolean),
     gstin:        process.env.SELLER_GSTIN?.trim()      || "29ABFCS0538N1ZV",
-    phone:        process.env.SELLER_PHONE?.trim()      || "+919535975075",
-    email:        process.env.SELLER_EMAIL?.trim()      || "care@sarveda.com",
+    phone:        wa?.raw || process.env.SELLER_PHONE?.trim() || "",
+    email:        resolveSupportContactEmail(),
     website:      process.env.SELLER_WEBSITE?.trim()    || "www.sarveda.com"
   };
 }

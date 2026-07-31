@@ -4,6 +4,10 @@ import { prisma } from "../../config/db";
 import { isEmailSmtpConfigured, resolveEmailSmtpConfig } from "../../config/email";
 import { enqueueEmail } from "../../jobs/emailQueue";
 import { logger } from "../../config/logger";
+import {
+  resolveCustomerWhatsApp,
+  resolveSupportContactEmail
+} from "../../utils/customerContact";
 import { gstRatePercent } from "../../utils/gst";
 
 if (process.env.NODE_ENV === "production" && !isEmailSmtpConfigured()) {
@@ -216,31 +220,14 @@ function supportContactConfig(): {
   displayPhone: string;
   waLink: string;
 } {
-  const email =
-    process.env.SUPPORT_CONTACT_EMAIL?.trim() ||
-    process.env.SELLER_EMAIL?.trim() ||
-    "care@sarveda.com";
+  const email = resolveSupportContactEmail();
   const address = process.env.SELLER_ADDRESS?.trim() || "";
-  const phoneRaw =
-    process.env.SUPPORT_WHATSAPP_NUMBER?.trim() ||
-    process.env.SELLER_PHONE?.trim() ||
-    "";
-  const digits = phoneRaw.replace(/\D/g, "");
-  const waDigits =
-    digits.length === 10 ? `91${digits}` : digits.startsWith("0") && digits.length === 11
-      ? `91${digits.slice(1)}`
-      : digits;
-  let displayPhone = phoneRaw;
-  if (waDigits.length === 12 && waDigits.startsWith("91")) {
-    displayPhone = `+91 ${waDigits.slice(2, 7)} ${waDigits.slice(7)}`;
-  } else if (digits.length === 10) {
-    displayPhone = `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
-  }
+  const wa = resolveCustomerWhatsApp();
   return {
     email,
     address,
-    displayPhone,
-    waLink: waDigits.length >= 10 ? `https://wa.me/${waDigits}` : ""
+    displayPhone: wa?.displayPhone || "",
+    waLink: wa?.waLink || ""
   };
 }
 

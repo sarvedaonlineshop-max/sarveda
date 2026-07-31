@@ -1,10 +1,18 @@
-/** Sarveda official WhatsApp: +91 95359 75075 */
-export const SARVEDA_WHATSAPP_E164 = "919535975075";
+/**
+ * Customer WhatsApp for the storefront.
+ * Keep NEXT_PUBLIC_WHATSAPP_NUMBER in sync with backend EXOTEL_WHATSAPP_FROM
+ * (same digits). Fallback matches the live Exotel number.
+ */
+export const SARVEDA_WHATSAPP_E164 = "919972238158";
 
 const DEFAULT_EMAIL = "care@sarveda.com";
 
 export function enquiryEmail(): string {
-  return process.env.NEXT_PUBLIC_ENQUIRY_EMAIL?.trim() || DEFAULT_EMAIL;
+  return (
+    process.env.NEXT_PUBLIC_ENQUIRY_EMAIL?.trim() ||
+    process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() ||
+    DEFAULT_EMAIL
+  );
 }
 
 export function enquiryWhatsAppE164(): string {
