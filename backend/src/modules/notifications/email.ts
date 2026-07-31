@@ -554,7 +554,8 @@ export async function sendOrderEmail(
         "",
         [
           `We were unable to complete payment for order <strong>${escapeHtml(order.orderNumber)}</strong>.`,
-          "This order has been cancelled and any reserved stock has been released.",
+          "This order has been cancelled.",
+          "If any amount was deducted, it will be refunded within 5–10 business days, depending on your bank or payment provider.",
           "You may place a new order with the same items whenever you are ready."
         ],
         {
@@ -571,7 +572,7 @@ export async function sendOrderEmail(
           ]
         }
       );
-      text = `Dear ${customerFirstName(order)}, payment failed for ${order.orderNumber}. Order cancelled.`;
+      text = `Dear ${customerFirstName(order)}, payment failed for ${order.orderNumber}. Order cancelled. If any amount was deducted, it will be refunded within 5–10 business days.`;
       break;
     case "payment_reminder":
       html = buildHtml(
@@ -692,7 +693,7 @@ export async function sendOrderEmail(
         "",
         [
           `Order <strong>${escapeHtml(order.orderNumber)}</strong> has been cancelled.`,
-          "If you were charged, any refund will follow your payment provider's timeline."
+          "If any amount was deducted, it will be refunded within 5–10 business days, depending on your bank or payment provider."
         ],
         {
           banner: "Order cancelled",
@@ -703,7 +704,7 @@ export async function sendOrderEmail(
           ctas: [{ href: view, label: "View order" }]
         }
       );
-      text = `Dear ${customerFirstName(order)}, order ${order.orderNumber} cancelled.`;
+      text = `Dear ${customerFirstName(order)}, order ${order.orderNumber} cancelled. If any amount was deducted, it will be refunded within 5–10 business days.`;
       break;
   }
 

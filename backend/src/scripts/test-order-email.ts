@@ -1,12 +1,12 @@
 /**
- * Fire one transactional order email through the same path as production
- * (enqueue → sendOrderEmail → ZeptoMail/SES).
+ * Fire transactional order email(s) through the same path as production.
  *
  * Usage:
- *   npx tsx src/scripts/test-order-email.ts <orderNumber|orderId> [event]
+ *   npx tsx src/scripts/test-order-email.ts <orderNumber|orderId> [event|all] [--to=email@example.com]
  *
  * Events: order_confirmed | payment_failed | payment_reminder | order_processing
  *         order_shipped | order_delivered | order_returned | refund_initiated | order_cancelled
+ *         all
  */
 import * as dotenv from "dotenv";
 
@@ -31,19 +31,44 @@ const EVENTS: OrderEmailEvent[] = [
   "order_cancelled"
 ];
 
+function parseArgs(argv: string[]) {
+  const positional: string[] = [];
+  let toOverride: string | undefined;
+  for (const a of argv) {
+    if (a.startsWith("--to=")) {
+      toOverride = a.slice("--to=".length).trim();
+    } else if (!a.startsWith("--")) {
+      positional.push(a);
+    }
+  }
+  return {
+    key: positional[0]?.trim(),
+    eventArg: (positional[1]?.trim() || "order_confirmed") as string,
+    toOverride
+  };
+}
+
 async function main() {
-  const key = process.argv[2]?.trim();
-  const event = (process.argv[3]?.trim() || "order_confirmed") as OrderEmailEvent;
+  const { key, eventArg, toOverride } = parseArgs(process.argv.slice(2));
 
   if (!key) {
-    console.error("Usage: npm run test:order-email -- <orderNumber|orderId> [event]");
-    console.error(`Events: ${EVENTS.join(" | ")}`);
+    console.error(
+      "Usage: npm run test:order-email -- <orderNumber|orderId> [event|all] [--to=you@email.com]"
+    );
+    console.error(`Events: ${EVENTS.join(" | ")} | all`);
     process.exitCode = 1;
     return;
   }
 
-  if (!EVENTS.includes(event)) {
-    console.error(`Unknown event "${event}". Use one of: ${EVENTS.join(", ")}`);
+  const events: OrderEmailEvent[] =
+    eventArg === "all"
+      ? [...EVENTS]
+      : EVENTS.includes(eventArg as OrderEmailEvent)
+        ? [eventArg as OrderEmailEvent]
+        : [];
+
+  if (!events.length) {
+    console.error(`Unknown event "${eventArg}". Use one of: ${EVENTS.join(", ")}, all`);
     process.exitCode = 1;
     return;
   }
@@ -71,14 +96,40 @@ async function main() {
     return;
   }
 
+  const originalEmail = order.email;
+  if (toOverride) {
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { email: toOverride }
+    });
+  }
+
+  const deliverTo = toOverride || originalEmail;
   console.log(`Provider: ${config.provider} (${config.host})`);
   console.log(`From:     ${config.fromEmail}`);
   console.log(`Order:    ${order.orderNumber} (${order.id})`);
-  console.log(`To:       ${order.email}`);
-  console.log(`Event:    ${event}`);
+  console.log(`To:       ${deliverTo}${toOverride ? " (override)" : ""}`);
+  console.log(`Events:   ${events.join(", ")}`);
+  console.log("");
 
-  await sendOrderEmail(order.id, event);
-  console.log("\n✅ Order email sent (check inbox / spam).");
+  try {
+    for (const event of events) {
+      process.stdout.write(`→ ${event} … `);
+      await sendOrderEmail(order.id, event);
+      console.log("sent");
+      // Brief pause so ZeptoMail / Gmail don’t throttle a burst
+      await new Promise((r) => setTimeout(r, 800));
+    }
+    console.log("\n✅ All requested order emails sent (check inbox / spam).");
+  } finally {
+    if (toOverride) {
+      await prisma.order.update({
+        where: { id: order.id },
+        data: { email: originalEmail }
+      });
+      console.log(`Restored order email to ${originalEmail}`);
+    }
+  }
 }
 
 void main()

@@ -376,11 +376,42 @@ export async function getByOrderNumber(req: Request, res: Response, next: NextFu
   }
 }
 
+function wantsBrowserHtml(req: Request): boolean {
+  const accept = String(req.headers.accept || "");
+  return accept.includes("text/html") && !accept.includes("application/json");
+}
+
+function invoiceBrowserError(
+  res: Response,
+  status: number,
+  title: string,
+  message: string,
+  loginPath?: string
+) {
+  const login = loginPath
+    ? `<p style="margin-top:24px"><a href="${loginPath}" style="color:#1e3a2f;font-weight:600">Log in to view your orders</a></p>`
+    : "";
+  res.status(status).type("html").send(`<!DOCTYPE html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>${title} — Sarveda</title></head><body style="font-family:system-ui,sans-serif;background:#f7f3ee;color:#2c2420;margin:0;padding:48px 16px;text-align:center"><div style="max-width:420px;margin:0 auto;background:#fff;border-radius:16px;padding:32px;border:1px solid #e0d8ce"><h1 style="font-size:1.25rem;margin:0 0 8px">${title}</h1><p style="margin:0;color:#6b5e54;line-height:1.5">${message}</p>${login}</div></body></html>`);
+}
+
 export async function downloadInvoice(req: Request, res: Response, next: NextFunction) {
   try {
     const { orderNumber } = req.params;
     const email = typeof req.query.email === "string" ? req.query.email.trim().toLowerCase() : "";
+    const asHtml = wantsBrowserHtml(req);
+    const loginPath = `/login?next=${encodeURIComponent(`/profile?tab=orders`)}`;
+
     if (!orderNumber || !email) {
+      if (asHtml) {
+        invoiceBrowserError(
+          res,
+          400,
+          "Invoice link incomplete",
+          "Please use the link from your email, or log in to download your invoice from My Orders.",
+          loginPath
+        );
+        return;
+      }
       res.status(400).json({
         success: false,
         error: "orderNumber and email query required",
@@ -395,6 +426,16 @@ export async function downloadInvoice(req: Request, res: Response, next: NextFun
     });
 
     if (!orderRow) {
+      if (asHtml) {
+        invoiceBrowserError(
+          res,
+          404,
+          "Please log in to download this invoice",
+          "We could not open this invoice with the email on the link. Log in with the account used at checkout, or use Track my order with that email.",
+          loginPath
+        );
+        return;
+      }
       res.status(404).json({ success: false, error: "Order not found", code: "NOT_FOUND" });
       return;
     }
@@ -402,6 +443,16 @@ export async function downloadInvoice(req: Request, res: Response, next: NextFun
     const order = await loadOrderForInvoice(orderRow.id);
 
     if (!order || order.email !== email) {
+      if (asHtml) {
+        invoiceBrowserError(
+          res,
+          404,
+          "Please log in to download this invoice",
+          "We could not open this invoice with the email on the link. Log in with the account used at checkout, or use Track my order with that email.",
+          loginPath
+        );
+        return;
+      }
       res.status(404).json({ success: false, error: "Order not found", code: "NOT_FOUND" });
       return;
     }
@@ -413,6 +464,16 @@ export async function downloadInvoice(req: Request, res: Response, next: NextFun
       (isCod && !["PENDING_PAYMENT", "CANCELLED", "REFUNDED"].includes(order.status));
 
     if (!invoiceReady) {
+      if (asHtml) {
+        invoiceBrowserError(
+          res,
+          400,
+          "Invoice not ready yet",
+          "Your invoice will be available after the order is confirmed. Please try again later, or log in to My Orders.",
+          loginPath
+        );
+        return;
+      }
       res.status(400).json({
         success: false,
         error: "Invoice is available after your order is confirmed",

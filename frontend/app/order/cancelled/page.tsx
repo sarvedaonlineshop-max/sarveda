@@ -79,12 +79,14 @@ function CancelledInner() {
           {unpaidCancelled ? (
             <>
               Order <span className="font-mono font-medium">{order.orderNumber}</span> was cancelled
-              because payment was not completed in time. Reserved stock has been released.
+              because payment was not completed in time. If any amount was deducted, it will be
+              refunded within 5–10 business days, depending on your bank or payment provider.
             </>
           ) : (
             <>
               Order <span className="font-mono font-medium">{order.orderNumber}</span> has been
-              cancelled.
+              cancelled. If any amount was deducted, it will be refunded within 5–10 business days,
+              depending on your bank or payment provider.
             </>
           )}
         </p>

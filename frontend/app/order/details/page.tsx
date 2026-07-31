@@ -25,29 +25,61 @@ function DetailsInner() {
         const o = await fetchOrderPublic(orderNumber, email || phone, phone || undefined);
         setOrder(o);
       } catch (e) {
-        setErr(e instanceof Error ? e.message : "Could not load order");
+        const raw = e instanceof Error ? e.message : "Could not load order";
+        const lower = raw.toLowerCase();
+        if (lower.includes("forbidden") || lower.includes("unauthorized")) {
+          setErr("login");
+        } else if (lower.includes("not found")) {
+          setErr("not_found");
+        } else {
+          setErr(raw);
+        }
       }
     })();
   }, [orderNumber, email, phone]);
+
+  const loginHref = `/login?next=${encodeURIComponent(
+    `/order/details?orderNumber=${encodeURIComponent(orderNumber)}${
+      email ? `&email=${encodeURIComponent(email)}` : ""
+    }${phone ? `&phone=${encodeURIComponent(phone)}` : ""}`
+  )}`;
 
   if (!orderNumber || (!email && !phone)) {
     return (
       <div className="mx-auto max-w-3xl rounded-2xl border border-brand-cream-dark bg-white p-8 text-center shadow-card">
         <p className="text-stone-600">Missing order details.</p>
-        <Link href="/profile?tab=orders" className="mt-6 inline-block font-medium text-brand-forest hover:underline">
-          Back to My Orders
+        <Link href="/login" className="mt-6 inline-block font-medium text-brand-forest hover:underline">
+          Log in to view your orders
         </Link>
       </div>
     );
   }
 
   if (!order && err) {
+    const isLogin = err === "login";
+    const isMissing = err === "not_found";
     return (
       <div className="mx-auto max-w-3xl rounded-2xl border border-brand-cream-dark bg-white p-8 text-center shadow-card">
-        <p className="text-stone-600">{err}</p>
-        <Link href="/profile?tab=orders" className="mt-6 inline-block font-medium text-brand-forest hover:underline">
-          Back to My Orders
-        </Link>
+        <p className="text-lg font-medium text-brand-ink">
+          {isLogin
+            ? "Please log in to view this order"
+            : isMissing
+              ? "We could not find this order"
+              : err}
+        </p>
+        <p className="mt-2 text-sm text-stone-600">
+          {isLogin || isMissing
+            ? "Use the same email you used at checkout, or log in to My Orders. Guests can also open Track my order from the header."
+            : null}
+        </p>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
+          <Link href={loginHref} className="font-medium text-brand-forest hover:underline">
+            Log in to view order
+          </Link>
+          <Link href="/profile?tab=orders" className="text-sm text-brand-muted hover:underline">
+            My Orders
+          </Link>
+        </div>
       </div>
     );
   }
