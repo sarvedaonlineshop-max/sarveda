@@ -1,5 +1,7 @@
 "use client";
 
+import JsBarcode from "jsbarcode";
+import { jsPDF } from "jspdf";
 import { useMemo, useState } from "react";
 
 import { SkuBarcode } from "@/components/admin/SkuBarcode";
@@ -18,9 +20,10 @@ type Props = {
 
 const LABEL_W_MM = 50;
 const LABEL_H_MM = 25;
-/** Usable A4 after ~5mm page margin */
-const A4_W_MM = 200;
-const A4_H_MM = 287;
+const MARGIN_MM = 5;
+/** Usable A4 after margin */
+const A4_W_MM = 210 - MARGIN_MM * 2;
+const A4_H_MM = 297 - MARGIN_MM * 2;
 
 function maxCols() {
   return Math.max(1, Math.floor(A4_W_MM / LABEL_W_MM));
@@ -29,120 +32,80 @@ function maxRows() {
   return Math.max(1, Math.floor(A4_H_MM / LABEL_H_MM));
 }
 
-function escapeHtml(s: string) {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+function barcodePngDataUrl(sku: string): string | null {
+  const canvas = document.createElement("canvas");
+  try {
+    JsBarcode(canvas, sku, {
+      format: "CODE128",
+      width: 2,
+      height: 56,
+      margin: 0,
+      displayValue: false,
+      background: "#ffffff",
+      lineColor: "#000000"
+    });
+    return canvas.toDataURL("image/png");
+  } catch {
+    return null;
+  }
 }
 
-/** Build print HTML: Code128 via JsBarcode CDN for the print window. */
-function buildPrintHtml(
+function slugFile(name: string) {
+  return (
+    name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 40) || "product"
+  );
+}
+
+function downloadBarcodePdf(
   productName: string,
   items: { sku: string; variantLabel: string }[],
   cols: number,
   rows: number
 ) {
+  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
   const slots = cols * rows;
-  const cells: { sku: string; title: string }[] = [];
+  const barcodeCache = new Map<string, string | null>();
+
   for (let i = 0; i < slots; i++) {
     const src = items[i % items.length]!;
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const x = MARGIN_MM + col * LABEL_W_MM;
+    const y = MARGIN_MM + row * LABEL_H_MM;
+
     const title = [productName.trim(), src.variantLabel.trim()].filter(Boolean).join(" / ");
-    cells.push({ sku: src.sku, title });
+
+    // Light cut guide (optional dashed feel via thin rect)
+    pdf.setDrawColor(200);
+    pdf.setLineWidth(0.1);
+    pdf.rect(x, y, LABEL_W_MM, LABEL_H_MM);
+
+    pdf.setTextColor(17);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(7);
+    const nameLines = pdf.splitTextToSize(title || "Product", LABEL_W_MM - 3);
+    pdf.text(nameLines.slice(0, 2), x + 1.5, y + 3.2);
+
+    if (!barcodeCache.has(src.sku)) {
+      barcodeCache.set(src.sku, barcodePngDataUrl(src.sku));
+    }
+    const png = barcodeCache.get(src.sku);
+    if (png) {
+      const bcW = LABEL_W_MM - 4;
+      const bcH = 10;
+      pdf.addImage(png, "PNG", x + 2, y + 8, bcW, bcH);
+    }
+
+    pdf.setFontSize(8);
+    pdf.text(src.sku, x + 1.5, y + LABEL_H_MM - 2.2);
   }
 
-  const cellHtml = cells
-    .map(
-      (c, i) => `
-    <div class="label">
-      <div class="name">${escapeHtml(c.title || "Product")}</div>
-      <svg class="bc" id="bc-${i}"></svg>
-      <div class="sku">${escapeHtml(c.sku)}</div>
-    </div>`
-    )
-    .join("");
-
-  const skusJson = JSON.stringify(cells.map((c) => c.sku));
-
-  return `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>Print barcodes — ${escapeHtml(productName || "Sarveda")}</title>
-  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-  <style>
-    @page { size: A4; margin: 5mm; }
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: #111; }
-    .sheet {
-      width: ${cols * LABEL_W_MM}mm;
-      display: grid;
-      grid-template-columns: repeat(${cols}, ${LABEL_W_MM}mm);
-      grid-template-rows: repeat(${rows}, ${LABEL_H_MM}mm);
-      page-break-after: always;
-    }
-    .label {
-      width: ${LABEL_W_MM}mm;
-      height: ${LABEL_H_MM}mm;
-      padding: 1.2mm 1.5mm 1mm;
-      overflow: hidden;
-      border: 0.2mm dashed #ccc;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      align-items: flex-start;
-    }
-    .name {
-      font-size: 6.5pt;
-      font-weight: 600;
-      line-height: 1.15;
-      max-height: 7mm;
-      overflow: hidden;
-      width: 100%;
-    }
-    .bc {
-      width: 100%;
-      max-height: 11mm;
-      display: block;
-    }
-    .sku {
-      font-size: 7pt;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      width: 100%;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    @media print {
-      .label { border-color: transparent; }
-    }
-  </style>
-</head>
-<body>
-  <div class="sheet">${cellHtml}</div>
-  <script>
-    (function () {
-      var skus = ${skusJson};
-      for (var i = 0; i < skus.length; i++) {
-        var el = document.getElementById("bc-" + i);
-        if (!el || !skus[i]) continue;
-        try {
-          JsBarcode(el, skus[i], {
-            format: "CODE128",
-            width: 1.1,
-            height: 28,
-            margin: 0,
-            displayValue: false
-          });
-        } catch (e) {}
-      }
-      setTimeout(function () { window.focus(); window.print(); }, 200);
-    })();
-  </script>
-</body>
-</html>`;
+  pdf.save(`barcodes-${slugFile(productName)}.pdf`);
 }
 
 export function ProductBarcodeTab({ productName, variants }: Props) {
@@ -151,7 +114,8 @@ export function ProductBarcodeTab({ productName, variants }: Props) {
     [variants]
   );
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
-  const [printOpen, setPrintOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [cols, setCols] = useState(4);
   const [rows, setRows] = useState(10);
 
@@ -171,14 +135,14 @@ export function ProductBarcodeTab({ productName, variants }: Props) {
     });
   }
 
-  function openPrint() {
+  function openDialog() {
     if (selected.size === 0) return;
     setCols(Math.min(4, maxCols()));
     setRows(Math.min(10, maxRows()));
-    setPrintOpen(true);
+    setDialogOpen(true);
   }
 
-  function doPrint() {
+  function savePdf() {
     const items = withSku
       .filter((v) => selected.has(v.key))
       .map((v) => ({ sku: v.sku.trim(), variantLabel: v.variantLabel }));
@@ -186,16 +150,16 @@ export function ProductBarcodeTab({ productName, variants }: Props) {
 
     const safeCols = Math.min(maxCols(), Math.max(1, Math.floor(cols) || 1));
     const safeRows = Math.min(maxRows(), Math.max(1, Math.floor(rows) || 1));
-    const html = buildPrintHtml(productName, items, safeCols, safeRows);
-    const w = window.open("", "_blank", "noopener,noreferrer,width=900,height=700");
-    if (!w) {
-      alert("Pop-up blocked. Allow pop-ups for this site to print barcodes.");
-      return;
+
+    setBusy(true);
+    try {
+      downloadBarcodePdf(productName, items, safeCols, safeRows);
+      setDialogOpen(false);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Could not create PDF");
+    } finally {
+      setBusy(false);
     }
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
-    setPrintOpen(false);
   }
 
   return (
@@ -204,17 +168,17 @@ export function ProductBarcodeTab({ productName, variants }: Props) {
         <div className="min-w-0 flex-1">
           <p className="text-sm text-stone-600 dark:text-stone-300">
             Each variant uses its unique <strong>SKU</strong> as a Code128 barcode for stickers
-            ({LABEL_W_MM / 10}&nbsp;cm × {LABEL_H_MM / 10}&nbsp;cm). Select rows, then Print for an
-            A4 sheet.
+            ({LABEL_W_MM / 10}&nbsp;cm × {LABEL_H_MM / 10}&nbsp;cm). Select rows, then download an
+            A4 PDF (print from the PDF later).
           </p>
         </div>
         <button
           type="button"
           disabled={selected.size === 0}
-          onClick={openPrint}
+          onClick={openDialog}
           className="shrink-0 rounded-lg bg-stone-900 px-4 py-2 text-sm font-semibold text-white hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-amber-500 dark:text-stone-900 dark:hover:bg-amber-400"
         >
-          Print{selected.size > 0 ? ` (${selected.size})` : ""}
+          Save PDF{selected.size > 0 ? ` (${selected.size})` : ""}
         </button>
       </div>
 
@@ -275,27 +239,30 @@ export function ProductBarcodeTab({ productName, variants }: Props) {
         </div>
       )}
 
-      {printOpen ? (
+      {dialogOpen ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="barcode-print-title"
+          aria-labelledby="barcode-pdf-title"
         >
           <div className="w-full max-w-md rounded-xl border border-stone-200 bg-white p-5 shadow-xl dark:border-stone-600 dark:bg-stone-900">
             <h2
-              id="barcode-print-title"
+              id="barcode-pdf-title"
               className="text-lg font-semibold text-stone-900 dark:text-stone-50"
             >
-              Print on A4
+              Save A4 PDF
             </h2>
             <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
               Each label is {LABEL_W_MM / 10}×{LABEL_H_MM / 10} cm. The grid fills by repeating
-              selected variants (handy for many copies of one SKU).
+              selected variants. Open the PDF and print when you are ready.
             </p>
             <div className="mt-4 grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="bc-cols" className="text-xs font-semibold uppercase tracking-wider text-stone-500">
+                <label
+                  htmlFor="bc-cols"
+                  className="text-xs font-semibold uppercase tracking-wider text-stone-500"
+                >
                   Columns
                 </label>
                 <input
@@ -310,7 +277,10 @@ export function ProductBarcodeTab({ productName, variants }: Props) {
                 <p className="mt-1 text-[11px] text-stone-500">Max {maxCols()} on A4</p>
               </div>
               <div>
-                <label htmlFor="bc-rows" className="text-xs font-semibold uppercase tracking-wider text-stone-500">
+                <label
+                  htmlFor="bc-rows"
+                  className="text-xs font-semibold uppercase tracking-wider text-stone-500"
+                >
                   Rows
                 </label>
                 <input
@@ -334,17 +304,19 @@ export function ProductBarcodeTab({ productName, variants }: Props) {
             <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
-                onClick={() => setPrintOpen(false)}
+                disabled={busy}
+                onClick={() => setDialogOpen(false)}
                 className="rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={doPrint}
+                disabled={busy}
+                onClick={savePdf}
                 className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-semibold text-white dark:bg-amber-500 dark:text-stone-900"
               >
-                Print
+                {busy ? "Creating…" : "Download PDF"}
               </button>
             </div>
           </div>
