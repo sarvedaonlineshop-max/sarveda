@@ -15,7 +15,9 @@ export class AdminApiError extends Error {
 }
 
 /** Map API / Zod paths to form tab for navigation on error. */
-export function tabForFieldPath(path: string): "general" | "variants" | "media" | "seo" {
+export function tabForFieldPath(
+  path: string
+): "general" | "variants" | "media" | "barcodes" | "seo" {
   if (path.startsWith("variants")) return "variants";
   if (path.startsWith("images")) return "media";
   if (path.startsWith("accordionItems")) return "media";

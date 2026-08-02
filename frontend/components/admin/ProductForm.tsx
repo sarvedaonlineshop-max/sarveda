@@ -21,6 +21,7 @@ import { formatAccordionSection, plainTextFromAccordionContent } from "@/lib/acc
 import { applyApiError, tabForFieldPath } from "@/lib/admin-errors";
 import { AdminToast } from "@/components/admin/AdminToast";
 import { ProductAudioUpload } from "@/components/admin/ProductAudioUpload";
+import { ProductBarcodeTab } from "@/components/admin/ProductBarcodeTab";
 import { VariantPricingShippingTables } from "@/components/admin/VariantPricingShippingTables";
 import { VariantMediaBlock, type VariantImageForm } from "@/components/admin/VariantMediaBlock";
 import { VariantOptionAxesEditor } from "@/components/admin/VariantOptionAxesEditor";
@@ -181,6 +182,7 @@ const FORM_TABS = [
   { id: "general" as const, label: "General", hint: "Name, slug, categories" },
   { id: "variants" as const, label: "Variants & shipping", hint: "Options, SKU, media" },
   { id: "media" as const, label: "Content & shared media", hint: "Accordion, shared gallery" },
+  { id: "barcodes" as const, label: "Generate Bar Code", hint: "Labels & print" },
   { id: "seo" as const, label: "SEO", hint: "Search listing" }
 ];
 type FormTab = (typeof FORM_TABS)[number]["id"];
@@ -1542,6 +1544,20 @@ export function ProductForm({ productId }: { productId?: string }) {
               </button>
             </div>
           </div>
+        ) : null}
+
+        {tab === "barcodes" ? (
+          <ProductBarcodeTab
+            productName={name}
+            variants={variants.map((v, vi) => ({
+              key: v.id ?? `new-${vi}`,
+              sku: v.sku,
+              variantLabel: v.attributes
+                .map((a) => a.value.trim())
+                .filter(Boolean)
+                .join(" / ")
+            }))}
+          />
         ) : null}
 
         {tab === "seo" ? (
