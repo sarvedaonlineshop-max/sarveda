@@ -43,7 +43,7 @@ export function applyApiError(
   ex: unknown,
   setErr: (s: string | null) => void,
   setFieldErrors: (m: Record<string, string>) => void,
-  setTab?: (t: "general" | "variants" | "media" | "seo") => void
+  setTab?: (t: "general" | "variants" | "media" | "barcodes" | "seo") => void
 ) {
   let message = "Request failed";
   let fields: ApiFieldError[] | undefined;
