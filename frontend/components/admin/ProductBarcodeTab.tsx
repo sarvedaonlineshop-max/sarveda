@@ -61,26 +61,23 @@ function slugFile(name: string) {
   );
 }
 
-function downloadBarcodePdf(
+function drawLabelPage(
+  pdf: jsPDF,
   productName: string,
-  items: { sku: string; variantLabel: string }[],
+  item: { sku: string; variantLabel: string },
   cols: number,
-  rows: number
+  rows: number,
+  barcodePng: string | null
 ) {
-  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
   const slots = cols * rows;
-  const barcodeCache = new Map<string, string | null>();
+  const title = [productName.trim(), item.variantLabel.trim()].filter(Boolean).join(" / ");
 
   for (let i = 0; i < slots; i++) {
-    const src = items[i % items.length]!;
     const col = i % cols;
     const row = Math.floor(i / cols);
     const x = MARGIN_MM + col * LABEL_W_MM;
     const y = MARGIN_MM + row * LABEL_H_MM;
 
-    const title = [productName.trim(), src.variantLabel.trim()].filter(Boolean).join(" / ");
-
-    // Light cut guide (optional dashed feel via thin rect)
     pdf.setDrawColor(200);
     pdf.setLineWidth(0.1);
     pdf.rect(x, y, LABEL_W_MM, LABEL_H_MM);
@@ -91,19 +88,28 @@ function downloadBarcodePdf(
     const nameLines = pdf.splitTextToSize(title || "Product", LABEL_W_MM - 3);
     pdf.text(nameLines.slice(0, 2), x + 1.5, y + 3.2);
 
-    if (!barcodeCache.has(src.sku)) {
-      barcodeCache.set(src.sku, barcodePngDataUrl(src.sku));
-    }
-    const png = barcodeCache.get(src.sku);
-    if (png) {
-      const bcW = LABEL_W_MM - 4;
-      const bcH = 10;
-      pdf.addImage(png, "PNG", x + 2, y + 8, bcW, bcH);
+    if (barcodePng) {
+      pdf.addImage(barcodePng, "PNG", x + 2, y + 8, LABEL_W_MM - 4, 10);
     }
 
     pdf.setFontSize(8);
-    pdf.text(src.sku, x + 1.5, y + LABEL_H_MM - 2.2);
+    pdf.text(item.sku, x + 1.5, y + LABEL_H_MM - 2.2);
   }
+}
+
+/** One A4 page per selected variant (grid filled with copies of that SKU only). */
+function downloadBarcodePdf(
+  productName: string,
+  items: { sku: string; variantLabel: string }[],
+  cols: number,
+  rows: number
+) {
+  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+
+  items.forEach((item, index) => {
+    if (index > 0) pdf.addPage();
+    drawLabelPage(pdf, productName, item, cols, rows, barcodePngDataUrl(item.sku));
+  });
 
   pdf.save(`barcodes-${slugFile(productName)}.pdf`);
 }
@@ -169,7 +175,7 @@ export function ProductBarcodeTab({ productName, variants }: Props) {
           <p className="text-sm text-stone-600 dark:text-stone-300">
             Each variant uses its unique <strong>SKU</strong> as a Code128 barcode for stickers
             ({LABEL_W_MM / 10}&nbsp;cm × {LABEL_H_MM / 10}&nbsp;cm). Select rows, then download an
-            A4 PDF (print from the PDF later).
+            A4 PDF — <strong>one page per variant</strong> (print from the PDF later).
           </p>
         </div>
         <button
@@ -254,8 +260,9 @@ export function ProductBarcodeTab({ productName, variants }: Props) {
               Save A4 PDF
             </h2>
             <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
-              Each label is {LABEL_W_MM / 10}×{LABEL_H_MM / 10} cm. The grid fills by repeating
-              selected variants. Open the PDF and print when you are ready.
+              Each label is {LABEL_W_MM / 10}×{LABEL_H_MM / 10} cm.{" "}
+              <strong>One page per selected variant</strong> — that page is filled only with copies
+              of that SKU (no mixing). Open the PDF and print when ready.
             </p>
             <div className="mt-4 grid grid-cols-2 gap-3">
               <div>
