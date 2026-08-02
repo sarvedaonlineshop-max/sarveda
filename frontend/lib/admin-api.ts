@@ -894,6 +894,21 @@ export function fetchAdminProduct(id: string, signal?: AbortSignal) {
   }).then((d) => d.product);
 }
 
+/** Which of the given SKUs already exist (optionally excluding one product's variants). */
+export function checkAdminSkus(
+  skus: string[],
+  opts?: { excludeProductId?: string; signal?: AbortSignal }
+) {
+  return adminFetch<{ taken: string[] }>("/api/admin/products/check-skus", {
+    method: "POST",
+    body: JSON.stringify({
+      skus,
+      excludeProductId: opts?.excludeProductId
+    }),
+    signal: opts?.signal
+  });
+}
+
 export type ZohoProductSyncResult = {
   ok: boolean;
   created: number;

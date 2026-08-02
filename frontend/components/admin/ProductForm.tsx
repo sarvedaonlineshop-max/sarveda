@@ -5,12 +5,18 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
+  checkAdminSkus,
   deleteAdminProduct,
   fetchAdminProduct,
   postAdminProduct,
   putAdminProduct,
   suggestProductSeo
 } from "@/lib/admin-api";
+import {
+  generateUniqueSkus,
+  SKU_FAMILY_OPTIONS,
+  type SkuFamilyCode
+} from "@/lib/sku-generate";
 import { formatAccordionSection, plainTextFromAccordionContent } from "@/lib/accordion-format";
 import { applyApiError, tabForFieldPath } from "@/lib/admin-errors";
 import { AdminToast } from "@/components/admin/AdminToast";
@@ -48,6 +54,8 @@ type ShippingRateForm = {
 type VariantForm = {
   id?: string;
   sku: string;
+  /** When true, auto-SKU generation will not overwrite this row. */
+  skuManual?: boolean;
   mrpInr: string;
   saleInr: string;
   mrpUsd: string;
@@ -106,9 +114,10 @@ function emptyShipping(): ShippingRateForm[] {
   }));
 }
 
-function newVariant(skuPrefix: string): VariantForm {
+function newVariant(): VariantForm {
   return {
-    sku: `${skuPrefix}-v1`,
+    sku: "",
+    skuManual: false,
     mrpInr: "0",
     saleInr: "0",
     mrpUsd: "",
@@ -205,7 +214,9 @@ export function ProductForm({ productId }: { productId?: string }) {
   const [seoDescription, setSeoDescription] = useState("");
   const [seoKeyword, setSeoKeyword] = useState("");
   const [selectedCats, setSelectedCats] = useState<Set<string>>(new Set());
-  const [variants, setVariants] = useState<VariantForm[]>([newVariant("product")]);
+  const [skuFamily, setSkuFamily] = useState<SkuFamilyCode | "">("");
+  const [skuGenBusy, setSkuGenBusy] = useState(false);
+  const [variants, setVariants] = useState<VariantForm[]>([newVariant()]);
   const [optionAxes, setOptionAxes] = useState<OptionAxisForm[]>([
     { name: "Size", slug: "size", values: [] }
   ]);
@@ -282,6 +293,7 @@ export function ProductForm({ productId }: { productId?: string }) {
           return {
             id: vid,
             sku: String(v.sku),
+            skuManual: true,
             mrpInr: fromMinor(v.mrpInPaise as number),
             saleInr: fromMinor(v.saleInPaise as number),
             mrpUsd: fromMinor(v.mrpUsdCents as number | null),
@@ -322,6 +334,18 @@ export function ProductForm({ productId }: { productId?: string }) {
           };
         });
         setVariants(loadedVariants);
+        const prefixes = loadedVariants
+          .map((v) => v.sku.split("-")[0]?.toUpperCase() ?? "")
+          .filter(Boolean);
+        if (
+          prefixes.length > 0 &&
+          prefixes.every((p) => p === prefixes[0]) &&
+          (prefixes[0] === "MI" || prefixes[0] === "YO" || prefixes[0] === "ME")
+        ) {
+          setSkuFamily(prefixes[0] as SkuFamilyCode);
+        } else {
+          setSkuFamily("");
+        }
         const axes = deriveOptionAxes(loadedVariants, savedAxisOrder);
         setOptionAxes(
           axes.length > 0 ? axes : [{ name: "Size", slug: "size", values: [] }]
@@ -371,15 +395,73 @@ export function ProductForm({ productId }: { productId?: string }) {
     if (!slugTouched && isNew && name) setSlug(slugify(name));
   }, [name, slugTouched, isNew]);
 
+  const variantAttrKey = useMemo(
+    () =>
+      variants
+        .map(
+          (v) =>
+            `${v.skuManual ? "1" : "0"}:${v.attributes.map((a) => a.value.trim()).join("\u0001")}`
+        )
+        .join("\u0002"),
+    [variants]
+  );
+
+  const applyGeneratedSkus = useCallback(
+    async (opts?: { forceAll?: boolean }) => {
+      if (!skuFamily || !name.trim() || variants.length === 0) return;
+      setSkuGenBusy(true);
+      try {
+        const inputs = variants.map((v) => ({
+          attributeValues: v.attributes.map((a) => a.value.trim()).filter(Boolean)
+        }));
+        const takenAccum = new Set<string>();
+        let skus = generateUniqueSkus({
+          family: skuFamily,
+          productName: name,
+          variants: inputs,
+          takenSkus: takenAccum
+        });
+        for (let attempt = 0; attempt < 6; attempt++) {
+          try {
+            const { taken } = await checkAdminSkus(skus, {
+              excludeProductId: productId || undefined
+            });
+            if (!taken.length) break;
+            for (const t of taken) takenAccum.add(t);
+            skus = generateUniqueSkus({
+              family: skuFamily,
+              productName: name,
+              variants: inputs,
+              takenSkus: takenAccum
+            });
+          } catch {
+            break;
+          }
+        }
+        setVariants((prev) =>
+          prev.map((v, i) => {
+            if (!opts?.forceAll && v.skuManual) return v;
+            const next = skus[i];
+            if (!next) return v;
+            return { ...v, sku: next, skuManual: opts?.forceAll ? false : v.skuManual };
+          })
+        );
+      } finally {
+        setSkuGenBusy(false);
+      }
+    },
+    [skuFamily, name, variants, productId]
+  );
+
   useEffect(() => {
-    if (!isNew || !slug.trim()) return;
-    setVariants((prev) => {
-      if (prev.length !== 1 || prev[0]?.id) return prev;
-      const nextSku = `${slug.trim()}-v1`.slice(0, 120);
-      if (prev[0]?.sku === nextSku) return prev;
-      return [{ ...prev[0]!, sku: nextSku }];
-    });
-  }, [slug, isNew]);
+    if (!isNew) return;
+    if (!skuFamily || !name.trim()) return;
+    const t = window.setTimeout(() => {
+      void applyGeneratedSkus();
+    }, 350);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fingerprint drives regen; avoid SKU churn loops
+  }, [isNew, skuFamily, name, variantAttrKey, variants.length]);
 
   const tabIndex = FORM_TABS.findIndex((t) => t.id === tab);
 
@@ -390,6 +472,9 @@ export function ProductForm({ productId }: { productId?: string }) {
       if (!slug.trim()) errors.slug = "Slug is required.";
       else if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug.trim())) {
         errors.slug = "Slug must be lowercase letters, numbers, and hyphens only.";
+      }
+      if (isNew && !skuFamily) {
+        errors.skuFamily = "Select a product family for SKU generation.";
       }
       if (hasAudio && audioUrl.trim() && !/^https?:\/\/.+/i.test(audioUrl.trim())) {
         errors.audioUrl = "Audio URL must start with http:// or https://";
@@ -671,6 +756,9 @@ export function ProductForm({ productId }: { productId?: string }) {
       if (typeof d.shortDescription === "string") setShortDescription(d.shortDescription);
       if (typeof d.productType === "string") setProductType(d.productType);
       if (typeof d.status === "string") setStatus(d.status);
+      if (d.skuFamily === "MI" || d.skuFamily === "YO" || d.skuFamily === "ME" || d.skuFamily === "OTHER") {
+        setSkuFamily(d.skuFamily);
+      }
       if (typeof d.tab === "string") setTab(d.tab as FormTab);
       if (Array.isArray(d.variants)) setVariants(d.variants as VariantForm[]);
       if (Array.isArray(d.images)) setImages(d.images as ImageForm[]);
@@ -704,6 +792,7 @@ export function ProductForm({ productId }: { productId?: string }) {
             shortDescription,
             productType,
             status,
+            skuFamily,
             tab,
             variants,
             images,
@@ -729,6 +818,7 @@ export function ProductForm({ productId }: { productId?: string }) {
     shortDescription,
     productType,
     status,
+    skuFamily,
     tab,
     variants,
     images,
@@ -1016,6 +1106,29 @@ export function ProductForm({ productId }: { productId?: string }) {
                 </select>
               </div>
               <div>
+                <label htmlFor="skuFamily" className={labelCls}>
+                  SKU family
+                </label>
+                <select
+                  id="skuFamily"
+                  value={skuFamily}
+                  onChange={(e) => setSkuFamily(e.target.value as SkuFamilyCode | "")}
+                  className={inputCls}
+                  aria-invalid={Boolean(fieldErrors.skuFamily)}
+                >
+                  <option value="">Select family…</option>
+                  {SKU_FAMILY_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-stone-500">
+                  Prefix for auto SKUs on the Variants step (Others = no prefix).
+                </p>
+                <FieldErr message={fieldErrors.skuFamily} />
+              </div>
+              <div>
                 <label htmlFor="tax" className={labelCls}>
                   GST class
                 </label>
@@ -1096,6 +1209,28 @@ export function ProductForm({ productId }: { productId?: string }) {
               <strong>Variant images &amp; video</strong> are set inside each variant card below (at the
               top). Shared gallery on the next step is only a fallback when a variant has no images.
             </div>
+            <div className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-sm dark:border-stone-600 dark:bg-stone-950/50">
+              <div className="min-w-0 flex-1 text-stone-600 dark:text-stone-300">
+                <p>
+                  SKUs auto-build as{" "}
+                  <code className="text-xs">FAMILY-PRODUCT-OPTION…</code> (e.g.{" "}
+                  <code className="text-xs">YO-YM-L-B</code>). Editing a SKU locks that row.
+                </p>
+                {!skuFamily ? (
+                  <p className="mt-1 text-amber-800 dark:text-amber-300">
+                    Choose an SKU family on the General step first.
+                  </p>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                disabled={!skuFamily || !name.trim() || skuGenBusy}
+                onClick={() => void applyGeneratedSkus({ forceAll: true })}
+                className="shrink-0 rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-800 hover:bg-stone-100 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-100 dark:hover:bg-stone-800"
+              >
+                {skuGenBusy ? "Generating…" : "Regenerate SKUs"}
+              </button>
+            </div>
             <FieldErr message={fieldErrors.variants} />
             {showVariantAxes ? (
               <VariantOptionAxesEditor axes={optionAxes} onChange={handleOptionAxesChange} />
@@ -1164,12 +1299,19 @@ export function ProductForm({ productId }: { productId?: string }) {
                       value={v.sku}
                       onChange={(e) =>
                         setVariants((prev) =>
-                          prev.map((x, i) => (i === vi ? { ...x, sku: e.target.value } : x))
+                          prev.map((x, i) =>
+                            i === vi
+                              ? { ...x, sku: e.target.value, skuManual: true }
+                              : x
+                          )
                         )
                       }
                       className={inputCls}
                       aria-invalid={Boolean(fieldErrors[`variants.${vi}.sku`])}
                     />
+                    {v.skuManual ? (
+                      <p className="mt-1 text-xs text-stone-500">Locked (edited manually).</p>
+                    ) : null}
                     <FieldErr message={fieldErrors[`variants.${vi}.sku`]} />
                   </div>
                   <div>
@@ -1278,7 +1420,7 @@ export function ProductForm({ productId }: { productId?: string }) {
                 setVariants((prev) => [
                   ...prev.map((x) => ({ ...x, isDefault: false })),
                   {
-                    ...newVariant(slug || "product"),
+                    ...newVariant(),
                     isDefault: prev.length === 0,
                     attributes: syncVariantAttributesToAxes([], optionAxes)
                   }

@@ -1,0 +1,33 @@
+{
+  "sources": {
+    "live_woo_store_api_published_products": 154,
+    "lightsail_products_not_deleted": 185,
+    "lightsail_variants": 1033,
+    "wxr_products_may29": 170,
+    "variations_xml": 1038,
+    "note": "DigitalOcean MySQL not reachable (SSH key denied, 3306 closed). Used live sarveda.com Store API + existing WXR/variations XML dumps. Lightsail Postgres dumped read-only."
+  },
+  "product_match_by_slug": {
+    "matched": 66,
+    "missing_on_lightsail_exact_slug": 88,
+    "fuzzy_name_recovered_from_missing": 72,
+    "still_missing_after_fuzzy": 16,
+    "extra_on_lightsail_not_in_live_woo": 47
+  },
+  "matched_quality_flags": {
+    "missing_variant_images": 31,
+    "missing_video": 66,
+    "variant_count_mismatch": 5,
+    "missing_shipping_rates": 5
+  },
+  "sku_info_only": {
+    "woo_skus_from_xml": 622,
+    "lightsail_skus": 1033,
+    "exact_sku_overlap": 584,
+    "note": "SKU differences expected (admin remapped). Not used as match key."
+  },
+  "matched_status": {
+    "active": 62,
+    "catalog_hidden": 0
+  }
+}

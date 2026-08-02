@@ -209,6 +209,45 @@ export async function catalogGaps(_req: Request, res: Response, next: NextFuncti
   }
 }
 
+const checkSkusBodySchema = z.object({
+  skus: z.array(z.string().min(1).max(120)).min(1).max(200),
+  /** When editing, ignore variants that already belong to this product. */
+  excludeProductId: z.string().uuid().optional()
+});
+
+/** POST /api/admin/products/check-skus — which SKUs are already taken. */
+export async function checkSkus(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = checkSkusBodySchema.parse(req.body);
+    const normalized = Array.from(
+      new Set(body.skus.map((s) => s.trim()).filter(Boolean))
+    );
+    if (normalized.length === 0) {
+      res.json({ success: true, data: { taken: [] as string[] } });
+      return;
+    }
+
+    const rows = await prisma.productVariant.findMany({
+      where: {
+        ...(body.excludeProductId
+          ? { productId: { not: body.excludeProductId } }
+          : {}),
+        OR: normalized.map((s) => ({
+          sku: { equals: s, mode: "insensitive" as const }
+        }))
+      },
+      select: { sku: true }
+    });
+
+    const takenUpper = new Set(rows.map((r) => r.sku.toUpperCase()));
+    const takenRequested = normalized.filter((s) => takenUpper.has(s.toUpperCase()));
+
+    res.json({ success: true, data: { taken: takenRequested } });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function create(req: Request, res: Response, next: NextFunction) {
   try {
     const body = req.body as CreateProductBody;
