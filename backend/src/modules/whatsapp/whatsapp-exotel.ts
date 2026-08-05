@@ -30,7 +30,13 @@ function basicAuthHeader(): string {
   return `Basic ${Buffer.from(`${key}:${token}`, "utf8").toString("base64")}`;
 }
 
-type ExotelMsg = { sid?: string; status?: string; error_data?: unknown };
+type ExotelMsg = {
+  sid?: string;
+  status?: string;
+  error_data?: unknown;
+  /** Exotel nests the message sid here; older shapes put it at the top level. */
+  data?: { sid?: string };
+};
 
 /**
  * Send one WhatsApp message content object. Valid only inside the customer's
@@ -79,6 +85,7 @@ export async function sendExotelWhatsAppContent(
     throw new Error(`Exotel WhatsApp message failure: ${JSON.stringify(msg0).slice(0, 800)}`);
   }
 
-  logger.info(logEvent, { to: toE164, sid: msg0?.sid ?? null });
-  return msg0?.sid ?? null;
+  const sid = msg0?.data?.sid ?? msg0?.sid ?? null;
+  logger.info(logEvent, { to: toE164, sid });
+  return sid;
 }

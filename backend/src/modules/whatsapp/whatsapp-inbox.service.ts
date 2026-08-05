@@ -193,20 +193,51 @@ type ParsedStatus = {
   kind: "status";
   sid: string;
   status: string;
+  /** Provider detail kept for failures so logs explain why delivery failed. */
+  detail?: string;
 };
+
+/**
+ * Exotel reports delivery state as `exo_detailed_status` (EX_MESSAGE_DELIVERED,
+ * EX_UNKNOWN_ERROR, ...) rather than a plain `status`. Anything that is not an
+ * explicit sent/delivered/seen signal counts as a failure.
+ */
+function exotelStatusToWaStatus(detailed: string): string {
+  switch (detailed.toUpperCase()) {
+    case "EX_MESSAGE_QUEUED":
+    case "EX_MESSAGE_ACCEPTED":
+      return "queued";
+    case "EX_MESSAGE_SENT":
+      return "sent";
+    case "EX_MESSAGE_DELIVERED":
+      return "delivered";
+    case "EX_MESSAGE_SEEN":
+      return "read";
+    default:
+      return "failed";
+  }
+}
 
 function parseCallbackItem(item: AnyRecord): ParsedInbound | ParsedStatus | null {
   const callbackType = asString(item.callback_type) ?? "";
   const sid = asString(item.sid) ?? asString(item.message_sid) ?? null;
   const status = asString(item.status);
+  const detailedStatus = asString(item.exo_detailed_status);
 
   // Delivery receipt: dlr / message-status callbacks carry sid + status, no content.
   const looksLikeDlr =
     callbackType === "dlr" ||
     callbackType === "message-status" ||
+    Boolean(detailedStatus) ||
     (Boolean(status) && !item.content && !item.text && !asString(item.body));
   if (looksLikeDlr) {
-    if (!sid || !status) return null;
+    if (!sid) return null;
+    if (detailedStatus) {
+      const code = typeof item.exo_status_code === "number" ? String(item.exo_status_code) : null;
+      const detail = [detailedStatus, code, asString(item.description)].filter(Boolean).join(" ");
+      return { kind: "status", sid, status: exotelStatusToWaStatus(detailedStatus), detail };
+    }
+    if (!status) return null;
     return { kind: "status", sid, status: status.toLowerCase() };
   }
 
@@ -309,6 +340,9 @@ async function upsertInboundMessage(msg: ParsedInbound): Promise<StoredInbound |
 }
 
 async function applyStatusUpdate(update: ParsedStatus): Promise<void> {
+  if (update.status === "failed") {
+    logger.error("whatsapp_delivery_failed", { sid: update.sid, detail: update.detail ?? null });
+  }
   const message = await prisma.enquiryMessage.findUnique({
     where: { waMessageSid: update.sid },
     select: { threadId: true }
