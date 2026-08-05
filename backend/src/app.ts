@@ -33,6 +33,7 @@ import { paypalWebhookHandler } from "./modules/payments/paypal.webhook";
 import { delhiveryWebhookHandler } from "./modules/shipping/delhivery.webhook";
 import { shiprocketWebhookHandler } from "./modules/shipping/shiprocket.webhook";
 import { whatsappWebhookHandler } from "./modules/whatsapp/whatsapp.webhook";
+import { whatsappFlowEndpointHandler } from "./modules/whatsapp/whatsapp-flow.endpoint";
 import { adminRoutes } from "./modules/admin";
 import { productsRoutes } from "./modules/products/products.routes";
 import { shippingRoutes } from "./modules/shipping";
@@ -182,6 +183,22 @@ app.post("/api/zoho/webhook", express.json(), (req: Request, res: Response, next
 app.post("/api/whatsapp/webhook", express.json({ limit: "2mb" }), (req: Request, res: Response, next: NextFunction) => {
   void whatsappWebhookHandler(req, res).catch(next);
 });
+
+// Meta WhatsApp Flow data-exchange endpoint (RSA/AES encrypted by Meta).
+const whatsappFlowLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+app.post(
+  "/api/whatsapp/flow",
+  whatsappFlowLimiter,
+  express.json({ limit: "1mb" }),
+  (req: Request, res: Response, next: NextFunction) => {
+    void whatsappFlowEndpointHandler(req, res).catch(next);
+  }
+);
 
 // Base64 uploads (images/audio) need headroom; default 1mb causes "request entity too large"
 app.use(express.json({ limit: "14mb" }));

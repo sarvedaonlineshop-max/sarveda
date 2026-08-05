@@ -1,0 +1,399 @@
+{
+  "version": "7.3",
+  "data_api_version": "3.0",
+  "routing_model": {
+    "SUPPORT_MENU": ["ORDER_LIST", "EXIT", "ERROR"],
+    "ORDER_LIST": ["ORDER_DETAILS", "EXIT", "ERROR"],
+    "ORDER_DETAILS": ["FEEDBACK", "EXIT", "ERROR"],
+    "FEEDBACK": ["THANK_YOU", "ERROR"],
+    "THANK_YOU": [],
+    "EXIT": [],
+    "ERROR": []
+  },
+  "screens": [
+    {
+      "id": "SUPPORT_MENU",
+      "title": "Sarveda Support",
+      "data": {},
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "support_form",
+            "children": [
+              {
+                "type": "TextHeading",
+                "text": "Welcome to Sarveda 🙏"
+              },
+              {
+                "type": "TextSubheading",
+                "text": "How can we help you today?"
+              },
+              {
+                "type": "TextBody",
+                "text": "Choose an option and we'll guide you."
+              },
+              {
+                "type": "RadioButtonsGroup",
+                "name": "support_topic",
+                "label": "Support menu",
+                "required": true,
+                "data-source": [
+                  {
+                    "id": "order_issue",
+                    "title": "I have an order-related issue"
+                  },
+                  {
+                    "id": "payment_issue",
+                    "title": "Paid but no order"
+                  },
+                  {
+                    "id": "track_order",
+                    "title": "Track my order"
+                  },
+                  {
+                    "id": "live_agent",
+                    "title": "Chat with a live agent"
+                  },
+                  {
+                    "id": "exit",
+                    "title": "Exit"
+                  }
+                ]
+              },
+              {
+                "type": "Footer",
+                "label": "Continue",
+                "on-click-action": {
+                  "name": "data_exchange",
+                  "payload": {
+                    "support_topic": "${form.support_topic}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "ORDER_LIST",
+      "title": "Choose your order",
+      "data": {
+        "orders": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          },
+          "__example__": [
+            {
+              "id": "00000000-0000-0000-0000-000000000000",
+              "title": "SRV-20260800001",
+              "description": "Delivered · ₹1,499.00 · 5/8/2026"
+            }
+          ]
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "order_form",
+            "children": [
+              {
+                "type": "TextHeading",
+                "text": "Your recent orders"
+              },
+              {
+                "type": "TextBody",
+                "text": "Select the order you need help with."
+              },
+              {
+                "type": "RadioButtonsGroup",
+                "name": "order_id",
+                "label": "Orders",
+                "required": true,
+                "data-source": "${data.orders}"
+              },
+              {
+                "type": "Footer",
+                "label": "View order",
+                "on-click-action": {
+                  "name": "data_exchange",
+                  "payload": {
+                    "order_id": "${form.order_id}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "ORDER_DETAILS",
+      "title": "Order details",
+      "data": {
+        "order_id": {
+          "type": "string",
+          "__example__": "00000000-0000-0000-0000-000000000000"
+        },
+        "order_heading": {
+          "type": "string",
+          "__example__": "SRV-20260800001 · Delivered"
+        },
+        "items_text": {
+          "type": "string",
+          "__example__": "1. Sample product × 1 — ₹1,299.00"
+        },
+        "subtotal_text": {
+          "type": "string",
+          "__example__": "Subtotal: ₹1,299.00"
+        },
+        "total_text": {
+          "type": "string",
+          "__example__": "Total: ₹1,499.00"
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "issue_form",
+            "children": [
+              {
+                "type": "TextHeading",
+                "text": "${data.order_heading}"
+              },
+              {
+                "type": "TextSubheading",
+                "text": "Items"
+              },
+              {
+                "type": "TextBody",
+                "text": "${data.items_text}"
+              },
+              {
+                "type": "TextBody",
+                "text": "${data.subtotal_text}"
+              },
+              {
+                "type": "TextBody",
+                "text": "${data.total_text}"
+              },
+              {
+                "type": "RadioButtonsGroup",
+                "name": "issue_type",
+                "label": "What went wrong?",
+                "required": true,
+                "data-source": [
+                  {
+                    "id": "damaged",
+                    "title": "Item broken or damaged"
+                  },
+                  {
+                    "id": "wrong_item",
+                    "title": "Wrong item received"
+                  },
+                  {
+                    "id": "description_mismatch",
+                    "title": "Not as described"
+                  }
+                ]
+              },
+              {
+                "type": "Footer",
+                "label": "Submit issue",
+                "on-click-action": {
+                  "name": "data_exchange",
+                  "payload": {
+                    "order_id": "${data.order_id}",
+                    "issue_type": "${form.issue_type}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FEEDBACK",
+      "title": "We're sorry",
+      "data": {
+        "order_id": {
+          "type": "string",
+          "__example__": "00000000-0000-0000-0000-000000000000"
+        },
+        "apology_text": {
+          "type": "string",
+          "__example__": "We're very sorry. Our support team will review your issue shortly."
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "feedback_form",
+            "children": [
+              {
+                "type": "TextHeading",
+                "text": "Please accept our apologies 🙏"
+              },
+              {
+                "type": "TextBody",
+                "text": "${data.apology_text}"
+              },
+              {
+                "type": "RadioButtonsGroup",
+                "name": "rating",
+                "label": "How was your chat experience?",
+                "required": true,
+                "data-source": [
+                  {
+                    "id": "5",
+                    "title": "Excellent"
+                  },
+                  {
+                    "id": "4",
+                    "title": "Good"
+                  },
+                  {
+                    "id": "3",
+                    "title": "Okay"
+                  },
+                  {
+                    "id": "2",
+                    "title": "Poor"
+                  },
+                  {
+                    "id": "1",
+                    "title": "Very poor"
+                  }
+                ]
+              },
+              {
+                "type": "Footer",
+                "label": "Submit feedback",
+                "on-click-action": {
+                  "name": "data_exchange",
+                  "payload": {
+                    "order_id": "${data.order_id}",
+                    "rating": "${form.rating}"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "THANK_YOU",
+      "title": "Thank you",
+      "terminal": true,
+      "success": true,
+      "data": {},
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextHeading",
+            "text": "Thank you for your feedback 🙏"
+          },
+          {
+            "type": "TextBody",
+            "text": "Your issue has been recorded. Our support team will contact you on WhatsApp."
+          },
+          {
+            "type": "Footer",
+            "label": "Close",
+            "on-click-action": {
+              "name": "complete",
+              "payload": {}
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "EXIT",
+      "title": "Sarveda Support",
+      "terminal": true,
+      "data": {
+        "message": {
+          "type": "string",
+          "__example__": "Thank you for contacting Sarveda."
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextHeading",
+            "text": "Thank you"
+          },
+          {
+            "type": "TextBody",
+            "text": "${data.message}"
+          },
+          {
+            "type": "Footer",
+            "label": "Close",
+            "on-click-action": {
+              "name": "complete",
+              "payload": {}
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "ERROR",
+      "title": "Please try again",
+      "terminal": true,
+      "data": {
+        "message": {
+          "type": "string",
+          "__example__": "Something went wrong. Please send Hi again."
+        }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextHeading",
+            "text": "We couldn't complete that"
+          },
+          {
+            "type": "TextBody",
+            "text": "${data.message}"
+          },
+          {
+            "type": "Footer",
+            "label": "Close",
+            "on-click-action": {
+              "name": "complete",
+              "payload": {}
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

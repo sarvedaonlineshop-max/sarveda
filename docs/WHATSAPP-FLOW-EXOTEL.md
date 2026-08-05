@@ -6,7 +6,7 @@ Last updated: 2026-08-05
 When a customer sends "Hi"/"Hello"/"Namaste" on WhatsApp, Exotel replies with a
 welcome message + **Menu** button that opens a published Meta Flow (support menu).
 
-## Meta Flow (published)
+## Meta Flow v1 (published; static)
 - **WABA:** Sarveda
 - **Flow name:** `sarveda support menu`
 - **Flow ID:** `1037332878669898`
@@ -25,6 +25,16 @@ welcome message + **Menu** button that opens a published Meta Flow (support menu
 
 Footer button: **Continue** → `complete` (all options exit for now).
 
+## Meta Flow v2 (dynamic order support; backend ready, Meta setup pending)
+- Flow JSON: `docs/meta-whatsapp-support-dynamic-flow.json`
+- Create as **With endpoint** because the published v1 Flow is immutable.
+- Endpoint URL: `https://sarveda-demo.xyz/api/whatsapp/flow`
+- Order path:
+  `SUPPORT_MENU → ORDER_LIST → ORDER_DETAILS → FEEDBACK → THANK_YOU`
+- Orders are looked up from the signed WhatsApp-number session token.
+- Every selected order is re-authorized against that number server-side.
+- Submitted issue + chat rating are stored in the existing admin Chats thread.
+
 ## WhatsApp business number
 - `EXOTEL_WHATSAPP_FROM=+919972238158` (backend `.env`)
 - Frontend `NEXT_PUBLIC_WHATSAPP_NUMBER` must match same digits.
@@ -35,7 +45,7 @@ Footer button: **Continue** → `complete` (all options exit for now).
 - `flow_action` = `navigate`
 - `screen` = `SUPPORT_MENU`
 - `flow_cta` = `Menu` (<=20 chars, no emoji)
-- `flow_token` = generate per business (from Meta Manage panel)
+- `flow_token` = generated and HMAC-signed by the Sarveda backend per customer/session
 - `mode` = `published`
 
 ## "Hi" trigger — implemented in Sarveda backend (Path B, NOT Exotel chatbot)
@@ -55,6 +65,8 @@ our own inbound webhook. No Exotel-team ticket needed.
 WHATSAPP_SUPPORT_FLOW_ID=1037332878669898
 WHATSAPP_SUPPORT_FLOW_SCREEN=SUPPORT_MENU
 WHATSAPP_SUPPORT_FLOW_CTA=Menu
+WHATSAPP_FLOW_TOKEN_SECRET=<32+ random bytes>
+WHATSAPP_FLOW_PRIVATE_KEY_B64=<base64 RSA private key>
 # WHATSAPP_WELCOME_TEXT=  (optional override)
 ```
 
@@ -63,10 +75,14 @@ WHATSAPP_SUPPORT_FLOW_CTA=Menu
 - Inbound webhook: `backend/src/modules/whatsapp/whatsapp.webhook.ts`
   - URL: `https://<host>/api/whatsapp/webhook?token=<EXOTEL_WEBHOOK_TOKEN>`
 - Inbox/session send + greeting auto-reply: `backend/src/modules/whatsapp/whatsapp-inbox.service.ts`
+- Dynamic Flow endpoint: `backend/src/modules/whatsapp/whatsapp-flow.endpoint.ts`
+- Encryption: `backend/src/modules/whatsapp/whatsapp-flow.crypto.ts`
+- Order flow + complaint/feedback storage: `backend/src/modules/whatsapp/whatsapp-flow.service.ts`
 
 ## TODO
-- [ ] Wire each menu option to a real action (currently all exit):
-      order_issue / payment_issue / track_order / live_agent
-      (handle the Flow completion `nfm_reply` in the inbound webhook).
-- [ ] Confirm `EXOTEL_*` + `WHATSAPP_SUPPORT_FLOW_*` env set on Lightsail backend.
-- [ ] Set Exotel inbound webhook URL to `/api/whatsapp/webhook?token=...`.
+- [x] Implement dynamic order list/details/issue/feedback backend.
+- [ ] Deploy current backend changes and configure RSA/token env.
+- [ ] Upload the RSA public key for the WhatsApp number in Meta.
+- [ ] Create a new **With endpoint** Meta Flow using the v2 JSON; health-check and publish.
+- [ ] Change `WHATSAPP_SUPPORT_FLOW_ID` to the newly published v2 Flow ID.
+- [ ] Future: implement payment, tracking, and live-agent paths (currently graceful exit).

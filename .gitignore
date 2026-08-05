@@ -11,7 +11,13 @@ public/workbox-*.js.map
 *.log
 *.zip
 .DS_Store
-.pem
+*.pem
+*.key
+# Env backups / editor swap files can contain live secrets
+.env.*
+!.env.example
+*.env.bak*
+.*.swp
 
 # Database dumps — never commit (customer PII, orders)
 backups/

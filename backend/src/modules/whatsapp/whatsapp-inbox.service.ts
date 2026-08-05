@@ -9,6 +9,7 @@
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { toWhatsAppE164 } from "../notifications/whatsapp";
+import { createSupportFlowToken } from "./whatsapp-flow.token";
 
 export const WA_SESSION_WINDOW_MS = 24 * 60 * 60 * 1000;
 
@@ -160,14 +161,21 @@ export async function sendSupportMenuFlow(toE164: string): Promise<string | null
             type: "interactive",
             interactive: {
               type: "flow",
+              header: {
+                type: "text",
+                text: "Sarveda Support"
+              },
               body: { text: welcomeBodyText().slice(0, 1024) },
+              footer: {
+                text: "We're here to help."
+              },
               action: {
                 name: "flow",
                 parameters: {
                   mode: "published",
                   flow_message_version: "3",
                   flow_id: supportFlowId(),
-                  flow_token: `sarveda-${Date.now()}`,
+                  flow_token: createSupportFlowToken(toE164),
                   flow_cta: supportFlowCta(),
                   flow_action: "navigate",
                   flow_action_payload: { screen: supportFlowScreen() }
