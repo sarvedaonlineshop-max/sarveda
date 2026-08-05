@@ -1,0 +1,15 @@
+{
+  "sheet_products": 147,
+  "sheet_skus": 825,
+  "db_products": 182,
+  "db_skus": 1030,
+  "sku_exact": 573,
+  "sku_only_sheet": 252,
+  "sku_only_db": 457,
+  "products_exact": 65,
+  "products_partial": 57,
+  "products_only_sheet": 25,
+  "products_only_db": 60,
+  "linked_via_sku": 89,
+  "linked_via_name_only": 33
+}
