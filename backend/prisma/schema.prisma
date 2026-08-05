@@ -33,6 +33,7 @@ model User {
   passwordResetTokens PasswordResetToken[]
   enquiryThreads      EnquiryThread[]
   enquiryAdminMessages EnquiryMessage[] @relation("EnquiryAdminMessages")
+  whatsappAgentSessions WhatsAppAgentSession[] @relation("WhatsAppAgentSessionAdmin")
   adminSessions       AdminSession[]
   adminActivities     AdminActivityLog[] @relation("AdminActivityActor")
   fcmToken                    String?
@@ -1160,11 +1161,35 @@ model EnquiryThread {
   updatedAt       DateTime                @updatedAt
   user            User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
   messages        EnquiryMessage[]
+  whatsappAgentSessions WhatsAppAgentSession[]
 
   @@index([unreadByAdmin, lastMessageAt(sort: Desc)])
   @@index([customerEmail])
   @@index([source])
   @@index([waPhone])
+}
+
+/// One human-support handoff inside a WhatsApp enquiry thread.
+/// A thread can have many sessions over time; only sessions with endedAt=null are active.
+model WhatsAppAgentSession {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  threadId         String    @db.Uuid
+  reason           String?
+  startedAt        DateTime  @default(now())
+  attendingAdminId String?   @db.Uuid
+  claimedAt        DateTime?
+  endedAt          DateTime?
+  endReason        String?
+  customerRating   Int?
+  ratedAt          DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  thread           EnquiryThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  attendingAdmin   User?     @relation("WhatsAppAgentSessionAdmin", fields: [attendingAdminId], references: [id], onDelete: SetNull)
+
+  @@index([threadId, startedAt(sort: Desc)])
+  @@index([attendingAdminId, startedAt(sort: Desc)])
+  @@index([endedAt])
 }
 
 model EnquiryMessage {

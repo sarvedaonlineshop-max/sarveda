@@ -10,6 +10,7 @@
  */
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
+import { publishEnquiryEvent } from "../enquiries/enquiry-realtime";
 import {
   sendWhatsAppButtons,
   sendWhatsAppList,
@@ -23,6 +24,15 @@ import {
   statusLabel,
   type OwnedOrder
 } from "./whatsapp-support.data";
+import {
+  consumeWhatsAppBotOptionToken,
+  issueWhatsAppBotOptionToken
+} from "../../jobs/whatsappBotIdleJob";
+import {
+  closeWhatsAppAgentSession,
+  rateWhatsAppAgentSession,
+  startWhatsAppAgentSession
+} from "./whatsapp-agent-session.service";
 
 /** Bot display name for replies recorded in the admin Chats inbox. */
 export const WA_BOT_AUTHOR = "Sarveda Assistant";
@@ -78,6 +88,7 @@ async function recordBotMessage(threadId: string, body: string, sid: string | nu
     where: { id: threadId },
     data: { lastMessageAt: new Date() }
   });
+  publishEnquiryEvent({ type: "message_changed", threadId });
 }
 
 /**
@@ -104,23 +115,29 @@ async function botShouldStayQuiet(threadId: string): Promise<boolean> {
 }
 
 async function flagForHuman(threadId: string, reason: string): Promise<void> {
-  await prisma.enquiryThread.update({
-    where: { id: threadId },
-    data: {
-      contextTitle: AGENT_FLAG,
-      customSubject: reason,
-      status: "OPEN",
-      unreadByAdmin: true,
-      lastMessageAt: new Date()
-    }
-  });
+  await Promise.all([
+    startWhatsAppAgentSession(threadId, reason),
+    prisma.enquiryThread.update({
+      where: { id: threadId },
+      data: {
+        contextTitle: AGENT_FLAG,
+        customSubject: reason,
+        status: "OPEN",
+        unreadByAdmin: true,
+        lastMessageAt: new Date()
+      }
+    })
+  ]);
 }
 
 async function clearAgentFlag(threadId: string): Promise<void> {
-  await prisma.enquiryThread.updateMany({
-    where: { id: threadId, contextTitle: AGENT_FLAG },
-    data: { contextTitle: null }
-  });
+  await Promise.all([
+    prisma.enquiryThread.updateMany({
+      where: { id: threadId, contextTitle: AGENT_FLAG },
+      data: { contextTitle: null }
+    }),
+    closeWhatsAppAgentSession(threadId, "customer_restarted")
+  ]);
 }
 
 // ---------------------------------------------------------------------------
@@ -135,6 +152,7 @@ function welcomeBody(): string {
 }
 
 async function sendMainMenu(threadId: string, phone: string): Promise<void> {
+  const token = await issueWhatsAppBotOptionToken(threadId, phone);
   const sid = await sendWhatsAppList(
     phone,
     {
@@ -148,13 +166,13 @@ async function sendMainMenu(threadId: string, phone: string): Promise<void> {
         title: "Orders",
         rows: [
           {
-            id: "m:orders",
+            id: `m:${token}:orders`,
             title: "Order-related issue",
             description: "Damaged, wrong or missing item"
           },
-          { id: "m:track", title: "Track my order", description: "Check delivery status" },
+          { id: `m:${token}:track`, title: "Track my order", description: "Check delivery status" },
           {
-            id: "m:pay",
+            id: `m:${token}:pay`,
             title: "Paid but no order",
             description: "Money debited, order not confirmed"
           }
@@ -163,8 +181,12 @@ async function sendMainMenu(threadId: string, phone: string): Promise<void> {
       {
         title: "More help",
         rows: [
-          { id: "m:agent", title: "Chat with live agent", description: "Talk to our support team" },
-          { id: "m:exit", title: "Exit", description: "Close this conversation" }
+          {
+            id: `m:${token}:agent`,
+            title: "Chat with live agent",
+            description: "Talk to our support team"
+          },
+          { id: `m:${token}:exit`, title: "Exit", description: "Close this conversation" }
         ]
       }
     ]
@@ -176,10 +198,11 @@ async function sendNoOrdersFound(threadId: string, phone: string): Promise<void>
   const body =
     "We couldn't find any order linked to this WhatsApp number.\n\n" +
     "If you ordered using a different number, our team can look it up for you.";
+  const token = await issueWhatsAppBotOptionToken(threadId, phone);
   const sid = await sendWhatsAppButtons(phone, { body }, [
-    { id: "m:agent", title: "Chat with agent" },
-    { id: "nav:menu", title: "Main Menu" },
-    { id: "nav:exit", title: "Exit" }
+    { id: `m:${token}:agent`, title: "Chat with agent" },
+    { id: `nav:${token}:menu`, title: "Main Menu" },
+    { id: `nav:${token}:exit`, title: "Exit" }
   ]);
   await recordBotMessage(threadId, body, sid);
 }
@@ -197,8 +220,9 @@ async function sendOrderList(
   }
 
   const prefix = intent === "issue" ? "o" : "t";
+  const token = await issueWhatsAppBotOptionToken(threadId, phone);
   const rows: ListRow[] = orders.map((order) => ({
-    id: `${prefix}:${order.id}`,
+    id: `${prefix}:${token}:${order.id}`,
     title: order.title,
     description: order.description
   }));
@@ -254,8 +278,9 @@ async function sendOrderIssueMenu(
   const detailsSid = await sendWhatsAppText(phone, details);
   await recordBotMessage(threadId, details, detailsSid);
 
+  const token = await issueWhatsAppBotOptionToken(threadId, phone);
   const rows: ListRow[] = Object.entries(ISSUE_LABELS).map(([code, label]) => ({
-    id: `i:${order.id}:${code}`,
+    id: `i:${token}:${order.id}:${code}`,
     title: label
   }));
 
@@ -275,29 +300,35 @@ async function sendOrderTracking(
   order: OwnedOrder
 ): Promise<void> {
   const shipment = order.shipments[0];
-  const lines = [orderDetailsText(order)];
+  const lines: string[] = [];
 
   if (shipment?.awb) {
     lines.push(
-      "",
+      `*Tracking ${order.orderNumber}*`,
       `Courier: ${shipment.courier}`,
       `AWB: ${shipment.awb}`,
-      ...(shipment.trackingUrl ? [`Track: ${shipment.trackingUrl}`] : [])
+      ...(shipment.trackingUrl ? [`Track: ${shipment.trackingUrl}`] : []),
+      ""
     );
   } else {
-    lines.push("", "Your order hasn't been handed to the courier yet. We'll share tracking as soon as it ships.");
+    lines.push(
+      `*Tracking ${order.orderNumber}*`,
+      "Your order hasn't been handed to the courier yet. We'll share tracking as soon as it ships.",
+      ""
+    );
   }
+  // Put tracking first so WhatsApp's 1,024-character interactive-body limit
+  // can only trim lower-priority item detail, never the delivery result.
+  lines.push(orderDetailsText(order));
 
   const body = lines.join("\n");
-  const sid = await sendWhatsAppText(phone, body);
-  await recordBotMessage(threadId, body, sid);
-  await sendNavButtons(threadId, phone, "Anything else we can help with?");
-}
-
-async function sendNavButtons(threadId: string, phone: string, body: string): Promise<void> {
+  // Keep the tracking result and navigation in one provider message. Exotel
+  // accepts sequential sends in order, but WhatsApp can deliver two separate
+  // messages out of order. One interactive message is atomic.
+  const token = await issueWhatsAppBotOptionToken(threadId, phone);
   const sid = await sendWhatsAppButtons(phone, { body }, [
-    { id: "nav:menu", title: "Main Menu" },
-    { id: "nav:exit", title: "Exit" }
+    { id: `nav:${token}:menu`, title: "Main Menu" },
+    { id: `nav:${token}:exit`, title: "Exit" }
   ]);
   await recordBotMessage(threadId, body, sid);
 }
@@ -377,6 +408,20 @@ export type BotTurn = {
   replyId: string | null;
 };
 
+// The production backend runs as one PM2 fork. Serialize turns per customer so
+// two rapid webhook requests cannot interleave multi-step bot responses.
+const pendingTurns = new Map<string, Promise<void>>();
+
+export function enqueueBotTurn(turn: BotTurn): Promise<void> {
+  const previous = pendingTurns.get(turn.phone) ?? Promise.resolve();
+  const current = previous.catch(() => undefined).then(() => handleBotTurn(turn));
+  pendingTurns.set(turn.phone, current);
+  void current.finally(() => {
+    if (pendingTurns.get(turn.phone) === current) pendingTurns.delete(turn.phone);
+  });
+  return current;
+}
+
 async function handleMenuChoice(turn: BotTurn, choice: string): Promise<void> {
   const { threadId, phone } = turn;
 
@@ -422,7 +467,18 @@ async function handleMenuChoice(turn: BotTurn, choice: string): Promise<void> {
 
 async function handleReplyId(turn: BotTurn, replyId: string): Promise<boolean> {
   const { threadId, phone, name } = turn;
-  const [kind, first, second] = replyId.split(":");
+  const [kind, token, first, second] = replyId.split(":");
+  const botKinds = new Set(["m", "nav", "o", "t", "i", "f", "a"]);
+  if (!botKinds.has(kind)) return false;
+
+  if (!token || !(await consumeWhatsAppBotOptionToken(threadId, token))) {
+    const body =
+      "That menu has expired or was already used.\n\n" +
+      "Send *Hi* to open a fresh menu. 🙏";
+    const sid = await sendWhatsAppText(phone, body);
+    await recordBotMessage(threadId, body, sid);
+    return true;
+  }
 
   if (kind === "m") {
     await clearAgentFlag(threadId);
@@ -464,6 +520,7 @@ async function handleReplyId(turn: BotTurn, replyId: string): Promise<boolean> {
     if (!order) return false;
 
     await recordOrderIssue(threadId, phone, name, order, second);
+    await flagForHuman(threadId, `Order ${order.orderNumber}: ${ISSUE_LABELS[second] ?? "issue"}`);
 
     const issueLabel = (ISSUE_LABELS[second] ?? "issue").toLowerCase();
     const body =
@@ -472,17 +529,6 @@ async function handleReplyId(turn: BotTurn, replyId: string): Promise<boolean> {
     const sid = await sendWhatsAppText(phone, body);
     await recordBotMessage(threadId, body, sid);
 
-    const feedbackBody = "Before you go — how was your experience with this chat?";
-    const feedbackSid = await sendWhatsAppButtons(
-      phone,
-      { body: feedbackBody },
-      [
-        { id: `f:${order.id}:5`, title: "😊 Good" },
-        { id: `f:${order.id}:3`, title: "😐 Okay" },
-        { id: `f:${order.id}:1`, title: "😞 Poor" }
-      ]
-    );
-    await recordBotMessage(threadId, feedbackBody, feedbackSid);
     return true;
   }
 
@@ -495,6 +541,18 @@ async function handleReplyId(turn: BotTurn, replyId: string): Promise<boolean> {
     const body =
       "Thank you for your feedback 🙏\n\n" +
       "Your request is with our support team. Send *Hi* any time to reopen the menu.";
+    const sid = await sendWhatsAppText(phone, body);
+    await recordBotMessage(threadId, body, sid);
+    return true;
+  }
+
+  if (kind === "a") {
+    if (!first || !second) return false;
+    const rating = Number(second);
+    const recorded = await rateWhatsAppAgentSession(threadId, first, rating);
+    const body = recorded
+      ? "Thank you for rating our support 🙏\nYour feedback helps us serve you better."
+      : "This rating request was already completed or is no longer available.";
     const sid = await sendWhatsAppText(phone, body);
     await recordBotMessage(threadId, body, sid);
     return true;

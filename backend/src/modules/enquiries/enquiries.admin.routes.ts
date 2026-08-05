@@ -7,6 +7,11 @@ import { prisma } from "../../config/db";
 import { requireAdmin } from "../../middleware/admin";
 import { validateBody } from "../../middleware/validate";
 import { MAX_ATTACHMENTS, MAX_ATTACHMENT_BYTES } from "./enquiries.constants";
+import { getWhatsAppAgentSessionStats } from "../whatsapp/whatsapp-agent-session.service";
+import {
+  setAdminTyping,
+  subscribeToEnquiryEvents
+} from "./enquiry-realtime";
 import {
   getEnquiryThread,
   getEnquiryUnreadCount,
@@ -18,6 +23,8 @@ import {
 
 const router = Router();
 router.use(requireAdmin);
+let activeSseConnections = 0;
+const MAX_SSE_CONNECTIONS = 100;
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -42,6 +49,77 @@ router.get("/unread-count", async (_req, res, next) => {
     next(err);
   }
 });
+
+router.get("/whatsapp-agent-stats", async (_req, res, next) => {
+  try {
+    const data = await getWhatsAppAgentSessionStats();
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/stream", (req, res) => {
+  const parsed = z.string().uuid().safeParse(req.query.threadId);
+  if (!parsed.success) {
+    res.status(400).json({
+      success: false,
+      error: "Valid threadId is required",
+      code: "VALIDATION_ERROR"
+    });
+    return;
+  }
+  if (activeSseConnections >= MAX_SSE_CONNECTIONS) {
+    res.status(503).json({
+      success: false,
+      error: "Too many live chat connections",
+      code: "CONNECTION_LIMIT"
+    });
+    return;
+  }
+
+  const threadId = parsed.data;
+  activeSseConnections += 1;
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders();
+  res.write(`event: ready\ndata: ${JSON.stringify({ threadId })}\n\n`);
+
+  const unsubscribe = subscribeToEnquiryEvents((event) => {
+    if (event.threadId !== threadId) return;
+    res.write(`event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`);
+  });
+  const heartbeat = setInterval(() => res.write(": heartbeat\n\n"), 20_000);
+
+  let cleaned = false;
+  const cleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
+    clearInterval(heartbeat);
+    unsubscribe();
+    activeSseConnections = Math.max(0, activeSseConnections - 1);
+  };
+  req.on("close", cleanup);
+  res.on("close", cleanup);
+});
+
+router.post(
+  "/:id/typing",
+  validateBody(z.object({ typing: z.boolean() })),
+  (req, res) => {
+    const adminName =
+      req.authUser!.name?.trim() || req.authUser!.email.split("@")[0] || "Admin";
+    setAdminTyping({
+      threadId: req.params.id,
+      adminId: req.authUser!.id,
+      adminName,
+      typing: req.body.typing
+    });
+    res.json({ success: true, data: { typing: req.body.typing } });
+  }
+);
 
 router.get("/", async (req, res, next) => {
   try {

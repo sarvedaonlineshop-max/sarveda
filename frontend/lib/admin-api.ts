@@ -1926,6 +1926,18 @@ export function fetchAdminEnquiryThread(id: string) {
   return adminFetch<EnquiryThreadDetail>(`/api/admin/enquiries/${encodeURIComponent(id)}`);
 }
 
+export function getAdminEnquiryStreamUrl(id: string) {
+  const q = new URLSearchParams({ threadId: id });
+  return `${getApiBase()}/api/admin/enquiries/stream?${q.toString()}`;
+}
+
+export function setAdminEnquiryTyping(id: string, typing: boolean) {
+  return adminFetch<unknown>(`/api/admin/enquiries/${encodeURIComponent(id)}/typing`, {
+    method: "POST",
+    body: JSON.stringify({ typing })
+  });
+}
+
 export async function replyAdminEnquiryThread(
   id: string,
   message: string,

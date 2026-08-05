@@ -8,6 +8,7 @@ import { startAmazonMarketplaceSyncJob } from "./jobs/amazonMarketplaceSyncJob";
 import { startEtsyMarketplaceSyncJob } from "./jobs/etsyMarketplaceSyncJob";
 import { startFlipkartMarketplaceSyncJob } from "./jobs/flipkartMarketplaceSyncJob";
 import { startPaymentTimeoutWorker } from "./jobs/paymentTimeoutJob";
+import { startWhatsAppBotIdleWorker } from "./jobs/whatsappBotIdleJob";
 import { startDueDateReminderWorker } from "./jobs/taskDueDateJob";
 import { startShippingRetryWorker } from "./jobs/shippingRetryJob";
 import { startTrackingSyncWorker } from "./jobs/trackingSyncJob";
@@ -22,6 +23,7 @@ app.listen(port, () => {
   process.stdout.write(`Sarveda backend running on http://localhost:${port}\n`);
   validateFirebaseConfig();
   startPaymentTimeoutWorker();
+  startWhatsAppBotIdleWorker();
   startDueDateReminderWorker();
   startShippingRetryWorker();
   startEmailWorker();

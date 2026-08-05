@@ -11,8 +11,9 @@
  */
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
+import { publishEnquiryEvent } from "../enquiries/enquiry-realtime";
 import { toWhatsAppE164 } from "../notifications/whatsapp";
-import { handleBotTurn } from "./whatsapp-bot.service";
+import { enqueueBotTurn } from "./whatsapp-bot.service";
 import { isExotelConfigured, sendExotelWhatsAppContent } from "./whatsapp-exotel";
 import { createSupportFlowToken } from "./whatsapp-flow.token";
 
@@ -303,16 +304,22 @@ async function upsertInboundMessage(msg: ParsedInbound): Promise<StoredInbound |
   });
 
   logger.info("whatsapp_inbound_stored", { threadId: thread.id, from: msg.from, sid: msg.sid });
+  publishEnquiryEvent({ type: "message_changed", threadId: thread.id });
   return { threadId: thread.id, customerName: displayName };
 }
 
 async function applyStatusUpdate(update: ParsedStatus): Promise<void> {
+  const message = await prisma.enquiryMessage.findUnique({
+    where: { waMessageSid: update.sid },
+    select: { threadId: true }
+  });
   const result = await prisma.enquiryMessage.updateMany({
     where: { waMessageSid: update.sid },
     data: { waStatus: update.status }
   });
   if (result.count > 0) {
     logger.info("whatsapp_status_updated", { sid: update.sid, status: update.status });
+    if (message) publishEnquiryEvent({ type: "message_changed", threadId: message.threadId });
   }
 }
 
@@ -340,7 +347,7 @@ export async function processExotelWhatsAppCallback(payload: unknown): Promise<v
       if (parsed.kind === "message") {
         const stored = await upsertInboundMessage(parsed);
         if (stored && isExotelConfigured()) {
-          await handleBotTurn({
+          await enqueueBotTurn({
             threadId: stored.threadId,
             phone: parsed.from,
             name: stored.customerName,

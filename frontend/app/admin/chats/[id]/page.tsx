@@ -6,8 +6,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   fetchAdminEnquiryThread,
+  getAdminEnquiryStreamUrl,
   patchAdminEnquiryStatus,
   replyAdminEnquiryThread,
+  setAdminEnquiryTyping,
   type EnquiryMessageRow,
   type EnquiryThreadDetail
 } from "@/lib/admin-api";
@@ -17,6 +19,7 @@ import {
   type EnquirySource
 } from "@/lib/enquiry-subjects";
 import { MAX_ENQUIRY_ATTACHMENTS } from "@/lib/enquiry-limits";
+import { useAdminUser } from "@/components/admin/AdminUserContext";
 
 function formatMsgTime(iso: string) {
   return new Date(iso).toLocaleString("en-IN", {
@@ -83,13 +86,17 @@ function MessageBubble({ message }: { message: EnquiryMessageRow }) {
 export default function AdminChatDetailPage() {
   const params = useParams();
   const id = String(params.id ?? "");
+  const adminUser = useAdminUser();
   const [thread, setThread] = useState<EnquiryThreadDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reply, setReply] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
+  const [typingAdmins, setTypingAdmins] = useState<Record<string, string>>({});
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const typingStopTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingSignal = useRef(0);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -108,6 +115,40 @@ export default function AdminChatDetailPage() {
   }, [load]);
 
   useEffect(() => {
+    if (!id) return;
+    const stream = new EventSource(getAdminEnquiryStreamUrl(id));
+    const refresh = () => void load();
+    const onTyping = (event: Event) => {
+      const data = JSON.parse((event as MessageEvent<string>).data) as {
+        adminId: string;
+        adminName: string;
+        typing: boolean;
+      };
+      if (data.adminId === adminUser?.id) return;
+      setTypingAdmins((current) => {
+        const next = { ...current };
+        if (data.typing) next[data.adminId] = data.adminName;
+        else delete next[data.adminId];
+        return next;
+      });
+    };
+    stream.addEventListener("message_changed", refresh);
+    stream.addEventListener("thread_changed", refresh);
+    stream.addEventListener("admin_typing", onTyping);
+    return () => {
+      stream.close();
+      setTypingAdmins({});
+    };
+  }, [adminUser?.id, id, load]);
+
+  useEffect(() => {
+    return () => {
+      if (typingStopTimer.current) clearTimeout(typingStopTimer.current);
+      if (id) void setAdminEnquiryTyping(id, false).catch(() => undefined);
+    };
+  }, [id]);
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [thread?.messages.length]);
 
@@ -115,6 +156,8 @@ export default function AdminChatDetailPage() {
     if (!reply.trim() || !id) return;
     setSending(true);
     setError(null);
+    if (typingStopTimer.current) clearTimeout(typingStopTimer.current);
+    void setAdminEnquiryTyping(id, false).catch(() => undefined);
     try {
       await replyAdminEnquiryThread(id, reply.trim(), files);
       setReply("");
@@ -125,6 +168,19 @@ export default function AdminChatDetailPage() {
     } finally {
       setSending(false);
     }
+  }
+
+  function handleReplyChange(value: string) {
+    setReply(value);
+    const now = Date.now();
+    if (value.trim() && now - lastTypingSignal.current > 1_500) {
+      lastTypingSignal.current = now;
+      void setAdminEnquiryTyping(id, true).catch(() => undefined);
+    }
+    if (typingStopTimer.current) clearTimeout(typingStopTimer.current);
+    typingStopTimer.current = setTimeout(() => {
+      void setAdminEnquiryTyping(id, false).catch(() => undefined);
+    }, 2_000);
   }
 
   async function toggleStatus() {
@@ -201,6 +257,20 @@ export default function AdminChatDetailPage() {
       </div>
 
       <div className="shrink-0 border-t border-stone-200 pt-4 dark:border-stone-700">
+        {Object.keys(typingAdmins).length > 0 ? (
+          <div className="mb-2 flex items-center gap-2 text-xs font-medium text-green-700 dark:text-green-400">
+            <span>{Object.values(typingAdmins).join(", ")} typing</span>
+            <span className="flex items-end gap-0.5" aria-label="typing">
+              {[0, 1, 2].map((dot) => (
+                <span
+                  key={dot}
+                  className="h-1.5 w-1.5 animate-bounce rounded-full bg-current"
+                  style={{ animationDelay: `${dot * 120}ms` }}
+                />
+              ))}
+            </span>
+          </div>
+        ) : null}
         {isWhatsApp ? (
           waWindowOpen ? (
             <p className="mb-2 text-xs text-stone-500">
@@ -220,7 +290,8 @@ export default function AdminChatDetailPage() {
         )}
         <textarea
           value={reply}
-          onChange={(e) => setReply(e.target.value)}
+          onChange={(e) => handleReplyChange(e.target.value)}
+          onBlur={() => void setAdminEnquiryTyping(id, false).catch(() => undefined)}
           rows={3}
           placeholder="Type your reply…"
           className="w-full resize-y rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm dark:border-stone-600 dark:bg-stone-950"

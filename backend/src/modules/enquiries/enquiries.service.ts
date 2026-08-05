@@ -16,6 +16,11 @@ import {
   WA_SESSION_WINDOW_MS
 } from "../whatsapp/whatsapp-inbox.service";
 import {
+  claimWhatsAppAgentSession,
+  closeWhatsAppAgentSessionAndRequestRating,
+  startWhatsAppAgentSession
+} from "../whatsapp/whatsapp-agent-session.service";
+import {
   CARE_INBOX_EMAIL,
   MAX_ATTACHMENT_BYTES,
   MAX_ATTACHMENT_MB,
@@ -24,6 +29,7 @@ import {
   SUBJECT_LABELS
 } from "./enquiries.constants";
 import { isAllowedEnquiryMime, normalizeEnquiryMime } from "./enquiries.mime";
+import { publishEnquiryEvent } from "./enquiry-realtime";
 
 export type EnquiryAttachmentInput = {
   buffer: Buffer;
@@ -359,6 +365,9 @@ export async function replyToEnquiryThread(
       where: { id: threadId },
       data: { lastMessageAt: waNow, status: "OPEN", unreadByAdmin: false }
     });
+    await startWhatsAppAgentSession(threadId, "Admin replied");
+    await claimWhatsAppAgentSession(threadId, admin.id);
+    publishEnquiryEvent({ type: "message_changed", threadId });
 
     logger.info("enquiry_whatsapp_replied", { threadId, adminId: admin.id, sid });
     return message;
@@ -434,6 +443,7 @@ ${attachmentLinesHtml(uploaded)}
   );
 
   logger.info("enquiry_replied", { threadId, adminId: admin.id });
+  publishEnquiryEvent({ type: "message_changed", threadId });
 
   return message;
 }
@@ -442,8 +452,23 @@ export async function patchEnquiryThreadStatus(
   threadId: string,
   status: EnquiryThreadStatus
 ) {
-  return prisma.enquiryThread.update({
+  const thread = await prisma.enquiryThread.update({
     where: { id: threadId },
     data: { status }
   });
+  if (status === "CLOSED" && thread.source === "WHATSAPP") {
+    const phone = thread.waPhone || toWhatsAppE164(thread.customerPhone);
+    if (phone) {
+      try {
+        await closeWhatsAppAgentSessionAndRequestRating(threadId, phone);
+      } catch (error) {
+        logger.error("whatsapp_agent_rating_request_failed", {
+          threadId,
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
+    }
+  }
+  publishEnquiryEvent({ type: "thread_changed", threadId });
+  return thread;
 }
