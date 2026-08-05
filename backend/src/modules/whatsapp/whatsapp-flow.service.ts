@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { verifySupportFlowToken } from "./whatsapp-flow.token";
+import { findOwnedOrder, formatMoney, listOrders, statusLabel } from "./whatsapp-support.data";
 
 const flowRequestSchema = z.object({
   version: z.string().max(20),
@@ -42,100 +43,6 @@ const ISSUE_LABELS: Record<z.infer<typeof issueTypeSchema>, string> = {
 
 function response(screen: string, data: Record<string, unknown> = {}): FlowResponse {
   return { version: "3.0", screen, data };
-}
-
-function phoneCandidates(e164: string): string[] {
-  const digits = e164.replace(/\D/g, "");
-  const candidates = new Set([e164, digits, `+${digits}`]);
-  if (digits.startsWith("91") && digits.length === 12) {
-    candidates.add(digits.slice(2));
-  }
-  return [...candidates];
-}
-
-function orderOwnershipWhere(phone: string) {
-  const candidates = phoneCandidates(phone);
-  return {
-    OR: [
-      { phone: { in: candidates } },
-      { addresses: { some: { phone: { in: candidates } } } },
-      { customer: { phone: { in: candidates } } }
-    ]
-  };
-}
-
-function formatMoney(minor: number, currency: string): string {
-  const major = minor / 100;
-  try {
-    return new Intl.NumberFormat(currency === "INR" ? "en-IN" : "en-US", {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 2
-    }).format(major);
-  } catch {
-    return `${currency} ${major.toFixed(2)}`;
-  }
-}
-
-function statusLabel(status: string): string {
-  return status
-    .toLowerCase()
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
-async function listOrders(phone: string) {
-  const orders = await prisma.order.findMany({
-    where: {
-      deletedAt: null,
-      ...orderOwnershipWhere(phone)
-    },
-    select: {
-      id: true,
-      orderNumber: true,
-      status: true,
-      currency: true,
-      grandTotalInPaise: true,
-      createdAt: true
-    },
-    orderBy: { createdAt: "desc" },
-    take: 10
-  });
-
-  return orders.map((order) => ({
-    id: order.id,
-    title: order.orderNumber,
-    description: `${statusLabel(order.status)} · ${formatMoney(
-      order.grandTotalInPaise,
-      order.currency
-    )} · ${order.createdAt.toLocaleDateString("en-IN")}`
-  }));
-}
-
-async function findOwnedOrder(phone: string, orderId: string) {
-  return prisma.order.findFirst({
-    where: {
-      id: orderId,
-      deletedAt: null,
-      ...orderOwnershipWhere(phone)
-    },
-    include: {
-      items: {
-        select: {
-          nameSnapshot: true,
-          skuSnapshot: true,
-          qtyOrdered: true,
-          lineTotalInPaise: true
-        }
-      },
-      addresses: {
-        where: { type: "SHIPPING" },
-        select: { fullName: true },
-        take: 1
-      }
-    }
-  });
 }
 
 async function whatsappThread(phone: string, customerName: string) {

@@ -5,40 +5,24 @@
  * EnquiryThread/EnquiryMessage rows with source WHATSAPP, so they appear in
  * the existing admin Chats UI. Admin replies for WHATSAPP threads go out as
  * Exotel session text messages (24h window) instead of email.
+ *
+ * Auto-replies are handled by the interactive button/list bot in
+ * `whatsapp-bot.service`.
  */
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { toWhatsAppE164 } from "../notifications/whatsapp";
+import { handleBotTurn } from "./whatsapp-bot.service";
+import { isExotelConfigured, sendExotelWhatsAppContent } from "./whatsapp-exotel";
 import { createSupportFlowToken } from "./whatsapp-flow.token";
 
 export const WA_SESSION_WINDOW_MS = 24 * 60 * 60 * 1000;
 
+export { WA_BOT_AUTHOR, isGreeting } from "./whatsapp-bot.service";
+
 /** Synthetic, non-routable email for WA-only contacts (EnquiryThread.customerEmail is required). */
 function syntheticWaEmail(e164: string): string {
   return `wa-${e164.replace(/\D/g, "")}@whatsapp.invalid`;
-}
-
-function isExotelConfigured(): boolean {
-  return Boolean(
-    process.env.EXOTEL_ACCOUNT_SID?.trim() &&
-      process.env.EXOTEL_API_KEY?.trim() &&
-      process.env.EXOTEL_API_TOKEN?.trim() &&
-      process.env.EXOTEL_WHATSAPP_FROM?.trim()
-  );
-}
-
-function messagesUrl(): string {
-  const sid = process.env.EXOTEL_ACCOUNT_SID!.trim();
-  const host = (process.env.EXOTEL_API_HOST?.trim() || "api.exotel.com")
-    .replace(/^https?:\/\//, "")
-    .replace(/\/$/, "");
-  return `https://${host}/v2/accounts/${encodeURIComponent(sid)}/messages`;
-}
-
-function exotelBasicAuthHeader(): string {
-  const key = process.env.EXOTEL_API_KEY!.trim();
-  const token = process.env.EXOTEL_API_TOKEN!.trim();
-  return `Basic ${Buffer.from(`${key}:${token}`, "utf8").toString("base64")}`;
 }
 
 /**
@@ -46,75 +30,24 @@ function exotelBasicAuthHeader(): string {
  * Returns the provider message sid when available.
  */
 export async function sendWhatsAppSessionText(toE164: string, body: string): Promise<string | null> {
-  if (!isExotelConfigured()) {
-    throw new Error("WhatsApp is not configured on the server (Exotel env missing).");
-  }
-  const from = process.env.EXOTEL_WHATSAPP_FROM!.trim();
-
-  const payload = {
-    whatsapp: {
-      messages: [
-        {
-          from,
-          to: toE164,
-          content: {
-            recipient_type: "individual",
-            type: "text",
-            text: { body: body.slice(0, 4096) }
-          }
-        }
-      ]
-    }
-  };
-
-  const res = await fetch(messagesUrl(), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      Authorization: exotelBasicAuthHeader()
+  return sendExotelWhatsAppContent(
+    toE164,
+    {
+      recipient_type: "individual",
+      type: "text",
+      text: { body: body.slice(0, 4096) }
     },
-    body: JSON.stringify(payload)
-  });
-
-  const raw = await res.text();
-  let parsed: unknown = raw;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    /* keep text */
-  }
-
-  if (!res.ok) {
-    throw new Error(`Exotel WhatsApp HTTP ${res.status}: ${raw.slice(0, 800)}`);
-  }
-
-  type ExotelMsg = { sid?: string; status?: string; error_data?: unknown };
-  let msg0: ExotelMsg | undefined;
-  if (parsed && typeof parsed === "object" && "response" in parsed) {
-    const response = (parsed as { response?: { whatsapp?: { messages?: ExotelMsg[] } } }).response;
-    msg0 = response?.whatsapp?.messages?.[0];
-  }
-  if (msg0?.status === "failure") {
-    throw new Error(`Exotel WhatsApp message failure: ${JSON.stringify(msg0).slice(0, 800)}`);
-  }
-
-  logger.info("whatsapp_session_text_sent", { to: toE164, sid: msg0?.sid ?? null });
-  return msg0?.sid ?? null;
+    "whatsapp_session_text_sent"
+  );
 }
 
 // ---------------------------------------------------------------------------
-// Auto-reply: greeting → welcome + support menu Flow (CTA button)
+// Meta Flow CTA (parked)
+//
+// Kept for the dynamic Flow path, which is blocked on Meta signing our business
+// public key. The live support menu uses interactive lists instead — see
+// `whatsapp-bot.service`.
 // ---------------------------------------------------------------------------
-
-/** Bot display name for auto-replies recorded in the Chats inbox. */
-export const WA_BOT_AUTHOR = "Sarveda Assistant";
-
-/** Re-send guard: don't push the menu again within this window per thread. */
-const WELCOME_DEBOUNCE_MS = 10 * 60 * 1000;
-
-/** Greeting / menu keywords that (re)open the support menu. */
-const GREETING_RE = /^\s*(hi+|hey+|hello+|helo|namaste|namaskara?m?|start|menu|help|options?)\b/i;
 
 function supportFlowId(): string {
   return process.env.WHATSAPP_SUPPORT_FLOW_ID?.trim() || "1037332878669898";
@@ -128,147 +61,33 @@ function supportFlowCta(): string {
   return (process.env.WHATSAPP_SUPPORT_FLOW_CTA?.trim() || "Menu").slice(0, 20);
 }
 
-function welcomeBodyText(): string {
-  return (
-    process.env.WHATSAPP_WELCOME_TEXT?.trim() ||
-    "Welcome to Sarveda \uD83D\uDE4F\n\n*How can we help you today?*\nTap the menu button below to explore options."
-  );
-}
-
-/** True if the customer message is a greeting/menu keyword. */
-export function isGreeting(body: string): boolean {
-  return GREETING_RE.test(body || "");
-}
-
-/**
- * Send the published support-menu Flow as an interactive CTA message.
- * Valid inside the customer's 24h session window (a greeting just arrived).
- * Returns the provider message sid when available.
- */
+/** Send the published support-menu Flow as an interactive CTA message. */
 export async function sendSupportMenuFlow(toE164: string): Promise<string | null> {
-  if (!isExotelConfigured()) {
-    throw new Error("WhatsApp is not configured on the server (Exotel env missing).");
-  }
-  const from = process.env.EXOTEL_WHATSAPP_FROM!.trim();
-
-  const payload = {
-    whatsapp: {
-      messages: [
-        {
-          from,
-          to: toE164,
-          content: {
-            type: "interactive",
-            interactive: {
-              type: "flow",
-              header: {
-                type: "text",
-                text: "Sarveda Support"
-              },
-              body: { text: welcomeBodyText().slice(0, 1024) },
-              footer: {
-                text: "We're here to help."
-              },
-              action: {
-                name: "flow",
-                parameters: {
-                  mode: "published",
-                  flow_message_version: "3",
-                  flow_id: supportFlowId(),
-                  flow_token: createSupportFlowToken(toE164),
-                  flow_cta: supportFlowCta(),
-                  flow_action: "navigate",
-                  flow_action_payload: { screen: supportFlowScreen() }
-                }
-              }
-            }
+  return sendExotelWhatsAppContent(
+    toE164,
+    {
+      type: "interactive",
+      interactive: {
+        type: "flow",
+        header: { type: "text", text: "Sarveda Support" },
+        body: { text: "How can we help you today?" },
+        footer: { text: "We're here to help." },
+        action: {
+          name: "flow",
+          parameters: {
+            mode: "published",
+            flow_message_version: "3",
+            flow_id: supportFlowId(),
+            flow_token: createSupportFlowToken(toE164),
+            flow_cta: supportFlowCta(),
+            flow_action: "navigate",
+            flow_action_payload: { screen: supportFlowScreen() }
           }
         }
-      ]
-    }
-  };
-
-  const res = await fetch(messagesUrl(), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      Authorization: exotelBasicAuthHeader()
-    },
-    body: JSON.stringify(payload)
-  });
-
-  const raw = await res.text();
-  let parsed: unknown = raw;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    /* keep text */
-  }
-
-  if (!res.ok) {
-    throw new Error(`Exotel WhatsApp HTTP ${res.status}: ${raw.slice(0, 800)}`);
-  }
-
-  type ExotelMsg = { sid?: string; status?: string; error_data?: unknown };
-  let msg0: ExotelMsg | undefined;
-  if (parsed && typeof parsed === "object" && "response" in parsed) {
-    const response = (parsed as { response?: { whatsapp?: { messages?: ExotelMsg[] } } }).response;
-    msg0 = response?.whatsapp?.messages?.[0];
-  }
-  if (msg0?.status === "failure") {
-    throw new Error(`Exotel WhatsApp flow send failure: ${JSON.stringify(msg0).slice(0, 800)}`);
-  }
-
-  logger.info("whatsapp_support_menu_sent", { to: toE164, sid: msg0?.sid ?? null });
-  return msg0?.sid ?? null;
-}
-
-/**
- * If the inbound message is a greeting, reply with the support-menu Flow and
- * record the bot reply in the thread. Debounced per thread; never throws.
- */
-async function maybeSendSupportMenu(threadId: string, toE164: string, body: string): Promise<void> {
-  if (!isExotelConfigured() || !isGreeting(body)) return;
-
-  try {
-    const recentBot = await prisma.enquiryMessage.findFirst({
-      where: {
-        threadId,
-        authorType: "ADMIN",
-        authorName: WA_BOT_AUTHOR,
-        createdAt: { gte: new Date(Date.now() - WELCOME_DEBOUNCE_MS) }
-      },
-      select: { id: true }
-    });
-    if (recentBot) {
-      logger.info("whatsapp_support_menu_debounced", { threadId });
-      return;
-    }
-
-    const sid = await sendSupportMenuFlow(toE164);
-
-    await prisma.enquiryMessage.create({
-      data: {
-        threadId,
-        authorType: "ADMIN",
-        authorName: WA_BOT_AUTHOR,
-        authorEmail: "bot@sarveda.com",
-        body: `${welcomeBodyText()}\n\n[Support menu sent]`,
-        waMessageSid: sid,
-        waStatus: sid ? "sent" : null
       }
-    });
-    await prisma.enquiryThread.update({
-      where: { id: threadId },
-      data: { lastMessageAt: new Date() }
-    });
-  } catch (err) {
-    logger.error("whatsapp_support_menu_failed", {
-      threadId,
-      error: err instanceof Error ? err.message : String(err)
-    });
-  }
+    },
+    "whatsapp_support_menu_sent"
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -335,12 +154,38 @@ function extractBody(content: AnyRecord | null, fallback: AnyRecord): string {
   return "";
 }
 
+/**
+ * Stable id behind a tapped button or list row. The bot routes on this rather
+ * than the visible title, so wording changes can't break routing.
+ */
+function extractReplyId(content: AnyRecord | null): string | null {
+  if (!content) return null;
+
+  const interactive = asRecord(content.interactive);
+  if (interactive) {
+    const br = asRecord(interactive.button_reply);
+    const lr = asRecord(interactive.list_reply);
+    const id = asString(br?.id) ?? asString(lr?.id);
+    if (id) return id;
+  }
+
+  // Template quick-reply buttons surface the id as a payload instead.
+  const button = asRecord(content.button);
+  if (button) {
+    const payload = asString(button.payload);
+    if (payload) return payload;
+  }
+
+  return null;
+}
+
 type ParsedInbound = {
   kind: "message";
   sid: string | null;
   from: string;
   profileName: string | null;
   body: string;
+  replyId: string | null;
 };
 
 type ParsedStatus = {
@@ -371,10 +216,11 @@ function parseCallbackItem(item: AnyRecord): ParsedInbound | ParsedStatus | null
 
   const profile = asRecord(item.profile);
   const profileName = asString(item.profile_name) ?? asString(profile?.name);
-  const body = extractBody(asRecord(item.content), item);
+  const content = asRecord(item.content);
+  const body = extractBody(content, item);
   if (!body) return null;
 
-  return { kind: "message", sid, from, profileName, body };
+  return { kind: "message", sid, from, profileName, body, replyId: extractReplyId(content) };
 }
 
 /** Flatten known Exotel webhook shapes into individual callback items. */
@@ -390,7 +236,9 @@ function collectCallbackItems(payload: unknown): AnyRecord[] {
   return list.map(asRecord).filter((r): r is AnyRecord => r !== null);
 }
 
-async function upsertInboundMessage(msg: ParsedInbound): Promise<string | null> {
+type StoredInbound = { threadId: string; customerName: string };
+
+async function upsertInboundMessage(msg: ParsedInbound): Promise<StoredInbound | null> {
   // Idempotency: Exotel retries webhooks; skip if we already stored this sid.
   if (msg.sid) {
     const existing = await prisma.enquiryMessage.findUnique({
@@ -455,7 +303,7 @@ async function upsertInboundMessage(msg: ParsedInbound): Promise<string | null> 
   });
 
   logger.info("whatsapp_inbound_stored", { threadId: thread.id, from: msg.from, sid: msg.sid });
-  return thread.id;
+  return { threadId: thread.id, customerName: displayName };
 }
 
 async function applyStatusUpdate(update: ParsedStatus): Promise<void> {
@@ -490,9 +338,15 @@ export async function processExotelWhatsAppCallback(payload: unknown): Promise<v
         continue;
       }
       if (parsed.kind === "message") {
-        const threadId = await upsertInboundMessage(parsed);
-        if (threadId) {
-          await maybeSendSupportMenu(threadId, parsed.from, parsed.body);
+        const stored = await upsertInboundMessage(parsed);
+        if (stored && isExotelConfigured()) {
+          await handleBotTurn({
+            threadId: stored.threadId,
+            phone: parsed.from,
+            name: stored.customerName,
+            text: parsed.body,
+            replyId: parsed.replyId
+          });
         }
       } else {
         await applyStatusUpdate(parsed);

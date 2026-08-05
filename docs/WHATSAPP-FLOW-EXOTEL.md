@@ -3,8 +3,38 @@
 Last updated: 2026-08-05
 
 ## Purpose
-When a customer sends "Hi"/"Hello"/"Namaste" on WhatsApp, Exotel replies with a
-welcome message + **Menu** button that opens a published Meta Flow (support menu).
+When a customer sends "Hi"/"Hello"/"Namaste" on WhatsApp, the backend replies with a
+welcome message + **Menu** button listing the support options.
+
+## Which implementation is live
+
+**Live: interactive button/list bot** (`whatsapp-bot.service.ts`).
+Plain WhatsApp interactive messages sent through Exotel. No Flow endpoint, no
+signed public key, no connected Meta app, no publish step — so nothing here is
+gated on Meta or Exotel approval. Works inside the customer's 24h session window,
+which is always the case because the customer messages first.
+
+**Parked: Meta Flow v2** (below). Fully implemented but blocked on Meta signing
+our business public key, which needs a token with access to the WABA that Exotel
+owns. Kept in the repo in case we want the richer form UI later.
+
+### Bot conversation map
+```
+"Hi" → main menu (list)
+  ├── m:orders → order list → o:<id> → details + issue list
+  │                → i:<id>:<code> → apology → feedback buttons
+  │                → f:<id>:<rating> → thank you
+  ├── m:track  → order list → t:<id> → details + tracking/AWB
+  ├── m:pay    → refund explanation + flag for human
+  ├── m:agent  → handoff message + flag for human
+  └── m:exit   → goodbye
+```
+Routing is stateless — each option id carries its own context, so stale buttons
+from older messages still resolve correctly.
+
+The bot goes silent when a human is involved: a real admin reply in the last 24h,
+or `EnquiryThread.contextTitle = "WhatsApp · live agent requested"`. Sending
+"Hi" clears the flag and resumes the bot.
 
 ## Meta Flow v1 (published; static)
 - **WABA:** Sarveda
