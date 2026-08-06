@@ -313,6 +313,135 @@ export async function getEnquiryThread(id: string) {
   return { ...thread, unreadByAdmin: false };
 }
 
+function syntheticWaEmail(e164: string): string {
+  return `wa-${e164.replace(/\D/g, "")}@whatsapp.invalid`;
+}
+
+function isWhatsAppSessionOpen(lastCustomerMessageAt: Date | null | undefined): boolean {
+  if (!lastCustomerMessageAt) return false;
+  return Date.now() - lastCustomerMessageAt.getTime() <= WA_SESSION_WINDOW_MS;
+}
+
+/**
+ * Compose E.164 from dial code + national number (or pass-through if national already has +).
+ */
+export function composeWhatsAppE164(countryDialCode: string, nationalNumber: string): string | null {
+  const national = nationalNumber.trim();
+  if (national.startsWith("+")) {
+    return toWhatsAppE164(national);
+  }
+  const dial = countryDialCode.replace(/\D/g, "");
+  const digits = national.replace(/\D/g, "").replace(/^0+/, "");
+  if (!dial || !digits) return null;
+  return toWhatsAppE164(`+${dial}${digits}`);
+}
+
+export type StartWhatsAppChatInput = {
+  countryDialCode: string;
+  phone: string;
+  customerName?: string | null;
+  message?: string | null;
+  admin: { id: string; email: string; name: string | null };
+};
+
+export type StartWhatsAppChatResult = {
+  threadId: string;
+  created: boolean;
+  waPhone: string;
+  sessionWindowOpen: boolean;
+  messageSent: boolean;
+  warning: string | null;
+};
+
+/**
+ * Open (or create) a WhatsApp enquiry thread for an arbitrary phone number.
+ * Free-form first messages only send when the Meta 24h customer session is open.
+ */
+export async function startWhatsAppChatByPhone(
+  input: StartWhatsAppChatInput
+): Promise<StartWhatsAppChatResult> {
+  const waPhone = composeWhatsAppE164(input.countryDialCode, input.phone);
+  if (!waPhone) {
+    throw new Error("Enter a valid mobile number with country code.");
+  }
+
+  const now = new Date();
+  const displayName =
+    input.customerName?.trim() ||
+    waPhone;
+  const email = syntheticWaEmail(waPhone);
+
+  let thread = await prisma.enquiryThread.findFirst({
+    where: { source: "WHATSAPP", waPhone },
+    orderBy: { lastMessageAt: "desc" }
+  });
+
+  let created = false;
+  if (!thread) {
+    thread = await prisma.enquiryThread.create({
+      data: {
+        source: "WHATSAPP",
+        customerName: displayName,
+        customerEmail: email,
+        customerPhone: waPhone,
+        waPhone,
+        status: "OPEN",
+        unreadByAdmin: false,
+        lastMessageAt: now
+      }
+    });
+    created = true;
+    logger.info("whatsapp_chat_started_by_admin", {
+      threadId: thread.id,
+      waPhone,
+      adminId: input.admin.id
+    });
+  } else {
+    const nameUpdate =
+      input.customerName?.trim() &&
+      (thread.customerName === thread.waPhone || thread.customerName === waPhone)
+        ? { customerName: input.customerName.trim() }
+        : {};
+    thread = await prisma.enquiryThread.update({
+      where: { id: thread.id },
+      data: {
+        status: "OPEN",
+        unreadByAdmin: false,
+        ...nameUpdate
+      }
+    });
+  }
+
+  const sessionWindowOpen = isWhatsAppSessionOpen(thread.lastCustomerMessageAt);
+  const trimmedMessage = input.message?.trim() || "";
+  let messageSent = false;
+  let warning: string | null = null;
+
+  if (trimmedMessage) {
+    if (!sessionWindowOpen) {
+      warning =
+        "Chat opened, but WhatsApp only allows free-form messages within 24 hours of the customer's last message. Ask them to send Hi, or use an approved template later.";
+    } else {
+      await replyToEnquiryThread(thread.id, input.admin, trimmedMessage, []);
+      messageSent = true;
+    }
+  } else if (!sessionWindowOpen) {
+    warning =
+      "Chat opened. Free-form WhatsApp replies unlock after the customer messages you (24-hour window).";
+  }
+
+  publishEnquiryEvent({ type: "thread_changed", threadId: thread.id });
+
+  return {
+    threadId: thread.id,
+    created,
+    waPhone,
+    sessionWindowOpen,
+    messageSent,
+    warning
+  };
+}
+
 export async function replyToEnquiryThread(
   threadId: string,
   admin: { id: string; email: string; name: string | null },

@@ -1964,3 +1964,24 @@ export function patchAdminEnquiryStatus(id: string, status: "OPEN" | "CLOSED") {
   });
 }
 
+export type StartWhatsAppChatResult = {
+  threadId: string;
+  created: boolean;
+  waPhone: string;
+  sessionWindowOpen: boolean;
+  messageSent: boolean;
+  warning: string | null;
+};
+
+export function startAdminWhatsAppChat(input: {
+  countryDialCode: string;
+  phone: string;
+  customerName?: string;
+  message?: string;
+}) {
+  return adminFetch<StartWhatsAppChatResult>("/api/admin/enquiries/whatsapp/start", {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
+}
+

@@ -18,6 +18,7 @@ import {
   listEnquiryThreads,
   patchEnquiryThreadStatus,
   replyToEnquiryThread,
+  startWhatsAppChatByPhone,
   type EnquiryAttachmentInput
 } from "./enquiries.service";
 
@@ -58,6 +59,54 @@ router.get("/whatsapp-agent-stats", async (_req, res, next) => {
     next(err);
   }
 });
+
+const startWhatsAppChatSchema = z.object({
+  countryDialCode: z
+    .string()
+    .trim()
+    .min(1)
+    .max(5)
+    .regex(/^\+?\d{1,4}$/, "Invalid country code"),
+  phone: z.string().trim().min(4).max(20),
+  customerName: z.string().trim().max(120).optional().nullable(),
+  message: z.string().trim().max(4096).optional().nullable()
+});
+
+router.post(
+  "/whatsapp/start",
+  validateBody(startWhatsAppChatSchema),
+  async (req, res, next) => {
+    try {
+      const adminUser = await prisma.user.findUnique({
+        where: { id: req.authUser!.id },
+        select: { id: true, email: true, name: true }
+      });
+      if (!adminUser) {
+        res.status(401).json({ success: false, error: "Not authenticated", code: "UNAUTHORIZED" });
+        return;
+      }
+      const data = await startWhatsAppChatByPhone({
+        countryDialCode: req.body.countryDialCode,
+        phone: req.body.phone,
+        customerName: req.body.customerName,
+        message: req.body.message,
+        admin: adminUser
+      });
+      res.json({ success: true, data });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (
+        message.includes("valid mobile") ||
+        message.includes("24-hour") ||
+        message.includes("Attachments are not supported")
+      ) {
+        res.status(400).json({ success: false, error: message, code: "VALIDATION_ERROR" });
+        return;
+      }
+      next(err);
+    }
+  }
+);
 
 router.get("/stream", (req, res) => {
   const parsed = z.string().uuid().safeParse(req.query.threadId);
