@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { fetchPendingServiceRequestCount } from "@/lib/order-service-request";
+import { adminTheme as t } from "@/lib/admin-theme";
 
 const ordersIcon = (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -40,18 +41,18 @@ export function AdminOrdersSidebarLink({ onNavigate }: { onNavigate?: () => void
         alignItems: "center",
         gap: "12px",
         padding: "10px 12px",
-        borderRadius: "8px",
+        borderRadius: "10px",
         marginBottom: "2px",
-        color: active ? "#fffbf5" : "rgba(255,255,255,0.55)",
-        background: active ? "rgba(200,150,10,0.18)" : "transparent",
+        color: active ? t.sidebarTextActive : t.sidebarText,
+        background: active ? t.primarySoft : "transparent",
         fontSize: "13.5px",
         fontWeight: active ? 600 : 400,
         textDecoration: "none",
-        transition: "all 0.15s ease",
-        borderLeft: active ? "3px solid #c8960a" : "3px solid transparent"
+        transition: "background 0.15s ease, color 0.15s ease",
+        borderLeft: active ? `3px solid ${t.primary}` : "3px solid transparent"
       }}
     >
-      <span style={{ color: active ? "#c8960a" : "rgba(255,255,255,0.4)", flexShrink: 0 }}>{ordersIcon}</span>
+      <span style={{ color: active ? t.primary : t.sidebarMuted, flexShrink: 0 }}>{ordersIcon}</span>
       <span style={{ flex: 1 }}>Orders</span>
       {pending > 0 ? (
         <span

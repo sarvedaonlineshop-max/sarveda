@@ -8,6 +8,7 @@ import { logoutSession } from "@/lib/auth-client";
 import { AdminChatsSidebarLink } from "@/components/admin/AdminChatsSidebarLink";
 import { AdminOrdersSidebarLink } from "@/components/admin/AdminOrdersSidebarLink";
 import { useIsSuperAdmin } from "@/components/admin/AdminUserContext";
+import { adminTheme as t } from "@/lib/admin-theme";
 
 type NavItem = {
   href: string;
@@ -185,18 +186,30 @@ function NavLink({
         alignItems: "center",
         gap: "12px",
         padding: "10px 12px",
-        borderRadius: "8px",
+        borderRadius: "10px",
         marginBottom: "2px",
-        color: isActive ? "#fffbf5" : "rgba(255,255,255,0.55)",
-        background: isActive ? "rgba(200,150,10,0.18)" : "transparent",
+        color: isActive ? t.sidebarTextActive : t.sidebarText,
+        background: isActive ? t.primarySoft : "transparent",
         fontSize: "13.5px",
         fontWeight: isActive ? 600 : 400,
         textDecoration: "none",
-        transition: "all 0.15s ease",
-        borderLeft: isActive ? "3px solid #c8960a" : "3px solid transparent"
+        transition: "background 0.15s ease, color 0.15s ease",
+        borderLeft: isActive ? `3px solid ${t.primary}` : "3px solid transparent"
+      }}
+      onMouseEnter={(e) => {
+        if (!isActive) {
+          e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+          e.currentTarget.style.color = "#fff";
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!isActive) {
+          e.currentTarget.style.background = "transparent";
+          e.currentTarget.style.color = t.sidebarText;
+        }
       }}
     >
-      <span style={{ color: isActive ? "#c8960a" : "rgba(255,255,255,0.4)", flexShrink: 0 }}>
+      <span style={{ color: isActive ? t.primary : t.sidebarMuted, flexShrink: 0 }}>
         {item.icon}
       </span>
       {item.label}
@@ -293,9 +306,9 @@ export function AdminSidebar({
   return (
     <div
       className="flex h-full flex-col"
-      style={{ background: "#1a2e22", borderRight: "1px solid rgba(255,255,255,0.06)" }}
+      style={{ background: t.sidebarBg, borderRight: `1px solid ${t.sidebarBorder}` }}
     >
-      <div style={{ padding: "24px 20px 20px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+      <div style={{ padding: "24px 20px 20px", borderBottom: `1px solid ${t.sidebarBorder}` }}>
         <Link href="/admin" onClick={onNavigate} style={{ display: "block" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <Image
@@ -307,12 +320,12 @@ export function AdminSidebar({
               aria-hidden
             />
             <div>
-              <p style={{ color: "#fffbf5", fontSize: "15px", fontWeight: 700, lineHeight: 1.1 }}>
+              <p style={{ color: "#fff", fontSize: "15px", fontWeight: 700, lineHeight: 1.1 }}>
                 Sarveda
               </p>
               <p
                 style={{
-                  color: "#c8960a",
+                  color: t.primary,
                   fontSize: "10px",
                   fontWeight: 600,
                   letterSpacing: "0.1em",

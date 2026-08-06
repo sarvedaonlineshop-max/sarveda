@@ -6,34 +6,36 @@ import { AdminDashboardAnalytics } from "@/components/admin/AdminDashboardAnalyt
 import type { DashboardData } from "@/lib/admin-api";
 import { fetchAdminDashboard } from "@/lib/admin-api";
 import { formatINRFromPaise } from "@/lib/money";
+import { adminTheme as t } from "@/lib/admin-theme";
 
 const cardStyle: React.CSSProperties = {
-  background: "#ffffff",
-  borderRadius: "12px",
-  border: "1px solid #e8e2d9",
+  background: t.cardBg,
+  borderRadius: "14px",
+  border: `1px solid ${t.cardBorder}`,
   padding: "20px 22px",
-  boxShadow: "0 1px 4px rgba(44,36,32,0.06)"
+  boxShadow: "0 1px 2px rgba(15,23,42,0.04)",
+  transition: "box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease"
 };
 
 function StatusBadge({ status }: { status: string }) {
   const s = status.toUpperCase().replace(/_/g, "");
-  let bg = "#f3f4f6";
-  let color = "#374151";
+  let bg = "#f1f5f9";
+  let color = "#334155";
   if (s.includes("PAID") || s.includes("PROCESSING")) {
-    bg = "#dcfce7";
-    color = "#166534";
+    bg = "#d1fae5";
+    color = "#047857";
   } else if (s.includes("SHIPPED")) {
     bg = "#dbeafe";
-    color = "#1e40af";
+    color = "#1d4ed8";
   } else if (s.includes("DELIVERED")) {
-    bg = "#f0fdf4";
-    color = "#15803d";
+    bg = "#ecfdf5";
+    color = "#059669";
   } else if (s.includes("CANCEL")) {
     bg = "#fee2e2";
-    color = "#991b1b";
+    color = "#b91c1c";
   } else if (s.includes("REFUND")) {
-    bg = "#fef3c7";
-    color = "#92400e";
+    bg = "#ffedd5";
+    color = "#c2410c";
   }
   return (
     <span
@@ -71,13 +73,13 @@ export default function AdminDashboardPage() {
 
   if (err)
     return (
-      <p style={{ color: "#dc2626" }} role="alert">
+      <p style={{ color: t.danger }} role="alert">
         {err}
       </p>
     );
   if (!data)
     return (
-      <p style={{ color: "#8a7060" }} role="status">
+      <p style={{ color: t.textMuted }} role="status">
         Loading dashboard...
       </p>
     );
@@ -88,25 +90,37 @@ export default function AdminDashboardPage() {
     fontWeight: 700,
     letterSpacing: "0.08em",
     textTransform: "uppercase",
-    color: "#8a7060",
-    background: "#f9f7f4",
+    color: t.textMuted,
+    background: t.tableHeadBg,
     textAlign: "left",
     whiteSpace: "nowrap"
   };
   const tdSt: React.CSSProperties = {
     padding: "13px 16px",
     fontSize: "13px",
-    color: "#4a3f38",
-    borderBottom: "1px solid #f0ece6"
+    color: "#334155",
+    borderBottom: `1px solid ${t.cardBorder}`
   };
 
   const lowStockCount = data.lowStockAlerts.length;
 
+  const statCards = [
+    { label: "Orders today", value: String(data.ordersCount.today), tone: t.primary },
+    { label: "Orders (7 days)", value: String(data.ordersCount.thisWeek), tone: "#3b82f6" },
+    { label: "Orders (month)", value: String(data.ordersCount.thisMonth), tone: "#8b5cf6" },
+    { label: "Active products", value: String(data.productsByStatus.active), tone: t.accent },
+    { label: "Draft products", value: String(data.productsByStatus.draft), tone: "#f59e0b" },
+    { label: "Archived", value: String(data.productsByStatus.archived), tone: "#94a3b8" },
+    { label: "Low stock SKUs", value: String(lowStockCount), tone: t.danger }
+  ];
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       <div>
-        <h2 style={{ fontSize: "22px", fontWeight: 700, color: "#2c2420" }}>Dashboard</h2>
-        <p style={{ fontSize: "13px", color: "#8a7060", marginTop: "4px" }}>
+        <h2 style={{ fontSize: "22px", fontWeight: 700, color: t.text, letterSpacing: "-0.02em" }}>
+          Dashboard
+        </h2>
+        <p style={{ fontSize: "13px", color: t.textMuted, marginTop: "4px" }}>
           Store ops snapshot plus WooCommerce dump analytics for the selected date range.
         </p>
       </div>
@@ -118,35 +132,51 @@ export default function AdminDashboardPage() {
           gap: "16px"
         }}
       >
-        {[
-          { label: "Orders today", value: String(data.ordersCount.today) },
-          { label: "Orders (7 days)", value: String(data.ordersCount.thisWeek) },
-          { label: "Orders (month)", value: String(data.ordersCount.thisMonth) },
-          { label: "Active products", value: String(data.productsByStatus.active) },
-          { label: "Draft products", value: String(data.productsByStatus.draft) },
-          { label: "Archived", value: String(data.productsByStatus.archived) },
-          { label: "Low stock SKUs", value: String(lowStockCount) }
-        ].map((item) => (
-          <div key={item.label} style={{ ...cardStyle, padding: "16px 18px" }}>
-            <p
-              style={{
-                fontSize: "11px",
-                fontWeight: 700,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: "#8a7060",
-                marginBottom: "6px"
-              }}
-            >
-              {item.label}
-            </p>
-            <p style={{ fontSize: "1.4rem", fontWeight: 700, color: "#2c2420" }}>{item.value}</p>
+        {statCards.map((item) => (
+          <div
+            key={item.label}
+            style={{ ...cardStyle, padding: "16px 18px" }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = "0 8px 24px rgba(99,102,241,0.12)";
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.borderColor = "#c7d2fe";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = "0 1px 2px rgba(15,23,42,0.04)";
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.borderColor = t.cardBorder;
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+              <p
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: t.textMuted,
+                  marginBottom: "6px"
+                }}
+              >
+                {item.label}
+              </p>
+              <span
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 999,
+                  background: item.tone,
+                  flexShrink: 0
+                }}
+              />
+            </div>
+            <p style={{ fontSize: "1.45rem", fontWeight: 700, color: t.text }}>{item.value}</p>
           </div>
         ))}
       </div>
 
       <div>
-        <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#2c2420", marginBottom: "12px" }}>
+        <h3 style={{ fontSize: "15px", fontWeight: 700, color: t.text, marginBottom: "12px" }}>
           Analytics
         </h3>
         <AdminDashboardAnalytics />
@@ -164,11 +194,11 @@ export default function AdminDashboardPage() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#2c2420" }}>Low Stock</h3>
+            <h3 style={{ fontSize: "15px", fontWeight: 700, color: t.text }}>Low Stock</h3>
             <span
               style={{
-                background: lowStockCount > 0 ? "#fee2e2" : "#dcfce7",
-                color: lowStockCount > 0 ? "#991b1b" : "#166534",
+                background: lowStockCount > 0 ? "#fee2e2" : "#d1fae5",
+                color: lowStockCount > 0 ? "#b91c1c" : "#047857",
                 fontSize: "12px",
                 fontWeight: 700,
                 padding: "3px 10px",
@@ -178,12 +208,15 @@ export default function AdminDashboardPage() {
               {lowStockCount} SKU{lowStockCount === 1 ? "" : "s"}
             </span>
           </div>
-          <Link href="/admin/inventory" style={{ fontSize: "12px", color: "#c8960a", textDecoration: "none" }}>
+          <Link
+            href="/admin/inventory"
+            style={{ fontSize: "12px", color: t.primary, textDecoration: "none", fontWeight: 600 }}
+          >
             View all
           </Link>
         </div>
         {lowStockCount === 0 ? (
-          <p style={{ fontSize: "13px", color: "#8a7060", textAlign: "center", padding: "24px 0" }}>
+          <p style={{ fontSize: "13px", color: t.textMuted, textAlign: "center", padding: "24px 0" }}>
             No low-stock SKUs
           </p>
         ) : (
@@ -197,7 +230,7 @@ export default function AdminDashboardPage() {
                   justifyContent: "space-between",
                   gap: "8px",
                   padding: "10px 0",
-                  borderBottom: "1px solid #f0ece6"
+                  borderBottom: `1px solid ${t.cardBorder}`
                 }}
               >
                 <div style={{ minWidth: 0 }}>
@@ -205,7 +238,7 @@ export default function AdminDashboardPage() {
                     style={{
                       fontSize: "13px",
                       fontWeight: 600,
-                      color: "#2c2420",
+                      color: t.text,
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap"
@@ -213,14 +246,14 @@ export default function AdminDashboardPage() {
                   >
                     {a.productName}
                   </p>
-                  <p style={{ fontSize: "11px", color: "#8a7060" }}>
+                  <p style={{ fontSize: "11px", color: t.textMuted }}>
                     SKU {a.sku} · {a.onHand} on hand
                   </p>
                 </div>
                 <span
                   style={{
                     background: "#fee2e2",
-                    color: "#991b1b",
+                    color: "#b91c1c",
                     fontSize: "11px",
                     fontWeight: 600,
                     padding: "2px 8px",
@@ -245,15 +278,18 @@ export default function AdminDashboardPage() {
             marginBottom: "16px"
           }}
         >
-          <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#2c2420" }}>Recent Orders</h3>
-          <Link href="/admin/orders" style={{ fontSize: "12px", color: "#c8960a", textDecoration: "none" }}>
+          <h3 style={{ fontSize: "15px", fontWeight: 700, color: t.text }}>Recent Orders</h3>
+          <Link
+            href="/admin/orders"
+            style={{ fontSize: "12px", color: t.primary, textDecoration: "none", fontWeight: 600 }}
+          >
             All orders
           </Link>
         </div>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ borderBottom: "2px solid #f0ece6" }}>
+              <tr style={{ borderBottom: `2px solid ${t.cardBorder}` }}>
                 <th style={thSt}>Order</th>
                 <th style={thSt}>Customer</th>
                 <th style={thSt}>Amount</th>
@@ -266,7 +302,7 @@ export default function AdminDashboardPage() {
                 <tr
                   key={o.id}
                   onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLTableRowElement).style.background = "#faf8f5";
+                    (e.currentTarget as HTMLTableRowElement).style.background = t.rowHover;
                   }}
                   onMouseLeave={(e) => {
                     (e.currentTarget as HTMLTableRowElement).style.background = "transparent";
@@ -276,9 +312,9 @@ export default function AdminDashboardPage() {
                     <Link
                       href={`/admin/orders/${o.id}`}
                       style={{
-                        fontFamily: "monospace",
+                        fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
                         fontWeight: 600,
-                        color: "#c8960a",
+                        color: t.primary,
                         textDecoration: "none"
                       }}
                     >
@@ -290,7 +326,7 @@ export default function AdminDashboardPage() {
                   <td style={tdSt}>
                     <StatusBadge status={o.status} />
                   </td>
-                  <td style={{ ...tdSt, color: "#8a7060", fontSize: "12px", whiteSpace: "nowrap" }}>
+                  <td style={{ ...tdSt, color: t.textMuted, fontSize: "12px", whiteSpace: "nowrap" }}>
                     {new Date(o.createdAt).toLocaleString("en-IN", {
                       dateStyle: "medium",
                       timeStyle: "short"

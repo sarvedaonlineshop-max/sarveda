@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
+import { Plus_Jakarta_Sans } from "next/font/google";
 
 import { AdminAuthBoundary } from "@/components/admin/AdminAuthBoundary";
 import { AdminShell } from "@/components/admin/AdminShell";
+
+const adminSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-admin-sans",
+  display: "swap"
+});
 
 export const metadata: Metadata = {
   title: "Admin",
@@ -14,8 +21,10 @@ export default function AdminLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <AdminAuthBoundary>
-      <AdminShell>{children}</AdminShell>
-    </AdminAuthBoundary>
+    <div className={`${adminSans.variable} ${adminSans.className}`}>
+      <AdminAuthBoundary>
+        <AdminShell>{children}</AdminShell>
+      </AdminAuthBoundary>
+    </div>
   );
 }
