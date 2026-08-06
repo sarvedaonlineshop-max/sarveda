@@ -210,12 +210,11 @@ export default function AdminChatDetailPage() {
   }
 
   const isWhatsApp = thread.source === "WHATSAPP";
+  const hasCustomerMessage = Boolean(thread.lastCustomerMessageAt);
   const waWindowOpen =
     isWhatsApp &&
-    Boolean(
-      thread.lastCustomerMessageAt &&
-        Date.now() - new Date(thread.lastCustomerMessageAt).getTime() < 24 * 60 * 60 * 1000
-    );
+    hasCustomerMessage &&
+    Date.now() - new Date(thread.lastCustomerMessageAt!).getTime() < 24 * 60 * 60 * 1000;
 
   return (
     <div className="mx-auto flex h-[calc(100vh-4rem)] max-w-4xl flex-col px-4 py-4 sm:px-6">
@@ -279,8 +278,9 @@ export default function AdminChatDetailPage() {
             </p>
           ) : (
             <p className="mb-2 rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-              The WhatsApp 24-hour reply window has closed. You can reply here again after the
-              customer sends a new message.
+              {hasCustomerMessage
+                ? "The WhatsApp 24-hour reply window has closed. Free-form replies unlock again after the customer sends a new message."
+                : "This number has not messaged Sarveda yet. WhatsApp does not allow free-form admin messages to a new number — the customer must send Hi first (or you send an approved template to open the chat)."}
             </p>
           )
         ) : (

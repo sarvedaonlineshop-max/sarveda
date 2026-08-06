@@ -66,6 +66,7 @@ export default function AdminChatsPage() {
   const [phone, setPhone] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [firstMessage, setFirstMessage] = useState("");
+  const [sendOutreach, setSendOutreach] = useState(true);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
 
@@ -96,6 +97,7 @@ export default function AdminChatsPage() {
     setPhone("");
     setCustomerName("");
     setFirstMessage("");
+    setSendOutreach(true);
     setStartError(null);
   }
 
@@ -108,12 +110,15 @@ export default function AdminChatsPage() {
         countryDialCode: dialCode,
         phone: phone.trim(),
         customerName: customerName.trim() || undefined,
-        message: firstMessage.trim() || undefined
+        message: firstMessage.trim() || undefined,
+        sendOutreachTemplate: sendOutreach
       });
       setStartOpen(false);
       resetStartForm();
       if (result.warning) {
         window.alert(result.warning);
+      } else if (result.outreachSent) {
+        window.alert("Outreach template sent. Free chat unlocks after they reply.");
       }
       router.push(`/admin/chats/${result.threadId}`);
     } catch (err) {
@@ -256,8 +261,8 @@ export default function AdminChatsPage() {
               Start new WhatsApp chat
             </h2>
             <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
-              Opens a conversation for any mobile number. Free-form messages only send if the
-              customer messaged in the last 24 hours.
+              Opens a WhatsApp conversation. For a new number, keep “Send outreach template”
+              on — that uses your approved Meta template (works outside the 24-hour window).
             </p>
 
             <div className="mt-4 space-y-3">
@@ -312,7 +317,7 @@ export default function AdminChatsPage() {
                   htmlFor="start-chat-name"
                   className="text-xs font-semibold uppercase tracking-wider text-stone-500"
                 >
-                  Customer name <span className="font-normal normal-case">(optional)</span>
+                  Customer name <span className="font-normal normal-case">(used in template)</span>
                 </label>
                 <input
                   id="start-chat-name"
@@ -325,12 +330,31 @@ export default function AdminChatsPage() {
                 />
               </div>
 
+              <label className="flex items-start gap-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm dark:border-stone-700 dark:bg-stone-950">
+                <input
+                  type="checkbox"
+                  checked={sendOutreach}
+                  onChange={(e) => setSendOutreach(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span>
+                  <span className="font-semibold text-stone-800 dark:text-stone-100">
+                    Send outreach template
+                  </span>
+                  <span className="mt-0.5 block text-xs text-stone-500">
+                    Sends <code className="text-[11px]">admin_support_outreach</code> now
+                    (Marketing). Required to message a number that has not written to you yet.
+                  </span>
+                </span>
+              </label>
+
               <div>
                 <label
                   htmlFor="start-chat-message"
                   className="text-xs font-semibold uppercase tracking-wider text-stone-500"
                 >
-                  First message <span className="font-normal normal-case">(optional)</span>
+                  Extra free-form message{" "}
+                  <span className="font-normal normal-case">(only if 24h window is open)</span>
                 </label>
                 <textarea
                   id="start-chat-message"
@@ -338,7 +362,7 @@ export default function AdminChatsPage() {
                   maxLength={4096}
                   value={firstMessage}
                   onChange={(e) => setFirstMessage(e.target.value)}
-                  placeholder="Hello! This is Sarveda support…"
+                  placeholder="Optional — only delivers if they already messaged you recently"
                   className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
                 />
               </div>

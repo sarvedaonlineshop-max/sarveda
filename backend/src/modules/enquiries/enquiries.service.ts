@@ -10,7 +10,7 @@ import { prisma } from "../../config/db";
 import { getPublicMediaUrl, presignPutUploadUrl, uploadAsset } from "../../config/s3";
 import { logger } from "../../config/logger";
 import { sendMail } from "../notifications/email";
-import { toWhatsAppE164 } from "../notifications/whatsapp";
+import { toWhatsAppE164, sendWhatsAppNamedTemplate } from "../notifications/whatsapp";
 import {
   sendWhatsAppSessionText,
   WA_SESSION_WINDOW_MS
@@ -341,6 +341,8 @@ export type StartWhatsAppChatInput = {
   phone: string;
   customerName?: string | null;
   message?: string | null;
+  /** Send approved admin_support_outreach template (works outside 24h window). */
+  sendOutreachTemplate?: boolean;
   admin: { id: string; email: string; name: string | null };
 };
 
@@ -350,12 +352,14 @@ export type StartWhatsAppChatResult = {
   waPhone: string;
   sessionWindowOpen: boolean;
   messageSent: boolean;
+  outreachSent: boolean;
   warning: string | null;
 };
 
 /**
  * Open (or create) a WhatsApp enquiry thread for an arbitrary phone number.
  * Free-form first messages only send when the Meta 24h customer session is open.
+ * Outside that window, optionally send the approved outreach template.
  */
 export async function startWhatsAppChatByPhone(
   input: StartWhatsAppChatInput
@@ -366,9 +370,7 @@ export async function startWhatsAppChatByPhone(
   }
 
   const now = new Date();
-  const displayName =
-    input.customerName?.trim() ||
-    waPhone;
+  const displayName = input.customerName?.trim() || waPhone;
   const email = syntheticWaEmail(waPhone);
 
   let thread = await prisma.enquiryThread.findFirst({
@@ -415,22 +417,65 @@ export async function startWhatsAppChatByPhone(
   const sessionWindowOpen = isWhatsAppSessionOpen(thread.lastCustomerMessageAt);
   const trimmedMessage = input.message?.trim() || "";
   let messageSent = false;
+  let outreachSent = false;
   let warning: string | null = null;
+
+  const adminName =
+    input.admin.name?.trim() || input.admin.email.split("@")[0] || "Sarveda Team";
+  const outreachName =
+    input.customerName?.trim()?.split(/\s+/)[0] ||
+    (thread.customerName !== waPhone ? thread.customerName.split(/\s+/)[0] : null) ||
+    "there";
+
+  if (input.sendOutreachTemplate) {
+    const templateName =
+      process.env.WHATSAPP_ADMIN_OUTREACH_TEMPLATE?.trim() || "admin_support_outreach";
+    const sid = await sendWhatsAppNamedTemplate(waPhone, templateName, [outreachName.slice(0, 60)]);
+    const bodyPreview = `Namaste 🙏 ${outreachName},\n\nThis is Sarveda support. We'd like to help with your query. Please reply here and our team will assist you.\n\n[Template: ${templateName}]`;
+    await prisma.enquiryMessage.create({
+      data: {
+        threadId: thread.id,
+        authorType: "ADMIN",
+        adminUserId: input.admin.id,
+        authorName: adminName,
+        authorEmail: input.admin.email,
+        body: bodyPreview,
+        waMessageSid: sid,
+        waStatus: "sent"
+      }
+    });
+    await prisma.enquiryThread.update({
+      where: { id: thread.id },
+      data: { lastMessageAt: new Date(), status: "OPEN", unreadByAdmin: false }
+    });
+    await startWhatsAppAgentSession(thread.id, "Admin outreach template");
+    await claimWhatsAppAgentSession(thread.id, input.admin.id);
+    outreachSent = true;
+    logger.info("whatsapp_admin_outreach_sent", {
+      threadId: thread.id,
+      waPhone,
+      templateName,
+      sid,
+      adminId: input.admin.id
+    });
+  }
 
   if (trimmedMessage) {
     if (!sessionWindowOpen) {
-      warning =
-        "Chat opened, but WhatsApp only allows free-form messages within 24 hours of the customer's last message. Ask them to send Hi, or use an approved template later.";
+      warning = outreachSent
+        ? "Outreach template sent. Free-form replies unlock after the customer replies."
+        : "Chat opened, but WhatsApp only allows free-form messages within 24 hours of the customer's last message. Enable “Send outreach template” to message a new number.";
     } else {
       await replyToEnquiryThread(thread.id, input.admin, trimmedMessage, []);
       messageSent = true;
     }
-  } else if (!sessionWindowOpen) {
+  } else if (!sessionWindowOpen && !outreachSent) {
     warning =
-      "Chat opened. Free-form WhatsApp replies unlock after the customer messages you (24-hour window).";
+      "Chat opened. To message this number now, enable “Send outreach template”, or wait until they message you.";
   }
 
   publishEnquiryEvent({ type: "thread_changed", threadId: thread.id });
+  publishEnquiryEvent({ type: "message_changed", threadId: thread.id });
 
   return {
     threadId: thread.id,
@@ -438,6 +483,7 @@ export async function startWhatsAppChatByPhone(
     waPhone,
     sessionWindowOpen,
     messageSent,
+    outreachSent,
     warning
   };
 }

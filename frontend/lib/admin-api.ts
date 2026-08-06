@@ -1970,6 +1970,7 @@ export type StartWhatsAppChatResult = {
   waPhone: string;
   sessionWindowOpen: boolean;
   messageSent: boolean;
+  outreachSent: boolean;
   warning: string | null;
 };
 
@@ -1978,6 +1979,7 @@ export function startAdminWhatsAppChat(input: {
   phone: string;
   customerName?: string;
   message?: string;
+  sendOutreachTemplate?: boolean;
 }) {
   return adminFetch<StartWhatsAppChatResult>("/api/admin/enquiries/whatsapp/start", {
     method: "POST",

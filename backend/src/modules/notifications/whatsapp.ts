@@ -94,11 +94,32 @@ function exotelBasicAuthHeader(): string {
   return `Basic ${Buffer.from(`${key}:${token}`, "utf8").toString("base64")}`;
 }
 
-async function sendWhatsAppTemplate(toE164: string, templateName: string, bodyParams: TemplateParams): Promise<void> {
-  const from = process.env.EXOTEL_WHATSAPP_FROM!.trim();
-  const lang = process.env.EXOTEL_WHATSAPP_LANG?.trim() || "en";
+type ExotelMsg = {
+  status?: string;
+  error_data?: unknown;
+  sid?: string;
+  data?: { sid?: string };
+};
 
-  // Exotel v2 Send Message requires a channel object (`whatsapp`), not top-level from/to.
+/**
+ * Send an approved WhatsApp template (works outside the 24h session window).
+ * Returns the provider message sid when Exotel returns one.
+ */
+export async function sendWhatsAppNamedTemplate(
+  toE164: string,
+  templateName: string,
+  bodyParams: TemplateParams = [],
+  languageCode?: string
+): Promise<string | null> {
+  if (!isExotelConfigured()) {
+    throw new Error("WhatsApp is not configured on the server (Exotel env missing).");
+  }
+  const from = process.env.EXOTEL_WHATSAPP_FROM!.trim();
+  const lang =
+    languageCode?.trim() ||
+    process.env.EXOTEL_WHATSAPP_LANG?.trim() ||
+    "en";
+
   const payload = {
     whatsapp: {
       messages: [
@@ -111,12 +132,19 @@ async function sendWhatsAppTemplate(toE164: string, templateName: string, bodyPa
             template: {
               name: templateName,
               language: { code: lang, policy: "deterministic" },
-              components: [
-                {
-                  type: "body",
-                  parameters: bodyParams.map((text) => ({ type: "text", text: text.slice(0, 1024) }))
-                }
-              ]
+              ...(bodyParams.length > 0
+                ? {
+                    components: [
+                      {
+                        type: "body",
+                        parameters: bodyParams.map((text) => ({
+                          type: "text",
+                          text: text.slice(0, 1024)
+                        }))
+                      }
+                    ]
+                  }
+                : {})
             }
           }
         }
@@ -146,8 +174,6 @@ async function sendWhatsAppTemplate(toE164: string, templateName: string, bodyPa
     throw new Error(`Exotel WhatsApp HTTP ${res.status}: ${raw.slice(0, 800)}`);
   }
 
-  // Exotel sometimes returns HTTP 200 with per-message failure in the body.
-  type ExotelMsg = { status?: string; error_data?: unknown };
   let msg0: ExotelMsg | undefined;
   if (parsed && typeof parsed === "object" && "response" in parsed) {
     const response = (parsed as { response?: { whatsapp?: { messages?: ExotelMsg[] } } }).response;
@@ -157,7 +183,17 @@ async function sendWhatsAppTemplate(toE164: string, templateName: string, bodyPa
     throw new Error(`Exotel WhatsApp message failure: ${JSON.stringify(msg0).slice(0, 800)}`);
   }
 
-  logger.info("whatsapp_template_sent", { to: toE164, templateName, response: parsed });
+  const sid = msg0?.data?.sid ?? msg0?.sid ?? null;
+  logger.info("whatsapp_template_sent", { to: toE164, templateName, sid });
+  return sid;
+}
+
+async function sendWhatsAppTemplate(
+  toE164: string,
+  templateName: string,
+  bodyParams: TemplateParams
+): Promise<void> {
+  await sendWhatsAppNamedTemplate(toE164, templateName, bodyParams);
 }
 
 function buildBodyParams(

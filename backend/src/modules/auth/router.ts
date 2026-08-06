@@ -62,8 +62,8 @@ const otpLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
-    const body = req.body as { email?: string; phone?: string };
-    const identifier = body.email ?? body.phone ?? "";
+    const body = req.body as { target?: string; email?: string; phone?: string };
+    const identifier = body.target ?? body.email ?? body.phone ?? "";
     return `${req.ip}:${identifier}`;
   }
 });

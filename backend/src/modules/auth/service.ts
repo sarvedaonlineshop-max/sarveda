@@ -97,13 +97,8 @@ function otpCode(): string {
 }
 
 async function deliverEmailOtp(target: string, code: string) {
-  const sesConfigured =
-    process.env.AWS_SES_SMTP_HOST?.trim() &&
-    process.env.AWS_SES_SMTP_USER?.trim() &&
-    process.env.AWS_SES_SMTP_PASS?.trim();
-  const zeptoConfigured =
-    process.env.ZEPTOMAIL_SMTP_PASS?.trim() && process.env.ZEPTOMAIL_FROM_EMAIL?.trim();
-  if (!sesConfigured && !zeptoConfigured) {
+  const { isEmailSmtpConfigured } = await import("../../config/email");
+  if (!isEmailSmtpConfigured()) {
     if (process.env.NODE_ENV === "production") {
       throw httpError(503, "Email delivery is not configured", "OTP_DELIVERY_UNAVAILABLE");
     }
@@ -255,6 +250,26 @@ export function logoutUser(res: Response) {
 
 export async function sendOtp(body: SendOtpBody) {
   const normalized = normalizeLoginTarget(body.target);
+
+  // Login OTP only for existing accounts — avoids blasting codes to unknown addresses.
+  if (normalized.kind === "email") {
+    const existing = await prisma.user.findUnique({
+      where: { email: normalized.value },
+      select: { id: true, deletedAt: true }
+    });
+    if (!existing || existing.deletedAt) {
+      throw httpError(404, "No account found with this email address.", "EMAIL_NOT_FOUND");
+    }
+  } else {
+    const existing = await prisma.user.findUnique({
+      where: { phone: normalized.value },
+      select: { id: true, deletedAt: true }
+    });
+    if (!existing || existing.deletedAt) {
+      throw httpError(404, "No account found with this phone number.", "PHONE_NOT_FOUND");
+    }
+  }
+
   const newCode = otpCode();
 
   await prisma.$transaction(async (tx) => {

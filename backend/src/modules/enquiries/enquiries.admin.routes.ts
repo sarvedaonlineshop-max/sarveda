@@ -69,7 +69,8 @@ const startWhatsAppChatSchema = z.object({
     .regex(/^\+?\d{1,4}$/, "Invalid country code"),
   phone: z.string().trim().min(4).max(20),
   customerName: z.string().trim().max(120).optional().nullable(),
-  message: z.string().trim().max(4096).optional().nullable()
+  message: z.string().trim().max(4096).optional().nullable(),
+  sendOutreachTemplate: z.boolean().optional().default(false)
 });
 
 router.post(
@@ -90,6 +91,7 @@ router.post(
         phone: req.body.phone,
         customerName: req.body.customerName,
         message: req.body.message,
+        sendOutreachTemplate: Boolean(req.body.sendOutreachTemplate),
         admin: adminUser
       });
       res.json({ success: true, data });
@@ -98,7 +100,9 @@ router.post(
       if (
         message.includes("valid mobile") ||
         message.includes("24-hour") ||
-        message.includes("Attachments are not supported")
+        message.includes("Attachments are not supported") ||
+        message.includes("WhatsApp is not configured") ||
+        message.includes("Exotel WhatsApp")
       ) {
         res.status(400).json({ success: false, error: message, code: "VALIDATION_ERROR" });
         return;
