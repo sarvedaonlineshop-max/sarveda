@@ -131,6 +131,8 @@ model Product {
   seoDescription   String?
   seoKeyword       String?
   wooCommerceId    Int?             @unique
+  // Global catalog order for /shop and unfiltered lists (admin drag-reorder).
+  sortOrder        Int              @default(0)
   deletedAt        DateTime?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
@@ -143,6 +145,8 @@ model Product {
   stockNotifications StockNotification[]
   relationsFrom    ProductRelation[] @relation("ProductRelationFrom")
   relationsTo      ProductRelation[] @relation("ProductRelationTo")
+
+  @@index([sortOrder])
 }
 
 enum ProductType {
@@ -423,10 +427,13 @@ model Category {
 model ProductCategory {
   productId  String   @db.Uuid
   categoryId String   @db.Uuid
+  // Order within this category (admin drag-reorder when category filter is set).
+  position   Int      @default(0)
   product    Product  @relation(fields: [productId], references: [id])
   category   Category @relation(fields: [categoryId], references: [id])
 
   @@id([productId, categoryId])
+  @@index([categoryId, position])
 }
 
 model ProductAttribute {

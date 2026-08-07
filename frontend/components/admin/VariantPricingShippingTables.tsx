@@ -28,10 +28,10 @@ export type VariantFormSlice = {
 };
 
 const thClass =
-  "px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400";
+  "px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--admin-th-text,#3d2e24)]";
 const tdClass = "px-3 py-2 align-top";
 const inputCls =
-  "w-full min-w-[4.5rem] rounded-md border border-stone-300 bg-white px-2 py-1.5 text-sm tabular-nums dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100";
+  "w-full min-w-[4.5rem] rounded-md border border-[var(--admin-card-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-2 py-1.5 text-sm tabular-nums text-[var(--admin-text,#2c2420)] [&_option]:bg-white [&_option]:text-[#2c2420]";
 
 const zoneLabel: Record<Zone, string> = {
   IN: "India",
@@ -79,16 +79,12 @@ export function VariantPricingShippingTables({
   return (
     <div className="space-y-5">
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--admin-label,#4a3728)]">
           Prices (GST-inclusive for India)
         </p>
-        <p className="mt-1 text-xs text-stone-500">
-          <strong>MRP</strong> = full price shown with strike-through. <strong>Sale price</strong> = what
-          customers pay. All amounts must be zero or positive.
-        </p>
-        <div className="mt-3 overflow-x-auto rounded-lg border border-stone-200 dark:border-stone-700">
+        <div className="mt-3 overflow-x-auto rounded-lg border border-[var(--admin-card-border,#e8e2d9)]">
           <table className="min-w-full text-sm">
-            <thead className="bg-stone-50 dark:bg-stone-800/80">
+            <thead className="bg-[var(--admin-table-head,linear-gradient(180deg,#f2ede5,#f9f7f4))]">
               <tr>
                 <th className={thClass}>Market</th>
                 <th className={thClass}>MRP (list price)</th>
@@ -194,16 +190,12 @@ export function VariantPricingShippingTables({
       </div>
 
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--admin-label,#4a3728)]">
           Shipping fees (per order)
         </p>
-        <p className="mt-1 text-xs text-stone-500">
-          <strong>First item</strong> = shipping when customer buys one unit. <strong>Each extra item</strong>{" "}
-          = added fee per additional unit in the cart. India can include COD fees.
-        </p>
-        <div className="mt-3 overflow-x-auto rounded-lg border border-stone-200 dark:border-stone-700">
+        <div className="mt-3 overflow-x-auto rounded-lg border border-[var(--admin-card-border,#e8e2d9)]">
           <table className="min-w-full text-sm">
-            <thead className="bg-stone-50 dark:bg-stone-800/80">
+            <thead className="bg-[var(--admin-table-head,linear-gradient(180deg,#f2ede5,#f9f7f4))]">
               <tr>
                 <th className={thClass}>Ship to</th>
                 <th className={thClass}>First item</th>
@@ -213,14 +205,14 @@ export function VariantPricingShippingTables({
                 <th className={thClass}>Delivery note</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-stone-100 dark:divide-stone-700">
+            <tbody className="divide-y divide-[var(--admin-card-border,#f0ece6)]">
               {variant.shippingRates.map((r, ri) => (
                 <tr key={r.country}>
                   <td className={tdClass}>
-                    <span className="font-medium text-stone-800 dark:text-stone-100">
+                    <span className="font-medium text-[var(--admin-text,#2c2420)]">
                       {zoneLabel[r.country]}
                     </span>
-                    <span className="block text-xs text-stone-500">{zoneCurrency[r.country]}</span>
+                    <span className="block text-xs text-[var(--admin-text-muted,#8a7060)]">{zoneCurrency[r.country]}</span>
                   </td>
                   <td className={tdClass}>
                     <input

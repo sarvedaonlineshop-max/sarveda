@@ -19,6 +19,32 @@ const card: React.CSSProperties = {
   padding: "18px 20px"
 };
 
+const ACTION_ICONS: Record<string, string> = {
+  CREATE: "✚",
+  UPDATE: "✎",
+  DELETE: "✕",
+  LOGIN: "→",
+  LOGOUT: "←",
+  REFUND: "↩",
+  CANCEL: "⊗",
+  APPROVE: "✓",
+  REJECT: "✗"
+};
+
+const AREA_ICONS: Record<string, string> = {
+  products: "📦",
+  orders: "🛒",
+  inventory: "📋",
+  auth: "🔑",
+  shipping: "🚚",
+  content: "📄",
+  coupons: "🎟️",
+  customers: "👥",
+  reviews: "⭐",
+  courses: "📚",
+  "pickup-locations": "📍"
+};
+
 function formatWhen(iso: string): string {
   return new Date(iso).toLocaleString("en-IN", {
     dateStyle: "medium",
@@ -31,24 +57,30 @@ function ActionPill({ action }: { action: string }) {
   const a = action.toUpperCase();
   let bg = "#f3f4f6";
   let color = "#374151";
+  let border = "1px solid transparent";
   if (a === "CREATE" || a === "LOGIN") {
     bg = "#dcfce7";
     color = "#166534";
+    border = "1px solid rgba(34,197,94,0.3)";
   } else if (a === "UPDATE" || a === "APPROVE") {
     bg = "#dbeafe";
     color = "#1e40af";
+    border = "1px solid rgba(59,130,246,0.3)";
   } else if (a === "DELETE" || a === "CANCEL" || a === "LOGOUT") {
     bg = "#fee2e2";
     color = "#991b1b";
+    border = "1px solid rgba(239,68,68,0.3)";
   } else if (a === "REFUND" || a === "REJECT") {
     bg = "#fef3c7";
     color = "#92400e";
+    border = "1px solid rgba(245,158,11,0.3)";
   }
   return (
     <span
       style={{
         background: bg,
         color,
+        border,
         fontSize: "10px",
         fontWeight: 700,
         letterSpacing: "0.06em",
@@ -57,9 +89,18 @@ function ActionPill({ action }: { action: string }) {
         borderRadius: "999px"
       }}
     >
-      {action}
+      {ACTION_ICONS[a] ?? ""} {action}
     </span>
   );
+}
+
+function focusGold(e: React.FocusEvent<HTMLElement>) {
+  e.currentTarget.style.borderColor = "#b98a3e";
+  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(185,138,62,0.10)";
+}
+function blurGold(e: React.FocusEvent<HTMLElement>) {
+  e.currentTarget.style.borderColor = "#e0d8ce";
+  e.currentTarget.style.boxShadow = "none";
 }
 
 export default function AdminActivityPage() {
@@ -124,12 +165,40 @@ export default function AdminActivityPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "22px" }}>
-      <div>
-        <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#2c2420" }}>Admin activity</h1>
-        <p style={{ fontSize: "13px", color: "#8a7060", marginTop: "4px" }}>
-          Super-admin only. Login/logout and successful create / update / delete actions across the
-          admin backend.
-        </p>
+      <div
+        style={{
+          background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)",
+          borderRadius: "16px",
+          padding: "22px 28px",
+          marginBottom: "4px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "12px"
+        }}
+      >
+        <div>
+          <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec", margin: 0 }}>🛡️ Admin activity</h1>
+          <p style={{ fontSize: "13px", color: "#a8c4b0", marginTop: "4px" }}>
+            Super-admin only. Login/logout and successful create / update / delete actions across the
+            admin backend.
+          </p>
+        </div>
+        <span
+          style={{
+            background: "rgba(185,138,62,0.2)",
+            color: "#f6c95a",
+            borderRadius: "999px",
+            padding: "4px 12px",
+            fontSize: "11px",
+            fontWeight: 700,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase"
+          }}
+        >
+          Super admin only
+        </span>
       </div>
 
       {err ? (
@@ -139,29 +208,46 @@ export default function AdminActivityPage() {
       ) : null}
 
       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-        {[7, 14, 30].map((d) => (
-          <button
-            key={d}
-            type="button"
-            onClick={() => {
-              setDays(d);
-              setPage(1);
-            }}
-            style={{
-              padding: "6px 12px",
-              borderRadius: "6px",
-              fontSize: "12px",
-              fontWeight: 600,
-              cursor: "pointer",
-              border: "1px solid",
-              borderColor: days === d ? "#1e3a2f" : "#e0d8ce",
-              background: days === d ? "#1e3a2f" : "#fff",
-              color: days === d ? "#fffbf5" : "#6b5c52"
-            }}
-          >
-            Last {d} days
-          </button>
-        ))}
+        {[7, 14, 30].map((d) => {
+          const active = days === d;
+          return (
+            <button
+              key={d}
+              type="button"
+              onClick={() => {
+                setDays(d);
+                setPage(1);
+              }}
+              style={{
+                padding: "6px 12px",
+                borderRadius: "6px",
+                fontSize: "12px",
+                fontWeight: 600,
+                cursor: "pointer",
+                border: "1px solid",
+                borderColor: active ? "#1c352a" : "#e0d8ce",
+                background: active
+                  ? "linear-gradient(135deg, #1c352a, #2d5040)"
+                  : "#fff",
+                color: active ? "#fffbf5" : "#6b5c52",
+                boxShadow: active ? "0 2px 6px rgba(28,53,42,0.25)" : "none",
+                transition: "all 0.15s"
+              }}
+              onMouseEnter={(e) => {
+                if (active) return;
+                e.currentTarget.style.background = "#faf5ec";
+                e.currentTarget.style.borderColor = "#b98a3e";
+              }}
+              onMouseLeave={(e) => {
+                if (active) return;
+                e.currentTarget.style.background = "#fff";
+                e.currentTarget.style.borderColor = "#e0d8ce";
+              }}
+            >
+              📅 Last {d} days
+            </button>
+          );
+        })}
       </div>
 
       <div
@@ -171,49 +257,79 @@ export default function AdminActivityPage() {
           gap: "12px"
         }}
       >
-        <div style={card}>
+        <div style={{ ...card, borderTop: "3px solid #b98a3e" }}>
           <p
             style={{
               fontSize: "11px",
               fontWeight: 700,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
-              color: "#8a7060"
+              color: "#6b5c52"
             }}
           >
             Events
           </p>
-          <p style={{ fontSize: "1.6rem", fontWeight: 700, color: "#2c2420", marginTop: "6px" }}>
+          <p style={{ fontSize: "2rem", fontWeight: 800, color: "#2c2420", marginTop: "6px" }}>
             {dash?.total ?? "—"}
           </p>
         </div>
-        {(dash?.byActor ?? []).slice(0, 3).map((a) => (
-          <div key={a.userId} style={card}>
-            <p
-              style={{
-                fontSize: "11px",
-                fontWeight: 700,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                color: "#8a7060",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap"
-              }}
-            >
-              {a.name || a.email}
-            </p>
-            <p style={{ fontSize: "1.4rem", fontWeight: 700, color: "#2c2420", marginTop: "6px" }}>
-              {a.count}
-            </p>
-            <p style={{ fontSize: "11px", color: "#8a7060" }}>{a.email}</p>
-          </div>
-        ))}
+        {(dash?.byActor ?? []).slice(0, 3).map((a) => {
+          const initial = (a.name || a.email).charAt(0).toUpperCase();
+          return (
+            <div key={a.userId} style={{ ...card, borderTop: "3px solid rgba(185,138,62,0.3)" }}>
+              <div
+                style={{
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: "50%",
+                  background: "linear-gradient(135deg, #1c352a, #2d5040)",
+                  color: "#faf5ec",
+                  fontSize: "14px",
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: "8px"
+                }}
+                aria-hidden
+              >
+                {initial}
+              </div>
+              <p
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "#8a7060",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap"
+                }}
+              >
+                {a.name || a.email}
+              </p>
+              <p style={{ fontSize: "1.4rem", fontWeight: 700, color: "#2c2420", marginTop: "6px" }}>
+                {a.count}
+              </p>
+              <p style={{ fontSize: "11px", color: "#8a7060" }}>{a.email}</p>
+            </div>
+          );
+        })}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }} className="max-md:!grid-cols-1">
-        <div style={card}>
-          <h3 style={{ fontSize: "14px", fontWeight: 700, color: "#2c2420", marginBottom: "10px" }}>
+        <div style={{ ...card, borderTop: "3px solid rgba(185,138,62,0.2)", boxShadow: "0 4px 16px rgba(28,53,42,0.07)" }}>
+          <h3
+            style={{
+              fontSize: "15px",
+              fontWeight: 800,
+              color: "#2c2420",
+              marginBottom: "10px",
+              borderLeft: "3px solid #b98a3e",
+              paddingLeft: "10px"
+            }}
+          >
             By action
           </h3>
           {(dash?.byAction ?? []).length === 0 ? (
@@ -236,8 +352,17 @@ export default function AdminActivityPage() {
             ))
           )}
         </div>
-        <div style={card}>
-          <h3 style={{ fontSize: "14px", fontWeight: 700, color: "#2c2420", marginBottom: "10px" }}>
+        <div style={{ ...card, borderTop: "3px solid rgba(185,138,62,0.2)", boxShadow: "0 4px 16px rgba(28,53,42,0.07)" }}>
+          <h3
+            style={{
+              fontSize: "15px",
+              fontWeight: 800,
+              color: "#2c2420",
+              marginBottom: "10px",
+              borderLeft: "3px solid #b98a3e",
+              paddingLeft: "10px"
+            }}
+          >
             By area
           </h3>
           {(dash?.byResource ?? []).length === 0 ? (
@@ -255,7 +380,9 @@ export default function AdminActivityPage() {
                   color: "#4a3f38"
                 }}
               >
-                <span style={{ textTransform: "capitalize" }}>{r.resource.replace(/_/g, " ")}</span>
+                <span style={{ textTransform: "capitalize" }}>
+                  {AREA_ICONS[r.resource] ?? "⚙️"} {r.resource.replace(/_/g, " ")}
+                </span>
                 <span style={{ fontWeight: 600, color: "#2c2420" }}>{r.count}</span>
               </div>
             ))
@@ -263,8 +390,23 @@ export default function AdminActivityPage() {
         </div>
       </div>
 
-      <div style={card}>
-        <h3 style={{ fontSize: "15px", fontWeight: 700, color: "#2c2420", marginBottom: "12px" }}>
+      <div
+        style={{
+          ...card,
+          borderLeft: "3px solid rgba(185,138,62,0.2)",
+          boxShadow: "0 4px 16px rgba(28,53,42,0.06)"
+        }}
+      >
+        <h3
+          style={{
+            fontSize: "15px",
+            fontWeight: 800,
+            color: "#2c2420",
+            marginBottom: "12px",
+            borderLeft: "3px solid #b98a3e",
+            paddingLeft: "10px"
+          }}
+        >
           Filter by admin
         </h3>
         <div
@@ -283,6 +425,8 @@ export default function AdminActivityPage() {
                 setActorUserId(e.target.value);
                 setPage(1);
               }}
+              onFocus={focusGold}
+              onBlur={blurGold}
               style={{
                 display: "block",
                 width: "100%",
@@ -292,7 +436,8 @@ export default function AdminActivityPage() {
                 border: "1px solid #e0d8ce",
                 padding: "0 10px",
                 background: "#fff",
-                color: "#2c2420"
+                color: "#2c2420",
+                outline: "none"
               }}
             >
               <option value="">All admins</option>
@@ -312,6 +457,8 @@ export default function AdminActivityPage() {
                 setResource(e.target.value);
                 setPage(1);
               }}
+              onFocus={focusGold}
+              onBlur={blurGold}
               style={{
                 display: "block",
                 width: "100%",
@@ -321,7 +468,8 @@ export default function AdminActivityPage() {
                 border: "1px solid #e0d8ce",
                 padding: "0 10px",
                 background: "#fff",
-                color: "#2c2420"
+                color: "#2c2420",
+                outline: "none"
               }}
             >
               <option value="">All areas</option>
@@ -348,6 +496,8 @@ export default function AdminActivityPage() {
                 setAction(e.target.value);
                 setPage(1);
               }}
+              onFocus={focusGold}
+              onBlur={blurGold}
               style={{
                 display: "block",
                 width: "100%",
@@ -357,7 +507,8 @@ export default function AdminActivityPage() {
                 border: "1px solid #e0d8ce",
                 padding: "0 10px",
                 background: "#fff",
-                color: "#2c2420"
+                color: "#2c2420",
+                outline: "none"
               }}
             >
               <option value="">All actions</option>
@@ -375,7 +526,11 @@ export default function AdminActivityPage() {
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              onBlur={() => setPage(1)}
+              onBlur={(e) => {
+                blurGold(e);
+                setPage(1);
+              }}
+              onFocus={focusGold}
               placeholder="email, summary, id…"
               style={{
                 display: "block",
@@ -387,16 +542,21 @@ export default function AdminActivityPage() {
                 padding: "0 10px",
                 background: "#fff",
                 color: "#2c2420",
-                boxSizing: "border-box"
+                boxSizing: "border-box",
+                outline: "none"
               }}
             />
           </label>
         </div>
 
         {loading ? (
-          <p style={{ color: "#8a7060", fontSize: "13px" }}>Loading…</p>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#8a7060" }}>
+            <span style={{ fontSize: "18px" }}>🛡️</span>
+            <span style={{ fontSize: "13px" }}>Loading activity…</span>
+          </div>
         ) : items.length === 0 ? (
-          <p style={{ color: "#8a7060", fontSize: "13px" }}>
+          <p style={{ color: "#8a7060", fontSize: "13px", display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontSize: "20px" }}>🛡️</span>
             No activity yet. History starts as admins log in and make changes.
           </p>
         ) : (
@@ -415,7 +575,7 @@ export default function AdminActivityPage() {
                         textTransform: "uppercase",
                         color: "#8a7060",
                         textAlign: "left",
-                        background: "#f9f7f4"
+                        background: "linear-gradient(180deg, #f2ede5, #f9f7f4)"
                       }}
                     >
                       {h}
@@ -424,43 +584,69 @@ export default function AdminActivityPage() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((row) => (
-                  <tr key={row.id} style={{ borderBottom: "1px solid #f0ece6" }}>
-                    <td
-                      style={{
-                        padding: "12px",
-                        fontSize: "12px",
-                        color: "#8a7060",
-                        whiteSpace: "nowrap"
-                      }}
-                    >
-                      {formatWhen(row.createdAt)}
-                    </td>
-                    <td style={{ padding: "12px", fontSize: "13px", color: "#2c2420" }}>
-                      <div style={{ fontWeight: 600 }}>{row.actorName || "—"}</div>
-                      <div style={{ fontSize: "11px", color: "#8a7060" }}>{row.actorEmail}</div>
-                    </td>
-                    <td style={{ padding: "12px" }}>
-                      <ActionPill action={row.action} />
-                    </td>
-                    <td
-                      style={{
-                        padding: "12px",
-                        fontSize: "12px",
-                        color: "#4a3f38",
-                        textTransform: "capitalize"
-                      }}
-                    >
-                      {row.resource.replace(/_/g, " ")}
-                    </td>
-                    <td style={{ padding: "12px", fontSize: "13px", color: "#4a3f38", maxWidth: 320 }}>
-                      {row.summary}
-                    </td>
-                    <td style={{ padding: "12px", fontSize: "11px", color: "#8a7060" }}>
-                      {row.ip || "—"}
-                    </td>
-                  </tr>
-                ))}
+                {items.map((row) => {
+                  const initial = (row.actorName || row.actorEmail).charAt(0).toUpperCase();
+                  return (
+                    <tr key={row.id} style={{ borderBottom: "1px solid #f0ece6" }}>
+                      <td
+                        style={{
+                          padding: "12px",
+                          fontSize: "12px",
+                          color: "#8a7060",
+                          whiteSpace: "nowrap"
+                        }}
+                      >
+                        {formatWhen(row.createdAt)}
+                      </td>
+                      <td style={{ padding: "12px", fontSize: "13px", color: "#2c2420" }}>
+                        <div style={{ display: "flex", alignItems: "center" }}>
+                          <span
+                            style={{
+                              width: "28px",
+                              height: "28px",
+                              borderRadius: "50%",
+                              background: "linear-gradient(135deg, #1c352a, #2d5040)",
+                              color: "#faf5ec",
+                              fontSize: "11px",
+                              fontWeight: 700,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              marginRight: "8px",
+                              flexShrink: 0
+                            }}
+                            aria-hidden
+                          >
+                            {initial}
+                          </span>
+                          <div>
+                            <div style={{ fontWeight: 700, color: "#1c352a" }}>{row.actorName || "—"}</div>
+                            <div style={{ fontSize: "11px", color: "#8a7060" }}>{row.actorEmail}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: "12px" }}>
+                        <ActionPill action={row.action} />
+                      </td>
+                      <td
+                        style={{
+                          padding: "12px",
+                          fontSize: "12px",
+                          color: "#4a3f38",
+                          textTransform: "capitalize"
+                        }}
+                      >
+                        {AREA_ICONS[row.resource] ?? "⚙️"} {row.resource.replace(/_/g, " ")}
+                      </td>
+                      <td style={{ padding: "12px", fontSize: "13px", color: "#4a3f38", maxWidth: 320 }}>
+                        {row.summary}
+                      </td>
+                      <td style={{ padding: "12px", fontSize: "11px", color: "#8a7060" }}>
+                        {row.ip || "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -490,7 +676,19 @@ export default function AdminActivityPage() {
                 border: "1px solid #e0d8ce",
                 background: "#fff",
                 cursor: page <= 1 ? "not-allowed" : "pointer",
-                opacity: page <= 1 ? 0.5 : 1
+                opacity: page <= 1 ? 0.5 : 1,
+                fontWeight: 600,
+                transition: "all 0.15s"
+              }}
+              onMouseEnter={(e) => {
+                if (page <= 1) return;
+                e.currentTarget.style.background = "#faf5ec";
+                e.currentTarget.style.borderColor = "#b98a3e";
+              }}
+              onMouseLeave={(e) => {
+                if (page <= 1) return;
+                e.currentTarget.style.background = "#fff";
+                e.currentTarget.style.borderColor = "#e0d8ce";
               }}
             >
               Prev
@@ -503,10 +701,17 @@ export default function AdminActivityPage() {
                 height: "34px",
                 padding: "0 12px",
                 borderRadius: "8px",
-                border: "1px solid #e0d8ce",
-                background: "#fff",
+                border: "none",
+                background:
+                  page >= totalPages
+                    ? "#f4f1ec"
+                    : "linear-gradient(135deg, #1c352a, #2d5040)",
+                color: page >= totalPages ? "#c8bca8" : "#fffbf5",
                 cursor: page >= totalPages ? "not-allowed" : "pointer",
-                opacity: page >= totalPages ? 0.5 : 1
+                opacity: page >= totalPages ? 0.5 : 1,
+                fontWeight: 600,
+                boxShadow: page >= totalPages ? "none" : "0 2px 6px rgba(28,53,42,0.2)",
+                transition: "all 0.15s"
               }}
             >
               Next

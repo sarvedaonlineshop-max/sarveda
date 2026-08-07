@@ -14,12 +14,62 @@ export type ListProductsQuery = {
 const defaultPage = 1;
 const defaultLimit = 24;
 const maxLimit = 100;
+const adminMaxLimit = 2000;
 
 function httpError(status: number, message: string, code: string): Error {
   const e = new Error(message) as Error & { statusCode: number; code: string };
   e.statusCode = status;
   e.code = code;
   return e;
+}
+
+const globalProductOrderBy: Prisma.ProductOrderByWithRelationInput[] = [
+  { sortOrder: "asc" },
+  { updatedAt: "desc" }
+];
+
+/** Resolve paginated product ids honoring global sortOrder or category position. */
+async function findOrderedProductIds(
+  where: Prisma.ProductWhereInput,
+  categorySlugs: string[] | null,
+  skip: number,
+  take: number
+): Promise<string[]> {
+  if (!categorySlugs?.length) {
+    const rows = await prisma.product.findMany({
+      where,
+      select: { id: true },
+      orderBy: globalProductOrderBy,
+      skip,
+      take
+    });
+    return rows.map((r) => r.id);
+  }
+
+  const rows = await prisma.product.findMany({
+    where,
+    select: {
+      id: true,
+      sortOrder: true,
+      updatedAt: true,
+      categories: {
+        where: { category: { slug: { in: categorySlugs } } },
+        select: { position: true },
+        orderBy: { position: "asc" },
+        take: 1
+      }
+    }
+  });
+
+  rows.sort((a, b) => {
+    const pa = a.categories[0]?.position ?? Number.MAX_SAFE_INTEGER;
+    const pb = b.categories[0]?.position ?? Number.MAX_SAFE_INTEGER;
+    if (pa !== pb) return pa - pb;
+    if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+    return b.updatedAt.getTime() - a.updatedAt.getTime();
+  });
+
+  return rows.slice(skip, skip + take).map((r) => r.id);
 }
 
 export type ListProductsAdminQuery = {
@@ -33,7 +83,7 @@ export type ListProductsAdminQuery = {
 
 export async function listProductsAdmin(query: ListProductsAdminQuery) {
   const page = Math.max(1, query.page ?? defaultPage);
-  const limit = Math.min(100, Math.max(1, query.limit ?? 24));
+  const limit = Math.min(adminMaxLimit, Math.max(1, query.limit ?? 24));
   const skip = (page - 1) * limit;
 
   const where: Prisma.ProductWhereInput = {
@@ -50,38 +100,40 @@ export async function listProductsAdmin(query: ListProductsAdminQuery) {
     where.name = { contains: query.q.trim(), mode: "insensitive" };
   }
 
+  let categorySlugs: string[] | null = null;
   if (query.categorySlug?.trim()) {
-    const slugs = await getCategorySlugScope(query.categorySlug.trim());
+    categorySlugs = await getCategorySlugScope(query.categorySlug.trim());
     where.categories = {
       some: {
-        category: { slug: { in: slugs } }
+        category: { slug: { in: categorySlugs } }
       }
     };
   }
 
-  const [total, rows] = await prisma.$transaction([
-    prisma.product.count({ where }),
-    prisma.product.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { updatedAt: "desc" },
-      include: {
-        images: {
-          where: { isPrimary: true },
-          take: 1
-        },
-        variants: {
-          orderBy: [{ isDefault: "desc" }, { saleInPaise: "asc" }],
-          include: { inventory: true }
-        },
-        categories: {
-          include: { category: true },
-          take: 4
-        }
-      }
-    })
-  ]);
+  const total = await prisma.product.count({ where });
+  const orderedIds = await findOrderedProductIds(where, categorySlugs, skip, limit);
+  const rowsUnsorted =
+    orderedIds.length === 0
+      ? []
+      : await prisma.product.findMany({
+          where: { id: { in: orderedIds } },
+          include: {
+            images: {
+              where: { isPrimary: true },
+              take: 1
+            },
+            variants: {
+              orderBy: [{ isDefault: "desc" }, { saleInPaise: "asc" }],
+              include: { inventory: true }
+            },
+            categories: {
+              include: { category: true },
+              take: 4
+            }
+          }
+        });
+  const byId = new Map(rowsUnsorted.map((p) => [p.id, p]));
+  const rows = orderedIds.map((id) => byId.get(id)).filter(Boolean) as typeof rowsUnsorted;
 
   const items = rows.map((p) => {
     const img = p.images[0]?.url ?? null;
@@ -176,39 +228,41 @@ export async function listProducts(query: ListProductsQuery) {
     ];
   }
 
+  let categorySlugs: string[] | null = null;
   if (query.categorySlug?.trim()) {
-    const slugs = await getCategorySlugScope(query.categorySlug.trim());
+    categorySlugs = await getCategorySlugScope(query.categorySlug.trim());
     where.categories = {
       some: {
-        category: { slug: { in: slugs } }
+        category: { slug: { in: categorySlugs } }
       }
     };
   }
 
-  const [total, rows] = await prisma.$transaction([
-    prisma.product.count({ where }),
-    prisma.product.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { updatedAt: "desc" },
-      include: {
-        images: {
-          where: { isPrimary: true },
-          take: 1
-        },
-        variants: {
-          where: { status: "ACTIVE" },
-          orderBy: [{ isDefault: "desc" }, { saleInPaise: "asc" }],
-          take: 1
-        },
-        categories: {
-          include: { category: true },
-          take: 3
-        }
-      }
-    })
-  ]);
+  const total = await prisma.product.count({ where });
+  const orderedIds = await findOrderedProductIds(where, categorySlugs, skip, limit);
+  const rowsUnsorted =
+    orderedIds.length === 0
+      ? []
+      : await prisma.product.findMany({
+          where: { id: { in: orderedIds } },
+          include: {
+            images: {
+              where: { isPrimary: true },
+              take: 1
+            },
+            variants: {
+              where: { status: "ACTIVE" },
+              orderBy: [{ isDefault: "desc" }, { saleInPaise: "asc" }],
+              take: 1
+            },
+            categories: {
+              include: { category: true },
+              take: 3
+            }
+          }
+        });
+  const byId = new Map(rowsUnsorted.map((p) => [p.id, p]));
+  const rows = orderedIds.map((id) => byId.get(id)).filter(Boolean) as typeof rowsUnsorted;
 
   const items = rows.map((p) => {
     const img = p.images[0]?.url ?? null;
@@ -245,6 +299,78 @@ export async function listProducts(query: ListProductsQuery) {
       totalPages: Math.ceil(total / limit) || 1
     }
   };
+}
+
+export type ReorderProductsInput = {
+  categorySlug?: string | null;
+  orderedIds: string[];
+};
+
+/** Persist admin drag-reorder: global Product.sortOrder or ProductCategory.position. */
+export async function reorderProducts(input: ReorderProductsInput) {
+  const orderedIds = input.orderedIds;
+  if (orderedIds.length === 0) {
+    throw httpError(400, "orderedIds is required", "VALIDATION_ERROR");
+  }
+  if (orderedIds.length > adminMaxLimit) {
+    throw httpError(400, `At most ${adminMaxLimit} products can be reordered`, "VALIDATION_ERROR");
+  }
+  if (new Set(orderedIds).size !== orderedIds.length) {
+    throw httpError(400, "Duplicate product ids", "VALIDATION_ERROR");
+  }
+
+  const slug = input.categorySlug?.trim() || null;
+
+  if (!slug) {
+    const found = await prisma.product.findMany({
+      where: { id: { in: orderedIds }, deletedAt: null },
+      select: { id: true }
+    });
+    if (found.length !== orderedIds.length) {
+      throw httpError(400, "Unknown or deleted product ids", "VALIDATION_ERROR");
+    }
+    await prisma.$transaction(
+      orderedIds.map((id, index) =>
+        prisma.product.update({
+          where: { id },
+          data: { sortOrder: index }
+        })
+      )
+    );
+    return { mode: "global" as const, count: orderedIds.length };
+  }
+
+  const category = await prisma.category.findUnique({ where: { slug } });
+  if (!category) {
+    throw httpError(404, "Category not found", "NOT_FOUND");
+  }
+
+  const scopeSlugs = await getCategorySlugScope(slug);
+  const inScope = await prisma.product.findMany({
+    where: {
+      id: { in: orderedIds },
+      deletedAt: null,
+      categories: { some: { category: { slug: { in: scopeSlugs } } } }
+    },
+    select: { id: true }
+  });
+  if (inScope.length !== orderedIds.length) {
+    throw httpError(400, "Some products are not in this category", "VALIDATION_ERROR");
+  }
+
+  await prisma.$transaction(
+    orderedIds.map((productId, index) =>
+      prisma.productCategory.upsert({
+        where: {
+          productId_categoryId: { productId, categoryId: category.id }
+        },
+        create: { productId, categoryId: category.id, position: index },
+        update: { position: index }
+      })
+    )
+  );
+
+  return { mode: "category" as const, count: orderedIds.length, categoryId: category.id };
 }
 
 const RELATION_TYPE_ORDER: Record<string, number> = {

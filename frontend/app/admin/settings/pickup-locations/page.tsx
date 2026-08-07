@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
 import {
@@ -155,50 +154,125 @@ export default function AdminPickupLocationsPage() {
         onSave={handleSave}
       />
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div
+        style={{
+          background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)",
+          borderRadius: "16px",
+          padding: "22px 28px",
+          marginBottom: "4px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          flexWrap: "wrap",
+          gap: "16px"
+        }}
+      >
         <div>
-          <Link href="/admin" className="text-sm text-amber-700 hover:underline dark:text-amber-400">
-            ← Dashboard
-          </Link>
-          <h1 className="mt-2 text-2xl font-bold text-stone-900 dark:text-stone-100">Pickup Locations</h1>
-          <p className="mt-1 max-w-xl text-sm text-stone-500">
+          <h1 style={{ color: "#faf5ec", fontSize: "26px", fontWeight: 800, margin: 0 }}>📍 Pickup Locations</h1>
+          <p style={{ color: "#a8c4b0", fontSize: "13px", maxWidth: "500px", marginTop: "6px", marginBottom: 0 }}>
             Manage facilities like Delhivery One. The <strong>Delhivery facility name</strong> must match your Delhivery
-            dashboard exactly — used as <code className="text-xs">pickup_location</code> when creating AWBs.
+            dashboard exactly — used as <code style={{ fontSize: "11px" }}>pickup_location</code> when creating AWBs.
           </p>
         </div>
         <button
           type="button"
           onClick={openAdd}
-          className="h-10 shrink-0 rounded-lg bg-stone-900 px-5 text-sm font-semibold text-amber-50 hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900"
+          style={{
+            background: "linear-gradient(135deg, #b98a3e, #c8960a)",
+            color: "#fff",
+            fontWeight: 700,
+            borderRadius: "10px",
+            border: "none",
+            padding: "10px 20px",
+            fontSize: "13px",
+            cursor: "pointer",
+            boxShadow: "0 2px 8px rgba(185,138,62,0.35)",
+            flexShrink: 0
+          }}
         >
-          Add New Pickup Location
+          📍 Add New Pickup Location
         </button>
       </div>
 
       {err ? (
         <p
-          className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"
           role="alert"
+          style={{
+            background: "#fef2f2",
+            borderLeft: "3px solid #dc2626",
+            borderRadius: "10px",
+            padding: "10px 14px",
+            color: "#dc2626",
+            fontSize: "13px",
+            margin: 0
+          }}
         >
-          {err}
+          ⚠️ {err}
         </p>
       ) : null}
 
-      <div className="rounded-xl border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-stone-900">
-        <div className="flex flex-wrap items-center gap-3 border-b border-stone-100 p-4 dark:border-stone-700">
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: "14px",
+          border: "1px solid #e8e2d9",
+          boxShadow: "0 4px 20px rgba(28,53,42,0.08)"
+        }}
+      >
+        <div
+          className="flex flex-wrap items-center gap-3"
+          style={{ background: "linear-gradient(180deg, #f9f7f4, #fff)", borderBottom: "1px solid #f0ece6", padding: "14px 18px" }}
+        >
           <div className="relative min-w-[14rem] flex-1">
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by pickup location, city"
-              className="w-full rounded-lg border border-stone-300 py-2 pl-9 pr-3 text-sm dark:border-stone-600 dark:bg-stone-950"
+              style={{
+                width: "100%",
+                height: "38px",
+                padding: "0 12px 0 36px",
+                borderRadius: "8px",
+                border: "1px solid #e0d8ce",
+                fontSize: "13px",
+                color: "#2c2420",
+                outline: "none",
+                background: "#fff"
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = "#b98a3e";
+                e.currentTarget.style.boxShadow = "0 0 0 3px rgba(185,138,62,0.10)";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = "#e0d8ce";
+                e.currentTarget.style.boxShadow = "none";
+              }}
             />
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400">⌕</span>
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#8a7060" }}>
+              ⌕
+            </span>
           </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as "" | "active" | "inactive")}
-            className="rounded-lg border border-stone-300 px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
+            style={{
+              height: "38px",
+              padding: "0 12px",
+              borderRadius: "8px",
+              border: "1px solid #e0d8ce",
+              fontSize: "13px",
+              color: "#2c2420",
+              background: "#fff",
+              outline: "none"
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = "#b98a3e";
+              e.currentTarget.style.boxShadow = "0 0 0 3px rgba(185,138,62,0.10)";
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = "#e0d8ce";
+              e.currentTarget.style.boxShadow = "none";
+            }}
           >
             <option value="">All statuses</option>
             <option value="active">Active</option>
@@ -207,51 +281,127 @@ export default function AdminPickupLocationsPage() {
         </div>
 
         {items.length === 0 ? (
-          <p className="px-6 py-16 text-center text-sm text-stone-500">
-            No pickup locations yet. Add your Mysore / Moradabad facilities first.
-          </p>
+          <div style={{ padding: "60px 40px", textAlign: "center" }}>
+            <div style={{ fontSize: "48px", marginBottom: "12px" }}>📍</div>
+            <p style={{ fontSize: "15px", fontWeight: 700, color: "#1c352a", margin: 0 }}>No pickup locations yet</p>
+            <p style={{ fontSize: "13px", color: "#8a7060", marginTop: "4px" }}>
+              Add your Mysore / Moradabad facilities first.
+            </p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
-              <thead className="border-b border-stone-100 bg-stone-50 dark:border-stone-700 dark:bg-stone-800/80">
+              <thead style={{ background: "linear-gradient(180deg, #f2ede5, #f9f7f4)" }}>
                 <tr>
                   {["Pickup location", "Created on", "Status", "City", "State", ""].map((h) => (
                     <th
                       key={h || "actions"}
-                      className="px-4 py-3 text-xs font-bold uppercase tracking-wide text-stone-500"
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        color: "#8a7060",
+                        padding: "11px 16px"
+                      }}
                     >
                       {h}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-stone-100 dark:divide-stone-700">
+              <tbody>
                 {items.map((row) => (
-                  <tr key={row.id} className={row.isActive ? "" : "opacity-60"}>
-                    <td className="px-4 py-3 font-medium text-stone-900 dark:text-stone-100">
+                  <tr
+                    key={row.id}
+                    style={{ opacity: row.isActive ? 1 : 0.6 }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "#faf5ec";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "";
+                    }}
+                  >
+                    <td style={{ padding: "12px 16px", fontSize: "13px", fontWeight: 600, color: "#1c352a", borderBottom: "1px solid #f0ece6" }}>
                       {facilityDisplay(row)}
                       {row.isPrimary ? (
-                        <span className="ml-2 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-800">
+                        <span
+                          style={{
+                            background: "linear-gradient(135deg, #1c352a, #2d5040)",
+                            color: "#faf5ec",
+                            borderRadius: "999px",
+                            fontSize: "10px",
+                            fontWeight: 700,
+                            padding: "2px 8px",
+                            marginLeft: "6px"
+                          }}
+                        >
                           Primary
                         </span>
                       ) : null}
                     </td>
-                    <td className="px-4 py-3 text-stone-600 dark:text-stone-300">{formatDate(row.createdAt)}</td>
-                    <td className="px-4 py-3">
+                    <td style={{ padding: "12px 16px", fontSize: "13px", color: "#4a3f38", borderBottom: "1px solid #f0ece6" }}>
+                      {formatDate(row.createdAt)}
+                    </td>
+                    <td style={{ padding: "12px 16px", fontSize: "13px", color: "#4a3f38", borderBottom: "1px solid #f0ece6" }}>
                       {row.isActive ? (
-                        <span className="font-semibold text-green-700 dark:text-green-400">Active</span>
+                        <span
+                          style={{
+                            background: "#f0fdf4",
+                            color: "#16a34a",
+                            borderRadius: "999px",
+                            padding: "3px 10px",
+                            fontSize: "11px",
+                            fontWeight: 700,
+                            border: "1px solid rgba(34,197,94,0.2)"
+                          }}
+                        >
+                          ● Active
+                        </span>
                       ) : (
-                        <span className="text-stone-500">Inactive</span>
+                        <span
+                          style={{
+                            background: "#f5f0e8",
+                            color: "#8a7060",
+                            borderRadius: "999px",
+                            padding: "3px 10px",
+                            fontSize: "11px"
+                          }}
+                        >
+                          Inactive
+                        </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-stone-600 dark:text-stone-300">{row.city ?? "—"}</td>
-                    <td className="px-4 py-3 text-stone-600 dark:text-stone-300">{row.state ?? "—"}</td>
-                    <td className="px-4 py-3">
+                    <td style={{ padding: "12px 16px", fontSize: "13px", color: "#4a3f38", borderBottom: "1px solid #f0ece6" }}>
+                      {row.city ?? "—"}
+                    </td>
+                    <td style={{ padding: "12px 16px", fontSize: "13px", color: "#4a3f38", borderBottom: "1px solid #f0ece6" }}>
+                      {row.state ?? "—"}
+                    </td>
+                    <td style={{ padding: "12px 16px", fontSize: "13px", color: "#4a3f38", borderBottom: "1px solid #f0ece6" }}>
                       <div className="flex gap-3">
                         <button
                           type="button"
                           onClick={() => openEdit(row)}
-                          className="text-sm font-semibold text-amber-800 hover:underline dark:text-amber-400"
+                          style={{
+                            color: "#b98a3e",
+                            background: "#faf5ec",
+                            borderRadius: "6px",
+                            padding: "3px 8px",
+                            fontSize: "12px",
+                            fontWeight: 700,
+                            border: "none",
+                            cursor: "pointer",
+                            transition: "all 0.15s"
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = "#b98a3e";
+                            e.currentTarget.style.color = "#fff";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = "#faf5ec";
+                            e.currentTarget.style.color = "#b98a3e";
+                          }}
                         >
                           Edit
                         </button>
@@ -259,7 +409,19 @@ export default function AdminPickupLocationsPage() {
                           <button
                             type="button"
                             onClick={() => setDeactivateId(row.id)}
-                            className="text-sm font-semibold text-red-700 hover:underline dark:text-red-400"
+                            style={{
+                              color: "#dc2626",
+                              background: "none",
+                              border: "none",
+                              fontSize: "12px",
+                              cursor: "pointer"
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.color = "#b91c1c";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.color = "#dc2626";
+                            }}
                           >
                             Deactivate
                           </button>

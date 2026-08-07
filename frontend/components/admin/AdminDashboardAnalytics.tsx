@@ -67,12 +67,12 @@ function UnderlineTabs<T extends string>({
             style={{
               background: "transparent",
               border: "none",
-              borderBottom: on ? "2px solid #1e3a2f" : "2px solid transparent",
+              borderBottom: on ? "2px solid #b98a3e" : "2px solid transparent",
               marginBottom: "-1px",
               padding: "10px 2px 12px",
               fontSize: "14px",
               fontWeight: on ? 700 : 500,
-              color: on ? "#1e3a2f" : "#8a7060",
+              color: on ? "#1c352a" : "#8a7060",
               cursor: "pointer"
             }}
           >
@@ -99,17 +99,49 @@ function BarChart({
   }
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontSize: "10px", color: "#8a7060", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+          Trend
+        </span>
+        <span style={{ fontSize: "10px", color: "#8a7060" }}>Max {max}</span>
+      </div>
       {rows.map((r) => {
         const v = Number(r[valueKey]) || 0;
         const pct = Math.round((v / max) * 100);
         return (
           <div
             key={String(r[labelKey])}
-            style={{ display: "grid", gridTemplateColumns: "72px 1fr 64px", gap: "10px", alignItems: "center" }}
+            style={{ display: "grid", gridTemplateColumns: "90px 1fr 80px", gap: "10px", alignItems: "center" }}
           >
-            <span style={{ fontSize: "12px", color: "#8a7060" }}>{String(r[labelKey])}</span>
-            <div style={{ height: "10px", background: "#f0ece6", borderRadius: "999px", overflow: "hidden" }}>
-              <div style={{ width: `${pct}%`, height: "100%", background: "#1e3a2f" }} />
+            <span style={{ fontSize: "12px", color: "#8a7060", fontFamily: "'JetBrains Mono', monospace" }}>
+              {String(r[labelKey])}
+            </span>
+            <div style={{ height: "14px", background: "#e8e2d9", borderRadius: "999px", overflow: "hidden" }}>
+              <div
+                style={{
+                  width: `${pct}%`,
+                  height: "100%",
+                  background: "linear-gradient(90deg, #1c352a, #48705a)",
+                  borderRadius: "0 4px 4px 0",
+                  position: "relative"
+                }}
+              >
+                {pct > 30 ? (
+                  <span
+                    style={{
+                      position: "absolute",
+                      right: "8px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      fontSize: "10px",
+                      color: "white",
+                      fontWeight: 700
+                    }}
+                  >
+                    {v}
+                  </span>
+                ) : null}
+              </div>
             </div>
             <span style={{ fontSize: "12px", fontFamily: "monospace", color: "#2c2420", textAlign: "right" }}>
               {v}
@@ -154,7 +186,15 @@ function renderMiniTable(headers: string[], rows: React.ReactNode[][], empty: st
             </tr>
           ) : (
             rows.map((row, i) => (
-              <tr key={i}>
+              <tr
+                key={i}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#faf5ec";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                }}
+              >
                 {row.map((cell, j) => (
                   <td
                     key={j}
@@ -301,8 +341,9 @@ export function AdminDashboardAnalytics() {
                   cursor: "pointer",
                   border: "1px solid",
                   borderColor: preset === p.id ? "#1e3a2f" : "#e0d8ce",
-                  background: preset === p.id ? "#1e3a2f" : "#fff",
-                  color: preset === p.id ? "#fffbf5" : "#6b5c52"
+                  background: preset === p.id ? "#1c352a" : "#fff",
+                  color: preset === p.id ? "#fffbf5" : "#6b5c52",
+                  boxShadow: preset === p.id ? "0 2px 8px rgba(28,53,42,0.20)" : "none"
                 }}
               >
                 {p.label}
@@ -375,20 +416,40 @@ export function AdminDashboardAnalytics() {
             { label: "Refunds", value: `${kpis.refundCount}` },
             { label: "Repeat buyers", value: String(kpis.repeatCustomerCount) }
           ].map((c) => (
-            <div key={c.label} style={{ ...card, padding: "14px 16px" }}>
+            <div
+              key={c.label}
+              style={
+                c.label === "Revenue"
+                  ? {
+                      ...card,
+                      padding: "14px 16px",
+                      background: "linear-gradient(135deg, #1c352a, #2d5040)",
+                      borderLeft: "none"
+                    }
+                  : { ...card, padding: "14px 16px", borderLeft: "3px solid #1c352a" }
+              }
+            >
               <p
                 style={{
                   fontSize: "11px",
                   fontWeight: 700,
                   letterSpacing: "0.08em",
                   textTransform: "uppercase",
-                  color: "#8a7060",
+                  color: c.label === "Revenue" ? "#fffbf5" : "#8a7060",
                   marginBottom: "6px"
                 }}
               >
                 {c.label}
               </p>
-              <p style={{ fontSize: "1.05rem", fontWeight: 700, color: "#2c2420" }}>{c.value}</p>
+              <p
+                style={{
+                  fontSize: "1.25rem",
+                  fontWeight: 800,
+                  color: c.label === "Revenue" ? "#e9d6ae" : "#2c2420"
+                }}
+              >
+                {c.value}
+              </p>
             </div>
           ))}
         </div>
@@ -404,7 +465,7 @@ export function AdminDashboardAnalytics() {
             {data.overview.tips.length > 0 ? (
               <div
                 style={{
-                  background: "#f9f7f0",
+                  background: "linear-gradient(135deg, #faf5ec, #f0ebe0)",
                   border: "1px solid #e8e2d9",
                   borderRadius: "10px",
                   padding: "12px 14px",
@@ -414,7 +475,7 @@ export function AdminDashboardAnalytics() {
                 <ul style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                   {data.overview.tips.slice(0, 3).map((t) => (
                     <li key={t} style={{ fontSize: "13px", color: "#4a3f38" }}>
-                      <span style={{ color: "#c8960a" }}>✦ </span>
+                      <span style={{ color: "#b98a3e" }}>✦ </span>
                       {t}
                     </li>
                   ))}

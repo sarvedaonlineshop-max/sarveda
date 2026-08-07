@@ -11,7 +11,7 @@ type Props = {
 };
 
 const inputCls =
-  "mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100";
+  "mt-1 w-full rounded-lg border border-[var(--admin-card-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-3 py-2 text-sm text-[var(--admin-text,#2c2420)] [&_option]:bg-white [&_option]:text-[#2c2420]";
 
 function AxisValuesEditor({
   axis,
@@ -38,7 +38,7 @@ function AxisValuesEditor({
 
   return (
     <div className="min-w-0 flex-[2]">
-      <label className="text-[10px] font-semibold uppercase tracking-wider text-stone-500">
+      <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--admin-label,#4a3728)]">
         Dropdown options
       </label>
       <div className="mt-1 flex flex-wrap gap-1.5">
@@ -91,11 +91,7 @@ function AxisValuesEditor({
 export function VariantOptionAxesEditor({ axes, onChange }: Props) {
   return (
     <div className="rounded-lg border border-amber-200/80 bg-amber-50/50 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
-      <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Option levels</p>
-      <p className="mt-1 text-xs text-stone-600 dark:text-stone-400">
-        Name each level (Size, Color, …) and list its dropdown options. Each variant row below picks
-        one value per level.
-      </p>
+      <p className="text-sm font-semibold text-[var(--admin-text,#2c2420)]">Option levels</p>
       <div className="mt-3 space-y-4">
         {axes.map((axis, i) => (
           <div
@@ -104,7 +100,7 @@ export function VariantOptionAxesEditor({ axes, onChange }: Props) {
           >
             <div className="flex flex-wrap items-end gap-2">
               <div className="min-w-[140px] flex-1">
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-stone-500">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--admin-label,#4a3728)]">
                   Level {i + 1} name
                 </label>
                 <input

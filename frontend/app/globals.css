@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -79,7 +81,10 @@ body {
   -webkit-tap-highlight-color: transparent;
   background-color: var(--brand-cream);
   color: var(--brand-ink);
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, sans-serif;
 }
+
+.font-mono-admin { font-family: 'JetBrains Mono', monospace; }
 
 /* ─── Premium Scrollbar ────────────────────────────────────────── */
 ::-webkit-scrollbar        { width: 5px; }
@@ -232,6 +237,29 @@ select:-webkit-autofill {
 @keyframes marquee {
   0%   { transform:translateX(0%);   }
   100% { transform:translateX(-50%); }
+}
+
+@keyframes admin-tick-pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  70% { transform: scale(1.18); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes admin-x-pop {
+  0% { transform: scale(0.4) rotate(-20deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.admin-tick-pop {
+  animation: admin-tick-pop 0.35s ease-out;
+}
+.admin-x-pop {
+  animation: admin-x-pop 0.3s ease-out;
+}
+
+@keyframes admin-nav-spin {
+  to { transform: rotate(360deg); }
+}
+.admin-nav-spinner {
+  animation: admin-nav-spin 0.7s linear infinite;
 }
 
 /* ─── Reduced Motion ────────────────────────────────────────────── */

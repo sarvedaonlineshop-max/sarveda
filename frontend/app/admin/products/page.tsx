@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { GripVertical, ScanSearch } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AdminPagination } from "@/components/admin/AdminPagination";
 import { AdminToast } from "@/components/admin/AdminToast";
 import type { AdminProductRow } from "@/lib/admin-api";
-import { fetchAdminProducts, putAdminProduct } from "@/lib/admin-api";
+import { fetchAdminProducts, putAdminProduct, reorderAdminProducts } from "@/lib/admin-api";
 import { fetchCategoryTree } from "@/lib/api";
 import type { CategoryNode } from "@/lib/types";
 import { formatINRFromPaise } from "@/lib/money";
@@ -24,7 +25,15 @@ function flattenCategoryOptions(nodes: CategoryNode[], depth = 0): { slug: strin
 }
 
 const thClass =
-  "px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400";
+  "px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--admin-text-muted,#8a7060)] transition-colors";
+
+const ROW_H = 72;
+const FULL_LIST_VISIBLE_ROWS = 24;
+const FULL_LIST_MAX_H = ROW_H * FULL_LIST_VISIBLE_ROWS;
+const AUTO_SCROLL_EDGE = 48;
+const AUTO_SCROLL_STEP = 10;
+
+type ViewMode = "paginated" | "full";
 
 export default function AdminProductsPage() {
   const router = useRouter();
@@ -32,12 +41,23 @@ export default function AdminProductsPage() {
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
+  const [viewMode, setViewMode] = useState<ViewMode>("paginated");
   const [items, setItems] = useState<AdminProductRow[]>([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 24, total: 0, totalPages: 1 });
   const [categories, setCategories] = useState<{ slug: string; label: string }[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; error?: boolean } | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
+  const [savingOrder, setSavingOrder] = useState(false);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const autoScrollRaf = useRef<number | null>(null);
+  const autoScrollDir = useRef<0 | 1 | -1>(0);
+
+  const searchActive = q.trim().length > 0;
+  const canReorder = viewMode === "full" && !searchActive && !savingOrder;
 
   useEffect(() => {
     fetchCategoryTree({ cache: "no-store" })
@@ -52,8 +72,8 @@ export default function AdminProductsPage() {
         q: q || undefined,
         category: category || undefined,
         status: status || undefined,
-        page,
-        limit: 24
+        page: viewMode === "full" ? 1 : page,
+        limit: viewMode === "full" ? 2000 : 24
       });
       setItems(data.items);
       setPagination(data.pagination);
@@ -61,11 +81,131 @@ export default function AdminProductsPage() {
       setErr(e instanceof Error ? e.message : "Failed to load products");
       setItems([]);
     }
-  }, [q, category, status, page]);
+  }, [q, category, status, page, viewMode]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    return () => {
+      if (autoScrollRaf.current != null) cancelAnimationFrame(autoScrollRaf.current);
+    };
+  }, []);
+
+  function stopAutoScroll() {
+    autoScrollDir.current = 0;
+    if (autoScrollRaf.current != null) {
+      cancelAnimationFrame(autoScrollRaf.current);
+      autoScrollRaf.current = null;
+    }
+  }
+
+  function ensureAutoScrollLoop() {
+    if (autoScrollRaf.current != null) return;
+    const tick = () => {
+      const el = scrollRef.current;
+      const dir = autoScrollDir.current;
+      if (!el || dir === 0) {
+        autoScrollRaf.current = null;
+        return;
+      }
+      el.scrollTop += dir * AUTO_SCROLL_STEP;
+      autoScrollRaf.current = requestAnimationFrame(tick);
+    };
+    autoScrollRaf.current = requestAnimationFrame(tick);
+  }
+
+  function handleListDragOver(e: React.DragEvent) {
+    if (!canReorder) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    const el = scrollRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    if (y < AUTO_SCROLL_EDGE) {
+      autoScrollDir.current = -1;
+      ensureAutoScrollLoop();
+    } else if (y > rect.height - AUTO_SCROLL_EDGE) {
+      autoScrollDir.current = 1;
+      ensureAutoScrollLoop();
+    } else {
+      stopAutoScroll();
+    }
+  }
+
+  async function persistOrder(nextItems: AdminProductRow[]) {
+    const prev = items;
+    setItems(nextItems);
+    setSavingOrder(true);
+    try {
+      await reorderAdminProducts({
+        categorySlug: category.trim() ? category.trim() : null,
+        orderedIds: nextItems.map((p) => p.id)
+      });
+      setToast({
+        message: category.trim()
+          ? "Category order saved"
+          : "Storefront order saved"
+      });
+    } catch (ex) {
+      setItems(prev);
+      setToast({
+        message: ex instanceof Error ? ex.message : "Failed to save order",
+        error: true
+      });
+      await load();
+    } finally {
+      setSavingOrder(false);
+    }
+  }
+
+  function onHandleDragStart(e: React.DragEvent, id: string) {
+    if (!canReorder) {
+      e.preventDefault();
+      return;
+    }
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", id);
+    setDragId(id);
+  }
+
+  function onRowDragOver(e: React.DragEvent, index: number) {
+    if (!canReorder || !dragId) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const before = e.clientY < rect.top + rect.height / 2;
+    setDropIndex(before ? index : index + 1);
+  }
+
+  async function onDrop(e: React.DragEvent) {
+    e.preventDefault();
+    stopAutoScroll();
+    const id = dragId || e.dataTransfer.getData("text/plain");
+    const target = dropIndex;
+    setDragId(null);
+    setDropIndex(null);
+    if (!canReorder || !id || target == null) return;
+
+    const from = items.findIndex((p) => p.id === id);
+    if (from < 0) return;
+    let to = target;
+    if (from < to) to -= 1;
+    if (from === to) return;
+
+    const next = [...items];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    await persistOrder(next);
+  }
+
+  function onDragEnd() {
+    stopAutoScroll();
+    setDragId(null);
+    setDropIndex(null);
+  }
 
   async function toggleStatus(p: AdminProductRow, e: React.MouseEvent) {
     e.stopPropagation();
@@ -86,32 +226,81 @@ export default function AdminProductsPage() {
     <div className="mx-auto max-w-[1400px] space-y-5 font-sans">
       <AdminToast toast={toast} onDismiss={() => setToast(null)} />
 
-      <div className="flex flex-col gap-3 border-b border-stone-200 pb-4 dark:border-stone-700 sm:flex-row sm:items-center sm:justify-between">
+      <div
+        style={{
+          background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)",
+          borderRadius: "16px",
+          padding: "22px 28px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "16px"
+        }}
+      >
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">
-            Products
-          </h1>
-          <p className="mt-1 text-sm text-stone-500">Click any row to open and edit the product.</p>
+          <h1 style={{ color: "#faf5ec", fontSize: "26px", fontWeight: 800, margin: 0 }}>📦 Products</h1>
+          <p style={{ color: "#a8c4b0", fontSize: "13px", marginTop: "4px", marginBottom: 0 }}>
+            Drag the handle to set storefront order (global or this category).
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
             href="/admin/catalog-gaps"
-            className="inline-flex items-center rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-medium shadow-sm hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "9px 16px",
+              borderRadius: "8px",
+              background: "rgba(255,255,255,0.12)",
+              color: "#faf5ec",
+              border: "1px solid rgba(255,255,255,0.2)",
+              fontSize: "13px",
+              fontWeight: 600,
+              textDecoration: "none"
+            }}
           >
+            <ScanSearch size={14} aria-hidden />
             Catalog gaps
           </Link>
           <Link
             href="/admin/products/new"
-            className="inline-flex items-center rounded-md bg-amber-500 px-4 py-2 text-sm font-semibold text-stone-900 shadow-sm hover:bg-amber-400"
+            style={{
+              background: "linear-gradient(135deg, #b98a3e, #c8960a)",
+              color: "#fff",
+              fontWeight: 700,
+              borderRadius: "10px",
+              padding: "10px 18px",
+              fontSize: "13px",
+              boxShadow: "0 2px 8px rgba(185,138,62,0.35)",
+              textDecoration: "none",
+              display: "inline-block"
+            }}
           >
-            + Add product
+            ✨ Add product
           </Link>
         </div>
       </div>
+      <div
+        className="h-px w-full"
+        style={{
+          background: "linear-gradient(90deg, transparent, rgba(185,138,62,0.2), transparent)"
+        }}
+        aria-hidden
+      />
 
-      <div className="flex flex-wrap items-end gap-3 rounded-lg border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900">
+      <div
+        className="flex flex-wrap items-end gap-3 rounded-lg border p-4"
+        style={{
+          background: "var(--admin-card-bg, #faf9f7)",
+          borderLeft: "3px solid rgba(185,138,62,0.25)",
+          borderColor: "var(--admin-card-border, #e8e2d9)",
+          boxShadow: "0 2px 8px rgba(28,53,42,0.05)"
+        }}
+      >
         <div className="min-w-[12rem] flex-1">
-          <label htmlFor="q" className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">
+          <label htmlFor="q" className="text-[11px] font-semibold uppercase tracking-wider text-[var(--admin-text-muted,#8a7060)]">
             Search
           </label>
           <input
@@ -120,11 +309,11 @@ export default function AdminProductsPage() {
             onChange={(e) => setQ(e.target.value)}
             onBlur={() => setPage(1)}
             placeholder="Product name…"
-            className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+            className="mt-1 w-full rounded-md border border-[var(--admin-input-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-3 py-2 text-sm text-[var(--admin-text,#2c2420)] focus:border-[#b98a3e] focus:outline-none focus:ring-1 focus:ring-[rgba(185,138,62,0.15)]"
           />
         </div>
         <div className="min-w-[10rem]">
-          <label htmlFor="category" className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">
+          <label htmlFor="category" className="text-[11px] font-semibold uppercase tracking-wider text-[var(--admin-text-muted,#8a7060)]">
             Category
           </label>
           <select
@@ -134,7 +323,7 @@ export default function AdminProductsPage() {
               setPage(1);
               setCategory(e.target.value);
             }}
-            className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+            className="mt-1 w-full rounded-md border border-[var(--admin-input-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-3 py-2 text-sm text-[var(--admin-text,#2c2420)] focus:border-[#b98a3e] focus:outline-none focus:ring-1 focus:ring-[rgba(185,138,62,0.15)]"
           >
             <option value="">All categories</option>
             {categories.map((c) => (
@@ -145,7 +334,7 @@ export default function AdminProductsPage() {
           </select>
         </div>
         <div className="min-w-[8rem]">
-          <label htmlFor="status" className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">
+          <label htmlFor="status" className="text-[11px] font-semibold uppercase tracking-wider text-[var(--admin-text-muted,#8a7060)]">
             Status
           </label>
           <select
@@ -155,7 +344,7 @@ export default function AdminProductsPage() {
               setPage(1);
               setStatus(e.target.value);
             }}
-            className="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+            className="mt-1 w-full rounded-md border border-[var(--admin-input-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-3 py-2 text-sm text-[var(--admin-text,#2c2420)] focus:border-[#b98a3e] focus:outline-none focus:ring-1 focus:ring-[rgba(185,138,62,0.15)]"
           >
             <option value="">Active + Draft</option>
             <option value="ACTIVE">Active only</option>
@@ -166,11 +355,61 @@ export default function AdminProductsPage() {
         <button
           type="button"
           onClick={() => void load()}
-          className="rounded-md border border-stone-200 bg-white px-4 py-2 text-sm font-medium shadow-sm hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+          className="h-[38px] shrink-0 rounded-lg px-4 text-[13px] font-semibold text-[#fffbf5] shadow-[0_2px_6px_rgba(28,53,42,0.2)]"
+          style={{
+            background: "linear-gradient(135deg, #1c352a, #2d5040)",
+            border: "none",
+            cursor: "pointer"
+          }}
         >
           Apply
         </button>
+        <div
+          className="relative mt-auto inline-grid h-[38px] shrink-0 grid-cols-2 overflow-hidden rounded-lg border border-[var(--admin-card-border,#e0d8ce)] bg-white p-0.5 dark:bg-[#f5f0e8]"
+          role="group"
+          aria-label="List view mode"
+        >
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-md bg-[#dc2626] shadow-sm transition-transform duration-300 ease-out"
+            style={{
+              transform: viewMode === "full" ? "translateX(100%)" : "translateX(0)"
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setViewMode("paginated");
+              setPage(1);
+            }}
+            className={`relative z-10 rounded-md px-3.5 text-sm font-semibold transition-colors duration-300 ${
+              viewMode === "paginated"
+                ? "text-white"
+                : "text-[#1c352a] dark:text-[#5c4033]"
+            }`}
+          >
+            Paginated
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setViewMode("full");
+              setPage(1);
+            }}
+            className={`relative z-10 rounded-md px-3.5 text-sm font-semibold transition-colors duration-300 ${
+              viewMode === "full"
+                ? "text-white"
+                : "text-[#1c352a] dark:text-[#5c4033]"
+            }`}
+          >
+            Full list
+          </button>
+        </div>
       </div>
+
+      {savingOrder ? (
+        <p style={{ fontSize: "13px", color: "var(--admin-text-muted, #8a7060)" }}>Saving order…</p>
+      ) : null}
 
       {err ? (
         <p className="text-sm text-red-600 dark:text-red-400" role="alert">
@@ -178,10 +417,27 @@ export default function AdminProductsPage() {
         </p>
       ) : null}
 
-      <div className="overflow-x-auto rounded-lg border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-stone-900">
+      <div
+        ref={scrollRef}
+        onDragOver={handleListDragOver}
+        onDrop={(e) => void onDrop(e)}
+        onDragLeave={(e) => {
+          if (!scrollRef.current?.contains(e.relatedTarget as Node)) stopAutoScroll();
+        }}
+        className={`overflow-x-auto rounded-lg border ${
+          viewMode === "full" ? "overflow-y-auto" : ""
+        }`}
+        style={{
+          background: "var(--admin-card-bg, #fff)",
+          boxShadow: "0 4px 20px rgba(28,53,42,0.08)",
+          borderColor: "var(--admin-card-border, #e8e2d9)",
+          ...(viewMode === "full" ? { maxHeight: FULL_LIST_MAX_H } : {})
+        }}
+      >
         <table className="min-w-full text-left text-sm">
-          <thead className="border-b border-stone-200 bg-stone-50/90 dark:border-stone-700 dark:bg-stone-800/80">
+          <thead className="sticky top-0 z-10 border-b border-[var(--admin-card-border,#e8e2d9)]" style={{ background: "var(--admin-table-head, linear-gradient(180deg,#f2ede5,#f9f7f4))" }}>
             <tr>
+              <th className={`${thClass} w-10 px-2`} aria-label="Reorder" />
               <th className={thClass}>Image</th>
               <th className={thClass}>Product</th>
               <th className={thClass}>Category</th>
@@ -191,75 +447,147 @@ export default function AdminProductsPage() {
               <th className={`${thClass} text-right`}>Quick action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
-            {items.map((p) => (
-              <tr
-                key={p.id}
-                role="link"
-                tabIndex={0}
-                onClick={() => router.push(`/admin/products/${p.id}`)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    router.push(`/admin/products/${p.id}`);
-                  }
-                }}
-                className="cursor-pointer transition-colors hover:bg-amber-50/50 dark:hover:bg-amber-950/20"
-              >
-                <td className="px-4 py-2.5">
-                  <div className="h-12 w-12 overflow-hidden rounded-md border border-stone-200 bg-stone-100 dark:border-stone-600 dark:bg-stone-800">
-                    {p.primaryImageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.primaryImageUrl} alt="" className="h-full w-full object-cover" />
-                    ) : null}
-                  </div>
-                </td>
-                <td className="px-4 py-2.5">
-                  <p className="font-medium text-stone-900 dark:text-stone-100">{p.name}</p>
-                  <p className="font-mono text-xs text-stone-500">{p.slug}</p>
-                </td>
-                <td className="max-w-[12rem] px-4 py-2.5 text-xs text-stone-600 dark:text-stone-400">
-                  {p.categories.map((c) => c.name).join(", ") || "—"}
-                </td>
-                <td className="px-4 py-2.5 font-medium tabular-nums">
-                  {formatINRFromPaise(p.fromPriceInPaise)}
-                </td>
-                <td className="px-4 py-2.5 tabular-nums">{p.totalOnHand}</td>
-                <td className="px-4 py-2.5">
-                  <span
-                    className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
-                      p.status === "ACTIVE"
-                        ? "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200/80 dark:bg-emerald-950/50 dark:text-emerald-300"
-                        : "bg-amber-50 text-amber-900 ring-1 ring-amber-200/80 dark:bg-amber-950/40 dark:text-amber-200"
-                    }`}
+          <tbody className="divide-y divide-[var(--admin-card-border,#f0ece6)]">
+            {items.map((p, index) => {
+              const isDragging = dragId === p.id;
+              const showInsertBefore = canReorder && dropIndex === index && dragId !== p.id;
+              return (
+                <tr
+                  key={p.id}
+                  role="link"
+                  tabIndex={0}
+                  onClick={() => router.push(`/admin/products/${p.id}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      router.push(`/admin/products/${p.id}`);
+                    }
+                  }}
+                  onDragOver={(e) => onRowDragOver(e, index)}
+                  className={`relative transition-colors ${
+                    isDragging
+                      ? "bg-amber-50/80 shadow-md ring-1 ring-[#b98a3e]/40 dark:bg-amber-950/30"
+                      : "cursor-pointer hover:bg-[var(--admin-row-hover,#faf5ec)]"
+                  } ${isDragging ? "border-l-[3px] border-l-[#b98a3e]" : ""} ${
+                    showInsertBefore ? "shadow-[inset_0_2px_0_0_#b98a3e]" : ""
+                  }`}
+                >
+                  <td
+                    className="w-10 px-1 py-2.5"
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
                   >
-                    {p.status}
-                  </span>
-                </td>
-                <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    type="button"
-                    disabled={busyId === p.id}
-                    onClick={(e) => void toggleStatus(p, e)}
-                    className="rounded-md border border-stone-200 bg-white px-2.5 py-1 text-xs font-medium shadow-sm hover:border-amber-400 disabled:opacity-40 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-200"
-                  >
-                    {busyId === p.id ? "…" : p.status === "ACTIVE" ? "Set draft" : "Set active"}
-                  </button>
+                    <span
+                      role="button"
+                      tabIndex={canReorder ? 0 : -1}
+                      draggable={canReorder}
+                      title={canReorder ? "Drag to reorder" : undefined}
+                      onDragStart={(e) => onHandleDragStart(e, p.id)}
+                      onDragEnd={onDragEnd}
+                      className={`inline-flex h-9 w-8 items-center justify-center rounded text-stone-300 transition-colors ${
+                        canReorder
+                          ? "cursor-grab text-stone-400 hover:text-[#b98a3e] active:cursor-grabbing"
+                          : "cursor-not-allowed opacity-40"
+                      }`}
+                      aria-label="Drag to reorder"
+                      aria-disabled={!canReorder}
+                    >
+                      <GripVertical className="h-5 w-5" strokeWidth={1.75} />
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <div className="h-12 w-12 overflow-hidden rounded-md border border-[var(--admin-card-border,#e8e2d9)] bg-[var(--admin-input-bg,#f5f0e8)]">
+                      {p.primaryImageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={p.primaryImageUrl} alt="" className="h-full w-full object-cover" />
+                      ) : null}
+                    </div>
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <p className="font-semibold text-[var(--admin-text,#1c352a)]">{p.name}</p>
+                    <p className="font-mono text-[11px] text-[#b98a3e]">{p.slug}</p>
+                  </td>
+                  <td className="max-w-[12rem] px-4 py-2.5 text-xs text-[var(--admin-text-muted,#6b5c52)]">
+                    {p.categories.map((c) => c.name).join(", ") || "—"}
+                  </td>
+                  <td className="px-4 py-2.5 font-medium tabular-nums text-[var(--admin-text,#2c2420)]">
+                    {formatINRFromPaise(p.fromPriceInPaise)}
+                  </td>
+                  <td className="px-4 py-2.5 tabular-nums text-[var(--admin-text,#2c2420)]">{p.totalOnHand}</td>
+                  <td className="px-4 py-2.5">
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                        p.status === "ACTIVE"
+                          ? "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200/80 dark:bg-emerald-950/50 dark:text-emerald-300"
+                          : "bg-amber-50 text-amber-900 ring-1 ring-amber-200/80 dark:bg-amber-950/40 dark:text-amber-200"
+                      }`}
+                    >
+                      <span
+                        className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                          p.status === "ACTIVE" ? "bg-emerald-500" : "bg-amber-500"
+                        }`}
+                        aria-hidden
+                      />
+                      {p.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      disabled={busyId === p.id}
+                      onClick={(e) => void toggleStatus(p, e)}
+                      style={{
+                        border: "1px solid var(--admin-card-border, #e0d8ce)",
+                        background: "var(--admin-card-bg, #fff)",
+                        color: "var(--admin-text, #4a3f38)",
+                        borderRadius: "8px",
+                        padding: "4px 10px",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        opacity: busyId === p.id ? 0.3 : 1
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = "#b98a3e";
+                        e.currentTarget.style.background = "var(--admin-row-hover, #faf5ec)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = "var(--admin-card-border, #e0d8ce)";
+                        e.currentTarget.style.background = "var(--admin-card-bg, #fff)";
+                      }}
+                    >
+                      {busyId === p.id ? "…" : p.status === "ACTIVE" ? "Set draft" : "Set active"}
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+            {canReorder && dropIndex === items.length && dragId ? (
+              <tr className="pointer-events-none">
+                <td colSpan={8} className="relative h-1 p-0">
+                  <span className="absolute inset-x-2 top-0 h-0.5 bg-[#b98a3e]" />
                 </td>
               </tr>
-            ))}
+            ) : null}
           </tbody>
         </table>
       </div>
 
-      <AdminPagination
-        page={page}
-        totalPages={pagination.totalPages}
-        total={pagination.total}
-        itemLabel="products"
-        onPrev={() => setPage((pg) => Math.max(1, pg - 1))}
-        onNext={() => setPage((pg) => Math.min(pagination.totalPages, pg + 1))}
-      />
+      {viewMode === "paginated" ? (
+        <AdminPagination
+          page={page}
+          totalPages={pagination.totalPages}
+          total={pagination.total}
+          itemLabel="products"
+          onPrev={() => setPage((pg) => Math.max(1, pg - 1))}
+          onNext={() => setPage((pg) => Math.min(pagination.totalPages, pg + 1))}
+        />
+      ) : (
+        <p style={{ fontSize: "13px", color: "var(--admin-text-muted, #8a7060)" }}>
+          Showing {items.length} of {pagination.total} products
+          {pagination.total > items.length ? " (list capped at 2000)" : ""}
+        </p>
+      )}
     </div>
   );
 }

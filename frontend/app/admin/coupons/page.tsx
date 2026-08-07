@@ -160,7 +160,7 @@ export default function AdminCouponsPage() {
     letterSpacing: "0.08em",
     textTransform: "uppercase",
     color: "#8a7060",
-    background: "#f9f7f4",
+    background: "linear-gradient(180deg, #f2ede5, #f9f7f4)",
     textAlign: "left"
   };
   const tdSt: React.CSSProperties = {
@@ -172,10 +172,21 @@ export default function AdminCouponsPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div
+        style={{
+          background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)",
+          borderRadius: "16px",
+          padding: "22px 28px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "12px"
+        }}
+      >
         <div>
-          <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#2c2420" }}>Coupons</h1>
-          <p style={{ fontSize: "13px", color: "#8a7060", marginTop: "4px" }}>
+          <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec", margin: 0 }}>🎟️ Coupons</h1>
+          <p style={{ fontSize: "13px", color: "#a8c4b0", marginTop: "4px" }}>
             {coupons.length} total · {coupons.filter((c) => c.isActive).length} active
           </p>
         </div>
@@ -184,37 +195,39 @@ export default function AdminCouponsPage() {
           style={{
             height: "40px",
             padding: "0 20px",
-            borderRadius: "8px",
-            background: "#1e3a2f",
-            color: "#fffbf5",
+            borderRadius: "10px",
+            background: "linear-gradient(135deg, #b98a3e, #c8960a)",
+            color: "#fff",
             fontSize: "13px",
-            fontWeight: 600,
+            fontWeight: 700,
             border: "none",
-            cursor: "pointer"
+            cursor: "pointer",
+            boxShadow: "0 2px 8px rgba(185,138,62,0.35)"
           }}
         >
-          + New Coupon
+          ✨ + New Coupon
         </button>
       </div>
 
       {success && (
         <div
           style={{
-            background: "#dcfce7",
+            background: "linear-gradient(135deg, #f0fdf4, #dcfce7)",
+            borderLeft: "4px solid #16a34a",
             color: "#166534",
             padding: "10px 14px",
-            borderRadius: "8px",
+            borderRadius: "10px",
             fontSize: "13px"
           }}
         >
-          {success}
+          ✅ {success}
         </div>
       )}
 
       {showForm && (
-        <div style={{ ...card, padding: "24px" }}>
-          <h2 style={{ fontSize: "16px", fontWeight: 700, color: "#2c2420", marginBottom: "16px" }}>
-            {editing ? `Edit ${editing.code}` : "New Coupon"}
+        <div style={{ ...card, padding: "24px", borderTop: "4px solid #b98a3e", boxShadow: "0 4px 20px rgba(28,53,42,0.10)" }}>
+          <h2 style={{ fontSize: "16px", fontWeight: 700, color: "#2c2420", marginBottom: "16px", borderLeft: "3px solid #b98a3e", paddingLeft: "10px" }}>
+            🎟️ {editing ? `Edit ${editing.code}` : "New Coupon"}
           </h2>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
             <label style={{ display: "block" }}>
@@ -237,6 +250,14 @@ export default function AdminCouponsPage() {
                 onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))}
                 placeholder="WELCOME5"
                 disabled={!!editing}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "#b98a3e";
+                  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(185,138,62,0.12)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "#e0d8ce";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
               />
             </label>
 
@@ -263,6 +284,14 @@ export default function AdminCouponsPage() {
                   }))
                 }
                 style={{ ...inputSt }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "#b98a3e";
+                  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(185,138,62,0.12)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "#e0d8ce";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
               >
                 <option value="PERCENTAGE">Percentage (%)</option>
                 <option value="FIXED">Fixed Amount (₹)</option>
@@ -289,6 +318,14 @@ export default function AdminCouponsPage() {
                 onChange={(e) => setForm((f) => ({ ...f, value: e.target.value }))}
                 style={inputSt}
                 placeholder="10"
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "#b98a3e";
+                  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(185,138,62,0.12)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "#e0d8ce";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
               />
             </label>
 
@@ -317,6 +354,14 @@ export default function AdminCouponsPage() {
                 }
                 style={inputSt}
                 placeholder="0"
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "#b98a3e";
+                  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(185,138,62,0.12)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "#e0d8ce";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
               />
             </label>
 
@@ -462,13 +507,15 @@ export default function AdminCouponsPage() {
                 height: "40px",
                 padding: "0 24px",
                 borderRadius: "8px",
-                background: "#1e3a2f",
+                background: "linear-gradient(135deg, #1c352a, #2d5040)",
                 color: "#fffbf5",
                 fontWeight: 600,
                 fontSize: "13px",
                 border: "none",
                 cursor: "pointer",
-                opacity: saving ? 0.6 : 1
+                opacity: saving ? 0.6 : 1,
+                boxShadow: "0 2px 8px rgba(28,53,42,0.25)",
+                transition: "all 0.15s"
               }}
             >
               {saving ? "Saving..." : editing ? "Save changes" : "Create"}
@@ -492,7 +539,10 @@ export default function AdminCouponsPage() {
       )}
 
       {loading ? (
-        <p style={{ color: "#8a7060" }}>Loading...</p>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#8a7060", padding: "40px 16px", justifyContent: "center" }}>
+          <span style={{ fontSize: "22px" }}>🎟️</span>
+          <span style={{ fontSize: "14px" }}>Loading coupons…</span>
+        </div>
       ) : (
         <div style={{ ...card, overflow: "hidden" }}>
           <div style={{ overflowX: "auto" }}>
@@ -511,23 +561,38 @@ export default function AdminCouponsPage() {
                   <tr
                     key={c.id}
                     onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLElement).style.background = "#faf8f5";
+                      (e.currentTarget as HTMLElement).style.background = "#faf5ec";
                     }}
                     onMouseLeave={(e) => {
                       (e.currentTarget as HTMLElement).style.background = "";
                     }}
                   >
-                    <td style={{ ...tdSt, fontWeight: 700, fontFamily: "monospace" }}>{c.code}</td>
+                    <td style={{ ...tdSt, fontWeight: 700 }}>
+                      <span style={{ fontFamily: "'JetBrains Mono', ui-monospace, monospace", color: "#1c352a", fontSize: "13px", background: "#f0ece6", borderRadius: "6px", padding: "3px 8px" }}>{c.code}</span>
+                    </td>
                     <td style={tdSt}>{c.type}</td>
                     <td style={{ ...tdSt, fontWeight: 600 }}>
-                      {c.type === "PERCENTAGE" ? `${c.value}%` : `₹${c.value / 100}`}
+                      {c.type === "PERCENTAGE" ? (
+                        <span style={{ background: "#eff6ff", color: "#1d4ed8", borderRadius: "6px", padding: "2px 8px", fontSize: "12px", fontWeight: 700 }}>{c.value}%</span>
+                      ) : (
+                        <span style={{ background: "#fef9c3", color: "#92400e", borderRadius: "6px", padding: "2px 8px", fontSize: "12px", fontWeight: 700 }}>₹{c.value / 100}</span>
+                      )}
                     </td>
                     <td style={tdSt}>
                       {c.minOrderInPaise > 0 ? `₹${c.minOrderInPaise / 100}` : "—"}
                     </td>
                     <td style={tdSt}>
-                      {c.usageCount}
-                      {c.maxUsageTotal ? ` / ${c.maxUsageTotal}` : " / ∞"}
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <span>
+                          {c.usageCount}
+                          {c.maxUsageTotal ? ` / ${c.maxUsageTotal}` : " / ∞"}
+                        </span>
+                        {c.maxUsageTotal ? (
+                          <div style={{ width: "60px", height: "4px", borderRadius: "2px", background: "#e8e2d9" }}>
+                            <div style={{ width: `${Math.min(100, (c.usageCount / c.maxUsageTotal) * 100)}%`, height: "100%", borderRadius: "2px", background: "#b98a3e" }} />
+                          </div>
+                        ) : null}
+                      </div>
                     </td>
                     <td style={{ ...tdSt, fontSize: "12px", color: "#8a7060" }}>
                       {c.validUntil
@@ -542,9 +607,14 @@ export default function AdminCouponsPage() {
                           fontSize: "11px",
                           fontWeight: 600,
                           padding: "3px 10px",
-                          borderRadius: "999px"
+                          borderRadius: "999px",
+                          border: c.isActive ? "1px solid rgba(34,197,94,0.2)" : "1px solid #e5e7eb",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px"
                         }}
                       >
+                        <span style={{ color: c.isActive ? "#16a34a" : "#6b7280" }}>●</span>
                         {c.isActive ? "Active" : "Inactive"}
                       </span>
                     </td>
@@ -554,11 +624,21 @@ export default function AdminCouponsPage() {
                         style={{
                           fontSize: "13px",
                           fontWeight: 600,
-                          color: "#c8960a",
-                          background: "none",
+                          color: "#b98a3e",
+                          background: "#faf5ec",
                           border: "none",
                           cursor: "pointer",
-                          padding: 0
+                          padding: "3px 8px",
+                          borderRadius: "6px",
+                          transition: "all 0.15s"
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "#b98a3e";
+                          e.currentTarget.style.color = "#fff";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "#faf5ec";
+                          e.currentTarget.style.color = "#b98a3e";
                         }}
                       >
                         Edit
@@ -573,8 +653,11 @@ export default function AdminCouponsPage() {
                             border: "none",
                             cursor: "pointer",
                             marginLeft: "14px",
-                            padding: 0
+                            padding: 0,
+                            transition: "color 0.15s"
                           }}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = "#dc2626"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = "#8a7060"; }}
                         >
                           Deactivate
                         </button>
@@ -584,16 +667,14 @@ export default function AdminCouponsPage() {
                 ))}
                 {coupons.length === 0 && (
                   <tr>
-                    <td
-                      colSpan={8}
-                      style={{
-                        padding: "40px",
-                        textAlign: "center",
-                        color: "#8a7060",
-                        fontSize: "13px"
-                      }}
-                    >
-                      No coupons yet. Create your first one.
+                    <td colSpan={8} style={{ padding: "60px 40px", textAlign: "center" }}>
+                      <div style={{ fontSize: "48px", marginBottom: "12px" }}>🎟️</div>
+                      <p style={{ fontSize: "15px", fontWeight: 700, color: "#1c352a" }}>
+                        No coupons yet
+                      </p>
+                      <p style={{ fontSize: "13px", color: "#8a7060", marginTop: "4px" }}>
+                        Create your first coupon to offer discounts to customers.
+                      </p>
                     </td>
                   </tr>
                 )}

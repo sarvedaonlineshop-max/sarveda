@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { ChevronLeft } from "lucide-react";
 
 import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
 import {
@@ -52,25 +53,25 @@ const DIM_MAX_CM = 200;
 
 const AWB_PILL = {
   track:
-    "inline-flex min-h-[30px] items-center rounded-full border border-sky-700 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-900 no-underline hover:bg-sky-100 dark:border-sky-500 dark:bg-sky-950/40 dark:text-sky-100",
+    "inline-flex min-h-[30px] cursor-pointer items-center rounded-full border border-sky-700 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-900 no-underline transition-all duration-150 hover:bg-sky-100 dark:border-sky-500 dark:bg-sky-950/40 dark:text-sky-100",
   sync:
-    "inline-flex min-h-[30px] items-center rounded-full border border-violet-700 bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-900 hover:bg-violet-100 disabled:opacity-50 dark:border-violet-500 dark:bg-violet-950/40 dark:text-violet-100",
+    "inline-flex min-h-[30px] cursor-pointer items-center rounded-full border border-violet-700 bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-900 transition-all duration-150 hover:bg-violet-100 disabled:opacity-50 dark:border-violet-500 dark:bg-violet-950/40 dark:text-violet-100",
   label:
-    "inline-flex min-h-[30px] items-center rounded-full border border-emerald-700 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-900 no-underline hover:bg-emerald-100 dark:border-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-100",
+    "inline-flex min-h-[30px] cursor-pointer items-center rounded-full border border-emerald-700 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-900 no-underline transition-all duration-150 hover:bg-emerald-100 dark:border-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-100",
   cancel:
-    "inline-flex min-h-[30px] items-center rounded-full border border-red-700 bg-red-50 px-3 py-1 text-xs font-semibold text-red-800 hover:bg-red-100 disabled:opacity-50 dark:border-red-600 dark:bg-red-950/40 dark:text-red-200",
+    "inline-flex min-h-[30px] cursor-pointer items-center rounded-full border border-red-700 bg-red-50 px-3 py-1 text-xs font-semibold text-red-800 transition-all duration-150 hover:bg-red-100 disabled:opacity-50 dark:border-red-600 dark:bg-red-950/40 dark:text-red-200",
   return:
-    "inline-flex min-h-[30px] items-center rounded-full border border-amber-700 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-950 hover:bg-amber-100 disabled:opacity-50 dark:border-amber-500 dark:bg-amber-950/40 dark:text-amber-100",
+    "inline-flex min-h-[30px] cursor-pointer items-center rounded-full border border-amber-700 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-950 transition-all duration-150 hover:bg-amber-100 disabled:opacity-50 dark:border-amber-500 dark:bg-amber-950/40 dark:text-amber-100",
   save:
-    "inline-flex min-h-[30px] items-center rounded-full border border-stone-700 bg-stone-800 px-3 py-1 text-xs font-semibold text-amber-50 hover:bg-stone-700 disabled:opacity-50 dark:border-stone-500 dark:bg-stone-200 dark:text-stone-900"
+    "inline-flex min-h-[30px] cursor-pointer items-center rounded-full border border-stone-700 bg-stone-800 px-3 py-1 text-xs font-semibold text-amber-50 transition-all duration-150 hover:bg-stone-700 disabled:opacity-50 dark:border-stone-500 dark:bg-stone-200 dark:text-stone-900"
 } as const;
 
-function defaultShipBox(weightGrams = 500): DelhiveryShipBox {
+function defaultShipBox(weightGrams = 0): DelhiveryShipBox {
   return {
     lengthCm: DEFAULT_SHIP_BOX_PRESET.lengthCm,
     breadthCm: DEFAULT_SHIP_BOX_PRESET.breadthCm,
     heightCm: DEFAULT_SHIP_BOX_PRESET.heightCm,
-    weightGrams: Math.max(50, weightGrams),
+    weightGrams: Math.max(0, weightGrams),
     packageType: "CARDBOARD_BOX"
   };
 }
@@ -89,7 +90,7 @@ function patchActiveBoxDim(
 function patchActiveBoxWeight(boxes: DelhiveryShipBox[], activeIdx: number, raw: string): DelhiveryShipBox[] {
   const digits = digitsOnly(raw, 6);
   const parsed =
-    digits === "" ? 50 : Math.min(500_000, Math.max(50, Number.parseInt(digits, 10)));
+    digits === "" ? 0 : Math.min(500_000, Math.max(0, Number.parseInt(digits, 10)));
   return boxes.map((b, i) => (i === activeIdx ? { ...b, weightGrams: parsed } : b));
 }
 
@@ -562,11 +563,7 @@ export default function AdminOrderDetailPage() {
     if (!order) return;
     const isCod = (order.payments ?? []).some((p) => p.provider === "COD");
     setShipPaymentMode(isCod ? "COD" : "Pre-paid");
-    const g = Math.max(
-      50,
-      order.items.reduce((sum, it) => sum + it.qtyOrdered * 500, 0) || 500
-    );
-    setShipBoxes([defaultShipBox(g)]);
+    setShipBoxes([defaultShipBox(0)]);
     setActiveShipBoxIdx(0);
   }, [order?.id, order?.items]);
 
@@ -995,9 +992,10 @@ export default function AdminOrderDetailPage() {
         </p>
         <Link
           href="/admin/orders"
-          className="mt-4 inline-block text-amber-700 hover:underline dark:text-amber-400"
+          className="inline-flex items-center gap-1 text-sm font-medium text-brand-gold transition-colors hover:text-brand-forest mt-4 dark:text-amber-400"
         >
-          ← Orders
+          <ChevronLeft size={14} />
+          Orders
         </Link>
       </div>
     );
@@ -1067,11 +1065,12 @@ export default function AdminOrderDetailPage() {
     <div className="space-y-8">
       {toast ? (
         <div
-          className={`fixed bottom-6 left-1/2 z-[110] max-w-md -translate-x-1/2 rounded-xl border px-4 py-3 text-sm shadow-lg ${
+          className={`fixed bottom-6 left-1/2 z-[110] max-w-md -translate-x-1/2 rounded-2xl border px-4 py-3 text-sm font-medium tracking-tight shadow-lg ${
             toast.error
               ? "border-red-300 bg-red-950 text-red-50 dark:border-red-800"
-              : "border-stone-300 bg-stone-900 text-amber-50 dark:border-stone-600"
+              : "border-stone-300 bg-gradient-to-r from-stone-900 to-stone-800 text-amber-50 dark:border-stone-600"
           }`}
+          style={toast.error ? undefined : { borderLeft: "3px solid #b98a3e" }}
           role="status"
         >
           {toast.message}
@@ -1111,13 +1110,21 @@ export default function AdminOrderDetailPage() {
 
       {shipResultModal ? (
         <div
-          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm transition-opacity duration-200"
           role="dialog"
           aria-modal="true"
         >
-          <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl dark:border-stone-600 dark:bg-stone-900">
+          <div className="w-full max-w-md overflow-hidden rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl dark:border-stone-600 dark:bg-stone-900" style={{ boxShadow: "0 32px 64px rgba(0,0,0,0.24)" }}>
+            <div
+              style={{
+                height: "3px",
+                background: "linear-gradient(90deg, #b98a3e, #e9d6ae, #b98a3e)",
+                borderRadius: "12px 12px 0 0",
+                margin: "-24px -24px 20px"
+              }}
+            />
             <h2
-              className={`font-serif text-xl italic ${
+              className={`text-xl font-bold tracking-tight ${
                 shipResultModal.success
                   ? "text-emerald-900 dark:text-emerald-200"
                   : "text-red-900 dark:text-red-200"
@@ -1153,12 +1160,20 @@ export default function AdminOrderDetailPage() {
 
       {addressModal ? (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm transition-opacity duration-200"
           role="dialog"
           aria-modal="true"
         >
-          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl dark:border-stone-600 dark:bg-stone-900">
-            <h2 className="font-serif text-xl italic text-stone-900 dark:text-stone-50">
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl dark:border-stone-600 dark:bg-stone-900" style={{ boxShadow: "0 32px 64px rgba(0,0,0,0.24)" }}>
+            <div
+              style={{
+                height: "3px",
+                background: "linear-gradient(90deg, #b98a3e, #e9d6ae, #b98a3e)",
+                borderRadius: "12px 12px 0 0",
+                margin: "-24px -24px 20px"
+              }}
+            />
+            <h2 className="text-xl font-bold tracking-tight text-stone-900 dark:text-stone-50">
               Edit {addressModal.type.toLowerCase()} address
             </h2>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -1167,7 +1182,7 @@ export default function AdminOrderDetailPage() {
                 <input
                   value={addrDraft.fullName}
                   onChange={(e) => setAddrDraft((d) => ({ ...d, fullName: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 transition-colors duration-150 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
                 />
               </label>
               <label className="block text-sm">
@@ -1175,7 +1190,7 @@ export default function AdminOrderDetailPage() {
                 <input
                   value={addrDraft.phone}
                   onChange={(e) => setAddrDraft((d) => ({ ...d, phone: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 transition-colors duration-150 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
                 />
               </label>
               <label className="block text-sm">
@@ -1183,7 +1198,7 @@ export default function AdminOrderDetailPage() {
                 <input
                   value={addrDraft.country}
                   onChange={(e) => setAddrDraft((d) => ({ ...d, country: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 transition-colors duration-150 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
                 />
               </label>
               <label className="block text-sm sm:col-span-2">
@@ -1191,7 +1206,7 @@ export default function AdminOrderDetailPage() {
                 <input
                   value={addrDraft.line1}
                   onChange={(e) => setAddrDraft((d) => ({ ...d, line1: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 transition-colors duration-150 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
                 />
               </label>
               <label className="block text-sm sm:col-span-2">
@@ -1199,7 +1214,7 @@ export default function AdminOrderDetailPage() {
                 <input
                   value={addrDraft.line2}
                   onChange={(e) => setAddrDraft((d) => ({ ...d, line2: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 transition-colors duration-150 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
                 />
               </label>
               <label className="block text-sm">
@@ -1207,7 +1222,7 @@ export default function AdminOrderDetailPage() {
                 <input
                   value={addrDraft.city}
                   onChange={(e) => setAddrDraft((d) => ({ ...d, city: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 transition-colors duration-150 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
                 />
               </label>
               <label className="block text-sm">
@@ -1215,7 +1230,7 @@ export default function AdminOrderDetailPage() {
                 <input
                   value={addrDraft.state}
                   onChange={(e) => setAddrDraft((d) => ({ ...d, state: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 transition-colors duration-150 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
                 />
               </label>
               <label className="block text-sm sm:col-span-2">
@@ -1223,7 +1238,7 @@ export default function AdminOrderDetailPage() {
                 <input
                   value={addrDraft.postalCode}
                   onChange={(e) => setAddrDraft((d) => ({ ...d, postalCode: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 transition-colors duration-150 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
                 />
               </label>
             </div>
@@ -1240,7 +1255,7 @@ export default function AdminOrderDetailPage() {
                 type="button"
                 disabled={addrSaving}
                 onClick={() => void handleSaveAddress()}
-                className="rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-stone-950 hover:bg-amber-500 disabled:opacity-50"
+                className="rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 px-4 py-2 text-sm font-semibold text-stone-950 shadow-sm transition-all duration-150 hover:from-amber-500 hover:to-amber-400 hover:shadow-md disabled:opacity-50"
               >
                 {addrSaving ? "Saving…" : "Save address"}
               </button>
@@ -1255,13 +1270,14 @@ export default function AdminOrderDetailPage() {
         </p>
       ) : null}
       <div>
-        <Link href="/admin/orders" className="text-sm text-amber-700 hover:underline dark:text-amber-400">
-          ← Orders
+        <Link href="/admin/orders" className="inline-flex items-center gap-1 text-sm font-medium text-brand-gold transition-colors hover:text-brand-forest dark:text-amber-400">
+          <ChevronLeft size={14} />
+          Orders
         </Link>
         <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="font-serif text-3xl italic text-stone-800 dark:text-stone-100">{order.orderNumber}</h1>
+              <h1 className="text-3xl font-extrabold tracking-tight text-stone-800 dark:text-stone-100" style={{ fontFamily: "'Plus Jakarta Sans', ui-sans-serif, sans-serif", fontWeight: 800 }}>{order.orderNumber}</h1>
               <span
                 className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${
                   isUnpaidCheckoutAttempt(
@@ -1275,6 +1291,17 @@ export default function AdminOrderDetailPage() {
                       : "bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-200"
                 }`}
               >
+                <span
+                  style={{
+                    width: "6px",
+                    height: "6px",
+                    borderRadius: "50%",
+                    background: "currentColor",
+                    display: "inline-block",
+                    marginRight: "5px",
+                    flexShrink: 0
+                  }}
+                />
                 {formatAdminOrderStatusLabel(
                   order.status,
                   order.paymentStatus,
@@ -1283,7 +1310,7 @@ export default function AdminOrderDetailPage() {
               </span>
               {parseOrderNotes(order.notes).giftWrap ? (
                 <span className="rounded-full border border-amber-400 bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-950 dark:border-amber-500/60 dark:bg-amber-950/40 dark:text-amber-100">
-                  Gift wrap requested
+                  🎁 Gift wrap requested
                 </span>
               ) : null}
             </div>
@@ -1410,7 +1437,7 @@ export default function AdminOrderDetailPage() {
       {!order.shipments.some((s) => s.awb?.trim()) && shipUi ? (
         <div className="rounded-xl border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-stone-900">
           <div className="border-b border-stone-100 px-5 py-4 dark:border-stone-700">
-            <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Create shipment</h2>
+            <h2 className="text-base font-bold tracking-tight text-stone-800 dark:text-stone-100">Create shipment</h2>
             <p className="mt-1 text-xs text-stone-500">
               Delhivery shipment — facility, box details, and shipping mode. AWBs are generated via Delhivery API.
             </p>
@@ -1546,6 +1573,7 @@ export default function AdminOrderDetailPage() {
                   <option value="CARDBOARD_BOX">Cardboard Box</option>
                 </select>
               </label>
+              <hr className="my-4 border-stone-100 dark:border-stone-800" />
               <div>
                 <label className="block">
                   <span className="text-xs text-stone-500">Box size preset</span>
@@ -1593,7 +1621,7 @@ export default function AdminOrderDetailPage() {
                       onChange={(e) => {
                         setShipBoxes((prev) => patchActiveBoxDim(prev, activeShipBoxIdx, "lengthCm", e.target.value));
                       }}
-                      className="mt-0.5 w-full rounded-lg border border-stone-300 px-2 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
+                      className="mt-0.5 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm font-mono focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 dark:border-stone-600 dark:bg-stone-950"
                     />
                   </label>
                   <label className="block text-[11px] text-stone-500">
@@ -1606,7 +1634,7 @@ export default function AdminOrderDetailPage() {
                       onChange={(e) => {
                         setShipBoxes((prev) => patchActiveBoxDim(prev, activeShipBoxIdx, "breadthCm", e.target.value));
                       }}
-                      className="mt-0.5 w-full rounded-lg border border-stone-300 px-2 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
+                      className="mt-0.5 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm font-mono focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 dark:border-stone-600 dark:bg-stone-950"
                     />
                   </label>
                   <label className="block text-[11px] text-stone-500">
@@ -1619,7 +1647,7 @@ export default function AdminOrderDetailPage() {
                       onChange={(e) => {
                         setShipBoxes((prev) => patchActiveBoxDim(prev, activeShipBoxIdx, "heightCm", e.target.value));
                       }}
-                      className="mt-0.5 w-full rounded-lg border border-stone-300 px-2 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
+                      className="mt-0.5 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm font-mono focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 dark:border-stone-600 dark:bg-stone-950"
                     />
                   </label>
                 </div>
@@ -1637,44 +1665,65 @@ export default function AdminOrderDetailPage() {
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
-                  value={String(activeShipBox.weightGrams)}
+                  value={activeShipBox.weightGrams > 0 ? String(activeShipBox.weightGrams) : ""}
                   onChange={(e) => {
                     setShipBoxes((prev) => patchActiveBoxWeight(prev, activeShipBoxIdx, e.target.value));
                   }}
-                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
+                  className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm font-mono focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 dark:border-stone-600 dark:bg-stone-950"
                 />
               </label>
+              <hr className="my-4 border-stone-100 dark:border-stone-800" />
               <div>
                 <span className="text-xs text-stone-500">Shipping mode</span>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShipMode("S")}
-                    className={`rounded-lg border px-3 py-3 text-sm font-semibold ${
-                      shipMode === "S"
-                        ? "border-stone-900 bg-stone-900 text-amber-50 dark:border-stone-200 dark:bg-stone-100 dark:text-stone-900"
-                        : "border-stone-300 text-stone-700 dark:border-stone-600"
-                    }`}
-                  >
-                    <span className="block">SURFACE</span>
-                    <span className="mt-1 block text-base font-bold">
-                      {formatFreightAmount(freightByMode.S)}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShipMode("E")}
-                    className={`rounded-lg border px-3 py-3 text-sm font-semibold ${
-                      shipMode === "E"
-                        ? "border-stone-900 bg-stone-900 text-amber-50 dark:border-stone-200 dark:bg-stone-100 dark:text-stone-900"
-                        : "border-stone-300 text-stone-700 dark:border-stone-600"
-                    }`}
-                  >
-                    <span className="block">EXPRESS</span>
-                    <span className="mt-1 block text-base font-bold">
-                      {formatFreightAmount(freightByMode.E)}
-                    </span>
-                  </button>
+                <div className="relative mt-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShipMode("S")}
+                      className={`rounded-lg border px-3 py-3 text-sm font-semibold ${
+                        shipMode === "S"
+                          ? "border-stone-900 bg-stone-900 text-amber-50 dark:border-stone-200 dark:bg-stone-100 dark:text-stone-900"
+                          : "border-stone-300 text-stone-700 dark:border-stone-600"
+                      }`}
+                    >
+                      <span className="block text-[10px] uppercase tracking-widest text-stone-500">Surface</span>
+                      <span className="mt-1 block text-base font-bold" style={{ fontWeight: 700, color: shipMode === "S" ? "#fffbf5" : "#1c352a", fontSize: "1rem" }}>
+                        {formatFreightAmount(freightByMode.S)}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShipMode("E")}
+                      className={`rounded-lg border px-3 py-3 text-sm font-semibold ${
+                        shipMode === "E"
+                          ? "border-stone-900 bg-stone-900 text-amber-50 dark:border-stone-200 dark:bg-stone-100 dark:text-stone-900"
+                          : "border-stone-300 text-stone-700 dark:border-stone-600"
+                      }`}
+                    >
+                      <span className="block text-[10px] uppercase tracking-widest text-stone-500">Express</span>
+                      <span className="mt-1 block text-base font-bold" style={{ fontWeight: 700, color: shipMode === "E" ? "#fffbf5" : "#1c352a", fontSize: "1rem" }}>
+                        {formatFreightAmount(freightByMode.E)}
+                      </span>
+                    </button>
+                  </div>
+                  {freightEstimateBusy ? (
+                    <div
+                      className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/80 backdrop-blur-[1px] dark:bg-stone-950/75"
+                      role="status"
+                      aria-live="polite"
+                      aria-busy="true"
+                    >
+                      <div className="flex items-center gap-2.5 rounded-full border border-stone-200 bg-white px-3.5 py-2 shadow-sm dark:border-stone-600 dark:bg-stone-900">
+                        <div
+                          className="h-4 w-4 animate-spin rounded-full border-2 border-stone-200 border-t-[#1c352a]"
+                          aria-hidden
+                        />
+                        <span className="text-xs font-semibold text-stone-700 dark:text-stone-200">
+                          Calculating…
+                        </span>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
                 <p className="mt-2 text-[11px] text-stone-500">
                   Total chargeable:{" "}
@@ -1684,11 +1733,12 @@ export default function AdminOrderDetailPage() {
                   ) : null}
                 </p>
               </div>
+              <hr className="my-4 border-stone-100 dark:border-stone-800" />
               <button
                 type="button"
                 disabled={!!shipBusy || !pickupOptions.length || !!boxDimError}
                 onClick={() => void handleRetryShipment()}
-                className="w-full rounded-lg bg-stone-900 py-3 text-sm font-semibold text-amber-50 hover:bg-stone-800 disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
+                className="w-full rounded-xl bg-stone-900 py-3 text-sm font-bold text-amber-50 transition-all duration-150 hover:bg-stone-800 hover:shadow-md disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
               >
                 {shipBusy === "create" ? "Creating AWB…" : "Create order & get AWB"}
               </button>
@@ -1717,7 +1767,7 @@ export default function AdminOrderDetailPage() {
         <div className="border-b border-stone-100 p-4 dark:border-stone-700">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Line items &amp; fulfillment</h2>
+              <h2 className="text-base font-bold tracking-tight text-stone-800 dark:text-stone-100">Line items &amp; fulfillment</h2>
               <p className="text-xs text-stone-500 dark:text-stone-400">
                 Fulfillment:{" "}
                 <span className="font-medium text-stone-700 dark:text-stone-200">{order.fulfillmentStatus}</span>
@@ -1740,7 +1790,7 @@ export default function AdminOrderDetailPage() {
                   type="button"
                   disabled={!!shipBusy || !shipUi}
                   onClick={() => void handleRetryShipment()}
-                  className="inline-flex min-h-[34px] items-center rounded-full border border-amber-700 bg-amber-50 px-4 py-1.5 text-xs font-semibold text-amber-950 hover:bg-amber-100 disabled:opacity-50 dark:border-amber-500 dark:bg-amber-950/40 dark:text-amber-100"
+                  className="inline-flex min-h-[34px] items-center rounded-xl border border-amber-700 bg-amber-50 px-4 py-1.5 text-xs font-bold text-amber-950 transition-all duration-150 hover:bg-amber-100 hover:shadow-md disabled:opacity-50 dark:border-amber-500 dark:bg-amber-950/40 dark:text-amber-100"
                 >
                   {shipBusy === "create" ? "Working…" : "Create / retry shipment"}
                 </button>
@@ -1801,22 +1851,31 @@ export default function AdminOrderDetailPage() {
         ) : null}
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-stone-100 bg-stone-50 dark:border-stone-700 dark:bg-stone-800/80">
+            <thead className="border-b border-stone-100 dark:border-stone-700 dark:bg-stone-800/80" style={{ background: "linear-gradient(180deg,#f4f0e8,#f9f7f4)" }}>
               <tr>
-                <th className="px-3 py-3 font-semibold text-stone-600 dark:text-stone-300">Product</th>
-                <th className="px-3 py-3 font-semibold text-stone-600 dark:text-stone-300">SKU</th>
-                <th className="px-3 py-3 font-semibold text-stone-600 dark:text-stone-300">Qty</th>
-                <th className="px-3 py-3 font-semibold text-stone-600 dark:text-stone-300">Unit</th>
-                <th className="px-3 py-3 font-semibold text-stone-600 dark:text-stone-300">Line total</th>
+                <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a7060] dark:text-stone-300">Product</th>
+                <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a7060] dark:text-stone-300">SKU</th>
+                <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a7060] dark:text-stone-300">Qty</th>
+                <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a7060] dark:text-stone-300">Unit</th>
+                <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a7060] dark:text-stone-300">Line total</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100 dark:divide-stone-700">
               {order.items.map((item, idx) => (
-                <tr key={item.id ?? `${item.skuSnapshot}-${idx}`}>
+                <tr
+                  key={item.id ?? `${item.skuSnapshot}-${idx}`}
+                  className="transition-colors"
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#faf8f5";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "";
+                  }}
+                >
                   <td className="px-3 py-3 align-top font-medium text-stone-800 dark:text-stone-100">
                     {item.nameSnapshot}
                   </td>
-                  <td className="px-3 py-3 align-top font-mono text-xs text-stone-500">{item.skuSnapshot}</td>
+                  <td className="px-3 py-3 align-top" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "12px", color: "#8a7060" }}>{item.skuSnapshot}</td>
                   <td className="px-3 py-3 align-top">{item.qtyOrdered}</td>
                   <td className="px-3 py-3 align-top">{formatMinorFromPaise(item.unitPriceInPaise, order.currency)}</td>
                   <td className="px-3 py-3 align-top">{formatMinorFromPaise(item.lineTotalInPaise, order.currency)}</td>
@@ -1839,7 +1898,7 @@ export default function AdminOrderDetailPage() {
                 type="button"
                 disabled={!!shipBusy}
                 onClick={() => void handleCreateReturn()}
-                className={AWB_PILL.return}
+                className={`${AWB_PILL.return} rounded-xl font-bold hover:shadow-md`}
               >
                 {shipBusy === "reverse" ? "Creating…" : "Initiate Delhivery return"}
               </button>
@@ -2033,7 +2092,7 @@ export default function AdminOrderDetailPage() {
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700 dark:bg-stone-900">
-          <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Totals</h2>
+          <h2 className="text-base font-bold tracking-tight text-stone-800 dark:text-stone-100">Totals</h2>
           <dl className="mt-3 space-y-1 text-sm">
             <div className="flex justify-between">
               <dt className="text-stone-500 dark:text-stone-400">Subtotal</dt>
@@ -2067,9 +2126,9 @@ export default function AdminOrderDetailPage() {
               <dt className="text-stone-500 dark:text-stone-400">Discount</dt>
               <dd>{formatMinorFromPaise(order.discountInPaise, order.currency)}</dd>
             </div>
-            <div className="flex justify-between border-t border-stone-100 pt-2 font-semibold dark:border-stone-700">
+            <div className="flex justify-between border-t border-stone-100 pt-2 font-semibold dark:border-stone-700" style={{ borderTop: "2px solid #e8e2d9" }}>
               <dt>Grand total</dt>
-              <dd>{formatMinorFromPaise(order.grandTotalInPaise, order.currency)}</dd>
+              <dd style={{ fontSize: "1.1rem", fontWeight: 800, color: "#1c352a" }}>{formatMinorFromPaise(order.grandTotalInPaise, order.currency)}</dd>
             </div>
           </dl>
           <p className="mt-2 text-xs font-medium uppercase tracking-wide text-stone-500 dark:text-stone-400">
@@ -2084,7 +2143,7 @@ export default function AdminOrderDetailPage() {
           (p) => p.providerPaymentId || (p.refunds?.length ?? 0) > 0
         ) ? (
           <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900">
-            <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Payment &amp; refunds</h2>
+            <h2 className="text-base font-bold tracking-tight text-stone-800 dark:text-stone-100">Payment &amp; refunds</h2>
             <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
               Match these IDs in Razorpay Dashboard → Transactions → Payments → Refunds.
             </p>
@@ -2145,11 +2204,12 @@ export default function AdminOrderDetailPage() {
         ) : null}
 
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Addresses</h2>
+          <h2 className="text-base font-bold tracking-tight text-stone-800 dark:text-stone-100">Addresses</h2>
           {order.addresses.map((a) => (
             <div
               key={a.id ?? `${a.type}-${a.line1}`}
               className="rounded-xl border border-stone-200 bg-white p-4 text-sm shadow-sm dark:border-stone-700 dark:bg-stone-900"
+              style={{ borderLeft: "3px solid rgba(185,138,62,0.3)", borderRadius: "12px", padding: "16px", background: "linear-gradient(135deg, #faf7f2, #fff)" }}
             >
               <div className="flex items-start justify-between gap-2">
                 <p className="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">

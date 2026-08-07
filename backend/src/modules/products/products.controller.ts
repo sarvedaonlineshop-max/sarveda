@@ -15,9 +15,10 @@ import {
   listProducts,
   listProductsAdmin,
   listRelatedProducts,
+  reorderProducts,
   suggestProducts
 } from "./products.service";
-import type { CreateProductBody, UpdateProductBody } from "./schemas";
+import type { CreateProductBody, ReorderProductsBody, UpdateProductBody } from "./schemas";
 import type { ProductAdminSaveInput } from "./productAdmin.service";
 
 const productStatuses: ProductStatus[] = ["DRAFT", "ACTIVE", "ARCHIVED"];
@@ -53,6 +54,19 @@ export async function adminGetOne(req: Request, res: Response, next: NextFunctio
     const { id } = req.params;
     const product = await getProductAdminById(id);
     res.json({ success: true, data: { product } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function adminReorder(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = req.body as ReorderProductsBody;
+    const data = await reorderProducts({
+      categorySlug: body.categorySlug,
+      orderedIds: body.orderedIds
+    });
+    res.json({ success: true, data });
   } catch (err) {
     next(err);
   }

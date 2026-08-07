@@ -30,6 +30,16 @@ data/users.csv
 data/**/orders*.xml
 data/**/user-export*.csv
 data/**/refund.xml
+data/Sarveda_Kolkata_Mumbai_Customers.xlsx
+data/kolkata_mumbai_orders.tsv
+data/Sarveda_Zoho_Invoices.xlsx
+data/zoho_invoices_raw.json
+data/zoho_invoices_list.json
+data/zoho_invoices_checkpoint.json
+data/zoho_contacts_city_cache.json
+data/zoho_city_invoices_checkpoint.json
+data/Sarveda_Zoho_Kolkata_Mumbai_Invoices.xlsx
+data/zoho_export_run.log
 
 # May-30 batch: keep README in git; copy full folder to EC2 via SCP (not git)
 data/May-30/*

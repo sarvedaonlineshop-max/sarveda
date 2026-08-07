@@ -13,10 +13,10 @@ import {
 import { formatMinorFromPaise } from "@/lib/money";
 
 const card: React.CSSProperties = {
-  background: "#fff",
+  background: "var(--admin-card-bg, #fff)",
   borderRadius: "12px",
-  border: "1px solid #e8e2d9",
-  boxShadow: "0 1px 4px rgba(44,36,32,0.06)"
+  border: "1px solid var(--admin-card-border, #e8e2d9)",
+  boxShadow: "0 4px 20px rgba(28,53,42,0.08)"
 };
 
 const thSt: React.CSSProperties = {
@@ -25,8 +25,8 @@ const thSt: React.CSSProperties = {
   fontWeight: 700,
   letterSpacing: "0.08em",
   textTransform: "uppercase",
-  color: "#8a7060",
-  background: "#f9f7f4",
+  color: "var(--admin-text-muted, #8a7060)",
+  background: "var(--admin-table-head, linear-gradient(180deg,#f2ede5,#f9f7f4))",
   textAlign: "left",
   whiteSpace: "nowrap"
 };
@@ -34,8 +34,8 @@ const thSt: React.CSSProperties = {
 const tdSt: React.CSSProperties = {
   padding: "12px 16px",
   fontSize: "13px",
-  color: "#4a3f38",
-  borderBottom: "1px solid #f0ece6",
+  color: "var(--admin-text, #4a3f38)",
+  borderBottom: "1px solid var(--admin-card-border, #f0ece6)",
   verticalAlign: "top"
 };
 
@@ -43,11 +43,12 @@ const inputSt: React.CSSProperties = {
   height: "40px",
   padding: "0 14px",
   borderRadius: "8px",
-  border: "1px solid #e0d8ce",
+  border: "1px solid var(--admin-card-border, #e8e2d9)",
   fontSize: "13px",
-  background: "#fff",
-  color: "#2c2420",
-  outline: "none"
+  background: "var(--admin-card-bg, #fff)",
+  color: "var(--admin-text, #2c2420)",
+  outline: "none",
+  transition: "all 0.15s"
 };
 
 function formatWhen(iso: string) {
@@ -58,6 +59,16 @@ function formatWhen(iso: string) {
     hour: "numeric",
     minute: "2-digit"
   });
+}
+
+function focusGold(e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) {
+  e.currentTarget.style.borderColor = "#b98a3e";
+  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(185,138,62,0.10)";
+}
+
+function blurGold(e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) {
+  e.currentTarget.style.borderColor = "var(--admin-card-border, #e8e2d9)";
+  e.currentTarget.style.boxShadow = "none";
 }
 
 export default function AdminEnrollmentsPage() {
@@ -105,71 +116,97 @@ export default function AdminEnrollmentsPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div>
-        <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#2c2420" }}>Course enrollments</h1>
-        <p style={{ fontSize: "13px", color: "#8a7060", marginTop: "4px", maxWidth: "640px" }}>
-          Students who paid online and have an active enrollment record. Use this list to follow up with
-          Zoom links, schedules, and certificates. Full LMS (lessons, progress) is planned for a later
-          phase.
+      <div
+        style={{
+          background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)",
+          borderRadius: "16px",
+          padding: "22px 28px",
+          marginBottom: "4px"
+        }}
+      >
+        <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec", margin: 0 }}>
+          🎓 Course Enrollments
+        </h1>
+        <p style={{ fontSize: "13px", color: "#a8c4b0", marginTop: "4px", maxWidth: "560px" }}>
+          Students who paid online and have an active enrollment record.
         </p>
       </div>
 
-      <form
-        onSubmit={applyFilters}
-        style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}
+      <div
+        style={{
+          background: "var(--admin-card-bg, #faf9f7)",
+          borderRadius: "12px",
+          border: "1px solid var(--admin-card-border, #e8e2d9)",
+          borderLeft: "3px solid rgba(185,138,62,0.25)",
+          padding: "16px 20px",
+          marginBottom: "4px",
+          boxShadow: "0 2px 8px rgba(28,53,42,0.05)"
+        }}
       >
-        <input
-          type="search"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search name, email, phone, course, order #"
-          style={{ ...inputSt, flex: "1 1 220px", minWidth: "200px" }}
-        />
-        <select
-          value={courseId}
-          onChange={(e) => {
-            setCourseId(e.target.value);
-            setPage(1);
-          }}
-          style={{ ...inputSt, flex: "1 1 200px", minWidth: "180px" }}
+        <form
+          onSubmit={applyFilters}
+          style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}
         >
-          <option value="">All courses</option>
-          {courses.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.title}
-              {c.enrollmentCount > 0 ? ` (${c.enrollmentCount})` : ""}
-            </option>
-          ))}
-        </select>
-        <select
-          value={status}
-          onChange={(e) => {
-            setStatus(e.target.value);
-            setPage(1);
-          }}
-          style={{ ...inputSt, width: "140px" }}
-        >
-          <option value="ACTIVE">Active</option>
-          <option value="CANCELLED">Cancelled</option>
-          <option value="ALL">All statuses</option>
-        </select>
-        <button
-          type="submit"
-          style={{
-            height: "40px",
-            padding: "0 20px",
-            borderRadius: "8px",
-            background: "#1e3a2f",
-            color: "#fffbf5",
-            fontSize: "13px",
-            fontWeight: 600,
-            border: "none",
-            cursor: "pointer"
-          }}
-        >
-          Search
-        </button>
-      </form>
+          <input
+            type="search"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search name, email, phone, course, order #"
+            style={{ ...inputSt, flex: "1 1 220px", minWidth: "200px" }}
+            onFocus={focusGold}
+            onBlur={blurGold}
+          />
+          <select
+            value={courseId}
+            onChange={(e) => {
+              setCourseId(e.target.value);
+              setPage(1);
+            }}
+            style={{ ...inputSt, flex: "1 1 200px", minWidth: "180px" }}
+            onFocus={focusGold}
+            onBlur={blurGold}
+          >
+            <option value="">All courses</option>
+            {courses.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.title}
+                {c.enrollmentCount > 0 ? ` (${c.enrollmentCount})` : ""}
+              </option>
+            ))}
+          </select>
+          <select
+            value={status}
+            onChange={(e) => {
+              setStatus(e.target.value);
+              setPage(1);
+            }}
+            style={{ ...inputSt, width: "140px" }}
+            onFocus={focusGold}
+            onBlur={blurGold}
+          >
+            <option value="ACTIVE">Active</option>
+            <option value="CANCELLED">Cancelled</option>
+            <option value="ALL">All statuses</option>
+          </select>
+          <button
+            type="submit"
+            style={{
+              height: "40px",
+              padding: "0 20px",
+              borderRadius: "8px",
+              background: "linear-gradient(135deg, #1c352a, #2d5040)",
+              color: "#fffbf5",
+              fontSize: "13px",
+              fontWeight: 600,
+              border: "none",
+              cursor: "pointer",
+              boxShadow: "0 2px 6px rgba(28,53,42,0.2)"
+            }}
+          >
+            🔍 Search
+          </button>
+        </form>
+      </div>
 
       {err ? (
         <p style={{ color: "#dc2626", fontSize: "13px" }} role="alert">
@@ -179,14 +216,14 @@ export default function AdminEnrollmentsPage() {
 
       {data ? (
         <>
-          <p style={{ fontSize: "13px", color: "#8a7060" }}>
+          <p style={{ fontSize: "13px", color: "var(--admin-text-muted, #8a7060)", fontWeight: 500 }}>
             {data.pagination.total.toLocaleString("en-IN")} enrollment
             {data.pagination.total === 1 ? "" : "s"}
             {courseId ? (
               <>
                 {" "}
                 for{" "}
-                <strong style={{ color: "#2c2420" }}>
+                <strong style={{ color: "var(--admin-text, #2c2420)" }}>
                   {courses.find((c) => c.id === courseId)?.title ?? "selected course"}
                 </strong>
               </>
@@ -194,9 +231,18 @@ export default function AdminEnrollmentsPage() {
           </p>
 
           {data.items.length === 0 ? (
-            <div style={{ ...card, padding: "32px 24px", textAlign: "center" }}>
-              <p style={{ color: "#4a3f38", fontSize: "14px" }}>No enrollments match your filters.</p>
-              <p style={{ color: "#8a7060", fontSize: "13px", marginTop: "8px" }}>
+            <div
+              style={{
+                background: "var(--admin-card-bg, #faf9f7)",
+                borderRadius: "14px",
+                border: "1px solid var(--admin-card-border, #e8e2d9)",
+                padding: "60px 40px",
+                textAlign: "center"
+              }}
+            >
+              <div style={{ fontSize: "48px", marginBottom: "12px" }}>🎓</div>
+              <p style={{ fontSize: "15px", fontWeight: 700, color: "var(--admin-text, #2c2420)" }}>No enrollments found</p>
+              <p style={{ color: "var(--admin-text-muted, #8a7060)", fontSize: "13px", marginTop: "8px" }}>
                 Enrollments are created when a signed-in customer completes payment for a course with
                 online checkout enabled. Guest checkouts without a matching account are not listed here.
               </p>
@@ -218,23 +264,23 @@ export default function AdminEnrollmentsPage() {
                     <tr
                       key={row.id}
                       onMouseEnter={(e) => {
-                        (e.currentTarget as HTMLElement).style.background = "#faf8f5";
+                        (e.currentTarget as HTMLElement).style.background = "var(--admin-row-hover, #faf5ec)";
                       }}
                       onMouseLeave={(e) => {
                         (e.currentTarget as HTMLElement).style.background = "";
                       }}
                     >
                       <td style={tdSt}>
-                        <p style={{ fontWeight: 600, color: "#2c2420", margin: 0 }}>
+                        <p style={{ fontWeight: 700, color: "var(--admin-text, #2c2420)", margin: 0 }}>
                           {row.user.name?.trim() || "—"}
                         </p>
-                        <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#8a7060" }}>
-                          <a href={`mailto:${row.user.email}`} style={{ color: "#1e3a2f" }}>
+                        <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--admin-text-muted, #8a7060)" }}>
+                          <a href={`mailto:${row.user.email}`} style={{ color: "#b98a3e" }}>
                             {row.user.email}
                           </a>
                         </p>
                         {row.user.phone ? (
-                          <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#8a7060" }}>
+                          <p style={{ margin: "2px 0 0", fontSize: "12px", color: "var(--admin-text-muted, #8a7060)" }}>
                             {row.user.phone}
                           </p>
                         ) : null}
@@ -244,12 +290,20 @@ export default function AdminEnrollmentsPage() {
                           href={`/course/${row.course.slug}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ fontWeight: 500, color: "#1e3a2f", textDecoration: "underline" }}
+                          style={{ fontWeight: 600, color: "var(--admin-text, #2c2420)", textDecoration: "none" }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = "#b98a3e";
+                            e.currentTarget.style.textDecoration = "underline";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = "var(--admin-text, #2c2420)";
+                            e.currentTarget.style.textDecoration = "none";
+                          }}
                         >
                           {row.course.title}
                         </Link>
                       </td>
-                      <td style={{ ...tdSt, fontSize: "12px", color: "#8a7060", whiteSpace: "nowrap" }}>
+                      <td style={{ ...tdSt, fontSize: "12px", color: "var(--admin-text-muted, #8a7060)", whiteSpace: "nowrap" }}>
                         {formatWhen(row.enrolledAt)}
                       </td>
                       <td style={tdSt}>
@@ -257,10 +311,10 @@ export default function AdminEnrollmentsPage() {
                           <Link
                             href={`/admin/orders/${row.order.id}`}
                             style={{
-                              fontFamily: "monospace",
+                              fontFamily: "'JetBrains Mono', ui-monospace, monospace",
                               fontSize: "12px",
-                              color: "#1e3a2f",
-                              textDecoration: "underline"
+                              color: "#b98a3e",
+                              textDecoration: "none"
                             }}
                           >
                             {row.order.orderNumber}
@@ -269,26 +323,38 @@ export default function AdminEnrollmentsPage() {
                           "—"
                         )}
                       </td>
-                      <td style={{ ...tdSt, whiteSpace: "nowrap" }}>
+                      <td style={{ ...tdSt, whiteSpace: "nowrap", color: "var(--admin-text, #2c2420)", fontWeight: 600 }}>
                         {row.order
                           ? formatMinorFromPaise(row.order.grandTotalInPaise, row.order.currency)
                           : "—"}
                       </td>
                       <td style={tdSt}>
                         <span
-                          style={{
-                            display: "inline-block",
-                            padding: "3px 10px",
-                            borderRadius: "999px",
-                            fontSize: "11px",
-                            fontWeight: 700,
-                            letterSpacing: "0.04em",
-                            textTransform: "uppercase",
-                            background: row.status === "ACTIVE" ? "#ecfdf5" : "#f5f5f4",
-                            color: row.status === "ACTIVE" ? "#047857" : "#78716c"
-                          }}
+                          style={
+                            row.status === "ACTIVE"
+                              ? {
+                                  display: "inline-block",
+                                  padding: "3px 10px",
+                                  borderRadius: "999px",
+                                  fontSize: "11px",
+                                  fontWeight: 700,
+                                  background: "#f0fdf4",
+                                  color: "#166534",
+                                  border: "1px solid rgba(34,197,94,0.2)"
+                                }
+                              : {
+                                  display: "inline-block",
+                                  padding: "3px 10px",
+                                  borderRadius: "999px",
+                                  fontSize: "11px",
+                                  fontWeight: 700,
+                                  background: "#fef2f2",
+                                  color: "#dc2626",
+                                  border: "1px solid rgba(220,38,38,0.2)"
+                                }
+                          }
                         >
-                          {row.status}
+                          {row.status === "ACTIVE" ? "● ACTIVE" : "● CANCELLED"}
                         </span>
                       </td>
                     </tr>
@@ -308,9 +374,20 @@ export default function AdminEnrollmentsPage() {
           />
         </>
       ) : !err ? (
-        <p style={{ color: "#8a7060" }} role="status">
-          Loading…
-        </p>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            color: "var(--admin-text-muted, #8a7060)",
+            padding: "40px 16px",
+            justifyContent: "center"
+          }}
+          role="status"
+        >
+          <span style={{ fontSize: "22px" }}>🎓</span>
+          <span style={{ fontSize: "14px" }}>Loading enrollments…</span>
+        </div>
       ) : null}
     </div>
   );

@@ -121,10 +121,19 @@ function MetricCard({
           ? "text-emerald-700 dark:text-emerald-400"
           : "text-stone-900 dark:text-stone-100";
 
+  const borderBottom =
+    tone === "emerald"
+      ? "3px solid #16a34a"
+      : tone === "amber"
+        ? "3px solid #d97706"
+        : tone === "red"
+          ? "3px solid #dc2626"
+          : "3px solid #1c352a";
+
   const inner = (
     <>
       <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">{label}</p>
-      <p className={`mt-1 text-2xl font-semibold tabular-nums ${valueClass}`}>{value}</p>
+      <p className={`mt-1 text-3xl font-extrabold tabular-nums ${valueClass}`}>{value}</p>
     </>
   );
 
@@ -134,12 +143,17 @@ function MetricCard({
         type="button"
         onClick={onClick}
         className="w-full rounded-lg px-3 py-2 text-left hover:bg-amber-50/60 dark:hover:bg-amber-950/20"
+        style={{ borderBottom, transition: "all 0.15s" }}
       >
         {inner}
       </button>
     );
   }
-  return <div className="px-3 py-2">{inner}</div>;
+  return (
+    <div className="px-3 py-2" style={{ borderBottom, transition: "all 0.15s" }}>
+      {inner}
+    </div>
+  );
 }
 
 function ZohoBadge({
@@ -606,6 +620,14 @@ export function AdminInventoryWorkspace() {
     { id: "out_of_sync", label: "Out of Sync with Zoho" }
   ];
 
+  const STOCK_TAB_ICONS: Record<string, string> = {
+    all: "📦",
+    in_stock: "✅",
+    low_stock: "⚠️",
+    out_of_stock: "❌",
+    out_of_sync: "🔄"
+  };
+
   const zohoSubTabs: { id: ZohoSyncSubFilter; label: string }[] = [
     { id: "count_mismatch", label: "Count mismatch" },
     { id: "zoho_only", label: "In Zoho only" },
@@ -696,8 +718,10 @@ export function AdminInventoryWorkspace() {
     return (
       <tr
         key={`product-${g.productId}`}
-        className={`cursor-pointer border-t border-stone-200 bg-stone-50/90 hover:bg-stone-100/80 dark:border-stone-700 dark:bg-stone-800/50 dark:hover:bg-stone-800 ${
-          g.zohoOutOfSync > 0 ? "bg-amber-50/30 dark:bg-amber-950/10" : ""
+        className={`cursor-pointer border-t border-stone-200 bg-stone-50/95 hover:bg-stone-100/80 dark:border-stone-700 dark:bg-stone-800/50 dark:hover:bg-stone-800 ${
+          g.zohoOutOfSync > 0
+            ? "border-l-2 border-l-amber-400 bg-amber-50/30 dark:bg-amber-950/10"
+            : "border-l-2 border-l-transparent"
         }`}
         onClick={() => toggleProduct(g.productId)}
       >
@@ -705,7 +729,7 @@ export function AdminInventoryWorkspace() {
           <IconChevron open={expanded} />
         </td>
         <td className="px-4 py-3" colSpan={2}>
-          <span className="font-semibold text-stone-900 dark:text-stone-100">{g.productName}</span>
+          <span className="text-base font-semibold text-stone-900 dark:text-stone-100">{g.productName}</span>
           <p className="mt-0.5 text-xs text-stone-500">
             {g.variantCount} variant{g.variantCount === 1 ? "" : "s"}
             {g.zohoOutOfSync > 0 ? ` · ${g.zohoOutOfSync} out of sync` : ""}
@@ -713,7 +737,18 @@ export function AdminInventoryWorkspace() {
         </td>
         <td className="px-4 py-3">
           {g.zohoOutOfSync > 0 ? (
-            <span className="text-xs font-medium text-amber-700 dark:text-amber-400">Review SKUs</span>
+            <span
+              style={{
+                background: "#fef3c7",
+                color: "#92400e",
+                borderRadius: "999px",
+                padding: "2px 8px",
+                fontSize: "11px",
+                fontWeight: 700
+              }}
+            >
+              Review SKUs
+            </span>
           ) : g.zohoSynced > 0 ? (
             <span className="text-xs text-emerald-700 dark:text-emerald-400">Synced</span>
           ) : (
@@ -887,23 +922,28 @@ export function AdminInventoryWorkspace() {
               ? "border-red-200 bg-red-50 text-red-900"
               : "border-stone-200 bg-white text-stone-900 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-100"
           }`}
+          style={toast.error ? undefined : { borderLeft: "4px solid #b98a3e" }}
           role="status"
         >
-          {toast.message}
+          {toast.error ? toast.message : `✓ ${toast.message}`}
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-3 border-b border-stone-200 pb-4 dark:border-stone-700 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">
-            Inventory
-          </h1>
-          <p className="mt-1 text-xs text-stone-500">
-            Last Zoho audit: {formatRelativeTime(lastZohoSync)} · Sarveda admin is source of truth for website
-            products
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
+      <div
+        style={{
+          background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)",
+          borderRadius: "16px",
+          padding: "20px 24px",
+          marginBottom: "4px"
+        }}
+      >
+        <h1 className="text-3xl font-bold text-[#faf5ec]">📦 Inventory</h1>
+        <p className="mt-1 text-xs text-[#a8c4b0]">
+          Last Zoho audit: {formatRelativeTime(lastZohoSync)} · Sarveda admin is source of truth for website
+          products
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() =>
@@ -913,7 +953,7 @@ export function AdminInventoryWorkspace() {
               )
             }
             disabled={loading || displayedRows.length === 0}
-            className="inline-flex items-center gap-2 rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-medium shadow-sm hover:bg-stone-50 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+            className="inline-flex items-center gap-2 rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-[#faf5ec]/50 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
           >
             <IconDownload className="h-4 w-4" />
             Export
@@ -922,7 +962,7 @@ export function AdminInventoryWorkspace() {
             type="button"
             disabled={importing}
             onClick={() => importInputRef.current?.click()}
-            className="inline-flex items-center gap-2 rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-medium shadow-sm hover:bg-stone-50 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+            className="inline-flex items-center gap-2 rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-[#faf5ec]/50 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
             title="CSV columns: SKU, On Hand — overwritten on next Zoho sync"
           >
             <IconUpload className="h-4 w-4" />
@@ -942,7 +982,11 @@ export function AdminInventoryWorkspace() {
             type="button"
             disabled={bulkSaving || thresholdChanges.length === 0}
             onClick={() => void saveAllThresholds()}
-            className="rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-medium shadow-sm disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+            className={
+              thresholdChanges.length > 0
+                ? "rounded-md bg-gradient-to-r from-[#b98a3e] to-[#c8960a] px-3 py-2 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
+                : "rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-medium shadow-sm disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+            }
           >
             {bulkSaving ? "Saving…" : thresholdChanges.length > 0 ? `Save ${thresholdChanges.length} thresholds` : "Save thresholds"}
           </button>
@@ -952,8 +996,7 @@ export function AdminInventoryWorkspace() {
             className="inline-flex cursor-not-allowed items-center gap-2 rounded-md border border-[#1e3a2f]/30 bg-white px-4 py-2 text-sm font-semibold text-[#1e3a2f] opacity-50 shadow-sm dark:border-[#2d5240] dark:bg-stone-800 dark:text-[#8fd3b6]"
             title="Temporarily disabled — Zoho audit refresh is turned off for now"
           >
-            <IconRefresh className="h-4 w-4" />
-            Refresh Zoho audit
+            🔒 Refresh Zoho audit
           </button>
           <button
             type="button"
@@ -961,10 +1004,8 @@ export function AdminInventoryWorkspace() {
             className="inline-flex cursor-not-allowed items-center gap-2 rounded-md bg-[#1e3a2f] px-4 py-2 text-sm font-semibold text-[#fffbf5] opacity-50 shadow-sm"
             title="Temporarily disabled — bulk Zoho sync is turned off for now"
           >
-            <IconDownload className="h-4 w-4" />
-            Sync all from Zoho
+            🔒 Sync all from Zoho
           </button>
-        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-stone-200 bg-stone-200 sm:grid-cols-3 lg:grid-cols-6 dark:border-stone-700 dark:bg-stone-700">
@@ -1004,9 +1045,9 @@ export function AdminInventoryWorkspace() {
         <button
           type="button"
           onClick={() => setHistoryOpen((o) => !o)}
-          className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-stone-700 dark:text-stone-300"
+          className="flex w-full items-center justify-between px-4 py-3 text-left text-sm transition-[background] duration-150 hover:bg-[#faf5ec] dark:text-stone-300 dark:hover:bg-stone-800/60"
         >
-          <span>Sync history ({syncHistory.length})</span>
+          <span style={{ fontWeight: 600, color: "#2c2420" }}>Sync history ({syncHistory.length})</span>
           <IconChevron open={historyOpen} />
         </button>
         {historyOpen ? (
@@ -1049,7 +1090,10 @@ export function AdminInventoryWorkspace() {
         ) : null}
       </div>
 
-      <div className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900">
+      <div
+        className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900"
+        style={{ borderLeft: "3px solid rgba(185,138,62,0.2)" }}
+      >
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <div className="relative min-w-0 flex-1">
             <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
@@ -1092,11 +1136,11 @@ export function AdminInventoryWorkspace() {
               }}
               className={`rounded-md px-3 py-1.5 text-sm font-medium ${
                 stockFilter === tab.id
-                  ? "bg-amber-500 text-stone-900"
+                  ? "bg-gradient-to-r from-[#b98a3e] to-[#c8960a] font-bold text-white shadow-sm"
                   : "text-stone-600 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800"
               }`}
             >
-              {tab.label}{" "}
+              {STOCK_TAB_ICONS[tab.id]} {tab.label}{" "}
               <span className="tabular-nums opacity-80">
                 {tab.id === "out_of_sync" ? outOfSyncTotal : tabCounts[tab.id]}
               </span>
@@ -1113,9 +1157,17 @@ export function AdminInventoryWorkspace() {
                   onClick={() => setZohoSubFilter(tab.id)}
                   className={`rounded-md px-3 py-1.5 text-xs font-medium ${
                     zohoSubFilter === tab.id
-                      ? "bg-[#1e3a2f] text-[#fffbf5]"
+                      ? "text-[#fffbf5]"
                       : "border border-stone-200 text-stone-600 dark:border-stone-600 dark:text-stone-400"
                   }`}
+                  style={
+                    zohoSubFilter === tab.id
+                      ? {
+                          background: "linear-gradient(135deg, #1c352a, #2d5040)",
+                          boxShadow: "0 1px 4px rgba(28,53,42,0.2)"
+                        }
+                      : undefined
+                  }
                 >
                   {tab.label}{" "}
                   <span className="tabular-nums opacity-80">{zohoSubCounts[tab.id]}</span>
@@ -1192,18 +1244,29 @@ export function AdminInventoryWorkspace() {
       </p>
 
       {loading ? (
-        <div className="h-48 animate-pulse rounded-lg border border-stone-200 bg-stone-100 dark:border-stone-700 dark:bg-stone-800" />
+        <div className="space-y-3">
+          {[...Array(3)].map((_, i) => (
+            <div
+              key={i}
+              className="h-14 animate-pulse rounded-lg bg-stone-100 dark:bg-stone-800"
+              style={{ opacity: 1 - i * 0.25 }}
+            />
+          ))}
+        </div>
       ) : stockFilter === "out_of_sync" && zohoSubFilter === "zoho_only" ? (
         renderZohoOnlyTable()
       ) : productGroups.length === 0 ? (
         <div className="rounded-lg border border-dashed border-stone-300 px-8 py-16 text-center text-sm text-stone-500">
-          No products match your filters.
+          🔍 No products match your current filters
+          <p style={{ color: "#8a7060", marginTop: "8px", fontSize: "13px" }}>
+            Try clearing the search or changing the stock filter
+          </p>
         </div>
       ) : (
         <div className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-stone-900">
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead className="sticky top-0 z-10 border-b border-stone-200 bg-stone-100/95 backdrop-blur dark:border-stone-600 dark:bg-stone-800/95">
+              <thead className="sticky top-0 z-10 border-b border-stone-200 bg-gradient-to-b from-stone-100/95 to-stone-50/95 backdrop-blur dark:border-stone-600 dark:bg-stone-800/95">
                 <tr>
                   <th className={`${thClass} w-10`} aria-label="Expand" />
                   <th className={thClass}>Product / variant</th>

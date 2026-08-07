@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminNotificationsBell } from "@/components/admin/AdminNotificationsBell";
 import { AdminProfileMenu } from "@/components/admin/AdminProfileMenu";
+import { AdminNavProvider, useAdminNav } from "@/components/admin/AdminNavContext";
+import { AdminLoadingOverlay } from "@/components/admin/AdminLoadingOverlay";
 import { adminTheme as t } from "@/lib/admin-theme";
 
 const THEME_KEY = "sarveda-admin-theme";
@@ -46,34 +48,56 @@ function getPageTitle(pathname: string): string {
   return "Admin";
 }
 
-export function AdminShell({ children }: { children: React.ReactNode }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [preferDarkMain, setPreferDarkMain] = useState(false);
+function AdminShellInner({
+  children,
+  preferDarkMain,
+  toggleMainTheme,
+  sidebarOpen,
+  setSidebarOpen
+}: {
+  children: React.ReactNode;
+  preferDarkMain: boolean;
+  toggleMainTheme: () => void;
+  sidebarOpen: boolean;
+  setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
   const pathname = usePathname();
   const pageTitle = getPageTitle(pathname);
-
-  useEffect(() => {
-    setPreferDarkMain(readStoredTheme());
-  }, []);
-
-  function toggleMainTheme() {
-    setPreferDarkMain((prev) => {
-      const next = !prev;
-      if (typeof window !== "undefined") window.localStorage.setItem(THEME_KEY, next ? "dark" : "light");
-      return next;
-    });
-  }
+  const { isNavigating } = useAdminNav();
 
   const bg = preferDarkMain ? t.workspaceBgDark : t.workspaceBg;
-  const headerBg = preferDarkMain ? t.headerBgDark : t.headerBg;
-  const headerBorder = preferDarkMain ? "rgba(255,255,255,0.08)" : t.cardBorder;
-  const titleColor = preferDarkMain ? "#f8fafc" : t.text;
-  const mutedColor = preferDarkMain ? "rgba(255,255,255,0.45)" : t.textMuted;
-  const inputBg = preferDarkMain ? "rgba(255,255,255,0.06)" : "#f8fafc";
-  const inputBorder = preferDarkMain ? "rgba(255,255,255,0.1)" : t.cardBorder;
+  const isDark = preferDarkMain;
+  const cardBg = isDark ? t.cardBgDark : t.cardBg;
+  const cardBorder = isDark ? t.cardBorderDark : t.cardBorder;
+  const textColor = isDark ? t.textDark : t.text;
+  const mutedColor = isDark ? t.textMutedDark : t.textMuted;
+  const labelColor = isDark ? t.labelDark : t.label;
+  const thTextColor = isDark ? t.thTextDark : t.thText;
+  const inputBg = isDark ? t.inputBgDark : "#f8fafc";
+  const inputBorder = isDark ? t.inputBorderDark : t.cardBorder;
+  const rowHover = isDark ? t.rowHoverDark : t.rowHover;
+  const tableHeadBg = isDark ? t.tableHeadBgDark : t.tableHeadBg;
+  const headerBg = isDark ? t.headerBgDark : t.headerBg;
+  const headerBorder = isDark ? "rgba(185,138,62,0.12)" : t.cardBorder;
+  const titleColor = textColor;
 
   return (
-    <div className={preferDarkMain ? "dark" : ""}>
+    <div
+      className={preferDarkMain ? "dark" : ""}
+      style={{
+        "--admin-card-bg": cardBg,
+        "--admin-card-border": cardBorder,
+        "--admin-text": textColor,
+        "--admin-text-muted": mutedColor,
+        "--admin-label": labelColor,
+        "--admin-th-text": thTextColor,
+        "--admin-row-hover": rowHover,
+        "--admin-table-head": tableHeadBg,
+        "--admin-input-bg": inputBg,
+        "--admin-input-border": inputBorder,
+        "--admin-workspace-bg": preferDarkMain ? t.workspaceBgDark : t.workspaceBg,
+      } as React.CSSProperties}
+    >
       <div
         style={{
           minHeight: "100vh",
@@ -126,12 +150,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               zIndex: 30,
               background: headerBg,
               borderBottom: `1px solid ${headerBorder}`,
-              height: "64px",
+              height: "60px",
               display: "flex",
               alignItems: "center",
               padding: "0 24px",
               gap: "16px",
-              boxShadow: "0 1px 2px rgba(15,23,42,0.04)"
+              boxShadow: isDark
+                ? "0 1px 0 rgba(185,138,62,0.10), 0 2px 16px rgba(0,0,0,0.35)"
+                : "0 1px 0 rgba(28,53,42,0.08), 0 2px 8px rgba(28,53,42,0.04)"
             }}
           >
             <button
@@ -148,6 +174,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               }}
               className="md:hidden block"
               aria-label="Open navigation"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = isDark
+                  ? "rgba(185,138,62,0.14)"
+                  : "rgba(28,53,42,0.08)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "transparent";
+              }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="3" y1="6" x2="21" y2="6" />
@@ -156,9 +190,22 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               </svg>
             </button>
 
-            <h1 style={{ fontSize: "17px", fontWeight: 700, color: titleColor, flex: "0 0 auto" }}>
-              {pageTitle}
-            </h1>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: "0 0 auto" }}>
+              <div
+                style={{
+                  width: "3px",
+                  height: "20px",
+                  borderRadius: "2px",
+                  background: "#b98a3e",
+                  flexShrink: 0,
+                  boxShadow: isDark ? "0 0 10px rgba(185,138,62,0.5)" : "none"
+                }}
+                aria-hidden
+              />
+              <h1 style={{ fontSize: "18px", fontWeight: 800, color: titleColor, margin: 0 }}>
+                {pageTitle}
+              </h1>
+            </div>
 
             <div
               style={{
@@ -199,8 +246,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                   transition: "border-color 0.15s ease, box-shadow 0.15s ease"
                 }}
                 onFocus={(e) => {
-                  e.currentTarget.style.borderColor = t.primary;
-                  e.currentTarget.style.boxShadow = `0 0 0 3px ${t.primarySoft}`;
+                  e.currentTarget.style.borderColor = "#b98a3e";
+                  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(185,138,62,0.12)";
                 }}
                 onBlur={(e) => {
                   e.currentTarget.style.borderColor = inputBorder;
@@ -231,10 +278,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               }}
               title={preferDarkMain ? "Light mode" : "Dark mode"}
               onMouseEnter={(e) => {
-                e.currentTarget.style.color = t.primary;
+                e.currentTarget.style.color = "#b98a3e";
+                e.currentTarget.style.background = isDark
+                  ? "rgba(185,138,62,0.14)"
+                  : "rgba(185,138,62,0.12)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.color = mutedColor;
+                e.currentTarget.style.background = inputBg;
               }}
             >
               {preferDarkMain ? (
@@ -264,9 +315,50 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             />
           </header>
 
-          <main style={{ flex: 1, padding: "28px 28px 40px" }}>{children}</main>
+          <main style={{ flex: 1, padding: "24px 32px 48px", position: "relative" }}>
+            <AdminLoadingOverlay show={isNavigating} label="Loading page…" />
+            <div
+              style={{
+                maxWidth: "1400px",
+                opacity: isNavigating ? 0.45 : 1,
+                transition: "opacity 0.15s ease"
+              }}
+            >
+              {children}
+            </div>
+          </main>
         </div>
       </div>
     </div>
+  );
+}
+
+export function AdminShell({ children }: { children: React.ReactNode }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [preferDarkMain, setPreferDarkMain] = useState(false);
+
+  useEffect(() => {
+    setPreferDarkMain(readStoredTheme());
+  }, []);
+
+  function toggleMainTheme() {
+    setPreferDarkMain((prev) => {
+      const next = !prev;
+      if (typeof window !== "undefined") window.localStorage.setItem(THEME_KEY, next ? "dark" : "light");
+      return next;
+    });
+  }
+
+  return (
+    <AdminNavProvider>
+      <AdminShellInner
+        preferDarkMain={preferDarkMain}
+        toggleMainTheme={toggleMainTheme}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+      >
+        {children}
+      </AdminShellInner>
+    </AdminNavProvider>
   );
 }

@@ -87,5 +87,15 @@ export const updateProductSchema = createProductSchema.partial();
 
 export const productAdminSaveSchema = createProductSchema;
 
+export const reorderProductsSchema = z.object({
+  categorySlug: z
+    .union([z.string().max(220), z.null()])
+    .optional()
+    .transform((v) => (v == null || String(v).trim() === "" ? null : String(v).trim())),
+  orderedIds: z.array(z.string().uuid()).min(1).max(2000)
+});
+
 export type CreateProductBody = z.infer<typeof createProductSchema>;
 export type UpdateProductBody = z.infer<typeof updateProductSchema>;
+export type ReorderProductsBody = z.infer<typeof reorderProductsSchema>;
+
