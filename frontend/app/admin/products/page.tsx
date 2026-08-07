@@ -41,7 +41,7 @@ export default function AdminProductsPage() {
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
-  const [viewMode, setViewMode] = useState<ViewMode>("paginated");
+  const [viewMode, setViewMode] = useState<ViewMode>("full");
   const [items, setItems] = useState<AdminProductRow[]>([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 24, total: 0, totalPages: 1 });
   const [categories, setCategories] = useState<{ slug: string; label: string }[]>([]);
@@ -58,6 +58,12 @@ export default function AdminProductsPage() {
 
   const searchActive = q.trim().length > 0;
   const canReorder = viewMode === "full" && !searchActive && !savingOrder;
+  const reorderHint =
+    viewMode !== "full"
+      ? "Switch to Full list to drag-reorder products."
+      : searchActive
+        ? "Clear search to enable drag-reorder."
+        : "Drag the grip handle to set storefront order. Saves automatically.";
 
   useEffect(() => {
     fetchCategoryTree({ cache: "no-store" })
@@ -409,7 +415,9 @@ export default function AdminProductsPage() {
 
       {savingOrder ? (
         <p style={{ fontSize: "13px", color: "var(--admin-text-muted, #8a7060)" }}>Saving order…</p>
-      ) : null}
+      ) : (
+        <p style={{ fontSize: "13px", color: "var(--admin-text-muted, #8a7060)" }}>{reorderHint}</p>
+      )}
 
       {err ? (
         <p className="text-sm text-red-600 dark:text-red-400" role="alert">
