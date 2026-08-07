@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Clock } from "lucide-react";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import {
@@ -20,6 +21,25 @@ const SOURCE_FILTERS: Array<{ value: string; label: string }> = [
   { value: "EVENT", label: "Event" },
   { value: "INSIGHTS", label: "Insights" }
 ];
+
+const FILTER_ICONS: Record<string, string> = {
+  "": "🗂️",
+  WHATSAPP: "💬",
+  CONTACT: "✉️",
+  CORPORATE: "🏢",
+  COURSE: "📚",
+  EVENT: "🎉",
+  INSIGHTS: "💡"
+};
+
+const SOURCE_BADGE_CLS: Record<string, string> = {
+  WHATSAPP: "bg-green-50 text-green-800 border border-green-200/60",
+  CONTACT: "bg-blue-50 text-blue-800 border border-blue-200/60",
+  CORPORATE: "bg-purple-50 text-purple-800 border border-purple-200/60",
+  COURSE: "bg-orange-50 text-orange-800 border border-orange-200/60",
+  EVENT: "bg-pink-50 text-pink-800 border border-pink-200/60",
+  INSIGHTS: "bg-amber-50 text-amber-800 border border-amber-200/60"
+};
 
 /** Common dial codes for Sarveda’s India + international customers. */
 const COUNTRY_DIAL_OPTIONS: Array<{ dial: string; label: string }> = [
@@ -129,14 +149,21 @@ export default function AdminChatsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="mx-auto max-w-[1200px] px-6 pb-8">
+      <div
+        className="mb-2 flex flex-wrap items-end justify-between gap-4"
+        style={{
+          background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)",
+          borderRadius: "16px",
+          padding: "24px 28px"
+        }}
+      >
         <div>
-          <h1 className="font-serif text-2xl font-semibold text-stone-900 dark:text-stone-100">Chats</h1>
-          <p className="mt-1 text-sm text-stone-500">
+          <h1 className="font-serif text-3xl font-bold text-[#faf5ec]">💬 Chats</h1>
+          <p className="mt-1 text-sm text-[#a8c4b0]">
             Customer enquiries from contact, corporate, courses, events, and insights.
             {unreadCount > 0 ? (
-              <span className="ml-2 font-semibold text-amber-700">{unreadCount} unread</span>
+              <span className="ml-2 font-bold text-[#f6c95a]">{unreadCount} unread</span>
             ) : null}
           </p>
         </div>
@@ -147,14 +174,22 @@ export default function AdminChatsPage() {
               resetStartForm();
               setStartOpen(true);
             }}
-            className="rounded-lg bg-stone-900 px-3 py-2 text-sm font-semibold text-amber-50 hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900"
+            className="px-3 py-2 text-sm"
+            style={{
+              background: "linear-gradient(135deg, #b98a3e, #c8960a)",
+              color: "#fff",
+              fontWeight: 700,
+              boxShadow: "0 2px 8px rgba(185,138,62,0.35)",
+              borderRadius: "10px",
+              border: "none"
+            }}
           >
-            Start new chat
+            📲 Start new chat
           </button>
           <button
             type="button"
             onClick={() => void load()}
-            className="rounded-lg border border-stone-300 px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 dark:border-stone-600 dark:text-stone-200"
+            className="rounded-lg border border-white/20 px-3 py-2 text-sm font-medium text-[#faf5ec] transition-colors duration-150 hover:bg-[#faf5ec]/10"
           >
             Refresh
           </button>
@@ -162,27 +197,40 @@ export default function AdminChatsPage() {
       </div>
 
       <div className="mt-6 flex flex-wrap gap-2">
-        {SOURCE_FILTERS.map((f) => (
-          <button
-            key={f.value || "all"}
-            type="button"
-            onClick={() => setSource(f.value)}
-            className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
-              source === f.value
-                ? "border-stone-900 bg-stone-900 text-amber-50 dark:border-stone-200 dark:bg-stone-100 dark:text-stone-900"
-                : "border-stone-300 text-stone-600 dark:border-stone-600"
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
+        {SOURCE_FILTERS.map((f) => {
+          const active = source === f.value;
+          return (
+            <button
+              key={f.value || "all"}
+              type="button"
+              onClick={() => setSource(f.value)}
+              className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
+                active
+                  ? ""
+                  : "border-stone-300 text-stone-600 hover:border-[#b98a3e] hover:text-[#b98a3e] dark:border-stone-600"
+              }`}
+              style={
+                active
+                  ? {
+                      background: "linear-gradient(135deg, #1c352a, #2d5040)",
+                      borderColor: "#b98a3e",
+                      color: "#faf5ec",
+                      boxShadow: "0 1px 4px rgba(28,53,42,0.3)"
+                    }
+                  : undefined
+              }
+            >
+              {FILTER_ICONS[f.value] ?? ""} {f.label}
+            </button>
+          );
+        })}
         <button
           type="button"
           onClick={() => setUnreadOnly((v) => !v)}
           className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
             unreadOnly
-              ? "border-amber-600 bg-amber-50 text-amber-900"
-              : "border-stone-300 text-stone-600 dark:border-stone-600"
+              ? "border-[#b98a3e] bg-[#b98a3e]/10 text-[#7a5a20]"
+              : "border-stone-300 text-stone-600 hover:border-[#b98a3e] hover:text-[#b98a3e] dark:border-stone-600"
           }`}
         >
           Unread only
@@ -191,49 +239,96 @@ export default function AdminChatsPage() {
 
       {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
 
-      <div className="mt-6 overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-stone-900">
+      <div className="mt-6 overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-[0_4px_20px_rgba(28,53,42,0.08)] dark:border-stone-700 dark:bg-stone-900">
         {loading ? (
-          <p className="p-8 text-center text-sm text-stone-500">Loading…</p>
+          <div className="flex items-center justify-center gap-2 p-8 text-sm text-stone-400">
+            <span className="animate-spin text-lg">⟳</span>
+            <span>Loading conversations…</span>
+          </div>
         ) : items.length === 0 ? (
-          <p className="p-8 text-center text-sm text-stone-500">No conversations yet.</p>
+          <div className="flex flex-col items-center gap-3 p-12 text-center">
+            <span className="text-5xl">💬</span>
+            <p className="text-base font-semibold text-stone-700">No conversations yet</p>
+            <p className="text-sm text-stone-400">
+              Start a new WhatsApp chat or wait for incoming enquiries
+            </p>
+          </div>
         ) : (
           <ul className="divide-y divide-stone-100 dark:divide-stone-800">
-            {items.map((thread) => (
-              <li key={thread.id}>
-                <Link
-                  href={`/admin/chats/${thread.id}`}
-                  className={`flex gap-4 px-4 py-4 transition hover:bg-stone-50 dark:hover:bg-stone-800/50 ${
-                    thread.unreadByAdmin ? "bg-amber-50/40 dark:bg-amber-950/20" : ""
-                  }`}
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {thread.unreadByAdmin ? (
-                        <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500" aria-hidden />
-                      ) : null}
-                      <span className="font-semibold text-stone-900 dark:text-stone-100">
-                        {thread.customerName}
-                      </span>
-                      <span className="text-xs text-stone-500">
-                        {thread.source === "WHATSAPP"
-                          ? thread.customerPhone ?? ""
-                          : thread.customerEmail}
-                      </span>
-                      <span className="rounded-md bg-stone-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-stone-600 dark:bg-stone-800 dark:text-stone-300">
-                        {ENQUIRY_SOURCE_LABELS[thread.source as EnquirySource] ?? thread.source}
-                      </span>
+            {items.map((thread) => {
+              const initial = (thread.customerName?.trim()?.[0] || "?").toUpperCase();
+              const isWa = thread.source === "WHATSAPP";
+              return (
+                <li key={thread.id}>
+                  <Link
+                    href={`/admin/chats/${thread.id}`}
+                    className={`flex gap-4 px-4 py-4 transition hover:bg-gradient-to-r hover:from-[#faf5ec]/40 hover:to-transparent dark:hover:from-stone-800/50 ${
+                      thread.unreadByAdmin
+                        ? "bg-gradient-to-r from-amber-50/60 to-transparent dark:from-amber-950/20"
+                        : ""
+                    }`}
+                  >
+                    <div
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: "50%",
+                        background: isWa
+                          ? "linear-gradient(135deg, #128c7e, #25d366)"
+                          : "linear-gradient(135deg, #1c352a, #2d5040)",
+                        color: "#faf5ec",
+                        fontSize: "16px",
+                        fontWeight: 700,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                        textTransform: "uppercase"
+                      }}
+                      aria-hidden
+                    >
+                      {initial}
                     </div>
-                    <p className="mt-1 truncate text-sm text-stone-600 dark:text-stone-400">
-                      {previewText(thread)}
-                    </p>
-                    {thread.orderNumber ? (
-                      <p className="mt-1 font-mono text-xs text-stone-500">Order {thread.orderNumber}</p>
-                    ) : null}
-                  </div>
-                  <time className="shrink-0 text-xs text-stone-400">{formatWhen(thread.lastMessageAt)}</time>
-                </Link>
-              </li>
-            ))}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {thread.unreadByAdmin ? (
+                          <span
+                            className="h-2.5 w-2.5 shrink-0 rounded-full bg-[#b98a3e] shadow-sm shadow-amber-500/50"
+                            aria-hidden
+                          />
+                        ) : null}
+                        <span className="text-base font-bold text-stone-900 dark:text-stone-100">
+                          {thread.customerName}
+                        </span>
+                        <span className="text-xs text-stone-500">
+                          {thread.source === "WHATSAPP"
+                            ? thread.customerPhone ?? ""
+                            : thread.customerEmail}
+                        </span>
+                        <span
+                          className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                            SOURCE_BADGE_CLS[thread.source] ??
+                            "bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300"
+                          }`}
+                        >
+                          {ENQUIRY_SOURCE_LABELS[thread.source as EnquirySource] ?? thread.source}
+                        </span>
+                      </div>
+                      <p className="mt-1 truncate text-[13px] leading-snug text-stone-500 dark:text-stone-400">
+                        {previewText(thread)}
+                      </p>
+                      {thread.orderNumber ? (
+                        <p className="mt-1 font-mono text-xs text-stone-500">Order {thread.orderNumber}</p>
+                      ) : null}
+                    </div>
+                    <time className="inline-flex shrink-0 items-center gap-1 text-xs text-stone-400">
+                      <Clock size={11} className="text-stone-400" aria-hidden />
+                      {formatWhen(thread.lastMessageAt)}
+                    </time>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
@@ -252,13 +347,25 @@ export default function AdminChatsPage() {
         >
           <form
             onSubmit={(e) => void handleStartChat(e)}
-            className="w-full max-w-md rounded-xl border border-stone-200 bg-white p-5 shadow-xl dark:border-stone-600 dark:bg-stone-900"
+            className="w-full max-w-md overflow-hidden rounded-xl border border-stone-200 bg-white p-5 shadow-xl dark:border-stone-600 dark:bg-stone-900"
           >
+            <div
+              style={{
+                height: "4px",
+                borderRadius: "8px 8px 0 0",
+                background: "linear-gradient(90deg, #1c352a, #b98a3e)",
+                marginTop: "-20px",
+                marginLeft: "-20px",
+                marginRight: "-20px",
+                marginBottom: "16px"
+              }}
+              aria-hidden
+            />
             <h2
               id="start-chat-title"
               className="text-lg font-semibold text-stone-900 dark:text-stone-50"
             >
-              Start new WhatsApp chat
+              📲 Start new WhatsApp chat
             </h2>
             <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
               Opens a WhatsApp conversation. For a new number, keep “Send outreach template”
@@ -382,7 +489,14 @@ export default function AdminChatsPage() {
               <button
                 type="submit"
                 disabled={starting || !phone.trim()}
-                className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-semibold text-amber-50 disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
+                className="px-4 py-2 text-sm disabled:opacity-50"
+                style={{
+                  background: "linear-gradient(135deg, #b98a3e, #c8960a)",
+                  color: "#fff",
+                  fontWeight: 700,
+                  borderRadius: "10px",
+                  border: "none"
+                }}
               >
                 {starting ? "Opening…" : "Open chat"}
               </button>

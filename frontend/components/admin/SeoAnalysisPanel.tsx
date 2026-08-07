@@ -37,10 +37,10 @@ function textIncludesKeyword(text: string, keyword: string): boolean {
 }
 
 function scoreColor(score: number): string {
-  if (score === 8) return "text-emerald-700";
-  if (score >= 6) return "text-amber-700";
-  if (score >= 4) return "text-orange-700";
-  return "text-rose-700";
+  if (score === 8) return "text-emerald-700 dark:text-emerald-400";
+  if (score >= 6) return "text-amber-700 dark:text-amber-400";
+  if (score >= 4) return "text-orange-700 dark:text-orange-400";
+  return "text-rose-700 dark:text-rose-400";
 }
 
 function scoreLabel(score: number): string {
@@ -138,51 +138,69 @@ export function SeoAnalysisPanel({
   ]);
 
   return (
-    <div className="mt-6 space-y-6 rounded-xl border border-emerald-200 bg-amber-50/40 p-4">
+    <div className="mt-6 space-y-6 rounded-xl border border-emerald-200 bg-amber-50/40 p-4 dark:border-[var(--admin-card-border,#2a4a35)] dark:bg-[var(--admin-card-bg,#132a1a)]">
       <div>
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-emerald-800">Google SERP Preview</h3>
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-emerald-800 dark:text-[var(--admin-text,#e8e0d4)]">
+          Google SERP Preview
+        </h3>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
-          <div className="rounded-lg border border-stone-200 bg-white p-3">
-            <p className="text-xs text-emerald-700">
+          <div className="rounded-lg border border-stone-200 bg-white p-3 dark:border-[var(--admin-card-border,#2a4a35)] dark:bg-[var(--admin-input-bg,rgba(255,255,255,0.05))]">
+            <p className="text-xs text-emerald-700 dark:text-[#7da58a]">
               🌐 sarveda.com › {serpPath} › {slug || `${serpPath}-slug`}
             </p>
-            <p className="mt-1 text-lg font-medium text-blue-700">{truncate(`${title} | Sarveda`, 65)}</p>
-            <p className="mt-1 text-sm text-stone-600">{truncate(description, 158)}</p>
+            <p className="mt-1 text-lg font-medium text-blue-700 dark:text-[#93c5fd]">
+              {truncate(`${title} | Sarveda`, 65)}
+            </p>
+            <p className="mt-1 text-sm text-stone-600 dark:text-[var(--admin-text-muted,#8aaa95)]">
+              {truncate(description, 158)}
+            </p>
           </div>
-          <div className="max-w-xs rounded-lg border border-stone-200 bg-white p-3">
-            <p className="text-xs text-emerald-700">🌐 sarveda.com</p>
-            <p className="mt-1 text-base font-medium text-blue-700">{truncate(`${title} | Sarveda`, 48)}</p>
-            <p className="mt-1 text-sm text-stone-600">{truncate(description, 110)}</p>
+          <div className="max-w-xs rounded-lg border border-stone-200 bg-white p-3 dark:border-[var(--admin-card-border,#2a4a35)] dark:bg-[var(--admin-input-bg,rgba(255,255,255,0.05))]">
+            <p className="text-xs text-emerald-700 dark:text-[#7da58a]">🌐 sarveda.com</p>
+            <p className="mt-1 text-base font-medium text-blue-700 dark:text-[#93c5fd]">
+              {truncate(`${title} | Sarveda`, 48)}
+            </p>
+            <p className="mt-1 text-sm text-stone-600 dark:text-[var(--admin-text-muted,#8aaa95)]">
+              {truncate(description, 110)}
+            </p>
           </div>
         </div>
       </div>
 
       <div>
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-emerald-800">Character Counters</h3>
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-emerald-800 dark:text-[var(--admin-text,#e8e0d4)]">
+          Character Counters
+        </h3>
         <div className="mt-3 space-y-4">
           <div>
-            <p className="text-sm font-medium text-stone-800">SEO Title: {titleLen} / 60 characters</p>
-            <div className="mt-1 h-2 w-full rounded bg-stone-200">
-              <div className={`h-2 rounded ${titleBar}`} style={{ width: `${titleProgress}%` }} />
+            <p className="text-sm font-medium text-stone-800 dark:text-[var(--admin-text,#e8e0d4)]">
+              SEO Title: {titleLen} / 60 characters
+            </p>
+            <div className="mt-1 h-2 w-full rounded bg-stone-200 dark:bg-[var(--admin-input-bg,rgba(255,255,255,0.08))]">
+              <div className={`h-2 rounded transition-all duration-300 ${titleBar}`} style={{ width: `${titleProgress}%` }} />
             </div>
           </div>
           <div>
-            <p className="text-sm font-medium text-stone-800">Meta Description: {descLen} / 158 characters</p>
-            <div className="mt-1 h-2 w-full rounded bg-stone-200">
-              <div className={`h-2 rounded ${descBar}`} style={{ width: `${descProgress}%` }} />
+            <p className="text-sm font-medium text-stone-800 dark:text-[var(--admin-text,#e8e0d4)]">
+              Meta Description: {descLen} / 158 characters
+            </p>
+            <div className="mt-1 h-2 w-full rounded bg-stone-200 dark:bg-[var(--admin-input-bg,rgba(255,255,255,0.08))]">
+              <div className={`h-2 rounded transition-all duration-300 ${descBar}`} style={{ width: `${descProgress}%` }} />
             </div>
           </div>
         </div>
       </div>
 
       <div>
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-emerald-800">SEO Analysis Checklist</h3>
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-emerald-800 dark:text-[var(--admin-text,#e8e0d4)]">
+          SEO Analysis Checklist
+        </h3>
         <p className={`mt-2 text-sm font-semibold ${scoreColor(passed)}`}>
           {passed}/{checks.length} checks passed - {scoreLabel(passed)}
         </p>
-        <div className="mt-1 h-2 w-full rounded bg-stone-200">
+        <div className="mt-1 h-2 w-full rounded bg-stone-200 dark:bg-[var(--admin-input-bg,rgba(255,255,255,0.08))]">
           <div
-            className={`h-2 rounded ${
+            className={`h-2 rounded transition-all duration-300 ${
               passed === 8 ? "bg-emerald-600" : passed >= 6 ? "bg-amber-500" : passed >= 4 ? "bg-orange-500" : "bg-rose-500"
             }`}
             style={{ width: `${scorePercent}%` }}
@@ -191,13 +209,29 @@ export function SeoAnalysisPanel({
         <ul className="mt-3 space-y-2">
           {checks.map((item) => (
             <li key={item.label} className="flex items-start justify-between gap-4 text-sm">
-              <span className="text-stone-700">{item.label}</span>
+              <span className="text-stone-700 dark:text-[var(--admin-text,#e8e0d4)]">{item.label}</span>
               <span
                 className={`shrink-0 font-medium ${
-                  item.check ? "text-emerald-700" : item.required ? "text-rose-700" : "text-amber-700"
+                  item.check
+                    ? "text-emerald-700 dark:text-emerald-400"
+                    : item.required
+                      ? "text-rose-700 dark:text-rose-400"
+                      : "text-amber-700 dark:text-amber-400"
                 }`}
               >
-                {item.check ? "✅" : item.required ? "❌" : "⚠️"}
+                {item.check ? (
+                  <span className="admin-tick-pop inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-white">
+                    ✓
+                  </span>
+                ) : item.required ? (
+                  <span className="admin-x-pop inline-flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[11px] font-bold text-white">
+                    ✕
+                  </span>
+                ) : (
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 text-[11px] font-bold text-stone-900">
+                    !
+                  </span>
+                )}
               </span>
             </li>
           ))}

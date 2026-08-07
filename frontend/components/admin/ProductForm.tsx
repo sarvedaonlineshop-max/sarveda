@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronLeft, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   checkAdminSkus,
@@ -20,6 +21,7 @@ import {
 import { formatAccordionSection, plainTextFromAccordionContent } from "@/lib/accordion-format";
 import { applyApiError, tabForFieldPath } from "@/lib/admin-errors";
 import { AdminToast } from "@/components/admin/AdminToast";
+import { AdminLoadingOverlay } from "@/components/admin/AdminLoadingOverlay";
 import { ProductAudioUpload } from "@/components/admin/ProductAudioUpload";
 import { ProductBarcodeTab } from "@/components/admin/ProductBarcodeTab";
 import { VariantPricingShippingTables } from "@/components/admin/VariantPricingShippingTables";
@@ -149,7 +151,7 @@ function CategoryCheckTree({
     <ul className="space-y-1 pl-3 text-sm">
       {nodes.map((n) => (
         <li key={n.id}>
-          <label className="flex cursor-pointer items-center gap-2 py-0.5 hover:text-amber-700 dark:text-stone-200 dark:hover:text-amber-400">
+          <label className="flex cursor-pointer items-center gap-2 py-0.5 text-[var(--admin-text,#2c2420)] hover:text-[#b98a3e]">
             <input
               type="checkbox"
               checked={selected.has(n.id)}
@@ -168,8 +170,11 @@ function CategoryCheckTree({
 }
 
 const inputCls =
-  "mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100";
-const labelCls = "text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400";
+  "mt-1 w-full rounded-lg border border-[var(--admin-input-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-3 py-2 text-sm text-[var(--admin-text,#2c2420)] transition-colors duration-150 focus:border-[#b98a3e] focus:ring-1 focus:ring-[rgba(185,138,62,0.15)] [&_option]:bg-white [&_option]:text-[#2c2420]";
+const labelCls =
+  "text-xs font-semibold uppercase tracking-wider text-[var(--admin-label,#4a3728)]";
+const floatAddBtnCls =
+  "rounded-lg bg-[#dc2626] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#b91c1c] disabled:opacity-60";
 const fieldErrCls = "mt-1 text-xs text-red-600 dark:text-red-400";
 const DRAFT_KEY = "sarveda_admin_new_product_draft";
 
@@ -192,6 +197,9 @@ export function ProductForm({ productId }: { productId?: string }) {
   const isNew = !productId;
 
   const [tab, setTab] = useState<FormTab>("general");
+  const [tabLoading, setTabLoading] = useState(false);
+  const [variantsBannerDismissed, setVariantsBannerDismissed] = useState(false);
+  const tabSwitchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [categoryTree, setCategoryTree] = useState<CategoryNode[]>([]);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
@@ -212,6 +220,8 @@ export function ProductForm({ productId }: { productId?: string }) {
   const [audioUrl, setAudioUrl] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [expressShippingEnabled, setExpressShippingEnabled] = useState(true);
+  const [expressShippingIndia, setExpressShippingIndia] = useState(true);
+  const [expressShippingIntl, setExpressShippingIntl] = useState(true);
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDescription, setSeoDescription] = useState("");
   const [seoKeyword, setSeoKeyword] = useState("");
@@ -257,6 +267,9 @@ export function ProductForm({ productId }: { productId?: string }) {
       setExpressShippingEnabled(
         (p as { expressShippingEnabled?: boolean }).expressShippingEnabled !== false
       );
+      const exOn = (p as { expressShippingEnabled?: boolean }).expressShippingEnabled !== false;
+      setExpressShippingIndia(exOn);
+      setExpressShippingIntl(exOn);
       setSeoTitle(String(p.seoTitle ?? ""));
       setSeoDescription(String(p.seoDescription ?? ""));
       setSeoKeyword(String(p.seoKeyword ?? ""));
@@ -485,6 +498,14 @@ export function ProductForm({ productId }: { productId?: string }) {
     if (target === "variants") {
       variants.forEach((v, i) => {
         if (!v.sku.trim()) errors[`variants.${i}.sku`] = "SKU is required.";
+        if (variants.length > 1) {
+          v.attributes.forEach((attr, ai) => {
+            if (!attr.value.trim()) {
+              const label = attr.name || `Option level ${ai + 1}`;
+              errors[`variants.${i}.attr.${ai}`] = `${label} is required.`;
+            }
+          });
+        }
         const mrp = parseNonNegativeNumber(v.mrpInr);
         const sale = parseNonNegativeNumber(v.saleInr);
         if (v.mrpInr.trim() && mrp === null) errors[`variants.${i}.mrpInr`] = "MRP cannot be negative.";
@@ -543,7 +564,7 @@ export function ProductForm({ productId }: { productId?: string }) {
     const first = Object.keys(errors)[0];
     if (first) {
       setErr(errors[first]!);
-      setTab(tabForFieldPath(first));
+      selectTab(tabForFieldPath(first));
     }
   }
 
@@ -555,13 +576,30 @@ export function ProductForm({ productId }: { productId?: string }) {
     }
     setErr(null);
     setFieldErrors({});
-    if (tabIndex < FORM_TABS.length - 1) setTab(FORM_TABS[tabIndex + 1]!.id);
+    if (tabIndex < FORM_TABS.length - 1) selectTab(FORM_TABS[tabIndex + 1]!.id);
   }
 
   function goBack() {
     setErr(null);
-    if (tabIndex > 0) setTab(FORM_TABS[tabIndex - 1]!.id);
+    if (tabIndex > 0) selectTab(FORM_TABS[tabIndex - 1]!.id);
   }
+
+  function selectTab(next: FormTab) {
+    if (next === tab) return;
+    if (tabSwitchTimer.current) clearTimeout(tabSwitchTimer.current);
+    setTabLoading(true);
+    tabSwitchTimer.current = setTimeout(() => {
+      setTab(next);
+      setTabLoading(false);
+      tabSwitchTimer.current = null;
+    }, 220);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (tabSwitchTimer.current) clearTimeout(tabSwitchTimer.current);
+    };
+  }, []);
 
   function toggleCat(catId: string) {
     setSelectedCats((prev) => {
@@ -905,24 +943,42 @@ export function ProductForm({ productId }: { productId?: string }) {
     }
   }
 
-  if (loading) {
-    return <p className="text-sm text-stone-500">Loading product…</p>;
-  }
-
   const onLastTab = tabIndex === FORM_TABS.length - 1;
+
+  const variantIssueMessages = useMemo(() => {
+    const msgs: string[] = [];
+    if (!skuFamily) msgs.push("Choose an SKU family on the General step first.");
+    const errors = validateTab("variants");
+    for (const m of Object.values(errors)) {
+      if (m && !msgs.includes(m)) msgs.push(m);
+    }
+    return msgs;
+    // validateTab closes over form fields in the dependency list
+  }, [skuFamily, variants, name, optionAxes, productType]);
+
+  useEffect(() => {
+    setVariantsBannerDismissed(false);
+  }, [variantIssueMessages.join("|")]);
+
+  const showVariantsBanner = tab === "variants" && !variantsBannerDismissed && variantIssueMessages.length > 0;
+
+  if (loading) {
+    return <p className="text-sm text-[var(--admin-text-muted,#8a7060)]">Loading product…</p>;
+  }
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-5 pb-28 font-sans">
       <AdminToast toast={toast} onDismiss={() => setToast(null)} />
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-stone-200 pb-4 dark:border-stone-700">
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--admin-card-border,#e8e2d9)] pb-4">
         <div>
           <Link
             href="/admin/products"
-            className="text-sm font-medium text-stone-600 hover:text-amber-700 dark:text-stone-400 dark:hover:text-amber-400"
+            className="inline-flex items-center gap-1 text-sm font-medium text-amber-700 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300"
           >
-            ← Products
+            <ChevronLeft size={14} aria-hidden />
+            Products
           </Link>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--admin-text,#2c2420)]">
             {isNew ? "Add product" : "Edit product"}
           </h1>
           {savedAt ? (
@@ -931,23 +987,19 @@ export function ProductForm({ productId }: { productId?: string }) {
             </p>
           ) : null}
           {isNew ? (
-            <p className="mt-1 max-w-xl text-sm text-stone-600 dark:text-stone-400">
+            <p className="mt-1 max-w-xl text-sm text-[var(--admin-text-muted,#8a7060)]">
               Work through each step — nothing is saved until you click{" "}
-              <strong className="font-medium text-stone-800 dark:text-stone-200">Create product</strong> on
+              <strong className="font-medium text-[var(--admin-text,#2c2420)]">Create product</strong> on
               the SEO step. You can move back anytime to change earlier sections.
             </p>
-          ) : (
-            <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
-              Use the tabs to navigate. Save applies all sections at once.
-            </p>
-          )}
+          ) : null}
         </div>
         {!isNew ? (
           <button
             type="button"
             disabled={deleting}
             onClick={() => void handleDelete()}
-            className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/40"
+            className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-700 transition-colors duration-150 hover:bg-red-50 hover:shadow-sm disabled:opacity-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/40"
           >
             {deleting ? "Archiving…" : "Archive product"}
           </button>
@@ -955,12 +1007,12 @@ export function ProductForm({ productId }: { productId?: string }) {
       </div>
 
       <nav
-        className="flex flex-wrap gap-2 rounded-xl border border-stone-200 bg-stone-50/80 p-2 dark:border-stone-700 dark:bg-stone-950/50"
+        className="flex flex-wrap gap-2 rounded-xl border border-[var(--admin-card-border,#e8e2d9)] bg-[var(--admin-card-bg,#faf9f7)] p-2"
         aria-label="Product form steps"
       >
         {FORM_TABS.map((t, i) => {
           const active = tab === t.id;
-          const done = i < tabIndex;
+          const tabOk = Object.keys(validateTab(t.id)).length === 0;
           return (
             <button
               key={t.id}
@@ -975,29 +1027,34 @@ export function ProductForm({ productId }: { productId?: string }) {
                 }
                 setErr(null);
                 setFieldErrors({});
-                setTab(t.id);
+                selectTab(t.id);
               }}
               className={`min-w-[8rem] flex-1 rounded-lg px-3 py-2.5 text-left transition-colors ${
                 active
-                  ? "bg-white shadow-sm ring-1 ring-amber-200 dark:bg-stone-900 dark:ring-amber-900/60"
-                  : "hover:bg-white/70 dark:hover:bg-stone-900/60"
+                  ? "bg-[var(--admin-card-bg,#fff)] shadow-sm ring-1 ring-[#b98a3e]/50"
+                  : "hover:bg-[var(--admin-row-hover,#faf5ec)]"
               }`}
+              style={active ? { borderLeft: "2px solid #b98a3e" } : undefined}
             >
               <span
-                className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
+                className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold ${
                   active
-                    ? "bg-amber-500 text-stone-900"
-                    : done
-                      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                      : "bg-stone-200 text-stone-600 dark:bg-stone-700 dark:text-stone-300"
+                    ? tabOk
+                      ? "bg-emerald-500 text-white admin-tick-pop shadow-sm"
+                      : "bg-rose-500 text-white admin-x-pop shadow-sm"
+                    : tabOk
+                      ? "bg-emerald-500 text-white admin-tick-pop"
+                      : "bg-rose-100 text-rose-600 admin-x-pop dark:bg-rose-950/50 dark:text-rose-400"
                 }`}
+                title={tabOk ? "All required fields look good" : "Something missing or invalid on this step"}
+                aria-label={tabOk ? `${t.label}: complete` : `${t.label}: incomplete`}
               >
-                {done && !active ? "✓" : i + 1}
+                {tabOk ? "✓" : "✕"}
               </span>
-              <span className="mt-1 block text-sm font-semibold text-stone-800 dark:text-stone-100">
+              <span className="mt-1 block text-sm font-semibold text-[var(--admin-text,#2c2420)]">
                 {t.label}
               </span>
-              <span className="block text-[11px] text-stone-500">{t.hint}</span>
+              <span className="block text-[11px] text-[var(--admin-text-muted,#8a7060)]">{t.hint}</span>
             </button>
           );
         })}
@@ -1005,8 +1062,9 @@ export function ProductForm({ productId }: { productId?: string }) {
 
       <form
         onSubmit={(e) => e.preventDefault()}
-        className="space-y-5 rounded-xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-700 dark:bg-stone-900"
+        className="relative space-y-5 rounded-xl border border-[var(--admin-card-border,#e8e2d9)] bg-[var(--admin-card-bg,#fff)] p-6 shadow-[0_2px_12px_rgba(44,36,32,0.06)]"
       >
+        <AdminLoadingOverlay show={tabLoading} label="Loading section…" />
         {tab === "general" ? (
           <div className="space-y-4">
             <div>
@@ -1125,7 +1183,7 @@ export function ProductForm({ productId }: { productId?: string }) {
                     </option>
                   ))}
                 </select>
-                <p className="mt-1 text-xs text-stone-500">
+                <p className="mt-1 text-xs text-[var(--admin-text-muted,#8a7060)]">
                   Prefix for auto SKUs on the Variants step (Others = no prefix).
                 </p>
                 <FieldErr message={fieldErrors.skuFamily} />
@@ -1146,16 +1204,11 @@ export function ProductForm({ productId }: { productId?: string }) {
                     </option>
                   ))}
                 </select>
-                <p className="mt-1 text-xs text-stone-500">
-                  Woo used <code className="text-[10px]">gst18</code> and{" "}
-                  <code className="text-[10px]">standard</code> for 18% — we store{" "}
-                  <strong>standard</strong> only.
-                </p>
               </div>
               <div>
                 <label htmlFor="hsn" className={labelCls}>
                   HSN Code
-                  <span className="ml-1.5 font-normal normal-case tracking-normal text-stone-400">
+                  <span className="ml-1.5 font-normal normal-case tracking-normal text-[var(--admin-text-muted,#8a7060)]">
                     (GST invoice)
                   </span>
                 </label>
@@ -1168,16 +1221,7 @@ export function ProductForm({ productId }: { productId?: string }) {
                 />
               </div>
             </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={expressShippingEnabled}
-                onChange={(e) => setExpressShippingEnabled(e.target.checked)}
-                className="rounded text-amber-600"
-              />
-              Offer express shipping on PDP (2–3 days India, 5–7 days international)
-            </label>
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex items-center gap-2 text-sm text-[var(--admin-text,#2c2420)]">
               <input
                 type="checkbox"
                 checked={hasAudio}
@@ -1198,41 +1242,69 @@ export function ProductForm({ productId }: { productId?: string }) {
             ) : null}
             <div>
               <p className={labelCls}>Categories</p>
-              <div className="mt-2 max-h-48 overflow-y-auto rounded-lg border border-stone-200 bg-stone-50 p-3 dark:border-stone-600 dark:bg-stone-950/60">
+              <div className="mt-2 max-h-48 overflow-y-auto rounded-lg border border-[var(--admin-card-border,#e8e2d9)] bg-[var(--admin-input-bg,#faf9f7)] p-3 text-[var(--admin-text,#2c2420)]">
                 <CategoryCheckTree nodes={categoryTree} selected={selectedCats} onToggle={toggleCat} />
+              </div>
+            </div>
+            <div className="rounded-lg border border-[var(--admin-card-border,#e8e2d9)] bg-[var(--admin-input-bg,#faf9f7)] p-4">
+              <p className={labelCls}>Shipping modes</p>
+              <div className="mt-3 space-y-2">
+                <label className="flex items-center gap-2 text-sm text-[var(--admin-text,#2c2420)]">
+                  <input
+                    type="checkbox"
+                    checked={expressShippingIndia}
+                    onChange={(e) => {
+                      const next = e.target.checked;
+                      setExpressShippingIndia(next);
+                      setExpressShippingEnabled(next || expressShippingIntl);
+                    }}
+                    className="rounded text-amber-600"
+                  />
+                  India — Express 2–3 days
+                </label>
+                <label className="flex items-center gap-2 text-sm text-[var(--admin-text,#2c2420)]">
+                  <input
+                    type="checkbox"
+                    checked={expressShippingIntl}
+                    onChange={(e) => {
+                      const next = e.target.checked;
+                      setExpressShippingIntl(next);
+                      setExpressShippingEnabled(expressShippingIndia || next);
+                    }}
+                    className="rounded text-amber-600"
+                  />
+                  International — Express 5–7 days
+                </label>
               </div>
             </div>
           </div>
         ) : null}
 
         {tab === "variants" ? (
-          <div className="space-y-6">
-            <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
-              <strong>Variant images &amp; video</strong> are set inside each variant card below (at the
-              top). Shared gallery on the next step is only a fallback when a variant has no images.
-            </div>
-            <div className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-sm dark:border-stone-600 dark:bg-stone-950/50">
-              <div className="min-w-0 flex-1 text-stone-600 dark:text-stone-300">
-                <p>
-                  SKUs auto-build as{" "}
-                  <code className="text-xs">FAMILY-PRODUCT-OPTION…</code> (e.g.{" "}
-                  <code className="text-xs">YO-YM-L-B</code>). Editing a SKU locks that row.
-                </p>
-                {!skuFamily ? (
-                  <p className="mt-1 text-amber-800 dark:text-amber-300">
-                    Choose an SKU family on the General step first.
-                  </p>
-                ) : null}
-              </div>
-              <button
-                type="button"
-                disabled={!skuFamily || !name.trim() || skuGenBusy}
-                onClick={() => void applyGeneratedSkus({ forceAll: true })}
-                className="shrink-0 rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-800 hover:bg-stone-100 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-100 dark:hover:bg-stone-800"
+          <div className="relative space-y-6">
+            {showVariantsBanner ? (
+              <div
+                className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-amber-500/40 bg-amber-50 px-4 py-3 text-sm dark:border-amber-500/35 dark:bg-[rgba(185,138,62,0.12)]"
+                role="alert"
               >
-                {skuGenBusy ? "Generating…" : "Regenerate SKUs"}
-              </button>
-            </div>
+                <div className="min-w-0 flex-1 space-y-1 text-amber-950 dark:text-[#f0e2b8]">
+                  {variantIssueMessages.slice(0, 4).map((msg) => (
+                    <p key={msg}>{msg}</p>
+                  ))}
+                  {variantIssueMessages.length > 4 ? (
+                    <p className="text-xs opacity-80">+{variantIssueMessages.length - 4} more issues</p>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setVariantsBannerDismissed(true)}
+                  className="shrink-0 rounded-md p-1 text-amber-800/70 transition-colors hover:bg-amber-100 hover:text-amber-950 dark:text-[#e8d9a8]/80 dark:hover:bg-[rgba(185,138,62,0.2)] dark:hover:text-[#fffbf5]"
+                  aria-label="Dismiss"
+                >
+                  <X size={16} strokeWidth={2} />
+                </button>
+              </div>
+            ) : null}
             <FieldErr message={fieldErrors.variants} />
             {showVariantAxes ? (
               <VariantOptionAxesEditor axes={optionAxes} onChange={handleOptionAxesChange} />
@@ -1240,10 +1312,10 @@ export function ProductForm({ productId }: { productId?: string }) {
             {variants.map((v, vi) => (
               <div
                 key={v.id ?? `new-${vi}`}
-                className="rounded-lg border border-stone-200 p-4 dark:border-stone-600"
+                className="rounded-xl border-2 border-[#1c352a]/35 bg-[var(--admin-card-bg,#fff)] p-5 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-[#b98a3e]/45"
               >
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-medium text-stone-800 dark:text-stone-100">
+                  <p className="font-medium text-[var(--admin-text,#2c2420)]">
                     {showVariantAxes && v.attributes.some((a) => a.value.trim())
                       ? v.attributes
                           .filter((a) => a.value.trim())
@@ -1277,91 +1349,8 @@ export function ProductForm({ productId }: { productId?: string }) {
                     ) : null}
                   </div>
                 </div>
-                <VariantMediaBlock
-                  images={v.images}
-                  videoUrl={v.videoUrl}
-                  fieldPrefix={`variants.${vi}`}
-                  fieldErrors={fieldErrors}
-                  prominent
-                  onImagesChange={(next) =>
-                    setVariants((prev) =>
-                      prev.map((x, i) => (i === vi ? { ...x, images: next } : x))
-                    )
-                  }
-                  onVideoUrlChange={(url) =>
-                    setVariants((prev) =>
-                      prev.map((x, i) => (i === vi ? { ...x, videoUrl: url } : x))
-                    )
-                  }
-                />
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <label className={labelCls}>SKU</label>
-                    <input
-                      value={v.sku}
-                      onChange={(e) =>
-                        setVariants((prev) =>
-                          prev.map((x, i) =>
-                            i === vi
-                              ? { ...x, sku: e.target.value, skuManual: true }
-                              : x
-                          )
-                        )
-                      }
-                      className={inputCls}
-                      aria-invalid={Boolean(fieldErrors[`variants.${vi}.sku`])}
-                    />
-                    {v.skuManual ? (
-                      <p className="mt-1 text-xs text-stone-500">Locked (edited manually).</p>
-                    ) : null}
-                    <FieldErr message={fieldErrors[`variants.${vi}.sku`]} />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Stock on hand</label>
-                    <input
-                      inputMode="numeric"
-                      min={0}
-                      value={v.onHand}
-                      onChange={(e) =>
-                        setVariants((prev) =>
-                          prev.map((x, i) =>
-                            i === vi
-                              ? { ...x, onHand: sanitizeNonNegativeInput(e.target.value, false) }
-                              : x
-                          )
-                        )
-                      }
-                      className={inputCls}
-                    />
-                    <p className="mt-1 text-xs text-stone-500">
-                      Day-to-day stock is synced from Zoho on the Inventory page.
-                    </p>
-                    <FieldErr message={fieldErrors[`variants.${vi}.onHand`]} />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Weight (grams)</label>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      min={50}
-                      value={v.weightGrams}
-                      onChange={(e) =>
-                        setVariants((prev) =>
-                          prev.map((x, i) =>
-                            i === vi ? { ...x, weightGrams: e.target.value } : x
-                          )
-                        )
-                      }
-                      placeholder="500"
-                      className={inputCls}
-                      aria-invalid={Boolean(fieldErrors[`variants.${vi}.weightGrams`])}
-                    />
-                    <p className="mt-1 text-xs text-stone-500">Min 50g. Used for shipping calculation.</p>
-                    <FieldErr message={fieldErrors[`variants.${vi}.weightGrams`]} />
-                  </div>
-                </div>
                 {showVariantAxes && optionAxes.length > 0 ? (
-                  <div className="mb-4 grid gap-3 sm:grid-cols-2">
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     {v.attributes.map((attr, ai) => {
                       const axis = optionAxes[ai];
                       const choices = axis ? optionsForAxis(axis, attr.value) : [];
@@ -1396,15 +1385,77 @@ export function ProductForm({ productId }: { productId?: string }) {
                               ))}
                             </select>
                           ) : (
-                            <p className="mt-1 rounded-lg border border-dashed border-stone-300 bg-stone-50 px-3 py-2 text-xs text-stone-500 dark:border-stone-600 dark:bg-stone-950/50">
+                            <p className="mt-1 rounded-lg border border-dashed border-[var(--admin-card-border,#e0d8ce)] bg-[var(--admin-input-bg,#faf9f7)] px-3 py-2 text-xs text-[var(--admin-text-muted,#8a7060)]">
                               Add {label} options in the option levels box above first.
                             </p>
                           )}
+                          <FieldErr message={fieldErrors[`variants.${vi}.attr.${ai}`]} />
                         </div>
                       );
                     })}
                   </div>
                 ) : null}
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className={labelCls}>Stock on hand</label>
+                    <input
+                      inputMode="numeric"
+                      min={0}
+                      value={v.onHand}
+                      onChange={(e) =>
+                        setVariants((prev) =>
+                          prev.map((x, i) =>
+                            i === vi
+                              ? { ...x, onHand: sanitizeNonNegativeInput(e.target.value, false) }
+                              : x
+                          )
+                        )
+                      }
+                      className={inputCls}
+                    />
+                    <FieldErr message={fieldErrors[`variants.${vi}.onHand`]} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Weight (grams)</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={v.weightGrams}
+                      onChange={(e) =>
+                        setVariants((prev) =>
+                          prev.map((x, i) =>
+                            i === vi ? { ...x, weightGrams: e.target.value.replace(/[^\d]/g, "") } : x
+                          )
+                        )
+                      }
+                      placeholder="500"
+                      className={inputCls}
+                      aria-invalid={Boolean(fieldErrors[`variants.${vi}.weightGrams`])}
+                    />
+                    <FieldErr message={fieldErrors[`variants.${vi}.weightGrams`]} />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className={labelCls}>SKU</label>
+                    <input
+                      value={v.sku}
+                      onChange={(e) =>
+                        setVariants((prev) =>
+                          prev.map((x, i) =>
+                            i === vi
+                              ? { ...x, sku: e.target.value, skuManual: true }
+                              : x
+                          )
+                        )
+                      }
+                      className={inputCls}
+                      aria-invalid={Boolean(fieldErrors[`variants.${vi}.sku`])}
+                    />
+                    {v.skuManual ? (
+                      <p className="mt-1 text-xs text-[var(--admin-text-muted,#8a7060)]">Locked (edited manually).</p>
+                    ) : null}
+                    <FieldErr message={fieldErrors[`variants.${vi}.sku`]} />
+                  </div>
+                </div>
                 <VariantPricingShippingTables
                   variant={v}
                   variantIndex={vi}
@@ -1413,25 +1464,28 @@ export function ProductForm({ productId }: { productId?: string }) {
                     setVariants((prev) => prev.map((x, i) => (i === vi ? { ...x, ...next } : x)))
                   }
                 />
+                <div className="mt-4">
+                  <VariantMediaBlock
+                    images={v.images}
+                    videoUrl={v.videoUrl}
+                    fieldPrefix={`variants.${vi}`}
+                    fieldErrors={fieldErrors}
+                    showImages
+                    showVideo
+                    onImagesChange={(next) =>
+                      setVariants((prev) =>
+                        prev.map((x, i) => (i === vi ? { ...x, images: next } : x))
+                      )
+                    }
+                    onVideoUrlChange={(url) =>
+                      setVariants((prev) =>
+                        prev.map((x, i) => (i === vi ? { ...x, videoUrl: url } : x))
+                      )
+                    }
+                  />
+                </div>
               </div>
             ))}
-            <button
-              type="button"
-              onClick={() => {
-                setProductType("VARIABLE");
-                setVariants((prev) => [
-                  ...prev.map((x) => ({ ...x, isDefault: false })),
-                  {
-                    ...newVariant(),
-                    isDefault: prev.length === 0,
-                    attributes: syncVariantAttributesToAxes([], optionAxes)
-                  }
-                ]);
-              }}
-              className="text-sm font-medium text-amber-700 hover:underline dark:text-amber-400"
-            >
-              + Add variant
-            </button>
           </div>
         ) : null}
 
@@ -1440,10 +1494,6 @@ export function ProductForm({ productId }: { productId?: string }) {
             <div className="space-y-3">
               <div>
                 <p className={labelCls}>Shared product images</p>
-                <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
-                  Used as fallback when a variant has no images of its own. Variant-specific images
-                  are set on the Variants step.
-                </p>
               </div>
               {images.map((im, ii) => (
                 <ProductImageUpload
@@ -1473,7 +1523,7 @@ export function ProductForm({ productId }: { productId?: string }) {
                 + Add gallery image
               </button>
             </div>
-            <div className="space-y-3 border-t border-stone-200 pt-6 dark:border-stone-700">
+            <div className="space-y-3 border-t border-[var(--admin-card-border,#e8e2d9)] pt-6">
               <div>
                 <label htmlFor="sharedVideoUrl" className={labelCls}>
                   Shared product video URL
@@ -1487,21 +1537,17 @@ export function ProductForm({ productId }: { productId?: string }) {
                 />
               </div>
             </div>
-            <div className="space-y-3 border-t border-stone-200 pt-6 dark:border-stone-700">
+            <div className="space-y-3 border-t border-[var(--admin-card-border,#e8e2d9)] pt-6">
               <div>
                 <p className={labelCls}>Product page sections</p>
-                <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
-                  Type plain text or bullet lists (lines starting with -). Styling is applied
-                  automatically on the storefront — no HTML needed.
-                </p>
               </div>
               {accordion.map((a, ai) => (
                 <div
                   key={ai}
-                  className="space-y-2 rounded-lg border border-stone-200 bg-stone-50/80 p-4 dark:border-stone-700 dark:bg-stone-950/40"
+                  className="space-y-2 rounded-lg border border-[var(--admin-card-border,#e8e2d9)] bg-[var(--admin-input-bg,#faf9f7)] p-4"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-[var(--admin-label,#4a3728)]">
                       Section {ai + 1}
                     </span>
                     <button
@@ -1535,13 +1581,6 @@ export function ProductForm({ productId }: { productId?: string }) {
                   />
                 </div>
               ))}
-              <button
-                type="button"
-                onClick={() => setAccordion((prev) => [...prev, { title: "", content: "" }])}
-                className="text-sm font-medium text-amber-700 hover:underline dark:text-amber-400"
-              >
-                + Add section
-              </button>
             </div>
           </div>
         ) : null}
@@ -1562,8 +1601,8 @@ export function ProductForm({ productId }: { productId?: string }) {
 
         {tab === "seo" ? (
           <div className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-stone-200 bg-stone-50/80 px-4 py-3 dark:border-stone-700 dark:bg-stone-950/40">
-              <p className="text-sm text-stone-600 dark:text-stone-400">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--admin-card-border,#e8e2d9)] bg-[var(--admin-input-bg,#faf9f7)] px-4 py-3">
+              <p className="text-sm text-[var(--admin-text-muted,#8a7060)]">
                 AI fills SEO title, meta description, and focus keyword (tuned to pass the checklist
                 below).
               </p>
@@ -1572,7 +1611,7 @@ export function ProductForm({ productId }: { productId?: string }) {
                   type="button"
                   disabled={seoAiLoading || !name.trim()}
                   onClick={() => void fillSeoWithAi()}
-                  className="inline-flex shrink-0 items-center gap-2 rounded-md bg-stone-800 px-4 py-2 text-sm font-semibold text-white hover:bg-stone-700 disabled:opacity-50 dark:bg-stone-200 dark:text-stone-900"
+                  className="inline-flex shrink-0 items-center gap-2 rounded-md bg-gradient-to-r from-[#1c352a] to-[#2d5040] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
                 >
                   {seoAiLoading ? "Generating…" : "Fill SEO with AI"}
                 </button>
@@ -1584,7 +1623,7 @@ export function ProductForm({ productId }: { productId?: string }) {
                     setSeoKeyword("");
                     setToast({ message: "SEO fields cleared" });
                   }}
-                  className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-200"
+                  className="rounded-md border border-[var(--admin-card-border,#e0d8ce)] bg-[var(--admin-card-bg,#fff)] px-4 py-2 text-sm font-medium text-[var(--admin-text,#2c2420)] hover:bg-[var(--admin-row-hover,#faf5ec)]"
                 >
                   Reset SEO
                 </button>
@@ -1637,15 +1676,53 @@ export function ProductForm({ productId }: { productId?: string }) {
 
       </form>
 
-      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-stone-200 bg-white/95 px-4 py-3 backdrop-blur md:left-64 dark:border-stone-700 dark:bg-stone-900/95">
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-[var(--admin-card-border,#e8e2d9)] bg-[var(--admin-card-bg,#fff)]/95 px-4 py-3 backdrop-blur md:left-64">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
-          <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
+            {tab === "variants" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setProductType("VARIABLE");
+                  setVariants((prev) => [
+                    ...prev.map((x) => ({ ...x, isDefault: false })),
+                    {
+                      ...newVariant(),
+                      isDefault: prev.length === 0,
+                      attributes: syncVariantAttributesToAxes([], optionAxes)
+                    }
+                  ]);
+                }}
+                className={floatAddBtnCls}
+              >
+                + Add variant
+              </button>
+            ) : null}
+            {tab === "variants" ? (
+              <button
+                type="button"
+                disabled={!skuFamily || !name.trim() || skuGenBusy}
+                onClick={() => void applyGeneratedSkus({ forceAll: true })}
+                className="rounded-lg border border-[var(--admin-card-border,#e0d8ce)] bg-[var(--admin-card-bg,#fff)] px-4 py-2 text-sm font-semibold text-[var(--admin-text,#2c2420)] shadow-sm transition-colors hover:bg-[var(--admin-row-hover,#faf5ec)] disabled:opacity-50"
+              >
+                {skuGenBusy ? "Generating…" : "Regenerate SKUs"}
+              </button>
+            ) : null}
+            {tab === "media" ? (
+              <button
+                type="button"
+                onClick={() => setAccordion((prev) => [...prev, { title: "", content: "" }])}
+                className={floatAddBtnCls}
+              >
+                + Add section
+              </button>
+            ) : null}
             {err ? (
               <p className="text-sm font-medium text-red-600 dark:text-red-400" role="alert">
                 {err}
               </p>
             ) : isNew ? (
-              <p className="text-xs text-stone-500">
+              <p className="text-xs text-[var(--admin-text-muted,#8a7060)]">
                 Step {tabIndex + 1} of {FORM_TABS.length} · {FORM_TABS[tabIndex]?.label}
                 {typeof window !== "undefined" && sessionStorage.getItem(DRAFT_KEY)
                   ? " · draft saved in this browser"
@@ -1656,7 +1733,7 @@ export function ProductForm({ productId }: { productId?: string }) {
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href="/admin/products"
-              className="rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+              className="rounded-lg border border-[var(--admin-card-border,#e0d8ce)] bg-[var(--admin-card-bg,#fff)] px-4 py-2 text-sm font-medium text-[var(--admin-text,#2c2420)]"
             >
               Cancel
             </Link>
@@ -1664,7 +1741,7 @@ export function ProductForm({ productId }: { productId?: string }) {
               <button
                 type="button"
                 onClick={goBack}
-                className="rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+                className="rounded-lg border border-[var(--admin-card-border,#e0d8ce)] bg-[var(--admin-card-bg,#fff)] px-4 py-2 text-sm font-medium text-[var(--admin-text,#2c2420)]"
               >
                 Back
               </button>
@@ -1673,7 +1750,7 @@ export function ProductForm({ productId }: { productId?: string }) {
               <button
                 type="button"
                 onClick={goNext}
-                className="rounded-lg bg-stone-800 px-5 py-2 text-sm font-semibold text-white hover:bg-stone-700 dark:bg-stone-200 dark:text-stone-900 dark:hover:bg-white"
+                className="rounded-lg bg-gradient-to-r from-[#1c352a] to-[#2d5040] px-5 py-2 text-sm font-semibold text-white hover:opacity-90"
               >
                 Next
               </button>

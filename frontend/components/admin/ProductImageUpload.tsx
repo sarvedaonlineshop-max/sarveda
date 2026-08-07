@@ -62,13 +62,13 @@ export function ProductImageUpload({
   }
 
   return (
-    <div className="rounded-lg border border-stone-200 bg-stone-50/80 p-4 dark:border-stone-700 dark:bg-stone-950/40">
+    <div className="rounded-lg border border-[var(--admin-card-border,#e8e2d9)] bg-[var(--admin-input-bg,#faf9f7)] p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <span
           className={`rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${
             isPrimary
               ? "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200"
-              : "bg-stone-200 text-stone-700 dark:bg-stone-700 dark:text-stone-200"
+              : "bg-[var(--admin-input-bg,#e8e2d9)] text-[var(--admin-text,#2c2420)]"
           }`}
         >
           {role === "primary" ? "Primary image" : "Gallery image"}
@@ -83,7 +83,7 @@ export function ProductImageUpload({
       </div>
 
       <div className="flex flex-col gap-4 sm:flex-row">
-        <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-stone-200 bg-white dark:border-stone-600 dark:bg-stone-900">
+        <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[var(--admin-card-border,#e8e2d9)] bg-[var(--admin-card-bg,#fff)]">
           {url.trim() ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={url.trim()} alt={altText || "Preview"} className="h-full w-full object-cover" />
@@ -118,26 +118,26 @@ export function ProductImageUpload({
 
           {url.trim() ? (
             <div>
-              <label className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">
+              <label className="text-[11px] font-semibold uppercase tracking-wider text-[var(--admin-label,#4a3728)]">
                 CDN URL (auto-filled)
               </label>
               <input
                 readOnly
                 value={url}
-                className="mt-1 w-full rounded-md border border-stone-200 bg-stone-100 px-3 py-2 font-mono text-xs text-stone-600 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-400"
+                className="mt-1 w-full rounded-md border border-[var(--admin-card-border,#e8e2d9)] bg-[var(--admin-input-bg,#f5f0e8)] px-3 py-2 font-mono text-xs text-[var(--admin-text-muted,#8a7060)]"
               />
             </div>
           ) : null}
 
           <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">
-              Alt text
-            </label>
+              <label className="text-[11px] font-semibold uppercase tracking-wider text-[var(--admin-label,#4a3728)]">
+                Alt text
+              </label>
             <input
               value={altText}
               onChange={(e) => onAltChange(e.target.value)}
               placeholder="Describe the image for accessibility"
-              className="mt-1 w-full rounded-md border border-stone-200 bg-white px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+              className="mt-1 w-full rounded-md border border-[var(--admin-input-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-3 py-2 text-sm text-[var(--admin-text,#2c2420)] placeholder:text-[var(--admin-text-muted,#8a7060)]"
             />
           </div>
 

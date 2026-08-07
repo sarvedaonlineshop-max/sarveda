@@ -40,14 +40,14 @@ type ListingSort =
   | "stock_asc";
 
 const CHART_COLORS = [
-  "#0d9488",
-  "#2563eb",
-  "#d97706",
-  "#db2777",
-  "#7c3aed",
-  "#059669",
-  "#dc2626",
-  "#0891b2"
+  "#1c352a",
+  "#b98a3e",
+  "#2d5040",
+  "#c8960a",
+  "#4a7c59",
+  "#8a6200",
+  "#7da58a",
+  "#e0b86a"
 ];
 
 const CHANNELS: Array<{ code: MarketplaceChannelCode; label: string }> = [
@@ -80,10 +80,10 @@ function tone(label: string) {
 
 function badgeClass(name: string) {
   const t = tone(name);
-  if (t === "emerald") return "bg-emerald-50 text-emerald-800 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-900";
-  if (t === "amber") return "bg-amber-50 text-amber-900 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-900";
-  if (t === "red") return "bg-red-50 text-red-800 ring-red-200 dark:bg-red-950/40 dark:text-red-200 dark:ring-red-900";
-  return "bg-stone-100 text-stone-700 ring-stone-200 dark:bg-stone-800 dark:text-stone-200 dark:ring-stone-700";
+  if (t === "emerald") return "bg-emerald-50 text-emerald-800 ring-emerald-200";
+  if (t === "amber") return "bg-amber-50 text-amber-900 ring-amber-200";
+  if (t === "red") return "bg-red-50 text-red-800 ring-red-200";
+  return "bg-[#f5f0e8] text-[#4a3f38] ring-[#e0d8ce]";
 }
 
 function StatusPill({ label }: { label: string }) {
@@ -106,9 +106,17 @@ function SectionCard({
   compact?: boolean;
 }) {
   return (
-    <section className="overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-stone-900">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 px-4 py-3 dark:border-stone-800">
-        <h3 className="text-sm font-semibold text-stone-900 dark:text-stone-100">{title}</h3>
+    <section className="overflow-hidden rounded-xl border border-[#e8e2d9] bg-white shadow-sm">
+      <div
+        className="flex flex-wrap items-center justify-between gap-3 border-b border-[#f0ece6] px-4 py-3"
+        style={{ background: "linear-gradient(180deg, #f9f7f4, #fff)" }}
+      >
+        <h3
+          className="text-sm font-bold text-[#1c352a]"
+          style={{ borderLeft: "3px solid #b98a3e", paddingLeft: "8px" }}
+        >
+          {title}
+        </h3>
         {right}
       </div>
       <div className={compact ? "p-3" : "p-4"}>{children}</div>
@@ -118,16 +126,19 @@ function SectionCard({
 
 function MetricCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
-    <div className="rounded-lg border border-stone-200 bg-white px-4 py-3 dark:border-stone-700 dark:bg-stone-900">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-500">{label}</p>
-      <p className="mt-1 text-xl font-semibold text-stone-900 dark:text-stone-100">{value}</p>
-      {sub ? <p className="mt-1 text-xs text-stone-500">{sub}</p> : null}
+    <div
+      className="rounded-lg border border-[#e8e2d9] bg-white px-4 py-3"
+      style={{ borderBottom: "3px solid rgba(185,138,62,0.3)" }}
+    >
+      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8a7060]">{label}</p>
+      <p className="mt-1 text-xl font-bold text-[#1c352a]">{value}</p>
+      {sub ? <p className="mt-1 text-xs text-[#8a7060]">{sub}</p> : null}
     </div>
   );
 }
 
 function EmptyState({ message }: { message: string }) {
-  return <p className="py-8 text-center text-sm text-stone-500 dark:text-stone-400">{message}</p>;
+  return <p className="py-8 text-center text-sm text-[#8a7060]">{message}</p>;
 }
 
 function toIsoDate(date: Date) {
@@ -201,30 +212,34 @@ function DateRangeFilter({
   onQuick: (next: DateRange) => void;
 }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-3 rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm dark:border-stone-700 dark:bg-stone-900">
+    <div
+      className="flex flex-wrap items-end justify-between gap-3 rounded-xl border border-[#e8e2d9] bg-white px-4 py-3"
+      style={{ boxShadow: "0 4px 16px rgba(28,53,42,0.06)" }}
+    >
       <div className="flex flex-wrap items-end gap-3">
         <div>
-          <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500">From</label>
+          <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8a7060]">From</label>
           <input
             type="date"
             value={draft.from}
             onChange={(e) => onDraftChange({ ...draft, from: e.target.value })}
-            className="rounded-lg border border-stone-200 px-3 py-2 text-sm dark:border-stone-700 dark:bg-stone-950"
+            className="rounded-lg border border-[#e0d8ce] px-3 py-2 text-sm text-[#2c2420]"
           />
         </div>
         <div>
-          <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500">To</label>
+          <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8a7060]">To</label>
           <input
             type="date"
             value={draft.to}
             onChange={(e) => onDraftChange({ ...draft, to: e.target.value })}
-            className="rounded-lg border border-stone-200 px-3 py-2 text-sm dark:border-stone-700 dark:bg-stone-950"
+            className="rounded-lg border border-[#e0d8ce] px-3 py-2 text-sm text-[#2c2420]"
           />
         </div>
         <button
           type="button"
           onClick={onApply}
-          className="rounded-lg bg-stone-900 px-4 py-2 text-xs font-semibold text-white dark:bg-stone-100 dark:text-stone-900"
+          className="rounded-lg px-4 py-2 text-xs font-semibold text-white"
+          style={{ background: "linear-gradient(135deg, #1c352a, #2d5040)", boxShadow: "0 2px 6px rgba(28,53,42,0.2)" }}
         >
           Filter
         </button>
@@ -232,31 +247,31 @@ function DateRangeFilter({
           <button
             type="button"
             onClick={() => onQuick(currentMonthRange())}
-            className="rounded-full bg-teal-50 px-2.5 py-1 text-[11px] font-medium text-teal-800 ring-1 ring-teal-200 dark:bg-teal-950/40 dark:text-teal-200 dark:ring-teal-900"
+            className="rounded-full px-2.5 py-1 text-[11px] font-medium ring-1 bg-[#f0f7f3] text-[#1c352a] ring-[#a8c4b0]"
           >
             This month
           </button>
           <button
             type="button"
             onClick={() => onQuick(lastDaysRange(7))}
-            className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-medium text-sky-800 ring-1 ring-sky-200 dark:bg-sky-950/40 dark:text-sky-200 dark:ring-sky-900"
+            className="rounded-full px-2.5 py-1 text-[11px] font-medium ring-1 bg-[#faf5ec] text-[#8a6200] ring-[#e0d4b0]"
           >
             Last 7 days
           </button>
           <button
             type="button"
             onClick={() => onQuick(allTimeBounds)}
-            className="rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-medium text-violet-800 ring-1 ring-violet-200 dark:bg-violet-950/40 dark:text-violet-200 dark:ring-violet-900"
+            className="rounded-full px-2.5 py-1 text-[11px] font-medium ring-1 bg-[#f5f0e8] text-[#4a3f38] ring-[#e8e2d9]"
             title={`All time: ${formatRangeLabel(allTimeBounds)}`}
           >
             All time
           </button>
         </div>
       </div>
-      <p className="text-xs text-stone-500">
-        Showing <span className="font-medium text-stone-700 dark:text-stone-300">{formatRangeLabel(applied)}</span>
-        <span className="mx-1.5 text-stone-300 dark:text-stone-600">·</span>
-        All time covers <span className="font-medium text-stone-700 dark:text-stone-300">{formatRangeLabel(allTimeBounds)}</span>
+      <p className="text-xs text-[#8a7060]">
+        Showing <span className="font-medium text-[#1c352a]">{formatRangeLabel(applied)}</span>
+        <span className="mx-1.5 text-stone-300">·</span>
+        All time covers <span className="font-medium text-[#1c352a]">{formatRangeLabel(allTimeBounds)}</span>
       </p>
     </div>
   );
@@ -283,19 +298,19 @@ function VerticalBarChart({
             const color = row.color || CHART_COLORS[idx % CHART_COLORS.length];
             return (
               <div key={`${title}:${row.label}`} className="flex min-w-[52px] flex-1 flex-col items-center gap-2">
-                <span className="text-[11px] font-semibold text-stone-700 dark:text-stone-200">{valueFormatter(row.value)}</span>
+                <span className="text-[11px] font-semibold text-[#4a3f38]">{valueFormatter(row.value)}</span>
                 <div
                   className="w-full max-w-[40px] rounded-t-lg shadow-sm transition-all duration-500"
                   style={{
                     height,
                     background:
                       row.value <= 0
-                        ? "linear-gradient(180deg, #d6d3d1 0%, #e7e5e4 100%)"
+                        ? "linear-gradient(180deg, #e8e2d9 0%, #f0ece6 100%)"
                         : `linear-gradient(180deg, ${color} 0%, ${color}cc 100%)`
                   }}
                   title={`${row.label}: ${valueFormatter(row.value)}`}
                 />
-                <span className="max-w-full truncate text-center text-[10px] font-medium text-stone-500">{row.label}</span>
+                <span className="max-w-full truncate text-center text-[10px] font-medium text-[#8a7060]">{row.label}</span>
               </div>
             );
           })}
@@ -317,9 +332,9 @@ function SalesVsReturnsChart({
     <SectionCard
       title={title}
       right={
-        <div className="flex items-center gap-3 text-[11px] text-stone-500">
-          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-teal-500" /> Sales (orders)</span>
-          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-rose-500" /> Returns (units)</span>
+        <div className="flex items-center gap-3 text-[11px] text-[#8a7060]">
+          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#1c352a]" /> Sales (orders)</span>
+          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#b98a3e]" /> Returns (units)</span>
         </div>
       }
     >
@@ -331,7 +346,7 @@ function SalesVsReturnsChart({
             <div key={row.label} className="flex min-w-[64px] flex-1 flex-col items-center gap-2">
               <div className="flex items-end gap-1">
                 <div className="flex flex-col items-center gap-1">
-                  <span className="text-[10px] font-semibold text-teal-700 dark:text-teal-300">{row.sales}</span>
+                  <span className="text-[10px] font-semibold text-[#1c352a]">{row.sales}</span>
                   <div
                     className="w-5 rounded-t-md bg-gradient-to-b from-teal-400 to-teal-600 shadow-sm"
                     style={{ height: salesH }}
@@ -339,15 +354,15 @@ function SalesVsReturnsChart({
                   />
                 </div>
                 <div className="flex flex-col items-center gap-1">
-                  <span className="text-[10px] font-semibold text-rose-700 dark:text-rose-300">{row.returns}</span>
+                  <span className="text-[10px] font-semibold text-[#8a6200]">{row.returns}</span>
                   <div
-                    className="w-5 rounded-t-md bg-gradient-to-b from-rose-400 to-rose-600 shadow-sm"
+                    className="w-5 rounded-t-md bg-gradient-to-b from-[#b98a3e] to-[#8a6200] shadow-sm"
                     style={{ height: returnsH }}
                     title={`${row.label} returns: ${row.returns}`}
                   />
                 </div>
               </div>
-              <span className="max-w-full truncate text-center text-[10px] font-medium text-stone-500">{row.label}</span>
+              <span className="max-w-full truncate text-center text-[10px] font-medium text-[#8a7060]">{row.label}</span>
             </div>
           );
         })}
@@ -357,18 +372,18 @@ function SalesVsReturnsChart({
 }
 
 function focusTone(action: string) {
-  if (action === "SCALE") return "bg-emerald-50 text-emerald-800 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:ring-emerald-900";
-  if (action === "FIX RETURNS") return "bg-rose-50 text-rose-800 ring-rose-200 dark:bg-rose-950/40 dark:text-rose-200 dark:ring-rose-900";
-  if (action === "CLEAR BACKLOG") return "bg-amber-50 text-amber-900 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-900";
-  if (action === "INTEGRATE") return "bg-sky-50 text-sky-800 ring-sky-200 dark:bg-sky-950/40 dark:text-sky-200 dark:ring-sky-900";
-  return "bg-stone-100 text-stone-700 ring-stone-200 dark:bg-stone-800 dark:text-stone-200 dark:ring-stone-700";
+  if (action === "SCALE") return "bg-[#f0f7f3] text-[#1c352a] ring-[#a8c4b0]";
+  if (action === "FIX RETURNS") return "bg-[#fef9c3] text-[#92400e] ring-[#fde68a]";
+  if (action === "CLEAR BACKLOG") return "bg-amber-50 text-amber-900 ring-amber-200";
+  if (action === "INTEGRATE") return "bg-[#faf5ec] text-[#8a6200] ring-[#e0d4b0]";
+  return "bg-[#f5f0e8] text-[#4a3f38] ring-[#e0d8ce]";
 }
 
 function ChartBars({
   title,
   rows,
   valueFormatter = (v: number) => String(v),
-  accent = "bg-stone-900"
+  accent: _accent = "bg-[#1c352a]"
 }: {
   title: string;
   rows: Array<{ label: string; value: number; sub?: string }>;
@@ -384,14 +399,20 @@ function ChartBars({
         <div className="space-y-2">
           {rows.map((row) => (
             <div key={`${title}:${row.label}`} className="grid grid-cols-[68px_minmax(0,1fr)_72px] items-center gap-3">
-              <div className="text-[11px] text-stone-500">{row.label}</div>
+              <div className="text-[11px] text-[#8a7060]">{row.label}</div>
               <div>
-                <div className="h-2.5 overflow-hidden rounded-full bg-stone-100 dark:bg-stone-800">
-                  <div className={`h-full rounded-full ${accent}`} style={{ width: `${Math.max(4, Math.round((row.value / max) * 100))}%` }} />
+                <div className="h-2.5 overflow-hidden rounded-full bg-[#f0ece6]">
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${Math.max(4, Math.round((row.value / max) * 100))}%`,
+                      background: "linear-gradient(90deg, #1c352a, #2d5040)"
+                    }}
+                  />
                 </div>
-                {row.sub ? <div className="mt-1 truncate text-[11px] text-stone-500">{row.sub}</div> : null}
+                {row.sub ? <div className="mt-1 truncate text-[11px] text-[#8a7060]">{row.sub}</div> : null}
               </div>
-              <div className="text-right text-[11px] font-semibold text-stone-700 dark:text-stone-200">{valueFormatter(row.value)}</div>
+              <div className="text-right text-[11px] font-semibold text-[#1c352a]">{valueFormatter(row.value)}</div>
             </div>
           ))}
         </div>
@@ -435,30 +456,35 @@ function OrderDetailModal({
   return (
     <div className="fixed inset-0 z-[140] flex items-center justify-center bg-black/40 px-4">
       <div className="max-h-[85vh] w-full max-w-3xl overflow-auto rounded-2xl bg-white shadow-2xl dark:bg-stone-900">
-        <div className="sticky top-0 flex items-center justify-between border-b border-stone-200 bg-white px-5 py-4 dark:border-stone-700 dark:bg-stone-900">
+        <div className="sticky top-0 flex items-center justify-between border-b border-[#e8e2d9] bg-white px-5 py-4">
           <div>
-            <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">Order details</p>
-            <p className="mt-1 text-xs text-stone-500">{order.externalOrderId}</p>
+            <p className="text-sm font-semibold text-[#1c352a]">Order details</p>
+            <p className="mt-1 text-xs text-[#8a7060]">{order.externalOrderId}</p>
           </div>
-          <button type="button" onClick={onClose} className="rounded-md border border-stone-200 px-3 py-1.5 text-xs font-medium dark:border-stone-700">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md px-3 py-1.5 text-xs font-medium"
+            style={{ border: "1px solid #e0d8ce", color: "#4a3f38" }}
+          >
             Close
           </button>
         </div>
 
         <div className="space-y-5 p-5 text-sm">
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-lg border border-stone-200 p-4 dark:border-stone-700">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">Customer details</p>
-              <div className="mt-2 space-y-1 text-sm text-stone-700 dark:text-stone-200">
+            <div className="rounded-lg border border-[#e8e2d9] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#8a7060]">Customer details</p>
+              <div className="mt-2 space-y-1 text-sm text-[#4a3f38]">
                 <p>{order.customerName || "Unknown"}</p>
                 <p>{order.customerEmail || "Email not returned"}</p>
                 <p>{order.customerPhone || "Phone not returned"}</p>
                 <p>{[order.shipToCity, order.shipToState, order.shipToPostalCode].filter(Boolean).join(", ") || "Address not returned"}</p>
               </div>
             </div>
-            <div className="rounded-lg border border-stone-200 p-4 dark:border-stone-700">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">Order summary</p>
-              <div className="mt-2 space-y-1 text-sm text-stone-700 dark:text-stone-200">
+            <div className="rounded-lg border border-[#e8e2d9] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#8a7060]">Order summary</p>
+              <div className="mt-2 space-y-1 text-sm text-[#4a3f38]">
                 <p>Status: {order.status}</p>
                 <p>Date: {new Date(order.orderDate).toLocaleString("en-IN")}</p>
                 <p>Item count: {order.totalItems}</p>
@@ -470,10 +496,10 @@ function OrderDetailModal({
           <SectionCard title="Items in this order">
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
-                <thead className="border-b border-stone-200 bg-stone-50 dark:border-stone-700 dark:bg-stone-800/60">
+                <thead className="border-b border-[#e8e2d9]" style={{ background: "linear-gradient(180deg, #f2ede5, #f9f7f4)" }}>
                   <tr>
                     {["Product", "Variant", "SKU", "Qty", "Unit", "Line total"].map((h) => (
-                      <th key={h} className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500">
+                      <th key={h} className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8a7060]">
                         {h}
                       </th>
                     ))}
@@ -481,10 +507,15 @@ function OrderDetailModal({
                 </thead>
                 <tbody>
                   {order.items.map((item) => (
-                    <tr key={item.id} className="border-b border-stone-100 dark:border-stone-800">
+                    <tr key={item.id} className="border-b border-[#f0ece6]">
                       <td className="px-3 py-3">{item.productName || item.productNameSnapshot || "Unknown"}</td>
-                      <td className="px-3 py-3 text-xs text-stone-500">{item.variantName || "Default"}</td>
-                      <td className="px-3 py-3 font-mono text-xs">{item.variantSku || item.skuSnapshot}</td>
+                      <td className="px-3 py-3 text-xs text-[#8a7060]">{item.variantName || "Default"}</td>
+                      <td
+                        className="px-3 py-3 font-mono text-xs"
+                        style={{ fontFamily: "'JetBrains Mono', ui-monospace, monospace", color: "#b98a3e" }}
+                      >
+                        {item.variantSku || item.skuSnapshot}
+                      </td>
                       <td className="px-3 py-3">{item.quantity}</td>
                       <td className="px-3 py-3">{item.unitPriceInPaise ? money(item.unitPriceInPaise, currency) : "—"}</td>
                       <td className="px-3 py-3">{money(item.lineTotalInPaise ?? (item.unitPriceInPaise ?? 0) * item.quantity, currency)}</td>
@@ -1078,15 +1109,16 @@ export function MarketplaceOpsWorkspace() {
 
   return (
     <div className="mx-auto max-w-[1440px] space-y-4 pt-2">
-      <div className="border-b border-stone-200 pb-3 dark:border-stone-700">
-        <h1 className="text-[28px] font-semibold tracking-tight text-stone-900 dark:text-stone-100">Marketplace Operations</h1>
+      <div style={{ background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)", borderRadius: "16px", padding: "22px 28px" }}>
+        <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec" }}>🛒 Marketplace Operations</h1>
+        <p style={{ fontSize: "13px", color: "#a8c4b0", marginTop: "4px" }}>Multi-channel sales, listings, returns & syncs</p>
       </div>
 
-      <div className="flex flex-wrap gap-5 border-b border-stone-200 dark:border-stone-700">
+      <div className="flex flex-wrap gap-5 border-b border-[#e8e2d9]">
         <button
           type="button"
           onClick={() => setActiveTab("overview")}
-          className={`border-b-2 px-1 pb-2 text-sm font-medium ${activeTab === "overview" ? "border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100" : "border-transparent text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"}`}
+          className={`border-b-2 px-1 pb-2 text-sm font-medium ${activeTab === "overview" ? "border-[#b98a3e] text-[#1c352a] font-semibold" : "border-transparent text-[#8a7060] hover:text-[#1c352a] transition-colors"}`}
         >
           Overview
         </button>
@@ -1095,15 +1127,15 @@ export function MarketplaceOpsWorkspace() {
             key={item.code}
             type="button"
             onClick={() => setActiveTab(item.code)}
-            className={`border-b-2 px-1 pb-2 text-sm font-medium ${activeTab === item.code ? "border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100" : "border-transparent text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"}`}
+            className={`border-b-2 px-1 pb-2 text-sm font-medium ${activeTab === item.code ? "border-[#b98a3e] text-[#1c352a] font-semibold" : "border-transparent text-[#8a7060] hover:text-[#1c352a] transition-colors"}`}
           >
             {item.label}
           </button>
         ))}
       </div>
 
-      {error ? <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200">{error}</div> : null}
-      {notice ? <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200">{notice}</div> : null}
+      {error ? <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" style={{ borderLeft: "3px solid #dc2626", borderRadius: "10px" }}>{error}</div> : null}
+      {notice ? <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900" style={{ borderLeft: "3px solid #16a34a", borderRadius: "10px" }}>{notice}</div> : null}
 
       {activeTab === "overview" && overview ? (
         <div className="space-y-4">
@@ -1149,7 +1181,7 @@ export function MarketplaceOpsWorkspace() {
                 {marketplaceFocus.conclusions.map((line) => (
                   <div
                     key={line}
-                    className="rounded-lg border border-stone-200 bg-gradient-to-r from-teal-50/80 via-white to-rose-50/60 px-4 py-3 text-sm text-stone-700 dark:border-stone-700 dark:from-teal-950/20 dark:via-stone-900 dark:to-rose-950/20 dark:text-stone-200"
+                    className="rounded-lg border border-[#e8e2d9] px-4 py-3 text-sm text-[#4a3f38]" style={{ background: "linear-gradient(135deg, #f9f7f4, #faf5ec)", borderLeft: "3px solid rgba(185,138,62,0.3)" }}
                   >
                     {line}
                   </div>
@@ -1158,7 +1190,7 @@ export function MarketplaceOpsWorkspace() {
 
               <div className="overflow-x-auto">
                 <table className="min-w-full text-sm">
-                  <thead className="border-b border-stone-200 bg-stone-50 dark:border-stone-700 dark:bg-stone-800/60">
+                  <thead className="border-b border-[#e8e2d9]" style={{ background: "linear-gradient(180deg, #f2ede5, #f9f7f4)" }}>
                     <tr>
                       {[
                         "Marketplace",
@@ -1171,7 +1203,7 @@ export function MarketplaceOpsWorkspace() {
                         "Next-month forecast",
                         "Focus"
                       ].map((h) => (
-                        <th key={h} className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500">
+                        <th key={h} className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8a7060]">
                           {h}
                         </th>
                       ))}
@@ -1179,12 +1211,12 @@ export function MarketplaceOpsWorkspace() {
                   </thead>
                   <tbody>
                     {marketplaceFocus.rows.map((row) => (
-                      <tr key={row.code} className="border-b border-stone-100 dark:border-stone-800">
-                        <td className="px-3 py-3 font-semibold text-stone-900 dark:text-stone-100">{row.label}</td>
+                      <tr key={row.code} className="border-b border-[#f0ece6]">
+                        <td className="px-3 py-3 font-semibold text-[#1c352a]">{row.label}</td>
                         <td className="px-3 py-3">{row.orders}</td>
                         <td className="px-3 py-3">{row.sold}</td>
-                        <td className="px-3 py-3 text-amber-700 dark:text-amber-300">{row.openReturns}</td>
-                        <td className="px-3 py-3 text-rose-700 dark:text-rose-300">{row.refunded}</td>
+                        <td className="px-3 py-3 font-semibold text-[#b98a3e]">{row.openReturns}</td>
+                        <td className="px-3 py-3 font-semibold text-[#dc2626]">{row.refunded}</td>
                         <td className="px-3 py-3">{row.sold > 0 || row.orders > 0 ? `${Math.round(row.returnRate * 100)}%` : "—"}</td>
                         <td className="px-3 py-3">{row.pendingCount}</td>
                         <td className="px-3 py-3">{row.predictedNextMonthOrders}</td>
@@ -1192,7 +1224,7 @@ export function MarketplaceOpsWorkspace() {
                           <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${focusTone(row.action)}`}>
                             {row.action}
                           </span>
-                          <p className="mt-1 max-w-[240px] text-[11px] leading-snug text-stone-500">{row.reason}</p>
+                          <p className="mt-1 max-w-[240px] text-[11px] leading-snug text-[#8a7060]">{row.reason}</p>
                         </td>
                       </tr>
                     ))}
@@ -1207,18 +1239,18 @@ export function MarketplaceOpsWorkspace() {
               {overview.channels.map((row, idx) => (
                 <div
                   key={row.id}
-                  className="rounded-xl border border-stone-200 p-4 dark:border-stone-700"
+                  className="rounded-xl border border-[#e8e2d9] p-4"
                   style={{ background: `linear-gradient(135deg, ${CHART_COLORS[idx % CHART_COLORS.length]}12, transparent)` }}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <p className="font-semibold text-stone-900 dark:text-stone-100">{row.displayName}</p>
+                    <p className="font-semibold text-[#1c352a]">{row.displayName}</p>
                     <StatusPill label={row.isActive ? "ACTIVE" : "PAUSED"} />
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                    <div><p className="text-stone-500">Listings</p><p className="font-semibold">{row.activeListingCount}/{row.listingCount}</p></div>
-                    <div><p className="text-stone-500">Orders</p><p className="font-semibold">{row.orderCount}</p></div>
-                    <div><p className="text-stone-500">Pending dispatch</p><p className="font-semibold">{row.dispatchPending}</p></div>
-                    <div><p className="text-stone-500">High stock risk</p><p className="font-semibold">{row.highRiskCount}</p></div>
+                    <div><p className="text-[#8a7060]">Listings</p><p className="font-semibold">{row.activeListingCount}/{row.listingCount}</p></div>
+                    <div><p className="text-[#8a7060]">Orders</p><p className="font-semibold">{row.orderCount}</p></div>
+                    <div><p className="text-[#8a7060]">Pending dispatch</p><p className="font-semibold">{row.dispatchPending}</p></div>
+                    <div><p className="text-[#8a7060]">High stock risk</p><p className="font-semibold">{row.highRiskCount}</p></div>
                   </div>
                 </div>
               ))}
@@ -1229,14 +1261,14 @@ export function MarketplaceOpsWorkspace() {
 
       {activeChannel ? (
         <>
-          <div className="flex items-center justify-between border-b border-stone-200 dark:border-stone-700">
+          <div className="flex items-center justify-between border-b border-[#e8e2d9]">
             <div className="flex flex-wrap gap-4">
               {SUB_TABS.map((tab) => (
                 <button
                   key={tab.id}
                   type="button"
                   onClick={() => setChannelSubTab(tab.id)}
-                  className={`border-b-2 px-1 pb-2 text-sm font-medium ${channelSubTab === tab.id ? "border-stone-900 text-stone-900 dark:border-stone-100 dark:text-stone-100" : "border-transparent text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"}`}
+                  className={`border-b-2 px-1 pb-2 text-sm font-medium ${channelSubTab === tab.id ? "border-[#b98a3e] text-[#1c352a] font-semibold" : "border-transparent text-[#8a7060] hover:text-[#1c352a] transition-colors"}`}
                 >
                   {tab.label}
                 </button>
@@ -1247,7 +1279,14 @@ export function MarketplaceOpsWorkspace() {
                 type="button"
                 onClick={() => void runAmazonManualSync()}
                 disabled={busy === "amazon-sync" || amazonConnection?.configured === false}
-                className="mb-1 rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
+                className="mb-1 rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+                style={{
+                  background: busy === "amazon-sync" ? "#4a7c59" : "linear-gradient(135deg, #1c352a, #2d5040)",
+                  color: "#fffbf5",
+                  border: "none",
+                  boxShadow: "0 2px 6px rgba(28,53,42,0.2)",
+                  borderRadius: "8px"
+                }}
               >
                 {busy === "amazon-sync" ? "Syncing..." : "Sync now"}
               </button>
@@ -1256,7 +1295,14 @@ export function MarketplaceOpsWorkspace() {
                 type="button"
                 onClick={() => void runFlipkartManualSync()}
                 disabled={busy === "flipkart-sync" || flipkartConnection?.configured === false}
-                className="mb-1 rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
+                className="mb-1 rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+                style={{
+                  background: busy === "flipkart-sync" ? "#4a7c59" : "linear-gradient(135deg, #1c352a, #2d5040)",
+                  color: "#fffbf5",
+                  border: "none",
+                  boxShadow: "0 2px 6px rgba(28,53,42,0.2)",
+                  borderRadius: "8px"
+                }}
               >
                 {busy === "flipkart-sync" ? "Syncing..." : "Sync now"}
               </button>
@@ -1265,7 +1311,14 @@ export function MarketplaceOpsWorkspace() {
                 type="button"
                 onClick={() => void runEtsyManualSync()}
                 disabled={busy === "etsy-sync" || etsyConnection?.configured === false}
-                className="mb-1 rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
+                className="mb-1 rounded-lg px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+                style={{
+                  background: busy === "etsy-sync" ? "#4a7c59" : "linear-gradient(135deg, #1c352a, #2d5040)",
+                  color: "#fffbf5",
+                  border: "none",
+                  boxShadow: "0 2px 6px rgba(28,53,42,0.2)",
+                  borderRadius: "8px"
+                }}
               >
                 {busy === "etsy-sync" ? "Syncing..." : "Sync now"}
               </button>
@@ -1352,12 +1405,37 @@ export function MarketplaceOpsWorkspace() {
             <div className="space-y-4">
               <div className="grid gap-3 rounded-xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900 md:grid-cols-[1.2fr_0.8fr]">
                 <div>
-                  <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500">Search</label>
-                  <input value={listingSearch} onChange={(e) => setListingSearch(e.target.value)} placeholder="Search product, variant, SKU, listing ID" className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm dark:border-stone-700 dark:bg-stone-950" />
+                  <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8a7060]">Search</label>
+                  <input
+                    value={listingSearch}
+                    onChange={(e) => setListingSearch(e.target.value)}
+                    placeholder="Search product, variant, SKU, listing ID"
+                    className="w-full rounded-lg border border-[#e0d8ce] px-3 py-2 text-sm"
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = "#b98a3e";
+                      e.currentTarget.style.boxShadow = "0 0 0 3px rgba(185,138,62,0.10)";
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = "#e0d8ce";
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
+                  />
                 </div>
                 <div>
-                  <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500">Sort</label>
-                  <select value={listingSort} onChange={(e) => setListingSort(e.target.value as ListingSort)} className="w-full rounded-lg border border-stone-200 px-3 py-2 text-sm dark:border-stone-700 dark:bg-stone-950">
+                  <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8a7060]">Sort</label>
+                  <select
+                    value={listingSort}
+                    onChange={(e) => setListingSort(e.target.value as ListingSort)}
+                    className="w-full rounded-lg border border-[#e0d8ce] px-3 py-2 text-sm"
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = "#b98a3e";
+                      e.currentTarget.style.boxShadow = "0 0 0 3px rgba(185,138,62,0.10)";
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = "#e0d8ce";
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
+                  >
                     <option value="sold_desc">Sold count: high to low</option>
                     <option value="sold_asc">Sold count: low to high</option>
                     <option value="returns_desc">Return count: high to low</option>
@@ -1374,16 +1452,16 @@ export function MarketplaceOpsWorkspace() {
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="min-w-full text-sm">
-                      <thead className="border-b border-stone-200 bg-stone-50 dark:border-stone-700 dark:bg-stone-800/60">
+                      <thead className="border-b border-[#e8e2d9]" style={{ background: "linear-gradient(180deg, #f2ede5, #f9f7f4)" }}>
                         <tr>
                           {["Product name", "Variant name", "SKU", "Listing ID", "Stock Count", "Status", "Price", "Sold count", "Return count"].map((h) => (
-                            <th key={h} className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500">{h}</th>
+                            <th key={h} className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8a7060]">{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {filteredListings.map((row) => (
-                          <tr key={row.id} className="border-b border-stone-100 dark:border-stone-800">
+                          <tr key={row.id} className="border-b border-[#f0ece6]">
                             <td className="px-3 py-3">{row.variant.productName}</td>
                             <td className="px-3 py-3 text-xs text-stone-600 dark:text-stone-300">{row.variant.variantName}</td>
                             <td className="px-3 py-3 font-mono text-xs">{row.variant.sku}</td>
@@ -1422,16 +1500,16 @@ export function MarketplaceOpsWorkspace() {
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="min-w-full text-sm">
-                      <thead className="border-b border-stone-200 bg-stone-50 dark:border-stone-700 dark:bg-stone-800/60">
+                      <thead className="border-b border-[#e8e2d9]" style={{ background: "linear-gradient(180deg, #f2ede5, #f9f7f4)" }}>
                         <tr>
                           {["Order ID", "Customer details", "Order details", "Item Count", "Order Total", "Status", "Date"].map((h) => (
-                            <th key={h} className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500">{h}</th>
+                            <th key={h} className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8a7060]">{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {filteredOrders.map((row) => (
-                          <tr key={row.id} className="border-b border-stone-100 dark:border-stone-800">
+                          <tr key={row.id} className="border-b border-[#f0ece6]">
                             <td className="px-3 py-3">
                               <button type="button" onClick={() => copyText(row.externalOrderId)} className="font-mono text-xs text-stone-900 underline-offset-2 hover:underline dark:text-stone-100">
                                 {row.externalOrderId}
@@ -1480,16 +1558,16 @@ export function MarketplaceOpsWorkspace() {
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="min-w-full text-sm">
-                      <thead className="border-b border-stone-200 bg-stone-50 dark:border-stone-700 dark:bg-stone-800/60">
+                      <thead className="border-b border-[#e8e2d9]" style={{ background: "linear-gradient(180deg, #f2ede5, #f9f7f4)" }}>
                         <tr>
                           {["Order", "Product", "Variant", "Qty", "Refund", "Status", "Date"].map((h) => (
-                            <th key={h} className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500">{h}</th>
+                            <th key={h} className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8a7060]">{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {filteredReturns.map((row) => (
-                          <tr key={row.id} className="border-b border-stone-100 dark:border-stone-800">
+                          <tr key={row.id} className="border-b border-[#f0ece6]">
                             <td className="px-3 py-3 font-mono text-xs">{row.externalOrderId}</td>
                             <td className="px-3 py-3 font-medium">{row.productName || "Unknown"}</td>
                             <td className="px-3 py-3 text-xs text-stone-600 dark:text-stone-300">{row.variantName || row.sku || "—"}</td>

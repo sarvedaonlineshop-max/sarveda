@@ -1,5 +1,7 @@
 "use client";
 
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
 type Props = {
   page: number;
   totalPages: number;
@@ -20,10 +22,10 @@ export function AdminPagination({ page, totalPages, total, itemLabel, onPrev, on
   };
 
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
-      <p style={{ fontSize: "13px", color: "#8a7060" }}>
-        Showing page <strong style={{ color: "#2c2420" }}>{page}</strong> of <strong style={{ color: "#2c2420" }}>{safePages}</strong>
-        <span style={{ marginLeft: "6px", color: "#b8a898" }}>· {total.toLocaleString("en-IN")} {itemLabel}</span>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", padding: "12px 0", borderTop: "1px solid rgba(185,138,62,0.12)" }}>
+      <p style={{ fontSize: "13px", color: "#6b5c52" }}>
+        Page <strong style={{ color: "#1c352a", fontWeight: 800 }}>{page}</strong> / <strong style={{ color: "#1c352a", fontWeight: 800 }}>{safePages}</strong>
+        <span style={{ marginLeft: "6px", color: "#8a7060" }}>· {total.toLocaleString("en-IN")} {itemLabel}</span>
       </p>
       <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
         <button
@@ -35,10 +37,21 @@ export function AdminPagination({ page, totalPages, total, itemLabel, onPrev, on
             background: page <= 1 ? "#f4f1ec" : "#ffffff",
             border: "1px solid #e0d8ce",
             color: page <= 1 ? "#c8bca8" : "#2c2420",
-            opacity: page <= 1 ? 0.5 : 1
+            opacity: page <= 1 ? 0.35 : 1,
+            cursor: page <= 1 ? "not-allowed" : "pointer"
+          }}
+          onMouseEnter={(e) => {
+            if (page <= 1) return;
+            e.currentTarget.style.background = "#faf5ec";
+            e.currentTarget.style.borderColor = "#b98a3e";
+          }}
+          onMouseLeave={(e) => {
+            if (page <= 1) return;
+            e.currentTarget.style.background = "#ffffff";
+            e.currentTarget.style.borderColor = "#e0d8ce";
           }}
         >
-          ← Prev
+          <ChevronLeft size={16} />
         </button>
 
         {/* Page number pills */}
@@ -61,15 +74,28 @@ export function AdminPagination({ page, totalPages, total, itemLabel, onPrev, on
               style={{
                 ...btnBase,
                 minWidth: "36px", padding: "0",
-                background: isActive ? "#1e3a2f" : "#ffffff",
+                background: isActive ? "linear-gradient(135deg, #1c352a, #2d5040)" : "#ffffff",
                 border: isActive ? "1px solid #1e3a2f" : "1px solid #e0d8ce",
                 color: isActive ? "#fffbf5" : "#2c2420",
-                fontWeight: isActive ? 700 : 400,
-                pointerEvents: isActive ? "none" : "auto"
+                fontWeight: isActive ? 800 : 400,
+                pointerEvents: isActive ? "none" : "auto",
+                boxShadow: isActive ? "0 2px 8px rgba(28,53,42,0.30)" : "none"
               }}
               onClick={() => {
                 if (p < page) { for (let x = page; x > p; x--) onPrev(); }
                 else { for (let x = page; x < p; x++) onNext(); }
+              }}
+              onMouseEnter={(e) => {
+                if (isActive) return;
+                e.currentTarget.style.background = "#faf5ec";
+                e.currentTarget.style.borderColor = "#b98a3e";
+                e.currentTarget.style.color = "#b98a3e";
+              }}
+              onMouseLeave={(e) => {
+                if (isActive) return;
+                e.currentTarget.style.background = "#ffffff";
+                e.currentTarget.style.borderColor = "#e0d8ce";
+                e.currentTarget.style.color = "#2c2420";
               }}
             >
               {p}
@@ -83,14 +109,16 @@ export function AdminPagination({ page, totalPages, total, itemLabel, onPrev, on
           onClick={onNext}
           style={{
             ...btnBase,
-            background: page >= safePages ? "#f4f1ec" : "#1e3a2f",
+            background: page >= safePages ? "#f4f1ec" : "linear-gradient(135deg, #1c352a, #2d5040)",
             border: "1px solid",
             borderColor: page >= safePages ? "#e0d8ce" : "#1e3a2f",
             color: page >= safePages ? "#c8bca8" : "#fffbf5",
-            opacity: page >= safePages ? 0.5 : 1
+            opacity: page >= safePages ? 0.35 : 1,
+            cursor: page >= safePages ? "not-allowed" : "pointer",
+            boxShadow: page >= safePages ? "none" : "0 2px 6px rgba(28,53,42,0.22)"
           }}
         >
-          Next →
+          <ChevronRight size={16} />
         </button>
       </div>
     </div>

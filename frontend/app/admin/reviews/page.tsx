@@ -16,19 +16,20 @@ type PendingReview = {
 
 const card: React.CSSProperties = {
   background: "#fff",
-  borderRadius: "12px",
+  borderRadius: "14px",
   border: "1px solid #e8e2d9",
-  boxShadow: "0 1px 4px rgba(44,36,32,0.06)"
+  boxShadow: "0 4px 20px rgba(28,53,42,0.08)",
+  overflow: "hidden"
 };
 
 const thSt: React.CSSProperties = {
-  padding: "10px 14px",
+  padding: "13px 14px",
   fontSize: "11px",
   fontWeight: 700,
   letterSpacing: "0.08em",
   textTransform: "uppercase",
   color: "#8a7060",
-  background: "#f9f7f4",
+  background: "linear-gradient(180deg, #f2ede5, #f9f7f4)",
   textAlign: "left"
 };
 
@@ -42,9 +43,15 @@ const tdSt: React.CSSProperties = {
 
 function Stars({ value }: { value: number }) {
   return (
-    <span style={{ color: "#c8960a", letterSpacing: "1px" }}>
+    <span style={{ color: "#b98a3e", letterSpacing: "2px" }}>
       {Array.from({ length: 5 }).map((_, i) => (
-        <span key={i} style={{ opacity: i < value ? 1 : 0.25 }}>
+        <span
+          key={i}
+          style={{
+            opacity: i < value ? 1 : 0.2,
+            textShadow: i < value ? "0 1px 3px rgba(185,138,62,0.4)" : undefined
+          }}
+        >
           ★
         </span>
       ))}
@@ -118,11 +125,34 @@ export default function AdminReviewsPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div>
-        <h1 style={{ fontSize: "22px", fontWeight: 700, color: "#2c2420" }}>Reviews</h1>
-        <p style={{ fontSize: "13px", color: "#8a7060", marginTop: "4px" }}>
-          {reviews.length} pending approval
-        </p>
+      <div
+        style={{
+          background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)",
+          borderRadius: "16px",
+          padding: "22px 28px",
+          marginBottom: "4px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "12px"
+        }}
+      >
+        <div>
+          <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec", margin: 0 }}>⭐ Reviews</h1>
+        </div>
+        <span
+          style={{
+            background: reviews.length > 0 ? "rgba(245,158,11,0.2)" : "rgba(34,197,94,0.2)",
+            color: reviews.length > 0 ? "#f6c95a" : "#86efac",
+            borderRadius: "999px",
+            padding: "4px 12px",
+            fontSize: "12px",
+            fontWeight: 700
+          }}
+        >
+          {reviews.length > 0 ? `${reviews.length} pending` : "✓ All clear"}
+        </span>
       </div>
 
       {err && (
@@ -132,9 +162,12 @@ export default function AdminReviewsPage() {
       )}
 
       {loading ? (
-        <p style={{ color: "#8a7060" }}>Loading...</p>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#8a7060", padding: "40px 16px", justifyContent: "center" }}>
+          <span style={{ fontSize: "24px" }}>⭐</span>
+          <span style={{ fontSize: "14px" }}>Loading reviews…</span>
+        </div>
       ) : (
-        <div style={{ ...card, overflow: "hidden" }}>
+        <div style={card}>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
@@ -151,22 +184,37 @@ export default function AdminReviewsPage() {
                   <tr
                     key={r.id}
                     onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLElement).style.background = "#faf8f5";
+                      (e.currentTarget as HTMLElement).style.background = "#faf5ec";
                     }}
                     onMouseLeave={(e) => {
                       (e.currentTarget as HTMLElement).style.background = "";
                     }}
+                    style={{ transition: "background 0.15s" }}
                   >
                     <td style={tdSt}>
                       <Link
                         href={`/product/${r.product.slug}`}
-                        style={{ fontWeight: 600, color: "#2c2420", textDecoration: "none" }}
+                        style={{ fontWeight: 700, color: "#1c352a", textDecoration: "none" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = "#b98a3e"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = "#1c352a"; }}
                       >
                         {r.product.name}
                       </Link>
                       {r.isVerified && (
-                        <p style={{ fontSize: "11px", color: "#166534", marginTop: "4px" }}>
-                          Verified purchase
+                        <p
+                          style={{
+                            marginTop: "6px",
+                            background: "#dcfce7",
+                            color: "#166534",
+                            borderRadius: "999px",
+                            padding: "2px 8px",
+                            fontSize: "11px",
+                            fontWeight: 700,
+                            border: "1px solid rgba(34,197,94,0.2)",
+                            display: "inline-block"
+                          }}
+                        >
+                          ✓ Verified purchase
                         </p>
                       )}
                     </td>
@@ -188,7 +236,15 @@ export default function AdminReviewsPage() {
                         </p>
                       )}
                       {r.body ? (
-                        <p style={{ fontSize: "12px", color: "#6b5c52", lineHeight: 1.55 }}>
+                        <p
+                          style={{
+                            fontSize: "12px",
+                            color: "#4a3f38",
+                            lineHeight: 1.55,
+                            borderLeft: "2px solid #e8e2d9",
+                            paddingLeft: "8px"
+                          }}
+                        >
                           {r.body}
                         </p>
                       ) : (
@@ -208,48 +264,67 @@ export default function AdminReviewsPage() {
                         disabled={acting === r.id}
                         onClick={() => void approve(r.id)}
                         style={{
-                          fontSize: "13px",
-                          fontWeight: 600,
+                          fontSize: "12px",
+                          fontWeight: 700,
                           color: "#166534",
-                          background: "none",
-                          border: "none",
+                          background: "#dcfce7",
+                          border: "1px solid rgba(34,197,94,0.3)",
+                          borderRadius: "8px",
+                          padding: "5px 12px",
                           cursor: acting === r.id ? "wait" : "pointer",
-                          padding: 0
+                          transition: "all 0.15s"
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "#16a34a";
+                          e.currentTarget.style.color = "#fff";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "#dcfce7";
+                          e.currentTarget.style.color = "#166534";
                         }}
                       >
-                        Approve
+                        ✓ Approve
                       </button>
                       <button
                         type="button"
                         disabled={acting === r.id}
                         onClick={() => void reject(r.id)}
                         style={{
-                          fontSize: "13px",
-                          color: "#8a7060",
-                          background: "none",
-                          border: "none",
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          color: "#dc2626",
+                          background: "#fff0f0",
+                          border: "1px solid rgba(220,38,38,0.2)",
+                          borderRadius: "8px",
+                          padding: "5px 12px",
                           cursor: acting === r.id ? "wait" : "pointer",
-                          marginLeft: "14px",
-                          padding: 0
+                          marginLeft: "8px",
+                          transition: "all 0.15s"
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "#dc2626";
+                          e.currentTarget.style.color = "#fff";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "#fff0f0";
+                          e.currentTarget.style.color = "#dc2626";
                         }}
                       >
-                        Reject
+                        ✗ Reject
                       </button>
                     </td>
                   </tr>
                 ))}
                 {reviews.length === 0 && (
                   <tr>
-                    <td
-                      colSpan={6}
-                      style={{
-                        padding: "40px",
-                        textAlign: "center",
-                        color: "#8a7060",
-                        fontSize: "13px"
-                      }}
-                    >
-                      No reviews awaiting approval.
+                    <td colSpan={6} style={{ padding: "60px 40px", textAlign: "center" }}>
+                      <div style={{ fontSize: "48px", marginBottom: "12px" }}>⭐</div>
+                      <p style={{ fontSize: "15px", fontWeight: 700, color: "#1c352a" }}>
+                        All caught up!
+                      </p>
+                      <p style={{ fontSize: "13px", color: "#8a7060", marginTop: "4px" }}>
+                        No reviews awaiting approval right now.
+                      </p>
                     </td>
                   </tr>
                 )}

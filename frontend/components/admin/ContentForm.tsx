@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ChevronLeft } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { ContentImageUpload } from "@/components/admin/ContentImageUpload";
@@ -39,10 +40,10 @@ type Props = {
 };
 
 const inputClass =
-  "mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100";
+  "mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm transition-colors duration-150 focus:border-[#b98a3e] focus:ring-1 focus:ring-[#b98a3e]/20 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100";
 
 const courseInputClass =
-  "mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100";
+  "mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 transition-colors duration-150 focus:border-[#b98a3e] focus:ring-1 focus:ring-[#b98a3e]/20 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100";
 
 export function ContentForm({ type, itemId }: Props) {
   const isCourse = type === "courses";
@@ -207,23 +208,26 @@ export function ContentForm({ type, itemId }: Props) {
     ? "mx-auto w-full max-w-6xl space-y-5 pb-28 font-sans"
     : "mx-auto max-w-3xl space-y-6";
   const cardClass = isCourse
-    ? "space-y-4 rounded-xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-700 dark:bg-stone-900"
-    : "space-y-4 rounded-xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-700 dark:bg-stone-900";
+    ? "space-y-4 rounded-xl border border-stone-200 bg-white p-6 shadow-[0_2px_12px_rgba(44,36,32,0.06)] dark:border-stone-700 dark:bg-stone-900"
+    : "space-y-4 rounded-xl border border-stone-200 bg-white p-6 shadow-[0_2px_12px_rgba(44,36,32,0.06)] dark:border-stone-700 dark:bg-stone-900";
 
   return (
     <form onSubmit={(e) => void onSubmit(e)} className={formClass}>
       <div>
         <Link
           href={isCourse ? "/admin/courses" : `/admin/content?type=${type}`}
-          className={`text-sm hover:underline ${isCourse ? "text-blue-700 dark:text-blue-400" : "text-amber-700 dark:text-amber-400"}`}
+          className={`inline-flex items-center gap-1 text-sm font-semibold hover:underline ${
+            isCourse ? "text-[#b98a3e] dark:text-amber-400" : "text-[#b98a3e] dark:text-amber-400"
+          }`}
         >
-          ← {label}
+          <ChevronLeft size={14} aria-hidden />
+          {label}
         </Link>
         <h1
           className={
             isCourse
-              ? "mt-1 text-2xl font-semibold text-stone-900 dark:text-stone-100"
-              : "mt-2 font-serif text-3xl italic text-stone-800 dark:text-stone-100"
+              ? "mt-1 text-3xl font-bold text-stone-900 dark:text-stone-100"
+              : "mt-2 font-serif text-3xl italic text-stone-900 dark:text-stone-100"
           }
         >
           {isNew ? `New ${label.slice(0, -1)}` : `Edit ${label.slice(0, -1)}`}
@@ -242,7 +246,7 @@ export function ContentForm({ type, itemId }: Props) {
         </p>
       ) : null}
 
-      <div className={cardClass}>
+      <div className={cardClass} style={{ borderTop: "3px solid #b98a3e" }}>
         <Field label={contentTitleLabel(type)} required>
           <input
             value={values.title}
@@ -261,17 +265,29 @@ export function ContentForm({ type, itemId }: Props) {
         </Field>
 
         <Field label="Status">
-          <select
-            value={values.status}
-            onChange={(e) => setValues((v) => ({ ...v, status: e.target.value }))}
-            className={fieldInput}
-          >
-            {contentStatusOptions(type).map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2">
+            <select
+              value={values.status}
+              onChange={(e) => setValues((v) => ({ ...v, status: e.target.value }))}
+              className={fieldInput}
+            >
+              {contentStatusOptions(type).map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            <span
+              className={`text-xs ${
+                values.status.toUpperCase() === "PUBLISHED"
+                  ? "text-emerald-600"
+                  : "text-amber-600"
+              }`}
+              aria-hidden
+            >
+              ●
+            </span>
+          </div>
         </Field>
 
         {type === "events" ? (
@@ -508,7 +524,15 @@ export function ContentForm({ type, itemId }: Props) {
               </p>
             ) : null}
 
-            <div className="rounded-lg border border-stone-200 bg-stone-50/80 p-4 dark:border-stone-700 dark:bg-stone-950/40">
+            <div
+              className="rounded-lg p-4 dark:border-stone-700 dark:bg-stone-950/40"
+              style={{
+                background: "linear-gradient(135deg, #faf9f6, #f5f1e8)",
+                border: "1px solid #e8e2d9",
+                borderRadius: "12px",
+                borderLeft: "3px solid #b98a3e"
+              }}
+            >
               <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
                 Pricing &amp; enrolment
               </p>
@@ -619,7 +643,10 @@ export function ContentForm({ type, itemId }: Props) {
         </Field>
       </div>
 
-      <div className="space-y-4 rounded-xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-700 dark:bg-stone-900">
+      <div
+        className="space-y-4 rounded-xl border border-stone-200 bg-white p-6 shadow-[0_2px_12px_rgba(44,36,32,0.06)] dark:border-stone-700 dark:bg-stone-900"
+        style={{ borderTop: "3px solid rgba(185,138,62,0.3)" }}
+      >
         <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
           SEO
         </h2>
@@ -637,7 +664,7 @@ export function ContentForm({ type, itemId }: Props) {
                 onClick={() =>
                   void (type === "courses" ? fillCourseSeoWithAi() : fillMentorSeoWithAi())
                 }
-                className="inline-flex shrink-0 items-center gap-2 rounded-md bg-stone-800 px-4 py-2 text-sm font-semibold text-white hover:bg-stone-700 disabled:opacity-50 dark:bg-stone-200 dark:text-stone-900"
+                className="inline-flex shrink-0 items-center gap-2 rounded-md bg-gradient-to-r from-[#1c352a] to-[#2d5040] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-95 disabled:opacity-50"
               >
                 {seoAiLoading ? "Generating…" : "Fill SEO with AI"}
               </button>
@@ -716,7 +743,17 @@ export function ContentForm({ type, itemId }: Props) {
         <button
           type="submit"
           disabled={saving}
-          className="rounded-lg bg-[#1e3a2f] px-5 py-2 text-sm font-semibold text-[#fffbf5] hover:bg-[#2d5240] disabled:opacity-50"
+          className="rounded-lg px-5 py-2.5 text-sm font-bold text-[#fffbf5] transition-all duration-150 disabled:opacity-50"
+          style={{
+            background: "linear-gradient(135deg, #1c352a, #2d5040)",
+            boxShadow: "0 2px 8px rgba(28,53,42,0.25)"
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.boxShadow = "0 4px 14px rgba(28,53,42,0.35)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.boxShadow = "0 2px 8px rgba(28,53,42,0.25)";
+          }}
         >
           {saving ? "Saving…" : isNew ? "Create" : "Save changes"}
         </button>
@@ -725,14 +762,14 @@ export function ContentForm({ type, itemId }: Props) {
             type="button"
             disabled={saving}
             onClick={() => void onDelete()}
-            className="rounded-lg border border-red-300 px-4 py-2 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/40"
+            className="rounded-lg border border-red-300 px-4 py-2 text-sm text-red-700 transition-colors duration-150 hover:bg-red-100 disabled:opacity-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/40"
           >
             Deactivate
           </button>
         ) : null}
         <Link
           href={`/admin/content?type=${type}`}
-          className="rounded-lg border border-stone-300 px-4 py-2 text-sm text-stone-700 dark:border-stone-600 dark:text-stone-200"
+          className="rounded-lg border border-stone-300 px-4 py-2 text-sm text-stone-700 transition-colors hover:bg-stone-100 dark:border-stone-600 dark:text-stone-200"
         >
           Cancel
         </Link>
@@ -752,7 +789,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-xs font-semibold uppercase text-stone-500 dark:text-stone-400">
+      <label className="block text-xs font-semibold uppercase text-stone-600 dark:text-stone-400">
         {label}
         {required ? " *" : ""}
       </label>

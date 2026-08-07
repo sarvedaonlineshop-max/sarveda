@@ -171,31 +171,25 @@ export function ProductBarcodeTab({ productName, variants }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="text-sm text-stone-600 dark:text-stone-300">
-            Each variant uses its unique <strong>SKU</strong> as a Code128 barcode for stickers
-            ({LABEL_W_MM / 10}&nbsp;cm × {LABEL_H_MM / 10}&nbsp;cm). Select rows, then download an
-            A4 PDF — <strong>one page per variant</strong> (print from the PDF later).
-          </p>
-        </div>
+        <div className="min-w-0 flex-1" />
         <button
           type="button"
           disabled={selected.size === 0}
           onClick={openDialog}
-          className="shrink-0 rounded-lg bg-stone-900 px-4 py-2 text-sm font-semibold text-white hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-amber-500 dark:text-stone-900 dark:hover:bg-amber-400"
+          className="shrink-0 rounded-lg bg-gradient-to-r from-[#1c352a] to-[#2d5040] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
         >
           Save PDF{selected.size > 0 ? ` (${selected.size})` : ""}
         </button>
       </div>
 
       {withSku.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-stone-300 bg-stone-50 px-4 py-8 text-center text-sm text-stone-500 dark:border-stone-600 dark:bg-stone-950/40">
+        <p className="rounded-lg border border-dashed border-[var(--admin-card-border,#e0d8ce)] bg-[var(--admin-input-bg,#faf9f7)] px-4 py-8 text-center text-sm text-[var(--admin-text-muted,#8a7060)]">
           No variants with SKUs yet. Add SKUs on the Variants step first.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-stone-200 dark:border-stone-600">
+        <div className="overflow-x-auto rounded-lg border border-[var(--admin-card-border,#e8e2d9)] bg-[var(--admin-card-bg,#fff)]">
           <table className="min-w-full text-left text-sm">
-            <thead className="border-b border-stone-200 bg-stone-50 text-xs uppercase tracking-wider text-stone-500 dark:border-stone-600 dark:bg-stone-950/60">
+            <thead className="border-b border-[var(--admin-card-border,#e8e2d9)] text-xs uppercase tracking-wider text-[var(--admin-th-text,#3d2e24)] bg-[var(--admin-table-head,linear-gradient(180deg,#f2ede5,#f9f7f4))]">
               <tr>
                 <th className="w-10 px-3 py-2">
                   <input
@@ -218,7 +212,7 @@ export function ProductBarcodeTab({ productName, variants }: Props) {
                 return (
                   <tr
                     key={v.key}
-                    className="border-b border-stone-100 last:border-0 dark:border-stone-800"
+                    className="border-b border-[var(--admin-card-border,#f0ece6)] last:border-0 hover:bg-[var(--admin-row-hover,#faf5ec)]"
                   >
                     <td className="px-3 py-3 align-middle">
                       <input
@@ -228,10 +222,10 @@ export function ProductBarcodeTab({ productName, variants }: Props) {
                         aria-label={`Select ${v.sku}`}
                       />
                     </td>
-                    <td className="max-w-[14rem] px-3 py-3 align-middle font-medium text-stone-800 dark:text-stone-100">
+                    <td className="max-w-[14rem] px-3 py-3 align-middle font-medium text-[var(--admin-text,#2c2420)]">
                       {title || "—"}
                     </td>
-                    <td className="px-3 py-3 align-middle font-mono text-xs text-stone-700 dark:text-stone-300">
+                    <td className="px-3 py-3 align-middle font-mono text-xs text-[var(--admin-text-muted,#8a7060)]">
                       {v.sku}
                     </td>
                     <td className="px-3 py-3 align-middle">
@@ -252,14 +246,14 @@ export function ProductBarcodeTab({ productName, variants }: Props) {
           aria-modal="true"
           aria-labelledby="barcode-pdf-title"
         >
-          <div className="w-full max-w-md rounded-xl border border-stone-200 bg-white p-5 shadow-xl dark:border-stone-600 dark:bg-stone-900">
+          <div className="w-full max-w-md rounded-xl border border-[var(--admin-card-border,#e8e2d9)] bg-[var(--admin-card-bg,#fff)] p-5 shadow-xl">
             <h2
               id="barcode-pdf-title"
-              className="text-lg font-semibold text-stone-900 dark:text-stone-50"
+              className="text-lg font-semibold text-[var(--admin-text,#2c2420)]"
             >
               Save A4 PDF
             </h2>
-            <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
+            <p className="mt-1 text-sm text-[var(--admin-text-muted,#8a7060)]">
               Each label is {LABEL_W_MM / 10}×{LABEL_H_MM / 10} cm.{" "}
               <strong>One page per selected variant</strong> — that page is filled only with copies
               of that SKU (no mixing). Open the PDF and print when ready.
@@ -268,7 +262,7 @@ export function ProductBarcodeTab({ productName, variants }: Props) {
               <div>
                 <label
                   htmlFor="bc-cols"
-                  className="text-xs font-semibold uppercase tracking-wider text-stone-500"
+                  className="text-xs font-semibold uppercase tracking-wider text-[var(--admin-label,#4a3728)]"
                 >
                   Columns
                 </label>
@@ -279,14 +273,14 @@ export function ProductBarcodeTab({ productName, variants }: Props) {
                   max={maxCols()}
                   value={cols}
                   onChange={(e) => setCols(Number(e.target.value))}
-                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
+                  className="mt-1 w-full rounded-lg border border-[var(--admin-input-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-3 py-2 text-sm text-[var(--admin-text,#2c2420)]"
                 />
-                <p className="mt-1 text-[11px] text-stone-500">Max {maxCols()} on A4</p>
+                <p className="mt-1 text-[11px] text-[var(--admin-text-muted,#8a7060)]">Max {maxCols()} on A4</p>
               </div>
               <div>
                 <label
                   htmlFor="bc-rows"
-                  className="text-xs font-semibold uppercase tracking-wider text-stone-500"
+                  className="text-xs font-semibold uppercase tracking-wider text-[var(--admin-label,#4a3728)]"
                 >
                   Rows
                 </label>
@@ -297,12 +291,12 @@ export function ProductBarcodeTab({ productName, variants }: Props) {
                   max={maxRows()}
                   value={rows}
                   onChange={(e) => setRows(Number(e.target.value))}
-                  className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
+                  className="mt-1 w-full rounded-lg border border-[var(--admin-input-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-3 py-2 text-sm text-[var(--admin-text,#2c2420)]"
                 />
-                <p className="mt-1 text-[11px] text-stone-500">Max {maxRows()} on A4</p>
+                <p className="mt-1 text-[11px] text-[var(--admin-text-muted,#8a7060)]">Max {maxRows()} on A4</p>
               </div>
             </div>
-            <p className="mt-3 text-xs text-stone-500">
+            <p className="mt-3 text-xs text-[var(--admin-text-muted,#8a7060)]">
               Total labels on sheet:{" "}
               <strong>
                 {Math.max(1, Math.floor(cols) || 1) * Math.max(1, Math.floor(rows) || 1)}
@@ -313,7 +307,7 @@ export function ProductBarcodeTab({ productName, variants }: Props) {
                 type="button"
                 disabled={busy}
                 onClick={() => setDialogOpen(false)}
-                className="rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+                className="rounded-lg border border-[var(--admin-card-border,#e0d8ce)] bg-[var(--admin-card-bg,#fff)] px-4 py-2 text-sm font-medium text-[var(--admin-text,#2c2420)]"
               >
                 Cancel
               </button>
@@ -321,7 +315,7 @@ export function ProductBarcodeTab({ productName, variants }: Props) {
                 type="button"
                 disabled={busy}
                 onClick={savePdf}
-                className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-semibold text-white dark:bg-amber-500 dark:text-stone-900"
+                className="rounded-lg bg-gradient-to-r from-[#b98a3e] to-[#c8960a] px-4 py-2 text-sm font-semibold text-white"
               >
                 {busy ? "Creating…" : "Download PDF"}
               </button>

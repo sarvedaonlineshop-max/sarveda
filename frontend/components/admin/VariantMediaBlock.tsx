@@ -18,13 +18,19 @@ type Props = {
   onVideoUrlChange: (url: string) => void;
   fieldPrefix: string;
   fieldErrors: Record<string, string>;
-  prominent?: boolean;
+  /** Show image gallery block */
+  showImages?: boolean;
+  /** Show video block */
+  showVideo?: boolean;
 };
 
 const inputCls =
-  "mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100";
+  "mt-1 w-full rounded-lg border border-[var(--admin-card-border,#e0d8ce)] bg-[var(--admin-input-bg,#fff)] px-3 py-2 text-sm text-[var(--admin-text,#2c2420)] placeholder:text-[var(--admin-text-muted,#8a7060)] [&_option]:bg-white [&_option]:text-[#2c2420]";
 
 const MAX_VIDEO_BYTES = 10 * 1024 * 1024;
+
+const sectionCls =
+  "space-y-3 rounded-lg border border-[var(--admin-card-border,#e8e2d9)] bg-[var(--admin-input-bg,#faf9f7)] p-4";
 
 export function VariantMediaBlock({
   images,
@@ -33,7 +39,8 @@ export function VariantMediaBlock({
   onVideoUrlChange,
   fieldPrefix,
   fieldErrors,
-  prominent = false
+  showImages = true,
+  showVideo = true
 }: Props) {
   const videoInputRef = useRef<HTMLInputElement>(null);
   const [videoUploading, setVideoUploading] = useState(false);
@@ -81,86 +88,80 @@ export function VariantMediaBlock({
   }
 
   return (
-    <div
-      className={
-        prominent
-          ? "space-y-4 rounded-lg border-2 border-amber-400/70 bg-amber-50/60 p-4 dark:border-amber-700 dark:bg-amber-950/30"
-          : "mt-4 space-y-4 border-t border-stone-200 pt-4 dark:border-stone-700"
-      }
-    >
-      <div>
-        <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">
-          This variant&apos;s images &amp; video
-        </p>
-        <p className="mt-1 text-xs text-stone-600 dark:text-stone-400">
-          Shown on the product page when shoppers pick this variant. Shared product images are used
-          only as fallback.
-        </p>
-      </div>
-      {images.map((im, ii) => (
-        <ProductImageUpload
-          key={ii}
-          url={im.url}
-          altText={im.altText}
-          isPrimary={im.isPrimary}
-          onUrlChange={(url) => updateImage(ii, { url })}
-          onAltChange={(altText) => updateImage(ii, { altText })}
-          onPrimaryChange={() =>
-            onImagesChange(images.map((x, i) => ({ ...x, isPrimary: i === ii })))
-          }
-          onRemove={() => removeImage(ii)}
-          role={im.isPrimary ? "primary" : "secondary"}
-        />
-      ))}
-      <button
-        type="button"
-        onClick={() =>
-          onImagesChange([
-            ...images,
-            { url: "", altText: "", isPrimary: images.length === 0 }
-          ])
-        }
-        className="text-sm font-medium text-amber-700 hover:underline dark:text-amber-400"
-      >
-        + Add variant image
-      </button>
-      {fieldErrors[`${fieldPrefix}.images`] ? (
-        <p className="text-xs text-red-600">{fieldErrors[`${fieldPrefix}.images`]}</p>
-      ) : null}
-
-      <div className="border-t border-amber-200/80 pt-4 dark:border-amber-900/50">
-        <label className="text-xs font-semibold uppercase tracking-wider text-stone-500">
-          Variant video
-        </label>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <input
-            ref={videoInputRef}
-            type="file"
-            accept="video/mp4,video/webm,video/quicktime"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void onVideoFile(f);
-            }}
-          />
+    <div className="space-y-4">
+      {showImages ? (
+        <div className={sectionCls}>
+          <p className="text-sm font-semibold text-[var(--admin-text,#2c2420)]">
+            This variant&apos;s images
+          </p>
+          {images.map((im, ii) => (
+            <ProductImageUpload
+              key={ii}
+              url={im.url}
+              altText={im.altText}
+              isPrimary={im.isPrimary}
+              onUrlChange={(url) => updateImage(ii, { url })}
+              onAltChange={(altText) => updateImage(ii, { altText })}
+              onPrimaryChange={() =>
+                onImagesChange(images.map((x, i) => ({ ...x, isPrimary: i === ii })))
+              }
+              onRemove={() => removeImage(ii)}
+              role={im.isPrimary ? "primary" : "secondary"}
+            />
+          ))}
           <button
             type="button"
-            disabled={videoUploading}
-            onClick={() => videoInputRef.current?.click()}
-            className="rounded-md bg-amber-500 px-4 py-2 text-sm font-semibold text-stone-900 hover:bg-amber-400 disabled:opacity-60"
+            onClick={() =>
+              onImagesChange([
+                ...images,
+                { url: "", altText: "", isPrimary: images.length === 0 }
+              ])
+            }
+            className="text-sm font-medium text-[#b98a3e] hover:underline"
           >
-            {videoUploading ? "Uploading…" : "Upload video (MP4)"}
+            + Add variant image
           </button>
-          <span className="text-xs text-stone-500">or paste URL below · max 10MB</span>
+          {fieldErrors[`${fieldPrefix}.images`] ? (
+            <p className="text-xs text-red-600">{fieldErrors[`${fieldPrefix}.images`]}</p>
+          ) : null}
         </div>
-        {videoUploadErr ? <p className="mt-1 text-xs text-red-600">{videoUploadErr}</p> : null}
-        <input
-          value={videoUrl}
-          onChange={(e) => onVideoUrlChange(e.target.value)}
-          placeholder="https://… (optional — overrides shared product video)"
-          className={inputCls}
-        />
-      </div>
+      ) : null}
+
+      {showVideo ? (
+        <div className={sectionCls}>
+          <label className="text-xs font-semibold uppercase tracking-wider text-[var(--admin-label,#4a3728)]">
+            Variant video
+          </label>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept="video/mp4,video/webm,video/quicktime"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void onVideoFile(f);
+              }}
+            />
+            <button
+              type="button"
+              disabled={videoUploading}
+              onClick={() => videoInputRef.current?.click()}
+              className="rounded-md bg-[#b98a3e] px-4 py-2 text-sm font-semibold text-white hover:bg-[#c8960a] disabled:opacity-60"
+            >
+              {videoUploading ? "Uploading…" : "Upload video (MP4)"}
+            </button>
+            <span className="text-xs text-[var(--admin-text-muted,#8a7060)]">or paste URL · max 10MB</span>
+          </div>
+          {videoUploadErr ? <p className="mt-1 text-xs text-red-600">{videoUploadErr}</p> : null}
+          <input
+            value={videoUrl}
+            onChange={(e) => onVideoUrlChange(e.target.value)}
+            placeholder="https://… (optional)"
+            className={inputCls}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

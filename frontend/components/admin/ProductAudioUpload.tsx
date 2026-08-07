@@ -54,7 +54,7 @@ export function ProductAudioUpload({ url, onUrlChange, onClear }: Props) {
 
   return (
     <div className="rounded-lg border border-stone-200 bg-stone-50/80 p-4 dark:border-stone-700 dark:bg-stone-950/40">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">Sound sample</p>
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--admin-label,#4a3728)]">Sound sample</p>
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <input
           ref={inputRef}
@@ -84,7 +84,7 @@ export function ProductAudioUpload({ url, onUrlChange, onClear }: Props) {
           </button>
         ) : null}
       </div>
-      <p className="mt-1 text-xs text-stone-500">MP3, WAV, OGG · max 10MB · stored on S3</p>
+      <p className="mt-1 text-xs text-[var(--admin-text-muted,#8a7060)]">MP3, WAV, OGG · max 10MB · stored on S3</p>
       {uploadErr ? <p className="mt-1 text-xs text-red-600">{uploadErr}</p> : null}
       {url.trim() ? (
         <>

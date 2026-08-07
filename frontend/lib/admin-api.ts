@@ -888,6 +888,20 @@ export function fetchAdminProducts(
   return adminFetch<AdminProductListData>(`/api/admin/products?${q.toString()}`, { signal });
 }
 
+/** Persist drag-reorder: global sortOrder when category is null/empty, else category position. */
+export function reorderAdminProducts(body: {
+  categorySlug: string | null;
+  orderedIds: string[];
+}) {
+  return adminFetch<{ mode: string; count: number; categoryId?: string }>(
+    "/api/admin/products/reorder",
+    {
+      method: "PUT",
+      body: JSON.stringify(body)
+    }
+  );
+}
+
 export function fetchAdminProduct(id: string, signal?: AbortSignal) {
   return adminFetch<{ product: Record<string, unknown> }>(`/api/admin/products/${id}`, {
     signal

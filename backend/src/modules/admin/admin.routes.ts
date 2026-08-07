@@ -6,7 +6,7 @@ import { requireAdmin } from "../../middleware/admin";
 import { logAdminMutations, requireSuperAdmin } from "../../middleware/adminActivity";
 import { validateBody } from "../../middleware/validate";
 import * as productsController from "../products/products.controller";
-import { createProductSchema, updateProductSchema } from "../products/schemas";
+import { createProductSchema, reorderProductsSchema, updateProductSchema } from "../products/schemas";
 
 import * as admin from "./admin.handlers";
 import * as activity from "./activity.handlers";
@@ -128,6 +128,11 @@ const productsAdmin = Router();
 productsAdmin.get("/", productsController.adminList);
 productsAdmin.post("/upload-image", mediaHandlers.uploadAdminMedia);
 productsAdmin.post("/check-skus", productsController.checkSkus);
+productsAdmin.put(
+  "/reorder",
+  validateBody(reorderProductsSchema),
+  productsController.adminReorder
+);
 productsAdmin.get("/:id", productsController.adminGetOne);
 productsAdmin.post("/", validateBody(createProductSchema), productsController.create);
 productsAdmin.put("/:id", validateBody(updateProductSchema), productsController.update);

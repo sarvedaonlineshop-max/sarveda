@@ -12,7 +12,9 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: ["var(--font-inter)", "ui-sans-serif", "system-ui", "sans-serif"],
-        serif: ["var(--font-fraunces)", "ui-serif", "Georgia", "serif"]
+        serif: ["var(--font-fraunces)", "ui-serif", "Georgia", "serif"],
+        jakarta: ["Plus Jakarta Sans", "ui-sans-serif", "sans-serif"],
+        mono: ["JetBrains Mono", "ui-monospace", "monospace"]
       },
       colors: {
         brand: {
