@@ -229,7 +229,7 @@ export default function AdminProductsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-5 font-sans">
+    <div className="w-full space-y-5 font-sans">
       <AdminToast toast={toast} onDismiss={() => setToast(null)} />
 
       <div

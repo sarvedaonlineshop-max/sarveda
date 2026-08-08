@@ -12,6 +12,7 @@ import { logger } from "../../config/logger";
 import { sendMail } from "../notifications/email";
 import { toWhatsAppE164, sendWhatsAppNamedTemplate } from "../notifications/whatsapp";
 import {
+  sendWhatsAppSessionMedia,
   sendWhatsAppSessionText,
   WA_SESSION_WINDOW_MS
 } from "../whatsapp/whatsapp-inbox.service";
@@ -259,12 +260,36 @@ export async function listEnquiryThreads(params: {
   limit?: number;
   unreadOnly?: boolean;
   source?: EnquirySource;
+  /** Search name, email, phone, order number, context */
+  q?: string;
 }) {
   const page = Math.max(1, params.page ?? 1);
-  const limit = Math.min(50, Math.max(1, params.limit ?? 20));
+  const limit = Math.min(100, Math.max(1, params.limit ?? 20));
+  const q = params.q?.trim();
+  const digits = q ? q.replace(/\D/g, "") : "";
+  const searchWhere =
+    q && q.length > 0
+      ? {
+          OR: [
+            { customerName: { contains: q, mode: "insensitive" as const } },
+            { customerEmail: { contains: q, mode: "insensitive" as const } },
+            { customerPhone: { contains: q, mode: "insensitive" as const } },
+            { waPhone: { contains: q, mode: "insensitive" as const } },
+            { orderNumber: { contains: q, mode: "insensitive" as const } },
+            { contextTitle: { contains: q, mode: "insensitive" as const } },
+            ...(digits.length >= 3
+              ? [
+                  { customerPhone: { contains: digits } },
+                  { waPhone: { contains: digits } }
+                ]
+              : [])
+          ]
+        }
+      : {};
   const where = {
     ...(params.unreadOnly ? { unreadByAdmin: true } : {}),
-    ...(params.source ? { source: params.source } : {})
+    ...(params.source ? { source: params.source } : {}),
+    ...searchWhere
   };
   const [items, total, unreadCount] = await Promise.all([
     prisma.enquiryThread.findMany({
@@ -340,9 +365,8 @@ export type StartWhatsAppChatInput = {
   countryDialCode: string;
   phone: string;
   customerName?: string | null;
-  message?: string | null;
-  /** Send approved admin_support_outreach template (works outside 24h window). */
-  sendOutreachTemplate?: boolean;
+  /** Body text for template param {{2}} — required. */
+  message: string;
   admin: { id: string; email: string; name: string | null };
 };
 
@@ -357,9 +381,9 @@ export type StartWhatsAppChatResult = {
 };
 
 /**
- * Open (or create) a WhatsApp enquiry thread for an arbitrary phone number.
- * Free-form first messages only send when the Meta 24h customer session is open.
- * Outside that window, optionally send the approved outreach template.
+ * Open (or create) a WhatsApp enquiry thread and send the approved outreach template.
+ * Template params: {{1}} = customer first name, {{2}} = admin message.
+ * (WhatsApp Business API requires a template outside the 24h customer-service window.)
  */
 export async function startWhatsAppChatByPhone(
   input: StartWhatsAppChatInput
@@ -367,6 +391,11 @@ export async function startWhatsAppChatByPhone(
   const waPhone = composeWhatsAppE164(input.countryDialCode, input.phone);
   if (!waPhone) {
     throw new Error("Enter a valid mobile number with country code.");
+  }
+
+  const trimmedMessage = input.message?.trim() || "";
+  if (!trimmedMessage) {
+    throw new Error("Message is required.");
   }
 
   const now = new Date();
@@ -399,11 +428,9 @@ export async function startWhatsAppChatByPhone(
       adminId: input.admin.id
     });
   } else {
-    const nameUpdate =
-      input.customerName?.trim() &&
-      (thread.customerName === thread.waPhone || thread.customerName === waPhone)
-        ? { customerName: input.customerName.trim() }
-        : {};
+    const nameUpdate = input.customerName?.trim()
+      ? { customerName: input.customerName.trim() }
+      : {};
     thread = await prisma.enquiryThread.update({
       where: { id: thread.id },
       data: {
@@ -415,7 +442,6 @@ export async function startWhatsAppChatByPhone(
   }
 
   const sessionWindowOpen = isWhatsAppSessionOpen(thread.lastCustomerMessageAt);
-  const trimmedMessage = input.message?.trim() || "";
   let messageSent = false;
   let outreachSent = false;
   let warning: string | null = null;
@@ -427,51 +453,43 @@ export async function startWhatsAppChatByPhone(
     (thread.customerName !== waPhone ? thread.customerName.split(/\s+/)[0] : null) ||
     "there";
 
-  if (input.sendOutreachTemplate) {
-    const templateName =
-      process.env.WHATSAPP_ADMIN_OUTREACH_TEMPLATE?.trim() || "admin_support_outreach";
-    const sid = await sendWhatsAppNamedTemplate(waPhone, templateName, [outreachName.slice(0, 60)]);
-    const bodyPreview = `Namaste 🙏 ${outreachName},\n\nThis is Sarveda support. We'd like to help with your query. Please reply here and our team will assist you.\n\n[Template: ${templateName}]`;
-    await prisma.enquiryMessage.create({
-      data: {
-        threadId: thread.id,
-        authorType: "ADMIN",
-        adminUserId: input.admin.id,
-        authorName: adminName,
-        authorEmail: input.admin.email,
-        body: bodyPreview,
-        waMessageSid: sid,
-        waStatus: "sent"
-      }
-    });
-    await prisma.enquiryThread.update({
-      where: { id: thread.id },
-      data: { lastMessageAt: new Date(), status: "OPEN", unreadByAdmin: false }
-    });
-    await startWhatsAppAgentSession(thread.id, "Admin outreach template");
-    await claimWhatsAppAgentSession(thread.id, input.admin.id);
-    outreachSent = true;
-    logger.info("whatsapp_admin_outreach_sent", {
-      threadId: thread.id,
-      waPhone,
-      templateName,
-      sid,
-      adminId: input.admin.id
-    });
-  }
+  const templateName =
+    process.env.WHATSAPP_ADMIN_OUTREACH_TEMPLATE?.trim() || "sarveda_support_outreach";
+  const nameParam = outreachName.slice(0, 60);
+  const messageParam = trimmedMessage.slice(0, 1024);
+  const sid = await sendWhatsAppNamedTemplate(waPhone, templateName, [nameParam, messageParam]);
+  const bodyPreview = `Namaste ${nameParam},\n\n${messageParam}`;
 
-  if (trimmedMessage) {
-    if (!sessionWindowOpen) {
-      warning = outreachSent
-        ? "Outreach template sent. Free-form replies unlock after the customer replies."
-        : "Chat opened, but WhatsApp only allows free-form messages within 24 hours of the customer's last message. Enable “Send outreach template” to message a new number.";
-    } else {
-      await replyToEnquiryThread(thread.id, input.admin, trimmedMessage, []);
-      messageSent = true;
+  await prisma.enquiryMessage.create({
+    data: {
+      threadId: thread.id,
+      authorType: "ADMIN",
+      adminUserId: input.admin.id,
+      authorName: adminName,
+      authorEmail: input.admin.email,
+      body: bodyPreview,
+      waMessageSid: sid,
+      waStatus: "sent"
     }
-  } else if (!sessionWindowOpen && !outreachSent) {
-    warning =
-      "Chat opened. To message this number now, enable “Send outreach template”, or wait until they message you.";
+  });
+  await prisma.enquiryThread.update({
+    where: { id: thread.id },
+    data: { lastMessageAt: new Date(), status: "OPEN", unreadByAdmin: false }
+  });
+  await startWhatsAppAgentSession(thread.id, "Admin outreach template");
+  await claimWhatsAppAgentSession(thread.id, input.admin.id);
+  outreachSent = true;
+  messageSent = true;
+  logger.info("whatsapp_admin_outreach_sent", {
+    threadId: thread.id,
+    waPhone,
+    templateName,
+    sid,
+    adminId: input.admin.id
+  });
+
+  if (!sessionWindowOpen) {
+    warning = "Outreach template sent. Free chat unlocks after the customer replies.";
   }
 
   publishEnquiryEvent({ type: "thread_changed", threadId: thread.id });
@@ -499,15 +517,12 @@ export async function replyToEnquiryThread(
 
   const adminName = admin.name?.trim() || admin.email.split("@")[0] || "Sarveda Team";
   const trimmed = body.trim();
-  if (!trimmed) {
-    throw new Error("Reply message is required");
+  if (!trimmed && attachments.length === 0) {
+    throw new Error("Reply message or attachment is required");
   }
 
   // WhatsApp threads: deliver via Exotel session message, not email.
   if (thread.source === "WHATSAPP") {
-    if (attachments.length > 0) {
-      throw new Error("Attachments are not supported on WhatsApp replies yet — send text only.");
-    }
     const to = thread.waPhone || toWhatsAppE164(thread.customerPhone);
     if (!to) {
       throw new Error("This WhatsApp thread has no customer number.");
@@ -519,7 +534,24 @@ export async function replyToEnquiryThread(
       );
     }
 
-    const sid = await sendWhatsAppSessionText(to, trimmed);
+    const uploaded = await uploadEnquiryFiles(attachments);
+    let sid: string | null = null;
+
+    if (uploaded.length === 0) {
+      sid = await sendWhatsAppSessionText(to, trimmed);
+    } else {
+      for (let i = 0; i < uploaded.length; i++) {
+        const file = uploaded[i]!;
+        const caption = i === 0 ? trimmed || undefined : undefined;
+        const mediaSid = await sendWhatsAppSessionMedia(to, {
+          link: file.s3Url,
+          mimeType: file.mimeType,
+          fileName: file.fileName,
+          caption
+        });
+        if (i === 0) sid = mediaSid;
+      }
+    }
 
     const waNow = new Date();
     const message = await prisma.enquiryMessage.create({
@@ -529,9 +561,18 @@ export async function replyToEnquiryThread(
         adminUserId: admin.id,
         authorName: adminName,
         authorEmail: admin.email,
-        body: trimmed,
+        body: trimmed || uploaded.map((u) => u.fileName).join(", "),
         waMessageSid: sid,
-        waStatus: "sent"
+        waStatus: "sent",
+        attachments: {
+          create: uploaded.map((u) => ({
+            fileName: u.fileName,
+            mimeType: u.mimeType,
+            fileSizeBytes: u.fileSizeBytes,
+            s3Key: u.s3Key,
+            s3Url: u.s3Url
+          }))
+        }
       },
       include: { attachments: true }
     });
@@ -544,7 +585,12 @@ export async function replyToEnquiryThread(
     await claimWhatsAppAgentSession(threadId, admin.id);
     publishEnquiryEvent({ type: "message_changed", threadId });
 
-    logger.info("enquiry_whatsapp_replied", { threadId, adminId: admin.id, sid });
+    logger.info("enquiry_whatsapp_replied", {
+      threadId,
+      adminId: admin.id,
+      sid,
+      attachmentCount: uploaded.length
+    });
     return message;
   }
 

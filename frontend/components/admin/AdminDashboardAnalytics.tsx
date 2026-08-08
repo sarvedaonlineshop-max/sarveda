@@ -5,6 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 import type { AdminWooProductAnalytics, WooDumpProductRow } from "@/lib/admin-api";
 import { fetchAdminWooAnalytics } from "@/lib/admin-api";
 import { formatINRFromPaise } from "@/lib/money";
+import { useAdminUser } from "@/components/admin/AdminUserContext";
+
+const REVENUE_VISIBLE_EMAIL = "arjun@sarveda.com";
 
 const card: React.CSSProperties = {
   background: "#fff",
@@ -232,6 +235,9 @@ function monthBounds(maxDate: string): { from: string; to: string } {
 }
 
 export function AdminDashboardAnalytics() {
+  const adminUser = useAdminUser();
+  const canSeeRevenue =
+    (adminUser?.email ?? "").trim().toLowerCase() === REVENUE_VISIBLE_EMAIL;
   const [data, setData] = useState<AdminWooProductAnalytics | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -410,7 +416,9 @@ export function AdminDashboardAnalytics() {
         >
           {[
             { label: "Orders", value: String(kpis.orders) },
-            { label: "Revenue", value: money(kpis.revenueInr) },
+            ...(canSeeRevenue
+              ? [{ label: "Revenue", value: money(kpis.revenueInr) }]
+              : []),
             { label: "AOV", value: money(kpis.aovInr) },
             { label: "Units", value: String(kpis.units) },
             { label: "Refunds", value: `${kpis.refundCount}` },

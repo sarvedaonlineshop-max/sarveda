@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { Lock } from "lucide-react";
 
 import type { AdminReportPeriod, AdminReportType } from "@/lib/admin-api";
 import { downloadAdminReportExcel } from "@/lib/admin-api";
+import { useIsSuperAdmin } from "@/components/admin/AdminUserContext";
 
 const card: React.CSSProperties = {
   background: "#fff",
@@ -43,6 +45,7 @@ const REPORTS: Array<{
   type: AdminReportType;
   title: string;
   blurb: string;
+  superAdminOnly?: boolean;
 }> = [
   {
     type: "sales",
@@ -57,7 +60,8 @@ const REPORTS: Array<{
   {
     type: "customers",
     title: "Customers",
-    blurb: "Customer accounts with period and lifetime order totals."
+    blurb: "Customer accounts with period and lifetime order totals.",
+    superAdminOnly: true
   },
   {
     type: "vendors",
@@ -87,11 +91,16 @@ const REPORTS: Array<{
 ];
 
 export default function AdminReportsPage() {
+  const isSuper = useIsSuperAdmin();
   const [period, setPeriod] = useState<AdminReportPeriod>("monthly");
   const [busy, setBusy] = useState<AdminReportType | null>(null);
   const [downloadErr, setDownloadErr] = useState<string | null>(null);
 
   async function onDownload(type: AdminReportType) {
+    if (type === "customers" && !isSuper) {
+      setDownloadErr("Only super admin can download customer data");
+      return;
+    }
     setDownloadErr(null);
     setBusy(type);
     try {
@@ -119,7 +128,7 @@ export default function AdminReportsPage() {
           <a href="/admin" style={{ color: "#f6c95a", fontWeight: 700 }}>
             Dashboard
           </a>
-          .
+          . Customer downloads are super-admin only.
         </p>
       </div>
 
@@ -215,58 +224,116 @@ export default function AdminReportsPage() {
             gap: "12px"
           }}
         >
-          {REPORTS.map((r) => (
-            <div
-              key={r.type}
-              style={{
-                border: "1px solid #e8e4db",
-                borderRadius: "10px",
-                padding: "14px 16px",
-                background: "#faf9f7",
-                borderTop: "3px solid rgba(185,138,62,0.15)",
-                transition: "all 0.2s",
-                cursor: "default"
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = "0 4px 16px rgba(28,53,42,0.08)";
-                e.currentTarget.style.borderTopColor = "rgba(185,138,62,0.4)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = "none";
-                e.currentTarget.style.borderTopColor = "rgba(185,138,62,0.15)";
-              }}
-            >
-              <p style={{ fontSize: "28px", marginBottom: "8px" }}>{REPORT_ICONS[r.type]}</p>
-              <p style={{ fontSize: "15px", fontWeight: 800, color: "#1c352a" }}>{r.title}</p>
-              <p style={{ fontSize: "12px", color: "#6b5c52", marginTop: "4px", minHeight: "36px", lineHeight: 1.55 }}>
-                {r.blurb}
-              </p>
-              <button
-                type="button"
-                disabled={busy !== null}
-                onClick={() => void onDownload(r.type)}
+          {REPORTS.map((r) => {
+            const locked = Boolean(r.superAdminOnly && !isSuper);
+            return (
+              <div
+                key={r.type}
                 style={{
-                  marginTop: "12px",
-                  height: "36px",
-                  padding: "0 14px",
-                  borderRadius: "8px",
-                  border: "none",
-                  background:
-                    busy === r.type
-                      ? "#4a7c59"
-                      : "linear-gradient(135deg, #1c352a, #2d5040)",
-                  color: "#fffbf5",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  cursor: busy !== null ? "wait" : "pointer",
-                  opacity: busy !== null && busy !== r.type ? 0.55 : 1,
-                  boxShadow: "0 2px 6px rgba(28,53,42,0.2)"
+                  border: "1px solid #e8e4db",
+                  borderRadius: "10px",
+                  padding: "14px 16px",
+                  background: locked ? "#f3f1ed" : "#faf9f7",
+                  borderTop: "3px solid rgba(185,138,62,0.15)",
+                  transition: "all 0.2s",
+                  cursor: "default",
+                  opacity: locked ? 0.85 : 1
+                }}
+                onMouseEnter={(e) => {
+                  if (locked) return;
+                  e.currentTarget.style.boxShadow = "0 4px 16px rgba(28,53,42,0.08)";
+                  e.currentTarget.style.borderTopColor = "rgba(185,138,62,0.4)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = "none";
+                  e.currentTarget.style.borderTopColor = "rgba(185,138,62,0.15)";
                 }}
               >
-                {busy === r.type ? "⏳ Preparing..." : "📥 Download .xlsx"}
-              </button>
-            </div>
-          ))}
+                <p style={{ fontSize: "28px", marginBottom: "8px" }}>{REPORT_ICONS[r.type]}</p>
+                <p style={{ fontSize: "15px", fontWeight: 800, color: "#1c352a" }}>
+                  {r.title}
+                  {r.superAdminOnly ? (
+                    <span
+                      style={{
+                        marginLeft: "8px",
+                        fontSize: "10px",
+                        fontWeight: 700,
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                        color: "#92400e",
+                        background: "#fef3c7",
+                        borderRadius: "999px",
+                        padding: "2px 8px",
+                        verticalAlign: "middle"
+                      }}
+                    >
+                      Super admin
+                    </span>
+                  ) : null}
+                </p>
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "#6b5c52",
+                    marginTop: "4px",
+                    minHeight: "36px",
+                    lineHeight: 1.55
+                  }}
+                >
+                  {r.blurb}
+                </p>
+                {locked ? (
+                  <button
+                    type="button"
+                    disabled
+                    title="Only super admin can download customer data"
+                    style={{
+                      marginTop: "12px",
+                      height: "36px",
+                      padding: "0 14px",
+                      borderRadius: "8px",
+                      border: "1px solid #d6d3d1",
+                      background: "#e7e5e4",
+                      color: "#78716c",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      cursor: "not-allowed",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px"
+                    }}
+                  >
+                    <Lock size={14} /> Locked
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={busy !== null}
+                    onClick={() => void onDownload(r.type)}
+                    style={{
+                      marginTop: "12px",
+                      height: "36px",
+                      padding: "0 14px",
+                      borderRadius: "8px",
+                      border: "none",
+                      background:
+                        busy === r.type
+                          ? "#4a7c59"
+                          : "linear-gradient(135deg, #1c352a, #2d5040)",
+                      color: "#fffbf5",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      cursor: busy !== null ? "wait" : "pointer",
+                      opacity: busy !== null && busy !== r.type ? 0.55 : 1,
+                      boxShadow: "0 2px 6px rgba(28,53,42,0.2)"
+                    }}
+                  >
+                    {busy === r.type ? "⏳ Preparing..." : "📥 Download .xlsx"}
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

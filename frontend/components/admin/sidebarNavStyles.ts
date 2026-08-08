@@ -18,6 +18,8 @@ export function sidebarLinkStyle(isActive: boolean): React.CSSProperties {
     display: "flex",
     alignItems: "center",
     gap: "12px",
+    width: "100%",
+    boxSizing: "border-box",
     padding: "10px 12px",
     borderRadius: "10px",
     marginBottom: "2px",
@@ -26,7 +28,8 @@ export function sidebarLinkStyle(isActive: boolean): React.CSSProperties {
     fontSize: "13.5px",
     fontWeight: isActive ? 600 : 400,
     textDecoration: "none",
-    transition: "background 0.15s ease, color 0.15s ease, transform 0.15s ease, border-color 0.15s ease",
+    transform: "none",
+    transition: "background 0.15s ease, color 0.15s ease, border-color 0.15s ease",
     borderLeft: isActive
       ? `3px solid ${sidebarNavStyles.activeBorder}`
       : "3px solid transparent"
@@ -37,7 +40,7 @@ export function applySidebarHover(el: HTMLElement, isActive: boolean) {
   if (isActive) return;
   el.style.background = sidebarNavStyles.hoverBg;
   el.style.color = sidebarNavStyles.hoverColor;
-  el.style.transform = "translateX(3px)";
+  el.style.transform = "none";
   const iconEl = el.querySelector("[data-nav-icon]") as HTMLElement | null;
   if (iconEl) iconEl.style.color = sidebarNavStyles.hoverIcon;
 }
@@ -46,7 +49,7 @@ export function clearSidebarHover(el: HTMLElement, isActive: boolean) {
   if (isActive) return;
   el.style.background = "transparent";
   el.style.color = sidebarNavStyles.idleColor;
-  el.style.transform = "translateX(0)";
+  el.style.transform = "none";
   const iconEl = el.querySelector("[data-nav-icon]") as HTMLElement | null;
   if (iconEl) iconEl.style.color = sidebarNavStyles.idleIcon;
 }

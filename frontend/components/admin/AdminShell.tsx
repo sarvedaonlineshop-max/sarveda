@@ -319,7 +319,8 @@ function AdminShellInner({
             <AdminLoadingOverlay show={isNavigating} label="Loading page…" />
             <div
               style={{
-                maxWidth: "1400px",
+                width: "100%",
+                maxWidth: "none",
                 opacity: isNavigating ? 0.45 : 1,
                 transition: "opacity 0.15s ease"
               }}

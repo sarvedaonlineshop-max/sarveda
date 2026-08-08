@@ -42,6 +42,36 @@ export async function sendWhatsAppSessionText(toE164: string, body: string): Pro
   );
 }
 
+/** Send a session media message (image / video / audio / document) via public HTTPS link. */
+export async function sendWhatsAppSessionMedia(
+  toE164: string,
+  input: { link: string; mimeType: string; fileName: string; caption?: string }
+): Promise<string | null> {
+  const mime = input.mimeType.toLowerCase();
+  const caption = input.caption?.trim().slice(0, 1024) || undefined;
+  const link = input.link;
+
+  let content: Record<string, unknown>;
+  if (mime.startsWith("image/")) {
+    content = { type: "image", image: { link, ...(caption ? { caption } : {}) } };
+  } else if (mime.startsWith("video/")) {
+    content = { type: "video", video: { link, ...(caption ? { caption } : {}) } };
+  } else if (mime.startsWith("audio/")) {
+    content = { type: "audio", audio: { link } };
+  } else {
+    content = {
+      type: "document",
+      document: {
+        link,
+        filename: input.fileName.slice(0, 240),
+        ...(caption ? { caption } : {})
+      }
+    };
+  }
+
+  return sendExotelWhatsAppContent(toE164, content, "whatsapp_session_media_sent");
+}
+
 // ---------------------------------------------------------------------------
 // Meta Flow CTA (parked)
 //

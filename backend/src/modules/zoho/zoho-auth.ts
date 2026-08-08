@@ -3,12 +3,15 @@ import { logger } from "../../config/logger";
 import { getRedisConnection } from "../../config/redisConnection";
 
 const CACHE_KEY = "zoho:access_token";
+let memoryToken: { value: string; expiresAt: number } | null = null;
 
 export async function getZohoAccessToken(): Promise<string> {
   const redis = getRedisConnection();
   if (redis) {
     const cached = await redis.get(CACHE_KEY);
     if (cached) return cached;
+  } else if (memoryToken && memoryToken.expiresAt > Date.now()) {
+    return memoryToken.value;
   }
 
   const res = await fetch(`${zohoEnv.ZOHO_ACCOUNTS_URL}/oauth/v2/token`, {
@@ -30,6 +33,8 @@ export async function getZohoAccessToken(): Promise<string> {
 
   if (redis) {
     await redis.setex(CACHE_KEY, 55 * 60, data.access_token);
+  } else {
+    memoryToken = { value: data.access_token, expiresAt: Date.now() + 55 * 60 * 1000 };
   }
   return data.access_token;
 }

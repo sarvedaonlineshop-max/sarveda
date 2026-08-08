@@ -69,8 +69,7 @@ const startWhatsAppChatSchema = z.object({
     .regex(/^\+?\d{1,4}$/, "Invalid country code"),
   phone: z.string().trim().min(4).max(20),
   customerName: z.string().trim().max(120).optional().nullable(),
-  message: z.string().trim().max(4096).optional().nullable(),
-  sendOutreachTemplate: z.boolean().optional().default(false)
+  message: z.string().trim().min(1, "Message is required").max(1024)
 });
 
 router.post(
@@ -91,7 +90,6 @@ router.post(
         phone: req.body.phone,
         customerName: req.body.customerName,
         message: req.body.message,
-        sendOutreachTemplate: Boolean(req.body.sendOutreachTemplate),
         admin: adminUser
       });
       res.json({ success: true, data });
@@ -99,6 +97,7 @@ router.post(
       const message = err instanceof Error ? err.message : String(err);
       if (
         message.includes("valid mobile") ||
+        message.includes("Message is required") ||
         message.includes("24-hour") ||
         message.includes("Attachments are not supported") ||
         message.includes("WhatsApp is not configured") ||
@@ -177,14 +176,16 @@ router.post(
 router.get("/", async (req, res, next) => {
   try {
     const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 20;
+    const limit = Number(req.query.limit) || 50;
     const unreadOnly = req.query.unreadOnly === "true";
     const source = typeof req.query.source === "string" ? req.query.source : undefined;
+    const q = typeof req.query.q === "string" ? req.query.q : undefined;
     const data = await listEnquiryThreads({
       page,
       limit,
       unreadOnly,
-      source: source as Parameters<typeof listEnquiryThreads>[0]["source"]
+      source: source as Parameters<typeof listEnquiryThreads>[0]["source"],
+      q
     });
     res.json({ success: true, data });
   } catch (err) {
@@ -206,7 +207,7 @@ router.get("/:id", async (req, res, next) => {
 });
 
 const replySchema = z.object({
-  message: z.string().min(1).max(8000)
+  message: z.string().max(8000).optional().default("")
 });
 
 router.post(
@@ -225,6 +226,15 @@ router.post(
         });
         return;
       }
+      const files = filesFromRequest(req);
+      if (!parsed.data.message.trim() && files.length === 0) {
+        res.status(400).json({
+          success: false,
+          error: "Reply message or attachment is required",
+          code: "VALIDATION_ERROR"
+        });
+        return;
+      }
       const adminUser = await prisma.user.findUnique({
         where: { id: req.authUser!.id },
         select: { id: true, email: true, name: true }
@@ -237,7 +247,7 @@ router.post(
         req.params.id,
         adminUser,
         parsed.data.message,
-        filesFromRequest(req)
+        files
       );
       if (!message) {
         res.status(404).json({ success: false, error: "Thread not found", code: "NOT_FOUND" });

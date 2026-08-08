@@ -6,6 +6,7 @@ import { OrderStatus, PaymentProvider, PaymentStatus, Role } from "@prisma/clien
 import { z } from "zod";
 
 import { prisma } from "../../config/db";
+import { isSuperAdminRole, superAdminEmailSet } from "../../middleware/adminActivity";
 import {
   addDaysInstant,
   startOfDayKolkata,
@@ -561,6 +562,22 @@ export async function exportAdminReport(req: Request, res: Response, next: NextF
     }
 
     const { type, period } = parsed.data;
+
+    if (type === "customers") {
+      const role = req.authUser?.role;
+      const email = req.authUser?.email?.toLowerCase();
+      const allowed =
+        isSuperAdminRole(role) || (email != null && superAdminEmailSet().has(email));
+      if (!allowed) {
+        res.status(403).json({
+          success: false,
+          error: "Only super admin can download customer data",
+          code: "FORBIDDEN"
+        });
+        return;
+      }
+    }
+
     const { from, to, label } = resolveReportRange(period);
     let buffer: Buffer;
     let filename: string;

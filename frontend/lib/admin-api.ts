@@ -1874,6 +1874,7 @@ export type EnquiryThreadListItem = {
   customerName: string;
   customerEmail: string;
   customerPhone: string | null;
+  waPhone?: string | null;
   orderNumber: string | null;
   contextTitle: string | null;
   status: string;
@@ -1919,13 +1920,17 @@ export function fetchEnquiryUnreadCount() {
 
 export function fetchAdminEnquiries(params?: {
   page?: number;
+  limit?: number;
   unreadOnly?: boolean;
   source?: string;
+  q?: string;
 }) {
   const q = new URLSearchParams();
   if (params?.page) q.set("page", String(params.page));
+  if (params?.limit) q.set("limit", String(params.limit));
   if (params?.unreadOnly) q.set("unreadOnly", "true");
   if (params?.source) q.set("source", params.source);
+  if (params?.q?.trim()) q.set("q", params.q.trim());
   const qs = q.toString();
   return adminFetch<{
     items: EnquiryThreadListItem[];
@@ -1992,8 +1997,7 @@ export function startAdminWhatsAppChat(input: {
   countryDialCode: string;
   phone: string;
   customerName?: string;
-  message?: string;
-  sendOutreachTemplate?: boolean;
+  message: string;
 }) {
   return adminFetch<StartWhatsAppChatResult>("/api/admin/enquiries/whatsapp/start", {
     method: "POST",
