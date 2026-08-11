@@ -133,6 +133,8 @@ function blurMoney(e: React.FocusEvent<HTMLInputElement>) {
 
 const COL_COUNT = 14;
 
+type StatusFilter = "ACTIVE" | "DRAFT" | "ALL";
+
 export default function ProductsXlSheetPage() {
   const [rows, setRows] = useState<EditRow[]>([]);
   const [baseline, setBaseline] = useState("");
@@ -141,12 +143,13 @@ export default function ProductsXlSheetPage() {
   const [err, setErr] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; error?: boolean } | null>(null);
   const [filter, setFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ACTIVE");
 
   const load = useCallback(async () => {
     setLoading(true);
     setErr(null);
     try {
-      const data = await fetchProductsXlSheet();
+      const data = await fetchProductsXlSheet({ status: statusFilter });
       const mapped = data.rows.map(apiToEdit);
       setRows(mapped);
       setBaseline(JSON.stringify(mapped));
@@ -156,13 +159,22 @@ export default function ProductsXlSheetPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [statusFilter]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
   const dirty = useMemo(() => JSON.stringify(rows) !== baseline, [rows, baseline]);
+
+  function changeStatusFilter(next: StatusFilter) {
+    if (next === statusFilter) return;
+    if (dirty) {
+      const ok = window.confirm("You have unsaved edits. Switch status filter and discard them?");
+      if (!ok) return;
+    }
+    setStatusFilter(next);
+  }
 
   const filtered = useMemo(() => {
     const q = filter.trim().toLowerCase();
@@ -291,10 +303,34 @@ export default function ProductsXlSheetPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <label
+            htmlFor="xl-status"
+            style={{ fontSize: "11px", fontWeight: 700, color: "#a8c4b0", letterSpacing: "0.04em" }}
+          >
+            STATUS
+          </label>
+          <select
+            id="xl-status"
+            value={statusFilter}
+            onChange={(e) => changeStatusFilter(e.target.value as StatusFilter)}
+            style={{
+              border: "1px solid rgba(255,255,255,0.2)",
+              borderRadius: "8px",
+              padding: "8px 12px",
+              fontSize: "13px",
+              background: "rgba(0,0,0,0.2)",
+              color: "#faf5ec",
+              minWidth: "9.5rem"
+            }}
+          >
+            <option value="ACTIVE">Active only</option>
+            <option value="DRAFT">Draft only</option>
+            <option value="ALL">Active + Draft</option>
+          </select>
           <input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            placeholder="Filter…"
+            placeholder="Filter name / SKU…"
             style={{
               width: "200px",
               border: "1px solid rgba(255,255,255,0.2)",
