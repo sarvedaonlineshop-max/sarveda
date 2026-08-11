@@ -167,8 +167,13 @@ model ProductVariant {
   sku             String                  @unique
   mrpInPaise      Int
   saleInPaise     Int
+  /// Purchase / landed cost in INR paise (admin XL sheet)
+  costInPaise     Int?
   mrpUsdCents     Int?
   saleUsdCents    Int?
+  /// UAE Dirham (Dinar on catalog sheet) in fils (1/100 AED)
+  mrpAedFils      Int?
+  saleAedFils     Int?
   mrpGbpPence     Int?
   saleGbpPence    Int?
   weightGrams     Int?

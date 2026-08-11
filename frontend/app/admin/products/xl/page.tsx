@@ -11,38 +11,131 @@ import {
   type XlSheetRow
 } from "@/lib/admin-api";
 
-type EditRow = XlSheetRow & { dirty?: boolean };
+/** Editable row: money as major-unit strings for spreadsheet UX. */
+type EditRow = {
+  productId: string;
+  variantId: string;
+  productName: string;
+  variantName: string;
+  sku: string;
+  qty: string;
+  cost: string;
+  mrp: string;
+  sale: string;
+  mrpUsd: string;
+  saleUsd: string;
+  mrpAed: string;
+  saleAed: string;
+  mrpGbp: string;
+  saleGbp: string;
+  hsnCode: string;
+  productStatus: string;
+};
 
-const thSt: React.CSSProperties = {
-  padding: "10px 12px",
-  fontSize: "11px",
-  fontWeight: 700,
-  letterSpacing: "0.06em",
-  textTransform: "uppercase",
-  color: "var(--admin-text-muted, #8a7060)",
-  background: "var(--admin-table-head, linear-gradient(180deg,#f2ede5,#f9f7f4))",
-  textAlign: "left",
+function minorToMajorStr(minor: number | null | undefined): string {
+  if (minor == null) return "";
+  const n = minor / 100;
+  return Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
+}
+
+function majorStrToMinor(raw: string): number | null {
+  const t = raw.trim().replace(/,/g, "");
+  if (!t) return null;
+  const n = parseFloat(t);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return Math.round(n * 100);
+}
+
+function majorStrToMinorRequired(raw: string, label: string): number {
+  const v = majorStrToMinor(raw);
+  if (v == null) throw new Error(`${label} is required`);
+  return v;
+}
+
+function apiToEdit(r: XlSheetRow): EditRow {
+  return {
+    productId: r.productId,
+    variantId: r.variantId,
+    productName: r.productName,
+    variantName: r.variantName,
+    sku: r.sku,
+    qty: String(r.qty ?? 0),
+    cost: minorToMajorStr(r.costInPaise),
+    mrp: minorToMajorStr(r.mrpInPaise),
+    sale: minorToMajorStr(r.saleInPaise),
+    mrpUsd: minorToMajorStr(r.mrpUsdCents),
+    saleUsd: minorToMajorStr(r.saleUsdCents),
+    mrpAed: minorToMajorStr(r.mrpAedFils),
+    saleAed: minorToMajorStr(r.saleAedFils),
+    mrpGbp: minorToMajorStr(r.mrpGbpPence),
+    saleGbp: minorToMajorStr(r.saleGbpPence),
+    hsnCode: r.hsnCode || "",
+    productStatus: r.productStatus
+  };
+}
+
+const stickyHead: React.CSSProperties = {
   position: "sticky",
   top: 0,
+  zIndex: 3,
+  background: "#1c352a",
+  color: "#faf5ec",
+  fontSize: "11px",
+  fontWeight: 700,
+  letterSpacing: "0.04em",
+  textTransform: "uppercase",
+  padding: "8px 6px",
+  borderBottom: "1px solid rgba(255,255,255,0.12)",
+  whiteSpace: "nowrap",
+  textAlign: "left"
+};
+
+const stickySub: React.CSSProperties = {
+  ...stickyHead,
+  top: 28,
   zIndex: 2,
-  borderBottom: "1px solid var(--admin-card-border, #e8e2d9)",
-  whiteSpace: "nowrap"
+  background: "#2d5040",
+  fontSize: "10px",
+  fontWeight: 600,
+  letterSpacing: "0.03em",
+  textTransform: "none",
+  padding: "6px"
 };
 
 const inputSt: React.CSSProperties = {
   width: "100%",
+  minWidth: 0,
   border: "1px solid transparent",
   background: "transparent",
-  padding: "8px 10px",
-  fontSize: "13px",
+  padding: "6px 6px",
+  fontSize: "12px",
   color: "var(--admin-text, #2c2420)",
-  borderRadius: "6px",
-  outline: "none"
+  borderRadius: "4px",
+  outline: "none",
+  boxSizing: "border-box"
 };
+
+const numInput: React.CSSProperties = {
+  ...inputSt,
+  fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+  fontSize: "12px",
+  textAlign: "right"
+};
+
+function focusMoney(e: React.FocusEvent<HTMLInputElement>) {
+  e.currentTarget.style.borderColor = "rgba(185,138,62,0.55)";
+  e.currentTarget.style.background = "rgba(185,138,62,0.08)";
+}
+function blurMoney(e: React.FocusEvent<HTMLInputElement>) {
+  e.currentTarget.style.borderColor = "transparent";
+  e.currentTarget.style.background = "transparent";
+}
+
+const COL_COUNT = 14;
 
 export default function ProductsXlSheetPage() {
   const [rows, setRows] = useState<EditRow[]>([]);
-  const [baseline, setBaseline] = useState<string>("");
+  const [baseline, setBaseline] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -54,8 +147,9 @@ export default function ProductsXlSheetPage() {
     setErr(null);
     try {
       const data = await fetchProductsXlSheet();
-      setRows(data.rows);
-      setBaseline(JSON.stringify(data.rows));
+      const mapped = data.rows.map(apiToEdit);
+      setRows(mapped);
+      setBaseline(JSON.stringify(mapped));
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Failed to load sheet");
       setRows([]);
@@ -109,22 +203,33 @@ export default function ProductsXlSheetPage() {
     setSaving(true);
     setErr(null);
     try {
-      const payload = rows.map((r) => ({
-        productId: r.productId,
-        variantId: r.variantId,
-        productName: r.productName.trim(),
-        variantName: r.variantName.trim(),
-        sku: r.sku.trim(),
-        hsnCode: r.hsnCode.trim() || null
-      }));
-      const blankName = payload.find((r) => !r.productName);
-      if (blankName) {
-        throw new Error("Product name cannot be empty");
-      }
-      const blankSku = payload.find((r) => !r.sku);
-      if (blankSku) {
-        throw new Error("SKU cannot be empty");
-      }
+      const payload = rows.map((r, idx) => {
+        const rowLabel = r.sku || `row ${idx + 1}`;
+        const qty = parseInt(r.qty.trim() || "0", 10);
+        if (!Number.isFinite(qty) || qty < 0) {
+          throw new Error(`Invalid qty for ${rowLabel}`);
+        }
+        if (!r.productName.trim()) throw new Error(`Product name empty (${rowLabel})`);
+        if (!r.sku.trim()) throw new Error(`SKU empty at row ${idx + 1}`);
+        return {
+          productId: r.productId,
+          variantId: r.variantId,
+          productName: r.productName.trim(),
+          variantName: r.variantName.trim(),
+          sku: r.sku.trim(),
+          qty,
+          costInPaise: majorStrToMinor(r.cost),
+          mrpInPaise: majorStrToMinorRequired(r.mrp, `MRP (${rowLabel})`),
+          saleInPaise: majorStrToMinorRequired(r.sale, `Sale (${rowLabel})`),
+          mrpUsdCents: majorStrToMinor(r.mrpUsd),
+          saleUsdCents: majorStrToMinor(r.saleUsd),
+          mrpAedFils: majorStrToMinor(r.mrpAed),
+          saleAedFils: majorStrToMinor(r.saleAed),
+          mrpGbpPence: majorStrToMinor(r.mrpGbp),
+          saleGbpPence: majorStrToMinor(r.saleGbp),
+          hsnCode: r.hsnCode.trim() || null
+        };
+      });
 
       const result = await saveProductsXlSheet(payload);
       const errCount = result.errors?.length ?? 0;
@@ -136,7 +241,7 @@ export default function ProductsXlSheetPage() {
         setErr(result.errors.map((e) => `${e.sku}: ${e.error}`).slice(0, 8).join(" · "));
       } else {
         setToast({
-          message: `Saved. Updated ${result.updatedProducts} product(s) and ${result.updatedVariants} variant(s). Storefront will show the new names/SKUs/HSN.`
+          message: `Saved. Updated ${result.updatedProducts} product(s) and ${result.updatedVariants} variant(s). Storefront prices/names/stock reflect these values.`
         });
       }
       await load();
@@ -150,37 +255,67 @@ export default function ProductsXlSheetPage() {
   }
 
   return (
-    <div className="w-full space-y-5 font-sans">
+    <div
+      className="font-sans"
+      style={{
+        margin: "-24px -32px -48px",
+        height: "calc(100vh - 72px)",
+        display: "flex",
+        flexDirection: "column",
+        minHeight: 0,
+        background: "var(--admin-page-bg, #f4f1ec)"
+      }}
+    >
       <AdminToast toast={toast} onDismiss={() => setToast(null)} />
 
       <div
         style={{
+          flexShrink: 0,
           background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)",
-          borderRadius: "16px",
-          padding: "22px 28px",
+          padding: "14px 20px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           flexWrap: "wrap",
-          gap: "16px"
+          gap: "12px",
+          borderBottom: "1px solid rgba(255,255,255,0.08)"
         }}
       >
         <div>
-          <h1 style={{ color: "#faf5ec", fontSize: "26px", fontWeight: 800, margin: 0 }}>
-            📊 Products — XL format
+          <h1 style={{ color: "#faf5ec", fontSize: "20px", fontWeight: 800, margin: 0 }}>
+            Website Catalog — XL
           </h1>
-          <p style={{ color: "#a8c4b0", fontSize: "13px", marginTop: "4px", marginBottom: 0 }}>
-            Edit like the Aug 9 sheet (Name, Variant, SKU) plus HSN. Save updates the catalog DB and storefront.
+          <p style={{ color: "#a8c4b0", fontSize: "12px", marginTop: "2px", marginBottom: 0 }}>
+            Name · Variant · SKU · Qty · Cost · MRP / Sale · USD · Dinar · GBP · HSN — save updates DB +
+            storefront
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Filter…"
+            style={{
+              width: "200px",
+              border: "1px solid rgba(255,255,255,0.2)",
+              borderRadius: "8px",
+              padding: "8px 12px",
+              fontSize: "13px",
+              background: "rgba(0,0,0,0.2)",
+              color: "#faf5ec"
+            }}
+          />
+          <span style={{ fontSize: "12px", color: "#a8c4b0", minWidth: "7rem" }}>
+            {loading ? "Loading…" : `${filtered.length}/${rows.length}`}
+            {dirty ? " · unsaved" : ""}
+          </span>
           <Link
             href="/admin/products"
             style={{
               display: "inline-flex",
               alignItems: "center",
               gap: "6px",
-              padding: "9px 16px",
+              padding: "8px 14px",
               borderRadius: "8px",
               background: "rgba(255,255,255,0.12)",
               color: "#faf5ec",
@@ -191,7 +326,7 @@ export default function ProductsXlSheetPage() {
             }}
           >
             <ArrowLeft size={14} aria-hidden />
-            Back to products
+            Products
           </Link>
           <button
             type="button"
@@ -207,12 +342,11 @@ export default function ProductsXlSheetPage() {
               color: "#fff",
               fontWeight: 700,
               borderRadius: "10px",
-              padding: "10px 18px",
+              padding: "9px 16px",
               fontSize: "13px",
               border: "none",
               cursor: !dirty || saving ? "not-allowed" : "pointer",
-              opacity: !dirty || saving ? 0.65 : 1,
-              boxShadow: dirty ? "0 2px 8px rgba(185,138,62,0.35)" : "none"
+              opacity: !dirty || saving ? 0.65 : 1
             }}
           >
             <Save size={14} aria-hidden />
@@ -221,39 +355,11 @@ export default function ProductsXlSheetPage() {
         </div>
       </div>
 
-      <div
-        className="flex flex-wrap items-center gap-3 rounded-lg border p-3"
-        style={{
-          background: "var(--admin-card-bg, #faf9f7)",
-          borderColor: "var(--admin-card-border, #e8e2d9)"
-        }}
-      >
-        <input
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder="Filter name / variant / SKU / HSN…"
-          style={{
-            flex: 1,
-            minWidth: "16rem",
-            border: "1px solid var(--admin-card-border, #e8e2d9)",
-            borderRadius: "8px",
-            padding: "9px 12px",
-            fontSize: "13px",
-            background: "var(--admin-input-bg, #fff)",
-            color: "var(--admin-text, #2c2420)"
-          }}
-        />
-        <span style={{ fontSize: "12px", color: "var(--admin-text-muted, #8a7060)" }}>
-          {loading ? "Loading…" : `${filtered.length} / ${rows.length} rows`}
-          {dirty ? " · unsaved edits" : ""}
-        </span>
-      </div>
-
       {err ? (
         <div
           style={{
-            padding: "12px 14px",
-            borderRadius: "8px",
+            flexShrink: 0,
+            padding: "10px 16px",
             background: "#fde8e8",
             color: "#9b2c2c",
             fontSize: "13px"
@@ -263,74 +369,113 @@ export default function ProductsXlSheetPage() {
         </div>
       ) : null}
 
-      <div
-        style={{
-          borderRadius: "12px",
-          border: "1px solid var(--admin-card-border, #e8e2d9)",
-          background: "var(--admin-card-bg, #fff)",
-          maxHeight: "calc(100vh - 280px)",
-          overflow: "auto",
-          boxShadow: "0 1px 4px rgba(44,36,32,0.06)"
-        }}
-      >
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "900px" }}>
+      <div style={{ flex: 1, minHeight: 0, overflow: "auto", background: "#fff" }}>
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            minWidth: "1280px",
+            tableLayout: "fixed"
+          }}
+        >
+          <colgroup>
+            <col style={{ width: "160px" }} />
+            <col style={{ width: "140px" }} />
+            <col style={{ width: "120px" }} />
+            <col style={{ width: "64px" }} />
+            <col style={{ width: "80px" }} />
+            <col style={{ width: "80px" }} />
+            <col style={{ width: "80px" }} />
+            <col style={{ width: "72px" }} />
+            <col style={{ width: "72px" }} />
+            <col style={{ width: "72px" }} />
+            <col style={{ width: "72px" }} />
+            <col style={{ width: "72px" }} />
+            <col style={{ width: "72px" }} />
+            <col style={{ width: "80px" }} />
+          </colgroup>
           <thead>
             <tr>
-              <th style={{ ...thSt, width: "28%" }}>Name</th>
-              <th style={{ ...thSt, width: "28%" }}>Variant Name</th>
-              <th style={{ ...thSt, width: "22%" }}>SKU</th>
-              <th style={{ ...thSt, width: "14%" }}>HSN Code</th>
-              <th style={{ ...thSt, width: "8%" }}>Status</th>
+              <th style={stickyHead} rowSpan={2}>
+                Name
+              </th>
+              <th style={stickyHead} rowSpan={2}>
+                Variant Name
+              </th>
+              <th style={stickyHead} rowSpan={2}>
+                SKU
+              </th>
+              <th style={stickyHead} rowSpan={2}>
+                Qty
+              </th>
+              <th style={stickyHead} rowSpan={2}>
+                Cost
+              </th>
+              <th style={stickyHead} rowSpan={2}>
+                MRP
+              </th>
+              <th style={stickyHead} rowSpan={2}>
+                Proposed sale
+              </th>
+              <th style={{ ...stickyHead, textAlign: "center" }} colSpan={2}>
+                USD
+              </th>
+              <th style={{ ...stickyHead, textAlign: "center" }} colSpan={2}>
+                Dinar
+              </th>
+              <th style={{ ...stickyHead, textAlign: "center" }} colSpan={2}>
+                GBP
+              </th>
+              <th style={stickyHead} rowSpan={2}>
+                HSN
+              </th>
+            </tr>
+            <tr>
+              <th style={stickySub}>MRP</th>
+              <th style={stickySub}>Sale</th>
+              <th style={stickySub}>MRP</th>
+              <th style={stickySub}>Sale</th>
+              <th style={stickySub}>MRP</th>
+              <th style={stickySub}>Sale</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5} style={{ padding: "24px", color: "var(--admin-text-muted,#8a7060)" }}>
+                <td colSpan={COL_COUNT} style={{ padding: "24px", color: "#8a7060" }}>
                   Loading catalog sheet…
                 </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={5} style={{ padding: "24px", color: "var(--admin-text-muted,#8a7060)" }}>
+                <td colSpan={COL_COUNT} style={{ padding: "24px", color: "#8a7060" }}>
                   No rows.
                 </td>
               </tr>
             ) : (
               filtered.map(({ r, i }) => {
-                const isFirstOfProduct =
-                  i === 0 || rows[i - 1]?.productId !== r.productId;
+                const isFirstOfProduct = i === 0 || rows[i - 1]?.productId !== r.productId;
                 const showNameEditor = isFirstOfProduct || filter.trim().length > 0;
                 return (
                   <tr
                     key={r.variantId}
                     style={{
-                      borderBottom: "1px solid var(--admin-card-border, #f0ece6)",
-                      background: isFirstOfProduct ? "rgba(185,138,62,0.04)" : "transparent"
+                      borderBottom: "1px solid #eee8e0",
+                      background: isFirstOfProduct ? "rgba(185,138,62,0.05)" : "#fff"
                     }}
                   >
                     <td style={{ padding: 0, verticalAlign: "middle" }}>
                       {showNameEditor ? (
                         <input
-                          style={{
-                            ...inputSt,
-                            fontWeight: 600,
-                            borderColor: "transparent"
-                          }}
+                          style={{ ...inputSt, fontWeight: 600 }}
                           value={r.productName}
                           onChange={(e) => patchRow(i, { productName: e.target.value })}
-                          onFocus={(e) => {
-                            e.currentTarget.style.borderColor = "rgba(185,138,62,0.45)";
-                            e.currentTarget.style.background = "rgba(185,138,62,0.06)";
-                          }}
-                          onBlur={(e) => {
-                            e.currentTarget.style.borderColor = "transparent";
-                            e.currentTarget.style.background = "transparent";
-                          }}
+                          onFocus={focusMoney}
+                          onBlur={blurMoney}
                           aria-label="Product name"
                         />
                       ) : (
-                        <div style={{ padding: "8px 10px", minHeight: "36px" }} />
+                        <div style={{ padding: "6px", minHeight: "30px" }} />
                       )}
                     </td>
                     <td style={{ padding: 0 }}>
@@ -338,71 +483,146 @@ export default function ProductsXlSheetPage() {
                         style={inputSt}
                         value={r.variantName}
                         onChange={(e) => patchRow(i, { variantName: e.target.value })}
-                        onFocus={(e) => {
-                          e.currentTarget.style.borderColor = "rgba(185,138,62,0.45)";
-                          e.currentTarget.style.background = "rgba(185,138,62,0.06)";
-                        }}
-                        onBlur={(e) => {
-                          e.currentTarget.style.borderColor = "transparent";
-                          e.currentTarget.style.background = "transparent";
-                        }}
+                        onFocus={focusMoney}
+                        onBlur={blurMoney}
                         aria-label="Variant name"
                       />
                     </td>
                     <td style={{ padding: 0 }}>
                       <input
-                        style={{
-                          ...inputSt,
-                          fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-                          fontSize: "12px"
-                        }}
+                        style={{ ...numInput, textAlign: "left" }}
                         value={r.sku}
                         onChange={(e) => patchRow(i, { sku: e.target.value })}
-                        onFocus={(e) => {
-                          e.currentTarget.style.borderColor = "rgba(185,138,62,0.45)";
-                          e.currentTarget.style.background = "rgba(185,138,62,0.06)";
-                        }}
-                        onBlur={(e) => {
-                          e.currentTarget.style.borderColor = "transparent";
-                          e.currentTarget.style.background = "transparent";
-                        }}
+                        onFocus={focusMoney}
+                        onBlur={blurMoney}
                         aria-label="SKU"
+                      />
+                    </td>
+                    <td style={{ padding: 0 }}>
+                      <input
+                        style={numInput}
+                        inputMode="numeric"
+                        value={r.qty}
+                        onChange={(e) => patchRow(i, { qty: e.target.value.replace(/[^\d]/g, "") })}
+                        onFocus={focusMoney}
+                        onBlur={blurMoney}
+                        aria-label="Qty"
+                      />
+                    </td>
+                    <td style={{ padding: 0 }}>
+                      <input
+                        style={numInput}
+                        inputMode="decimal"
+                        value={r.cost}
+                        onChange={(e) => patchRow(i, { cost: e.target.value })}
+                        onFocus={focusMoney}
+                        onBlur={blurMoney}
+                        aria-label="Cost INR"
+                        placeholder="—"
+                      />
+                    </td>
+                    <td style={{ padding: 0 }}>
+                      <input
+                        style={numInput}
+                        inputMode="decimal"
+                        value={r.mrp}
+                        onChange={(e) => patchRow(i, { mrp: e.target.value })}
+                        onFocus={focusMoney}
+                        onBlur={blurMoney}
+                        aria-label="MRP INR"
+                      />
+                    </td>
+                    <td style={{ padding: 0 }}>
+                      <input
+                        style={numInput}
+                        inputMode="decimal"
+                        value={r.sale}
+                        onChange={(e) => patchRow(i, { sale: e.target.value })}
+                        onFocus={focusMoney}
+                        onBlur={blurMoney}
+                        aria-label="Sale INR"
+                      />
+                    </td>
+                    <td style={{ padding: 0 }}>
+                      <input
+                        style={numInput}
+                        inputMode="decimal"
+                        value={r.mrpUsd}
+                        onChange={(e) => patchRow(i, { mrpUsd: e.target.value })}
+                        onFocus={focusMoney}
+                        onBlur={blurMoney}
+                        aria-label="USD MRP"
+                      />
+                    </td>
+                    <td style={{ padding: 0 }}>
+                      <input
+                        style={numInput}
+                        inputMode="decimal"
+                        value={r.saleUsd}
+                        onChange={(e) => patchRow(i, { saleUsd: e.target.value })}
+                        onFocus={focusMoney}
+                        onBlur={blurMoney}
+                        aria-label="USD Sale"
+                      />
+                    </td>
+                    <td style={{ padding: 0 }}>
+                      <input
+                        style={numInput}
+                        inputMode="decimal"
+                        value={r.mrpAed}
+                        onChange={(e) => patchRow(i, { mrpAed: e.target.value })}
+                        onFocus={focusMoney}
+                        onBlur={blurMoney}
+                        aria-label="Dinar MRP"
+                      />
+                    </td>
+                    <td style={{ padding: 0 }}>
+                      <input
+                        style={numInput}
+                        inputMode="decimal"
+                        value={r.saleAed}
+                        onChange={(e) => patchRow(i, { saleAed: e.target.value })}
+                        onFocus={focusMoney}
+                        onBlur={blurMoney}
+                        aria-label="Dinar Sale"
+                      />
+                    </td>
+                    <td style={{ padding: 0 }}>
+                      <input
+                        style={numInput}
+                        inputMode="decimal"
+                        value={r.mrpGbp}
+                        onChange={(e) => patchRow(i, { mrpGbp: e.target.value })}
+                        onFocus={focusMoney}
+                        onBlur={blurMoney}
+                        aria-label="GBP MRP"
+                      />
+                    </td>
+                    <td style={{ padding: 0 }}>
+                      <input
+                        style={numInput}
+                        inputMode="decimal"
+                        value={r.saleGbp}
+                        onChange={(e) => patchRow(i, { saleGbp: e.target.value })}
+                        onFocus={focusMoney}
+                        onBlur={blurMoney}
+                        aria-label="GBP Sale"
                       />
                     </td>
                     <td style={{ padding: 0 }}>
                       {showNameEditor ? (
                         <input
-                          style={{
-                            ...inputSt,
-                            fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-                            fontSize: "12px"
-                          }}
+                          style={{ ...numInput, textAlign: "left" }}
                           value={r.hsnCode}
                           onChange={(e) => patchRow(i, { hsnCode: e.target.value })}
-                          placeholder="e.g. 9205"
-                          onFocus={(e) => {
-                            e.currentTarget.style.borderColor = "rgba(185,138,62,0.45)";
-                            e.currentTarget.style.background = "rgba(185,138,62,0.06)";
-                          }}
-                          onBlur={(e) => {
-                            e.currentTarget.style.borderColor = "transparent";
-                            e.currentTarget.style.background = "transparent";
-                          }}
-                          aria-label="HSN code"
+                          onFocus={focusMoney}
+                          onBlur={blurMoney}
+                          aria-label="HSN"
+                          placeholder="HSN"
                         />
                       ) : (
-                        <div style={{ padding: "8px 10px", minHeight: "36px" }} />
+                        <div style={{ padding: "6px", minHeight: "30px" }} />
                       )}
-                    </td>
-                    <td
-                      style={{
-                        padding: "8px 12px",
-                        fontSize: "11px",
-                        color: "var(--admin-text-muted, #8a7060)",
-                        whiteSpace: "nowrap"
-                      }}
-                    >
-                      {r.productStatus}
                     </td>
                   </tr>
                 );

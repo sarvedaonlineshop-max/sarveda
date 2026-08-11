@@ -1070,13 +1070,23 @@ export function fetchCatalogGaps(signal?: AbortSignal) {
   return adminFetch<CatalogGapsReport>(`/api/admin/catalog/gaps`, { signal });
 }
 
-/** Aug-9 style editable catalog sheet (Name / Variant / SKU / HSN). */
+/** Website-catalog style editable sheet (Name / Variant / SKU / Qty / Cost / prices / HSN). */
 export type XlSheetRow = {
   productId: string;
   variantId: string;
   productName: string;
   variantName: string;
   sku: string;
+  qty: number;
+  costInPaise: number | null;
+  mrpInPaise: number;
+  saleInPaise: number;
+  mrpUsdCents: number | null;
+  saleUsdCents: number | null;
+  mrpAedFils: number | null;
+  saleAedFils: number | null;
+  mrpGbpPence: number | null;
+  saleGbpPence: number | null;
   hsnCode: string;
   productStatus: string;
   variantStatus: string;
@@ -1095,6 +1105,16 @@ export function saveProductsXlSheet(
     productName: string;
     variantName: string;
     sku: string;
+    qty: number;
+    costInPaise?: number | null;
+    mrpInPaise: number;
+    saleInPaise: number;
+    mrpUsdCents?: number | null;
+    saleUsdCents?: number | null;
+    mrpAedFils?: number | null;
+    saleAedFils?: number | null;
+    mrpGbpPence?: number | null;
+    saleGbpPence?: number | null;
     hsnCode?: string | null;
   }>
 ) {
