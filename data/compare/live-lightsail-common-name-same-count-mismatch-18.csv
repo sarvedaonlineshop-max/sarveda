@@ -1,0 +1,19 @@
+product_name,product_slug,variant_count,mismatch_type,sheet_skus,live_skus,sheet_variants,live_variants
+Bamboo Castanet,bamboo-castanet,1,sku_only,MI-CN,MI-CN-B,Standard,Standard
+Belly Bowls,belly-bowls,1,sku_only,MI-SB-BB,MI-SB-BY,Standard,Standard
+Bendo Chimes,bendo-chimes,1,sku_only,MI-BE-CH,MI-CH-BE,Standard,Standard
+Caxixi,caxixi,1,sku_only,MI-CX,Mi-CX-M-N,Standard,Standard
+Coconut Rattle,coconut-rattle,1,variant_only,MI-CR,MI-CR,,Standard
+Conscious Cards,conscious-cards,1,variant_only,ME-CC,ME-CC,,Standard
+Crystal Bowl with Handle,crystal-bowl-with-handle,1,variant_only,MI-CB-H,MI-CB-H,,Standard
+Egg Shaker with Handle,egg-shaker-with-handle,1,variant_only,MI-ES-H,MI-ES-H,,Standard
+Element Chimes,elemental-chimes,1,sku_and_variant,MI-EC,MI-Ch-KS,,Standard
+Handheld Natural Coconut Shaker,handheld-natural-coconut-shaker,1,variant_only,MI-CS-HH,MI-CS-HH,,Standard
+Handpan Stand,handpan-stand,1,sku_and_variant,MI-HP-S,MI-HS-S,,Stand
+Heart Chakra Singing Bowl,heart-chakra-singing-bowl,1,variant_only,MI-SB-HC,MI-SB-HC,,Standard
+Root Chakra Singing Bowl,root-chakra-singing-bowl,1,sku_and_variant,MI-SB-RC,MI-RCSB-S,,Standard
+Singing Bowl with Handle,singing-bowl-with-handle,1,sku_only,MI-SB-H,MI-SBH-S,Standard,Standard
+"The Four Bowl Set - Root, Heart, Third Eye and Universal",the-four-bowl-set-root-heart-third-eye-and-universal,1,variant_only,MI-SB-RHTU-SET4,MI-SB-RHTU-SET4,,Standard
+The Head Bowl,the-head-bowl,1,sku_only,MI-SB-HB,MI-HB-S,Standard,Standard
+"The Three Bowl Set - Root, Heart and Third Eye",the-three-bowl-set-root-heart-and-third-eye,1,variant_only,MI-SB-RHT-SET3,MI-SB-RHT-SET3,,Standard
+Third Eye Chakra Singing Bowl,third-eye-chakra-singing-bowl,1,sku_and_variant,MI-SB-TEC,MI-TECS-S,,Standard

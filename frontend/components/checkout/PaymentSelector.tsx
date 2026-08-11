@@ -489,7 +489,7 @@ export function PaymentSelector({
           {cartItems.map((item) => (
             <li key={item.variantId} className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="font-medium text-brand-ink line-clamp-2">{item.productName}</p>
+                <p className="line-clamp-2 font-sans font-medium text-brand-ink">{item.productName}</p>
                 {item.variantLabel ? (
                   <p className="text-xs text-brand-muted">{item.variantLabel}</p>
                 ) : null}

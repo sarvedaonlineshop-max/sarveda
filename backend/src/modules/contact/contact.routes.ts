@@ -33,6 +33,11 @@ const supportSchema = z.object({
   orderNumber: z.string().max(40).optional()
 });
 
+const newsletterSchema = z.object({
+  email: z.string().email().max(200),
+  source: z.string().max(60).optional()
+});
+
 router.post(
   "/corporate",
   validateBody(corporateSchema),
@@ -117,6 +122,37 @@ router.post(
         data: {
           id: thread.id,
           message: "Thank you — we received your message and will reply within 1–2 business days."
+        }
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.post(
+  "/newsletter",
+  validateBody(newsletterSchema),
+  async (req, res, next) => {
+    try {
+      const body = req.body as z.infer<typeof newsletterSchema>;
+      const { subscribeNewsletter } = await import("../newsletter/newsletter.service");
+      const result = await subscribeNewsletter({
+        email: body.email,
+        source: body.source
+      });
+      logger.info("newsletter_subscribed_via_contact", {
+        email: body.email.trim().toLowerCase(),
+        created: result.created,
+        alreadySubscribed: result.alreadySubscribed
+      });
+      res.json({
+        success: true,
+        data: {
+          ...result,
+          message: result.alreadySubscribed
+            ? "You're already on our list — thank you."
+            : "Welcome to the Sarveda community."
         }
       });
     } catch (err) {

@@ -1,0 +1,3164 @@
+{
+  "32-bar-rod-chime": {
+    "id": 42389,
+    "name": "25 Rods &#8211; Bar Chime",
+    "slug": "32-bar-rod-chime",
+    "product_type": "simple",
+    "description": "",
+    "short_description": "<p><span style=\"font-weight: 400\">The 32 bar single row chimes are meticulously crafted with precision, featuring bars made from aluminum alloy and wood sourced from the revered Kari Maruthu tree.\u00a0</span></p>\n<p><span style=\"font-weight: 400\">Perfect for both indoor and outdoor use, our 25 bar single row chimes are versatile additions to any setting.\u00a0</span></p>\n<p><span style=\"font-weight: 400\">Whether you&#8217;re adding this to your percussion ensemble, conducting sound therapy sessions, or simply enjoying the serene melodies in your garden, these chimes are a great addition!\u00a0</span></p>\n<p>&nbsp;</p>",
+    "prices": {
+      "price": "495000",
+      "regular_price": "760500",
+      "sale_price": "495000",
+      "currency_minor_unit": 2
+    },
+    "images": [
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2024/06/25-Rods-Bar-Chime-5.jpg",
+        "alt": ""
+      }
+    ],
+    "categories": [
+      {
+        "id": 74,
+        "name": "All",
+        "slug": "all",
+        "link": "https://sarveda.com/product-category/all/"
+      },
+      {
+        "id": 902,
+        "name": "All",
+        "slug": "all-musical-instruments",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/all-musical-instruments/"
+      },
+      {
+        "id": 679,
+        "name": "Chimes",
+        "slug": "chimes",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/chimes/"
+      },
+      {
+        "id": 55,
+        "name": "Sound &amp; Musical Instruments",
+        "slug": "sound-musical-instruments",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/"
+      }
+    ],
+    "attributes": [],
+    "variations": []
+  },
+  "clay-ocarinas": {
+    "id": 50995,
+    "name": "Clay Ocarinas",
+    "slug": "clay-ocarinas",
+    "product_type": "variable",
+    "description": "<p>Discover the timeless charm of music with the <strong data-start=\"124\" data-end=\"157\">Sarveda Handmade Clay Ocarina</strong>, a beautifully crafted wind instrument inspired by traditional vessel flutes.</p>",
+    "short_description": "<p class=\"PDq2pG_selectionAnchorContainer\" data-start=\"78\" data-end=\"446\">Discover the timeless charm of music with the <strong data-start=\"124\" data-end=\"157\">Sarveda Handmade Clay Ocarina</strong>, a beautifully crafted wind instrument inspired by traditional vessel flutes. Made from clay and finished with an elegant marbled glaze, this compact ocarina produces warm, soothing tones that are perfect for beginners, hobbyists, music educators, and collectors alike.</p>\n<p data-start=\"448\" data-end=\"777\">Its lightweight design and ergonomic finger holes make it comfortable to hold and easy to learn. Whether you&#8217;re exploring your first melodies, introducing children to music, or adding a unique handcrafted instrument to your collection, this clay ocarina delivers an authentic playing experience with a beautiful artisanal finish.</p>\n<p data-start=\"779\" data-end=\"860\">Available in <strong data-start=\"792\" data-end=\"801\">Small</strong> and <strong data-start=\"806\" data-end=\"815\">Large</strong> sizes to suit different playing preferences.</p>",
+    "prices": {
+      "price": "245000",
+      "regular_price": "295000",
+      "sale_price": "245000",
+      "currency_minor_unit": 2
+    },
+    "images": [
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2026/07/Clay-Ocarina-Cover.jpg",
+        "alt": ""
+      }
+    ],
+    "categories": [
+      {
+        "id": 74,
+        "name": "All",
+        "slug": "all",
+        "link": "https://sarveda.com/product-category/all/"
+      },
+      {
+        "id": 55,
+        "name": "Sound &amp; Musical Instruments",
+        "slug": "sound-musical-instruments",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/"
+      },
+      {
+        "id": 898,
+        "name": "Wind",
+        "slug": "wind",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/wind/"
+      }
+    ],
+    "attributes": [
+      {
+        "name": "Size",
+        "taxonomy": null,
+        "value": [
+          {
+            "id": 0,
+            "name": "Small",
+            "slug": "Small",
+            "default": true
+          },
+          {
+            "id": 0,
+            "name": "Big",
+            "slug": "Big",
+            "default": false
+          }
+        ],
+        "options": [
+          {
+            "id": 0,
+            "name": "Small",
+            "slug": "Small",
+            "default": true
+          },
+          {
+            "id": 0,
+            "name": "Big",
+            "slug": "Big",
+            "default": false
+          }
+        ]
+      }
+    ],
+    "variations": [
+      {
+        "id": 50997,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "245000",
+          "regular_price": "295000",
+          "sale_price": "245000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "Small",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 50998,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "345000",
+          "regular_price": "395000",
+          "sale_price": "345000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "Big",
+            "options": null
+          }
+        ],
+        "image": null
+      }
+    ]
+  },
+  "copper-bottle-curved-vintage-hammered": {
+    "id": 5495,
+    "name": "Curved Hammered Copper Bottles",
+    "slug": "copper-bottle-curved-vintage-hammered",
+    "product_type": "variable",
+    "description": "",
+    "short_description": "<p>Copper has been an important element of Indian culture for ages due to its numerous health benefits. In Ayurveda, it is known as Tamra, and modern research has established its antibacterial and antimicrobial qualities.</p>\n<p>Copper is required for basic activities such as cell communication, red blood cell production, metabolism, and healthy brain function.</p>\n<ul>\n<li>Makes the water alkaline and balances acidic levels in the body.</li>\n<li>Kills harmful bacteria such as rotavirus and cholera.</li>\n<li>Provides trace elements of copper to the body, essential for skin regeneration, rejuvenation, and metabolism.</li>\n<li>Aids in cleansing, detoxification, and weight loss.</li>\n</ul>",
+    "prices": {
+      "price": "109900",
+      "regular_price": "142900",
+      "sale_price": "109900",
+      "currency_minor_unit": 2
+    },
+    "images": [
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/07/vintage-hammered.png",
+        "alt": ""
+      },
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/07/Health-benifits_dark-brown-small-holes.jpg",
+        "alt": ""
+      },
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/07/Health-benifits_dark-brown-small-holes-1.jpg",
+        "alt": ""
+      },
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/07/copper-vs-bottle_dark-brown-small-holes.jpg",
+        "alt": ""
+      },
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/07/Roundabout-bottles-1.png",
+        "alt": ""
+      },
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/07/brush-with-bittle-10-1.jpg",
+        "alt": ""
+      },
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/07/vintage-hammered.png",
+        "alt": ""
+      }
+    ],
+    "categories": [
+      {
+        "id": 74,
+        "name": "All",
+        "slug": "all",
+        "link": "https://sarveda.com/product-category/all/"
+      },
+      {
+        "id": 901,
+        "name": "All",
+        "slug": "all-handpans-tonguedrum",
+        "link": "https://sarveda.com/product-category/eco-living-sustainable/all-handpans-tonguedrum/"
+      },
+      {
+        "id": 894,
+        "name": "Bottles",
+        "slug": "bottles",
+        "link": "https://sarveda.com/product-category/eco-living-sustainable/bottles/"
+      },
+      {
+        "id": 888,
+        "name": "Bottles &amp; Accessories",
+        "slug": "bottles-accessories",
+        "link": "https://sarveda.com/product-category/yoga-and-meditation/bottles-accessories/"
+      }
+    ],
+    "attributes": [
+      {
+        "name": "Bottle Type",
+        "taxonomy": "pa_bottle-type",
+        "value": [
+          {
+            "id": 358,
+            "name": "Vintage",
+            "slug": "vintage"
+          }
+        ],
+        "options": [
+          {
+            "id": 358,
+            "name": "Vintage",
+            "slug": "vintage"
+          }
+        ]
+      },
+      {
+        "name": "Coconut Fiber Brush",
+        "taxonomy": "pa_coconut-fiber-brush",
+        "value": [
+          {
+            "id": 357,
+            "name": "With Brush",
+            "slug": "with-brush",
+            "default": false
+          },
+          {
+            "id": 356,
+            "name": "Without Brush",
+            "slug": "without-brush",
+            "default": true
+          }
+        ],
+        "options": [
+          {
+            "id": 357,
+            "name": "With Brush",
+            "slug": "with-brush",
+            "default": false
+          },
+          {
+            "id": 356,
+            "name": "Without Brush",
+            "slug": "without-brush",
+            "default": true
+          }
+        ]
+      }
+    ],
+    "variations": [
+      {
+        "id": 5944,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "119900",
+          "regular_price": "155900",
+          "sale_price": "119900",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Bottle Type",
+            "taxonomy": null,
+            "value": "vintage",
+            "options": null
+          },
+          {
+            "name": "Coconut Fiber Brush",
+            "taxonomy": null,
+            "value": "with-brush",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 5945,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "109900",
+          "regular_price": "142900",
+          "sale_price": "109900",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Bottle Type",
+            "taxonomy": null,
+            "value": "vintage",
+            "options": null
+          },
+          {
+            "name": "Coconut Fiber Brush",
+            "taxonomy": null,
+            "value": "without-brush",
+            "options": null
+          }
+        ],
+        "image": null
+      }
+    ]
+  },
+  "copper-bottle-hammered-copper-set": {
+    "id": 5688,
+    "name": "Hammered Copper Bottle",
+    "slug": "copper-bottle-hammered-copper-set",
+    "product_type": "variable",
+    "description": "",
+    "short_description": "<p>Copper has been an important element of Indian culture for ages due to its numerous health benefits. In Ayurveda, it is known as Tamra, and modern research has established its antibacterial and antimicrobial qualities.</p>\n<p>Copper is required for basic activities such as cell communication, red blood cell production, metabolism, and healthy brain function.</p>\n<ul>\n<li>Makes the water alkaline and balances acidic levels in the body.</li>\n<li>Kills harmful bacteria such as rotavirus and cholera.</li>\n<li>Provides trace elements of copper to the body, essential for skin regeneration, rejuvenation, and metabolism.</li>\n<li>Aids in cleansing, detoxification, and weight loss.</li>\n</ul>",
+    "prices": {
+      "price": "109900",
+      "regular_price": "142900",
+      "sale_price": "109900",
+      "currency_minor_unit": 2
+    },
+    "images": [
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/07/White-bg_small-groves_light.jpg",
+        "alt": ""
+      },
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/07/ALL-bottles-chakra-3.jpg",
+        "alt": ""
+      },
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/07/Health-benifits_light-brown-small-holes-1.jpg",
+        "alt": ""
+      },
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/07/copper-vs-bottle_light-small-groves.jpg",
+        "alt": ""
+      },
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/07/Health-benifits_light-brown-small-holes.jpg",
+        "alt": ""
+      },
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/07/Hammered-Copper.png",
+        "alt": ""
+      },
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/07/brush-with-bittle-1.jpg",
+        "alt": ""
+      }
+    ],
+    "categories": [
+      {
+        "id": 74,
+        "name": "All",
+        "slug": "all",
+        "link": "https://sarveda.com/product-category/all/"
+      },
+      {
+        "id": 901,
+        "name": "All",
+        "slug": "all-handpans-tonguedrum",
+        "link": "https://sarveda.com/product-category/eco-living-sustainable/all-handpans-tonguedrum/"
+      },
+      {
+        "id": 894,
+        "name": "Bottles",
+        "slug": "bottles",
+        "link": "https://sarveda.com/product-category/eco-living-sustainable/bottles/"
+      },
+      {
+        "id": 888,
+        "name": "Bottles &amp; Accessories",
+        "slug": "bottles-accessories",
+        "link": "https://sarveda.com/product-category/yoga-and-meditation/bottles-accessories/"
+      }
+    ],
+    "attributes": [
+      {
+        "name": "Coconut Fiber Brush",
+        "taxonomy": "pa_coconut-fiber-brush",
+        "value": [
+          {
+            "id": 357,
+            "name": "With Brush",
+            "slug": "with-brush",
+            "default": false
+          },
+          {
+            "id": 356,
+            "name": "Without Brush",
+            "slug": "without-brush",
+            "default": true
+          }
+        ],
+        "options": [
+          {
+            "id": 357,
+            "name": "With Brush",
+            "slug": "with-brush",
+            "default": false
+          },
+          {
+            "id": 356,
+            "name": "Without Brush",
+            "slug": "without-brush",
+            "default": true
+          }
+        ]
+      }
+    ],
+    "variations": [
+      {
+        "id": 5913,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "109900",
+          "regular_price": "142900",
+          "sale_price": "109900",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Coconut Fiber Brush",
+            "taxonomy": null,
+            "value": "without-brush",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 5914,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "119900",
+          "regular_price": "155900",
+          "sale_price": "119900",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Coconut Fiber Brush",
+            "taxonomy": null,
+            "value": "with-brush",
+            "options": null
+          }
+        ],
+        "image": null
+      }
+    ]
+  },
+  "copper-bottle-pink-noble-toughts": {
+    "id": 5778,
+    "name": "Pink &#038; Positive",
+    "slug": "copper-bottle-pink-noble-toughts",
+    "product_type": "variation",
+    "description": "",
+    "short_description": "",
+    "prices": {
+      "price": "124500",
+      "regular_price": "161900",
+      "sale_price": "124500",
+      "currency_minor_unit": 2
+    },
+    "images": [
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/07/Pink.png",
+        "alt": ""
+      }
+    ],
+    "categories": [],
+    "attributes": [
+      {
+        "name": "Attribute",
+        "value": "B"
+      },
+      {
+        "name": "Attribute",
+        "value": "o"
+      },
+      {
+        "name": "Attribute",
+        "value": "t"
+      },
+      {
+        "name": "Attribute",
+        "value": "t"
+      },
+      {
+        "name": "Attribute",
+        "value": "l"
+      },
+      {
+        "name": "Attribute",
+        "value": "e"
+      },
+      {
+        "name": "Attribute",
+        "value": " "
+      },
+      {
+        "name": "Attribute",
+        "value": "T"
+      },
+      {
+        "name": "Attribute",
+        "value": "y"
+      },
+      {
+        "name": "Attribute",
+        "value": "p"
+      },
+      {
+        "name": "Attribute",
+        "value": "e"
+      },
+      {
+        "name": "Attribute",
+        "value": ":"
+      },
+      {
+        "name": "Attribute",
+        "value": " "
+      },
+      {
+        "name": "Attribute",
+        "value": "W"
+      },
+      {
+        "name": "Attribute",
+        "value": "i"
+      },
+      {
+        "name": "Attribute",
+        "value": "t"
+      },
+      {
+        "name": "Attribute",
+        "value": "h"
+      },
+      {
+        "name": "Attribute",
+        "value": "o"
+      },
+      {
+        "name": "Attribute",
+        "value": "u"
+      },
+      {
+        "name": "Attribute",
+        "value": "t"
+      },
+      {
+        "name": "Attribute",
+        "value": " "
+      },
+      {
+        "name": "Attribute",
+        "value": "B"
+      },
+      {
+        "name": "Attribute",
+        "value": "r"
+      },
+      {
+        "name": "Attribute",
+        "value": "u"
+      },
+      {
+        "name": "Attribute",
+        "value": "s"
+      },
+      {
+        "name": "Attribute",
+        "value": "h"
+      },
+      {
+        "name": "Attribute",
+        "value": ","
+      },
+      {
+        "name": "Attribute",
+        "value": " "
+      },
+      {
+        "name": "Attribute",
+        "value": "S"
+      },
+      {
+        "name": "Attribute",
+        "value": "i"
+      },
+      {
+        "name": "Attribute",
+        "value": "z"
+      },
+      {
+        "name": "Attribute",
+        "value": "e"
+      },
+      {
+        "name": "Attribute",
+        "value": ":"
+      },
+      {
+        "name": "Attribute",
+        "value": " "
+      },
+      {
+        "name": "Attribute",
+        "value": "1"
+      },
+      {
+        "name": "Attribute",
+        "value": "L"
+      }
+    ],
+    "variations": []
+  },
+  "copper-bottle-vintage-plain-curved": {
+    "id": 5489,
+    "name": "Curved Copper Bottles",
+    "slug": "copper-bottle-vintage-plain-curved",
+    "product_type": "variable",
+    "description": "",
+    "short_description": "<p>Copper has been an important element of Indian culture for ages due to its numerous health benefits. In Ayurveda, it is known as Tamra, and modern research has established its antibacterial and antimicrobial qualities.</p>\n<p>Copper is required for basic activities such as cell communication, red blood cell production, metabolism, and healthy brain function.</p>\n<ul>\n<li>Makes the water alkaline and balances acidic levels in the body.</li>\n<li>Kills harmful bacteria such as rotavirus and cholera.</li>\n<li>Provides trace elements of copper to the body, essential for skin regeneration, rejuvenation, and metabolism.</li>\n<li>Aids in cleansing, detoxification, and weight loss.</li>\n</ul>",
+    "prices": {
+      "price": "109900",
+      "regular_price": "142900",
+      "sale_price": "109900",
+      "currency_minor_unit": 2
+    },
+    "images": [
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/07/vintage-plain-curved.png",
+        "alt": ""
+      },
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/07/brush-with-bittle-3-1.jpg",
+        "alt": ""
+      },
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/07/copper-curved-plain.png",
+        "alt": ""
+      },
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/08/copper-curved-plain-with-brush.jpg",
+        "alt": ""
+      },
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/07/vintage-plain-curved.png",
+        "alt": ""
+      },
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/07/plain-dark-bottle.jpg",
+        "alt": ""
+      },
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/07/copper-vs-bottle_dark-plain.jpg",
+        "alt": ""
+      },
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/07/Health-benifits_plain-dark.jpg",
+        "alt": ""
+      },
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/07/Roundabout-bottles.png",
+        "alt": ""
+      }
+    ],
+    "categories": [
+      {
+        "id": 74,
+        "name": "All",
+        "slug": "all",
+        "link": "https://sarveda.com/product-category/all/"
+      },
+      {
+        "id": 901,
+        "name": "All",
+        "slug": "all-handpans-tonguedrum",
+        "link": "https://sarveda.com/product-category/eco-living-sustainable/all-handpans-tonguedrum/"
+      },
+      {
+        "id": 894,
+        "name": "Bottles",
+        "slug": "bottles",
+        "link": "https://sarveda.com/product-category/eco-living-sustainable/bottles/"
+      },
+      {
+        "id": 888,
+        "name": "Bottles &amp; Accessories",
+        "slug": "bottles-accessories",
+        "link": "https://sarveda.com/product-category/yoga-and-meditation/bottles-accessories/"
+      }
+    ],
+    "attributes": [
+      {
+        "name": "Bottle Type",
+        "taxonomy": "pa_bottle-type",
+        "value": [
+          {
+            "id": 804,
+            "name": "Gold",
+            "slug": "gold"
+          },
+          {
+            "id": 358,
+            "name": "Vintage",
+            "slug": "vintage"
+          }
+        ],
+        "options": [
+          {
+            "id": 804,
+            "name": "Gold",
+            "slug": "gold"
+          },
+          {
+            "id": 358,
+            "name": "Vintage",
+            "slug": "vintage"
+          }
+        ]
+      },
+      {
+        "name": "Cleaning Brush",
+        "taxonomy": null,
+        "value": [
+          {
+            "id": 0,
+            "name": "With Brush",
+            "slug": "With Brush"
+          },
+          {
+            "id": 0,
+            "name": "Without Brush",
+            "slug": "Without Brush"
+          }
+        ],
+        "options": [
+          {
+            "id": 0,
+            "name": "With Brush",
+            "slug": "With Brush"
+          },
+          {
+            "id": 0,
+            "name": "Without Brush",
+            "slug": "Without Brush"
+          }
+        ]
+      }
+    ],
+    "variations": [
+      {
+        "id": 43496,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "119900",
+          "regular_price": "155900",
+          "sale_price": "119900",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Bottle Type",
+            "taxonomy": null,
+            "value": "gold",
+            "options": null
+          },
+          {
+            "name": "Cleaning Brush",
+            "taxonomy": null,
+            "value": "With Brush",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 43497,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "109900",
+          "regular_price": "142900",
+          "sale_price": "109900",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Bottle Type",
+            "taxonomy": null,
+            "value": "gold",
+            "options": null
+          },
+          {
+            "name": "Cleaning Brush",
+            "taxonomy": null,
+            "value": "Without Brush",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 43498,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "119900",
+          "regular_price": "155900",
+          "sale_price": "119900",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Bottle Type",
+            "taxonomy": null,
+            "value": "vintage",
+            "options": null
+          },
+          {
+            "name": "Cleaning Brush",
+            "taxonomy": null,
+            "value": "With Brush",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 43499,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "109900",
+          "regular_price": "142900",
+          "sale_price": "109900",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Bottle Type",
+            "taxonomy": null,
+            "value": "vintage",
+            "options": null
+          },
+          {
+            "name": "Cleaning Brush",
+            "taxonomy": null,
+            "value": "Without Brush",
+            "options": null
+          }
+        ],
+        "image": null
+      }
+    ]
+  },
+  "copper-bottle-with-brush-tattvamasi": {
+    "id": 5632,
+    "name": "Tattvamasi-I am Infinite",
+    "slug": "copper-bottle-with-brush-tattvamasi",
+    "product_type": "variation",
+    "description": "",
+    "short_description": "",
+    "prices": {
+      "price": "134500",
+      "regular_price": "174900",
+      "sale_price": "134500",
+      "currency_minor_unit": 2
+    },
+    "images": [
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/06/brush-with-blue.png",
+        "alt": ""
+      }
+    ],
+    "categories": [],
+    "attributes": [
+      {
+        "name": "Attribute",
+        "value": "B"
+      },
+      {
+        "name": "Attribute",
+        "value": "o"
+      },
+      {
+        "name": "Attribute",
+        "value": "t"
+      },
+      {
+        "name": "Attribute",
+        "value": "t"
+      },
+      {
+        "name": "Attribute",
+        "value": "l"
+      },
+      {
+        "name": "Attribute",
+        "value": "e"
+      },
+      {
+        "name": "Attribute",
+        "value": " "
+      },
+      {
+        "name": "Attribute",
+        "value": "T"
+      },
+      {
+        "name": "Attribute",
+        "value": "y"
+      },
+      {
+        "name": "Attribute",
+        "value": "p"
+      },
+      {
+        "name": "Attribute",
+        "value": "e"
+      },
+      {
+        "name": "Attribute",
+        "value": ":"
+      },
+      {
+        "name": "Attribute",
+        "value": " "
+      },
+      {
+        "name": "Attribute",
+        "value": "W"
+      },
+      {
+        "name": "Attribute",
+        "value": "i"
+      },
+      {
+        "name": "Attribute",
+        "value": "t"
+      },
+      {
+        "name": "Attribute",
+        "value": "h"
+      },
+      {
+        "name": "Attribute",
+        "value": " "
+      },
+      {
+        "name": "Attribute",
+        "value": "B"
+      },
+      {
+        "name": "Attribute",
+        "value": "r"
+      },
+      {
+        "name": "Attribute",
+        "value": "u"
+      },
+      {
+        "name": "Attribute",
+        "value": "s"
+      },
+      {
+        "name": "Attribute",
+        "value": "h"
+      },
+      {
+        "name": "Attribute",
+        "value": ","
+      },
+      {
+        "name": "Attribute",
+        "value": " "
+      },
+      {
+        "name": "Attribute",
+        "value": "S"
+      },
+      {
+        "name": "Attribute",
+        "value": "i"
+      },
+      {
+        "name": "Attribute",
+        "value": "z"
+      },
+      {
+        "name": "Attribute",
+        "value": "e"
+      },
+      {
+        "name": "Attribute",
+        "value": ":"
+      },
+      {
+        "name": "Attribute",
+        "value": " "
+      },
+      {
+        "name": "Attribute",
+        "value": "1"
+      },
+      {
+        "name": "Attribute",
+        "value": "L"
+      }
+    ],
+    "variations": []
+  },
+  "copper-bottle-with-brush-true-happiness-lies-within": {
+    "id": 5634,
+    "name": "Happiness is Inside",
+    "slug": "copper-bottle-with-brush-true-happiness-lies-within",
+    "product_type": "variation",
+    "description": "",
+    "short_description": "",
+    "prices": {
+      "price": "134500",
+      "regular_price": "174900",
+      "sale_price": "134500",
+      "currency_minor_unit": 2
+    },
+    "images": [
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2022/06/White-brush.png",
+        "alt": ""
+      }
+    ],
+    "categories": [],
+    "attributes": [
+      {
+        "name": "Attribute",
+        "value": "B"
+      },
+      {
+        "name": "Attribute",
+        "value": "o"
+      },
+      {
+        "name": "Attribute",
+        "value": "t"
+      },
+      {
+        "name": "Attribute",
+        "value": "t"
+      },
+      {
+        "name": "Attribute",
+        "value": "l"
+      },
+      {
+        "name": "Attribute",
+        "value": "e"
+      },
+      {
+        "name": "Attribute",
+        "value": " "
+      },
+      {
+        "name": "Attribute",
+        "value": "T"
+      },
+      {
+        "name": "Attribute",
+        "value": "y"
+      },
+      {
+        "name": "Attribute",
+        "value": "p"
+      },
+      {
+        "name": "Attribute",
+        "value": "e"
+      },
+      {
+        "name": "Attribute",
+        "value": ":"
+      },
+      {
+        "name": "Attribute",
+        "value": " "
+      },
+      {
+        "name": "Attribute",
+        "value": "W"
+      },
+      {
+        "name": "Attribute",
+        "value": "i"
+      },
+      {
+        "name": "Attribute",
+        "value": "t"
+      },
+      {
+        "name": "Attribute",
+        "value": "h"
+      },
+      {
+        "name": "Attribute",
+        "value": " "
+      },
+      {
+        "name": "Attribute",
+        "value": "B"
+      },
+      {
+        "name": "Attribute",
+        "value": "r"
+      },
+      {
+        "name": "Attribute",
+        "value": "u"
+      },
+      {
+        "name": "Attribute",
+        "value": "s"
+      },
+      {
+        "name": "Attribute",
+        "value": "h"
+      },
+      {
+        "name": "Attribute",
+        "value": ","
+      },
+      {
+        "name": "Attribute",
+        "value": " "
+      },
+      {
+        "name": "Attribute",
+        "value": "S"
+      },
+      {
+        "name": "Attribute",
+        "value": "i"
+      },
+      {
+        "name": "Attribute",
+        "value": "z"
+      },
+      {
+        "name": "Attribute",
+        "value": "e"
+      },
+      {
+        "name": "Attribute",
+        "value": ":"
+      },
+      {
+        "name": "Attribute",
+        "value": " "
+      },
+      {
+        "name": "Attribute",
+        "value": "1"
+      },
+      {
+        "name": "Attribute",
+        "value": "L"
+      }
+    ],
+    "variations": []
+  },
+  "etched-gongs": {
+    "id": 49115,
+    "name": "Etched Chau Gongs",
+    "slug": "etched-gongs",
+    "product_type": "variable",
+    "description": "<p>Crafted using traditional metalworking techniques, the <strong data-start=\"197\" data-end=\"212\">Etched Gong</strong> produces deep, resonant tones that promote relaxation, meditation, and sound healing.</p>",
+    "short_description": "<p data-start=\"142\" data-end=\"424\">Crafted using traditional metalworking techniques, the <strong data-start=\"197\" data-end=\"212\">Etched Gong</strong> produces deep, resonant tones that promote relaxation, meditation, and sound healing. The hand-etched surface adds a distinctive visual character while also enhancing the instrument\u2019s tonal richness and sustain.</p>\n<p data-start=\"426\" data-end=\"662\">Ideal for meditation spaces, yoga studios, sound therapy sessions, and ceremonial use, this gong responds beautifully to gentle strikes and rolling techniques, creating immersive vibrations that fill the environment with calming energy.</p>\n<p data-start=\"664\" data-end=\"757\">Available in multiple sizes to suit different sound depth preferences and space requirements.</p>\n<h2 data-start=\"764\" data-end=\"787\">Available Variations</h2>\n<ul data-start=\"788\" data-end=\"906\">\n<li data-start=\"788\" data-end=\"804\">\n<p data-start=\"790\" data-end=\"804\">18 inch Gong</p>\n</li>\n<li data-start=\"805\" data-end=\"821\">\n<p data-start=\"807\" data-end=\"821\">20 inch Gong</p>\n</li>\n<li data-start=\"822\" data-end=\"838\">\n<p data-start=\"824\" data-end=\"838\">22 inch Gong</p>\n</li>\n<li data-start=\"839\" data-end=\"855\">\n<p data-start=\"841\" data-end=\"855\">24 inch Gong</p>\n</li>\n<li data-start=\"856\" data-end=\"872\">\n<p data-start=\"858\" data-end=\"872\">28 inch Gong</p>\n</li>\n<li data-start=\"873\" data-end=\"889\">\n<p data-start=\"875\" data-end=\"889\">32 inch Gong</p>\n</li>\n<li data-start=\"890\" data-end=\"906\">\n<p data-start=\"892\" data-end=\"906\">40 inch Gong</p>\n</li>\n</ul>\n<p data-start=\"908\" data-end=\"1022\">Larger gongs produce deeper, longer-sustaining vibrations, while smaller sizes offer brighter, more focused tones.</p>",
+    "prices": {
+      "price": "2135000",
+      "regular_price": "2250000",
+      "sale_price": "2135000",
+      "currency_minor_unit": 2
+    },
+    "images": [
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2026/02/Etched-Gong-2.jpg",
+        "alt": ""
+      }
+    ],
+    "categories": [
+      {
+        "id": 74,
+        "name": "All",
+        "slug": "all",
+        "link": "https://sarveda.com/product-category/all/"
+      },
+      {
+        "id": 902,
+        "name": "All",
+        "slug": "all-musical-instruments",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/all-musical-instruments/"
+      },
+      {
+        "id": 900,
+        "name": "Gongs",
+        "slug": "gongs-musical-instruments",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/gongs-musical-instruments/"
+      },
+      {
+        "id": 55,
+        "name": "Sound &amp; Musical Instruments",
+        "slug": "sound-musical-instruments",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/"
+      }
+    ],
+    "attributes": [
+      {
+        "name": "Type",
+        "taxonomy": null,
+        "value": [
+          {
+            "id": 0,
+            "name": "Chakra",
+            "slug": "Chakra",
+            "default": true
+          },
+          {
+            "id": 0,
+            "name": "Mantra",
+            "slug": "Mantra",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "Buddhist Om",
+            "slug": "Buddhist Om",
+            "default": false
+          }
+        ],
+        "options": [
+          {
+            "id": 0,
+            "name": "Chakra",
+            "slug": "Chakra",
+            "default": true
+          },
+          {
+            "id": 0,
+            "name": "Mantra",
+            "slug": "Mantra",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "Buddhist Om",
+            "slug": "Buddhist Om",
+            "default": false
+          }
+        ]
+      },
+      {
+        "name": "Size",
+        "taxonomy": null,
+        "value": [
+          {
+            "id": 0,
+            "name": "18 in",
+            "slug": "18 in",
+            "default": true
+          },
+          {
+            "id": 0,
+            "name": "20 in",
+            "slug": "20 in",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "22 in",
+            "slug": "22 in",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "24 in",
+            "slug": "24 in",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "28 in",
+            "slug": "28 in",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "32 in",
+            "slug": "32 in",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "40 in",
+            "slug": "40 in",
+            "default": false
+          }
+        ],
+        "options": [
+          {
+            "id": 0,
+            "name": "18 in",
+            "slug": "18 in",
+            "default": true
+          },
+          {
+            "id": 0,
+            "name": "20 in",
+            "slug": "20 in",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "22 in",
+            "slug": "22 in",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "24 in",
+            "slug": "24 in",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "28 in",
+            "slug": "28 in",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "32 in",
+            "slug": "32 in",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "40 in",
+            "slug": "40 in",
+            "default": false
+          }
+        ]
+      }
+    ],
+    "variations": [
+      {
+        "id": 49191,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "2135000",
+          "regular_price": "2250000",
+          "sale_price": "2135000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Chakra",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "18 in",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 49192,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "2975000",
+          "regular_price": "3975000",
+          "sale_price": "2975000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Chakra",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "20 in",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 49193,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "3500000",
+          "regular_price": "4500000",
+          "sale_price": "3500000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Chakra",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "22 in",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 49194,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "5945000",
+          "regular_price": "6945000",
+          "sale_price": "5945000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Chakra",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "24 in",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 49195,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "6890000",
+          "regular_price": "7250000",
+          "sale_price": "6890000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Chakra",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "28 in",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 49196,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "10630000",
+          "regular_price": "11630000",
+          "sale_price": "10630000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Chakra",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "32 in",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 49197,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "19500000",
+          "regular_price": "20500000",
+          "sale_price": "19500000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Chakra",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "40 in",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 49198,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "2135000",
+          "regular_price": "2250000",
+          "sale_price": "2135000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Mantra",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "18 in",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 49199,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "2975000",
+          "regular_price": "3975000",
+          "sale_price": "2975000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Mantra",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "20 in",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 49200,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "3500000",
+          "regular_price": "4500000",
+          "sale_price": "3500000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Mantra",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "22 in",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 49201,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "5945000",
+          "regular_price": "6945000",
+          "sale_price": "5945000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Mantra",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "24 in",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 49202,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "6890000",
+          "regular_price": "7250000",
+          "sale_price": "6890000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Mantra",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "28 in",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 49203,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "10630000",
+          "regular_price": "11630000",
+          "sale_price": "10630000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Mantra",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "32 in",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 49204,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "19500000",
+          "regular_price": "20500000",
+          "sale_price": "19500000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Mantra",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "40 in",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 49205,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "2135000",
+          "regular_price": "2250000",
+          "sale_price": "2135000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Buddhist Om",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "18 in",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 49206,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "2975000",
+          "regular_price": "3975000",
+          "sale_price": "2975000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Buddhist Om",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "20 in",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 49207,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "3500000",
+          "regular_price": "4500000",
+          "sale_price": "3500000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Buddhist Om",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "22 in",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 49208,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "5945000",
+          "regular_price": "6945000",
+          "sale_price": "5945000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Buddhist Om",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "24 in",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 49209,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "6890000",
+          "regular_price": "7250000",
+          "sale_price": "6890000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Buddhist Om",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "28 in",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 49210,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "10630000",
+          "regular_price": "11630000",
+          "sale_price": "10630000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Buddhist Om",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "32 in",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 49211,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "19500000",
+          "regular_price": "20500000",
+          "sale_price": "19500000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Buddhist Om",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "40 in",
+            "options": null
+          }
+        ],
+        "image": null
+      }
+    ]
+  },
+  "incense-stick-stand": {
+    "id": 51098,
+    "name": "Incense Stick Stand",
+    "slug": "incense-stick-stand",
+    "product_type": "simple",
+    "description": "<p>Enhance your daily rituals with this beautifully handcrafted <strong data-start=\"129\" data-end=\"159\">Metal Incense Stick Holder</strong>, designed to safely hold incense sticks while neatly collecting ash.</p>",
+    "short_description": "<p class=\"PDq2pG_selectionAnchorContainer\" data-start=\"68\" data-end=\"471\">Featuring intricate embossed patterns inspired by traditional Indian artistry, this elegant holder combines functionality with timeless aesthetics, making it a perfect addition to meditation spaces, yoga studios, prayer rooms, and home d\u00e9cor.</p>\n<p data-start=\"473\" data-end=\"758\">Crafted from durable metal with a polished antique silver finish, the elongated ash-catching tray prevents mess while allowing incense to burn evenly. The compact and lightweight design makes it easy to place on altars, desks, shelves, or travel with for spiritual practices on the go.</p>\n<p data-start=\"760\" data-end=\"984\">Ideal for burning your favourite incense during meditation, yoga, aromatherapy, relaxation, or religious ceremonies, this incense holder creates a peaceful atmosphere while adding a touch of handcrafted elegance to any space.</p>",
+    "prices": {
+      "price": "9900",
+      "regular_price": "19900",
+      "sale_price": "9900",
+      "currency_minor_unit": 2
+    },
+    "images": [
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2026/08/Incense-Sticks-Stand-6.jpg",
+        "alt": ""
+      }
+    ],
+    "categories": [
+      {
+        "id": 721,
+        "name": "Accessories",
+        "slug": "accessories",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/accessories/"
+      },
+      {
+        "id": 895,
+        "name": "Gift Sets",
+        "slug": "gift-sets",
+        "link": "https://sarveda.com/product-category/eco-living-sustainable/gift-sets/"
+      }
+    ],
+    "attributes": [],
+    "variations": []
+  },
+  "large-tuning-fork": {
+    "id": 49817,
+    "name": "DNA Tuning Fork",
+    "slug": "large-tuning-fork",
+    "product_type": "variable",
+    "description": "<p>Our DNA Tuning Fork is a powerful sound healing instrument designed to deliver deep, resonant vibrations for meditation, energy work, and therapeutic practices.</p>",
+    "short_description": "<p data-start=\"119\" data-end=\"454\">Our DNA Tuning Fork is a powerful sound healing instrument designed to deliver deep, resonant vibrations for meditation, energy work, and therapeutic practices. Crafted for precision and balance, this dual-ended tuning fork offers a unique combination of frequencies, making it ideal for both beginners and experienced practitioners.</p>\n<p data-start=\"456\" data-end=\"603\">Each fork variation is carefully tuned to specific frequency pairings to support different aspects of relaxation, alignment, and energetic harmony:</p>\n<ul data-start=\"605\" data-end=\"789\">\n<li data-section-id=\"1ubknot\" data-start=\"605\" data-end=\"651\"><strong data-start=\"607\" data-end=\"627\">Harmonic Balance</strong> \u2013 D 288 Hz / A 432 Hz</li>\n<li data-section-id=\"1340kp7\" data-start=\"652\" data-end=\"694\"><strong data-start=\"654\" data-end=\"672\">Love Frequency</strong> \u2013 528 Hz / A 432 Hz</li>\n<li data-section-id=\"1oocv95\" data-start=\"695\" data-end=\"735\"><strong data-start=\"697\" data-end=\"715\">Sacred Balance</strong> \u2013 512 Hz / 528 Hz</li>\n<li data-section-id=\"15fh24l\" data-start=\"736\" data-end=\"789\"><strong data-start=\"738\" data-end=\"761\">Cosmic OM Resonance</strong> \u2013 136.10 Hz (OM) / 528 Hz</li>\n</ul>\n<p data-start=\"791\" data-end=\"907\">The elongated design allows for deeper vibration and longer sustain, enhancing the overall sound healing experience.</p>",
+    "prices": {
+      "price": "3025000",
+      "regular_price": "3245000",
+      "sale_price": "3025000",
+      "currency_minor_unit": 2
+    },
+    "images": [
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2026/04/Large-tuning-fork-3.jpg",
+        "alt": ""
+      }
+    ],
+    "categories": [
+      {
+        "id": 902,
+        "name": "All",
+        "slug": "all-musical-instruments",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/all-musical-instruments/"
+      },
+      {
+        "id": 55,
+        "name": "Sound &amp; Musical Instruments",
+        "slug": "sound-musical-instruments",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/"
+      },
+      {
+        "id": 558,
+        "name": "Tuning Forks",
+        "slug": "tuning-forks",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/tuning-forks/"
+      }
+    ],
+    "attributes": [
+      {
+        "name": "Fork",
+        "taxonomy": null,
+        "value": [
+          {
+            "id": 0,
+            "name": "Harmonic Balance",
+            "slug": "Harmonic Balance",
+            "default": true
+          },
+          {
+            "id": 0,
+            "name": "Love Frequency",
+            "slug": "Love Frequency",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "Deep Healing",
+            "slug": "Deep Healing",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "Cosmic OM Resonance",
+            "slug": "Cosmic OM Resonance",
+            "default": false
+          }
+        ],
+        "options": [
+          {
+            "id": 0,
+            "name": "Harmonic Balance",
+            "slug": "Harmonic Balance",
+            "default": true
+          },
+          {
+            "id": 0,
+            "name": "Love Frequency",
+            "slug": "Love Frequency",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "Deep Healing",
+            "slug": "Deep Healing",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "Cosmic OM Resonance",
+            "slug": "Cosmic OM Resonance",
+            "default": false
+          }
+        ]
+      }
+    ],
+    "variations": [
+      {
+        "id": 49862,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "3025000",
+          "regular_price": "3245000",
+          "sale_price": "3025000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Fork",
+            "taxonomy": null,
+            "value": "Harmonic Balance",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 49863,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "3025000",
+          "regular_price": "3245000",
+          "sale_price": "3025000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Fork",
+            "taxonomy": null,
+            "value": "Love Frequency",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 49864,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "3025000",
+          "regular_price": "3245000",
+          "sale_price": "3025000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Fork",
+            "taxonomy": null,
+            "value": "Deep Healing",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 49865,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "3025000",
+          "regular_price": "3245000",
+          "sale_price": "3025000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Fork",
+            "taxonomy": null,
+            "value": "Cosmic OM Resonance",
+            "options": null
+          }
+        ],
+        "image": null
+      }
+    ]
+  },
+  "native-american-style-flute-handcrafted-wooden-melody-maker": {
+    "id": 48428,
+    "name": "Native American Style Flutes",
+    "slug": "native-american-style-flute-handcrafted-wooden-melody-maker",
+    "product_type": "variable",
+    "description": "<p data-start=\"198\" data-end=\"679\">Experience the timeless beauty of traditional woodwind music with our handcrafted <strong data-start=\"131\" data-end=\"156\">Native American Flute</strong>, designed to produce warm, soothing, and expressive melodies.</p>",
+    "short_description": "<p class=\"PDq2pG_selectionAnchorContainer\" data-start=\"49\" data-end=\"425\">Carefully crafted from premium natural wood, each flute features a smooth finish, excellent resonance, and an ergonomic design that makes it comfortable to play for both beginners and experienced musicians.</p>\n<p data-start=\"427\" data-end=\"779\">Traditionally inspired by Native American craftsmanship, these flutes are renowned for their calming, breathy tone and are widely used for meditation, relaxation, sound healing, musical performances, and personal practice. The built-in block (bird/totem) directs the airflow precisely, allowing effortless sound production with minimal breath pressure.</p>\n<p data-start=\"781\" data-end=\"1107\">Available in <strong data-start=\"794\" data-end=\"820\">five unique variations</strong>\u2014Single Small, Single Medium, Single Large, Double Hole, and Triple Hole\u2014each flute offers its own tonal depth and musical character. Whether you&#8217;re seeking a compact travel flute or a rich, deep-toned instrument for immersive performances, there&#8217;s a flute to match your musical journey.</p>",
+    "prices": {
+      "price": "850000",
+      "regular_price": "950000",
+      "sale_price": "850000",
+      "currency_minor_unit": 2
+    },
+    "images": [
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2025/12/Native-American-Flute-3.jpg",
+        "alt": ""
+      }
+    ],
+    "categories": [
+      {
+        "id": 902,
+        "name": "All",
+        "slug": "all-musical-instruments",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/all-musical-instruments/"
+      },
+      {
+        "id": 55,
+        "name": "Sound &amp; Musical Instruments",
+        "slug": "sound-musical-instruments",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/"
+      },
+      {
+        "id": 898,
+        "name": "Wind",
+        "slug": "wind",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/wind/"
+      }
+    ],
+    "attributes": [
+      {
+        "name": "Type",
+        "taxonomy": null,
+        "value": [
+          {
+            "id": 0,
+            "name": "Double",
+            "slug": "Double",
+            "default": true
+          },
+          {
+            "id": 0,
+            "name": "Triple",
+            "slug": "Triple",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "Single Small",
+            "slug": "Single Small",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "Single Medium",
+            "slug": "Single Medium",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "Single Large",
+            "slug": "Single Large",
+            "default": false
+          }
+        ],
+        "options": [
+          {
+            "id": 0,
+            "name": "Double",
+            "slug": "Double",
+            "default": true
+          },
+          {
+            "id": 0,
+            "name": "Triple",
+            "slug": "Triple",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "Single Small",
+            "slug": "Single Small",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "Single Medium",
+            "slug": "Single Medium",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "Single Large",
+            "slug": "Single Large",
+            "default": false
+          }
+        ]
+      }
+    ],
+    "variations": [
+      {
+        "id": 51041,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "1850000",
+          "regular_price": "2250000",
+          "sale_price": "1850000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Double",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 51042,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "2250000",
+          "regular_price": "2550000",
+          "sale_price": "2250000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Triple",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 51043,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "850000",
+          "regular_price": "950000",
+          "sale_price": "850000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Single Small",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 51044,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "1025000",
+          "regular_price": "1150000",
+          "sale_price": "1025000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Single Medium",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 51045,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "1195000",
+          "regular_price": "1250000",
+          "sale_price": "1195000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Type",
+            "taxonomy": null,
+            "value": "Single Large",
+            "options": null
+          }
+        ],
+        "image": null
+      }
+    ]
+  },
+  "shruti-box-pedal": {
+    "id": 51090,
+    "name": "Shruti Box Pedal",
+    "slug": "shruti-box-pedal",
+    "product_type": "simple",
+    "description": "<p>Experience effortless and continuous airflow while playing your Shruti Box with this handcrafted <strong data-start=\"146\" data-end=\"171\">Shruti Box Foot Pedal</strong>.</p>",
+    "short_description": "<p class=\"PDq2pG_selectionAnchorContainer\" data-start=\"49\" data-end=\"396\">Designed for musicians, vocalists, meditation practitioners, and sound therapists, this pedal allows you to pump the bellows hands-free, keeping both hands free for playing instruments or maintaining mudras during practice.</p>\n<p data-start=\"398\" data-end=\"842\">Crafted from premium hardwood with sturdy metal linkages and a durable flexible cable, the foot pedal delivers smooth, consistent movement and reliable performance. Its ergonomic spring-assisted design minimizes fatigue during long sessions while providing excellent control over airflow. Whether you&#8217;re accompanying Indian classical music, kirtans, yoga sessions, or sound healing practices, this pedal enhances comfort and playing efficiency.</p>\n<p data-start=\"844\" data-end=\"994\">Easy to install and compatible with most standard Shruti Boxes, it is an ideal accessory for professional performers, teachers, and enthusiasts alike.</p>",
+    "prices": {
+      "price": "195000",
+      "regular_price": "265000",
+      "sale_price": "195000",
+      "currency_minor_unit": 2
+    },
+    "images": [
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2026/08/Shruti-Box-Foot-Pedal-4.jpg",
+        "alt": ""
+      }
+    ],
+    "categories": [
+      {
+        "id": 721,
+        "name": "Accessories",
+        "slug": "accessories",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/accessories/"
+      },
+      {
+        "id": 74,
+        "name": "All",
+        "slug": "all",
+        "link": "https://sarveda.com/product-category/all/"
+      },
+      {
+        "id": 55,
+        "name": "Sound &amp; Musical Instruments",
+        "slug": "sound-musical-instruments",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/"
+      }
+    ],
+    "attributes": [],
+    "variations": []
+  },
+  "sleigh-bells-wooden-jingle-stick": {
+    "id": 50608,
+    "name": "Sleigh Bells Wooden Jingle Stick",
+    "slug": "sleigh-bells-wooden-jingle-stick",
+    "product_type": "simple",
+    "description": "<p><span style=\"font-weight: 400\">Fill any space with bright, cascading shimmer using the Sleigh Bells Wooden Jingle Stick &#8211; one of the most universally joyful sounds in all of percussion</span></p>",
+    "short_description": "<p><span style=\"font-weight: 400\">Fill any space with bright, cascading shimmer using the Sleigh Bells Wooden Jingle Stick &#8211; one of the most universally joyful sounds in all of percussion. According to percussion historian James Blades, the small tinkling bells were commonly suspended on horses, mules, and camels in ancient Egypt and Assyria. One of the earliest uses of sleigh bells in the classical repertoire can be found in Mozart&#8217;s Three German Dances, composed in 1791.</span></p>\n<p><span style=\"font-weight: 400\">Our Sleigh Bells Wooden Jingle Stick is designed for instant musical joy and effortless play. The wooden handle provides a warm, comfortable grip while the layered metal jingle bells produce a full, cascading shimmer that fills any room with a single shake- no technique required, no prior experience needed. Bright, celebratory, and immediately expressive, the jingle stick develops a sense of rhythm and pulse in young players while remaining a versatile tool for performers and sound practitioners alike.</span></p>\n<p><span style=\"font-weight: 400\">Available in a single classic design, measuring 30 \u00d7 2.5 \u00d7 2.5 cm and weighing just 200 g, this lightweight instrument is effortless to carry and play for extended periods without fatigue. The Sleigh Bells Wooden Jingle Stick delivers a warm, resonant sound in the most accessible form possible.</span></p>",
+    "prices": {
+      "price": "145000",
+      "regular_price": "195000",
+      "sale_price": "145000",
+      "currency_minor_unit": 2
+    },
+    "images": [
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2026/06/sleigh-bells-wooden-jingle-stick-3.jpg",
+        "alt": ""
+      }
+    ],
+    "categories": [
+      {
+        "id": 74,
+        "name": "All",
+        "slug": "all",
+        "link": "https://sarveda.com/product-category/all/"
+      },
+      {
+        "id": 899,
+        "name": "Percussion",
+        "slug": "percussion",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/percussion/"
+      },
+      {
+        "id": 55,
+        "name": "Sound &amp; Musical Instruments",
+        "slug": "sound-musical-instruments",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/"
+      }
+    ],
+    "attributes": [],
+    "variations": []
+  },
+  "wind-chimes": {
+    "id": 50420,
+    "name": "Wind Chimes",
+    "slug": "wind-chimes",
+    "product_type": "variable",
+    "description": "<p>Bring harmony, elegance, and soothing sound to your living space with our handcrafted Metal Wind Chime. Designed to create rich, resonant tones with every gentle breeze, this wind chime is perfect for gardens, balconies, patios, meditation spaces, yoga studios, and indoor d\u00e9cor. Its durable construction and timeless finish make it both a decorative accent and a calming musical instrument.</p>",
+    "short_description": "<p>Bring harmony, elegance, and soothing sound to your living space with our handcrafted Metal Wind Chime. Designed to create rich, resonant tones with every gentle breeze, this wind chime is perfect for gardens, balconies, patios, meditation spaces, yoga studios, and indoor d\u00e9cor. Its durable construction and timeless finish make it both a decorative accent and a calming musical instrument.</p>\n<p class=\"isSelectedEnd\">Available in <strong>five elegant finishes\u2014Gold, Antique Copper, Yellow, Silver, and Green</strong>\u2014this handcrafted metal wind chime is designed to complement a variety of indoor and outdoor d\u00e9cor styles. Crafted from premium-quality metal tubes with a durable finish, it produces soothing, resonant tones that create a peaceful and relaxing atmosphere.</p>\n<p>The wind chime is offered in <strong>two sizes</strong> to suit different spaces and preferences.</p>\n<p>The Small size measures 78 cm in total length and weighs approximately 850 g, making it ideal for balconies, windows, meditation corners, and compact outdoor spaces.</p>\n<p>The Large size measures 90 cm in total length and weighs approximately 1.05 kg, delivering a deeper, fuller resonance that is perfect for gardens, patios, porches, and larger relaxation areas.</p>",
+    "prices": {
+      "price": "195000",
+      "regular_price": "245000",
+      "sale_price": "195000",
+      "currency_minor_unit": 2
+    },
+    "images": [
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2026/06/Wind-Chime-cover-1.jpg",
+        "alt": ""
+      }
+    ],
+    "categories": [
+      {
+        "id": 74,
+        "name": "All",
+        "slug": "all",
+        "link": "https://sarveda.com/product-category/all/"
+      },
+      {
+        "id": 679,
+        "name": "Chimes",
+        "slug": "chimes",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/chimes/"
+      },
+      {
+        "id": 55,
+        "name": "Sound &amp; Musical Instruments",
+        "slug": "sound-musical-instruments",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/"
+      }
+    ],
+    "attributes": [
+      {
+        "name": "Colours",
+        "taxonomy": null,
+        "value": [
+          {
+            "id": 0,
+            "name": "Gold",
+            "slug": "Gold",
+            "default": true
+          },
+          {
+            "id": 0,
+            "name": "Green",
+            "slug": "Green",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "Yellow",
+            "slug": "Yellow",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "Silver",
+            "slug": "Silver",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "Antique Copper",
+            "slug": "Antique Copper",
+            "default": false
+          }
+        ],
+        "options": [
+          {
+            "id": 0,
+            "name": "Gold",
+            "slug": "Gold",
+            "default": true
+          },
+          {
+            "id": 0,
+            "name": "Green",
+            "slug": "Green",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "Yellow",
+            "slug": "Yellow",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "Silver",
+            "slug": "Silver",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "Antique Copper",
+            "slug": "Antique Copper",
+            "default": false
+          }
+        ]
+      },
+      {
+        "name": "Size",
+        "taxonomy": null,
+        "value": [
+          {
+            "id": 0,
+            "name": "Small",
+            "slug": "Small",
+            "default": true
+          },
+          {
+            "id": 0,
+            "name": "Large",
+            "slug": "Large",
+            "default": false
+          }
+        ],
+        "options": [
+          {
+            "id": 0,
+            "name": "Small",
+            "slug": "Small",
+            "default": true
+          },
+          {
+            "id": 0,
+            "name": "Large",
+            "slug": "Large",
+            "default": false
+          }
+        ]
+      }
+    ],
+    "variations": [
+      {
+        "id": 50472,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "195000",
+          "regular_price": "245000",
+          "sale_price": "195000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Colours",
+            "taxonomy": null,
+            "value": "Gold",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "Small",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 50473,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "265000",
+          "regular_price": "315000",
+          "sale_price": "265000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Colours",
+            "taxonomy": null,
+            "value": "Gold",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "Large",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 50474,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "195000",
+          "regular_price": "245000",
+          "sale_price": "195000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Colours",
+            "taxonomy": null,
+            "value": "Green",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "Small",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 50475,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "265000",
+          "regular_price": "315000",
+          "sale_price": "265000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Colours",
+            "taxonomy": null,
+            "value": "Green",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "Large",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 50476,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "195000",
+          "regular_price": "245000",
+          "sale_price": "195000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Colours",
+            "taxonomy": null,
+            "value": "Yellow",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "Small",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 50477,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "265000",
+          "regular_price": "315000",
+          "sale_price": "265000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Colours",
+            "taxonomy": null,
+            "value": "Yellow",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "Large",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 50478,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "195000",
+          "regular_price": "245000",
+          "sale_price": "195000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Colours",
+            "taxonomy": null,
+            "value": "Silver",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "Small",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 50479,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "265000",
+          "regular_price": "315000",
+          "sale_price": "265000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Colours",
+            "taxonomy": null,
+            "value": "Silver",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "Large",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 50480,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "195000",
+          "regular_price": "245000",
+          "sale_price": "195000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Colours",
+            "taxonomy": null,
+            "value": "Antique Copper",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "Small",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 50481,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "265000",
+          "regular_price": "315000",
+          "sale_price": "265000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Colours",
+            "taxonomy": null,
+            "value": "Antique Copper",
+            "options": null
+          },
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "Large",
+            "options": null
+          }
+        ],
+        "image": null
+      }
+    ]
+  },
+  "wooden-finger-castanet": {
+    "id": 50579,
+    "name": "Wooden Finger Castanet",
+    "slug": "wooden-finger-castanet",
+    "product_type": "variable",
+    "description": "<p><span style=\"font-weight: 400\">Add a spark of rhythm and cultural richness to your music with the Finger Castanet, one of the world&#8217;s oldest and most expressive handheld percussion instruments.</span></p>",
+    "short_description": "<p><span style=\"font-weight: 400\">Add a spark of rhythm and cultural richness to your music with the Finger Castanet, one of the world&#8217;s oldest and most expressive handheld percussion instruments. With a history dating back more than 3,000 years, the castanet is attributed to the Phoenicians, who crafted the first versions from everyday wood. From there, trade routes carried them across the Mediterranean, and it was Spain that welcomed the castanet most deeply into its culture- making it an identifying instrument of Spanish music and a cornerstone of flamenco.</span></p>\n<p><span style=\"font-weight: 400\">Our Finger Castanet is designed for ease and accessibility. Rather than the traditional palm-held style, the finger loop design allows the castanet to be worn directly on the finger- making it ideal for beginners, children, classroom use, and performers who want an immediate, intuitive rhythmic experience. Compact and clickable, finger castanets improve rhythm, coordination, and fine motor skills, making them as valuable in music education as they are on a stage.\u00a0</span></p>\n<p><span style=\"font-weight: 400\">Available in <strong>2 variations</strong>, <strong>White and Black</strong> each measuring 5.5 \u00d7 5.5 \u00d7 2 cm and weighing just 30 g, these lightweight castanets are effortless to carry and play. Whether you are a music teacher introducing rhythm to young students, a dancer adding percussive expression to your movement, or a world music enthusiast building your collection- the Finger Castanet delivers an authentic, expressive sound in the simplest possible form.</span></p>",
+    "prices": {
+      "price": "74500",
+      "regular_price": "125000",
+      "sale_price": "74500",
+      "currency_minor_unit": 2
+    },
+    "images": [
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2026/06/Wooden-Finger-Castanet-cover-1.jpg",
+        "alt": ""
+      }
+    ],
+    "categories": [
+      {
+        "id": 74,
+        "name": "All",
+        "slug": "all",
+        "link": "https://sarveda.com/product-category/all/"
+      },
+      {
+        "id": 887,
+        "name": "Rattles &amp; Shakers",
+        "slug": "rattles-shakers",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/rattles-shakers/"
+      },
+      {
+        "id": 55,
+        "name": "Sound &amp; Musical Instruments",
+        "slug": "sound-musical-instruments",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/"
+      }
+    ],
+    "attributes": [
+      {
+        "name": "Colour",
+        "taxonomy": null,
+        "value": [
+          {
+            "id": 0,
+            "name": "White",
+            "slug": "White",
+            "default": true
+          },
+          {
+            "id": 0,
+            "name": "Black",
+            "slug": "Black",
+            "default": false
+          }
+        ],
+        "options": [
+          {
+            "id": 0,
+            "name": "White",
+            "slug": "White",
+            "default": true
+          },
+          {
+            "id": 0,
+            "name": "Black",
+            "slug": "Black",
+            "default": false
+          }
+        ]
+      }
+    ],
+    "variations": [
+      {
+        "id": 50589,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "74500",
+          "regular_price": "125000",
+          "sale_price": "74500",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Colour",
+            "taxonomy": null,
+            "value": "White",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 50590,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "79500",
+          "regular_price": "130000",
+          "sale_price": "79500",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Colour",
+            "taxonomy": null,
+            "value": "Black",
+            "options": null
+          }
+        ],
+        "image": null
+      }
+    ]
+  },
+  "wooden-guiro": {
+    "id": 50572,
+    "name": "Wooden Guiro",
+    "slug": "wooden-guiro",
+    "product_type": "simple",
+    "description": "<p>Bring rhythm and texture to your musical creations with the Wooden Guiro, a beautifully handcrafted percussion instrument designed for musicians, educators, and music enthusiasts of all ages. Made from high-quality natural wood, this guiro produces the distinctive rasping sound that has become a staple in Latin, folk, and world music traditions.</p>",
+    "short_description": "<p class=\"PDq2pG_selectionAnchorContainer\" data-start=\"40\" data-end=\"387\">Bring rhythm and texture to your musical creations with the Wooden Guiro, a beautifully handcrafted percussion instrument designed for musicians, educators, and music enthusiasts of all ages. Made from high-quality natural wood, this guiro produces the distinctive rasping sound that has become a staple in Latin, folk, and world music traditions.</p>\n<p data-start=\"389\" data-end=\"724\">Measuring <strong data-start=\"399\" data-end=\"436\">32 cm in length and 6 cm in width</strong>, this lightweight instrument weighs approximately <strong data-start=\"487\" data-end=\"496\">200 g</strong>, making it comfortable to hold and easy to play for extended periods. The carefully carved ridges create clear, crisp tones when scraped with the included wooden striker, delivering an authentic and expressive sound experience.</p>\n<p data-start=\"726\" data-end=\"902\">Whether used in classrooms, music therapy sessions, percussion ensembles, or home music-making, the Wooden Guiro offers a fun and engaging way to explore rhythm and creativity.</p>",
+    "prices": {
+      "price": "125000",
+      "regular_price": "165000",
+      "sale_price": "125000",
+      "currency_minor_unit": 2
+    },
+    "images": [
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2026/06/Wooden-Guiro-4.jpg",
+        "alt": ""
+      }
+    ],
+    "categories": [
+      {
+        "id": 74,
+        "name": "All",
+        "slug": "all",
+        "link": "https://sarveda.com/product-category/all/"
+      },
+      {
+        "id": 899,
+        "name": "Percussion",
+        "slug": "percussion",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/percussion/"
+      },
+      {
+        "id": 55,
+        "name": "Sound &amp; Musical Instruments",
+        "slug": "sound-musical-instruments",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/"
+      }
+    ],
+    "attributes": [],
+    "variations": []
+  },
+  "wooden-hand-taal-khartal": {
+    "id": 50964,
+    "name": "Wooden Hand Khartal/Jingles",
+    "slug": "wooden-hand-taal-khartal",
+    "product_type": "variable",
+    "description": "<p>Experience the timeless rhythm of Indian folk and devotional music with the <strong data-start=\"128\" data-end=\"156\">Wooden Hand Taal Khartal/Jingles</strong>.</p>",
+    "short_description": "<p class=\"PDq2pG_selectionAnchorContainer\" data-start=\"52\" data-end=\"533\">Experience the timeless rhythm of Indian folk and devotional music with the <strong data-start=\"128\" data-end=\"156\">Wooden Hand Taal Khartal</strong>. Handcrafted from quality natural wood and fitted with durable metal jingles, this traditional percussion instrument produces a bright, crisp, and resonant sound that enhances every performance. Lightweight, comfortable to hold, and easy to play, it is ideal for musicians, kirtan groups, bhajan sessions, classrooms, music therapy, and beginners exploring rhythm instruments.</p>\n<p data-start=\"535\" data-end=\"910\">Available in <strong data-start=\"548\" data-end=\"576\">Small, Medium, and Large</strong> sizes, each variation offers a unique tonal character and volume, allowing players to choose the instrument best suited to their style and performance setting. Whether used for devotional singing, folk performances, rhythm practice, or recreational music-making, the Wooden Hand Taal Khartal delivers an authentic musical experience.</p>",
+    "prices": {
+      "price": "45000",
+      "regular_price": "50000",
+      "sale_price": "45000",
+      "currency_minor_unit": 2
+    },
+    "images": [
+      {
+        "src": "https://sarveda.com/wp-content/uploads/2026/07/Wooden-Hand-Taal-Khartal-cover.jpg",
+        "alt": ""
+      }
+    ],
+    "categories": [
+      {
+        "id": 74,
+        "name": "All",
+        "slug": "all",
+        "link": "https://sarveda.com/product-category/all/"
+      },
+      {
+        "id": 559,
+        "name": "Singing Bowls &amp; Bells",
+        "slug": "singing-bowls-bells",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/singing-bowls-bells/"
+      },
+      {
+        "id": 55,
+        "name": "Sound &amp; Musical Instruments",
+        "slug": "sound-musical-instruments",
+        "link": "https://sarveda.com/product-category/sound-musical-instruments/"
+      }
+    ],
+    "attributes": [
+      {
+        "name": "Size",
+        "taxonomy": null,
+        "value": [
+          {
+            "id": 0,
+            "name": "Small",
+            "slug": "Small",
+            "default": true
+          },
+          {
+            "id": 0,
+            "name": "Medium",
+            "slug": "Medium",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "Large",
+            "slug": "Large",
+            "default": false
+          }
+        ],
+        "options": [
+          {
+            "id": 0,
+            "name": "Small",
+            "slug": "Small",
+            "default": true
+          },
+          {
+            "id": 0,
+            "name": "Medium",
+            "slug": "Medium",
+            "default": false
+          },
+          {
+            "id": 0,
+            "name": "Large",
+            "slug": "Large",
+            "default": false
+          }
+        ]
+      }
+    ],
+    "variations": [
+      {
+        "id": 50969,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "45000",
+          "regular_price": "50000",
+          "sale_price": "45000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "Small",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 50970,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "65000",
+          "regular_price": "70000",
+          "sale_price": "65000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "Medium",
+            "options": null
+          }
+        ],
+        "image": null
+      },
+      {
+        "id": 50971,
+        "name": null,
+        "sku": null,
+        "prices": {
+          "price": "245000",
+          "regular_price": "300000",
+          "sale_price": "245000",
+          "currency_minor_unit": 2
+        },
+        "attributes": [
+          {
+            "name": "Size",
+            "taxonomy": null,
+            "value": "Large",
+            "options": null
+          }
+        ],
+        "image": null
+      }
+    ]
+  }
+}

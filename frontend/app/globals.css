@@ -20,7 +20,7 @@
   --brand-ink:        #26251f;
   --brand-muted:      #7d7263;
   --sarveda-bottom-nav: 4.5rem;
-  /* Mobile: announcement + brand row. Desktop: + search row. */
+  /* Mobile: announcement + brand row (search expands on demand). */
   --storefront-header-offset: 5.5rem;
   --storefront-header-offset-scrolled: 4.75rem;
   /* Live sticky top — Header syncs this when the marquee hides on scroll. */
@@ -30,6 +30,19 @@
 
 @media (min-width: 768px) {
   :root {
+    /* Desktop default: single brand row (search layer collapsed). */
+    --storefront-header-offset: 5.85rem;
+    --storefront-header-offset-scrolled: 4.95rem;
+  }
+}
+
+html[data-header-search-open="true"] {
+  --storefront-header-offset: 7.35rem;
+  --storefront-header-offset-scrolled: 6.5rem;
+}
+
+@media (min-width: 768px) {
+  html[data-header-search-open="true"] {
     --storefront-header-offset: 8.1rem;
     --storefront-header-offset-scrolled: 6.6rem;
   }
@@ -70,6 +83,20 @@ html {
 :where(a, button, [role="button"], input, select, textarea, summary):focus-visible {
   outline: 2px solid var(--brand-forest);
   outline-offset: 2px;
+}
+
+/* Newsletter pill: focus lives on the rounded shell, not a square input outline. */
+.newsletter-email-input:focus,
+.newsletter-email-input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+.newsletter-email-input:-webkit-autofill,
+.newsletter-email-input:-webkit-autofill:hover,
+.newsletter-email-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  transition: background-color 99999s ease-out 0s;
 }
 
 body {

@@ -10,7 +10,7 @@ const WORDMARK_H = 40;
 type SarvedaLogoProps = {
   href?: string;
   className?: string;
-  /** Spiral mark height in px */
+  /** Spiral mark height in px (desktop baseline; mobile scales via CSS) */
   iconHeight?: number;
   showWordmark?: boolean;
   /** @deprecated Tagline removed from header; kept for call-site compat. */
@@ -31,13 +31,13 @@ export function SarvedaLogo({
   const wordmarkWidth = Math.round(wordmarkHeight * (WORDMARK_W / WORDMARK_H) * 1.15);
 
   const content = (
-    <div className={`flex items-center gap-2.5 ${className}`}>
+    <div className={`flex items-center gap-1.5 sm:gap-2 md:gap-2.5 ${className}`}>
       <Image
         src={MARK_SRC}
         alt=""
         width={iconWidth}
         height={iconHeight}
-        className="shrink-0 object-contain"
+        className="h-7 w-auto shrink-0 object-contain sm:h-9 md:h-[2.625rem]"
         priority
         aria-hidden
       />
@@ -47,8 +47,7 @@ export function SarvedaLogo({
           alt="Sarveda"
           width={wordmarkWidth}
           height={wordmarkHeight}
-          className="object-contain object-left"
-          style={{ height: wordmarkHeight, width: wordmarkWidth }}
+          className="h-[1.35rem] w-auto object-contain object-left sm:h-[1.7rem] md:h-[2.05rem]"
           priority
         />
       ) : null}

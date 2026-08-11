@@ -1,7 +1,7 @@
 "use client";
 
-import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
+import { usePathname } from "next/navigation";
 
 import type { CategoryNode } from "@/lib/types";
 import { categorySlugFromPathname } from "@/lib/shop-navigation";
@@ -10,6 +10,7 @@ import { ShopCategoriesProvider } from "./ShopCategoriesContext";
 import { ShopCategoryFilterSidebar } from "./ShopCategoryFilterSidebar";
 import { ShopProductToolbar } from "./ShopProductToolbar";
 import { ShopProductsMetaProvider } from "./ShopProductsMetaContext";
+import { useLocationQueryParam } from "./useLocationQueryParam";
 import { useShopNavigate } from "./useShopNavigate";
 
 type Props = {
@@ -17,13 +18,16 @@ type Props = {
   children: React.ReactNode;
 };
 
+/**
+ * Persistent shop chrome. Avoid Suspense around server `children` and avoid
+ * `useSearchParams` here — both caused soft-nav to hang on blank/skeleton /shop.
+ */
 export function ShopShell({ categories, children }: Props) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const { navigate, isPending } = useShopNavigate();
+  const searchQ = useLocationQueryParam("q");
 
   const categorySlug = categorySlugFromPathname(pathname);
-  const searchQ = searchParams.get("q") ?? "";
 
   const handleSelectCategory = useCallback(
     (slug: string | undefined) => {
@@ -62,7 +66,7 @@ export function ShopShell({ categories, children }: Props) {
   return (
     <ShopCategoriesProvider categories={categories}>
       <ShopProductsMetaProvider>
-        <main className="mx-auto max-w-7xl pb-16 pt-0 md:px-4 md:pb-0 lg:px-8">
+        <div className="mx-auto max-w-7xl pb-16 pt-0 md:px-4 md:pb-0 lg:px-8">
           <h1 className="sr-only">{activeCategoryName ?? "Shop"}</h1>
 
           <div className="flex flex-col lg:h-[calc(100dvh-var(--storefront-header-offset)-var(--storefront-slim-footer-offset))] lg:flex-row lg:items-stretch lg:gap-10 lg:py-6">
@@ -85,6 +89,7 @@ export function ShopShell({ categories, children }: Props) {
                 onClearCategory={clearCategory}
                 onClearSearch={clearSearch}
               />
+
               <div
                 className={`relative z-0 lg:flex-1 lg:overflow-y-auto ${
                   isPending ? "pointer-events-none opacity-50 transition-opacity duration-150" : ""
@@ -95,7 +100,7 @@ export function ShopShell({ categories, children }: Props) {
               </div>
             </div>
           </div>
-        </main>
+        </div>
       </ShopProductsMetaProvider>
     </ShopCategoriesProvider>
   );

@@ -1,0 +1,550 @@
+{
+  "crystal_bowls": {
+    "id": 9777,
+    "name": "Crystal Bowls",
+    "slug": "sarveda-crystal-bowls",
+    "description": "",
+    "short_description": "<p><span style=\"font-weight: 400\">Available in sizes ranging from 6 to 14 inches, our range of crystal singing bowls are meticulously tuned to produce harmonious and resonant tones. Crafted from high-quality crystal, these bowls not only produce beautiful sounds but also emit powerful vibrational frequencies that promote relaxation and healing.</span></p>\n<p><span style=\"font-weight: 400\">Every crystal singing bowl comes with a mallet and cushion, ensuring you have everything you need to begin your sonic journey. Whether you&#8217;re a seasoned sound healer or new to the world of sound therapy, our crystal singing bowls offer a versatile and accessible way to enhance your well-being. </span></p>",
+    "prices": {
+      "price": "895000",
+      "regular": "1163500",
+      "sale": "895000"
+    },
+    "images": [
+      "https://sarveda.com/wp-content/uploads/2024/05/154-1.jpg",
+      "https://sarveda.com/wp-content/uploads/2024/05/154.jpg",
+      "https://sarveda.com/wp-content/uploads/2024/05/IMG0631-scaled.jpg"
+    ],
+    "variations": [
+      {
+        "id": 9778,
+        "attrs": [
+          {
+            "name": "Size",
+            "value": "6 in"
+          }
+        ],
+        "price": "895000",
+        "regular": "1163500",
+        "sale": "895000",
+        "image": "https://sarveda.com/wp-content/uploads/2024/05/IMG0626-scaled.jpg"
+      },
+      {
+        "id": 9779,
+        "attrs": [
+          {
+            "name": "Size",
+            "value": "7 in"
+          }
+        ],
+        "price": "965000",
+        "regular": "1254500",
+        "sale": "965000",
+        "image": "https://sarveda.com/wp-content/uploads/2024/05/154.jpg"
+      },
+      {
+        "id": 9780,
+        "attrs": [
+          {
+            "name": "Size",
+            "value": "8 in"
+          }
+        ],
+        "price": "1045000",
+        "regular": "1358500",
+        "sale": "1045000",
+        "image": "https://sarveda.com/wp-content/uploads/2024/05/IMG0631-scaled.jpg"
+      },
+      {
+        "id": 9781,
+        "attrs": [
+          {
+            "name": "Size",
+            "value": "9 in"
+          }
+        ],
+        "price": "1145000",
+        "regular": "1488500",
+        "sale": "1145000",
+        "image": "https://sarveda.com/wp-content/uploads/2024/05/IMG0626-scaled.jpg"
+      },
+      {
+        "id": 9782,
+        "attrs": [
+          {
+            "name": "Size",
+            "value": "10 in"
+          }
+        ],
+        "price": "1225000",
+        "regular": "1592500",
+        "sale": "1225000",
+        "image": "https://sarveda.com/wp-content/uploads/2024/05/154.jpg"
+      },
+      {
+        "id": 9783,
+        "attrs": [
+          {
+            "name": "Size",
+            "value": "11 in"
+          }
+        ],
+        "price": "1325000",
+        "regular": "1722500",
+        "sale": "1325000",
+        "image": "https://sarveda.com/wp-content/uploads/2024/05/IMG0631-scaled.jpg"
+      },
+      {
+        "id": 9784,
+        "attrs": [
+          {
+            "name": "Size",
+            "value": "12 in"
+          }
+        ],
+        "price": "1465000",
+        "regular": "1904500",
+        "sale": "1465000",
+        "image": "https://sarveda.com/wp-content/uploads/2024/05/IMG0626-scaled.jpg"
+      },
+      {
+        "id": 9785,
+        "attrs": [
+          {
+            "name": "Size",
+            "value": "13 in"
+          }
+        ],
+        "price": "1775000",
+        "regular": "2307500",
+        "sale": "1775000",
+        "image": "https://sarveda.com/wp-content/uploads/2024/05/154.jpg"
+      },
+      {
+        "id": 9786,
+        "attrs": [
+          {
+            "name": "Size",
+            "value": "14 in"
+          }
+        ],
+        "price": "1975000",
+        "regular": "2567500",
+        "sale": "1975000",
+        "image": "https://sarveda.com/wp-content/uploads/2024/05/IMG0631-scaled.jpg"
+      }
+    ],
+    "type": "variable"
+  },
+  "crystal_set7": {
+    "id": 43219,
+    "name": "Crystal Bowls \u2013 Set of 7",
+    "slug": "crystal-bowls-set-of-7",
+    "description": "",
+    "short_description": "<p>Our Crystal Bowl Sets are available in two beautiful colours: Frosted White and Chakra Coloured. They come in two sizes\u20146-12 inches and 8-14 inches\u2014and are crafted from high-quality quartz crystal to produce exceptional sound and vibrational healing. Each bowl is carefully tuned from A to G, offering a series of harmonious and resonant tones that support relaxation and healing.</p>",
+    "prices": {
+      "price": "8150000",
+      "regular": "9150000",
+      "sale": "8150000"
+    },
+    "images": [
+      "https://sarveda.com/wp-content/uploads/2024/08/E1-1.jpg",
+      "https://sarveda.com/wp-content/uploads/2024/08/crystal-set-7.png",
+      "https://sarveda.com/wp-content/uploads/2024/08/crystal.png",
+      "https://sarveda.com/wp-content/uploads/2024/08/crystal-bowl-sets-Sarveda.png",
+      "https://sarveda.com/wp-content/uploads/2024/08/Screenshot-2024-08-15-at-5.22.11-PM.png",
+      "https://sarveda.com/wp-content/uploads/2024/08/Screenshot-2024-08-15-at-5.21.40-PM.png",
+      "https://sarveda.com/wp-content/uploads/2024/08/Screenshot-2024-08-15-at-5.21.51-PM.png",
+      "https://sarveda.com/wp-content/uploads/2024/08/crystal-bowl.jpg",
+      "https://sarveda.com/wp-content/uploads/2024/08/Artboard-1-copy-2.jpg",
+      "https://sarveda.com/wp-content/uploads/2024/08/Artboard-1-copy-12-1.jpg",
+      "https://sarveda.com/wp-content/uploads/2024/08/Artboard-1-copy-10-1.jpg",
+      "https://sarveda.com/wp-content/uploads/2024/08/Artboard-1-copy-8-1.jpg",
+      "https://sarveda.com/wp-content/uploads/2024/08/Artboard-1-copy-6-1.jpg",
+      "https://sarveda.com/wp-content/uploads/2024/08/E4-1.jpg",
+      "https://sarveda.com/wp-content/uploads/2024/08/E2-1.jpg",
+      "https://sarveda.com/wp-content/uploads/2024/08/E1-1.jpg"
+    ],
+    "variations": [
+      {
+        "id": 44988,
+        "attrs": [
+          {
+            "name": "Colour",
+            "value": "Chakra Coloured"
+          },
+          {
+            "name": "Size",
+            "value": "8-14-in-set"
+          }
+        ],
+        "price": "10550000",
+        "regular": "11550000",
+        "sale": "10550000",
+        "image": "https://sarveda.com/wp-content/uploads/2024/08/Artboard-1-copy-8-1.jpg"
+      },
+      {
+        "id": 44989,
+        "attrs": [
+          {
+            "name": "Colour",
+            "value": "Chakra Coloured"
+          },
+          {
+            "name": "Size",
+            "value": "6-12-in-set"
+          }
+        ],
+        "price": "8950000",
+        "regular": "9950000",
+        "sale": "8950000",
+        "image": "https://sarveda.com/wp-content/uploads/2024/08/Artboard-1-copy-6-1.jpg"
+      },
+      {
+        "id": 43231,
+        "attrs": [
+          {
+            "name": "Colour",
+            "value": "Frosted White"
+          },
+          {
+            "name": "Size",
+            "value": "6-12-in-set"
+          }
+        ],
+        "price": "8150000",
+        "regular": "9150000",
+        "sale": "8150000",
+        "image": "https://sarveda.com/wp-content/uploads/2024/08/Artboard-1-copy-2.jpg"
+      },
+      {
+        "id": 43232,
+        "attrs": [
+          {
+            "name": "Colour",
+            "value": "Frosted White"
+          },
+          {
+            "name": "Size",
+            "value": "8-14-in-set"
+          }
+        ],
+        "price": "9750000",
+        "regular": "10750000",
+        "sale": "9750000",
+        "image": "https://sarveda.com/wp-content/uploads/2024/08/crystal-bowl.jpg"
+      }
+    ],
+    "type": "variable"
+  },
+  "gong_plates": {
+    "id": 45485,
+    "name": "Shruthi Thali/Gong Plates",
+    "slug": "shruthi-thali-gong-plates",
+    "description": "<p>Experience the profound resonance and therapeutic effects of our Shruthi Thali also known as Gong plates, crafted to bring harmonic balance and transformation to sound healing practice.<br />\nThese tuned sonic plates and bells are calibrated to the complete musical scale in the 4th octave\u2014C, D, E, F, G, A, B\u2014and also available as a complete set of 7.<br />\nEach piece has been meticulously crafted to produce pure tones that can add a new soundscape to your musical journeys.</p>\n<p>The Shruthi Thali ranges in size from the larger 12.5 inch by 8.5 tuned inch plate tuned to C4 to the more compact 10 inch by 6.5 inch version tuned to B4, with weights varying between 2kg for the C4 plate and 1.24kg for the Smaller B4 plate.<br />\nEach set includes an elegantly designed wooden holder and plate, a cover and a mallet creating both a functional sound instrument and a beautiful addition to your sacred or therapeutic environment.</p>\n<p>Elevate your sonic healing practice with this extraordinary set designed to attune your surroundings to the fundamental harmonies of existence.</p>",
+    "short_description": "<p>Experience the profound resonance and therapeutic effects of our Shruthi Thali also known as Gong plates, crafted to bring harmonic balance and transformation to sound healing practice.<br />\nThese tuned sonic plates and bells are calibrated to the complete musical scale in the 4th octave\u2014C, D, E, F, G, A, B\u2014and also available as a complete set of 7.<br />\nEach piece has been meticulously crafted to produce pure tones that can add a new soundscape to your musical journeys.</p>\n<p>The Shruthi Thali ranges in size from the larger 12.5 inch by 8.5 tuned inch plate tuned to C4 to the more compact 10 inch by 6.5 inch version tuned to B4, with weights varying between 2kg for the C4 plate and 1.24kg for the Smaller B4 plate.<br />\nEach set includes an elegantly designed wooden holder and plate, a cover and a mallet creating both a functional sound instrument and a beautiful addition to your sacred or therapeutic environment.</p>\n<p>Elevate your sonic healing practice with this extraordinary set designed to attune your surroundings to the fundamental harmonies of existence.</p>",
+    "prices": {
+      "price": "835000",
+      "regular": "935000",
+      "sale": "835000"
+    },
+    "images": [
+      "https://sarveda.com/wp-content/uploads/2025/04/Artboard-1-2.jpg"
+    ],
+    "variations": [
+      {
+        "id": 45486,
+        "attrs": [
+          {
+            "name": "Type",
+            "value": "B Plate"
+          }
+        ],
+        "price": "835000",
+        "regular": "935000",
+        "sale": "835000",
+        "image": "https://sarveda.com/wp-content/uploads/2025/04/Artboard-1-2.jpg"
+      },
+      {
+        "id": 45487,
+        "attrs": [
+          {
+            "name": "Type",
+            "value": "A Plate"
+          }
+        ],
+        "price": "895000",
+        "regular": "995000",
+        "sale": "895000",
+        "image": "https://sarveda.com/wp-content/uploads/2025/04/Artboard-1-2.jpg"
+      },
+      {
+        "id": 45488,
+        "attrs": [
+          {
+            "name": "Type",
+            "value": "G Plate"
+          }
+        ],
+        "price": "975000",
+        "regular": "1075000",
+        "sale": "975000",
+        "image": "https://sarveda.com/wp-content/uploads/2025/04/Artboard-1-2.jpg"
+      },
+      {
+        "id": 45489,
+        "attrs": [
+          {
+            "name": "Type",
+            "value": "F Plate"
+          }
+        ],
+        "price": "1055000",
+        "regular": "1155000",
+        "sale": "1055000",
+        "image": "https://sarveda.com/wp-content/uploads/2025/04/Artboard-1-2.jpg"
+      },
+      {
+        "id": 45490,
+        "attrs": [
+          {
+            "name": "Type",
+            "value": "E Plate"
+          }
+        ],
+        "price": "1125000",
+        "regular": "1225000",
+        "sale": "1125000",
+        "image": "https://sarveda.com/wp-content/uploads/2025/04/Artboard-1-2.jpg"
+      },
+      {
+        "id": 45491,
+        "attrs": [
+          {
+            "name": "Type",
+            "value": "D Plate"
+          }
+        ],
+        "price": "1285000",
+        "regular": "1385000",
+        "sale": "1285000",
+        "image": "https://sarveda.com/wp-content/uploads/2025/04/Artboard-1-2.jpg"
+      },
+      {
+        "id": 45492,
+        "attrs": [
+          {
+            "name": "Type",
+            "value": "C Plate"
+          }
+        ],
+        "price": "1455000",
+        "regular": "1555000",
+        "sale": "1455000",
+        "image": "https://sarveda.com/wp-content/uploads/2025/04/Artboard-1-2.jpg"
+      },
+      {
+        "id": 45493,
+        "attrs": [
+          {
+            "name": "Type",
+            "value": "Full Set"
+          }
+        ],
+        "price": "7550000",
+        "regular": "8550000",
+        "sale": "7550000",
+        "image": "https://sarveda.com/wp-content/uploads/2025/04/Artboard-1-2.jpg"
+      }
+    ],
+    "type": "variable"
+  },
+  "gong_stand": {
+    "id": 45289,
+    "name": "Gong Stand",
+    "slug": "gong-stand",
+    "description": "<p><span style=\"font-weight: 400\">Elevate your gong experience with this </span><b>high-quality wooden gong stand</b><span style=\"font-weight: 400\">, crafted for </span><b>stability, durability, and aesthetic appeal</b><span style=\"font-weight: 400\">. Designed to </span><b>securely hold bronze and metal alloy gongs</b><span style=\"font-weight: 400\">, this stand provides a </span><b>solid foundation</b><span style=\"font-weight: 400\"> while complementing any meditation space, sound healing setup, or performance stage. Available in two colours, comes in four sizes with a storage bag also included.</span></p>",
+    "short_description": "<p><span style=\"font-weight: 400\">Elevate your gong experience with this </span><b>high-quality wooden gong stand</b><span style=\"font-weight: 400\">, crafted for </span><b>stability, durability, and aesthetic appeal</b><span style=\"font-weight: 400\">. Designed to </span><b>securely hold bronze and metal alloy gongs</b><span style=\"font-weight: 400\">, this stand provides a </span><b>solid foundation</b><span style=\"font-weight: 400\"> while complementing any meditation space, sound healing setup, or performance stage. Available in two colours, comes in four sizes with a storage bag also included.</span></p>",
+    "prices": {
+      "price": "685000",
+      "regular": "700000",
+      "sale": "685000"
+    },
+    "images": [
+      "https://sarveda.com/wp-content/uploads/2025/04/Artboard-1-copy-15.jpg"
+    ],
+    "variations": [
+      {
+        "id": 45294,
+        "attrs": [
+          {
+            "name": "Color",
+            "value": "Light"
+          },
+          {
+            "name": "Size",
+            "value": "Small"
+          }
+        ],
+        "price": "685000",
+        "regular": "700000",
+        "sale": "685000",
+        "image": "https://sarveda.com/wp-content/uploads/2025/04/Artboard-1-copy-15.jpg"
+      },
+      {
+        "id": 45295,
+        "attrs": [
+          {
+            "name": "Color",
+            "value": "Light"
+          },
+          {
+            "name": "Size",
+            "value": "Medium"
+          }
+        ],
+        "price": "745000",
+        "regular": "785000",
+        "sale": "745000",
+        "image": "https://sarveda.com/wp-content/uploads/2025/04/Artboard-1-copy-15.jpg"
+      },
+      {
+        "id": 45296,
+        "attrs": [
+          {
+            "name": "Color",
+            "value": "Light"
+          },
+          {
+            "name": "Size",
+            "value": "Large"
+          }
+        ],
+        "price": "845000",
+        "regular": "900000",
+        "sale": "845000",
+        "image": "https://sarveda.com/wp-content/uploads/2025/04/Artboard-1-copy-15.jpg"
+      },
+      {
+        "id": 46254,
+        "attrs": [
+          {
+            "name": "Color",
+            "value": "Light"
+          },
+          {
+            "name": "Size",
+            "value": "Extra Large"
+          }
+        ],
+        "price": "900000",
+        "regular": "1000000",
+        "sale": "900000",
+        "image": "https://sarveda.com/wp-content/uploads/2025/04/Artboard-1-copy-15.jpg"
+      },
+      {
+        "id": 45297,
+        "attrs": [
+          {
+            "name": "Color",
+            "value": "Dark"
+          },
+          {
+            "name": "Size",
+            "value": "Small"
+          }
+        ],
+        "price": "685000",
+        "regular": "700000",
+        "sale": "685000",
+        "image": "https://sarveda.com/wp-content/uploads/2025/04/Artboard-1-copy-15.jpg"
+      },
+      {
+        "id": 45298,
+        "attrs": [
+          {
+            "name": "Color",
+            "value": "Dark"
+          },
+          {
+            "name": "Size",
+            "value": "Medium"
+          }
+        ],
+        "price": "745000",
+        "regular": "785000",
+        "sale": "745000",
+        "image": "https://sarveda.com/wp-content/uploads/2025/04/Artboard-1-copy-15.jpg"
+      },
+      {
+        "id": 45299,
+        "attrs": [
+          {
+            "name": "Color",
+            "value": "Dark"
+          },
+          {
+            "name": "Size",
+            "value": "Large"
+          }
+        ],
+        "price": "845000",
+        "regular": "900000",
+        "sale": "845000",
+        "image": "https://sarveda.com/wp-content/uploads/2025/04/Artboard-1-copy-15.jpg"
+      },
+      {
+        "id": 46255,
+        "attrs": [
+          {
+            "name": "Color",
+            "value": "Dark"
+          },
+          {
+            "name": "Size",
+            "value": "Extra Large"
+          }
+        ],
+        "price": "900000",
+        "regular": "1000000",
+        "sale": "900000",
+        "image": "https://sarveda.com/wp-content/uploads/2025/04/Artboard-1-copy-15.jpg"
+      }
+    ],
+    "type": "variable"
+  },
+  "gab": {
+    "id": 49832,
+    "name": "Singing Bowl Head Set \u2013 G, A, B",
+    "slug": "singing-bowl-set-g-a-b",
+    "description": "<p>Bring home the timeless tradition of sound healing with this beautifully tuned GAB Singing Bowl Set\u2014crafted to elevate your meditation and create a deeply peaceful atmosphere.</p>",
+    "short_description": "<p data-start=\"148\" data-end=\"394\">Experience the soothing harmony of sound with our handcrafted Singing Bowl Set tuned to <strong data-start=\"236\" data-end=\"251\">G, A, and B</strong>. Each bowl is carefully made by skilled artisans, offering rich, resonant tones ideal for meditation, sound healing, and relaxation practices.</p>\n<p data-start=\"396\" data-end=\"526\">This set is perfect for beginners as well as experienced practitioners looking to create a calming and balanced sound environment.</p>\n<h3 data-section-id=\"1dqbs77\" data-start=\"533\" data-end=\"559\">Product Specifications</h3>\n<ul data-start=\"561\" data-end=\"868\">\n<li data-section-id=\"d2mf4e\" data-start=\"561\" data-end=\"634\"><strong data-start=\"563\" data-end=\"578\">B Note Bowl</strong><br data-start=\"578\" data-end=\"581\" />Size: <strong data-start=\"589\" data-end=\"603\">5\u20136 inches</strong><br data-start=\"603\" data-end=\"606\" />Weight: <strong data-start=\"616\" data-end=\"634\">Approx. 0.5 kg</strong></li>\n<li data-section-id=\"tk0e76\" data-start=\"636\" data-end=\"709\"><strong data-start=\"638\" data-end=\"653\">A Note Bowl</strong><br data-start=\"653\" data-end=\"656\" />Size: <strong data-start=\"664\" data-end=\"678\">6\u20137 inches</strong><br data-start=\"678\" data-end=\"681\" />Weight: <strong data-start=\"691\" data-end=\"709\">Approx. 0.8 kg</strong></li>\n<li data-section-id=\"1kmiy3h\" data-start=\"711\" data-end=\"782\"><strong data-start=\"713\" data-end=\"728\">G Note Bowl</strong><br data-start=\"728\" data-end=\"731\" />Size: <strong data-start=\"739\" data-end=\"753\">7\u20138 inches</strong><br data-start=\"753\" data-end=\"756\" />Weight: <strong data-start=\"766\" data-end=\"782\">Approx. 1 kg</strong></li>\n<li data-section-id=\"1x1qg9l\" data-start=\"784\" data-end=\"807\"><strong data-start=\"786\" data-end=\"797\">Tuning:</strong> G, A, B</li>\n<li data-section-id=\"1umwoja\" data-start=\"808\" data-end=\"868\"><strong data-start=\"810\" data-end=\"823\">Material:</strong> Traditional metal alloy (handcrafted finish)</li>\n</ul>",
+    "prices": {
+      "price": "1950000",
+      "regular": "2550000",
+      "sale": "1950000"
+    },
+    "images": [
+      "https://sarveda.com/wp-content/uploads/2026/04/1.jpg"
+    ],
+    "variations": [],
+    "type": "simple"
+  },
+  "solar": {
+    "id": 49816,
+    "name": "Solar Bell",
+    "slug": "solar-bell",
+    "description": "<p>Resonate with the healing power of 528 Hz.<br data-start=\"172\" data-end=\"175\" />Experience deep balance, clarity, and inner harmony with every tone.</p>",
+    "short_description": "<p data-start=\"88\" data-end=\"363\">Our Solar Bell is a beautifully crafted sound healing instrument designed to elevate your meditation and relaxation practices. Inspired by ancient traditions and often associated with sacred frequencies, solar bells are known to support energetic alignment and inner harmony.</p>\n<p data-start=\"365\" data-end=\"731\">While many solar bells are traditionally tuned to 432 Hz, our Solar Bell is precisely tuned to <strong data-start=\"460\" data-end=\"470\">528 Hz</strong> \u2014 a frequency often referred to as the \u201clove frequency,\u201d believed to encourage transformation, balance, and deep healing. Subtle design influences inspired by ancient Egyptian cosmology add a symbolic dimension, connecting sound with timeless spiritual wisdom.</p>\n<p data-start=\"733\" data-end=\"960\">With a compact size of <strong data-start=\"756\" data-end=\"767\">19.5 cm</strong>, this Solar Bell is easy to handle and perfect for personal rituals, sound baths, or therapeutic sessions. It comes complete with a mallet, allowing you to begin your sound journey right away.</p>",
+    "prices": {
+      "price": "1265000",
+      "regular": "1534000",
+      "sale": "1265000"
+    },
+    "images": [
+      "https://sarveda.com/wp-content/uploads/2026/04/Solar-Bell-2.jpg"
+    ],
+    "variations": [],
+    "type": "simple"
+  }
+}

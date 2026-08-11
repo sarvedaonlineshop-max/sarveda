@@ -100,6 +100,8 @@ export default async function ProductCategoryPage({ params, searchParams }: Prop
           totalPages: list.pagination.totalPages,
           total: list.pagination.total
         }}
+        categorySlug={params.slug}
+        searchQ={typeof searchParams.q === "string" ? searchParams.q : Array.isArray(searchParams.q) ? searchParams.q[0] ?? "" : ""}
       />
     </>
   );

@@ -135,10 +135,6 @@ export function CouponInput({
   return (
     <div className="rounded-2xl border border-brand-cream-dark bg-white p-4 shadow-card">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">Coupon code</p>
-      <p className="mt-1 text-xs text-brand-muted">
-        Coupons are checked against your Sarveda account before they can be applied. Invalid codes are
-        rejected here — not silently removed at payment.
-      </p>
 
       {couponRejected && !appliedCode ? (
         <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800" role="alert">

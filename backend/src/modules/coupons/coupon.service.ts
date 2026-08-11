@@ -251,18 +251,19 @@ export async function listActivePdpCouponOffers(): Promise<PdpCouponOffer[]> {
     if (code === "WELCOME10") continue;
     const coupon = byCode.get(code);
     if (coupon && isCouponCurrentlyValid(coupon)) {
+      const isWelcome5 = coupon.code === "WELCOME5";
       offers.push({
         code: coupon.code,
-        label: formatCouponOfferLabel(coupon),
-        description: coupon.description ?? null
+        label: isWelcome5 ? "5% offer on your first order" : formatCouponOfferLabel(coupon),
+        description: isWelcome5 ? null : coupon.description ?? null
       });
       continue;
     }
     if (code === "WELCOME5") {
       offers.push({
         code: "WELCOME5",
-        label: "5% off",
-        description: "Welcome 5% off your first order"
+        label: "5% offer on your first order",
+        description: null
       });
     }
   }
@@ -270,8 +271,8 @@ export async function listActivePdpCouponOffers(): Promise<PdpCouponOffer[]> {
   if (!offers.length) {
     offers.push({
       code: "WELCOME5",
-      label: "5% off",
-      description: "Welcome 5% off your first order"
+      label: "5% offer on your first order",
+      description: null
     });
   }
 

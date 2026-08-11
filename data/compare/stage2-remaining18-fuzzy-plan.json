@@ -1,0 +1,1928 @@
+[
+  {
+    "cls": "FULL_MATCH_AFTER_FUZZY",
+    "sheet": "7 Chakras - Copper Bottles with Handle",
+    "db": "7 Chakras Copper Water Bottles with Handle",
+    "sheet_n": 4,
+    "db_n": 4,
+    "matched": 4,
+    "exact": 4,
+    "fuzzy": 0,
+    "new_sheet": [],
+    "gone_db": [],
+    "matches": [
+      {
+        "sheet": {
+          "variant": "Plain / 1L / With Brush",
+          "sku": "CB-7C-H-B"
+        },
+        "db": {
+          "variant": "7 Chakras Plain / 1L / With Brush",
+          "sku": "CB-7CP-B-1",
+          "id": "3dba5364-4ba1-4261-9cb4-6497c09b9e0a"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Plain / 1L/ Without Brush",
+          "sku": "CB-7C-H"
+        },
+        "db": {
+          "variant": "7 Chakras Plain / 1L / Without Brush",
+          "sku": "CB-7CP-1",
+          "id": "26cc0383-81bd-4855-a8ec-abcb38dede87"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Vintage / 1L/ Without Brush",
+          "sku": "CB-7C-V-H"
+        },
+        "db": {
+          "variant": "7 Chakras Vintage / 1L / Without Brush",
+          "sku": "CB-7CV-1",
+          "id": "8449594e-a2eb-4f95-bce8-0cfe60eed18a"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Vintage / 1L / With Brush",
+          "sku": "CB-7C-V-H-B"
+        },
+        "db": {
+          "variant": "7 Chakras Vintage / 1L / With Brush",
+          "sku": "CB-7CV-B-1",
+          "id": "345f2b9c-1a9a-4f4a-a3d5-3878ed9771d8"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      }
+    ],
+    "coverage_sheet": 100.0,
+    "coverage_db": 100.0
+  },
+  {
+    "cls": "PARTIAL",
+    "sheet": "7 Chakras - Plain Copper Bottles",
+    "db": "7 Chakras Copper Water Bottles",
+    "sheet_n": 4,
+    "db_n": 8,
+    "matched": 4,
+    "exact": 4,
+    "fuzzy": 0,
+    "new_sheet": [],
+    "gone_db": [
+      {
+        "variant": "7 Chakras Vintage / 500ml / With Brush",
+        "sku": "CB-7CV-B-.5",
+        "id": "515c45e1-bac8-4e9b-94ab-91fec92230d6"
+      },
+      {
+        "variant": "7 Chakras Vintage / 500ml / Without Brush",
+        "sku": "CB-7CV-.5",
+        "id": "640e4291-f2c2-45f8-a49b-719bbb5f838c"
+      },
+      {
+        "variant": "7 Chakras Vintage / 1L / With Brush",
+        "sku": "CB-7CV-B",
+        "id": "630cfde3-f1bb-49b8-9345-894edc026720"
+      },
+      {
+        "variant": "7 Chakras Vintage / 1L / Without Brush",
+        "sku": "CB-7CV",
+        "id": "806512cb-2a81-4a35-aa5e-e983bf58fe4a"
+      }
+    ],
+    "matches": [
+      {
+        "sheet": {
+          "variant": "Plain / 500ml/ With Brush",
+          "sku": "CB-7C-B-.5"
+        },
+        "db": {
+          "variant": "7 Chakras Plain / 500ml / With Brush",
+          "sku": "CB-7CP-B-.5",
+          "id": "41486a94-1d3b-4289-8f65-c72aa7193671"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Plain / 500ml/ Without Brush",
+          "sku": "CB-7C-.5"
+        },
+        "db": {
+          "variant": "7 Chakras Plain / 500ml / Without Brush",
+          "sku": "CB-7CP-.5",
+          "id": "3b666585-a1df-4dab-aaab-3e1cbd378f8f"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Plain / 1L / With Brush",
+          "sku": "CB-7C-B"
+        },
+        "db": {
+          "variant": "7 Chakras Plain / 1L / With Brush",
+          "sku": "CB-7CP-B",
+          "id": "fac07400-34d6-4742-9419-16dd85f37d10"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Plain / 1L/ Without Brush",
+          "sku": "CB-7C"
+        },
+        "db": {
+          "variant": "7 Chakras Plain / 1L / Without Brush",
+          "sku": "CB-7CP",
+          "id": "45d9981b-b467-4cc1-a187-4ad6042e14ee"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      }
+    ],
+    "coverage_sheet": 100.0,
+    "coverage_db": 50.0
+  },
+  {
+    "cls": "TOTALLY_DIFFER",
+    "sheet": "7 Chakras - Vintage Copper Bottles",
+    "db": "7 Chakras Vintage - Copper Bottle",
+    "sheet_n": 4,
+    "db_n": 0,
+    "matched": 0,
+    "exact": 0,
+    "fuzzy": 0,
+    "new_sheet": [
+      {
+        "variant": "Vintage / 500ml/ With Brush",
+        "sku": "CB-7C-V-B-.5"
+      },
+      {
+        "variant": "Vintage/ 500ml/ Without Brush",
+        "sku": "CB-7C-V-.5"
+      },
+      {
+        "variant": "Vintage / 1L/ With Brush",
+        "sku": "CB-7C-V-B"
+      },
+      {
+        "variant": "Vintage/  1L/ Without Brush",
+        "sku": "CB-7C-V"
+      }
+    ],
+    "gone_db": [],
+    "matches": [],
+    "coverage_sheet": 0.0,
+    "coverage_db": 0.0
+  },
+  {
+    "cls": "TOTALLY_DIFFER",
+    "sheet": "Ankh",
+    "db": "Ankh Sound Healing Instrument",
+    "sheet_n": 1,
+    "db_n": 2,
+    "matched": 0,
+    "exact": 0,
+    "fuzzy": 0,
+    "new_sheet": [
+      {
+        "variant": "",
+        "sku": "MI-AH"
+      }
+    ],
+    "gone_db": [
+      {
+        "variant": "Large",
+        "sku": "woo-var-49881",
+        "id": "6666c8cd-441d-48f6-9bdf-00f2dcb1a79d"
+      },
+      {
+        "variant": "Medium",
+        "sku": "woo-var-49880",
+        "id": "9ff5e0b1-a1cf-40a1-b8d8-f1f11fa29c04"
+      }
+    ],
+    "matches": [],
+    "coverage_sheet": 0.0,
+    "coverage_db": 0.0
+  },
+  {
+    "cls": "TOTALLY_DIFFER",
+    "sheet": "Bamboo Rainstick Wide-80cm",
+    "db": "Bamboo Rainstick",
+    "sheet_n": 1,
+    "db_n": 1,
+    "matched": 0,
+    "exact": 0,
+    "fuzzy": 0,
+    "new_sheet": [
+      {
+        "variant": "Wide 80cm",
+        "sku": "MI-RS-W-80"
+      }
+    ],
+    "gone_db": [
+      {
+        "variant": "Standard",
+        "sku": "MI-RS-N",
+        "id": "bb2e4ddf-530f-496d-8ffa-594c3fb37f67"
+      }
+    ],
+    "matches": [],
+    "coverage_sheet": 0.0,
+    "coverage_db": 0.0
+  },
+  {
+    "cls": "FULL_MATCH_AFTER_FUZZY",
+    "sheet": "Crescent Zafu Cushion - Wide -Cotton",
+    "db": "Crescent Zafu Cushion - Wide",
+    "sheet_n": 3,
+    "db_n": 3,
+    "matched": 3,
+    "exact": 0,
+    "fuzzy": 3,
+    "new_sheet": [],
+    "gone_db": [],
+    "matches": [
+      {
+        "sheet": {
+          "variant": "Misty Blue",
+          "sku": "ME-CZ-W-MB"
+        },
+        "db": {
+          "variant": "Large / Misty Blue",
+          "sku": "Me-CZ-W-MB",
+          "id": "4351bab1-37a2-42d6-991c-385bc07ce94c"
+        },
+        "score": 0.85,
+        "basis": "j=0.67|c=1.00"
+      },
+      {
+        "sheet": {
+          "variant": "Rouge Pink",
+          "sku": "ME-CZ-W-RP"
+        },
+        "db": {
+          "variant": "Large / Rouge Pink",
+          "sku": "Me-CZ-W-RP",
+          "id": "6b255b94-ece6-4df8-98fd-4e88c3af80b1"
+        },
+        "score": 0.85,
+        "basis": "j=0.67|c=1.00"
+      },
+      {
+        "sheet": {
+          "variant": "Lavender",
+          "sku": "ME-CZ-W-LV"
+        },
+        "db": {
+          "variant": "Large / Lavender",
+          "sku": "Me-CZ-W-L",
+          "id": "ecd82830-84fc-4ccb-a269-5f303366b3eb"
+        },
+        "score": 0.85,
+        "basis": "j=0.50|c=1.00"
+      }
+    ],
+    "coverage_sheet": 100.0,
+    "coverage_db": 100.0
+  },
+  {
+    "cls": "TOTALLY_DIFFER",
+    "sheet": "Curved Diamond Groove Copper Bottle",
+    "db": "Grooved, Hammered & Plain Copper Bottle",
+    "sheet_n": 2,
+    "db_n": 12,
+    "matched": 0,
+    "exact": 0,
+    "fuzzy": 0,
+    "new_sheet": [
+      {
+        "variant": "copper / 1L / without-brush",
+        "sku": "CB-CDG"
+      },
+      {
+        "variant": "vintage / 1L / without-brush",
+        "sku": "CB-CDG-V"
+      }
+    ],
+    "gone_db": [
+      {
+        "variant": "Without Brush / Gold / Curved",
+        "sku": "CB-CP",
+        "id": "5492f297-e60f-4f3a-b6e3-17f6cdda10c4"
+      },
+      {
+        "variant": "Without Brush / Vintage / Curved",
+        "sku": "CB-CV-B",
+        "id": "3d924677-3180-41c5-923d-2160c0e1fa15"
+      },
+      {
+        "variant": "Without Brush / Vintage / Curved",
+        "sku": "CB-CV",
+        "id": "5674619d-ee39-4167-a104-f265a9d63fe5"
+      },
+      {
+        "variant": "With Brush / Gold / Hammered",
+        "sku": "CB-CPH-B",
+        "id": "b8b31006-be0b-4963-abff-8ac7b525d6d1"
+      },
+      {
+        "variant": "Without Brush / Gold / Hammered",
+        "sku": "CB-CPH",
+        "id": "8bbbb929-8632-43f7-8cbb-96efc2fdcf5a"
+      },
+      {
+        "variant": "With Brush / Gold / Diamond Groove",
+        "sku": "CB-CDG-B",
+        "id": "0f54f08e-d179-44ce-b9b0-fe084b255a70"
+      },
+      {
+        "variant": "Without Brush / Gold / Diamond Groove",
+        "sku": "CB-CDG",
+        "id": "e82dea2f-ce96-4e23-bcb3-2ba19b3a8467"
+      },
+      {
+        "variant": "With Brush / Vintage / Diamond Groove",
+        "sku": "CB-CVDG-B",
+        "id": "638be162-5be1-4513-9859-1918784021bc"
+      },
+      {
+        "variant": "Without Brush / Vintage / Diamond Groove",
+        "sku": "CB-CVDG",
+        "id": "75391b29-cc1e-4d54-9940-a727d121fb38"
+      },
+      {
+        "variant": "Without Brush / Vintage / Curved Hammered",
+        "sku": "CB-CVH",
+        "id": "b439762b-3837-4fb4-abbb-ecaf080c535b"
+      },
+      {
+        "variant": "Curved Hammered / Vintage / With Brush",
+        "sku": "CB-CVH-B",
+        "id": "a837a965-6b01-4659-94cf-6df10bdd5297"
+      },
+      {
+        "variant": "With Brush / Gold / Curved",
+        "sku": "CB-CP-B",
+        "id": "5682cd8a-c180-4fb8-98b3-04210515e516"
+      }
+    ],
+    "matches": [],
+    "coverage_sheet": 0.0,
+    "coverage_db": 0.0
+  },
+  {
+    "cls": "FULL_MATCH_AFTER_FUZZY",
+    "sheet": "Joint / Knee Cut Bowl",
+    "db": "Joint Bowl or Knee Cut Bowl",
+    "sheet_n": 2,
+    "db_n": 2,
+    "matched": 2,
+    "exact": 2,
+    "fuzzy": 0,
+    "new_sheet": [],
+    "gone_db": [],
+    "matches": [
+      {
+        "sheet": {
+          "variant": "8 in",
+          "sku": "MI-SB-J-8"
+        },
+        "db": {
+          "variant": "8 in",
+          "sku": "MI-JB-8",
+          "id": "057743cd-3e56-4d88-aa79-2b06f5397a87"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "10in",
+          "sku": "MI-SB-J-10"
+        },
+        "db": {
+          "variant": "10 inch",
+          "sku": "MI-JB-10",
+          "id": "d60e268f-bb94-48ae-aa76-c35cefa11665"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      }
+    ],
+    "coverage_sheet": 100.0,
+    "coverage_db": 100.0
+  },
+  {
+    "cls": "TOTALLY_DIFFER",
+    "sheet": "Kenari Shaker",
+    "db": "Kenari Seed Shell Shaker with Handle",
+    "sheet_n": 1,
+    "db_n": 1,
+    "matched": 0,
+    "exact": 0,
+    "fuzzy": 0,
+    "new_sheet": [
+      {
+        "variant": "Standard",
+        "sku": "MI-KR-S"
+      }
+    ],
+    "gone_db": [
+      {
+        "variant": "",
+        "sku": "MI-KS-H",
+        "id": "206784d4-516f-40ad-bcc0-852afc6100fe"
+      }
+    ],
+    "matches": [],
+    "coverage_sheet": 0.0,
+    "coverage_db": 0.0
+  },
+  {
+    "cls": "TOTALLY_DIFFER",
+    "sheet": "Native American Flute - Triple",
+    "db": "Native American Style Flute \u2013 Handcrafted Wooden Melody Maker",
+    "sheet_n": 1,
+    "db_n": 1,
+    "matched": 0,
+    "exact": 0,
+    "fuzzy": 0,
+    "new_sheet": [
+      {
+        "variant": "Triple",
+        "sku": "MI-NF-T"
+      }
+    ],
+    "gone_db": [
+      {
+        "variant": "",
+        "sku": "MI-NM-F",
+        "id": "cc5da362-93bb-41fb-8e5c-16db1e0dd26e"
+      }
+    ],
+    "matches": [],
+    "coverage_sheet": 0.0,
+    "coverage_db": 0.0
+  },
+  {
+    "cls": "TOTALLY_DIFFER",
+    "sheet": "Ocarina - Big",
+    "db": "Ocarina Instruments",
+    "sheet_n": 1,
+    "db_n": 2,
+    "matched": 0,
+    "exact": 0,
+    "fuzzy": 0,
+    "new_sheet": [
+      {
+        "variant": "Big",
+        "sku": "MI-OC-B"
+      }
+    ],
+    "gone_db": [
+      {
+        "variant": "Oval",
+        "sku": "woo-var-48383",
+        "id": "bc22dad2-b78b-486a-b47f-dfc0ae01ec74"
+      },
+      {
+        "variant": "Banana",
+        "sku": "woo-var-48382",
+        "id": "fb6544f5-e11a-4e78-9a02-215daa53b643"
+      }
+    ],
+    "matches": [],
+    "coverage_sheet": 0.0,
+    "coverage_db": 0.0
+  },
+  {
+    "cls": "FULL_MATCH_AFTER_FUZZY",
+    "sheet": "Singing Bowls - Flower of Life with Sacred Symbols",
+    "db": "Flower of Life with Sacred Symbols Singing Bowls",
+    "sheet_n": 12,
+    "db_n": 12,
+    "matched": 12,
+    "exact": 11,
+    "fuzzy": 1,
+    "new_sheet": [],
+    "gone_db": [],
+    "matches": [
+      {
+        "sheet": {
+          "variant": "Blue / 8 in",
+          "sku": "MI-SB-FL-B-8"
+        },
+        "db": {
+          "variant": "8 in / Blue",
+          "sku": "MI-SB-RFL-B-8",
+          "id": "a703fab9-509a-4d31-aac8-50fc235b47d6"
+        },
+        "score": 0.99,
+        "basis": "slash_order"
+      },
+      {
+        "sheet": {
+          "variant": "Blue / 9 in",
+          "sku": "MI-SB-FL-B-9"
+        },
+        "db": {
+          "variant": "9 in / Blue",
+          "sku": "MI-SB-RFL-B-9",
+          "id": "97acf109-246c-4978-bde3-9bb64f5c2619"
+        },
+        "score": 0.99,
+        "basis": "slash_order"
+      },
+      {
+        "sheet": {
+          "variant": "Blue / 10.5in",
+          "sku": "MI-SB-FL-B-10.5"
+        },
+        "db": {
+          "variant": "10.5 in / Blue",
+          "sku": "MI-SB-RFL-B-10.5",
+          "id": "d2b27dcf-bbfe-43ee-be0b-f61ff548770d"
+        },
+        "score": 0.99,
+        "basis": "slash_order"
+      },
+      {
+        "sheet": {
+          "variant": "Brown / 8in",
+          "sku": "MI-SB-FL-BR-8"
+        },
+        "db": {
+          "variant": "8 in / Brown",
+          "sku": "MI-SB-RFL-BR-8",
+          "id": "6a440a57-e76a-48c1-a4fa-fe01982d2b56"
+        },
+        "score": 0.99,
+        "basis": "slash_order"
+      },
+      {
+        "sheet": {
+          "variant": "Brown / 9 in",
+          "sku": "MI-SB-FL-BR-9"
+        },
+        "db": {
+          "variant": "9 in / Brown",
+          "sku": "MI-SB-RFL-BR-9",
+          "id": "36629aef-3b94-4693-a177-96480ac4482a"
+        },
+        "score": 0.99,
+        "basis": "slash_order"
+      },
+      {
+        "sheet": {
+          "variant": "Green / 8in",
+          "sku": "MI-SB-FL-G-8"
+        },
+        "db": {
+          "variant": "8 in / Green",
+          "sku": "MI-SB-RFL-G-8",
+          "id": "89a8cbbb-e8e2-470e-a7d4-f0906493ae30"
+        },
+        "score": 0.99,
+        "basis": "slash_order"
+      },
+      {
+        "sheet": {
+          "variant": "Green / 9in",
+          "sku": "MI-SB-FL-G-9"
+        },
+        "db": {
+          "variant": "9 in / Green",
+          "sku": "MI-SB-RFL-G-9",
+          "id": "4bafdc47-71e1-4e7e-88ba-7e05559e61d6"
+        },
+        "score": 0.99,
+        "basis": "slash_order"
+      },
+      {
+        "sheet": {
+          "variant": "Green / 10.5 in",
+          "sku": "MI-SB-FL-G-10.5"
+        },
+        "db": {
+          "variant": "10.5 in / Green",
+          "sku": "MI-SB-RFL-G-10.5",
+          "id": "32df8a42-e752-4513-b13f-18c115144563"
+        },
+        "score": 0.99,
+        "basis": "slash_order"
+      },
+      {
+        "sheet": {
+          "variant": "Olive green / 8in",
+          "sku": "MI-SB-FL-O-8"
+        },
+        "db": {
+          "variant": "8 in / Olive green",
+          "sku": "MI-SB-RFL-O-8",
+          "id": "feb11b8b-14f0-4b18-af23-4944670675e2"
+        },
+        "score": 0.99,
+        "basis": "slash_order"
+      },
+      {
+        "sheet": {
+          "variant": "Olive green / 9 in",
+          "sku": "MI-SB-FL-O-9"
+        },
+        "db": {
+          "variant": "9 in / Olive green",
+          "sku": "MI-SB-RFL-O-9",
+          "id": "eec649b9-16ea-447e-871d-6eadea557627"
+        },
+        "score": 0.99,
+        "basis": "slash_order"
+      },
+      {
+        "sheet": {
+          "variant": "Olive green / 10.5in",
+          "sku": "MI-SB-FL-O-10.5"
+        },
+        "db": {
+          "variant": "10.5 in / Olive green",
+          "sku": "MI-SB-RFL-O-10.5",
+          "id": "e519caf9-64be-415c-b421-c9163d5420c7"
+        },
+        "score": 0.99,
+        "basis": "slash_order"
+      },
+      {
+        "sheet": {
+          "variant": "Brown / 10.5",
+          "sku": "MI-SB-FL-BR-10.5"
+        },
+        "db": {
+          "variant": "10.5 in / Brown",
+          "sku": "MI-SB-RFL-BR-10.5",
+          "id": "2ed623fd-365f-4d9a-956c-3b33b241e63b"
+        },
+        "score": 0.85,
+        "basis": "j=0.67|c=1.00"
+      }
+    ],
+    "coverage_sheet": 100.0,
+    "coverage_db": 100.0
+  },
+  {
+    "cls": "PARTIAL",
+    "sheet": "Tuned Pipes",
+    "db": "Tune Sound Pipe",
+    "sheet_n": 2,
+    "db_n": 4,
+    "matched": 1,
+    "exact": 1,
+    "fuzzy": 0,
+    "new_sheet": [
+      {
+        "variant": "285 Hz",
+        "sku": "MI-TP-285"
+      }
+    ],
+    "gone_db": [
+      {
+        "variant": "465 Hz",
+        "sku": "woo-var-45979",
+        "id": "de881917-7165-46c8-9c01-d4d264b021f1"
+      },
+      {
+        "variant": "639 Hz",
+        "sku": "woo-var-45980",
+        "id": "e7a59b23-0cf5-4b6c-80a8-4f0179418583"
+      },
+      {
+        "variant": "900 Hz",
+        "sku": "woo-var-45981",
+        "id": "0a8fe32c-b1b2-4d1d-a740-7ef3be18997a"
+      }
+    ],
+    "matches": [
+      {
+        "sheet": {
+          "variant": "432 Hz",
+          "sku": "MI-TP-432"
+        },
+        "db": {
+          "variant": "432 Hz",
+          "sku": "woo-var-45978",
+          "id": "7e040431-0471-4283-94a1-238d3221f595"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      }
+    ],
+    "coverage_sheet": 50.0,
+    "coverage_db": 25.0
+  },
+  {
+    "cls": "PARTIAL",
+    "sheet": "Wind Gong - Etched",
+    "db": "Etched Plain/Wind Gong",
+    "sheet_n": 64,
+    "db_n": 62,
+    "matched": 62,
+    "exact": 62,
+    "fuzzy": 0,
+    "new_sheet": [
+      {
+        "variant": "Flower of Life / 26 in",
+        "sku": "MI-GO-WI-ET-FOL-26"
+      },
+      {
+        "variant": "Flower of Life / 28 in",
+        "sku": "MI-GO-WI-ET-FOL-28"
+      }
+    ],
+    "gone_db": [],
+    "matches": [
+      {
+        "sheet": {
+          "variant": "7 Chakras / 14 in",
+          "sku": "MI-GO-WI-ET-7C-14"
+        },
+        "db": {
+          "variant": "7 Chakras / 14 in",
+          "sku": "MI-G-ET-7C-14",
+          "id": "f380b4d2-3185-425b-bb9c-2b9154afb11c"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "7 Chakras / 16 in",
+          "sku": "MI-GO-WI-ET-7C-16"
+        },
+        "db": {
+          "variant": "7 Chakras / 16 in",
+          "sku": "MI-G-ET-7C-16",
+          "id": "48997147-84f6-46f2-ba53-203e7f72a327"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "7 Chakras/18 in",
+          "sku": "MI-GO-WI-ET-7C-18"
+        },
+        "db": {
+          "variant": "7 Chakras / 18 in",
+          "sku": "MI-G-ET-7C-18",
+          "id": "7c093f89-a48f-4e16-a572-95f2db9b7a92"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "7 Chakras / 20 in",
+          "sku": "MI-GO-WI-ET-7C-20"
+        },
+        "db": {
+          "variant": "7 Chakras / 20 in",
+          "sku": "MI-G-ET-7C-20",
+          "id": "c66b4925-a0be-46d0-83ba-9364cf836295"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "7 Chakras / 22 in",
+          "sku": "MI-GO-WI-ET-7C-22"
+        },
+        "db": {
+          "variant": "7 Chakras / 22 in",
+          "sku": "MI-G-ET-7C-22",
+          "id": "1d34c3ee-dfe6-46af-bb27-2be4da427f0e"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "7 Chakras / 24 in",
+          "sku": "MI-GO-WI-ET-7C-24"
+        },
+        "db": {
+          "variant": "7 Chakras / 24 in",
+          "sku": "MI-G-ET-7C-24",
+          "id": "3b2b3668-7479-429b-85be-d9740eafbf3a"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "7 Chakras / 26 in",
+          "sku": "MI-GO-WI-ET-7C-26"
+        },
+        "db": {
+          "variant": "7 Chakras / 26 in",
+          "sku": "MI-G-ET-7C-26",
+          "id": "e9669d4e-0f5d-4f2f-b1e9-395852b8624a"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "7 Chakras / 28 in",
+          "sku": "MI-GO-WI-ET-7C-28"
+        },
+        "db": {
+          "variant": "7 Chakras / 28 in",
+          "sku": "MI-G-ET-7C-28",
+          "id": "87f73b2e-adaf-4c50-8ff4-8d23591d7587"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Flower of Life / 14 in",
+          "sku": "MI-GO-WI-ET-FOL-14"
+        },
+        "db": {
+          "variant": "Flower of Life / 14 in",
+          "sku": "MI-G-ET-FOL-14",
+          "id": "b3e5ff1f-6af2-4379-8cb8-8856dbfd5142"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Flower of Life / 16 in",
+          "sku": "MI-GO-WI-ET-FOL-16"
+        },
+        "db": {
+          "variant": "Flower of Life / 16 in",
+          "sku": "MI-G-ET-FOL-16",
+          "id": "483aab23-05a6-4836-ad9b-d293efb0e0b0"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Flower of Life/18 In",
+          "sku": "MI-GO-WI-ET-FOL-18"
+        },
+        "db": {
+          "variant": "Flower of Life / 18 in",
+          "sku": "MI-G-ET-FOL-18",
+          "id": "8b5fc80f-fd51-4f2a-b667-875b674b776f"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Flower of Life / 20 in",
+          "sku": "MI-GO-WI-ET-FOL-20"
+        },
+        "db": {
+          "variant": "Flower of Life / 20 in",
+          "sku": "MI-G-ET-FOL-20",
+          "id": "30375329-0153-47da-8995-f784c62816c2"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Flower of Life / 22 in",
+          "sku": "MI-GO-WI-ET-FOL-22"
+        },
+        "db": {
+          "variant": "Flower of Life / 22 in",
+          "sku": "MI-G-ET-FOL-22",
+          "id": "865076fa-5a7d-4d7c-9a06-7fe911ff1189"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Flower of Life / 24 in",
+          "sku": "MI-GO-WI-ET-FOL-24"
+        },
+        "db": {
+          "variant": "Flower of Life / 24 in",
+          "sku": "MI-G-ET-FOL-24",
+          "id": "1388e73b-113e-4f13-846f-29a47a8d175a"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Om / 14in",
+          "sku": "MI-GO-WI-ET-OM-14"
+        },
+        "db": {
+          "variant": "Om / 14 in",
+          "sku": "MI-G-ET-F-OM-14",
+          "id": "adb4ca27-1419-46fa-91ab-dd110b23bfcd"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Om / 16in",
+          "sku": "MI-GO-WI-ET-OM-16"
+        },
+        "db": {
+          "variant": "Om / 16 in",
+          "sku": "MI-G-ET-F-OM-16",
+          "id": "3eebec5b-e25b-4056-83d7-220cf42e7558"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Om / 18 in",
+          "sku": "MI-GO-WI-ET-OM-18"
+        },
+        "db": {
+          "variant": "Om / 18 in",
+          "sku": "MI-G-ET-F-OM-18",
+          "id": "151354d6-413a-47af-83c6-6ac8d6bac325"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Om / 20in",
+          "sku": "MI-GO-WI-ET-OM-20"
+        },
+        "db": {
+          "variant": "Om / 20 in",
+          "sku": "MI-G-ET-F-OM-20",
+          "id": "2c7d9e13-de8e-4058-86ef-19662eeb1660"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Om / 22in",
+          "sku": "MI-GO-WI-ET-OM-22"
+        },
+        "db": {
+          "variant": "Om / 22 in",
+          "sku": "MI-G-ET-F-OM-22",
+          "id": "3a742f0f-0a31-4276-865c-eea4d6cba375"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Om / 24in",
+          "sku": "MI-GO-WI-ET-OM-24"
+        },
+        "db": {
+          "variant": "Om / 24 in",
+          "sku": "MI-G-ET-F-OM-24",
+          "id": "890e7892-64b5-42e2-b292-6336e5356a1c"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Om / 26in",
+          "sku": "MI-GO-WI-ET-OM-26"
+        },
+        "db": {
+          "variant": "Om / 26 in",
+          "sku": "MI-G-ET-F-OM-26",
+          "id": "d7a6f09e-e6de-4ee1-9e5a-c58b3f5d87c1"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Om / 28in",
+          "sku": "MI-GO-WI-ET-OM-28"
+        },
+        "db": {
+          "variant": "Om / 28 in",
+          "sku": "MI-G-ET-F-OM-28",
+          "id": "0fb380b9-f69b-4dfb-a11e-6a9577fe5f8f"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Mandala / 14 in",
+          "sku": "MI-GO-WI-ET-MD-14"
+        },
+        "db": {
+          "variant": "Mandala / 14 in",
+          "sku": "MI-G-ET-M-14",
+          "id": "c1369e53-b01c-4ea8-bbcc-ff58c25251b9"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Mandala / 16 in",
+          "sku": "MI-GO-WI-ET-MD-16"
+        },
+        "db": {
+          "variant": "Mandala / 16 in",
+          "sku": "MI-G-ET-M-16",
+          "id": "8d4d5605-8c20-4fc8-8104-d4f6609e8412"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Mandala / 18in",
+          "sku": "MI-GO-WI-ET-MD-18"
+        },
+        "db": {
+          "variant": "Mandala / 18 in",
+          "sku": "MI-G-ET-M-18",
+          "id": "bc38d666-b82a-468f-a49a-d7e8c3cb3f27"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Mandala / 20 in",
+          "sku": "MI-GO-WI-ET-MD-20"
+        },
+        "db": {
+          "variant": "Mandala / 20 in",
+          "sku": "MI-G-ET-M-20",
+          "id": "3fee8901-251b-4925-bc6f-140057913af5"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Mandala / 22in",
+          "sku": "MI-GO-WI-ET-MD-22"
+        },
+        "db": {
+          "variant": "Mandala / 22 in",
+          "sku": "MI-G-ET-M-22",
+          "id": "d82c9e9d-d4fb-449c-bd6c-02488bdd7a33"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Mandala / 24in",
+          "sku": "MI-GO-WI-ET-MD-24"
+        },
+        "db": {
+          "variant": "Mandala / 24 in",
+          "sku": "MI-G-ET-M-24",
+          "id": "52efe296-aea0-4c79-899e-185460ef62aa"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Mandala / 26 in",
+          "sku": "MI-GO-WI-ET-MD-26"
+        },
+        "db": {
+          "variant": "Mandala / 26 in",
+          "sku": "MI-G-ET-M-26",
+          "id": "1b63f7ca-66ac-4979-aa37-cb99d0617e7c"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Mandala / 28in",
+          "sku": "MI-GO-WI-ET-MD-28"
+        },
+        "db": {
+          "variant": "Mandala / 28 in",
+          "sku": "MI-G-ET-M-28",
+          "id": "b1993063-152a-421d-9f4d-67e25e2a3714"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Shakti Chakra / 14 in",
+          "sku": "MI-GO-WI-ET-SC-14"
+        },
+        "db": {
+          "variant": "Shakti Chakra / 14 in",
+          "sku": "MI-G-ET-SC-14",
+          "id": "8ea54ec4-d0a6-4f1f-b938-33341bba222f"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Shakti Chakra / 16 in",
+          "sku": "MI-GO-WI-ET-SC-16"
+        },
+        "db": {
+          "variant": "Shakti Chakra / 16 in",
+          "sku": "MI-G-ET-SC-16",
+          "id": "c68136c0-4685-48ba-a1b5-87ba4b995054"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Shakti Chakra / 18in",
+          "sku": "MI-GO-WI-ET-SC-18"
+        },
+        "db": {
+          "variant": "Shakti Chakra / 18 in",
+          "sku": "MI-G-ET-SC-18",
+          "id": "b2466377-273b-4b77-82e4-dca84a2c5f66"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Shakti Chakra / 20 in",
+          "sku": "MI-GO-WI-ET-SC-20"
+        },
+        "db": {
+          "variant": "Shakti Chakra / 20 in",
+          "sku": "MI-G-ET-SC-20",
+          "id": "56083638-0379-4cea-9afa-e32ff3d9e14b"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Shakti Chakra / 22 in",
+          "sku": "MI-GO-WI-ET-SC-22"
+        },
+        "db": {
+          "variant": "Shakti Chakra / 22 in",
+          "sku": "MI-G-ET-SC-22",
+          "id": "78697620-95e7-4474-be35-3d7a01ab3214"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Shakti Chakra / 24 in",
+          "sku": "MI-GO-WI-ET-SC-24"
+        },
+        "db": {
+          "variant": "Shakti Chakra / 24 in",
+          "sku": "MI-G-ET-SC-24",
+          "id": "2a35df06-e698-49d6-b17c-4d26b71cf79f"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Shakti Chakra / 26 in",
+          "sku": "MI-GO-WI-ET-SC-26"
+        },
+        "db": {
+          "variant": "Shakti Chakra / 26 in",
+          "sku": "MI-G-ET-SC-26",
+          "id": "a149b22d-654d-442a-a627-044321bb059e"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Shakti Chakra / 28 in",
+          "sku": "MI-GO-WI-ET-SC-28"
+        },
+        "db": {
+          "variant": "Shakti Chakra / 28 in",
+          "sku": "MI-G-ET-SC-28",
+          "id": "bbc79d03-e725-4a65-b07f-7491ac631c10"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Dorje / 14 in",
+          "sku": "MI-GO-WI-ET-DJ-14"
+        },
+        "db": {
+          "variant": "Dorje / 14 in",
+          "sku": "MI-SB-H-ET-DJ-14",
+          "id": "6fb95b1f-3a2b-42d7-aa1e-f20e3fe72be1"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Dorje / 16 in",
+          "sku": "MI-GO-WI-ET-DJ-16"
+        },
+        "db": {
+          "variant": "Dorje / 16 in",
+          "sku": "MI-SB-H-ET-DJ-16",
+          "id": "97a8886b-7a70-438d-a865-3a689dcc6d74"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Dorje / 18in",
+          "sku": "MI-GO-WI-ET-DJ-18"
+        },
+        "db": {
+          "variant": "Dorje / 18 in",
+          "sku": "MI-SB-H-ET-DJ-18",
+          "id": "cbc6e02b-56e4-4a22-a87d-ccfb3c5c0eb3"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Dorje / 20 in",
+          "sku": "MI-GO-WI-ET-DJ-20"
+        },
+        "db": {
+          "variant": "Dorje / 20 in",
+          "sku": "MI-SB-H-ET-DJ-20",
+          "id": "9a3040de-a6c1-44ba-837e-9412657d9a7d"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Dorje / 22 in",
+          "sku": "MI-GO-WI-ET-DJ-22"
+        },
+        "db": {
+          "variant": "Dorje / 22 in",
+          "sku": "MI-SB-H-ET-DJ-22",
+          "id": "8353230f-2168-4729-b426-5dcd0c25ec18"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Dorje / 24 in",
+          "sku": "MI-GO-WI-ET-DJ-24"
+        },
+        "db": {
+          "variant": "Dorje / 24 in",
+          "sku": "MI-SB-H-ET-DJ-24",
+          "id": "d9658492-329d-40af-a39a-87905865fcd3"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Dorje / 26 in",
+          "sku": "MI-GO-WI-ET-DJ-26"
+        },
+        "db": {
+          "variant": "Dorje / 26 in",
+          "sku": "MI-SB-H-ET-DJ-26",
+          "id": "5662b7e8-3f7d-42c5-934a-6a9975b34444"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Dorje / 28 in",
+          "sku": "MI-GO-WI-ET-DJ-28"
+        },
+        "db": {
+          "variant": "Dorje / 28 in",
+          "sku": "MI-SB-H-ET-DJ-28",
+          "id": "5e056a5a-1465-4fa0-894b-e8422eda8821"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Tara / 14 in",
+          "sku": "MI-GO-WI-ET-TR-14"
+        },
+        "db": {
+          "variant": "Tara / 14 in",
+          "sku": "MI-SB-H-ET-TR-14",
+          "id": "48a1f827-effa-401a-be79-247be6de4d88"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Tara / 16 in",
+          "sku": "MI-GO-WI-ET-TR-16"
+        },
+        "db": {
+          "variant": "Tara / 16 in",
+          "sku": "MI-SB-H-ET-TR-16",
+          "id": "39fb0e3d-d784-48bb-8579-9a1453b26e30"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Tara / 18in",
+          "sku": "MI-GO-WI-ET-TR-18"
+        },
+        "db": {
+          "variant": "Tara / 18 in",
+          "sku": "MI-SB-H-ET-TR-18",
+          "id": "1e5bcf1f-e6c6-472b-9165-a9bbd43e7145"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Tara / 20 in",
+          "sku": "MI-GO-WI-ET-TR-20"
+        },
+        "db": {
+          "variant": "Tara / 20 in",
+          "sku": "MI-SB-H-ET-TR-20",
+          "id": "cdf85bab-c821-49c8-bc67-a01369fb1a99"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Tara / 22 in",
+          "sku": "MI-GO-WI-ET-TR-22"
+        },
+        "db": {
+          "variant": "Tara / 22 in",
+          "sku": "MI-SB-H-ET-TR-22",
+          "id": "758c471d-ede7-40ff-a487-6f4130c3c827"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Tara / 24 in",
+          "sku": "MI-GO-WI-ET-TR-24"
+        },
+        "db": {
+          "variant": "Tara / 24 in",
+          "sku": "MI-SB-H-ET-TR-24",
+          "id": "819be411-67e5-49bd-bdf8-2c843a4e3e99"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Tara / 26 in",
+          "sku": "MI-GO-WI-ET-TR-26"
+        },
+        "db": {
+          "variant": "Tara / 26 in",
+          "sku": "MI-SB-H-ET-TR-26",
+          "id": "d58ecb68-5dcd-4ca3-9a5d-7e956d205a3c"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Tara / 28 in",
+          "sku": "MI-GO-WI-ET-TR-28"
+        },
+        "db": {
+          "variant": "Tara / 28 in",
+          "sku": "MI-SB-H-ET-TR-28",
+          "id": "c450c2e4-3fac-4fd1-8d22-4df80bc30238"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Flower of Life-Center / 14in",
+          "sku": "MI-GO-WI-ET-FLC-14"
+        },
+        "db": {
+          "variant": "Flower of Life-Center / 14 in",
+          "sku": "MI-SB-H-ET-FL-14",
+          "id": "fd35c630-9a4e-481f-895a-8d571fa2e8e5"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Flower of Life-Center / 16in",
+          "sku": "MI-GO-WI-ET-FLC-16"
+        },
+        "db": {
+          "variant": "Flower of Life-Center / 16 in",
+          "sku": "MI-SB-H-ET-FL-16",
+          "id": "dc51b06f-3bde-4995-81f9-5e8af9fb9b80"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Flower of Life-Center / 18in",
+          "sku": "MI-GO-WI-ET-FLC-18"
+        },
+        "db": {
+          "variant": "Flower of Life-Center / 18 in",
+          "sku": "MI-SB-H-ET-FL-18",
+          "id": "dc046451-cac7-4ec1-9416-7250fb89f76e"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Flower of Life-Center / 20 in",
+          "sku": "MI-GO-WI-ET-FLC-20"
+        },
+        "db": {
+          "variant": "Flower of Life-Center / 20 in",
+          "sku": "MI-SB-H-ET-FL-20",
+          "id": "f05a95d5-6589-401d-9c56-a0a865f4d599"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Flower of Life-Center / 22in",
+          "sku": "MI-GO-WI-ET-FLC-22"
+        },
+        "db": {
+          "variant": "Flower of Life-Center / 22 in",
+          "sku": "MI-SB-H-ET-FL-22",
+          "id": "7af30998-e726-4cb6-b724-5dfbea21c961"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Flower of Life-Center / 24in",
+          "sku": "MI-GO-WI-ET-FLC-24"
+        },
+        "db": {
+          "variant": "Flower of Life-Center / 24 in",
+          "sku": "MI-SB-H-ET-FL-24",
+          "id": "9f2f556c-3a05-4641-90f8-a1aa5b69fb76"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Flower of Life-Center / 26 in",
+          "sku": "MI-GO-WI-ET-FLC-26"
+        },
+        "db": {
+          "variant": "Flower of Life-Center / 26 in",
+          "sku": "MI-SB-H-ET-FL-26",
+          "id": "9dd47072-92ec-401e-ac04-90d0ddea7123"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Flower of Life-Center / 28in",
+          "sku": "MI-GO-WI-ET-FLC-28"
+        },
+        "db": {
+          "variant": "Flower of Life-Center / 28 in",
+          "sku": "MI-SB-H-ET-FL-28",
+          "id": "34591089-642f-4f44-8c65-d894c50a6cb1"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      }
+    ],
+    "coverage_sheet": 96.9,
+    "coverage_db": 100.0
+  },
+  {
+    "cls": "PARTIAL",
+    "sheet": "Wooden Frog",
+    "db": "Musical Wooden Frog",
+    "sheet_n": 1,
+    "db_n": 2,
+    "matched": 1,
+    "exact": 1,
+    "fuzzy": 0,
+    "new_sheet": [],
+    "gone_db": [
+      {
+        "variant": "Large",
+        "sku": "MI-WF-L",
+        "id": "ae449268-e0de-4da6-a8f6-89d3172116d8"
+      }
+    ],
+    "matches": [
+      {
+        "sheet": {
+          "variant": "Standard",
+          "sku": "MI-WF"
+        },
+        "db": {
+          "variant": "Standard",
+          "sku": "MI-WF-S",
+          "id": "5df734a6-b394-4192-872e-e82db48a5213"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      }
+    ],
+    "coverage_sheet": 100.0,
+    "coverage_db": 50.0
+  },
+  {
+    "cls": "PARTIAL",
+    "sheet": "Yoga Mats-Lotus",
+    "db": "Lotus Yoga Mat",
+    "sheet_n": 8,
+    "db_n": 8,
+    "matched": 6,
+    "exact": 6,
+    "fuzzy": 0,
+    "new_sheet": [
+      {
+        "variant": "Moderate / Green",
+        "sku": "YO-M-CT-L-M-G"
+      },
+      {
+        "variant": "Moderate / Blue",
+        "sku": "YO-M-CT-L-M-B"
+      }
+    ],
+    "gone_db": [
+      {
+        "variant": "Moderate / Teal",
+        "sku": "YO-YMA-M-T",
+        "id": "af95ae2b-d6e9-471a-ae04-ee7d32e232f4"
+      },
+      {
+        "variant": "Moderate / Yellow",
+        "sku": "YO-YMA-M-Y",
+        "id": "416d0765-38b1-4e4f-84fe-35d775612723"
+      }
+    ],
+    "matches": [
+      {
+        "sheet": {
+          "variant": "Moderate / Orange",
+          "sku": "YO-M-CT-L-M-O"
+        },
+        "db": {
+          "variant": "Moderate / Orange",
+          "sku": "YO-YMA-M-O",
+          "id": "9950db41-6bd4-4c7d-868d-e8a18656306d"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Moderate / Pink",
+          "sku": "YO-M-CT-L-M-P"
+        },
+        "db": {
+          "variant": "Moderate / Pink",
+          "sku": "YO-YMA-M-P",
+          "id": "80562e2f-6fc2-421b-baaa-7b97bb1d26b6"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Teal / Superior",
+          "sku": "YO-M-CT-L-S-T"
+        },
+        "db": {
+          "variant": "Teal / Superior",
+          "sku": "YO-YMA-T-S",
+          "id": "858c8391-cd5c-4dbd-b775-bda237337067"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Orange / Superior",
+          "sku": "YO-M-CT-L-S-O"
+        },
+        "db": {
+          "variant": "Orange / Superior",
+          "sku": "YO-YMA-O-S",
+          "id": "307c95a3-7951-4bb9-8057-7bd7def34cb8"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Yellow / Superior",
+          "sku": "YO-M-CT-L-S-Y"
+        },
+        "db": {
+          "variant": "Yellow / Superior",
+          "sku": "YO-YMA-Y-S",
+          "id": "26cd9417-ae90-40bf-9b59-434c5567d7b2"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Pink / Superior",
+          "sku": "YO-M-CT-L-S-P"
+        },
+        "db": {
+          "variant": "Pink / Superior",
+          "sku": "YO-YMA-P-S",
+          "id": "d6e6c0b6-04e5-49ef-8ecc-05bedfc89fe4"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      }
+    ],
+    "coverage_sheet": 75.0,
+    "coverage_db": 75.0
+  },
+  {
+    "cls": "PARTIAL",
+    "sheet": "Zafu & Zabuton Combo - Plain",
+    "db": "Zafu & Zabuton Meditation Cushion Combo",
+    "sheet_n": 4,
+    "db_n": 5,
+    "matched": 4,
+    "exact": 4,
+    "fuzzy": 0,
+    "new_sheet": [],
+    "gone_db": [
+      {
+        "variant": "Grey",
+        "sku": "CO-Me-Zf-Zn-C-GY",
+        "id": "3abda024-edea-4ad8-8de3-3a46fb0be31a"
+      }
+    ],
+    "matches": [
+      {
+        "sheet": {
+          "variant": "Light Grey",
+          "sku": "ME-Z-Zn-LG"
+        },
+        "db": {
+          "variant": "Light Grey",
+          "sku": "Co-Me-C-Z-Zn-LG",
+          "id": "c8e141e7-c922-4c28-8aea-b85fa2ed20e4"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Lavender",
+          "sku": "ME-Z-Zn-LV"
+        },
+        "db": {
+          "variant": "Lavender",
+          "sku": "Co-Me-C-Z-Zn-LR",
+          "id": "19010b6c-118e-406a-a7f5-2990f69bc9c2"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Misty Blue",
+          "sku": "ME-Z-Zn-MB"
+        },
+        "db": {
+          "variant": "Misty Blue",
+          "sku": "Co-Me-C-Z-Zn-MB",
+          "id": "3db6be85-a95d-4d11-ae55-7d2e43374b88"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Navy Blue",
+          "sku": "ME-Z-Zn-NB"
+        },
+        "db": {
+          "variant": "Navy Blue",
+          "sku": "CO-Me-Zf-Zn-C-NB",
+          "id": "27b07dd2-50e8-4a64-b34b-da8521df0ef1"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      }
+    ],
+    "coverage_sheet": 100.0,
+    "coverage_db": 80.0
+  },
+  {
+    "cls": "PARTIAL",
+    "sheet": "Zafu Meditation Cushion - Plain",
+    "db": "Zafu Meditation Cushion Plain Filled with Cotton",
+    "sheet_n": 9,
+    "db_n": 10,
+    "matched": 9,
+    "exact": 9,
+    "fuzzy": 0,
+    "new_sheet": [],
+    "gone_db": [
+      {
+        "variant": "Grey",
+        "sku": "Me-Z-R-C-GY",
+        "id": "91bc607f-3ce5-48b7-b156-ba0b3eaae4a8"
+      }
+    ],
+    "matches": [
+      {
+        "sheet": {
+          "variant": "Dark Grey",
+          "sku": "ME-Z-DG"
+        },
+        "db": {
+          "variant": "Dark Grey",
+          "sku": "Me-Z-R-C-DG",
+          "id": "4354beef-6817-4c79-8cc4-ee63dd973715"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Navy Blue",
+          "sku": "ME-Z-NB"
+        },
+        "db": {
+          "variant": "Navy Blue",
+          "sku": "Me-Z-R-C-NB",
+          "id": "1d529511-aaca-4e00-902b-afc684f1aaf2"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Orange",
+          "sku": "ME-Z-O"
+        },
+        "db": {
+          "variant": "Orange",
+          "sku": "Me-Z-R-C-O",
+          "id": "0259fbec-59d9-4959-9741-0cb15ed53b16"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Rose",
+          "sku": "ME-Z-R"
+        },
+        "db": {
+          "variant": "Rose",
+          "sku": "Me-Z-R-C-RE",
+          "id": "b047a140-cd36-4b41-83ba-4853a3848998"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Sage",
+          "sku": "ME-Z-S"
+        },
+        "db": {
+          "variant": "Sage",
+          "sku": "Me-Z-R-C-SE",
+          "id": "c41e71d5-aa63-4d51-81e4-71cea2480598"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Light Grey",
+          "sku": "ME-Z-LG"
+        },
+        "db": {
+          "variant": "Light Grey",
+          "sku": "Me-Z-R-LG",
+          "id": "ecf4cddc-e55e-4b81-b2e7-8745236950be"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Lavender",
+          "sku": "ME-Z-LR"
+        },
+        "db": {
+          "variant": "Lavender",
+          "sku": "Me-Z-R-LR",
+          "id": "b9e6d623-f2d7-4c4f-bbf1-a794bc909148"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Misty Blue",
+          "sku": "ME-Z-MB"
+        },
+        "db": {
+          "variant": "Misty Blue",
+          "sku": "Me-Z-R-MB",
+          "id": "4b2741da-d1db-4e27-8619-9a1f62331f89"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      },
+      {
+        "sheet": {
+          "variant": "Magenta",
+          "sku": "ME-Z-MG"
+        },
+        "db": {
+          "variant": "Magenta",
+          "sku": "Me-Z-R-MG",
+          "id": "72c35c3b-512b-4dbd-9b34-3916beb0b48c"
+        },
+        "score": 1.0,
+        "basis": "exact_fold"
+      }
+    ],
+    "coverage_sheet": 100.0,
+    "coverage_db": 90.0
+  }
+]

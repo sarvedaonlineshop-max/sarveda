@@ -1,0 +1,3332 @@
+[
+  {
+    "name": "Crystal Bowls - Set of 7",
+    "slug": "crystal-bowls-set-of-7",
+    "productId": "80ab849d-7e51-4d62-9fbc-9e77d9448e0a",
+    "axisOrder": [
+      "dumroo-size",
+      "colour"
+    ],
+    "matches": [
+      {
+        "sheet_variant": "6-12-in-set / Frosted White",
+        "sheet_sku": "MI-CB-W-6-12",
+        "db_id": "8af7ddfe-b6a8-44e9-bd43-2a40fca52677",
+        "db_sku": "MI-CB-W-6-12-SET",
+        "db_variant": "6-12-in-set / Frosted White",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Dumroo Size",
+            "slug": "dumroo-size",
+            "value": "6-12-in-set"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Frosted White"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "8-14-in-set / Frosted White",
+        "sheet_sku": "MI-CB-W-8-14",
+        "db_id": "f955e6e0-3dd8-41b6-8c81-be2462925ab4",
+        "db_sku": "MI-CB-W-8-14-SET",
+        "db_variant": "8-14-in-set / Frosted White",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Dumroo Size",
+            "slug": "dumroo-size",
+            "value": "8-14-in-set"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Frosted White"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "6-12-in-set / Coloured",
+        "sheet_sku": "MI-CB-CL-6-12",
+        "db_id": "8f340654-9cd9-439c-a7a0-e17a0c7a4190",
+        "db_sku": "MI-CB-CL-6-12-SET",
+        "db_variant": "6-12-in-set / Chakra Coloured",
+        "score": 0.82,
+        "basis": "j=0.67",
+        "attrs": [
+          {
+            "name": "Dumroo Size",
+            "slug": "dumroo-size",
+            "value": "6-12-in-set"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Coloured"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "8-14-in-set / Coloured",
+        "sheet_sku": "MI-CB-CL-8-14",
+        "db_id": "090de018-8ed9-4458-bb54-9918aa32d4f3",
+        "db_sku": "MI-CB-CL-8-14-SET",
+        "db_variant": "8-14-in-set / Chakra Coloured",
+        "score": 0.82,
+        "basis": "j=0.67",
+        "attrs": [
+          {
+            "name": "Dumroo Size",
+            "slug": "dumroo-size",
+            "value": "8-14-in-set"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Coloured"
+          }
+        ]
+      }
+    ],
+    "draft": [],
+    "create": []
+  },
+  {
+    "name": "Dotted Singing Bowl",
+    "slug": "dotted-singing-bowl",
+    "productId": "0792cbcb-f1fc-4a41-baac-879c1555b0ed",
+    "axisOrder": [
+      "size"
+    ],
+    "matches": [
+      {
+        "sheet_variant": "4 inch",
+        "sheet_sku": "MI-SB-DT-4",
+        "db_id": "1000f801-79ac-4cef-806e-42110fa61a3d",
+        "db_sku": "MI-SB-HH-4",
+        "db_variant": "4 inch Hand Made",
+        "score": 0.875,
+        "basis": "j=0.50",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "4 inch"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "5.5 inch",
+        "sheet_sku": "MI-SB-DT-5.5",
+        "db_id": "4a2b228a-627c-4c6c-b6bc-3663bea85dc9",
+        "db_sku": "MI-SB-HH-5.5",
+        "db_variant": "5.5 inch Hand Made",
+        "score": 0.875,
+        "basis": "j=0.50",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "5.5 inch"
+          }
+        ]
+      }
+    ],
+    "draft": [
+      {
+        "id": "8f3cda8c-86a0-44e9-bb0e-b934893d6907",
+        "sku": "MI-SB-HH-D-5.5",
+        "variant": "Deep 5.5 Inch",
+        "reason": "force_list"
+      }
+    ],
+    "create": [
+      {
+        "variant": "7 inch",
+        "sku": "MI-SB-DT-7",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "7 inch"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Mini Coconut Shakers - 3 Types",
+    "slug": "mini-coconut-shakers-3-types",
+    "productId": "2d01b5db-bd27-4be7-a06d-a19bf8874bb7",
+    "axisOrder": [
+      "shape"
+    ],
+    "matches": [
+      {
+        "sheet_variant": "Round Shaped",
+        "sheet_sku": "MI-CS-RS",
+        "db_id": "4e9aeabe-3780-456a-be8c-843cbcb66c7d",
+        "db_sku": "MI-CS-R",
+        "db_variant": "Round Shaped",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Shape",
+            "slug": "shape",
+            "value": "Round Shaped"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Square Shaped",
+        "sheet_sku": "MI-CS-SS",
+        "db_id": "1433b1fa-bacb-4b38-ad53-d52940b00641",
+        "db_sku": "MI-CS-S",
+        "db_variant": "Square Shaped",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Shape",
+            "slug": "shape",
+            "value": "Square Shaped"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Eye Shaped",
+        "sheet_sku": "MI-CS-ES",
+        "db_id": "ef2a4963-e4bd-493f-8c97-25c78a1a752e",
+        "db_sku": "MI-CS-E",
+        "db_variant": "Eye Shaped",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Shape",
+            "slug": "shape",
+            "value": "Eye Shaped"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Set of 3",
+        "sheet_sku": "MI-CS-SET3",
+        "db_id": "66458626-3cd1-440b-b7ad-e423feb6e781",
+        "db_sku": "CO-MI-CS-SRE",
+        "db_variant": "All 3",
+        "score": 0.82,
+        "basis": "j=0.50",
+        "attrs": [
+          {
+            "name": "Shape",
+            "slug": "shape",
+            "value": "Set of 3"
+          }
+        ]
+      }
+    ],
+    "draft": [],
+    "create": []
+  },
+  {
+    "name": "Ocean Drums",
+    "slug": "ocean-drums",
+    "productId": "c3ba0ccc-2388-4b60-b55b-ff2cfd62891f",
+    "axisOrder": [
+      "type",
+      "size"
+    ],
+    "matches": [
+      {
+        "sheet_variant": "Plain / 30 cms",
+        "sheet_sku": "MI-OD-P-30",
+        "db_id": "99ce8fc6-27bc-48d6-8c6d-9372d16b19e2",
+        "db_sku": "MI-OD-P-30",
+        "db_variant": "Plain / 30 cms",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Plain"
+          },
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "30 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Plain / 35 cms",
+        "sheet_sku": "MI-OD-P-35",
+        "db_id": "b21847ae-c99b-4098-87d4-24cfd32d133c",
+        "db_sku": "MI-OD-P-35",
+        "db_variant": "Plain / 35 cms",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Plain"
+          },
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "35 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Plain / 40 cms",
+        "sheet_sku": "MI-OD-P-40",
+        "db_id": "bd7583e2-5f90-4272-b648-54726096a9e8",
+        "db_sku": "MI-OD-P-40",
+        "db_variant": "Plain / 40 cms",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Plain"
+          },
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "40 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Dream Catcher / 30 cms",
+        "sheet_sku": "MI-OD-D-30",
+        "db_id": "0eb543ad-2ca2-4637-8391-8b4665bd44d6",
+        "db_sku": "MI-OD-D-30",
+        "db_variant": "Dream Catcher / 30 cms",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Dream Catcher"
+          },
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "30 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Dream Catcher / 35 cms",
+        "sheet_sku": "MI-OD-D-35",
+        "db_id": "002be618-31b4-4faf-a559-12a052c3e5d0",
+        "db_sku": "MI-OD-D-35",
+        "db_variant": "Dream Catcher / 35 cms",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Dream Catcher"
+          },
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "35 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Dream Catcher / 40cm",
+        "sheet_sku": "MI-OD-D-40",
+        "db_id": "f1e9ee9d-8f90-400d-967a-6a2fd9824063",
+        "db_sku": "MI-OD-D-40",
+        "db_variant": "Dream Catcher / 40 cms",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Dream Catcher"
+          },
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "40cm"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Flower of Life / 30 cms",
+        "sheet_sku": "MI-OD-F-30",
+        "db_id": "f773226c-4aa6-40d7-a3d5-6f8641579fe4",
+        "db_sku": "MI-OD-F-30",
+        "db_variant": "Flower of Life / 30 cms",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Flower of Life"
+          },
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "30 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Flower of Life / 35 cms",
+        "sheet_sku": "MI-OD-F-35",
+        "db_id": "c8936873-f4b2-4a39-95f6-893b4b5e3ded",
+        "db_sku": "MI-OD-F-35",
+        "db_variant": "Flower of Life / 35 cms",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Flower of Life"
+          },
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "35 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Flower of Life / 40cm",
+        "sheet_sku": "MI-OD-F-40",
+        "db_id": "c92812da-be13-4e68-944e-41b6dafe4c9f",
+        "db_sku": "MI-OD-F-40",
+        "db_variant": "Flower of Life / 40 cms",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Flower of Life"
+          },
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "40cm"
+          }
+        ]
+      }
+    ],
+    "draft": [],
+    "create": []
+  },
+  {
+    "name": "Plain Yoga Mats",
+    "slug": "plain-yoga-mats",
+    "productId": "7eb85842-9a60-4290-9a84-d68e3ab771c6",
+    "axisOrder": [
+      "grip",
+      "color"
+    ],
+    "matches": [
+      {
+        "sheet_variant": "Moderate / Orange",
+        "sheet_sku": "YO-M-CT-M-O",
+        "db_id": "b3135edd-14c7-45ac-b240-b251cc9ec8ad",
+        "db_sku": "YO-PYM-M-O",
+        "db_variant": "Moderate / Orange",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Grip",
+            "slug": "grip",
+            "value": "Moderate"
+          },
+          {
+            "name": "Color",
+            "slug": "color",
+            "value": "Orange"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Moderate / Pink",
+        "sheet_sku": "YO-M-CT-M-P",
+        "db_id": "332e1547-7e8b-4a90-bec1-14f37c0e06e9",
+        "db_sku": "YO-PYM-M-P",
+        "db_variant": "Moderate / Pink",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Grip",
+            "slug": "grip",
+            "value": "Moderate"
+          },
+          {
+            "name": "Color",
+            "slug": "color",
+            "value": "Pink"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Teal / Superior",
+        "sheet_sku": "YO-M-CT-S-T",
+        "db_id": "c61f9d76-23bf-48f6-8374-1588e324c2f9",
+        "db_sku": "YO-PYM-S-T",
+        "db_variant": "Superior / Teal",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Grip",
+            "slug": "grip",
+            "value": "Teal"
+          },
+          {
+            "name": "Color",
+            "slug": "color",
+            "value": "Superior"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Orange / Superior",
+        "sheet_sku": "YO-M-CT-S-O",
+        "db_id": "f2f536fe-5da1-4bf1-8038-a6a61e31cb9b",
+        "db_sku": "YO-PYM-S-O",
+        "db_variant": "Superior / Orange",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Grip",
+            "slug": "grip",
+            "value": "Orange"
+          },
+          {
+            "name": "Color",
+            "slug": "color",
+            "value": "Superior"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Yellow / Superior",
+        "sheet_sku": "YO-M-CT-S-Y",
+        "db_id": "aa5d1dd6-2e7a-4945-b14d-8f63ed780578",
+        "db_sku": "YO-PYM-S-Y",
+        "db_variant": "Superior / Yellow",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Grip",
+            "slug": "grip",
+            "value": "Yellow"
+          },
+          {
+            "name": "Color",
+            "slug": "color",
+            "value": "Superior"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Pink / Superior",
+        "sheet_sku": "YO-M-CT-S-P",
+        "db_id": "438e50be-57dd-405c-99f4-8e322d20dde7",
+        "db_sku": "YO-PYM-S-P",
+        "db_variant": "Superior / Pink",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Grip",
+            "slug": "grip",
+            "value": "Pink"
+          },
+          {
+            "name": "Color",
+            "slug": "color",
+            "value": "Superior"
+          }
+        ]
+      }
+    ],
+    "draft": [
+      {
+        "id": "d7e3d2ab-54ff-47f0-a85a-8c6e974c5d88",
+        "sku": "YO-PYM-M-Y",
+        "variant": "Moderate / Yellow",
+        "reason": "force_list"
+      },
+      {
+        "id": "d9bb2578-c2d6-4ffc-b4cc-2e53a9e39037",
+        "sku": "Yo-PYM-M-T",
+        "variant": "Moderate / Teal",
+        "reason": "force_list"
+      }
+    ],
+    "create": [
+      {
+        "variant": "Moderate / Green",
+        "sku": "YO-M-CT-M-G",
+        "attrs": [
+          {
+            "name": "Grip",
+            "slug": "grip",
+            "value": "Moderate"
+          },
+          {
+            "name": "Color",
+            "slug": "color",
+            "value": "Green"
+          }
+        ]
+      },
+      {
+        "variant": "Moderate / Blue",
+        "sku": "YO-M-CT-M-B",
+        "attrs": [
+          {
+            "name": "Grip",
+            "slug": "grip",
+            "value": "Moderate"
+          },
+          {
+            "name": "Color",
+            "slug": "color",
+            "value": "Blue"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Pulse Tubes",
+    "slug": "pulse-tubes",
+    "productId": "584ffe9e-3fc4-4b87-b93d-30e5bc9a451c",
+    "axisOrder": [
+      "size"
+    ],
+    "matches": [
+      {
+        "sheet_variant": "Medium",
+        "sheet_sku": "MI-PT-M",
+        "db_id": "f29a37c5-742f-4f04-b280-031971df0be0",
+        "db_sku": "MI-PT-M",
+        "db_variant": "Medium",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Medium"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Small",
+        "sheet_sku": "MI-PT-S",
+        "db_id": "611ebf5f-64b7-41c2-9a62-4769868375f1",
+        "db_sku": "MI-PT-S",
+        "db_variant": "Small",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Small"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Large",
+        "sheet_sku": "MI-PT-L",
+        "db_id": "9e16fab4-d2fe-42da-a342-4b4f95424c83",
+        "db_sku": "MI-PT-B",
+        "db_variant": "Big",
+        "score": 0.96,
+        "basis": "token_sort_syn",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Large"
+          }
+        ]
+      }
+    ],
+    "draft": [],
+    "create": []
+  },
+  {
+    "name": "Rectangular Yoga Bolster",
+    "slug": "rectangular-yoga-bolster",
+    "productId": "5ad51bc1-b984-4894-b009-7ab364bb0831",
+    "axisOrder": [
+      "colour"
+    ],
+    "matches": [
+      {
+        "sheet_variant": "Dark Grey",
+        "sheet_sku": "YO-BR-RT-DG",
+        "db_id": "8d56dd8f-7a4a-4d11-ab05-f032dc0afeb2",
+        "db_sku": "Yo-BR-RE-DG",
+        "db_variant": "Dark Grey",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Dark Grey"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Navy Blue",
+        "sheet_sku": "YO-BR-RT-NB",
+        "db_id": "c4884b86-3b8a-48e6-a4ad-3661b4f967fe",
+        "db_sku": "Yo-BR-RE-NB",
+        "db_variant": "Navy Blue",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Navy Blue"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Rose",
+        "sheet_sku": "YO-BR-RT-R",
+        "db_id": "cbca20d8-6f94-406f-924b-a23dff301494",
+        "db_sku": "Yo-BR-RE-RE",
+        "db_variant": "Rose",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Rose"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Grey",
+        "sheet_sku": "YO-BR-RT-GY",
+        "db_id": "06bd5644-3d9e-4262-829e-e84bb8c4016e",
+        "db_sku": "Yo-BR-RE-LG",
+        "db_variant": "Light Grey",
+        "score": 0.82,
+        "basis": "j=0.50",
+        "attrs": [
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Grey"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Rouge Pink",
+        "sheet_sku": "YO-BR-RT-RP",
+        "db_id": "d390ae6a-7f41-4978-843b-9f17593d0306",
+        "db_sku": "Yo-BR-RE-RP",
+        "db_variant": "Rouge",
+        "score": 0.82,
+        "basis": "j=0.50",
+        "attrs": [
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Rouge Pink"
+          }
+        ]
+      }
+    ],
+    "draft": [
+      {
+        "id": "84409d69-b014-483f-84aa-91235ad0ad91",
+        "sku": "Yo-BR-RE-SE",
+        "variant": "Sage",
+        "reason": "force_list"
+      }
+    ],
+    "create": [
+      {
+        "variant": "Maroon",
+        "sku": "YO-BR-RT-M",
+        "attrs": [
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Maroon"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Shamanic Drum",
+    "slug": "shamanic-drum",
+    "productId": "c920f4d0-8c03-44f0-bea3-a05b25d295a0",
+    "axisOrder": [
+      "type",
+      "size"
+    ],
+    "matches": [
+      {
+        "sheet_variant": "Plain / 30 cms",
+        "sheet_sku": "MI-SD-P-30",
+        "db_id": "7b707a9e-ce7f-45eb-a55f-f7ffe1eeeda8",
+        "db_sku": "MI-SD-P-30",
+        "db_variant": "Plain / 30 cms",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Plain"
+          },
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "30 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Plain / 40 cms",
+        "sheet_sku": "MI-SD-P-40",
+        "db_id": "d0caf045-5ca3-4b5f-9cfa-9df07b6889d7",
+        "db_sku": "MI-SD-P-40",
+        "db_variant": "Plain / 40 cms",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Plain"
+          },
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "40 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Plain / 45 cms",
+        "sheet_sku": "MI-SD-P-45",
+        "db_id": "00026ef6-a187-4a08-bda7-530178bebe10",
+        "db_sku": "MI-SD-P-45",
+        "db_variant": "Plain / 45 cms",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Plain"
+          },
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "45 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Butterfly / 30 cms",
+        "sheet_sku": "MI-SD-B-30",
+        "db_id": "9ab8cfd1-437c-436f-93aa-e8e4a5a4d208",
+        "db_sku": "MI-SD-B-30",
+        "db_variant": "Butterfly / 30 cms",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Butterfly"
+          },
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "30 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Butterfly / 40 cms",
+        "sheet_sku": "MI-SD-B-40",
+        "db_id": "8d65659f-1834-43bf-95df-8ae3419ad8d2",
+        "db_sku": "MI-SD-B-40",
+        "db_variant": "Butterfly / 40 cms",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Butterfly"
+          },
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "40 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Butterfly / 45 cms",
+        "sheet_sku": "MI-SD-B-45",
+        "db_id": "a884ea47-7e0c-4843-bea8-e90d3e1d7ce7",
+        "db_sku": "MI-SD-B-45",
+        "db_variant": "Butterfly / 45 cms",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Butterfly"
+          },
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "45 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Tree of Life / 30 cms",
+        "sheet_sku": "MI-SD-T-30",
+        "db_id": "f20f3f69-df19-4073-b482-81421d314d34",
+        "db_sku": "MI-SD-30-T",
+        "db_variant": "Tree of Life / 30 cms",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Tree of Life"
+          },
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "30 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Tree of Life / 40cm",
+        "sheet_sku": "MI-SD-T-40",
+        "db_id": "38f2db40-c9f1-49ae-acce-3de43f91f0ed",
+        "db_sku": "MI-SD-40-T",
+        "db_variant": "Tree of Life / 40 cms",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Tree of Life"
+          },
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "40cm"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Tree of Life / 45cm",
+        "sheet_sku": "MI-SD-T-45",
+        "db_id": "9543d430-697d-47af-b083-523451d62e61",
+        "db_sku": "MI-SD-45-T",
+        "db_variant": "Tree of Life / 45 cms",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Tree of Life"
+          },
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "45cm"
+          }
+        ]
+      }
+    ],
+    "draft": [],
+    "create": []
+  },
+  {
+    "name": "Singing Bowl Bags",
+    "slug": "singing-bowl-bags",
+    "productId": "65ed6adf-38b4-486a-91f2-dec3710ae565",
+    "axisOrder": [
+      "type"
+    ],
+    "matches": [
+      {
+        "sheet_variant": "Small",
+        "sheet_sku": "MI-SB-BG-S",
+        "db_id": "1373c6dc-d4cf-4445-8dd2-1cb73df7663a",
+        "db_sku": "MI-SB-Bag-S",
+        "db_variant": "Small",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Small"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Large",
+        "sheet_sku": "MI-SB-BG-L",
+        "db_id": "d2c607e5-941e-41ab-b972-896a18aa70a4",
+        "db_sku": "MI-SB-Bag-L",
+        "db_variant": "Large",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Large"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Medium",
+        "sheet_sku": "MI-SB-BG-M",
+        "db_id": "f47007ae-58a0-4eea-9dc4-83e46b836a3c",
+        "db_sku": "MI-SB-Bag-M",
+        "db_variant": "Standard",
+        "score": 0.96,
+        "basis": "token_sort_syn",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Medium"
+          }
+        ]
+      }
+    ],
+    "draft": [],
+    "create": []
+  },
+  {
+    "name": "Singing Bowls Silk Ring Cushion Accessories",
+    "slug": "singing-bowls-silk-ring-cushion-accessories",
+    "productId": "8973a710-7663-4804-bdbb-34737729e1f3",
+    "axisOrder": [
+      "size"
+    ],
+    "matches": [
+      {
+        "sheet_variant": "16 cms / Blue",
+        "sheet_sku": "MI-SBC-B-16",
+        "db_id": "9bd9affd-5fc1-4b62-b8fa-f4fa1bd0e37c",
+        "db_sku": "MI-SB-C-B-16",
+        "db_variant": "16 cms / Blue",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "16 cms"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Blue"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Combo of 3",
+        "sheet_sku": "MI-SBC-SET3",
+        "db_id": "13198cd9-a201-4af4-89c6-97d7f86f70a7",
+        "db_sku": "MI-SB-C-CO-3",
+        "db_variant": "Combo of 3",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Combo of 3"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Combo of 5",
+        "sheet_sku": "MI-SBC-SET5",
+        "db_id": "c10f7747-09c4-47a4-b41d-8702118f4945",
+        "db_sku": "MI-SB-C-CO-5",
+        "db_variant": "Combo of 5",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Combo of 5"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Combo of 7",
+        "sheet_sku": "MI-SBC-SET7",
+        "db_id": "744f6150-69a7-43d9-af8e-3c6b4465530f",
+        "db_sku": "MI-SB-C-CO-7",
+        "db_variant": "Combo of 7",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Combo of 7"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Green / 10 cms",
+        "sheet_sku": "MI-SBC-G-10",
+        "db_id": "bfc6eeb4-986c-483f-8e78-136ab2476906",
+        "db_sku": "MI-SB-C-G-12",
+        "db_variant": "10 cms / Green",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Green"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "10 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Blue / 10 cms",
+        "sheet_sku": "MI-SBC-B-10",
+        "db_id": "8aa1ae67-d312-475e-a1dd-afb38d9eaed0",
+        "db_sku": "MI-SB-C-B-10",
+        "db_variant": "10 cms / Blue",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Blue"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "10 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Navy Blue / 10cm",
+        "sheet_sku": "MI-SBC-NB-10",
+        "db_id": "82e5677d-1bf3-4f5b-a65e-62d4c187268e",
+        "db_sku": "MI-SB-C-NB-10",
+        "db_variant": "10 cms / Navy Blue",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Navy Blue"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "10cm"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Black / 10cm",
+        "sheet_sku": "MI-SBC-BK-10",
+        "db_id": "8f332966-351a-446d-9e51-9597fbbec9ef",
+        "db_sku": "MI-SB-C-BK-10",
+        "db_variant": "10 cms / Black",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Black"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "10cm"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Red / 10cm",
+        "sheet_sku": "MI-SBC-R-10",
+        "db_id": "070ef4e6-e50a-4d0b-8c82-91e192b0c4e8",
+        "db_sku": "MI-SB-C-R-10",
+        "db_variant": "10 cms / Red",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Red"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "10cm"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Brown / 10cm",
+        "sheet_sku": "MI-SBC-BR-10",
+        "db_id": "77b40bdf-f308-4a3d-a6f8-6e64035238a7",
+        "db_sku": "MI-SB-C-Bn-10",
+        "db_variant": "10 cms / Brown",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Brown"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "10cm"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Orange / 10cm",
+        "sheet_sku": "MI-SBC-O-10",
+        "db_id": "001fc7e3-3fd0-4a4e-ac09-a249552cabe1",
+        "db_sku": "MI-SB-C-O-10",
+        "db_variant": "10 cms / Orange",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Orange"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "10cm"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Yellow / 10cm",
+        "sheet_sku": "MI-SBC-Y-10",
+        "db_id": "a2dd0c76-a71c-4f8f-a9ab-0ba340e0147f",
+        "db_sku": "MI-SB-C-Y-10",
+        "db_variant": "10 cms / Yellow",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Yellow"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "10cm"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Pink / 10cm",
+        "sheet_sku": "MI-SBC-PK-10",
+        "db_id": "f31422f7-aeab-4596-860f-39c6ccef2abf",
+        "db_sku": "MI-SB-C-PK-10",
+        "db_variant": "10 cms / Pink",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Pink"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "10cm"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Blue / 12 cms",
+        "sheet_sku": "MI-SBC-B-12",
+        "db_id": "39b18b41-5d67-42aa-b5ee-0075379510b3",
+        "db_sku": "MI-SB-C-B-12",
+        "db_variant": "12 cms / Blue",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Blue"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "12 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Black / 12 cms",
+        "sheet_sku": "MI-SBC-BK-12",
+        "db_id": "cf32490a-ea58-4485-b73c-4882d4660b7a",
+        "db_sku": "MI-SB-C-BK-12",
+        "db_variant": "12 cms / Black",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Black"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "12 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Brown / 12 cms",
+        "sheet_sku": "MI-SBC-BR-12",
+        "db_id": "c102af02-b9ae-4bf2-93b4-fd059144300f",
+        "db_sku": "MI-SB-C-Bn-12",
+        "db_variant": "12 cms / Brown",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Brown"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "12 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Red / 12 cms",
+        "sheet_sku": "MI-SBC-R-12",
+        "db_id": "cec722f6-32e1-484f-9cfe-613534cc5cf6",
+        "db_sku": "MI-SB-C-R-12",
+        "db_variant": "12 cms / Red",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Red"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "12 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Pink / 12 cms",
+        "sheet_sku": "MI-SBC-PK-12",
+        "db_id": "e1120215-5871-440b-851c-4c2194ea4f7f",
+        "db_sku": "MI-SB-C-PK-12",
+        "db_variant": "12 cms / Pink",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Pink"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "12 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Orange / 12 cms",
+        "sheet_sku": "MI-SBC-O-12",
+        "db_id": "96b9e949-8860-4b2a-8289-cfc5f3b81315",
+        "db_sku": "MI-SB-C-O-12",
+        "db_variant": "12 cms / Orange",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Orange"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "12 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Yellow / 12 cms",
+        "sheet_sku": "MI-SBC-Y-12",
+        "db_id": "e3d17ffb-bff4-4200-89e7-16509bd70e2e",
+        "db_sku": "MI-SB-C-Y-12",
+        "db_variant": "12 cms / Yellow",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Yellow"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "12 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Navy Blue / 12 cms",
+        "sheet_sku": "MI-SBC-NB-12",
+        "db_id": "1ee09ea8-24d1-4bbe-99a2-101577f47b75",
+        "db_sku": "MI-SB-C-NB-12",
+        "db_variant": "12 cms / Navy Blue",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Navy Blue"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "12 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Blue / 14 cms",
+        "sheet_sku": "MI-SBC-B-14",
+        "db_id": "5abd9fe9-2f0c-4dca-b3a2-b1ec8b014530",
+        "db_sku": "MI-SB-C-B-14",
+        "db_variant": "14 cms / Blue",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Blue"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "14 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Green / 14cm",
+        "sheet_sku": "MI-SBC-G-14",
+        "db_id": "042369bb-c409-4295-b310-ab2b8689d823",
+        "db_sku": "MI-SB-C-G-14",
+        "db_variant": "14 cms / Green",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Green"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "14cm"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Navy Blue / 14 cms",
+        "sheet_sku": "MI-SBC-NB-14",
+        "db_id": "3cc62875-7f29-4ccc-ae66-018b41acd66a",
+        "db_sku": "MI-SB-C-NB-14",
+        "db_variant": "14 cms / Navy Blue",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Navy Blue"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "14 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Orange / 14 cms",
+        "sheet_sku": "MI-SBC-O-14",
+        "db_id": "e12b9474-3ac0-45a7-bb65-de8c584d7f29",
+        "db_sku": "MI-SB-C-O-14",
+        "db_variant": "14 cms / Orange",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Orange"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "14 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Black / 14 cms",
+        "sheet_sku": "MI-SBC-BK-14",
+        "db_id": "26a86a1f-1b31-4aa7-b4fb-e8323668e3c1",
+        "db_sku": "MI-SB-C-BK-14",
+        "db_variant": "14 cms / Black",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Black"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "14 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Red / 14 cms",
+        "sheet_sku": "MI-SBC-R-14",
+        "db_id": "3136262b-4648-406b-8017-73d3fe7f6a29",
+        "db_sku": "MI-SB-C-R-14",
+        "db_variant": "14 cms / Red",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Red"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "14 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Brown / 14 cms",
+        "sheet_sku": "MI-SBC-BR-14",
+        "db_id": "f6f2a625-9597-4e59-a45b-924143d6e51d",
+        "db_sku": "MI-SB-C-Bn-14",
+        "db_variant": "14 cms / Brown",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Brown"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "14 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Pink / 14 cms",
+        "sheet_sku": "MI-SBC-PK-14",
+        "db_id": "2a159bba-7827-4702-975d-9ce05d300097",
+        "db_sku": "MI-SB-C-PK-14",
+        "db_variant": "14 cms / Pink",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Pink"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "14 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Yellow / 14 cms",
+        "sheet_sku": "MI-SBC-Y-14",
+        "db_id": "0aee0915-39b0-43c8-b56e-3b71ba7ac559",
+        "db_sku": "MI-SB-C-Y-14",
+        "db_variant": "14 cms / Yellow",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Yellow"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "14 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Black / 16 cms",
+        "sheet_sku": "MI-SBC-BK-16",
+        "db_id": "5aea80f7-bc0b-4dac-b62f-a9f02030084c",
+        "db_sku": "MI-SB-C-BK-16",
+        "db_variant": "16 cms / Black",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Black"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "16 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Brown / 16 cms",
+        "sheet_sku": "MI-SBC-BR-16",
+        "db_id": "3c8f8a46-ba92-4d4d-b9cb-3a1e1c8d3018",
+        "db_sku": "MI-SB-C-Bn-16",
+        "db_variant": "16 cms / Brown",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Brown"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "16 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Orange / 16 cms",
+        "sheet_sku": "MI-SBC-O-16",
+        "db_id": "24d228f8-12cc-4f74-bd2d-f25ea4534653",
+        "db_sku": "MI-SB-C-O-16",
+        "db_variant": "16 cms / Orange",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Orange"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "16 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Navy Blue / 16cms",
+        "sheet_sku": "MI-SBC-NB-16",
+        "db_id": "09b58240-e85f-4fd9-9fff-301a2c8c2309",
+        "db_sku": "MI-SB-C-NB-16",
+        "db_variant": "16 cms / Navy Blue",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Navy Blue"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "16cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Green /16cms",
+        "sheet_sku": "MI-SBC-G-16",
+        "db_id": "921a9c2b-1962-4b2a-b84a-6b61bdc3faf5",
+        "db_sku": "MI-SB-C-G-16",
+        "db_variant": "16 cms / Green",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Green"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "16cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Red / 16 cms",
+        "sheet_sku": "MI-SBC-R-16",
+        "db_id": "9d036861-2f97-4b81-b3c0-3f65a05811b1",
+        "db_sku": "MI-SB-C-R-16",
+        "db_variant": "16 cms / Red",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Red"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "16 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Yellow / 16 cms",
+        "sheet_sku": "MI-SBC-Y-16",
+        "db_id": "c0262382-7f73-40ab-86a9-94d233b9bf2a",
+        "db_sku": "MI-SB-C-Y-16",
+        "db_variant": "16 cms / Yellow",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Yellow"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "16 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Pink / 16cms",
+        "sheet_sku": "MI-SBC-PK-16",
+        "db_id": "6ca3eb5b-98e2-44f9-bf16-5b4bea03728d",
+        "db_sku": "MI-SB-C-PK-16",
+        "db_variant": "16 cms / Pink",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Pink"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "16cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Blue / 18cms",
+        "sheet_sku": "MI-SBC-B-18",
+        "db_id": "86668a2b-37bb-4bdc-9c95-6ae5f1f80633",
+        "db_sku": "MI-SB-C-B-18",
+        "db_variant": "18 cms / Blue",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Blue"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "18cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Black / 18 cms",
+        "sheet_sku": "MI-SBC-BK-18",
+        "db_id": "acf92edf-f5cd-4561-b5e3-236105f2b93b",
+        "db_sku": "MI-SB-C-BK-18",
+        "db_variant": "18 cms / Black",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Black"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "18 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Green / 18cms",
+        "sheet_sku": "MI-SBC-G-18",
+        "db_id": "569893ba-9598-4127-b18a-39741102a87e",
+        "db_sku": "MI-SB-C-G-18",
+        "db_variant": "18 cms / Green",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Green"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "18cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Brown / 18 cms",
+        "sheet_sku": "MI-SBC-BR-18",
+        "db_id": "a1581a4e-626d-42bf-8b46-a3abdf2fadfe",
+        "db_sku": "MI-SB-C-Bn-18",
+        "db_variant": "18 cms / Brown",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Brown"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "18 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Navy Blue / 18cms",
+        "sheet_sku": "MI-SBC-NB-18",
+        "db_id": "8da9c3c2-fac3-46cd-8f8f-9c6ee540aaba",
+        "db_sku": "MI-SB-C-NB-18",
+        "db_variant": "18 cms / Navy Blue",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Navy Blue"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "18cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Yellow / 18 cms",
+        "sheet_sku": "MI-SBC-Y-18",
+        "db_id": "d85a94ea-2bff-4c72-8674-b0eb0daf719c",
+        "db_sku": "MI-SB-C-Y-18",
+        "db_variant": "18 cms / Yellow",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Yellow"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "18 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Pink / 18cms",
+        "sheet_sku": "MI-SBC-PK-18",
+        "db_id": "6c0b4b35-fd27-4880-950e-9f24e801db7a",
+        "db_sku": "MI-SB-C-PK-18",
+        "db_variant": "18 cms / Pink",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Pink"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "18cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Red / 18 cms",
+        "sheet_sku": "MI-SBC-R-18",
+        "db_id": "e8512235-3faa-40d5-a958-f4804cfe3255",
+        "db_sku": "MI-SB-C-R-18",
+        "db_variant": "18 cms / Red",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Red"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "18 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Orange / 18 cms",
+        "sheet_sku": "MI-SBC-O-18",
+        "db_id": "c2071eb1-2e3b-449c-8f58-be710441bf68",
+        "db_sku": "MI-SB-C-O-18",
+        "db_variant": "18 cms / Orange",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Orange"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "18 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Brown / 20 cms",
+        "sheet_sku": "MI-SBC-BR-20",
+        "db_id": "c38974b8-e29f-4c1c-9e44-a6e7b25109e3",
+        "db_sku": "MI-SB-C-Bn-20",
+        "db_variant": "20 cms / Brown",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Brown"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "20 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Navy Blue / 20 cms",
+        "sheet_sku": "MI-SBC-NB-20",
+        "db_id": "3db4057a-5e03-4459-98cc-eedf209f5a56",
+        "db_sku": "MI-SB-C-NB-20",
+        "db_variant": "20 cms / Navy Blue",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Navy Blue"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "20 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Black / 20 cms",
+        "sheet_sku": "MI-SBC-BK-20",
+        "db_id": "fd503485-5567-4ffd-9839-efb092529ed9",
+        "db_sku": "MI-SB-C-BK-20",
+        "db_variant": "20 cms / Black",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Black"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "20 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Orange / 20 cms",
+        "sheet_sku": "MI-SBC-O-20",
+        "db_id": "01d648c7-6625-4df1-9c9a-d30594bd1669",
+        "db_sku": "MI-SB-C-O-20",
+        "db_variant": "20 cms / Orange",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Orange"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "20 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Yellow / 20 cms",
+        "sheet_sku": "MI-SBC-Y-20",
+        "db_id": "7a599603-0f43-40ef-b767-054ad58091ae",
+        "db_sku": "MI-SB-C-Y-20",
+        "db_variant": "20 cms / Yellow",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Yellow"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "20 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Green / 20 cms",
+        "sheet_sku": "MI-SBC-G-20",
+        "db_id": "039d3cb0-da71-4c8f-aa44-8cee45e797ff",
+        "db_sku": "MI-SB-C-G-20",
+        "db_variant": "20 cms / Green",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Green"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "20 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Red / 20 cms",
+        "sheet_sku": "MI-SBC-R-20",
+        "db_id": "f1829609-cba8-44d6-a30c-73217335e058",
+        "db_sku": "MI-SB-C-R-20",
+        "db_variant": "20 cms / Red",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Red"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "20 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Pink / 20 cms",
+        "sheet_sku": "MI-SBC-PK-20",
+        "db_id": "49904f1a-9c3e-4ca7-92f7-3e52c9273a15",
+        "db_sku": "MI-SB-C-PK-20",
+        "db_variant": "20 cms / Pink",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Pink"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "20 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Blue / 22 cms",
+        "sheet_sku": "MI-SBC-B-22",
+        "db_id": "a316e91d-5a0f-4a95-882b-ec86375d2832",
+        "db_sku": "MI-SB-C-B-22",
+        "db_variant": "22 cms / Blue",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Blue"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "22 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Black / 22 cms",
+        "sheet_sku": "MI-SBC-BK-22",
+        "db_id": "89e2a1d7-5ad7-429a-9fb2-44bfce3c475b",
+        "db_sku": "MI-SB-C-BK-22",
+        "db_variant": "22 cms / Black",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Black"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "22 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Brown / 22 cms",
+        "sheet_sku": "MI-SBC-BR-22",
+        "db_id": "206e507e-0c20-4174-9ea4-a78bd1354159",
+        "db_sku": "MI-SB-C-Bn-22",
+        "db_variant": "22 cms / Brown",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Brown"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "22 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Green / 22 cms",
+        "sheet_sku": "MI-SBC-G-22",
+        "db_id": "485e9a51-ace2-4ed8-bfb4-fc66a5e4854b",
+        "db_sku": "MI-SB-C-G-22",
+        "db_variant": "22 cms / Green",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Green"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "22 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Navy Blue / 22 cms",
+        "sheet_sku": "MI-SBC-NB-22",
+        "db_id": "18f70c74-8321-4743-aea9-580692be20f2",
+        "db_sku": "MI-SB-C-NB-22",
+        "db_variant": "22 cms / Navy Blue",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Navy Blue"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "22 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Orange / 22 cms",
+        "sheet_sku": "MI-SBC-O-22",
+        "db_id": "95e0c305-e930-4484-9553-0e8086bc2510",
+        "db_sku": "MI-SB-C-O-22",
+        "db_variant": "22 cms / Orange",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Orange"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "22 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Pink / 22 cms",
+        "sheet_sku": "MI-SBC-PK-22",
+        "db_id": "05fde967-5895-41bd-953d-c440f8fb3c95",
+        "db_sku": "MI-SB-C-PK-22",
+        "db_variant": "22 cms / Pink",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Pink"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "22 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Red / 22 cms",
+        "sheet_sku": "MI-SBC-R-22",
+        "db_id": "66470188-b709-49c4-bf90-2dc97516c138",
+        "db_sku": "MI-SB-C-R-22",
+        "db_variant": "22 cms / Red",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Red"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "22 cms"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Yellow / 22 cms",
+        "sheet_sku": "MI-SBC-Y-22",
+        "db_id": "d743417e-e74c-4be0-b071-f582eae76e50",
+        "db_sku": "MI-SB-C-Y-22",
+        "db_variant": "22 cms / Yellow",
+        "score": 0.99,
+        "basis": "slash_order",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Yellow"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "22 cms"
+          }
+        ]
+      }
+    ],
+    "draft": [
+      {
+        "id": "0a4dd507-b734-4ce1-8045-7ac69ab69741",
+        "sku": "MI-SB-C-G-10",
+        "variant": "10 cms / Green",
+        "reason": "unmatched_db_extra"
+      },
+      {
+        "id": "72e5c4f8-d1ac-411c-8716-9dc8e31c904d",
+        "sku": "MI-SB-C-B-20",
+        "variant": "20 cms / Blue",
+        "reason": "unmatched_db_extra"
+      }
+    ],
+    "create": [
+      {
+        "variant": "Green / 12cm",
+        "sku": "MI-SBC-G-12",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Green / 12cm"
+          }
+        ]
+      },
+      {
+        "variant": "Blue / 18cms",
+        "sku": "MI-SBC-B-20",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Blue / 18cms"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Thunder Tube - Basic Edition",
+    "slug": "thunder-tube-basic-edition",
+    "productId": "657cc982-075e-4066-a023-57c49f737640",
+    "axisOrder": [
+      "size"
+    ],
+    "matches": [
+      {
+        "sheet_variant": "20cms /Small",
+        "sheet_sku": "MI-TT-S",
+        "db_id": "3b18cba4-825d-4113-ae06-e00fbf863feb",
+        "db_sku": "MI-TTBE-20",
+        "db_variant": "20cms",
+        "score": 0.95,
+        "basis": "j=0.67",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "20cms /Small"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "25cms /Medium",
+        "sheet_sku": "MI-TT-M",
+        "db_id": "e4860997-b2da-48ed-8b03-a9e64452d66a",
+        "db_sku": "MI-TTBE-25",
+        "db_variant": "25cms",
+        "score": 0.95,
+        "basis": "j=0.67",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "25cms /Medium"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "30cms /Large",
+        "sheet_sku": "MI-TT-L",
+        "db_id": "f22fc70e-dd79-47c6-b6f0-fa0c01209474",
+        "db_sku": "MI-TTBE-30",
+        "db_variant": "30cms",
+        "score": 0.95,
+        "basis": "j=0.67",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "30cms /Large"
+          }
+        ]
+      }
+    ],
+    "draft": [],
+    "create": []
+  },
+  {
+    "name": "Tibetan Buddhist Bell",
+    "slug": "tibetan-buddhist-bell",
+    "productId": "93317129-46b8-4d61-a482-9228852027ce",
+    "axisOrder": [
+      "size"
+    ],
+    "matches": [
+      {
+        "sheet_variant": "Small",
+        "sheet_sku": "MI-BB-S",
+        "db_id": "e4c388a6-fd57-4e89-9b33-8b72f5c9d2e1",
+        "db_sku": "MI-BB-2",
+        "db_variant": "Small",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Small"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Large",
+        "sheet_sku": "MI-BB-L",
+        "db_id": "fa4a16de-9d52-4f0d-b49d-7a99c4af102f",
+        "db_sku": "MI-BB-3.5",
+        "db_variant": "Large",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Large"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Extra Large",
+        "sheet_sku": "MI-BB-XL",
+        "db_id": "e18e2452-8fce-4b9f-8f11-bdc894b9b69a",
+        "db_sku": "MI-TBB-E",
+        "db_variant": "Extra Large",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Extra Large"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Medium",
+        "sheet_sku": "MI-BB-M",
+        "db_id": "bc6a2d1b-a49f-4b87-ba2a-a251c924953c",
+        "db_sku": "MI-BB-3",
+        "db_variant": "Standard",
+        "score": 0.96,
+        "basis": "token_sort_syn",
+        "attrs": [
+          {
+            "name": "Size",
+            "slug": "size",
+            "value": "Medium"
+          }
+        ]
+      }
+    ],
+    "draft": [],
+    "create": []
+  },
+  {
+    "name": "Tuning Fork - Single Weighted & Unweighted",
+    "slug": "tuning-fork-single-weighted-unweighted",
+    "productId": "e2d559dd-93aa-4fa3-ac93-facf7107733d",
+    "axisOrder": [
+      "type",
+      "hertz"
+    ],
+    "matches": [
+      {
+        "sheet_variant": "Weighted / 64 Hz",
+        "sheet_sku": "MI-TF-W-64",
+        "db_id": "701dcd7f-7c2c-4096-98d4-808f864681c4",
+        "db_sku": "MI-TFSW-W-64",
+        "db_variant": "Weighted / 64 Hz",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Weighted"
+          },
+          {
+            "name": "Hertz",
+            "slug": "hertz",
+            "value": "64 Hz"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Weighted / 68.05 Hz",
+        "sheet_sku": "MI-TF-W-6805",
+        "db_id": "5edc8654-df73-4636-a030-4893d609d68c",
+        "db_sku": "MI-TF-W-68",
+        "db_variant": "Weighted / 68.05 Hz",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Weighted"
+          },
+          {
+            "name": "Hertz",
+            "slug": "hertz",
+            "value": "68.05 Hz"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Weighted / 93.96 Hz",
+        "sheet_sku": "MI-TF-W-9396",
+        "db_id": "f399bde5-0921-4b26-bc52-ad915dd52350",
+        "db_sku": "MI-TFSW-W-9396",
+        "db_variant": "Weighted / 93.96 Hz",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Weighted"
+          },
+          {
+            "name": "Hertz",
+            "slug": "hertz",
+            "value": "93.96 Hz"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Weighted / 128 Hz",
+        "sheet_sku": "MI-TF-W-128",
+        "db_id": "6218bd14-049a-411b-8415-ab911c6c2f0a",
+        "db_sku": "MI-TF-W-128",
+        "db_variant": "Weighted / 128 Hz",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Weighted"
+          },
+          {
+            "name": "Hertz",
+            "slug": "hertz",
+            "value": "128 Hz"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Weighted / 136.10 Hz",
+        "sheet_sku": "MI-TF-W-13610",
+        "db_id": "fa587f27-9ba6-43b7-a629-e0b8d05e2fdc",
+        "db_sku": "MI-TFSW-W-13610",
+        "db_variant": "Weighted / 136.10 Hz",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Weighted"
+          },
+          {
+            "name": "Hertz",
+            "slug": "hertz",
+            "value": "136.10 Hz"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Weighted / 256 Hz",
+        "sheet_sku": "MI-TF-W-256",
+        "db_id": "69399503-a56c-4f97-9853-c0b3fffb6ef2",
+        "db_sku": "MI-TF-W-256",
+        "db_variant": "Weighted / 256 Hz",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Weighted"
+          },
+          {
+            "name": "Hertz",
+            "slug": "hertz",
+            "value": "256 Hz"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Weighted / 432 Hz",
+        "sheet_sku": "MI-TF-W-432",
+        "db_id": "8edcc2b4-f89f-415d-bc43-c311e2432e50",
+        "db_sku": "MI-TF-W-432",
+        "db_variant": "Weighted / 432 Hz",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Weighted"
+          },
+          {
+            "name": "Hertz",
+            "slug": "hertz",
+            "value": "432 Hz"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Weighted / 440 Hz",
+        "sheet_sku": "MI-TF-W-440",
+        "db_id": "13a65b85-ce1d-4218-9a25-0ca55968aae4",
+        "db_sku": "MI-TFSW-W-440",
+        "db_variant": "Weighted / 440 Hz",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Weighted"
+          },
+          {
+            "name": "Hertz",
+            "slug": "hertz",
+            "value": "440 Hz"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Weighted / 528 Hz",
+        "sheet_sku": "MI-TF-W-528",
+        "db_id": "dca4f2b2-2ee5-40b9-9c02-c408ddc609d3",
+        "db_sku": "MI-TFSW-W-528",
+        "db_variant": "Weighted / 528 Hz",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Weighted"
+          },
+          {
+            "name": "Hertz",
+            "slug": "hertz",
+            "value": "528 Hz"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Unweighted / 64 Hz",
+        "sheet_sku": "MI-TF-UW-64",
+        "db_id": "788a5411-7ca0-4b3b-ad7a-99e8650b307a",
+        "db_sku": "MI-TFSW-U-64",
+        "db_variant": "Unweighted / 64 Hz",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Unweighted"
+          },
+          {
+            "name": "Hertz",
+            "slug": "hertz",
+            "value": "64 Hz"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Unweighted / 68.05 Hz",
+        "sheet_sku": "MI-TF-UW-6805",
+        "db_id": "3ed3d887-97ed-4861-b8e0-2d826a5665ca",
+        "db_sku": "MI-TFSW-U-6805",
+        "db_variant": "Unweighted / 68.05 Hz",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Unweighted"
+          },
+          {
+            "name": "Hertz",
+            "slug": "hertz",
+            "value": "68.05 Hz"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Unweighted / 93.96 Hz",
+        "sheet_sku": "MI-TF-UW-9396",
+        "db_id": "e580a43e-6aea-4dc4-a3b1-a143bf46753e",
+        "db_sku": "MI-TFSW-U-9396",
+        "db_variant": "Unweighted / 93.96 Hz",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Unweighted"
+          },
+          {
+            "name": "Hertz",
+            "slug": "hertz",
+            "value": "93.96 Hz"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Unweighted / 128 Hz",
+        "sheet_sku": "MI-TF-UW-128",
+        "db_id": "9a0bd538-cb38-4025-a04c-89dc761e6e41",
+        "db_sku": "MI-TFSW-U-128",
+        "db_variant": "Unweighted / 128 Hz",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Unweighted"
+          },
+          {
+            "name": "Hertz",
+            "slug": "hertz",
+            "value": "128 Hz"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Unweighted / 136.10 Hz",
+        "sheet_sku": "MI-TF-UW-13610",
+        "db_id": "fa6d14e5-cd2f-4f86-8a62-cd1973f6caab",
+        "db_sku": "MI-TFSW-U-13610",
+        "db_variant": "Unweighted / 136.10 Hz",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Unweighted"
+          },
+          {
+            "name": "Hertz",
+            "slug": "hertz",
+            "value": "136.10 Hz"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Unweighted / 256 Hz",
+        "sheet_sku": "MI-TF-UW-256",
+        "db_id": "8e75adbb-d7e8-4a7e-8535-993ed8c613d6",
+        "db_sku": "MI-TFSW-U-256",
+        "db_variant": "Unweighted / 256 Hz",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Unweighted"
+          },
+          {
+            "name": "Hertz",
+            "slug": "hertz",
+            "value": "256 Hz"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Unweighted / 432 Hz",
+        "sheet_sku": "MI-TF-UW-432",
+        "db_id": "06085613-b74d-40cc-a4fe-460a2a495fbe",
+        "db_sku": "MI-TFSW-U-432",
+        "db_variant": "Unweighted / 432 Hz",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Unweighted"
+          },
+          {
+            "name": "Hertz",
+            "slug": "hertz",
+            "value": "432 Hz"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Unweighted /440Hz",
+        "sheet_sku": "MI-TF-UW-440",
+        "db_id": "6cfa4da5-8a65-4a81-a2e9-a5c0b3687572",
+        "db_sku": "MI-TFSW-U-440",
+        "db_variant": "Unweighted / 440 Hz",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Unweighted"
+          },
+          {
+            "name": "Hertz",
+            "slug": "hertz",
+            "value": "440Hz"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Unweighted / 528 Hz",
+        "sheet_sku": "MI-TF-UW-528",
+        "db_id": "0b3d8358-36ac-434c-88cf-29fac42bc887",
+        "db_sku": "MI-TFSW-U-528",
+        "db_variant": "Unweighted / 528 Hz",
+        "score": 1.0,
+        "basis": "exact_fold",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Unweighted"
+          },
+          {
+            "name": "Hertz",
+            "slug": "hertz",
+            "value": "528 Hz"
+          }
+        ]
+      }
+    ],
+    "draft": [],
+    "create": []
+  },
+  {
+    "name": "Wooden Mallets for Singing Bowls",
+    "slug": "wooden-mallets-for-singing-bowls",
+    "productId": "11562f3e-c0f5-40f1-8f5d-a7b72ed23192",
+    "axisOrder": [
+      "type",
+      "colour"
+    ],
+    "matches": [
+      {
+        "sheet_variant": "Red / Long Firm-Standard Striker",
+        "sheet_sku": "MI-SBM-S-LF-ST-R",
+        "db_id": "a03fcc23-6c81-4b39-9d66-01e3140f1a99",
+        "db_sku": "MI-SB-M-L-F-ST",
+        "db_variant": "Long Firm-Standard / Red",
+        "score": 0.863,
+        "basis": "j=0.75",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Red"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Long Firm-Standard Striker"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Red / Long Firm-Small Striker",
+        "sheet_sku": "MI-SBM-S-LF-S-R",
+        "db_id": "a4e249e8-f55c-4d42-988f-b0914346a34c",
+        "db_sku": "MI-SB-M-L-F-S",
+        "db_variant": "Long Firm-Small / Red",
+        "score": 0.863,
+        "basis": "j=0.75",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Red"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Long Firm-Small Striker"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "White / Long Firm-Standard Striker",
+        "sheet_sku": "MI-SBM-S-LF-ST-W",
+        "db_id": "f780b829-d806-49d0-8190-445937f7b859",
+        "db_sku": "MI-SB-M-W-L-F-ST",
+        "db_variant": "Long Firm-Standard / White",
+        "score": 0.863,
+        "basis": "j=0.75",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "White"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Long Firm-Standard Striker"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "White / Long Firm-Small Striker",
+        "sheet_sku": "MI-SBM-S-LF-S-W",
+        "db_id": "a1328eea-85af-4277-ac60-1c4661c14c51",
+        "db_sku": "MI-SB-M-W-L-F-S",
+        "db_variant": "Long Firm-Small / White",
+        "score": 0.863,
+        "basis": "j=0.75",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "White"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Long Firm-Small Striker"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Red / Long Soft-13\" Striker",
+        "sheet_sku": "MI-SBM-S-LS-R-13",
+        "db_id": "91699d81-4b6d-446e-871f-d900819d5fb8",
+        "db_sku": "MI-SB-M-L-R-13",
+        "db_variant": "Long Soft-13\" / Red",
+        "score": 0.863,
+        "basis": "j=0.75",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Red"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Long Soft-13\" Striker"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Red / Long Soft-11\" Striker",
+        "sheet_sku": "MI-SBM-S-LS-R-11",
+        "db_id": "078efa9a-da37-487a-aa3d-5fea52e04390",
+        "db_sku": "MI-SB-M-L-R-11",
+        "db_variant": "Long Soft-11\" / Red",
+        "score": 0.863,
+        "basis": "j=0.75",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Red"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Long Soft-11\" Striker"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Red / Long Soft-9\" Striker",
+        "sheet_sku": "MI-SBM-S-LS-R-9",
+        "db_id": "22c21023-ccd2-4ff9-99d3-2b0a1551e1ff",
+        "db_sku": "MI-SB-M-L-R-9",
+        "db_variant": "Long Soft-9\" / Red",
+        "score": 0.863,
+        "basis": "j=0.75",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Red"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Long Soft-9\" Striker"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "White / Long Soft-13\" Striker",
+        "sheet_sku": "MI-SBM-S-LS-W-13",
+        "db_id": "407e6fc3-5514-4503-893e-dbe528f7064e",
+        "db_sku": "MI-SB-M-L-W-13",
+        "db_variant": "Long Soft-13\" / White",
+        "score": 0.863,
+        "basis": "j=0.75",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "White"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Long Soft-13\" Striker"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "White / Long Soft-11\" Striker",
+        "sheet_sku": "MI-SBM-S-LS-W-11",
+        "db_id": "b46b24c4-264c-47f4-9dd4-2d59a7af47fc",
+        "db_sku": "MI-SB-M-L-W-11",
+        "db_variant": "Long Soft-11\" / White",
+        "score": 0.863,
+        "basis": "j=0.75",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "White"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Long Soft-11\" Striker"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "White / Long Soft-9\" Striker",
+        "sheet_sku": "MI-SBM-S-LS-W-9",
+        "db_id": "342ec635-0c74-4dce-a962-77adef766544",
+        "db_sku": "MI-SB-M-L-W-9",
+        "db_variant": "Long Soft-9\" / White",
+        "score": 0.863,
+        "basis": "j=0.75",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "White"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Long Soft-9\" Striker"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Black / Thick Wide Rimmer",
+        "sheet_sku": "MI-SBM-R-TW-B",
+        "db_id": "8352912d-f9ab-45b2-abb3-6008a6b48d82",
+        "db_sku": "MI-SB-M-TW-B",
+        "db_variant": "Thick Wide / Black",
+        "score": 0.863,
+        "basis": "j=0.75",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Black"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Thick Wide Rimmer"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Red / Thick Wide Rimmer",
+        "sheet_sku": "MI-SBM-R-TW-R",
+        "db_id": "752a291d-7143-46a3-8878-a89d5e643d60",
+        "db_sku": "MI-SB-M-TW-R",
+        "db_variant": "Thick Wide / Red",
+        "score": 0.863,
+        "basis": "j=0.75",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Red"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Thick Wide Rimmer"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Black / Standard Wide Rimmer",
+        "sheet_sku": "MI-SBM-R-SW-B",
+        "db_id": "54a48536-9ba0-4441-964e-7da6f80e9006",
+        "db_sku": "MI-SB-M-ST-B",
+        "db_variant": "Standard Wide / Black",
+        "score": 0.863,
+        "basis": "j=0.75",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Black"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Standard Wide Rimmer"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Red / Standard Wide Rimmer",
+        "sheet_sku": "MI-SBM-R-SW-R",
+        "db_id": "a21a73db-0c4b-4717-8cd3-8f6e20e8dbda",
+        "db_sku": "MI-SB-M-ST-R",
+        "db_variant": "Standard Wide / Red",
+        "score": 0.863,
+        "basis": "j=0.75",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Red"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Standard Wide Rimmer"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Black / Curved Rimmer",
+        "sheet_sku": "MI-SBM-R-C-B",
+        "db_id": "0686a63b-e266-46b0-951b-99b05cba98eb",
+        "db_sku": "MI-SB-M-B-C",
+        "db_variant": "Curved / Black",
+        "score": 0.82,
+        "basis": "j=0.67",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Black"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Curved Rimmer"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Black / Straight Rimmer",
+        "sheet_sku": "MI-SBM-R-ST-B",
+        "db_id": "9c8f219c-4a61-487c-b47a-aa9c4fc3e192",
+        "db_sku": "MI-SB-M-B-S",
+        "db_variant": "Straight / Black",
+        "score": 0.82,
+        "basis": "j=0.67",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Black"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Straight Rimmer"
+          }
+        ]
+      },
+      {
+        "sheet_variant": "Red / Straight Rimmer",
+        "sheet_sku": "MI-SBM-R-ST-R",
+        "db_id": "6a2066ab-6313-4f88-8e8b-a2bfb11985ef",
+        "db_sku": "MI-SB-M-R-S",
+        "db_variant": "Straight / Red",
+        "score": 0.82,
+        "basis": "j=0.67",
+        "attrs": [
+          {
+            "name": "Type",
+            "slug": "type",
+            "value": "Red"
+          },
+          {
+            "name": "Colour",
+            "slug": "colour",
+            "value": "Straight Rimmer"
+          }
+        ]
+      }
+    ],
+    "draft": [],
+    "create": []
+  }
+]

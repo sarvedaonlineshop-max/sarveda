@@ -1,0 +1,772 @@
+[
+  {
+    "productId": "2dc04de0-f820-4b4b-9803-04e2a087e616",
+    "dbName": "7 Chakra Morchang Set",
+    "sheetName": "7 Chakra Morchang",
+    "dbSlug": "7-chakra-morchang-set",
+    "sheetSlug": "7-chakra-morchang",
+    "rename": true,
+    "skuUpdates": [
+      {
+        "variantId": "c05389be-13a9-4173-829a-1e37cc8429cb",
+        "from": "MI-MO-C",
+        "to": "MI-MO-7C-C",
+        "variant": "C Tune"
+      },
+      {
+        "variantId": "2d9b1358-c49a-4222-b31c-e0045b46f771",
+        "from": "MI-MO-D",
+        "to": "MI-MO-7C-D",
+        "variant": "D Tune"
+      },
+      {
+        "variantId": "7da1537b-8314-4261-b88d-6faccb0011be",
+        "from": "MI-MO-E",
+        "to": "MI-MO-7C-E",
+        "variant": "E Tune"
+      },
+      {
+        "variantId": "408db62c-be7d-4ffa-a606-a4a8bd3b53d9",
+        "from": "MI-MO-F",
+        "to": "MI-MO-7C-F",
+        "variant": "F Tune"
+      },
+      {
+        "variantId": "7774013b-81d8-4c24-88b9-21d4b5ca0a73",
+        "from": "MI-MO-G",
+        "to": "MI-MO-7C-G",
+        "variant": "G Tune"
+      },
+      {
+        "variantId": "e611ae26-a719-4900-8c4a-7f6061f5baaa",
+        "from": "MI-MO-A",
+        "to": "MI-MO-7C-A",
+        "variant": "A Tune"
+      },
+      {
+        "variantId": "be239ede-794e-4ef7-acf0-57bc9b455aeb",
+        "from": "MI-MO-B",
+        "to": "MI-MO-7C-B",
+        "variant": "B Tune"
+      },
+      {
+        "variantId": "5209cf4a-8130-49a2-8213-63f8407567f4",
+        "from": "MI-MO-ST",
+        "to": "MI-MO-7C-SET7",
+        "variant": "Full Set"
+      }
+    ],
+    "alreadySameSku": 0
+  },
+  {
+    "productId": "27fa1d13-23d8-457c-9939-d9aad361f769",
+    "dbName": "7-Key Kalimba Made from Coconut Shell - Painted & Plain",
+    "sheetName": "7-Key Kalimba Made from Coconut Shell",
+    "dbSlug": "7-key-kalimba-made-from-coconut-shell-painted-plain",
+    "sheetSlug": "7-key-kalimba-made-from-coconut-shell",
+    "rename": true,
+    "skuUpdates": [],
+    "alreadySameSku": 2
+  },
+  {
+    "productId": "4cee3d7b-ce9f-485a-a1a0-f3efc01f2ff1",
+    "dbName": "8 Keys Metallophone - with 1\u201d & 1.5\u201d key-widths",
+    "sheetName": "8 Keys Metallophone",
+    "dbSlug": "8-keys-metallophone-with-1-1-5-key-widths",
+    "sheetSlug": "8-keys-metallophone",
+    "rename": true,
+    "skuUpdates": [
+      {
+        "variantId": "1a421244-69bc-410c-a789-ded5edde3c23",
+        "from": "MI-XP-SP-1-8",
+        "to": "MI-XY-MT-8-1",
+        "variant": "1 inch"
+      },
+      {
+        "variantId": "91992e58-9e25-4264-9cb3-6ed8b1a52cd3",
+        "from": "MI-XP-SP-1.5-8",
+        "to": "MI-XY-MT-8-1.5",
+        "variant": "1.5 inch"
+      }
+    ],
+    "alreadySameSku": 0
+  },
+  {
+    "productId": "b80a6a66-9deb-41fb-9c69-b13d8a713be4",
+    "dbName": "Asalato/Aslatau or Kashaka Shaker",
+    "sheetName": "Asalato / Kashaka Shaker",
+    "dbSlug": "asalato-aslatau-or-kashaka-shaker",
+    "sheetSlug": "asalato-kashaka-shaker",
+    "rename": true,
+    "skuUpdates": [],
+    "alreadySameSku": 4
+  },
+  {
+    "productId": "e73f7d05-aa92-480d-8fe7-8805b112f1e7",
+    "dbName": "Tam-Tam/Chau Gong",
+    "sheetName": "Chau Gongs",
+    "dbSlug": "tam-tam-chau-gong",
+    "sheetSlug": "chau-gongs",
+    "rename": true,
+    "skuUpdates": [
+      {
+        "variantId": "175b7f65-869f-47ed-a925-940f656f84a4",
+        "from": "MI-CG-18",
+        "to": "MI-GO-CH-18",
+        "variant": "18 in"
+      },
+      {
+        "variantId": "8a48f0b7-2ad2-45e9-b881-b5406bb80eba",
+        "from": "MI-CG-2",
+        "to": "MI-GO-CH-20",
+        "variant": "20 in"
+      },
+      {
+        "variantId": "645e8ca3-327e-42fd-8efb-a514dc7d2845",
+        "from": "MI-CG-22",
+        "to": "MI-GO-CH-22",
+        "variant": "22 in"
+      },
+      {
+        "variantId": "b82560fa-cd23-4412-addc-014ea506be21",
+        "from": "MI-CG-24",
+        "to": "MI-GO-CH-24",
+        "variant": "24 in"
+      },
+      {
+        "variantId": "7196f47d-7c93-4a5e-91a8-dc5937de7874",
+        "from": "MI-CG-28",
+        "to": "MI-GO-CH-28",
+        "variant": "28 in"
+      },
+      {
+        "variantId": "320f2786-5401-4c98-9448-90364736c66d",
+        "from": "MI-CG-32",
+        "to": "MI-GO-CH-32",
+        "variant": "32 in"
+      },
+      {
+        "variantId": "656dde0a-2b10-4a6d-a20a-ec24a2401906",
+        "from": "MI-CG-36",
+        "to": "MI-GO-CH-36",
+        "variant": "36 in"
+      }
+    ],
+    "alreadySameSku": 0
+  },
+  {
+    "productId": "7e7e66a5-001b-403e-a6e7-36ce5ad86c5d",
+    "dbName": "Classic Morchang Set",
+    "sheetName": "Classic Morchang",
+    "dbSlug": "classic-morchang-set",
+    "sheetSlug": "classic-morchang",
+    "rename": true,
+    "skuUpdates": [
+      {
+        "variantId": "6b923a99-7380-4084-9e7a-d45c03df4266",
+        "from": "MI-CM-S",
+        "to": "MI-MO-CL-S",
+        "variant": "Sharp"
+      },
+      {
+        "variantId": "ac6ebdd1-130d-480e-8872-3fd473a82b52",
+        "from": "MI-CM-M",
+        "to": "MI-MO-CL-M",
+        "variant": "Middle"
+      },
+      {
+        "variantId": "358c8533-abfb-4985-b74e-bb4d4ba5713b",
+        "from": "MI-CM-B",
+        "to": "MI-MO-CL-B",
+        "variant": "Bass"
+      },
+      {
+        "variantId": "a723ec67-d6d7-4bee-ad7f-b7993723e1a1",
+        "from": "MI-CM-ST",
+        "to": "MI-MO-CL-SET3",
+        "variant": "Full Set"
+      }
+    ],
+    "alreadySameSku": 0
+  },
+  {
+    "productId": "7f9bea9e-de6b-44f5-9666-f2b16eaef7a1",
+    "dbName": "Crescent Zafu Cushion - Compact",
+    "sheetName": "Crescent Zafu Cushion - Compact -Buck wheat",
+    "dbSlug": "crescent-zafu-cushion-compact",
+    "sheetSlug": "crescent-zafu-cushion-compact-buck-wheat",
+    "rename": true,
+    "skuUpdates": [
+      {
+        "variantId": "499b3abd-109f-4875-b617-c88f3f1dcafc",
+        "from": "Me-CZ-C-DG",
+        "to": "ME-CZ-C-DG",
+        "variant": "Dark Grey"
+      },
+      {
+        "variantId": "fc9c6cb6-dbcb-4aa1-a4b9-72b165b61d13",
+        "from": "Me-CZ-C-MB",
+        "to": "ME-CZ-C-MB",
+        "variant": "Misty Blue"
+      },
+      {
+        "variantId": "c9a57049-ffa3-444e-a228-8e0c07b670dd",
+        "from": "Me-CZ-C-L",
+        "to": "ME-CZ-C-LV",
+        "variant": "Lavender"
+      },
+      {
+        "variantId": "8936bbb8-bb81-4173-80c0-83b495ee5fed",
+        "from": "Me-CZ-C-S",
+        "to": "ME-CZ-C-S",
+        "variant": "Sage"
+      },
+      {
+        "variantId": "66609905-d363-41aa-b3a0-58721f180853",
+        "from": "Me-CZ-C-RE",
+        "to": "ME-CZ-C-R",
+        "variant": "Rose"
+      }
+    ],
+    "alreadySameSku": 0
+  },
+  {
+    "productId": "264acde7-5f9a-4a8c-b9ff-218160deec81",
+    "dbName": "Crystal Bowls",
+    "sheetName": "Crystal Bowls - Frosted white",
+    "dbSlug": "crystal-bowls",
+    "sheetSlug": "crystal-bowls-frosted-white",
+    "rename": true,
+    "skuUpdates": [],
+    "alreadySameSku": 9
+  },
+  {
+    "productId": "050ec2b4-004f-47dd-b827-32a8fbcbce54",
+    "dbName": "Dumru/Dumroo Indian Handmade Percussion Instrument",
+    "sheetName": "Dumru/Dumroo",
+    "dbSlug": "dumru-dumroo-indian-handmade-percussion-instrument",
+    "sheetSlug": "dumru-dumroo",
+    "rename": true,
+    "skuUpdates": [
+      {
+        "variantId": "d2f78109-4a97-43bc-9cbe-220ccc6a9dc5",
+        "from": "MI-D-P",
+        "to": "MI-DM",
+        "variant": "Plain"
+      },
+      {
+        "variantId": "1531542a-7580-4a98-be07-3be8b145aefc",
+        "from": "MI-D-DP",
+        "to": "MI-DM-DP",
+        "variant": "Dot Painted"
+      }
+    ],
+    "alreadySameSku": 0
+  },
+  {
+    "productId": "1bc221bd-8906-4d1a-b8a5-ae5762478b7e",
+    "dbName": "Eye Shaped Natural Lavender Scented Eye Pillows",
+    "sheetName": "Eye Shaped - Eye Pillows",
+    "dbSlug": "eye-shaped-natural-lavender-scented-eye-pillows",
+    "sheetSlug": "eye-shaped-eye-pillows",
+    "rename": true,
+    "skuUpdates": [
+      {
+        "variantId": "3098c929-57cb-4ee0-8d69-8cbbbabdd02f",
+        "from": "Yo-P-E-RE-1",
+        "to": "YO-EP-R",
+        "variant": "Rose"
+      },
+      {
+        "variantId": "999c24a7-fd9b-418d-81f9-dee2c1847e37",
+        "from": "Yo-P-E-DG-1",
+        "to": "YO-EP-DG",
+        "variant": "Dark Grey"
+      },
+      {
+        "variantId": "98e4bd55-8fad-4a05-aa25-b171bc66feed",
+        "from": "Yo-P-E-GY-1",
+        "to": "YO-EP-GY",
+        "variant": "Grey"
+      },
+      {
+        "variantId": "600ed6e4-8f93-47a1-baa3-f51a5b82ddd7",
+        "from": "Yo-P-E-NB-1",
+        "to": "YO-EP-NB",
+        "variant": "Navy Blue"
+      },
+      {
+        "variantId": "b2747564-6beb-47b8-9c66-49f678b0b9e3",
+        "from": "Yo-P-E-SE-1",
+        "to": "YO-EP-S",
+        "variant": "Sage"
+      }
+    ],
+    "alreadySameSku": 0
+  },
+  {
+    "productId": "d5cf5319-90ed-4c18-82a2-92741fdf7ee4",
+    "dbName": "Shruthi Thali/Gong Plates",
+    "sheetName": "Gong Plates/Shruti Plates -Plain",
+    "dbSlug": "shruthi-thali-gong-plates",
+    "sheetSlug": "gong-plates-shruti-plates-plain",
+    "rename": true,
+    "skuUpdates": [
+      {
+        "variantId": "e585b044-81b0-4e53-8004-a1608cf8acb2",
+        "from": "MI-STGP-BP",
+        "to": "MI-GP-B",
+        "variant": "B Plate"
+      },
+      {
+        "variantId": "eeefd65d-85c7-423d-a4fa-86f5add2b250",
+        "from": "MI-STGP-AP",
+        "to": "MI-GP-A",
+        "variant": "A Plate"
+      },
+      {
+        "variantId": "bde7506e-ffd7-4643-88a6-b94e9f99044b",
+        "from": "MI-STGP-GP",
+        "to": "MI-GP-G",
+        "variant": "G Plate"
+      },
+      {
+        "variantId": "8b117de4-1407-4a6e-9f79-26e7546ac2fd",
+        "from": "MI-STGP-FP",
+        "to": "MI-GP-F",
+        "variant": "F Plate"
+      },
+      {
+        "variantId": "9c75e205-31ba-45bb-a34e-14d04ad7bffa",
+        "from": "MI-STGP-EP",
+        "to": "MI-GP-E",
+        "variant": "E Plate"
+      },
+      {
+        "variantId": "2123a7a1-d864-4397-89bd-9745bf365293",
+        "from": "MI-STGP-DP",
+        "to": "MI-GP-D",
+        "variant": "D Plate"
+      },
+      {
+        "variantId": "7b823d15-4156-4cce-aa21-c1e039affb3f",
+        "from": "MI-STGP-CP",
+        "to": "MI-GP-C",
+        "variant": "C Plate"
+      },
+      {
+        "variantId": "518ee300-03c5-4d5e-a985-8a8badd7af5a",
+        "from": "MI-STGP-FU",
+        "to": "MI-GP-SET7",
+        "variant": "Full Set"
+      }
+    ],
+    "alreadySameSku": 0
+  },
+  {
+    "productId": "426112a1-1cea-4bf8-8bd3-7acc564ec874",
+    "dbName": "9/10 Notes Handpan Drum - Handcrafted to Precision",
+    "sheetName": "Handpan",
+    "dbSlug": "9-10-notes-handpan-drum-handcrafted-to-precision",
+    "sheetSlug": "handpan",
+    "rename": true,
+    "skuUpdates": [
+      {
+        "variantId": "3e81b752-acdc-4b7e-a94a-399dd7237f03",
+        "from": "MI-D-HP-DC-M9",
+        "to": "MI-HP-DC-9",
+        "variant": "D Celtic Minor 9"
+      },
+      {
+        "variantId": "6e9d5444-093c-4f0b-8ca5-cd90974c7a20",
+        "from": "MI-D-HP-DK-10",
+        "to": "MI-HP-DK-10",
+        "variant": "D Kurd 10"
+      }
+    ],
+    "alreadySameSku": 0
+  },
+  {
+    "productId": "6672f836-9450-4a30-80a8-791066ec9c2e",
+    "dbName": "Kenari Chimes - Small & Large",
+    "sheetName": "Kenari Chimes",
+    "dbSlug": "kenari-chimes-small-large",
+    "sheetSlug": "kenari-chimes",
+    "rename": true,
+    "skuUpdates": [
+      {
+        "variantId": "4271d6d9-bb55-4fdd-b900-f00e3cec0c9c",
+        "from": "MI-KC-S",
+        "to": "MI-KR-C-S",
+        "variant": "Small"
+      },
+      {
+        "variantId": "380348fe-ca21-4c9f-8d36-ea5b93826845",
+        "from": "MI-KC-L",
+        "to": "MI-KR-C-L",
+        "variant": "Large"
+      }
+    ],
+    "alreadySameSku": 0
+  },
+  {
+    "productId": "53f939bf-f0d1-4ceb-8c0d-dc815ec62309",
+    "dbName": "Shamanic Drum Bags/Ocean Drum Bags",
+    "sheetName": "Shamanic Drum/Ocean Drum Bags",
+    "dbSlug": "shamanic-drum-bags-ocean-drum-bags",
+    "sheetSlug": "shamanic-drum-ocean-drum-bags",
+    "rename": true,
+    "skuUpdates": [
+      {
+        "variantId": "8ad45538-783a-4a0b-bc79-c194b629aab0",
+        "from": "MI-SDBO-S",
+        "to": "MI-BG-SD-S",
+        "variant": "Small"
+      },
+      {
+        "variantId": "18fbc7d8-6d5a-4135-9af5-fdf96bcd22d9",
+        "from": "MI-SDBO-M",
+        "to": "MI-BG-SD-M",
+        "variant": "Medium"
+      },
+      {
+        "variantId": "58237b6f-ca2c-4d63-9466-f19724ebfe64",
+        "from": "MI-SDBO-L",
+        "to": "MI-BG-SD-L",
+        "variant": "Large"
+      }
+    ],
+    "alreadySameSku": 0
+  },
+  {
+    "productId": "b92d8c5b-d6a3-4820-9301-6b173c9b91c6",
+    "dbName": "Shankh/Conch",
+    "sheetName": "Standard Shankh",
+    "dbSlug": "shankh-conch",
+    "sheetSlug": "standard-shankh",
+    "rename": true,
+    "skuUpdates": [
+      {
+        "variantId": "b65b51af-cda2-491c-b6a0-9ac5bea2ea9a",
+        "from": "MI-SH-S",
+        "to": "MI-SK-ST-S",
+        "variant": "Small"
+      },
+      {
+        "variantId": "9ec79a70-9556-41c0-af79-793eacfb80fd",
+        "from": "MI-SH-M",
+        "to": "MI-SK-ST-M",
+        "variant": "Medium"
+      },
+      {
+        "variantId": "0ed6f5ab-cce2-4d70-8fad-1733abcac1be",
+        "from": "MI-SH-L",
+        "to": "MI-SK-ST-L",
+        "variant": "Large"
+      }
+    ],
+    "alreadySameSku": 0
+  },
+  {
+    "productId": "423a3ce7-30b0-4b1b-a434-77941461906b",
+    "dbName": "Sunshine within Me",
+    "sheetName": "Sunshine within Me (Artistic Design)",
+    "dbSlug": "sunshine-within-me",
+    "sheetSlug": "sunshine-within-me-artistic-design",
+    "rename": true,
+    "skuUpdates": [
+      {
+        "variantId": "1fc75d0a-19e9-4e39-a51d-fcf187a12a6b",
+        "from": "SWM-B-1",
+        "to": "CB-AD-SS-B",
+        "variant": "with-brush / 1L"
+      },
+      {
+        "variantId": "cd0ebef0-26d0-4d79-8f5e-c4900bdc19ae",
+        "from": "SWM-N-1",
+        "to": "CB-AD-SS",
+        "variant": "without-brush / 1L"
+      },
+      {
+        "variantId": "22284be9-7649-4af2-a620-fb06101bbc68",
+        "from": "SWM-N-.5",
+        "to": "CB-AD-SS-.5",
+        "variant": "without-brush / 500ml"
+      },
+      {
+        "variantId": "253af1ec-3006-4478-baad-49d55966d4e9",
+        "from": "SWM-B-.5",
+        "to": "CB-AD-SS-.5-B",
+        "variant": "with-brush / 500ml"
+      }
+    ],
+    "alreadySameSku": 0
+  },
+  {
+    "productId": "cf037f79-26fa-400d-8ffd-047df5b8f5f8",
+    "dbName": "Copper Tongue Cleaner",
+    "sheetName": "Tounge Cleaner",
+    "dbSlug": "copper-tongue-cleaner",
+    "sheetSlug": "tounge-cleaner",
+    "rename": true,
+    "skuUpdates": [],
+    "alreadySameSku": 3
+  },
+  {
+    "productId": "48eb33d2-93a7-479b-b305-8bbf7ad4289e",
+    "dbName": "Handmade Universal Bowl for Sound Healing",
+    "sheetName": "Universal Bowl",
+    "dbSlug": "handmade-universal-bowl-for-sound-healing",
+    "sheetSlug": "universal-bowl",
+    "rename": true,
+    "skuUpdates": [
+      {
+        "variantId": "e446846a-ad22-422a-aa47-0285904fd37c",
+        "from": "MI-SB-HM-UN",
+        "to": "MI-SB-UB",
+        "variant": "Standard"
+      }
+    ],
+    "alreadySameSku": 0
+  },
+  {
+    "productId": "a1d5d588-ebda-47bf-8ce3-ec6498dd7352",
+    "dbName": "WIND GONG PLAIN",
+    "sheetName": "Wind Gong - Plain",
+    "dbSlug": "wind-gong-plain",
+    "sheetSlug": "wind-gong-plain",
+    "rename": true,
+    "skuUpdates": [
+      {
+        "variantId": "f7768e54-1d67-474f-b8c2-09b52168b6f0",
+        "from": "MI-WGP-14",
+        "to": "MI-GO-WI-14",
+        "variant": "14 INCh"
+      },
+      {
+        "variantId": "ce0c820b-a107-4b68-b703-2e0199aeef6c",
+        "from": "MI-WGP-16",
+        "to": "MI-GO-WI-16",
+        "variant": "16INCH"
+      },
+      {
+        "variantId": "e756d3f1-826d-47cf-b9d1-f3328e300283",
+        "from": "MI-WGP-18",
+        "to": "MI-GO-WI-18",
+        "variant": "18INCH"
+      },
+      {
+        "variantId": "39c36fe9-0590-4b1b-8808-e050f50b952e",
+        "from": "MI-WGP-20",
+        "to": "MI-GO-WI-20",
+        "variant": "20INCH"
+      },
+      {
+        "variantId": "c0da346d-7fd0-4b93-8fa7-add5e953fdcd",
+        "from": "MI-WGP-22",
+        "to": "MI-GO-WI-22",
+        "variant": "22INCH"
+      },
+      {
+        "variantId": "09c6c4f5-c4c6-40a4-9d70-316d062ec199",
+        "from": "MI-WGP-24",
+        "to": "MI-GO-WI-24",
+        "variant": "24INCH"
+      },
+      {
+        "variantId": "9b30db93-05cc-4b58-9964-2531443df9d4",
+        "from": "MI-WGP-26",
+        "to": "MI-GO-WI-26",
+        "variant": "26INCH"
+      },
+      {
+        "variantId": "e37921b4-df77-46fb-a427-55b988b5ff79",
+        "from": "MI-WGP-28",
+        "to": "MI-GO-WI-28",
+        "variant": "28INCH"
+      }
+    ],
+    "alreadySameSku": 0
+  },
+  {
+    "productId": "c862c85c-6b43-404e-b45e-644bbcc013fc",
+    "dbName": "Yoga Belt/Strap for Sturdy Grip",
+    "sheetName": "Yoga Belt/Strap",
+    "dbSlug": "yoga-belt-strap-for-sturdy-grip",
+    "sheetSlug": "yoga-belt-strap",
+    "rename": true,
+    "skuUpdates": [
+      {
+        "variantId": "fa55b157-b1e5-46e1-9189-11c712a2d7db",
+        "from": "Yo-BL-D-SB",
+        "to": "YO-BL-SB",
+        "variant": "Sky Blue"
+      },
+      {
+        "variantId": "e5559855-2909-4090-a399-778d4ba23b9f",
+        "from": "Yo-BL-D-BE",
+        "to": "YO-BL-BE",
+        "variant": "Beige"
+      },
+      {
+        "variantId": "327a1ba8-0f4a-4d22-bc60-25b5a1f0cac4",
+        "from": "Yo-BL-D-GR",
+        "to": "YO-BL-G",
+        "variant": "Green"
+      },
+      {
+        "variantId": "f56c1b77-3610-485e-ace0-8f4fc95b55a7",
+        "from": "Yo-BL-D-NB",
+        "to": "YO-BL-NB",
+        "variant": "Navy Blue"
+      },
+      {
+        "variantId": "e1b3ad97-f3a7-47b8-9d7d-8d575bdd5b51",
+        "from": "Yo-BL-D-RE",
+        "to": "YO-BL-R",
+        "variant": "Rose"
+      }
+    ],
+    "alreadySameSku": 0
+  },
+  {
+    "productId": "165b6177-49e9-47db-818c-a9d2c27134b7",
+    "dbName": "Yoga Blanket made from Organic Cotton",
+    "sheetName": "Yoga Blanket",
+    "dbSlug": "yoga-blanket-made-from-organic-cotton",
+    "sheetSlug": "yoga-blanket",
+    "rename": true,
+    "skuUpdates": [
+      {
+        "variantId": "f66a13c8-0605-452b-8d82-a4299051d6fb",
+        "from": "Yo-BT-C-MG",
+        "to": "YO-BT-MG",
+        "variant": "Magenta"
+      },
+      {
+        "variantId": "2aafd1e1-56c1-4355-a64e-9cc635ffcccd",
+        "from": "Yo-BT-C-BW",
+        "to": "YO-BT-BR",
+        "variant": "Brown"
+      },
+      {
+        "variantId": "65f0286b-6fac-4fe4-acfa-cfa81b262994",
+        "from": "Yo-BT-C-NT",
+        "to": "YO-BT-W",
+        "variant": "Natural White"
+      }
+    ],
+    "alreadySameSku": 0
+  },
+  {
+    "productId": "5d57de6c-6d65-41f0-8bef-a1bdbb3195fa",
+    "dbName": "Zabuton Cushion for Meditation",
+    "sheetName": "Zabuton Cushion",
+    "dbSlug": "zabuton-cushion-for-meditation",
+    "sheetSlug": "zabuton-cushion",
+    "rename": true,
+    "skuUpdates": [
+      {
+        "variantId": "0115db92-7272-4c90-ab3a-a3b79c3c7cda",
+        "from": "Me-C-Zn-NB",
+        "to": "ME-Zn-NB",
+        "variant": "Navy Blue"
+      },
+      {
+        "variantId": "655dcc17-1b28-4df1-adb2-9b4fe2d6d79d",
+        "from": "Me-C-Zn-GY",
+        "to": "ME-Zn-GY",
+        "variant": "Grey"
+      },
+      {
+        "variantId": "7461ad0c-fb10-4eea-b178-796513332963",
+        "from": "Me-C-Zn-LG",
+        "to": "ME-Zn-LG",
+        "variant": "Light Grey"
+      },
+      {
+        "variantId": "dea0434d-32db-4662-9de0-7598b521f024",
+        "from": "Me-C-Zn-LR",
+        "to": "ME-Zn-LV",
+        "variant": "Lavender"
+      },
+      {
+        "variantId": "42de0815-86c3-4e42-94cf-5172c4ddd1fe",
+        "from": "Me-C-Zn-MB",
+        "to": "ME-Zn-MB",
+        "variant": "Misty Blue"
+      }
+    ],
+    "alreadySameSku": 0
+  },
+  {
+    "productId": "1f27d24c-5458-4d53-8dde-487a0d3f1a5a",
+    "dbName": "Zafu & Zabuton Meditation Cushion Combo - Lotus Embroidery",
+    "sheetName": "Zafu & Zabuton Combo - Lotus Embroidery",
+    "dbSlug": "zafu-zabuton-meditation-cushion-combo-lotus-embroidery",
+    "sheetSlug": "zafu-zabuton-combo-lotus-embroidery",
+    "rename": true,
+    "skuUpdates": [
+      {
+        "variantId": "aa48ea22-a3a6-4296-b544-fe929986edaa",
+        "from": "Co-Me-C-Z-Zn-LR-E-L",
+        "to": "ME-Z-Zn-EM-L-LV",
+        "variant": "Lavender"
+      },
+      {
+        "variantId": "13183064-c9de-493e-b304-d8a35ac343e8",
+        "from": "Co-Me-C-Z-Zn-LG-E-L",
+        "to": "ME-Z-Zn-EM-L-LG",
+        "variant": "Light Grey"
+      },
+      {
+        "variantId": "dac965f3-44e9-409b-b660-f0cebaf7b6fa",
+        "from": "Co-Me-C-Z-Zn-MB-E-L",
+        "to": "ME-Z-Zn-EM-L-MB",
+        "variant": "Misty Blue"
+      }
+    ],
+    "alreadySameSku": 0
+  },
+  {
+    "productId": "0b0ad928-075f-4f15-be83-cb1b13db3264",
+    "dbName": "Zafu Meditation Cushion Lotus - Embroidery Filled with Cotton",
+    "sheetName": "Zafu Meditation Cushion - Lotus Embroidery",
+    "dbSlug": "zafu-meditation-cushion-lotus-embroidery-filled-with-cotton",
+    "sheetSlug": "zafu-meditation-cushion-lotus-embroidery",
+    "rename": true,
+    "skuUpdates": [
+      {
+        "variantId": "2428e63f-b4b0-4a98-afef-c9b33dcd1454",
+        "from": "Me-C-RZ-R-E-L",
+        "to": "ME-Z-EM-L-R",
+        "variant": "Rose"
+      },
+      {
+        "variantId": "2a1fa241-9aff-4644-a1c9-840a81f84ed9",
+        "from": "Me-C-RZ-LG-E-L",
+        "to": "ME-Z-EM-L-LG",
+        "variant": "Light Grey"
+      },
+      {
+        "variantId": "3e4b73b2-d45e-4f5c-a21a-5012ca1ca130",
+        "from": "Me-C-RZ-LR-E-L",
+        "to": "ME-Z-EM-L-LV",
+        "variant": "Lavender"
+      },
+      {
+        "variantId": "9b731dc1-3376-430c-af7c-532e6b10b115",
+        "from": "Me-C-RZ-MB-E-L",
+        "to": "ME-Z-EM-L-MB",
+        "variant": "Misty Blue"
+      },
+      {
+        "variantId": "cf0a2424-bd58-4dc8-92c8-4073455ce367",
+        "from": "Me-C-RZ-S-E-L",
+        "to": "ME-Z-EM-L-S",
+        "variant": "Sage"
+      }
+    ],
+    "alreadySameSku": 0
+  }
+]

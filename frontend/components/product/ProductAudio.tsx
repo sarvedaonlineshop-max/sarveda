@@ -6,12 +6,23 @@ import { resolveMediaUrl } from "@/lib/media-cdn";
 
 type Props = {
   audioUrl: string;
+  /** Product name used in the storefront “Hear this …” label. */
+  productName?: string;
   /** Shown only on non-storefront variant (legacy layout). */
   title?: string;
   variant?: "default" | "storefront";
 };
 
-export function ProductAudio({ audioUrl, title, variant = "default" }: Props) {
+function hearThisLabel(productName?: string): string {
+  const name = productName?.trim();
+  if (!name) return "Hear this sample";
+  // Keep the uppercase eyebrow readable on long titles.
+  if (name.length <= 42) return `Hear this ${name}`;
+  const clipped = name.slice(0, 40).replace(/\s+\S*$/, "").trim();
+  return `Hear this ${clipped || name.slice(0, 40)}`;
+}
+
+export function ProductAudio({ audioUrl, productName, title, variant = "default" }: Props) {
   const src = resolveMediaUrl(audioUrl) ?? audioUrl;
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -78,7 +89,7 @@ export function ProductAudio({ audioUrl, title, variant = "default" }: Props) {
           <track kind="captions" />
         </audio>
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-gold">
-          Hear this bowl
+          {hearThisLabel(productName)}
         </p>
         <div className="mt-4 flex items-center gap-4">
           <button

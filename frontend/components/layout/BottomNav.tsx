@@ -55,6 +55,11 @@ export function BottomNav() {
 
   function go(href: string) {
     setPendingHref(href);
+    // Avoid startTransition into shop — same blank-page soft-nav bug as Header.
+    if (isShopBrowsePath(href)) {
+      router.push(href);
+      return;
+    }
     startTransition(() => {
       router.push(href);
     });

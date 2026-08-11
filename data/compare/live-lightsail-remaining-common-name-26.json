@@ -1,0 +1,2848 @@
+{
+  "source_of_truth": "Excel sheet vs current live Lightsail DB snapshot",
+  "baseline_common_name_bucket_total": 89,
+  "done_already": 63,
+  "remaining_product_count": 26,
+  "issue_breakdown": {
+    "variant_count_mismatch": 16,
+    "mixed_variant_and_sku_mismatch": 9,
+    "sku_mismatch_with_variant_alignment": 1
+  },
+  "products": [
+    {
+      "product_name": "Etched Plain/Wind Gong",
+      "db_name": "Etched Plain/Wind Gong",
+      "product_slug": "etched-plain-wind-gong",
+      "issue_type": "variant_count_mismatch",
+      "sheet_count": 0,
+      "live_count": 64,
+      "shared_skus": 0,
+      "shared_variants_exact": 0,
+      "shared_variants_canonical": 0,
+      "sheet_rows": [],
+      "live_rows": [
+        {
+          "variant": "Flower of Life / 28 in",
+          "sku": "MI-SB-H-ET-TR-32",
+          "status": "INACTIVE"
+        },
+        {
+          "variant": "Flower of Life-Center / 16 in",
+          "sku": "MI-SB-H-ET-FL-16",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Flower of Life-Center / 18 in",
+          "sku": "MI-SB-H-ET-FL-18",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Flower of Life-Center / 20 in",
+          "sku": "MI-SB-H-ET-FL-20",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Flower of Life-Center / 22 in",
+          "sku": "MI-SB-H-ET-FL-22",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Flower of Life-Center / 24 in",
+          "sku": "MI-SB-H-ET-FL-24",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Flower of Life-Center / 28 in",
+          "sku": "MI-SB-H-ET-FL-28",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Mandala / 16 in",
+          "sku": "MI-G-ET-M-16",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Mandala / 18 in",
+          "sku": "MI-G-ET-M-18",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Mandala / 20 in",
+          "sku": "MI-G-ET-M-20",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Mandala / 22 in",
+          "sku": "MI-G-ET-M-22",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Mandala / 24 in",
+          "sku": "MI-G-ET-M-24",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Mandala / 26 in",
+          "sku": "MI-G-ET-M-26",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Mandala / 28 in",
+          "sku": "MI-G-ET-M-28",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Shakti Chakra / 14 in",
+          "sku": "MI-G-ET-SC-14",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Shakti Chakra / 16 in",
+          "sku": "MI-G-ET-SC-16",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Shakti Chakra / 18 in",
+          "sku": "MI-G-ET-SC-18",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Shakti Chakra / 20 in",
+          "sku": "MI-G-ET-SC-20",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Shakti Chakra / 22 in",
+          "sku": "MI-G-ET-SC-22",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Shakti Chakra / 24 in",
+          "sku": "MI-G-ET-SC-24",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Shakti Chakra / 26 in",
+          "sku": "MI-G-ET-SC-26",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Shakti Chakra / 28 in",
+          "sku": "MI-G-ET-SC-28",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "7 Chakras / 14 in",
+          "sku": "MI-G-ET-7C-14",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "7 Chakras / 16 in",
+          "sku": "MI-G-ET-7C-16",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "7 Chakras / 18 in",
+          "sku": "MI-G-ET-7C-18",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "7 Chakras / 20 in",
+          "sku": "MI-G-ET-7C-20",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "7 Chakras / 22 in",
+          "sku": "MI-G-ET-7C-22",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "7 Chakras / 24 in",
+          "sku": "MI-G-ET-7C-24",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "7 Chakras / 26 in",
+          "sku": "MI-G-ET-7C-26",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "7 Chakras / 28 in",
+          "sku": "MI-G-ET-7C-28",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Om / 14 in",
+          "sku": "MI-G-ET-F-OM-14",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Om / 16 in",
+          "sku": "MI-G-ET-F-OM-16",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Om / 18 in",
+          "sku": "MI-G-ET-F-OM-18",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Om / 20 in",
+          "sku": "MI-G-ET-F-OM-20",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Flower of Life / 16 in",
+          "sku": "MI-G-ET-FOL-16",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Flower of Life / 18 in",
+          "sku": "MI-G-ET-FOL-18",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Flower of Life / 20 in",
+          "sku": "MI-G-ET-FOL-20",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Flower of Life / 22 in",
+          "sku": "MI-G-ET-FOL-22",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Flower of Life / 24 in",
+          "sku": "MI-G-ET-FOL-24",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Om / 22 in",
+          "sku": "MI-G-ET-F-OM-22",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Om / 24 in",
+          "sku": "MI-G-ET-F-OM-24",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Om / 26 in",
+          "sku": "MI-G-ET-F-OM-26",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Om / 28 in",
+          "sku": "MI-G-ET-F-OM-28",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Dorje / 14 in",
+          "sku": "MI-SB-H-ET-DJ-14",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Dorje / 16 in",
+          "sku": "MI-SB-H-ET-DJ-16",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Dorje / 18 in",
+          "sku": "MI-SB-H-ET-DJ-18",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Dorje / 20 in",
+          "sku": "MI-SB-H-ET-DJ-20",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Dorje / 22 in",
+          "sku": "MI-SB-H-ET-DJ-22",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Dorje / 24 in",
+          "sku": "MI-SB-H-ET-DJ-24",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Dorje / 26 in",
+          "sku": "MI-SB-H-ET-DJ-26",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Dorje / 28 in",
+          "sku": "MI-SB-H-ET-DJ-28",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Tara / 14 in",
+          "sku": "MI-SB-H-ET-TR-14",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Tara / 16 in",
+          "sku": "MI-SB-H-ET-TR-16",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Tara / 18 in",
+          "sku": "MI-SB-H-ET-TR-18",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Tara / 20 in",
+          "sku": "MI-SB-H-ET-TR-20",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Tara / 22 in",
+          "sku": "MI-SB-H-ET-TR-22",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Tara / 24 in",
+          "sku": "MI-SB-H-ET-TR-24",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Tara / 26 in",
+          "sku": "MI-SB-H-ET-TR-26",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Tara / 28 in",
+          "sku": "MI-SB-H-ET-TR-28",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Mandala / 14 in",
+          "sku": "MI-G-ET-M-14",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Flower of Life / 14 in",
+          "sku": "MI-G-ET-FOL-14",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Flower of Life / 26 in",
+          "sku": "MI-SB-H-ET-TR-30",
+          "status": "INACTIVE"
+        },
+        {
+          "variant": "Flower of Life-Center / 14 in",
+          "sku": "MI-SB-H-ET-FL-14",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Flower of Life-Center / 26 in",
+          "sku": "MI-SB-H-ET-FL-26",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Tuning Fork - Single Weighted & Unweighted",
+      "db_name": "Tuning Fork - Single Weighted & Unweighted",
+      "product_slug": "tuning-fork-single-weighted-unweighted",
+      "issue_type": "mixed_variant_and_sku_mismatch",
+      "sheet_count": 18,
+      "live_count": 18,
+      "shared_skus": 3,
+      "shared_variants_exact": 17,
+      "shared_variants_canonical": 17,
+      "sheet_rows": [
+        {
+          "variant": "Weighted / 64 Hz",
+          "sku": "MI-TF-W-64"
+        },
+        {
+          "variant": "Weighted / 68.05 Hz",
+          "sku": "MI-TF-W-6805"
+        },
+        {
+          "variant": "Weighted / 93.96 Hz",
+          "sku": "MI-TF-W-9396"
+        },
+        {
+          "variant": "Weighted / 128 Hz",
+          "sku": "MI-TF-W-128"
+        },
+        {
+          "variant": "Weighted / 136.10 Hz",
+          "sku": "MI-TF-W-13610"
+        },
+        {
+          "variant": "Weighted / 256 Hz",
+          "sku": "MI-TF-W-256"
+        },
+        {
+          "variant": "Weighted / 432 Hz",
+          "sku": "MI-TF-W-432"
+        },
+        {
+          "variant": "Weighted / 440 Hz",
+          "sku": "MI-TF-W-440"
+        },
+        {
+          "variant": "Weighted / 528 Hz",
+          "sku": "MI-TF-W-528"
+        },
+        {
+          "variant": "Unweighted / 64 Hz",
+          "sku": "MI-TF-UW-64"
+        },
+        {
+          "variant": "Unweighted / 68.05 Hz",
+          "sku": "MI-TF-UW-6805"
+        },
+        {
+          "variant": "Unweighted / 93.96 Hz",
+          "sku": "MI-TF-UW-9396"
+        },
+        {
+          "variant": "Unweighted / 128 Hz",
+          "sku": "MI-TF-UW-128"
+        },
+        {
+          "variant": "Unweighted / 136.10 Hz",
+          "sku": "MI-TF-UW-13610"
+        },
+        {
+          "variant": "Unweighted / 256 Hz",
+          "sku": "MI-TF-UW-256"
+        },
+        {
+          "variant": "Unweighted / 432 Hz",
+          "sku": "MI-TF-UW-432"
+        },
+        {
+          "variant": "Unweighted /440Hz",
+          "sku": "MI-TF-UW-440"
+        },
+        {
+          "variant": "Unweighted / 528 Hz",
+          "sku": "MI-TF-UW-528"
+        }
+      ],
+      "live_rows": [
+        {
+          "variant": "Weighted / 68.05 Hz",
+          "sku": "MI-TF-W-68",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Weighted / 64 Hz",
+          "sku": "MI-TFSW-W-64",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Weighted / 440 Hz",
+          "sku": "MI-TFSW-W-440",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Weighted / 93.96 Hz",
+          "sku": "MI-TFSW-W-9396",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Weighted / 136.10 Hz",
+          "sku": "MI-TFSW-W-13610",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Weighted / 528 Hz",
+          "sku": "MI-TFSW-W-528",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Unweighted / 68.05 Hz",
+          "sku": "MI-TFSW-U-6805",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Unweighted / 64 Hz",
+          "sku": "MI-TFSW-U-64",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Unweighted / 440 Hz",
+          "sku": "MI-TFSW-U-440",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Unweighted / 93.96 Hz",
+          "sku": "MI-TFSW-U-9396",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Unweighted / 128 Hz",
+          "sku": "MI-TFSW-U-128",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Unweighted / 136.10 Hz",
+          "sku": "MI-TFSW-U-13610",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Unweighted / 256 Hz",
+          "sku": "MI-TFSW-U-256",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Unweighted / 432 Hz",
+          "sku": "MI-TFSW-U-432",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Unweighted / 528 Hz",
+          "sku": "MI-TFSW-U-528",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Weighted / 256 Hz",
+          "sku": "MI-TF-W-256",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Weighted / 432 Hz",
+          "sku": "MI-TF-W-432",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Weighted / 128 Hz",
+          "sku": "MI-TF-W-128",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Etched Handmade Singing Bowls",
+      "db_name": "Etched Handmade Singing Bowls",
+      "product_slug": "etched-handmade-singing-bowls",
+      "issue_type": "variant_count_mismatch",
+      "sheet_count": 88,
+      "live_count": 79,
+      "shared_skus": 0,
+      "shared_variants_exact": 48,
+      "shared_variants_canonical": 48,
+      "sheet_rows": [
+        {
+          "variant": "Buddha / 6 in",
+          "sku": "MI-SB-HM-ET-B-6"
+        },
+        {
+          "variant": "Buddha / 7 in",
+          "sku": "MI-SB-HM-ET-B-7"
+        },
+        {
+          "variant": "Buddha / 8in",
+          "sku": "MI-SB-HM-ET-B-8"
+        },
+        {
+          "variant": "Buddha / 9 in",
+          "sku": "MI-SB-HM-ET-B-9"
+        },
+        {
+          "variant": "Buddha / 10 in",
+          "sku": "MI-SB-HM-ET-B-10"
+        },
+        {
+          "variant": "Buddha / 11 in",
+          "sku": "MI-SB-HM-ET-B-11"
+        },
+        {
+          "variant": "Buddha / 12 in",
+          "sku": "MI-SB-HM-ET-B-12"
+        },
+        {
+          "variant": "Buddha / 13 in",
+          "sku": "MI-SB-HM-ET-B-13"
+        },
+        {
+          "variant": "Sacred Geometry / 6 in",
+          "sku": "MI-SB-HM-ET-SG-6"
+        },
+        {
+          "variant": "Sacred Geometry / 7 in",
+          "sku": "MI-SB-HM-ET-SG-7"
+        },
+        {
+          "variant": "Sacred Geometry / 8in",
+          "sku": "MI-SB-HM-ET-SG-8"
+        },
+        {
+          "variant": "Sacred Geometry / 9 in",
+          "sku": "MI-SB-HM-ET-SG-9"
+        },
+        {
+          "variant": "Sacred Geometry / 10 in",
+          "sku": "MI-SB-HM-ET-SG-10"
+        },
+        {
+          "variant": "Sacred Geometry / 11 in",
+          "sku": "MI-SB-HM-ET-SG-11"
+        },
+        {
+          "variant": "Sacred Geometry / 12 in",
+          "sku": "MI-SB-HM-ET-SG-12"
+        },
+        {
+          "variant": "Sacred Geometry / 13 in",
+          "sku": "MI-SB-HM-ET-SG-13"
+        },
+        {
+          "variant": "Golden Feet / 6 in",
+          "sku": "MI-SB-HM-ET-GF-6"
+        },
+        {
+          "variant": "Golden Feet / 7 in",
+          "sku": "MI-SB-HM-ET-GF-7"
+        },
+        {
+          "variant": "Golden Feet / 8in",
+          "sku": "MI-SB-HM-ET-GF-8"
+        },
+        {
+          "variant": "Golden Feet / 9 in",
+          "sku": "MI-SB-HM-ET-GF-9"
+        },
+        {
+          "variant": "Golden Feet / 10 in",
+          "sku": "MI-SB-HM-ET-GF-10"
+        },
+        {
+          "variant": "Golden Feet / 11 in",
+          "sku": "MI-SB-HM-ET-GF-11"
+        },
+        {
+          "variant": "Golden Feet / 12 in",
+          "sku": "MI-SB-HM-ET-GF-12"
+        },
+        {
+          "variant": "Golden Feet / 13 in",
+          "sku": "MI-SB-HM-ET-GF-13"
+        },
+        {
+          "variant": "Buddhas Eyes / 6in",
+          "sku": "MI-SB-HM-ET-BE-6"
+        },
+        {
+          "variant": "Buddhas Eyes / 7in",
+          "sku": "MI-SB-HM-ET-BE-7"
+        },
+        {
+          "variant": "Buddhas Eyes / 8in",
+          "sku": "MI-SB-HM-ET-BE-8"
+        },
+        {
+          "variant": "Buddhas Eyes / 9 in",
+          "sku": "MI-SB-HM-ET-BE-9"
+        },
+        {
+          "variant": "Buddhas Eyes / 10 in",
+          "sku": "MI-SB-HM-ET-BE-10"
+        },
+        {
+          "variant": "Buddhas Eyes / 11 in",
+          "sku": "MI-SB-HM-ET-BE-11"
+        },
+        {
+          "variant": "Buddhas Eyes /12in",
+          "sku": "MI-SB-HM-ET-BE-12"
+        },
+        {
+          "variant": "Buddhas Eyes /13in",
+          "sku": "MI-SB-HM-ET-BE-13"
+        },
+        {
+          "variant": "Chakras / 6in",
+          "sku": "MI-SB-HM-ET-C-6"
+        },
+        {
+          "variant": "Chakras / 7in",
+          "sku": "MI-SB-HM-ET-C-7"
+        },
+        {
+          "variant": "Chakras / 8in",
+          "sku": "MI-SB-HM-ET-C-8"
+        },
+        {
+          "variant": "Chakras / 9in",
+          "sku": "MI-SB-HM-ET-C-9"
+        },
+        {
+          "variant": "Chakras / 10in",
+          "sku": "MI-SB-HM-ET-C-10"
+        },
+        {
+          "variant": "Chakras / 11 in",
+          "sku": "MI-SB-HM-ET-C-11"
+        },
+        {
+          "variant": "Chakras / 12in",
+          "sku": "MI-SB-HM-ET-C-12"
+        },
+        {
+          "variant": "Chakras / 13in",
+          "sku": "MI-SB-HM-ET-C-13"
+        },
+        {
+          "variant": "Dorje / 6 in",
+          "sku": "MI-SB-HM-ET-DJ-6"
+        },
+        {
+          "variant": "Dorje / 7 in",
+          "sku": "MI-SB-HM-ET-DJ-7"
+        },
+        {
+          "variant": "Dorje / 8in",
+          "sku": "MI-SB-HM-ET-DJ-8"
+        },
+        {
+          "variant": "Dorje / 9 in",
+          "sku": "MI-SB-HM-ET-DJ-9"
+        },
+        {
+          "variant": "Dorje / 10 in",
+          "sku": "MI-SB-HM-ET-DJ-10"
+        },
+        {
+          "variant": "Dorje / 11 in",
+          "sku": "MI-SB-HM-ET-DJ-11"
+        },
+        {
+          "variant": "Dorje / 12 in",
+          "sku": "MI-SB-HM-ET-DJ-12"
+        },
+        {
+          "variant": "Dorje / 13 in",
+          "sku": "MI-SB-HM-ET-DJ-13"
+        },
+        {
+          "variant": "Flower of Life / 6 in",
+          "sku": "MI-SB-HM-ET-FL-6"
+        },
+        {
+          "variant": "Flower of Life / 7 in",
+          "sku": "MI-SB-HM-ET-FL-7"
+        },
+        {
+          "variant": "Flower of Life / 8in",
+          "sku": "MI-SB-HM-ET-FL-8"
+        },
+        {
+          "variant": "Flower of Life / 9 in",
+          "sku": "MI-SB-HM-ET-FL-9"
+        },
+        {
+          "variant": "Flower of Life / 10 in",
+          "sku": "MI-SB-HM-ET-FL-10"
+        },
+        {
+          "variant": "Flower of Life / 11 in",
+          "sku": "MI-SB-HM-ET-FL-11"
+        },
+        {
+          "variant": "Flower of Life / 12 in",
+          "sku": "MI-SB-HM-ET-FL-12"
+        },
+        {
+          "variant": "Flower of Life / 13 in",
+          "sku": "MI-SB-HM-ET-FL-13"
+        },
+        {
+          "variant": "Om / 6in",
+          "sku": "MI-SB-HM-ET-OM-6"
+        },
+        {
+          "variant": "Om / 7in",
+          "sku": "MI-SB-HM-ET-OM-7"
+        },
+        {
+          "variant": "Om / 8in",
+          "sku": "MI-SB-HM-ET-OM-8"
+        },
+        {
+          "variant": "Om / 9in",
+          "sku": "MI-SB-HM-ET-OM-9"
+        },
+        {
+          "variant": "Om / 10in",
+          "sku": "MI-SB-HM-ET-OM-10"
+        },
+        {
+          "variant": "Om / 11 in",
+          "sku": "MI-SB-HM-ET-OM-11"
+        },
+        {
+          "variant": "Om / 12in",
+          "sku": "MI-SB-HM-ET-OM-12"
+        },
+        {
+          "variant": "Om / 13in",
+          "sku": "MI-SB-HM-ET-OM-13"
+        },
+        {
+          "variant": "Tara / 6 in",
+          "sku": "MI-SB-HM-ET-T-6"
+        },
+        {
+          "variant": "Tara / 7 in",
+          "sku": "MI-SB-HM-ET-T-7"
+        },
+        {
+          "variant": "Tara / 8in",
+          "sku": "MI-SB-HM-ET-T-8"
+        },
+        {
+          "variant": "Tara / 9 in",
+          "sku": "MI-SB-HM-ET-T-9"
+        },
+        {
+          "variant": "Tara / 10 in",
+          "sku": "MI-SB-HM-ET-T-10"
+        },
+        {
+          "variant": "Tara / 11 in",
+          "sku": "MI-SB-HM-ET-T-11"
+        },
+        {
+          "variant": "Tara / 12 in",
+          "sku": "MI-SB-HM-ET-T-12"
+        },
+        {
+          "variant": "Tara / 13 in",
+          "sku": "MI-SB-HM-ET-T-13"
+        },
+        {
+          "variant": "Yin Yang / 6 in",
+          "sku": "MI-SB-HM-ET-YY-6"
+        },
+        {
+          "variant": "Yin Yang / 7 in",
+          "sku": "MI-SB-HM-ET-YY-7"
+        },
+        {
+          "variant": "Yin Yang / 8in",
+          "sku": "MI-SB-HM-ET-YY-8"
+        },
+        {
+          "variant": "Yin Yang / 9 in",
+          "sku": "MI-SB-HM-ET-YY-9"
+        },
+        {
+          "variant": "Yin Yang / 10 in",
+          "sku": "MI-SB-HM-ET-YY-10"
+        },
+        {
+          "variant": "Yin Yang / 11 in",
+          "sku": "MI-SB-HM-ET-YY-11"
+        },
+        {
+          "variant": "Yin Yang / 12 in",
+          "sku": "MI-SB-HM-ET-YY-12"
+        },
+        {
+          "variant": "Yin Yang / 13 in",
+          "sku": "MI-SB-HM-ET-YY-13"
+        },
+        {
+          "variant": "Mantra / 6in",
+          "sku": "MI-SB-HM-ET-M-6"
+        },
+        {
+          "variant": "Mantra / 7in",
+          "sku": "MI-SB-HM-ET-M-7"
+        },
+        {
+          "variant": "Mantra / 8in",
+          "sku": "MI-SB-HM-ET-M-8"
+        },
+        {
+          "variant": "Mantra / 9in",
+          "sku": "MI-SB-HM-ET-M-9"
+        },
+        {
+          "variant": "Mantra / 10in",
+          "sku": "MI-SB-HM-ET-M-10"
+        },
+        {
+          "variant": "Mantra / 11 in",
+          "sku": "MI-SB-HM-ET-M-11"
+        },
+        {
+          "variant": "Mantra / 12in",
+          "sku": "MI-SB-HM-ET-M-12"
+        },
+        {
+          "variant": "Mantra / 13in",
+          "sku": "MI-SB-HM-ET-M-13"
+        }
+      ],
+      "live_rows": [
+        {
+          "variant": "Mantra / 10 in",
+          "sku": "MI-SB-H-ET-M-10",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Mantra / 12 in",
+          "sku": "MI-SB-H-ET-M-12",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Mantra / 6 in",
+          "sku": "MI-SB-H-ET-M-6",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Mantra / 7 in",
+          "sku": "MI-SB-H-ET-M-7",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Mantra / 8 in",
+          "sku": "MI-SB-H-ET-M-8",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Mantra / 9 in",
+          "sku": "MI-SB-H-ET-M-9",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Mantra / 11 in",
+          "sku": "MI-SB-H-ET-M-11",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Yin Yang / 6 in",
+          "sku": "MI-SB-H-ET-YY-6",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Yin Yang / 7 in",
+          "sku": "MI-SB-H-ET-YY-7",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Yin Yang / 8 in",
+          "sku": "MI-SB-H-ET-YY-8",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Yin Yang / 9 in",
+          "sku": "MI-SB-H-ET-YY-9",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Yin Yang / 10 in",
+          "sku": "MI-SB-H-ET-YY-10",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Yin Yang / 11 in",
+          "sku": "MI-SB-H-ET-YY-11",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Yin Yang / 12 in",
+          "sku": "MI-SB-H-ET-YY-12",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Buddha / 7 in",
+          "sku": "MI-SB-H-ET-B-7",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Buddha / 8 in",
+          "sku": "MI-SB-H-ET-B-8",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Buddha / 9 in",
+          "sku": "MI-SB-H-ET-B-9",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Buddha / 10 in",
+          "sku": "MI-SB-H-ET-B-10",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Buddha / 11 in",
+          "sku": "MI-SB-H-ET-B-11",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Buddha / 12 in",
+          "sku": "MI-SB-H-ET-B-12",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Sacred Geometry / 6 in",
+          "sku": "MI-SB-GE-6",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Sacred Geometry / 7 in",
+          "sku": "MI-SB-GE-7",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Sacred Geometry / 8 in",
+          "sku": "MI-SB-GE-8",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Sacred Geometry / 9 in",
+          "sku": "MI-SB-GE-9",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Sacred Geometry / 10 in",
+          "sku": "MI-SB-GE-10",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Sacred Geometry / 11 in",
+          "sku": "MI-SB-GE-11",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Sacred Geometry / 12 in",
+          "sku": "MI-SB-GE-12",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Om / 6 in",
+          "sku": "MI-SB-H-ET-O-C-6",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Om / 7 in",
+          "sku": "MI-SB-H-ET-O-C-7",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Om / 8 in",
+          "sku": "MI-SB-H-ET-O-C-8",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Om / 9 in",
+          "sku": "MI-SB-H-ET-O-C-9",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Om / 10 in",
+          "sku": "MI-SB-H-ET-O-C-10",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Om / 11 in",
+          "sku": "MI-SB-H-ET-O-C-11",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Dorje / 6 in",
+          "sku": "MI-SB-H-ET-DJ-6",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Om / 12 in",
+          "sku": "MI-SB-H-ET-O-C-12",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Golden Feet / 6 in",
+          "sku": "MI-SB-GF-6",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Golden Feet / 7 in",
+          "sku": "MI-SB-GF-7",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Golden Feet / 8 in",
+          "sku": "MI-SB-GF-8",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Golden Feet / 9 in",
+          "sku": "MI-SB-GF-9",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Golden Feet / 10 in",
+          "sku": "MI-SB-GF-10",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Golden Feet / 11 in",
+          "sku": "MI-SB-GF-11",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Golden Feet / 12 in",
+          "sku": "MI-SB-GF-12",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Buddhas Eyes / 6 in",
+          "sku": "MI-SB-H-ET-BE-6",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Buddhas Eyes / 7 in",
+          "sku": "MI-SB-H-ET-BE-7",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Buddhas Eyes / 8 in",
+          "sku": "MI-SB-H-ET-BE-8",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Buddhas Eyes / 9 in",
+          "sku": "MI-SB-H-ET-BE-9",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Buddhas Eyes / 10 in",
+          "sku": "MI-SB-H-ET-BE-10",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Buddhas Eyes / 11 in",
+          "sku": "MI-SB-H-ET-BE-11",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Buddhas Eyes / 12 in",
+          "sku": "MI-SB-H-ET-BE-12",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Chakras / 6 in",
+          "sku": "MI-SB-H-ET-C-6",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Chakras / 7 in",
+          "sku": "MI-SB-H-ET-C-7",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Chakras / 8 in",
+          "sku": "MI-SB-H-ET-C-8",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Chakras / 9 in",
+          "sku": "MI-SB-H-ET-C-9",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Chakras / 10 in",
+          "sku": "MI-SB-H-ET-C-10",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Chakras / 11 in",
+          "sku": "MI-SB-H-ET-C-11",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Chakras / 12 in",
+          "sku": "MI-SB-H-ET-C-12",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Flower of Life / 6 in",
+          "sku": "MI-SB-H-ET-FL-6",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Flower of Life / 7 in",
+          "sku": "MI-SB-H-ET-FL-7",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Flower of Life / 8 in",
+          "sku": "MI-SB-H-ET-FL-8",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Flower of Life / 9 in",
+          "sku": "MI-SB-H-ET-FL-9",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Flower of Life / 10 in",
+          "sku": "MI-SB-H-ET-FL-10",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Flower of Life / 11 in",
+          "sku": "MI-SB-H-ET-FL-11",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Flower of Life / 12 in",
+          "sku": "MI-SB-H-ET-FL-12",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Buddha / 6 in",
+          "sku": "MI-SB-H-ET-B-6",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Dorje / 7 in",
+          "sku": "MI-SB-H-ET-DJ-7",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Dorje / 8 in",
+          "sku": "MI-SB-H-ET-DJ-8",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Dorje / 9 in",
+          "sku": "MI-SB-H-ET-DJ-9",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Dorje / 10 in",
+          "sku": "MI-SB-H-ET-DJ-10",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Dorje / 11 in",
+          "sku": "MI-SB-H-ET-DJ-11",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Dorje / 12 in",
+          "sku": "MI-SB-H-ET-DJ-12",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Tara / 6 in",
+          "sku": "MI-SB-H-ET-T-6",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Tara / 7 in",
+          "sku": "MI-SB-H-ET-T-7",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Tara / 8 in",
+          "sku": "MI-SB-H-ET-T-8",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Tara / 9 in",
+          "sku": "MI-SB-H-ET-T-9",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Tara / 10 in",
+          "sku": "MI-SB-H-ET-T-10",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Tara / 11 in",
+          "sku": "MI-SB-H-ET-T-11",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Tara / 12 in",
+          "sku": "MI-SB-H-ET-T-12",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Dorje / 6 in",
+          "sku": "REMOVED-dorje-dup-MI-SB-H-ET-DJ-6",
+          "status": "INACTIVE"
+        },
+        {
+          "variant": "Dorje / 6 in",
+          "sku": "MI-SB-H-ET-DO-6",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Grooved, Hammered & Plain Copper Bottle",
+      "db_name": "Grooved, Hammered & Plain Copper Bottle",
+      "product_slug": "grooved-hammered-plain-copper-bottle",
+      "issue_type": "variant_count_mismatch",
+      "sheet_count": 0,
+      "live_count": 12,
+      "shared_skus": 0,
+      "shared_variants_exact": 0,
+      "shared_variants_canonical": 0,
+      "sheet_rows": [],
+      "live_rows": [
+        {
+          "variant": "Without Brush / Gold / Curved",
+          "sku": "CB-CP",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Without Brush / Vintage / Curved",
+          "sku": "CB-CV-B",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Without Brush / Vintage / Curved",
+          "sku": "CB-CV",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "With Brush / Gold / Hammered",
+          "sku": "CB-CPH-B",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Without Brush / Gold / Hammered",
+          "sku": "CB-CPH",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "With Brush / Gold / Diamond Groove",
+          "sku": "CB-CDG-B",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Without Brush / Gold / Diamond Groove",
+          "sku": "CB-CDG",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "With Brush / Vintage / Diamond Groove",
+          "sku": "CB-CVDG-B",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Without Brush / Vintage / Diamond Groove",
+          "sku": "CB-CVDG",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Without Brush / Vintage / Curved Hammered",
+          "sku": "CB-CVH",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Curved Hammered / Vintage / With Brush",
+          "sku": "CB-CVH-B",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "With Brush / Gold / Curved",
+          "sku": "CB-CP-B",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Plain Yoga Mats",
+      "db_name": "Plain Yoga Mats",
+      "product_slug": "plain-yoga-mats",
+      "issue_type": "mixed_variant_and_sku_mismatch",
+      "sheet_count": 8,
+      "live_count": 8,
+      "shared_skus": 0,
+      "shared_variants_exact": 2,
+      "shared_variants_canonical": 6,
+      "sheet_rows": [
+        {
+          "variant": "Moderate / Green",
+          "sku": "YO-M-CT-M-G"
+        },
+        {
+          "variant": "Moderate / Orange",
+          "sku": "YO-M-CT-M-O"
+        },
+        {
+          "variant": "Moderate / Blue",
+          "sku": "YO-M-CT-M-B"
+        },
+        {
+          "variant": "Moderate / Pink",
+          "sku": "YO-M-CT-M-P"
+        },
+        {
+          "variant": "Teal / Superior",
+          "sku": "YO-M-CT-S-T"
+        },
+        {
+          "variant": "Orange / Superior",
+          "sku": "YO-M-CT-S-O"
+        },
+        {
+          "variant": "Yellow / Superior",
+          "sku": "YO-M-CT-S-Y"
+        },
+        {
+          "variant": "Pink / Superior",
+          "sku": "YO-M-CT-S-P"
+        }
+      ],
+      "live_rows": [
+        {
+          "variant": "Moderate / Pink",
+          "sku": "YO-PYM-M-P",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Moderate / Yellow",
+          "sku": "YO-PYM-M-Y",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Moderate / Teal",
+          "sku": "Yo-PYM-M-T",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Superior / Teal",
+          "sku": "YO-PYM-S-T",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Moderate / Orange",
+          "sku": "YO-PYM-M-O",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Superior / Orange",
+          "sku": "YO-PYM-S-O",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Superior / Yellow",
+          "sku": "YO-PYM-S-Y",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Superior / Pink",
+          "sku": "YO-PYM-S-P",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Shruthi Thali/Gong Plates",
+      "db_name": "Shruthi Thali/Gong Plates",
+      "product_slug": "shruthi-thali-gong-plates",
+      "issue_type": "variant_count_mismatch",
+      "sheet_count": 0,
+      "live_count": 8,
+      "shared_skus": 0,
+      "shared_variants_exact": 0,
+      "shared_variants_canonical": 0,
+      "sheet_rows": [],
+      "live_rows": [
+        {
+          "variant": "A Plate",
+          "sku": "MI-STGP-AP",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Full Set",
+          "sku": "MI-STGP-FU",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "F Plate",
+          "sku": "MI-STGP-FP",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "G Plate",
+          "sku": "MI-STGP-GP",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "E Plate",
+          "sku": "MI-STGP-EP",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "B Plate",
+          "sku": "MI-STGP-BP",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "D Plate",
+          "sku": "MI-STGP-DP",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "C Plate",
+          "sku": "MI-STGP-CP",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Wooden Mallets for Singing Bowls",
+      "db_name": "Wooden Mallets for Singing Bowls",
+      "product_slug": "wooden-mallets-for-singing-bowls",
+      "issue_type": "mixed_variant_and_sku_mismatch",
+      "sheet_count": 17,
+      "live_count": 17,
+      "shared_skus": 0,
+      "shared_variants_exact": 0,
+      "shared_variants_canonical": 0,
+      "sheet_rows": [
+        {
+          "variant": "Red / Long Firm-Standard Striker",
+          "sku": "MI-SBM-S-LF-ST-R"
+        },
+        {
+          "variant": "Red / Long Firm-Small Striker",
+          "sku": "MI-SBM-S-LF-S-R"
+        },
+        {
+          "variant": "White / Long Firm-Standard Striker",
+          "sku": "MI-SBM-S-LF-ST-W"
+        },
+        {
+          "variant": "White / Long Firm-Small Striker",
+          "sku": "MI-SBM-S-LF-S-W"
+        },
+        {
+          "variant": "Red / Long Soft-13\" Striker",
+          "sku": "MI-SBM-S-LS-R-13"
+        },
+        {
+          "variant": "Red / Long Soft-11\" Striker",
+          "sku": "MI-SBM-S-LS-R-11"
+        },
+        {
+          "variant": "Red / Long Soft-9\" Striker",
+          "sku": "MI-SBM-S-LS-R-9"
+        },
+        {
+          "variant": "White / Long Soft-13\" Striker",
+          "sku": "MI-SBM-S-LS-W-13"
+        },
+        {
+          "variant": "White / Long Soft-11\" Striker",
+          "sku": "MI-SBM-S-LS-W-11"
+        },
+        {
+          "variant": "White / Long Soft-9\" Striker",
+          "sku": "MI-SBM-S-LS-W-9"
+        },
+        {
+          "variant": "Black / Curved Rimmer",
+          "sku": "MI-SBM-R-C-B"
+        },
+        {
+          "variant": "Black / Thick Wide Rimmer",
+          "sku": "MI-SBM-R-TW-B"
+        },
+        {
+          "variant": "Red / Thick Wide Rimmer",
+          "sku": "MI-SBM-R-TW-R"
+        },
+        {
+          "variant": "Black / Standard Wide Rimmer",
+          "sku": "MI-SBM-R-SW-B"
+        },
+        {
+          "variant": "Red / Standard Wide Rimmer",
+          "sku": "MI-SBM-R-SW-R"
+        },
+        {
+          "variant": "Black / Straight Rimmer",
+          "sku": "MI-SBM-R-ST-B"
+        },
+        {
+          "variant": "Red / Straight Rimmer",
+          "sku": "MI-SBM-R-ST-R"
+        }
+      ],
+      "live_rows": [
+        {
+          "variant": "Thick Wide / Red",
+          "sku": "MI-SB-M-TW-R",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Long Firm-Standard / Red",
+          "sku": "MI-SB-M-L-F-ST",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Long Firm-Small / White",
+          "sku": "MI-SB-M-W-L-F-S",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Long Firm-Small / Red",
+          "sku": "MI-SB-M-L-F-S",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Standard Wide / Black",
+          "sku": "MI-SB-M-ST-B",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Long Firm-Standard / White",
+          "sku": "MI-SB-M-W-L-F-ST",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Thick Wide / Black",
+          "sku": "MI-SB-M-TW-B",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Standard Wide / Red",
+          "sku": "MI-SB-M-ST-R",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Straight / Black",
+          "sku": "MI-SB-M-B-S",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Straight / Red",
+          "sku": "MI-SB-M-R-S",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Long Soft-13\" / White",
+          "sku": "MI-SB-M-L-W-13",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Long Soft-11\" / White",
+          "sku": "MI-SB-M-L-W-11",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Long Soft-9\" / White",
+          "sku": "MI-SB-M-L-W-9",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Long Soft-13\" / Red",
+          "sku": "MI-SB-M-L-R-13",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Long Soft-11\" / Red",
+          "sku": "MI-SB-M-L-R-11",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Long Soft-9\" / Red",
+          "sku": "MI-SB-M-L-R-9",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Curved / Black",
+          "sku": "MI-SB-M-B-C",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Ocean Drums",
+      "db_name": "Ocean Drums",
+      "product_slug": "ocean-drums",
+      "issue_type": "mixed_variant_and_sku_mismatch",
+      "sheet_count": 9,
+      "live_count": 9,
+      "shared_skus": 9,
+      "shared_variants_exact": 7,
+      "shared_variants_canonical": 7,
+      "sheet_rows": [
+        {
+          "variant": "Plain / 30 cms",
+          "sku": "MI-OD-P-30"
+        },
+        {
+          "variant": "Plain / 35 cms",
+          "sku": "MI-OD-P-35"
+        },
+        {
+          "variant": "Plain / 40 cms",
+          "sku": "MI-OD-P-40"
+        },
+        {
+          "variant": "Dream Catcher / 30 cms",
+          "sku": "MI-OD-D-30"
+        },
+        {
+          "variant": "Dream Catcher / 35 cms",
+          "sku": "MI-OD-D-35"
+        },
+        {
+          "variant": "Dream Catcher / 40cm",
+          "sku": "MI-OD-D-40"
+        },
+        {
+          "variant": "Flower of Life / 30 cms",
+          "sku": "MI-OD-F-30"
+        },
+        {
+          "variant": "Flower of Life / 35 cms",
+          "sku": "MI-OD-F-35"
+        },
+        {
+          "variant": "Flower of Life / 40cm",
+          "sku": "MI-OD-F-40"
+        }
+      ],
+      "live_rows": [
+        {
+          "variant": "Flower of Life / 35 cms",
+          "sku": "MI-OD-F-35",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Flower of Life / 30 cms",
+          "sku": "MI-OD-F-30",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Plain / 30 cms",
+          "sku": "MI-OD-P-30",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Plain / 35 cms",
+          "sku": "MI-OD-P-35",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Plain / 40 cms",
+          "sku": "MI-OD-P-40",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Dream Catcher / 35 cms",
+          "sku": "MI-OD-D-35",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Dream Catcher / 30 cms",
+          "sku": "MI-OD-D-30",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Dream Catcher / 40 cms",
+          "sku": "MI-OD-D-40",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Flower of Life / 40 cms",
+          "sku": "MI-OD-F-40",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Tingsha Bell",
+      "db_name": "Tingsha Bell",
+      "product_slug": "tingsha-bell",
+      "issue_type": "variant_count_mismatch",
+      "sheet_count": 9,
+      "live_count": 8,
+      "shared_skus": 0,
+      "shared_variants_exact": 2,
+      "shared_variants_canonical": 3,
+      "sheet_rows": [
+        {
+          "variant": "Plain / Small",
+          "sku": "MI-TB-P-S"
+        },
+        {
+          "variant": "Plain /Medium",
+          "sku": "MI-TB-P-M"
+        },
+        {
+          "variant": "Plain /Large",
+          "sku": "MI-TB-P-L"
+        },
+        {
+          "variant": "Dark / Small",
+          "sku": "MI-TB-D-S"
+        },
+        {
+          "variant": "Dark / Medium",
+          "sku": "MI-TB-D-M"
+        },
+        {
+          "variant": "Dark / Large",
+          "sku": "MI-TB-D-L"
+        },
+        {
+          "variant": "Etched /Small",
+          "sku": "MI-TB-ET-S"
+        },
+        {
+          "variant": "Etched / Medium",
+          "sku": "MI-TB-ET-M"
+        },
+        {
+          "variant": "Etched / Large",
+          "sku": "MI-TB-ET-L"
+        }
+      ],
+      "live_rows": [
+        {
+          "variant": "Dark / Standard",
+          "sku": "MI-TB-D-ST",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Etched / Small",
+          "sku": "MI-TB-E-SM",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Etched / Standard",
+          "sku": "MI-TB-E-ST",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Golden / Standard",
+          "sku": "MI-TB-G-M",
+          "status": "INACTIVE"
+        },
+        {
+          "variant": "Golden / Small",
+          "sku": "MI-TB-G-S",
+          "status": "INACTIVE"
+        },
+        {
+          "variant": "Plain / Small",
+          "sku": "MI-TB-P-SM",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Plain / Standard",
+          "sku": "MI-TB-P-ST",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Dark / Small",
+          "sku": "MI-TB-D-SM",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Sunshine within Me",
+      "db_name": "Sunshine within Me",
+      "product_slug": "sunshine-within-me",
+      "issue_type": "variant_count_mismatch",
+      "sheet_count": 0,
+      "live_count": 4,
+      "shared_skus": 0,
+      "shared_variants_exact": 0,
+      "shared_variants_canonical": 0,
+      "sheet_rows": [],
+      "live_rows": [
+        {
+          "variant": "without-brush / 500ml",
+          "sku": "SWM-N-.5",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "with-brush / 500ml",
+          "sku": "SWM-B-.5",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "without-brush / 1L",
+          "sku": "SWM-N-1",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "with-brush / 1L",
+          "sku": "SWM-B-1",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Vibroacoustic Therapy Bowls - Universal, Belly and Head",
+      "db_name": "Vibroacoustic Therapy Bowls - Universal, Belly and Head",
+      "product_slug": "vibroacoustic-therapy-bowls-universal-belly-and-head",
+      "issue_type": "variant_count_mismatch",
+      "sheet_count": 1,
+      "live_count": 4,
+      "shared_skus": 0,
+      "shared_variants_exact": 1,
+      "shared_variants_canonical": 1,
+      "sheet_rows": [
+        {
+          "variant": "Set of 3",
+          "sku": "MI-SB-UBH-SET3"
+        }
+      ],
+      "live_rows": [
+        {
+          "variant": "Set of 3",
+          "sku": "MI-SB-Z-S3",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Universal Bowl",
+          "sku": "Mi-SB-Z-8",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Belly Bowl",
+          "sku": "Mi-SB-Z-9",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Head Bowl",
+          "sku": "Mi-SB-Z-10",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Dotted Singing Bowl",
+      "db_name": "Dotted Singing Bowl",
+      "product_slug": "dotted-singing-bowl",
+      "issue_type": "variant_count_mismatch",
+      "sheet_count": 3,
+      "live_count": 5,
+      "shared_skus": 0,
+      "shared_variants_exact": 2,
+      "shared_variants_canonical": 2,
+      "sheet_rows": [
+        {
+          "variant": "4 inch",
+          "sku": "MI-SB-DT-4"
+        },
+        {
+          "variant": "5.5 inch",
+          "sku": "MI-SB-DT-5.5"
+        },
+        {
+          "variant": "7 inch",
+          "sku": "MI-SB-DT-7"
+        }
+      ],
+      "live_rows": [
+        {
+          "variant": "Deep 5.5 Inch",
+          "sku": "MI-SB-HH-D-5.5",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "4 inch Hand Made",
+          "sku": "MI-SB-HH-4",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "5.5 inch Hand Made",
+          "sku": "MI-SB-HH-5.5",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "4 inch",
+          "sku": "MI-SB-H-4",
+          "status": "INACTIVE"
+        },
+        {
+          "variant": "5.5 inch",
+          "sku": "MI-SB-H-5.5",
+          "status": "INACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Shamanic Drum",
+      "db_name": "Shamanic Drum",
+      "product_slug": "shamanic-drum",
+      "issue_type": "mixed_variant_and_sku_mismatch",
+      "sheet_count": 9,
+      "live_count": 9,
+      "shared_skus": 6,
+      "shared_variants_exact": 7,
+      "shared_variants_canonical": 7,
+      "sheet_rows": [
+        {
+          "variant": "Plain / 30 cms",
+          "sku": "MI-SD-P-30"
+        },
+        {
+          "variant": "Plain / 40 cms",
+          "sku": "MI-SD-P-40"
+        },
+        {
+          "variant": "Plain / 45 cms",
+          "sku": "MI-SD-P-45"
+        },
+        {
+          "variant": "Butterfly / 30 cms",
+          "sku": "MI-SD-B-30"
+        },
+        {
+          "variant": "Butterfly / 40 cms",
+          "sku": "MI-SD-B-40"
+        },
+        {
+          "variant": "Butterfly / 45 cms",
+          "sku": "MI-SD-B-45"
+        },
+        {
+          "variant": "Tree of Life / 30 cms",
+          "sku": "MI-SD-T-30"
+        },
+        {
+          "variant": "Tree of Life / 40cm",
+          "sku": "MI-SD-T-40"
+        },
+        {
+          "variant": "Tree of Life / 45cm",
+          "sku": "MI-SD-T-45"
+        }
+      ],
+      "live_rows": [
+        {
+          "variant": "Tree of Life / 30 cms",
+          "sku": "MI-SD-30-T",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Tree of Life / 40 cms",
+          "sku": "MI-SD-40-T",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Tree of Life / 45 cms",
+          "sku": "MI-SD-45-T",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Plain / 40 cms",
+          "sku": "MI-SD-P-40",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Plain / 45 cms",
+          "sku": "MI-SD-P-45",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Butterfly / 30 cms",
+          "sku": "MI-SD-B-30",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Butterfly / 40 cms",
+          "sku": "MI-SD-B-40",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Butterfly / 45 cms",
+          "sku": "MI-SD-B-45",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Plain / 30 cms",
+          "sku": "MI-SD-P-30",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Shamanic Drum Bags/Ocean Drum Bags",
+      "db_name": "Shamanic Drum Bags/Ocean Drum Bags",
+      "product_slug": "shamanic-drum-bags-ocean-drum-bags",
+      "issue_type": "variant_count_mismatch",
+      "sheet_count": 0,
+      "live_count": 3,
+      "shared_skus": 0,
+      "shared_variants_exact": 0,
+      "shared_variants_canonical": 0,
+      "sheet_rows": [],
+      "live_rows": [
+        {
+          "variant": "Large",
+          "sku": "MI-SDBO-L",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Medium",
+          "sku": "MI-SDBO-M",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Small",
+          "sku": "MI-SDBO-S",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Shankh/Conch",
+      "db_name": "Shankh/Conch",
+      "product_slug": "shankh-conch",
+      "issue_type": "variant_count_mismatch",
+      "sheet_count": 0,
+      "live_count": 3,
+      "shared_skus": 0,
+      "shared_variants_exact": 0,
+      "shared_variants_canonical": 0,
+      "sheet_rows": [],
+      "live_rows": [
+        {
+          "variant": "Large",
+          "sku": "MI-SH-L",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Medium",
+          "sku": "MI-SH-M",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Small",
+          "sku": "MI-SH-S",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Shruti Box",
+      "db_name": "Shruti Box",
+      "product_slug": "shruti-box",
+      "issue_type": "variant_count_mismatch",
+      "sheet_count": 4,
+      "live_count": 3,
+      "shared_skus": 0,
+      "shared_variants_exact": 2,
+      "shared_variants_canonical": 2,
+      "sheet_rows": [
+        {
+          "variant": "1 Octave Standard",
+          "sku": "MI-STB-O1"
+        },
+        {
+          "variant": "1 Octave Mini",
+          "sku": "MI-STB-O1-M"
+        },
+        {
+          "variant": "2 Octaves",
+          "sku": "MI-STB-O2"
+        },
+        {
+          "variant": "3 Octaves",
+          "sku": "MI-STB-O3"
+        }
+      ],
+      "live_rows": [
+        {
+          "variant": "1 Octave",
+          "sku": "MI-SB-1",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "2 Octaves",
+          "sku": "MI-SB-2",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "3 Octaves",
+          "sku": "MI-SB-3",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Thunder Tube - Basic Edition",
+      "db_name": "Thunder Tube - Basic Edition",
+      "product_slug": "thunder-tube-basic-edition",
+      "issue_type": "mixed_variant_and_sku_mismatch",
+      "sheet_count": 3,
+      "live_count": 3,
+      "shared_skus": 0,
+      "shared_variants_exact": 0,
+      "shared_variants_canonical": 0,
+      "sheet_rows": [
+        {
+          "variant": "20cms /Small",
+          "sku": "MI-TT-S"
+        },
+        {
+          "variant": "25cms /Medium",
+          "sku": "MI-TT-M"
+        },
+        {
+          "variant": "30cms /Large",
+          "sku": "MI-TT-L"
+        }
+      ],
+      "live_rows": [
+        {
+          "variant": "20cms",
+          "sku": "MI-TTBE-20",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "25cms",
+          "sku": "MI-TTBE-25",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "30cms",
+          "sku": "MI-TTBE-30",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Handmade Singing Bowls - All Sizes",
+      "db_name": "Handmade Singing Bowls - All Sizes",
+      "product_slug": "handmade-singing-bowls-all-sizes",
+      "issue_type": "variant_count_mismatch",
+      "sheet_count": 9,
+      "live_count": 18,
+      "shared_skus": 0,
+      "shared_variants_exact": 7,
+      "shared_variants_canonical": 7,
+      "sheet_rows": [
+        {
+          "variant": "Matte / 5 in",
+          "sku": "MI-SB-HM-5"
+        },
+        {
+          "variant": "Matte / 6 in",
+          "sku": "MI-SB-HM-6"
+        },
+        {
+          "variant": "Matte / 7 in",
+          "sku": "MI-SB-HM-7"
+        },
+        {
+          "variant": "Matte / 8in",
+          "sku": "MI-SB-HM-8"
+        },
+        {
+          "variant": "Matte / 9 in",
+          "sku": "MI-SB-HM-9"
+        },
+        {
+          "variant": "Matte / 10 in",
+          "sku": "MI-SB-HM-10"
+        },
+        {
+          "variant": "Matte / 11 in",
+          "sku": "MI-SB-HM-11"
+        },
+        {
+          "variant": "Matte / 12 in",
+          "sku": "MI-SB-HM-12"
+        },
+        {
+          "variant": "Matte / 13in",
+          "sku": "MI-SB-HM-13"
+        }
+      ],
+      "live_rows": [
+        {
+          "variant": "Polished / 13 in",
+          "sku": "MI-SB-H-P-13",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Matte / 12 in",
+          "sku": "MI-SB-H-M-12",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Matte / 6 in",
+          "sku": "MI-HSBA-M-6",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Matte / 7 in",
+          "sku": "MI-HSBA-M-7",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Matte / 13 in",
+          "sku": "MI-SB-H-M-13",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Matte / 5 in",
+          "sku": "Mi-SB-H-M-5",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Polished / 6 in",
+          "sku": "Mi-SB-H-P-6",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Polished / 7 in",
+          "sku": "Mi-SB-H-P-7",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Polished / 8 in",
+          "sku": "Mi-SB-H-P-8",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Matte / 8 in",
+          "sku": "Mi-SB-H-M-8",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Polished / 9 in",
+          "sku": "Mi-SB-H-P-9",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Matte / 9 in",
+          "sku": "Mi-SB-H-M-9",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Polished / 10 in",
+          "sku": "Mi-SB-H-P-10",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Matte / 10 in",
+          "sku": "Mi-SB-H-M-10",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Polished / 11 in",
+          "sku": "Mi-SB-H-P-11",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Matte / 11 in",
+          "sku": "Mi-SB-H-M-11",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Polished / 12 in",
+          "sku": "Mi-SB-H-P-12",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Matte / 5 in",
+          "sku": "Mi-SB-H-P-5",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Hanging Bowls/Zen Drops",
+      "db_name": "Hanging Bowls/Zen Drops",
+      "product_slug": "hanging-bowls-zen-drops",
+      "issue_type": "variant_count_mismatch",
+      "sheet_count": 1,
+      "live_count": 2,
+      "shared_skus": 0,
+      "shared_variants_exact": 1,
+      "shared_variants_canonical": 1,
+      "sheet_rows": [
+        {
+          "variant": "Set of 3",
+          "sku": "MI-SB-HB-3"
+        }
+      ],
+      "live_rows": [
+        {
+          "variant": "Set of 3",
+          "sku": "MI-HBZD-SE",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Single",
+          "sku": "MI-HBZD-SI",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Zafu & Zabuton Meditation Cushion Combo - Lotus Embroidery",
+      "db_name": "Zafu & Zabuton Meditation Cushion Combo - Lotus Embroidery",
+      "product_slug": "zafu-zabuton-meditation-cushion-combo-lotus-embroidery",
+      "issue_type": "variant_count_mismatch",
+      "sheet_count": 0,
+      "live_count": 3,
+      "shared_skus": 0,
+      "shared_variants_exact": 0,
+      "shared_variants_canonical": 0,
+      "sheet_rows": [],
+      "live_rows": [
+        {
+          "variant": "Misty Blue",
+          "sku": "Co-Me-C-Z-Zn-MB-E-L",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Lavender",
+          "sku": "Co-Me-C-Z-Zn-LR-E-L",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Light Grey",
+          "sku": "Co-Me-C-Z-Zn-LG-E-L",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Joint Bowl or Knee Cut Bowl",
+      "db_name": "Joint Bowl or Knee Cut Bowl",
+      "product_slug": "joint-bowl-or-knee-cut-bowl",
+      "issue_type": "variant_count_mismatch",
+      "sheet_count": 0,
+      "live_count": 2,
+      "shared_skus": 0,
+      "shared_variants_exact": 0,
+      "shared_variants_canonical": 0,
+      "sheet_rows": [],
+      "live_rows": [
+        {
+          "variant": "8 in",
+          "sku": "MI-JB-8",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "10 inch",
+          "sku": "MI-JB-10",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Mini Coconut Shakers - 3 Types",
+      "db_name": "Mini Coconut Shakers - 3 Types",
+      "product_slug": "mini-coconut-shakers-3-types",
+      "issue_type": "mixed_variant_and_sku_mismatch",
+      "sheet_count": 4,
+      "live_count": 4,
+      "shared_skus": 0,
+      "shared_variants_exact": 3,
+      "shared_variants_canonical": 3,
+      "sheet_rows": [
+        {
+          "variant": "Round Shaped",
+          "sku": "MI-CS-RS"
+        },
+        {
+          "variant": "Square Shaped",
+          "sku": "MI-CS-SS"
+        },
+        {
+          "variant": "Eye Shaped",
+          "sku": "MI-CS-ES"
+        },
+        {
+          "variant": "Set of 3",
+          "sku": "MI-CS-SET3"
+        }
+      ],
+      "live_rows": [
+        {
+          "variant": "Eye Shaped",
+          "sku": "MI-CS-E",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Square Shaped",
+          "sku": "MI-CS-S",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Round Shaped",
+          "sku": "MI-CS-R",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "All 3",
+          "sku": "CO-MI-CS-SRE",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Tibetan Buddhist Bell",
+      "db_name": "Tibetan Buddhist Bell",
+      "product_slug": "tibetan-buddhist-bell",
+      "issue_type": "mixed_variant_and_sku_mismatch",
+      "sheet_count": 4,
+      "live_count": 4,
+      "shared_skus": 0,
+      "shared_variants_exact": 3,
+      "shared_variants_canonical": 3,
+      "sheet_rows": [
+        {
+          "variant": "Small",
+          "sku": "MI-BB-S"
+        },
+        {
+          "variant": "Medium",
+          "sku": "MI-BB-M"
+        },
+        {
+          "variant": "Large",
+          "sku": "MI-BB-L"
+        },
+        {
+          "variant": "Extra Large",
+          "sku": "MI-BB-XL"
+        }
+      ],
+      "live_rows": [
+        {
+          "variant": "Small",
+          "sku": "MI-BB-2",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Extra Large",
+          "sku": "MI-TBB-E",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Standard",
+          "sku": "MI-BB-3",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Large",
+          "sku": "MI-BB-3.5",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Angel Tuning Forks",
+      "db_name": "Angel Tuning Forks",
+      "product_slug": "angel-tuning-forks",
+      "issue_type": "sku_mismatch_with_variant_alignment",
+      "sheet_count": 4,
+      "live_count": 4,
+      "shared_skus": 0,
+      "shared_variants_exact": 4,
+      "shared_variants_canonical": 4,
+      "sheet_rows": [
+        {
+          "variant": "4096 Hz",
+          "sku": "MI-TF-AG-4096"
+        },
+        {
+          "variant": "4160 Hz",
+          "sku": "MI-TF-AG-4160"
+        },
+        {
+          "variant": "4225 Hz",
+          "sku": "MI-TF-AG-4225"
+        },
+        {
+          "variant": "Set",
+          "sku": "MI-TF-AG-SET3"
+        }
+      ],
+      "live_rows": [
+        {
+          "variant": "Set",
+          "sku": "MI-TF-AG-3",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "4160 Hz",
+          "sku": "Mi-TF-AG-4160",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "4225 Hz",
+          "sku": "Mi-TF-AG-4225",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "4096 Hz",
+          "sku": "Mi-TF-AG-4096",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Round Yoga Bolster",
+      "db_name": "Round Yoga Bolster",
+      "product_slug": "round-yoga-bolster",
+      "issue_type": "mixed_variant_and_sku_mismatch",
+      "sheet_count": 8,
+      "live_count": 8,
+      "shared_skus": 0,
+      "shared_variants_exact": 6,
+      "shared_variants_canonical": 7,
+      "sheet_rows": [
+        {
+          "variant": "Dark Grey",
+          "sku": "YO-BR-RD-DG"
+        },
+        {
+          "variant": "Grey",
+          "sku": "YO-BR-RD-GY"
+        },
+        {
+          "variant": "Maroon",
+          "sku": "YO-BR-RD-M"
+        },
+        {
+          "variant": "Navy Blue",
+          "sku": "YO-BR-RD-NB"
+        },
+        {
+          "variant": "Orange",
+          "sku": "YO-BR-RD-O"
+        },
+        {
+          "variant": "Rose",
+          "sku": "YO-BR-RD-R"
+        },
+        {
+          "variant": "sage",
+          "sku": "YO-BR-RD-S"
+        },
+        {
+          "variant": "Rouge Pink",
+          "sku": "YO-BR-RD-RP"
+        }
+      ],
+      "live_rows": [
+        {
+          "variant": "Navy Blue",
+          "sku": "Yo-BR-R-NB",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Rose",
+          "sku": "Yo-BR-R-RE",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Grey",
+          "sku": "Yo-BR-R-GY",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Sage",
+          "sku": "Yo-BR-R-SE",
+          "status": "INACTIVE"
+        },
+        {
+          "variant": "Dark Grey",
+          "sku": "Yo-BR-R-DG",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Orange",
+          "sku": "Yo-BR-R-O",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Maroon",
+          "sku": "Yo-BR-R-M",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "Rogue Pink",
+          "sku": "Yo-BR-R-RP",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Sacred Symbols Singing Bowls",
+      "db_name": "Sacred Symbols Singing Bowls",
+      "product_slug": "sacred-symbols-singing-bowls",
+      "issue_type": "variant_count_mismatch",
+      "sheet_count": 18,
+      "live_count": 15,
+      "shared_skus": 0,
+      "shared_variants_exact": 0,
+      "shared_variants_canonical": 13,
+      "sheet_rows": [
+        {
+          "variant": "Green / 3.5 in",
+          "sku": "MI-SB-SS-G-3.5"
+        },
+        {
+          "variant": "Green / 4in",
+          "sku": "MI-SB-SS-G-4"
+        },
+        {
+          "variant": "Green / 5.5in",
+          "sku": "MI-SB-SS-G-5.5"
+        },
+        {
+          "variant": "Blue / 3.5 in",
+          "sku": "MI-SB-SS-B-3.5"
+        },
+        {
+          "variant": "Blue / 4 in",
+          "sku": "MI-SB-SS-B-4"
+        },
+        {
+          "variant": "Blue / 5.5 in",
+          "sku": "MI-SB-SS-B-5.5"
+        },
+        {
+          "variant": "Black / 3.5 in",
+          "sku": "MI-SB-SS-BK-3.5"
+        },
+        {
+          "variant": "Black / 4 in",
+          "sku": "MI-SB-SS-BK-4"
+        },
+        {
+          "variant": "Black / 5.5 in",
+          "sku": "MI-SB-SS-BK-5.5"
+        },
+        {
+          "variant": "Red / 3.5 in",
+          "sku": "MI-SB-SS-R-3.5"
+        },
+        {
+          "variant": "Red / 4 in",
+          "sku": "MI-SB-SS-R-4"
+        },
+        {
+          "variant": "Red / 5.5 in",
+          "sku": "MI-SB-SS-R-5.5"
+        },
+        {
+          "variant": "Yellow / 3.5 in",
+          "sku": "MI-SB-SS-Y-3.5"
+        },
+        {
+          "variant": "Yellow / 4 in",
+          "sku": "MI-SB-SS-Y-4"
+        },
+        {
+          "variant": "Yellow / 5.5 in",
+          "sku": "MI-SB-SS-Y-5.5"
+        },
+        {
+          "variant": "Gold / 3.5 Inches",
+          "sku": "MI-SB-SS-GO-3.5"
+        },
+        {
+          "variant": "Gold / 4 Inches",
+          "sku": "MI-SB-SS-GO-4"
+        },
+        {
+          "variant": "Gold / 5.5 Inches",
+          "sku": "MI-SB-SS-GO-5.5"
+        }
+      ],
+      "live_rows": [
+        {
+          "variant": "4 in / Green",
+          "sku": "MI-SB-P-SS-G-4",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "5.5 in / Green",
+          "sku": "MI-SB-P-SS-G-5.5",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "3.5 in / Black",
+          "sku": "MI-SB-P-SS-BK-3.5",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "4 in / Black",
+          "sku": "MI-SB-P-SS-BK-4",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "5.5 in / Black",
+          "sku": "MI-SB-P-SS-BK-5.5",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "3.5 in / Blue",
+          "sku": "MI-SB-P-SS-B-3.5",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "4 in / Blue",
+          "sku": "MI-SB-P-SS-B-4",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "5.5 in / Blue",
+          "sku": "MI-SB-P-SS-B-5.5",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "3.5 in / Red",
+          "sku": "MI-SB-P-SS-R-3.5",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "4 in / Red",
+          "sku": "MI-SB-P-SS-R-4",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "5.5 in / Red",
+          "sku": "MI-SB-P-SS-R-5.5",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "3.5 in / Yellow",
+          "sku": "MI-SB-P-SS-Y-3.5",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "4 in / Yellow",
+          "sku": "MI-SB-P-SS-Y-4",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "5.5 in / Yellow",
+          "sku": "MI-SB-P-SS-Y-5.5",
+          "status": "ACTIVE"
+        },
+        {
+          "variant": "3.5 in / Green",
+          "sku": "MI-SB-P-SS-G-3.5",
+          "status": "ACTIVE"
+        }
+      ]
+    }
+  ]
+}

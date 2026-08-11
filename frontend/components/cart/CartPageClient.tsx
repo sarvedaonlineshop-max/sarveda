@@ -68,7 +68,7 @@ export function CartPageClient() {
                   <div className="flex items-start justify-between gap-2">
                     <Link
                       href={`/product/${line.productSlug}`}
-                      className="font-serif text-sm font-medium leading-snug text-brand-ink hover:text-brand-forest sm:text-base lg:text-lg"
+                      className="font-sans text-sm font-medium leading-snug text-brand-ink hover:text-brand-forest sm:text-base lg:text-lg"
                     >
                       {line.productName}
                     </Link>
@@ -90,7 +90,7 @@ export function CartPageClient() {
                     </button>
                   </div>
                   {line.variantLabel ? <p className="mt-0.5 text-xs text-brand-muted sm:text-sm">{line.variantLabel}</p> : null}
-                  <p className="mt-1.5 text-sm font-semibold text-brand-forest sm:text-base">
+                  <p className="mt-1.5 font-sans text-sm font-semibold tabular-nums text-brand-forest sm:text-base">
                     {formatINRFromPaise(line.unitPriceInPaise)}
                   </p>
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
@@ -112,7 +112,9 @@ export function CartPageClient() {
 
       <div className="mt-6 border-t border-brand-cream-dark bg-brand-cream p-4 lg:hidden">
         <p className="text-sm text-brand-muted">{itemCount} items</p>
-        <p className="font-serif text-2xl font-semibold text-brand-ink">{formatINRFromPaise(subtotalInPaise)}</p>
+        <p className="font-sans text-2xl font-semibold tabular-nums text-brand-ink">
+          {formatINRFromPaise(subtotalInPaise)}
+        </p>
         <Link
           href="/checkout"
           className="mt-4 flex min-h-[52px] w-full items-center justify-center rounded-full bg-brand-gold text-base font-semibold text-brand-night transition-colors hover:bg-[#a37934]"

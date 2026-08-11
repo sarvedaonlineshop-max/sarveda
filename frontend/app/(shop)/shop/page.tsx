@@ -24,6 +24,14 @@ const emptyList: ProductListResponse = {
   pagination: { page: 1, limit: 48, total: 0, totalPages: 0 }
 };
 
+function firstSearchParam(
+  value: string | string[] | undefined
+): string {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) return value[0] ?? "";
+  return "";
+}
+
 export default async function ShopPage({ searchParams }: Props) {
   let list = emptyList;
   try {
@@ -40,6 +48,7 @@ export default async function ShopPage({ searchParams }: Props) {
         totalPages: list.pagination.totalPages,
         total: list.pagination.total
       }}
+      searchQ={firstSearchParam(searchParams.q)}
     />
   );
 }

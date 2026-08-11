@@ -1,0 +1,1383 @@
+{
+  "imports": [
+    {
+      "wooSlug": "32-bar-rod-chime",
+      "wooId": 42389,
+      "wooName": "25 Rods \u2013 Bar Chime",
+      "wooType": "simple",
+      "sheetProducts": [
+        "Bar Chime - 25 Rods"
+      ],
+      "description": "",
+      "shortDescription": "<p><span style=\"font-weight: 400\">The 32 bar single row chimes are meticulously crafted with precision, featuring bars made from aluminum alloy and wood sourced from the revered Kari Maruthu tree.\u00a0</span></p>\n<p><span style=\"font-weight: 400\">Perfect for both indoor and outdoor use, our 25 bar single row chimes are versatile additions to any setting.\u00a0</span></p>\n<p><span style=\"font-weight: 400\">Whether you&#8217;re adding this to your percussion ensemble, conducting sound therapy sessions, or simply enjoying the serene melodies in your garden, these chimes are a great addition!\u00a0</span></p>\n<p>&nbsp;</p>",
+      "imageUrls": [
+        "https://sarveda.com/wp-content/uploads/2024/06/25-Rods-Bar-Chime-5.jpg"
+      ],
+      "primaryImage": "https://sarveda.com/wp-content/uploads/2024/06/25-Rods-Bar-Chime-5.jpg",
+      "variants": [
+        {
+          "sku": "MI-BC-25",
+          "label": "",
+          "attrs": [],
+          "mrpInPaise": 760500,
+          "saleInPaise": 495000,
+          "matchedWooAttrs": []
+        }
+      ],
+      "special": {
+        "moveExistingSkus": false,
+        "mergeIntoExistingOcarinaBig": false,
+        "reactivateDraftDnaSlug": false,
+        "naFlutesConsolidate": false
+      }
+    },
+    {
+      "wooSlug": "copper-bottle-vintage-plain-curved",
+      "wooId": 5489,
+      "wooName": "Curved Copper Bottles",
+      "wooType": "variable",
+      "sheetProducts": [
+        "Curved Copper Bottles"
+      ],
+      "description": "",
+      "shortDescription": "<p>Copper has been an important element of Indian culture for ages due to its numerous health benefits. In Ayurveda, it is known as Tamra, and modern research has established its antibacterial and antimicrobial qualities.</p>\n<p>Copper is required for basic activities such as cell communication, red blood cell production, metabolism, and healthy brain function.</p>\n<ul>\n<li>Makes the water alkaline and balances acidic levels in the body.</li>\n<li>Kills harmful bacteria such as rotavirus and cholera.</li>\n<li>Provides trace elements of copper to the body, essential for skin regeneration, rejuvenation, and metabolism.</li>\n<li>Aids in cleansing, detoxification, and weight loss.</li>\n</ul>",
+      "imageUrls": [
+        "https://sarveda.com/wp-content/uploads/2022/07/vintage-plain-curved.png",
+        "https://sarveda.com/wp-content/uploads/2022/07/brush-with-bittle-3-1.jpg",
+        "https://sarveda.com/wp-content/uploads/2022/07/copper-curved-plain.png",
+        "https://sarveda.com/wp-content/uploads/2022/08/copper-curved-plain-with-brush.jpg",
+        "https://sarveda.com/wp-content/uploads/2022/07/vintage-plain-curved.png",
+        "https://sarveda.com/wp-content/uploads/2022/07/plain-dark-bottle.jpg",
+        "https://sarveda.com/wp-content/uploads/2022/07/copper-vs-bottle_dark-plain.jpg",
+        "https://sarveda.com/wp-content/uploads/2022/07/Health-benifits_plain-dark.jpg",
+        "https://sarveda.com/wp-content/uploads/2022/07/Roundabout-bottles.png"
+      ],
+      "primaryImage": "https://sarveda.com/wp-content/uploads/2022/07/vintage-plain-curved.png",
+      "variants": [
+        {
+          "sku": "CB-C-B",
+          "label": "gold / With Brush",
+          "attrs": [
+            {
+              "name": "Bottle Type",
+              "slug": "bottle-type",
+              "value": "gold"
+            },
+            {
+              "name": "Coconut Fiber Brush",
+              "slug": "coconut-fiber-brush",
+              "value": "With Brush"
+            }
+          ],
+          "mrpInPaise": 155900,
+          "saleInPaise": 119900,
+          "matchedWooAttrs": [
+            "gold",
+            "With Brush"
+          ]
+        },
+        {
+          "sku": "CB-C",
+          "label": "gold / Without Brush",
+          "attrs": [
+            {
+              "name": "Bottle Type",
+              "slug": "bottle-type",
+              "value": "gold"
+            },
+            {
+              "name": "Coconut Fiber Brush",
+              "slug": "coconut-fiber-brush",
+              "value": "Without Brush"
+            }
+          ],
+          "mrpInPaise": 142900,
+          "saleInPaise": 109900,
+          "matchedWooAttrs": [
+            "gold",
+            "Without Brush"
+          ]
+        },
+        {
+          "sku": "CB-C-V-B",
+          "label": "vintage / With Brush",
+          "attrs": [
+            {
+              "name": "Bottle Type",
+              "slug": "bottle-type",
+              "value": "vintage"
+            },
+            {
+              "name": "Coconut Fiber Brush",
+              "slug": "coconut-fiber-brush",
+              "value": "With Brush"
+            }
+          ],
+          "mrpInPaise": 155900,
+          "saleInPaise": 119900,
+          "matchedWooAttrs": [
+            "vintage",
+            "With Brush"
+          ]
+        },
+        {
+          "sku": "CB-C-V",
+          "label": "vintage / Without Brush",
+          "attrs": [
+            {
+              "name": "Bottle Type",
+              "slug": "bottle-type",
+              "value": "vintage"
+            },
+            {
+              "name": "Coconut Fiber Brush",
+              "slug": "coconut-fiber-brush",
+              "value": "Without Brush"
+            }
+          ],
+          "mrpInPaise": 142900,
+          "saleInPaise": 109900,
+          "matchedWooAttrs": [
+            "vintage",
+            "Without Brush"
+          ]
+        }
+      ],
+      "special": {
+        "moveExistingSkus": false,
+        "mergeIntoExistingOcarinaBig": false,
+        "reactivateDraftDnaSlug": false,
+        "naFlutesConsolidate": false
+      }
+    },
+    {
+      "wooSlug": "copper-bottle-curved-vintage-hammered",
+      "wooId": 5495,
+      "wooName": "Curved Hammered Copper Bottles",
+      "wooType": "variable",
+      "sheetProducts": [
+        "Curved Hammered Copper Bottles"
+      ],
+      "description": "",
+      "shortDescription": "<p>Copper has been an important element of Indian culture for ages due to its numerous health benefits. In Ayurveda, it is known as Tamra, and modern research has established its antibacterial and antimicrobial qualities.</p>\n<p>Copper is required for basic activities such as cell communication, red blood cell production, metabolism, and healthy brain function.</p>\n<ul>\n<li>Makes the water alkaline and balances acidic levels in the body.</li>\n<li>Kills harmful bacteria such as rotavirus and cholera.</li>\n<li>Provides trace elements of copper to the body, essential for skin regeneration, rejuvenation, and metabolism.</li>\n<li>Aids in cleansing, detoxification, and weight loss.</li>\n</ul>",
+      "imageUrls": [
+        "https://sarveda.com/wp-content/uploads/2022/07/vintage-hammered.png",
+        "https://sarveda.com/wp-content/uploads/2022/07/Health-benifits_dark-brown-small-holes.jpg",
+        "https://sarveda.com/wp-content/uploads/2022/07/Health-benifits_dark-brown-small-holes-1.jpg",
+        "https://sarveda.com/wp-content/uploads/2022/07/copper-vs-bottle_dark-brown-small-holes.jpg",
+        "https://sarveda.com/wp-content/uploads/2022/07/Roundabout-bottles-1.png",
+        "https://sarveda.com/wp-content/uploads/2022/07/brush-with-bittle-10-1.jpg",
+        "https://sarveda.com/wp-content/uploads/2022/07/vintage-hammered.png"
+      ],
+      "primaryImage": "https://sarveda.com/wp-content/uploads/2022/07/vintage-hammered.png",
+      "variants": [
+        {
+          "sku": "CB-CVH-B",
+          "label": "with-brush / vintage",
+          "attrs": [
+            {
+              "name": "Coconut Fiber Brush",
+              "slug": "coconut-fiber-brush",
+              "value": "with-brush"
+            },
+            {
+              "name": "Bottle Type",
+              "slug": "bottle-type",
+              "value": "vintage"
+            }
+          ],
+          "mrpInPaise": 155900,
+          "saleInPaise": 119900,
+          "matchedWooAttrs": [
+            "vintage",
+            "with-brush"
+          ]
+        },
+        {
+          "sku": "CB-CVH",
+          "label": "vintage / without-brush",
+          "attrs": [
+            {
+              "name": "Bottle Type",
+              "slug": "bottle-type",
+              "value": "vintage"
+            },
+            {
+              "name": "Coconut Fiber Brush",
+              "slug": "coconut-fiber-brush",
+              "value": "without-brush"
+            }
+          ],
+          "mrpInPaise": 142900,
+          "saleInPaise": 109900,
+          "matchedWooAttrs": [
+            "vintage",
+            "without-brush"
+          ]
+        }
+      ],
+      "special": {
+        "moveExistingSkus": true,
+        "mergeIntoExistingOcarinaBig": false,
+        "reactivateDraftDnaSlug": false,
+        "naFlutesConsolidate": false
+      }
+    },
+    {
+      "wooSlug": "large-tuning-fork",
+      "wooId": 49817,
+      "wooName": "DNA Tuning Fork",
+      "wooType": "variable",
+      "sheetProducts": [
+        "DNA Tuning Fork"
+      ],
+      "description": "<p>Our DNA Tuning Fork is a powerful sound healing instrument designed to deliver deep, resonant vibrations for meditation, energy work, and therapeutic practices.</p>",
+      "shortDescription": "<p data-start=\"119\" data-end=\"454\">Our DNA Tuning Fork is a powerful sound healing instrument designed to deliver deep, resonant vibrations for meditation, energy work, and therapeutic practices. Crafted for precision and balance, this dual-ended tuning fork offers a unique combination of frequencies, making it ideal for both beginners and experienced practitioners.</p>\n<p data-start=\"456\" data-end=\"603\">Each fork variation is carefully tuned to specific frequency pairings to support different aspects of relaxation, alignment, and energetic harmony:</p>\n<ul data-start=\"605\" data-end=\"789\">\n<li data-section-id=\"1ubknot\" data-start=\"605\" data-end=\"651\"><strong data-start=\"607\" data-end=\"627\">Harmonic Balance</strong> \u2013 D 288 Hz / A 432 Hz</li>\n<li data-section-id=\"1340kp7\" data-start=\"652\" data-end=\"694\"><strong data-start=\"654\" data-end=\"672\">Love Frequency</strong> \u2013 528 Hz / A 432 Hz</li>\n<li data-section-id=\"1oocv95\" data-start=\"695\" data-end=\"735\"><strong data-start=\"697\" data-end=\"715\">Sacred Balance</strong> \u2013 512 Hz / 528 Hz</li>\n<li data-section-id=\"15fh24l\" data-start=\"736\" data-end=\"789\"><strong data-start=\"738\" data-end=\"761\">Cosmic OM Resonance</strong> \u2013 136.10 Hz (OM) / 528 Hz</li>\n</ul>\n<p data-start=\"791\" data-end=\"907\">The elongated design allows for deeper vibration and longer sustain, enhancing the overall sound healing experience.</p>",
+      "imageUrls": [
+        "https://sarveda.com/wp-content/uploads/2026/04/Large-tuning-fork-3.jpg"
+      ],
+      "primaryImage": "https://sarveda.com/wp-content/uploads/2026/04/Large-tuning-fork-3.jpg",
+      "variants": [
+        {
+          "sku": "MI-TF-DNA",
+          "label": "",
+          "attrs": [],
+          "mrpInPaise": 3245000,
+          "saleInPaise": 3025000,
+          "matchedWooAttrs": [
+            "Harmonic Balance"
+          ]
+        }
+      ],
+      "special": {
+        "moveExistingSkus": false,
+        "mergeIntoExistingOcarinaBig": false,
+        "reactivateDraftDnaSlug": true,
+        "naFlutesConsolidate": false
+      }
+    },
+    {
+      "wooSlug": "etched-gongs",
+      "wooId": 49115,
+      "wooName": "Etched Chau Gongs",
+      "wooType": "variable",
+      "sheetProducts": [
+        "Etched Chau Gong"
+      ],
+      "description": "<p>Crafted using traditional metalworking techniques, the <strong data-start=\"197\" data-end=\"212\">Etched Gong</strong> produces deep, resonant tones that promote relaxation, meditation, and sound healing.</p>",
+      "shortDescription": "<p data-start=\"142\" data-end=\"424\">Crafted using traditional metalworking techniques, the <strong data-start=\"197\" data-end=\"212\">Etched Gong</strong> produces deep, resonant tones that promote relaxation, meditation, and sound healing. The hand-etched surface adds a distinctive visual character while also enhancing the instrument\u2019s tonal richness and sustain.</p>\n<p data-start=\"426\" data-end=\"662\">Ideal for meditation spaces, yoga studios, sound therapy sessions, and ceremonial use, this gong responds beautifully to gentle strikes and rolling techniques, creating immersive vibrations that fill the environment with calming energy.</p>\n<p data-start=\"664\" data-end=\"757\">Available in multiple sizes to suit different sound depth preferences and space requirements.</p>\n<h2 data-start=\"764\" data-end=\"787\">Available Variations</h2>\n<ul data-start=\"788\" data-end=\"906\">\n<li data-start=\"788\" data-end=\"804\">\n<p data-start=\"790\" data-end=\"804\">18 inch Gong</p>\n</li>\n<li data-start=\"805\" data-end=\"821\">\n<p data-start=\"807\" data-end=\"821\">20 inch Gong</p>\n</li>\n<li data-start=\"822\" data-end=\"838\">\n<p data-start=\"824\" data-end=\"838\">22 inch Gong</p>\n</li>\n<li data-start=\"839\" data-end=\"855\">\n<p data-start=\"841\" data-end=\"855\">24 inch Gong</p>\n</li>\n<li data-start=\"856\" data-end=\"872\">\n<p data-start=\"858\" data-end=\"872\">28 inch Gong</p>\n</li>\n<li data-start=\"873\" data-end=\"889\">\n<p data-start=\"875\" data-end=\"889\">32 inch Gong</p>\n</li>\n<li data-start=\"890\" data-end=\"906\">\n<p data-start=\"892\" data-end=\"906\">40 inch Gong</p>\n</li>\n</ul>\n<p data-start=\"908\" data-end=\"1022\">Larger gongs produce deeper, longer-sustaining vibrations, while smaller sizes offer brighter, more focused tones.</p>",
+      "imageUrls": [
+        "https://sarveda.com/wp-content/uploads/2026/02/Etched-Gong-2.jpg"
+      ],
+      "primaryImage": "https://sarveda.com/wp-content/uploads/2026/02/Etched-Gong-2.jpg",
+      "variants": [
+        {
+          "sku": "MI-GO-CH-ET-18",
+          "label": "18 in",
+          "attrs": [
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "18 in"
+            }
+          ],
+          "mrpInPaise": 2250000,
+          "saleInPaise": 2135000,
+          "matchedWooAttrs": [
+            "Chakra",
+            "18 in"
+          ]
+        },
+        {
+          "sku": "MI-GO-CH-ET-20",
+          "label": "20 in",
+          "attrs": [
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "20 in"
+            }
+          ],
+          "mrpInPaise": 3975000,
+          "saleInPaise": 2975000,
+          "matchedWooAttrs": [
+            "Chakra",
+            "20 in"
+          ]
+        },
+        {
+          "sku": "MI-GO-CH-ET-22",
+          "label": "22 in",
+          "attrs": [
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "22 in"
+            }
+          ],
+          "mrpInPaise": 4500000,
+          "saleInPaise": 3500000,
+          "matchedWooAttrs": [
+            "Chakra",
+            "22 in"
+          ]
+        },
+        {
+          "sku": "MI-GO-CH-ET-24",
+          "label": "24 in",
+          "attrs": [
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "24 in"
+            }
+          ],
+          "mrpInPaise": 6945000,
+          "saleInPaise": 5945000,
+          "matchedWooAttrs": [
+            "Chakra",
+            "24 in"
+          ]
+        },
+        {
+          "sku": "MI-GO-CH-ET-28",
+          "label": "28 in",
+          "attrs": [
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "28 in"
+            }
+          ],
+          "mrpInPaise": 7250000,
+          "saleInPaise": 6890000,
+          "matchedWooAttrs": [
+            "Chakra",
+            "28 in"
+          ]
+        },
+        {
+          "sku": "MI-GO-CH-ET-32",
+          "label": "32 in",
+          "attrs": [
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "32 in"
+            }
+          ],
+          "mrpInPaise": 11630000,
+          "saleInPaise": 10630000,
+          "matchedWooAttrs": [
+            "Chakra",
+            "32 in"
+          ]
+        },
+        {
+          "sku": "MI-GO-CH-ET-36",
+          "label": "36 in",
+          "attrs": [
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "36 in"
+            }
+          ],
+          "mrpInPaise": 2250000,
+          "saleInPaise": 2135000,
+          "matchedWooAttrs": [],
+          "note": "No 36in on Woo; price=parent min \u2014 review"
+        },
+        {
+          "sku": "MI-GO-CH-ET-40",
+          "label": "40INCH",
+          "attrs": [
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "40 in"
+            }
+          ],
+          "mrpInPaise": 20500000,
+          "saleInPaise": 19500000,
+          "matchedWooAttrs": [
+            "Chakra",
+            "40 in"
+          ]
+        }
+      ],
+      "special": {
+        "moveExistingSkus": false,
+        "mergeIntoExistingOcarinaBig": false,
+        "reactivateDraftDnaSlug": false,
+        "naFlutesConsolidate": false
+      }
+    },
+    {
+      "wooSlug": "wooden-guiro",
+      "wooId": 50572,
+      "wooName": "Wooden Guiro",
+      "wooType": "simple",
+      "sheetProducts": [
+        "Guiro"
+      ],
+      "description": "<p>Bring rhythm and texture to your musical creations with the Wooden Guiro, a beautifully handcrafted percussion instrument designed for musicians, educators, and music enthusiasts of all ages. Made from high-quality natural wood, this guiro produces the distinctive rasping sound that has become a staple in Latin, folk, and world music traditions.</p>",
+      "shortDescription": "<p class=\"PDq2pG_selectionAnchorContainer\" data-start=\"40\" data-end=\"387\">Bring rhythm and texture to your musical creations with the Wooden Guiro, a beautifully handcrafted percussion instrument designed for musicians, educators, and music enthusiasts of all ages. Made from high-quality natural wood, this guiro produces the distinctive rasping sound that has become a staple in Latin, folk, and world music traditions.</p>\n<p data-start=\"389\" data-end=\"724\">Measuring <strong data-start=\"399\" data-end=\"436\">32 cm in length and 6 cm in width</strong>, this lightweight instrument weighs approximately <strong data-start=\"487\" data-end=\"496\">200 g</strong>, making it comfortable to hold and easy to play for extended periods. The carefully carved ridges create clear, crisp tones when scraped with the included wooden striker, delivering an authentic and expressive sound experience.</p>\n<p data-start=\"726\" data-end=\"902\">Whether used in classrooms, music therapy sessions, percussion ensembles, or home music-making, the Wooden Guiro offers a fun and engaging way to explore rhythm and creativity.</p>",
+      "imageUrls": [
+        "https://sarveda.com/wp-content/uploads/2026/06/Wooden-Guiro-4.jpg"
+      ],
+      "primaryImage": "https://sarveda.com/wp-content/uploads/2026/06/Wooden-Guiro-4.jpg",
+      "variants": [
+        {
+          "sku": "MI-GRO",
+          "label": "",
+          "attrs": [],
+          "mrpInPaise": 165000,
+          "saleInPaise": 125000,
+          "matchedWooAttrs": []
+        }
+      ],
+      "special": {
+        "moveExistingSkus": false,
+        "mergeIntoExistingOcarinaBig": false,
+        "reactivateDraftDnaSlug": false,
+        "naFlutesConsolidate": false
+      }
+    },
+    {
+      "wooSlug": "copper-bottle-hammered-copper-set",
+      "wooId": 5688,
+      "wooName": "Hammered Copper Bottle",
+      "wooType": "variable",
+      "sheetProducts": [
+        "Hammered Copper Bottle"
+      ],
+      "description": "",
+      "shortDescription": "<p>Copper has been an important element of Indian culture for ages due to its numerous health benefits. In Ayurveda, it is known as Tamra, and modern research has established its antibacterial and antimicrobial qualities.</p>\n<p>Copper is required for basic activities such as cell communication, red blood cell production, metabolism, and healthy brain function.</p>\n<ul>\n<li>Makes the water alkaline and balances acidic levels in the body.</li>\n<li>Kills harmful bacteria such as rotavirus and cholera.</li>\n<li>Provides trace elements of copper to the body, essential for skin regeneration, rejuvenation, and metabolism.</li>\n<li>Aids in cleansing, detoxification, and weight loss.</li>\n</ul>",
+      "imageUrls": [
+        "https://sarveda.com/wp-content/uploads/2022/07/White-bg_small-groves_light.jpg",
+        "https://sarveda.com/wp-content/uploads/2022/07/ALL-bottles-chakra-3.jpg",
+        "https://sarveda.com/wp-content/uploads/2022/07/Health-benifits_light-brown-small-holes-1.jpg",
+        "https://sarveda.com/wp-content/uploads/2022/07/copper-vs-bottle_light-small-groves.jpg",
+        "https://sarveda.com/wp-content/uploads/2022/07/Health-benifits_light-brown-small-holes.jpg",
+        "https://sarveda.com/wp-content/uploads/2022/07/Hammered-Copper.png",
+        "https://sarveda.com/wp-content/uploads/2022/07/brush-with-bittle-1.jpg"
+      ],
+      "primaryImage": "https://sarveda.com/wp-content/uploads/2022/07/White-bg_small-groves_light.jpg",
+      "variants": [
+        {
+          "sku": "CB-HM",
+          "label": "copper / without-brush",
+          "attrs": [
+            {
+              "name": "Bottle Type",
+              "slug": "bottle-type",
+              "value": "copper"
+            },
+            {
+              "name": "Coconut Fiber Brush",
+              "slug": "coconut-fiber-brush",
+              "value": "without-brush"
+            }
+          ],
+          "mrpInPaise": 142900,
+          "saleInPaise": 109900,
+          "matchedWooAttrs": [
+            "without-brush"
+          ]
+        },
+        {
+          "sku": "CB-HM-B",
+          "label": "copper / with-brush",
+          "attrs": [
+            {
+              "name": "Bottle Type",
+              "slug": "bottle-type",
+              "value": "copper"
+            },
+            {
+              "name": "Coconut Fiber Brush",
+              "slug": "coconut-fiber-brush",
+              "value": "with-brush"
+            }
+          ],
+          "mrpInPaise": 155900,
+          "saleInPaise": 119900,
+          "matchedWooAttrs": [
+            "with-brush"
+          ]
+        }
+      ],
+      "special": {
+        "moveExistingSkus": false,
+        "mergeIntoExistingOcarinaBig": false,
+        "reactivateDraftDnaSlug": false,
+        "naFlutesConsolidate": false
+      }
+    },
+    {
+      "wooSlug": "copper-bottle-with-brush-true-happiness-lies-within",
+      "wooId": 5634,
+      "wooName": "Happiness is Inside",
+      "wooType": "variation",
+      "sheetProducts": [
+        "Happiness is Inside"
+      ],
+      "description": "",
+      "shortDescription": "",
+      "imageUrls": [
+        "https://sarveda.com/wp-content/uploads/2022/06/White-brush.png"
+      ],
+      "primaryImage": "https://sarveda.com/wp-content/uploads/2022/06/White-brush.png",
+      "variants": [
+        {
+          "sku": "CB-AD-HI-B",
+          "label": "with-brush / 1L",
+          "attrs": [
+            {
+              "name": "Coconut Fiber Brush",
+              "slug": "coconut-fiber-brush",
+              "value": "with-brush"
+            },
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "1L"
+            }
+          ],
+          "mrpInPaise": 174900,
+          "saleInPaise": 134500,
+          "matchedWooAttrs": []
+        },
+        {
+          "sku": "CB-AD-HI",
+          "label": "without-brush / 1L",
+          "attrs": [
+            {
+              "name": "Coconut Fiber Brush",
+              "slug": "coconut-fiber-brush",
+              "value": "without-brush"
+            },
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "1L"
+            }
+          ],
+          "mrpInPaise": 174900,
+          "saleInPaise": 134500,
+          "matchedWooAttrs": []
+        },
+        {
+          "sku": "CB-AD-HI-.5",
+          "label": "without-brush / 500ml",
+          "attrs": [
+            {
+              "name": "Coconut Fiber Brush",
+              "slug": "coconut-fiber-brush",
+              "value": "without-brush"
+            },
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "500ml"
+            }
+          ],
+          "mrpInPaise": 174900,
+          "saleInPaise": 134500,
+          "matchedWooAttrs": []
+        },
+        {
+          "sku": "CB-AD-HI-.5-B",
+          "label": "with-brush / 500ml",
+          "attrs": [
+            {
+              "name": "Coconut Fiber Brush",
+              "slug": "coconut-fiber-brush",
+              "value": "with-brush"
+            },
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "500ml"
+            }
+          ],
+          "mrpInPaise": 174900,
+          "saleInPaise": 134500,
+          "matchedWooAttrs": []
+        }
+      ],
+      "special": {
+        "moveExistingSkus": false,
+        "mergeIntoExistingOcarinaBig": false,
+        "reactivateDraftDnaSlug": false,
+        "naFlutesConsolidate": false
+      }
+    },
+    {
+      "wooSlug": "sleigh-bells-wooden-jingle-stick",
+      "wooId": 50608,
+      "wooName": "Sleigh Bells Wooden Jingle Stick",
+      "wooType": "simple",
+      "sheetProducts": [
+        "Jingle Stick"
+      ],
+      "description": "<p><span style=\"font-weight: 400\">Fill any space with bright, cascading shimmer using the Sleigh Bells Wooden Jingle Stick &#8211; one of the most universally joyful sounds in all of percussion</span></p>",
+      "shortDescription": "<p><span style=\"font-weight: 400\">Fill any space with bright, cascading shimmer using the Sleigh Bells Wooden Jingle Stick &#8211; one of the most universally joyful sounds in all of percussion. According to percussion historian James Blades, the small tinkling bells were commonly suspended on horses, mules, and camels in ancient Egypt and Assyria. One of the earliest uses of sleigh bells in the classical repertoire can be found in Mozart&#8217;s Three German Dances, composed in 1791.</span></p>\n<p><span style=\"font-weight: 400\">Our Sleigh Bells Wooden Jingle Stick is designed for instant musical joy and effortless play. The wooden handle provides a warm, comfortable grip while the layered metal jingle bells produce a full, cascading shimmer that fills any room with a single shake- no technique required, no prior experience needed. Bright, celebratory, and immediately expressive, the jingle stick develops a sense of rhythm and pulse in young players while remaining a versatile tool for performers and sound practitioners alike.</span></p>\n<p><span style=\"font-weight: 400\">Available in a single classic design, measuring 30 \u00d7 2.5 \u00d7 2.5 cm and weighing just 200 g, this lightweight instrument is effortless to carry and play for extended periods without fatigue. The Sleigh Bells Wooden Jingle Stick delivers a warm, resonant sound in the most accessible form possible.</span></p>",
+      "imageUrls": [
+        "https://sarveda.com/wp-content/uploads/2026/06/sleigh-bells-wooden-jingle-stick-3.jpg"
+      ],
+      "primaryImage": "https://sarveda.com/wp-content/uploads/2026/06/sleigh-bells-wooden-jingle-stick-3.jpg",
+      "variants": [
+        {
+          "sku": "MI-JE-S",
+          "label": "",
+          "attrs": [],
+          "mrpInPaise": 195000,
+          "saleInPaise": 145000,
+          "matchedWooAttrs": []
+        }
+      ],
+      "special": {
+        "moveExistingSkus": false,
+        "mergeIntoExistingOcarinaBig": false,
+        "reactivateDraftDnaSlug": false,
+        "naFlutesConsolidate": false
+      }
+    },
+    {
+      "wooSlug": "wooden-hand-taal-khartal",
+      "wooId": 50964,
+      "wooName": "Wooden Hand Khartal/Jingles",
+      "wooType": "variable",
+      "sheetProducts": [
+        "Khartal*3"
+      ],
+      "description": "<p>Experience the timeless rhythm of Indian folk and devotional music with the <strong data-start=\"128\" data-end=\"156\">Wooden Hand Taal Khartal/Jingles</strong>.</p>",
+      "shortDescription": "<p class=\"PDq2pG_selectionAnchorContainer\" data-start=\"52\" data-end=\"533\">Experience the timeless rhythm of Indian folk and devotional music with the <strong data-start=\"128\" data-end=\"156\">Wooden Hand Taal Khartal</strong>. Handcrafted from quality natural wood and fitted with durable metal jingles, this traditional percussion instrument produces a bright, crisp, and resonant sound that enhances every performance. Lightweight, comfortable to hold, and easy to play, it is ideal for musicians, kirtan groups, bhajan sessions, classrooms, music therapy, and beginners exploring rhythm instruments.</p>\n<p data-start=\"535\" data-end=\"910\">Available in <strong data-start=\"548\" data-end=\"576\">Small, Medium, and Large</strong> sizes, each variation offers a unique tonal character and volume, allowing players to choose the instrument best suited to their style and performance setting. Whether used for devotional singing, folk performances, rhythm practice, or recreational music-making, the Wooden Hand Taal Khartal delivers an authentic musical experience.</p>",
+      "imageUrls": [
+        "https://sarveda.com/wp-content/uploads/2026/07/Wooden-Hand-Taal-Khartal-cover.jpg"
+      ],
+      "primaryImage": "https://sarveda.com/wp-content/uploads/2026/07/Wooden-Hand-Taal-Khartal-cover.jpg",
+      "variants": [
+        {
+          "sku": "MI-KL",
+          "label": "",
+          "attrs": [],
+          "mrpInPaise": 50000,
+          "saleInPaise": 45000,
+          "matchedWooAttrs": [
+            "Small"
+          ]
+        }
+      ],
+      "special": {
+        "moveExistingSkus": false,
+        "mergeIntoExistingOcarinaBig": false,
+        "reactivateDraftDnaSlug": false,
+        "naFlutesConsolidate": false
+      }
+    },
+    {
+      "wooSlug": "native-american-style-flute-handcrafted-wooden-melody-maker",
+      "wooId": 48428,
+      "wooName": "Native American Style Flutes",
+      "wooType": "variable",
+      "sheetProducts": [
+        "Native American Flute - Double",
+        "Native American Flute - Single Large",
+        "Native American Flute - Single Medium",
+        "Native American Flute - Single Small"
+      ],
+      "description": "<p data-start=\"198\" data-end=\"679\">Experience the timeless beauty of traditional woodwind music with our handcrafted <strong data-start=\"131\" data-end=\"156\">Native American Flute</strong>, designed to produce warm, soothing, and expressive melodies.</p>",
+      "shortDescription": "<p class=\"PDq2pG_selectionAnchorContainer\" data-start=\"49\" data-end=\"425\">Carefully crafted from premium natural wood, each flute features a smooth finish, excellent resonance, and an ergonomic design that makes it comfortable to play for both beginners and experienced musicians.</p>\n<p data-start=\"427\" data-end=\"779\">Traditionally inspired by Native American craftsmanship, these flutes are renowned for their calming, breathy tone and are widely used for meditation, relaxation, sound healing, musical performances, and personal practice. The built-in block (bird/totem) directs the airflow precisely, allowing effortless sound production with minimal breath pressure.</p>\n<p data-start=\"781\" data-end=\"1107\">Available in <strong data-start=\"794\" data-end=\"820\">five unique variations</strong>\u2014Single Small, Single Medium, Single Large, Double Hole, and Triple Hole\u2014each flute offers its own tonal depth and musical character. Whether you&#8217;re seeking a compact travel flute or a rich, deep-toned instrument for immersive performances, there&#8217;s a flute to match your musical journey.</p>",
+      "imageUrls": [
+        "https://sarveda.com/wp-content/uploads/2025/12/Native-American-Flute-3.jpg"
+      ],
+      "primaryImage": "https://sarveda.com/wp-content/uploads/2025/12/Native-American-Flute-3.jpg",
+      "variants": [
+        {
+          "sku": "MI-NF-D",
+          "label": "Double",
+          "attrs": [
+            {
+              "name": "Type",
+              "slug": "type",
+              "value": "Double"
+            }
+          ],
+          "mrpInPaise": 2250000,
+          "saleInPaise": 1850000,
+          "matchedWooAttrs": [
+            "Double"
+          ]
+        },
+        {
+          "sku": "MI-NF-S-L",
+          "label": "Single Large",
+          "attrs": [
+            {
+              "name": "Type",
+              "slug": "type",
+              "value": "Single Large"
+            }
+          ],
+          "mrpInPaise": 1250000,
+          "saleInPaise": 1195000,
+          "matchedWooAttrs": [
+            "Single Large"
+          ]
+        },
+        {
+          "sku": "MI-NF-S-M",
+          "label": "Single Medium",
+          "attrs": [
+            {
+              "name": "Type",
+              "slug": "type",
+              "value": "Single Medium"
+            }
+          ],
+          "mrpInPaise": 1150000,
+          "saleInPaise": 1025000,
+          "matchedWooAttrs": [
+            "Single Medium"
+          ]
+        },
+        {
+          "sku": "MI-NF-S-S",
+          "label": "Single Small",
+          "attrs": [
+            {
+              "name": "Type",
+              "slug": "type",
+              "value": "Single Small"
+            }
+          ],
+          "mrpInPaise": 950000,
+          "saleInPaise": 850000,
+          "matchedWooAttrs": [
+            "Single Small"
+          ]
+        }
+      ],
+      "special": {
+        "moveExistingSkus": false,
+        "mergeIntoExistingOcarinaBig": false,
+        "reactivateDraftDnaSlug": false,
+        "naFlutesConsolidate": true
+      }
+    },
+    {
+      "wooSlug": "clay-ocarinas",
+      "wooId": 50995,
+      "wooName": "Clay Ocarinas",
+      "wooType": "variable",
+      "sheetProducts": [
+        "Ocarina - Small"
+      ],
+      "description": "<p>Discover the timeless charm of music with the <strong data-start=\"124\" data-end=\"157\">Sarveda Handmade Clay Ocarina</strong>, a beautifully crafted wind instrument inspired by traditional vessel flutes.</p>",
+      "shortDescription": "<p class=\"PDq2pG_selectionAnchorContainer\" data-start=\"78\" data-end=\"446\">Discover the timeless charm of music with the <strong data-start=\"124\" data-end=\"157\">Sarveda Handmade Clay Ocarina</strong>, a beautifully crafted wind instrument inspired by traditional vessel flutes. Made from clay and finished with an elegant marbled glaze, this compact ocarina produces warm, soothing tones that are perfect for beginners, hobbyists, music educators, and collectors alike.</p>\n<p data-start=\"448\" data-end=\"777\">Its lightweight design and ergonomic finger holes make it comfortable to hold and easy to learn. Whether you&#8217;re exploring your first melodies, introducing children to music, or adding a unique handcrafted instrument to your collection, this clay ocarina delivers an authentic playing experience with a beautiful artisanal finish.</p>\n<p data-start=\"779\" data-end=\"860\">Available in <strong data-start=\"792\" data-end=\"801\">Small</strong> and <strong data-start=\"806\" data-end=\"815\">Large</strong> sizes to suit different playing preferences.</p>",
+      "imageUrls": [
+        "https://sarveda.com/wp-content/uploads/2026/07/Clay-Ocarina-Cover.jpg"
+      ],
+      "primaryImage": "https://sarveda.com/wp-content/uploads/2026/07/Clay-Ocarina-Cover.jpg",
+      "variants": [
+        {
+          "sku": "MI-OC-S",
+          "label": "Small",
+          "attrs": [
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "Small"
+            }
+          ],
+          "mrpInPaise": 295000,
+          "saleInPaise": 245000,
+          "matchedWooAttrs": [
+            "Small"
+          ]
+        }
+      ],
+      "special": {
+        "moveExistingSkus": false,
+        "mergeIntoExistingOcarinaBig": true,
+        "reactivateDraftDnaSlug": false,
+        "naFlutesConsolidate": false
+      }
+    },
+    {
+      "wooSlug": "copper-bottle-pink-noble-toughts",
+      "wooId": 5778,
+      "wooName": "Pink & Positive",
+      "wooType": "variation",
+      "sheetProducts": [
+        "Pink & Positive"
+      ],
+      "description": "",
+      "shortDescription": "",
+      "imageUrls": [
+        "https://sarveda.com/wp-content/uploads/2022/07/Pink.png"
+      ],
+      "primaryImage": "https://sarveda.com/wp-content/uploads/2022/07/Pink.png",
+      "variants": [
+        {
+          "sku": "CB-AD-PP",
+          "label": "without-brush / 1L",
+          "attrs": [
+            {
+              "name": "Coconut Fiber Brush",
+              "slug": "coconut-fiber-brush",
+              "value": "without-brush"
+            },
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "1L"
+            }
+          ],
+          "mrpInPaise": 161900,
+          "saleInPaise": 124500,
+          "matchedWooAttrs": []
+        },
+        {
+          "sku": "CB-AD-PP-B",
+          "label": "with-brush / 1L",
+          "attrs": [
+            {
+              "name": "Coconut Fiber Brush",
+              "slug": "coconut-fiber-brush",
+              "value": "with-brush"
+            },
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "1L"
+            }
+          ],
+          "mrpInPaise": 161900,
+          "saleInPaise": 124500,
+          "matchedWooAttrs": []
+        },
+        {
+          "sku": "CB-AD-PP-.5",
+          "label": "without-brush / 500ml",
+          "attrs": [
+            {
+              "name": "Coconut Fiber Brush",
+              "slug": "coconut-fiber-brush",
+              "value": "without-brush"
+            },
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "500ml"
+            }
+          ],
+          "mrpInPaise": 161900,
+          "saleInPaise": 124500,
+          "matchedWooAttrs": []
+        },
+        {
+          "sku": "CB-AD-PP-.5-B",
+          "label": "with-brush / 500ml",
+          "attrs": [
+            {
+              "name": "Coconut Fiber Brush",
+              "slug": "coconut-fiber-brush",
+              "value": "with-brush"
+            },
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "500ml"
+            }
+          ],
+          "mrpInPaise": 161900,
+          "saleInPaise": 124500,
+          "matchedWooAttrs": []
+        }
+      ],
+      "special": {
+        "moveExistingSkus": false,
+        "mergeIntoExistingOcarinaBig": false,
+        "reactivateDraftDnaSlug": false,
+        "naFlutesConsolidate": false
+      }
+    },
+    {
+      "wooSlug": "shruti-box-pedal",
+      "wooId": 51090,
+      "wooName": "Shruti Box Pedal",
+      "wooType": "simple",
+      "sheetProducts": [
+        "Shruti Box Pedal"
+      ],
+      "description": "<p>Experience effortless and continuous airflow while playing your Shruti Box with this handcrafted <strong data-start=\"146\" data-end=\"171\">Shruti Box Foot Pedal</strong>.</p>",
+      "shortDescription": "<p class=\"PDq2pG_selectionAnchorContainer\" data-start=\"49\" data-end=\"396\">Designed for musicians, vocalists, meditation practitioners, and sound therapists, this pedal allows you to pump the bellows hands-free, keeping both hands free for playing instruments or maintaining mudras during practice.</p>\n<p data-start=\"398\" data-end=\"842\">Crafted from premium hardwood with sturdy metal linkages and a durable flexible cable, the foot pedal delivers smooth, consistent movement and reliable performance. Its ergonomic spring-assisted design minimizes fatigue during long sessions while providing excellent control over airflow. Whether you&#8217;re accompanying Indian classical music, kirtans, yoga sessions, or sound healing practices, this pedal enhances comfort and playing efficiency.</p>\n<p data-start=\"844\" data-end=\"994\">Easy to install and compatible with most standard Shruti Boxes, it is an ideal accessory for professional performers, teachers, and enthusiasts alike.</p>",
+      "imageUrls": [
+        "https://sarveda.com/wp-content/uploads/2026/08/Shruti-Box-Foot-Pedal-4.jpg"
+      ],
+      "primaryImage": "https://sarveda.com/wp-content/uploads/2026/08/Shruti-Box-Foot-Pedal-4.jpg",
+      "variants": [
+        {
+          "sku": "MI-STB-P",
+          "label": "Pedal",
+          "attrs": [
+            {
+              "name": "Type",
+              "slug": "type",
+              "value": "Pedal"
+            }
+          ],
+          "mrpInPaise": 265000,
+          "saleInPaise": 195000,
+          "matchedWooAttrs": []
+        }
+      ],
+      "special": {
+        "moveExistingSkus": false,
+        "mergeIntoExistingOcarinaBig": false,
+        "reactivateDraftDnaSlug": false,
+        "naFlutesConsolidate": false
+      }
+    },
+    {
+      "wooSlug": "copper-bottle-with-brush-tattvamasi",
+      "wooId": 5632,
+      "wooName": "Tattvamasi-I am Infinite",
+      "wooType": "variation",
+      "sheetProducts": [
+        "Tattvamasi-I am Infinite"
+      ],
+      "description": "",
+      "shortDescription": "",
+      "imageUrls": [
+        "https://sarveda.com/wp-content/uploads/2022/06/brush-with-blue.png"
+      ],
+      "primaryImage": "https://sarveda.com/wp-content/uploads/2022/06/brush-with-blue.png",
+      "variants": [
+        {
+          "sku": "CB-AD-TM-B",
+          "label": "with-brush / 1L",
+          "attrs": [
+            {
+              "name": "Coconut Fiber Brush",
+              "slug": "coconut-fiber-brush",
+              "value": "with-brush"
+            },
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "1L"
+            }
+          ],
+          "mrpInPaise": 174900,
+          "saleInPaise": 134500,
+          "matchedWooAttrs": []
+        },
+        {
+          "sku": "CB-AD-TM",
+          "label": "without-brush / 1L",
+          "attrs": [
+            {
+              "name": "Coconut Fiber Brush",
+              "slug": "coconut-fiber-brush",
+              "value": "without-brush"
+            },
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "1L"
+            }
+          ],
+          "mrpInPaise": 174900,
+          "saleInPaise": 134500,
+          "matchedWooAttrs": []
+        },
+        {
+          "sku": "CB-AD-TM-.5",
+          "label": "without-brush / 500ml",
+          "attrs": [
+            {
+              "name": "Coconut Fiber Brush",
+              "slug": "coconut-fiber-brush",
+              "value": "without-brush"
+            },
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "500ml"
+            }
+          ],
+          "mrpInPaise": 174900,
+          "saleInPaise": 134500,
+          "matchedWooAttrs": []
+        },
+        {
+          "sku": "CB-AD-TM-B-.5",
+          "label": "with-brush / 500ml",
+          "attrs": [
+            {
+              "name": "Coconut Fiber Brush",
+              "slug": "coconut-fiber-brush",
+              "value": "with-brush"
+            },
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "500ml"
+            }
+          ],
+          "mrpInPaise": 174900,
+          "saleInPaise": 134500,
+          "matchedWooAttrs": []
+        }
+      ],
+      "special": {
+        "moveExistingSkus": false,
+        "mergeIntoExistingOcarinaBig": false,
+        "reactivateDraftDnaSlug": false,
+        "naFlutesConsolidate": false
+      }
+    },
+    {
+      "wooSlug": "wind-chimes",
+      "wooId": 50420,
+      "wooName": "Wind Chimes",
+      "wooType": "variable",
+      "sheetProducts": [
+        "Wind chimes"
+      ],
+      "description": "<p>Bring harmony, elegance, and soothing sound to your living space with our handcrafted Metal Wind Chime. Designed to create rich, resonant tones with every gentle breeze, this wind chime is perfect for gardens, balconies, patios, meditation spaces, yoga studios, and indoor d\u00e9cor. Its durable construction and timeless finish make it both a decorative accent and a calming musical instrument.</p>",
+      "shortDescription": "<p>Bring harmony, elegance, and soothing sound to your living space with our handcrafted Metal Wind Chime. Designed to create rich, resonant tones with every gentle breeze, this wind chime is perfect for gardens, balconies, patios, meditation spaces, yoga studios, and indoor d\u00e9cor. Its durable construction and timeless finish make it both a decorative accent and a calming musical instrument.</p>\n<p class=\"isSelectedEnd\">Available in <strong>five elegant finishes\u2014Gold, Antique Copper, Yellow, Silver, and Green</strong>\u2014this handcrafted metal wind chime is designed to complement a variety of indoor and outdoor d\u00e9cor styles. Crafted from premium-quality metal tubes with a durable finish, it produces soothing, resonant tones that create a peaceful and relaxing atmosphere.</p>\n<p>The wind chime is offered in <strong>two sizes</strong> to suit different spaces and preferences.</p>\n<p>The Small size measures 78 cm in total length and weighs approximately 850 g, making it ideal for balconies, windows, meditation corners, and compact outdoor spaces.</p>\n<p>The Large size measures 90 cm in total length and weighs approximately 1.05 kg, delivering a deeper, fuller resonance that is perfect for gardens, patios, porches, and larger relaxation areas.</p>",
+      "imageUrls": [
+        "https://sarveda.com/wp-content/uploads/2026/06/Wind-Chime-cover-1.jpg"
+      ],
+      "primaryImage": "https://sarveda.com/wp-content/uploads/2026/06/Wind-Chime-cover-1.jpg",
+      "variants": [
+        {
+          "sku": "MI-WC-GO-S",
+          "label": "Gold-Small",
+          "attrs": [
+            {
+              "name": "Colours",
+              "slug": "colours",
+              "value": "Gold"
+            },
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "Small"
+            }
+          ],
+          "mrpInPaise": 245000,
+          "saleInPaise": 195000,
+          "matchedWooAttrs": [
+            "Gold",
+            "Small"
+          ]
+        },
+        {
+          "sku": "MI-WC-GO-L",
+          "label": "Gold-Large",
+          "attrs": [
+            {
+              "name": "Colours",
+              "slug": "colours",
+              "value": "Gold"
+            },
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "Large"
+            }
+          ],
+          "mrpInPaise": 315000,
+          "saleInPaise": 265000,
+          "matchedWooAttrs": [
+            "Gold",
+            "Large"
+          ]
+        },
+        {
+          "sku": "MI-WC-GR-S",
+          "label": "Green-Small",
+          "attrs": [
+            {
+              "name": "Colours",
+              "slug": "colours",
+              "value": "Green"
+            },
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "Small"
+            }
+          ],
+          "mrpInPaise": 245000,
+          "saleInPaise": 195000,
+          "matchedWooAttrs": [
+            "Green",
+            "Small"
+          ]
+        },
+        {
+          "sku": "MI-WC-GR-L",
+          "label": "Green-Large",
+          "attrs": [
+            {
+              "name": "Colours",
+              "slug": "colours",
+              "value": "Green"
+            },
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "Large"
+            }
+          ],
+          "mrpInPaise": 315000,
+          "saleInPaise": 265000,
+          "matchedWooAttrs": [
+            "Green",
+            "Large"
+          ]
+        },
+        {
+          "sku": "MI-WC-YE-S",
+          "label": "Yellow-Small",
+          "attrs": [
+            {
+              "name": "Colours",
+              "slug": "colours",
+              "value": "Yellow"
+            },
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "Small"
+            }
+          ],
+          "mrpInPaise": 245000,
+          "saleInPaise": 195000,
+          "matchedWooAttrs": [
+            "Yellow",
+            "Small"
+          ]
+        },
+        {
+          "sku": "MI-WC-YE-L",
+          "label": "Yellow-Large",
+          "attrs": [
+            {
+              "name": "Colours",
+              "slug": "colours",
+              "value": "Yellow"
+            },
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "Large"
+            }
+          ],
+          "mrpInPaise": 315000,
+          "saleInPaise": 265000,
+          "matchedWooAttrs": [
+            "Yellow",
+            "Large"
+          ]
+        },
+        {
+          "sku": "MI-WC-SI-S",
+          "label": "Silver-Small",
+          "attrs": [
+            {
+              "name": "Colours",
+              "slug": "colours",
+              "value": "Silver"
+            },
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "Small"
+            }
+          ],
+          "mrpInPaise": 245000,
+          "saleInPaise": 195000,
+          "matchedWooAttrs": [
+            "Silver",
+            "Small"
+          ]
+        },
+        {
+          "sku": "MI-WC-SI-L",
+          "label": "Silver-Large",
+          "attrs": [
+            {
+              "name": "Colours",
+              "slug": "colours",
+              "value": "Silver"
+            },
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "Large"
+            }
+          ],
+          "mrpInPaise": 315000,
+          "saleInPaise": 265000,
+          "matchedWooAttrs": [
+            "Silver",
+            "Large"
+          ]
+        },
+        {
+          "sku": "MI-WC-AC-S",
+          "label": "Antique Copper-Small",
+          "attrs": [
+            {
+              "name": "Colours",
+              "slug": "colours",
+              "value": "Antique Copper"
+            },
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "Small"
+            }
+          ],
+          "mrpInPaise": 245000,
+          "saleInPaise": 195000,
+          "matchedWooAttrs": [
+            "Antique Copper",
+            "Small"
+          ]
+        },
+        {
+          "sku": "MI-WC-AC-L",
+          "label": "Antique Copper-Large",
+          "attrs": [
+            {
+              "name": "Colours",
+              "slug": "colours",
+              "value": "Antique Copper"
+            },
+            {
+              "name": "Size",
+              "slug": "size",
+              "value": "Large"
+            }
+          ],
+          "mrpInPaise": 315000,
+          "saleInPaise": 265000,
+          "matchedWooAttrs": [
+            "Antique Copper",
+            "Large"
+          ]
+        }
+      ],
+      "special": {
+        "moveExistingSkus": false,
+        "mergeIntoExistingOcarinaBig": false,
+        "reactivateDraftDnaSlug": false,
+        "naFlutesConsolidate": false
+      }
+    },
+    {
+      "wooSlug": "wooden-finger-castanet",
+      "wooId": 50579,
+      "wooName": "Wooden Finger Castanet",
+      "wooType": "variable",
+      "sheetProducts": [
+        "Wooden Finger Castanet"
+      ],
+      "description": "<p><span style=\"font-weight: 400\">Add a spark of rhythm and cultural richness to your music with the Finger Castanet, one of the world&#8217;s oldest and most expressive handheld percussion instruments.</span></p>",
+      "shortDescription": "<p><span style=\"font-weight: 400\">Add a spark of rhythm and cultural richness to your music with the Finger Castanet, one of the world&#8217;s oldest and most expressive handheld percussion instruments. With a history dating back more than 3,000 years, the castanet is attributed to the Phoenicians, who crafted the first versions from everyday wood. From there, trade routes carried them across the Mediterranean, and it was Spain that welcomed the castanet most deeply into its culture- making it an identifying instrument of Spanish music and a cornerstone of flamenco.</span></p>\n<p><span style=\"font-weight: 400\">Our Finger Castanet is designed for ease and accessibility. Rather than the traditional palm-held style, the finger loop design allows the castanet to be worn directly on the finger- making it ideal for beginners, children, classroom use, and performers who want an immediate, intuitive rhythmic experience. Compact and clickable, finger castanets improve rhythm, coordination, and fine motor skills, making them as valuable in music education as they are on a stage.\u00a0</span></p>\n<p><span style=\"font-weight: 400\">Available in <strong>2 variations</strong>, <strong>White and Black</strong> each measuring 5.5 \u00d7 5.5 \u00d7 2 cm and weighing just 30 g, these lightweight castanets are effortless to carry and play. Whether you are a music teacher introducing rhythm to young students, a dancer adding percussive expression to your movement, or a world music enthusiast building your collection- the Finger Castanet delivers an authentic, expressive sound in the simplest possible form.</span></p>",
+      "imageUrls": [
+        "https://sarveda.com/wp-content/uploads/2026/06/Wooden-Finger-Castanet-cover-1.jpg"
+      ],
+      "primaryImage": "https://sarveda.com/wp-content/uploads/2026/06/Wooden-Finger-Castanet-cover-1.jpg",
+      "variants": [
+        {
+          "sku": "MI-FC-B",
+          "label": "Black",
+          "attrs": [
+            {
+              "name": "Colour",
+              "slug": "colour",
+              "value": "Black"
+            }
+          ],
+          "mrpInPaise": 130000,
+          "saleInPaise": 79500,
+          "matchedWooAttrs": [
+            "Black"
+          ]
+        },
+        {
+          "sku": "MI-FC-W",
+          "label": "White",
+          "attrs": [
+            {
+              "name": "Colour",
+              "slug": "colour",
+              "value": "White"
+            }
+          ],
+          "mrpInPaise": 125000,
+          "saleInPaise": 74500,
+          "matchedWooAttrs": [
+            "White"
+          ]
+        }
+      ],
+      "special": {
+        "moveExistingSkus": false,
+        "mergeIntoExistingOcarinaBig": false,
+        "reactivateDraftDnaSlug": false,
+        "naFlutesConsolidate": false
+      }
+    },
+    {
+      "wooSlug": "incense-stick-stand",
+      "wooId": 51098,
+      "wooName": "Incense Stick Stand",
+      "wooType": "simple",
+      "sheetProducts": [
+        "incense stick stand"
+      ],
+      "description": "<p>Enhance your daily rituals with this beautifully handcrafted <strong data-start=\"129\" data-end=\"159\">Metal Incense Stick Holder</strong>, designed to safely hold incense sticks while neatly collecting ash.</p>",
+      "shortDescription": "<p class=\"PDq2pG_selectionAnchorContainer\" data-start=\"68\" data-end=\"471\">Featuring intricate embossed patterns inspired by traditional Indian artistry, this elegant holder combines functionality with timeless aesthetics, making it a perfect addition to meditation spaces, yoga studios, prayer rooms, and home d\u00e9cor.</p>\n<p data-start=\"473\" data-end=\"758\">Crafted from durable metal with a polished antique silver finish, the elongated ash-catching tray prevents mess while allowing incense to burn evenly. The compact and lightweight design makes it easy to place on altars, desks, shelves, or travel with for spiritual practices on the go.</p>\n<p data-start=\"760\" data-end=\"984\">Ideal for burning your favourite incense during meditation, yoga, aromatherapy, relaxation, or religious ceremonies, this incense holder creates a peaceful atmosphere while adding a touch of handcrafted elegance to any space.</p>",
+      "imageUrls": [
+        "https://sarveda.com/wp-content/uploads/2026/08/Incense-Sticks-Stand-6.jpg"
+      ],
+      "primaryImage": "https://sarveda.com/wp-content/uploads/2026/08/Incense-Sticks-Stand-6.jpg",
+      "variants": [
+        {
+          "sku": "MI-IS-ST",
+          "label": "",
+          "attrs": [],
+          "mrpInPaise": 19900,
+          "saleInPaise": 9900,
+          "matchedWooAttrs": []
+        }
+      ],
+      "special": {
+        "moveExistingSkus": false,
+        "mergeIntoExistingOcarinaBig": false,
+        "reactivateDraftDnaSlug": false,
+        "naFlutesConsolidate": false
+      }
+    }
+  ],
+  "skipped": [
+    "Blue Tranquillity/Meditation",
+    "Crystal Bowls - Coloured",
+    "Deep Dotted",
+    "GAB Set",
+    "Gong Plates/Shruti Plates Etched",
+    "Gong Plates/Shruti Plates Stand"
+  ]
+}

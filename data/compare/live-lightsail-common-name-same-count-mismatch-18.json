@@ -1,0 +1,350 @@
+{
+  "source_of_truth": "Excel sheet vs current live Lightsail DB snapshot",
+  "live_snapshot_file": "/home/radha/sarveda/data/compare/live-product-variant-snapshot.json",
+  "sheet_file": "/home/radha/sarveda/data/Inventory count 09 Aug Price, and SKU.xlsx",
+  "product_count": 18,
+  "products": [
+    {
+      "product_name": "Bamboo Castanet",
+      "product_slug": "bamboo-castanet",
+      "variant_count": 1,
+      "mismatch_type": "sku_only",
+      "sheet_rows": [
+        {
+          "variant": "Standard",
+          "sku": "MI-CN"
+        }
+      ],
+      "live_rows": [
+        {
+          "sku": "MI-CN-B",
+          "variant": "Standard",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Belly Bowls",
+      "product_slug": "belly-bowls",
+      "variant_count": 1,
+      "mismatch_type": "sku_only",
+      "sheet_rows": [
+        {
+          "variant": "Standard",
+          "sku": "MI-SB-BB"
+        }
+      ],
+      "live_rows": [
+        {
+          "sku": "MI-SB-BY",
+          "variant": "Standard",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Bendo Chimes",
+      "product_slug": "bendo-chimes",
+      "variant_count": 1,
+      "mismatch_type": "sku_only",
+      "sheet_rows": [
+        {
+          "variant": "Standard",
+          "sku": "MI-BE-CH"
+        }
+      ],
+      "live_rows": [
+        {
+          "sku": "MI-CH-BE",
+          "variant": "Standard",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Caxixi",
+      "product_slug": "caxixi",
+      "variant_count": 1,
+      "mismatch_type": "sku_only",
+      "sheet_rows": [
+        {
+          "variant": "Standard",
+          "sku": "MI-CX"
+        }
+      ],
+      "live_rows": [
+        {
+          "sku": "Mi-CX-M-N",
+          "variant": "Standard",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Coconut Rattle",
+      "product_slug": "coconut-rattle",
+      "variant_count": 1,
+      "mismatch_type": "variant_only",
+      "sheet_rows": [
+        {
+          "variant": "",
+          "sku": "MI-CR"
+        }
+      ],
+      "live_rows": [
+        {
+          "sku": "MI-CR",
+          "variant": "Standard",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Conscious Cards",
+      "product_slug": "conscious-cards",
+      "variant_count": 1,
+      "mismatch_type": "variant_only",
+      "sheet_rows": [
+        {
+          "variant": "",
+          "sku": "ME-CC"
+        }
+      ],
+      "live_rows": [
+        {
+          "sku": "ME-CC",
+          "variant": "Standard",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Crystal Bowl with Handle",
+      "product_slug": "crystal-bowl-with-handle",
+      "variant_count": 1,
+      "mismatch_type": "variant_only",
+      "sheet_rows": [
+        {
+          "variant": "",
+          "sku": "MI-CB-H"
+        }
+      ],
+      "live_rows": [
+        {
+          "sku": "MI-CB-H",
+          "variant": "Standard",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Egg Shaker with Handle",
+      "product_slug": "egg-shaker-with-handle",
+      "variant_count": 1,
+      "mismatch_type": "variant_only",
+      "sheet_rows": [
+        {
+          "variant": "",
+          "sku": "MI-ES-H"
+        }
+      ],
+      "live_rows": [
+        {
+          "sku": "MI-ES-H",
+          "variant": "Standard",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Element Chimes",
+      "product_slug": "elemental-chimes",
+      "variant_count": 1,
+      "mismatch_type": "sku_and_variant",
+      "sheet_rows": [
+        {
+          "variant": "",
+          "sku": "MI-EC"
+        }
+      ],
+      "live_rows": [
+        {
+          "sku": "MI-Ch-KS",
+          "variant": "Standard",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Handheld Natural Coconut Shaker",
+      "product_slug": "handheld-natural-coconut-shaker",
+      "variant_count": 1,
+      "mismatch_type": "variant_only",
+      "sheet_rows": [
+        {
+          "variant": "",
+          "sku": "MI-CS-HH"
+        }
+      ],
+      "live_rows": [
+        {
+          "sku": "MI-CS-HH",
+          "variant": "Standard",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Handpan Stand",
+      "product_slug": "handpan-stand",
+      "variant_count": 1,
+      "mismatch_type": "sku_and_variant",
+      "sheet_rows": [
+        {
+          "variant": "",
+          "sku": "MI-HP-S"
+        }
+      ],
+      "live_rows": [
+        {
+          "sku": "MI-HS-S",
+          "variant": "Stand",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Heart Chakra Singing Bowl",
+      "product_slug": "heart-chakra-singing-bowl",
+      "variant_count": 1,
+      "mismatch_type": "variant_only",
+      "sheet_rows": [
+        {
+          "variant": "",
+          "sku": "MI-SB-HC"
+        }
+      ],
+      "live_rows": [
+        {
+          "sku": "MI-SB-HC",
+          "variant": "Standard",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Root Chakra Singing Bowl",
+      "product_slug": "root-chakra-singing-bowl",
+      "variant_count": 1,
+      "mismatch_type": "sku_and_variant",
+      "sheet_rows": [
+        {
+          "variant": "",
+          "sku": "MI-SB-RC"
+        }
+      ],
+      "live_rows": [
+        {
+          "sku": "MI-RCSB-S",
+          "variant": "Standard",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Singing Bowl with Handle",
+      "product_slug": "singing-bowl-with-handle",
+      "variant_count": 1,
+      "mismatch_type": "sku_only",
+      "sheet_rows": [
+        {
+          "variant": "Standard",
+          "sku": "MI-SB-H"
+        }
+      ],
+      "live_rows": [
+        {
+          "sku": "MI-SBH-S",
+          "variant": "Standard",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "The Four Bowl Set - Root, Heart, Third Eye and Universal",
+      "product_slug": "the-four-bowl-set-root-heart-third-eye-and-universal",
+      "variant_count": 1,
+      "mismatch_type": "variant_only",
+      "sheet_rows": [
+        {
+          "variant": "",
+          "sku": "MI-SB-RHTU-SET4"
+        }
+      ],
+      "live_rows": [
+        {
+          "sku": "MI-SB-RHTU-SET4",
+          "variant": "Standard",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "The Head Bowl",
+      "product_slug": "the-head-bowl",
+      "variant_count": 1,
+      "mismatch_type": "sku_only",
+      "sheet_rows": [
+        {
+          "variant": "Standard",
+          "sku": "MI-SB-HB"
+        }
+      ],
+      "live_rows": [
+        {
+          "sku": "MI-HB-S",
+          "variant": "Standard",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "The Three Bowl Set - Root, Heart and Third Eye",
+      "product_slug": "the-three-bowl-set-root-heart-and-third-eye",
+      "variant_count": 1,
+      "mismatch_type": "variant_only",
+      "sheet_rows": [
+        {
+          "variant": "",
+          "sku": "MI-SB-RHT-SET3"
+        }
+      ],
+      "live_rows": [
+        {
+          "sku": "MI-SB-RHT-SET3",
+          "variant": "Standard",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "product_name": "Third Eye Chakra Singing Bowl",
+      "product_slug": "third-eye-chakra-singing-bowl",
+      "variant_count": 1,
+      "mismatch_type": "sku_and_variant",
+      "sheet_rows": [
+        {
+          "variant": "",
+          "sku": "MI-SB-TEC"
+        }
+      ],
+      "live_rows": [
+        {
+          "sku": "MI-TECS-S",
+          "variant": "Standard",
+          "status": "ACTIVE"
+        }
+      ]
+    }
+  ]
+}

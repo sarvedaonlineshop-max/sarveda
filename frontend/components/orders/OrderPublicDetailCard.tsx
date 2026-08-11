@@ -326,7 +326,7 @@ export function OrderPublicDetailCard({ order, accessEmail }: Props) {
             >
               🧾
             </span>
-            <span className="flex-1 text-sm font-medium text-brand-ink">Cost split &amp; delivery address</span>
+            <span className="flex-1 text-sm font-medium text-brand-ink">Order details</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"

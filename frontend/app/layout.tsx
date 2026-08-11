@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Inter } from "next/font/google";
+import { Cormorant_Garamond, Manrope } from "next/font/google";
 import Script from "next/script";
 
 import { CartProvider } from "@/components/cart/CartProvider";
@@ -12,14 +12,17 @@ const isProd = process.env.NODE_ENV === "production";
 const ga4Id = process.env.NEXT_PUBLIC_GA4_ID?.trim();
 const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim();
 
-const inter = Inter({
+/** Body / UI — designer: Manrope (was Inter; revert by swapping imports). */
+const manrope = Manrope({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap"
 });
 
-const fraunces = Fraunces({
+/** Headings — designer: Cormorant Garamond (was Fraunces; revert by swapping imports). */
+const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
+  weight: ["500", "600", "700"],
   variable: "--font-fraunces",
   display: "swap"
 });
@@ -80,8 +83,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${fraunces.variable}`}>
-      <body className={`${inter.className} min-h-screen bg-brand-cream font-sans tracking-wide text-brand-ink antialiased`}>
+    <html lang="en" className={`${manrope.variable} ${cormorant.variable}`}>
+      <body className={`${manrope.className} min-h-screen bg-brand-cream font-sans tracking-wide text-brand-ink antialiased`}>
         {isProd && ga4Id ? (
           <>
             <Script

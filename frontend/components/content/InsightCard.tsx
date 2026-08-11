@@ -42,7 +42,7 @@ export function InsightCard({ post, compact = false }: Props) {
         <span className="inline-flex rounded-full border border-brand-gold-pale/30 bg-white/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-gold-pale backdrop-blur-sm">
           {category}
         </span>
-        <h3 className="mt-3 font-serif text-lg font-semibold leading-snug md:text-xl">{post.title}</h3>
+        <h3 className="mt-3 font-serif text-xl font-semibold leading-snug tracking-tight md:text-[1.35rem]">{post.title}</h3>
         {post.excerpt ? (
           <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-brand-cream/80">{post.excerpt}</p>
         ) : null}

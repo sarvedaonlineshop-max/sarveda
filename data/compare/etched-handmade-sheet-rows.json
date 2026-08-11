@@ -1,0 +1,354 @@
+[
+  {
+    "variant": "Buddha / 6 in",
+    "sku": "MI-SB-HM-ET-B-6"
+  },
+  {
+    "variant": "Buddha / 7 in",
+    "sku": "MI-SB-HM-ET-B-7"
+  },
+  {
+    "variant": "Buddha / 8in",
+    "sku": "MI-SB-HM-ET-B-8"
+  },
+  {
+    "variant": "Buddha / 9 in",
+    "sku": "MI-SB-HM-ET-B-9"
+  },
+  {
+    "variant": "Buddha / 10 in",
+    "sku": "MI-SB-HM-ET-B-10"
+  },
+  {
+    "variant": "Buddha / 11 in",
+    "sku": "MI-SB-HM-ET-B-11"
+  },
+  {
+    "variant": "Buddha / 12 in",
+    "sku": "MI-SB-HM-ET-B-12"
+  },
+  {
+    "variant": "Buddha / 13 in",
+    "sku": "MI-SB-HM-ET-B-13"
+  },
+  {
+    "variant": "Sacred Geometry / 6 in",
+    "sku": "MI-SB-HM-ET-SG-6"
+  },
+  {
+    "variant": "Sacred Geometry / 7 in",
+    "sku": "MI-SB-HM-ET-SG-7"
+  },
+  {
+    "variant": "Sacred Geometry / 8in",
+    "sku": "MI-SB-HM-ET-SG-8"
+  },
+  {
+    "variant": "Sacred Geometry / 9 in",
+    "sku": "MI-SB-HM-ET-SG-9"
+  },
+  {
+    "variant": "Sacred Geometry / 10 in",
+    "sku": "MI-SB-HM-ET-SG-10"
+  },
+  {
+    "variant": "Sacred Geometry / 11 in",
+    "sku": "MI-SB-HM-ET-SG-11"
+  },
+  {
+    "variant": "Sacred Geometry / 12 in",
+    "sku": "MI-SB-HM-ET-SG-12"
+  },
+  {
+    "variant": "Sacred Geometry / 13 in",
+    "sku": "MI-SB-HM-ET-SG-13"
+  },
+  {
+    "variant": "Golden Feet / 6 in",
+    "sku": "MI-SB-HM-ET-GF-6"
+  },
+  {
+    "variant": "Golden Feet / 7 in",
+    "sku": "MI-SB-HM-ET-GF-7"
+  },
+  {
+    "variant": "Golden Feet / 8in",
+    "sku": "MI-SB-HM-ET-GF-8"
+  },
+  {
+    "variant": "Golden Feet / 9 in",
+    "sku": "MI-SB-HM-ET-GF-9"
+  },
+  {
+    "variant": "Golden Feet / 10 in",
+    "sku": "MI-SB-HM-ET-GF-10"
+  },
+  {
+    "variant": "Golden Feet / 11 in",
+    "sku": "MI-SB-HM-ET-GF-11"
+  },
+  {
+    "variant": "Golden Feet / 12 in",
+    "sku": "MI-SB-HM-ET-GF-12"
+  },
+  {
+    "variant": "Golden Feet / 13 in",
+    "sku": "MI-SB-HM-ET-GF-13"
+  },
+  {
+    "variant": "Buddhas Eyes / 6in",
+    "sku": "MI-SB-HM-ET-BE-6"
+  },
+  {
+    "variant": "Buddhas Eyes / 7in",
+    "sku": "MI-SB-HM-ET-BE-7"
+  },
+  {
+    "variant": "Buddhas Eyes / 8in",
+    "sku": "MI-SB-HM-ET-BE-8"
+  },
+  {
+    "variant": "Buddhas Eyes / 9 in",
+    "sku": "MI-SB-HM-ET-BE-9"
+  },
+  {
+    "variant": "Buddhas Eyes / 10 in",
+    "sku": "MI-SB-HM-ET-BE-10"
+  },
+  {
+    "variant": "Buddhas Eyes / 11 in",
+    "sku": "MI-SB-HM-ET-BE-11"
+  },
+  {
+    "variant": "Buddhas Eyes /12in",
+    "sku": "MI-SB-HM-ET-BE-12"
+  },
+  {
+    "variant": "Buddhas Eyes /13in",
+    "sku": "MI-SB-HM-ET-BE-13"
+  },
+  {
+    "variant": "Chakras / 6in",
+    "sku": "MI-SB-HM-ET-C-6"
+  },
+  {
+    "variant": "Chakras / 7in",
+    "sku": "MI-SB-HM-ET-C-7"
+  },
+  {
+    "variant": "Chakras / 8in",
+    "sku": "MI-SB-HM-ET-C-8"
+  },
+  {
+    "variant": "Chakras / 9in",
+    "sku": "MI-SB-HM-ET-C-9"
+  },
+  {
+    "variant": "Chakras / 10in",
+    "sku": "MI-SB-HM-ET-C-10"
+  },
+  {
+    "variant": "Chakras / 11 in",
+    "sku": "MI-SB-HM-ET-C-11"
+  },
+  {
+    "variant": "Chakras / 12in",
+    "sku": "MI-SB-HM-ET-C-12"
+  },
+  {
+    "variant": "Chakras / 13in",
+    "sku": "MI-SB-HM-ET-C-13"
+  },
+  {
+    "variant": "Dorje / 6 in",
+    "sku": "MI-SB-HM-ET-DJ-6"
+  },
+  {
+    "variant": "Dorje / 7 in",
+    "sku": "MI-SB-HM-ET-DJ-7"
+  },
+  {
+    "variant": "Dorje / 8in",
+    "sku": "MI-SB-HM-ET-DJ-8"
+  },
+  {
+    "variant": "Dorje / 9 in",
+    "sku": "MI-SB-HM-ET-DJ-9"
+  },
+  {
+    "variant": "Dorje / 10 in",
+    "sku": "MI-SB-HM-ET-DJ-10"
+  },
+  {
+    "variant": "Dorje / 11 in",
+    "sku": "MI-SB-HM-ET-DJ-11"
+  },
+  {
+    "variant": "Dorje / 12 in",
+    "sku": "MI-SB-HM-ET-DJ-12"
+  },
+  {
+    "variant": "Dorje / 13 in",
+    "sku": "MI-SB-HM-ET-DJ-13"
+  },
+  {
+    "variant": "Flower of Life / 6 in",
+    "sku": "MI-SB-HM-ET-FL-6"
+  },
+  {
+    "variant": "Flower of Life / 7 in",
+    "sku": "MI-SB-HM-ET-FL-7"
+  },
+  {
+    "variant": "Flower of Life / 8in",
+    "sku": "MI-SB-HM-ET-FL-8"
+  },
+  {
+    "variant": "Flower of Life / 9 in",
+    "sku": "MI-SB-HM-ET-FL-9"
+  },
+  {
+    "variant": "Flower of Life / 10 in",
+    "sku": "MI-SB-HM-ET-FL-10"
+  },
+  {
+    "variant": "Flower of Life / 11 in",
+    "sku": "MI-SB-HM-ET-FL-11"
+  },
+  {
+    "variant": "Flower of Life / 12 in",
+    "sku": "MI-SB-HM-ET-FL-12"
+  },
+  {
+    "variant": "Flower of Life / 13 in",
+    "sku": "MI-SB-HM-ET-FL-13"
+  },
+  {
+    "variant": "Om / 6in",
+    "sku": "MI-SB-HM-ET-OM-6"
+  },
+  {
+    "variant": "Om / 7in",
+    "sku": "MI-SB-HM-ET-OM-7"
+  },
+  {
+    "variant": "Om / 8in",
+    "sku": "MI-SB-HM-ET-OM-8"
+  },
+  {
+    "variant": "Om / 9in",
+    "sku": "MI-SB-HM-ET-OM-9"
+  },
+  {
+    "variant": "Om / 10in",
+    "sku": "MI-SB-HM-ET-OM-10"
+  },
+  {
+    "variant": "Om / 11 in",
+    "sku": "MI-SB-HM-ET-OM-11"
+  },
+  {
+    "variant": "Om / 12in",
+    "sku": "MI-SB-HM-ET-OM-12"
+  },
+  {
+    "variant": "Om / 13in",
+    "sku": "MI-SB-HM-ET-OM-13"
+  },
+  {
+    "variant": "Tara / 6 in",
+    "sku": "MI-SB-HM-ET-T-6"
+  },
+  {
+    "variant": "Tara / 7 in",
+    "sku": "MI-SB-HM-ET-T-7"
+  },
+  {
+    "variant": "Tara / 8in",
+    "sku": "MI-SB-HM-ET-T-8"
+  },
+  {
+    "variant": "Tara / 9 in",
+    "sku": "MI-SB-HM-ET-T-9"
+  },
+  {
+    "variant": "Tara / 10 in",
+    "sku": "MI-SB-HM-ET-T-10"
+  },
+  {
+    "variant": "Tara / 11 in",
+    "sku": "MI-SB-HM-ET-T-11"
+  },
+  {
+    "variant": "Tara / 12 in",
+    "sku": "MI-SB-HM-ET-T-12"
+  },
+  {
+    "variant": "Tara / 13 in",
+    "sku": "MI-SB-HM-ET-T-13"
+  },
+  {
+    "variant": "Yin Yang / 6 in",
+    "sku": "MI-SB-HM-ET-YY-6"
+  },
+  {
+    "variant": "Yin Yang / 7 in",
+    "sku": "MI-SB-HM-ET-YY-7"
+  },
+  {
+    "variant": "Yin Yang / 8in",
+    "sku": "MI-SB-HM-ET-YY-8"
+  },
+  {
+    "variant": "Yin Yang / 9 in",
+    "sku": "MI-SB-HM-ET-YY-9"
+  },
+  {
+    "variant": "Yin Yang / 10 in",
+    "sku": "MI-SB-HM-ET-YY-10"
+  },
+  {
+    "variant": "Yin Yang / 11 in",
+    "sku": "MI-SB-HM-ET-YY-11"
+  },
+  {
+    "variant": "Yin Yang / 12 in",
+    "sku": "MI-SB-HM-ET-YY-12"
+  },
+  {
+    "variant": "Yin Yang / 13 in",
+    "sku": "MI-SB-HM-ET-YY-13"
+  },
+  {
+    "variant": "Mantra / 6in",
+    "sku": "MI-SB-HM-ET-M-6"
+  },
+  {
+    "variant": "Mantra / 7in",
+    "sku": "MI-SB-HM-ET-M-7"
+  },
+  {
+    "variant": "Mantra / 8in",
+    "sku": "MI-SB-HM-ET-M-8"
+  },
+  {
+    "variant": "Mantra / 9in",
+    "sku": "MI-SB-HM-ET-M-9"
+  },
+  {
+    "variant": "Mantra / 10in",
+    "sku": "MI-SB-HM-ET-M-10"
+  },
+  {
+    "variant": "Mantra / 11 in",
+    "sku": "MI-SB-HM-ET-M-11"
+  },
+  {
+    "variant": "Mantra / 12in",
+    "sku": "MI-SB-HM-ET-M-12"
+  },
+  {
+    "variant": "Mantra / 13in",
+    "sku": "MI-SB-HM-ET-M-13"
+  }
+]

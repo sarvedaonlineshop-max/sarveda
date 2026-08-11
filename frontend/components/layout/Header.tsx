@@ -90,7 +90,7 @@ function NavIcon({ label }: { label: string }) {
 
 function CartIcon({ count }: { count: number }) {
   return (
-    <span className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-brand-forest/15 bg-white text-brand-forest transition-all hover:border-brand-gold/50 hover:bg-brand-gold/10 hover:text-brand-gold">
+    <span className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-orange-500/40 bg-orange-50 text-orange-600 transition-all hover:border-orange-500 hover:bg-orange-100 hover:text-orange-700">
       <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" aria-hidden>
         <path
           strokeWidth={1.75}
@@ -100,7 +100,7 @@ function CartIcon({ count }: { count: number }) {
         />
       </svg>
       {count > 0 ? (
-        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-brand-gold px-1 text-[9px] font-bold text-brand-night">
+        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-orange-600 px-1 text-[9px] font-bold text-white">
           {count > 99 ? "99+" : count}
         </span>
       ) : null}
@@ -121,6 +121,19 @@ function ProfileIcon() {
   );
 }
 
+function SearchIcon() {
+  return (
+    <svg className="h-[18px] w-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.75}
+        d="M21 21l-4.35-4.35M16.5 10.5a6 6 0 11-12 0 6 6 0 0112 0z"
+      />
+    </svg>
+  );
+}
+
 function TrackOrderButton({ onClick, compact }: { onClick: () => void; compact?: boolean }) {
   return (
     <button
@@ -128,20 +141,31 @@ function TrackOrderButton({ onClick, compact }: { onClick: () => void; compact?:
       onClick={onClick}
       className={
         compact
-          ? "inline-flex min-h-[36px] max-w-[9.5rem] items-center gap-1 rounded-full bg-brand-sage px-2.5 text-[11px] font-semibold leading-tight text-white shadow-sm transition-colors hover:bg-brand-forest"
-          : "inline-flex min-h-[36px] shrink-0 items-center gap-1.5 rounded-full bg-brand-sage px-4 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-brand-forest"
+          ? "inline-flex min-h-[36px] max-w-[9.5rem] items-center gap-1 rounded-full bg-red-600 px-2.5 text-[11px] font-semibold leading-tight text-white shadow-sm transition-colors hover:bg-red-700 active:bg-red-800"
+          : "inline-flex min-h-[36px] shrink-0 items-center gap-1.5 rounded-full bg-red-600 px-4 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-red-700 active:bg-red-800"
       }
     >
+      {/* Package / parcel — reads clearly as order tracking */}
       <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" aria-hidden>
         <path
-          strokeWidth={2}
+          strokeWidth={1.85}
           strokeLinecap="round"
           strokeLinejoin="round"
-          d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0zM13 16V6l6-2v10M5 16V8l6-2"
+          d="M21 8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16V8z"
         />
+        <path strokeWidth={1.85} strokeLinecap="round" strokeLinejoin="round" d="M3.3 7L12 12l8.7-5M12 22V12" />
       </svg>
       {compact ? "Track order" : "Track my order"}
     </button>
+  );
+}
+
+function PageLoadingSpinner() {
+  return (
+    <span
+      className="inline-block h-10 w-10 animate-spin rounded-full border-[3px] border-brand-gold/25 border-t-brand-gold"
+      aria-hidden
+    />
   );
 }
 
@@ -161,19 +185,30 @@ export function Header() {
   const { goToCart } = useCartUi();
   const { itemCount: cartCount } = useCartData();
   const sessionUser = useStorefrontSession();
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
 
   const [marqueeHidden, setMarqueeHidden] = useState(false);
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [trackOpen, setTrackOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const hideMarquee = isProfilePath(pathname);
   const isShopPage = isShopListingPath(pathname);
   const headerCompact = hideMarquee || marqueeHidden;
+  const showGlobalSearch = !isShopPage;
+  const isNavLoading = pendingHref != null || isPending;
 
   useEffect(() => {
     setPendingHref(null);
+    setSearchOpen(false);
   }, [pathname]);
+
+  // Safety: clear stuck pending if navigation never settles.
+  useEffect(() => {
+    if (!pendingHref) return;
+    const t = window.setTimeout(() => setPendingHref(null), 12_000);
+    return () => window.clearTimeout(t);
+  }, [pendingHref]);
 
   useEffect(() => {
     if (hideMarquee) {
@@ -187,14 +222,25 @@ export function Header() {
   }, [hideMarquee]);
 
   useEffect(() => {
+    if (!searchOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSearchOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [searchOpen]);
+
+  useEffect(() => {
     const root = document.documentElement;
     root.dataset.headerScrolled = headerCompact ? "true" : "false";
     root.dataset.headerNoMarquee = hideMarquee ? "true" : "false";
+    root.dataset.headerSearchOpen = searchOpen && showGlobalSearch ? "true" : "false";
     return () => {
       delete root.dataset.headerScrolled;
       delete root.dataset.headerNoMarquee;
+      delete root.dataset.headerSearchOpen;
     };
-  }, [headerCompact, hideMarquee]);
+  }, [headerCompact, hideMarquee, searchOpen, showGlobalSearch]);
 
   if (
     pathname?.startsWith("/admin") ||
@@ -209,9 +255,19 @@ export function Header() {
   const chromeVisibility = hideOnMobile ? "hidden md:block" : "";
 
   function goNav(href: string) {
+    if (isMainNavActive(pathname, href)) return;
+    // Paint selected state first, then navigate.
     setPendingHref(href);
-    startTransition(() => {
+    // Shop browse uses a Suspense-heavy layout — startTransition soft-nav can leave
+    // /shop blank. Push outside a transition so the RSC tree commits normally.
+    if (isShopListingPath(href)) {
       router.push(href);
+      return;
+    }
+    requestAnimationFrame(() => {
+      startTransition(() => {
+        router.push(href);
+      });
     });
   }
 
@@ -240,7 +296,7 @@ export function Header() {
         {hideMarquee ? null : <AnnouncementBar hidden={marqueeHidden} />}
 
         <header className="border-b border-brand-forest/10 bg-white shadow-[0_4px_16px_rgba(16,32,26,0.05)]">
-          {/* Layer 1: logo + nav + auth/cart */}
+          {/* Layer 1: logo + nav + track / search / auth / cart */}
           <div className="border-b border-brand-cream-dark/60 bg-white">
             <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-1.5 sm:px-6 lg:px-8">
               <SarvedaLogo iconHeight={42} />
@@ -290,23 +346,40 @@ export function Header() {
                 })}
               </nav>
 
-              {/* Desktop: auth + cart */}
+              {/* Desktop: track + search + auth + cart */}
               <div className="ml-auto hidden shrink-0 items-center gap-1.5 md:flex">
+                <TrackOrderButton onClick={onTrackClick} />
+
+                {showGlobalSearch ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearchOpen((v) => !v)}
+                    className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition-all ${
+                      searchOpen
+                        ? "border-blue-600 bg-blue-600 text-white"
+                        : "border-blue-500/40 bg-blue-50 text-blue-600 hover:border-blue-600 hover:bg-blue-100 hover:text-blue-700"
+                    }`}
+                    aria-label={searchOpen ? "Close search" : "Open search"}
+                    aria-expanded={searchOpen}
+                    aria-controls="header-search-panel"
+                  >
+                    <SearchIcon />
+                  </button>
+                ) : null}
+
                 {sessionUser ? (
-                  <>
-                    <Link
-                      href="/profile"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        goNav("/profile");
-                      }}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-brand-forest/12 bg-white text-brand-forest transition-all hover:border-brand-gold/45 hover:bg-brand-gold/10 hover:text-brand-gold"
-                      aria-label={displayName ? `Account, ${displayName}` : "Profile"}
-                      title={displayName ? `Hello, ${displayName}` : "Profile"}
-                    >
-                      <ProfileIcon />
-                    </Link>
-                  </>
+                  <Link
+                    href="/profile"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      goNav("/profile");
+                    }}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-green-600/40 bg-green-50 text-green-700 transition-all hover:border-green-700 hover:bg-green-100 hover:text-green-800"
+                    aria-label={displayName ? `Account, ${displayName}` : "Profile"}
+                    title={displayName ? `Hello, ${displayName}` : "Profile"}
+                  >
+                    <ProfileIcon />
+                  </Link>
                 ) : (
                   <>
                     <Link
@@ -334,8 +407,24 @@ export function Header() {
                 </button>
               </div>
 
-              {/* Mobile: Track order (+ store category menu) — profile/cart live in bottom nav */}
+              {/* Mobile: search + track (+ store category menu) — profile/cart live in bottom nav */}
               <div className="ml-auto flex shrink-0 items-center gap-1.5 md:hidden">
+                {showGlobalSearch ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearchOpen((v) => !v)}
+                    className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition-all ${
+                      searchOpen
+                        ? "border-blue-600 bg-blue-600 text-white"
+                        : "border-blue-500/40 bg-blue-50 text-blue-600 hover:border-blue-600 hover:bg-blue-100"
+                    }`}
+                    aria-label={searchOpen ? "Close search" : "Open search"}
+                    aria-expanded={searchOpen}
+                    aria-controls="header-search-panel"
+                  >
+                    <SearchIcon />
+                  </button>
+                ) : null}
                 <TrackOrderButton onClick={onTrackClick} compact />
                 {isShopPage ? (
                   <button
@@ -353,15 +442,21 @@ export function Header() {
             </div>
           </div>
 
-          {/* Layer 2: search + track order (desktop). Hide global search on store — shop has its own. */}
-          <div className="hidden bg-brand-cream/95 md:block">
-            <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-1.5 sm:px-6 lg:px-8">
-              {isShopPage ? (
-                <div className="min-w-0 flex-1" aria-hidden />
-              ) : (
+          {/* Layer 2: expands only when search icon is clicked (hidden on shop — shop has its own search). */}
+          {showGlobalSearch ? (
+            <div
+              id="header-search-panel"
+              className={`bg-brand-cream/95 transition-[max-height,opacity] duration-300 ease-out ${
+                searchOpen
+                  ? "max-h-[min(70vh,28rem)] overflow-visible opacity-100"
+                  : "max-h-0 overflow-hidden opacity-0"
+              }`}
+              aria-hidden={!searchOpen}
+            >
+              <div className="mx-auto flex max-w-7xl items-start gap-2.5 px-4 py-1.5 sm:gap-3 sm:px-6 lg:px-8">
                 <div className="relative z-[60] min-w-0 flex-1">
                   <svg
-                    className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-3.5 w-3.5 -translate-y-1/2 text-brand-muted"
+                    className="pointer-events-none absolute left-3.5 top-[0.85rem] z-10 h-3.5 w-3.5 text-brand-muted"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -374,19 +469,47 @@ export function Header() {
                       d="M21 21l-4.35-4.35M16.5 10.5a6 6 0 11-12 0 6 6 0 0112 0z"
                     />
                   </svg>
-                  <SearchWithSuggestions
-                    id="desktop-search"
-                    placeholder="Search products, courses, insights…"
-                    inputClassName="w-full rounded-full border border-brand-forest/12 bg-white py-1.5 pl-10 pr-3 text-sm text-brand-ink placeholder:text-brand-muted transition-all focus:border-brand-gold/50 focus:outline-none focus:ring-1 focus:ring-brand-gold/30"
-                  />
+                  {searchOpen ? (
+                    <SearchWithSuggestions
+                      id="desktop-search"
+                      autoFocus
+                      placeholder="Search products, courses, insights…"
+                      inputClassName="w-full rounded-full border border-brand-forest/12 bg-white py-1.5 pl-10 pr-3 text-sm text-brand-ink placeholder:text-brand-muted transition-all focus:border-brand-gold/50 focus:outline-none focus:ring-1 focus:ring-brand-gold/30"
+                      onNavigate={() => setSearchOpen(false)}
+                    />
+                  ) : null}
                 </div>
-              )}
-
-              <TrackOrderButton onClick={onTrackClick} />
+                <button
+                  type="button"
+                  onClick={() => setSearchOpen(false)}
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-forest/10 text-brand-forest transition-colors hover:bg-brand-forest hover:text-brand-cream active:bg-brand-night active:text-brand-cream"
+                  aria-label="Close search"
+                >
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" aria-hidden>
+                    <path strokeWidth={2.25} strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />
+                  </svg>
+                </button>
+              </div>
             </div>
-          </div>
+          ) : null}
         </header>
       </div>
+
+      {isNavLoading ? (
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center bg-brand-cream/55 backdrop-blur-[1px]"
+          style={{ paddingTop: spacerHeight }}
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          aria-label="Loading page"
+        >
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-brand-forest/10 bg-white px-8 py-7 shadow-xl">
+            <PageLoadingSpinner />
+            <span className="text-sm font-semibold text-brand-forest">Loading…</span>
+          </div>
+        </div>
+      ) : null}
 
       <div className={`shrink-0 ${chromeVisibility}`} style={{ height: spacerHeight }} aria-hidden="true" />
 
