@@ -126,6 +126,8 @@ router.patch(
 
 const productsAdmin = Router();
 productsAdmin.get("/", productsController.adminList);
+productsAdmin.get("/xl-sheet", productsController.xlSheetList);
+productsAdmin.put("/xl-sheet", productsController.xlSheetSave);
 productsAdmin.post("/upload-image", mediaHandlers.uploadAdminMedia);
 productsAdmin.post("/check-skus", productsController.checkSkus);
 productsAdmin.put(

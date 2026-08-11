@@ -31,6 +31,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/reviews": "Reviews",
   "/admin/coupons": "Coupons",
   "/admin/products": "Products",
+  "/admin/products/xl": "Products — XL format",
   "/admin/courses": "Courses",
   "/admin/enrollments": "Enrollments",
   "/admin/mentors": "Mentors",
@@ -42,7 +43,9 @@ const PAGE_TITLES: Record<string, string> = {
 
 function getPageTitle(pathname: string): string {
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
-  for (const key of Object.keys(PAGE_TITLES)) {
+  // Prefer longer prefixes so /admin/products/xl wins over /admin/products
+  const keys = Object.keys(PAGE_TITLES).sort((a, b) => b.length - a.length);
+  for (const key of keys) {
     if (pathname.startsWith(key + "/")) return PAGE_TITLES[key];
   }
   return "Admin";
