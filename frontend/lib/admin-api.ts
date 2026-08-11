@@ -1092,10 +1092,15 @@ export type XlSheetRow = {
   variantStatus: string;
 };
 
-export function fetchProductsXlSheet(signal?: AbortSignal) {
-  return adminFetch<{ rows: XlSheetRow[]; total: number }>(`/api/admin/products/xl-sheet`, {
-    signal
-  });
+export function fetchProductsXlSheet(
+  opts?: { status?: "ACTIVE" | "DRAFT" | "ALL"; signal?: AbortSignal }
+) {
+  const status = opts?.status ?? "ACTIVE";
+  const qs = new URLSearchParams({ status });
+  return adminFetch<{ rows: XlSheetRow[]; total: number }>(
+    `/api/admin/products/xl-sheet?${qs.toString()}`,
+    { signal: opts?.signal }
+  );
 }
 
 export function saveProductsXlSheet(

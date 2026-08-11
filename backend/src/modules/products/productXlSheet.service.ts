@@ -112,12 +112,21 @@ const optionalNonNegInt = z
   .nullable()
   .optional();
 
-export async function listXlSheetRows(): Promise<{ rows: XlSheetRow[]; total: number }> {
+export type XlSheetStatusFilter = "ACTIVE" | "DRAFT" | "ALL";
+
+export async function listXlSheetRows(
+  statusFilter: XlSheetStatusFilter = "ACTIVE"
+): Promise<{ rows: XlSheetRow[]; total: number }> {
+  const statusWhere =
+    statusFilter === "ALL"
+      ? ({ in: ["ACTIVE", "DRAFT"] } as const)
+      : statusFilter;
+
   const products = await prisma.product.findMany({
     where: {
       deletedAt: null,
       catalogHidden: false,
-      status: { in: ["ACTIVE", "DRAFT"] },
+      status: statusWhere,
     },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     select: {
