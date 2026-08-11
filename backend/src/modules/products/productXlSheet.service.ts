@@ -1,5 +1,6 @@
 /**
- * Admin Excel-style product sheet (Aug 9 layout + HSN).
+ * Admin Excel-style product sheet (Website Catalog / Aug 9 layout).
+ * Columns: Name, Variant, SKU, Qty, Cost, MRP, Sale, USD, Dinar (AED), GBP, HSN
  * GET/PUT /api/admin/products/xl-sheet
  */
 import { z } from "zod";
@@ -17,6 +18,16 @@ export type XlSheetRow = {
   productName: string;
   variantName: string;
   sku: string;
+  qty: number;
+  costInPaise: number | null;
+  mrpInPaise: number;
+  saleInPaise: number;
+  mrpUsdCents: number | null;
+  saleUsdCents: number | null;
+  mrpAedFils: number | null;
+  saleAedFils: number | null;
+  mrpGbpPence: number | null;
+  saleGbpPence: number | null;
   hsnCode: string;
   productStatus: string;
   variantStatus: string;
@@ -76,7 +87,6 @@ async function applyVariantName(
       );
       return;
     }
-    // e.g. Gold-Small with Colours + Size
     if (existing.length === 2 && label.includes("-")) {
       const idx = label.lastIndexOf("-");
       const left = label.slice(0, idx).trim();
@@ -93,6 +103,14 @@ async function applyVariantName(
 
   await syncVariantAttributes(variantId, [{ name: "Type", slug: "type", value: label }]);
 }
+
+const optionalNonNegInt = z
+  .number()
+  .int()
+  .min(0)
+  .max(999_999_999)
+  .nullable()
+  .optional();
 
 export async function listXlSheetRows(): Promise<{ rows: XlSheetRow[]; total: number }> {
   const products = await prisma.product.findMany({
@@ -114,6 +132,16 @@ export async function listXlSheetRows(): Promise<{ rows: XlSheetRow[]; total: nu
           id: true,
           sku: true,
           status: true,
+          mrpInPaise: true,
+          saleInPaise: true,
+          costInPaise: true,
+          mrpUsdCents: true,
+          saleUsdCents: true,
+          mrpAedFils: true,
+          saleAedFils: true,
+          mrpGbpPence: true,
+          saleGbpPence: true,
+          inventory: { select: { onHand: true } },
           attributeValues: {
             include: {
               attributeValue: { include: { attribute: true } },
@@ -133,6 +161,16 @@ export async function listXlSheetRows(): Promise<{ rows: XlSheetRow[]; total: nu
         productName: p.name,
         variantName: variantLabel(v),
         sku: v.sku,
+        qty: v.inventory?.onHand ?? 0,
+        costInPaise: v.costInPaise ?? null,
+        mrpInPaise: v.mrpInPaise,
+        saleInPaise: v.saleInPaise,
+        mrpUsdCents: v.mrpUsdCents ?? null,
+        saleUsdCents: v.saleUsdCents ?? null,
+        mrpAedFils: v.mrpAedFils ?? null,
+        saleAedFils: v.saleAedFils ?? null,
+        mrpGbpPence: v.mrpGbpPence ?? null,
+        saleGbpPence: v.saleGbpPence ?? null,
         hsnCode: p.hsnCode?.trim() || "",
         productStatus: p.status,
         variantStatus: v.status,
@@ -152,6 +190,16 @@ export const xlSheetSaveSchema = z.object({
         productName: z.string().min(1).max(300),
         variantName: z.string().max(300),
         sku: z.string().min(1).max(120),
+        qty: z.number().int().min(0).max(10_000_000),
+        costInPaise: optionalNonNegInt,
+        mrpInPaise: z.number().int().min(0).max(999_999_999),
+        saleInPaise: z.number().int().min(0).max(999_999_999),
+        mrpUsdCents: optionalNonNegInt,
+        saleUsdCents: optionalNonNegInt,
+        mrpAedFils: optionalNonNegInt,
+        saleAedFils: optionalNonNegInt,
+        mrpGbpPence: optionalNonNegInt,
+        saleGbpPence: optionalNonNegInt,
         hsnCode: z.string().max(16).optional().nullable(),
       })
     )
@@ -160,6 +208,11 @@ export const xlSheetSaveSchema = z.object({
 });
 
 export type XlSheetSaveBody = z.infer<typeof xlSheetSaveSchema>;
+
+function normOptionalMoney(v: number | null | undefined): number | null {
+  if (v == null || Number.isNaN(v)) return null;
+  return v;
+}
 
 export async function saveXlSheetRows(body: XlSheetSaveBody): Promise<{
   updatedProducts: number;
@@ -170,7 +223,6 @@ export async function saveXlSheetRows(body: XlSheetSaveBody): Promise<{
   let updatedProducts = 0;
   let updatedVariants = 0;
 
-  // Detect duplicate SKUs in the payload itself
   const skuCounts = new Map<string, number>();
   for (const r of body.rows) {
     const key = r.sku.trim().toUpperCase();
@@ -189,7 +241,6 @@ export async function saveXlSheetRows(body: XlSheetSaveBody): Promise<{
     throw httpError(400, "Duplicate SKUs in sheet — fix before saving", "VALIDATION_ERROR");
   }
 
-  // Group product-level fields
   const byProduct = new Map<
     string,
     { name: string; hsnCode: string | null; rows: typeof body.rows }
@@ -205,7 +256,6 @@ export async function saveXlSheetRows(body: XlSheetSaveBody): Promise<{
     } else {
       cur.rows.push(r);
       if (r.productName.trim()) cur.name = r.productName.trim();
-      // Keep first non-empty HSN; allow explicit clear only if every row blank
       const h = r.hsnCode?.trim() || null;
       if (h) cur.hsnCode = h;
     }
@@ -224,7 +274,7 @@ export async function saveXlSheetRows(body: XlSheetSaveBody): Promise<{
     }
 
     const nextHsn = (() => {
-      const values = group.rows.map((r) => (r.hsnCode?.trim() || ""));
+      const values = group.rows.map((r) => r.hsnCode?.trim() || "");
       if (values.every((v) => !v)) return null;
       return values.find((v) => v) || null;
     })();
@@ -248,6 +298,16 @@ export async function saveXlSheetRows(body: XlSheetSaveBody): Promise<{
           select: {
             id: true,
             sku: true,
+            mrpInPaise: true,
+            saleInPaise: true,
+            costInPaise: true,
+            mrpUsdCents: true,
+            saleUsdCents: true,
+            mrpAedFils: true,
+            saleAedFils: true,
+            mrpGbpPence: true,
+            saleGbpPence: true,
+            inventory: { select: { id: true, onHand: true } },
             attributeValues: {
               include: {
                 attributeValue: { include: { attribute: true } },
@@ -282,9 +342,42 @@ export async function saveXlSheetRows(body: XlSheetSaveBody): Promise<{
             });
             continue;
           }
-          await prisma.productVariant.update({
-            where: { id: variant.id },
-            data: { sku: nextSku },
+        }
+
+        const nextCost = normOptionalMoney(r.costInPaise);
+        const nextMrpUsd = normOptionalMoney(r.mrpUsdCents);
+        const nextSaleUsd = normOptionalMoney(r.saleUsdCents);
+        const nextMrpAed = normOptionalMoney(r.mrpAedFils);
+        const nextSaleAed = normOptionalMoney(r.saleAedFils);
+        const nextMrpGbp = normOptionalMoney(r.mrpGbpPence);
+        const nextSaleGbp = normOptionalMoney(r.saleGbpPence);
+
+        await prisma.productVariant.update({
+          where: { id: variant.id },
+          data: {
+            sku: nextSku,
+            mrpInPaise: r.mrpInPaise,
+            saleInPaise: r.saleInPaise,
+            costInPaise: nextCost,
+            mrpUsdCents: nextMrpUsd,
+            saleUsdCents: nextSaleUsd,
+            mrpAedFils: nextMrpAed,
+            saleAedFils: nextSaleAed,
+            mrpGbpPence: nextMrpGbp,
+            saleGbpPence: nextSaleGbp,
+          },
+        });
+
+        if (variant.inventory) {
+          if (variant.inventory.onHand !== r.qty) {
+            await prisma.inventory.update({
+              where: { id: variant.inventory.id },
+              data: { onHand: r.qty },
+            });
+          }
+        } else {
+          await prisma.inventory.create({
+            data: { variantId: variant.id, onHand: r.qty, reserved: 0 },
           });
         }
 
