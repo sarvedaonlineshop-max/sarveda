@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { GripVertical, ScanSearch } from "lucide-react";
+import { FileSpreadsheet, GripVertical, ScanSearch } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AdminPagination } from "@/components/admin/AdminPagination";
@@ -251,6 +251,25 @@ export default function AdminProductsPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link
+            href="/admin/products/xl"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "9px 16px",
+              borderRadius: "8px",
+              background: "rgba(255,255,255,0.12)",
+              color: "#faf5ec",
+              border: "1px solid rgba(255,255,255,0.2)",
+              fontSize: "13px",
+              fontWeight: 600,
+              textDecoration: "none"
+            }}
+          >
+            <FileSpreadsheet size={14} aria-hidden />
+            View in XL format
+          </Link>
           <Link
             href="/admin/catalog-gaps"
             style={{

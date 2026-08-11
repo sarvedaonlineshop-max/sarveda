@@ -1070,6 +1070,44 @@ export function fetchCatalogGaps(signal?: AbortSignal) {
   return adminFetch<CatalogGapsReport>(`/api/admin/catalog/gaps`, { signal });
 }
 
+/** Aug-9 style editable catalog sheet (Name / Variant / SKU / HSN). */
+export type XlSheetRow = {
+  productId: string;
+  variantId: string;
+  productName: string;
+  variantName: string;
+  sku: string;
+  hsnCode: string;
+  productStatus: string;
+  variantStatus: string;
+};
+
+export function fetchProductsXlSheet(signal?: AbortSignal) {
+  return adminFetch<{ rows: XlSheetRow[]; total: number }>(`/api/admin/products/xl-sheet`, {
+    signal
+  });
+}
+
+export function saveProductsXlSheet(
+  rows: Array<{
+    productId: string;
+    variantId: string;
+    productName: string;
+    variantName: string;
+    sku: string;
+    hsnCode?: string | null;
+  }>
+) {
+  return adminFetch<{
+    updatedProducts: number;
+    updatedVariants: number;
+    errors: Array<{ variantId: string; sku: string; error: string }>;
+  }>(`/api/admin/products/xl-sheet`, {
+    method: "PUT",
+    body: JSON.stringify({ rows })
+  });
+}
+
 export type InventoryCategoryRef = {
   slug: string;
   name: string;

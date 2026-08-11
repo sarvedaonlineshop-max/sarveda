@@ -9,6 +9,11 @@ import { subscribeStockNotification } from "../stock-notifications/stockNotifica
 import { buildCatalogGapsReport } from "../admin/catalogGaps.service";
 import { deleteProductAdmin, saveProductAdmin } from "./productAdmin.service";
 import {
+  listXlSheetRows,
+  saveXlSheetRows,
+  xlSheetSaveSchema
+} from "./productXlSheet.service";
+import {
   getProductAdminById,
   getProductBySlug,
   listProductSitemapEntries,
@@ -218,6 +223,27 @@ export async function catalogGaps(_req: Request, res: Response, next: NextFuncti
   try {
     const report = await buildCatalogGapsReport();
     res.json({ success: true, data: report });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** GET /api/admin/products/xl-sheet — Aug-9 style Name / Variant / SKU + HSN */
+export async function xlSheetList(_req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await listXlSheetRows();
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** PUT /api/admin/products/xl-sheet — save edits back to Product + ProductVariant */
+export async function xlSheetSave(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = xlSheetSaveSchema.parse(req.body);
+    const data = await saveXlSheetRows(body);
+    res.json({ success: true, data });
   } catch (err) {
     next(err);
   }
