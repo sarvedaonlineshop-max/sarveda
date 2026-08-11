@@ -155,7 +155,7 @@ export function PairWithRow({ items, compact = false }: Props) {
                 {price ? <p className="whitespace-nowrap text-sm font-semibold text-brand-forest">+ {price}</p> : null}
                 <Link
                   href={`/product/${item.slug}`}
-                  className="mt-0.5 line-clamp-2 font-serif text-sm font-medium text-brand-ink hover:text-brand-forest"
+                  className="mt-0.5 line-clamp-2 font-sans text-sm font-medium text-brand-ink hover:text-brand-forest"
                 >
                   {item.name}
                 </Link>

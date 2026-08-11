@@ -1,0 +1,74 @@
+[
+  {
+    "sheetName": "Annapurna Shankh",
+    "sheetSlug": "annapurna-shankh",
+    "sku": "MI-SK-AP",
+    "variant": "Annapurna",
+    "mrpInPaise": 355000,
+    "saleInPaise": 295000,
+    "wooId": 51249,
+    "imageUrl": "https://sarveda-media.s3.amazonaws.com/products/annapurna-shankh/primary.jpg",
+    "categories": [
+      "589db629-2c4a-426b-8b61-91f119eb51f8",
+      "6ce88872-b479-4a34-856a-8657d0611b7c",
+      "f6476976-41f1-4efc-bd1e-bbe4dd596b03"
+    ],
+    "shippingCountries": [
+      "IN",
+      "US",
+      "GB",
+      "OTHER"
+    ],
+    "action": "created",
+    "productId": "e5388f6f-7b23-4547-af51-bf3b0167a5e5",
+    "variantId": "fdd8d672-49c9-470a-88cd-d049193cf552"
+  },
+  {
+    "sheetName": "Sughosh Shankh",
+    "sheetSlug": "sughosh-shankh",
+    "sku": "MI-SK-SG",
+    "variant": "Sughosh",
+    "mrpInPaise": 355000,
+    "saleInPaise": 295000,
+    "wooId": 51251,
+    "imageUrl": "https://sarveda-media.s3.amazonaws.com/products/sughosh-shankh/primary.jpg",
+    "categories": [
+      "589db629-2c4a-426b-8b61-91f119eb51f8",
+      "6ce88872-b479-4a34-856a-8657d0611b7c",
+      "f6476976-41f1-4efc-bd1e-bbe4dd596b03"
+    ],
+    "shippingCountries": [
+      "IN",
+      "US",
+      "GB",
+      "OTHER"
+    ],
+    "action": "created",
+    "productId": "3ac4303f-d59c-4b8c-9cb9-ac4daa5a0d28",
+    "variantId": "72c865fe-488a-4685-87ce-8d1938a050a0"
+  },
+  {
+    "sheetName": "Gomukhi Shankh",
+    "sheetSlug": "gomukhi-shankh",
+    "sku": "MI-SK-GM",
+    "variant": "Gomukhi",
+    "mrpInPaise": 355000,
+    "saleInPaise": 295000,
+    "wooId": 51250,
+    "imageUrl": "https://sarveda-media.s3.amazonaws.com/products/gomukhi-shankh/primary.jpg",
+    "categories": [
+      "589db629-2c4a-426b-8b61-91f119eb51f8",
+      "6ce88872-b479-4a34-856a-8657d0611b7c",
+      "f6476976-41f1-4efc-bd1e-bbe4dd596b03"
+    ],
+    "shippingCountries": [
+      "IN",
+      "US",
+      "GB",
+      "OTHER"
+    ],
+    "action": "created",
+    "productId": "93d23309-52a6-4963-a116-9dba6258b443",
+    "variantId": "f79e7822-b951-4f21-9c4d-c5acec19a338"
+  }
+]

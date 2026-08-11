@@ -1,206 +1,227 @@
 import Link from "next/link";
 
 import { SarvedaLogo } from "@/components/brand/SarvedaLogo";
-import { whatsAppSiteUrl } from "@/lib/enquiry";
 
-const footerLinks = {
-  explore: [
-    { label: "About",        href: "/about"     },
-    { label: "Shop All",     href: "/shop"      },
-    { label: "Courses", href: "/courses" },
-    { label: "Events", href: "/events" },
-    { label: "Corporate Wellness", href: "/corporate-wellness" },
-    { label: "Insights", href: "/insights" },
-    { label: "Sound Healing", href: "/product-category/sound-musical-instruments" },
-    { label: "Meditation", href: "/product-category/yoga-meditation" },
-    { label: "Yoga & Meditation", href: "/product-category/yoga-meditation" },
-  ],
-  support: [
-    { label: "Track Order",  href: "/my-account" },
-    { label: "My Account",   href: "/my-account" },
-    { label: "Search",       href: "/search"     },
-    { label: "Contact Us",   href: "/contact"     },
-  ],
-  legal: [
-    { label: "Privacy Policy",    href: "/privacy"  },
-    { label: "Terms of Service",  href: "/terms"    },
-    { label: "Refund Policy",     href: "/refunds"  },
-    { label: "Shipping Policy",   href: "/shipping" },
-  ],
-};
+const quickLinks = [
+  { label: "Store", href: "/shop" },
+  { label: "Courses", href: "/courses" },
+  { label: "Workshops & Events", href: "/events" },
+  { label: "Corporate Wellness", href: "/corporate-wellness" },
+  { label: "Journal", href: "/insights" },
+  { label: "About Us", href: "/about" },
+  { label: "Contact Us", href: "/contact" }
+];
 
-function BadgeIcon({ children }: { children: React.ReactNode }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-5 w-5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      {children}
-    </svg>
-  );
-}
+const customerService = [
+  { label: "Track My Order", href: "/my-account" },
+  { label: "Login / Sign Up", href: "/login" },
+  { label: "Shipping & Delivery", href: "/shipping" },
+  { label: "Returns & Exchanges", href: "/refunds" },
+  { label: "FAQs", href: "/contact" },
+  { label: "Terms of Use", href: "/terms" },
+  { label: "Privacy Policy", href: "/privacy" }
+];
 
-const trustBadges = [
+const values = [
   {
+    title: "Authentic & Handpicked",
+    body: "Carefully sourced for quality and purity",
     icon: (
-      <BadgeIcon>
-        <rect x="3" y="11" width="18" height="11" rx="2" />
-        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-      </BadgeIcon>
-    ),
-    text: "Secure Checkout"
+      <path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6l7-3zM9.5 12l2 2 4-4" />
+    )
   },
   {
-    icon: (
-      <BadgeIcon>
-        <circle cx="12" cy="12" r="10" />
-        <path d="m9 12 2 2 4-4" />
-      </BadgeIcon>
-    ),
-    text: "100% Authentic"
+    title: "Ethical & Sustainable",
+    body: "Conscious choices for a better world",
+    icon: <path d="M11 20A7 7 0 019.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10zM2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
   },
   {
+    title: "Ships Worldwide",
+    body: "Delivered with care across borders",
     icon: (
-      <BadgeIcon>
-        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-        <path d="M3 3v5h5" />
-      </BadgeIcon>
-    ),
-    text: "Easy Returns"
+      <>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18" />
+      </>
+    )
   },
   {
+    title: "Made with Care",
+    body: "Rooted in tradition, crafted with love",
     icon: (
-      <BadgeIcon>
-        <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
-        <path d="M15 18H9" />
-        <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35a1 1 0 0 0-.78-.38H14" />
-        <circle cx="17" cy="18" r="2" />
-        <circle cx="7" cy="18" r="2" />
-      </BadgeIcon>
-    ),
-    text: "Pan India Shipping"
+      <path d="M12 21s-7-4.5-7-10a4 4 0 017-2.5A4 4 0 0119 11c0 5.5-7 10-7 10z" />
+    )
+  }
+];
+
+const social = [
+  {
+    label: "Instagram",
+    href: "https://www.instagram.com/sarveda.shaala/",
+    d: "M7.75 2h8.5A5.75 5.75 0 0122 7.75v8.5A5.75 5.75 0 0116.25 22h-8.5A5.75 5.75 0 012 16.25v-8.5A5.75 5.75 0 017.75 2zm0 1.5A4.25 4.25 0 003.5 7.75v8.5A4.25 4.25 0 007.75 20.5h8.5a4.25 4.25 0 004.25-4.25v-8.5A4.25 4.25 0 0016.25 3.5h-8.5zM12 7a5 5 0 110 10A5 5 0 0112 7zm0 1.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm5.25-.75a.875.875 0 110 1.75.875.875 0 010-1.75z"
   },
+  {
+    label: "Facebook",
+    href: "https://facebook.com/sarveda",
+    d: "M14 8h3V5h-3c-2.2 0-4 1.8-4 4v2H7v3h3v7h3v-7h3l1-3h-4V9c0-.6.4-1 1-1z"
+  },
+  {
+    label: "YouTube",
+    href: "https://youtube.com/@sarveda",
+    d: "M21.8 8s-.2-1.4-.8-2c-.8-.8-1.7-.8-2.1-.9C16.1 5 12 5 12 5s-4.1 0-6.9.1c-.4 0-1.3.1-2.1.9-.6.6-.8 2-.8 2S2 9.6 2 11.2v1.5c0 1.6.2 3.2.2 3.2s.2 1.4.8 2c.8.8 1.8.8 2.3.9C6.8 19 12 19 12 19s4.1 0 6.9-.2c.4 0 1.3-.1 2.1-.9.6-.6.8-2 .8-2s.2-1.6.2-3.2v-1.5C22 9.6 21.8 8 21.8 8zM9.8 14.5v-5.1l5.7 2.6-5.7 2.5z"
+  },
+  {
+    label: "LinkedIn",
+    href: "https://www.linkedin.com/company/sarveda",
+    d: "M6.5 9H3v12h3.5V9zM4.75 3A2.1 2.1 0 102.7 5.1 2.1 2.1 0 004.75 3zM21 21h-3.5v-6.2c0-1.7-.6-2.8-2.1-2.8-1.1 0-1.8.8-2.1 1.5-.1.3-.1.6-.1.9V21H9.8s.05-10.8 0-12H13.3v1.9c.5-.8 1.4-1.9 3.4-1.9 2.5 0 4.3 1.6 4.3 5.1V21z"
+  }
 ];
 
 export function SiteFooter() {
   return (
     <footer className="hidden bg-brand-forest md:block">
-
-      {/* Trust Bar */}
-      <div className="border-b border-brand-cream/10">
-        <div className="mx-auto grid max-w-7xl grid-cols-4 divide-x divide-brand-cream/10 px-4 sm:px-6 lg:px-8">
-          {trustBadges.map((b) => (
-            <div key={b.text} className="flex items-center justify-center gap-2.5 py-4">
-              <span className="text-brand-gold">{b.icon}</span>
-              <span className="text-sm font-medium text-brand-cream/90">{b.text}</span>
+      <div className="mx-auto w-[90%] max-w-[1600px] py-14 md:w-[80%]">
+        <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr_1fr_1.3fr] lg:gap-12">
+          {/* Brand */}
+          <div>
+            <SarvedaLogo
+              iconHeight={40}
+              wordmarkClassName="font-serif text-2xl tracking-[0.08em] text-brand-cream uppercase"
+            />
+            <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-gold">
+              Sound. Yoga. Conscious Living.
+            </p>
+            <p className="mt-5 max-w-sm text-sm leading-relaxed text-brand-cream/75">
+              Sarveda brings together timeless traditions and conscious living through sound,
+              yoga and mindful practices. We curate and craft authentic instruments, offer
+              transformative learning experiences and design wellness programs for individuals
+              and organizations worldwide.
+            </p>
+            <div className="mt-6 flex gap-2.5">
+              {social.map((s) => (
+                <a
+                  key={s.label}
+                  href={s.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={s.label}
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-brand-cream/20 text-brand-cream/80 transition-colors hover:border-brand-gold/50 hover:text-brand-gold"
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d={s.d} />
+                  </svg>
+                </a>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      {/* Main Footer */}
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-5 lg:px-8">
+          <div>
+            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-gold">
+              Quicklinks
+            </p>
+            <ul className="space-y-2.5">
+              {quickLinks.map((l) => (
+                <li key={l.label}>
+                  <Link
+                    href={l.href}
+                    className="text-sm text-brand-cream/75 transition-colors hover:text-brand-gold"
+                  >
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-        {/* Brand col */}
-        <div className="lg:col-span-2">
-          <SarvedaLogo
-            iconHeight={44}
-            showTagline
-            wordmarkClassName="font-serif text-3xl italic text-brand-cream"
-            taglineClassName="mt-0.5 text-xs tracking-[0.22em] text-brand-gold"
-          />
-          <p className="mt-5 max-w-sm text-sm leading-relaxed text-brand-cream/70">
-            Authentic yoga, meditation, and sound healing products — curated with care for practitioners
-            across India and worldwide. Every piece chosen for depth of practice.
-          </p>
+          <div>
+            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-gold">
+              Customer Service
+            </p>
+            <ul className="space-y-2.5">
+              {customerService.map((l) => (
+                <li key={l.label}>
+                  <Link
+                    href={l.href}
+                    className="text-sm text-brand-cream/75 transition-colors hover:text-brand-gold"
+                  >
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-          {/* Social Links */}
-          <div className="mt-6 flex gap-3">
-            {[
-              { label:"Instagram", href:"https://instagram.com/sarveda",  d:"M7.75 2h8.5A5.75 5.75 0 0122 7.75v8.5A5.75 5.75 0 0116.25 22h-8.5A5.75 5.75 0 012 16.25v-8.5A5.75 5.75 0 017.75 2zm0 1.5A4.25 4.25 0 003.5 7.75v8.5A4.25 4.25 0 007.75 20.5h8.5a4.25 4.25 0 004.25-4.25v-8.5A4.25 4.25 0 0016.25 3.5h-8.5zM12 7a5 5 0 110 10A5 5 0 0112 7zm0 1.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm5.25-.75a.875.875 0 110 1.75.875.875 0 010-1.75z" },
-              { label:"YouTube",   href:"https://youtube.com/@sarveda",   d:"M21.8 8s-.2-1.4-.8-2c-.8-.8-1.7-.8-2.1-.9C16.1 5 12 5 12 5s-4.1 0-6.9.1c-.4 0-1.3.1-2.1.9-.6.6-.8 2-.8 2S2 9.6 2 11.2v1.5c0 1.6.2 3.2.2 3.2s.2 1.4.8 2c.8.8 1.8.8 2.3.9C6.8 19 12 19 12 19s4.1 0 6.9-.2c.4 0 1.3-.1 2.1-.9.6-.6.8-2 .8-2s.2-1.6.2-3.2v-1.5C22 9.6 21.8 8 21.8 8zM9.8 14.5v-5.1l5.7 2.6-5.7 2.5z" },
-              { label:"WhatsApp",  href: whatsAppSiteUrl(),     d:"M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.957 9.957 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm-1.062 14.853c-.883-.07-2.308-.574-3.395-1.66-1.088-1.088-1.592-2.513-1.661-3.396-.07-.883.244-1.766.767-2.29l.523-.522c.14-.14.349-.14.489 0l1.4 1.4c.14.14.14.349 0 .489l-.662.662c-.21.21-.245.523-.105.767.35.628.84 1.153 1.468 1.503.244.14.558.105.768-.105l.662-.662c.14-.14.35-.14.489 0l1.4 1.4c.14.14.14.35 0 .49l-.523.522c-.489.49-1.33.821-2.22.402z" },
-            ].map((s) => (
-              <a
-                key={s.label}
-                href={s.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={s.label}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-brand-cream/15 text-brand-cream/70 transition-colors hover:border-brand-gold/50 hover:text-brand-gold"
-              >
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d={s.d} />
-                </svg>
-              </a>
-            ))}
+          <div>
+            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-gold">
+              Get in Touch
+            </p>
+            <ul className="space-y-3.5 text-sm text-brand-cream/75">
+              <li className="flex gap-2.5">
+                <span className="mt-0.5 shrink-0 text-brand-gold" aria-hidden>
+                  ⌖
+                </span>
+                <span>
+                  Sarveda Warehouse, Hebbal Industrial Area, Mysore – 570 016, Karnataka, India.
+                </span>
+              </li>
+              <li className="flex gap-2.5">
+                <span className="shrink-0 text-brand-gold" aria-hidden>
+                  ✉
+                </span>
+                <a href="mailto:care@sarveda.com" className="hover:text-brand-gold">
+                  care@sarveda.com
+                </a>
+              </li>
+              <li className="flex gap-2.5">
+                <span className="shrink-0 text-brand-gold" aria-hidden>
+                  ☎
+                </span>
+                <a href="tel:+919972238158" className="hover:text-brand-gold">
+                  +91 9972238158
+                </a>
+              </li>
+              <li className="flex gap-2.5">
+                <span className="mt-0.5 shrink-0 text-brand-gold" aria-hidden>
+                  ◷
+                </span>
+                <span>
+                  Mon – Fri: 9:30 AM – 5:30 PM (IST)
+                  <br />
+                  Sat: 9:30 AM – 1:00 PM (IST)
+                </span>
+              </li>
+            </ul>
           </div>
         </div>
-
-        {/* Explore */}
-        <div>
-          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-gold">Explore</p>
-          <ul className="space-y-2.5">
-            {footerLinks.explore.map((l) => (
-              <li key={l.label}>
-                <Link href={l.href} className="text-sm text-brand-cream/70 transition-colors hover:text-brand-gold">
-                  {l.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Support */}
-        <div>
-          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-gold">Support</p>
-          <ul className="space-y-2.5">
-            {footerLinks.support.map((l) => (
-              <li key={l.label}>
-                <Link href={l.href} className="text-sm text-brand-cream/70 transition-colors hover:text-brand-gold">
-                  {l.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Legal */}
-        <div>
-          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-gold">Legal</p>
-          <ul className="space-y-2.5">
-            {footerLinks.legal.map((l) => (
-              <li key={l.label}>
-                <Link href={l.href} className="text-sm text-brand-cream/70 transition-colors hover:text-brand-gold">
-                  {l.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
       </div>
 
-      {/* Bottom strip */}
       <div className="border-t border-brand-cream/10">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-5 sm:flex-row sm:px-6 lg:px-8">
-          <p className="text-xs text-brand-cream/50">
-            © {new Date().getFullYear()} Sarveda. All rights reserved. Made with care in India.
-          </p>
-          {/* Payment methods */}
-          <div className="flex items-center gap-2 text-brand-cream/50">
-            <span className="text-xs tracking-wide">We accept</span>
-            {["Razorpay","UPI","Visa","Mastercard","Stripe","PayPal"].map((p) => (
-              <span key={p} className="rounded border border-brand-cream/15 px-1.5 py-0.5 text-[10px] font-medium text-brand-cream/60">
-                {p}
-              </span>
+        <div className="mx-auto flex w-[90%] max-w-[1600px] flex-col gap-6 py-6 md:w-[80%] lg:flex-row lg:items-center lg:justify-between">
+          <ul className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:gap-6">
+            {values.map((v) => (
+              <li key={v.title} className="flex gap-2.5">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="mt-0.5 h-5 w-5 shrink-0 text-brand-gold"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  {v.icon}
+                </svg>
+                <div>
+                  <p className="text-xs font-semibold text-brand-cream/90">{v.title}</p>
+                  <p className="mt-0.5 text-[11px] leading-snug text-brand-cream/55">{v.body}</p>
+                </div>
+              </li>
             ))}
-          </div>
+          </ul>
+          <p className="shrink-0 text-xs text-brand-cream/50 lg:text-right">
+            © {new Date().getFullYear()} Sarveda. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>

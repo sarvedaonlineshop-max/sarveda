@@ -132,7 +132,7 @@ export function CartDrawer({ open, onClose }: Props) {
                   <Link
                     href={`/product/${line.productSlug}`}
                     onClick={onClose}
-                    className="font-medium leading-snug text-stone-900 hover:text-amber-800"
+                    className="font-sans font-medium leading-snug text-stone-900 hover:text-amber-800"
                   >
                     {line.productName}
                   </Link>

@@ -13,7 +13,7 @@ type Offer = {
 /** Shown when API has no active featured coupon yet (e.g. migration pending). */
 const FALLBACK_OFFER: Offer = {
   code: "WELCOME5",
-  label: "5% off",
+  label: "5% offer on your first order",
   description: null
 };
 
@@ -26,7 +26,13 @@ export function ProductOffersBanner() {
       .then((res) => res.json())
       .then((json: { data?: { offers?: Offer[] } }) => {
         if (cancelled) return;
-        const fromApi = (json.data?.offers ?? []).filter((o) => o.code !== "WELCOME10");
+        const fromApi = (json.data?.offers ?? [])
+          .filter((o) => o.code !== "WELCOME10")
+          .map((o) =>
+            o.code === "WELCOME5"
+              ? { ...o, label: "5% offer on your first order", description: null }
+              : o
+          );
         setOffers(fromApi.length ? fromApi : [FALLBACK_OFFER]);
       })
       .catch(() => {

@@ -1,0 +1,19 @@
+{
+  "productId": "c35b829e-612d-4c10-9d37-616a7a4a9763",
+  "actions": [
+    "UPDATED product c35b829e-612d-4c10-9d37-616a7a4a9763 (was ACTIVE Native American Flute - Triple)",
+    "CREATED MI-NF-D",
+    "CREATED MI-NF-S-L",
+    "CREATED MI-NF-S-M",
+    "CREATED MI-NF-S-S"
+  ],
+  "item": {
+    "wooSlug": "native-american-style-flute-handcrafted-wooden-melody-maker",
+    "variants": [
+      "MI-NF-D",
+      "MI-NF-S-L",
+      "MI-NF-S-M",
+      "MI-NF-S-S"
+    ]
+  }
+}

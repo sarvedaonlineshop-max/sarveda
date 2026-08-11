@@ -1,0 +1,144 @@
+[
+  {
+    "wooName": "25 Rods – Bar Chime",
+    "dryRun": [
+      "CREATE MI-BC-25 label=(blank) sale=495000 mrp=760500"
+    ]
+  },
+  {
+    "wooName": "Curved Copper Bottles",
+    "dryRun": [
+      "CREATE CB-C-B label=gold / With Brush sale=119900 mrp=155900",
+      "CREATE CB-C label=gold / Without Brush sale=109900 mrp=142900",
+      "CREATE CB-C-V-B label=vintage / With Brush sale=119900 mrp=155900",
+      "CREATE CB-C-V label=vintage / Without Brush sale=109900 mrp=142900"
+    ]
+  },
+  {
+    "wooName": "Curved Hammered Copper Bottles",
+    "dryRun": [
+      "MOVE/UPDATE CB-CVH-B currently on Grooved, Hammered & Plain Copper Bottle (grooved-hammered-plain-copper-bottle) sale=119900",
+      "MOVE/UPDATE CB-CVH currently on Grooved, Hammered & Plain Copper Bottle (grooved-hammered-plain-copper-bottle) sale=109900"
+    ]
+  },
+  {
+    "wooName": "DNA Tuning Fork",
+    "dryRun": [
+      "CREATE MI-TF-DNA label=(blank) sale=3025000 mrp=3245000"
+    ]
+  },
+  {
+    "wooName": "Etched Chau Gongs",
+    "dryRun": [
+      "CREATE MI-GO-CH-ET-18 label=18 in sale=2135000 mrp=2250000",
+      "CREATE MI-GO-CH-ET-20 label=20 in sale=2975000 mrp=3975000",
+      "CREATE MI-GO-CH-ET-22 label=22 in sale=3500000 mrp=4500000",
+      "CREATE MI-GO-CH-ET-24 label=24 in sale=5945000 mrp=6945000",
+      "CREATE MI-GO-CH-ET-28 label=28 in sale=6890000 mrp=7250000",
+      "CREATE MI-GO-CH-ET-32 label=32 in sale=10630000 mrp=11630000",
+      "CREATE MI-GO-CH-ET-36 label=36 in sale=2135000 mrp=2250000",
+      "CREATE MI-GO-CH-ET-40 label=40INCH sale=19500000 mrp=20500000"
+    ]
+  },
+  {
+    "wooName": "Wooden Guiro",
+    "dryRun": [
+      "CREATE MI-GRO label=(blank) sale=125000 mrp=165000"
+    ]
+  },
+  {
+    "wooName": "Hammered Copper Bottle",
+    "dryRun": [
+      "CREATE CB-HM label=copper / without-brush sale=109900 mrp=142900",
+      "CREATE CB-HM-B label=copper / with-brush sale=119900 mrp=155900"
+    ]
+  },
+  {
+    "wooName": "Happiness is Inside",
+    "dryRun": [
+      "CREATE CB-AD-HI-B label=with-brush / 1L sale=134500 mrp=174900",
+      "CREATE CB-AD-HI label=without-brush / 1L sale=134500 mrp=174900",
+      "CREATE CB-AD-HI-.5 label=without-brush / 500ml sale=134500 mrp=174900",
+      "CREATE CB-AD-HI-.5-B label=with-brush / 500ml sale=134500 mrp=174900"
+    ]
+  },
+  {
+    "wooName": "Sleigh Bells Wooden Jingle Stick",
+    "dryRun": [
+      "CREATE MI-JE-S label=(blank) sale=145000 mrp=195000"
+    ]
+  },
+  {
+    "wooName": "Wooden Hand Khartal/Jingles",
+    "dryRun": [
+      "CREATE MI-KL label=(blank) sale=45000 mrp=50000"
+    ]
+  },
+  {
+    "wooName": "Native American Style Flutes",
+    "dryRun": [
+      "CREATE MI-NF-D label=Double sale=1850000 mrp=2250000",
+      "CREATE MI-NF-S-L label=Single Large sale=1195000 mrp=1250000",
+      "CREATE MI-NF-S-M label=Single Medium sale=1025000 mrp=1150000",
+      "CREATE MI-NF-S-S label=Single Small sale=850000 mrp=950000"
+    ]
+  },
+  {
+    "wooName": "Clay Ocarinas",
+    "dryRun": [
+      "CREATE MI-OC-S label=Small sale=245000 mrp=295000"
+    ]
+  },
+  {
+    "wooName": "Pink & Positive",
+    "dryRun": [
+      "CREATE CB-AD-PP label=without-brush / 1L sale=124500 mrp=161900",
+      "CREATE CB-AD-PP-B label=with-brush / 1L sale=124500 mrp=161900",
+      "CREATE CB-AD-PP-.5 label=without-brush / 500ml sale=124500 mrp=161900",
+      "CREATE CB-AD-PP-.5-B label=with-brush / 500ml sale=124500 mrp=161900"
+    ]
+  },
+  {
+    "wooName": "Shruti Box Pedal",
+    "dryRun": [
+      "CREATE MI-STB-P label=Pedal sale=195000 mrp=265000"
+    ]
+  },
+  {
+    "wooName": "Tattvamasi-I am Infinite",
+    "dryRun": [
+      "CREATE CB-AD-TM-B label=with-brush / 1L sale=134500 mrp=174900",
+      "CREATE CB-AD-TM label=without-brush / 1L sale=134500 mrp=174900",
+      "CREATE CB-AD-TM-.5 label=without-brush / 500ml sale=134500 mrp=174900",
+      "CREATE CB-AD-TM-B-.5 label=with-brush / 500ml sale=134500 mrp=174900"
+    ]
+  },
+  {
+    "wooName": "Wind Chimes",
+    "dryRun": [
+      "CREATE MI-WC-GO-S label=Gold-Small sale=195000 mrp=245000",
+      "CREATE MI-WC-GO-L label=Gold-Large sale=265000 mrp=315000",
+      "CREATE MI-WC-GR-S label=Green-Small sale=195000 mrp=245000",
+      "CREATE MI-WC-GR-L label=Green-Large sale=265000 mrp=315000",
+      "CREATE MI-WC-YE-S label=Yellow-Small sale=195000 mrp=245000",
+      "CREATE MI-WC-YE-L label=Yellow-Large sale=265000 mrp=315000",
+      "CREATE MI-WC-SI-S label=Silver-Small sale=195000 mrp=245000",
+      "CREATE MI-WC-SI-L label=Silver-Large sale=265000 mrp=315000",
+      "CREATE MI-WC-AC-S label=Antique Copper-Small sale=195000 mrp=245000",
+      "CREATE MI-WC-AC-L label=Antique Copper-Large sale=265000 mrp=315000"
+    ]
+  },
+  {
+    "wooName": "Wooden Finger Castanet",
+    "dryRun": [
+      "CREATE MI-FC-B label=Black sale=79500 mrp=130000",
+      "CREATE MI-FC-W label=White sale=74500 mrp=125000"
+    ]
+  },
+  {
+    "wooName": "Incense Stick Stand",
+    "dryRun": [
+      "CREATE MI-IS-ST label=(blank) sale=9900 mrp=19900"
+    ]
+  }
+]

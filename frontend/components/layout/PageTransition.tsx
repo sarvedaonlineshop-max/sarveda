@@ -7,6 +7,9 @@ import { useEffect, useRef } from "react";
 import { isShopBrowsePath } from "@/lib/shop-navigation";
 import { pageTransition, pageVariants } from "@/lib/motion";
 
+/** Set to `true` to re-enable Framer Motion fade/slide between storefront pages. */
+export const ENABLE_PAGE_TRANSITIONS = false;
+
 function skipPageMotion(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
   // Shared shop shell — fade would remount sidebar/toolbar.
@@ -26,6 +29,10 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     prevPathnameRef.current = pathname;
   }, [pathname]);
+
+  if (!ENABLE_PAGE_TRANSITIONS) {
+    return <>{children}</>;
+  }
 
   // Skip motion when either side of the navigation is shop/PDP (covers PDP → shop).
   if (skipPageMotion(pathname) || skipPageMotion(previousPathname)) {

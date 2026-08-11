@@ -1,0 +1,68 @@
+[
+  {
+    "sheetName": "Annapurna Shankh",
+    "sheetSlug": "annapurna-shankh",
+    "sku": "MI-SK-AP",
+    "variant": "Annapurna",
+    "mrpInPaise": 355000,
+    "saleInPaise": 295000,
+    "wooId": 51249,
+    "imageUrl": "https://sarveda.com/wp-content/uploads/2026/08/Annapurna-Shankh-3.jpg",
+    "categories": [
+      "589db629-2c4a-426b-8b61-91f119eb51f8",
+      "6ce88872-b479-4a34-856a-8657d0611b7c",
+      "f6476976-41f1-4efc-bd1e-bbe4dd596b03"
+    ],
+    "shippingCountries": [
+      "IN",
+      "US",
+      "GB",
+      "OTHER"
+    ],
+    "action": "would_create"
+  },
+  {
+    "sheetName": "Sughosh Shankh",
+    "sheetSlug": "sughosh-shankh",
+    "sku": "MI-SK-SG",
+    "variant": "Sughosh",
+    "mrpInPaise": 355000,
+    "saleInPaise": 295000,
+    "wooId": 51251,
+    "imageUrl": "https://sarveda.com/wp-content/uploads/2026/08/Sughosh-Shankh-3.jpg",
+    "categories": [
+      "589db629-2c4a-426b-8b61-91f119eb51f8",
+      "6ce88872-b479-4a34-856a-8657d0611b7c",
+      "f6476976-41f1-4efc-bd1e-bbe4dd596b03"
+    ],
+    "shippingCountries": [
+      "IN",
+      "US",
+      "GB",
+      "OTHER"
+    ],
+    "action": "would_create"
+  },
+  {
+    "sheetName": "Gomukhi Shankh",
+    "sheetSlug": "gomukhi-shankh",
+    "sku": "MI-SK-GM",
+    "variant": "Gomukhi",
+    "mrpInPaise": 355000,
+    "saleInPaise": 295000,
+    "wooId": 51250,
+    "imageUrl": "https://sarveda.com/wp-content/uploads/2026/08/Gaumukhi-Shankh-4.jpg",
+    "categories": [
+      "589db629-2c4a-426b-8b61-91f119eb51f8",
+      "6ce88872-b479-4a34-856a-8657d0611b7c",
+      "f6476976-41f1-4efc-bd1e-bbe4dd596b03"
+    ],
+    "shippingCountries": [
+      "IN",
+      "US",
+      "GB",
+      "OTHER"
+    ],
+    "action": "would_create"
+  }
+]

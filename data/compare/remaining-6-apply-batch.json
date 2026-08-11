@@ -1,0 +1,1202 @@
+[
+  {
+    "name": "Handmade Singing Bowls - All Sizes",
+    "slug": "handmade-singing-bowls-all-sizes",
+    "axisOrder": [
+      "type",
+      "size"
+    ],
+    "matches": [
+      {
+        "sheet": {
+          "variant": "Matte / 5 in",
+          "sku": "MI-SB-HM-5"
+        },
+        "db": {
+          "variant": "Matte / 5 in",
+          "sku": "Mi-SB-H-M-5",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "type",
+              "name": "Type",
+              "value": "Matte"
+            },
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "5 in"
+            }
+          ]
+        },
+        "basis": "exact_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Matte / 6 in",
+          "sku": "MI-SB-HM-6"
+        },
+        "db": {
+          "variant": "Matte / 6 in",
+          "sku": "MI-HSBA-M-6",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "type",
+              "name": "Type",
+              "value": "Matte"
+            },
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "6 in"
+            }
+          ]
+        },
+        "basis": "exact_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Matte / 7 in",
+          "sku": "MI-SB-HM-7"
+        },
+        "db": {
+          "variant": "Matte / 7 in",
+          "sku": "MI-HSBA-M-7",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "type",
+              "name": "Type",
+              "value": "Matte"
+            },
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "7 in"
+            }
+          ]
+        },
+        "basis": "exact_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Matte / 8in",
+          "sku": "MI-SB-HM-8"
+        },
+        "db": {
+          "variant": "Matte / 8 in",
+          "sku": "Mi-SB-H-M-8",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "type",
+              "name": "Type",
+              "value": "Matte"
+            },
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "8 in"
+            }
+          ]
+        },
+        "basis": "exact_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Matte / 9 in",
+          "sku": "MI-SB-HM-9"
+        },
+        "db": {
+          "variant": "Matte / 9 in",
+          "sku": "Mi-SB-H-M-9",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "type",
+              "name": "Type",
+              "value": "Matte"
+            },
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "9 in"
+            }
+          ]
+        },
+        "basis": "exact_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Matte / 10 in",
+          "sku": "MI-SB-HM-10"
+        },
+        "db": {
+          "variant": "Matte / 10 in",
+          "sku": "Mi-SB-H-M-10",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "type",
+              "name": "Type",
+              "value": "Matte"
+            },
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "10 in"
+            }
+          ]
+        },
+        "basis": "exact_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Matte / 11 in",
+          "sku": "MI-SB-HM-11"
+        },
+        "db": {
+          "variant": "Matte / 11 in",
+          "sku": "Mi-SB-H-M-11",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "type",
+              "name": "Type",
+              "value": "Matte"
+            },
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "11 in"
+            }
+          ]
+        },
+        "basis": "exact_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Matte / 12 in",
+          "sku": "MI-SB-HM-12"
+        },
+        "db": {
+          "variant": "Matte / 12 in",
+          "sku": "MI-SB-H-M-12",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "type",
+              "name": "Type",
+              "value": "Matte"
+            },
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "12 in"
+            }
+          ]
+        },
+        "basis": "exact_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Matte / 13in",
+          "sku": "MI-SB-HM-13"
+        },
+        "db": {
+          "variant": "Matte / 13 in",
+          "sku": "MI-SB-H-M-13",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "type",
+              "name": "Type",
+              "value": "Matte"
+            },
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "13 in"
+            }
+          ]
+        },
+        "basis": "exact_norm"
+      }
+    ],
+    "only_sheet": [],
+    "only_db": [
+      {
+        "variant": "Polished / 13 in",
+        "sku": "MI-SB-H-P-13",
+        "status": "ACTIVE",
+        "attrs": [
+          {
+            "slug": "type",
+            "name": "Type",
+            "value": "Polished"
+          },
+          {
+            "slug": "size",
+            "name": "Size",
+            "value": "13 in"
+          }
+        ]
+      },
+      {
+        "variant": "Polished / 6 in",
+        "sku": "Mi-SB-H-P-6",
+        "status": "ACTIVE",
+        "attrs": [
+          {
+            "slug": "type",
+            "name": "Type",
+            "value": "Polished"
+          },
+          {
+            "slug": "size",
+            "name": "Size",
+            "value": "6 in"
+          }
+        ]
+      },
+      {
+        "variant": "Polished / 7 in",
+        "sku": "Mi-SB-H-P-7",
+        "status": "ACTIVE",
+        "attrs": [
+          {
+            "slug": "type",
+            "name": "Type",
+            "value": "Polished"
+          },
+          {
+            "slug": "size",
+            "name": "Size",
+            "value": "7 in"
+          }
+        ]
+      },
+      {
+        "variant": "Polished / 8 in",
+        "sku": "Mi-SB-H-P-8",
+        "status": "ACTIVE",
+        "attrs": [
+          {
+            "slug": "type",
+            "name": "Type",
+            "value": "Polished"
+          },
+          {
+            "slug": "size",
+            "name": "Size",
+            "value": "8 in"
+          }
+        ]
+      },
+      {
+        "variant": "Polished / 9 in",
+        "sku": "Mi-SB-H-P-9",
+        "status": "ACTIVE",
+        "attrs": [
+          {
+            "slug": "type",
+            "name": "Type",
+            "value": "Polished"
+          },
+          {
+            "slug": "size",
+            "name": "Size",
+            "value": "9 in"
+          }
+        ]
+      },
+      {
+        "variant": "Polished / 10 in",
+        "sku": "Mi-SB-H-P-10",
+        "status": "ACTIVE",
+        "attrs": [
+          {
+            "slug": "type",
+            "name": "Type",
+            "value": "Polished"
+          },
+          {
+            "slug": "size",
+            "name": "Size",
+            "value": "10 in"
+          }
+        ]
+      },
+      {
+        "variant": "Polished / 11 in",
+        "sku": "Mi-SB-H-P-11",
+        "status": "ACTIVE",
+        "attrs": [
+          {
+            "slug": "type",
+            "name": "Type",
+            "value": "Polished"
+          },
+          {
+            "slug": "size",
+            "name": "Size",
+            "value": "11 in"
+          }
+        ]
+      },
+      {
+        "variant": "Polished / 12 in",
+        "sku": "Mi-SB-H-P-12",
+        "status": "ACTIVE",
+        "attrs": [
+          {
+            "slug": "type",
+            "name": "Type",
+            "value": "Polished"
+          },
+          {
+            "slug": "size",
+            "name": "Size",
+            "value": "12 in"
+          }
+        ]
+      },
+      {
+        "variant": "Matte / 5 in",
+        "sku": "Mi-SB-H-P-5",
+        "status": "ACTIVE",
+        "attrs": [
+          {
+            "slug": "type",
+            "name": "Type",
+            "value": "Matte"
+          },
+          {
+            "slug": "size",
+            "name": "Size",
+            "value": "5 in"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Painted Egg Shakers",
+    "slug": "painted-egg-shakers",
+    "axisOrder": [
+      "type"
+    ],
+    "matches": [],
+    "only_sheet": [
+      {
+        "variant": "",
+        "sku": "MI-ES"
+      }
+    ],
+    "only_db": [
+      {
+        "variant": "Blue Dotted",
+        "sku": "MI-ES-P-B",
+        "status": "ACTIVE",
+        "attrs": [
+          {
+            "slug": "type",
+            "name": "Type",
+            "value": "Blue Dotted"
+          }
+        ]
+      },
+      {
+        "variant": "Artistically Designed",
+        "sku": "MI-ES-P-A",
+        "status": "ACTIVE",
+        "attrs": [
+          {
+            "slug": "type",
+            "name": "Type",
+            "value": "Artistically Designed"
+          }
+        ]
+      },
+      {
+        "variant": "Red Dotted",
+        "sku": "MI-ES-P-R",
+        "status": "ACTIVE",
+        "attrs": [
+          {
+            "slug": "type",
+            "name": "Type",
+            "value": "Red Dotted"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Round Yoga Bolster",
+    "slug": "round-yoga-bolster",
+    "axisOrder": [
+      "colour"
+    ],
+    "matches": [
+      {
+        "sheet": {
+          "variant": "Dark Grey",
+          "sku": "YO-BR-RD-DG"
+        },
+        "db": {
+          "variant": "Dark Grey",
+          "sku": "Yo-BR-R-DG",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "colour",
+              "name": "Colour",
+              "value": "Dark Grey"
+            }
+          ]
+        },
+        "basis": "exact_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Grey",
+          "sku": "YO-BR-RD-GY"
+        },
+        "db": {
+          "variant": "Grey",
+          "sku": "Yo-BR-R-GY",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "colour",
+              "name": "Colour",
+              "value": "Grey"
+            }
+          ]
+        },
+        "basis": "exact_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Maroon",
+          "sku": "YO-BR-RD-M"
+        },
+        "db": {
+          "variant": "Maroon",
+          "sku": "Yo-BR-R-M",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "colour",
+              "name": "Colour",
+              "value": "Maroon"
+            }
+          ]
+        },
+        "basis": "exact_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Navy Blue",
+          "sku": "YO-BR-RD-NB"
+        },
+        "db": {
+          "variant": "Navy Blue",
+          "sku": "Yo-BR-R-NB",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "colour",
+              "name": "Colour",
+              "value": "Navy Blue"
+            }
+          ]
+        },
+        "basis": "exact_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Orange",
+          "sku": "YO-BR-RD-O"
+        },
+        "db": {
+          "variant": "Orange",
+          "sku": "Yo-BR-R-O",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "colour",
+              "name": "Colour",
+              "value": "Orange"
+            }
+          ]
+        },
+        "basis": "exact_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Rose",
+          "sku": "YO-BR-RD-R"
+        },
+        "db": {
+          "variant": "Rose",
+          "sku": "Yo-BR-R-RE",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "colour",
+              "name": "Colour",
+              "value": "Rose"
+            }
+          ]
+        },
+        "basis": "exact_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Rouge Pink",
+          "sku": "YO-BR-RD-RP"
+        },
+        "db": {
+          "variant": "Rogue Pink",
+          "sku": "Yo-BR-R-RP",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "colour",
+              "name": "Colour",
+              "value": "Rogue Pink"
+            }
+          ]
+        },
+        "basis": "exact_norm"
+      }
+    ],
+    "only_sheet": [
+      {
+        "variant": "sage",
+        "sku": "YO-BR-RD-S"
+      }
+    ],
+    "only_db": []
+  },
+  {
+    "name": "Sacred Symbols Singing Bowls",
+    "slug": "sacred-symbols-singing-bowls",
+    "axisOrder": [
+      "size",
+      "color"
+    ],
+    "matches": [
+      {
+        "sheet": {
+          "variant": "Green / 3.5 in",
+          "sku": "MI-SB-SS-G-3.5"
+        },
+        "db": {
+          "variant": "3.5 in / Green",
+          "sku": "MI-SB-P-SS-G-3.5",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "3.5 in"
+            },
+            {
+              "slug": "color",
+              "name": "Color",
+              "value": "Green"
+            }
+          ]
+        },
+        "basis": "reversed_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Green / 4in",
+          "sku": "MI-SB-SS-G-4"
+        },
+        "db": {
+          "variant": "4 in / Green",
+          "sku": "MI-SB-P-SS-G-4",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "4 in"
+            },
+            {
+              "slug": "color",
+              "name": "Color",
+              "value": "Green"
+            }
+          ]
+        },
+        "basis": "reversed_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Green / 5.5in",
+          "sku": "MI-SB-SS-G-5.5"
+        },
+        "db": {
+          "variant": "5.5 in / Green",
+          "sku": "MI-SB-P-SS-G-5.5",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "5.5 in"
+            },
+            {
+              "slug": "color",
+              "name": "Color",
+              "value": "Green"
+            }
+          ]
+        },
+        "basis": "reversed_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Blue / 3.5 in",
+          "sku": "MI-SB-SS-B-3.5"
+        },
+        "db": {
+          "variant": "3.5 in / Blue",
+          "sku": "MI-SB-P-SS-B-3.5",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "3.5 in"
+            },
+            {
+              "slug": "color",
+              "name": "Color",
+              "value": "Blue"
+            }
+          ]
+        },
+        "basis": "reversed_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Blue / 4 in",
+          "sku": "MI-SB-SS-B-4"
+        },
+        "db": {
+          "variant": "4 in / Blue",
+          "sku": "MI-SB-P-SS-B-4",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "4 in"
+            },
+            {
+              "slug": "color",
+              "name": "Color",
+              "value": "Blue"
+            }
+          ]
+        },
+        "basis": "reversed_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Blue / 5.5 in",
+          "sku": "MI-SB-SS-B-5.5"
+        },
+        "db": {
+          "variant": "5.5 in / Blue",
+          "sku": "MI-SB-P-SS-B-5.5",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "5.5 in"
+            },
+            {
+              "slug": "color",
+              "name": "Color",
+              "value": "Blue"
+            }
+          ]
+        },
+        "basis": "reversed_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Black / 3.5 in",
+          "sku": "MI-SB-SS-BK-3.5"
+        },
+        "db": {
+          "variant": "3.5 in / Black",
+          "sku": "MI-SB-P-SS-BK-3.5",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "3.5 in"
+            },
+            {
+              "slug": "color",
+              "name": "Color",
+              "value": "Black"
+            }
+          ]
+        },
+        "basis": "reversed_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Black / 4 in",
+          "sku": "MI-SB-SS-BK-4"
+        },
+        "db": {
+          "variant": "4 in / Black",
+          "sku": "MI-SB-P-SS-BK-4",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "4 in"
+            },
+            {
+              "slug": "color",
+              "name": "Color",
+              "value": "Black"
+            }
+          ]
+        },
+        "basis": "reversed_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Black / 5.5 in",
+          "sku": "MI-SB-SS-BK-5.5"
+        },
+        "db": {
+          "variant": "5.5 in / Black",
+          "sku": "MI-SB-P-SS-BK-5.5",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "5.5 in"
+            },
+            {
+              "slug": "color",
+              "name": "Color",
+              "value": "Black"
+            }
+          ]
+        },
+        "basis": "reversed_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Red / 3.5 in",
+          "sku": "MI-SB-SS-R-3.5"
+        },
+        "db": {
+          "variant": "3.5 in / Red",
+          "sku": "MI-SB-P-SS-R-3.5",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "3.5 in"
+            },
+            {
+              "slug": "color",
+              "name": "Color",
+              "value": "Red"
+            }
+          ]
+        },
+        "basis": "reversed_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Red / 4 in",
+          "sku": "MI-SB-SS-R-4"
+        },
+        "db": {
+          "variant": "4 in / Red",
+          "sku": "MI-SB-P-SS-R-4",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "4 in"
+            },
+            {
+              "slug": "color",
+              "name": "Color",
+              "value": "Red"
+            }
+          ]
+        },
+        "basis": "reversed_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Red / 5.5 in",
+          "sku": "MI-SB-SS-R-5.5"
+        },
+        "db": {
+          "variant": "5.5 in / Red",
+          "sku": "MI-SB-P-SS-R-5.5",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "5.5 in"
+            },
+            {
+              "slug": "color",
+              "name": "Color",
+              "value": "Red"
+            }
+          ]
+        },
+        "basis": "reversed_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Yellow / 3.5 in",
+          "sku": "MI-SB-SS-Y-3.5"
+        },
+        "db": {
+          "variant": "3.5 in / Yellow",
+          "sku": "MI-SB-P-SS-Y-3.5",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "3.5 in"
+            },
+            {
+              "slug": "color",
+              "name": "Color",
+              "value": "Yellow"
+            }
+          ]
+        },
+        "basis": "reversed_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Yellow / 4 in",
+          "sku": "MI-SB-SS-Y-4"
+        },
+        "db": {
+          "variant": "4 in / Yellow",
+          "sku": "MI-SB-P-SS-Y-4",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "4 in"
+            },
+            {
+              "slug": "color",
+              "name": "Color",
+              "value": "Yellow"
+            }
+          ]
+        },
+        "basis": "reversed_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Yellow / 5.5 in",
+          "sku": "MI-SB-SS-Y-5.5"
+        },
+        "db": {
+          "variant": "5.5 in / Yellow",
+          "sku": "MI-SB-P-SS-Y-5.5",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "5.5 in"
+            },
+            {
+              "slug": "color",
+              "name": "Color",
+              "value": "Yellow"
+            }
+          ]
+        },
+        "basis": "reversed_norm"
+      }
+    ],
+    "only_sheet": [
+      {
+        "variant": "Gold / 3.5 Inches",
+        "sku": "MI-SB-SS-GO-3.5"
+      },
+      {
+        "variant": "Gold / 4 Inches",
+        "sku": "MI-SB-SS-GO-4"
+      },
+      {
+        "variant": "Gold / 5.5 Inches",
+        "sku": "MI-SB-SS-GO-5.5"
+      }
+    ],
+    "only_db": []
+  },
+  {
+    "name": "Shruti Box",
+    "slug": "shruti-box",
+    "axisOrder": [
+      "octaves"
+    ],
+    "matches": [
+      {
+        "sheet": {
+          "variant": "2 Octaves",
+          "sku": "MI-STB-O2"
+        },
+        "db": {
+          "variant": "2 Octaves",
+          "sku": "MI-SB-2",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "octaves",
+              "name": "Octaves",
+              "value": "2 Octaves"
+            }
+          ]
+        },
+        "basis": "exact_norm"
+      },
+      {
+        "sheet": {
+          "variant": "3 Octaves",
+          "sku": "MI-STB-O3"
+        },
+        "db": {
+          "variant": "3 Octaves",
+          "sku": "MI-SB-3",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "octaves",
+              "name": "Octaves",
+              "value": "3 Octaves"
+            }
+          ]
+        },
+        "basis": "exact_norm"
+      }
+    ],
+    "only_sheet": [
+      {
+        "variant": "1 Octave Standard",
+        "sku": "MI-STB-O1"
+      },
+      {
+        "variant": "1 Octave Mini",
+        "sku": "MI-STB-O1-M"
+      }
+    ],
+    "only_db": [
+      {
+        "variant": "1 Octave",
+        "sku": "MI-SB-1",
+        "status": "ACTIVE",
+        "attrs": [
+          {
+            "slug": "octaves",
+            "name": "Octaves",
+            "value": "1 Octave"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Tingsha Bell",
+    "slug": "tingsha-bell",
+    "axisOrder": [
+      "type",
+      "size"
+    ],
+    "matches": [
+      {
+        "sheet": {
+          "variant": "Plain / Small",
+          "sku": "MI-TB-P-S"
+        },
+        "db": {
+          "variant": "Plain / Small",
+          "sku": "MI-TB-P-SM",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "type",
+              "name": "Type",
+              "value": "Plain"
+            },
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "Small"
+            }
+          ]
+        },
+        "basis": "exact_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Dark / Small",
+          "sku": "MI-TB-D-S"
+        },
+        "db": {
+          "variant": "Dark / Small",
+          "sku": "MI-TB-D-SM",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "type",
+              "name": "Type",
+              "value": "Dark"
+            },
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "Small"
+            }
+          ]
+        },
+        "basis": "exact_norm"
+      },
+      {
+        "sheet": {
+          "variant": "Etched /Small",
+          "sku": "MI-TB-ET-S"
+        },
+        "db": {
+          "variant": "Etched / Small",
+          "sku": "MI-TB-E-SM",
+          "status": "ACTIVE",
+          "attrs": [
+            {
+              "slug": "type",
+              "name": "Type",
+              "value": "Etched"
+            },
+            {
+              "slug": "size",
+              "name": "Size",
+              "value": "Small"
+            }
+          ]
+        },
+        "basis": "exact_norm"
+      }
+    ],
+    "only_sheet": [
+      {
+        "variant": "Plain /Medium",
+        "sku": "MI-TB-P-M"
+      },
+      {
+        "variant": "Plain /Large",
+        "sku": "MI-TB-P-L"
+      },
+      {
+        "variant": "Dark / Medium",
+        "sku": "MI-TB-D-M"
+      },
+      {
+        "variant": "Dark / Large",
+        "sku": "MI-TB-D-L"
+      },
+      {
+        "variant": "Etched / Medium",
+        "sku": "MI-TB-ET-M"
+      },
+      {
+        "variant": "Etched / Large",
+        "sku": "MI-TB-ET-L"
+      }
+    ],
+    "only_db": [
+      {
+        "variant": "Dark / Standard",
+        "sku": "MI-TB-D-ST",
+        "status": "ACTIVE",
+        "attrs": [
+          {
+            "slug": "type",
+            "name": "Type",
+            "value": "Dark"
+          },
+          {
+            "slug": "size",
+            "name": "Size",
+            "value": "Standard"
+          }
+        ]
+      },
+      {
+        "variant": "Etched / Standard",
+        "sku": "MI-TB-E-ST",
+        "status": "ACTIVE",
+        "attrs": [
+          {
+            "slug": "type",
+            "name": "Type",
+            "value": "Etched"
+          },
+          {
+            "slug": "size",
+            "name": "Size",
+            "value": "Standard"
+          }
+        ]
+      },
+      {
+        "variant": "Plain / Standard",
+        "sku": "MI-TB-P-ST",
+        "status": "ACTIVE",
+        "attrs": [
+          {
+            "slug": "type",
+            "name": "Type",
+            "value": "Plain"
+          },
+          {
+            "slug": "size",
+            "name": "Size",
+            "value": "Standard"
+          }
+        ]
+      }
+    ]
+  }
+]

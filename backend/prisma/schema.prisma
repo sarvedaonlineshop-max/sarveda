@@ -870,6 +870,18 @@ model StockNotification {
   @@unique([productId, variantId, email])
 }
 
+/// Homepage / storefront newsletter opt-ins (“Join the Community”).
+model NewsletterSubscriber {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email          String    @unique
+  source         String    @default("homepage")
+  unsubscribedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([createdAt(sort: Desc)])
+}
+
 model Wishlist {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId    String   @db.Uuid

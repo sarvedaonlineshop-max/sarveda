@@ -25,10 +25,10 @@ export function PriceDisplay({
   const isCompact = size === "compact";
   const isStorefront = presentation === "storefront";
   const saleClass = isStorefront
-    ? "text-2xl font-bold text-brand-forest sm:text-3xl"
+    ? "font-sans text-2xl font-bold tabular-nums tracking-tight text-brand-forest sm:text-3xl"
     : isCompact
-      ? "text-lg font-bold tracking-tight text-stone-900"
-      : "text-3xl font-semibold tracking-tight text-stone-900 sm:text-4xl";
+      ? "font-sans text-lg font-bold tabular-nums tracking-tight text-stone-900"
+      : "font-sans text-3xl font-semibold tabular-nums tracking-tight text-stone-900 sm:text-4xl";
 
   if (!variant && variants.length > 1) {
     const range = salePriceRange(variants, (v) => unitSaleMinor(v, zone));
@@ -63,7 +63,7 @@ export function PriceDisplay({
       <div className={isStorefront ? "flex flex-wrap items-center gap-3" : undefined}>
         <p className={saleClass}>{formatMinorFromPaise(sale, currency)}</p>
         {mrp > sale && isStorefront ? (
-          <span className="text-lg text-brand-muted line-through">
+          <span className="font-sans text-lg tabular-nums text-brand-muted line-through">
             {formatMinorFromPaise(mrp, currency)}
           </span>
         ) : null}

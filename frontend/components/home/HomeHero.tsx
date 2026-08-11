@@ -1,70 +1,90 @@
-import Link from "next/link";
-
-import { SarvedaLogoWatermark } from "@/components/brand/SarvedaLogo";
+import Image from "next/image";
 
 /**
- * Static homepage hero — single brand panel (~70vh), no product carousel.
- * Background: `frontend/public/images/home-hero-bg.png` (source copy at `data/bg.png`).
+ * Homepage hero — original banner photo + spiral overlay + HTML type.
+ * Mobile: zoomed on the subject; copy near neck with a light text scrim (no full-image fade).
+ * Desktop: natural landscape ratio with copy on the open mist at left.
  */
 export function HomeHero() {
   return (
     <section
-      className="relative flex min-h-[70vh] flex-col justify-end overflow-hidden border-b border-white/10"
-      style={{
-        backgroundImage:
-          "linear-gradient(90deg, rgba(10, 22, 18, 0.78) 0%, rgba(15, 31, 24, 0.62) 42%, rgba(18, 34, 27, 0.45) 100%), url(/images/home-hero-bg.png)",
-        backgroundSize: "cover",
-        backgroundPosition: "center center"
-      }}
-      aria-label="Welcome to Sarveda"
+      className="relative isolate overflow-hidden bg-[#ebe4d6]"
+      aria-label="Your partner on the journey within"
     >
       <div
-        className="pointer-events-none absolute inset-0 opacity-20"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 20% 30%, rgba(185,138,62,0.22) 0%, transparent 45%), radial-gradient(circle at 80% 70%, rgba(111,153,127,0.16) 0%, transparent 40%)"
-        }}
-        aria-hidden
-      />
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden>
-        <SarvedaLogoWatermark height={320} className="opacity-[0.035]" />
-      </div>
+        className={[
+          "relative w-full",
+          /* Mobile: portrait frame with extra zoom on the subject */
+          "aspect-[3/4] sm:aspect-[4/5]",
+          /* Desktop: natural photo ratio */
+          "md:aspect-[2400/1049]"
+        ].join(" ")}
+      >
+        <Image
+          src="/images/home/hero-journey-within-photo.jpg"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className={[
+            "object-cover",
+            /* Mobile: tighter crop / more zoom; face clear above copy */
+            "scale-[1.18] object-[74%_18%] sm:scale-[1.12] sm:object-[72%_20%]",
+            "md:scale-100 md:object-center"
+          ].join(" ")}
+          aria-hidden
+        />
 
-      <div className="relative mx-auto w-full max-w-7xl px-4 pb-16 pt-24 sm:px-6 md:pb-24 md:pt-32 lg:px-8">
-        <div className="max-w-3xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-brand-gold-pale">
-            Yoga · Meditation · Sound Healing
-          </p>
-          <h1 className="mt-6 font-serif text-4xl font-semibold leading-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
-            Authentic wellness, curated for practitioners
-          </h1>
-          <p className="mt-7 max-w-2xl text-base leading-relaxed text-brand-cream/75 sm:text-lg">
-            Sarveda brings together singing bowls, meditation tools, mindful living goods, and
-            practitioner-trusted essentials — rooted in Indian tradition, shipped worldwide.
-          </p>
-          <div className="mt-10 flex flex-wrap gap-3">
-            <Link
-              href="/shop"
-              className="inline-flex min-h-[52px] min-w-[180px] items-center justify-center gap-2 rounded-full bg-brand-gold px-8 text-sm font-bold tracking-wide text-brand-night transition-colors hover:bg-[#a37934]"
-            >
-              Shop all products
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-            <Link
-              href="/courses"
-              className="inline-flex min-h-[52px] items-center justify-center rounded-full border border-brand-cream/40 px-8 text-sm font-semibold text-brand-cream transition-colors hover:border-brand-cream/70 hover:bg-brand-cream/10"
-            >
-              Explore courses
-            </Link>
+        {/* Original Sarveda spiral watermark (gold, transparent PNG) */}
+        <div
+          className="pointer-events-none absolute inset-y-[4%] left-[-2%] z-[1] w-[min(48%,16rem)] opacity-55 sm:left-0 sm:w-[min(40%,22rem)] sm:opacity-65 md:w-[min(32%,28rem)] md:opacity-80 lg:w-[min(30%,32rem)] xl:w-[min(28%,36rem)]"
+          aria-hidden
+        >
+          <Image
+            src="/images/home/hero-spiral-overlay.png"
+            alt=""
+            fill
+            sizes="(max-width: 768px) 48vw, 30vw"
+            className="object-contain object-left"
+          />
+        </div>
+
+        {/*
+          Copy placement:
+          - Mobile: starts near neck (face clear); light scrim on text only — image stays sharp
+          - Desktop: elevated on the mist at left
+        */}
+        <div className="absolute inset-0 z-[2] md:flex md:items-start md:px-[6%] md:pt-[9%] lg:px-[8%] lg:pt-[8%] xl:px-[9%] xl:pt-[7.5%]">
+          <div
+            className={[
+              "px-4 sm:px-8 md:px-0",
+              "absolute left-0 right-0 top-[32%] w-full max-w-[22rem] sm:top-[30%] sm:max-w-[26rem]",
+              "md:static md:top-auto md:max-w-[min(36rem,46vw)] lg:max-w-[min(44rem,42vw)]"
+            ].join(" ")}
+          >
+            <div className="rounded-2xl bg-[#f7f1e6]/82 px-3.5 py-3 shadow-[0_8px_28px_rgba(26,46,38,0.08)] backdrop-blur-[2px] sm:px-4 sm:py-3.5 md:rounded-none md:bg-transparent md:px-0 md:py-0 md:shadow-none md:backdrop-blur-none">
+              <h1
+                className="font-serif font-semibold leading-[1.12] tracking-tight text-[#1a2e26]"
+                style={{
+                  fontSize: "clamp(1.65rem, 1rem + 3.2vw, 4rem)",
+                  textShadow: "0 1px 0 rgba(247,241,230,0.35)"
+                }}
+              >
+                Your Partner on the Journey{" "}
+                <span className="text-[#b98a3e]">Within</span>
+              </h1>
+              <p
+                className="mt-2.5 leading-relaxed text-[#1a2e26]/90 sm:mt-3.5 md:mt-5 md:text-[#1a2e26]/85"
+                style={{
+                  fontSize: "clamp(0.85rem, 0.7rem + 0.7vw, 1.25rem)",
+                  maxWidth: "36ch"
+                }}
+              >
+                Curated sound healing instruments, yoga essentials, and authentic learning
+                experiences for every stage of your practice.
+              </p>
+            </div>
           </div>
-          <ul className="mt-12 flex flex-wrap gap-x-6 gap-y-2 text-sm text-brand-cream/55">
-            <li>169+ curated products</li>
-            <li>India · US · UK · worldwide</li>
-            <li>💳 Visa · Mastercard · PayPal · Stripe</li>
-            <li>Audio samples on singing bowls</li>
-          </ul>
         </div>
       </div>
     </section>

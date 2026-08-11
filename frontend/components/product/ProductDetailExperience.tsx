@@ -214,7 +214,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
 
             {product.hasAudio && audioUrl ? (
               <div className="mt-5">
-                <ProductAudio audioUrl={audioUrl} variant="storefront" />
+                <ProductAudio audioUrl={audioUrl} productName={product.name} variant="storefront" />
               </div>
             ) : null}
           </div>
@@ -234,7 +234,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
                   ))}
                 </div>
               ) : null}
-              <h1 className="font-serif text-3xl font-semibold leading-tight text-brand-ink sm:text-4xl">
+              <h1 className="font-sans text-3xl font-semibold leading-tight text-brand-ink sm:text-4xl">
                 {product.name}
               </h1>
             </div>

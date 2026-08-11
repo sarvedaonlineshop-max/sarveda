@@ -1,0 +1,8279 @@
+{
+  "products": [
+    {
+      "name": "Conscious Cards",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "ME-CC"
+        }
+      ]
+    },
+    {
+      "name": "Jala Neti Pot - Ceramic 185 ml",
+      "variants": [
+        {
+          "variant": "Red",
+          "sku": "YO-NP-R-185"
+        },
+        {
+          "variant": "Blue",
+          "sku": "YO-NP-B-185"
+        },
+        {
+          "variant": "Lemon Yellow",
+          "sku": "YO-NP-LY-185"
+        },
+        {
+          "variant": "Mint Green",
+          "sku": "YO-NP-MG-185"
+        },
+        {
+          "variant": "White",
+          "sku": "YO-NP-W-185"
+        }
+      ]
+    },
+    {
+      "name": "Tounge Cleaner",
+      "variants": [
+        {
+          "variant": "Straight / pack-of-1",
+          "sku": "TC-S-1"
+        },
+        {
+          "variant": "Straight / pack-of-2",
+          "sku": "TC-S-2"
+        },
+        {
+          "variant": "Straight / pack-of-4",
+          "sku": "TC-S-4"
+        }
+      ]
+    },
+    {
+      "name": "Stainless Steel Straws",
+      "variants": [
+        {
+          "variant": "pack-of-2",
+          "sku": "SSS-2"
+        },
+        {
+          "variant": "pack-of-4",
+          "sku": "SSS-4"
+        }
+      ]
+    },
+    {
+      "name": "7 Chakras - Plain Copper Bottles",
+      "variants": [
+        {
+          "variant": "Plain / 500ml/ With Brush",
+          "sku": "CB-7C-B-.5"
+        },
+        {
+          "variant": "Plain / 500ml/ Without Brush",
+          "sku": "CB-7C-.5"
+        },
+        {
+          "variant": "Plain / 1L / With Brush",
+          "sku": "CB-7C-B"
+        },
+        {
+          "variant": "Plain / 1L/ Without Brush",
+          "sku": "CB-7C"
+        }
+      ]
+    },
+    {
+      "name": "7 Chakras - Vintage Copper Bottles",
+      "variants": [
+        {
+          "variant": "Vintage / 500ml/ With Brush",
+          "sku": "CB-7C-V-B-.5"
+        },
+        {
+          "variant": "Vintage/ 500ml/ Without Brush",
+          "sku": "CB-7C-V-.5"
+        },
+        {
+          "variant": "Vintage / 1L/ With Brush",
+          "sku": "CB-7C-V-B"
+        },
+        {
+          "variant": "Vintage/  1L/ Without Brush",
+          "sku": "CB-7C-V"
+        }
+      ]
+    },
+    {
+      "name": "7 Chakras - Copper Bottles with Handle",
+      "variants": [
+        {
+          "variant": "Plain / 1L / With Brush",
+          "sku": "CB-7C-H-B"
+        },
+        {
+          "variant": "Plain / 1L/ Without Brush",
+          "sku": "CB-7C-H"
+        },
+        {
+          "variant": "Vintage / 1L/ Without Brush",
+          "sku": "CB-7C-V-H"
+        },
+        {
+          "variant": "Vintage / 1L / With Brush",
+          "sku": "CB-7C-V-H-B"
+        }
+      ]
+    },
+    {
+      "name": "Curved Copper Bottles",
+      "variants": [
+        {
+          "variant": "gold / With Brush",
+          "sku": "CB-C-B"
+        },
+        {
+          "variant": "gold / Without Brush",
+          "sku": "CB-C"
+        },
+        {
+          "variant": "vintage / With Brush",
+          "sku": "CB-C-V-B"
+        },
+        {
+          "variant": "vintage / Without Brush",
+          "sku": "CB-C-V"
+        }
+      ]
+    },
+    {
+      "name": "Curved Diamond Groove Copper Bottle",
+      "variants": [
+        {
+          "variant": "copper / 1L / without-brush",
+          "sku": "CB-CDG"
+        },
+        {
+          "variant": "vintage / 1L / without-brush",
+          "sku": "CB-CDG-V"
+        }
+      ]
+    },
+    {
+      "name": "Curved Hammered Copper Bottles",
+      "variants": [
+        {
+          "variant": "with-brush / vintage",
+          "sku": "CB-CVH-B"
+        },
+        {
+          "variant": "vintage / without-brush",
+          "sku": "CB-CVH"
+        }
+      ]
+    },
+    {
+      "name": "Hammered Copper Bottle",
+      "variants": [
+        {
+          "variant": "copper / without-brush",
+          "sku": "CB-HM"
+        },
+        {
+          "variant": "copper / with-brush",
+          "sku": "CB-HM-B"
+        }
+      ]
+    },
+    {
+      "name": "Sunshine within Me (Artistic Design)",
+      "variants": [
+        {
+          "variant": "with-brush / 1L",
+          "sku": "CB-AD-SS-B"
+        },
+        {
+          "variant": "without-brush / 1L",
+          "sku": "CB-AD-SS"
+        },
+        {
+          "variant": "without-brush / 500ml",
+          "sku": "CB-AD-SS-.5"
+        },
+        {
+          "variant": "with-brush / 500ml",
+          "sku": "CB-AD-SS-.5-B"
+        }
+      ]
+    },
+    {
+      "name": "Tattvamasi-I am Infinite",
+      "variants": [
+        {
+          "variant": "with-brush / 1L",
+          "sku": "CB-AD-TM-B"
+        },
+        {
+          "variant": "without-brush / 1L",
+          "sku": "CB-AD-TM"
+        },
+        {
+          "variant": "without-brush / 500ml",
+          "sku": "CB-AD-TM-.5"
+        },
+        {
+          "variant": "with-brush / 500ml",
+          "sku": "CB-AD-TM-B-.5"
+        }
+      ]
+    },
+    {
+      "name": "Pink & Positive",
+      "variants": [
+        {
+          "variant": "without-brush / 1L",
+          "sku": "CB-AD-PP"
+        },
+        {
+          "variant": "with-brush / 1L",
+          "sku": "CB-AD-PP-B"
+        },
+        {
+          "variant": "without-brush / 500ml",
+          "sku": "CB-AD-PP-.5"
+        },
+        {
+          "variant": "with-brush / 500ml",
+          "sku": "CB-AD-PP-.5-B"
+        }
+      ]
+    },
+    {
+      "name": "Happiness is Inside",
+      "variants": [
+        {
+          "variant": "with-brush / 1L",
+          "sku": "CB-AD-HI-B"
+        },
+        {
+          "variant": "without-brush / 1L",
+          "sku": "CB-AD-HI"
+        },
+        {
+          "variant": "without-brush / 500ml",
+          "sku": "CB-AD-HI-.5"
+        },
+        {
+          "variant": "with-brush / 500ml",
+          "sku": "CB-AD-HI-.5-B"
+        }
+      ]
+    },
+    {
+      "name": "Blue Tranquillity/Meditation",
+      "variants": [
+        {
+          "variant": "Without Brush / 1L",
+          "sku": "CB-AD-BM"
+        },
+        {
+          "variant": "1L / With Brush /",
+          "sku": "CB-AD-BM-B"
+        },
+        {
+          "variant": "Without Brush /500ml",
+          "sku": "CB-AD-BM-.5"
+        },
+        {
+          "variant": "With Brush / 500ml",
+          "sku": "CB-AD-BM-.5-B"
+        }
+      ]
+    },
+    {
+      "name": "Ayurvedic Copper Bedroom Jar",
+      "variants": [
+        {
+          "variant": "Standard",
+          "sku": "CB-BJ"
+        }
+      ]
+    },
+    {
+      "name": "Copper Bottle Gift Set - 7 Chakra",
+      "variants": [
+        {
+          "variant": "Gold",
+          "sku": "CB-7C-C-2G-SET"
+        },
+        {
+          "variant": "Vintage",
+          "sku": "CB-7C-V-2G-SET"
+        }
+      ]
+    },
+    {
+      "name": "7 Chakras Mystical Incense Sticks Set",
+      "variants": [
+        {
+          "variant": "7 Chakra Set",
+          "sku": "IS-7C-SET"
+        },
+        {
+          "variant": "7 Chakra Set with Stand",
+          "sku": "IS-7C-SET-S"
+        },
+        {
+          "variant": "Pure Citronella",
+          "sku": "IS-CT"
+        },
+        {
+          "variant": "Pure Eucalyptus",
+          "sku": "IS-EU"
+        },
+        {
+          "variant": "Pure Frankincense",
+          "sku": "IS-FI"
+        },
+        {
+          "variant": "Pure Lavender",
+          "sku": "IS-LV"
+        },
+        {
+          "variant": "Pure Musk",
+          "sku": "IS-MU"
+        },
+        {
+          "variant": "Pure Rose",
+          "sku": "IS-R"
+        },
+        {
+          "variant": "Pure Sandalwood",
+          "sku": "IS-SW"
+        }
+      ]
+    },
+    {
+      "name": "7 Chakras Yoga Mats",
+      "variants": [
+        {
+          "variant": "Moderate / Green",
+          "sku": "YO-M-CT-7C-M-G"
+        },
+        {
+          "variant": "Moderate / Orange",
+          "sku": "YO-M-CT-7C-M-O"
+        },
+        {
+          "variant": "Moderate / Blue",
+          "sku": "YO-M-CT-7C-M-B"
+        },
+        {
+          "variant": "Moderate / Pink",
+          "sku": "YO-M-CT-7C-M-P"
+        },
+        {
+          "variant": "Teal/ Superior",
+          "sku": "YO-M-CT-7C-S-T"
+        },
+        {
+          "variant": "Orange / Superior",
+          "sku": "YO-M-CT-7C-S-O"
+        },
+        {
+          "variant": "Yellow / Superior",
+          "sku": "YO-M-CT-7C-S-Y"
+        },
+        {
+          "variant": "Pink / Superior",
+          "sku": "YO-M-CT-7C-S-P"
+        }
+      ]
+    },
+    {
+      "name": "Plain Yoga Mats",
+      "variants": [
+        {
+          "variant": "Moderate / Green",
+          "sku": "YO-M-CT-M-G"
+        },
+        {
+          "variant": "Moderate / Orange",
+          "sku": "YO-M-CT-M-O"
+        },
+        {
+          "variant": "Moderate / Blue",
+          "sku": "YO-M-CT-M-B"
+        },
+        {
+          "variant": "Moderate / Pink",
+          "sku": "YO-M-CT-M-P"
+        },
+        {
+          "variant": "Teal / Superior",
+          "sku": "YO-M-CT-S-T"
+        },
+        {
+          "variant": "Orange / Superior",
+          "sku": "YO-M-CT-S-O"
+        },
+        {
+          "variant": "Yellow / Superior",
+          "sku": "YO-M-CT-S-Y"
+        },
+        {
+          "variant": "Pink / Superior",
+          "sku": "YO-M-CT-S-P"
+        }
+      ]
+    },
+    {
+      "name": "Yoga Mats-Lotus",
+      "variants": [
+        {
+          "variant": "Moderate / Green",
+          "sku": "YO-M-CT-L-M-G"
+        },
+        {
+          "variant": "Moderate / Orange",
+          "sku": "YO-M-CT-L-M-O"
+        },
+        {
+          "variant": "Moderate / Blue",
+          "sku": "YO-M-CT-L-M-B"
+        },
+        {
+          "variant": "Moderate / Pink",
+          "sku": "YO-M-CT-L-M-P"
+        },
+        {
+          "variant": "Teal / Superior",
+          "sku": "YO-M-CT-L-S-T"
+        },
+        {
+          "variant": "Orange / Superior",
+          "sku": "YO-M-CT-L-S-O"
+        },
+        {
+          "variant": "Yellow / Superior",
+          "sku": "YO-M-CT-L-S-Y"
+        },
+        {
+          "variant": "Pink / Superior",
+          "sku": "YO-M-CT-L-S-P"
+        }
+      ]
+    },
+    {
+      "name": "Macrame Yoga Mat Straps",
+      "variants": [
+        {
+          "variant": "Green",
+          "sku": "YO-MMS-G"
+        },
+        {
+          "variant": "Brown",
+          "sku": "YO-MMS-BR"
+        },
+        {
+          "variant": "Dark Grey",
+          "sku": "YO-MMS-DG"
+        },
+        {
+          "variant": "Orange",
+          "sku": "YO-MMS-O"
+        },
+        {
+          "variant": "Navy Blue",
+          "sku": "YO-MMS-NB"
+        },
+        {
+          "variant": "Rose",
+          "sku": "YO-MMS-R"
+        },
+        {
+          "variant": "Rouge Pink",
+          "sku": "YO-MMS-RP"
+        },
+        {
+          "variant": "Sage",
+          "sku": "YO-MMS-S"
+        }
+      ]
+    },
+    {
+      "name": "Round Yoga Bolster",
+      "variants": [
+        {
+          "variant": "Dark Grey",
+          "sku": "YO-BR-RD-DG"
+        },
+        {
+          "variant": "Grey",
+          "sku": "YO-BR-RD-GY"
+        },
+        {
+          "variant": "Maroon",
+          "sku": "YO-BR-RD-M"
+        },
+        {
+          "variant": "Navy Blue",
+          "sku": "YO-BR-RD-NB"
+        },
+        {
+          "variant": "Orange",
+          "sku": "YO-BR-RD-O"
+        },
+        {
+          "variant": "Rose",
+          "sku": "YO-BR-RD-R"
+        },
+        {
+          "variant": "sage",
+          "sku": "YO-BR-RD-S"
+        },
+        {
+          "variant": "Rouge Pink",
+          "sku": "YO-BR-RD-RP"
+        }
+      ]
+    },
+    {
+      "name": "Rectangular Yoga Bolster",
+      "variants": [
+        {
+          "variant": "Dark Grey",
+          "sku": "YO-BR-RT-DG"
+        },
+        {
+          "variant": "Grey",
+          "sku": "YO-BR-RT-GY"
+        },
+        {
+          "variant": "Maroon",
+          "sku": "YO-BR-RT-M"
+        },
+        {
+          "variant": "Navy Blue",
+          "sku": "YO-BR-RT-NB"
+        },
+        {
+          "variant": "Rose",
+          "sku": "YO-BR-RT-R"
+        },
+        {
+          "variant": "Rouge Pink",
+          "sku": "YO-BR-RT-RP"
+        }
+      ]
+    },
+    {
+      "name": "Eye Shaped - Eye Pillows",
+      "variants": [
+        {
+          "variant": "Rose",
+          "sku": "YO-EP-R"
+        },
+        {
+          "variant": "Dark Grey",
+          "sku": "YO-EP-DG"
+        },
+        {
+          "variant": "Grey",
+          "sku": "YO-EP-GY"
+        },
+        {
+          "variant": "Navy Blue",
+          "sku": "YO-EP-NB"
+        },
+        {
+          "variant": "Sage",
+          "sku": "YO-EP-S"
+        }
+      ]
+    },
+    {
+      "name": "Yoga Belt/Strap",
+      "variants": [
+        {
+          "variant": "Sky Blue",
+          "sku": "YO-BL-SB"
+        },
+        {
+          "variant": "Beige",
+          "sku": "YO-BL-BE"
+        },
+        {
+          "variant": "Green",
+          "sku": "YO-BL-G"
+        },
+        {
+          "variant": "Navy Blue",
+          "sku": "YO-BL-NB"
+        },
+        {
+          "variant": "Rose",
+          "sku": "YO-BL-R"
+        }
+      ]
+    },
+    {
+      "name": "Yoga Blanket",
+      "variants": [
+        {
+          "variant": "Magenta",
+          "sku": "YO-BT-MG"
+        },
+        {
+          "variant": "Brown",
+          "sku": "YO-BT-BR"
+        },
+        {
+          "variant": "Natural White",
+          "sku": "YO-BT-W"
+        }
+      ]
+    },
+    {
+      "name": "Zafu Meditation Cushion - Plain",
+      "variants": [
+        {
+          "variant": "Dark Grey",
+          "sku": "ME-Z-DG"
+        },
+        {
+          "variant": "Navy Blue",
+          "sku": "ME-Z-NB"
+        },
+        {
+          "variant": "Orange",
+          "sku": "ME-Z-O"
+        },
+        {
+          "variant": "Rose",
+          "sku": "ME-Z-R"
+        },
+        {
+          "variant": "Sage",
+          "sku": "ME-Z-S"
+        },
+        {
+          "variant": "Light Grey",
+          "sku": "ME-Z-LG"
+        },
+        {
+          "variant": "Lavender",
+          "sku": "ME-Z-LR"
+        },
+        {
+          "variant": "Misty Blue",
+          "sku": "ME-Z-MB"
+        },
+        {
+          "variant": "Magenta",
+          "sku": "ME-Z-MG"
+        }
+      ]
+    },
+    {
+      "name": "Zafu Meditation Cushion - Lotus Embroidery",
+      "variants": [
+        {
+          "variant": "Rose",
+          "sku": "ME-Z-EM-L-R"
+        },
+        {
+          "variant": "Light Grey",
+          "sku": "ME-Z-EM-L-LG"
+        },
+        {
+          "variant": "Lavender",
+          "sku": "ME-Z-EM-L-LV"
+        },
+        {
+          "variant": "Misty Blue",
+          "sku": "ME-Z-EM-L-MB"
+        },
+        {
+          "variant": "Sage",
+          "sku": "ME-Z-EM-L-S"
+        }
+      ]
+    },
+    {
+      "name": "Zabuton Cushion",
+      "variants": [
+        {
+          "variant": "Navy Blue",
+          "sku": "ME-Zn-NB"
+        },
+        {
+          "variant": "Grey",
+          "sku": "ME-Zn-GY"
+        },
+        {
+          "variant": "Light Grey",
+          "sku": "ME-Zn-LG"
+        },
+        {
+          "variant": "Lavender",
+          "sku": "ME-Zn-LV"
+        },
+        {
+          "variant": "Misty Blue",
+          "sku": "ME-Zn-MB"
+        }
+      ]
+    },
+    {
+      "name": "Zafu & Zabuton Combo - Plain",
+      "variants": [
+        {
+          "variant": "Light Grey",
+          "sku": "ME-Z-Zn-LG"
+        },
+        {
+          "variant": "Lavender",
+          "sku": "ME-Z-Zn-LV"
+        },
+        {
+          "variant": "Misty Blue",
+          "sku": "ME-Z-Zn-MB"
+        },
+        {
+          "variant": "Navy Blue",
+          "sku": "ME-Z-Zn-NB"
+        }
+      ]
+    },
+    {
+      "name": "Zafu & Zabuton Combo - Lotus Embroidery",
+      "variants": [
+        {
+          "variant": "Lavender",
+          "sku": "ME-Z-Zn-EM-L-LV"
+        },
+        {
+          "variant": "Light Grey",
+          "sku": "ME-Z-Zn-EM-L-LG"
+        },
+        {
+          "variant": "Misty Blue",
+          "sku": "ME-Z-Zn-EM-L-MB"
+        }
+      ]
+    },
+    {
+      "name": "Hi-Zafu Meditation Cushion - Embroidered with Lotus",
+      "variants": [
+        {
+          "variant": "Sage",
+          "sku": "ME-HZ-EM-L-S"
+        },
+        {
+          "variant": "Lavender",
+          "sku": "ME-HZ-EM-L-LV"
+        },
+        {
+          "variant": "Light Grey",
+          "sku": "ME-HZ-EM-L-LG"
+        },
+        {
+          "variant": "Misty Blue",
+          "sku": "ME-HZ-EM-L-MB"
+        },
+        {
+          "variant": "Rose",
+          "sku": "ME-HZ-EM-L-R"
+        }
+      ]
+    },
+    {
+      "name": "Hi-Zafu Meditation Cushion - Filled with Buckwheat",
+      "variants": [
+        {
+          "variant": "Royal Blue",
+          "sku": "ME-HZ-RB"
+        },
+        {
+          "variant": "Dark Grey",
+          "sku": "ME-HZ-DG"
+        },
+        {
+          "variant": "Grey",
+          "sku": "ME-HZ-GY"
+        },
+        {
+          "variant": "Ivory",
+          "sku": "ME-HZ-I"
+        },
+        {
+          "variant": "Light Grey",
+          "sku": "ME-HZ-LG"
+        },
+        {
+          "variant": "Lavender",
+          "sku": "ME-HZ-LV"
+        },
+        {
+          "variant": "Maroon",
+          "sku": "ME-HZ-M"
+        },
+        {
+          "variant": "Misty Blue",
+          "sku": "ME-HZ-MB"
+        },
+        {
+          "variant": "Navy Blue",
+          "sku": "ME-HZ-NB"
+        },
+        {
+          "variant": "Rose",
+          "sku": "ME-HZ-R"
+        },
+        {
+          "variant": "Red",
+          "sku": "ME-HZ-RD"
+        },
+        {
+          "variant": "Sage",
+          "sku": "ME-HZ-S"
+        }
+      ]
+    },
+    {
+      "name": "Crescent Zafu Cushion - Compact -Buck wheat",
+      "variants": [
+        {
+          "variant": "Dark Grey",
+          "sku": "ME-CZ-C-DG"
+        },
+        {
+          "variant": "Misty Blue",
+          "sku": "ME-CZ-C-MB"
+        },
+        {
+          "variant": "Lavender",
+          "sku": "ME-CZ-C-LV"
+        },
+        {
+          "variant": "Sage",
+          "sku": "ME-CZ-C-S"
+        },
+        {
+          "variant": "Rose",
+          "sku": "ME-CZ-C-R"
+        }
+      ]
+    },
+    {
+      "name": "Crescent Zafu Cushion - Wide -Cotton",
+      "variants": [
+        {
+          "variant": "Rouge Pink",
+          "sku": "ME-CZ-W-RP"
+        },
+        {
+          "variant": "Lavender",
+          "sku": "ME-CZ-W-LV"
+        },
+        {
+          "variant": "Misty Blue",
+          "sku": "ME-CZ-W-MB"
+        }
+      ]
+    },
+    {
+      "name": "Zen Meditation Bench",
+      "variants": [
+        {
+          "variant": "Small",
+          "sku": "ME-ZMB-S"
+        },
+        {
+          "variant": "Medium",
+          "sku": "ME-ZMB-M"
+        },
+        {
+          "variant": "Large",
+          "sku": "ME-ZMB-L"
+        }
+      ]
+    },
+    {
+      "name": "11 Note Tongue Drum",
+      "variants": [
+        {
+          "variant": "6 inches / White",
+          "sku": "MI-TD-11N-W-6"
+        },
+        {
+          "variant": "6 inches / Blue",
+          "sku": "MI-TD-11N-B-6"
+        },
+        {
+          "variant": "8 inches / White",
+          "sku": "MI-TD-11N-W-8"
+        },
+        {
+          "variant": "8 inches / Blue",
+          "sku": "MI-TD-11N-B-8"
+        },
+        {
+          "variant": "10 inches / White",
+          "sku": "MI-TD-11N-W-10"
+        },
+        {
+          "variant": "10 inches / Blue",
+          "sku": "MI-TD-11N-B-10"
+        },
+        {
+          "variant": "12 inches / White",
+          "sku": "MI-TD-11N-W-12"
+        },
+        {
+          "variant": "12 inches / Blue",
+          "sku": "MI-TD-11N-B-12"
+        }
+      ]
+    },
+    {
+      "name": "Handpan",
+      "variants": [
+        {
+          "variant": "D Celtic Minor 9",
+          "sku": "MI-HP-DC-9"
+        },
+        {
+          "variant": "D Kurd 10",
+          "sku": "MI-HP-DK-10"
+        }
+      ]
+    },
+    {
+      "name": "Handpan Stand",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-HP-S"
+        }
+      ]
+    },
+    {
+      "name": "8 Keys Metallophone",
+      "variants": [
+        {
+          "variant": "1 inch",
+          "sku": "MI-XY-MT-8-1"
+        },
+        {
+          "variant": "1.5 inch",
+          "sku": "MI-XY-MT-8-1.5"
+        }
+      ]
+    },
+    {
+      "name": "8 Keys Wooden Xylophone",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-XY-W-8"
+        }
+      ]
+    },
+    {
+      "name": "Teak Wood - Stainless Steel Xylophone",
+      "variants": [
+        {
+          "variant": "8 Keys",
+          "sku": "MI-XY-TW-8"
+        },
+        {
+          "variant": "15 Keys",
+          "sku": "MI-XY-TW-15"
+        }
+      ]
+    },
+    {
+      "name": "Bird Flute",
+      "variants": [
+        {
+          "variant": "Brown / Single",
+          "sku": "MI-BF-BN-S"
+        },
+        {
+          "variant": "Brown / Pair",
+          "sku": "MI-BF-BN-P"
+        }
+      ]
+    },
+    {
+      "name": "7-Key Kalimba Made from Coconut Shell",
+      "variants": [
+        {
+          "variant": "Plain Etched",
+          "sku": "MI-KCS-PE"
+        },
+        {
+          "variant": "Dot Painted",
+          "sku": "MI-KCS-DP"
+        }
+      ]
+    },
+    {
+      "name": "Asalato / Kashaka Shaker",
+      "variants": [
+        {
+          "variant": "Plain / Single",
+          "sku": "MI-AS"
+        },
+        {
+          "variant": "Plain / Pair",
+          "sku": "MI-AS-2"
+        },
+        {
+          "variant": "Painted / Single",
+          "sku": "MI-AS-P"
+        },
+        {
+          "variant": "Painted / Pair",
+          "sku": "MI-AS-P-2"
+        }
+      ]
+    },
+    {
+      "name": "Bamboo Castanet",
+      "variants": [
+        {
+          "variant": "Standard",
+          "sku": "MI-CN"
+        }
+      ]
+    },
+    {
+      "name": "Bamboo Rainstick Wide-80cm",
+      "variants": [
+        {
+          "variant": "Wide 80cm",
+          "sku": "MI-RS-W-80"
+        }
+      ]
+    },
+    {
+      "name": "Caxixi",
+      "variants": [
+        {
+          "variant": "Standard",
+          "sku": "MI-CX"
+        }
+      ]
+    },
+    {
+      "name": "Coconut Maracas Shakers",
+      "variants": [
+        {
+          "variant": "Plain",
+          "sku": "MI-CMS"
+        },
+        {
+          "variant": "Dot Painted",
+          "sku": "MI-CMS-DP"
+        }
+      ]
+    },
+    {
+      "name": "Wooden Maracas Shakers | Plain & Dot Painted",
+      "variants": [
+        {
+          "variant": "Plain",
+          "sku": "MI-WMS"
+        },
+        {
+          "variant": "Dot Painted",
+          "sku": "MI-WMS-DP"
+        }
+      ]
+    },
+    {
+      "name": "Egg Shaker with Handle",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-ES-H"
+        }
+      ]
+    },
+    {
+      "name": "Painted Egg Shakers",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-ES"
+        }
+      ]
+    },
+    {
+      "name": "Handheld Natural Coconut Shaker",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-CS-HH"
+        }
+      ]
+    },
+    {
+      "name": "Mini Coconut Shakers - 3 Types",
+      "variants": [
+        {
+          "variant": "Round Shaped",
+          "sku": "MI-CS-RS"
+        },
+        {
+          "variant": "Square Shaped",
+          "sku": "MI-CS-SS"
+        },
+        {
+          "variant": "Eye Shaped",
+          "sku": "MI-CS-ES"
+        },
+        {
+          "variant": "Set of 3",
+          "sku": "MI-CS-SET3"
+        }
+      ]
+    },
+    {
+      "name": "Dumru/Dumroo",
+      "variants": [
+        {
+          "variant": "Plain",
+          "sku": "MI-DM"
+        },
+        {
+          "variant": "Dot Painted",
+          "sku": "MI-DM-DP"
+        }
+      ]
+    },
+    {
+      "name": "Spin/Twist Drum or Den Den Daiko",
+      "variants": [
+        {
+          "variant": "Large 3.5 in",
+          "sku": "MI-SD-L"
+        },
+        {
+          "variant": "Small 3 in",
+          "sku": "MI-SD-S"
+        }
+      ]
+    },
+    {
+      "name": "Wooden Tambourines",
+      "variants": [
+        {
+          "variant": "Half-Moon",
+          "sku": "MI-WTM-HM"
+        },
+        {
+          "variant": "Circular",
+          "sku": "MI-WTM-C"
+        }
+      ]
+    },
+    {
+      "name": "Djembe Drums",
+      "variants": [
+        {
+          "variant": "8in / Ivory",
+          "sku": "MI-DJB-I-8"
+        },
+        {
+          "variant": "8in / Mahogany",
+          "sku": "MI-DJB-M-8"
+        },
+        {
+          "variant": "10in / Ivory",
+          "sku": "MI-DJB-I-10"
+        },
+        {
+          "variant": "10in / Mahogany",
+          "sku": "MI-DJB-M-10"
+        },
+        {
+          "variant": "12in / Ivory",
+          "sku": "MI-DJB-I-12"
+        },
+        {
+          "variant": "12in / Mahogany",
+          "sku": "MI-DJB-M-12"
+        },
+        {
+          "variant": "14in / Ivory",
+          "sku": "MI-DJB-I-14"
+        },
+        {
+          "variant": "14in / Mahogany",
+          "sku": "MI-DJB-M-14"
+        }
+      ]
+    },
+    {
+      "name": "Thunder Tube - Basic Edition",
+      "variants": [
+        {
+          "variant": "20cms /Small",
+          "sku": "MI-TT-S"
+        },
+        {
+          "variant": "25cms /Medium",
+          "sku": "MI-TT-M"
+        },
+        {
+          "variant": "30cms /Large",
+          "sku": "MI-TT-L"
+        }
+      ]
+    },
+    {
+      "name": "Coconut Rattle",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-CR"
+        }
+      ]
+    },
+    {
+      "name": "Pangi Seed Shell Rattle",
+      "variants": [
+        {
+          "variant": "Standard",
+          "sku": "MI-PS"
+        }
+      ]
+    },
+    {
+      "name": "Kenari Shaker",
+      "variants": [
+        {
+          "variant": "Standard",
+          "sku": "MI-KR-S"
+        }
+      ]
+    },
+    {
+      "name": "Kenari Bracelet",
+      "variants": [
+        {
+          "variant": "Standard",
+          "sku": "MI-KR-BT"
+        }
+      ]
+    },
+    {
+      "name": "Kenari Chimes",
+      "variants": [
+        {
+          "variant": "Small",
+          "sku": "MI-KR-C-S"
+        },
+        {
+          "variant": "Large",
+          "sku": "MI-KR-C-L"
+        }
+      ]
+    },
+    {
+      "name": "Bendo Shaker",
+      "variants": [
+        {
+          "variant": "Small",
+          "sku": "MI-BE-S"
+        },
+        {
+          "variant": "Large",
+          "sku": "MI-BE-L"
+        }
+      ]
+    },
+    {
+      "name": "Bendo Chimes",
+      "variants": [
+        {
+          "variant": "Standard",
+          "sku": "MI-BE-CH"
+        }
+      ]
+    },
+    {
+      "name": "Wooden Frog",
+      "variants": [
+        {
+          "variant": "Standard",
+          "sku": "MI-WF"
+        }
+      ]
+    },
+    {
+      "name": "Ocean Drums",
+      "variants": [
+        {
+          "variant": "Plain / 30 cms",
+          "sku": "MI-OD-P-30"
+        },
+        {
+          "variant": "Plain / 35 cms",
+          "sku": "MI-OD-P-35"
+        },
+        {
+          "variant": "Plain / 40 cms",
+          "sku": "MI-OD-P-40"
+        },
+        {
+          "variant": "Dream Catcher / 30 cms",
+          "sku": "MI-OD-D-30"
+        },
+        {
+          "variant": "Dream Catcher / 35 cms",
+          "sku": "MI-OD-D-35"
+        },
+        {
+          "variant": "Dream Catcher / 40cm",
+          "sku": "MI-OD-D-40"
+        },
+        {
+          "variant": "Flower of Life / 30 cms",
+          "sku": "MI-OD-F-30"
+        },
+        {
+          "variant": "Flower of Life / 35 cms",
+          "sku": "MI-OD-F-35"
+        },
+        {
+          "variant": "Flower of Life / 40cm",
+          "sku": "MI-OD-F-40"
+        }
+      ]
+    },
+    {
+      "name": "Shamanic Drum",
+      "variants": [
+        {
+          "variant": "Plain / 30 cms",
+          "sku": "MI-SD-P-30"
+        },
+        {
+          "variant": "Plain / 40 cms",
+          "sku": "MI-SD-P-40"
+        },
+        {
+          "variant": "Plain / 45 cms",
+          "sku": "MI-SD-P-45"
+        },
+        {
+          "variant": "Butterfly / 30 cms",
+          "sku": "MI-SD-B-30"
+        },
+        {
+          "variant": "Butterfly / 40 cms",
+          "sku": "MI-SD-B-40"
+        },
+        {
+          "variant": "Butterfly / 45 cms",
+          "sku": "MI-SD-B-45"
+        },
+        {
+          "variant": "Tree of Life / 30 cms",
+          "sku": "MI-SD-T-30"
+        },
+        {
+          "variant": "Tree of Life / 40cm",
+          "sku": "MI-SD-T-40"
+        },
+        {
+          "variant": "Tree of Life / 45cm",
+          "sku": "MI-SD-T-45"
+        }
+      ]
+    },
+    {
+      "name": "Shamanic Drum/Ocean Drum Bags",
+      "variants": [
+        {
+          "variant": "Small",
+          "sku": "MI-BG-SD-S"
+        },
+        {
+          "variant": "Medium",
+          "sku": "MI-BG-SD-M"
+        },
+        {
+          "variant": "Large",
+          "sku": "MI-BG-SD-L"
+        }
+      ]
+    },
+    {
+      "name": "Crystal Bowls - Frosted white",
+      "variants": [
+        {
+          "variant": "6 in",
+          "sku": "MI-CB-W-6"
+        },
+        {
+          "variant": "7 in",
+          "sku": "MI-CB-W-7"
+        },
+        {
+          "variant": "8 in",
+          "sku": "MI-CB-W-8"
+        },
+        {
+          "variant": "9 in",
+          "sku": "MI-CB-W-9"
+        },
+        {
+          "variant": "10 in",
+          "sku": "MI-CB-W-10"
+        },
+        {
+          "variant": "11 in",
+          "sku": "MI-CB-W-11"
+        },
+        {
+          "variant": "12 in",
+          "sku": "MI-CB-W-12"
+        },
+        {
+          "variant": "13 in",
+          "sku": "MI-CB-W-13"
+        },
+        {
+          "variant": "14 in",
+          "sku": "MI-CB-W-14"
+        }
+      ]
+    },
+    {
+      "name": "Crystal Bowls - Coloured",
+      "variants": [
+        {
+          "variant": "6 in",
+          "sku": "MI-CB-C-6"
+        },
+        {
+          "variant": "7 in",
+          "sku": "MI-CB-C-7"
+        },
+        {
+          "variant": "8 in",
+          "sku": "MI-CB-C-8"
+        },
+        {
+          "variant": "9 in",
+          "sku": "MI-CB-C-9"
+        },
+        {
+          "variant": "10 in",
+          "sku": "MI-CB-C-10"
+        },
+        {
+          "variant": "11 in",
+          "sku": "MI-CB-C-11"
+        },
+        {
+          "variant": "12 in",
+          "sku": "MI-CB-C-12"
+        },
+        {
+          "variant": "13 in",
+          "sku": "MI-CB-C-13"
+        },
+        {
+          "variant": "14 in",
+          "sku": "MI-CB-C-14"
+        }
+      ]
+    },
+    {
+      "name": "Crystal Bowls - Set of 7",
+      "variants": [
+        {
+          "variant": "6-12-in-set / Frosted White",
+          "sku": "MI-CB-W-6-12"
+        },
+        {
+          "variant": "6-12-in-set / Coloured",
+          "sku": "MI-CB-CL-6-12"
+        },
+        {
+          "variant": "8-14-in-set / Frosted White",
+          "sku": "MI-CB-W-8-14"
+        },
+        {
+          "variant": "8-14-in-set / Coloured",
+          "sku": "MI-CB-CL-8-14"
+        }
+      ]
+    },
+    {
+      "name": "Triad Crystal Bowl Set",
+      "variants": [
+        {
+          "variant": "CEG",
+          "sku": "MI-CB-CEG"
+        },
+        {
+          "variant": "DFA",
+          "sku": "MI-CB-DFA"
+        },
+        {
+          "variant": "EGB",
+          "sku": "MI-CB-EGB"
+        }
+      ]
+    },
+    {
+      "name": "Crystal Bowl Bag",
+      "variants": [
+        {
+          "variant": "Small",
+          "sku": "MI-BG-CB-S"
+        },
+        {
+          "variant": "Medium",
+          "sku": "MI-BG-CB-M"
+        },
+        {
+          "variant": "Large",
+          "sku": "MI-BG-CB-L"
+        }
+      ]
+    },
+    {
+      "name": "Crystal Bowl with Handle",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-CB-H"
+        }
+      ]
+    },
+    {
+      "name": "Crystal Pyramid",
+      "variants": [
+        {
+          "variant": "6 in",
+          "sku": "MI-CP-6"
+        },
+        {
+          "variant": "8 in",
+          "sku": "MI-CP-8"
+        }
+      ]
+    },
+    {
+      "name": "Gong Plates/Shruti Plates -Plain",
+      "variants": [
+        {
+          "variant": "B Plate",
+          "sku": "MI-GP-B"
+        },
+        {
+          "variant": "A Plate",
+          "sku": "MI-GP-A"
+        },
+        {
+          "variant": "G Plate",
+          "sku": "MI-GP-G"
+        },
+        {
+          "variant": "F Plate",
+          "sku": "MI-GP-F"
+        },
+        {
+          "variant": "E Plate",
+          "sku": "MI-GP-E"
+        },
+        {
+          "variant": "D Plate",
+          "sku": "MI-GP-D"
+        },
+        {
+          "variant": "C Plate",
+          "sku": "MI-GP-C"
+        },
+        {
+          "variant": "Full Set",
+          "sku": "MI-GP-SET7"
+        }
+      ]
+    },
+    {
+      "name": "Gong Plates/Shruti Plates Etched",
+      "variants": [
+        {
+          "variant": "B Plate",
+          "sku": "MI-GP-ET-B"
+        },
+        {
+          "variant": "A Plate",
+          "sku": "MI-GP-ET-A"
+        },
+        {
+          "variant": "G Plate",
+          "sku": "MI-GP-ET-G"
+        },
+        {
+          "variant": "F Plate",
+          "sku": "MI-GP-ET-F"
+        },
+        {
+          "variant": "E Plate",
+          "sku": "MI-GP-ET-E"
+        },
+        {
+          "variant": "D Plate",
+          "sku": "MI-GP-ET-D"
+        },
+        {
+          "variant": "C Plate",
+          "sku": "MI-GP-ET-C"
+        },
+        {
+          "variant": "Full Set",
+          "sku": "MI-GP-ET-SET7"
+        }
+      ]
+    },
+    {
+      "name": "Gong Plates/Shruti Plates Stand",
+      "variants": [
+        {
+          "variant": "Set Stand",
+          "sku": "MI-GP-ST"
+        }
+      ]
+    },
+    {
+      "name": "Chau Gongs",
+      "variants": [
+        {
+          "variant": "18 in",
+          "sku": "MI-GO-CH-18"
+        },
+        {
+          "variant": "20 in",
+          "sku": "MI-GO-CH-20"
+        },
+        {
+          "variant": "22 in",
+          "sku": "MI-GO-CH-22"
+        },
+        {
+          "variant": "24 in",
+          "sku": "MI-GO-CH-24"
+        },
+        {
+          "variant": "28 in",
+          "sku": "MI-GO-CH-28"
+        },
+        {
+          "variant": "32 in",
+          "sku": "MI-GO-CH-32"
+        },
+        {
+          "variant": "36 in",
+          "sku": "MI-GO-CH-36"
+        }
+      ]
+    },
+    {
+      "name": "Etched Chau Gong",
+      "variants": [
+        {
+          "variant": "18 in",
+          "sku": "MI-GO-CH-ET-18"
+        },
+        {
+          "variant": "20 in",
+          "sku": "MI-GO-CH-ET-20"
+        },
+        {
+          "variant": "22 in",
+          "sku": "MI-GO-CH-ET-22"
+        },
+        {
+          "variant": "24 in",
+          "sku": "MI-GO-CH-ET-24"
+        },
+        {
+          "variant": "28 in",
+          "sku": "MI-GO-CH-ET-28"
+        },
+        {
+          "variant": "32 in",
+          "sku": "MI-GO-CH-ET-32"
+        },
+        {
+          "variant": "36 in",
+          "sku": "MI-GO-CH-ET-36"
+        },
+        {
+          "variant": "40INCH",
+          "sku": "MI-GO-CH-ET-40"
+        }
+      ]
+    },
+    {
+      "name": "Wind Gong - Plain",
+      "variants": [
+        {
+          "variant": "14 INCh",
+          "sku": "MI-GO-WI-14"
+        },
+        {
+          "variant": "16INCH",
+          "sku": "MI-GO-WI-16"
+        },
+        {
+          "variant": "18INCH",
+          "sku": "MI-GO-WI-18"
+        },
+        {
+          "variant": "20INCH",
+          "sku": "MI-GO-WI-20"
+        },
+        {
+          "variant": "22INCH",
+          "sku": "MI-GO-WI-22"
+        },
+        {
+          "variant": "24INCH",
+          "sku": "MI-GO-WI-24"
+        },
+        {
+          "variant": "26INCH",
+          "sku": "MI-GO-WI-26"
+        },
+        {
+          "variant": "28INCH",
+          "sku": "MI-GO-WI-28"
+        }
+      ]
+    },
+    {
+      "name": "Wind Gong - Etched",
+      "variants": [
+        {
+          "variant": "7 Chakras / 14 in",
+          "sku": "MI-GO-WI-ET-7C-14"
+        },
+        {
+          "variant": "7 Chakras / 16 in",
+          "sku": "MI-GO-WI-ET-7C-16"
+        },
+        {
+          "variant": "7 Chakras/18 in",
+          "sku": "MI-GO-WI-ET-7C-18"
+        },
+        {
+          "variant": "7 Chakras / 20 in",
+          "sku": "MI-GO-WI-ET-7C-20"
+        },
+        {
+          "variant": "7 Chakras / 22 in",
+          "sku": "MI-GO-WI-ET-7C-22"
+        },
+        {
+          "variant": "7 Chakras / 24 in",
+          "sku": "MI-GO-WI-ET-7C-24"
+        },
+        {
+          "variant": "7 Chakras / 26 in",
+          "sku": "MI-GO-WI-ET-7C-26"
+        },
+        {
+          "variant": "7 Chakras / 28 in",
+          "sku": "MI-GO-WI-ET-7C-28"
+        },
+        {
+          "variant": "Flower of Life / 14 in",
+          "sku": "MI-GO-WI-ET-FOL-14"
+        },
+        {
+          "variant": "Flower of Life / 16 in",
+          "sku": "MI-GO-WI-ET-FOL-16"
+        },
+        {
+          "variant": "Flower of Life/18 In",
+          "sku": "MI-GO-WI-ET-FOL-18"
+        },
+        {
+          "variant": "Flower of Life / 20 in",
+          "sku": "MI-GO-WI-ET-FOL-20"
+        },
+        {
+          "variant": "Flower of Life / 22 in",
+          "sku": "MI-GO-WI-ET-FOL-22"
+        },
+        {
+          "variant": "Flower of Life / 24 in",
+          "sku": "MI-GO-WI-ET-FOL-24"
+        },
+        {
+          "variant": "Flower of Life / 26 in",
+          "sku": "MI-GO-WI-ET-FOL-26"
+        },
+        {
+          "variant": "Flower of Life / 28 in",
+          "sku": "MI-GO-WI-ET-FOL-28"
+        },
+        {
+          "variant": "Om / 14in",
+          "sku": "MI-GO-WI-ET-OM-14"
+        },
+        {
+          "variant": "Om / 16in",
+          "sku": "MI-GO-WI-ET-OM-16"
+        },
+        {
+          "variant": "Om / 18 in",
+          "sku": "MI-GO-WI-ET-OM-18"
+        },
+        {
+          "variant": "Om / 20in",
+          "sku": "MI-GO-WI-ET-OM-20"
+        },
+        {
+          "variant": "Om / 22in",
+          "sku": "MI-GO-WI-ET-OM-22"
+        },
+        {
+          "variant": "Om / 24in",
+          "sku": "MI-GO-WI-ET-OM-24"
+        },
+        {
+          "variant": "Om / 26in",
+          "sku": "MI-GO-WI-ET-OM-26"
+        },
+        {
+          "variant": "Om / 28in",
+          "sku": "MI-GO-WI-ET-OM-28"
+        },
+        {
+          "variant": "Mandala / 14 in",
+          "sku": "MI-GO-WI-ET-MD-14"
+        },
+        {
+          "variant": "Mandala / 16 in",
+          "sku": "MI-GO-WI-ET-MD-16"
+        },
+        {
+          "variant": "Mandala / 18in",
+          "sku": "MI-GO-WI-ET-MD-18"
+        },
+        {
+          "variant": "Mandala / 20 in",
+          "sku": "MI-GO-WI-ET-MD-20"
+        },
+        {
+          "variant": "Mandala / 22in",
+          "sku": "MI-GO-WI-ET-MD-22"
+        },
+        {
+          "variant": "Mandala / 24in",
+          "sku": "MI-GO-WI-ET-MD-24"
+        },
+        {
+          "variant": "Mandala / 26 in",
+          "sku": "MI-GO-WI-ET-MD-26"
+        },
+        {
+          "variant": "Mandala / 28in",
+          "sku": "MI-GO-WI-ET-MD-28"
+        },
+        {
+          "variant": "Shakti Chakra / 14 in",
+          "sku": "MI-GO-WI-ET-SC-14"
+        },
+        {
+          "variant": "Shakti Chakra / 16 in",
+          "sku": "MI-GO-WI-ET-SC-16"
+        },
+        {
+          "variant": "Shakti Chakra / 18in",
+          "sku": "MI-GO-WI-ET-SC-18"
+        },
+        {
+          "variant": "Shakti Chakra / 20 in",
+          "sku": "MI-GO-WI-ET-SC-20"
+        },
+        {
+          "variant": "Shakti Chakra / 22 in",
+          "sku": "MI-GO-WI-ET-SC-22"
+        },
+        {
+          "variant": "Shakti Chakra / 24 in",
+          "sku": "MI-GO-WI-ET-SC-24"
+        },
+        {
+          "variant": "Shakti Chakra / 26 in",
+          "sku": "MI-GO-WI-ET-SC-26"
+        },
+        {
+          "variant": "Shakti Chakra / 28 in",
+          "sku": "MI-GO-WI-ET-SC-28"
+        },
+        {
+          "variant": "Dorje / 14 in",
+          "sku": "MI-GO-WI-ET-DJ-14"
+        },
+        {
+          "variant": "Dorje / 16 in",
+          "sku": "MI-GO-WI-ET-DJ-16"
+        },
+        {
+          "variant": "Dorje / 18in",
+          "sku": "MI-GO-WI-ET-DJ-18"
+        },
+        {
+          "variant": "Dorje / 20 in",
+          "sku": "MI-GO-WI-ET-DJ-20"
+        },
+        {
+          "variant": "Dorje / 22 in",
+          "sku": "MI-GO-WI-ET-DJ-22"
+        },
+        {
+          "variant": "Dorje / 24 in",
+          "sku": "MI-GO-WI-ET-DJ-24"
+        },
+        {
+          "variant": "Dorje / 26 in",
+          "sku": "MI-GO-WI-ET-DJ-26"
+        },
+        {
+          "variant": "Dorje / 28 in",
+          "sku": "MI-GO-WI-ET-DJ-28"
+        },
+        {
+          "variant": "Tara / 14 in",
+          "sku": "MI-GO-WI-ET-TR-14"
+        },
+        {
+          "variant": "Tara / 16 in",
+          "sku": "MI-GO-WI-ET-TR-16"
+        },
+        {
+          "variant": "Tara / 18in",
+          "sku": "MI-GO-WI-ET-TR-18"
+        },
+        {
+          "variant": "Tara / 20 in",
+          "sku": "MI-GO-WI-ET-TR-20"
+        },
+        {
+          "variant": "Tara / 22 in",
+          "sku": "MI-GO-WI-ET-TR-22"
+        },
+        {
+          "variant": "Tara / 24 in",
+          "sku": "MI-GO-WI-ET-TR-24"
+        },
+        {
+          "variant": "Tara / 26 in",
+          "sku": "MI-GO-WI-ET-TR-26"
+        },
+        {
+          "variant": "Tara / 28 in",
+          "sku": "MI-GO-WI-ET-TR-28"
+        },
+        {
+          "variant": "Flower of Life-Center / 14in",
+          "sku": "MI-GO-WI-ET-FLC-14"
+        },
+        {
+          "variant": "Flower of Life-Center / 16in",
+          "sku": "MI-GO-WI-ET-FLC-16"
+        },
+        {
+          "variant": "Flower of Life-Center / 18in",
+          "sku": "MI-GO-WI-ET-FLC-18"
+        },
+        {
+          "variant": "Flower of Life-Center / 20 in",
+          "sku": "MI-GO-WI-ET-FLC-20"
+        },
+        {
+          "variant": "Flower of Life-Center / 22in",
+          "sku": "MI-GO-WI-ET-FLC-22"
+        },
+        {
+          "variant": "Flower of Life-Center / 24in",
+          "sku": "MI-GO-WI-ET-FLC-24"
+        },
+        {
+          "variant": "Flower of Life-Center / 26 in",
+          "sku": "MI-GO-WI-ET-FLC-26"
+        },
+        {
+          "variant": "Flower of Life-Center / 28in",
+          "sku": "MI-GO-WI-ET-FLC-28"
+        }
+      ]
+    },
+    {
+      "name": "Gong Bags",
+      "variants": [
+        {
+          "variant": "Small",
+          "sku": "MI-BG-GO-S"
+        },
+        {
+          "variant": "Medium",
+          "sku": "MI-BG-GO-M"
+        },
+        {
+          "variant": "Large",
+          "sku": "MI-BG-GO-L"
+        },
+        {
+          "variant": "Extra Large",
+          "sku": "MI-BG-GO-XL"
+        }
+      ]
+    },
+    {
+      "name": "Gong Stand",
+      "variants": [
+        {
+          "variant": "Light / Small",
+          "sku": "MI-GO-ST-L-S"
+        },
+        {
+          "variant": "Light / Medium",
+          "sku": "MI-GO-ST-L-M"
+        },
+        {
+          "variant": "Light / Large",
+          "sku": "MI-GO-ST-L-L"
+        },
+        {
+          "variant": "Light / Extra Large",
+          "sku": "MI-GO-ST-L-XL"
+        },
+        {
+          "variant": "Dark / Small",
+          "sku": "MI-GO-ST-D-S"
+        },
+        {
+          "variant": "Dark / Medium",
+          "sku": "MI-GO-ST-D-M"
+        },
+        {
+          "variant": "Dark / Large",
+          "sku": "MI-GO-ST-D-L"
+        },
+        {
+          "variant": "Dark / Extra Large",
+          "sku": "MI-GO-ST-D-XL"
+        }
+      ]
+    },
+    {
+      "name": "Etched Handmade Singing Bowls",
+      "variants": [
+        {
+          "variant": "Buddha / 6 in",
+          "sku": "MI-SB-HM-ET-B-6"
+        },
+        {
+          "variant": "Buddha / 7 in",
+          "sku": "MI-SB-HM-ET-B-7"
+        },
+        {
+          "variant": "Buddha / 8in",
+          "sku": "MI-SB-HM-ET-B-8"
+        },
+        {
+          "variant": "Buddha / 9 in",
+          "sku": "MI-SB-HM-ET-B-9"
+        },
+        {
+          "variant": "Buddha / 10 in",
+          "sku": "MI-SB-HM-ET-B-10"
+        },
+        {
+          "variant": "Buddha / 11 in",
+          "sku": "MI-SB-HM-ET-B-11"
+        },
+        {
+          "variant": "Buddha / 12 in",
+          "sku": "MI-SB-HM-ET-B-12"
+        },
+        {
+          "variant": "Buddha / 13 in",
+          "sku": "MI-SB-HM-ET-B-13"
+        },
+        {
+          "variant": "Sacred Geometry / 6 in",
+          "sku": "MI-SB-HM-ET-SG-6"
+        },
+        {
+          "variant": "Sacred Geometry / 7 in",
+          "sku": "MI-SB-HM-ET-SG-7"
+        },
+        {
+          "variant": "Sacred Geometry / 8in",
+          "sku": "MI-SB-HM-ET-SG-8"
+        },
+        {
+          "variant": "Sacred Geometry / 9 in",
+          "sku": "MI-SB-HM-ET-SG-9"
+        },
+        {
+          "variant": "Sacred Geometry / 10 in",
+          "sku": "MI-SB-HM-ET-SG-10"
+        },
+        {
+          "variant": "Sacred Geometry / 11 in",
+          "sku": "MI-SB-HM-ET-SG-11"
+        },
+        {
+          "variant": "Sacred Geometry / 12 in",
+          "sku": "MI-SB-HM-ET-SG-12"
+        },
+        {
+          "variant": "Sacred Geometry / 13 in",
+          "sku": "MI-SB-HM-ET-SG-13"
+        },
+        {
+          "variant": "Golden Feet / 6 in",
+          "sku": "MI-SB-HM-ET-GF-6"
+        },
+        {
+          "variant": "Golden Feet / 7 in",
+          "sku": "MI-SB-HM-ET-GF-7"
+        },
+        {
+          "variant": "Golden Feet / 8in",
+          "sku": "MI-SB-HM-ET-GF-8"
+        },
+        {
+          "variant": "Golden Feet / 9 in",
+          "sku": "MI-SB-HM-ET-GF-9"
+        },
+        {
+          "variant": "Golden Feet / 10 in",
+          "sku": "MI-SB-HM-ET-GF-10"
+        },
+        {
+          "variant": "Golden Feet / 11 in",
+          "sku": "MI-SB-HM-ET-GF-11"
+        },
+        {
+          "variant": "Golden Feet / 12 in",
+          "sku": "MI-SB-HM-ET-GF-12"
+        },
+        {
+          "variant": "Golden Feet / 13 in",
+          "sku": "MI-SB-HM-ET-GF-13"
+        },
+        {
+          "variant": "Buddhas Eyes / 6in",
+          "sku": "MI-SB-HM-ET-BE-6"
+        },
+        {
+          "variant": "Buddhas Eyes / 7in",
+          "sku": "MI-SB-HM-ET-BE-7"
+        },
+        {
+          "variant": "Buddhas Eyes / 8in",
+          "sku": "MI-SB-HM-ET-BE-8"
+        },
+        {
+          "variant": "Buddhas Eyes / 9 in",
+          "sku": "MI-SB-HM-ET-BE-9"
+        },
+        {
+          "variant": "Buddhas Eyes / 10 in",
+          "sku": "MI-SB-HM-ET-BE-10"
+        },
+        {
+          "variant": "Buddhas Eyes / 11 in",
+          "sku": "MI-SB-HM-ET-BE-11"
+        },
+        {
+          "variant": "Buddhas Eyes /12in",
+          "sku": "MI-SB-HM-ET-BE-12"
+        },
+        {
+          "variant": "Buddhas Eyes /13in",
+          "sku": "MI-SB-HM-ET-BE-13"
+        },
+        {
+          "variant": "Chakras / 6in",
+          "sku": "MI-SB-HM-ET-C-6"
+        },
+        {
+          "variant": "Chakras / 7in",
+          "sku": "MI-SB-HM-ET-C-7"
+        },
+        {
+          "variant": "Chakras / 8in",
+          "sku": "MI-SB-HM-ET-C-8"
+        },
+        {
+          "variant": "Chakras / 9in",
+          "sku": "MI-SB-HM-ET-C-9"
+        },
+        {
+          "variant": "Chakras / 10in",
+          "sku": "MI-SB-HM-ET-C-10"
+        },
+        {
+          "variant": "Chakras / 11 in",
+          "sku": "MI-SB-HM-ET-C-11"
+        },
+        {
+          "variant": "Chakras / 12in",
+          "sku": "MI-SB-HM-ET-C-12"
+        },
+        {
+          "variant": "Chakras / 13in",
+          "sku": "MI-SB-HM-ET-C-13"
+        },
+        {
+          "variant": "Dorje / 6 in",
+          "sku": "MI-SB-HM-ET-DJ-6"
+        },
+        {
+          "variant": "Dorje / 7 in",
+          "sku": "MI-SB-HM-ET-DJ-7"
+        },
+        {
+          "variant": "Dorje / 8in",
+          "sku": "MI-SB-HM-ET-DJ-8"
+        },
+        {
+          "variant": "Dorje / 9 in",
+          "sku": "MI-SB-HM-ET-DJ-9"
+        },
+        {
+          "variant": "Dorje / 10 in",
+          "sku": "MI-SB-HM-ET-DJ-10"
+        },
+        {
+          "variant": "Dorje / 11 in",
+          "sku": "MI-SB-HM-ET-DJ-11"
+        },
+        {
+          "variant": "Dorje / 12 in",
+          "sku": "MI-SB-HM-ET-DJ-12"
+        },
+        {
+          "variant": "Dorje / 13 in",
+          "sku": "MI-SB-HM-ET-DJ-13"
+        },
+        {
+          "variant": "Flower of Life / 6 in",
+          "sku": "MI-SB-HM-ET-FL-6"
+        },
+        {
+          "variant": "Flower of Life / 7 in",
+          "sku": "MI-SB-HM-ET-FL-7"
+        },
+        {
+          "variant": "Flower of Life / 8in",
+          "sku": "MI-SB-HM-ET-FL-8"
+        },
+        {
+          "variant": "Flower of Life / 9 in",
+          "sku": "MI-SB-HM-ET-FL-9"
+        },
+        {
+          "variant": "Flower of Life / 10 in",
+          "sku": "MI-SB-HM-ET-FL-10"
+        },
+        {
+          "variant": "Flower of Life / 11 in",
+          "sku": "MI-SB-HM-ET-FL-11"
+        },
+        {
+          "variant": "Flower of Life / 12 in",
+          "sku": "MI-SB-HM-ET-FL-12"
+        },
+        {
+          "variant": "Flower of Life / 13 in",
+          "sku": "MI-SB-HM-ET-FL-13"
+        },
+        {
+          "variant": "Om / 6in",
+          "sku": "MI-SB-HM-ET-OM-6"
+        },
+        {
+          "variant": "Om / 7in",
+          "sku": "MI-SB-HM-ET-OM-7"
+        },
+        {
+          "variant": "Om / 8in",
+          "sku": "MI-SB-HM-ET-OM-8"
+        },
+        {
+          "variant": "Om / 9in",
+          "sku": "MI-SB-HM-ET-OM-9"
+        },
+        {
+          "variant": "Om / 10in",
+          "sku": "MI-SB-HM-ET-OM-10"
+        },
+        {
+          "variant": "Om / 11 in",
+          "sku": "MI-SB-HM-ET-OM-11"
+        },
+        {
+          "variant": "Om / 12in",
+          "sku": "MI-SB-HM-ET-OM-12"
+        },
+        {
+          "variant": "Om / 13in",
+          "sku": "MI-SB-HM-ET-OM-13"
+        },
+        {
+          "variant": "Tara / 6 in",
+          "sku": "MI-SB-HM-ET-T-6"
+        },
+        {
+          "variant": "Tara / 7 in",
+          "sku": "MI-SB-HM-ET-T-7"
+        },
+        {
+          "variant": "Tara / 8in",
+          "sku": "MI-SB-HM-ET-T-8"
+        },
+        {
+          "variant": "Tara / 9 in",
+          "sku": "MI-SB-HM-ET-T-9"
+        },
+        {
+          "variant": "Tara / 10 in",
+          "sku": "MI-SB-HM-ET-T-10"
+        },
+        {
+          "variant": "Tara / 11 in",
+          "sku": "MI-SB-HM-ET-T-11"
+        },
+        {
+          "variant": "Tara / 12 in",
+          "sku": "MI-SB-HM-ET-T-12"
+        },
+        {
+          "variant": "Tara / 13 in",
+          "sku": "MI-SB-HM-ET-T-13"
+        },
+        {
+          "variant": "Yin Yang / 6 in",
+          "sku": "MI-SB-HM-ET-YY-6"
+        },
+        {
+          "variant": "Yin Yang / 7 in",
+          "sku": "MI-SB-HM-ET-YY-7"
+        },
+        {
+          "variant": "Yin Yang / 8in",
+          "sku": "MI-SB-HM-ET-YY-8"
+        },
+        {
+          "variant": "Yin Yang / 9 in",
+          "sku": "MI-SB-HM-ET-YY-9"
+        },
+        {
+          "variant": "Yin Yang / 10 in",
+          "sku": "MI-SB-HM-ET-YY-10"
+        },
+        {
+          "variant": "Yin Yang / 11 in",
+          "sku": "MI-SB-HM-ET-YY-11"
+        },
+        {
+          "variant": "Yin Yang / 12 in",
+          "sku": "MI-SB-HM-ET-YY-12"
+        },
+        {
+          "variant": "Yin Yang / 13 in",
+          "sku": "MI-SB-HM-ET-YY-13"
+        },
+        {
+          "variant": "Mantra / 6in",
+          "sku": "MI-SB-HM-ET-M-6"
+        },
+        {
+          "variant": "Mantra / 7in",
+          "sku": "MI-SB-HM-ET-M-7"
+        },
+        {
+          "variant": "Mantra / 8in",
+          "sku": "MI-SB-HM-ET-M-8"
+        },
+        {
+          "variant": "Mantra / 9in",
+          "sku": "MI-SB-HM-ET-M-9"
+        },
+        {
+          "variant": "Mantra / 10in",
+          "sku": "MI-SB-HM-ET-M-10"
+        },
+        {
+          "variant": "Mantra / 11 in",
+          "sku": "MI-SB-HM-ET-M-11"
+        },
+        {
+          "variant": "Mantra / 12in",
+          "sku": "MI-SB-HM-ET-M-12"
+        },
+        {
+          "variant": "Mantra / 13in",
+          "sku": "MI-SB-HM-ET-M-13"
+        }
+      ]
+    },
+    {
+      "name": "Extra Large Meridian Singing Bowls",
+      "variants": [
+        {
+          "variant": "Etched / 18 in",
+          "sku": "MI-SB-ME-ET-18"
+        },
+        {
+          "variant": "Etched / 20in",
+          "sku": "MI-SB-ME-ET-20"
+        },
+        {
+          "variant": "Etched / 22in",
+          "sku": "MI-SB-ME-ET-22"
+        },
+        {
+          "variant": "Etched / 23in",
+          "sku": "MI-SB-ME-ET-23"
+        },
+        {
+          "variant": "Etched /24in",
+          "sku": "MI-SB-ME-ET-24"
+        },
+        {
+          "variant": "Plain / 18 in",
+          "sku": "MI-SB-ME-18"
+        },
+        {
+          "variant": "Plain / 20 in",
+          "sku": "MI-SB-ME-20"
+        },
+        {
+          "variant": "Plain / 22 in",
+          "sku": "MI-SB-ME-22"
+        },
+        {
+          "variant": "Plain / 23 In",
+          "sku": "MI-SB-ME-23"
+        },
+        {
+          "variant": "Plain / 24 in",
+          "sku": "MI-SB-ME-24"
+        }
+      ]
+    },
+    {
+      "name": "Sacred Symbols Singing Bowls",
+      "variants": [
+        {
+          "variant": "Green / 3.5 in",
+          "sku": "MI-SB-SS-G-3.5"
+        },
+        {
+          "variant": "Green / 4in",
+          "sku": "MI-SB-SS-G-4"
+        },
+        {
+          "variant": "Green / 5.5in",
+          "sku": "MI-SB-SS-G-5.5"
+        },
+        {
+          "variant": "Blue / 3.5 in",
+          "sku": "MI-SB-SS-B-3.5"
+        },
+        {
+          "variant": "Blue / 4 in",
+          "sku": "MI-SB-SS-B-4"
+        },
+        {
+          "variant": "Blue / 5.5 in",
+          "sku": "MI-SB-SS-B-5.5"
+        },
+        {
+          "variant": "Black / 3.5 in",
+          "sku": "MI-SB-SS-BK-3.5"
+        },
+        {
+          "variant": "Black / 4 in",
+          "sku": "MI-SB-SS-BK-4"
+        },
+        {
+          "variant": "Black / 5.5 in",
+          "sku": "MI-SB-SS-BK-5.5"
+        },
+        {
+          "variant": "Red / 3.5 in",
+          "sku": "MI-SB-SS-R-3.5"
+        },
+        {
+          "variant": "Red / 4 in",
+          "sku": "MI-SB-SS-R-4"
+        },
+        {
+          "variant": "Red / 5.5 in",
+          "sku": "MI-SB-SS-R-5.5"
+        },
+        {
+          "variant": "Yellow / 3.5 in",
+          "sku": "MI-SB-SS-Y-3.5"
+        },
+        {
+          "variant": "Yellow / 4 in",
+          "sku": "MI-SB-SS-Y-4"
+        },
+        {
+          "variant": "Yellow / 5.5 in",
+          "sku": "MI-SB-SS-Y-5.5"
+        },
+        {
+          "variant": "Gold / 3.5 Inches",
+          "sku": "MI-SB-SS-GO-3.5"
+        },
+        {
+          "variant": "Gold / 4 Inches",
+          "sku": "MI-SB-SS-GO-4"
+        },
+        {
+          "variant": "Gold / 5.5 Inches",
+          "sku": "MI-SB-SS-GO-5.5"
+        }
+      ]
+    },
+    {
+      "name": "Singing Bowls with Sacred Mantra Printed",
+      "variants": [
+        {
+          "variant": "Blue / 3.5 Inches",
+          "sku": "MI-SB-SM-B-3.5"
+        },
+        {
+          "variant": "Blue / 4 Inches",
+          "sku": "MI-SB-SM-B-4"
+        },
+        {
+          "variant": "Blue / 5.5 Inches",
+          "sku": "MI-SB-SM-B-5.5"
+        },
+        {
+          "variant": "Black / 3.5 Inches",
+          "sku": "MI-SB-SM-BK-3.5"
+        },
+        {
+          "variant": "Black / 4 Inches",
+          "sku": "MI-SB-SM-BK-4"
+        },
+        {
+          "variant": "Black / 5.5 Inches",
+          "sku": "MI-SB-SM-BK-5.5"
+        },
+        {
+          "variant": "Black / 7 Inches",
+          "sku": "MI-SB-SM-BK-7"
+        },
+        {
+          "variant": "Green / 3.5 Inches",
+          "sku": "MI-SB-SM-G-3.5"
+        },
+        {
+          "variant": "Green / 4 inches",
+          "sku": "MI-SB-SM-G-4"
+        },
+        {
+          "variant": "Green / 5.5 Inches",
+          "sku": "MI-SB-SM-G-5.5"
+        },
+        {
+          "variant": "Red / 3.5 inches",
+          "sku": "MI-SB-SM-R-3.5"
+        },
+        {
+          "variant": "Red / 4 Inches",
+          "sku": "MI-SB-SM-R-4"
+        },
+        {
+          "variant": "Red / 5.5 Inches",
+          "sku": "MI-SB-SM-R-5.5"
+        },
+        {
+          "variant": "Gold / 3.5 Inches",
+          "sku": "MI-SB-SM-GO-3.5"
+        },
+        {
+          "variant": "Gold / 4 Inches",
+          "sku": "MI-SB-SM-GO-4"
+        },
+        {
+          "variant": "Gold / 5.5 Inches",
+          "sku": "MI-SB-SM-GO-5.5"
+        },
+        {
+          "variant": "Gold / 7 Inches",
+          "sku": "MI-SB-SM-GO-7"
+        }
+      ]
+    },
+    {
+      "name": "Singing Bowls - Flower of Life with Sacred Symbols",
+      "variants": [
+        {
+          "variant": "Blue / 8 in",
+          "sku": "MI-SB-FL-B-8"
+        },
+        {
+          "variant": "Blue / 9 in",
+          "sku": "MI-SB-FL-B-9"
+        },
+        {
+          "variant": "Blue / 10.5in",
+          "sku": "MI-SB-FL-B-10.5"
+        },
+        {
+          "variant": "Brown / 8in",
+          "sku": "MI-SB-FL-BR-8"
+        },
+        {
+          "variant": "Brown / 9 in",
+          "sku": "MI-SB-FL-BR-9"
+        },
+        {
+          "variant": "Brown / 10.5",
+          "sku": "MI-SB-FL-BR-10.5"
+        },
+        {
+          "variant": "Green / 8in",
+          "sku": "MI-SB-FL-G-8"
+        },
+        {
+          "variant": "Green / 9in",
+          "sku": "MI-SB-FL-G-9"
+        },
+        {
+          "variant": "Green / 10.5 in",
+          "sku": "MI-SB-FL-G-10.5"
+        },
+        {
+          "variant": "Olive green / 8in",
+          "sku": "MI-SB-FL-O-8"
+        },
+        {
+          "variant": "Olive green / 9 in",
+          "sku": "MI-SB-FL-O-9"
+        },
+        {
+          "variant": "Olive green / 10.5in",
+          "sku": "MI-SB-FL-O-10.5"
+        }
+      ]
+    },
+    {
+      "name": "Dotted Singing Bowl",
+      "variants": [
+        {
+          "variant": "4 inch",
+          "sku": "MI-SB-DT-4"
+        },
+        {
+          "variant": "5.5 inch",
+          "sku": "MI-SB-DT-5.5"
+        },
+        {
+          "variant": "7 inch",
+          "sku": "MI-SB-DT-7"
+        }
+      ]
+    },
+    {
+      "name": "Deep Dotted",
+      "variants": [
+        {
+          "variant": "5.5 Inch",
+          "sku": "MI-SB-DDT-5.5"
+        }
+      ]
+    },
+    {
+      "name": "Singing Bowl with Mantra - Rustic Blue Colour",
+      "variants": [
+        {
+          "variant": "6 inches",
+          "sku": "MI-SB-RB-6"
+        },
+        {
+          "variant": "7 Inches",
+          "sku": "MI-SB-RB-7"
+        }
+      ]
+    },
+    {
+      "name": "Handmade Singing Bowls - All Sizes",
+      "variants": [
+        {
+          "variant": "Matte / 5 in",
+          "sku": "MI-SB-HM-5"
+        },
+        {
+          "variant": "Matte / 6 in",
+          "sku": "MI-SB-HM-6"
+        },
+        {
+          "variant": "Matte / 7 in",
+          "sku": "MI-SB-HM-7"
+        },
+        {
+          "variant": "Matte / 8in",
+          "sku": "MI-SB-HM-8"
+        },
+        {
+          "variant": "Matte / 9 in",
+          "sku": "MI-SB-HM-9"
+        },
+        {
+          "variant": "Matte / 10 in",
+          "sku": "MI-SB-HM-10"
+        },
+        {
+          "variant": "Matte / 11 in",
+          "sku": "MI-SB-HM-11"
+        },
+        {
+          "variant": "Matte / 12 in",
+          "sku": "MI-SB-HM-12"
+        },
+        {
+          "variant": "Matte / 13in",
+          "sku": "MI-SB-HM-13"
+        }
+      ]
+    },
+    {
+      "name": "Full Moon Singing Bowls - All Sizes",
+      "variants": [
+        {
+          "variant": "5 Inches",
+          "sku": "MI-SB-HM-FM-5"
+        },
+        {
+          "variant": "6 inches",
+          "sku": "MI-SB-HM-FM-6"
+        },
+        {
+          "variant": "7 Inches",
+          "sku": "MI-SB-HM-FM-7"
+        },
+        {
+          "variant": "8 inches",
+          "sku": "MI-SB-HM-FM-8"
+        },
+        {
+          "variant": "9 Inches",
+          "sku": "MI-SB-HM-FM-9"
+        },
+        {
+          "variant": "10 inches",
+          "sku": "MI-SB-HM-FM-10"
+        },
+        {
+          "variant": "11 Inches",
+          "sku": "MI-SB-HM-FM-11"
+        },
+        {
+          "variant": "12 inches",
+          "sku": "MI-SB-HM-FM-12"
+        },
+        {
+          "variant": "13 Inches",
+          "sku": "MI-SB-HM-FM-13"
+        }
+      ]
+    },
+    {
+      "name": "Root Chakra Singing Bowl",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-SB-RC"
+        }
+      ]
+    },
+    {
+      "name": "Heart Chakra Singing Bowl",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-SB-HC"
+        }
+      ]
+    },
+    {
+      "name": "Third Eye Chakra Singing Bowl",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-SB-TEC"
+        }
+      ]
+    },
+    {
+      "name": "The Three Bowl Set - Root, Heart and Third Eye",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-SB-RHT-SET3"
+        }
+      ]
+    },
+    {
+      "name": "The Four Bowl Set - Root, Heart, Third Eye and Universal",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-SB-RHTU-SET4"
+        }
+      ]
+    },
+    {
+      "name": "GAB Set",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-SB-GAB-SET3"
+        }
+      ]
+    },
+    {
+      "name": "Handcrafted Set of 7 Bowls for Sound Therapy",
+      "variants": [
+        {
+          "variant": "Standard-Octave 3 / Matte",
+          "sku": "MI-SB-7C-O3-M-SET7"
+        },
+        {
+          "variant": "Standard-Octave 3 / Chakra Etching",
+          "sku": "MI-SB-7C-O3-ET-SET7"
+        },
+        {
+          "variant": "Standard-Octave 3 / Full Moon",
+          "sku": "MI-SB-7C-O3-FM-SET7"
+        },
+        {
+          "variant": "Large-Octave 2 / Matte",
+          "sku": "MI-SB-7C-O2-M-SET7"
+        },
+        {
+          "variant": "Large-Octave 2 / Chakra Etching",
+          "sku": "MI-SB-7C-O2-ET-SET7"
+        },
+        {
+          "variant": "Large-Octave 2 / Full Moon",
+          "sku": "MI-SB-7C-O2-FM-SET7"
+        }
+      ]
+    },
+    {
+      "name": "Universal Bowl",
+      "variants": [
+        {
+          "variant": "Standard",
+          "sku": "MI-SB-UB"
+        }
+      ]
+    },
+    {
+      "name": "Belly Bowls",
+      "variants": [
+        {
+          "variant": "Standard",
+          "sku": "MI-SB-BB"
+        }
+      ]
+    },
+    {
+      "name": "The Head Bowl",
+      "variants": [
+        {
+          "variant": "Standard",
+          "sku": "MI-SB-HB"
+        }
+      ]
+    },
+    {
+      "name": "Vibroacoustic Therapy Bowls - Universal, Belly and Head",
+      "variants": [
+        {
+          "variant": "Set of 3",
+          "sku": "MI-SB-UBH-SET3"
+        }
+      ]
+    },
+    {
+      "name": "Joint / Knee Cut Bowl",
+      "variants": [
+        {
+          "variant": "8 in",
+          "sku": "MI-SB-J-8"
+        },
+        {
+          "variant": "10in",
+          "sku": "MI-SB-J-10"
+        }
+      ]
+    },
+    {
+      "name": "Singing Bowl with Handle",
+      "variants": [
+        {
+          "variant": "Standard",
+          "sku": "MI-SB-H"
+        }
+      ]
+    },
+    {
+      "name": "Hanging Bowls/Zen Drops",
+      "variants": [
+        {
+          "variant": "Set of 3",
+          "sku": "MI-SB-HB-3"
+        }
+      ]
+    },
+    {
+      "name": "Singing Bowl Bags",
+      "variants": [
+        {
+          "variant": "Small",
+          "sku": "MI-SB-BG-S"
+        },
+        {
+          "variant": "Medium",
+          "sku": "MI-SB-BG-M"
+        },
+        {
+          "variant": "Large",
+          "sku": "MI-SB-BG-L"
+        }
+      ]
+    },
+    {
+      "name": "Singing Bowls Silk Ring Cushion Accessories",
+      "variants": [
+        {
+          "variant": "Green / 10 cms",
+          "sku": "MI-SBC-G-10"
+        },
+        {
+          "variant": "Blue / 10 cms",
+          "sku": "MI-SBC-B-10"
+        },
+        {
+          "variant": "Navy Blue / 10cm",
+          "sku": "MI-SBC-NB-10"
+        },
+        {
+          "variant": "Black / 10cm",
+          "sku": "MI-SBC-BK-10"
+        },
+        {
+          "variant": "Red / 10cm",
+          "sku": "MI-SBC-R-10"
+        },
+        {
+          "variant": "Brown / 10cm",
+          "sku": "MI-SBC-BR-10"
+        },
+        {
+          "variant": "Orange / 10cm",
+          "sku": "MI-SBC-O-10"
+        },
+        {
+          "variant": "Yellow / 10cm",
+          "sku": "MI-SBC-Y-10"
+        },
+        {
+          "variant": "Pink / 10cm",
+          "sku": "MI-SBC-PK-10"
+        },
+        {
+          "variant": "Green / 12cm",
+          "sku": "MI-SBC-G-12"
+        },
+        {
+          "variant": "Blue / 12 cms",
+          "sku": "MI-SBC-B-12"
+        },
+        {
+          "variant": "Black / 12 cms",
+          "sku": "MI-SBC-BK-12"
+        },
+        {
+          "variant": "Brown / 12 cms",
+          "sku": "MI-SBC-BR-12"
+        },
+        {
+          "variant": "Red / 12 cms",
+          "sku": "MI-SBC-R-12"
+        },
+        {
+          "variant": "Pink / 12 cms",
+          "sku": "MI-SBC-PK-12"
+        },
+        {
+          "variant": "Orange / 12 cms",
+          "sku": "MI-SBC-O-12"
+        },
+        {
+          "variant": "Yellow / 12 cms",
+          "sku": "MI-SBC-Y-12"
+        },
+        {
+          "variant": "Navy Blue / 12 cms",
+          "sku": "MI-SBC-NB-12"
+        },
+        {
+          "variant": "Blue / 14 cms",
+          "sku": "MI-SBC-B-14"
+        },
+        {
+          "variant": "Green / 14cm",
+          "sku": "MI-SBC-G-14"
+        },
+        {
+          "variant": "Navy Blue / 14 cms",
+          "sku": "MI-SBC-NB-14"
+        },
+        {
+          "variant": "Orange / 14 cms",
+          "sku": "MI-SBC-O-14"
+        },
+        {
+          "variant": "Black / 14 cms",
+          "sku": "MI-SBC-BK-14"
+        },
+        {
+          "variant": "Red / 14 cms",
+          "sku": "MI-SBC-R-14"
+        },
+        {
+          "variant": "Brown / 14 cms",
+          "sku": "MI-SBC-BR-14"
+        },
+        {
+          "variant": "Pink / 14 cms",
+          "sku": "MI-SBC-PK-14"
+        },
+        {
+          "variant": "Yellow / 14 cms",
+          "sku": "MI-SBC-Y-14"
+        },
+        {
+          "variant": "16 cms / Blue",
+          "sku": "MI-SBC-B-16"
+        },
+        {
+          "variant": "Black / 16 cms",
+          "sku": "MI-SBC-BK-16"
+        },
+        {
+          "variant": "Brown / 16 cms",
+          "sku": "MI-SBC-BR-16"
+        },
+        {
+          "variant": "Orange / 16 cms",
+          "sku": "MI-SBC-O-16"
+        },
+        {
+          "variant": "Navy Blue / 16cms",
+          "sku": "MI-SBC-NB-16"
+        },
+        {
+          "variant": "Green /16cms",
+          "sku": "MI-SBC-G-16"
+        },
+        {
+          "variant": "Red / 16 cms",
+          "sku": "MI-SBC-R-16"
+        },
+        {
+          "variant": "Yellow / 16 cms",
+          "sku": "MI-SBC-Y-16"
+        },
+        {
+          "variant": "Pink / 16cms",
+          "sku": "MI-SBC-PK-16"
+        },
+        {
+          "variant": "Blue / 18cms",
+          "sku": "MI-SBC-B-18"
+        },
+        {
+          "variant": "Black / 18 cms",
+          "sku": "MI-SBC-BK-18"
+        },
+        {
+          "variant": "Green / 18cms",
+          "sku": "MI-SBC-G-18"
+        },
+        {
+          "variant": "Brown / 18 cms",
+          "sku": "MI-SBC-BR-18"
+        },
+        {
+          "variant": "Navy Blue / 18cms",
+          "sku": "MI-SBC-NB-18"
+        },
+        {
+          "variant": "Yellow / 18 cms",
+          "sku": "MI-SBC-Y-18"
+        },
+        {
+          "variant": "Pink / 18cms",
+          "sku": "MI-SBC-PK-18"
+        },
+        {
+          "variant": "Red / 18 cms",
+          "sku": "MI-SBC-R-18"
+        },
+        {
+          "variant": "Orange / 18 cms",
+          "sku": "MI-SBC-O-18"
+        },
+        {
+          "variant": "Blue / 18cms",
+          "sku": "MI-SBC-B-20"
+        },
+        {
+          "variant": "Brown / 20 cms",
+          "sku": "MI-SBC-BR-20"
+        },
+        {
+          "variant": "Navy Blue / 20 cms",
+          "sku": "MI-SBC-NB-20"
+        },
+        {
+          "variant": "Black / 20 cms",
+          "sku": "MI-SBC-BK-20"
+        },
+        {
+          "variant": "Orange / 20 cms",
+          "sku": "MI-SBC-O-20"
+        },
+        {
+          "variant": "Yellow / 20 cms",
+          "sku": "MI-SBC-Y-20"
+        },
+        {
+          "variant": "Green / 20 cms",
+          "sku": "MI-SBC-G-20"
+        },
+        {
+          "variant": "Red / 20 cms",
+          "sku": "MI-SBC-R-20"
+        },
+        {
+          "variant": "Pink / 20 cms",
+          "sku": "MI-SBC-PK-20"
+        },
+        {
+          "variant": "Blue / 22 cms",
+          "sku": "MI-SBC-B-22"
+        },
+        {
+          "variant": "Black / 22 cms",
+          "sku": "MI-SBC-BK-22"
+        },
+        {
+          "variant": "Brown / 22 cms",
+          "sku": "MI-SBC-BR-22"
+        },
+        {
+          "variant": "Green / 22 cms",
+          "sku": "MI-SBC-G-22"
+        },
+        {
+          "variant": "Navy Blue / 22 cms",
+          "sku": "MI-SBC-NB-22"
+        },
+        {
+          "variant": "Orange / 22 cms",
+          "sku": "MI-SBC-O-22"
+        },
+        {
+          "variant": "Pink / 22 cms",
+          "sku": "MI-SBC-PK-22"
+        },
+        {
+          "variant": "Red / 22 cms",
+          "sku": "MI-SBC-R-22"
+        },
+        {
+          "variant": "Yellow / 22 cms",
+          "sku": "MI-SBC-Y-22"
+        },
+        {
+          "variant": "Combo of 3",
+          "sku": "MI-SBC-SET3"
+        },
+        {
+          "variant": "Combo of 5",
+          "sku": "MI-SBC-SET5"
+        },
+        {
+          "variant": "Combo of 7",
+          "sku": "MI-SBC-SET7"
+        }
+      ]
+    },
+    {
+      "name": "Wooden Mallets for Singing Bowls",
+      "variants": [
+        {
+          "variant": "Red / Long Firm-Standard Striker",
+          "sku": "MI-SBM-S-LF-ST-R"
+        },
+        {
+          "variant": "Red / Long Firm-Small Striker",
+          "sku": "MI-SBM-S-LF-S-R"
+        },
+        {
+          "variant": "White / Long Firm-Standard Striker",
+          "sku": "MI-SBM-S-LF-ST-W"
+        },
+        {
+          "variant": "White / Long Firm-Small Striker",
+          "sku": "MI-SBM-S-LF-S-W"
+        },
+        {
+          "variant": "Red / Long Soft-13\" Striker",
+          "sku": "MI-SBM-S-LS-R-13"
+        },
+        {
+          "variant": "Red / Long Soft-11\" Striker",
+          "sku": "MI-SBM-S-LS-R-11"
+        },
+        {
+          "variant": "Red / Long Soft-9\" Striker",
+          "sku": "MI-SBM-S-LS-R-9"
+        },
+        {
+          "variant": "White / Long Soft-13\" Striker",
+          "sku": "MI-SBM-S-LS-W-13"
+        },
+        {
+          "variant": "White / Long Soft-11\" Striker",
+          "sku": "MI-SBM-S-LS-W-11"
+        },
+        {
+          "variant": "White / Long Soft-9\" Striker",
+          "sku": "MI-SBM-S-LS-W-9"
+        },
+        {
+          "variant": "Black / Curved Rimmer",
+          "sku": "MI-SBM-R-C-B"
+        },
+        {
+          "variant": "Black / Thick Wide Rimmer",
+          "sku": "MI-SBM-R-TW-B"
+        },
+        {
+          "variant": "Red / Thick Wide Rimmer",
+          "sku": "MI-SBM-R-TW-R"
+        },
+        {
+          "variant": "Black / Standard Wide Rimmer",
+          "sku": "MI-SBM-R-SW-B"
+        },
+        {
+          "variant": "Red / Standard Wide Rimmer",
+          "sku": "MI-SBM-R-SW-R"
+        },
+        {
+          "variant": "Black / Straight Rimmer",
+          "sku": "MI-SBM-R-ST-B"
+        },
+        {
+          "variant": "Red / Straight Rimmer",
+          "sku": "MI-SBM-R-ST-R"
+        }
+      ]
+    },
+    {
+      "name": "Tibetan Buddhist Bell",
+      "variants": [
+        {
+          "variant": "Small",
+          "sku": "MI-BB-S"
+        },
+        {
+          "variant": "Medium",
+          "sku": "MI-BB-M"
+        },
+        {
+          "variant": "Large",
+          "sku": "MI-BB-L"
+        },
+        {
+          "variant": "Extra Large",
+          "sku": "MI-BB-XL"
+        }
+      ]
+    },
+    {
+      "name": "Tingsha Bell",
+      "variants": [
+        {
+          "variant": "Plain / Small",
+          "sku": "MI-TB-P-S"
+        },
+        {
+          "variant": "Plain /Medium",
+          "sku": "MI-TB-P-M"
+        },
+        {
+          "variant": "Plain /Large",
+          "sku": "MI-TB-P-L"
+        },
+        {
+          "variant": "Dark / Small",
+          "sku": "MI-TB-D-S"
+        },
+        {
+          "variant": "Dark / Medium",
+          "sku": "MI-TB-D-M"
+        },
+        {
+          "variant": "Dark / Large",
+          "sku": "MI-TB-D-L"
+        },
+        {
+          "variant": "Etched /Small",
+          "sku": "MI-TB-ET-S"
+        },
+        {
+          "variant": "Etched / Medium",
+          "sku": "MI-TB-ET-M"
+        },
+        {
+          "variant": "Etched / Large",
+          "sku": "MI-TB-ET-L"
+        }
+      ]
+    },
+    {
+      "name": "Mayura Morchang Set",
+      "variants": [
+        {
+          "variant": "Sharp",
+          "sku": "MI-MO-MY-S"
+        },
+        {
+          "variant": "Middle",
+          "sku": "MI-MO-MY-M"
+        },
+        {
+          "variant": "Bass",
+          "sku": "MI-MO-MY-B"
+        },
+        {
+          "variant": "Full Set",
+          "sku": "MI-MO-MY-SET3"
+        }
+      ]
+    },
+    {
+      "name": "Classic Morchang",
+      "variants": [
+        {
+          "variant": "Sharp",
+          "sku": "MI-MO-CL-S"
+        },
+        {
+          "variant": "Middle",
+          "sku": "MI-MO-CL-M"
+        },
+        {
+          "variant": "Bass",
+          "sku": "MI-MO-CL-B"
+        },
+        {
+          "variant": "Full Set",
+          "sku": "MI-MO-CL-SET3"
+        }
+      ]
+    },
+    {
+      "name": "7 Chakra Morchang",
+      "variants": [
+        {
+          "variant": "C Tune",
+          "sku": "MI-MO-7C-C"
+        },
+        {
+          "variant": "D Tune",
+          "sku": "MI-MO-7C-D"
+        },
+        {
+          "variant": "E Tune",
+          "sku": "MI-MO-7C-E"
+        },
+        {
+          "variant": "F Tune",
+          "sku": "MI-MO-7C-F"
+        },
+        {
+          "variant": "G Tune",
+          "sku": "MI-MO-7C-G"
+        },
+        {
+          "variant": "A Tune",
+          "sku": "MI-MO-7C-A"
+        },
+        {
+          "variant": "B Tune",
+          "sku": "MI-MO-7C-B"
+        },
+        {
+          "variant": "Full Set",
+          "sku": "MI-MO-7C-SET7"
+        }
+      ]
+    },
+    {
+      "name": "Box Tanpura",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-BT"
+        }
+      ]
+    },
+    {
+      "name": "S-Shaped Didgeridoo",
+      "variants": [
+        {
+          "variant": "Green",
+          "sku": "MI-DG-SS-G"
+        },
+        {
+          "variant": "Blue",
+          "sku": "MI-DG-SS-B"
+        },
+        {
+          "variant": "Red",
+          "sku": "MI-DG-SS-R"
+        }
+      ]
+    },
+    {
+      "name": "Spiral/Snake Didgeridoo",
+      "variants": [
+        {
+          "variant": "Green",
+          "sku": "MI-DG-SP-G"
+        },
+        {
+          "variant": "Red",
+          "sku": "MI-DG-SP-R"
+        }
+      ]
+    },
+    {
+      "name": "Standard Shankh",
+      "variants": [
+        {
+          "variant": "Small",
+          "sku": "MI-SK-ST-S"
+        },
+        {
+          "variant": "Medium",
+          "sku": "MI-SK-ST-M"
+        },
+        {
+          "variant": "Large",
+          "sku": "MI-SK-ST-L"
+        }
+      ]
+    },
+    {
+      "name": "Sughosh Shankh",
+      "variants": [
+        {
+          "variant": "Sughosh",
+          "sku": "MI-SK-SG"
+        }
+      ]
+    },
+    {
+      "name": "Annapurna Shankh",
+      "variants": [
+        {
+          "variant": "Annapurna",
+          "sku": "MI-SK-AP"
+        }
+      ]
+    },
+    {
+      "name": "Gomukhi Shankh",
+      "variants": [
+        {
+          "variant": "Gomukhi",
+          "sku": "MI-SK-GM"
+        }
+      ]
+    },
+    {
+      "name": "Debadutta Shankh",
+      "variants": [
+        {
+          "variant": "Debadutta",
+          "sku": "MI-SK-DD"
+        }
+      ]
+    },
+    {
+      "name": "Harmonium",
+      "variants": [
+        {
+          "variant": "Professional",
+          "sku": "MI-HA-P"
+        },
+        {
+          "variant": "Compact",
+          "sku": "MI-HA-C"
+        }
+      ]
+    },
+    {
+      "name": "Shruti Box",
+      "variants": [
+        {
+          "variant": "1 Octave Standard",
+          "sku": "MI-STB-O1"
+        },
+        {
+          "variant": "1 Octave Mini",
+          "sku": "MI-STB-O1-M"
+        },
+        {
+          "variant": "2 Octaves",
+          "sku": "MI-STB-O2"
+        },
+        {
+          "variant": "3 Octaves",
+          "sku": "MI-STB-O3"
+        }
+      ]
+    },
+    {
+      "name": "Shruti Box Pedal",
+      "variants": [
+        {
+          "variant": "Pedal",
+          "sku": "MI-STB-P"
+        }
+      ]
+    },
+    {
+      "name": "Native American Flute - Triple",
+      "variants": [
+        {
+          "variant": "Triple",
+          "sku": "MI-NF-T"
+        }
+      ]
+    },
+    {
+      "name": "Native American Flute - Double",
+      "variants": [
+        {
+          "variant": "Double",
+          "sku": "MI-NF-D"
+        }
+      ]
+    },
+    {
+      "name": "Native American Flute - Single Large",
+      "variants": [
+        {
+          "variant": "Single Large",
+          "sku": "MI-NF-S-L"
+        }
+      ]
+    },
+    {
+      "name": "Native American Flute - Single Medium",
+      "variants": [
+        {
+          "variant": "Single Medium",
+          "sku": "MI-NF-S-M"
+        }
+      ]
+    },
+    {
+      "name": "Native American Flute - Single Small",
+      "variants": [
+        {
+          "variant": "Single Small",
+          "sku": "MI-NF-S-S"
+        }
+      ]
+    },
+    {
+      "name": "Ocarina - Small",
+      "variants": [
+        {
+          "variant": "Small",
+          "sku": "MI-OC-S"
+        }
+      ]
+    },
+    {
+      "name": "Ocarina - Big",
+      "variants": [
+        {
+          "variant": "Big",
+          "sku": "MI-OC-B"
+        }
+      ]
+    },
+    {
+      "name": "Swing Flute/Harmonic",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-SF"
+        }
+      ]
+    },
+    {
+      "name": "Clay Whistle",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-CW"
+        }
+      ]
+    },
+    {
+      "name": "Overtone Flute",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-OF"
+        }
+      ]
+    },
+    {
+      "name": "Bar Chime - 25 Rods",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-BC-25"
+        }
+      ]
+    },
+    {
+      "name": "Pulse Tubes",
+      "variants": [
+        {
+          "variant": "Large",
+          "sku": "MI-PT-L"
+        },
+        {
+          "variant": "Medium",
+          "sku": "MI-PT-M"
+        },
+        {
+          "variant": "Small",
+          "sku": "MI-PT-S"
+        }
+      ]
+    },
+    {
+      "name": "Swinging Chimes",
+      "variants": [
+        {
+          "variant": "6 Bars",
+          "sku": "MI-SC-6"
+        },
+        {
+          "variant": "9 Bars",
+          "sku": "MI-SC-9"
+        }
+      ]
+    },
+    {
+      "name": "Element Chimes",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-EC"
+        }
+      ]
+    },
+    {
+      "name": "Wind chimes",
+      "variants": [
+        {
+          "variant": "Gold-Small",
+          "sku": "MI-WC-GO-S"
+        },
+        {
+          "variant": "Gold-Large",
+          "sku": "MI-WC-GO-L"
+        },
+        {
+          "variant": "Green-Small",
+          "sku": "MI-WC-GR-S"
+        },
+        {
+          "variant": "Green-Large",
+          "sku": "MI-WC-GR-L"
+        },
+        {
+          "variant": "Yellow-Small",
+          "sku": "MI-WC-YE-S"
+        },
+        {
+          "variant": "Yellow-Large",
+          "sku": "MI-WC-YE-L"
+        },
+        {
+          "variant": "Silver-Small",
+          "sku": "MI-WC-SI-S"
+        },
+        {
+          "variant": "Silver-Large",
+          "sku": "MI-WC-SI-L"
+        },
+        {
+          "variant": "Antique Copper-Small",
+          "sku": "MI-WC-AC-S"
+        },
+        {
+          "variant": "Antique Copper-Large",
+          "sku": "MI-WC-AC-L"
+        }
+      ]
+    },
+    {
+      "name": "Tuned Pipes",
+      "variants": [
+        {
+          "variant": "285 Hz",
+          "sku": "MI-TP-285"
+        },
+        {
+          "variant": "432 Hz",
+          "sku": "MI-TP-432"
+        }
+      ]
+    },
+    {
+      "name": "Tuning Fork - Single Weighted & Unweighted",
+      "variants": [
+        {
+          "variant": "Weighted / 64 Hz",
+          "sku": "MI-TF-W-64"
+        },
+        {
+          "variant": "Weighted / 68.05 Hz",
+          "sku": "MI-TF-W-6805"
+        },
+        {
+          "variant": "Weighted / 93.96 Hz",
+          "sku": "MI-TF-W-9396"
+        },
+        {
+          "variant": "Weighted / 128 Hz",
+          "sku": "MI-TF-W-128"
+        },
+        {
+          "variant": "Weighted / 136.10 Hz",
+          "sku": "MI-TF-W-13610"
+        },
+        {
+          "variant": "Weighted / 256 Hz",
+          "sku": "MI-TF-W-256"
+        },
+        {
+          "variant": "Weighted / 432 Hz",
+          "sku": "MI-TF-W-432"
+        },
+        {
+          "variant": "Weighted / 440 Hz",
+          "sku": "MI-TF-W-440"
+        },
+        {
+          "variant": "Weighted / 528 Hz",
+          "sku": "MI-TF-W-528"
+        },
+        {
+          "variant": "Unweighted / 64 Hz",
+          "sku": "MI-TF-UW-64"
+        },
+        {
+          "variant": "Unweighted / 68.05 Hz",
+          "sku": "MI-TF-UW-6805"
+        },
+        {
+          "variant": "Unweighted / 93.96 Hz",
+          "sku": "MI-TF-UW-9396"
+        },
+        {
+          "variant": "Unweighted / 128 Hz",
+          "sku": "MI-TF-UW-128"
+        },
+        {
+          "variant": "Unweighted / 136.10 Hz",
+          "sku": "MI-TF-UW-13610"
+        },
+        {
+          "variant": "Unweighted / 256 Hz",
+          "sku": "MI-TF-UW-256"
+        },
+        {
+          "variant": "Unweighted / 432 Hz",
+          "sku": "MI-TF-UW-432"
+        },
+        {
+          "variant": "Unweighted /440Hz",
+          "sku": "MI-TF-UW-440"
+        },
+        {
+          "variant": "Unweighted / 528 Hz",
+          "sku": "MI-TF-UW-528"
+        }
+      ]
+    },
+    {
+      "name": "Angel Tuning Forks",
+      "variants": [
+        {
+          "variant": "4096 Hz",
+          "sku": "MI-TF-AG-4096"
+        },
+        {
+          "variant": "4160 Hz",
+          "sku": "MI-TF-AG-4160"
+        },
+        {
+          "variant": "4225 Hz",
+          "sku": "MI-TF-AG-4225"
+        },
+        {
+          "variant": "Set",
+          "sku": "MI-TF-AG-SET3"
+        }
+      ]
+    },
+    {
+      "name": "C&G Tuning Forks",
+      "variants": [
+        {
+          "variant": "Weighted",
+          "sku": "MI-TF-W-CG"
+        },
+        {
+          "variant": "Unweighted",
+          "sku": "MI-TF-UW-CG"
+        }
+      ]
+    },
+    {
+      "name": "Tuning Fork Activators",
+      "variants": [
+        {
+          "variant": "Activator",
+          "sku": "MI-TF-A"
+        },
+        {
+          "variant": "Mallet",
+          "sku": "MI-TF-M"
+        },
+        {
+          "variant": "Activator & Mallet",
+          "sku": "MI-TF-AM"
+        }
+      ]
+    },
+    {
+      "name": "Tuning Fork Extensions",
+      "variants": [
+        {
+          "variant": "Extender",
+          "sku": "MI-TF-EX"
+        },
+        {
+          "variant": "Circuit Boot",
+          "sku": "MI-TF-CB"
+        },
+        {
+          "variant": "Massage Boot",
+          "sku": "MI-TF-MB"
+        }
+      ]
+    },
+    {
+      "name": "Tuning Forks Gem Feet",
+      "variants": [
+        {
+          "variant": "Maroon",
+          "sku": "MI-TF-GF-M"
+        },
+        {
+          "variant": "Yellow",
+          "sku": "MI-TF-GF-Y"
+        },
+        {
+          "variant": "Violet",
+          "sku": "MI-TF-GF-V"
+        },
+        {
+          "variant": "Blue",
+          "sku": "MI-TF-GF-B"
+        },
+        {
+          "variant": "Green",
+          "sku": "MI-TF-GF-G"
+        },
+        {
+          "variant": "Dark Blue",
+          "sku": "MI-TF-GF-DB"
+        },
+        {
+          "variant": "Red",
+          "sku": "MI-TF-GF-R"
+        },
+        {
+          "variant": "Full Set",
+          "sku": "MI-TF-GF-SET7"
+        }
+      ]
+    },
+    {
+      "name": "Tuning Forks 7 Chakra Set",
+      "variants": [
+        {
+          "variant": "Weighted / With Gem Foot",
+          "sku": "MI-TF-7C-W-GF-SET7"
+        },
+        {
+          "variant": "Weighted / Without Gem Foot",
+          "sku": "MI-TF-7C-W-SET7"
+        },
+        {
+          "variant": "Colour Weighted / With Gem Foot",
+          "sku": "MI-TF-7C-C-W-GF-SET7"
+        },
+        {
+          "variant": "Colour Weighted / Without Gem Foot",
+          "sku": "MI-TF-7C-C-W-SET7"
+        },
+        {
+          "variant": "Unweighted / With Gem Foot",
+          "sku": "MI-TF-7C-UW-GF-SET7"
+        },
+        {
+          "variant": "Unweighted / Without Gem Foot",
+          "sku": "MI-TF-7C-UW-SET7"
+        },
+        {
+          "variant": "Colour Unweighted / With Gem Foot",
+          "sku": "MI-TF-7C-C-UW-GF-SET7"
+        },
+        {
+          "variant": "Colour Unweighted / Without Gem Foot",
+          "sku": "MI-TF-7C-C-UW-SET7"
+        }
+      ]
+    },
+    {
+      "name": "Tuning Forks Solfeggio Set",
+      "variants": [
+        {
+          "variant": "Weighted",
+          "sku": "MI-TF-SF-W-SET9"
+        },
+        {
+          "variant": "Unweighted",
+          "sku": "MI-TF-SF-UW-SET9"
+        }
+      ]
+    },
+    {
+      "name": "Wooden Stand for Tuning Forks",
+      "variants": [
+        {
+          "variant": "Three",
+          "sku": "MI-TF-WS-3"
+        },
+        {
+          "variant": "Five",
+          "sku": "MI-TF-WS-5"
+        },
+        {
+          "variant": "Seven",
+          "sku": "MI-TF-WS-7"
+        },
+        {
+          "variant": "Nine",
+          "sku": "MI-TF-WS-9"
+        }
+      ]
+    },
+    {
+      "name": "Guiro",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-GRO"
+        }
+      ]
+    },
+    {
+      "name": "Khartal*3",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-KL"
+        }
+      ]
+    },
+    {
+      "name": "Ankh",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-AH"
+        }
+      ]
+    },
+    {
+      "name": "incense stick stand",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-IS-ST"
+        }
+      ]
+    },
+    {
+      "name": "DNA Tuning Fork",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-TF-DNA"
+        }
+      ]
+    },
+    {
+      "name": "Solar Bell",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-BL-SR"
+        }
+      ]
+    },
+    {
+      "name": "Wooden Finger Castanet",
+      "variants": [
+        {
+          "variant": "Black",
+          "sku": "MI-FC-B"
+        },
+        {
+          "variant": "White",
+          "sku": "MI-FC-W"
+        }
+      ]
+    },
+    {
+      "name": "Jingle Stick",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-JE-S"
+        }
+      ]
+    },
+    {
+      "name": "Ball Mallet",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-MT-BL"
+        }
+      ]
+    },
+    {
+      "name": "Nipple Gong",
+      "variants": [
+        {
+          "variant": "",
+          "sku": "MI-GO-NG"
+        }
+      ]
+    }
+  ],
+  "rows": [
+    {
+      "product": "Conscious Cards",
+      "variant": "",
+      "sku": "ME-CC"
+    },
+    {
+      "product": "Jala Neti Pot - Ceramic 185 ml",
+      "variant": "Red",
+      "sku": "YO-NP-R-185"
+    },
+    {
+      "product": "Jala Neti Pot - Ceramic 185 ml",
+      "variant": "Blue",
+      "sku": "YO-NP-B-185"
+    },
+    {
+      "product": "Jala Neti Pot - Ceramic 185 ml",
+      "variant": "Lemon Yellow",
+      "sku": "YO-NP-LY-185"
+    },
+    {
+      "product": "Jala Neti Pot - Ceramic 185 ml",
+      "variant": "Mint Green",
+      "sku": "YO-NP-MG-185"
+    },
+    {
+      "product": "Jala Neti Pot - Ceramic 185 ml",
+      "variant": "White",
+      "sku": "YO-NP-W-185"
+    },
+    {
+      "product": "Tounge Cleaner",
+      "variant": "Straight / pack-of-1",
+      "sku": "TC-S-1"
+    },
+    {
+      "product": "Tounge Cleaner",
+      "variant": "Straight / pack-of-2",
+      "sku": "TC-S-2"
+    },
+    {
+      "product": "Tounge Cleaner",
+      "variant": "Straight / pack-of-4",
+      "sku": "TC-S-4"
+    },
+    {
+      "product": "Stainless Steel Straws",
+      "variant": "pack-of-2",
+      "sku": "SSS-2"
+    },
+    {
+      "product": "Stainless Steel Straws",
+      "variant": "pack-of-4",
+      "sku": "SSS-4"
+    },
+    {
+      "product": "7 Chakras - Plain Copper Bottles",
+      "variant": "Plain / 500ml/ With Brush",
+      "sku": "CB-7C-B-.5"
+    },
+    {
+      "product": "7 Chakras - Plain Copper Bottles",
+      "variant": "Plain / 500ml/ Without Brush",
+      "sku": "CB-7C-.5"
+    },
+    {
+      "product": "7 Chakras - Plain Copper Bottles",
+      "variant": "Plain / 1L / With Brush",
+      "sku": "CB-7C-B"
+    },
+    {
+      "product": "7 Chakras - Plain Copper Bottles",
+      "variant": "Plain / 1L/ Without Brush",
+      "sku": "CB-7C"
+    },
+    {
+      "product": "7 Chakras - Vintage Copper Bottles",
+      "variant": "Vintage / 500ml/ With Brush",
+      "sku": "CB-7C-V-B-.5"
+    },
+    {
+      "product": "7 Chakras - Vintage Copper Bottles",
+      "variant": "Vintage/ 500ml/ Without Brush",
+      "sku": "CB-7C-V-.5"
+    },
+    {
+      "product": "7 Chakras - Vintage Copper Bottles",
+      "variant": "Vintage / 1L/ With Brush",
+      "sku": "CB-7C-V-B"
+    },
+    {
+      "product": "7 Chakras - Vintage Copper Bottles",
+      "variant": "Vintage/  1L/ Without Brush",
+      "sku": "CB-7C-V"
+    },
+    {
+      "product": "7 Chakras - Copper Bottles with Handle",
+      "variant": "Plain / 1L / With Brush",
+      "sku": "CB-7C-H-B"
+    },
+    {
+      "product": "7 Chakras - Copper Bottles with Handle",
+      "variant": "Plain / 1L/ Without Brush",
+      "sku": "CB-7C-H"
+    },
+    {
+      "product": "7 Chakras - Copper Bottles with Handle",
+      "variant": "Vintage / 1L/ Without Brush",
+      "sku": "CB-7C-V-H"
+    },
+    {
+      "product": "7 Chakras - Copper Bottles with Handle",
+      "variant": "Vintage / 1L / With Brush",
+      "sku": "CB-7C-V-H-B"
+    },
+    {
+      "product": "Curved Copper Bottles",
+      "variant": "gold / With Brush",
+      "sku": "CB-C-B"
+    },
+    {
+      "product": "Curved Copper Bottles",
+      "variant": "gold / Without Brush",
+      "sku": "CB-C"
+    },
+    {
+      "product": "Curved Copper Bottles",
+      "variant": "vintage / With Brush",
+      "sku": "CB-C-V-B"
+    },
+    {
+      "product": "Curved Copper Bottles",
+      "variant": "vintage / Without Brush",
+      "sku": "CB-C-V"
+    },
+    {
+      "product": "Curved Diamond Groove Copper Bottle",
+      "variant": "copper / 1L / without-brush",
+      "sku": "CB-CDG"
+    },
+    {
+      "product": "Curved Diamond Groove Copper Bottle",
+      "variant": "vintage / 1L / without-brush",
+      "sku": "CB-CDG-V"
+    },
+    {
+      "product": "Curved Hammered Copper Bottles",
+      "variant": "with-brush / vintage",
+      "sku": "CB-CVH-B"
+    },
+    {
+      "product": "Curved Hammered Copper Bottles",
+      "variant": "vintage / without-brush",
+      "sku": "CB-CVH"
+    },
+    {
+      "product": "Hammered Copper Bottle",
+      "variant": "copper / without-brush",
+      "sku": "CB-HM"
+    },
+    {
+      "product": "Hammered Copper Bottle",
+      "variant": "copper / with-brush",
+      "sku": "CB-HM-B"
+    },
+    {
+      "product": "Sunshine within Me (Artistic Design)",
+      "variant": "with-brush / 1L",
+      "sku": "CB-AD-SS-B"
+    },
+    {
+      "product": "Sunshine within Me (Artistic Design)",
+      "variant": "without-brush / 1L",
+      "sku": "CB-AD-SS"
+    },
+    {
+      "product": "Sunshine within Me (Artistic Design)",
+      "variant": "without-brush / 500ml",
+      "sku": "CB-AD-SS-.5"
+    },
+    {
+      "product": "Sunshine within Me (Artistic Design)",
+      "variant": "with-brush / 500ml",
+      "sku": "CB-AD-SS-.5-B"
+    },
+    {
+      "product": "Tattvamasi-I am Infinite",
+      "variant": "with-brush / 1L",
+      "sku": "CB-AD-TM-B"
+    },
+    {
+      "product": "Tattvamasi-I am Infinite",
+      "variant": "without-brush / 1L",
+      "sku": "CB-AD-TM"
+    },
+    {
+      "product": "Tattvamasi-I am Infinite",
+      "variant": "without-brush / 500ml",
+      "sku": "CB-AD-TM-.5"
+    },
+    {
+      "product": "Tattvamasi-I am Infinite",
+      "variant": "with-brush / 500ml",
+      "sku": "CB-AD-TM-B-.5"
+    },
+    {
+      "product": "Pink & Positive",
+      "variant": "without-brush / 1L",
+      "sku": "CB-AD-PP"
+    },
+    {
+      "product": "Pink & Positive",
+      "variant": "with-brush / 1L",
+      "sku": "CB-AD-PP-B"
+    },
+    {
+      "product": "Pink & Positive",
+      "variant": "without-brush / 500ml",
+      "sku": "CB-AD-PP-.5"
+    },
+    {
+      "product": "Pink & Positive",
+      "variant": "with-brush / 500ml",
+      "sku": "CB-AD-PP-.5-B"
+    },
+    {
+      "product": "Happiness is Inside",
+      "variant": "with-brush / 1L",
+      "sku": "CB-AD-HI-B"
+    },
+    {
+      "product": "Happiness is Inside",
+      "variant": "without-brush / 1L",
+      "sku": "CB-AD-HI"
+    },
+    {
+      "product": "Happiness is Inside",
+      "variant": "without-brush / 500ml",
+      "sku": "CB-AD-HI-.5"
+    },
+    {
+      "product": "Happiness is Inside",
+      "variant": "with-brush / 500ml",
+      "sku": "CB-AD-HI-.5-B"
+    },
+    {
+      "product": "Blue Tranquillity/Meditation",
+      "variant": "Without Brush / 1L",
+      "sku": "CB-AD-BM"
+    },
+    {
+      "product": "Blue Tranquillity/Meditation",
+      "variant": "1L / With Brush /",
+      "sku": "CB-AD-BM-B"
+    },
+    {
+      "product": "Blue Tranquillity/Meditation",
+      "variant": "Without Brush /500ml",
+      "sku": "CB-AD-BM-.5"
+    },
+    {
+      "product": "Blue Tranquillity/Meditation",
+      "variant": "With Brush / 500ml",
+      "sku": "CB-AD-BM-.5-B"
+    },
+    {
+      "product": "Ayurvedic Copper Bedroom Jar",
+      "variant": "Standard",
+      "sku": "CB-BJ"
+    },
+    {
+      "product": "Copper Bottle Gift Set - 7 Chakra",
+      "variant": "Gold",
+      "sku": "CB-7C-C-2G-SET"
+    },
+    {
+      "product": "Copper Bottle Gift Set - 7 Chakra",
+      "variant": "Vintage",
+      "sku": "CB-7C-V-2G-SET"
+    },
+    {
+      "product": "7 Chakras Mystical Incense Sticks Set",
+      "variant": "7 Chakra Set",
+      "sku": "IS-7C-SET"
+    },
+    {
+      "product": "7 Chakras Mystical Incense Sticks Set",
+      "variant": "7 Chakra Set with Stand",
+      "sku": "IS-7C-SET-S"
+    },
+    {
+      "product": "7 Chakras Mystical Incense Sticks Set",
+      "variant": "Pure Citronella",
+      "sku": "IS-CT"
+    },
+    {
+      "product": "7 Chakras Mystical Incense Sticks Set",
+      "variant": "Pure Eucalyptus",
+      "sku": "IS-EU"
+    },
+    {
+      "product": "7 Chakras Mystical Incense Sticks Set",
+      "variant": "Pure Frankincense",
+      "sku": "IS-FI"
+    },
+    {
+      "product": "7 Chakras Mystical Incense Sticks Set",
+      "variant": "Pure Lavender",
+      "sku": "IS-LV"
+    },
+    {
+      "product": "7 Chakras Mystical Incense Sticks Set",
+      "variant": "Pure Musk",
+      "sku": "IS-MU"
+    },
+    {
+      "product": "7 Chakras Mystical Incense Sticks Set",
+      "variant": "Pure Rose",
+      "sku": "IS-R"
+    },
+    {
+      "product": "7 Chakras Mystical Incense Sticks Set",
+      "variant": "Pure Sandalwood",
+      "sku": "IS-SW"
+    },
+    {
+      "product": "7 Chakras Yoga Mats",
+      "variant": "Moderate / Green",
+      "sku": "YO-M-CT-7C-M-G"
+    },
+    {
+      "product": "7 Chakras Yoga Mats",
+      "variant": "Moderate / Orange",
+      "sku": "YO-M-CT-7C-M-O"
+    },
+    {
+      "product": "7 Chakras Yoga Mats",
+      "variant": "Moderate / Blue",
+      "sku": "YO-M-CT-7C-M-B"
+    },
+    {
+      "product": "7 Chakras Yoga Mats",
+      "variant": "Moderate / Pink",
+      "sku": "YO-M-CT-7C-M-P"
+    },
+    {
+      "product": "7 Chakras Yoga Mats",
+      "variant": "Teal/ Superior",
+      "sku": "YO-M-CT-7C-S-T"
+    },
+    {
+      "product": "7 Chakras Yoga Mats",
+      "variant": "Orange / Superior",
+      "sku": "YO-M-CT-7C-S-O"
+    },
+    {
+      "product": "7 Chakras Yoga Mats",
+      "variant": "Yellow / Superior",
+      "sku": "YO-M-CT-7C-S-Y"
+    },
+    {
+      "product": "7 Chakras Yoga Mats",
+      "variant": "Pink / Superior",
+      "sku": "YO-M-CT-7C-S-P"
+    },
+    {
+      "product": "Plain Yoga Mats",
+      "variant": "Moderate / Green",
+      "sku": "YO-M-CT-M-G"
+    },
+    {
+      "product": "Plain Yoga Mats",
+      "variant": "Moderate / Orange",
+      "sku": "YO-M-CT-M-O"
+    },
+    {
+      "product": "Plain Yoga Mats",
+      "variant": "Moderate / Blue",
+      "sku": "YO-M-CT-M-B"
+    },
+    {
+      "product": "Plain Yoga Mats",
+      "variant": "Moderate / Pink",
+      "sku": "YO-M-CT-M-P"
+    },
+    {
+      "product": "Plain Yoga Mats",
+      "variant": "Teal / Superior",
+      "sku": "YO-M-CT-S-T"
+    },
+    {
+      "product": "Plain Yoga Mats",
+      "variant": "Orange / Superior",
+      "sku": "YO-M-CT-S-O"
+    },
+    {
+      "product": "Plain Yoga Mats",
+      "variant": "Yellow / Superior",
+      "sku": "YO-M-CT-S-Y"
+    },
+    {
+      "product": "Plain Yoga Mats",
+      "variant": "Pink / Superior",
+      "sku": "YO-M-CT-S-P"
+    },
+    {
+      "product": "Yoga Mats-Lotus",
+      "variant": "Moderate / Green",
+      "sku": "YO-M-CT-L-M-G"
+    },
+    {
+      "product": "Yoga Mats-Lotus",
+      "variant": "Moderate / Orange",
+      "sku": "YO-M-CT-L-M-O"
+    },
+    {
+      "product": "Yoga Mats-Lotus",
+      "variant": "Moderate / Blue",
+      "sku": "YO-M-CT-L-M-B"
+    },
+    {
+      "product": "Yoga Mats-Lotus",
+      "variant": "Moderate / Pink",
+      "sku": "YO-M-CT-L-M-P"
+    },
+    {
+      "product": "Yoga Mats-Lotus",
+      "variant": "Teal / Superior",
+      "sku": "YO-M-CT-L-S-T"
+    },
+    {
+      "product": "Yoga Mats-Lotus",
+      "variant": "Orange / Superior",
+      "sku": "YO-M-CT-L-S-O"
+    },
+    {
+      "product": "Yoga Mats-Lotus",
+      "variant": "Yellow / Superior",
+      "sku": "YO-M-CT-L-S-Y"
+    },
+    {
+      "product": "Yoga Mats-Lotus",
+      "variant": "Pink / Superior",
+      "sku": "YO-M-CT-L-S-P"
+    },
+    {
+      "product": "Macrame Yoga Mat Straps",
+      "variant": "Green",
+      "sku": "YO-MMS-G"
+    },
+    {
+      "product": "Macrame Yoga Mat Straps",
+      "variant": "Brown",
+      "sku": "YO-MMS-BR"
+    },
+    {
+      "product": "Macrame Yoga Mat Straps",
+      "variant": "Dark Grey",
+      "sku": "YO-MMS-DG"
+    },
+    {
+      "product": "Macrame Yoga Mat Straps",
+      "variant": "Orange",
+      "sku": "YO-MMS-O"
+    },
+    {
+      "product": "Macrame Yoga Mat Straps",
+      "variant": "Navy Blue",
+      "sku": "YO-MMS-NB"
+    },
+    {
+      "product": "Macrame Yoga Mat Straps",
+      "variant": "Rose",
+      "sku": "YO-MMS-R"
+    },
+    {
+      "product": "Macrame Yoga Mat Straps",
+      "variant": "Rouge Pink",
+      "sku": "YO-MMS-RP"
+    },
+    {
+      "product": "Macrame Yoga Mat Straps",
+      "variant": "Sage",
+      "sku": "YO-MMS-S"
+    },
+    {
+      "product": "Round Yoga Bolster",
+      "variant": "Dark Grey",
+      "sku": "YO-BR-RD-DG"
+    },
+    {
+      "product": "Round Yoga Bolster",
+      "variant": "Grey",
+      "sku": "YO-BR-RD-GY"
+    },
+    {
+      "product": "Round Yoga Bolster",
+      "variant": "Maroon",
+      "sku": "YO-BR-RD-M"
+    },
+    {
+      "product": "Round Yoga Bolster",
+      "variant": "Navy Blue",
+      "sku": "YO-BR-RD-NB"
+    },
+    {
+      "product": "Round Yoga Bolster",
+      "variant": "Orange",
+      "sku": "YO-BR-RD-O"
+    },
+    {
+      "product": "Round Yoga Bolster",
+      "variant": "Rose",
+      "sku": "YO-BR-RD-R"
+    },
+    {
+      "product": "Round Yoga Bolster",
+      "variant": "sage",
+      "sku": "YO-BR-RD-S"
+    },
+    {
+      "product": "Round Yoga Bolster",
+      "variant": "Rouge Pink",
+      "sku": "YO-BR-RD-RP"
+    },
+    {
+      "product": "Rectangular Yoga Bolster",
+      "variant": "Dark Grey",
+      "sku": "YO-BR-RT-DG"
+    },
+    {
+      "product": "Rectangular Yoga Bolster",
+      "variant": "Grey",
+      "sku": "YO-BR-RT-GY"
+    },
+    {
+      "product": "Rectangular Yoga Bolster",
+      "variant": "Maroon",
+      "sku": "YO-BR-RT-M"
+    },
+    {
+      "product": "Rectangular Yoga Bolster",
+      "variant": "Navy Blue",
+      "sku": "YO-BR-RT-NB"
+    },
+    {
+      "product": "Rectangular Yoga Bolster",
+      "variant": "Rose",
+      "sku": "YO-BR-RT-R"
+    },
+    {
+      "product": "Rectangular Yoga Bolster",
+      "variant": "Rouge Pink",
+      "sku": "YO-BR-RT-RP"
+    },
+    {
+      "product": "Eye Shaped - Eye Pillows",
+      "variant": "Rose",
+      "sku": "YO-EP-R"
+    },
+    {
+      "product": "Eye Shaped - Eye Pillows",
+      "variant": "Dark Grey",
+      "sku": "YO-EP-DG"
+    },
+    {
+      "product": "Eye Shaped - Eye Pillows",
+      "variant": "Grey",
+      "sku": "YO-EP-GY"
+    },
+    {
+      "product": "Eye Shaped - Eye Pillows",
+      "variant": "Navy Blue",
+      "sku": "YO-EP-NB"
+    },
+    {
+      "product": "Eye Shaped - Eye Pillows",
+      "variant": "Sage",
+      "sku": "YO-EP-S"
+    },
+    {
+      "product": "Yoga Belt/Strap",
+      "variant": "Sky Blue",
+      "sku": "YO-BL-SB"
+    },
+    {
+      "product": "Yoga Belt/Strap",
+      "variant": "Beige",
+      "sku": "YO-BL-BE"
+    },
+    {
+      "product": "Yoga Belt/Strap",
+      "variant": "Green",
+      "sku": "YO-BL-G"
+    },
+    {
+      "product": "Yoga Belt/Strap",
+      "variant": "Navy Blue",
+      "sku": "YO-BL-NB"
+    },
+    {
+      "product": "Yoga Belt/Strap",
+      "variant": "Rose",
+      "sku": "YO-BL-R"
+    },
+    {
+      "product": "Yoga Blanket",
+      "variant": "Magenta",
+      "sku": "YO-BT-MG"
+    },
+    {
+      "product": "Yoga Blanket",
+      "variant": "Brown",
+      "sku": "YO-BT-BR"
+    },
+    {
+      "product": "Yoga Blanket",
+      "variant": "Natural White",
+      "sku": "YO-BT-W"
+    },
+    {
+      "product": "Zafu Meditation Cushion - Plain",
+      "variant": "Dark Grey",
+      "sku": "ME-Z-DG"
+    },
+    {
+      "product": "Zafu Meditation Cushion - Plain",
+      "variant": "Navy Blue",
+      "sku": "ME-Z-NB"
+    },
+    {
+      "product": "Zafu Meditation Cushion - Plain",
+      "variant": "Orange",
+      "sku": "ME-Z-O"
+    },
+    {
+      "product": "Zafu Meditation Cushion - Plain",
+      "variant": "Rose",
+      "sku": "ME-Z-R"
+    },
+    {
+      "product": "Zafu Meditation Cushion - Plain",
+      "variant": "Sage",
+      "sku": "ME-Z-S"
+    },
+    {
+      "product": "Zafu Meditation Cushion - Plain",
+      "variant": "Light Grey",
+      "sku": "ME-Z-LG"
+    },
+    {
+      "product": "Zafu Meditation Cushion - Plain",
+      "variant": "Lavender",
+      "sku": "ME-Z-LR"
+    },
+    {
+      "product": "Zafu Meditation Cushion - Plain",
+      "variant": "Misty Blue",
+      "sku": "ME-Z-MB"
+    },
+    {
+      "product": "Zafu Meditation Cushion - Plain",
+      "variant": "Magenta",
+      "sku": "ME-Z-MG"
+    },
+    {
+      "product": "Zafu Meditation Cushion - Lotus Embroidery",
+      "variant": "Rose",
+      "sku": "ME-Z-EM-L-R"
+    },
+    {
+      "product": "Zafu Meditation Cushion - Lotus Embroidery",
+      "variant": "Light Grey",
+      "sku": "ME-Z-EM-L-LG"
+    },
+    {
+      "product": "Zafu Meditation Cushion - Lotus Embroidery",
+      "variant": "Lavender",
+      "sku": "ME-Z-EM-L-LV"
+    },
+    {
+      "product": "Zafu Meditation Cushion - Lotus Embroidery",
+      "variant": "Misty Blue",
+      "sku": "ME-Z-EM-L-MB"
+    },
+    {
+      "product": "Zafu Meditation Cushion - Lotus Embroidery",
+      "variant": "Sage",
+      "sku": "ME-Z-EM-L-S"
+    },
+    {
+      "product": "Zabuton Cushion",
+      "variant": "Navy Blue",
+      "sku": "ME-Zn-NB"
+    },
+    {
+      "product": "Zabuton Cushion",
+      "variant": "Grey",
+      "sku": "ME-Zn-GY"
+    },
+    {
+      "product": "Zabuton Cushion",
+      "variant": "Light Grey",
+      "sku": "ME-Zn-LG"
+    },
+    {
+      "product": "Zabuton Cushion",
+      "variant": "Lavender",
+      "sku": "ME-Zn-LV"
+    },
+    {
+      "product": "Zabuton Cushion",
+      "variant": "Misty Blue",
+      "sku": "ME-Zn-MB"
+    },
+    {
+      "product": "Zafu & Zabuton Combo - Plain",
+      "variant": "Light Grey",
+      "sku": "ME-Z-Zn-LG"
+    },
+    {
+      "product": "Zafu & Zabuton Combo - Plain",
+      "variant": "Lavender",
+      "sku": "ME-Z-Zn-LV"
+    },
+    {
+      "product": "Zafu & Zabuton Combo - Plain",
+      "variant": "Misty Blue",
+      "sku": "ME-Z-Zn-MB"
+    },
+    {
+      "product": "Zafu & Zabuton Combo - Plain",
+      "variant": "Navy Blue",
+      "sku": "ME-Z-Zn-NB"
+    },
+    {
+      "product": "Zafu & Zabuton Combo - Lotus Embroidery",
+      "variant": "Lavender",
+      "sku": "ME-Z-Zn-EM-L-LV"
+    },
+    {
+      "product": "Zafu & Zabuton Combo - Lotus Embroidery",
+      "variant": "Light Grey",
+      "sku": "ME-Z-Zn-EM-L-LG"
+    },
+    {
+      "product": "Zafu & Zabuton Combo - Lotus Embroidery",
+      "variant": "Misty Blue",
+      "sku": "ME-Z-Zn-EM-L-MB"
+    },
+    {
+      "product": "Hi-Zafu Meditation Cushion - Embroidered with Lotus",
+      "variant": "Sage",
+      "sku": "ME-HZ-EM-L-S"
+    },
+    {
+      "product": "Hi-Zafu Meditation Cushion - Embroidered with Lotus",
+      "variant": "Lavender",
+      "sku": "ME-HZ-EM-L-LV"
+    },
+    {
+      "product": "Hi-Zafu Meditation Cushion - Embroidered with Lotus",
+      "variant": "Light Grey",
+      "sku": "ME-HZ-EM-L-LG"
+    },
+    {
+      "product": "Hi-Zafu Meditation Cushion - Embroidered with Lotus",
+      "variant": "Misty Blue",
+      "sku": "ME-HZ-EM-L-MB"
+    },
+    {
+      "product": "Hi-Zafu Meditation Cushion - Embroidered with Lotus",
+      "variant": "Rose",
+      "sku": "ME-HZ-EM-L-R"
+    },
+    {
+      "product": "Hi-Zafu Meditation Cushion - Filled with Buckwheat",
+      "variant": "Royal Blue",
+      "sku": "ME-HZ-RB"
+    },
+    {
+      "product": "Hi-Zafu Meditation Cushion - Filled with Buckwheat",
+      "variant": "Dark Grey",
+      "sku": "ME-HZ-DG"
+    },
+    {
+      "product": "Hi-Zafu Meditation Cushion - Filled with Buckwheat",
+      "variant": "Grey",
+      "sku": "ME-HZ-GY"
+    },
+    {
+      "product": "Hi-Zafu Meditation Cushion - Filled with Buckwheat",
+      "variant": "Ivory",
+      "sku": "ME-HZ-I"
+    },
+    {
+      "product": "Hi-Zafu Meditation Cushion - Filled with Buckwheat",
+      "variant": "Light Grey",
+      "sku": "ME-HZ-LG"
+    },
+    {
+      "product": "Hi-Zafu Meditation Cushion - Filled with Buckwheat",
+      "variant": "Lavender",
+      "sku": "ME-HZ-LV"
+    },
+    {
+      "product": "Hi-Zafu Meditation Cushion - Filled with Buckwheat",
+      "variant": "Maroon",
+      "sku": "ME-HZ-M"
+    },
+    {
+      "product": "Hi-Zafu Meditation Cushion - Filled with Buckwheat",
+      "variant": "Misty Blue",
+      "sku": "ME-HZ-MB"
+    },
+    {
+      "product": "Hi-Zafu Meditation Cushion - Filled with Buckwheat",
+      "variant": "Navy Blue",
+      "sku": "ME-HZ-NB"
+    },
+    {
+      "product": "Hi-Zafu Meditation Cushion - Filled with Buckwheat",
+      "variant": "Rose",
+      "sku": "ME-HZ-R"
+    },
+    {
+      "product": "Hi-Zafu Meditation Cushion - Filled with Buckwheat",
+      "variant": "Red",
+      "sku": "ME-HZ-RD"
+    },
+    {
+      "product": "Hi-Zafu Meditation Cushion - Filled with Buckwheat",
+      "variant": "Sage",
+      "sku": "ME-HZ-S"
+    },
+    {
+      "product": "Crescent Zafu Cushion - Compact -Buck wheat",
+      "variant": "Dark Grey",
+      "sku": "ME-CZ-C-DG"
+    },
+    {
+      "product": "Crescent Zafu Cushion - Compact -Buck wheat",
+      "variant": "Misty Blue",
+      "sku": "ME-CZ-C-MB"
+    },
+    {
+      "product": "Crescent Zafu Cushion - Compact -Buck wheat",
+      "variant": "Lavender",
+      "sku": "ME-CZ-C-LV"
+    },
+    {
+      "product": "Crescent Zafu Cushion - Compact -Buck wheat",
+      "variant": "Sage",
+      "sku": "ME-CZ-C-S"
+    },
+    {
+      "product": "Crescent Zafu Cushion - Compact -Buck wheat",
+      "variant": "Rose",
+      "sku": "ME-CZ-C-R"
+    },
+    {
+      "product": "Crescent Zafu Cushion - Wide -Cotton",
+      "variant": "Rouge Pink",
+      "sku": "ME-CZ-W-RP"
+    },
+    {
+      "product": "Crescent Zafu Cushion - Wide -Cotton",
+      "variant": "Lavender",
+      "sku": "ME-CZ-W-LV"
+    },
+    {
+      "product": "Crescent Zafu Cushion - Wide -Cotton",
+      "variant": "Misty Blue",
+      "sku": "ME-CZ-W-MB"
+    },
+    {
+      "product": "Zen Meditation Bench",
+      "variant": "Small",
+      "sku": "ME-ZMB-S"
+    },
+    {
+      "product": "Zen Meditation Bench",
+      "variant": "Medium",
+      "sku": "ME-ZMB-M"
+    },
+    {
+      "product": "Zen Meditation Bench",
+      "variant": "Large",
+      "sku": "ME-ZMB-L"
+    },
+    {
+      "product": "11 Note Tongue Drum",
+      "variant": "6 inches / White",
+      "sku": "MI-TD-11N-W-6"
+    },
+    {
+      "product": "11 Note Tongue Drum",
+      "variant": "6 inches / Blue",
+      "sku": "MI-TD-11N-B-6"
+    },
+    {
+      "product": "11 Note Tongue Drum",
+      "variant": "8 inches / White",
+      "sku": "MI-TD-11N-W-8"
+    },
+    {
+      "product": "11 Note Tongue Drum",
+      "variant": "8 inches / Blue",
+      "sku": "MI-TD-11N-B-8"
+    },
+    {
+      "product": "11 Note Tongue Drum",
+      "variant": "10 inches / White",
+      "sku": "MI-TD-11N-W-10"
+    },
+    {
+      "product": "11 Note Tongue Drum",
+      "variant": "10 inches / Blue",
+      "sku": "MI-TD-11N-B-10"
+    },
+    {
+      "product": "11 Note Tongue Drum",
+      "variant": "12 inches / White",
+      "sku": "MI-TD-11N-W-12"
+    },
+    {
+      "product": "11 Note Tongue Drum",
+      "variant": "12 inches / Blue",
+      "sku": "MI-TD-11N-B-12"
+    },
+    {
+      "product": "Handpan",
+      "variant": "D Celtic Minor 9",
+      "sku": "MI-HP-DC-9"
+    },
+    {
+      "product": "Handpan",
+      "variant": "D Kurd 10",
+      "sku": "MI-HP-DK-10"
+    },
+    {
+      "product": "Handpan Stand",
+      "variant": "",
+      "sku": "MI-HP-S"
+    },
+    {
+      "product": "8 Keys Metallophone",
+      "variant": "1 inch",
+      "sku": "MI-XY-MT-8-1"
+    },
+    {
+      "product": "8 Keys Metallophone",
+      "variant": "1.5 inch",
+      "sku": "MI-XY-MT-8-1.5"
+    },
+    {
+      "product": "8 Keys Wooden Xylophone",
+      "variant": "",
+      "sku": "MI-XY-W-8"
+    },
+    {
+      "product": "Teak Wood - Stainless Steel Xylophone",
+      "variant": "8 Keys",
+      "sku": "MI-XY-TW-8"
+    },
+    {
+      "product": "Teak Wood - Stainless Steel Xylophone",
+      "variant": "15 Keys",
+      "sku": "MI-XY-TW-15"
+    },
+    {
+      "product": "Bird Flute",
+      "variant": "Brown / Single",
+      "sku": "MI-BF-BN-S"
+    },
+    {
+      "product": "Bird Flute",
+      "variant": "Brown / Pair",
+      "sku": "MI-BF-BN-P"
+    },
+    {
+      "product": "7-Key Kalimba Made from Coconut Shell",
+      "variant": "Plain Etched",
+      "sku": "MI-KCS-PE"
+    },
+    {
+      "product": "7-Key Kalimba Made from Coconut Shell",
+      "variant": "Dot Painted",
+      "sku": "MI-KCS-DP"
+    },
+    {
+      "product": "Asalato / Kashaka Shaker",
+      "variant": "Plain / Single",
+      "sku": "MI-AS"
+    },
+    {
+      "product": "Asalato / Kashaka Shaker",
+      "variant": "Plain / Pair",
+      "sku": "MI-AS-2"
+    },
+    {
+      "product": "Asalato / Kashaka Shaker",
+      "variant": "Painted / Single",
+      "sku": "MI-AS-P"
+    },
+    {
+      "product": "Asalato / Kashaka Shaker",
+      "variant": "Painted / Pair",
+      "sku": "MI-AS-P-2"
+    },
+    {
+      "product": "Bamboo Castanet",
+      "variant": "Standard",
+      "sku": "MI-CN"
+    },
+    {
+      "product": "Bamboo Rainstick Wide-80cm",
+      "variant": "Wide 80cm",
+      "sku": "MI-RS-W-80"
+    },
+    {
+      "product": "Caxixi",
+      "variant": "Standard",
+      "sku": "MI-CX"
+    },
+    {
+      "product": "Coconut Maracas Shakers",
+      "variant": "Plain",
+      "sku": "MI-CMS"
+    },
+    {
+      "product": "Coconut Maracas Shakers",
+      "variant": "Dot Painted",
+      "sku": "MI-CMS-DP"
+    },
+    {
+      "product": "Wooden Maracas Shakers | Plain & Dot Painted",
+      "variant": "Plain",
+      "sku": "MI-WMS"
+    },
+    {
+      "product": "Wooden Maracas Shakers | Plain & Dot Painted",
+      "variant": "Dot Painted",
+      "sku": "MI-WMS-DP"
+    },
+    {
+      "product": "Egg Shaker with Handle",
+      "variant": "",
+      "sku": "MI-ES-H"
+    },
+    {
+      "product": "Painted Egg Shakers",
+      "variant": "",
+      "sku": "MI-ES"
+    },
+    {
+      "product": "Handheld Natural Coconut Shaker",
+      "variant": "",
+      "sku": "MI-CS-HH"
+    },
+    {
+      "product": "Mini Coconut Shakers - 3 Types",
+      "variant": "Round Shaped",
+      "sku": "MI-CS-RS"
+    },
+    {
+      "product": "Mini Coconut Shakers - 3 Types",
+      "variant": "Square Shaped",
+      "sku": "MI-CS-SS"
+    },
+    {
+      "product": "Mini Coconut Shakers - 3 Types",
+      "variant": "Eye Shaped",
+      "sku": "MI-CS-ES"
+    },
+    {
+      "product": "Mini Coconut Shakers - 3 Types",
+      "variant": "Set of 3",
+      "sku": "MI-CS-SET3"
+    },
+    {
+      "product": "Dumru/Dumroo",
+      "variant": "Plain",
+      "sku": "MI-DM"
+    },
+    {
+      "product": "Dumru/Dumroo",
+      "variant": "Dot Painted",
+      "sku": "MI-DM-DP"
+    },
+    {
+      "product": "Spin/Twist Drum or Den Den Daiko",
+      "variant": "Large 3.5 in",
+      "sku": "MI-SD-L"
+    },
+    {
+      "product": "Spin/Twist Drum or Den Den Daiko",
+      "variant": "Small 3 in",
+      "sku": "MI-SD-S"
+    },
+    {
+      "product": "Wooden Tambourines",
+      "variant": "Half-Moon",
+      "sku": "MI-WTM-HM"
+    },
+    {
+      "product": "Wooden Tambourines",
+      "variant": "Circular",
+      "sku": "MI-WTM-C"
+    },
+    {
+      "product": "Djembe Drums",
+      "variant": "8in / Ivory",
+      "sku": "MI-DJB-I-8"
+    },
+    {
+      "product": "Djembe Drums",
+      "variant": "8in / Mahogany",
+      "sku": "MI-DJB-M-8"
+    },
+    {
+      "product": "Djembe Drums",
+      "variant": "10in / Ivory",
+      "sku": "MI-DJB-I-10"
+    },
+    {
+      "product": "Djembe Drums",
+      "variant": "10in / Mahogany",
+      "sku": "MI-DJB-M-10"
+    },
+    {
+      "product": "Djembe Drums",
+      "variant": "12in / Ivory",
+      "sku": "MI-DJB-I-12"
+    },
+    {
+      "product": "Djembe Drums",
+      "variant": "12in / Mahogany",
+      "sku": "MI-DJB-M-12"
+    },
+    {
+      "product": "Djembe Drums",
+      "variant": "14in / Ivory",
+      "sku": "MI-DJB-I-14"
+    },
+    {
+      "product": "Djembe Drums",
+      "variant": "14in / Mahogany",
+      "sku": "MI-DJB-M-14"
+    },
+    {
+      "product": "Thunder Tube - Basic Edition",
+      "variant": "20cms /Small",
+      "sku": "MI-TT-S"
+    },
+    {
+      "product": "Thunder Tube - Basic Edition",
+      "variant": "25cms /Medium",
+      "sku": "MI-TT-M"
+    },
+    {
+      "product": "Thunder Tube - Basic Edition",
+      "variant": "30cms /Large",
+      "sku": "MI-TT-L"
+    },
+    {
+      "product": "Coconut Rattle",
+      "variant": "",
+      "sku": "MI-CR"
+    },
+    {
+      "product": "Pangi Seed Shell Rattle",
+      "variant": "Standard",
+      "sku": "MI-PS"
+    },
+    {
+      "product": "Kenari Shaker",
+      "variant": "Standard",
+      "sku": "MI-KR-S"
+    },
+    {
+      "product": "Kenari Bracelet",
+      "variant": "Standard",
+      "sku": "MI-KR-BT"
+    },
+    {
+      "product": "Kenari Chimes",
+      "variant": "Small",
+      "sku": "MI-KR-C-S"
+    },
+    {
+      "product": "Kenari Chimes",
+      "variant": "Large",
+      "sku": "MI-KR-C-L"
+    },
+    {
+      "product": "Bendo Shaker",
+      "variant": "Small",
+      "sku": "MI-BE-S"
+    },
+    {
+      "product": "Bendo Shaker",
+      "variant": "Large",
+      "sku": "MI-BE-L"
+    },
+    {
+      "product": "Bendo Chimes",
+      "variant": "Standard",
+      "sku": "MI-BE-CH"
+    },
+    {
+      "product": "Wooden Frog",
+      "variant": "Standard",
+      "sku": "MI-WF"
+    },
+    {
+      "product": "Ocean Drums",
+      "variant": "Plain / 30 cms",
+      "sku": "MI-OD-P-30"
+    },
+    {
+      "product": "Ocean Drums",
+      "variant": "Plain / 35 cms",
+      "sku": "MI-OD-P-35"
+    },
+    {
+      "product": "Ocean Drums",
+      "variant": "Plain / 40 cms",
+      "sku": "MI-OD-P-40"
+    },
+    {
+      "product": "Ocean Drums",
+      "variant": "Dream Catcher / 30 cms",
+      "sku": "MI-OD-D-30"
+    },
+    {
+      "product": "Ocean Drums",
+      "variant": "Dream Catcher / 35 cms",
+      "sku": "MI-OD-D-35"
+    },
+    {
+      "product": "Ocean Drums",
+      "variant": "Dream Catcher / 40cm",
+      "sku": "MI-OD-D-40"
+    },
+    {
+      "product": "Ocean Drums",
+      "variant": "Flower of Life / 30 cms",
+      "sku": "MI-OD-F-30"
+    },
+    {
+      "product": "Ocean Drums",
+      "variant": "Flower of Life / 35 cms",
+      "sku": "MI-OD-F-35"
+    },
+    {
+      "product": "Ocean Drums",
+      "variant": "Flower of Life / 40cm",
+      "sku": "MI-OD-F-40"
+    },
+    {
+      "product": "Shamanic Drum",
+      "variant": "Plain / 30 cms",
+      "sku": "MI-SD-P-30"
+    },
+    {
+      "product": "Shamanic Drum",
+      "variant": "Plain / 40 cms",
+      "sku": "MI-SD-P-40"
+    },
+    {
+      "product": "Shamanic Drum",
+      "variant": "Plain / 45 cms",
+      "sku": "MI-SD-P-45"
+    },
+    {
+      "product": "Shamanic Drum",
+      "variant": "Butterfly / 30 cms",
+      "sku": "MI-SD-B-30"
+    },
+    {
+      "product": "Shamanic Drum",
+      "variant": "Butterfly / 40 cms",
+      "sku": "MI-SD-B-40"
+    },
+    {
+      "product": "Shamanic Drum",
+      "variant": "Butterfly / 45 cms",
+      "sku": "MI-SD-B-45"
+    },
+    {
+      "product": "Shamanic Drum",
+      "variant": "Tree of Life / 30 cms",
+      "sku": "MI-SD-T-30"
+    },
+    {
+      "product": "Shamanic Drum",
+      "variant": "Tree of Life / 40cm",
+      "sku": "MI-SD-T-40"
+    },
+    {
+      "product": "Shamanic Drum",
+      "variant": "Tree of Life / 45cm",
+      "sku": "MI-SD-T-45"
+    },
+    {
+      "product": "Shamanic Drum/Ocean Drum Bags",
+      "variant": "Small",
+      "sku": "MI-BG-SD-S"
+    },
+    {
+      "product": "Shamanic Drum/Ocean Drum Bags",
+      "variant": "Medium",
+      "sku": "MI-BG-SD-M"
+    },
+    {
+      "product": "Shamanic Drum/Ocean Drum Bags",
+      "variant": "Large",
+      "sku": "MI-BG-SD-L"
+    },
+    {
+      "product": "Crystal Bowls - Frosted white",
+      "variant": "6 in",
+      "sku": "MI-CB-W-6"
+    },
+    {
+      "product": "Crystal Bowls - Frosted white",
+      "variant": "7 in",
+      "sku": "MI-CB-W-7"
+    },
+    {
+      "product": "Crystal Bowls - Frosted white",
+      "variant": "8 in",
+      "sku": "MI-CB-W-8"
+    },
+    {
+      "product": "Crystal Bowls - Frosted white",
+      "variant": "9 in",
+      "sku": "MI-CB-W-9"
+    },
+    {
+      "product": "Crystal Bowls - Frosted white",
+      "variant": "10 in",
+      "sku": "MI-CB-W-10"
+    },
+    {
+      "product": "Crystal Bowls - Frosted white",
+      "variant": "11 in",
+      "sku": "MI-CB-W-11"
+    },
+    {
+      "product": "Crystal Bowls - Frosted white",
+      "variant": "12 in",
+      "sku": "MI-CB-W-12"
+    },
+    {
+      "product": "Crystal Bowls - Frosted white",
+      "variant": "13 in",
+      "sku": "MI-CB-W-13"
+    },
+    {
+      "product": "Crystal Bowls - Frosted white",
+      "variant": "14 in",
+      "sku": "MI-CB-W-14"
+    },
+    {
+      "product": "Crystal Bowls - Coloured",
+      "variant": "6 in",
+      "sku": "MI-CB-C-6"
+    },
+    {
+      "product": "Crystal Bowls - Coloured",
+      "variant": "7 in",
+      "sku": "MI-CB-C-7"
+    },
+    {
+      "product": "Crystal Bowls - Coloured",
+      "variant": "8 in",
+      "sku": "MI-CB-C-8"
+    },
+    {
+      "product": "Crystal Bowls - Coloured",
+      "variant": "9 in",
+      "sku": "MI-CB-C-9"
+    },
+    {
+      "product": "Crystal Bowls - Coloured",
+      "variant": "10 in",
+      "sku": "MI-CB-C-10"
+    },
+    {
+      "product": "Crystal Bowls - Coloured",
+      "variant": "11 in",
+      "sku": "MI-CB-C-11"
+    },
+    {
+      "product": "Crystal Bowls - Coloured",
+      "variant": "12 in",
+      "sku": "MI-CB-C-12"
+    },
+    {
+      "product": "Crystal Bowls - Coloured",
+      "variant": "13 in",
+      "sku": "MI-CB-C-13"
+    },
+    {
+      "product": "Crystal Bowls - Coloured",
+      "variant": "14 in",
+      "sku": "MI-CB-C-14"
+    },
+    {
+      "product": "Crystal Bowls - Set of 7",
+      "variant": "6-12-in-set / Frosted White",
+      "sku": "MI-CB-W-6-12"
+    },
+    {
+      "product": "Crystal Bowls - Set of 7",
+      "variant": "6-12-in-set / Coloured",
+      "sku": "MI-CB-CL-6-12"
+    },
+    {
+      "product": "Crystal Bowls - Set of 7",
+      "variant": "8-14-in-set / Frosted White",
+      "sku": "MI-CB-W-8-14"
+    },
+    {
+      "product": "Crystal Bowls - Set of 7",
+      "variant": "8-14-in-set / Coloured",
+      "sku": "MI-CB-CL-8-14"
+    },
+    {
+      "product": "Triad Crystal Bowl Set",
+      "variant": "CEG",
+      "sku": "MI-CB-CEG"
+    },
+    {
+      "product": "Triad Crystal Bowl Set",
+      "variant": "DFA",
+      "sku": "MI-CB-DFA"
+    },
+    {
+      "product": "Triad Crystal Bowl Set",
+      "variant": "EGB",
+      "sku": "MI-CB-EGB"
+    },
+    {
+      "product": "Crystal Bowl Bag",
+      "variant": "Small",
+      "sku": "MI-BG-CB-S"
+    },
+    {
+      "product": "Crystal Bowl Bag",
+      "variant": "Medium",
+      "sku": "MI-BG-CB-M"
+    },
+    {
+      "product": "Crystal Bowl Bag",
+      "variant": "Large",
+      "sku": "MI-BG-CB-L"
+    },
+    {
+      "product": "Crystal Bowl with Handle",
+      "variant": "",
+      "sku": "MI-CB-H"
+    },
+    {
+      "product": "Crystal Pyramid",
+      "variant": "6 in",
+      "sku": "MI-CP-6"
+    },
+    {
+      "product": "Crystal Pyramid",
+      "variant": "8 in",
+      "sku": "MI-CP-8"
+    },
+    {
+      "product": "Gong Plates/Shruti Plates -Plain",
+      "variant": "B Plate",
+      "sku": "MI-GP-B"
+    },
+    {
+      "product": "Gong Plates/Shruti Plates -Plain",
+      "variant": "A Plate",
+      "sku": "MI-GP-A"
+    },
+    {
+      "product": "Gong Plates/Shruti Plates -Plain",
+      "variant": "G Plate",
+      "sku": "MI-GP-G"
+    },
+    {
+      "product": "Gong Plates/Shruti Plates -Plain",
+      "variant": "F Plate",
+      "sku": "MI-GP-F"
+    },
+    {
+      "product": "Gong Plates/Shruti Plates -Plain",
+      "variant": "E Plate",
+      "sku": "MI-GP-E"
+    },
+    {
+      "product": "Gong Plates/Shruti Plates -Plain",
+      "variant": "D Plate",
+      "sku": "MI-GP-D"
+    },
+    {
+      "product": "Gong Plates/Shruti Plates -Plain",
+      "variant": "C Plate",
+      "sku": "MI-GP-C"
+    },
+    {
+      "product": "Gong Plates/Shruti Plates -Plain",
+      "variant": "Full Set",
+      "sku": "MI-GP-SET7"
+    },
+    {
+      "product": "Gong Plates/Shruti Plates Etched",
+      "variant": "B Plate",
+      "sku": "MI-GP-ET-B"
+    },
+    {
+      "product": "Gong Plates/Shruti Plates Etched",
+      "variant": "A Plate",
+      "sku": "MI-GP-ET-A"
+    },
+    {
+      "product": "Gong Plates/Shruti Plates Etched",
+      "variant": "G Plate",
+      "sku": "MI-GP-ET-G"
+    },
+    {
+      "product": "Gong Plates/Shruti Plates Etched",
+      "variant": "F Plate",
+      "sku": "MI-GP-ET-F"
+    },
+    {
+      "product": "Gong Plates/Shruti Plates Etched",
+      "variant": "E Plate",
+      "sku": "MI-GP-ET-E"
+    },
+    {
+      "product": "Gong Plates/Shruti Plates Etched",
+      "variant": "D Plate",
+      "sku": "MI-GP-ET-D"
+    },
+    {
+      "product": "Gong Plates/Shruti Plates Etched",
+      "variant": "C Plate",
+      "sku": "MI-GP-ET-C"
+    },
+    {
+      "product": "Gong Plates/Shruti Plates Etched",
+      "variant": "Full Set",
+      "sku": "MI-GP-ET-SET7"
+    },
+    {
+      "product": "Gong Plates/Shruti Plates Stand",
+      "variant": "Set Stand",
+      "sku": "MI-GP-ST"
+    },
+    {
+      "product": "Chau Gongs",
+      "variant": "18 in",
+      "sku": "MI-GO-CH-18"
+    },
+    {
+      "product": "Chau Gongs",
+      "variant": "20 in",
+      "sku": "MI-GO-CH-20"
+    },
+    {
+      "product": "Chau Gongs",
+      "variant": "22 in",
+      "sku": "MI-GO-CH-22"
+    },
+    {
+      "product": "Chau Gongs",
+      "variant": "24 in",
+      "sku": "MI-GO-CH-24"
+    },
+    {
+      "product": "Chau Gongs",
+      "variant": "28 in",
+      "sku": "MI-GO-CH-28"
+    },
+    {
+      "product": "Chau Gongs",
+      "variant": "32 in",
+      "sku": "MI-GO-CH-32"
+    },
+    {
+      "product": "Chau Gongs",
+      "variant": "36 in",
+      "sku": "MI-GO-CH-36"
+    },
+    {
+      "product": "Etched Chau Gong",
+      "variant": "18 in",
+      "sku": "MI-GO-CH-ET-18"
+    },
+    {
+      "product": "Etched Chau Gong",
+      "variant": "20 in",
+      "sku": "MI-GO-CH-ET-20"
+    },
+    {
+      "product": "Etched Chau Gong",
+      "variant": "22 in",
+      "sku": "MI-GO-CH-ET-22"
+    },
+    {
+      "product": "Etched Chau Gong",
+      "variant": "24 in",
+      "sku": "MI-GO-CH-ET-24"
+    },
+    {
+      "product": "Etched Chau Gong",
+      "variant": "28 in",
+      "sku": "MI-GO-CH-ET-28"
+    },
+    {
+      "product": "Etched Chau Gong",
+      "variant": "32 in",
+      "sku": "MI-GO-CH-ET-32"
+    },
+    {
+      "product": "Etched Chau Gong",
+      "variant": "36 in",
+      "sku": "MI-GO-CH-ET-36"
+    },
+    {
+      "product": "Etched Chau Gong",
+      "variant": "40INCH",
+      "sku": "MI-GO-CH-ET-40"
+    },
+    {
+      "product": "Wind Gong - Plain",
+      "variant": "14 INCh",
+      "sku": "MI-GO-WI-14"
+    },
+    {
+      "product": "Wind Gong - Plain",
+      "variant": "16INCH",
+      "sku": "MI-GO-WI-16"
+    },
+    {
+      "product": "Wind Gong - Plain",
+      "variant": "18INCH",
+      "sku": "MI-GO-WI-18"
+    },
+    {
+      "product": "Wind Gong - Plain",
+      "variant": "20INCH",
+      "sku": "MI-GO-WI-20"
+    },
+    {
+      "product": "Wind Gong - Plain",
+      "variant": "22INCH",
+      "sku": "MI-GO-WI-22"
+    },
+    {
+      "product": "Wind Gong - Plain",
+      "variant": "24INCH",
+      "sku": "MI-GO-WI-24"
+    },
+    {
+      "product": "Wind Gong - Plain",
+      "variant": "26INCH",
+      "sku": "MI-GO-WI-26"
+    },
+    {
+      "product": "Wind Gong - Plain",
+      "variant": "28INCH",
+      "sku": "MI-GO-WI-28"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "7 Chakras / 14 in",
+      "sku": "MI-GO-WI-ET-7C-14"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "7 Chakras / 16 in",
+      "sku": "MI-GO-WI-ET-7C-16"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "7 Chakras/18 in",
+      "sku": "MI-GO-WI-ET-7C-18"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "7 Chakras / 20 in",
+      "sku": "MI-GO-WI-ET-7C-20"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "7 Chakras / 22 in",
+      "sku": "MI-GO-WI-ET-7C-22"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "7 Chakras / 24 in",
+      "sku": "MI-GO-WI-ET-7C-24"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "7 Chakras / 26 in",
+      "sku": "MI-GO-WI-ET-7C-26"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "7 Chakras / 28 in",
+      "sku": "MI-GO-WI-ET-7C-28"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Flower of Life / 14 in",
+      "sku": "MI-GO-WI-ET-FOL-14"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Flower of Life / 16 in",
+      "sku": "MI-GO-WI-ET-FOL-16"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Flower of Life/18 In",
+      "sku": "MI-GO-WI-ET-FOL-18"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Flower of Life / 20 in",
+      "sku": "MI-GO-WI-ET-FOL-20"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Flower of Life / 22 in",
+      "sku": "MI-GO-WI-ET-FOL-22"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Flower of Life / 24 in",
+      "sku": "MI-GO-WI-ET-FOL-24"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Flower of Life / 26 in",
+      "sku": "MI-GO-WI-ET-FOL-26"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Flower of Life / 28 in",
+      "sku": "MI-GO-WI-ET-FOL-28"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Om / 14in",
+      "sku": "MI-GO-WI-ET-OM-14"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Om / 16in",
+      "sku": "MI-GO-WI-ET-OM-16"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Om / 18 in",
+      "sku": "MI-GO-WI-ET-OM-18"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Om / 20in",
+      "sku": "MI-GO-WI-ET-OM-20"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Om / 22in",
+      "sku": "MI-GO-WI-ET-OM-22"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Om / 24in",
+      "sku": "MI-GO-WI-ET-OM-24"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Om / 26in",
+      "sku": "MI-GO-WI-ET-OM-26"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Om / 28in",
+      "sku": "MI-GO-WI-ET-OM-28"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Mandala / 14 in",
+      "sku": "MI-GO-WI-ET-MD-14"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Mandala / 16 in",
+      "sku": "MI-GO-WI-ET-MD-16"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Mandala / 18in",
+      "sku": "MI-GO-WI-ET-MD-18"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Mandala / 20 in",
+      "sku": "MI-GO-WI-ET-MD-20"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Mandala / 22in",
+      "sku": "MI-GO-WI-ET-MD-22"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Mandala / 24in",
+      "sku": "MI-GO-WI-ET-MD-24"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Mandala / 26 in",
+      "sku": "MI-GO-WI-ET-MD-26"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Mandala / 28in",
+      "sku": "MI-GO-WI-ET-MD-28"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Shakti Chakra / 14 in",
+      "sku": "MI-GO-WI-ET-SC-14"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Shakti Chakra / 16 in",
+      "sku": "MI-GO-WI-ET-SC-16"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Shakti Chakra / 18in",
+      "sku": "MI-GO-WI-ET-SC-18"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Shakti Chakra / 20 in",
+      "sku": "MI-GO-WI-ET-SC-20"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Shakti Chakra / 22 in",
+      "sku": "MI-GO-WI-ET-SC-22"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Shakti Chakra / 24 in",
+      "sku": "MI-GO-WI-ET-SC-24"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Shakti Chakra / 26 in",
+      "sku": "MI-GO-WI-ET-SC-26"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Shakti Chakra / 28 in",
+      "sku": "MI-GO-WI-ET-SC-28"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Dorje / 14 in",
+      "sku": "MI-GO-WI-ET-DJ-14"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Dorje / 16 in",
+      "sku": "MI-GO-WI-ET-DJ-16"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Dorje / 18in",
+      "sku": "MI-GO-WI-ET-DJ-18"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Dorje / 20 in",
+      "sku": "MI-GO-WI-ET-DJ-20"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Dorje / 22 in",
+      "sku": "MI-GO-WI-ET-DJ-22"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Dorje / 24 in",
+      "sku": "MI-GO-WI-ET-DJ-24"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Dorje / 26 in",
+      "sku": "MI-GO-WI-ET-DJ-26"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Dorje / 28 in",
+      "sku": "MI-GO-WI-ET-DJ-28"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Tara / 14 in",
+      "sku": "MI-GO-WI-ET-TR-14"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Tara / 16 in",
+      "sku": "MI-GO-WI-ET-TR-16"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Tara / 18in",
+      "sku": "MI-GO-WI-ET-TR-18"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Tara / 20 in",
+      "sku": "MI-GO-WI-ET-TR-20"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Tara / 22 in",
+      "sku": "MI-GO-WI-ET-TR-22"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Tara / 24 in",
+      "sku": "MI-GO-WI-ET-TR-24"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Tara / 26 in",
+      "sku": "MI-GO-WI-ET-TR-26"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Tara / 28 in",
+      "sku": "MI-GO-WI-ET-TR-28"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Flower of Life-Center / 14in",
+      "sku": "MI-GO-WI-ET-FLC-14"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Flower of Life-Center / 16in",
+      "sku": "MI-GO-WI-ET-FLC-16"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Flower of Life-Center / 18in",
+      "sku": "MI-GO-WI-ET-FLC-18"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Flower of Life-Center / 20 in",
+      "sku": "MI-GO-WI-ET-FLC-20"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Flower of Life-Center / 22in",
+      "sku": "MI-GO-WI-ET-FLC-22"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Flower of Life-Center / 24in",
+      "sku": "MI-GO-WI-ET-FLC-24"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Flower of Life-Center / 26 in",
+      "sku": "MI-GO-WI-ET-FLC-26"
+    },
+    {
+      "product": "Wind Gong - Etched",
+      "variant": "Flower of Life-Center / 28in",
+      "sku": "MI-GO-WI-ET-FLC-28"
+    },
+    {
+      "product": "Gong Bags",
+      "variant": "Small",
+      "sku": "MI-BG-GO-S"
+    },
+    {
+      "product": "Gong Bags",
+      "variant": "Medium",
+      "sku": "MI-BG-GO-M"
+    },
+    {
+      "product": "Gong Bags",
+      "variant": "Large",
+      "sku": "MI-BG-GO-L"
+    },
+    {
+      "product": "Gong Bags",
+      "variant": "Extra Large",
+      "sku": "MI-BG-GO-XL"
+    },
+    {
+      "product": "Gong Stand",
+      "variant": "Light / Small",
+      "sku": "MI-GO-ST-L-S"
+    },
+    {
+      "product": "Gong Stand",
+      "variant": "Light / Medium",
+      "sku": "MI-GO-ST-L-M"
+    },
+    {
+      "product": "Gong Stand",
+      "variant": "Light / Large",
+      "sku": "MI-GO-ST-L-L"
+    },
+    {
+      "product": "Gong Stand",
+      "variant": "Light / Extra Large",
+      "sku": "MI-GO-ST-L-XL"
+    },
+    {
+      "product": "Gong Stand",
+      "variant": "Dark / Small",
+      "sku": "MI-GO-ST-D-S"
+    },
+    {
+      "product": "Gong Stand",
+      "variant": "Dark / Medium",
+      "sku": "MI-GO-ST-D-M"
+    },
+    {
+      "product": "Gong Stand",
+      "variant": "Dark / Large",
+      "sku": "MI-GO-ST-D-L"
+    },
+    {
+      "product": "Gong Stand",
+      "variant": "Dark / Extra Large",
+      "sku": "MI-GO-ST-D-XL"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Buddha / 6 in",
+      "sku": "MI-SB-HM-ET-B-6"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Buddha / 7 in",
+      "sku": "MI-SB-HM-ET-B-7"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Buddha / 8in",
+      "sku": "MI-SB-HM-ET-B-8"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Buddha / 9 in",
+      "sku": "MI-SB-HM-ET-B-9"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Buddha / 10 in",
+      "sku": "MI-SB-HM-ET-B-10"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Buddha / 11 in",
+      "sku": "MI-SB-HM-ET-B-11"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Buddha / 12 in",
+      "sku": "MI-SB-HM-ET-B-12"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Buddha / 13 in",
+      "sku": "MI-SB-HM-ET-B-13"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Sacred Geometry / 6 in",
+      "sku": "MI-SB-HM-ET-SG-6"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Sacred Geometry / 7 in",
+      "sku": "MI-SB-HM-ET-SG-7"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Sacred Geometry / 8in",
+      "sku": "MI-SB-HM-ET-SG-8"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Sacred Geometry / 9 in",
+      "sku": "MI-SB-HM-ET-SG-9"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Sacred Geometry / 10 in",
+      "sku": "MI-SB-HM-ET-SG-10"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Sacred Geometry / 11 in",
+      "sku": "MI-SB-HM-ET-SG-11"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Sacred Geometry / 12 in",
+      "sku": "MI-SB-HM-ET-SG-12"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Sacred Geometry / 13 in",
+      "sku": "MI-SB-HM-ET-SG-13"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Golden Feet / 6 in",
+      "sku": "MI-SB-HM-ET-GF-6"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Golden Feet / 7 in",
+      "sku": "MI-SB-HM-ET-GF-7"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Golden Feet / 8in",
+      "sku": "MI-SB-HM-ET-GF-8"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Golden Feet / 9 in",
+      "sku": "MI-SB-HM-ET-GF-9"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Golden Feet / 10 in",
+      "sku": "MI-SB-HM-ET-GF-10"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Golden Feet / 11 in",
+      "sku": "MI-SB-HM-ET-GF-11"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Golden Feet / 12 in",
+      "sku": "MI-SB-HM-ET-GF-12"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Golden Feet / 13 in",
+      "sku": "MI-SB-HM-ET-GF-13"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Buddhas Eyes / 6in",
+      "sku": "MI-SB-HM-ET-BE-6"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Buddhas Eyes / 7in",
+      "sku": "MI-SB-HM-ET-BE-7"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Buddhas Eyes / 8in",
+      "sku": "MI-SB-HM-ET-BE-8"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Buddhas Eyes / 9 in",
+      "sku": "MI-SB-HM-ET-BE-9"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Buddhas Eyes / 10 in",
+      "sku": "MI-SB-HM-ET-BE-10"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Buddhas Eyes / 11 in",
+      "sku": "MI-SB-HM-ET-BE-11"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Buddhas Eyes /12in",
+      "sku": "MI-SB-HM-ET-BE-12"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Buddhas Eyes /13in",
+      "sku": "MI-SB-HM-ET-BE-13"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Chakras / 6in",
+      "sku": "MI-SB-HM-ET-C-6"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Chakras / 7in",
+      "sku": "MI-SB-HM-ET-C-7"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Chakras / 8in",
+      "sku": "MI-SB-HM-ET-C-8"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Chakras / 9in",
+      "sku": "MI-SB-HM-ET-C-9"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Chakras / 10in",
+      "sku": "MI-SB-HM-ET-C-10"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Chakras / 11 in",
+      "sku": "MI-SB-HM-ET-C-11"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Chakras / 12in",
+      "sku": "MI-SB-HM-ET-C-12"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Chakras / 13in",
+      "sku": "MI-SB-HM-ET-C-13"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Dorje / 6 in",
+      "sku": "MI-SB-HM-ET-DJ-6"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Dorje / 7 in",
+      "sku": "MI-SB-HM-ET-DJ-7"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Dorje / 8in",
+      "sku": "MI-SB-HM-ET-DJ-8"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Dorje / 9 in",
+      "sku": "MI-SB-HM-ET-DJ-9"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Dorje / 10 in",
+      "sku": "MI-SB-HM-ET-DJ-10"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Dorje / 11 in",
+      "sku": "MI-SB-HM-ET-DJ-11"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Dorje / 12 in",
+      "sku": "MI-SB-HM-ET-DJ-12"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Dorje / 13 in",
+      "sku": "MI-SB-HM-ET-DJ-13"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Flower of Life / 6 in",
+      "sku": "MI-SB-HM-ET-FL-6"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Flower of Life / 7 in",
+      "sku": "MI-SB-HM-ET-FL-7"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Flower of Life / 8in",
+      "sku": "MI-SB-HM-ET-FL-8"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Flower of Life / 9 in",
+      "sku": "MI-SB-HM-ET-FL-9"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Flower of Life / 10 in",
+      "sku": "MI-SB-HM-ET-FL-10"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Flower of Life / 11 in",
+      "sku": "MI-SB-HM-ET-FL-11"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Flower of Life / 12 in",
+      "sku": "MI-SB-HM-ET-FL-12"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Flower of Life / 13 in",
+      "sku": "MI-SB-HM-ET-FL-13"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Om / 6in",
+      "sku": "MI-SB-HM-ET-OM-6"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Om / 7in",
+      "sku": "MI-SB-HM-ET-OM-7"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Om / 8in",
+      "sku": "MI-SB-HM-ET-OM-8"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Om / 9in",
+      "sku": "MI-SB-HM-ET-OM-9"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Om / 10in",
+      "sku": "MI-SB-HM-ET-OM-10"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Om / 11 in",
+      "sku": "MI-SB-HM-ET-OM-11"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Om / 12in",
+      "sku": "MI-SB-HM-ET-OM-12"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Om / 13in",
+      "sku": "MI-SB-HM-ET-OM-13"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Tara / 6 in",
+      "sku": "MI-SB-HM-ET-T-6"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Tara / 7 in",
+      "sku": "MI-SB-HM-ET-T-7"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Tara / 8in",
+      "sku": "MI-SB-HM-ET-T-8"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Tara / 9 in",
+      "sku": "MI-SB-HM-ET-T-9"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Tara / 10 in",
+      "sku": "MI-SB-HM-ET-T-10"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Tara / 11 in",
+      "sku": "MI-SB-HM-ET-T-11"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Tara / 12 in",
+      "sku": "MI-SB-HM-ET-T-12"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Tara / 13 in",
+      "sku": "MI-SB-HM-ET-T-13"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Yin Yang / 6 in",
+      "sku": "MI-SB-HM-ET-YY-6"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Yin Yang / 7 in",
+      "sku": "MI-SB-HM-ET-YY-7"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Yin Yang / 8in",
+      "sku": "MI-SB-HM-ET-YY-8"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Yin Yang / 9 in",
+      "sku": "MI-SB-HM-ET-YY-9"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Yin Yang / 10 in",
+      "sku": "MI-SB-HM-ET-YY-10"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Yin Yang / 11 in",
+      "sku": "MI-SB-HM-ET-YY-11"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Yin Yang / 12 in",
+      "sku": "MI-SB-HM-ET-YY-12"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Yin Yang / 13 in",
+      "sku": "MI-SB-HM-ET-YY-13"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Mantra / 6in",
+      "sku": "MI-SB-HM-ET-M-6"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Mantra / 7in",
+      "sku": "MI-SB-HM-ET-M-7"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Mantra / 8in",
+      "sku": "MI-SB-HM-ET-M-8"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Mantra / 9in",
+      "sku": "MI-SB-HM-ET-M-9"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Mantra / 10in",
+      "sku": "MI-SB-HM-ET-M-10"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Mantra / 11 in",
+      "sku": "MI-SB-HM-ET-M-11"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Mantra / 12in",
+      "sku": "MI-SB-HM-ET-M-12"
+    },
+    {
+      "product": "Etched Handmade Singing Bowls",
+      "variant": "Mantra / 13in",
+      "sku": "MI-SB-HM-ET-M-13"
+    },
+    {
+      "product": "Extra Large Meridian Singing Bowls",
+      "variant": "Etched / 18 in",
+      "sku": "MI-SB-ME-ET-18"
+    },
+    {
+      "product": "Extra Large Meridian Singing Bowls",
+      "variant": "Etched / 20in",
+      "sku": "MI-SB-ME-ET-20"
+    },
+    {
+      "product": "Extra Large Meridian Singing Bowls",
+      "variant": "Etched / 22in",
+      "sku": "MI-SB-ME-ET-22"
+    },
+    {
+      "product": "Extra Large Meridian Singing Bowls",
+      "variant": "Etched / 23in",
+      "sku": "MI-SB-ME-ET-23"
+    },
+    {
+      "product": "Extra Large Meridian Singing Bowls",
+      "variant": "Etched /24in",
+      "sku": "MI-SB-ME-ET-24"
+    },
+    {
+      "product": "Extra Large Meridian Singing Bowls",
+      "variant": "Plain / 18 in",
+      "sku": "MI-SB-ME-18"
+    },
+    {
+      "product": "Extra Large Meridian Singing Bowls",
+      "variant": "Plain / 20 in",
+      "sku": "MI-SB-ME-20"
+    },
+    {
+      "product": "Extra Large Meridian Singing Bowls",
+      "variant": "Plain / 22 in",
+      "sku": "MI-SB-ME-22"
+    },
+    {
+      "product": "Extra Large Meridian Singing Bowls",
+      "variant": "Plain / 23 In",
+      "sku": "MI-SB-ME-23"
+    },
+    {
+      "product": "Extra Large Meridian Singing Bowls",
+      "variant": "Plain / 24 in",
+      "sku": "MI-SB-ME-24"
+    },
+    {
+      "product": "Sacred Symbols Singing Bowls",
+      "variant": "Green / 3.5 in",
+      "sku": "MI-SB-SS-G-3.5"
+    },
+    {
+      "product": "Sacred Symbols Singing Bowls",
+      "variant": "Green / 4in",
+      "sku": "MI-SB-SS-G-4"
+    },
+    {
+      "product": "Sacred Symbols Singing Bowls",
+      "variant": "Green / 5.5in",
+      "sku": "MI-SB-SS-G-5.5"
+    },
+    {
+      "product": "Sacred Symbols Singing Bowls",
+      "variant": "Blue / 3.5 in",
+      "sku": "MI-SB-SS-B-3.5"
+    },
+    {
+      "product": "Sacred Symbols Singing Bowls",
+      "variant": "Blue / 4 in",
+      "sku": "MI-SB-SS-B-4"
+    },
+    {
+      "product": "Sacred Symbols Singing Bowls",
+      "variant": "Blue / 5.5 in",
+      "sku": "MI-SB-SS-B-5.5"
+    },
+    {
+      "product": "Sacred Symbols Singing Bowls",
+      "variant": "Black / 3.5 in",
+      "sku": "MI-SB-SS-BK-3.5"
+    },
+    {
+      "product": "Sacred Symbols Singing Bowls",
+      "variant": "Black / 4 in",
+      "sku": "MI-SB-SS-BK-4"
+    },
+    {
+      "product": "Sacred Symbols Singing Bowls",
+      "variant": "Black / 5.5 in",
+      "sku": "MI-SB-SS-BK-5.5"
+    },
+    {
+      "product": "Sacred Symbols Singing Bowls",
+      "variant": "Red / 3.5 in",
+      "sku": "MI-SB-SS-R-3.5"
+    },
+    {
+      "product": "Sacred Symbols Singing Bowls",
+      "variant": "Red / 4 in",
+      "sku": "MI-SB-SS-R-4"
+    },
+    {
+      "product": "Sacred Symbols Singing Bowls",
+      "variant": "Red / 5.5 in",
+      "sku": "MI-SB-SS-R-5.5"
+    },
+    {
+      "product": "Sacred Symbols Singing Bowls",
+      "variant": "Yellow / 3.5 in",
+      "sku": "MI-SB-SS-Y-3.5"
+    },
+    {
+      "product": "Sacred Symbols Singing Bowls",
+      "variant": "Yellow / 4 in",
+      "sku": "MI-SB-SS-Y-4"
+    },
+    {
+      "product": "Sacred Symbols Singing Bowls",
+      "variant": "Yellow / 5.5 in",
+      "sku": "MI-SB-SS-Y-5.5"
+    },
+    {
+      "product": "Sacred Symbols Singing Bowls",
+      "variant": "Gold / 3.5 Inches",
+      "sku": "MI-SB-SS-GO-3.5"
+    },
+    {
+      "product": "Sacred Symbols Singing Bowls",
+      "variant": "Gold / 4 Inches",
+      "sku": "MI-SB-SS-GO-4"
+    },
+    {
+      "product": "Sacred Symbols Singing Bowls",
+      "variant": "Gold / 5.5 Inches",
+      "sku": "MI-SB-SS-GO-5.5"
+    },
+    {
+      "product": "Singing Bowls with Sacred Mantra Printed",
+      "variant": "Blue / 3.5 Inches",
+      "sku": "MI-SB-SM-B-3.5"
+    },
+    {
+      "product": "Singing Bowls with Sacred Mantra Printed",
+      "variant": "Blue / 4 Inches",
+      "sku": "MI-SB-SM-B-4"
+    },
+    {
+      "product": "Singing Bowls with Sacred Mantra Printed",
+      "variant": "Blue / 5.5 Inches",
+      "sku": "MI-SB-SM-B-5.5"
+    },
+    {
+      "product": "Singing Bowls with Sacred Mantra Printed",
+      "variant": "Black / 3.5 Inches",
+      "sku": "MI-SB-SM-BK-3.5"
+    },
+    {
+      "product": "Singing Bowls with Sacred Mantra Printed",
+      "variant": "Black / 4 Inches",
+      "sku": "MI-SB-SM-BK-4"
+    },
+    {
+      "product": "Singing Bowls with Sacred Mantra Printed",
+      "variant": "Black / 5.5 Inches",
+      "sku": "MI-SB-SM-BK-5.5"
+    },
+    {
+      "product": "Singing Bowls with Sacred Mantra Printed",
+      "variant": "Black / 7 Inches",
+      "sku": "MI-SB-SM-BK-7"
+    },
+    {
+      "product": "Singing Bowls with Sacred Mantra Printed",
+      "variant": "Green / 3.5 Inches",
+      "sku": "MI-SB-SM-G-3.5"
+    },
+    {
+      "product": "Singing Bowls with Sacred Mantra Printed",
+      "variant": "Green / 4 inches",
+      "sku": "MI-SB-SM-G-4"
+    },
+    {
+      "product": "Singing Bowls with Sacred Mantra Printed",
+      "variant": "Green / 5.5 Inches",
+      "sku": "MI-SB-SM-G-5.5"
+    },
+    {
+      "product": "Singing Bowls with Sacred Mantra Printed",
+      "variant": "Red / 3.5 inches",
+      "sku": "MI-SB-SM-R-3.5"
+    },
+    {
+      "product": "Singing Bowls with Sacred Mantra Printed",
+      "variant": "Red / 4 Inches",
+      "sku": "MI-SB-SM-R-4"
+    },
+    {
+      "product": "Singing Bowls with Sacred Mantra Printed",
+      "variant": "Red / 5.5 Inches",
+      "sku": "MI-SB-SM-R-5.5"
+    },
+    {
+      "product": "Singing Bowls with Sacred Mantra Printed",
+      "variant": "Gold / 3.5 Inches",
+      "sku": "MI-SB-SM-GO-3.5"
+    },
+    {
+      "product": "Singing Bowls with Sacred Mantra Printed",
+      "variant": "Gold / 4 Inches",
+      "sku": "MI-SB-SM-GO-4"
+    },
+    {
+      "product": "Singing Bowls with Sacred Mantra Printed",
+      "variant": "Gold / 5.5 Inches",
+      "sku": "MI-SB-SM-GO-5.5"
+    },
+    {
+      "product": "Singing Bowls with Sacred Mantra Printed",
+      "variant": "Gold / 7 Inches",
+      "sku": "MI-SB-SM-GO-7"
+    },
+    {
+      "product": "Singing Bowls - Flower of Life with Sacred Symbols",
+      "variant": "Blue / 8 in",
+      "sku": "MI-SB-FL-B-8"
+    },
+    {
+      "product": "Singing Bowls - Flower of Life with Sacred Symbols",
+      "variant": "Blue / 9 in",
+      "sku": "MI-SB-FL-B-9"
+    },
+    {
+      "product": "Singing Bowls - Flower of Life with Sacred Symbols",
+      "variant": "Blue / 10.5in",
+      "sku": "MI-SB-FL-B-10.5"
+    },
+    {
+      "product": "Singing Bowls - Flower of Life with Sacred Symbols",
+      "variant": "Brown / 8in",
+      "sku": "MI-SB-FL-BR-8"
+    },
+    {
+      "product": "Singing Bowls - Flower of Life with Sacred Symbols",
+      "variant": "Brown / 9 in",
+      "sku": "MI-SB-FL-BR-9"
+    },
+    {
+      "product": "Singing Bowls - Flower of Life with Sacred Symbols",
+      "variant": "Brown / 10.5",
+      "sku": "MI-SB-FL-BR-10.5"
+    },
+    {
+      "product": "Singing Bowls - Flower of Life with Sacred Symbols",
+      "variant": "Green / 8in",
+      "sku": "MI-SB-FL-G-8"
+    },
+    {
+      "product": "Singing Bowls - Flower of Life with Sacred Symbols",
+      "variant": "Green / 9in",
+      "sku": "MI-SB-FL-G-9"
+    },
+    {
+      "product": "Singing Bowls - Flower of Life with Sacred Symbols",
+      "variant": "Green / 10.5 in",
+      "sku": "MI-SB-FL-G-10.5"
+    },
+    {
+      "product": "Singing Bowls - Flower of Life with Sacred Symbols",
+      "variant": "Olive green / 8in",
+      "sku": "MI-SB-FL-O-8"
+    },
+    {
+      "product": "Singing Bowls - Flower of Life with Sacred Symbols",
+      "variant": "Olive green / 9 in",
+      "sku": "MI-SB-FL-O-9"
+    },
+    {
+      "product": "Singing Bowls - Flower of Life with Sacred Symbols",
+      "variant": "Olive green / 10.5in",
+      "sku": "MI-SB-FL-O-10.5"
+    },
+    {
+      "product": "Dotted Singing Bowl",
+      "variant": "4 inch",
+      "sku": "MI-SB-DT-4"
+    },
+    {
+      "product": "Dotted Singing Bowl",
+      "variant": "5.5 inch",
+      "sku": "MI-SB-DT-5.5"
+    },
+    {
+      "product": "Dotted Singing Bowl",
+      "variant": "7 inch",
+      "sku": "MI-SB-DT-7"
+    },
+    {
+      "product": "Deep Dotted",
+      "variant": "5.5 Inch",
+      "sku": "MI-SB-DDT-5.5"
+    },
+    {
+      "product": "Singing Bowl with Mantra - Rustic Blue Colour",
+      "variant": "6 inches",
+      "sku": "MI-SB-RB-6"
+    },
+    {
+      "product": "Singing Bowl with Mantra - Rustic Blue Colour",
+      "variant": "7 Inches",
+      "sku": "MI-SB-RB-7"
+    },
+    {
+      "product": "Handmade Singing Bowls - All Sizes",
+      "variant": "Matte / 5 in",
+      "sku": "MI-SB-HM-5"
+    },
+    {
+      "product": "Handmade Singing Bowls - All Sizes",
+      "variant": "Matte / 6 in",
+      "sku": "MI-SB-HM-6"
+    },
+    {
+      "product": "Handmade Singing Bowls - All Sizes",
+      "variant": "Matte / 7 in",
+      "sku": "MI-SB-HM-7"
+    },
+    {
+      "product": "Handmade Singing Bowls - All Sizes",
+      "variant": "Matte / 8in",
+      "sku": "MI-SB-HM-8"
+    },
+    {
+      "product": "Handmade Singing Bowls - All Sizes",
+      "variant": "Matte / 9 in",
+      "sku": "MI-SB-HM-9"
+    },
+    {
+      "product": "Handmade Singing Bowls - All Sizes",
+      "variant": "Matte / 10 in",
+      "sku": "MI-SB-HM-10"
+    },
+    {
+      "product": "Handmade Singing Bowls - All Sizes",
+      "variant": "Matte / 11 in",
+      "sku": "MI-SB-HM-11"
+    },
+    {
+      "product": "Handmade Singing Bowls - All Sizes",
+      "variant": "Matte / 12 in",
+      "sku": "MI-SB-HM-12"
+    },
+    {
+      "product": "Handmade Singing Bowls - All Sizes",
+      "variant": "Matte / 13in",
+      "sku": "MI-SB-HM-13"
+    },
+    {
+      "product": "Full Moon Singing Bowls - All Sizes",
+      "variant": "5 Inches",
+      "sku": "MI-SB-HM-FM-5"
+    },
+    {
+      "product": "Full Moon Singing Bowls - All Sizes",
+      "variant": "6 inches",
+      "sku": "MI-SB-HM-FM-6"
+    },
+    {
+      "product": "Full Moon Singing Bowls - All Sizes",
+      "variant": "7 Inches",
+      "sku": "MI-SB-HM-FM-7"
+    },
+    {
+      "product": "Full Moon Singing Bowls - All Sizes",
+      "variant": "8 inches",
+      "sku": "MI-SB-HM-FM-8"
+    },
+    {
+      "product": "Full Moon Singing Bowls - All Sizes",
+      "variant": "9 Inches",
+      "sku": "MI-SB-HM-FM-9"
+    },
+    {
+      "product": "Full Moon Singing Bowls - All Sizes",
+      "variant": "10 inches",
+      "sku": "MI-SB-HM-FM-10"
+    },
+    {
+      "product": "Full Moon Singing Bowls - All Sizes",
+      "variant": "11 Inches",
+      "sku": "MI-SB-HM-FM-11"
+    },
+    {
+      "product": "Full Moon Singing Bowls - All Sizes",
+      "variant": "12 inches",
+      "sku": "MI-SB-HM-FM-12"
+    },
+    {
+      "product": "Full Moon Singing Bowls - All Sizes",
+      "variant": "13 Inches",
+      "sku": "MI-SB-HM-FM-13"
+    },
+    {
+      "product": "Root Chakra Singing Bowl",
+      "variant": "",
+      "sku": "MI-SB-RC"
+    },
+    {
+      "product": "Heart Chakra Singing Bowl",
+      "variant": "",
+      "sku": "MI-SB-HC"
+    },
+    {
+      "product": "Third Eye Chakra Singing Bowl",
+      "variant": "",
+      "sku": "MI-SB-TEC"
+    },
+    {
+      "product": "The Three Bowl Set - Root, Heart and Third Eye",
+      "variant": "",
+      "sku": "MI-SB-RHT-SET3"
+    },
+    {
+      "product": "The Four Bowl Set - Root, Heart, Third Eye and Universal",
+      "variant": "",
+      "sku": "MI-SB-RHTU-SET4"
+    },
+    {
+      "product": "GAB Set",
+      "variant": "",
+      "sku": "MI-SB-GAB-SET3"
+    },
+    {
+      "product": "Handcrafted Set of 7 Bowls for Sound Therapy",
+      "variant": "Standard-Octave 3 / Matte",
+      "sku": "MI-SB-7C-O3-M-SET7"
+    },
+    {
+      "product": "Handcrafted Set of 7 Bowls for Sound Therapy",
+      "variant": "Standard-Octave 3 / Chakra Etching",
+      "sku": "MI-SB-7C-O3-ET-SET7"
+    },
+    {
+      "product": "Handcrafted Set of 7 Bowls for Sound Therapy",
+      "variant": "Standard-Octave 3 / Full Moon",
+      "sku": "MI-SB-7C-O3-FM-SET7"
+    },
+    {
+      "product": "Handcrafted Set of 7 Bowls for Sound Therapy",
+      "variant": "Large-Octave 2 / Matte",
+      "sku": "MI-SB-7C-O2-M-SET7"
+    },
+    {
+      "product": "Handcrafted Set of 7 Bowls for Sound Therapy",
+      "variant": "Large-Octave 2 / Chakra Etching",
+      "sku": "MI-SB-7C-O2-ET-SET7"
+    },
+    {
+      "product": "Handcrafted Set of 7 Bowls for Sound Therapy",
+      "variant": "Large-Octave 2 / Full Moon",
+      "sku": "MI-SB-7C-O2-FM-SET7"
+    },
+    {
+      "product": "Universal Bowl",
+      "variant": "Standard",
+      "sku": "MI-SB-UB"
+    },
+    {
+      "product": "Belly Bowls",
+      "variant": "Standard",
+      "sku": "MI-SB-BB"
+    },
+    {
+      "product": "The Head Bowl",
+      "variant": "Standard",
+      "sku": "MI-SB-HB"
+    },
+    {
+      "product": "Vibroacoustic Therapy Bowls - Universal, Belly and Head",
+      "variant": "Set of 3",
+      "sku": "MI-SB-UBH-SET3"
+    },
+    {
+      "product": "Joint / Knee Cut Bowl",
+      "variant": "8 in",
+      "sku": "MI-SB-J-8"
+    },
+    {
+      "product": "Joint / Knee Cut Bowl",
+      "variant": "10in",
+      "sku": "MI-SB-J-10"
+    },
+    {
+      "product": "Singing Bowl with Handle",
+      "variant": "Standard",
+      "sku": "MI-SB-H"
+    },
+    {
+      "product": "Hanging Bowls/Zen Drops",
+      "variant": "Set of 3",
+      "sku": "MI-SB-HB-3"
+    },
+    {
+      "product": "Singing Bowl Bags",
+      "variant": "Small",
+      "sku": "MI-SB-BG-S"
+    },
+    {
+      "product": "Singing Bowl Bags",
+      "variant": "Medium",
+      "sku": "MI-SB-BG-M"
+    },
+    {
+      "product": "Singing Bowl Bags",
+      "variant": "Large",
+      "sku": "MI-SB-BG-L"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Green / 10 cms",
+      "sku": "MI-SBC-G-10"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Blue / 10 cms",
+      "sku": "MI-SBC-B-10"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Navy Blue / 10cm",
+      "sku": "MI-SBC-NB-10"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Black / 10cm",
+      "sku": "MI-SBC-BK-10"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Red / 10cm",
+      "sku": "MI-SBC-R-10"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Brown / 10cm",
+      "sku": "MI-SBC-BR-10"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Orange / 10cm",
+      "sku": "MI-SBC-O-10"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Yellow / 10cm",
+      "sku": "MI-SBC-Y-10"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Pink / 10cm",
+      "sku": "MI-SBC-PK-10"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Green / 12cm",
+      "sku": "MI-SBC-G-12"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Blue / 12 cms",
+      "sku": "MI-SBC-B-12"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Black / 12 cms",
+      "sku": "MI-SBC-BK-12"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Brown / 12 cms",
+      "sku": "MI-SBC-BR-12"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Red / 12 cms",
+      "sku": "MI-SBC-R-12"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Pink / 12 cms",
+      "sku": "MI-SBC-PK-12"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Orange / 12 cms",
+      "sku": "MI-SBC-O-12"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Yellow / 12 cms",
+      "sku": "MI-SBC-Y-12"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Navy Blue / 12 cms",
+      "sku": "MI-SBC-NB-12"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Blue / 14 cms",
+      "sku": "MI-SBC-B-14"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Green / 14cm",
+      "sku": "MI-SBC-G-14"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Navy Blue / 14 cms",
+      "sku": "MI-SBC-NB-14"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Orange / 14 cms",
+      "sku": "MI-SBC-O-14"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Black / 14 cms",
+      "sku": "MI-SBC-BK-14"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Red / 14 cms",
+      "sku": "MI-SBC-R-14"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Brown / 14 cms",
+      "sku": "MI-SBC-BR-14"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Pink / 14 cms",
+      "sku": "MI-SBC-PK-14"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Yellow / 14 cms",
+      "sku": "MI-SBC-Y-14"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "16 cms / Blue",
+      "sku": "MI-SBC-B-16"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Black / 16 cms",
+      "sku": "MI-SBC-BK-16"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Brown / 16 cms",
+      "sku": "MI-SBC-BR-16"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Orange / 16 cms",
+      "sku": "MI-SBC-O-16"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Navy Blue / 16cms",
+      "sku": "MI-SBC-NB-16"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Green /16cms",
+      "sku": "MI-SBC-G-16"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Red / 16 cms",
+      "sku": "MI-SBC-R-16"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Yellow / 16 cms",
+      "sku": "MI-SBC-Y-16"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Pink / 16cms",
+      "sku": "MI-SBC-PK-16"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Blue / 18cms",
+      "sku": "MI-SBC-B-18"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Black / 18 cms",
+      "sku": "MI-SBC-BK-18"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Green / 18cms",
+      "sku": "MI-SBC-G-18"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Brown / 18 cms",
+      "sku": "MI-SBC-BR-18"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Navy Blue / 18cms",
+      "sku": "MI-SBC-NB-18"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Yellow / 18 cms",
+      "sku": "MI-SBC-Y-18"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Pink / 18cms",
+      "sku": "MI-SBC-PK-18"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Red / 18 cms",
+      "sku": "MI-SBC-R-18"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Orange / 18 cms",
+      "sku": "MI-SBC-O-18"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Blue / 18cms",
+      "sku": "MI-SBC-B-20"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Brown / 20 cms",
+      "sku": "MI-SBC-BR-20"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Navy Blue / 20 cms",
+      "sku": "MI-SBC-NB-20"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Black / 20 cms",
+      "sku": "MI-SBC-BK-20"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Orange / 20 cms",
+      "sku": "MI-SBC-O-20"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Yellow / 20 cms",
+      "sku": "MI-SBC-Y-20"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Green / 20 cms",
+      "sku": "MI-SBC-G-20"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Red / 20 cms",
+      "sku": "MI-SBC-R-20"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Pink / 20 cms",
+      "sku": "MI-SBC-PK-20"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Blue / 22 cms",
+      "sku": "MI-SBC-B-22"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Black / 22 cms",
+      "sku": "MI-SBC-BK-22"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Brown / 22 cms",
+      "sku": "MI-SBC-BR-22"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Green / 22 cms",
+      "sku": "MI-SBC-G-22"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Navy Blue / 22 cms",
+      "sku": "MI-SBC-NB-22"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Orange / 22 cms",
+      "sku": "MI-SBC-O-22"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Pink / 22 cms",
+      "sku": "MI-SBC-PK-22"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Red / 22 cms",
+      "sku": "MI-SBC-R-22"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Yellow / 22 cms",
+      "sku": "MI-SBC-Y-22"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Combo of 3",
+      "sku": "MI-SBC-SET3"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Combo of 5",
+      "sku": "MI-SBC-SET5"
+    },
+    {
+      "product": "Singing Bowls Silk Ring Cushion Accessories",
+      "variant": "Combo of 7",
+      "sku": "MI-SBC-SET7"
+    },
+    {
+      "product": "Wooden Mallets for Singing Bowls",
+      "variant": "Red / Long Firm-Standard Striker",
+      "sku": "MI-SBM-S-LF-ST-R"
+    },
+    {
+      "product": "Wooden Mallets for Singing Bowls",
+      "variant": "Red / Long Firm-Small Striker",
+      "sku": "MI-SBM-S-LF-S-R"
+    },
+    {
+      "product": "Wooden Mallets for Singing Bowls",
+      "variant": "White / Long Firm-Standard Striker",
+      "sku": "MI-SBM-S-LF-ST-W"
+    },
+    {
+      "product": "Wooden Mallets for Singing Bowls",
+      "variant": "White / Long Firm-Small Striker",
+      "sku": "MI-SBM-S-LF-S-W"
+    },
+    {
+      "product": "Wooden Mallets for Singing Bowls",
+      "variant": "Red / Long Soft-13\" Striker",
+      "sku": "MI-SBM-S-LS-R-13"
+    },
+    {
+      "product": "Wooden Mallets for Singing Bowls",
+      "variant": "Red / Long Soft-11\" Striker",
+      "sku": "MI-SBM-S-LS-R-11"
+    },
+    {
+      "product": "Wooden Mallets for Singing Bowls",
+      "variant": "Red / Long Soft-9\" Striker",
+      "sku": "MI-SBM-S-LS-R-9"
+    },
+    {
+      "product": "Wooden Mallets for Singing Bowls",
+      "variant": "White / Long Soft-13\" Striker",
+      "sku": "MI-SBM-S-LS-W-13"
+    },
+    {
+      "product": "Wooden Mallets for Singing Bowls",
+      "variant": "White / Long Soft-11\" Striker",
+      "sku": "MI-SBM-S-LS-W-11"
+    },
+    {
+      "product": "Wooden Mallets for Singing Bowls",
+      "variant": "White / Long Soft-9\" Striker",
+      "sku": "MI-SBM-S-LS-W-9"
+    },
+    {
+      "product": "Wooden Mallets for Singing Bowls",
+      "variant": "Black / Curved Rimmer",
+      "sku": "MI-SBM-R-C-B"
+    },
+    {
+      "product": "Wooden Mallets for Singing Bowls",
+      "variant": "Black / Thick Wide Rimmer",
+      "sku": "MI-SBM-R-TW-B"
+    },
+    {
+      "product": "Wooden Mallets for Singing Bowls",
+      "variant": "Red / Thick Wide Rimmer",
+      "sku": "MI-SBM-R-TW-R"
+    },
+    {
+      "product": "Wooden Mallets for Singing Bowls",
+      "variant": "Black / Standard Wide Rimmer",
+      "sku": "MI-SBM-R-SW-B"
+    },
+    {
+      "product": "Wooden Mallets for Singing Bowls",
+      "variant": "Red / Standard Wide Rimmer",
+      "sku": "MI-SBM-R-SW-R"
+    },
+    {
+      "product": "Wooden Mallets for Singing Bowls",
+      "variant": "Black / Straight Rimmer",
+      "sku": "MI-SBM-R-ST-B"
+    },
+    {
+      "product": "Wooden Mallets for Singing Bowls",
+      "variant": "Red / Straight Rimmer",
+      "sku": "MI-SBM-R-ST-R"
+    },
+    {
+      "product": "Tibetan Buddhist Bell",
+      "variant": "Small",
+      "sku": "MI-BB-S"
+    },
+    {
+      "product": "Tibetan Buddhist Bell",
+      "variant": "Medium",
+      "sku": "MI-BB-M"
+    },
+    {
+      "product": "Tibetan Buddhist Bell",
+      "variant": "Large",
+      "sku": "MI-BB-L"
+    },
+    {
+      "product": "Tibetan Buddhist Bell",
+      "variant": "Extra Large",
+      "sku": "MI-BB-XL"
+    },
+    {
+      "product": "Tingsha Bell",
+      "variant": "Plain / Small",
+      "sku": "MI-TB-P-S"
+    },
+    {
+      "product": "Tingsha Bell",
+      "variant": "Plain /Medium",
+      "sku": "MI-TB-P-M"
+    },
+    {
+      "product": "Tingsha Bell",
+      "variant": "Plain /Large",
+      "sku": "MI-TB-P-L"
+    },
+    {
+      "product": "Tingsha Bell",
+      "variant": "Dark / Small",
+      "sku": "MI-TB-D-S"
+    },
+    {
+      "product": "Tingsha Bell",
+      "variant": "Dark / Medium",
+      "sku": "MI-TB-D-M"
+    },
+    {
+      "product": "Tingsha Bell",
+      "variant": "Dark / Large",
+      "sku": "MI-TB-D-L"
+    },
+    {
+      "product": "Tingsha Bell",
+      "variant": "Etched /Small",
+      "sku": "MI-TB-ET-S"
+    },
+    {
+      "product": "Tingsha Bell",
+      "variant": "Etched / Medium",
+      "sku": "MI-TB-ET-M"
+    },
+    {
+      "product": "Tingsha Bell",
+      "variant": "Etched / Large",
+      "sku": "MI-TB-ET-L"
+    },
+    {
+      "product": "Mayura Morchang Set",
+      "variant": "Sharp",
+      "sku": "MI-MO-MY-S"
+    },
+    {
+      "product": "Mayura Morchang Set",
+      "variant": "Middle",
+      "sku": "MI-MO-MY-M"
+    },
+    {
+      "product": "Mayura Morchang Set",
+      "variant": "Bass",
+      "sku": "MI-MO-MY-B"
+    },
+    {
+      "product": "Mayura Morchang Set",
+      "variant": "Full Set",
+      "sku": "MI-MO-MY-SET3"
+    },
+    {
+      "product": "Classic Morchang",
+      "variant": "Sharp",
+      "sku": "MI-MO-CL-S"
+    },
+    {
+      "product": "Classic Morchang",
+      "variant": "Middle",
+      "sku": "MI-MO-CL-M"
+    },
+    {
+      "product": "Classic Morchang",
+      "variant": "Bass",
+      "sku": "MI-MO-CL-B"
+    },
+    {
+      "product": "Classic Morchang",
+      "variant": "Full Set",
+      "sku": "MI-MO-CL-SET3"
+    },
+    {
+      "product": "7 Chakra Morchang",
+      "variant": "C Tune",
+      "sku": "MI-MO-7C-C"
+    },
+    {
+      "product": "7 Chakra Morchang",
+      "variant": "D Tune",
+      "sku": "MI-MO-7C-D"
+    },
+    {
+      "product": "7 Chakra Morchang",
+      "variant": "E Tune",
+      "sku": "MI-MO-7C-E"
+    },
+    {
+      "product": "7 Chakra Morchang",
+      "variant": "F Tune",
+      "sku": "MI-MO-7C-F"
+    },
+    {
+      "product": "7 Chakra Morchang",
+      "variant": "G Tune",
+      "sku": "MI-MO-7C-G"
+    },
+    {
+      "product": "7 Chakra Morchang",
+      "variant": "A Tune",
+      "sku": "MI-MO-7C-A"
+    },
+    {
+      "product": "7 Chakra Morchang",
+      "variant": "B Tune",
+      "sku": "MI-MO-7C-B"
+    },
+    {
+      "product": "7 Chakra Morchang",
+      "variant": "Full Set",
+      "sku": "MI-MO-7C-SET7"
+    },
+    {
+      "product": "Box Tanpura",
+      "variant": "",
+      "sku": "MI-BT"
+    },
+    {
+      "product": "S-Shaped Didgeridoo",
+      "variant": "Green",
+      "sku": "MI-DG-SS-G"
+    },
+    {
+      "product": "S-Shaped Didgeridoo",
+      "variant": "Blue",
+      "sku": "MI-DG-SS-B"
+    },
+    {
+      "product": "S-Shaped Didgeridoo",
+      "variant": "Red",
+      "sku": "MI-DG-SS-R"
+    },
+    {
+      "product": "Spiral/Snake Didgeridoo",
+      "variant": "Green",
+      "sku": "MI-DG-SP-G"
+    },
+    {
+      "product": "Spiral/Snake Didgeridoo",
+      "variant": "Red",
+      "sku": "MI-DG-SP-R"
+    },
+    {
+      "product": "Standard Shankh",
+      "variant": "Small",
+      "sku": "MI-SK-ST-S"
+    },
+    {
+      "product": "Standard Shankh",
+      "variant": "Medium",
+      "sku": "MI-SK-ST-M"
+    },
+    {
+      "product": "Standard Shankh",
+      "variant": "Large",
+      "sku": "MI-SK-ST-L"
+    },
+    {
+      "product": "Sughosh Shankh",
+      "variant": "Sughosh",
+      "sku": "MI-SK-SG"
+    },
+    {
+      "product": "Annapurna Shankh",
+      "variant": "Annapurna",
+      "sku": "MI-SK-AP"
+    },
+    {
+      "product": "Gomukhi Shankh",
+      "variant": "Gomukhi",
+      "sku": "MI-SK-GM"
+    },
+    {
+      "product": "Debadutta Shankh",
+      "variant": "Debadutta",
+      "sku": "MI-SK-DD"
+    },
+    {
+      "product": "Harmonium",
+      "variant": "Professional",
+      "sku": "MI-HA-P"
+    },
+    {
+      "product": "Harmonium",
+      "variant": "Compact",
+      "sku": "MI-HA-C"
+    },
+    {
+      "product": "Shruti Box",
+      "variant": "1 Octave Standard",
+      "sku": "MI-STB-O1"
+    },
+    {
+      "product": "Shruti Box",
+      "variant": "1 Octave Mini",
+      "sku": "MI-STB-O1-M"
+    },
+    {
+      "product": "Shruti Box",
+      "variant": "2 Octaves",
+      "sku": "MI-STB-O2"
+    },
+    {
+      "product": "Shruti Box",
+      "variant": "3 Octaves",
+      "sku": "MI-STB-O3"
+    },
+    {
+      "product": "Shruti Box Pedal",
+      "variant": "Pedal",
+      "sku": "MI-STB-P"
+    },
+    {
+      "product": "Native American Flute - Triple",
+      "variant": "Triple",
+      "sku": "MI-NF-T"
+    },
+    {
+      "product": "Native American Flute - Double",
+      "variant": "Double",
+      "sku": "MI-NF-D"
+    },
+    {
+      "product": "Native American Flute - Single Large",
+      "variant": "Single Large",
+      "sku": "MI-NF-S-L"
+    },
+    {
+      "product": "Native American Flute - Single Medium",
+      "variant": "Single Medium",
+      "sku": "MI-NF-S-M"
+    },
+    {
+      "product": "Native American Flute - Single Small",
+      "variant": "Single Small",
+      "sku": "MI-NF-S-S"
+    },
+    {
+      "product": "Ocarina - Small",
+      "variant": "Small",
+      "sku": "MI-OC-S"
+    },
+    {
+      "product": "Ocarina - Big",
+      "variant": "Big",
+      "sku": "MI-OC-B"
+    },
+    {
+      "product": "Swing Flute/Harmonic",
+      "variant": "",
+      "sku": "MI-SF"
+    },
+    {
+      "product": "Clay Whistle",
+      "variant": "",
+      "sku": "MI-CW"
+    },
+    {
+      "product": "Overtone Flute",
+      "variant": "",
+      "sku": "MI-OF"
+    },
+    {
+      "product": "Bar Chime - 25 Rods",
+      "variant": "",
+      "sku": "MI-BC-25"
+    },
+    {
+      "product": "Pulse Tubes",
+      "variant": "Large",
+      "sku": "MI-PT-L"
+    },
+    {
+      "product": "Pulse Tubes",
+      "variant": "Medium",
+      "sku": "MI-PT-M"
+    },
+    {
+      "product": "Pulse Tubes",
+      "variant": "Small",
+      "sku": "MI-PT-S"
+    },
+    {
+      "product": "Swinging Chimes",
+      "variant": "6 Bars",
+      "sku": "MI-SC-6"
+    },
+    {
+      "product": "Swinging Chimes",
+      "variant": "9 Bars",
+      "sku": "MI-SC-9"
+    },
+    {
+      "product": "Element Chimes",
+      "variant": "",
+      "sku": "MI-EC"
+    },
+    {
+      "product": "Wind chimes",
+      "variant": "Gold-Small",
+      "sku": "MI-WC-GO-S"
+    },
+    {
+      "product": "Wind chimes",
+      "variant": "Gold-Large",
+      "sku": "MI-WC-GO-L"
+    },
+    {
+      "product": "Wind chimes",
+      "variant": "Green-Small",
+      "sku": "MI-WC-GR-S"
+    },
+    {
+      "product": "Wind chimes",
+      "variant": "Green-Large",
+      "sku": "MI-WC-GR-L"
+    },
+    {
+      "product": "Wind chimes",
+      "variant": "Yellow-Small",
+      "sku": "MI-WC-YE-S"
+    },
+    {
+      "product": "Wind chimes",
+      "variant": "Yellow-Large",
+      "sku": "MI-WC-YE-L"
+    },
+    {
+      "product": "Wind chimes",
+      "variant": "Silver-Small",
+      "sku": "MI-WC-SI-S"
+    },
+    {
+      "product": "Wind chimes",
+      "variant": "Silver-Large",
+      "sku": "MI-WC-SI-L"
+    },
+    {
+      "product": "Wind chimes",
+      "variant": "Antique Copper-Small",
+      "sku": "MI-WC-AC-S"
+    },
+    {
+      "product": "Wind chimes",
+      "variant": "Antique Copper-Large",
+      "sku": "MI-WC-AC-L"
+    },
+    {
+      "product": "Tuned Pipes",
+      "variant": "285 Hz",
+      "sku": "MI-TP-285"
+    },
+    {
+      "product": "Tuned Pipes",
+      "variant": "432 Hz",
+      "sku": "MI-TP-432"
+    },
+    {
+      "product": "Tuning Fork - Single Weighted & Unweighted",
+      "variant": "Weighted / 64 Hz",
+      "sku": "MI-TF-W-64"
+    },
+    {
+      "product": "Tuning Fork - Single Weighted & Unweighted",
+      "variant": "Weighted / 68.05 Hz",
+      "sku": "MI-TF-W-6805"
+    },
+    {
+      "product": "Tuning Fork - Single Weighted & Unweighted",
+      "variant": "Weighted / 93.96 Hz",
+      "sku": "MI-TF-W-9396"
+    },
+    {
+      "product": "Tuning Fork - Single Weighted & Unweighted",
+      "variant": "Weighted / 128 Hz",
+      "sku": "MI-TF-W-128"
+    },
+    {
+      "product": "Tuning Fork - Single Weighted & Unweighted",
+      "variant": "Weighted / 136.10 Hz",
+      "sku": "MI-TF-W-13610"
+    },
+    {
+      "product": "Tuning Fork - Single Weighted & Unweighted",
+      "variant": "Weighted / 256 Hz",
+      "sku": "MI-TF-W-256"
+    },
+    {
+      "product": "Tuning Fork - Single Weighted & Unweighted",
+      "variant": "Weighted / 432 Hz",
+      "sku": "MI-TF-W-432"
+    },
+    {
+      "product": "Tuning Fork - Single Weighted & Unweighted",
+      "variant": "Weighted / 440 Hz",
+      "sku": "MI-TF-W-440"
+    },
+    {
+      "product": "Tuning Fork - Single Weighted & Unweighted",
+      "variant": "Weighted / 528 Hz",
+      "sku": "MI-TF-W-528"
+    },
+    {
+      "product": "Tuning Fork - Single Weighted & Unweighted",
+      "variant": "Unweighted / 64 Hz",
+      "sku": "MI-TF-UW-64"
+    },
+    {
+      "product": "Tuning Fork - Single Weighted & Unweighted",
+      "variant": "Unweighted / 68.05 Hz",
+      "sku": "MI-TF-UW-6805"
+    },
+    {
+      "product": "Tuning Fork - Single Weighted & Unweighted",
+      "variant": "Unweighted / 93.96 Hz",
+      "sku": "MI-TF-UW-9396"
+    },
+    {
+      "product": "Tuning Fork - Single Weighted & Unweighted",
+      "variant": "Unweighted / 128 Hz",
+      "sku": "MI-TF-UW-128"
+    },
+    {
+      "product": "Tuning Fork - Single Weighted & Unweighted",
+      "variant": "Unweighted / 136.10 Hz",
+      "sku": "MI-TF-UW-13610"
+    },
+    {
+      "product": "Tuning Fork - Single Weighted & Unweighted",
+      "variant": "Unweighted / 256 Hz",
+      "sku": "MI-TF-UW-256"
+    },
+    {
+      "product": "Tuning Fork - Single Weighted & Unweighted",
+      "variant": "Unweighted / 432 Hz",
+      "sku": "MI-TF-UW-432"
+    },
+    {
+      "product": "Tuning Fork - Single Weighted & Unweighted",
+      "variant": "Unweighted /440Hz",
+      "sku": "MI-TF-UW-440"
+    },
+    {
+      "product": "Tuning Fork - Single Weighted & Unweighted",
+      "variant": "Unweighted / 528 Hz",
+      "sku": "MI-TF-UW-528"
+    },
+    {
+      "product": "Angel Tuning Forks",
+      "variant": "4096 Hz",
+      "sku": "MI-TF-AG-4096"
+    },
+    {
+      "product": "Angel Tuning Forks",
+      "variant": "4160 Hz",
+      "sku": "MI-TF-AG-4160"
+    },
+    {
+      "product": "Angel Tuning Forks",
+      "variant": "4225 Hz",
+      "sku": "MI-TF-AG-4225"
+    },
+    {
+      "product": "Angel Tuning Forks",
+      "variant": "Set",
+      "sku": "MI-TF-AG-SET3"
+    },
+    {
+      "product": "C&G Tuning Forks",
+      "variant": "Weighted",
+      "sku": "MI-TF-W-CG"
+    },
+    {
+      "product": "C&G Tuning Forks",
+      "variant": "Unweighted",
+      "sku": "MI-TF-UW-CG"
+    },
+    {
+      "product": "Tuning Fork Activators",
+      "variant": "Activator",
+      "sku": "MI-TF-A"
+    },
+    {
+      "product": "Tuning Fork Activators",
+      "variant": "Mallet",
+      "sku": "MI-TF-M"
+    },
+    {
+      "product": "Tuning Fork Activators",
+      "variant": "Activator & Mallet",
+      "sku": "MI-TF-AM"
+    },
+    {
+      "product": "Tuning Fork Extensions",
+      "variant": "Extender",
+      "sku": "MI-TF-EX"
+    },
+    {
+      "product": "Tuning Fork Extensions",
+      "variant": "Circuit Boot",
+      "sku": "MI-TF-CB"
+    },
+    {
+      "product": "Tuning Fork Extensions",
+      "variant": "Massage Boot",
+      "sku": "MI-TF-MB"
+    },
+    {
+      "product": "Tuning Forks Gem Feet",
+      "variant": "Maroon",
+      "sku": "MI-TF-GF-M"
+    },
+    {
+      "product": "Tuning Forks Gem Feet",
+      "variant": "Yellow",
+      "sku": "MI-TF-GF-Y"
+    },
+    {
+      "product": "Tuning Forks Gem Feet",
+      "variant": "Violet",
+      "sku": "MI-TF-GF-V"
+    },
+    {
+      "product": "Tuning Forks Gem Feet",
+      "variant": "Blue",
+      "sku": "MI-TF-GF-B"
+    },
+    {
+      "product": "Tuning Forks Gem Feet",
+      "variant": "Green",
+      "sku": "MI-TF-GF-G"
+    },
+    {
+      "product": "Tuning Forks Gem Feet",
+      "variant": "Dark Blue",
+      "sku": "MI-TF-GF-DB"
+    },
+    {
+      "product": "Tuning Forks Gem Feet",
+      "variant": "Red",
+      "sku": "MI-TF-GF-R"
+    },
+    {
+      "product": "Tuning Forks Gem Feet",
+      "variant": "Full Set",
+      "sku": "MI-TF-GF-SET7"
+    },
+    {
+      "product": "Tuning Forks 7 Chakra Set",
+      "variant": "Weighted / With Gem Foot",
+      "sku": "MI-TF-7C-W-GF-SET7"
+    },
+    {
+      "product": "Tuning Forks 7 Chakra Set",
+      "variant": "Weighted / Without Gem Foot",
+      "sku": "MI-TF-7C-W-SET7"
+    },
+    {
+      "product": "Tuning Forks 7 Chakra Set",
+      "variant": "Colour Weighted / With Gem Foot",
+      "sku": "MI-TF-7C-C-W-GF-SET7"
+    },
+    {
+      "product": "Tuning Forks 7 Chakra Set",
+      "variant": "Colour Weighted / Without Gem Foot",
+      "sku": "MI-TF-7C-C-W-SET7"
+    },
+    {
+      "product": "Tuning Forks 7 Chakra Set",
+      "variant": "Unweighted / With Gem Foot",
+      "sku": "MI-TF-7C-UW-GF-SET7"
+    },
+    {
+      "product": "Tuning Forks 7 Chakra Set",
+      "variant": "Unweighted / Without Gem Foot",
+      "sku": "MI-TF-7C-UW-SET7"
+    },
+    {
+      "product": "Tuning Forks 7 Chakra Set",
+      "variant": "Colour Unweighted / With Gem Foot",
+      "sku": "MI-TF-7C-C-UW-GF-SET7"
+    },
+    {
+      "product": "Tuning Forks 7 Chakra Set",
+      "variant": "Colour Unweighted / Without Gem Foot",
+      "sku": "MI-TF-7C-C-UW-SET7"
+    },
+    {
+      "product": "Tuning Forks Solfeggio Set",
+      "variant": "Weighted",
+      "sku": "MI-TF-SF-W-SET9"
+    },
+    {
+      "product": "Tuning Forks Solfeggio Set",
+      "variant": "Unweighted",
+      "sku": "MI-TF-SF-UW-SET9"
+    },
+    {
+      "product": "Wooden Stand for Tuning Forks",
+      "variant": "Three",
+      "sku": "MI-TF-WS-3"
+    },
+    {
+      "product": "Wooden Stand for Tuning Forks",
+      "variant": "Five",
+      "sku": "MI-TF-WS-5"
+    },
+    {
+      "product": "Wooden Stand for Tuning Forks",
+      "variant": "Seven",
+      "sku": "MI-TF-WS-7"
+    },
+    {
+      "product": "Wooden Stand for Tuning Forks",
+      "variant": "Nine",
+      "sku": "MI-TF-WS-9"
+    },
+    {
+      "product": "Guiro",
+      "variant": "",
+      "sku": "MI-GRO"
+    },
+    {
+      "product": "Khartal*3",
+      "variant": "",
+      "sku": "MI-KL"
+    },
+    {
+      "product": "Ankh",
+      "variant": "",
+      "sku": "MI-AH"
+    },
+    {
+      "product": "incense stick stand",
+      "variant": "",
+      "sku": "MI-IS-ST"
+    },
+    {
+      "product": "DNA Tuning Fork",
+      "variant": "",
+      "sku": "MI-TF-DNA"
+    },
+    {
+      "product": "Solar Bell",
+      "variant": "",
+      "sku": "MI-BL-SR"
+    },
+    {
+      "product": "Wooden Finger Castanet",
+      "variant": "Black",
+      "sku": "MI-FC-B"
+    },
+    {
+      "product": "Wooden Finger Castanet",
+      "variant": "White",
+      "sku": "MI-FC-W"
+    },
+    {
+      "product": "Jingle Stick",
+      "variant": "",
+      "sku": "MI-JE-S"
+    },
+    {
+      "product": "Ball Mallet",
+      "variant": "",
+      "sku": "MI-MT-BL"
+    },
+    {
+      "product": "Nipple Gong",
+      "variant": "",
+      "sku": "MI-GO-NG"
+    }
+  ]
+}

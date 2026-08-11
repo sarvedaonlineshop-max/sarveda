@@ -1,0 +1,31 @@
+{
+  "productId": "801dfbab-5573-45f7-a02c-7104876d118b",
+  "actions": [
+    "CREATED product 801dfbab-5573-45f7-a02c-7104876d118b",
+    "CREATED MI-WC-GO-S",
+    "CREATED MI-WC-GO-L",
+    "CREATED MI-WC-GR-S",
+    "CREATED MI-WC-GR-L",
+    "CREATED MI-WC-YE-S",
+    "CREATED MI-WC-YE-L",
+    "CREATED MI-WC-SI-S",
+    "CREATED MI-WC-SI-L",
+    "CREATED MI-WC-AC-S",
+    "CREATED MI-WC-AC-L"
+  ],
+  "item": {
+    "wooSlug": "wind-chimes",
+    "variants": [
+      "MI-WC-GO-S",
+      "MI-WC-GO-L",
+      "MI-WC-GR-S",
+      "MI-WC-GR-L",
+      "MI-WC-YE-S",
+      "MI-WC-YE-L",
+      "MI-WC-SI-S",
+      "MI-WC-SI-L",
+      "MI-WC-AC-S",
+      "MI-WC-AC-L"
+    ]
+  }
+}

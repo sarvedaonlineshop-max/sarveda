@@ -174,15 +174,15 @@ export function ProductBuyBox({
 
   const pillClass = (active: boolean) =>
     isInline
-      ? `rounded-full border px-4 py-2 text-sm font-medium transition ${
+      ? `rounded-md border px-3.5 py-2 text-sm font-medium transition ${
           active
-            ? "border-brand-forest bg-brand-forest text-brand-cream"
-            : "border-brand-forest/20 bg-white text-brand-ink hover:border-brand-forest"
+            ? "border-[#3d4a38] bg-[#3d4a38] text-brand-cream"
+            : "border-brand-forest/25 bg-white text-brand-ink hover:border-[#3d4a38]"
         }`
       : `rounded-md border px-3 py-2 text-sm font-medium transition ${
           active
-            ? "border-[#1e3a2f] bg-[#1e3a2f] text-white"
-            : "border-stone-300 bg-white text-stone-700 hover:border-[#1e3a2f]"
+            ? "border-[#3d4a38] bg-[#3d4a38] text-white"
+            : "border-stone-300 bg-white text-stone-700 hover:border-[#3d4a38]"
         }`;
 
   const wrapperClass = isInline ? "space-y-5" : "rounded-xl border border-stone-200 bg-white p-5 shadow-md ring-1 ring-stone-100";

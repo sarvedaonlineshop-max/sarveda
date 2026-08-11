@@ -1,0 +1,206 @@
+{
+  "period": {
+    "start": "2026-05-10",
+    "end": "2026-08-10"
+  },
+  "source": "Zoho Books (live line-item fetch). Website orders synced into Zoho with INV-##### refs.",
+  "totals": {
+    "qty": 5,
+    "revenue": 103664.76,
+    "line_count": 5,
+    "sku_count": 3,
+    "invoice_count": 5,
+    "catalog_variants": 72
+  },
+  "by_month": [
+    {
+      "month": "2026-05",
+      "qty": 1.0,
+      "revenue": 8485.71,
+      "invoices": 1
+    },
+    {
+      "month": "2026-06",
+      "qty": 1.0,
+      "revenue": 9428.57,
+      "invoices": 1
+    },
+    {
+      "month": "2026-07",
+      "qty": 2.0,
+      "revenue": 46891.43,
+      "invoices": 2
+    },
+    {
+      "month": "2026-08",
+      "qty": 1.0,
+      "revenue": 38859.05,
+      "invoices": 1
+    }
+  ],
+  "by_sku": [
+    {
+      "sku": "MI-G-P-14",
+      "name": "Plain/Wind Tibetan Gong - 14 in",
+      "qty": 3.0,
+      "revenue": 28662.85,
+      "invoices": 3
+    },
+    {
+      "sku": "MI-G-ET-FOL1-28",
+      "name": "Etched Plain/Wind Gong - Flower of Life, 28 in",
+      "qty": 1.0,
+      "revenue": 38859.05,
+      "invoices": 1
+    },
+    {
+      "sku": "MI-G-ET-M-26",
+      "name": "Etched Plain/Wind Gong - Mandala, 26 in",
+      "qty": 1.0,
+      "revenue": 36142.86,
+      "invoices": 1
+    }
+  ],
+  "by_family": [
+    {
+      "family": "Etched \u2014 Flower of Life",
+      "qty": 1.0,
+      "revenue": 38859.05
+    },
+    {
+      "family": "Etched \u2014 Mandala",
+      "qty": 1.0,
+      "revenue": 36142.86
+    },
+    {
+      "family": "Plain/Wind Tibetan Gong",
+      "qty": 3.0,
+      "revenue": 28662.85
+    },
+    {
+      "family": "Etched \u2014 7 Chakras",
+      "qty": 0.0,
+      "revenue": 0.0
+    },
+    {
+      "family": "Etched \u2014 Dorje",
+      "qty": 0.0,
+      "revenue": 0.0
+    },
+    {
+      "family": "Etched \u2014 Flower of Life Center",
+      "qty": 0.0,
+      "revenue": 0.0
+    },
+    {
+      "family": "Etched \u2014 Om",
+      "qty": 0.0,
+      "revenue": 0.0
+    },
+    {
+      "family": "Etched \u2014 Shakti Chakra",
+      "qty": 0.0,
+      "revenue": 0.0
+    },
+    {
+      "family": "Etched \u2014 Tara",
+      "qty": 0.0,
+      "revenue": 0.0
+    }
+  ],
+  "by_channel": {
+    "Website/Woo (via Zoho)": {
+      "qty": 5,
+      "revenue": 103664.76,
+      "lines": 5
+    }
+  },
+  "lines": [
+    {
+      "date": "2026-05-29",
+      "invoice": "INV/25-26/08327",
+      "customer": "Pranav D",
+      "status": "paid",
+      "sku": "MI-G-P-14",
+      "name": "Plain/Wind Tibetan Gong - 14 in",
+      "qty": 1,
+      "total": 8485.71,
+      "ref": "INV-50292",
+      "channel": "Website/Woo (via Zoho)"
+    },
+    {
+      "date": "2026-06-27",
+      "invoice": "INV/25-26/08523",
+      "customer": "Shruthi Mylavarapu",
+      "status": "paid",
+      "sku": "MI-G-P-14",
+      "name": "Plain/Wind Tibetan Gong - 14 in",
+      "qty": 1,
+      "total": 9428.57,
+      "ref": "INV-50613",
+      "channel": "Website/Woo (via Zoho)"
+    },
+    {
+      "date": "2026-07-18",
+      "invoice": "INV/25-26/08687",
+      "customer": "Priyanka C",
+      "status": "paid",
+      "sku": "MI-G-P-14",
+      "name": "Plain/Wind Tibetan Gong - 14 in",
+      "qty": 1,
+      "total": 10748.57,
+      "ref": "INV-50799",
+      "channel": "Website/Woo (via Zoho)"
+    },
+    {
+      "date": "2026-07-19",
+      "invoice": "INV/25-26/08688",
+      "customer": "Nisha Karthik",
+      "status": "paid",
+      "sku": "MI-G-ET-M-26",
+      "name": "Etched Plain/Wind Gong - Mandala, 26 in",
+      "qty": 1,
+      "total": 36142.86,
+      "ref": "INV-50801",
+      "channel": "Website/Woo (via Zoho)"
+    },
+    {
+      "date": "2026-08-01",
+      "invoice": "INV/25-26/08786",
+      "customer": "Jasdeep Kaur",
+      "status": "paid",
+      "sku": "MI-G-ET-FOL1-28",
+      "name": "Etched Plain/Wind Gong - Flower of Life, 28 in",
+      "qty": 1,
+      "total": 38859.05,
+      "ref": "INV-51078",
+      "channel": "Website/Woo (via Zoho)"
+    }
+  ],
+  "sold_catalog": [
+    {
+      "sku": "\u2014",
+      "name": "Etched Plain/Wind Gong - Flower of Life, 28 in",
+      "qty": 1.0,
+      "revenue": 38859.05,
+      "invoices": 1
+    },
+    {
+      "sku": "MI-G-ET-M-26",
+      "name": "Etched Plain/Wind Gong - Mandala, 26 in",
+      "qty": 1.0,
+      "revenue": 36142.86,
+      "invoices": 1
+    },
+    {
+      "sku": "MI-G-P-14",
+      "name": "Plain/Wind Tibetan Gong - 14 in",
+      "qty": 3.0,
+      "revenue": 28662.85,
+      "invoices": 3
+    }
+  ],
+  "zero_sales_count": 69,
+  "excluded": "Void Zoho INV/25-26/08507 (HERO FINCORP, 2026-07-03): 30\u00d7 MI-G-P-18 Gong-Plain 18\" \u2014 not counted.",
+  "woo_note": "May-30 Woo WXR dump incomplete for order lines. All counted sales appear as Website/Woo via Zoho references (INV-50292, 50613, 50799, 50801, 51078). No separate offline Zoho-only wind gong sales in this window."
+}

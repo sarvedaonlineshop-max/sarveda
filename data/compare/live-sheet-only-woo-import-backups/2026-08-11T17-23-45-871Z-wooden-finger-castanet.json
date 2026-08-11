@@ -1,0 +1,15 @@
+{
+  "productId": "eb68ffcf-83ee-4733-9b99-59bdbb30889e",
+  "actions": [
+    "CREATED product eb68ffcf-83ee-4733-9b99-59bdbb30889e",
+    "CREATED MI-FC-B",
+    "CREATED MI-FC-W"
+  ],
+  "item": {
+    "wooSlug": "wooden-finger-castanet",
+    "variants": [
+      "MI-FC-B",
+      "MI-FC-W"
+    ]
+  }
+}

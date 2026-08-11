@@ -1,0 +1,27 @@
+{
+  "productId": "1d380ba4-d1ce-41b4-af83-25272cc70420",
+  "actions": [
+    "UPDATED product 1d380ba4-d1ce-41b4-af83-25272cc70420 (was ARCHIVED Etched Gongs)",
+    "CREATED MI-GO-CH-ET-18",
+    "CREATED MI-GO-CH-ET-20",
+    "CREATED MI-GO-CH-ET-22",
+    "CREATED MI-GO-CH-ET-24",
+    "CREATED MI-GO-CH-ET-28",
+    "CREATED MI-GO-CH-ET-32",
+    "CREATED MI-GO-CH-ET-36",
+    "CREATED MI-GO-CH-ET-40"
+  ],
+  "item": {
+    "wooSlug": "etched-gongs",
+    "variants": [
+      "MI-GO-CH-ET-18",
+      "MI-GO-CH-ET-20",
+      "MI-GO-CH-ET-22",
+      "MI-GO-CH-ET-24",
+      "MI-GO-CH-ET-28",
+      "MI-GO-CH-ET-32",
+      "MI-GO-CH-ET-36",
+      "MI-GO-CH-ET-40"
+    ]
+  }
+}

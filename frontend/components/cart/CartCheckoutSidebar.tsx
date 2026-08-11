@@ -17,7 +17,7 @@ type Props = {
 function CompactLine({ line }: { line: CartApiItem }) {
   return (
     <li className="border-b border-stone-100 py-2.5 last:border-0">
-      <p className="text-sm font-semibold leading-tight text-brand-forest">
+      <p className="font-sans text-sm font-semibold tabular-nums leading-tight text-brand-forest">
         {formatINRFromPaise(line.unitPriceInPaise)}
       </p>
       <div className="mt-1.5 flex gap-2">
@@ -30,7 +30,7 @@ function CompactLine({ line }: { line: CartApiItem }) {
           ) : null}
         </Link>
         <div className="min-w-0 flex-1">
-          <p className="line-clamp-2 text-[11px] leading-snug text-stone-700">{line.productName}</p>
+          <p className="line-clamp-2 font-sans text-[12px] font-medium leading-snug text-brand-ink">{line.productName}</p>
           <div className="mt-1.5">
             <CartLineQuantity line={line} size="sm" showDeleteAtOne />
           </div>
@@ -54,7 +54,9 @@ export function CartCheckoutSidebar({ mode, className = "" }: Props) {
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-muted">
           Subtotal ({count} {count === 1 ? "item" : "items"})
         </p>
-        <p className="mt-1 font-serif text-2xl font-bold text-brand-ink">{formatINRFromPaise(subtotalInPaise)}</p>
+        <p className="mt-1 font-sans text-2xl font-semibold tabular-nums tracking-tight text-brand-ink">
+          {formatINRFromPaise(subtotalInPaise)}
+        </p>
 
         <Link
           href="/checkout"

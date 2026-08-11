@@ -354,9 +354,6 @@ export function ProfileClient() {
           <form onSubmit={(event) => void handleSave(event)} className="space-y-6">
             <div>
               <h2 className="font-serif text-xl font-semibold text-brand-ink">Personal details</h2>
-              <p className="mt-1 text-sm text-brand-muted">
-                Used at checkout except email, which stays linked to your account.
-              </p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -400,14 +397,11 @@ export function ProfileClient() {
                 readOnly
                 className="min-h-[44px] w-full rounded-xl border border-[#E3D9C8] bg-brand-cream px-4 text-sm text-brand-muted"
               />
-              <p className="mt-1 text-xs text-brand-muted">Email cannot be changed here.</p>
+              <p className="mt-1 text-xs text-brand-muted">Cannot modify - contact admin</p>
             </div>
 
             <div className="border-t border-brand-cream-dark pt-6">
               <h3 className="font-serif text-lg font-semibold text-brand-ink">Primary delivery address</h3>
-              <p className="mt-1 text-sm text-brand-muted">
-                Pre-filled from your first order when available. This loads automatically at checkout.
-              </p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">

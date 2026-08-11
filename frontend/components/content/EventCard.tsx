@@ -44,7 +44,7 @@ export function EventCard({ event, compact = false }: Props) {
         <span className="inline-flex rounded-full border border-brand-gold-pale/30 bg-white/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-gold-pale backdrop-blur-sm">
           {typeLabel}
         </span>
-        <h3 className="mt-3 font-serif text-lg font-semibold leading-snug md:text-xl">{event.title}</h3>
+        <h3 className="mt-3 font-serif text-xl font-semibold leading-snug tracking-tight md:text-[1.35rem]">{event.title}</h3>
         {when ? (
           <p className="mt-3 whitespace-pre-line text-sm text-brand-cream/80">{when}</p>
         ) : null}

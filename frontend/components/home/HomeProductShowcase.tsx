@@ -103,7 +103,7 @@ export function HomeProductShowcase({ products }: Props) {
               {/* Product name */}
               <h1
                 key={product.name}
-                className="mt-3 font-serif text-3xl font-semibold leading-tight text-white sm:text-4xl md:text-5xl lg:text-6xl"
+                className="mt-3 font-sans text-3xl font-semibold leading-tight text-white sm:text-4xl md:text-5xl lg:text-6xl"
                 style={{ textShadow: "0 2px 20px rgba(0,0,0,0.4)" }}
               >
                 {product.name}

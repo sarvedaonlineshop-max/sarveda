@@ -369,7 +369,7 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
               🧾
             </span>
             <span className="flex-1 text-sm font-medium text-brand-ink">
-              Cost split &amp; delivery address
+              Order details
             </span>
             <svg
               xmlns="http://www.w3.org/2000/svg"

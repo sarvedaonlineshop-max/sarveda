@@ -1,0 +1,185 @@
+[
+  {
+    "wooName": "25 Rods – Bar Chime",
+    "productId": "1dbf30be-7a51-4859-bf5b-bd04472e12be",
+    "actions": [
+      "UPDATED product 1dbf30be-7a51-4859-bf5b-bd04472e12be (was ACTIVE 32 Rods - Bar Chime)",
+      "DRAFTED leftover MI-BCH-32",
+      "CREATED MI-BC-25"
+    ]
+  },
+  {
+    "wooName": "Curved Copper Bottles",
+    "productId": "571f96fa-45b5-4a40-adde-b5cb45ec7565",
+    "actions": [
+      "UPDATED product 571f96fa-45b5-4a40-adde-b5cb45ec7565 (was ARCHIVED Curved Copper Bottles)",
+      "CREATED CB-C-B",
+      "CREATED CB-C",
+      "CREATED CB-C-V-B",
+      "CREATED CB-C-V"
+    ]
+  },
+  {
+    "wooName": "Curved Hammered Copper Bottles",
+    "productId": "82d04b38-cb3a-466b-a439-83982b50c63b",
+    "actions": [
+      "UPDATED product 82d04b38-cb3a-466b-a439-83982b50c63b (was ARCHIVED Curved Hammered Copper Bottles)",
+      "MOVED/UPDATED CB-CVH-B",
+      "MOVED/UPDATED CB-CVH"
+    ]
+  },
+  {
+    "wooName": "DNA Tuning Fork",
+    "productId": "99c65027-85a9-45d6-bc01-ac7fd31ee3ce",
+    "actions": [
+      "UPDATED product 99c65027-85a9-45d6-bc01-ac7fd31ee3ce (was DRAFT Large Tuning Fork)",
+      "DRAFTED leftover woo-var-49863",
+      "DRAFTED leftover woo-var-49864",
+      "DRAFTED leftover woo-var-49865",
+      "DRAFTED leftover woo-var-49862",
+      "CREATED MI-TF-DNA"
+    ]
+  },
+  {
+    "wooName": "Etched Chau Gongs",
+    "productId": "1d380ba4-d1ce-41b4-af83-25272cc70420",
+    "actions": [
+      "UPDATED product 1d380ba4-d1ce-41b4-af83-25272cc70420 (was ARCHIVED Etched Gongs)",
+      "CREATED MI-GO-CH-ET-18",
+      "CREATED MI-GO-CH-ET-20",
+      "CREATED MI-GO-CH-ET-22",
+      "CREATED MI-GO-CH-ET-24",
+      "CREATED MI-GO-CH-ET-28",
+      "CREATED MI-GO-CH-ET-32",
+      "CREATED MI-GO-CH-ET-36",
+      "CREATED MI-GO-CH-ET-40"
+    ]
+  },
+  {
+    "wooName": "Wooden Guiro",
+    "productId": "cb57c8bc-8d37-491b-a58a-c2e2d20e37e4",
+    "actions": [
+      "CREATED product cb57c8bc-8d37-491b-a58a-c2e2d20e37e4",
+      "CREATED MI-GRO"
+    ]
+  },
+  {
+    "wooName": "Hammered Copper Bottle",
+    "productId": "668300fa-a4ed-4c43-9280-ea26af03a3cf",
+    "actions": [
+      "UPDATED product 668300fa-a4ed-4c43-9280-ea26af03a3cf (was ARCHIVED Hammered Copper Bottle)",
+      "CREATED CB-HM",
+      "CREATED CB-HM-B"
+    ]
+  },
+  {
+    "wooName": "Happiness is Inside",
+    "productId": "0cff80c6-de49-4786-afca-91c10dd20f43",
+    "actions": [
+      "CREATED product 0cff80c6-de49-4786-afca-91c10dd20f43",
+      "CREATED CB-AD-HI-B",
+      "CREATED CB-AD-HI",
+      "CREATED CB-AD-HI-.5",
+      "CREATED CB-AD-HI-.5-B"
+    ]
+  },
+  {
+    "wooName": "Sleigh Bells Wooden Jingle Stick",
+    "productId": "8a6ba17c-fb84-4bef-8e4d-e5c673403d3e",
+    "actions": [
+      "CREATED product 8a6ba17c-fb84-4bef-8e4d-e5c673403d3e",
+      "CREATED MI-JE-S"
+    ]
+  },
+  {
+    "wooName": "Wooden Hand Khartal/Jingles",
+    "productId": "ada39852-6612-4f1b-80ed-6cf171378a44",
+    "actions": [
+      "CREATED product ada39852-6612-4f1b-80ed-6cf171378a44",
+      "CREATED MI-KL"
+    ]
+  },
+  {
+    "wooName": "Native American Style Flutes",
+    "productId": "c35b829e-612d-4c10-9d37-616a7a4a9763",
+    "actions": [
+      "UPDATED product c35b829e-612d-4c10-9d37-616a7a4a9763 (was ACTIVE Native American Flute - Triple)",
+      "CREATED MI-NF-D",
+      "CREATED MI-NF-S-L",
+      "CREATED MI-NF-S-M",
+      "CREATED MI-NF-S-S"
+    ]
+  },
+  {
+    "wooName": "Clay Ocarinas",
+    "productId": "8f36ffd5-bb4b-4923-b4cc-7d84c569a9d8",
+    "actions": [
+      "UPDATED product 8f36ffd5-bb4b-4923-b4cc-7d84c569a9d8 (was ACTIVE Ocarina - Big)",
+      "CREATED MI-OC-S"
+    ]
+  },
+  {
+    "wooName": "Pink & Positive",
+    "productId": "5c872fe5-9fc1-4223-ac44-c5b4d3e5e55c",
+    "actions": [
+      "CREATED product 5c872fe5-9fc1-4223-ac44-c5b4d3e5e55c",
+      "CREATED CB-AD-PP",
+      "CREATED CB-AD-PP-B",
+      "CREATED CB-AD-PP-.5",
+      "CREATED CB-AD-PP-.5-B"
+    ]
+  },
+  {
+    "wooName": "Shruti Box Pedal",
+    "productId": "74dd5d51-6d51-47ab-afec-0792c920fe88",
+    "actions": [
+      "CREATED product 74dd5d51-6d51-47ab-afec-0792c920fe88",
+      "CREATED MI-STB-P"
+    ]
+  },
+  {
+    "wooName": "Tattvamasi-I am Infinite",
+    "productId": "b08ef60e-2cd5-4be5-a8e4-3d1572c0ed10",
+    "actions": [
+      "CREATED product b08ef60e-2cd5-4be5-a8e4-3d1572c0ed10",
+      "CREATED CB-AD-TM-B",
+      "CREATED CB-AD-TM",
+      "CREATED CB-AD-TM-.5",
+      "CREATED CB-AD-TM-B-.5"
+    ]
+  },
+  {
+    "wooName": "Wind Chimes",
+    "productId": "801dfbab-5573-45f7-a02c-7104876d118b",
+    "actions": [
+      "CREATED product 801dfbab-5573-45f7-a02c-7104876d118b",
+      "CREATED MI-WC-GO-S",
+      "CREATED MI-WC-GO-L",
+      "CREATED MI-WC-GR-S",
+      "CREATED MI-WC-GR-L",
+      "CREATED MI-WC-YE-S",
+      "CREATED MI-WC-YE-L",
+      "CREATED MI-WC-SI-S",
+      "CREATED MI-WC-SI-L",
+      "CREATED MI-WC-AC-S",
+      "CREATED MI-WC-AC-L"
+    ]
+  },
+  {
+    "wooName": "Wooden Finger Castanet",
+    "productId": "eb68ffcf-83ee-4733-9b99-59bdbb30889e",
+    "actions": [
+      "CREATED product eb68ffcf-83ee-4733-9b99-59bdbb30889e",
+      "CREATED MI-FC-B",
+      "CREATED MI-FC-W"
+    ]
+  },
+  {
+    "wooName": "Incense Stick Stand",
+    "productId": "b23c2780-f28b-4331-97c8-49260fbbb909",
+    "actions": [
+      "CREATED product b23c2780-f28b-4331-97c8-49260fbbb909",
+      "CREATED MI-IS-ST"
+    ]
+  }
+]

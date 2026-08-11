@@ -79,7 +79,7 @@ export function CourseCard({ course, compact = false }: Props) {
 
       {/* Body */}
       <div className="flex min-w-0 flex-1 flex-col gap-3 p-5">
-        <h3 className="break-words font-serif text-lg font-bold leading-snug text-brand-ink">
+        <h3 className="break-words font-serif text-xl font-semibold leading-snug text-brand-ink md:text-[1.35rem]">
           {course.title}
         </h3>
 
@@ -105,7 +105,7 @@ export function CourseCard({ course, compact = false }: Props) {
 
         {/* Price + CTA */}
         <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-2">
-          <p className="text-base font-bold text-brand-forest">
+          <p className="font-sans text-base font-semibold tabular-nums text-brand-forest">
             {course.isFree || course.priceInPaise === 0 ? "Free" : formatINRFromPaise(course.priceInPaise)}
           </p>
           <span className="inline-flex items-center rounded-full border border-brand-forest px-4 py-2 text-xs font-semibold text-brand-forest transition-colors group-hover:bg-brand-forest group-hover:text-brand-cream">

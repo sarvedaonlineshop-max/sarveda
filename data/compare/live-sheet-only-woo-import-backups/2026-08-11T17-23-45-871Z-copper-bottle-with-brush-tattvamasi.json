@@ -1,0 +1,19 @@
+{
+  "productId": "b08ef60e-2cd5-4be5-a8e4-3d1572c0ed10",
+  "actions": [
+    "CREATED product b08ef60e-2cd5-4be5-a8e4-3d1572c0ed10",
+    "CREATED CB-AD-TM-B",
+    "CREATED CB-AD-TM",
+    "CREATED CB-AD-TM-.5",
+    "CREATED CB-AD-TM-B-.5"
+  ],
+  "item": {
+    "wooSlug": "copper-bottle-with-brush-tattvamasi",
+    "variants": [
+      "CB-AD-TM-B",
+      "CB-AD-TM",
+      "CB-AD-TM-.5",
+      "CB-AD-TM-B-.5"
+    ]
+  }
+}

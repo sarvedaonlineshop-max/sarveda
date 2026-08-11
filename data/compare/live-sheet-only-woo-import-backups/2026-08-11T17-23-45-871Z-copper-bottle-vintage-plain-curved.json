@@ -1,0 +1,19 @@
+{
+  "productId": "571f96fa-45b5-4a40-adde-b5cb45ec7565",
+  "actions": [
+    "UPDATED product 571f96fa-45b5-4a40-adde-b5cb45ec7565 (was ARCHIVED Curved Copper Bottles)",
+    "CREATED CB-C-B",
+    "CREATED CB-C",
+    "CREATED CB-C-V-B",
+    "CREATED CB-C-V"
+  ],
+  "item": {
+    "wooSlug": "copper-bottle-vintage-plain-curved",
+    "variants": [
+      "CB-C-B",
+      "CB-C",
+      "CB-C-V-B",
+      "CB-C-V"
+    ]
+  }
+}

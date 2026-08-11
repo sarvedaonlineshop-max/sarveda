@@ -252,7 +252,7 @@ function renderInvoiceFooter(
   doc.rect(left, doc.y, pageWidth, 0.75).fill(BRAND_OLIVE);
   doc.y += 12;
 
-  // Two-column footer: Total in Words (left) | Authorized Signatory (right)
+  // Two-column footer: Total in Words (left) | digital invoice note (right)
   const footLeftW  = pageWidth * 0.60;
   const footRightX = left + footLeftW + 16;
   const footRightW = pageWidth - footLeftW - 16;
@@ -265,15 +265,18 @@ function renderInvoiceFooter(
   doc.fontSize(8.5).font("Helvetica-Oblique").fillColor(TEXT_BODY)
      .text(amountInCurrencyWords(totalMinor, code), left, doc.y, { width: footLeftW });
 
-  // Right: Authorized signatory
+  // Right: digital invoice note (no wet-ink signature required)
   doc.fontSize(7.5).font("Helvetica-Bold").fillColor(TEXT_MUTED)
-     .text("Authorized Signatory", footRightX, footStartY, { width: footRightW, align: "center" });
-  const sigLineY = footStartY + 44;
-  doc.moveTo(footRightX, sigLineY)
-     .lineTo(footRightX + footRightW, sigLineY)
-     .strokeColor(RULE_LIGHT).lineWidth(0.5).stroke();
+     .text("Digital Invoice", footRightX, footStartY, { width: footRightW, align: "center" });
+  doc.fontSize(7.5).font("Helvetica").fillColor(TEXT_BODY)
+     .text(
+       "This is a computer-generated invoice and does not require an authorized signature.",
+       footRightX,
+       footStartY + 14,
+       { width: footRightW, align: "center" }
+     );
   doc.fontSize(7).font("Helvetica").fillColor(TEXT_MUTED)
-     .text("for Sarveda Life Private Limited", footRightX, sigLineY + 3,
+     .text("for Sarveda Life Private Limited", footRightX, footStartY + 48,
            { width: footRightW, align: "center" });
 
   // Page footer

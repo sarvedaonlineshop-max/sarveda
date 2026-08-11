@@ -1,0 +1,13 @@
+{
+  "productId": "8f36ffd5-bb4b-4923-b4cc-7d84c569a9d8",
+  "actions": [
+    "UPDATED product 8f36ffd5-bb4b-4923-b4cc-7d84c569a9d8 (was ACTIVE Ocarina - Big)",
+    "CREATED MI-OC-S"
+  ],
+  "item": {
+    "wooSlug": "clay-ocarinas",
+    "variants": [
+      "MI-OC-S"
+    ]
+  }
+}

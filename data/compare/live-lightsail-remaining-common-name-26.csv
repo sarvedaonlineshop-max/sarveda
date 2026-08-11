@@ -1,0 +1,27 @@
+product_name,db_name,product_slug,issue_type,sheet_count,live_count,shared_skus,shared_variants_exact,shared_variants_canonical
+Etched Plain/Wind Gong,Etched Plain/Wind Gong,etched-plain-wind-gong,variant_count_mismatch,0,64,0,0,0
+Tuning Fork - Single Weighted & Unweighted,Tuning Fork - Single Weighted & Unweighted,tuning-fork-single-weighted-unweighted,mixed_variant_and_sku_mismatch,18,18,3,17,17
+Etched Handmade Singing Bowls,Etched Handmade Singing Bowls,etched-handmade-singing-bowls,variant_count_mismatch,88,79,0,48,48
+"Grooved, Hammered & Plain Copper Bottle","Grooved, Hammered & Plain Copper Bottle",grooved-hammered-plain-copper-bottle,variant_count_mismatch,0,12,0,0,0
+Plain Yoga Mats,Plain Yoga Mats,plain-yoga-mats,mixed_variant_and_sku_mismatch,8,8,0,2,6
+Shruthi Thali/Gong Plates,Shruthi Thali/Gong Plates,shruthi-thali-gong-plates,variant_count_mismatch,0,8,0,0,0
+Wooden Mallets for Singing Bowls,Wooden Mallets for Singing Bowls,wooden-mallets-for-singing-bowls,mixed_variant_and_sku_mismatch,17,17,0,0,0
+Ocean Drums,Ocean Drums,ocean-drums,mixed_variant_and_sku_mismatch,9,9,9,7,7
+Tingsha Bell,Tingsha Bell,tingsha-bell,variant_count_mismatch,9,8,0,2,3
+Sunshine within Me,Sunshine within Me,sunshine-within-me,variant_count_mismatch,0,4,0,0,0
+"Vibroacoustic Therapy Bowls - Universal, Belly and Head","Vibroacoustic Therapy Bowls - Universal, Belly and Head",vibroacoustic-therapy-bowls-universal-belly-and-head,variant_count_mismatch,1,4,0,1,1
+Dotted Singing Bowl,Dotted Singing Bowl,dotted-singing-bowl,variant_count_mismatch,3,5,0,2,2
+Shamanic Drum,Shamanic Drum,shamanic-drum,mixed_variant_and_sku_mismatch,9,9,6,7,7
+Shamanic Drum Bags/Ocean Drum Bags,Shamanic Drum Bags/Ocean Drum Bags,shamanic-drum-bags-ocean-drum-bags,variant_count_mismatch,0,3,0,0,0
+Shankh/Conch,Shankh/Conch,shankh-conch,variant_count_mismatch,0,3,0,0,0
+Shruti Box,Shruti Box,shruti-box,variant_count_mismatch,4,3,0,2,2
+Thunder Tube - Basic Edition,Thunder Tube - Basic Edition,thunder-tube-basic-edition,mixed_variant_and_sku_mismatch,3,3,0,0,0
+Handmade Singing Bowls - All Sizes,Handmade Singing Bowls - All Sizes,handmade-singing-bowls-all-sizes,variant_count_mismatch,9,18,0,7,7
+Hanging Bowls/Zen Drops,Hanging Bowls/Zen Drops,hanging-bowls-zen-drops,variant_count_mismatch,1,2,0,1,1
+Zafu & Zabuton Meditation Cushion Combo - Lotus Embroidery,Zafu & Zabuton Meditation Cushion Combo - Lotus Embroidery,zafu-zabuton-meditation-cushion-combo-lotus-embroidery,variant_count_mismatch,0,3,0,0,0
+Joint Bowl or Knee Cut Bowl,Joint Bowl or Knee Cut Bowl,joint-bowl-or-knee-cut-bowl,variant_count_mismatch,0,2,0,0,0
+Mini Coconut Shakers - 3 Types,Mini Coconut Shakers - 3 Types,mini-coconut-shakers-3-types,mixed_variant_and_sku_mismatch,4,4,0,3,3
+Tibetan Buddhist Bell,Tibetan Buddhist Bell,tibetan-buddhist-bell,mixed_variant_and_sku_mismatch,4,4,0,3,3
+Angel Tuning Forks,Angel Tuning Forks,angel-tuning-forks,sku_mismatch_with_variant_alignment,4,4,0,4,4
+Round Yoga Bolster,Round Yoga Bolster,round-yoga-bolster,mixed_variant_and_sku_mismatch,8,8,0,6,7
+Sacred Symbols Singing Bowls,Sacred Symbols Singing Bowls,sacred-symbols-singing-bowls,variant_count_mismatch,18,15,0,0,13

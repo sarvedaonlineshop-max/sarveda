@@ -117,16 +117,18 @@ export function ProductCard({ product, layout = "grid" }: Props) {
             </p>
           ) : null}
 
-          <h2 className="line-clamp-2 font-serif text-sm font-medium leading-snug text-brand-ink transition-colors group-hover:text-brand-forest">
+          <h2 className="line-clamp-2 font-sans text-[0.95rem] font-semibold leading-snug text-brand-ink transition-colors group-hover:text-brand-forest md:text-base">
             {product.name}
           </h2>
 
           <div className="mt-auto flex flex-wrap items-baseline gap-1.5 pt-1">
             {priceLabel ? (
-              <p className="text-sm font-bold text-brand-forest md:text-base">{priceLabel}</p>
+              <p className="font-sans text-sm font-semibold tabular-nums tracking-tight text-brand-forest md:text-base">
+                {priceLabel}
+              </p>
             ) : null}
             {mrpMinor != null && saleMinor != null && mrpMinor > saleMinor ? (
-              <p className="text-xs text-brand-muted line-through">
+              <p className="font-sans text-xs tabular-nums text-brand-muted line-through">
                 {formatMinorFromPaise(mrpMinor, currency)}
               </p>
             ) : null}
