@@ -322,7 +322,7 @@ export async function listZohoHistoricalProducts(opts: {
     for (const line of invoice.lines) {
       const parts = parseItemName(line.itemName, line.sku);
       suggestions.add(parts.productName);
-      if (q && !parts.productName.toLowerCase().startsWith(q)) {
+      if (q && !parts.productName.toLowerCase().includes(q)) {
         continue;
       }
 
@@ -348,7 +348,7 @@ export async function listZohoHistoricalProducts(opts: {
   return {
     total: sorted.length,
     suggestions: Array.from(suggestions)
-      .filter((name) => (q ? name.toLowerCase().startsWith(q) : true))
+      .filter((name) => (q ? name.toLowerCase().includes(q) : true))
       .sort((a, b) => a.localeCompare(b))
       .slice(0, 20),
     items: sorted.slice(offset, offset + limit),
