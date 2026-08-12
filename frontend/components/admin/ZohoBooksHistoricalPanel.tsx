@@ -138,6 +138,7 @@ export function ZohoBooksHistoricalPanel() {
   const [productSuggestions, setProductSuggestions] = useState<string[]>([]);
   const [productLoading, setProductLoading] = useState(false);
   const [productSuggestionsOpen, setProductSuggestionsOpen] = useState(false);
+  const [productSuggestionsLoading, setProductSuggestionsLoading] = useState(false);
 
   const [orderSearch, setOrderSearch] = useState("");
   const [orderCity, setOrderCity] = useState("");
@@ -220,7 +221,6 @@ export function ZohoBooksHistoricalPanel() {
           offset,
         });
         setProductTotal(data.total);
-        setProductSuggestions(data.suggestions);
         setProductRows((prev) => (append ? [...prev, ...data.items] : data.items));
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to load products");
@@ -229,6 +229,33 @@ export function ZohoBooksHistoricalPanel() {
       }
     },
     [applied.from, applied.to, productSearchApplied, productSort]
+  );
+
+  const loadProductSuggestions = useCallback(
+    async (term: string) => {
+      const q = term.trim();
+      if (!q) {
+        setProductSuggestions([]);
+        return;
+      }
+      setProductSuggestionsLoading(true);
+      try {
+        const data = await fetchZohoBooksProducts({
+          from: applied.from,
+          to: applied.to,
+          search: q,
+          sort: productSort,
+          limit: 0,
+          offset: 0,
+        });
+        setProductSuggestions(data.suggestions);
+      } catch {
+        setProductSuggestions([]);
+      } finally {
+        setProductSuggestionsLoading(false);
+      }
+    },
+    [applied.from, applied.to, productSort]
   );
 
   const loadOrders = useCallback(
@@ -267,20 +294,18 @@ export function ZohoBooksHistoricalPanel() {
   }, [loadOrders]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setProductSearchApplied(productSearchInput.trim());
-    }, 300);
-    return () => window.clearTimeout(timer);
-  }, [productSearchInput]);
-
-  useEffect(() => {
     const term = productSearchInput.trim();
     if (!term) {
+      setProductSuggestions([]);
       setProductSuggestionsOpen(false);
       return;
     }
-    setProductSuggestionsOpen(true);
-  }, [productSearchInput, productSuggestions.length]);
+    const timer = window.setTimeout(() => {
+      void loadProductSuggestions(term);
+      setProductSuggestionsOpen(true);
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [productSearchInput, loadProductSuggestions]);
 
   useEffect(() => {
     const onDocClick = (event: MouseEvent) => {
@@ -349,13 +374,25 @@ export function ZohoBooksHistoricalPanel() {
   function clearProductSearch() {
     setProductSearchInput("");
     setProductSearchApplied("");
+    setProductSuggestions([]);
+    setProductSuggestionsOpen(false);
+  }
+
+  function clearProductSearchInput() {
+    setProductSearchInput("");
+    setProductSuggestions([]);
+    setProductSuggestionsOpen(false);
+  }
+
+  function applyProductSearch(term?: string) {
+    const next = (term ?? productSearchInput).trim();
+    setProductSearchApplied(next);
+    setProductSearchInput(next);
     setProductSuggestionsOpen(false);
   }
 
   function selectProductSuggestion(name: string) {
-    setProductSearchInput(name);
-    setProductSearchApplied(name);
-    setProductSuggestionsOpen(false);
+    applyProductSearch(name);
   }
 
   return (
@@ -425,22 +462,29 @@ export function ZohoBooksHistoricalPanel() {
         right={
           <div className="ml-6 flex flex-1 justify-end gap-3">
             <div ref={productSearchRef} className="relative w-full max-w-[34rem]">
-              <input
-                value={productSearchInput}
-                onChange={(e) => setProductSearchInput(e.target.value)}
-                onFocus={() => {
-                  if (productSearchInput.trim().length > 0 && productSuggestions.length > 0) {
-                    setProductSuggestionsOpen(true);
-                  }
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  applyProductSearch();
                 }}
-                placeholder="Search product name"
-                autoComplete="off"
-                className="min-h-[42px] w-full rounded-full border border-[#e3d9c8] bg-white px-4 pr-10 text-sm text-[#2c2420] placeholder:text-[#9b8d81] focus:border-[#1c352a] focus:outline-none focus:ring-2 focus:ring-[#1c352a]/15"
-              />
+              >
+                <input
+                  value={productSearchInput}
+                  onChange={(e) => setProductSearchInput(e.target.value)}
+                  onFocus={() => {
+                    if (productSearchInput.trim().length > 0) {
+                      setProductSuggestionsOpen(true);
+                    }
+                  }}
+                  placeholder="Search product name — press Enter to apply"
+                  autoComplete="off"
+                  className="min-h-[42px] w-full rounded-full border border-[#e3d9c8] bg-white px-4 pr-10 text-sm text-[#2c2420] placeholder:text-[#9b8d81] focus:border-[#1c352a] focus:outline-none focus:ring-2 focus:ring-[#1c352a]/15"
+                />
+              </form>
               {productSearchInput ? (
                 <button
                   type="button"
-                  onClick={clearProductSearch}
+                  onClick={clearProductSearchInput}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-lg leading-none text-[#8a7060] hover:text-[#1c352a]"
                   aria-label="Clear search input"
                 >
@@ -449,7 +493,9 @@ export function ZohoBooksHistoricalPanel() {
               ) : null}
               {productSuggestionsOpen && productSearchInput.trim().length > 0 ? (
                 <ul className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 max-h-80 overflow-y-auto rounded-xl border border-[#e3d9c8] bg-white py-1 shadow-xl">
-                  {productSuggestions.length > 0 ? (
+                  {productSuggestionsLoading ? (
+                    <li className="px-4 py-3 text-sm text-[#8a7060]">Searching…</li>
+                  ) : productSuggestions.length > 0 ? (
                     productSuggestions.map((name) => (
                       <li key={name}>
                         <button
@@ -577,7 +623,7 @@ export function ZohoBooksHistoricalPanel() {
               onChange={(e) => setOrderState(e.target.value)}
               className="rounded-md border border-[#e0d8ce] px-2 py-1.5 text-sm text-[#2c2420]"
             >
-              <option value="">All regions</option>
+              <option value="">All states / regions</option>
               {orderOptions.states.map((v) => (
                 <option key={v} value={v}>
                   {v}
@@ -624,7 +670,8 @@ export function ZohoBooksHistoricalPanel() {
                 <th className="px-4 py-2">Order date</th>
                 <th className="px-4 py-2">Order id</th>
                 <th className="px-4 py-2">Customer</th>
-                <th className="px-4 py-2">Region</th>
+                <th className="px-4 py-2">City</th>
+                <th className="px-4 py-2">State / region</th>
                 <th className="px-4 py-2">Items</th>
                 <th className="px-4 py-2 text-right">Amount</th>
                 <th className="px-4 py-2">Status</th>
@@ -637,8 +684,9 @@ export function ZohoBooksHistoricalPanel() {
                   <td className="px-4 py-2">{formatDisplayDate(row.invoiceDate)}</td>
                   <td className="px-4 py-2 font-mono text-xs text-[#1c352a]">{row.invoiceNumber}</td>
                   <td className="px-4 py-2 text-[#4a3f38]">{row.customerName || "—"}</td>
+                  <td className="px-4 py-2 text-[#4a3f38]">{row.billingCity || "—"}</td>
                   <td className="px-4 py-2 text-[#4a3f38]">
-                    {[row.billingCity, row.billingState, row.billingCountry].filter(Boolean).join(", ") || "—"}
+                    {[row.billingState, row.billingCountry].filter(Boolean).join(", ") || "—"}
                   </td>
                   <td className="max-w-[18rem] truncate px-4 py-2 text-[#4a3f38]" title={row.itemsShort}>
                     {row.itemsShort}
@@ -666,7 +714,7 @@ export function ZohoBooksHistoricalPanel() {
               ))}
               {orderLoading ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-3 text-center text-sm text-[#8a7060]">
+                  <td colSpan={9} className="px-4 py-3 text-center text-sm text-[#8a7060]">
                     Loading…
                   </td>
                 </tr>

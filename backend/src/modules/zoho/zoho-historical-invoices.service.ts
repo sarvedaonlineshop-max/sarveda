@@ -4,6 +4,10 @@
  */
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../config/db";
+import {
+  dedupeLocationValues,
+  normalizeZohoBillingLocation,
+} from "./zoho-location";
 
 const FX_TO_INR: Record<string, number> = {
   INR: 1,
@@ -384,9 +388,36 @@ export async function listZohoHistoricalOrders(opts: {
       { billingCountry: { contains: q, mode: "insensitive" } },
     ];
   }
-  if (opts.city) where.billingCity = opts.city;
-  if (opts.state) where.billingState = opts.state;
   if (opts.country) where.billingCountry = opts.country;
+
+  const andClauses: Prisma.ZohoHistoricalInvoiceWhereInput[] = Array.isArray(where.AND)
+    ? [...where.AND]
+    : where.AND
+      ? [where.AND]
+      : [];
+
+  if (opts.city?.trim()) {
+    const c = opts.city.trim();
+    andClauses.push({
+      OR: [
+        { billingCity: { equals: c, mode: "insensitive" } },
+        { billingState: { equals: c, mode: "insensitive" } },
+        { billingCity: { contains: c, mode: "insensitive" } },
+        { billingState: { contains: c, mode: "insensitive" } },
+      ],
+    });
+  }
+  if (opts.state?.trim()) {
+    const s = opts.state.trim();
+    andClauses.push({
+      OR: [
+        { billingState: { equals: s, mode: "insensitive" } },
+        { billingCity: { equals: s, mode: "insensitive" } },
+        { billingState: { contains: s, mode: "insensitive" } },
+      ],
+    });
+  }
+  if (andClauses.length > 0) where.AND = andClauses;
 
   const [total, rows, allLocations] = await Promise.all([
     prisma.zohoHistoricalInvoice.count({ where }),
@@ -414,25 +445,29 @@ export async function listZohoHistoricalOrders(opts: {
     }),
     prisma.zohoHistoricalInvoice.findMany({
       select: { billingCity: true, billingState: true, billingCountry: true },
-      distinct: ["billingCity", "billingState", "billingCountry"],
-      orderBy: [{ billingCountry: "asc" }, { billingState: "asc" }, { billingCity: "asc" }],
     }),
   ]);
+
+  const normalizedLocations = allLocations.map((r) =>
+    normalizeZohoBillingLocation(r.billingCity, r.billingState)
+  );
 
   return {
     total,
     options: {
-      cities: Array.from(new Set(allLocations.map((r) => r.billingCity).filter(Boolean) as string[])),
-      states: Array.from(new Set(allLocations.map((r) => r.billingState).filter(Boolean) as string[])),
-      countries: Array.from(new Set(allLocations.map((r) => r.billingCountry).filter(Boolean) as string[])),
+      cities: dedupeLocationValues(normalizedLocations.map((r) => r.city)),
+      states: dedupeLocationValues(normalizedLocations.map((r) => r.state)),
+      countries: dedupeLocationValues(allLocations.map((r) => r.billingCountry)),
     },
-    items: rows.map((row) => ({
+    items: rows.map((row) => {
+      const loc = normalizeZohoBillingLocation(row.billingCity, row.billingState);
+      return {
       zohoInvoiceId: row.zohoInvoiceId,
       invoiceNumber: row.invoiceNumber,
       invoiceDate: row.invoiceDate.toISOString().slice(0, 10),
       customerName: row.customerName,
-      billingCity: row.billingCity,
-      billingState: row.billingState,
+      billingCity: loc.city,
+      billingState: loc.state,
       billingCountry: row.billingCountry,
       totalInMinor: row.totalInMinor,
       currency: row.currency,
@@ -440,7 +475,8 @@ export async function listZohoHistoricalOrders(opts: {
       itemsShort: row.lines
         .map((line) => `${line.itemName || "Item"}${line.quantity ? ` x${line.quantity}` : ""}`)
         .join(", "),
-    })),
+    };
+    }),
   };
 }
 
