@@ -4,6 +4,7 @@
  * GET/PUT /api/admin/products/xl-sheet
  */
 import { z } from "zod";
+import type { ProductStatus } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { syncVariantAttributes } from "./variant-attributes";
@@ -117,10 +118,8 @@ export type XlSheetStatusFilter = "ACTIVE" | "DRAFT" | "ALL";
 export async function listXlSheetRows(
   statusFilter: XlSheetStatusFilter = "ACTIVE"
 ): Promise<{ rows: XlSheetRow[]; total: number }> {
-  const statusWhere =
-    statusFilter === "ALL"
-      ? ({ in: ["ACTIVE", "DRAFT"] } as const)
-      : statusFilter;
+  const statusWhere: ProductStatus | { in: ProductStatus[] } =
+    statusFilter === "ALL" ? { in: ["ACTIVE", "DRAFT"] } : statusFilter;
 
   const products = await prisma.product.findMany({
     where: {
