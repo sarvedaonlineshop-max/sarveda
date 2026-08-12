@@ -321,8 +321,11 @@ export async function listZohoHistoricalProducts(opts: {
   for (const invoice of invoices) {
     for (const line of invoice.lines) {
       const parts = parseItemName(line.itemName, line.sku);
+      const searchBlob = [parts.productName, parts.variantName, line.itemName || "", line.sku || ""]
+        .join(" ")
+        .toLowerCase();
       suggestions.add(parts.productName);
-      if (q && !parts.productName.toLowerCase().includes(q)) {
+      if (q && !searchBlob.includes(q)) {
         continue;
       }
 
@@ -348,7 +351,10 @@ export async function listZohoHistoricalProducts(opts: {
   return {
     total: sorted.length,
     suggestions: Array.from(suggestions)
-      .filter((name) => (q ? name.toLowerCase().includes(q) : true))
+      .filter((name) => {
+        if (!q) return true;
+        return name.toLowerCase().includes(q);
+      })
       .sort((a, b) => a.localeCompare(b))
       .slice(0, 20),
     items: sorted.slice(offset, offset + limit),
