@@ -322,12 +322,7 @@ export async function listZohoHistoricalProducts(opts: {
     for (const line of invoice.lines) {
       const parts = parseItemName(line.itemName, line.sku);
       suggestions.add(parts.productName);
-      if (
-        q &&
-        !parts.productName.toLowerCase().includes(q) &&
-        !parts.variantName.toLowerCase().includes(q) &&
-        !(line.sku || "").toLowerCase().includes(q)
-      ) {
+      if (q && !parts.productName.toLowerCase().startsWith(q)) {
         continue;
       }
 
@@ -353,7 +348,7 @@ export async function listZohoHistoricalProducts(opts: {
   return {
     total: sorted.length,
     suggestions: Array.from(suggestions)
-      .filter((name) => (q ? name.toLowerCase().includes(q) : true))
+      .filter((name) => (q ? name.toLowerCase().startsWith(q) : true))
       .sort((a, b) => a.localeCompare(b))
       .slice(0, 20),
     items: sorted.slice(offset, offset + limit),
@@ -526,5 +521,69 @@ export async function getZohoHistoricalOrderDetail(
       taxAmountInMinor: line.taxAmountInMinor,
       hsnSac: line.hsnSac,
     })),
+  };
+}
+
+export async function getZohoHistoricalDateBounds(): Promise<{ from: string; to: string }> {
+  const agg = await prisma.zohoHistoricalInvoice.aggregate({
+    _min: { invoiceDate: true },
+    _max: { invoiceDate: true },
+  });
+  const today = new Date().toISOString().slice(0, 10);
+  return {
+    from: agg._min.invoiceDate?.toISOString().slice(0, 10) ?? "2024-04-01",
+    to: agg._max.invoiceDate?.toISOString().slice(0, 10) ?? today,
+  };
+}
+
+export type ZohoProductChannelBreakdown = {
+  productName: string;
+  sku: string;
+  totalUnits: number;
+  channels: Array<{ channel: string; unitsSold: number }>;
+};
+
+export async function getZohoProductChannelBreakdown(opts: {
+  from?: string;
+  to?: string;
+  sku: string;
+  productName: string;
+}): Promise<ZohoProductChannelBreakdown> {
+  const { where } = await buildWhere({ from: opts.from, to: opts.to });
+  const sku = opts.sku.trim();
+  const productName = opts.productName.trim();
+
+  const invoices = await prisma.zohoHistoricalInvoice.findMany({
+    where,
+    select: {
+      channelNormalized: true,
+      lines: {
+        select: { itemName: true, sku: true, quantity: true },
+      },
+    },
+  });
+
+  const map = new Map<string, number>();
+  let totalUnits = 0;
+
+  for (const invoice of invoices) {
+    const channel = invoice.channelNormalized || "Direct/Other";
+    for (const line of invoice.lines) {
+      const parts = parseItemName(line.itemName, line.sku);
+      const lineSku = (line.sku || "").trim();
+      if (lineSku !== sku || parts.productName !== productName) continue;
+      const qty = Number(line.quantity) || 0;
+      totalUnits += qty;
+      map.set(channel, (map.get(channel) || 0) + qty);
+    }
+  }
+
+  return {
+    productName,
+    sku,
+    totalUnits,
+    channels: Array.from(map.entries())
+      .map(([channel, unitsSold]) => ({ channel, unitsSold }))
+      .sort((a, b) => b.unitsSold - a.unitsSold || a.channel.localeCompare(b.channel)),
   };
 }

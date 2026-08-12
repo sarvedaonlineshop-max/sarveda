@@ -34,8 +34,10 @@ router.post("/flipkart/sync-all", controller.flipkartSyncAll);
 router.get("/etsy/connection", controller.etsyConnection);
 router.post("/etsy/sync-all", controller.etsySyncAll);
 router.get("/zoho-books/analytics", controller.zohoBooksAnalytics);
+router.get("/zoho-books/bounds", controller.zohoBooksBounds);
 router.get("/zoho-books/channels", controller.zohoBooksChannels);
 router.get("/zoho-books/products", controller.zohoBooksProducts);
+router.get("/zoho-books/products/channel-breakdown", controller.zohoBooksProductChannelBreakdown);
 router.get("/zoho-books/orders", controller.zohoBooksOrders);
 router.get("/zoho-books/orders/:zohoInvoiceId", controller.zohoBooksOrderDetail);
 

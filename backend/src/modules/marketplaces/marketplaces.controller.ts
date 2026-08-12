@@ -274,6 +274,16 @@ export async function zohoBooksAnalytics(req: Request, res: Response, next: Next
   }
 }
 
+/** GET /api/admin/marketplaces/zoho-books/bounds — min/max invoice dates */
+export async function zohoBooksBounds(_req: Request, res: Response, next: NextFunction) {
+  try {
+    const { getZohoHistoricalDateBounds } = await import("../zoho/zoho-historical-invoices.service");
+    res.json({ success: true, data: await getZohoHistoricalDateBounds() });
+  } catch (err) {
+    next(err);
+  }
+}
+
 /** GET /api/admin/marketplaces/zoho-books/channels */
 export async function zohoBooksChannels(_req: Request, res: Response, next: NextFunction) {
   try {
@@ -307,6 +317,27 @@ export async function zohoBooksProducts(req: Request, res: Response, next: NextF
     res.json({
       success: true,
       data: await listZohoHistoricalProducts({ from, to, channel, search, sort, limit, offset }),
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** GET /api/admin/marketplaces/zoho-books/products/channel-breakdown */
+export async function zohoBooksProductChannelBreakdown(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { getZohoProductChannelBreakdown } = await import("../zoho/zoho-historical-invoices.service");
+    const from = typeof req.query.from === "string" ? req.query.from : undefined;
+    const to = typeof req.query.to === "string" ? req.query.to : undefined;
+    const sku = typeof req.query.sku === "string" ? req.query.sku : "";
+    const productName = typeof req.query.productName === "string" ? req.query.productName : "";
+    if (!sku || !productName) {
+      res.status(400).json({ success: false, error: "sku and productName are required" });
+      return;
+    }
+    res.json({
+      success: true,
+      data: await getZohoProductChannelBreakdown({ from, to, sku, productName }),
     });
   } catch (err) {
     next(err);

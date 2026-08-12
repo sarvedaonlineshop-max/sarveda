@@ -1802,6 +1802,33 @@ export function fetchZohoBooksChannels() {
   return adminFetch<{ channels: string[] }>("/api/admin/marketplaces/zoho-books/channels");
 }
 
+export function fetchZohoBooksDateBounds() {
+  return adminFetch<{ from: string; to: string }>("/api/admin/marketplaces/zoho-books/bounds");
+}
+
+export type ZohoProductChannelBreakdownData = {
+  productName: string;
+  sku: string;
+  totalUnits: number;
+  channels: Array<{ channel: string; unitsSold: number }>;
+};
+
+export function fetchZohoBooksProductChannelBreakdown(params: {
+  from?: string;
+  to?: string;
+  sku: string;
+  productName: string;
+}) {
+  const q = new URLSearchParams();
+  if (params.from) q.set("from", params.from);
+  if (params.to) q.set("to", params.to);
+  q.set("sku", params.sku);
+  q.set("productName", params.productName);
+  return adminFetch<ZohoProductChannelBreakdownData>(
+    `/api/admin/marketplaces/zoho-books/products/channel-breakdown?${q.toString()}`
+  );
+}
+
 export type ZohoHistoricalProductRow = {
   productName: string;
   variantName: string;
