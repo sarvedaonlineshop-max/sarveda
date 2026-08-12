@@ -257,3 +257,29 @@ export async function etsySyncAll(req: Request, res: Response, next: NextFunctio
     next(err);
   }
 }
+
+/** GET /api/admin/marketplaces/zoho-books/analytics — historical Zoho Books (isolated tables) */
+export async function zohoBooksAnalytics(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { getZohoHistoricalAnalytics } = await import("../zoho/zoho-historical-invoices.service");
+    const from = typeof req.query.from === "string" ? req.query.from : undefined;
+    const to = typeof req.query.to === "string" ? req.query.to : undefined;
+    const channel = typeof req.query.channel === "string" ? req.query.channel : undefined;
+    res.json({
+      success: true,
+      data: await getZohoHistoricalAnalytics({ from, to, channel }),
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** GET /api/admin/marketplaces/zoho-books/channels */
+export async function zohoBooksChannels(_req: Request, res: Response, next: NextFunction) {
+  try {
+    const { listZohoHistoricalChannels } = await import("../zoho/zoho-historical-invoices.service");
+    res.json({ success: true, data: { channels: await listZohoHistoricalChannels() } });
+  } catch (err) {
+    next(err);
+  }
+}

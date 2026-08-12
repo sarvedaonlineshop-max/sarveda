@@ -33,5 +33,7 @@ router.get("/flipkart/connection", controller.flipkartConnection);
 router.post("/flipkart/sync-all", controller.flipkartSyncAll);
 router.get("/etsy/connection", controller.etsyConnection);
 router.post("/etsy/sync-all", controller.etsySyncAll);
+router.get("/zoho-books/analytics", controller.zohoBooksAnalytics);
+router.get("/zoho-books/channels", controller.zohoBooksChannels);
 
 export { router as marketplaceAdminRoutes };

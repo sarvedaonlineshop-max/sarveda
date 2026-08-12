@@ -1760,6 +1760,64 @@ export function syncEtsyMarketplaceAll(input?: { monthsBack?: number; maxPagesPe
   });
 }
 
+/** Historical Zoho Books invoices (all channels) — separate from Order / MarketplaceOrder. */
+export type ZohoHistoricalAnalyticsData = {
+  range: {
+    from: string;
+    to: string;
+    allTimeFrom: string | null;
+    allTimeTo: string | null;
+  };
+  totals: {
+    invoices: number;
+    lineItems: number;
+    unitsSold: number;
+    revenueInInrPaise: number;
+    excludedInvoices: number;
+  };
+  byChannel: Array<{
+    channel: string;
+    invoices: number;
+    unitsSold: number;
+    revenueInInrPaise: number;
+  }>;
+  byMonth: Array<{ month: string; invoices: number; revenueInInrPaise: number }>;
+  byCurrency: Array<{
+    currency: string;
+    invoices: number;
+    totalInMinor: number;
+    revenueInInrPaise: number;
+  }>;
+  topSkus: Array<{
+    sku: string;
+    itemName: string | null;
+    unitsSold: number;
+    lineRevenueInMinorApprox: number;
+    invoiceCount: number;
+  }>;
+  dailyInvoices: Array<{ date: string; invoices: number; revenueInInrPaise: number }>;
+  conclusion: string[];
+};
+
+export function fetchZohoBooksAnalytics(params?: {
+  from?: string;
+  to?: string;
+  channel?: string;
+}) {
+  const q = new URLSearchParams();
+  if (params?.from) q.set("from", params.from);
+  if (params?.to) q.set("to", params.to);
+  if (params?.channel) q.set("channel", params.channel);
+  const qs = q.toString();
+  return adminFetch<ZohoHistoricalAnalyticsData>(
+    `/api/admin/marketplaces/zoho-books/analytics${qs ? `?${qs}` : ""}`
+  );
+}
+
+export function fetchZohoBooksChannels() {
+  return adminFetch<{ channels: string[] }>("/api/admin/marketplaces/zoho-books/channels");
+}
+
 export type ZohoStockSyncResult = {
   synced: number;
   errors: number;

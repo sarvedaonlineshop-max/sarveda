@@ -372,6 +372,81 @@ model MarketplaceEventLog {
   @@index([source, createdAt(sort: Desc)])
 }
 
+/// Historical Zoho Books invoices (all channels). Separate from Order / MarketplaceOrder.
+/// Append-only upsert by zohoInvoiceId — used for pre-cutover analytics reference.
+model ZohoHistoricalInvoice {
+  id                       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  zohoInvoiceId            String   @unique
+  invoiceNumber            String
+  invoiceDate              DateTime @db.Date
+  issuedDate               DateTime? @db.Date
+  dueDate                  DateTime? @db.Date
+  status                   String
+  customerName             String?
+  customerIdZoho           String?
+  email                    String?
+  phone                    String?
+  currency                 String   @default("INR")
+  exchangeRate             Float?
+  /// Invoice totals in minor units of `currency` (paise/cents/fils/pence).
+  subtotalInMinor          Int      @default(0)
+  discountInMinor          Int      @default(0)
+  shippingInMinor          Int      @default(0)
+  taxInMinor               Int      @default(0)
+  totalInMinor             Int      @default(0)
+  balanceInMinor           Int      @default(0)
+  /// FX-normalized INR paise for dashboard totals (reporting helper rates).
+  reportingTotalInInrPaise Int      @default(0)
+  salesChannelRaw          String?
+  marketplaceRaw           String?
+  /// Normalized bucket: Amazon, Flipkart, Web Sales, Offline Sales, etc.
+  channelNormalized        String
+  ecomOrderId              String?
+  ecomInvoiceNo            String?
+  salesOrderNumber         String?
+  billingCity              String?
+  billingState             String?
+  billingCountry           String?
+  billingPostalCode        String?
+  shippingCity             String?
+  shippingState            String?
+  shippingCountry          String?
+  notes                    String?  @db.Text
+  sourceFile               String?
+  importedAt               DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+  lines                    ZohoHistoricalInvoiceLine[]
+
+  @@index([invoiceDate])
+  @@index([channelNormalized, invoiceDate])
+  @@index([status, invoiceDate])
+  @@index([currency, invoiceDate])
+  @@index([invoiceNumber])
+}
+
+model ZohoHistoricalInvoiceLine {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invoiceId       String   @db.Uuid
+  lineIndex       Int      @default(0)
+  itemName        String?
+  itemDesc        String?  @db.Text
+  sku             String?
+  quantity        Float    @default(0)
+  /// Unit / line amounts in minor units of parent invoice currency.
+  unitPriceInMinor Int     @default(0)
+  lineTotalInMinor Int     @default(0)
+  discountInMinor Int      @default(0)
+  taxName         String?
+  taxPercent      Float?
+  taxAmountInMinor Int     @default(0)
+  hsnSac          String?
+  invoice         ZohoHistoricalInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@unique([invoiceId, lineIndex])
+  @@index([sku])
+  @@index([invoiceId])
+}
+
 model ProductImage {
   id        String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   productId String          @db.Uuid

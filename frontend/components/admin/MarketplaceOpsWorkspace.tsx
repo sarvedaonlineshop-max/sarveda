@@ -27,8 +27,9 @@ import {
   syncFlipkartMarketplaceAll
 } from "@/lib/admin-api";
 import { formatMinorFromPaise } from "@/lib/money";
+import { ZohoBooksHistoricalPanel } from "@/components/admin/ZohoBooksHistoricalPanel";
 
-type ViewTab = "overview" | MarketplaceChannelCode;
+type ViewTab = "overview" | "zoho_books" | MarketplaceChannelCode;
 type ChannelSubTab = "overview" | "listings" | "orders" | "returns";
 type DateRange = { from: string; to: string };
 type ListingSort =
@@ -572,7 +573,7 @@ export function MarketplaceOpsWorkspace() {
   const [globalOrders, setGlobalOrders] = useState<MarketplaceOrderRow[]>([]);
   const [globalReturns, setGlobalReturns] = useState<MarketplaceReturnRow[]>([]);
 
-  const activeChannel = activeTab === "overview" ? null : activeTab;
+  const activeChannel = activeTab === "overview" || activeTab === "zoho_books" ? null : activeTab;
   const activeChannelLabel = useMemo(
     () => CHANNELS.find((c) => c.code === activeChannel)?.label ?? "Marketplace",
     [activeChannel]
@@ -1122,6 +1123,13 @@ export function MarketplaceOpsWorkspace() {
         >
           Overview
         </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("zoho_books")}
+          className={`border-b-2 px-1 pb-2 text-sm font-medium ${activeTab === "zoho_books" ? "border-[#b98a3e] text-[#1c352a] font-semibold" : "border-transparent text-[#8a7060] hover:text-[#1c352a] transition-colors"}`}
+        >
+          Zoho Books
+        </button>
         {CHANNELS.map((item) => (
           <button
             key={item.code}
@@ -1136,6 +1144,8 @@ export function MarketplaceOpsWorkspace() {
 
       {error ? <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" style={{ borderLeft: "3px solid #dc2626", borderRadius: "10px" }}>{error}</div> : null}
       {notice ? <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900" style={{ borderLeft: "3px solid #16a34a", borderRadius: "10px" }}>{notice}</div> : null}
+
+      {activeTab === "zoho_books" ? <ZohoBooksHistoricalPanel /> : null}
 
       {activeTab === "overview" && overview ? (
         <div className="space-y-4">
