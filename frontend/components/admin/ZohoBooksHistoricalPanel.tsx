@@ -70,7 +70,7 @@ const PRESET_LABELS: Record<Exclude<DatePreset, "custom">, string> = {
 };
 
 const PRESET_PILL =
-  "rounded-md border px-4 py-2 text-[18px] font-medium leading-tight transition-colors";
+  "rounded-md border px-4 py-2 text-[14px] font-medium leading-tight transition-colors";
 const PRESET_ACTIVE = "border-[#1c352a] bg-[#1c352a] text-[#faf5ec]";
 const PRESET_INACTIVE = "border-[#d8cdbd] bg-white text-[#1c352a] hover:bg-[#faf9f7]";
 
@@ -137,6 +137,7 @@ export function ZohoBooksHistoricalPanel() {
   const [productTotal, setProductTotal] = useState(0);
   const [productSuggestions, setProductSuggestions] = useState<string[]>([]);
   const [productLoading, setProductLoading] = useState(false);
+  const [productSuggestionsOpen, setProductSuggestionsOpen] = useState(false);
 
   const [orderSearch, setOrderSearch] = useState("");
   const [orderCity, setOrderCity] = useState("");
@@ -160,6 +161,7 @@ export function ZohoBooksHistoricalPanel() {
 
   const productListRef = useRef<HTMLDivElement | null>(null);
   const orderListRef = useRef<HTMLDivElement | null>(null);
+  const productSearchRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     fetchZohoBooksDateBounds()
@@ -271,6 +273,25 @@ export function ZohoBooksHistoricalPanel() {
     return () => window.clearTimeout(timer);
   }, [productSearchInput]);
 
+  useEffect(() => {
+    const term = productSearchInput.trim();
+    if (!term) {
+      setProductSuggestionsOpen(false);
+      return;
+    }
+    setProductSuggestionsOpen(true);
+  }, [productSearchInput, productSuggestions.length]);
+
+  useEffect(() => {
+    const onDocClick = (event: MouseEvent) => {
+      if (!productSearchRef.current?.contains(event.target as Node)) {
+        setProductSuggestionsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+
   function attachInfiniteLoader(
     el: HTMLDivElement | null,
     count: number,
@@ -328,6 +349,13 @@ export function ZohoBooksHistoricalPanel() {
   function clearProductSearch() {
     setProductSearchInput("");
     setProductSearchApplied("");
+    setProductSuggestionsOpen(false);
+  }
+
+  function selectProductSuggestion(name: string) {
+    setProductSearchInput(name);
+    setProductSearchApplied(name);
+    setProductSuggestionsOpen(false);
   }
 
   return (
@@ -395,14 +423,19 @@ export function ZohoBooksHistoricalPanel() {
       <SectionShell
         title="Products"
         right={
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative min-w-[16rem]">
+          <div className="ml-6 flex flex-1 justify-end gap-3">
+            <div ref={productSearchRef} className="relative w-full max-w-[34rem]">
               <input
-                list="all-marketplaces-product-suggestions"
                 value={productSearchInput}
                 onChange={(e) => setProductSearchInput(e.target.value)}
+                onFocus={() => {
+                  if (productSearchInput.trim().length > 0 && productSuggestions.length > 0) {
+                    setProductSuggestionsOpen(true);
+                  }
+                }}
                 placeholder="Search product name"
-                className="w-full rounded-md border border-[#e0d8ce] px-3 py-1.5 pr-8 text-sm text-[#2c2420]"
+                autoComplete="off"
+                className="min-h-[42px] w-full rounded-full border border-[#e3d9c8] bg-white px-4 pr-10 text-sm text-[#2c2420] placeholder:text-[#9b8d81] focus:border-[#1c352a] focus:outline-none focus:ring-2 focus:ring-[#1c352a]/15"
               />
               {productSearchInput ? (
                 <button
@@ -414,16 +447,30 @@ export function ZohoBooksHistoricalPanel() {
                   ×
                 </button>
               ) : null}
-              <datalist id="all-marketplaces-product-suggestions">
-                {productSuggestions.map((name) => (
-                  <option key={name} value={name} />
-                ))}
-              </datalist>
+              {productSuggestionsOpen && productSearchInput.trim().length > 0 ? (
+                <ul className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 max-h-80 overflow-y-auto rounded-xl border border-[#e3d9c8] bg-white py-1 shadow-xl">
+                  {productSuggestions.length > 0 ? (
+                    productSuggestions.map((name) => (
+                      <li key={name}>
+                        <button
+                          type="button"
+                          onClick={() => selectProductSuggestion(name)}
+                          className="w-full px-4 py-2.5 text-left text-sm text-[#2c2420] transition-colors hover:bg-[#faf5ec]"
+                        >
+                          {name}
+                        </button>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="px-4 py-3 text-sm text-[#8a7060]">No matching product suggestions</li>
+                  )}
+                </ul>
+              ) : null}
             </div>
             <select
               value={productSort}
               onChange={(e) => setProductSort(e.target.value as "top_sold" | "least_sold")}
-              className="rounded-md border border-[#e0d8ce] px-2 py-1.5 text-sm text-[#2c2420]"
+              className="min-h-[42px] rounded-md border border-[#e0d8ce] px-3 py-1.5 text-sm text-[#2c2420]"
             >
               <option value="top_sold">Top sold</option>
               <option value="least_sold">Least sold</option>

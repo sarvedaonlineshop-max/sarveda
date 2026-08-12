@@ -49,7 +49,7 @@ export function normalizeZohoChannel(input: {
   if (blob.includes("web sales") || sales.toLowerCase() === "web sales") return "Web Sales";
   if (sales) return sales;
   if (mp) return mp;
-  return "Direct/Other";
+  return "Direct Sales";
 }
 
 export type ZohoHistoricalAnalytics = {
@@ -566,15 +566,30 @@ export async function getZohoProductChannelBreakdown(opts: {
   const map = new Map<string, number>();
   let totalUnits = 0;
 
+  const targetSku = sku === "—" ? "" : sku;
+
   for (const invoice of invoices) {
-    const channel = invoice.channelNormalized || "Direct/Other";
+    const channel = (invoice.channelNormalized || "").trim() || "Direct Sales";
     for (const line of invoice.lines) {
       const parts = parseItemName(line.itemName, line.sku);
       const lineSku = (line.sku || "").trim();
-      if (lineSku !== sku || parts.productName !== productName) continue;
+      const skuMatches = targetSku ? lineSku === targetSku : !lineSku;
+      if (!skuMatches || parts.productName !== productName) continue;
       const qty = Number(line.quantity) || 0;
       totalUnits += qty;
       map.set(channel, (map.get(channel) || 0) + qty);
+    }
+  }
+
+  if (map.size === 0) {
+    for (const invoice of invoices) {
+      for (const line of invoice.lines) {
+        const parts = parseItemName(line.itemName, line.sku);
+        if (parts.productName !== productName) continue;
+        const qty = Number(line.quantity) || 0;
+        totalUnits += qty;
+        map.set("Direct Sales", (map.get("Direct Sales") || 0) + qty);
+      }
     }
   }
 
