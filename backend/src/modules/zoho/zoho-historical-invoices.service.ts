@@ -1,6 +1,6 @@
 /**
- * Zoho Books historical invoices — isolated from Order / MarketplaceOrder.
- * Analytics + shared channel normalization for import.
+ * Historical all-marketplaces invoices imported from Zoho Books.
+ * Kept fully separate from live website Orders / MarketplaceOrder tables.
  */
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../config/db";
@@ -13,12 +13,12 @@ const FX_TO_INR: Record<string, number> = {
   EUR: parseFloat(process.env.REPORTING_EUR_INR ?? "90"),
 };
 
+const EXCLUDED_STATUSES = new Set(["void", "draft"]);
+
 export function reportingInrPaiseFromMinor(currency: string, amountMinor: number): number {
   const c = (currency || "INR").toUpperCase();
   const fx = FX_TO_INR[c] ?? FX_TO_INR.USD;
-  // amountMinor is already *100 of major; convert major→INR→paise
-  const major = amountMinor / 100;
-  return Math.round(major * fx * 100);
+  return Math.round((amountMinor / 100) * fx * 100);
 }
 
 export function toMinor(major: number | null | undefined): number {
@@ -52,43 +52,102 @@ export function normalizeZohoChannel(input: {
   return "Direct/Other";
 }
 
-const EXCLUDED_STATUSES = new Set(["void", "draft"]);
-
 export type ZohoHistoricalAnalytics = {
   range: { from: string; to: string; allTimeFrom: string | null; allTimeTo: string | null };
   totals: {
-    invoices: number;
+    orders: number;
     lineItems: number;
     unitsSold: number;
     revenueInInrPaise: number;
-    excludedInvoices: number;
+    excludedOrders: number;
   };
-  byChannel: Array<{
-    channel: string;
-    invoices: number;
-    unitsSold: number;
-    revenueInInrPaise: number;
-  }>;
-  byMonth: Array<{
-    month: string;
-    invoices: number;
-    revenueInInrPaise: number;
-  }>;
-  byCurrency: Array<{
-    currency: string;
-    invoices: number;
-    totalInMinor: number;
-    revenueInInrPaise: number;
-  }>;
-  topSkus: Array<{
+  topSeller: {
+    productName: string;
+    variantName: string;
     sku: string;
-    itemName: string | null;
     unitsSold: number;
-    lineRevenueInMinorApprox: number;
-    invoiceCount: number;
+  } | null;
+};
+
+export type ZohoHistoricalProductRow = {
+  productName: string;
+  variantName: string;
+  sku: string;
+  unitsSold: number;
+};
+
+export type ZohoHistoricalProductsList = {
+  total: number;
+  suggestions: string[];
+  items: ZohoHistoricalProductRow[];
+};
+
+export type ZohoHistoricalOrderRow = {
+  zohoInvoiceId: string;
+  invoiceNumber: string;
+  invoiceDate: string;
+  customerName: string | null;
+  billingCity: string | null;
+  billingState: string | null;
+  billingCountry: string | null;
+  totalInMinor: number;
+  currency: string;
+  orderStatus: "PAID" | "CANCELLED" | "REFUNDED" | "DRAFT";
+  itemsShort: string;
+};
+
+export type ZohoHistoricalOrdersList = {
+  total: number;
+  options: {
+    cities: string[];
+    states: string[];
+    countries: string[];
+  };
+  items: ZohoHistoricalOrderRow[];
+};
+
+export type ZohoHistoricalOrderDetail = {
+  zohoInvoiceId: string;
+  invoiceNumber: string;
+  invoiceDate: string;
+  dueDate: string | null;
+  customerName: string | null;
+  email: string | null;
+  phone: string | null;
+  billingAddress: {
+    city: string | null;
+    state: string | null;
+    country: string | null;
+    postalCode: string | null;
+  };
+  shippingAddress: {
+    city: string | null;
+    state: string | null;
+    country: string | null;
+  };
+  currency: string;
+  status: string;
+  channel: string;
+  subtotalInMinor: number;
+  shippingInMinor: number;
+  taxInMinor: number;
+  discountInMinor: number;
+  totalInMinor: number;
+  balanceInMinor: number;
+  lines: Array<{
+    itemName: string | null;
+    sku: string | null;
+    quantity: number;
+    unitPriceInMinor: number;
+    lineTotalInMinor: number;
+    taxAmountInMinor: number;
+    hsnSac: string | null;
   }>;
-  dailyInvoices: Array<{ date: string; invoices: number; revenueInInrPaise: number }>;
-  conclusion: string[];
+};
+
+type ParsedItemParts = {
+  productName: string;
+  variantName: string;
 };
 
 function parseDay(s?: string | null): Date | null {
@@ -96,210 +155,130 @@ function parseDay(s?: string | null): Date | null {
   return new Date(`${s}T00:00:00.000Z`);
 }
 
+function buildWhere(opts: { from?: string; to?: string; channel?: string }) {
+  return prisma.zohoHistoricalInvoice.aggregate({
+    _min: { invoiceDate: true },
+    _max: { invoiceDate: true },
+  }).then((bounds) => {
+    const allTimeFrom = bounds._min.invoiceDate
+      ? bounds._min.invoiceDate.toISOString().slice(0, 10)
+      : null;
+    const allTimeTo = bounds._max.invoiceDate
+      ? bounds._max.invoiceDate.toISOString().slice(0, 10)
+      : null;
+
+    const from = parseDay(opts.from) ?? (allTimeFrom ? parseDay(allTimeFrom)! : new Date("2024-01-01"));
+    const toRaw = parseDay(opts.to) ?? (allTimeTo ? parseDay(allTimeTo)! : new Date());
+    const to = new Date(toRaw);
+    to.setUTCHours(23, 59, 59, 999);
+
+    const where: Prisma.ZohoHistoricalInvoiceWhereInput = {
+      invoiceDate: { gte: from, lte: to },
+      status: { notIn: [...EXCLUDED_STATUSES] },
+    };
+    if (opts.channel && opts.channel !== "ALL") {
+      where.channelNormalized = opts.channel;
+    }
+
+    return {
+      where,
+      range: {
+        from: from.toISOString().slice(0, 10),
+        to: toRaw.toISOString().slice(0, 10),
+        allTimeFrom,
+        allTimeTo,
+      },
+    };
+  });
+}
+
+function parseItemName(itemName: string | null, sku: string | null): ParsedItemParts {
+  const raw = (itemName || "").trim();
+  if (!raw) {
+    return { productName: sku?.trim() || "Unnamed product", variantName: "" };
+  }
+  const parts = raw.split("|").map((part) => part.trim()).filter(Boolean);
+  if (parts.length <= 1) {
+    return { productName: raw, variantName: "" };
+  }
+  return {
+    productName: parts[0],
+    variantName: parts.slice(1).join(" / "),
+  };
+}
+
+function mapZohoStatus(status: string): "PAID" | "CANCELLED" | "REFUNDED" | "DRAFT" {
+  const s = (status || "").toLowerCase();
+  if (s.includes("void") || s.includes("cancel")) return "CANCELLED";
+  if (s.includes("refund")) return "REFUNDED";
+  if (s.includes("draft")) return "DRAFT";
+  return "PAID";
+}
+
 export async function getZohoHistoricalAnalytics(opts: {
   from?: string;
   to?: string;
   channel?: string;
 }): Promise<ZohoHistoricalAnalytics> {
-  const bounds = await prisma.zohoHistoricalInvoice.aggregate({
-    _min: { invoiceDate: true },
-    _max: { invoiceDate: true },
-  });
-  const allTimeFrom = bounds._min.invoiceDate
-    ? bounds._min.invoiceDate.toISOString().slice(0, 10)
-    : null;
-  const allTimeTo = bounds._max.invoiceDate
-    ? bounds._max.invoiceDate.toISOString().slice(0, 10)
-    : null;
-
-  const from = parseDay(opts.from) ?? (allTimeFrom ? parseDay(allTimeFrom)! : new Date("2024-01-01"));
-  const toRaw = parseDay(opts.to) ?? (allTimeTo ? parseDay(allTimeTo)! : new Date());
-  const to = new Date(toRaw);
-  to.setUTCHours(23, 59, 59, 999);
-
-  const where: Prisma.ZohoHistoricalInvoiceWhereInput = {
-    invoiceDate: { gte: from, lte: to },
-    status: { notIn: [...EXCLUDED_STATUSES] },
-  };
-  if (opts.channel && opts.channel !== "ALL") {
-    where.channelNormalized = opts.channel;
-  }
+  const { where, range } = await buildWhere(opts);
 
   const invoices = await prisma.zohoHistoricalInvoice.findMany({
     where,
     select: {
       id: true,
-      invoiceDate: true,
-      currency: true,
-      totalInMinor: true,
+      lines: { select: { itemName: true, sku: true, quantity: true } },
       reportingTotalInInrPaise: true,
-      channelNormalized: true,
-      status: true,
-      lines: {
-        select: {
-          sku: true,
-          itemName: true,
-          quantity: true,
-          lineTotalInMinor: true,
-        },
-      },
     },
   });
 
-  const excludedInvoices = await prisma.zohoHistoricalInvoice.count({
+  const excludedOrders = await prisma.zohoHistoricalInvoice.count({
     where: {
-      invoiceDate: { gte: from, lte: to },
+      invoiceDate: {
+        gte: new Date(`${range.from}T00:00:00.000Z`),
+        lte: new Date(`${range.to}T23:59:59.999Z`),
+      },
       status: { in: [...EXCLUDED_STATUSES] },
       ...(opts.channel && opts.channel !== "ALL" ? { channelNormalized: opts.channel } : {}),
     },
   });
 
-  const byChannelMap = new Map<
-    string,
-    { invoices: number; unitsSold: number; revenueInInrPaise: number }
-  >();
-  const byMonthMap = new Map<string, { invoices: number; revenueInInrPaise: number }>();
-  const byCurrencyMap = new Map<
-    string,
-    { invoices: number; totalInMinor: number; revenueInInrPaise: number }
-  >();
-  const dailyMap = new Map<string, { invoices: number; revenueInInrPaise: number }>();
-  const skuMap = new Map<
-    string,
-    {
-      sku: string;
-      itemName: string | null;
-      unitsSold: number;
-      lineRevenueInMinorApprox: number;
-      invoiceIds: Set<string>;
-    }
-  >();
-
-  let lineItems = 0;
   let unitsSold = 0;
+  let lineItems = 0;
   let revenueInInrPaise = 0;
+  const skuMap = new Map<string, ZohoHistoricalProductRow>();
 
-  for (const inv of invoices) {
-    revenueInInrPaise += inv.reportingTotalInInrPaise;
-    const ch = inv.channelNormalized || "Direct/Other";
-    const chRow = byChannelMap.get(ch) || { invoices: 0, unitsSold: 0, revenueInInrPaise: 0 };
-    chRow.invoices += 1;
-    chRow.revenueInInrPaise += inv.reportingTotalInInrPaise;
-    byChannelMap.set(ch, chRow);
-
-    const month = inv.invoiceDate.toISOString().slice(0, 7);
-    const mRow = byMonthMap.get(month) || { invoices: 0, revenueInInrPaise: 0 };
-    mRow.invoices += 1;
-    mRow.revenueInInrPaise += inv.reportingTotalInInrPaise;
-    byMonthMap.set(month, mRow);
-
-    const cur = inv.currency || "INR";
-    const cRow = byCurrencyMap.get(cur) || {
-      invoices: 0,
-      totalInMinor: 0,
-      revenueInInrPaise: 0,
-    };
-    cRow.invoices += 1;
-    cRow.totalInMinor += inv.totalInMinor;
-    cRow.revenueInInrPaise += inv.reportingTotalInInrPaise;
-    byCurrencyMap.set(cur, cRow);
-
-    const day = inv.invoiceDate.toISOString().slice(0, 10);
-    const dRow = dailyMap.get(day) || { invoices: 0, revenueInInrPaise: 0 };
-    dRow.invoices += 1;
-    dRow.revenueInInrPaise += inv.reportingTotalInInrPaise;
-    dailyMap.set(day, dRow);
-
-    for (const line of inv.lines) {
+  for (const invoice of invoices) {
+    revenueInInrPaise += invoice.reportingTotalInInrPaise;
+    for (const line of invoice.lines) {
       lineItems += 1;
       const qty = Number(line.quantity) || 0;
       unitsSold += qty;
-      chRow.unitsSold += qty;
-      const skuKey = (line.sku || "").trim() || `(no-sku) ${line.itemName || "item"}`;
-      const s =
-        skuMap.get(skuKey) ||
-        {
-          sku: (line.sku || "").trim() || "—",
-          itemName: line.itemName,
-          unitsSold: 0,
-          lineRevenueInMinorApprox: 0,
-          invoiceIds: new Set<string>(),
-        };
-      s.unitsSold += qty;
-      s.lineRevenueInMinorApprox += line.lineTotalInMinor;
-      s.invoiceIds.add(inv.id);
-      if (!s.itemName && line.itemName) s.itemName = line.itemName;
-      skuMap.set(skuKey, s);
+      const parts = parseItemName(line.itemName, line.sku);
+      const key = `${line.sku || "—"}|${parts.productName}|${parts.variantName}`;
+      const row = skuMap.get(key) || {
+        productName: parts.productName,
+        variantName: parts.variantName,
+        sku: line.sku?.trim() || "—",
+        unitsSold: 0,
+      };
+      row.unitsSold += qty;
+      skuMap.set(key, row);
     }
-    byChannelMap.set(ch, chRow);
   }
 
-  const byChannel = Array.from(byChannelMap.entries())
-    .map(([channel, v]) => ({ channel, ...v }))
-    .sort((a, b) => b.revenueInInrPaise - a.revenueInInrPaise);
-
-  const byMonth = Array.from(byMonthMap.entries())
-    .map(([month, v]) => ({ month, ...v }))
-    .sort((a, b) => a.month.localeCompare(b.month));
-
-  const byCurrency = Array.from(byCurrencyMap.entries())
-    .map(([currency, v]) => ({ currency, ...v }))
-    .sort((a, b) => b.revenueInInrPaise - a.revenueInInrPaise);
-
-  const topSkus = Array.from(skuMap.values())
-    .map((s) => ({
-      sku: s.sku,
-      itemName: s.itemName,
-      unitsSold: Math.round(s.unitsSold * 100) / 100,
-      lineRevenueInMinorApprox: s.lineRevenueInMinorApprox,
-      invoiceCount: s.invoiceIds.size,
-    }))
-    .sort((a, b) => b.unitsSold - a.unitsSold)
-    .slice(0, 20);
-
-  const dailyInvoices = Array.from(dailyMap.entries())
-    .map(([date, v]) => ({ date, ...v }))
-    .sort((a, b) => a.date.localeCompare(b.date));
-
-  const topChannel = byChannel[0];
-  const topSku = topSkus[0];
-  const conclusion: string[] = [
-    `${invoices.length.toLocaleString("en-IN")} Zoho invoices in range (excl. void/draft) · ${Math.round(unitsSold).toLocaleString("en-IN")} units · ₹${(revenueInInrPaise / 100).toLocaleString("en-IN", { maximumFractionDigits: 0 })} reporting INR.`,
-  ];
-  if (topChannel) {
-    conclusion.push(
-      `Largest channel: ${topChannel.channel} (${topChannel.invoices.toLocaleString("en-IN")} invoices, ₹${(topChannel.revenueInInrPaise / 100).toLocaleString("en-IN", { maximumFractionDigits: 0 })}).`
-    );
-  }
-  if (topSku) {
-    conclusion.push(
-      `Top SKU by units: ${topSku.sku}${topSku.itemName ? ` — ${topSku.itemName}` : ""} (${topSku.unitsSold} units).`
-    );
-  }
-  if (excludedInvoices > 0) {
-    conclusion.push(`${excludedInvoices} void/draft invoices excluded from totals.`);
-  }
+  const topSeller =
+    Array.from(skuMap.values()).sort((a, b) => b.unitsSold - a.unitsSold)[0] ?? null;
 
   return {
-    range: {
-      from: from.toISOString().slice(0, 10),
-      to: toRaw.toISOString().slice(0, 10),
-      allTimeFrom,
-      allTimeTo,
-    },
+    range,
     totals: {
-      invoices: invoices.length,
+      orders: invoices.length,
       lineItems,
       unitsSold: Math.round(unitsSold * 100) / 100,
       revenueInInrPaise,
-      excludedInvoices,
+      excludedOrders,
     },
-    byChannel,
-    byMonth,
-    byCurrency,
-    topSkus,
-    dailyInvoices,
-    conclusion,
+    topSeller,
   };
 }
 
@@ -310,4 +289,242 @@ export async function listZohoHistoricalChannels(): Promise<string[]> {
     orderBy: { channelNormalized: "asc" },
   });
   return rows.map((r) => r.channelNormalized).filter(Boolean);
+}
+
+export async function listZohoHistoricalProducts(opts: {
+  from?: string;
+  to?: string;
+  channel?: string;
+  search?: string;
+  sort?: "top_sold" | "least_sold";
+  limit?: number;
+  offset?: number;
+}): Promise<ZohoHistoricalProductsList> {
+  const { where } = await buildWhere(opts);
+  const invoices = await prisma.zohoHistoricalInvoice.findMany({
+    where,
+    select: {
+      lines: {
+        select: {
+          itemName: true,
+          sku: true,
+          quantity: true,
+        },
+      },
+    },
+  });
+
+  const q = (opts.search || "").trim().toLowerCase();
+  const map = new Map<string, ZohoHistoricalProductRow>();
+  const suggestions = new Set<string>();
+
+  for (const invoice of invoices) {
+    for (const line of invoice.lines) {
+      const parts = parseItemName(line.itemName, line.sku);
+      suggestions.add(parts.productName);
+      if (
+        q &&
+        !parts.productName.toLowerCase().includes(q) &&
+        !parts.variantName.toLowerCase().includes(q) &&
+        !(line.sku || "").toLowerCase().includes(q)
+      ) {
+        continue;
+      }
+
+      const key = `${line.sku || "—"}|${parts.productName}|${parts.variantName}`;
+      const row = map.get(key) || {
+        productName: parts.productName,
+        variantName: parts.variantName,
+        sku: line.sku?.trim() || "—",
+        unitsSold: 0,
+      };
+      row.unitsSold += Number(line.quantity) || 0;
+      map.set(key, row);
+    }
+  }
+
+  const sorted = Array.from(map.values()).sort((a, b) => {
+    if (opts.sort === "least_sold") return a.unitsSold - b.unitsSold || a.productName.localeCompare(b.productName);
+    return b.unitsSold - a.unitsSold || a.productName.localeCompare(b.productName);
+  });
+
+  const offset = opts.offset ?? 0;
+  const limit = opts.limit ?? 25;
+  return {
+    total: sorted.length,
+    suggestions: Array.from(suggestions)
+      .filter((name) => (q ? name.toLowerCase().includes(q) : true))
+      .sort((a, b) => a.localeCompare(b))
+      .slice(0, 20),
+    items: sorted.slice(offset, offset + limit),
+  };
+}
+
+export async function listZohoHistoricalOrders(opts: {
+  from?: string;
+  to?: string;
+  channel?: string;
+  search?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  sort?: "highest" | "lowest";
+  limit?: number;
+  offset?: number;
+}): Promise<ZohoHistoricalOrdersList> {
+  const { where } = await buildWhere(opts);
+  const q = (opts.search || "").trim();
+  if (q) {
+    where.OR = [
+      { invoiceNumber: { contains: q, mode: "insensitive" } },
+      { customerName: { contains: q, mode: "insensitive" } },
+      { billingCity: { contains: q, mode: "insensitive" } },
+      { billingState: { contains: q, mode: "insensitive" } },
+      { billingCountry: { contains: q, mode: "insensitive" } },
+    ];
+  }
+  if (opts.city) where.billingCity = opts.city;
+  if (opts.state) where.billingState = opts.state;
+  if (opts.country) where.billingCountry = opts.country;
+
+  const [total, rows, allLocations] = await Promise.all([
+    prisma.zohoHistoricalInvoice.count({ where }),
+    prisma.zohoHistoricalInvoice.findMany({
+      where,
+      orderBy: { totalInMinor: opts.sort === "lowest" ? "asc" : "desc" },
+      skip: opts.offset ?? 0,
+      take: opts.limit ?? 25,
+      select: {
+        zohoInvoiceId: true,
+        invoiceNumber: true,
+        invoiceDate: true,
+        customerName: true,
+        billingCity: true,
+        billingState: true,
+        billingCountry: true,
+        totalInMinor: true,
+        currency: true,
+        status: true,
+        lines: {
+          take: 3,
+          select: { itemName: true, quantity: true },
+        },
+      },
+    }),
+    prisma.zohoHistoricalInvoice.findMany({
+      select: { billingCity: true, billingState: true, billingCountry: true },
+      distinct: ["billingCity", "billingState", "billingCountry"],
+      orderBy: [{ billingCountry: "asc" }, { billingState: "asc" }, { billingCity: "asc" }],
+    }),
+  ]);
+
+  return {
+    total,
+    options: {
+      cities: Array.from(new Set(allLocations.map((r) => r.billingCity).filter(Boolean) as string[])),
+      states: Array.from(new Set(allLocations.map((r) => r.billingState).filter(Boolean) as string[])),
+      countries: Array.from(new Set(allLocations.map((r) => r.billingCountry).filter(Boolean) as string[])),
+    },
+    items: rows.map((row) => ({
+      zohoInvoiceId: row.zohoInvoiceId,
+      invoiceNumber: row.invoiceNumber,
+      invoiceDate: row.invoiceDate.toISOString().slice(0, 10),
+      customerName: row.customerName,
+      billingCity: row.billingCity,
+      billingState: row.billingState,
+      billingCountry: row.billingCountry,
+      totalInMinor: row.totalInMinor,
+      currency: row.currency,
+      orderStatus: mapZohoStatus(row.status),
+      itemsShort: row.lines
+        .map((line) => `${line.itemName || "Item"}${line.quantity ? ` x${line.quantity}` : ""}`)
+        .join(", "),
+    })),
+  };
+}
+
+export async function getZohoHistoricalOrderDetail(
+  zohoInvoiceId: string
+): Promise<ZohoHistoricalOrderDetail | null> {
+  const row = await prisma.zohoHistoricalInvoice.findUnique({
+    where: { zohoInvoiceId },
+    select: {
+      zohoInvoiceId: true,
+      invoiceNumber: true,
+      invoiceDate: true,
+      dueDate: true,
+      customerName: true,
+      email: true,
+      phone: true,
+      billingCity: true,
+      billingState: true,
+      billingCountry: true,
+      billingPostalCode: true,
+      shippingCity: true,
+      shippingState: true,
+      shippingCountry: true,
+      currency: true,
+      status: true,
+      channelNormalized: true,
+      subtotalInMinor: true,
+      shippingInMinor: true,
+      taxInMinor: true,
+      discountInMinor: true,
+      totalInMinor: true,
+      balanceInMinor: true,
+      lines: {
+        orderBy: { lineIndex: "asc" },
+        select: {
+          itemName: true,
+          sku: true,
+          quantity: true,
+          unitPriceInMinor: true,
+          lineTotalInMinor: true,
+          taxAmountInMinor: true,
+          hsnSac: true,
+        },
+      },
+    },
+  });
+
+  if (!row) return null;
+
+  return {
+    zohoInvoiceId: row.zohoInvoiceId,
+    invoiceNumber: row.invoiceNumber,
+    invoiceDate: row.invoiceDate.toISOString().slice(0, 10),
+    dueDate: row.dueDate ? row.dueDate.toISOString().slice(0, 10) : null,
+    customerName: row.customerName,
+    email: row.email,
+    phone: row.phone,
+    billingAddress: {
+      city: row.billingCity,
+      state: row.billingState,
+      country: row.billingCountry,
+      postalCode: row.billingPostalCode,
+    },
+    shippingAddress: {
+      city: row.shippingCity,
+      state: row.shippingState,
+      country: row.shippingCountry,
+    },
+    currency: row.currency,
+    status: mapZohoStatus(row.status),
+    channel: row.channelNormalized,
+    subtotalInMinor: row.subtotalInMinor,
+    shippingInMinor: row.shippingInMinor,
+    taxInMinor: row.taxInMinor,
+    discountInMinor: row.discountInMinor,
+    totalInMinor: row.totalInMinor,
+    balanceInMinor: row.balanceInMinor,
+    lines: row.lines.map((line) => ({
+      itemName: line.itemName,
+      sku: line.sku,
+      quantity: Number(line.quantity) || 0,
+      unitPriceInMinor: line.unitPriceInMinor,
+      lineTotalInMinor: line.lineTotalInMinor,
+      taxAmountInMinor: line.taxAmountInMinor,
+      hsnSac: line.hsnSac,
+    })),
+  };
 }

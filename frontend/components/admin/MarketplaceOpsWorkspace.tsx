@@ -1128,7 +1128,7 @@ export function MarketplaceOpsWorkspace() {
           onClick={() => setActiveTab("zoho_books")}
           className={`border-b-2 px-1 pb-2 text-sm font-medium ${activeTab === "zoho_books" ? "border-[#b98a3e] text-[#1c352a] font-semibold" : "border-transparent text-[#8a7060] hover:text-[#1c352a] transition-colors"}`}
         >
-          Zoho Books
+          All marketplaces
         </button>
         {CHANNELS.map((item) => (
           <button

@@ -1760,7 +1760,7 @@ export function syncEtsyMarketplaceAll(input?: { monthsBack?: number; maxPagesPe
   });
 }
 
-/** Historical Zoho Books invoices (all channels) — separate from Order / MarketplaceOrder. */
+/** Historical all-marketplaces invoices — separate from Order / MarketplaceOrder. */
 export type ZohoHistoricalAnalyticsData = {
   range: {
     from: string;
@@ -1769,34 +1769,18 @@ export type ZohoHistoricalAnalyticsData = {
     allTimeTo: string | null;
   };
   totals: {
-    invoices: number;
+    orders: number;
     lineItems: number;
     unitsSold: number;
     revenueInInrPaise: number;
-    excludedInvoices: number;
+    excludedOrders: number;
   };
-  byChannel: Array<{
-    channel: string;
-    invoices: number;
-    unitsSold: number;
-    revenueInInrPaise: number;
-  }>;
-  byMonth: Array<{ month: string; invoices: number; revenueInInrPaise: number }>;
-  byCurrency: Array<{
-    currency: string;
-    invoices: number;
-    totalInMinor: number;
-    revenueInInrPaise: number;
-  }>;
-  topSkus: Array<{
+  topSeller: {
+    productName: string;
+    variantName: string;
     sku: string;
-    itemName: string | null;
     unitsSold: number;
-    lineRevenueInMinorApprox: number;
-    invoiceCount: number;
-  }>;
-  dailyInvoices: Array<{ date: string; invoices: number; revenueInInrPaise: number }>;
-  conclusion: string[];
+  } | null;
 };
 
 export function fetchZohoBooksAnalytics(params?: {
@@ -1816,6 +1800,124 @@ export function fetchZohoBooksAnalytics(params?: {
 
 export function fetchZohoBooksChannels() {
   return adminFetch<{ channels: string[] }>("/api/admin/marketplaces/zoho-books/channels");
+}
+
+export type ZohoHistoricalProductRow = {
+  productName: string;
+  variantName: string;
+  sku: string;
+  unitsSold: number;
+};
+
+export function fetchZohoBooksProducts(params?: {
+  from?: string;
+  to?: string;
+  channel?: string;
+  search?: string;
+  sort?: "top_sold" | "least_sold";
+  limit?: number;
+  offset?: number;
+}) {
+  const q = new URLSearchParams();
+  if (params?.from) q.set("from", params.from);
+  if (params?.to) q.set("to", params.to);
+  if (params?.channel) q.set("channel", params.channel);
+  if (params?.search) q.set("search", params.search);
+  if (params?.sort) q.set("sort", params.sort);
+  if (params?.limit != null) q.set("limit", String(params.limit));
+  if (params?.offset != null) q.set("offset", String(params.offset));
+  return adminFetch<{ total: number; suggestions: string[]; items: ZohoHistoricalProductRow[] }>(
+    `/api/admin/marketplaces/zoho-books/products?${q.toString()}`
+  );
+}
+
+export type ZohoHistoricalOrderRow = {
+  zohoInvoiceId: string;
+  invoiceNumber: string;
+  invoiceDate: string;
+  customerName: string | null;
+  billingCity: string | null;
+  billingState: string | null;
+  billingCountry: string | null;
+  totalInMinor: number;
+  currency: string;
+  orderStatus: "PAID" | "CANCELLED" | "REFUNDED" | "DRAFT";
+  itemsShort: string;
+};
+
+export function fetchZohoBooksOrders(params?: {
+  from?: string;
+  to?: string;
+  channel?: string;
+  search?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  sort?: "highest" | "lowest";
+  limit?: number;
+  offset?: number;
+}) {
+  const q = new URLSearchParams();
+  if (params?.from) q.set("from", params.from);
+  if (params?.to) q.set("to", params.to);
+  if (params?.channel) q.set("channel", params.channel);
+  if (params?.search) q.set("search", params.search);
+  if (params?.city) q.set("city", params.city);
+  if (params?.state) q.set("state", params.state);
+  if (params?.country) q.set("country", params.country);
+  if (params?.sort) q.set("sort", params.sort);
+  if (params?.limit != null) q.set("limit", String(params.limit));
+  if (params?.offset != null) q.set("offset", String(params.offset));
+  return adminFetch<{
+    total: number;
+    options: { cities: string[]; states: string[]; countries: string[] };
+    items: ZohoHistoricalOrderRow[];
+  }>(`/api/admin/marketplaces/zoho-books/orders?${q.toString()}`);
+}
+
+export type ZohoHistoricalOrderDetail = {
+  zohoInvoiceId: string;
+  invoiceNumber: string;
+  invoiceDate: string;
+  dueDate: string | null;
+  customerName: string | null;
+  email: string | null;
+  phone: string | null;
+  billingAddress: {
+    city: string | null;
+    state: string | null;
+    country: string | null;
+    postalCode: string | null;
+  };
+  shippingAddress: {
+    city: string | null;
+    state: string | null;
+    country: string | null;
+  };
+  currency: string;
+  status: string;
+  channel: string;
+  subtotalInMinor: number;
+  shippingInMinor: number;
+  taxInMinor: number;
+  discountInMinor: number;
+  totalInMinor: number;
+  balanceInMinor: number;
+  lines: Array<{
+    itemName: string | null;
+    sku: string | null;
+    quantity: number;
+    unitPriceInMinor: number;
+    lineTotalInMinor: number;
+    taxAmountInMinor: number;
+    hsnSac: string | null;
+  }>;
+};
+
+export function fetchZohoBooksOrderDetail(zohoInvoiceId: string) {
+  return adminFetch<ZohoHistoricalOrderDetail>(
+    `/api/admin/marketplaces/zoho-books/orders/${encodeURIComponent(zohoInvoiceId)}`
+  );
 }
 
 export type ZohoStockSyncResult = {

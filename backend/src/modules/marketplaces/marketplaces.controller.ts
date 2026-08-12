@@ -283,3 +283,90 @@ export async function zohoBooksChannels(_req: Request, res: Response, next: Next
     next(err);
   }
 }
+
+/** GET /api/admin/marketplaces/zoho-books/products */
+export async function zohoBooksProducts(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { listZohoHistoricalProducts } = await import("../zoho/zoho-historical-invoices.service");
+    const from = typeof req.query.from === "string" ? req.query.from : undefined;
+    const to = typeof req.query.to === "string" ? req.query.to : undefined;
+    const channel = typeof req.query.channel === "string" ? req.query.channel : undefined;
+    const search = typeof req.query.search === "string" ? req.query.search : undefined;
+    const sort =
+      req.query.sort === "least_sold" || req.query.sort === "top_sold"
+        ? req.query.sort
+        : undefined;
+    const limit =
+      typeof req.query.limit === "string" && !Number.isNaN(Number(req.query.limit))
+        ? Number(req.query.limit)
+        : undefined;
+    const offset =
+      typeof req.query.offset === "string" && !Number.isNaN(Number(req.query.offset))
+        ? Number(req.query.offset)
+        : undefined;
+    res.json({
+      success: true,
+      data: await listZohoHistoricalProducts({ from, to, channel, search, sort, limit, offset }),
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** GET /api/admin/marketplaces/zoho-books/orders */
+export async function zohoBooksOrders(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { listZohoHistoricalOrders } = await import("../zoho/zoho-historical-invoices.service");
+    const from = typeof req.query.from === "string" ? req.query.from : undefined;
+    const to = typeof req.query.to === "string" ? req.query.to : undefined;
+    const channel = typeof req.query.channel === "string" ? req.query.channel : undefined;
+    const search = typeof req.query.search === "string" ? req.query.search : undefined;
+    const city = typeof req.query.city === "string" ? req.query.city : undefined;
+    const state = typeof req.query.state === "string" ? req.query.state : undefined;
+    const country = typeof req.query.country === "string" ? req.query.country : undefined;
+    const sort =
+      req.query.sort === "lowest" || req.query.sort === "highest"
+        ? req.query.sort
+        : undefined;
+    const limit =
+      typeof req.query.limit === "string" && !Number.isNaN(Number(req.query.limit))
+        ? Number(req.query.limit)
+        : undefined;
+    const offset =
+      typeof req.query.offset === "string" && !Number.isNaN(Number(req.query.offset))
+        ? Number(req.query.offset)
+        : undefined;
+    res.json({
+      success: true,
+      data: await listZohoHistoricalOrders({
+        from,
+        to,
+        channel,
+        search,
+        city,
+        state,
+        country,
+        sort,
+        limit,
+        offset,
+      }),
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** GET /api/admin/marketplaces/zoho-books/orders/:zohoInvoiceId */
+export async function zohoBooksOrderDetail(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { getZohoHistoricalOrderDetail } = await import("../zoho/zoho-historical-invoices.service");
+    const data = await getZohoHistoricalOrderDetail(String(req.params.zohoInvoiceId || ""));
+    if (!data) {
+      res.status(404).json({ success: false, error: "Historical order not found" });
+      return;
+    }
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
