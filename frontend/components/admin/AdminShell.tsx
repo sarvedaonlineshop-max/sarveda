@@ -31,7 +31,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/reviews": "Reviews",
   "/admin/coupons": "Coupons",
   "/admin/products": "Products",
-  "/admin/products/xl": "Website Catalog — XL",
+  "/admin/products/xl": "Products XL View",
   "/admin/courses": "Courses",
   "/admin/enrollments": "Enrollments",
   "/admin/mentors": "Mentors",

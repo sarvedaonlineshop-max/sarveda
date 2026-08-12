@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Save } from "lucide-react";
 
 import { AdminToast } from "@/components/admin/AdminToast";
@@ -19,7 +19,6 @@ type EditRow = {
   variantName: string;
   sku: string;
   qty: string;
-  cost: string;
   mrp: string;
   sale: string;
   mrpUsd: string;
@@ -60,7 +59,6 @@ function apiToEdit(r: XlSheetRow): EditRow {
     variantName: r.variantName,
     sku: r.sku,
     qty: String(r.qty ?? 0),
-    cost: minorToMajorStr(r.costInPaise),
     mrp: minorToMajorStr(r.mrpInPaise),
     sale: minorToMajorStr(r.saleInPaise),
     mrpUsd: minorToMajorStr(r.mrpUsdCents),
@@ -74,6 +72,8 @@ function apiToEdit(r: XlSheetRow): EditRow {
   };
 }
 
+const cellBorder = "1px solid #e3d9c8";
+
 const stickyHead: React.CSSProperties = {
   position: "sticky",
   top: 0,
@@ -85,7 +85,8 @@ const stickyHead: React.CSSProperties = {
   letterSpacing: "0.04em",
   textTransform: "uppercase",
   padding: "8px 6px",
-  borderBottom: "1px solid rgba(255,255,255,0.12)",
+  borderBottom: cellBorder,
+  borderRight: cellBorder,
   whiteSpace: "nowrap",
   textAlign: "left"
 };
@@ -122,6 +123,13 @@ const numInput: React.CSSProperties = {
   textAlign: "right"
 };
 
+const tdSt: React.CSSProperties = {
+  padding: 0,
+  verticalAlign: "middle",
+  borderRight: cellBorder,
+  borderBottom: "1px solid #eee8e0"
+};
+
 function focusMoney(e: React.FocusEvent<HTMLInputElement>) {
   e.currentTarget.style.borderColor = "rgba(185,138,62,0.55)";
   e.currentTarget.style.background = "rgba(185,138,62,0.08)";
@@ -131,9 +139,14 @@ function blurMoney(e: React.FocusEvent<HTMLInputElement>) {
   e.currentTarget.style.background = "transparent";
 }
 
-const COL_COUNT = 14;
+const COL_COUNT = 13;
 
 type StatusFilter = "ACTIVE" | "DRAFT" | "ALL";
+
+function rowMatchesQuery(r: EditRow, q: string) {
+  const blob = [r.productName, r.variantName, r.sku, r.hsnCode].join(" ").toLowerCase();
+  return blob.includes(q);
+}
 
 export default function ProductsXlSheetPage() {
   const [rows, setRows] = useState<EditRow[]>([]);
@@ -142,8 +155,11 @@ export default function ProductsXlSheetPage() {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; error?: boolean } | null>(null);
-  const [filter, setFilter] = useState("");
+  const [filterInput, setFilterInput] = useState("");
+  const [filterApplied, setFilterApplied] = useState("");
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ACTIVE");
+  const searchRef = useRef<HTMLDivElement | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -176,19 +192,60 @@ export default function ProductsXlSheetPage() {
     setStatusFilter(next);
   }
 
+  const suggestions = useMemo(() => {
+    const q = filterInput.trim().toLowerCase();
+    if (!q) return [] as string[];
+    const names = new Set<string>();
+    for (const r of rows) {
+      if (rowMatchesQuery(r, q)) names.add(r.productName);
+    }
+    return Array.from(names).sort((a, b) => a.localeCompare(b)).slice(0, 20);
+  }, [rows, filterInput]);
+
   const filtered = useMemo(() => {
-    const q = filter.trim().toLowerCase();
+    const q = filterApplied.trim().toLowerCase();
     if (!q) return rows.map((r, i) => ({ r, i }));
     return rows
       .map((r, i) => ({ r, i }))
-      .filter(
-        ({ r }) =>
-          r.productName.toLowerCase().includes(q) ||
-          r.variantName.toLowerCase().includes(q) ||
-          r.sku.toLowerCase().includes(q) ||
-          r.hsnCode.toLowerCase().includes(q)
-      );
-  }, [rows, filter]);
+      .filter(({ r }) => rowMatchesQuery(r, q));
+  }, [rows, filterApplied]);
+
+  useEffect(() => {
+    const onDocClick = (event: MouseEvent) => {
+      if (!searchRef.current?.contains(event.target as Node)) {
+        setSuggestionsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+
+  useEffect(() => {
+    const q = filterInput.trim();
+    if (!q) {
+      setSuggestionsOpen(false);
+      return;
+    }
+    setSuggestionsOpen(true);
+  }, [filterInput]);
+
+  function applyFilter(term?: string) {
+    const next = (term ?? filterInput).trim();
+    setFilterApplied(next);
+    setFilterInput(next);
+    setSuggestionsOpen(false);
+  }
+
+  function clearFilter() {
+    setFilterInput("");
+    setFilterApplied("");
+    setSuggestionsOpen(false);
+  }
+
+  function clearFilterInput() {
+    setFilterInput("");
+    setSuggestionsOpen(false);
+  }
 
   function patchRow(index: number, patch: Partial<EditRow>) {
     setRows((prev) => {
@@ -210,7 +267,7 @@ export default function ProductsXlSheetPage() {
     });
   }
 
-  async function onSave() {
+  const onSave = useCallback(async () => {
     if (!dirty || saving) return;
     setSaving(true);
     setErr(null);
@@ -230,7 +287,7 @@ export default function ProductsXlSheetPage() {
           variantName: r.variantName.trim(),
           sku: r.sku.trim(),
           qty,
-          costInPaise: majorStrToMinor(r.cost),
+          costInPaise: null,
           mrpInPaise: majorStrToMinorRequired(r.mrp, `MRP (${rowLabel})`),
           saleInPaise: majorStrToMinorRequired(r.sale, `Sale (${rowLabel})`),
           mrpUsdCents: majorStrToMinor(r.mrpUsd),
@@ -253,7 +310,7 @@ export default function ProductsXlSheetPage() {
         setErr(result.errors.map((e) => `${e.sku}: ${e.error}`).slice(0, 8).join(" · "));
       } else {
         setToast({
-          message: `Saved. Updated ${result.updatedProducts} product(s) and ${result.updatedVariants} variant(s). Storefront prices/names/stock reflect these values.`
+          message: `Saved ${result.updatedVariants} variant(s). Storefront prices, names, and stock updated.`
         });
       }
       await load();
@@ -264,7 +321,18 @@ export default function ProductsXlSheetPage() {
     } finally {
       setSaving(false);
     }
-  }
+  }, [dirty, saving, rows, load]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        void onSave();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onSave]);
 
   return (
     <div
@@ -295,11 +363,10 @@ export default function ProductsXlSheetPage() {
       >
         <div>
           <h1 style={{ color: "#faf5ec", fontSize: "20px", fontWeight: 800, margin: 0 }}>
-            Website Catalog — XL
+            Products XL View
           </h1>
           <p style={{ color: "#a8c4b0", fontSize: "12px", marginTop: "2px", marginBottom: 0 }}>
-            Name · Variant · SKU · Qty · Cost · MRP / Sale · USD · Dinar · GBP · HSN — save updates DB +
-            storefront
+            Name · Variant · SKU · Qty · India Rupees · USD · Dinar · GBP · HSN — Ctrl+S to save
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -327,20 +394,106 @@ export default function ProductsXlSheetPage() {
             <option value="DRAFT">Draft only</option>
             <option value="ALL">Active + Draft</option>
           </select>
-          <input
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder="Filter name / SKU…"
-            style={{
-              width: "200px",
-              border: "1px solid rgba(255,255,255,0.2)",
-              borderRadius: "8px",
-              padding: "8px 12px",
-              fontSize: "13px",
-              background: "rgba(0,0,0,0.2)",
-              color: "#faf5ec"
-            }}
-          />
+          <div ref={searchRef} className="relative" style={{ width: "min(22rem, 42vw)" }}>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                applyFilter();
+              }}
+            >
+              <input
+                value={filterInput}
+                onChange={(e) => setFilterInput(e.target.value)}
+                onFocus={() => {
+                  if (filterInput.trim()) setSuggestionsOpen(true);
+                }}
+                placeholder="Search name / SKU — Enter to filter"
+                autoComplete="off"
+                style={{
+                  width: "100%",
+                  border: "1px solid rgba(255,255,255,0.2)",
+                  borderRadius: "999px",
+                  padding: "8px 36px 8px 14px",
+                  fontSize: "13px",
+                  background: "rgba(0,0,0,0.2)",
+                  color: "#faf5ec"
+                }}
+              />
+            </form>
+            {filterInput ? (
+              <button
+                type="button"
+                onClick={clearFilterInput}
+                style={{
+                  position: "absolute",
+                  right: "10px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "#a8c4b0",
+                  background: "none",
+                  border: "none",
+                  fontSize: "18px",
+                  cursor: "pointer"
+                }}
+                aria-label="Clear search"
+              >
+                ×
+              </button>
+            ) : null}
+            {suggestionsOpen && filterInput.trim() ? (
+              <ul
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  right: 0,
+                  top: "calc(100% + 6px)",
+                  zIndex: 40,
+                  maxHeight: "20rem",
+                  overflowY: "auto",
+                  borderRadius: "12px",
+                  border: "1px solid #e3d9c8",
+                  background: "#fff",
+                  padding: "4px 0",
+                  boxShadow: "0 12px 28px rgba(0,0,0,0.18)",
+                  listStyle: "none",
+                  margin: 0
+                }}
+              >
+                {suggestions.length > 0 ? (
+                  suggestions.map((name) => (
+                    <li key={name}>
+                      <button
+                        type="button"
+                        onClick={() => applyFilter(name)}
+                        style={{
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "10px 14px",
+                          fontSize: "13px",
+                          color: "#2c2420",
+                          background: "transparent",
+                          border: "none",
+                          cursor: "pointer"
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "#faf5ec";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "transparent";
+                        }}
+                      >
+                        {name}
+                      </button>
+                    </li>
+                  ))
+                ) : (
+                  <li style={{ padding: "10px 14px", fontSize: "13px", color: "#8a7060" }}>
+                    No matching products
+                  </li>
+                )}
+              </ul>
+            ) : null}
+          </div>
           <span style={{ fontSize: "12px", color: "#a8c4b0", minWidth: "7rem" }}>
             {loading ? "Loading…" : `${filtered.length}/${rows.length}`}
             {dirty ? " · unsaved" : ""}
@@ -386,7 +539,7 @@ export default function ProductsXlSheetPage() {
             }}
           >
             <Save size={14} aria-hidden />
-            {saving ? "Saving…" : dirty ? "Save changes" : "No changes"}
+            {saving ? "Saving…" : dirty ? "Save (Ctrl+S)" : "No changes"}
           </button>
         </div>
       </div>
@@ -405,13 +558,53 @@ export default function ProductsXlSheetPage() {
         </div>
       ) : null}
 
+      {filterApplied ? (
+        <div
+          style={{
+            flexShrink: 0,
+            padding: "8px 16px",
+            background: "#faf5ec",
+            borderBottom: "1px solid #e3d9c8",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            fontSize: "13px",
+            color: "#4a3f38"
+          }}
+        >
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              border: "1px solid #d8cdbd",
+              borderRadius: "8px",
+              padding: "4px 10px",
+              background: "#fff"
+            }}
+          >
+            Search: <strong>{filterApplied}</strong>
+            <button
+              type="button"
+              onClick={clearFilter}
+              style={{ border: "none", background: "none", cursor: "pointer", fontSize: "16px", color: "#8a7060" }}
+              aria-label="Remove filter"
+            >
+              ×
+            </button>
+          </span>
+          <span>{filtered.length} result{filtered.length === 1 ? "" : "s"}</span>
+        </div>
+      ) : null}
+
       <div style={{ flex: 1, minHeight: 0, overflow: "auto", background: "#fff" }}>
         <table
           style={{
             width: "100%",
             borderCollapse: "collapse",
-            minWidth: "1280px",
-            tableLayout: "fixed"
+            minWidth: "1200px",
+            tableLayout: "fixed",
+            border: cellBorder
           }}
         >
           <colgroup>
@@ -419,7 +612,6 @@ export default function ProductsXlSheetPage() {
             <col style={{ width: "140px" }} />
             <col style={{ width: "120px" }} />
             <col style={{ width: "64px" }} />
-            <col style={{ width: "80px" }} />
             <col style={{ width: "80px" }} />
             <col style={{ width: "80px" }} />
             <col style={{ width: "72px" }} />
@@ -444,25 +636,19 @@ export default function ProductsXlSheetPage() {
               <th style={stickyHead} rowSpan={2}>
                 Qty
               </th>
-              <th style={stickyHead} rowSpan={2}>
-                Cost
-              </th>
-              <th style={stickyHead} rowSpan={2}>
-                MRP
-              </th>
-              <th style={stickyHead} rowSpan={2}>
-                Proposed sale
+              <th style={{ ...stickyHead, textAlign: "center" }} colSpan={2}>
+                India Rupees (INR)
               </th>
               <th style={{ ...stickyHead, textAlign: "center" }} colSpan={2}>
                 USD
               </th>
               <th style={{ ...stickyHead, textAlign: "center" }} colSpan={2}>
-                Dinar
+                Dinar (AED)
               </th>
               <th style={{ ...stickyHead, textAlign: "center" }} colSpan={2}>
                 GBP
               </th>
-              <th style={stickyHead} rowSpan={2}>
+              <th style={{ ...stickyHead, borderRight: "none" }} rowSpan={2}>
                 HSN
               </th>
             </tr>
@@ -473,6 +659,8 @@ export default function ProductsXlSheetPage() {
               <th style={stickySub}>Sale</th>
               <th style={stickySub}>MRP</th>
               <th style={stickySub}>Sale</th>
+              <th style={stickySub}>MRP</th>
+              <th style={{ ...stickySub, borderRight: "none" }}>Sale</th>
             </tr>
           </thead>
           <tbody>
@@ -491,16 +679,15 @@ export default function ProductsXlSheetPage() {
             ) : (
               filtered.map(({ r, i }) => {
                 const isFirstOfProduct = i === 0 || rows[i - 1]?.productId !== r.productId;
-                const showNameEditor = isFirstOfProduct || filter.trim().length > 0;
+                const showNameEditor = isFirstOfProduct || filterApplied.trim().length > 0;
                 return (
                   <tr
                     key={r.variantId}
                     style={{
-                      borderBottom: "1px solid #eee8e0",
                       background: isFirstOfProduct ? "rgba(185,138,62,0.05)" : "#fff"
                     }}
                   >
-                    <td style={{ padding: 0, verticalAlign: "middle" }}>
+                    <td style={tdSt}>
                       {showNameEditor ? (
                         <input
                           style={{ ...inputSt, fontWeight: 600 }}
@@ -514,7 +701,7 @@ export default function ProductsXlSheetPage() {
                         <div style={{ padding: "6px", minHeight: "30px" }} />
                       )}
                     </td>
-                    <td style={{ padding: 0 }}>
+                    <td style={tdSt}>
                       <input
                         style={inputSt}
                         value={r.variantName}
@@ -524,7 +711,7 @@ export default function ProductsXlSheetPage() {
                         aria-label="Variant name"
                       />
                     </td>
-                    <td style={{ padding: 0 }}>
+                    <td style={tdSt}>
                       <input
                         style={{ ...numInput, textAlign: "left" }}
                         value={r.sku}
@@ -534,7 +721,7 @@ export default function ProductsXlSheetPage() {
                         aria-label="SKU"
                       />
                     </td>
-                    <td style={{ padding: 0 }}>
+                    <td style={tdSt}>
                       <input
                         style={numInput}
                         inputMode="numeric"
@@ -545,19 +732,7 @@ export default function ProductsXlSheetPage() {
                         aria-label="Qty"
                       />
                     </td>
-                    <td style={{ padding: 0 }}>
-                      <input
-                        style={numInput}
-                        inputMode="decimal"
-                        value={r.cost}
-                        onChange={(e) => patchRow(i, { cost: e.target.value })}
-                        onFocus={focusMoney}
-                        onBlur={blurMoney}
-                        aria-label="Cost INR"
-                        placeholder="—"
-                      />
-                    </td>
-                    <td style={{ padding: 0 }}>
+                    <td style={tdSt}>
                       <input
                         style={numInput}
                         inputMode="decimal"
@@ -568,7 +743,7 @@ export default function ProductsXlSheetPage() {
                         aria-label="MRP INR"
                       />
                     </td>
-                    <td style={{ padding: 0 }}>
+                    <td style={tdSt}>
                       <input
                         style={numInput}
                         inputMode="decimal"
@@ -579,7 +754,7 @@ export default function ProductsXlSheetPage() {
                         aria-label="Sale INR"
                       />
                     </td>
-                    <td style={{ padding: 0 }}>
+                    <td style={tdSt}>
                       <input
                         style={numInput}
                         inputMode="decimal"
@@ -590,7 +765,7 @@ export default function ProductsXlSheetPage() {
                         aria-label="USD MRP"
                       />
                     </td>
-                    <td style={{ padding: 0 }}>
+                    <td style={tdSt}>
                       <input
                         style={numInput}
                         inputMode="decimal"
@@ -601,7 +776,7 @@ export default function ProductsXlSheetPage() {
                         aria-label="USD Sale"
                       />
                     </td>
-                    <td style={{ padding: 0 }}>
+                    <td style={tdSt}>
                       <input
                         style={numInput}
                         inputMode="decimal"
@@ -612,7 +787,7 @@ export default function ProductsXlSheetPage() {
                         aria-label="Dinar MRP"
                       />
                     </td>
-                    <td style={{ padding: 0 }}>
+                    <td style={tdSt}>
                       <input
                         style={numInput}
                         inputMode="decimal"
@@ -623,7 +798,7 @@ export default function ProductsXlSheetPage() {
                         aria-label="Dinar Sale"
                       />
                     </td>
-                    <td style={{ padding: 0 }}>
+                    <td style={tdSt}>
                       <input
                         style={numInput}
                         inputMode="decimal"
@@ -634,7 +809,7 @@ export default function ProductsXlSheetPage() {
                         aria-label="GBP MRP"
                       />
                     </td>
-                    <td style={{ padding: 0 }}>
+                    <td style={tdSt}>
                       <input
                         style={numInput}
                         inputMode="decimal"
@@ -645,7 +820,7 @@ export default function ProductsXlSheetPage() {
                         aria-label="GBP Sale"
                       />
                     </td>
-                    <td style={{ padding: 0 }}>
+                    <td style={{ ...tdSt, borderRight: "none" }}>
                       {showNameEditor ? (
                         <input
                           style={{ ...numInput, textAlign: "left" }}
