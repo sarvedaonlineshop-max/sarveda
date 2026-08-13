@@ -17,6 +17,11 @@ do
   [ -f "$f" ] && cp -a "$f" "$BACKUP/"
 done
 
+# Untracked local copy blocks git pull once run.sh is tracked on main
+if [ -f backend/run.sh ] && ! git ls-files --error-unmatch backend/run.sh >/dev/null 2>&1; then
+  rm -f backend/run.sh
+fi
+
 # Allow git pull when compare CSVs were refreshed on-server (not committed)
 git checkout -- data/compare/do_products.csv data/compare/do_variants.csv 2>/dev/null || true
 
