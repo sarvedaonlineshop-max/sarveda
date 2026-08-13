@@ -114,7 +114,7 @@ async function main() {
     hsnCode: p.row.hsnCode || null,
   }));
 
-  const result = await saveXlSheetRows({ rows: payload });
+  const result = await saveXlSheetRows({ rows: payload }, { catalogOnly: true });
   fs.writeFileSync(path.join(BACKUP, `${stamp}-result.json`), JSON.stringify(result, null, 2));
 
   console.log("\nResult:", result);
@@ -122,9 +122,7 @@ async function main() {
     console.error("Errors:", result.errors);
     process.exitCode = 1;
   } else {
-    console.log(
-      `\nUpdated products=${result.updatedProducts} variants=${result.updatedVariants} (staging prices=${result.updatedStagingPrices})`
-    );
+    console.log(`\nUpdated products=${result.updatedProducts} variants=${result.updatedVariants}`);
   }
 
   await prisma.$disconnect();

@@ -4,20 +4,27 @@ Fuzzy compare team inventory xlsx vs live Lightsail catalog.
 
 Outputs multi-sheet xlsx:
   - Exact Match
-  - Fuzzy Match
+  - Pending (text diff on same SKU — excludes rows your DECISION already resolved)
+  - Deferred (DECISION = will do later)
   - Sheet Only
   - DB Only
+
+Re-use DECISION column from a prior compare file (--decisions) so accepted
+decisions (keep DB / already applied) drop out of Pending.
 
 Usage:
   python3 backend/scripts/fuzzy-compare-latest-inventory.py \\
     --xlsx data/latest_inventory.xlsx \\
-    --out data/compare/latest-inventory-fuzzy.xlsx
+    --out data/compare/latest-inventory-fuzzy.xlsx \\
+    --decisions data/compare/latest-inventory-fuzzy.xlsx
 """
 from __future__ import annotations
 
 import argparse
 import json
 import re
+import time
+import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -30,7 +37,24 @@ from rapidfuzz import fuzz
 
 API_DEFAULT = "http://13.204.112.165"
 
+# Accepted done — never show in Pending (team confirmed / manual apply)
+MANUALLY_DONE_SKUS = frozenset(
+    s.upper()
+    for s in (
+        "MI-SB-GAB-SET3",
+        "MI-GRO",
+        "MI-KL",
+        "MI-JE-S",
+        "MI-NF-T",
+        "MI-NF-D",
+        "MI-NF-S-L",
+        "MI-NF-S-M",
+        "MI-OC-S",
+    )
+)
+
 HEADERS = [
+    "DECISION",
     "Sheet Product name",
     "DB Product name",
     "Sheet Variant name",
@@ -40,6 +64,7 @@ HEADERS = [
     "Match score",
     "Match type",
     "Notes",
+    "Pending reason",
 ]
 
 
@@ -80,8 +105,227 @@ def norm_variant(s: str) -> str:
     return re.sub(r"[\s|/·,–—\-]+", " ", s).strip()
 
 
-def composite_key(product: str, variant: str, sku: str) -> str:
-    return f"{norm_text(product)} | {norm_variant(variant)} | {norm_sku(sku)}"
+def resolve_targets(
+    decision: str,
+    sheet_name: str,
+    sheet_variant: str,
+    sheet_sku: str,
+    db_name: str,
+    db_variant: str,
+    db_sku: str,
+) -> tuple[str, str, str] | None:
+    """Same rules as apply-fuzzy-match-decisions.py."""
+    d = (decision or "").strip().lower()
+    if not d or "will do later" in d:
+        return None
+
+    product = db_name
+    variant = db_variant
+    sku = (db_sku or sheet_sku).strip()
+
+    if (
+        "adapt sheet product name" in d
+        or "product name adapt from sheet" in d
+        or "adapt db product name" in d
+    ):
+        product = sheet_name
+    elif "product name same" in d:
+        product = db_name
+
+    if "vairant adapt from sheet" in d or "variant adapt from sheet" in d:
+        variant = sheet_variant
+    elif (
+        "vairant adapt from db" in d
+        or "variant adapt from db" in d
+        or "vairant same" in d
+        or "variant same" in d
+    ):
+        variant = db_variant
+
+    return product.strip(), (variant or "").strip(), sku
+
+
+def load_decisions_by_sku(path: Path) -> dict[str, str]:
+    out: dict[str, str] = {}
+
+    json_sidecar = path.parent / "fuzzy-decisions-by-sku.json"
+    if json_sidecar.exists():
+        out.update({k.upper(): v for k, v in json.loads(json_sidecar.read_text()).items()})
+
+    if not path.exists():
+        return out
+    wb = load_workbook(path, read_only=True, data_only=True)
+    sheet_name = "Fuzzy Match" if "Fuzzy Match" in wb.sheetnames else "Pending"
+    if sheet_name not in wb.sheetnames:
+        wb.close()
+        return out
+    ws = wb[sheet_name]
+    rows = list(ws.iter_rows(values_only=True))
+    if not rows:
+        wb.close()
+        return {}
+    headers = [str(h or "").strip() for h in rows[0]]
+    for r in rows[1:]:
+        rec = {headers[i]: (r[i] if i < len(r) else "") for i in range(len(headers))}
+        decision = str(rec.get("DECISION") or "").strip()
+        if not decision:
+            continue
+        sku = str(rec.get("DB SKU") or rec.get("Sheet SKU") or "").strip().upper()
+        if sku:
+            out[sku] = decision
+    wb.close()
+    return out
+
+
+def split_by_decision(fuzzy: list[dict], decisions_by_sku: dict[str, str]) -> tuple[list[dict], list[dict], int]:
+    pending: list[dict] = []
+    deferred: list[dict] = []
+    resolved = 0
+
+    for row in fuzzy:
+        sku = norm_sku(str(row.get("DB SKU") or row.get("Sheet SKU") or ""))
+        decision = decisions_by_sku.get(sku, "")
+        row = {**row, "DECISION": decision}
+
+        if sku in MANUALLY_DONE_SKUS:
+            resolved += 1
+            continue
+
+        if not decision:
+            row["Pending reason"] = "No DECISION yet"
+            pending.append(row)
+            continue
+
+        if "will do later" in decision.lower():
+            row["Pending reason"] = "Deferred by you"
+            deferred.append(row)
+            continue
+
+        targets = resolve_targets(
+            decision,
+            str(row.get("Sheet Product name") or ""),
+            str(row.get("Sheet Variant name") or ""),
+            str(row.get("Sheet SKU") or ""),
+            str(row.get("DB Product name") or ""),
+            str(row.get("DB Variant name") or ""),
+            str(row.get("DB SKU") or ""),
+        )
+        if targets is None:
+            row["Pending reason"] = "Deferred by you"
+            deferred.append(row)
+            continue
+
+        target_product, target_variant, target_sku = targets
+        db_product = str(row.get("DB Product name") or "").strip()
+        db_variant = str(row.get("DB Variant name") or "").strip()
+        db_sku = str(row.get("DB SKU") or "").strip()
+
+        if (
+            db_product == target_product
+            and db_variant == target_variant
+            and norm_sku(db_sku) == norm_sku(target_sku)
+        ):
+            resolved += 1
+            continue
+
+        changes: list[str] = []
+        if db_product != target_product:
+            changes.append(f"product -> {target_product!r}")
+        if db_variant != target_variant:
+            changes.append(f"variant -> {target_variant!r}")
+        if norm_sku(db_sku) != norm_sku(target_sku):
+            changes.append(f"sku -> {target_sku!r}")
+        row["Pending reason"] = "Apply pending: " + "; ".join(changes)
+        pending.append(row)
+
+    return pending, deferred, resolved
+
+
+def load_orphan_plan() -> dict | None:
+    plan_path = Path(__file__).resolve().parents[2] / "data/compare/sheet-db-only-plan.json"
+    if not plan_path.exists():
+        return None
+    return json.loads(plan_path.read_text())
+
+
+def apply_orphan_plan(
+    sheet_only: list[dict], db_only: list[dict], plan: dict | None
+) -> tuple[list[dict], list[dict], list[dict]]:
+    if not plan:
+        return sheet_only, db_only, []
+
+    rename_to = {norm_sku(x["toSku"]) for x in plan.get("rename_skus", [])}
+    rename_from = {norm_sku(x["fromSku"]) for x in plan.get("rename_skus", [])}
+    create_skus = {
+        norm_sku(x["sku"])
+        for x in plan.get("create_variants", []) + plan.get("create_products", [])
+    }
+    draft_skus = {norm_sku(x["sku"]) for x in plan.get("draft_variants", [])}
+
+    actions: list[dict] = []
+    for x in plan.get("rename_skus", []):
+        actions.append(
+            {
+                "Action": "rename_sku",
+                "SKU": x["toSku"],
+                "Details": f"{x['fromSku']} -> {x['toSku']}",
+                "Reason": x.get("reason", ""),
+            }
+        )
+    for x in plan.get("create_variants", []):
+        actions.append(
+            {
+                "Action": "create_variant",
+                "SKU": x["sku"],
+                "Details": x.get("productSlug", ""),
+                "Reason": x.get("reason", ""),
+            }
+        )
+    for x in plan.get("create_products", []):
+        actions.append(
+            {
+                "Action": "create_product",
+                "SKU": x["sku"],
+                "Details": x.get("productName", ""),
+                "Reason": x.get("reason", ""),
+            }
+        )
+    for x in plan.get("draft_variants", []):
+        actions.append(
+            {
+                "Action": "draft_variant",
+                "SKU": x["sku"],
+                "Details": x.get("productName", ""),
+                "Reason": x.get("reason", ""),
+            }
+        )
+
+    filtered_sheet = [
+        r
+        for r in sheet_only
+        if norm_sku(str(r.get("Sheet SKU") or "")) not in rename_to
+        and norm_sku(str(r.get("Sheet SKU") or "")) not in create_skus
+    ]
+    filtered_db = [
+        r
+        for r in db_only
+        if norm_sku(str(r.get("DB SKU") or "")) not in rename_from
+        and norm_sku(str(r.get("DB SKU") or "")) not in draft_skus
+    ]
+    return filtered_sheet, filtered_db, actions
+
+
+def write_actions_sheet(ws, rows: list[dict]) -> None:
+    headers = ["Action", "SKU", "Details", "Reason"]
+    for col, h in enumerate(headers, start=1):
+        cell = ws.cell(row=1, column=col, value=h)
+        cell.font = Font(bold=True)
+    for ri, row in enumerate(rows, start=2):
+        for ci, h in enumerate(headers, start=1):
+            ws.cell(row=ri, column=ci, value=row.get(h, ""))
+    for i, w in enumerate([18, 20, 42, 48], start=1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+    ws.freeze_panes = "A2"
 
 
 def fuzzy_score(sheet: Row, db: Row) -> float:
@@ -121,8 +365,17 @@ def load_inventory(path: Path) -> list[Row]:
 
 
 def fetch_json(url: str):
-    with urllib.request.urlopen(url, timeout=60) as resp:
-        return json.loads(resp.read().decode())
+    for attempt in range(5):
+        try:
+            with urllib.request.urlopen(url, timeout=60) as resp:
+                return json.loads(resp.read().decode())
+        except urllib.error.HTTPError as e:
+            if e.code == 429 and attempt < 4:
+                time.sleep(1.5 * (attempt + 1))
+                continue
+            raise
+        finally:
+            time.sleep(0.08)
 
 
 def variant_label(attrs) -> str:
@@ -205,6 +458,7 @@ def match_rows(sheet_rows: list[Row], db_rows: list[Row], *, fuzzy_threshold: fl
                 used_db.add(di)
                 exact.append(
                     {
+                        "DECISION": "",
                         "Sheet Product name": s.product,
                         "DB Product name": d.product,
                         "Sheet Variant name": s.variant,
@@ -214,6 +468,7 @@ def match_rows(sheet_rows: list[Row], db_rows: list[Row], *, fuzzy_threshold: fl
                         "Match score": 100,
                         "Match type": "exact",
                         "Notes": "All three fields match",
+                        "Pending reason": "",
                     }
                 )
                 break
@@ -231,6 +486,7 @@ def match_rows(sheet_rows: list[Row], db_rows: list[Row], *, fuzzy_threshold: fl
             mtype, note = classify_match(s, d)
             fuzzy.append(
                 {
+                    "DECISION": "",
                     "Sheet Product name": s.product,
                     "DB Product name": d.product,
                     "Sheet Variant name": s.variant,
@@ -240,6 +496,7 @@ def match_rows(sheet_rows: list[Row], db_rows: list[Row], *, fuzzy_threshold: fl
                     "Match score": round(fuzzy_score(s, d), 1),
                     "Match type": mtype,
                     "Notes": note,
+                    "Pending reason": "",
                 }
             )
 
@@ -265,6 +522,7 @@ def match_rows(sheet_rows: list[Row], db_rows: list[Row], *, fuzzy_threshold: fl
         mtype, note = classify_match(s, d)
         fuzzy.append(
             {
+                "DECISION": "",
                 "Sheet Product name": s.product,
                 "DB Product name": d.product,
                 "Sheet Variant name": s.variant,
@@ -274,11 +532,13 @@ def match_rows(sheet_rows: list[Row], db_rows: list[Row], *, fuzzy_threshold: fl
                 "Match score": round(sc, 1),
                 "Match type": mtype,
                 "Notes": note,
+                "Pending reason": "",
             }
         )
 
     sheet_only = [
         {
+            "DECISION": "",
             "Sheet Product name": sheet_rows[si].product,
             "DB Product name": "",
             "Sheet Variant name": sheet_rows[si].variant,
@@ -288,6 +548,7 @@ def match_rows(sheet_rows: list[Row], db_rows: list[Row], *, fuzzy_threshold: fl
             "Match score": "",
             "Match type": "sheet_only",
             "Notes": "No fuzzy match on Lightsail",
+            "Pending reason": "Create on Lightsail",
         }
         for si in range(len(sheet_rows))
         if si not in used_sheet
@@ -295,6 +556,7 @@ def match_rows(sheet_rows: list[Row], db_rows: list[Row], *, fuzzy_threshold: fl
 
     db_only = [
         {
+            "DECISION": "",
             "Sheet Product name": "",
             "DB Product name": db_rows[di].product,
             "Sheet Variant name": "",
@@ -304,6 +566,7 @@ def match_rows(sheet_rows: list[Row], db_rows: list[Row], *, fuzzy_threshold: fl
             "Match score": "",
             "Match type": "db_only",
             "Notes": "Not on team sheet",
+            "Pending reason": "Add to sheet or hide",
         }
         for di in range(len(db_rows))
         if di not in used_db
@@ -319,7 +582,7 @@ def write_sheet(ws, rows: list[dict]) -> None:
     for ri, row in enumerate(rows, start=2):
         for ci, h in enumerate(HEADERS, start=1):
             ws.cell(row=ri, column=ci, value=row.get(h, ""))
-    widths = [38, 38, 32, 32, 18, 18, 12, 16, 40]
+    widths = [36, 38, 38, 32, 32, 18, 18, 12, 16, 40, 44]
     for i, w in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(i)].width = w
     ws.freeze_panes = "A2"
@@ -331,7 +594,17 @@ def main() -> None:
     ap.add_argument("--out", type=Path, default=Path("data/compare/latest-inventory-fuzzy.xlsx"))
     ap.add_argument("--api", default=API_DEFAULT)
     ap.add_argument("--threshold", type=float, default=82.0)
+    ap.add_argument(
+        "--decisions",
+        type=Path,
+        default=None,
+        help="Prior fuzzy xlsx with DECISION column (default: --out if it exists)",
+    )
     args = ap.parse_args()
+
+    decisions_path = args.decisions
+    if decisions_path is None and args.out.exists():
+        decisions_path = args.out
 
     print("Loading sheet...")
     sheet_rows = load_inventory(args.xlsx)
@@ -339,7 +612,27 @@ def main() -> None:
     db_rows = fetch_lightsail_rows(args.api)
     print(f"Sheet: {len(sheet_rows)} | DB: {len(db_rows)}")
 
-    exact, fuzzy, sheet_only, db_only = match_rows(sheet_rows, db_rows, fuzzy_threshold=args.threshold)
+    exact, fuzzy_raw, sheet_only, db_only = match_rows(
+        sheet_rows, db_rows, fuzzy_threshold=args.threshold
+    )
+
+    decisions_by_sku: dict[str, str] = {}
+    if decisions_path:
+        decisions_by_sku = load_decisions_by_sku(decisions_path)
+        print(f"Loaded {len(decisions_by_sku)} decisions from {decisions_path}")
+
+    pending, deferred, resolved = split_by_decision(fuzzy_raw, decisions_by_sku)
+    print(f"Fuzzy raw: {len(fuzzy_raw)} | Resolved by decision: {resolved} | Pending: {len(pending)} | Deferred: {len(deferred)}")
+
+    orphan_plan = load_orphan_plan()
+    sheet_only, db_only, orphan_actions = apply_orphan_plan(sheet_only, db_only, orphan_plan)
+    if orphan_plan:
+        s = orphan_plan.get("summary", {})
+        print(
+            f"Orphan plan: rename={s.get('rename_skus', 0)} create_variants={s.get('create_variants', 0)} "
+            f"create_products={s.get('create_products', 0)} draft={s.get('draft_variants', 0)} | "
+            f"Sheet Only after plan: {len(sheet_only)} | DB Only after plan: {len(db_only)}"
+        )
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     wb = Workbook()
@@ -347,13 +640,18 @@ def main() -> None:
 
     sheets = [
         ("Exact Match", exact),
-        ("Fuzzy Match", fuzzy),
+        ("Pending", pending),
+        ("Deferred", deferred),
+        ("Actions", orphan_actions),
         ("Sheet Only", sheet_only),
         ("DB Only", db_only),
     ]
     for title, rows in sheets:
         ws = wb.create_sheet(title)
-        write_sheet(ws, rows)
+        if title == "Actions":
+            write_actions_sheet(ws, rows)
+        else:
+            write_sheet(ws, rows)
 
     summary = wb.create_sheet("Summary", 0)
     summary["A1"] = "Metric"
@@ -364,10 +662,15 @@ def main() -> None:
         ("Sheet rows (with SKU)", len(sheet_rows)),
         ("Lightsail ACTIVE variant rows", len(db_rows)),
         ("Exact Match", len(exact)),
-        ("Fuzzy Match (incl. SKU-exact-text-diff)", len(fuzzy)),
-        ("Sheet Only (unmatched)", len(sheet_only)),
-        ("DB Only (unmatched)", len(db_only)),
+        ("Fuzzy raw (before decisions)", len(fuzzy_raw)),
+        ("Resolved by your DECISION", resolved),
+        ("Pending (needs action)", len(pending)),
+        ("Deferred (will do later)", len(deferred)),
+        ("Planned actions", len(orphan_actions)),
+        ("Sheet Only (unmatched, after plan)", len(sheet_only)),
+        ("DB Only (unmatched, after plan)", len(db_only)),
         ("Fuzzy threshold", args.threshold),
+        ("Decisions file", str(decisions_path) if decisions_path else ""),
         ("Source API", args.api),
     ]
     for i, (k, v) in enumerate(metrics, start=2):
@@ -380,7 +683,10 @@ def main() -> None:
 
     print()
     print(f"Exact Match:  {len(exact)}")
-    print(f"Fuzzy Match:  {len(fuzzy)}")
+    print(f"Pending:      {len(pending)}")
+    print(f"Deferred:     {len(deferred)}")
+    print(f"Resolved:     {resolved} (dropped from Pending)")
+    print(f"Actions:      {len(orphan_actions)} (see Actions sheet)")
     print(f"Sheet Only:   {len(sheet_only)}")
     print(f"DB Only:      {len(db_only)}")
     print(f"Wrote: {args.out}")

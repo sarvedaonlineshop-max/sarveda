@@ -1,0 +1,11 @@
+{
+  "source": "Lightsail live API post fuzzy apply",
+  "sheet_rows": 839,
+  "lightsail_rows": 861,
+  "exact_match": 783,
+  "fuzzy_match": 32,
+  "sheet_only": 24,
+  "db_only": 46,
+  "before_exact": 716,
+  "improvement": 67
+}

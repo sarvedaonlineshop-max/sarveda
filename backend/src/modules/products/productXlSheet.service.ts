@@ -270,12 +270,16 @@ function normOptionalMoney(v: number | null | undefined): number | null {
   return v;
 }
 
-export async function saveXlSheetRows(body: XlSheetSaveBody): Promise<{
+export async function saveXlSheetRows(
+  body: XlSheetSaveBody,
+  opts?: { catalogOnly?: boolean }
+): Promise<{
   updatedProducts: number;
   updatedVariants: number;
   updatedStagingPrices: number;
   errors: Array<{ variantId: string; sku: string; error: string }>;
 }> {
+  const catalogOnly = opts?.catalogOnly === true;
   const errors: Array<{ variantId: string; sku: string; error: string }> = [];
   let updatedProducts = 0;
   let updatedVariants = 0;
@@ -404,7 +408,7 @@ export async function saveXlSheetRows(body: XlSheetSaveBody): Promise<{
           });
           variantUpdated = true;
 
-          if (prevSku.toUpperCase() !== nextSku.toUpperCase()) {
+          if (!catalogOnly && prevSku.toUpperCase() !== nextSku.toUpperCase()) {
             await prisma.productXlStagingPrice.deleteMany({
               where: { sku: { equals: prevSku, mode: "insensitive" } },
             });
@@ -418,22 +422,26 @@ export async function saveXlSheetRows(body: XlSheetSaveBody): Promise<{
           variantUpdated = true;
         }
 
-        if (variant.inventory) {
-          if (variant.inventory.onHand !== r.qty) {
-            await prisma.inventory.update({
-              where: { id: variant.inventory.id },
-              data: { onHand: r.qty },
+        if (!catalogOnly) {
+          if (variant.inventory) {
+            if (variant.inventory.onHand !== r.qty) {
+              await prisma.inventory.update({
+                where: { id: variant.inventory.id },
+                data: { onHand: r.qty },
+              });
+              variantUpdated = true;
+            }
+          } else {
+            await prisma.inventory.create({
+              data: { variantId: variant.id, onHand: r.qty, reserved: 0 },
             });
             variantUpdated = true;
           }
-        } else {
-          await prisma.inventory.create({
-            data: { variantId: variant.id, onHand: r.qty, reserved: 0 },
-          });
-          variantUpdated = true;
         }
 
         if (variantUpdated) updatedVariants++;
+
+        if (catalogOnly) continue;
 
         await prisma.productXlStagingPrice.upsert({
           where: { sku: nextSku },

@@ -14,5 +14,7 @@ fi
 cd backend
 npm install --silent 2>/dev/null || true
 npx prisma generate
+npx prisma migrate deploy
 npx tsx scripts/apply-fuzzy-match-decisions.ts --apply
+pm2 restart sarveda-backend --update-env 2>/dev/null || true
 echo "Done. Spot-check: curl -s http://127.0.0.1:5000/api/products/macrame-yoga-mat-straps | jq '.data.product.variants[]|select(.sku==\"YO-MMS-O\")|.attributeValues[0].attributeValue.value'"

@@ -1,0 +1,33 @@
+Sheet Product name,DB Product name,Sheet Variant name,DB Variant name,Sheet SKU,DB SKU,Match score,Match type,Notes
+Curved Diamond Groove Copper Bottle,"Grooved, Hammered & Plain Copper Bottle",copper / 1L / without-brush,Without Brush / Gold / Diamond Groove,CB-CDG,CB-CDG,71.8,sku_exact_text_diff,Product name differs; Variant name differs
+Crystal Bowls - Coloured,Crystal Bowls – Chakra Coloured,6 in,6 in,MI-CB-C-6,MI-CB-C-6,98.5,sku_exact_text_diff,Product name differs
+Crystal Bowls - Coloured,Crystal Bowls – Chakra Coloured,7 in,7 in,MI-CB-C-7,MI-CB-C-7,98.5,sku_exact_text_diff,Product name differs
+Crystal Bowls - Coloured,Crystal Bowls – Chakra Coloured,8 in,8 in,MI-CB-C-8,MI-CB-C-8,98.5,sku_exact_text_diff,Product name differs
+Crystal Bowls - Coloured,Crystal Bowls – Chakra Coloured,9 in,9 in,MI-CB-C-9,MI-CB-C-9,98.5,sku_exact_text_diff,Product name differs
+Crystal Bowls - Coloured,Crystal Bowls – Chakra Coloured,10 in,10 in,MI-CB-C-10,MI-CB-C-10,98.5,sku_exact_text_diff,Product name differs
+Crystal Bowls - Coloured,Crystal Bowls – Chakra Coloured,11 in,11 in,MI-CB-C-11,MI-CB-C-11,98.5,sku_exact_text_diff,Product name differs
+Crystal Bowls - Coloured,Crystal Bowls – Chakra Coloured,12 in,12 in,MI-CB-C-12,MI-CB-C-12,98.5,sku_exact_text_diff,Product name differs
+Crystal Bowls - Coloured,Crystal Bowls – Chakra Coloured,13 in,13 in,MI-CB-C-13,MI-CB-C-13,98.5,sku_exact_text_diff,Product name differs
+Crystal Bowls - Coloured,Crystal Bowls – Chakra Coloured,14 in,14 in,MI-CB-C-14,MI-CB-C-14,98.5,sku_exact_text_diff,Product name differs
+Etched Chau Gong,Etched Chau Gongs,18 in,18 in,MI-GO-CH-ET-18,MI-GO-CH-ET-18,98.9,sku_exact_text_diff,Product name differs
+Etched Chau Gong,Etched Chau Gongs,20 in,20 in,MI-GO-CH-ET-20,MI-GO-CH-ET-20,98.9,sku_exact_text_diff,Product name differs
+Etched Chau Gong,Etched Chau Gongs,22 in,22 in,MI-GO-CH-ET-22,MI-GO-CH-ET-22,98.9,sku_exact_text_diff,Product name differs
+Etched Chau Gong,Etched Chau Gongs,24 in,24 in,MI-GO-CH-ET-24,MI-GO-CH-ET-24,98.9,sku_exact_text_diff,Product name differs
+Etched Chau Gong,Etched Chau Gongs,28 in,28 in,MI-GO-CH-ET-28,MI-GO-CH-ET-28,98.9,sku_exact_text_diff,Product name differs
+Etched Chau Gong,Etched Chau Gongs,32 in,32 in,MI-GO-CH-ET-32,MI-GO-CH-ET-32,98.9,sku_exact_text_diff,Product name differs
+Etched Chau Gong,Etched Chau Gongs,36 in,36 in,MI-GO-CH-ET-36,MI-GO-CH-ET-36,98.9,sku_exact_text_diff,Product name differs
+Etched Chau Gong,Etched Chau Gongs,40INCH,40 in,MI-GO-CH-ET-40,MI-GO-CH-ET-40,83,sku_exact_text_diff,Product name differs; Variant name differs
+Sacred Symbols Singing Bowls,Sacred Symbols Singing Bowls,Green / 4in,Green / 4 in,MI-SB-SS-G-4,MI-SB-SS-G-4,98.9,sku_exact_text_diff,Variant name differs
+Sacred Symbols Singing Bowls,Sacred Symbols Singing Bowls,Green / 5.5in,Green / 5.5 in,MI-SB-SS-G-5.5,MI-SB-SS-G-5.5,99.1,sku_exact_text_diff,Variant name differs
+Sacred Symbols Singing Bowls,Sacred Symbols Singing Bowls,Gold / 3.5 Inches,Gold / 3.5 in,MI-SB-SS-GO-3.5,MI-SB-SS-GO-3.5,96.7,sku_exact_text_diff,Variant name differs
+Sacred Symbols Singing Bowls,Sacred Symbols Singing Bowls,Gold / 4 Inches,Gold / 4 in,MI-SB-SS-GO-4,MI-SB-SS-GO-4,96.1,sku_exact_text_diff,Variant name differs
+Sacred Symbols Singing Bowls,Sacred Symbols Singing Bowls,Gold / 5.5 Inches,Gold / 5.5 in,MI-SB-SS-GO-5.5,MI-SB-SS-GO-5.5,96.7,sku_exact_text_diff,Variant name differs
+GAB Set,"Singing Bowl Head Set – G, A, B",,,MI-SB-GAB-SET3,MI-SB-GAB-SET3,86,sku_exact_text_diff,Product name differs
+Native American Flute - Triple,Native American Flute - Single Small,Triple,Triple,MI-NF-T,MI-NF-T,95.4,sku_exact_text_diff,Product name differs
+Native American Flute - Double,Native American Flute - Single Small,Double,Double,MI-NF-D,MI-NF-D,95.4,sku_exact_text_diff,Product name differs
+Native American Flute - Single Large,Native American Flute - Single Small,Single Large,Single Large,MI-NF-S-L,MI-NF-S-L,96.8,sku_exact_text_diff,Product name differs
+Native American Flute - Single Medium,Native American Flute - Single Small,Single Medium,Single Medium,MI-NF-S-M,MI-NF-S-M,96.8,sku_exact_text_diff,Product name differs
+Ocarina - Small,Ocarina - Big,Small,Small,MI-OC-S,MI-OC-S,93.6,sku_exact_text_diff,Product name differs
+Guiro,Wooden Guiro,,,MI-GRO,MI-GRO,100,sku_exact_text_diff,Product name differs
+Khartal*3,Wooden Hand Khartal/Jingles,,,MI-KL,MI-KL,78.6,sku_exact_text_diff,Product name differs
+Jingle Stick,Sleigh Bells Wooden Jingle Stick,,,MI-JE-S,MI-JE-S,100,sku_exact_text_diff,Product name differs

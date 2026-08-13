@@ -2,7 +2,7 @@
 """
 Apply Fuzzy Match sheet DECISION column to Lightsail catalog (name / variant / SKU only).
 
-Reads: data/compare/latest-inventory-fuzzy.xlsx  (sheet "Fuzzy Match")
+Reads: data/compare/latest-inventory-fuzzy.xlsx  (sheet "Pending" or legacy "Fuzzy Match")
 Uses:  PUT /api/admin/products/xl-sheet on Lightsail (preserves qty + prices)
 
 Usage:
@@ -44,9 +44,14 @@ def resolve_targets(
     variant = db_variant
     sku = (db_sku or sheet_sku).strip()
 
-    if "adapt sheet product name" in d or "product name adapt from sheet" in d:
+    if (
+        "adapt sheet product name" in d
+        or "product name adapt from sheet" in d
+        or "adapt db product name" in d
+    ):
+        # "adapt db product name" = update Lightsail product title to match sheet
         product = sheet_name
-    elif "adapt db product name" in d or "product name same" in d:
+    elif "product name same" in d:
         product = db_name
 
     if "vairant adapt from sheet" in d or "variant adapt from sheet" in d:
@@ -93,9 +98,10 @@ def login(api: str, email: str, password: str) -> str:
 
 def load_decisions(xlsx: Path) -> list[dict]:
     wb = load_workbook(xlsx, read_only=True, data_only=True)
-    if "Fuzzy Match" not in wb.sheetnames:
-        raise SystemExit(f'Missing "Fuzzy Match" sheet in {xlsx}')
-    ws = wb["Fuzzy Match"]
+    sheet = "Pending" if "Pending" in wb.sheetnames else "Fuzzy Match"
+    if sheet not in wb.sheetnames:
+        raise SystemExit(f'Missing "Pending" / "Fuzzy Match" sheet in {xlsx}')
+    ws = wb[sheet]
     rows = list(ws.iter_rows(values_only=True))
     headers = [str(h or "").strip() for h in rows[0]]
     out: list[dict] = []
