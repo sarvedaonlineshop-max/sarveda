@@ -4,8 +4,12 @@ Fetch ACF carousel slot meta from live DO Woo MySQL → JSON for local sync scri
 
 Writes: data/compare/do_carousel_meta.json
 
-Usage:
-  DO_SSH_PASS=... python3 backend/scripts/fetch-do-carousel-meta.py
+Usage (from repo root):
+  pip3 install -r backend/scripts/requirements-do-fetch.txt
+  DO_SSH_PASS='your-password' python3 backend/scripts/fetch-do-carousel-meta.py
+  git add data/compare/do_carousel_meta.json && git commit -m "Refresh DO carousel meta"
+
+Optional — sync works without this (auto-infers term labels). Re-fetch improves edge cases.
 """
 from __future__ import annotations
 
@@ -13,9 +17,19 @@ import html
 import json
 import os
 import re
+import sys
 from pathlib import Path
 
-import paramiko
+try:
+    import paramiko
+except ImportError:
+    print(
+        "Missing paramiko. Install with:\n"
+        "  pip3 install -r backend/scripts/requirements-do-fetch.txt\n"
+        "Or: pip3 install paramiko",
+        file=sys.stderr,
+    )
+    raise SystemExit(1) from None
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "data/compare/do_carousel_meta.json"

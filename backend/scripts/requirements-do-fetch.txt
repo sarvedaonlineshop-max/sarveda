@@ -1,0 +1,3 @@
+# One-time / occasional: fetch DO carousel meta over SSH
+#   pip3 install -r backend/scripts/requirements-do-fetch.txt
+paramiko>=3.4.0
