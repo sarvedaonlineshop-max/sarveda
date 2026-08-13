@@ -35,7 +35,7 @@ async function findVariantBySku(sku: string) {
   return prisma.productVariant.findFirst({
     where: { sku: { equals: sku, mode: "insensitive" } },
     include: {
-      productRel: { include: { images: { orderBy: { position: "asc" }, take: 1 } } } },
+      productRel: { include: { images: { orderBy: { position: "asc" }, take: 1 } } },
       attributeValues: { include: { attributeValue: { include: { attribute: true } } } },
     },
   });
