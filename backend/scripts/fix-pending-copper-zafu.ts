@@ -16,7 +16,6 @@ import dotenv from "dotenv";
 import { PrismaClient, ProductStatus, ProductType } from "@prisma/client";
 
 import { syncVariantAttributes } from "../src/modules/products/variant-attributes";
-import { slugify } from "../src/utils/slugify";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
@@ -36,7 +35,7 @@ async function findVariantBySku(sku: string) {
   return prisma.productVariant.findFirst({
     where: { sku: { equals: sku, mode: "insensitive" } },
     include: {
-      product: { include: { images: { orderBy: { position: "asc" }, take: 1 } } },
+      productRel: { include: { images: { orderBy: { position: "asc" }, take: 1 } } } },
       attributeValues: { include: { attributeValue: { include: { attribute: true } } } },
     },
   });
@@ -129,9 +128,9 @@ async function main() {
   if (blueVariants.length) {
     const target = await ensureBlueTranquillityProduct(blueVariants[0]!.productId);
     for (const v of blueVariants) {
-      const from = `${v.product.name} (${v.product.slug})`;
+      const from = `${v.productRel.name} (${v.productRel.slug})`;
       log.push(`MOVE ${v.sku} from ${from} -> ${BLUE_PRODUCT_NAME}`);
-      if (APPLY && target.id !== "(new)") {
+      if (APPLY && typeof target.id === "string" && target.id !== "(new)") {
         await prisma.productVariant.update({
           where: { id: v.id },
           data: { productId: target.id, isDefault: false },
