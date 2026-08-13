@@ -38,7 +38,11 @@ OUT = ROOT / "data/compare/do_carousel_meta.json"
 def php_unserialize_term_ids(raw: str) -> list[str]:
     if not raw:
         return []
-    return re.findall(r's:\d+:"(\d+)"', raw)
+    ids = re.findall(r's:\d+:"(\d+)"', raw)
+    for m in re.findall(r"i:(\d+);", raw):
+        if m not in ids:
+            ids.append(m)
+    return list(dict.fromkeys(ids))
 
 
 def norm(s: str) -> str:
@@ -47,6 +51,78 @@ def norm(s: str) -> str:
 
 def slugify(s: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", norm(s)).strip("-")
+
+
+def canonical_size_label(attrs: dict[str, str], title: str) -> str | None:
+    for val in attrs.values():
+        m = re.search(r"(\d+(?:\.\d+)?)\s*in(?:ch|ches)?", val or "", re.I)
+        if m:
+            return f"{m.group(1)} in"
+    m = re.search(r"(\d+(?:\.\d+)?)\s*in(?:ch|ches)?", title or "", re.I)
+    if m:
+        return f"{m.group(1)} in"
+    return None
+
+
+def size_inches(attrs: dict[str, str], title: str) -> float:
+    label = canonical_size_label(attrs, title)
+    if not label:
+        return 9999.0
+    m = re.search(r"(\d+(?:\.\d+)?)", label)
+    return float(m.group(1)) if m else 9999.0
+
+
+def label_for_variation(attrs: dict[str, str], title: str) -> str:
+    size = canonical_size_label(attrs, title)
+    if size:
+        return size
+    vals = [v for v in attrs.values() if v]
+    if vals:
+        return " / ".join(vals)
+    parts = (title or "").split(" - ")
+    return parts[-1] if parts else title or ""
+
+
+def sort_variations(variations: list[dict]) -> list[dict]:
+    if variations and all(canonical_size_label(v.get("attrs", {}), v.get("title", "")) for v in variations):
+        return sorted(
+            variations,
+            key=lambda v: size_inches(v.get("attrs", {}), v.get("title", "")),
+        )
+    return sorted(
+        variations,
+        key=lambda v: norm(label_for_variation(v.get("attrs", {}), v.get("title", ""))),
+    )
+
+
+def enrich_term_names_from_carousel(products: list[dict], base: dict[str, str]) -> dict[str, str]:
+    """Mirror sync script inference — fill termNames when DB lookup misses term_taxonomy_id."""
+    term_names = dict(base)
+    for prod in products:
+        variations = prod.get("variations") or []
+        sorted_vars = sort_variations(variations)
+        for v in sorted_vars:
+            label = label_for_variation(v.get("attrs", {}), v.get("title", ""))
+            term_names[str(v["variationId"])] = label
+            for tid in v.get("termIds") or []:
+                term_names.setdefault(str(tid), label)
+        pairing_slots = sorted(
+            [s for s in prod.get("slots") or [] if len(s.get("termIds") or []) >= 2],
+            key=lambda s: len(s.get("termIds") or []),
+            reverse=True,
+        )
+        for slot in pairing_slots:
+            tids = slot.get("termIds") or []
+            if not any(tid not in term_names for tid in tids):
+                continue
+            if len(tids) == len(sorted_vars) or abs(len(tids) - len(sorted_vars)) <= 1:
+                for i, tid in enumerate(tids):
+                    if i < len(sorted_vars) and str(tid) not in term_names:
+                        term_names[str(tid)] = label_for_variation(
+                            sorted_vars[i].get("attrs", {}),
+                            sorted_vars[i].get("title", ""),
+                        )
+    return term_names
 
 
 def main() -> None:
@@ -124,26 +200,32 @@ mysql -usarveda_wp -h127.0.0.1 sarveda_wp_new_1 -N -e "{escaped}" """
             slot["termIds"] = list(dict.fromkeys(slot["termIds"] + ids))
             referenced_term_ids.update(ids)
 
-    # pa_* attribute terms (slug + name lookup)
-    pa_term_rows = mysql_tsv(
+    # All Woo terms (term_id + term_taxonomy_id) — carousel slots use either
+    all_term_rows = mysql_tsv(
         """
-        SELECT t.term_id, t.name, t.slug, tt.taxonomy
+        SELECT t.term_id, t.name, t.slug, tt.term_taxonomy_id, tt.taxonomy
         FROM wp_terms t
         JOIN wp_term_taxonomy tt ON tt.term_id = t.term_id
-        WHERE tt.taxonomy LIKE 'pa_%'
         """
     )
     terms: dict[str, str] = {}
     slug_to_id: dict[str, str] = {}
     name_to_id: dict[str, str] = {}
-    for tid, name, slug, _tax in pa_term_rows:
-        terms[tid] = html.unescape(name)
-        slug_to_id[slug.lower()] = tid
-        name_to_id[norm(name)] = tid
+    for tid, name, slug, ttid, tax in all_term_rows:
+        decoded = html.unescape(name)
+        terms[str(tid)] = decoded
+        terms[str(ttid)] = decoded
+        if tax.startswith("pa_"):
+            slug_to_id[slug.lower()] = str(tid)
+            name_to_id.setdefault(norm(decoded), str(tid))
 
-    # Carousel slots often store term_taxonomy_id, not term_id — resolve both
-    if referenced_term_ids:
-        ids_sql = ",".join(sorted(referenced_term_ids, key=int))
+    # Batch-resolve any carousel refs still missing (deleted terms, edge IDs)
+    missing_refs = [rid for rid in referenced_term_ids if rid not in terms]
+    for i in range(0, len(missing_refs), 100):
+        batch = missing_refs[i : i + 100]
+        if not batch:
+            break
+        ids_sql = ",".join(batch)
         extra = mysql_tsv(
             f"""
             SELECT t.term_id, tt.term_taxonomy_id, t.name
@@ -156,7 +238,6 @@ mysql -usarveda_wp -h127.0.0.1 sarveda_wp_new_1 -N -e "{escaped}" """
             decoded = html.unescape(name)
             terms[str(tid)] = decoded
             terms[str(ttid)] = decoded
-            name_to_id.setdefault(norm(decoded), str(tid))
 
     def resolve_term_ids(attrs: dict[str, str]) -> list[str]:
         found: list[str] = []
@@ -231,14 +312,21 @@ mysql -usarveda_wp -h127.0.0.1 sarveda_wp_new_1 -N -e "{escaped}" """
             }
         )
 
+    term_names = enrich_term_names_from_carousel(out_products, terms)
+
     payload = {
         "generatedAt": __import__("datetime").datetime.utcnow().isoformat() + "Z",
-        "termNames": terms,
+        "termNames": term_names,
         "products": out_products,
     }
     OUT.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    still_missing = [rid for rid in referenced_term_ids if rid not in term_names]
+    pa_count = sum(1 for row in all_term_rows if len(row) > 4 and str(row[4]).startswith("pa_"))
     print(f"Wrote {OUT} — {len(out_products)} products with carousel meta")
-    print(f"pa terms: {len(pa_term_rows)}, carousel term refs: {len(referenced_term_ids)}")
+    print(f"all terms: {len(all_term_rows)} (pa_*: {pa_count}), carousel term refs: {len(referenced_term_ids)}")
+    print(f"termNames keys: {len(term_names)} (db: {len(terms)}), unresolved carousel refs: {len(still_missing)}")
+    if still_missing[:5]:
+        print(f"  sample unresolved: {still_missing[:5]}")
 
 
 if __name__ == "__main__":
