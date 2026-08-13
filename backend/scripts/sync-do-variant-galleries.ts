@@ -177,14 +177,55 @@ function extractYoutube(url: string): string | null {
   return m ? `https://www.youtube.com/embed/${m[1]}` : null;
 }
 
-function buildCarouselByWooId(): Map<number, CarouselProduct> {
-  const map = new Map<number, CarouselProduct>();
-  if (!fs.existsSync(CAROUSEL_META)) return map;
-  const raw = JSON.parse(fs.readFileSync(CAROUSEL_META, "utf8")) as { products: CarouselProduct[] };
+function buildCarouselMeta(): {
+  byWooId: Map<number, CarouselProduct>;
+  termNames: Record<string, string>;
+} {
+  const byWooId = new Map<number, CarouselProduct>();
+  let termNames: Record<string, string> = {};
+  if (!fs.existsSync(CAROUSEL_META)) return { byWooId, termNames };
+  const raw = JSON.parse(fs.readFileSync(CAROUSEL_META, "utf8")) as {
+    products: CarouselProduct[];
+    termNames?: Record<string, string>;
+  };
+  termNames = raw.termNames ?? {};
   for (const p of raw.products) {
-    map.set(p.wooProductId, p);
+    byWooId.set(p.wooProductId, p);
   }
-  return map;
+  return { byWooId, termNames };
+}
+
+function normText(s: string): string {
+  return s
+    .replace(/&amp;/g, "&")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function variationHaystack(v: CarouselProduct["variations"][0]): string {
+  return normText(`${Object.values(v.attrs).join(" ")} ${v.title}`);
+}
+
+function slotAppliesToVariation(
+  slot: CarouselSlot,
+  variation: CarouselProduct["variations"][0],
+  termNames: Record<string, string>
+): boolean {
+  if (!slot.termIds.length) return true;
+
+  if (variation.termIds.some((t) => slot.termIds.includes(t))) return true;
+
+  const hay = variationHaystack(variation);
+  for (const tid of slot.termIds) {
+    const tname = termNames[tid];
+    if (!tname) continue;
+    const n = normText(tname);
+    if (!n) continue;
+    if (hay.includes(n)) return true;
+    if (hay.includes(n.replace(/\s+/g, "-"))) return true;
+  }
+  return false;
 }
 
 /** DO variation id → Lightsail variant id */
@@ -204,29 +245,21 @@ function buildDoToLsVariantMap(
 function lsVariantsForSlot(
   slot: CarouselSlot,
   carousel: CarouselProduct,
-  doToLs: Map<string, string>
+  doToLs: Map<string, string>,
+  termNames: Record<string, string>,
+  ignoreTermFilter = false
 ): Set<string> {
   const out = new Set<string>();
-  const termSet = new Set(slot.termIds);
 
-  if (termSet.size === 0) {
+  if (ignoreTermFilter || !slot.termIds.length) {
     for (const vid of doToLs.values()) out.add(vid);
     return out;
   }
 
   for (const v of carousel.variations) {
-    const matchesTerm = v.termIds.some((t) => termSet.has(t));
     const mapped = doToLs.get(String(v.variationId));
-    if (matchesTerm && mapped) out.add(mapped);
-  }
-
-  // Fallback: direct DO variation id match via pull list when term mapping thin
-  if (out.size === 0) {
-    for (const [doVarId, lsVarId] of doToLs.entries()) {
-      const dv = carousel.variations.find((x) => String(x.variationId) === doVarId);
-      if (!dv) continue;
-      if (dv.termIds.some((t) => termSet.has(t))) out.add(lsVarId);
-    }
+    if (!mapped) continue;
+    if (slotAppliesToVariation(slot, v, termNames)) out.add(mapped);
   }
 
   return out;
@@ -237,7 +270,9 @@ async function planCarouselProduct(
   pullRows: PullRow[],
   skuToVariantId: Map<string, string>,
   attachments: Map<string, string>,
-  cdnMap: Map<string, string>
+  cdnMap: Map<string, string>,
+  termNames: Record<string, string>,
+  ignoreTermFilter = false
 ): Promise<{ images: PlannedImage[]; videoByVariantId: Map<string, string> }> {
   const doToLs = buildDoToLsVariantMap(pullRows, skuToVariantId);
   const images: PlannedImage[] = [];
@@ -247,7 +282,7 @@ async function planCarouselProduct(
   const sortedSlots = [...carousel.slots].sort((a, b) => a.index - b.index);
 
   for (const slot of sortedSlots) {
-    const targetVariants = lsVariantsForSlot(slot, carousel, doToLs);
+    const targetVariants = lsVariantsForSlot(slot, carousel, doToLs, termNames, ignoreTermFilter);
 
     if (slot.youtube) {
       for (const vid of targetVariants) {
@@ -344,10 +379,56 @@ async function planThumbProduct(
   return { images, videoByVariantId };
 }
 
+/** Add DO featured thumbs for pull rows that still have no carousel image. */
+async function mergeThumbFallback(
+  images: PlannedImage[],
+  videoByVariantId: Map<string, string>,
+  pullRows: PullRow[],
+  skuToVariantId: Map<string, string>,
+  doVariantMedia: Map<string, { thumbId: string; video: string }>,
+  attachments: Map<string, string>,
+  cdnMap: Map<string, string>
+): Promise<PlannedImage[]> {
+  const covered = new Set(images.map((i) => i.variantId));
+  const merged = [...images];
+  const posByVariant = new Map<string, number>();
+  for (const img of images) {
+    posByVariant.set(img.variantId, Math.max(posByVariant.get(img.variantId) ?? 0, img.position + 1));
+  }
+
+  for (const r of pullRows) {
+    const variantId = skuToVariantId.get(r.ls_sku.trim());
+    if (!variantId || covered.has(variantId)) continue;
+
+    const media = doVariantMedia.get(r.do_variation_id);
+    if (!media?.thumbId) continue;
+    const doUrl = attachments.get(media.thumbId);
+    if (!doUrl) continue;
+
+    const s3Url = await resolveS3Url(doUrl, cdnMap);
+    const pos = posByVariant.get(variantId) ?? 0;
+    merged.push({
+      lsSku: r.ls_sku,
+      variantId,
+      position: pos,
+      doUrl,
+      s3Url,
+      isPrimary: pos === 0,
+    });
+    covered.add(variantId);
+    if (media.video && isRealVideo(media.video) && !videoByVariantId.has(variantId)) {
+      videoByVariantId.set(variantId, media.video);
+    }
+  }
+
+  return merged;
+}
+
 async function syncProduct(
   lsProductName: string,
   pullRows: PullRow[],
   carouselByWoo: Map<number, CarouselProduct>,
+  termNames: Record<string, string>,
   attachments: Map<string, string>,
   doVariantMedia: Map<string, { thumbId: string; video: string }>,
   cdnMap: Map<string, string>
@@ -428,10 +509,29 @@ async function syncProduct(
       rowsForCarousel,
       skuToVariantId,
       attachments,
-      cdnMap
+      cdnMap,
+      termNames,
+      isFallback
     );
     images = planned.images;
     videoByVariantId = planned.videoByVariantId;
+
+    // Fill gaps: carousel term mapping often misses attrs — use DO featured thumb per variant
+    const beforeThumb = images.length;
+    images = await mergeThumbFallback(
+      images,
+      videoByVariantId,
+      pullRows,
+      skuToVariantId,
+      doVariantMedia,
+      attachments,
+      cdnMap
+    );
+    if (images.length > beforeThumb && beforeThumb > 0) {
+      mode = "carousel+thumb";
+    } else if (images.length > 0 && beforeThumb === 0) {
+      mode = "carousel+thumb";
+    }
 
     // DNA-style fallback: if carousel yielded nothing, use donor thumb
     if (isFallback && images.length === 0) {
@@ -544,7 +644,7 @@ async function main(): Promise<void> {
   const attachments = loadAttachments();
   const doVariantMedia = loadDoVariantMedia();
   const cdnMap = loadCdnMap();
-  const carouselByWoo = buildCarouselByWooId();
+  const { byWooId, termNames } = buildCarouselMeta();
 
   console.log(DRY_RUN ? "DRY RUN — pass --apply to write DB + S3\n" : "APPLY mode\n");
   console.log(`Products to sync: ${byProduct.size} (${pullRows.length} variant rows)\n`);
@@ -558,7 +658,8 @@ async function main(): Promise<void> {
       const result = await syncProduct(
         lsProduct,
         rows,
-        carouselByWoo,
+        byWooId,
+        termNames,
         attachments,
         doVariantMedia,
         cdnMap

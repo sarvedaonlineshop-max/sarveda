@@ -5,10 +5,11 @@ Fetch ACF carousel slot meta from live DO Woo MySQL → JSON for local sync scri
 Writes: data/compare/do_carousel_meta.json
 
 Usage:
-  python3 backend/scripts/fetch-do-carousel-meta.py
+  DO_SSH_PASS=... python3 backend/scripts/fetch-do-carousel-meta.py
 """
 from __future__ import annotations
 
+import html
 import json
 import os
 import re
@@ -24,6 +25,14 @@ def php_unserialize_term_ids(raw: str) -> list[str]:
     if not raw:
         return []
     return re.findall(r's:\d+:"(\d+)"', raw)
+
+
+def norm(s: str) -> str:
+    return re.sub(r"\s+", " ", html.unescape(s or "").strip().lower())
+
+
+def slugify(s: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", norm(s)).strip("-")
 
 
 def main() -> None:
@@ -57,7 +66,6 @@ mysql -usarveda_wp -h127.0.0.1 sarveda_wp_new_1 -N -e "{escaped}" """
                 rows.append(line.split("\t"))
         return rows
 
-    # Carousel slots per parent product
     slot_rows = mysql_tsv(
         """
         SELECT post_id, meta_key, REPLACE(REPLACE(meta_value, CHAR(10), ' '), CHAR(13), ' ')
@@ -70,6 +78,8 @@ mysql -usarveda_wp -h127.0.0.1 sarveda_wp_new_1 -N -e "{escaped}" """
     )
 
     products: dict[str, dict] = {}
+    referenced_term_ids: set[str] = set()
+
     for parts in slot_rows:
         if len(parts) < 3:
             continue
@@ -96,15 +106,58 @@ mysql -usarveda_wp -h127.0.0.1 sarveda_wp_new_1 -N -e "{escaped}" """
             if yt:
                 slot["youtube"] = f"https://www.youtube.com/embed/{yt.group(1)}"
         elif field.startswith("link_this_image_type"):
-            slot["termIds"] = list(
-                dict.fromkeys(slot["termIds"] + php_unserialize_term_ids(meta_value))
-            )
+            ids = php_unserialize_term_ids(meta_value)
+            slot["termIds"] = list(dict.fromkeys(slot["termIds"] + ids))
+            referenced_term_ids.update(ids)
 
-    # Term id → name
-    term_rows = mysql_tsv("SELECT term_id, name FROM wp_terms")
-    terms = {tid: name for tid, name in term_rows}
+    # pa_* attribute terms (slug + name lookup)
+    pa_term_rows = mysql_tsv(
+        """
+        SELECT t.term_id, t.name, t.slug, tt.taxonomy
+        FROM wp_terms t
+        JOIN wp_term_taxonomy tt ON tt.term_id = t.term_id
+        WHERE tt.taxonomy LIKE 'pa_%'
+        """
+    )
+    terms: dict[str, str] = {}
+    slug_to_id: dict[str, str] = {}
+    name_to_id: dict[str, str] = {}
+    for tid, name, slug, _tax in pa_term_rows:
+        terms[tid] = html.unescape(name)
+        slug_to_id[slug.lower()] = tid
+        name_to_id[norm(name)] = tid
 
-    # Variation id → attrs + term ids from attribute meta
+    # Carousel slots often store term_taxonomy_id, not term_id — resolve both
+    if referenced_term_ids:
+        ids_sql = ",".join(sorted(referenced_term_ids, key=int))
+        extra = mysql_tsv(
+            f"""
+            SELECT t.term_id, tt.term_taxonomy_id, t.name
+            FROM wp_terms t
+            JOIN wp_term_taxonomy tt ON tt.term_id = t.term_id
+            WHERE t.term_id IN ({ids_sql}) OR tt.term_taxonomy_id IN ({ids_sql})
+            """
+        )
+        for tid, ttid, name in extra:
+            decoded = html.unescape(name)
+            terms[str(tid)] = decoded
+            terms[str(ttid)] = decoded
+            name_to_id.setdefault(norm(decoded), str(tid))
+
+    def resolve_term_ids(attrs: dict[str, str]) -> list[str]:
+        found: list[str] = []
+        for val in attrs.values():
+            if not val:
+                continue
+            raw = html.unescape(val.strip())
+            by_slug = slug_to_id.get(raw.lower()) or slug_to_id.get(slugify(raw))
+            by_name = name_to_id.get(norm(raw))
+            if by_slug:
+                found.append(by_slug)
+            elif by_name:
+                found.append(by_name)
+        return list(dict.fromkeys(found))
+
     var_rows = mysql_tsv(
         """
         SELECT p.ID, p.post_parent, p.post_title
@@ -120,28 +173,27 @@ mysql -usarveda_wp -h127.0.0.1 sarveda_wp_new_1 -N -e "{escaped}" """
         """
     )
     var_attrs: dict[str, dict[str, str]] = {}
-    for vid, key, val in var_meta_rows:
+    for parts in var_meta_rows:
+        if len(parts) < 3:
+            continue
+        vid, key, val = parts[0], parts[1], parts[2]
         if not key.startswith("attribute_"):
             continue
         attr = key.replace("attribute_", "").replace("pa_", "")
         var_attrs.setdefault(vid, {})[attr] = val.strip()
 
     variations: dict[str, list[dict]] = {}
-    for vid, parent, title in var_rows:
+    for parts in var_rows:
+        if len(parts) < 3:
+            continue
+        vid, parent, title = parts[0], parts[1], parts[2]
         attrs = var_attrs.get(vid, {})
-        # Resolve term ids from attribute slugs/names
-        term_ids: list[str] = []
-        for attr_name, attr_val in attrs.items():
-            for tid, tname in terms.items():
-                if tname.lower() == attr_val.replace("-", " ").lower() or tname.lower().replace(" ", "-") == attr_val.lower():
-                    term_ids.append(tid)
-                    break
         variations.setdefault(parent, []).append(
             {
                 "variationId": int(vid),
                 "title": title,
                 "attrs": attrs,
-                "termIds": list(dict.fromkeys(term_ids)),
+                "termIds": resolve_term_ids(attrs),
             }
         )
 
@@ -165,6 +217,7 @@ mysql -usarveda_wp -h127.0.0.1 sarveda_wp_new_1 -N -e "{escaped}" """
     }
     OUT.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     print(f"Wrote {OUT} — {len(out_products)} products with carousel meta")
+    print(f"pa terms: {len(pa_term_rows)}, carousel term refs: {len(referenced_term_ids)}")
 
 
 if __name__ == "__main__":
