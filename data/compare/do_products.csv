@@ -1,176 +1,186 @@
-id,slug,name,status,product_type,sku,hsn,tax_class,desc_len,short_len,video,thumb_id,gallery,upsell,crosssell,shipping_meta_count,accordion_meta_count,video_meta_count,article_meta_count,pair_meta_count
-46017,,Yoga Mats Superior & Moderate,draft,variable,,,gst-5,294,945,field_5fec24efe5459,8514,,a:4:{i:0;i:42648;i:1;i:42582;i:2;i:6530;i:3;i:6689;},,66,44,2,2,9
-42373,11-note-tongue-drum,11 Note Tongue Drum,publish,variable,,,gst12,0,571,field_5fec24efe5459,42380,"42376,42380,42387,42388,42386",,,66,44,2,2,2
-42389,32-bar-rod-chime,25 Rods - Bar Chime,publish,simple,MI-BCH-32,,gst18,0,589,field_5fec24efe5459,50342,,a:4:{i:0;i:8762;i:1;i:45197;i:2;i:7450;i:3;i:10345;},,154,44,2,2,3
-7491,6-3-inches-mini-tongue-drum,Mini Tongue Drum,publish,variable,,,gst12,0,763,field_5fec24efe5459,7505,"7497,7507,7501,7503,7505,7499,7498,7502,7504,7500,7506",a:4:{i:0;i:42373;i:1;i:8058;i:2;i:7435;i:3;i:10345;},,66,44,2,2,3
-48727,7-chakra-morchang-set,7 Chakra Morchang Set,publish,variable,,,,1285,1286,field_5fec24efe5459,48835,,,,154,44,2,2,2
-44503,7-chakras-copper-water-bottles-with-handle,7 Chakras Copper Water Bottles with Handle,publish,variable,,,gst-5,0,698,field_5fec24efe5459,44515,"6881,6880,5488,6310,6309,6882,6883,6340,6342,6343",,,66,44,2,2,2
-7687,7-chakras-mystical-incense-sticks-set,7 Chakras Mystical Incense Sticks Set,publish,variable,,,gst-5,0,1143,field_5fec24efe5459,10117,"10106,10107,10108,10109,10110,10111,10112,10113,10114,10115,10116,10117,10118,10119,10120,10121,10122,10123,10124",a:4:{i:0;i:6892;i:1;i:42674;i:2;i:6519;i:3;i:6507;},,66,44,2,2,3
-46141,7-chakras-yoga-mats,7 Chakras Yoga Mats,publish,variable,,,gst-5,294,983,field_5fec24efe5459,46214,,a:4:{i:0;i:42648;i:1;i:42582;i:2;i:6530;i:3;i:6689;},,66,44,2,2,9
-42332,8-keys-metallophone,8 Keys Metallophone - with 1” & 1.5” key-widths,publish,variable,,,gst12,0,854,field_5fec24efe5459,42336,"42333,42334,42335,42336,42337",a:4:{i:0;i:42340;i:1;i:7484;i:2;i:7435;i:3;i:10345;},a:3:{i:0;i:42332;i:1;i:7435;i:2;i:10345;},66,44,2,2,4
-42340,8-keys-wooden-xylophone,8 Keys Wooden Xylophone,publish,simple,,,gst12,0,837,field_5fec24efe5459,42344,"42341,42342,42343,42344",a:4:{i:0;i:42332;i:1;i:7484;i:2;i:45197;i:3;i:10345;},,66,44,2,2,3
-8058,9-10-notes-handpan,9/10 Notes Handpan Drum - Handcrafted to Precision,publish,variable,MI-HP,,gst-zero-rate,69,560,field_5fec24efe5459,10333,"10328,10333,8073,8072,8071,8070,8066,8064,8065,8132,8133,8134,8135,8136",a:4:{i:0;i:43219;i:1;i:7887;i:2;i:7491;i:3;i:7293;},,168,44,2,2,9
-46525,aluminium-22-steel-bars-chime,Aluminium 22 Steel Bars Chime,publish,simple,,,gst12,236,569,field_5fec24efe5459,46526,"46528,46527",,,10,44,2,2,2
-48205,angel-tuning-forks,Angel Tuning Forks,publish,variable,,,gst18,555,555,field_5fec24efe5459,48206,,,,154,44,2,2,2
-49596,ankh-sound-healing-instrument,Ankh Sound Healing Instrument,publish,variable,,,,156,842,field_5fec24efe5459,49872,,,,154,44,2,2,2
-7404,artistic-egg-shakers,Painted Egg Shakers,publish,variable,,,gst-5,0,337,field_5fec24efe5459,7411,"7406,8157,8158,8159,7408,7409,7410,7411,7412,7413",a:4:{i:0;i:42317;i:1;i:7370;i:2;i:7349;i:3;i:7317;},,66,44,2,2,3
-7300,aslatau-or-asalato,Asalato/Aslatau or Kashaka Shaker,publish,variable,MI-AS,,gst-5,0,1022,field_5fec24efe5459,7301,"7302,7303,9742,8174,8177,7305,8175,7306,8176",a:4:{i:0;i:7484;i:1;i:7349;i:2;i:7356;i:3;i:7317;},,154,44,2,2,3
-6289,ayurvedic-copper-bedroom-jar,Ayurvedic Copper Bedroom Jar,publish,simple,CB-BJ,,gst-5,0,594,field_5fec24efe5459,6619,"6290,6291,6292,6297,6299,6298,6309,6310",a:4:{i:0;i:5675;i:1;i:6007;i:2;i:6638;i:3;i:6071;},,66,44,2,2,3
-7329,bamboo-castanet,Bamboo Castanet,publish,simple,MI-CN-B,,gst-5,0,506,field_5fec24efe5459,7330,"44134,7332,7333,44133,44130,44132,44131",a:4:{i:0;i:42323;i:1;i:7349;i:2;i:7456;i:3;i:7356;},,66,44,2,2,3
-46498,bamboo-jaw-harp,Bamboo Jaw Harp,publish,simple,MI-BJH,,gst12,177,568,field_5fec24efe5459,46501,"46502,46614",a:4:{i:0;i:7300;i:1;i:45754;i:2;i:6065;i:3;i:5763;},,154,44,2,2,3
-7484,bamboo-rainstick,Bamboo Rainstick,draft,variable,MI-RS,,gst-5,0,621,field_5fec24efe5459,47615,"7486,7489,8765,8766,8767,7490,8768",a:4:{i:0;i:7472;i:1;i:9529;i:2;i:7356;i:3;i:10345;},,66,44,2,2,15
-49779,bamboo-rainstick-2,Bamboo Rainstick,publish,simple,MI-RS-N,,gst-5,260,621,field_5fec24efe5459,49784,,a:4:{i:0;i:7472;i:1;i:9529;i:2;i:7356;i:3;i:10345;},,154,44,2,2,15
-47924,belly-bowls,Belly Bowls,publish,simple,,,,613,613,field_5fec24efe5459,47979,,,,66,44,2,2,2
-47751,bendo-chimes,Bendo Chimes,publish,simple,,,gst18,330,650,field_5fec24efe5459,47784,,,,66,44,2,2,2
-47742,bendo-shaker,Bendo Shaker,publish,variable,,,gst18,550,550,field_5fec24efe5459,47774,,,,154,44,2,2,2
-45754,bird-flute,Bird Flute,publish,variable,,,gst-5,820,820,field_5fec24efe5459,48648,"46363,46361,46362,45758",a:3:{i:0;i:7484;i:1;i:7456;i:2;i:7317;},,154,44,2,2,3
-45384,box-tanpura,Box Tanpura,publish,variable,,,gst12,1236,1391,field_5fec24efe5459,47294,"47294,47292,47293,45386",a:4:{i:0;i:44972;i:1;i:9529;i:2;i:7293;i:3;i:44970;},,66,44,2,2,3
-48421,brain-tuner-set-harmonize-your-minds-natural-rhythms,Brain Tuner Set – Harmonize Your Mind’s Natural Rhythms,draft,variable,,,gst18,425,1640,field_5fec24efe5459,49908,,,,10,44,2,2,2
-42317,caxixi,Caxixi,publish,simple,Mi-CX-M-N,,gst-5,0,758,field_5fec24efe5459,42321,"42321,42322,42319,47456,47457",,,66,44,2,2,2
-45668,ceg-crystal-singing-bowl-set,Triad Crystal Bowl Set,publish,variable,,,gst18,957,957,field_5fec24efe5459,47479,"45684,45686,45685",a:4:{i:0;i:42373;i:1;i:45661;i:2;i:43219;i:3;i:45654;},,66,44,2,2,3
-48318,cg-tuning-forks,C&G Tuning Forks,publish,variable,,,,490,558,field_5fec24efe5459,48321,,,,66,44,2,2,2
-8802,chau-gong-tam-tam-for-sound-therapy-meditation,Tam-Tam/Chau Gong,publish,variable,,,gst-5,0,861,field_5fec24efe5459,45721,"8828,8829,45720,45721",,,66,44,2,2,2
-48653,classic-morchang-set,Classic Morchang Set,publish,variable,,,,724,2732,field_5fec24efe5459,48853,,,,154,44,2,2,2
-50995,clay-ocarinas,Clay Ocarinas,publish,variable,,,,202,1054,field_5fec24efe5459,51032,,,,98,44,2,2,2
-5730,coconut-rattle,Coconut Rattle,publish,simple,MI-CR,,gst-5,0,484,field_5fec24efe5459,44094,"8210,5812,8211,5811,8212,8176",,,66,44,2,2,2
-45533,conscious-cards,Conscious Cards,publish,simple,,,,1228,1228,field_5fec24efe5459,45538,"45534,45535,45536,45537,45538,45539,45540,45541,45542",a:4:{i:0;i:7329;i:1;i:7484;i:2;i:42323;i:3;i:45197;},,66,44,2,2,3
-5682,copper-bottle-black-with-7-chakras-vintage,7 Chakras Vintage - Copper Bottle,publish,variable,,,gst-5,0,698,field_5fec24efe5459,6631,"5687,6412,6922,6923,6924,6925",,,66,44,2,2,2
-5934,copper-bottle-curved-copper-diamond-groove,Curved Diamond Groove Copper Bottle,publish,variable,,,gst-5,0,698,field_5fec24efe5459,6413,"5935,5936,5937,5938,5939,5940,6413",,,66,44,2,2,2
-5495,copper-bottle-curved-vintage-hammered,Curved Hammered Copper Bottles,publish,variable,,,gst-5,0,698,field_5fec24efe5459,6407,"5497,5498,5499,5500,5752,6407",,,66,44,2,2,2
-5688,copper-bottle-hammered-copper-set,Hammered Copper Bottle,publish,variable,,,gst-5,0,698,field_5fec24efe5459,5788,"5689,5690,5691,5692,5693,5761",,,66,44,2,2,2
-5669,copper-bottle-orange-light,Sunshine within Me,publish,variable,,,gst-5,0,698,field_5fec24efe5459,6617,"5670,5671,5672,5673,5674,5756,6410",,,66,44,2,2,2
-5663,copper-bottle-pink-noble-toughts,Pink & Positive,publish,variable,,,gst-5,0,698,field_5fec24efe5459,6618,"5664,5665,5666,5667,5668,5755,5837,6409",,,66,44,2,2,2
-5489,copper-bottle-vintage-plain-curved,Curved Copper Bottles,publish,variable,,,gst-5,0,698,field_5fec24efe5459,6406,"5757,6405,6450,6406,5491,5493,5492,5488",,,66,44,2,2,2
-5675,copper-bottle-with-7-chakras-plain,7 Chakras Gold - Copper Bottle,publish,variable,,,gst-5,0,698,field_5fec24efe5459,6632,"5676,5677,5678,5680,5681,5751,6411",,,66,44,2,2,2
-5466,copper-bottle-with-brush-tattvamasi,Tattvamasi-I am Infinite,publish,variable,,,gst-5,0,520,field_5fec24efe5459,6628,"5468,5464,5463,5462,5465",,,66,44,2,2,2
-5459,copper-bottle-with-brush-true-happiness-lies-within,Happiness is Inside,publish,variable,,,gst-5,0,698,field_5fec24efe5459,6630,"5460,5461,5462,5463,5464,5465",,,66,44,2,2,2
-5042,copper-tongue-cleaner,Copper Tongue Cleaner,publish,variable,TC-R-1,,gst-5,0,383,field_5fec24efe5459,5835,"5225,5226,5227,5835,5134,5133,5132,7813,7814,7815,7816,7817,7818",,,66,44,2,2,2
-6638,copper-water-bottle-with-2-glasses-set-with-7-chakra-design,Copper Bottle Gift Set - 7 Chakra,publish,variable,,,gst-5,695,695,field_5fec24efe5459,43802,"9739,9741,9737,9738,9740,6644,43799,43800,43801,43802",a:4:{i:0;i:5675;i:1;i:6007;i:2;i:5042;i:3;i:42582;},a:2:{i:0;i:5042;i:1;i:6007;},66,44,2,2,4
-8401,cotton-yoga-mat-lotus,Lotus Moderate Grip Yoga Mat,draft,variable,,,gst-5,0,950,field_5fec24efe5459,8625,"8302,8650,8651,8653,8654,8656,8652,8657,8309,7652,7650,7648,7654,8655,8658,8659,7582,7579,7577,7575,7574",,,66,44,2,2,0
-8422,cotton-yoga-mat7-chakras,7 Chakras Moderate Grip Yoga Mat,publish,variable,,,gst-5,294,926,field_5fec24efe5459,8524,"8302,8529,8617,8618,8619,8646,8647,8648,8649,7640,7637,7630,7632,7582,7579,7577,7574,7575",a:4:{i:0;i:42674;i:1;i:9675;i:2;i:6530;i:3;i:6689;},,66,44,2,2,3
-47494,crescent-zafu-cushion-compact,Crescent Zafu Cushion - Wide,publish,variable,,,gst18,1142,1142,field_5fec24efe5459,47869,,a:4:{i:0;i:6530;i:1;i:6689;i:2;i:6711;i:3;i:9763;},,66,44,2,2,3
-47508,crescent-zafu-cushion-wide,Crescent Zafu Cushion - Compact,publish,variable,,,gst18,1161,1192,field_5fec24efe5459,47870,,a:4:{i:0;i:6530;i:1;i:6689;i:2;i:6711;i:3;i:9763;},,66,44,2,2,3
-49604,crystal-bowl-accessories,Crystal Bowl Mallets,draft,variable,,,gst-5,108,1083,field_5fec24efe5459,49856,,,,10,44,2,2,2
-47081,crystal-bowl-bag,Crystal Bowl Bag,publish,variable,,,,287,1848,field_5fec24efe5459,50395,,,,154,44,2,2,2
-49760,crystal-bowl-o-rings-support-rings,Crystal Bowl O Rings (Support Rings),draft,variable,,,gst-5,0,1333,field_5fec24efe5459,49615,,,,10,44,2,2,2
-45661,crystal-bowl-with-handle,Crystal Bowl with Handle,publish,simple,,,gst18,562,562,field_5fec24efe5459,47527,"45662,45663,45777,45664,45665",a:4:{i:0;i:9777;i:1;i:43219;i:2;i:45654;i:3;i:7293;},,66,44,2,2,3
-43219,crystal-bowls-set-of-7,Crystal Bowls - Set of 7,publish,variable,,,gst18,0,380,field_5fec24efe5459,45012,"43225,43226,43220,43224,43222,43223,44990,44991,44992,44993,44994,44995,45010,45011,45012",a:4:{i:0;i:45668;i:1;i:45661;i:2;i:9795;i:3;i:9529;},,154,44,2,2,3
-45654,crystal-pyramid,Crystal Pyramid,publish,variable,,,gst18,411,402,field_5fec24efe5459,45660,"45656,45657,45658,45659,45660",a:4:{i:0;i:45661;i:1;i:9777;i:2;i:43219;i:3;i:7887;},,154,44,2,2,3
-7417,den-den-daiko-or-spin-twist-drum,Spin/Twist Drum or Den Den Daiko,publish,variable,,,gst12,0,693,field_5fec24efe5459,47614,,a:4:{i:0;i:7329;i:1;i:42323;i:2;i:7456;i:3;i:7404;},,66,44,2,2,3
-44969,djembe-drums,Djembe Drums,publish,variable,,,,630,498,field_5fec24efe5459,45237,45060,,,66,44,2,2,2
-5740,dumroo-medium-size,Dumru/Dumroo Indian Handmade Percussion Instrument,publish,variable,,,gst-5,0,650,field_5fec24efe5459,47722,,,,66,44,2,2,2
-7396,egg-shaker-with-handle,Egg Shaker with Handle,publish,simple,MI-ES-H,,gst-5,0,850,field_5fec24efe5459,47639,"7398,8170,8171,7400,7401,8173,7402,8172",a:4:{i:0;i:7370;i:1;i:7404;i:2;i:7417;i:3;i:7542;},,66,44,2,2,3
-6080,engraved-copper-water-bottles,7 Chakras Copper Water Bottles,publish,variable,,,gst-5,0,643,field_5fec24efe5459,46329,"6881,6880,5488,6310,6309,6882,6883,6340,6342,6343",,,66,44,2,2,2
-8846,engraved-flat-wind-tibetan-gong-for-meditation-sound-therapy,Etched Wind Gong,publish,variable,,,gst-5,7,435,field_5fec24efe5459,10210,"10197,10198,10199,10200,10202,10203,10204,10205,47185,10206,10207",a:4:{i:0;i:6638;i:1;i:8802;i:2;i:8833;i:3;i:10345;},,154,44,2,2,15
-9763,ergonomic-meditation-bench,Zen Meditation Bench,publish,variable,ME-Cu,,gst18,0,1056,field_5fec24efe5459,9764,"9768,9772,9773,45644,9774,9775,9776",,,66,44,2,2,2
-49115,etched-gongs,Etched Chau Gongs,publish,variable,,,gst-5,201,1743,field_5fec24efe5459,49182,,a:4:{i:0;i:6638;i:1;i:8802;i:2;i:8833;i:3;i:10345;},,154,44,2,2,15
-9795,etched-handmade-singing-bowls,Etched Handmade Singing Bowls,publish,variable,,,gst-5,0,875,field_5fec24efe5459,9998,"9838,9839,9840,9841,9842,9843,9844,9845,9846,9847,9848,9849,9850,9851,9853,9854,9855,9856,9857",a:4:{i:0;i:6638;i:1;i:7607;i:2;i:8143;i:3;i:9978;},,66,44,2,2,21
-9220,eye-shaped-natural-lavender-scented-eye-pillows,Eye Shaped Natural Lavender Scented Eye Pillows,publish,variable,,,gst18,0,671,field_5fec24efe5459,9226,"9227,9228,9229,9230,9231,9233,9232,9615,9616,9617,9618,9619,9620,9621,9622,9623,9624",a:4:{i:0;i:7687;i:1;i:6892;i:2;i:42648;i:3;i:6007;},,66,44,2,2,9
-7607,full-moon-singing-bowls,Full Moon Singing Bowls - All Sizes,publish,variable,,,gst-5,103,554,field_5fec24efe5459,7612,"7613,7614,7615,7616,7617,7618,7619,7620,7621,7622,7623,7624",,,66,44,2,2,2
-45152,gong-bags,Gong Bags,publish,variable,,,gst18,356,356,field_5fec24efe5459,45605,,a:3:{i:0;i:8846;i:1;i:8833;i:2;i:10345;},,66,44,2,2,3
-45289,gong-stand,Gong Stand,publish,variable,,,gst12,610,610,field_5fec24efe5459,46454,,a:3:{i:0;i:43219;i:1;i:8846;i:2;i:8833;},,154,44,2,2,3
-6892,hand-hammered-singing-bowl,Dotted Singing Bowl,publish,variable,,,gst-5,0,0,field_5fec24efe5459,49375,,a:4:{i:0;i:7887;i:1;i:45113;i:2;i:9978;i:3;i:45327;},,154,44,2,2,9
-48229,handcrafted-wooden-stand-for-tuning-forks,Wooden Stand for Tuning Forks,publish,variable,,,gst18,332,332,field_5fec24efe5459,48239,,,,154,44,2,2,2
-5713,handheld-coconut-shaker,Handheld Natural Coconut Shaker,publish,simple,MI-CS-H,,gst-5,0,489,field_5fec24efe5459,5962,"5963,5964,8213,5931,8214,5800,8215,5801,5802,8172",,,66,44,2,2,2
-7472,handheld-kenari-seed-shell-shaker,Kenari Seed Shell Shakers,publish,variable,,,gst-5,0,505,field_5fec24efe5459,47645,"7474,7475,7476,8207,7477,8208,7369,8209,7368,7367,7366,7365,8176",a:4:{i:0;i:45197;i:1;i:45194;i:2;i:7356;i:3;i:10345;},,66,44,2,2,3
-7349,handheld-shaker-with-bamboo-handle-kenari-seed-shell-design,Kenari Seed Shell Shaker with Handle,draft,simple,MI-KS-H,,gst-5,0,784,field_5fec24efe5459,7350,"7351,7352,8165,8167,8164,7353,7354,7355,8166",a:4:{i:0;i:7370;i:1;i:5730;i:2;i:7472;i:3;i:7356;},,66,44,2,2,3
-43286,handmade-extra-large-meridian-singing-bowls,Extra Large Meridian Singing Bowls,publish,variable,,,gst-5,102,861,field_5fec24efe5459,43422,"43314,43315,43317,43318",a:4:{i:0;i:8058;i:1;i:6638;i:2;i:8143;i:3;i:9978;},,154,44,2,2,3
-6884,handmade-singing-bowls-for-sound-therapy,Handmade Singing Bowls - All Sizes,publish,variable,,,gst-5,0,0,field_5fec24efe5459,45747,,a:4:{i:0;i:5675;i:1;i:9795;i:2;i:8143;i:3;i:9978;},,66,44,2,2,9
-46907,handpan-stand,Handpan Stand,publish,simple,,,,210,609,field_5fec24efe5459,46908,"46908,46909,46910,46911",,,66,44,2,2,2
-45113,hanging-bowls-zen-drops,Hanging Bowls/Zen Drops,publish,variable,,,gst-5,423,579,field_5fec24efe5459,45121,,a:4:{i:0;i:45661;i:1;i:8846;i:2;i:7887;i:3;i:9978;},,154,44,2,2,3
-44972,harmonium,Harmonium,publish,variable,,,,531,531,field_5fec24efe5459,45027,,a:4:{i:0;i:45384;i:1;i:43219;i:2;i:44970;i:3;i:45327;},,66,44,2,2,3
-9291,hi-zafu-meditation-cushion-filled-with-lotus-embroidery,Hi-Zafu Meditation Cushion - Embroidered with Lotus,publish,variable,,,gst18,921,921,field_5fec24efe5459,9641,"9544,9545,9546,9547,9548,9285,9286,9287,9288,9289,9290",a:4:{i:0;i:42674;i:1;i:7484;i:2;i:9278;i:3;i:9763;},,66,44,2,2,3
-5769,jala-neti-pot,Jala Neti Pot - Ceramic 185 ml,publish,variable,,,gst18,0,399,field_5fec24efe5459,6430,"6419,44689,6085,6086,6088,6089,6429,6415,6421,6418,6417,5774,6423,6427,6428",a:4:{i:0;i:5682;i:1;i:6007;i:2;i:5042;i:3;i:42582;},,154,44,2,2,15
-7661,kalimba-made-from-coconut-shell-painted-7-key,7-Key Kalimba Made from Coconut Shell - Painted & Plain,publish,variable,,,gst-5,0,802,field_5fec24efe5459,7666,"7667,7668,7669,7677,7676,7678,7679,7680,7681,7682,7683,7684,7660,7659,7658,7657,7656",a:2:{i:0;i:7396;i:1;i:7417;},,66,44,2,2,3
-42323,kenari-bracelet,Kenari Bracelet,publish,simple,MI-KR-BT,,gst-5,0,684,field_5fec24efe5459,42329,"42324,42325,42326,42328,42329",,,66,44,2,2,2
-45197,kenari-chimes,Kenari Chimes - Small & Large,publish,variable,MI-KR-CH-168,,gst-5,629,629,field_5fec24efe5459,48923,"45198,45199,45229,46432,45230",a:4:{i:0;i:7349;i:1;i:7472;i:2;i:45194;i:3;i:7356;},,154,44,2,2,3
-45194,koshi-chimes,Elemental Chimes,publish,simple,MI-Ch-KS,,gst-5,523,525,field_5fec24efe5459,45195,"45195,45196",a:4:{i:0;i:42317;i:1;i:42323;i:2;i:45485;i:3;i:10345;},,66,44,2,2,3
-49817,large-tuning-fork,DNA Tuning Fork,publish,variable,,,,160,1393,field_5fec24efe5459,49859,,,,154,44,2,2,2
-46171,lotus-yoga-mat,Lotus Yoga Mat,publish,variable,,,gst-5,339,992,field_5fec24efe5459,46294,"8302,8529,9260,9712,9262,9263,9264,9265,9523,9519,9456,9387",a:4:{i:0;i:42674;i:1;i:42582;i:2;i:9690;i:3;i:6530;},,66,44,2,2,9
-7568,macrame-yoga-straps,Macrame Yoga Mat Straps,publish,variable,,,gst-5,0,456,field_5fec24efe5459,46007,"7575,8641,46787,8642,8643,8645,7579,7582",,,66,44,2,2,2
-48856,mayura-morchang-set,Mayura Morchang Set,publish,variable,,,,723,2718,field_5fec24efe5459,48867,,,,154,44,2,2,2
-7450,mini-bamboo-and-aluminium-bar-chime,Mini Bamboo and Aluminium Bar Chime,draft,variable,MI-BCH-S-10,,gst18,0,389,field_5fec24efe5459,7451,"7453,8219,7454,8220,7455,8221,8172",,,66,44,2,2,2
-46495,mini-bamboo-slide-whistle,Mini Bamboo Slide Whistle,publish,variable,MI-BSW,,gst12,230,2659,field_5fec24efe5459,47806,"46511,46512",a:4:{i:0;i:7300;i:1;i:45754;i:2;i:5730;i:3;i:7472;},,154,44,2,2,3
-6062,mini-coconut-shaker-3-types,Mini Coconut Shakers - 3 Types,publish,variable,,,gst-5,1,685,field_5fec24efe5459,46265,"44393,6282,8194,6283,8197,6284,8200,8195,6161,8196,8198,8201,8199,8202",a:4:{i:0;i:7370;i:1;i:7404;i:2;i:7356;i:3;i:7542;},,66,44,2,2,3
-7443,mini-teak-wood-and-stainless-steel-xylophone,Teak Wood - Stainless Steel Xylophone,publish,variable,MI-XP-W-8,,gst12,0,980,field_5fec24efe5459,7444,"7445,8181,8781,7447,8776,7448,8183,8176",,,66,44,2,2,2
-7456,musical-wooden-frog,Musical Wooden Frog,publish,variable,MI-WF,,gst-5,0,486,field_5fec24efe5459,47679,"7458,7459,7460,7461,7462",a:4:{i:0;i:45754;i:1;i:42323;i:2;i:45197;i:3;i:45194;},,154,44,2,2,3
-48428,native-american-style-flute-handcrafted-wooden-melody-maker,Native American Style Flute,draft,variable,,,gst18,134,0,field_5fec24efe5459,48433,,,,154,44,2,2,2
-7435,natural-bamboo-xylophone-with-5-keys,Natural Bamboo Xylophone with 5 Keys,publish,simple,MI-XP-B-5,,gst12,0,899,field_5fec24efe5459,7436,"7437,8187,7438,8188,7439,8189,8176",a:4:{i:0;i:42389;i:1;i:42332;i:2;i:42340;i:3;i:7443;},,66,44,2,2,3
-42674,natural-cotton-yoga-mat-24-572-5-inches-with-superior-natural-rubber-grip-copy,7 Chakras Superior Grip Yoga Mats,draft,variable,,,gst-5,294,932,field_5fec24efe5459,8514,,a:4:{i:0;i:42648;i:1;i:42582;i:2;i:6530;i:3;i:6689;},,66,44,2,2,1
-42648,natural-cotton-yoga-mat-24-572-5-inches-with-superior-natural-rubber-grip-copy-2,Lotus Superior Grip Yoga Mat,draft,variable,,,gst-5,335,932,field_5fec24efe5459,8517,"8302,8529,9260,9712,9262,9263,9264,9265,7582,7579,7574,7575,9523,9519,9456,9387",a:4:{i:0;i:42674;i:1;i:42582;i:2;i:9690;i:3;i:6530;},,66,44,2,2,1
-42582,natural-cotton-yoga-mat-24-572-5-inches-with-superior-natural-rubber-grip-lotus,Plain Superior Grip Yoga Mat,draft,variable,,,gst-5,294,785,field_5fec24efe5459,8532,"8302,8529,9260,9712,9262,9263,9264,9265,7582,7579,7574,7575,9522,9518,9455,9386",a:4:{i:0;i:42674;i:1;i:42648;i:2;i:6547;i:3;i:6711;},,66,44,2,2,1
-8379,natural-cotton-yoga-mat-with-natural-rubber-grip-plain-with-macrame-yoga-strap,Plain Moderate Grip Yoga Mat,draft,variable,,,gst-5,0,869,field_5fec24efe5459,8532,"8302,8540,8650,8657,8659,8653,8658,8654,8656,8655,7989,7986,7982,8652,8651",,,66,44,2,2,0
-5038,neem-wood-combs,Neem Wood Combs,draft,variable,,,gst-5,0,542,field_5fec24efe5459,5925,"5923,6090,6091,6092,5925,6093,6094",,,66,44,2,2,2
-6071,non-printed-copper-water-bottles,"Grooved, Hammered & Plain Copper Bottle",publish,variable,,,gst-5,0,520,field_5fec24efe5459,6118,"6413,6490,6408,6474,6452,6405,6406,6456,5493,5491,5481,5482",,,66,44,2,2,2
-48373,ocarina-instrument-banana-oval,Ocarina Instruments,draft,variable,,,gst-zero-rate,640,645,field_5fec24efe5459,48381,,,,66,44,2,2,2
-9529,ocean-drums,Ocean Drums,publish,variable,,,gst18,0,987,field_5fec24efe5459,44657,"9539,10157,10158,10159,10160,10161,10162,10163",a:4:{i:0;i:7349;i:1;i:7472;i:2;i:7356;i:3;i:7293;},,154,44,2,2,9
-7356,pangi-seed-shell-shaker-rattle,Pangi Seed Shell Rattle,publish,simple,MI-PS,,gst-5,0,527,field_5fec24efe5459,48071,"7358,45774,45775,45776",,,154,44,2,2,2
-8833,plain-flat-wind-tibetan-gong-for-meditation-sound-therapy,Plain/Wind Tibetan Gong,publish,variable,,,gst-5,0,435,field_5fec24efe5459,45723,"8836,44144,44145,44146,44147",,,168,44,2,2,2
-46220,plain-yoga-mats,Plain Yoga Mats,publish,variable,,,gst-5,294,841,field_5fec24efe5459,8532,"8302,8529,9260,9712,9262,9263,9264,9265,7582,7579,7574,7575,9522,9518,9455,9386",a:4:{i:0;i:42674;i:1;i:42648;i:2;i:6547;i:3;i:6711;},,66,44,2,2,3
-6007,printed-copper-water-bottles,Artistically Designed Copper Bottles,publish,variable,,,gst-5,0,698,field_5fec24efe5459,46299,"6110,6109,5500,6310,6309,6340,6108,6107,6106,6342,6343",a:4:{i:0;i:7687;i:1;i:5675;i:2;i:6638;i:3;i:6071;},,66,44,2,2,3
-48512,pulse-tubes,Pulse Tubes,publish,variable,,,,714,704,field_5fec24efe5459,48513,,,,154,44,2,2,2
-9675,rectangular-yoga-bolster-made-from-organic-cotton,Rectangular Yoga Bolster,publish,variable,,,gst18,0,621,field_5fec24efe5459,9688,"9684,9685,9686,9687,9688,9689,9316,9682,9683,9319",a:4:{i:0;i:6734;i:1;i:6730;i:2;i:6732;i:3;i:9763;},,66,44,2,2,3
-7307,s-shaped-didgeridoo,S-Shaped Didgeridoo,publish,variable,,,gst-5,0,552,field_5fec24efe5459,49370,"7309,7310,7311,7312,7313",a:4:{i:0;i:7300;i:1;i:7324;i:2;i:7317;i:3;i:7542;},,66,44,2,2,3
-45473,sacred-heart-chakra-singing-bowl,Heart Chakra Singing Bowl,publish,simple,,,gst-5,1253,1065,field_5fec24efe5459,45516,"45474,45475,45476",a:4:{i:0;i:7887;i:1;i:45469;i:2;i:45334;i:3;i:45327;},,66,44,2,2,3
-45469,sacred-root-chakra-singing-bowl,Root Chakra Singing Bowl,publish,simple,,,gst-5,1194,1194,field_5fec24efe5459,45515,"45471,45472,45470",a:4:{i:0;i:9795;i:1;i:43286;i:2;i:7887;i:3;i:45113;},,66,44,2,2,3
-9964,sarveda-antique-finish-handmade-singing-bowls,Antique finish Handmade Singing Bowls,draft,variable,,,gst-5,0,686,field_5fec24efe5459,9965,"9965,9966,9967,9968,9969,9970",a:4:{i:0;i:9795;i:1;i:7887;i:2;i:45334;i:3;i:45327;},,66,44,2,2,3
-6973,sarveda-buddhist-bell,Tibetan Buddhist Bell,publish,variable,,,gst-5,0,598,field_5fec24efe5459,47656,"6975,6974",,,66,44,2,2,2
-9777,sarveda-crystal-bowls,Crystal Bowls,publish,variable,,,gst18,0,689,field_5fec24efe5459,45257,"9787,9789",,,66,44,2,2,8
-10035,sarveda-flower-of-life-with-sacred-symbols-singing-bowls,Flower of Life with Sacred Symbols Singing Bowls,publish,variable,,,gst-5,4,1683,field_5fec24efe5459,10039,"10036,10037,10038,10039,10040,10041,10042,10043,10044,10045,10046,10047",a:4:{i:0;i:9795;i:1;i:43286;i:2;i:10008;i:3;i:6807;},,66,44,2,2,9
-8040,sarveda-handcrafted-zen-singing-bowl,"Vibroacoustic Therapy Bowls - Universal, Belly and Head",publish,variable,,,gst-5,887,887,field_5fec24efe5459,6871,"6870,8043",a:4:{i:0;i:9795;i:1;i:8143;i:2;i:45334;i:3;i:45327;},,66,44,2,2,9
-9936,sarveda-handmade-lingam-singing-bowl,Handmade Lingam Singing Bowl,draft,variable,,,gst-5,0,400,field_5fec24efe5459,9944,"9944,9945,9946,9948,9947",a:3:{i:0;i:9964;i:1;i:9949;i:2;i:9978;},,66,44,2,2,3
-9949,sarveda-ishana-or-black-gold-bowl,Ishana/Black-Gold Bowl,draft,variable,,,gst-5,0,1022,field_5fec24efe5459,9962,"9958,9959,47183,47184,9960,9961",,,66,44,2,2,2
-9978,sarveda-joint-bowl-or-bowl-with-a-hole,Joint Bowl or Knee Cut Bowl,publish,variable,,,gst-5,0,782,field_5fec24efe5459,9981,"9979,47187,47188,9983,9982",,,154,44,2,2,2
-6519,sarveda-lavender-scented-eye-pillows-for-yoga-meditation-and-relaxation-made-with-cotton-filled-with-flaxseed,Natural Lavender Scented Eye Pillows,publish,variable,,,gst18,0,960,field_5fec24efe5459,6585,"6521,6522,6523,6587,6588,6589,6591,6937,6938,6939,6940,6941",a:4:{i:0;i:7687;i:1;i:6892;i:2;i:42648;i:3;i:6007;},,66,44,2,2,3
-10008,sarveda-sacred-symbols-singing-bowls,Sacred Symbols Singing Bowls,publish,variable,,,gst-5,801,2156,field_5fec24efe5459,10033,"10024,10025,10026,10027,10028,10029,10030,10031,10032,10033,10034",,,66,44,2,2,2
-9713,sarveda-tuning-forks,Tuning Fork - Single Weighted & Unweighted,publish,variable,,,gst18,0,1514,field_5fec24efe5459,9730,"9726,9727,9728,9729,9730,9731,9732,9733,9734,9735,9736,10174,10175,10176,45951,10177,10178,10179,46456",,,154,44,2,2,2
-6780,sarveda-zabuton-cushion,Zabuton Cushion for Meditation,publish,variable,,,gst18,835,835,field_5fec24efe5459,9298,"9299,9300,9301,9302,9303,9304,9305,9306,9307,9308,9609,9610,9611,9612,9613,9614",a:4:{i:0;i:6755;i:1;i:6794;i:2;i:6711;i:3;i:9763;},,66,44,2,2,3
-6734,sarveda-zafu-crescent,Crescent Zafu Meditation Cushion,draft,variable,,,gst-5,0,965,field_5fec24efe5459,9663,"9662,9663,9664,9665,9666,9667,9669,9668,7563,7564,6746,7105,6749,9691,9692,9693,6750,6743,6744",a:4:{i:0;i:6530;i:1;i:6689;i:2;i:6711;i:3;i:9763;},,66,44,2,2,3
-6755,sarveda-zafu-cylindrical-meditation-cushion,Hi-Zafu Meditation Cushion - Filled with Buckwheat,publish,variable,,,gst18,838,838,field_5fec24efe5459,7561,"9644,9654,9653,9652,9651,9650,9649,6757,9648,9655,9285,9286,9287,9288,9289,6758,9290,6759,6760,6756,7560,7561,9647,9646,9645",,,66,44,2,2,2
-6711,sarveda-zafu-round,Zafu Meditation Cushion Plain Filled with Cotton,publish,variable,,,gst18,829,829,field_5fec24efe5459,7567,"9267,9268,9269,9270,9271,9272,9273,9274,9275,9276,9277,9631,9632,9633,9635,9637,9638,9639,9640",,,66,44,2,2,2
-7177,sarveda-zafu-zabuton-meditation-cushion-combo,Zafu & Zabuton Meditation Cushion Combo,publish,variable,,,gst18,682,682,field_5fec24efe5459,46863,"7184,7284,9600,9601,9602,9603,9605,9604,9306,9305,9304,9303,9299,9290",a:4:{i:0;i:9676;i:1;i:6794;i:2;i:6711;i:3;i:9763;},,66,44,2,2,3
-45131,shamanic-drum-bags-ocean-drum-bags,Shamanic Drum Bags/Ocean Drum Bags,publish,variable,,,gst18,371,471,field_5fec24efe5459,45135,,,,154,44,2,2,2
-7293,shamanic-drums,Shamanic Drum,publish,variable,MI-SD-B,,gst18,0,742,field_5fec24efe5459,7296,"7295,7298,9594,9595,9596,7299,10164,10165,10166,10167,10168,10169,10170,10171,10172,10173",a:4:{i:0;i:7370;i:1;i:7472;i:2;i:9529;i:3;i:10345;},,154,44,2,2,9
-45449,shankh-conch,Shankh/Conch,publish,variable,,,gst-5,579,579,field_5fec24efe5459,45461,,a:4:{i:0;i:45197;i:1;i:45194;i:2;i:9529;i:3;i:7293;},,66,44,2,2,3
-45485,shruthi-thali-gong-plates,Shruthi Thali/Gong Plates,publish,variable,,,gst-5,1059,1059,field_5fec24efe5459,45494,,,,154,44,2,2,2
-44970,shruti-box,Shruti Box,publish,variable,,,,343,343,field_5fec24efe5459,45013,"45006,45007,45008,45009,45013,45014,45015,45016",a:4:{i:0;i:45384;i:1;i:43219;i:2;i:9795;i:3;i:44972;},,66,44,2,2,3
-45127,singing-bowl-bags,Singing Bowl Bags,publish,variable,,,gst18,476,476,field_5fec24efe5459,45141,,a:4:{i:0;i:9795;i:1;i:45152;i:2;i:45289;i:3;i:45131;},,154,44,2,2,3
-49832,singing-bowl-set-g-a-b,"Singing Bowl Head Set – G, A, B",publish,simple,,,,175,1973,field_5fec24efe5459,49772,,,,98,44,2,2,2
-6988,singing-bowl-silk-ring-cushions-accessories,Singing Bowls Silk Ring Cushion Accessories,publish,variable,,,gst-5,0,329,field_5fec24efe5459,7759,"6993,6989,7752,7753,7754,7755,7756,7757,7758,7759,42272,42273",,,66,44,2,2,2
-7887,singing-bowl-with-7-chakra-healing-from-sound-therapy,Handcrafted Set of 7 Bowls for Sound Therapy,publish,variable,,,gst-5,0,927,field_5fec24efe5459,9190,"44976,44977,44978,44979,44980,44981,44982",a:5:{i:0;i:8846;i:1;i:8802;i:2;i:8143;i:3;i:9777;i:4;i:9978;},,154,44,2,2,21
-48931,singing-bowl-with-handle,Singing Bowl with Handle,publish,simple,,,,319,891,field_5fec24efe5459,49110,,,,154,44,2,2,2
-6861,singing-bowl-with-mantra-rustic-blue-color,Singing Bowl with Mantra - Rustic Blue Colour,publish,variable,,,gst-5,0,603,field_5fec24efe5459,6865,,a:4:{i:0;i:7887;i:1;i:45113;i:2;i:9978;i:3;i:6807;},,66,44,2,2,9
-6807,singing-bowls-with-sacred-mantra-printed,Singing Bowls with Sacred Mantra Printed,publish,variable,,,gst-5,0,603,field_5fec24efe5459,7012,,a:4:{i:0;i:9795;i:1;i:5688;i:2;i:10013;i:3;i:5763;},,66,44,2,2,3
-50608,sleigh-bells-wooden-jingle-stick,Sleigh Bells Wooden Jingle Stick,publish,simple,,,gst18,192,1370,field_5fec24efe5459,50611,,,,154,44,2,2,2
-49816,solar-bell,Solar Bell,publish,simple,,,gst18,148,1078,field_5fec24efe5459,49855,,,,154,44,2,2,2
-45527,sound-pipe,Tune Sound Pipe,draft,variable,,,,869,1066,field_5fec24efe5459,45552,45554,,,66,44,2,2,2
-7324,spiral-snake-didgeridoo,Spiral/Snake Didgeridoo,publish,variable,,,gst-5,0,1180,field_5fec24efe5459,49359,"7326,7327,7328",a:4:{i:0;i:7300;i:1;i:7307;i:2;i:10345;i:3;i:7317;},,66,44,2,2,3
-6505,stainless-steel-straws,Stainless Steel Straws,publish,variable,,,gst-5,0,573,field_5fec24efe5459,6945,"6511,6512,6513,6514,6517,6945,6947,6946,6948",,,66,44,2,2,2
-10345,swinging-chimes,Swinging Chimes,publish,variable,,,gst-5,972,1343,field_5fec24efe5459,10348,"10352,10351,10349,10350,10353",a:3:{i:0;i:42410;i:1;i:42389;i:2;i:7356;},,154,44,2,2,9
-45327,the-beginner-set,"The Three Bowl Set - Root, Heart and Third Eye",publish,simple,,,gst-5,499,499,field_5fec24efe5459,45330,"45601,45332,45600",a:4:{i:0;i:9777;i:1;i:7887;i:2;i:7293;i:3;i:45334;},,154,44,2,2,3
-45334,the-essential-set,"The Four Bowl Set - Root, Heart, Third Eye and Universal",publish,simple,,,gst-5,497,497,field_5fec24efe5459,45335,"45337,45336,45602",a:4:{i:0;i:9795;i:1;i:7887;i:2;i:44970;i:3;i:45327;},,154,44,2,2,3
-45518,the-head-bowl,The Head Bowl,publish,simple,,,gst-5,1682,1682,field_5fec24efe5459,45529,45530,,,66,44,2,2,2
-45477,third-eye-chakra-singing-bowl,Third Eye Chakra Singing Bowl,publish,simple,,,gst-5,1052,1052,field_5fec24efe5459,45517,"45480,45481,45482",a:4:{i:0;i:8846;i:1;i:6884;i:2;i:45113;i:3;i:45334;},,66,44,2,2,3
-7317,thunder-tube,Thunder Tube - Basic Edition,publish,variable,MI-TT-20,,gst-5,0,870,field_5fec24efe5459,48928,"7319,7320,8216,7321,7322,8217,7323,8218,8176",,,66,44,2,2,2
-5763,tingsha-bell,Tingsha Bell,publish,variable,,,gst-5,4,610,field_5fec24efe5459,47669,"5927,5768,6962,6963,6964,42345,42346,42347,42348,42349",,,66,44,2,2,2
-50549,tuned-pipe,Tuned Pipes,publish,variable,,,,152,882,field_5fec24efe5459,50607,,,,154,44,2,2,2
-48193,tuning-forks-7-chakra-set,Tuning Forks 7 Chakra Set,publish,variable,,,gst18,593,593,field_5fec24efe5459,47108,,,,154,44,2,2,2
-48133,tuning-forks-activators,Tuning Fork Activators,publish,variable,,,gst18,594,594,field_5fec24efe5459,48191,,,,66,44,2,2,2
-48135,tuning-forks-extensions,Tuning Fork Extensions,publish,variable,,,gst18,1089,1089,field_5fec24efe5459,48332,,,,154,44,2,2,2
-48136,tuning-forks-gem-foot,Tuning Forks Gem Feet,publish,variable,,,gst18,546,410,field_5fec24efe5459,48152,,,,154,44,2,2,2
-48202,tuning-forks-solfeggio-set,Tuning Forks Solfeggio Set,publish,variable,,,,558,558,field_5fec24efe5459,47108,,,,66,44,2,2,2
-49818,tuning-swords-sound-therapy-instrument,Tuning Swords – Sound Therapy Instrument,draft,variable,,,gst18,172,1197,field_5fec24efe5459,49838,,,,10,44,2,2,2
-8143,universal-bowl,Handmade Universal Bowl for Sound Healing,publish,simple,MI-SB-HM-UN,,gst-5,0,1105,field_5fec24efe5459,44392,"6871,6870,47186,8042,7169",a:4:{i:0;i:9964;i:1;i:7887;i:2;i:45334;i:3;i:45327;},,66,44,2,2,3
-50420,wind-chimes,Wind Chimes,publish,variable,,,,391,1240,field_5fec24efe5459,50606,,,,154,44,2,2,2
-50579,wooden-finger-castanet,Wooden Finger Castanet,publish,variable,,,,201,1590,field_5fec24efe5459,50593,,,,154,44,2,2,2
-50572,wooden-guiro,Wooden Guiro,publish,simple,,,gst18,347,1108,field_5fec24efe5459,50577,,,,154,44,2,2,2
-50964,wooden-hand-taal-khartal,Wooden Hand Taal Khartal,publish,variable,,,,150,1065,field_5fec24efe5459,50981,,,,98,44,2,2,2
-6978,wooden-mallets-for-singing-bowls,Wooden Mallets for Singing Bowls,publish,variable,MI-SB-M-R-Wd-4.5,,gst-5,0,509,field_5fec24efe5459,7528,"7529,7530,7531,7532,7533,7534,7535,7536,7537,7538,7539,7540,42255,42256,42257,42258,42259,42260,42261,42262,42263,42264,42265,42266,42267,42268,42269,42270,42271",a:3:{i:0;i:6892;i:1;i:6861;i:2;i:6988;},,66,44,2,2,3
-7370,wooden-maracas-shaker,Coconut Maracas Shakers,publish,variable,MI-CM,,gst-5,28,493,field_5fec24efe5459,45652,"7373,7374,7375,7376,8160,8161,8162,8163",a:3:{i:0;i:7484;i:1;i:5713;i:2;i:7404;},,66,44,2,2,3
-7542,wooden-maracas-shaker-handheld-shaker,Wooden Maracas Shakers | Plain & Dot Painted,publish,variable,MI-WM,,gst-5,0,542,field_5fec24efe5459,47682,"7544,8190,8192,8191,8172,7545,7546,7547",a:4:{i:0;i:7370;i:1;i:7396;i:2;i:7472;i:3;i:7404;},,66,44,2,2,3
-7478,wooden-tambourine-half-moon-2,Wooden Tambourines,publish,variable,MI-T-HM,,gst12,590,608,field_5fec24efe5459,45647,"7480,7481,8222,7482,8223,7483,8224,8176",,,66,44,2,2,2
-6668,yoga-blanket,Yoga Blanket made from Organic Cotton,publish,variable,,,gst-5,0,646,field_5fec24efe5459,6671,"6669,6675,6676,6677,6678,6679,6670,6671,6672,6673,6674",a:4:{i:0;i:42648;i:1;i:9675;i:2;i:6530;i:3;i:6689;},,66,44,2,2,3
-6689,yoga-bolster,Round Yoga Bolster,publish,variable,,,gst18,0,495,field_5fec24efe5459,6690,"9761,6699,6698,6696,6690,7906,6697,7907,9760,9315,9316,9625,9626,9319",a:4:{i:0;i:9675;i:1;i:6780;i:2;i:6711;i:3;i:9763;},,66,44,2,2,3
-6530,yoga-strap,Yoga Belt/Strap for Sturdy Grip,publish,variable,,,gst-5,0,883,field_5fec24efe5459,7246,"6600,6601,6602,6604,7248,7242,7243,7244,7245,7246,6931,6932,6933,6934,6936,7247",,,66,44,2,2,2
-9278,zafu-meditation-cushion-with-lotus-embroidery,Zafu Meditation Cushion Lotus - Embroidery Filled with Cotton,publish,variable,,,gst18,918,918,field_5fec24efe5459,9642,"9555,9556,9557,9558,9560,9267,9268,9269,9270,9271,9272,9551,9552,9553,9554,9559",a:4:{i:0;i:9291;i:1;i:9675;i:2;i:6689;i:3;i:6780;},,66,44,2,2,3
-9312,zafu-zabuton-meditation-cushion-combo-with-lotus-embroidery,Zafu & Zabuton Meditation Cushion Combo - Lotus Embroidery,publish,variable,,,gst18,771,771,field_5fec24efe5459,9561,"9565,9566,9567,9562,9563,9564,9306,9305,9304,9303,9299,9290",a:4:{i:0;i:6689;i:1;i:6780;i:2;i:6711;i:3;i:9763;},,66,44,2,2,3
+id,slug,name,status,product_type,sku,hsn,tax_class,desc_len,short_len,video,thumb_id,gallery,upsell,crosssell,shipping_meta_count,accordion_meta_count,video_meta_count,article_meta_count,pair_meta_count,regular_price,sale_price
+46017,,Yoga Mats Superior & Moderate,draft,variable,,,gst-5,294,945,field_5fec24efe5459,8514,,a:4:{i:0;i:42648;i:1;i:42582;i:2;i:6530;i:3;i:6689;},,66,44,2,2,9,,
+51283,,Energy Bar,draft,variable,,,,205,1001,field_5fec24efe5459,51335,,,,98,44,2,2,2,,
+51338,,Travel Shruti Box,draft,simple,,,gst18,108,1147,field_5fec24efe5459,51339,,,,98,44,2,2,2,,
+42373,11-note-tongue-drum,11 Note Tongue Drum,publish,variable,,,gst12,0,571,field_5fec24efe5459,42380,"42376,42380,42387,42388,42386",,,66,44,2,2,2,,
+42389,32-bar-rod-chime,25 Rods - Bar Chime,publish,simple,MI-BCH-32,,gst18,0,589,field_5fec24efe5459,50342,,a:4:{i:0;i:8762;i:1;i:45197;i:2;i:7450;i:3;i:10345;},,154,44,2,2,3,7605,4950
+7491,6-3-inches-mini-tongue-drum,Mini Tongue Drum,draft,variable,,,gst12,0,763,field_5fec24efe5459,7505,"7497,7507,7501,7503,7505,7499,7498,7502,7504,7500,7506",a:4:{i:0;i:42373;i:1;i:8058;i:2;i:7435;i:3;i:10345;},,66,44,2,2,3,,
+48727,7-chakra-morchang-set,7 Chakra Morchang Set,publish,variable,,,,1285,1286,field_5fec24efe5459,48835,,,,154,44,2,2,2,,
+44503,7-chakras-copper-water-bottles-with-handle,7 Chakras Copper Water Bottles with Handle,publish,variable,,,gst-5,0,698,field_5fec24efe5459,44515,"6881,6880,5488,6310,6309,6882,6883,6340,6342,6343",,,66,44,2,2,2,,
+7687,7-chakras-mystical-incense-sticks-set,7 Chakras Mystical Incense Sticks Set,publish,variable,,,gst-5,0,1143,field_5fec24efe5459,10117,"10106,10107,10108,10109,10110,10111,10112,10113,10114,10115,10116,10117,10118,10119,10120,10121,10122,10123,10124",a:4:{i:0;i:6892;i:1;i:42674;i:2;i:6519;i:3;i:6507;},,66,44,2,2,3,,
+46141,7-chakras-yoga-mats,7 Chakras Yoga Mats,publish,variable,,,gst-5,294,983,field_5fec24efe5459,46214,,a:4:{i:0;i:42648;i:1;i:42582;i:2;i:6530;i:3;i:6689;},,66,44,2,2,9,,
+51149,8-key-kalimba,8 Key Kalimba,publish,simple,,,,182,875,field_5fec24efe5459,51151,,,,98,44,2,2,2,3000,1950
+42332,8-keys-metallophone,8 Keys Metallophone - with 1” & 1.5” key-widths,publish,variable,,,gst12,0,854,field_5fec24efe5459,42336,"42333,42334,42335,42336,42337",a:4:{i:0;i:42340;i:1;i:7484;i:2;i:7435;i:3;i:10345;},a:3:{i:0;i:42332;i:1;i:7435;i:2;i:10345;},66,44,2,2,4,,
+42340,8-keys-wooden-xylophone,8 Keys Wooden Xylophone,publish,simple,,,gst12,0,837,field_5fec24efe5459,42344,"42341,42342,42343,42344",a:4:{i:0;i:42332;i:1;i:7484;i:2;i:45197;i:3;i:10345;},,66,44,2,2,3,10205,7850
+8058,9-10-notes-handpan,9/10 Notes Handpan Drum - Handcrafted to Precision,publish,variable,MI-HP,,gst-zero-rate,69,560,field_5fec24efe5459,10333,"10328,10333,8073,8072,8071,8070,8066,8064,8065,8132,8133,8134,8135,8136",a:4:{i:0;i:43219;i:1;i:7887;i:2;i:7491;i:3;i:7293;},,168,44,2,2,9,,
+46525,aluminium-22-steel-bars-chime,Aluminium 22 Steel Bars Chime,draft,simple,,,gst12,236,569,field_5fec24efe5459,46526,"46528,46527",,,10,44,2,2,2,5250,3950
+48205,angel-tuning-forks,Angel Tuning Forks,publish,variable,,,gst18,555,555,field_5fec24efe5459,48206,,,,154,44,2,2,2,,
+49596,ankh-sound-healing-instrument,Ankh Sound Healing Instrument,publish,variable,,,,156,842,field_5fec24efe5459,49872,,,,154,44,2,2,2,,
+51249,annapurna-shankh,Annapurna Shankh – Natural Conch Shell,publish,simple,,,gst18,267,1252,field_5fec24efe5459,51134,,,,98,44,2,2,2,3550,2950
+7404,artistic-egg-shakers,Painted Egg Shakers,publish,variable,,,gst-5,0,337,field_5fec24efe5459,7411,"7406,8157,8158,8159,7408,7409,7410,7411,7412,7413",a:4:{i:0;i:42317;i:1;i:7370;i:2;i:7349;i:3;i:7317;},,66,44,2,2,3,,
+7300,aslatau-or-asalato,Asalato/Aslatau or Kashaka Shaker,publish,variable,MI-AS,,gst-5,0,1022,field_5fec24efe5459,7301,"7302,7303,9742,8174,8177,7305,8175,7306,8176",a:4:{i:0;i:7484;i:1;i:7349;i:2;i:7356;i:3;i:7317;},,154,44,2,2,3,,
+6289,ayurvedic-copper-bedroom-jar,Ayurvedic Copper Bedroom Jar,publish,simple,CB-BJ,,gst-5,0,594,field_5fec24efe5459,6619,"6290,6291,6292,6297,6299,6298,6309,6310",a:4:{i:0;i:5675;i:1;i:6007;i:2;i:6638;i:3;i:6071;},,66,44,2,2,3,1619,1245
+7329,bamboo-castanet,Bamboo Castanet,publish,simple,MI-CN-B,,gst-5,0,506,field_5fec24efe5459,7330,"44134,7332,7333,44133,44130,44132,44131",a:4:{i:0;i:42323;i:1;i:7349;i:2;i:7456;i:3;i:7356;},,66,44,2,2,3,945,745
+46498,bamboo-jaw-harp,Bamboo Jaw Harp,draft,simple,MI-BJH,,gst12,177,568,field_5fec24efe5459,46501,"46502,46614",a:4:{i:0;i:7300;i:1;i:45754;i:2;i:6065;i:3;i:5763;},,154,44,2,2,3,550,300
+7484,bamboo-rainstick,Bamboo Rainstick,draft,variable,MI-RS,,gst-5,0,621,field_5fec24efe5459,47615,"7486,7489,8765,8766,8767,7490,8768",a:4:{i:0;i:7472;i:1;i:9529;i:2;i:7356;i:3;i:10345;},,66,44,2,2,15,,
+49779,bamboo-rainstick-2,Bamboo Rainstick,publish,simple,MI-RS-N,,gst-5,260,621,field_5fec24efe5459,49784,,a:4:{i:0;i:7472;i:1;i:9529;i:2;i:7356;i:3;i:10345;},,154,44,2,2,15,3950,3450
+47924,belly-bowls,Belly Bowls,publish,simple,,,,613,613,field_5fec24efe5459,47979,,,,66,44,2,2,2,10900,9900
+47751,bendo-chimes,Bendo Chimes,publish,simple,,,gst18,330,650,field_5fec24efe5459,47784,,,,66,44,2,2,2,6500,5950
+47742,bendo-shaker,Bendo Shaker,publish,variable,,,gst18,550,550,field_5fec24efe5459,47774,,,,154,44,2,2,2,,
+45754,bird-flute,Bird Flute,publish,variable,,,gst-5,820,820,field_5fec24efe5459,48648,"46363,46361,46362,45758",a:3:{i:0;i:7484;i:1;i:7456;i:2;i:7317;},,154,44,2,2,3,,
+45384,box-tanpura,Box Tanpura,publish,variable,,,gst12,1236,1391,field_5fec24efe5459,47294,"47294,47292,47293,45386",a:4:{i:0;i:44972;i:1;i:9529;i:2;i:7293;i:3;i:44970;},,66,44,2,2,3,,
+48421,brain-tuner-set-harmonize-your-minds-natural-rhythms,Brain Tuner Set – Harmonize Your Mind’s Natural Rhythms,draft,variable,,,gst18,425,1640,field_5fec24efe5459,49908,,,,10,44,2,2,2,,
+42317,caxixi,Caxixi,publish,simple,Mi-CX-M-N,,gst-5,0,758,field_5fec24efe5459,42321,"42321,42322,42319,47456,47457",,,66,44,2,2,2,1755,1350
+45668,ceg-crystal-singing-bowl-set,Triad Crystal Bowl Set,publish,variable,,,gst18,957,957,field_5fec24efe5459,47479,"45684,45686,45685",a:4:{i:0;i:42373;i:1;i:45661;i:2;i:43219;i:3;i:45654;},,66,44,2,2,3,,
+48318,cg-tuning-forks,C&G Tuning Forks,publish,variable,,,,490,558,field_5fec24efe5459,48321,,,,66,44,2,2,2,,
+8802,chau-gong-tam-tam-for-sound-therapy-meditation,Tam-Tam/Chau Gong,publish,variable,,,gst-5,0,861,field_5fec24efe5459,45721,"8828,8829,45720,45721",,,66,44,2,2,2,,
+48653,classic-morchang-set,Classic Morchang Set,publish,variable,,,,724,2732,field_5fec24efe5459,48853,,,,154,44,2,2,2,,
+50995,clay-ocarinas,Clay Ocarinas,publish,variable,,,,202,1054,field_5fec24efe5459,51032,,,,98,44,2,2,2,,
+5730,coconut-rattle,Coconut Rattle,publish,simple,MI-CR,,gst-5,0,484,field_5fec24efe5459,44094,"8210,5812,8211,5811,8212,8176",,,66,44,2,2,2,1359,1045
+45533,conscious-cards,Conscious Cards,publish,simple,,,,1228,1228,field_5fec24efe5459,45538,"45534,45535,45536,45537,45538,45539,45540,45541,45542",a:4:{i:0;i:7329;i:1;i:7484;i:2;i:42323;i:3;i:45197;},,66,44,2,2,3,1699,1499
+5682,copper-bottle-black-with-7-chakras-vintage,7 Chakras Vintage - Copper Bottle,publish,variable,,,gst-5,0,698,field_5fec24efe5459,6631,"5687,6412,6922,6923,6924,6925",,,66,44,2,2,2,,
+5934,copper-bottle-curved-copper-diamond-groove,Curved Diamond Groove Copper Bottle,publish,variable,,,gst-5,0,698,field_5fec24efe5459,6413,"5935,5936,5937,5938,5939,5940,6413",,,66,44,2,2,2,,
+5495,copper-bottle-curved-vintage-hammered,Curved Hammered Copper Bottles,publish,variable,,,gst-5,0,698,field_5fec24efe5459,6407,"5497,5498,5499,5500,5752,6407",,,66,44,2,2,2,,
+5688,copper-bottle-hammered-copper-set,Hammered Copper Bottle,publish,variable,,,gst-5,0,698,field_5fec24efe5459,5788,"5689,5690,5691,5692,5693,5761",,,66,44,2,2,2,,
+5669,copper-bottle-orange-light,Sunshine within Me,publish,variable,,,gst-5,0,698,field_5fec24efe5459,6617,"5670,5671,5672,5673,5674,5756,6410",,,66,44,2,2,2,,
+5663,copper-bottle-pink-noble-toughts,Pink & Positive,publish,variable,,,gst-5,0,698,field_5fec24efe5459,6618,"5664,5665,5666,5667,5668,5755,5837,6409",,,66,44,2,2,2,,
+5489,copper-bottle-vintage-plain-curved,Curved Copper Bottles,publish,variable,,,gst-5,0,698,field_5fec24efe5459,6406,"5757,6405,6450,6406,5491,5493,5492,5488",,,66,44,2,2,2,,
+5675,copper-bottle-with-7-chakras-plain,7 Chakras Gold - Copper Bottle,publish,variable,,,gst-5,0,698,field_5fec24efe5459,6632,"5676,5677,5678,5680,5681,5751,6411",,,66,44,2,2,2,,
+5466,copper-bottle-with-brush-tattvamasi,Tattvamasi-I am Infinite,publish,variable,,,gst-5,0,520,field_5fec24efe5459,6628,"5468,5464,5463,5462,5465",,,66,44,2,2,2,,
+5459,copper-bottle-with-brush-true-happiness-lies-within,Happiness is Inside,publish,variable,,,gst-5,0,698,field_5fec24efe5459,6630,"5460,5461,5462,5463,5464,5465",,,66,44,2,2,2,,
+5042,copper-tongue-cleaner,Copper Tongue Cleaner,publish,variable,TC-R-1,,gst-5,0,383,field_5fec24efe5459,5835,"5225,5226,5227,5835,5134,5133,5132,7813,7814,7815,7816,7817,7818",,,66,44,2,2,2,,
+6638,copper-water-bottle-with-2-glasses-set-with-7-chakra-design,Copper Bottle Gift Set - 7 Chakra,publish,variable,,,gst-5,695,695,field_5fec24efe5459,43802,"9739,9741,9737,9738,9740,6644,43799,43800,43801,43802",a:4:{i:0;i:5675;i:1;i:6007;i:2;i:5042;i:3;i:42582;},a:2:{i:0;i:5042;i:1;i:6007;},66,44,2,2,4,,
+8401,cotton-yoga-mat-lotus,Lotus Moderate Grip Yoga Mat,draft,variable,,,gst-5,0,950,field_5fec24efe5459,8625,"8302,8650,8651,8653,8654,8656,8652,8657,8309,7652,7650,7648,7654,8655,8658,8659,7582,7579,7577,7575,7574",,,66,44,2,2,0,,
+8422,cotton-yoga-mat7-chakras,7 Chakras Moderate Grip Yoga Mat,publish,variable,,,gst-5,294,926,field_5fec24efe5459,8524,"8302,8529,8617,8618,8619,8646,8647,8648,8649,7640,7637,7630,7632,7582,7579,7577,7574,7575",a:4:{i:0;i:42674;i:1;i:9675;i:2;i:6530;i:3;i:6689;},,66,44,2,2,3,,
+47494,crescent-zafu-cushion-compact,Crescent Zafu Cushion - Wide,publish,variable,,,gst18,1142,1142,field_5fec24efe5459,47869,,a:4:{i:0;i:6530;i:1;i:6689;i:2;i:6711;i:3;i:9763;},,66,44,2,2,3,,
+47508,crescent-zafu-cushion-wide,Crescent Zafu Cushion - Compact,publish,variable,,,gst18,1161,1192,field_5fec24efe5459,47870,,a:4:{i:0;i:6530;i:1;i:6689;i:2;i:6711;i:3;i:9763;},,66,44,2,2,3,,
+49604,crystal-bowl-accessories,Crystal Bowl Mallets,draft,variable,,,gst-5,108,1083,field_5fec24efe5459,49856,,,,10,44,2,2,2,,
+47081,crystal-bowl-bag,Crystal Bowl Bag,publish,variable,,,,287,1848,field_5fec24efe5459,50395,,,,154,44,2,2,2,,
+49760,crystal-bowl-o-rings-support-rings,Crystal Bowl O Rings (Support Rings),draft,variable,,,gst-5,0,1333,field_5fec24efe5459,49615,,,,10,44,2,2,2,,
+45661,crystal-bowl-with-handle,Crystal Bowl with Handle,publish,simple,,,gst18,562,562,field_5fec24efe5459,47527,"45662,45663,45777,45664,45665",a:4:{i:0;i:9777;i:1;i:43219;i:2;i:45654;i:3;i:7293;},,66,44,2,2,3,21500,19500
+43219,crystal-bowls-set-of-7,Crystal Bowls - Set of 7,publish,variable,,,gst18,0,380,field_5fec24efe5459,45012,"43225,43226,43220,43224,43222,43223,44990,44991,44992,44993,44994,44995,45010,45011,45012",a:4:{i:0;i:45668;i:1;i:45661;i:2;i:9795;i:3;i:9529;},,154,44,2,2,3,,
+45654,crystal-pyramid,Crystal Pyramid,publish,variable,,,gst18,411,402,field_5fec24efe5459,45660,"45656,45657,45658,45659,45660",a:4:{i:0;i:45661;i:1;i:9777;i:2;i:43219;i:3;i:7887;},,154,44,2,2,3,,
+7417,den-den-daiko-or-spin-twist-drum,Spin/Twist Drum or Den Den Daiko,publish,variable,,,gst12,0,693,field_5fec24efe5459,47614,,a:4:{i:0;i:7329;i:1;i:42323;i:2;i:7456;i:3;i:7404;},,66,44,2,2,3,,
+44969,djembe-drums,Djembe Drums,publish,variable,,,,630,498,field_5fec24efe5459,45237,45060,,,66,44,2,2,2,,
+5740,dumroo-medium-size,Dumru/Dumroo Indian Handmade Percussion Instrument,publish,variable,,,gst-5,0,650,field_5fec24efe5459,47722,,,,66,44,2,2,2,,
+7396,egg-shaker-with-handle,Egg Shaker with Handle,publish,simple,MI-ES-H,,gst-5,0,850,field_5fec24efe5459,47639,"7398,8170,8171,7400,7401,8173,7402,8172",a:4:{i:0;i:7370;i:1;i:7404;i:2;i:7417;i:3;i:7542;},,66,44,2,2,3,1164,895
+6080,engraved-copper-water-bottles,7 Chakras Copper Water Bottles,publish,variable,,,gst-5,0,643,field_5fec24efe5459,46329,"6881,6880,5488,6310,6309,6882,6883,6340,6342,6343",,,66,44,2,2,2,,
+8846,engraved-flat-wind-tibetan-gong-for-meditation-sound-therapy,Etched Wind Gong,publish,variable,,,gst-5,7,435,field_5fec24efe5459,10210,"10197,10198,10199,10200,10202,10203,10204,10205,47185,10206,10207",a:4:{i:0;i:6638;i:1;i:8802;i:2;i:8833;i:3;i:10345;},,154,44,2,2,15,,
+9763,ergonomic-meditation-bench,Zen Meditation Bench,publish,variable,ME-Cu,,gst18,0,1056,field_5fec24efe5459,9764,"9768,9772,9773,45644,9774,9775,9776",,,66,44,2,2,2,,
+49115,etched-gongs,Etched Chau Gongs,publish,variable,,,gst-5,201,1743,field_5fec24efe5459,49182,,a:4:{i:0;i:6638;i:1;i:8802;i:2;i:8833;i:3;i:10345;},,154,44,2,2,15,,
+9795,etched-handmade-singing-bowls,Etched Handmade Singing Bowls,publish,variable,,,gst-5,0,875,field_5fec24efe5459,9998,"9838,9839,9840,9841,9842,9843,9844,9845,9846,9847,9848,9849,9850,9851,9853,9854,9855,9856,9857",a:4:{i:0;i:6638;i:1;i:7607;i:2;i:8143;i:3;i:9978;},,66,44,2,2,21,,
+9220,eye-shaped-natural-lavender-scented-eye-pillows,Eye Shaped Natural Lavender Scented Eye Pillows,publish,variable,,,gst18,0,671,field_5fec24efe5459,9226,"9227,9228,9229,9230,9231,9233,9232,9615,9616,9617,9618,9619,9620,9621,9622,9623,9624",a:4:{i:0;i:7687;i:1;i:6892;i:2;i:42648;i:3;i:6007;},,66,44,2,2,9,,
+7607,full-moon-singing-bowls,Full Moon Singing Bowls - All Sizes,publish,variable,,,gst-5,103,554,field_5fec24efe5459,7612,"7613,7614,7615,7616,7617,7618,7619,7620,7621,7622,7623,7624",,,66,44,2,2,2,,
+51250,gaumukhi-shankh-natural-conch-shell,Gaumukhi Shankh – Natural Conch Shell,publish,simple,,,,214,1411,field_5fec24efe5459,51138,,,,98,44,2,2,2,3550,2950
+45152,gong-bags,Gong Bags,publish,variable,,,gst18,184,958,field_5fec24efe5459,45605,,a:3:{i:0;i:8846;i:1;i:8833;i:2;i:10345;},,154,44,2,2,3,,
+45289,gong-stand,Gong Stand,publish,variable,,,gst12,610,610,field_5fec24efe5459,46454,,a:3:{i:0;i:43219;i:1;i:8846;i:2;i:8833;},,154,44,2,2,3,,
+6892,hand-hammered-singing-bowl,Dotted Singing Bowl,publish,variable,,,gst-5,177,1231,field_5fec24efe5459,44461,,a:4:{i:0;i:7887;i:1;i:45113;i:2;i:9978;i:3;i:45327;},,154,44,2,2,9,,
+48229,handcrafted-wooden-stand-for-tuning-forks,Wooden Stand for Tuning Forks,publish,variable,,,gst18,332,332,field_5fec24efe5459,48239,,,,154,44,2,2,2,,
+5713,handheld-coconut-shaker,Handheld Natural Coconut Shaker,publish,simple,MI-CS-H,,gst-5,0,489,field_5fec24efe5459,5962,"5963,5964,8213,5931,8214,5800,8215,5801,5802,8172",,,154,44,2,2,2,1229,945
+7472,handheld-kenari-seed-shell-shaker,Kenari Seed Shell Shakers,publish,variable,,,gst-5,0,505,field_5fec24efe5459,47645,"7474,7475,7476,8207,7477,8208,7369,8209,7368,7367,7366,7365,8176",a:4:{i:0;i:45197;i:1;i:45194;i:2;i:7356;i:3;i:10345;},,66,44,2,2,3,,
+7349,handheld-shaker-with-bamboo-handle-kenari-seed-shell-design,Kenari Seed Shell Shaker with Handle,draft,simple,MI-KS-H,,gst-5,0,784,field_5fec24efe5459,7350,"7351,7352,8165,8167,8164,7353,7354,7355,8166",a:4:{i:0;i:7370;i:1;i:5730;i:2;i:7472;i:3;i:7356;},,66,44,2,2,3,1885,1450
+43286,handmade-extra-large-meridian-singing-bowls,Extra Large Meridian Singing Bowls,publish,variable,,,gst-5,102,861,field_5fec24efe5459,43422,"43314,43315,43317,43318",a:4:{i:0;i:8058;i:1;i:6638;i:2;i:8143;i:3;i:9978;},,154,44,2,2,3,,
+6884,handmade-singing-bowls-for-sound-therapy,Handmade Singing Bowls - All Sizes,publish,variable,,,gst-5,0,0,field_5fec24efe5459,45747,,a:4:{i:0;i:5675;i:1;i:9795;i:2;i:8143;i:3;i:9978;},,66,44,2,2,9,,
+46907,handpan-stand,Handpan Stand,publish,simple,,,,210,609,field_5fec24efe5459,51199,"46908,46909,46910,46911",,,154,44,2,2,2,11500,10500
+45113,hanging-bowls-zen-drops,Hanging Bowls/Zen Drops,publish,variable,,,gst-5,423,579,field_5fec24efe5459,45121,,a:4:{i:0;i:45661;i:1;i:8846;i:2;i:7887;i:3;i:9978;},,154,44,2,2,3,,
+44972,harmonium,Harmonium,publish,variable,,,,531,531,field_5fec24efe5459,45027,,a:4:{i:0;i:45384;i:1;i:43219;i:2;i:44970;i:3;i:45327;},,66,44,2,2,3,,
+9291,hi-zafu-meditation-cushion-filled-with-lotus-embroidery,Hi-Zafu Meditation Cushion - Embroidered with Lotus,publish,variable,,,gst18,921,921,field_5fec24efe5459,9641,"9544,9545,9546,9547,9548,9285,9286,9287,9288,9289,9290",a:4:{i:0;i:42674;i:1;i:7484;i:2;i:9278;i:3;i:9763;},,66,44,2,2,3,,
+51098,incense-stick-stand,Incense Stick Stand,draft,simple,,,,205,912,field_5fec24efe5459,51100,,,,98,44,2,2,2,199,99
+5769,jala-neti-pot,Jala Neti Pot - Ceramic 185 ml,publish,variable,,,gst18,0,399,field_5fec24efe5459,6430,"6419,44689,6085,6086,6088,6089,6429,6415,6421,6418,6417,5774,6423,6427,6428",a:4:{i:0;i:5682;i:1;i:6007;i:2;i:5042;i:3;i:42582;},,154,44,2,2,15,,
+7661,kalimba-made-from-coconut-shell-painted-7-key,7-Key Kalimba Made from Coconut Shell - Painted & Plain,draft,variable,,,gst-5,0,802,field_5fec24efe5459,7666,"7667,7668,7669,7677,7676,7678,7679,7680,7681,7682,7683,7684,7660,7659,7658,7657,7656",a:2:{i:0;i:7396;i:1;i:7417;},,66,44,2,2,3,,
+42323,kenari-bracelet,Kenari Bracelet,publish,simple,MI-KR-BT,,gst-5,0,684,field_5fec24efe5459,42329,"42324,42325,42326,42328,42329",,,66,44,2,2,2,1755,1350
+45197,kenari-chimes,Kenari Chimes - Small & Large,publish,variable,MI-KR-CH-168,,gst-5,629,629,field_5fec24efe5459,48923,"45198,45199,45229,46432,45230",a:4:{i:0;i:7349;i:1;i:7472;i:2;i:45194;i:3;i:7356;},,154,44,2,2,3,,
+45194,koshi-chimes,Elemental Chimes,publish,simple,MI-Ch-KS,,gst-5,523,525,field_5fec24efe5459,45195,"45195,45196",a:4:{i:0;i:42317;i:1;i:42323;i:2;i:45485;i:3;i:10345;},,66,44,2,2,3,4850,3850
+49817,large-tuning-fork,DNA Tuning Fork,publish,variable,,,,160,1393,field_5fec24efe5459,49859,,,,154,44,2,2,2,,
+46171,lotus-yoga-mat,Lotus Yoga Mat,publish,variable,,,gst-5,339,992,field_5fec24efe5459,46294,"8302,8529,9260,9712,9262,9263,9264,9265,9523,9519,9456,9387",a:4:{i:0;i:42674;i:1;i:42582;i:2;i:9690;i:3;i:6530;},,66,44,2,2,9,,
+7568,macrame-yoga-straps,Macrame Yoga Mat Straps,publish,variable,,,gst-5,0,456,field_5fec24efe5459,46007,"7575,8641,46787,8642,8643,8645,7579,7582",,,66,44,2,2,2,,
+48856,mayura-morchang-set,Mayura Morchang Set,publish,variable,,,,723,2718,field_5fec24efe5459,48867,,,,154,44,2,2,2,,
+7450,mini-bamboo-and-aluminium-bar-chime,Mini Bamboo and Aluminium Bar Chime,draft,variable,MI-BCH-S-10,,gst18,0,389,field_5fec24efe5459,7451,"7453,8219,7454,8220,7455,8221,8172",,,66,44,2,2,2,,
+46495,mini-bamboo-slide-whistle,Mini Bamboo Slide Whistle,draft,variable,MI-BSW,,gst12,230,2659,field_5fec24efe5459,47806,"46511,46512",a:4:{i:0;i:7300;i:1;i:45754;i:2;i:5730;i:3;i:7472;},,154,44,2,2,3,,
+6062,mini-coconut-shaker-3-types,Mini Coconut Shakers - 3 Types,publish,variable,,,gst-5,1,685,field_5fec24efe5459,46265,"44393,6282,8194,6283,8197,6284,8200,8195,6161,8196,8198,8201,8199,8202",a:4:{i:0;i:7370;i:1;i:7404;i:2;i:7356;i:3;i:7542;},,154,44,2,2,3,,
+51110,mini-flat-maracas,Mini Flat Maracas,publish,simple,,,,188,679,field_5fec24efe5459,51118,,,,98,44,2,2,2,1290,1090
+7443,mini-teak-wood-and-stainless-steel-xylophone,Teak Wood - Stainless Steel Xylophone,publish,variable,MI-XP-W-8,,gst12,0,980,field_5fec24efe5459,7444,"7445,8181,8781,7447,8776,7448,8183,8176",,,66,44,2,2,2,,
+7456,musical-wooden-frog,Musical Wooden Frog,publish,simple,MI-WF,,gst-5,229,950,field_5fec24efe5459,51033,"7458,7459,7460,7461,7462",a:4:{i:0;i:45754;i:1;i:42323;i:2;i:45197;i:3;i:45194;},,154,44,2,2,3,1650,1250
+48428,native-american-style-flute-handcrafted-wooden-melody-maker,Native American Style Flutes,publish,variable,,,gst18,253,1090,field_5fec24efe5459,48433,,,,154,44,2,2,2,,
+7435,natural-bamboo-xylophone-with-5-keys,Natural Bamboo Xylophone with 5 Keys,publish,simple,MI-XP-B-5,,gst12,0,899,field_5fec24efe5459,7436,"7437,8187,7438,8188,7439,8189,8176",a:4:{i:0;i:42389;i:1;i:42332;i:2;i:42340;i:3;i:7443;},,66,44,2,2,3,3185,2450
+42674,natural-cotton-yoga-mat-24-572-5-inches-with-superior-natural-rubber-grip-copy,7 Chakras Superior Grip Yoga Mats,draft,variable,,,gst-5,294,932,field_5fec24efe5459,8514,,a:4:{i:0;i:42648;i:1;i:42582;i:2;i:6530;i:3;i:6689;},,66,44,2,2,1,,
+42648,natural-cotton-yoga-mat-24-572-5-inches-with-superior-natural-rubber-grip-copy-2,Lotus Superior Grip Yoga Mat,draft,variable,,,gst-5,335,932,field_5fec24efe5459,8517,"8302,8529,9260,9712,9262,9263,9264,9265,7582,7579,7574,7575,9523,9519,9456,9387",a:4:{i:0;i:42674;i:1;i:42582;i:2;i:9690;i:3;i:6530;},,66,44,2,2,1,,
+42582,natural-cotton-yoga-mat-24-572-5-inches-with-superior-natural-rubber-grip-lotus,Plain Superior Grip Yoga Mat,draft,variable,,,gst-5,294,785,field_5fec24efe5459,8532,"8302,8529,9260,9712,9262,9263,9264,9265,7582,7579,7574,7575,9522,9518,9455,9386",a:4:{i:0;i:42674;i:1;i:42648;i:2;i:6547;i:3;i:6711;},,66,44,2,2,1,,
+8379,natural-cotton-yoga-mat-with-natural-rubber-grip-plain-with-macrame-yoga-strap,Plain Moderate Grip Yoga Mat,draft,variable,,,gst-5,0,869,field_5fec24efe5459,8532,"8302,8540,8650,8657,8659,8653,8658,8654,8656,8655,7989,7986,7982,8652,8651",,,66,44,2,2,0,,
+5038,neem-wood-combs,Neem Wood Combs,draft,variable,,,gst-5,0,542,field_5fec24efe5459,5925,"5923,6090,6091,6092,5925,6093,6094",,,66,44,2,2,2,,
+6071,non-printed-copper-water-bottles,"Grooved, Hammered & Plain Copper Bottle",publish,variable,,,gst-5,0,520,field_5fec24efe5459,6118,"6413,6490,6408,6474,6452,6405,6406,6456,5493,5491,5481,5482",,,66,44,2,2,2,,
+48373,ocarina-instrument-banana-oval,Ocarina Instruments,draft,variable,,,gst-zero-rate,640,645,field_5fec24efe5459,48381,,,,66,44,2,2,2,,
+9529,ocean-drums,Ocean Drums,publish,variable,,,gst18,0,987,field_5fec24efe5459,44657,"9539,10157,10158,10159,10160,10161,10162,10163",a:4:{i:0;i:7349;i:1;i:7472;i:2;i:7356;i:3;i:7293;},,154,44,2,2,9,,
+7356,pangi-seed-shell-shaker-rattle,Pangi Seed Shell Rattle,publish,simple,MI-PS,,gst-5,0,527,field_5fec24efe5459,48071,"7358,45774,45775,45776",,,154,44,2,2,2,2535,2450
+8833,plain-flat-wind-tibetan-gong-for-meditation-sound-therapy,Plain/Wind Tibetan Gong,publish,variable,,,gst-5,0,435,field_5fec24efe5459,45723,"8836,44144,44145,44146,44147",,,168,44,2,2,2,,
+46220,plain-yoga-mats,Plain Yoga Mats,publish,variable,,,gst-5,294,841,field_5fec24efe5459,8532,"8302,8529,9260,9712,9262,9263,9264,9265,7582,7579,7574,7575,9522,9518,9455,9386",a:4:{i:0;i:42674;i:1;i:42648;i:2;i:6547;i:3;i:6711;},,66,44,2,2,3,,
+6007,printed-copper-water-bottles,Artistically Designed Copper Bottles,publish,variable,,,gst-5,0,698,field_5fec24efe5459,46299,"6110,6109,5500,6310,6309,6340,6108,6107,6106,6342,6343",a:4:{i:0;i:7687;i:1;i:5675;i:2;i:6638;i:3;i:6071;},,66,44,2,2,3,,
+48512,pulse-tubes,Pulse Tubes,publish,variable,,,,714,704,field_5fec24efe5459,48513,,,,154,44,2,2,2,,
+51190,rectangle-wooden-maracas-shaker,Rectangle Wooden Maracas Shaker,publish,simple,,,gst12,131,660,field_5fec24efe5459,51197,,,,98,44,2,2,2,700,595
+9675,rectangular-yoga-bolster-made-from-organic-cotton,Rectangular Yoga Bolster,publish,variable,,,gst18,0,621,field_5fec24efe5459,9688,"9684,9685,9686,9687,9688,9689,9316,9682,9683,9319",a:4:{i:0;i:6734;i:1;i:6730;i:2;i:6732;i:3;i:9763;},,66,44,2,2,3,,
+7307,s-shaped-didgeridoo,S-Shaped Didgeridoo,publish,variable,,,gst-5,0,552,field_5fec24efe5459,49370,"7309,7310,7311,7312,7313",a:4:{i:0;i:7300;i:1;i:7324;i:2;i:7317;i:3;i:7542;},,66,44,2,2,3,,
+45473,sacred-heart-chakra-singing-bowl,Heart Chakra Singing Bowl,publish,simple,,,gst-5,1253,1065,field_5fec24efe5459,45516,"45474,45475,45476",a:4:{i:0;i:7887;i:1;i:45469;i:2;i:45334;i:3;i:45327;},,66,44,2,2,3,11990,10990
+45469,sacred-root-chakra-singing-bowl,Root Chakra Singing Bowl,publish,simple,,,gst-5,1194,1194,field_5fec24efe5459,45515,"45471,45472,45470",a:4:{i:0;i:9795;i:1;i:43286;i:2;i:7887;i:3;i:45113;},,66,44,2,2,3,17490,15490
+9964,sarveda-antique-finish-handmade-singing-bowls,Antique finish Handmade Singing Bowls,draft,variable,,,gst-5,0,686,field_5fec24efe5459,9965,"9965,9966,9967,9968,9969,9970",a:4:{i:0;i:9795;i:1;i:7887;i:2;i:45334;i:3;i:45327;},,66,44,2,2,3,,
+6973,sarveda-buddhist-bell,Tibetan Buddhist Bell,publish,variable,,,gst-5,159,978,field_5fec24efe5459,51217,"6975,6974",,,154,44,2,2,2,,
+9777,sarveda-crystal-bowls,Crystal Bowls,publish,variable,,,gst18,0,689,field_5fec24efe5459,45257,"9787,9789",,,66,44,2,2,8,,
+10035,sarveda-flower-of-life-with-sacred-symbols-singing-bowls,Flower of Life with Sacred Symbols Singing Bowls,publish,variable,,,gst-5,4,1683,field_5fec24efe5459,10039,"10036,10037,10038,10039,10040,10041,10042,10043,10044,10045,10046,10047",a:4:{i:0;i:9795;i:1;i:43286;i:2;i:10008;i:3;i:6807;},,66,44,2,2,9,,
+8040,sarveda-handcrafted-zen-singing-bowl,"Vibroacoustic Therapy Bowls - Universal, Belly and Head",publish,variable,,,gst-5,887,887,field_5fec24efe5459,6871,"6870,8043",a:4:{i:0;i:9795;i:1;i:8143;i:2;i:45334;i:3;i:45327;},,66,44,2,2,9,,
+9936,sarveda-handmade-lingam-singing-bowl,Handmade Lingam Singing Bowl,draft,variable,,,gst-5,0,400,field_5fec24efe5459,9944,"9944,9945,9946,9948,9947",a:3:{i:0;i:9964;i:1;i:9949;i:2;i:9978;},,66,44,2,2,3,,
+9949,sarveda-ishana-or-black-gold-bowl,Ishana/Black-Gold Bowl,draft,variable,,,gst-5,0,1022,field_5fec24efe5459,9962,"9958,9959,47183,47184,9960,9961",,,66,44,2,2,2,,
+9978,sarveda-joint-bowl-or-bowl-with-a-hole,Joint Bowl or Knee Cut Bowl,publish,variable,,,gst-5,0,782,field_5fec24efe5459,9981,"9979,47187,47188,9983,9982",,,154,44,2,2,2,,
+6519,sarveda-lavender-scented-eye-pillows-for-yoga-meditation-and-relaxation-made-with-cotton-filled-with-flaxseed,Natural Lavender Scented Eye Pillows,publish,variable,,,gst18,0,960,field_5fec24efe5459,6585,"6521,6522,6523,6587,6588,6589,6591,6937,6938,6939,6940,6941",a:4:{i:0;i:7687;i:1;i:6892;i:2;i:42648;i:3;i:6007;},,66,44,2,2,3,,
+10008,sarveda-sacred-symbols-singing-bowls,Sacred Symbols Singing Bowls,publish,variable,,,gst-5,801,2156,field_5fec24efe5459,10033,"10024,10025,10026,10027,10028,10029,10030,10031,10032,10033,10034",,,66,44,2,2,2,,
+9713,sarveda-tuning-forks,Tuning Fork - Single Weighted & Unweighted,publish,variable,,,gst18,0,1514,field_5fec24efe5459,9730,"9726,9727,9728,9729,9730,9731,9732,9733,9734,9735,9736,10174,10175,10176,45951,10177,10178,10179,46456",,,154,44,2,2,2,,
+6780,sarveda-zabuton-cushion,Zabuton Cushion for Meditation,publish,variable,,,gst18,835,835,field_5fec24efe5459,9298,"9299,9300,9301,9302,9303,9304,9305,9306,9307,9308,9609,9610,9611,9612,9613,9614",a:4:{i:0;i:6755;i:1;i:6794;i:2;i:6711;i:3;i:9763;},,66,44,2,2,3,,
+6734,sarveda-zafu-crescent,Crescent Zafu Meditation Cushion,draft,variable,,,gst-5,0,965,field_5fec24efe5459,9663,"9662,9663,9664,9665,9666,9667,9669,9668,7563,7564,6746,7105,6749,9691,9692,9693,6750,6743,6744",a:4:{i:0;i:6530;i:1;i:6689;i:2;i:6711;i:3;i:9763;},,66,44,2,2,3,,
+6755,sarveda-zafu-cylindrical-meditation-cushion,Hi-Zafu Meditation Cushion - Filled with Buckwheat,publish,variable,,,gst18,838,838,field_5fec24efe5459,7561,"9644,9654,9653,9652,9651,9650,9649,6757,9648,9655,9285,9286,9287,9288,9289,6758,9290,6759,6760,6756,7560,7561,9647,9646,9645",,,66,44,2,2,2,,
+6711,sarveda-zafu-round,Zafu Meditation Cushion Plain Filled with Cotton,publish,variable,,,gst18,829,829,field_5fec24efe5459,7567,"9267,9268,9269,9270,9271,9272,9273,9274,9275,9276,9277,9631,9632,9633,9635,9637,9638,9639,9640",,,66,44,2,2,2,,
+7177,sarveda-zafu-zabuton-meditation-cushion-combo,Zafu & Zabuton Meditation Cushion Combo,publish,variable,,,gst18,682,682,field_5fec24efe5459,46863,"7184,7284,9600,9601,9602,9603,9605,9604,9306,9305,9304,9303,9299,9290",a:4:{i:0;i:9676;i:1;i:6794;i:2;i:6711;i:3;i:9763;},,66,44,2,2,3,,
+45131,shamanic-drum-bags-ocean-drum-bags,Shamanic Drum Bags/Ocean Drum Bags,publish,variable,,,gst18,371,471,field_5fec24efe5459,45135,,,,154,44,2,2,2,,
+7293,shamanic-drums,Shamanic Drum,publish,variable,MI-SD-B,,gst18,0,742,field_5fec24efe5459,7296,"7295,7298,9594,9595,9596,7299,10164,10165,10166,10167,10168,10169,10170,10171,10172,10173",a:4:{i:0;i:7370;i:1;i:7472;i:2;i:9529;i:3;i:10345;},,154,44,2,2,9,,
+45449,shankh-conch,Shankh/Conch,publish,variable,,,gst-5,579,579,field_5fec24efe5459,45461,,a:4:{i:0;i:45197;i:1;i:45194;i:2;i:9529;i:3;i:7293;},,154,44,2,2,3,,
+45485,shruthi-thali-gong-plates,Shruthi Thali/Gong Plates,publish,variable,,,gst-5,1059,1059,field_5fec24efe5459,45494,,,,154,44,2,2,2,,
+44970,shruti-box,Shruti Box,publish,variable,,,,343,343,field_5fec24efe5459,45013,"45006,45007,45008,45009,45013,45014,45015,45016",a:4:{i:0;i:45384;i:1;i:43219;i:2;i:9795;i:3;i:44972;},,66,44,2,2,3,,
+51090,shruti-box-pedal,Shruti Box Pedal,publish,simple,,,,168,977,field_5fec24efe5459,51095,,,,98,44,2,2,2,2650,1950
+45127,singing-bowl-bags,Singing Bowl Bags,publish,variable,,,gst18,476,476,field_5fec24efe5459,45141,,a:4:{i:0;i:9795;i:1;i:45152;i:2;i:45289;i:3;i:45131;},,154,44,2,2,3,,
+49832,singing-bowl-set-g-a-b,"Singing Bowl Head Set – G, A, B",publish,simple,,,,175,1973,field_5fec24efe5459,49772,,,,98,44,2,2,2,25500,19500
+6988,singing-bowl-silk-ring-cushions-accessories,Singing Bowls Silk Ring Cushion Accessories,publish,variable,,,gst-5,0,329,field_5fec24efe5459,7759,"6993,6989,7752,7753,7754,7755,7756,7757,7758,7759,42272,42273",,,66,44,2,2,2,,
+7887,singing-bowl-with-7-chakra-healing-from-sound-therapy,Handcrafted Set of 7 Bowls for Sound Therapy,publish,variable,,,gst-5,0,927,field_5fec24efe5459,9190,"44976,44977,44978,44979,44980,44981,44982",a:5:{i:0;i:8846;i:1;i:8802;i:2;i:8143;i:3;i:9777;i:4;i:9978;},,154,44,2,2,21,,
+48931,singing-bowl-with-handle,Singing Bowl with Handle,publish,simple,,,,319,891,field_5fec24efe5459,49110,,,,154,44,2,2,2,9950,8750
+6861,singing-bowl-with-mantra-rustic-blue-color,Singing Bowl with Mantra - Rustic Blue Colour,publish,variable,,,gst-5,0,603,field_5fec24efe5459,6865,,a:4:{i:0;i:7887;i:1;i:45113;i:2;i:9978;i:3;i:6807;},,66,44,2,2,9,,
+6807,singing-bowls-with-sacred-mantra-printed,Singing Bowls with Sacred Mantra Printed,publish,variable,,,gst-5,0,603,field_5fec24efe5459,7012,,a:4:{i:0;i:9795;i:1;i:5688;i:2;i:10013;i:3;i:5763;},,154,44,2,2,3,,
+50608,sleigh-bells-wooden-jingle-stick,Sleigh Bells Wooden Jingle Stick,publish,simple,,,gst18,192,1370,field_5fec24efe5459,50611,,,,154,44,2,2,2,1950,1450
+49816,solar-bell,Solar Bell,publish,simple,,,gst18,148,1078,field_5fec24efe5459,49855,,,,154,44,2,2,2,15340,12650
+45527,sound-pipe,Tune Sound Pipe,draft,variable,,,,869,1066,field_5fec24efe5459,45552,45554,,,66,44,2,2,2,,
+7324,spiral-snake-didgeridoo,Spiral/Snake Didgeridoo,publish,variable,,,gst-5,0,1180,field_5fec24efe5459,49359,"7326,7327,7328",a:4:{i:0;i:7300;i:1;i:7307;i:2;i:10345;i:3;i:7317;},,66,44,2,2,3,,
+6505,stainless-steel-straws,Stainless Steel Straws,publish,variable,,,gst-5,0,573,field_5fec24efe5459,6945,"6511,6512,6513,6514,6517,6945,6947,6946,6948",,,66,44,2,2,2,,
+51251,sughosh-shankh-natural-conch-shell,Sughosh Shankh – Natural Conch Shell,publish,simple,,,gst18,186,1553,field_5fec24efe5459,51145,,,,98,44,2,2,2,3550,2950
+10345,swinging-chimes,Swinging Chimes,publish,variable,,,gst-5,972,1343,field_5fec24efe5459,10348,"10352,10351,10349,10350,10353",a:3:{i:0;i:42410;i:1;i:42389;i:2;i:7356;},,154,44,2,2,9,,
+45327,the-beginner-set,"The Three Bowl Set - Root, Heart and Third Eye",publish,simple,,,gst-5,499,499,field_5fec24efe5459,45330,"45601,45332,45600",a:4:{i:0;i:9777;i:1;i:7887;i:2;i:7293;i:3;i:45334;},,154,44,2,2,3,32900,29900
+45334,the-essential-set,"The Four Bowl Set - Root, Heart, Third Eye and Universal",publish,simple,,,gst-5,497,497,field_5fec24efe5459,45335,"45337,45336,45602",a:4:{i:0;i:9795;i:1;i:7887;i:2;i:44970;i:3;i:45327;},,154,44,2,2,3,39900,36900
+45518,the-head-bowl,The Head Bowl,publish,simple,,,gst-5,1682,1682,field_5fec24efe5459,45529,45530,,,154,44,2,2,2,10990,9990
+45477,third-eye-chakra-singing-bowl,Third Eye Chakra Singing Bowl,publish,simple,,,gst-5,1052,1052,field_5fec24efe5459,45517,"45480,45481,45482",a:4:{i:0;i:8846;i:1;i:6884;i:2;i:45113;i:3;i:45334;},,66,44,2,2,3,8200,7200
+7317,thunder-tube,Thunder Tube - Basic Edition,publish,variable,MI-TT-20,,gst-5,0,870,field_5fec24efe5459,48928,"7319,7320,8216,7321,7322,8217,7323,8218,8176",,,66,44,2,2,2,,
+5763,tingsha-bell,Tingsha Bell,publish,variable,,,gst-5,4,610,field_5fec24efe5459,47669,"5927,5768,6962,6963,6964,42345,42346,42347,42348,42349",,,66,44,2,2,2,,
+50549,tuned-pipe,Tuned Pipes,publish,variable,,,,152,882,field_5fec24efe5459,50607,,,,154,44,2,2,2,,
+48193,tuning-forks-7-chakra-set,Tuning Forks 7 Chakra Set,publish,variable,,,gst18,593,593,field_5fec24efe5459,47108,,,,154,44,2,2,2,,
+48133,tuning-forks-activators,Tuning Fork Activators,publish,variable,,,gst18,594,594,field_5fec24efe5459,48191,,,,66,44,2,2,2,,
+48135,tuning-forks-extensions,Tuning Fork Extensions,publish,variable,,,gst18,1089,1089,field_5fec24efe5459,48332,,,,154,44,2,2,2,,
+48136,tuning-forks-gem-foot,Tuning Forks Gem Feet,publish,variable,,,gst18,546,410,field_5fec24efe5459,48152,,,,154,44,2,2,2,,
+48202,tuning-forks-solfeggio-set,Tuning Forks Solfeggio Set,publish,variable,,,,558,558,field_5fec24efe5459,47108,,,,66,44,2,2,2,,
+49818,tuning-swords-sound-therapy-instrument,Tuning Swords – Sound Therapy Instrument,draft,variable,,,gst18,172,1197,field_5fec24efe5459,49838,,,,10,44,2,2,2,,
+8143,universal-bowl,Handmade Universal Bowl for Sound Healing,publish,simple,MI-SB-HM-UN,,gst-5,0,1105,field_5fec24efe5459,44392,"6871,6870,47186,8042,7169",a:4:{i:0;i:9964;i:1;i:7887;i:2;i:45334;i:3;i:45327;},,66,44,2,2,3,9950,8950
+50420,wind-chimes,Wind Chimes,publish,variable,,,,391,1240,field_5fec24efe5459,50606,,,,154,44,2,2,2,,
+50579,wooden-finger-castanet,Wooden Finger Castanet,publish,variable,,,,201,1590,field_5fec24efe5459,50593,,,,154,44,2,2,2,,
+50572,wooden-guiro,Wooden Guiro,publish,simple,,,gst18,347,1108,field_5fec24efe5459,50577,,,,154,44,2,2,2,1650,1250
+50964,wooden-hand-taal-khartal,Wooden Hand Khartal/Jingles,publish,variable,,,,158,1065,field_5fec24efe5459,51089,,,,98,44,2,2,2,,
+6978,wooden-mallets-for-singing-bowls,Wooden Mallets for Singing Bowls,publish,variable,MI-SB-M-R-Wd-4.5,,gst-5,0,509,field_5fec24efe5459,7528,"7529,7530,7531,7532,7533,7534,7535,7536,7537,7538,7539,7540,42255,42256,42257,42258,42259,42260,42261,42262,42263,42264,42265,42266,42267,42268,42269,42270,42271",a:3:{i:0;i:6892;i:1;i:6861;i:2;i:6988;},,66,44,2,2,3,,
+7370,wooden-maracas-shaker,Coconut Maracas Shakers,publish,variable,MI-CM,,gst-5,28,493,field_5fec24efe5459,45652,"7373,7374,7375,7376,8160,8161,8162,8163",a:3:{i:0;i:7484;i:1;i:5713;i:2;i:7404;},,66,44,2,2,3,,
+7542,wooden-maracas-shaker-handheld-shaker,Wooden Maracas Shakers | Plain & Dot Painted,publish,variable,MI-WM,,gst-5,0,542,field_5fec24efe5459,47682,"7544,8190,8192,8191,8172,7545,7546,7547",a:4:{i:0;i:7370;i:1;i:7396;i:2;i:7472;i:3;i:7404;},,66,44,2,2,3,,
+7478,wooden-tambourine-half-moon-2,Wooden Tambourines,publish,variable,MI-T-HM,,gst12,590,608,field_5fec24efe5459,45647,"7480,7481,8222,7482,8223,7483,8224,8176",,,66,44,2,2,2,,
+6668,yoga-blanket,Yoga Blanket made from Organic Cotton,publish,variable,,,gst-5,0,646,field_5fec24efe5459,6671,"6669,6675,6676,6677,6678,6679,6670,6671,6672,6673,6674",a:4:{i:0;i:42648;i:1;i:9675;i:2;i:6530;i:3;i:6689;},,66,44,2,2,3,,
+6689,yoga-bolster,Round Yoga Bolster,publish,variable,,,gst18,0,495,field_5fec24efe5459,6690,"9761,6699,6698,6696,6690,7906,6697,7907,9760,9315,9316,9625,9626,9319",a:4:{i:0;i:9675;i:1;i:6780;i:2;i:6711;i:3;i:9763;},,66,44,2,2,3,,
+6530,yoga-strap,Yoga Belt/Strap for Sturdy Grip,publish,variable,,,gst-5,0,883,field_5fec24efe5459,7246,"6600,6601,6602,6604,7248,7242,7243,7244,7245,7246,6931,6932,6933,6934,6936,7247",,,66,44,2,2,2,,
+9278,zafu-meditation-cushion-with-lotus-embroidery,Zafu Meditation Cushion Lotus - Embroidery Filled with Cotton,publish,variable,,,gst18,918,918,field_5fec24efe5459,9642,"9555,9556,9557,9558,9560,9267,9268,9269,9270,9271,9272,9551,9552,9553,9554,9559",a:4:{i:0;i:9291;i:1;i:9675;i:2;i:6689;i:3;i:6780;},,66,44,2,2,3,,
+9312,zafu-zabuton-meditation-cushion-combo-with-lotus-embroidery,Zafu & Zabuton Meditation Cushion Combo - Lotus Embroidery,publish,variable,,,gst18,771,771,field_5fec24efe5459,9561,"9565,9566,9567,9562,9563,9564,9306,9305,9304,9303,9299,9290",a:4:{i:0;i:6689;i:1;i:6780;i:2;i:6711;i:3;i:9763;},,66,44,2,2,3,,

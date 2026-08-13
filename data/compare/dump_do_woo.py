@@ -187,6 +187,8 @@ with (out / "do_products.csv").open("w", newline="", encoding="utf-8") as f:
             "video_meta_count",
             "article_meta_count",
             "pair_meta_count",
+            "regular_price",
+            "sale_price",
         ]
     )
     for r in prows:
@@ -201,14 +203,14 @@ with (out / "do_products.csv").open("w", newline="", encoding="utf-8") as f:
                 title,
                 status,
                 types.get(pid_s, ""),
-                m.get("_sku", ""),
-                pick_hsn(m),
-                m.get("_tax_class", ""),
-                dlen,
-                slen,
-                pick_video(m),
-                m.get("_thumbnail_id", ""),
-                m.get("_product_image_gallery", ""),
+            m.get("_sku", ""),
+            pick_hsn(m),
+            m.get("_tax_class", ""),
+            dlen,
+            slen,
+            pick_video(m),
+            m.get("_thumbnail_id", ""),
+            m.get("_product_image_gallery", ""),
                 m.get("_upsell_ids", ""),
                 m.get("_crosssell_ids", ""),
                 mc.get("shipping", 0),
@@ -216,6 +218,8 @@ with (out / "do_products.csv").open("w", newline="", encoding="utf-8") as f:
                 mc.get("video", 0),
                 mc.get("article", 0),
                 mc.get("pair", 0),
+                m.get("_regular_price", ""),
+                m.get("_sale_price", ""),
             ]
         )
 
@@ -265,5 +269,33 @@ with (out / "do_variants.csv").open("w", newline="", encoding="utf-8") as f:
 
 print("product status", Counter(r[3] for r in prows))
 print("publish products", sum(1 for r in prows if r[3] == "publish"))
+
+with conn.cursor() as cur:
+    cur.execute(
+        """
+        SELECT p.ID, p.guid, pm.meta_value
+        FROM wp_posts p
+        LEFT JOIN wp_postmeta pm
+          ON pm.post_id = p.ID AND pm.meta_key = '_wp_attached_file'
+        WHERE p.post_type = 'attachment'
+        ORDER BY p.ID
+        """
+    )
+    att_rows = cur.fetchall()
+    print("attachments", len(att_rows))
+
+with (out / "do_attachments.csv").open("w", newline="", encoding="utf-8") as f:
+    w = csv.writer(f)
+    w.writerow(["id", "guid", "attached_file", "url"])
+    for aid, guid, attached in att_rows:
+        attached = attached or ""
+        guid = guid or ""
+        url = ""
+        if attached:
+            url = f"https://sarveda.com/wp-content/uploads/{attached.lstrip('/')}"
+        elif guid.startswith("http"):
+            url = guid
+        w.writerow([aid, guid, attached, url])
+
 conn.close()
 print("wrote", out)

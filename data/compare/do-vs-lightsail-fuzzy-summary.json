@@ -1,0 +1,19 @@
+{
+  "generatedAt": "2026-08-13T11:41:04.126284+00:00",
+  "lightsail_products": 154,
+  "do_products": 157,
+  "fuzzy_matched_products": 125,
+  "lightsail_only_products": 29,
+  "do_only_products": 32,
+  "product_match_threshold": 82,
+  "variant_match_threshold": 85,
+  "inputs": {
+    "do_products": "/home/radha/sarveda/data/compare/do_products.csv",
+    "do_variants": "/home/radha/sarveda/data/compare/do_variants.csv",
+    "lightsail_export": "/home/radha/sarveda/data/compare/lightsail-catalog-export.json"
+  },
+  "outputs": {
+    "xlsx": "/home/radha/sarveda/data/compare/do-vs-lightsail-fuzzy.xlsx",
+    "json": "/home/radha/sarveda/data/compare/do-vs-lightsail-fuzzy-summary.json"
+  }
+}

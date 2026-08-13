@@ -175,11 +175,11 @@ id,parent_id,parent_slug,sku,status,title,thumb_id,video,attrs,regular_price,sal
 7288,6807,singing-bowls-with-sacred-mantra-printed,MI-SB-P-BK-5.5,publish,"Singing Bowls with Sacred Mantra Printed - Black, 5.5 Inches",6809,,attribute_color=Black;attribute_size=5.5 Inches,2594,1995
 7289,6807,singing-bowls-with-sacred-mantra-printed,MI-SB-P-W-4,publish,"Singing Bowls with Sacred Mantra Printed - Gold, 4 Inches",6815,,attribute_color=Gold;attribute_size=4 Inches,2009,1545
 7290,6807,singing-bowls-with-sacred-mantra-printed,MI-SB-P-W-5.5,publish,"Singing Bowls with Sacred Mantra Printed - Gold, 5.5 Inches",6814,,attribute_color=Gold;attribute_size=5.5 Inches,2594,1995
-7953,6807,singing-bowls-with-sacred-mantra-printed,MI-SB-P-R-3.5,publish,"Singing Bowls with Sacred Mantra Printed - Red, 3.5 Inches",6818,,attribute_color=Red;attribute_size=3.5 Inches,1684,1295
-7954,6807,singing-bowls-with-sacred-mantra-printed,MI-SB-P-B-3.5,publish,"Singing Bowls with Sacred Mantra Printed - Blue, 3.5 Inches",6811,,attribute_color=Blue;attribute_size=3.5 Inches,1684,1295
-7955,6807,singing-bowls-with-sacred-mantra-printed,MI-SB-P-W-3.5,publish,"Singing Bowls with Sacred Mantra Printed - Gold, 3.5 Inches",6815,,attribute_color=Gold;attribute_size=3.5 Inches,1684,1295
-7956,6807,singing-bowls-with-sacred-mantra-printed,MI-SB-P-G-3.5,publish,"Singing Bowls with Sacred Mantra Printed - Green, 3.5 Inches",6816,,attribute_color=Green;attribute_size=3.5 Inches,1684,1295
-7957,6807,singing-bowls-with-sacred-mantra-printed,MI-SB-P-BK-3.5,publish,"Singing Bowls with Sacred Mantra Printed - Black, 3.5 Inches",6809,,attribute_color=Black;attribute_size=3.5 Inches,1684,1295
+7953,6807,singing-bowls-with-sacred-mantra-printed,MI-SB-P-R-3.5,publish,"Singing Bowls with Sacred Mantra Printed - Red, 7 Inches",6818,,attribute_color=Red;attribute_size=7 Inches,2684,2295
+7954,6807,singing-bowls-with-sacred-mantra-printed,MI-SB-P-B-3.5,publish,"Singing Bowls with Sacred Mantra Printed - Blue, 7 Inches",6811,,attribute_color=Blue;attribute_size=7 Inches,2684,2295
+7955,6807,singing-bowls-with-sacred-mantra-printed,MI-SB-P-W-3.5,publish,"Singing Bowls with Sacred Mantra Printed - Gold, 7 Inches",6815,,attribute_color=Gold;attribute_size=7 Inches,2684,2295
+7956,6807,singing-bowls-with-sacred-mantra-printed,MI-SB-P-G-3.5,publish,"Singing Bowls with Sacred Mantra Printed - Green, 7 Inches",6816,,attribute_color=Green;attribute_size=7 Inches,2684,2295
+7957,6807,singing-bowls-with-sacred-mantra-printed,MI-SB-P-BK-3.5,publish,"Singing Bowls with Sacred Mantra Printed - Black, 7 Inches",6809,,attribute_color=Black;attribute_size=7 Inches,2684,2295
 6862,6861,singing-bowl-with-mantra-rustic-blue-color,MI-SB-RB-6,publish,Singing Bowl with Mantra - Rustic Blue Colour - 6 Inches,6865,,attribute_size=6 Inches,1879,1445
 7287,6861,singing-bowl-with-mantra-rustic-blue-color,MI-SB-RB-7,publish,Singing Bowl with Mantra - Rustic Blue Colour - 7 Inches,6865,,attribute_size=7 Inches,2269,1745
 9694,6884,handmade-singing-bowls-for-sound-therapy,Mi-SB-H-P-5,publish,"Handmade Singing Bowls - All Sizes - 5 in, Matte",6889,,attribute_size=5 in;attribute_type=Matte,6950,5950
@@ -200,11 +200,12 @@ id,parent_id,parent_slug,sku,status,title,thumb_id,video,attrs,regular_price,sal
 9709,6884,handmade-singing-bowls-for-sound-therapy,,publish,"Handmade Singing Bowls - All Sizes - 12 in, Matte",6887,,attribute_size=12 in;attribute_type=Matte,13650,12650
 9710,6884,handmade-singing-bowls-for-sound-therapy,,publish,"Handmade Singing Bowls - All Sizes - 13 in, Polished",6889,,attribute_size=13 in;attribute_type=Polished,14650,13650
 9711,6884,handmade-singing-bowls-for-sound-therapy,,publish,"Handmade Singing Bowls - All Sizes - 13 in, Matte",6887,,attribute_size=13 in;attribute_type=Matte,14650,13650
-6901,6892,hand-hammered-singing-bowl,MI-SB-H-4,publish,Dotted Singing Bowl - 4 inch,6893,,attribute_size=4 inch,2139,1645
-6902,6892,hand-hammered-singing-bowl,MI-SB-H-5.5,publish,Dotted Singing Bowl - 5.5 inch,6894,,attribute_size=5.5 inch,2789,2145
-42911,6892,hand-hammered-singing-bowl,MI-SB-DH-5.5,publish,Dotted Singing Bowl - Deep 5.5 Inch,42912,,attribute_size=Deep 5.5 Inch,3101,2385
+6901,6892,hand-hammered-singing-bowl,MI-SB-H-4,publish,Dotted Singing Bowl - 4 in,6893,,attribute_size=4 in,2139,1645
+6902,6892,hand-hammered-singing-bowl,MI-SB-H-5.5,publish,Dotted Singing Bowl - 5.5 in,6894,,attribute_size=5.5 in,2789,2145
+42911,6892,hand-hammered-singing-bowl,MI-SB-D-7,publish,Dotted Singing Bowl - 7 in,42912,,attribute_size=7 in,3101,2385
+51264,6892,hand-hammered-singing-bowl,,publish,Dotted Singing Bowl - Deep 5.5 Inch,,,attribute_size=Deep 5.5 Inch,3101,2385
 9198,6973,sarveda-buddhist-bell,MI-BB-2,publish,Tibetan Buddhist Bell - Small,0,,attribute_size=Small,1755,1350
-9199,6973,sarveda-buddhist-bell,MI-BB-3,publish,Tibetan Buddhist Bell - Standard,0,,attribute_size=Standard,2145,1650
+9199,6973,sarveda-buddhist-bell,MI-BB-3,publish,Tibetan Buddhist Bell - Medium,0,,attribute_size=Medium,2145,1650
 9200,6973,sarveda-buddhist-bell,MI-BB-3.5,publish,Tibetan Buddhist Bell - Large,0,,attribute_size=Large,2405,1850
 47410,6973,sarveda-buddhist-bell,,publish,Tibetan Buddhist Bell - Extra Large,0,,attribute_size=Extra Large,4000,3560
 43367,6978,wooden-mallets-for-singing-bowls,,publish,"Wooden Mallets for Singing Bowls - Long Firm-Standard, Red",42268,,attribute_colour=Red;attribute_type=Long Firm-Standard,895,645
@@ -327,8 +328,6 @@ id,parent_id,parent_slug,sku,status,title,thumb_id,video,attrs,regular_price,sal
 8775,7443,mini-teak-wood-and-stainless-steel-xylophone,MI-XP-W-15,publish,Teak Wood - Stainless Steel Xylophone - 15 Keys,8781,,attribute_keys=15 Keys,9850,6950
 46480,7450,mini-bamboo-and-aluminium-bar-chime,,publish,Mini Bamboo and Aluminium Bar Chime - 10,0,,attribute_number-of-bars=10,1150,985
 46481,7450,mini-bamboo-and-aluminium-bar-chime,,publish,Mini Bamboo and Aluminium Bar Chime - 21,0,,attribute_number-of-bars=21,2250,1850
-44632,7456,musical-wooden-frog,MI-WF-S,publish,Musical Wooden Frog - Standard,7457,,attribute_size=Standard,1250,950
-44633,7456,musical-wooden-frog,MI-WF-L,publish,Musical Wooden Frog - Large,44634,,attribute_size=Large,1750,1350
 7510,7472,handheld-kenari-seed-shell-shaker,MI-KR-S-S,publish,Kenari Seed Shell Shakers - Small,7367,,attribute_size=Small,1755,1350
 7511,7472,handheld-kenari-seed-shell-shaker,MI-KR-S-L,publish,Kenari Seed Shell Shakers - Large,7475,,attribute_size=Large,2535,2350
 45648,7478,wooden-tambourine-half-moon-2,,publish,Wooden Tambourines - Half-Moon,0,,attribute_type=Half-Moon,1550,1250
@@ -834,8 +833,10 @@ id,parent_id,parent_slug,sku,status,title,thumb_id,video,attrs,regular_price,sal
 45133,45131,shamanic-drum-bags-ocean-drum-bags,,publish,Shamanic Drum Bags/Ocean Drum Bags - Small,45136,,attribute_type=Small,1390,990
 45134,45131,shamanic-drum-bags-ocean-drum-bags,,publish,Shamanic Drum Bags/Ocean Drum Bags - Large,45136,,attribute_type=Large,1790,1290
 46932,45131,shamanic-drum-bags-ocean-drum-bags,,publish,Shamanic Drum Bags/Ocean Drum Bags - Medium,0,,attribute_type=Medium,1295,1190
-45153,45152,gong-bags,MI-Gg-Bag-S,publish,Gong Bags - Standard,45155,,attribute_type=Standard,2500,1950
-45154,45152,gong-bags,MI-Gg-Bag-L,publish,Gong Bags - Large,45156,,attribute_type=Large,2750,2350
+51170,45152,gong-bags,,publish,Gong Bags - Small,0,,attribute_type=Small,2350,1950
+51171,45152,gong-bags,,publish,Gong Bags - Medium,0,,attribute_type=Medium,2750,2350
+51172,45152,gong-bags,,publish,Gong Bags - Large,0,,attribute_type=Large,3450,2750
+51173,45152,gong-bags,,publish,Gong Bags - Extra Large,0,,attribute_type=Extra Large,4000,3450
 46430,45197,kenari-chimes,,publish,Kenari Chimes - Small & Large - Small,46432,,attribute_size=Small,4500,3950
 46431,45197,kenari-chimes,,publish,Kenari Chimes - Small & Large - Large,45198,,attribute_size=Large,5650,4950
 45294,45289,gong-stand,,publish,"Gong Stand - Light, Small",0,,attribute_color=Light;attribute_size=Small,7000,6850
@@ -978,10 +979,11 @@ id,parent_id,parent_slug,sku,status,title,thumb_id,video,attrs,regular_price,sal
 49905,48421,brain-tuner-set-harmonize-your-minds-natural-rhythms,,publish,Brain Tuner Set – Harmonize Your Mind’s Natural Rhythms - Alpha – 267 Hz,0,,attribute_frequency=Alpha – 267 Hz,3500,2500
 49906,48421,brain-tuner-set-harmonize-your-minds-natural-rhythms,,publish,Brain Tuner Set – Harmonize Your Mind’s Natural Rhythms - Beta – 271 Hz,0,,attribute_frequency=Beta – 271 Hz,3500,2500
 49907,48421,brain-tuner-set-harmonize-your-minds-natural-rhythms,,publish,Brain Tuner Set – Harmonize Your Mind’s Natural Rhythms - Combo of 5,0,,attribute_frequency=Combo of 5,10500,9500
-51011,48428,native-american-style-flute-handcrafted-wooden-melody-maker,,publish,Native American Style Flute - Double,0,,attribute_hole=Double,,
-51012,48428,native-american-style-flute-handcrafted-wooden-melody-maker,,publish,Native American Style Flute - Triple,,,attribute_hole=Triple,,
-51013,48428,native-american-style-flute-handcrafted-wooden-melody-maker,,publish,Native American Style Flute - Single Small,,,attribute_hole=Single Small,,
-51014,48428,native-american-style-flute-handcrafted-wooden-melody-maker,,publish,Native American Style Flute - Single Large,,,attribute_hole=Single Large,,
+51041,48428,native-american-style-flute-handcrafted-wooden-melody-maker,,publish,Native American Style Flutes - Double,0,,attribute_type=Double,22500,18500
+51042,48428,native-american-style-flute-handcrafted-wooden-melody-maker,,publish,Native American Style Flutes - Triple,0,,attribute_type=Triple,25500,22500
+51043,48428,native-american-style-flute-handcrafted-wooden-melody-maker,,publish,Native American Style Flutes - Single Small,0,,attribute_type=Single Small,9500,8500
+51044,48428,native-american-style-flute-handcrafted-wooden-melody-maker,,publish,Native American Style Flutes - Single Medium,0,,attribute_type=Single Medium,11500,10250
+51045,48428,native-american-style-flute-handcrafted-wooden-melody-maker,,publish,Native American Style Flutes - Single Large,0,,attribute_type=Single Large,12500,11950
 48760,48512,pulse-tubes,,publish,Pulse Tubes - Big,0,,attribute_size=Big,3250,2850
 48761,48512,pulse-tubes,,publish,Pulse Tubes - Medium,0,,attribute_size=Medium,2350,2150
 48762,48512,pulse-tubes,,publish,Pulse Tubes - Small,0,,attribute_size=Small,1850,1650
@@ -1053,8 +1055,16 @@ id,parent_id,parent_slug,sku,status,title,thumb_id,video,attrs,regular_price,sal
 50552,50549,tuned-pipe,,publish,Tuned Pipes - 432 Hz,0,,attribute_frequency=432 Hz,6200,5800
 50589,50579,wooden-finger-castanet,,publish,Wooden Finger Castanet - White,0,,attribute_colour=White,1250,745
 50590,50579,wooden-finger-castanet,,publish,Wooden Finger Castanet - Black,0,,attribute_colour=Black,1300,795
-50969,50964,wooden-hand-taal-khartal,,publish,Wooden Hand Taal Khartal - Small,0,,attribute_size=Small,500,450
-50970,50964,wooden-hand-taal-khartal,,publish,Wooden Hand Taal Khartal - Medium,0,,attribute_size=Medium,700,650
-50971,50964,wooden-hand-taal-khartal,,publish,Wooden Hand Taal Khartal - Large,0,,attribute_size=Large,3000,2450
+50969,50964,wooden-hand-taal-khartal,,publish,Wooden Hand Khartal/Jingles - Small,0,,attribute_size=Small,500,450
+50970,50964,wooden-hand-taal-khartal,,publish,Wooden Hand Khartal/Jingles - Medium,0,,attribute_size=Medium,700,650
+50971,50964,wooden-hand-taal-khartal,,publish,Wooden Hand Khartal/Jingles - Large,0,,attribute_size=Large,3000,2450
 50997,50995,clay-ocarinas,,publish,Clay Ocarinas - Small,0,,attribute_size=Small,2950,2450
 50998,50995,clay-ocarinas,,publish,Clay Ocarinas - Big,0,,attribute_size=Big,3950,3450
+51284,51283,,,publish,Energy Bar - G Note,0,,attribute_type=G Note,,
+51285,51283,,,publish,Energy Bar - A Note,,,attribute_type=A Note,,
+51286,51283,,,publish,Energy Bar - B Note,,,attribute_type=B Note,,
+51287,51283,,,publish,Energy Bar - C Note,,,attribute_type=C Note,,
+51288,51283,,,publish,Energy Bar - D Note,,,attribute_type=D Note,,
+51289,51283,,,publish,Energy Bar - E Note,,,attribute_type=E Note,,
+51290,51283,,,publish,Energy Bar - F Note,,,attribute_type=F Note,,
+51291,51283,,,publish,Energy Bar - 7 Note Set,0,,attribute_type=7 Note Set,9990,8990
