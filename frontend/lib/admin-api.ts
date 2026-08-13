@@ -1090,6 +1090,7 @@ export type XlSheetRow = {
   hsnCode: string;
   productStatus: string;
   variantStatus: string;
+  pricesFromStaging?: boolean;
 };
 
 export function fetchProductsXlSheet(
@@ -1126,6 +1127,7 @@ export function saveProductsXlSheet(
   return adminFetch<{
     updatedProducts: number;
     updatedVariants: number;
+    updatedStagingPrices: number;
     errors: Array<{ variantId: string; sku: string; error: string }>;
   }>(`/api/admin/products/xl-sheet`, {
     method: "PUT",

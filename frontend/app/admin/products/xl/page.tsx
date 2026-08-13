@@ -310,7 +310,7 @@ export default function ProductsXlSheetPage() {
         setErr(result.errors.map((e) => `${e.sku}: ${e.error}`).slice(0, 8).join(" · "));
       } else {
         setToast({
-          message: `Saved ${result.updatedVariants} variant(s). Storefront prices, names, and stock updated.`
+          message: `Saved. Catalog: ${result.updatedProducts} product(s), ${result.updatedVariants} variant(s). Staging prices: ${result.updatedStagingPrices} SKU(s) — not live on storefront yet.`
         });
       }
       await load();
@@ -366,7 +366,7 @@ export default function ProductsXlSheetPage() {
             Products XL View
           </h1>
           <p style={{ color: "#a8c4b0", fontSize: "12px", marginTop: "2px", marginBottom: 0 }}>
-            Name · Variant · SKU · Qty · India Rupees · USD · Dinar · GBP · HSN — Ctrl+S to save
+            Name · Variant · SKU · Qty · HSN → live catalog · Prices → staging only · Ctrl+S
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

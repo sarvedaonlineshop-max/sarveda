@@ -26,10 +26,7 @@ import { auditSarvedaVariant, computeZohoSyncSummary, listZohoOnlyItems } from "
 import { mirrorStockToZohoForSkus } from "../zoho/zoho-items";
 import type { ZohoItemAuditRow } from "../zoho/zoho-sync-types";
 import { shopCatalogProductWhere, shopInventoryWhere } from "../../utils/shop-catalog";
-import {
-  buildWooCommerceAnalytics,
-  dashboardInsightsFromWarehouse
-} from "./woo-commerce-analytics";
+import { buildZohoDashboardAnalytics, dashboardInsightsFromZoho } from "../zoho/zoho-dashboard-analytics.service";
 
 const revenueStatuses: OrderStatus[] = [
   "PAID",
@@ -255,7 +252,7 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
     const revenueByDayLast30 = buildDailySeriesKolkata(chart30Start, 30, ordersForChart30);
     const revenueByMonthLast12 = buildMonthlySeriesKolkata(now, 12, ordersForChart12m);
 
-    const wooInsights = dashboardInsightsFromWarehouse();
+    const wooInsights = await dashboardInsightsFromZoho();
     if (lowStock.length) {
       wooInsights.tips.unshift(
         `${lowStock.length} active SKU${lowStock.length === 1 ? "" : "s"} ${lowStock.length === 1 ? "is" : "are"} at or below the low-stock threshold — prioritize replenishment.`
@@ -324,9 +321,10 @@ export async function wooProductAnalytics(req: Request, res: Response, next: Nex
       tabRaw === "products"
         ? tabRaw
         : "products";
+    const data = await buildZohoDashboardAnalytics({ from, to, tab });
     res.json({
       success: true,
-      data: buildWooCommerceAnalytics({ from, to, tab })
+      data
     });
   } catch (err) {
     next(err);

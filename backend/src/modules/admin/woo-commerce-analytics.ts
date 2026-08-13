@@ -69,7 +69,7 @@ export type WooWarehouse = {
   customers: WarehouseCustomer[];
 };
 
-type ProductAgg = {
+export type ProductAgg = {
   sku: string;
   productName: string;
   unitsSold: number;
@@ -511,7 +511,7 @@ export function buildWooCommerceAnalytics(query: AnalyticsQuery) {
   };
 }
 
-function buildProductsTips(
+export function buildProductsTips(
   top?: ProductAgg,
   least?: ProductAgg,
   poCount = 0,
@@ -538,7 +538,7 @@ function buildProductsTips(
   return tips.slice(0, 3);
 }
 
-function buildOrdersTips(
+export function buildOrdersTips(
   kpis: { orders: number; aovInr: number; revenueInr: number },
   topOrder?: { orderNumber: string; totalInr: number; customerName: string },
   trend: Array<{ month: string; orders: number }> = []
@@ -562,7 +562,7 @@ function buildOrdersTips(
   return tips.slice(0, 3);
 }
 
-function buildPlacesTips(
+export function buildPlacesTips(
   places: Array<{ city: string; state: string; orderCount: number; totalInr: number }>
 ): string[] {
   const tips: string[] = [];
@@ -582,7 +582,7 @@ function buildPlacesTips(
   return tips.slice(0, 3);
 }
 
-function buildReturnsTips(
+export function buildReturnsTips(
   count: number,
   topItem?: ProductAgg,
   trend: Array<{ month: string; units: number }> = []
@@ -604,7 +604,7 @@ function buildReturnsTips(
   return tips.slice(0, 3);
 }
 
-function buildRefundsTips(
+export function buildRefundsTips(
   count: number,
   amount: number,
   topReason?: { reason: string; count: number }
@@ -621,7 +621,7 @@ function buildRefundsTips(
   return tips.slice(0, 3);
 }
 
-function buildCustomersTips(
+export function buildCustomersTips(
   kpis: { repeatCustomerCount: number; uniqueCustomers: number },
   topBuyer?: { name: string; orderCount: number; totalSpendInr: number },
   visitor?: { name: string; email: string; lastActive: string },

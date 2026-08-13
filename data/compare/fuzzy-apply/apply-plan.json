@@ -1,0 +1,1974 @@
+[
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "YO-MMS-O",
+    "from": {
+      "productName": "Macrame Yoga Mat Straps",
+      "variantName": "Orange",
+      "sku": "YO-MMS-O"
+    },
+    "to": {
+      "productName": "Macrame Yoga Mat Straps",
+      "variantName": "Yellow",
+      "sku": "YO-MMS-O"
+    },
+    "row": {
+      "productId": "17873bf6-064a-4bce-9ea7-b6f29a17fecc",
+      "variantId": "78ec2f18-0d07-43d6-834d-05899bf7d03f",
+      "productName": "Macrame Yoga Mat Straps",
+      "variantName": "Yellow",
+      "sku": "YO-MMS-O",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 76000,
+      "saleInPaise": 58500,
+      "mrpUsdCents": 1030,
+      "saleUsdCents": 920,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 1030,
+      "saleGbpPence": 920,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "YO-BR-RD-RP",
+    "from": {
+      "productName": "Round Yoga Bolster",
+      "variantName": "Rogue Pink",
+      "sku": "YO-BR-RD-RP"
+    },
+    "to": {
+      "productName": "Round Yoga Bolster",
+      "variantName": "Rouge Pink",
+      "sku": "YO-BR-RD-RP"
+    },
+    "row": {
+      "productId": "9af3503f-afb3-44ef-bd81-bfb243b10897",
+      "variantId": "96d4eb9f-bb0f-4577-9733-48b5b85a9b86",
+      "productName": "Round Yoga Bolster",
+      "variantName": "Rouge Pink",
+      "sku": "YO-BR-RD-RP",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 175500,
+      "saleInPaise": 155000,
+      "mrpUsdCents": 2370,
+      "saleUsdCents": 2110,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 2370,
+      "saleGbpPence": 2110,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name adapt from sheet, vairant same, Sku same",
+    "db_sku": "MI-GP-ET-B",
+    "from": {
+      "productName": "Shruthi Thali/Gong Plates \u2013 Etched",
+      "variantName": "B Plate",
+      "sku": "MI-GP-ET-B"
+    },
+    "to": {
+      "productName": "Gong Plates/Shruti Plates Etched",
+      "variantName": "B Plate",
+      "sku": "MI-GP-ET-B"
+    },
+    "row": {
+      "productId": "be9340fb-3d2c-455b-897d-37825eec55d4",
+      "variantId": "0fb70b8c-8d14-4ca0-8e37-dc37159a127b",
+      "productName": "Gong Plates/Shruti Plates Etched",
+      "variantName": "B Plate",
+      "sku": "MI-GP-ET-B",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 935000,
+      "saleInPaise": 835000,
+      "mrpUsdCents": 3500,
+      "saleUsdCents": 2500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 3500,
+      "saleGbpPence": 2500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name adapt from sheet, vairant same, Sku same",
+    "db_sku": "MI-GP-ET-A",
+    "from": {
+      "productName": "Shruthi Thali/Gong Plates \u2013 Etched",
+      "variantName": "A Plate",
+      "sku": "MI-GP-ET-A"
+    },
+    "to": {
+      "productName": "Gong Plates/Shruti Plates Etched",
+      "variantName": "A Plate",
+      "sku": "MI-GP-ET-A"
+    },
+    "row": {
+      "productId": "be9340fb-3d2c-455b-897d-37825eec55d4",
+      "variantId": "5947dc7e-9d1c-45fd-b4db-8176f9b52d1f",
+      "productName": "Gong Plates/Shruti Plates Etched",
+      "variantName": "A Plate",
+      "sku": "MI-GP-ET-A",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 995000,
+      "saleInPaise": 895000,
+      "mrpUsdCents": 3500,
+      "saleUsdCents": 2500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 3500,
+      "saleGbpPence": 2500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name adapt from sheet, vairant same, Sku same",
+    "db_sku": "MI-GP-ET-G",
+    "from": {
+      "productName": "Shruthi Thali/Gong Plates \u2013 Etched",
+      "variantName": "G Plate",
+      "sku": "MI-GP-ET-G"
+    },
+    "to": {
+      "productName": "Gong Plates/Shruti Plates Etched",
+      "variantName": "G Plate",
+      "sku": "MI-GP-ET-G"
+    },
+    "row": {
+      "productId": "be9340fb-3d2c-455b-897d-37825eec55d4",
+      "variantId": "1ff3eb48-c3fe-405c-b1cb-0483f083bb3b",
+      "productName": "Gong Plates/Shruti Plates Etched",
+      "variantName": "G Plate",
+      "sku": "MI-GP-ET-G",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 1075000,
+      "saleInPaise": 975000,
+      "mrpUsdCents": 3500,
+      "saleUsdCents": 2500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 3500,
+      "saleGbpPence": 2500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name adapt from sheet, vairant same, Sku same",
+    "db_sku": "MI-GP-ET-F",
+    "from": {
+      "productName": "Shruthi Thali/Gong Plates \u2013 Etched",
+      "variantName": "F Plate",
+      "sku": "MI-GP-ET-F"
+    },
+    "to": {
+      "productName": "Gong Plates/Shruti Plates Etched",
+      "variantName": "F Plate",
+      "sku": "MI-GP-ET-F"
+    },
+    "row": {
+      "productId": "be9340fb-3d2c-455b-897d-37825eec55d4",
+      "variantId": "0c99d0e5-74e4-4618-a107-6e5821d91140",
+      "productName": "Gong Plates/Shruti Plates Etched",
+      "variantName": "F Plate",
+      "sku": "MI-GP-ET-F",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 1155000,
+      "saleInPaise": 1055000,
+      "mrpUsdCents": 3500,
+      "saleUsdCents": 2500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 3500,
+      "saleGbpPence": 2500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name adapt from sheet, vairant same, Sku same",
+    "db_sku": "MI-GP-ET-E",
+    "from": {
+      "productName": "Shruthi Thali/Gong Plates \u2013 Etched",
+      "variantName": "E Plate",
+      "sku": "MI-GP-ET-E"
+    },
+    "to": {
+      "productName": "Gong Plates/Shruti Plates Etched",
+      "variantName": "E Plate",
+      "sku": "MI-GP-ET-E"
+    },
+    "row": {
+      "productId": "be9340fb-3d2c-455b-897d-37825eec55d4",
+      "variantId": "e6a1cf4d-fa5d-426a-82a0-dc55900d1e34",
+      "productName": "Gong Plates/Shruti Plates Etched",
+      "variantName": "E Plate",
+      "sku": "MI-GP-ET-E",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 1225000,
+      "saleInPaise": 1125000,
+      "mrpUsdCents": 3500,
+      "saleUsdCents": 2500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 3500,
+      "saleGbpPence": 2500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name adapt from sheet, vairant same, Sku same",
+    "db_sku": "MI-GP-ET-D",
+    "from": {
+      "productName": "Shruthi Thali/Gong Plates \u2013 Etched",
+      "variantName": "D Plate",
+      "sku": "MI-GP-ET-D"
+    },
+    "to": {
+      "productName": "Gong Plates/Shruti Plates Etched",
+      "variantName": "D Plate",
+      "sku": "MI-GP-ET-D"
+    },
+    "row": {
+      "productId": "be9340fb-3d2c-455b-897d-37825eec55d4",
+      "variantId": "c40c7ea4-92bf-4abc-b929-ca5739a6436f",
+      "productName": "Gong Plates/Shruti Plates Etched",
+      "variantName": "D Plate",
+      "sku": "MI-GP-ET-D",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 1385000,
+      "saleInPaise": 1285000,
+      "mrpUsdCents": 3500,
+      "saleUsdCents": 2500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 3500,
+      "saleGbpPence": 2500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name adapt from sheet, vairant same, Sku same",
+    "db_sku": "MI-GP-ET-C",
+    "from": {
+      "productName": "Shruthi Thali/Gong Plates \u2013 Etched",
+      "variantName": "C Plate",
+      "sku": "MI-GP-ET-C"
+    },
+    "to": {
+      "productName": "Gong Plates/Shruti Plates Etched",
+      "variantName": "C Plate",
+      "sku": "MI-GP-ET-C"
+    },
+    "row": {
+      "productId": "be9340fb-3d2c-455b-897d-37825eec55d4",
+      "variantId": "8e70f663-2958-48fe-bfba-94f742fb999b",
+      "productName": "Gong Plates/Shruti Plates Etched",
+      "variantName": "C Plate",
+      "sku": "MI-GP-ET-C",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 1555000,
+      "saleInPaise": 1455000,
+      "mrpUsdCents": 3500,
+      "saleUsdCents": 2500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 3500,
+      "saleGbpPence": 2500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name adapt from sheet, vairant same, Sku same",
+    "db_sku": "MI-GP-ET-SET7",
+    "from": {
+      "productName": "Shruthi Thali/Gong Plates \u2013 Etched",
+      "variantName": "Full Set",
+      "sku": "MI-GP-ET-SET7"
+    },
+    "to": {
+      "productName": "Gong Plates/Shruti Plates Etched",
+      "variantName": "Full Set",
+      "sku": "MI-GP-ET-SET7"
+    },
+    "row": {
+      "productId": "be9340fb-3d2c-455b-897d-37825eec55d4",
+      "variantId": "122e4b4b-4c0d-4e6e-b809-c9076664731d",
+      "productName": "Gong Plates/Shruti Plates Etched",
+      "variantName": "Full Set",
+      "sku": "MI-GP-ET-SET7",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 8550000,
+      "saleInPaise": 7550000,
+      "mrpUsdCents": 3500,
+      "saleUsdCents": 2500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 3500,
+      "saleGbpPence": 2500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-B-8",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "8 in / Buddha",
+      "sku": "MI-SB-HM-ET-B-8"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Buddha / 8in",
+      "sku": "MI-SB-HM-ET-B-8"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "d59441d8-8e28-4cbb-880c-a4e0e8215dee",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Buddha / 8in",
+      "sku": "MI-SB-HM-ET-B-8",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 1885000,
+      "saleInPaise": 1450000,
+      "mrpUsdCents": 25200,
+      "saleUsdCents": 22500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 25200,
+      "saleGbpPence": 22500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-SG-8",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "8 in / Sacred Geometry",
+      "sku": "MI-SB-HM-ET-SG-8"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Sacred Geometry / 8in",
+      "sku": "MI-SB-HM-ET-SG-8"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "573ceb44-83ad-403a-8308-4260c5846385",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Sacred Geometry / 8in",
+      "sku": "MI-SB-HM-ET-SG-8",
+      "qty": 999,
+      "costInPaise": null,
+      "mrpInPaise": 1625000,
+      "saleInPaise": 1250000,
+      "mrpUsdCents": 21840,
+      "saleUsdCents": 19500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 21840,
+      "saleGbpPence": 19500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-GF-8",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "8 in / Golden Feet",
+      "sku": "MI-SB-HM-ET-GF-8"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Golden Feet / 8in",
+      "sku": "MI-SB-HM-ET-GF-8"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "ad89a608-7f00-4a65-ae34-20ac338ba836",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Golden Feet / 8in",
+      "sku": "MI-SB-HM-ET-GF-8",
+      "qty": 999,
+      "costInPaise": null,
+      "mrpInPaise": 1885000,
+      "saleInPaise": 1450000,
+      "mrpUsdCents": 25200,
+      "saleUsdCents": 22500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 25200,
+      "saleGbpPence": 22500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-BE-6",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "6 in / Buddhas Eyes",
+      "sku": "MI-SB-HM-ET-BE-6"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Buddhas Eyes / 6in",
+      "sku": "MI-SB-HM-ET-BE-6"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "af21960e-a77b-4c39-b71b-0fef6a5572f2",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Buddhas Eyes / 6in",
+      "sku": "MI-SB-HM-ET-BE-6",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 1105000,
+      "saleInPaise": 850000,
+      "mrpUsdCents": 15120,
+      "saleUsdCents": 13500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 15120,
+      "saleGbpPence": 13500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-BE-7",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "7 in / Buddhas Eyes",
+      "sku": "MI-SB-HM-ET-BE-7"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Buddhas Eyes / 7in",
+      "sku": "MI-SB-HM-ET-BE-7"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "3844083e-477d-4bee-b988-ba9b9a168360",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Buddhas Eyes / 7in",
+      "sku": "MI-SB-HM-ET-BE-7",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 1365000,
+      "saleInPaise": 1050000,
+      "mrpUsdCents": 17810,
+      "saleUsdCents": 15900,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 17810,
+      "saleGbpPence": 15900,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-BE-8",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "8 in / Buddhas Eyes",
+      "sku": "MI-SB-HM-ET-BE-8"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Buddhas Eyes / 8in",
+      "sku": "MI-SB-HM-ET-BE-8"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "5b949a87-5efd-4ce2-ab07-a00fa9d8b7ee",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Buddhas Eyes / 8in",
+      "sku": "MI-SB-HM-ET-BE-8",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 1625000,
+      "saleInPaise": 1250000,
+      "mrpUsdCents": 21840,
+      "saleUsdCents": 19500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 21840,
+      "saleGbpPence": 19500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-BE-12",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "12 in / Buddhas Eyes",
+      "sku": "MI-SB-HM-ET-BE-12"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Buddhas Eyes /12in",
+      "sku": "MI-SB-HM-ET-BE-12"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "bfc8eb9a-a4db-494b-a772-39ca446e91b6",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Buddhas Eyes /12in",
+      "sku": "MI-SB-HM-ET-BE-12",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 2925000,
+      "saleInPaise": 2250000,
+      "mrpUsdCents": 36400,
+      "saleUsdCents": 32500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 36400,
+      "saleGbpPence": 32500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-BE-13",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "13 in / Buddhas Eyes",
+      "sku": "MI-SB-HM-ET-BE-13"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Buddhas Eyes /13in",
+      "sku": "MI-SB-HM-ET-BE-13"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "921497c0-8b39-4960-b992-599f1783165d",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Buddhas Eyes /13in",
+      "sku": "MI-SB-HM-ET-BE-13",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 2535000,
+      "saleInPaise": 1950000,
+      "mrpUsdCents": 33040,
+      "saleUsdCents": 29500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 33040,
+      "saleGbpPence": 29500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-C-6",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "6 in / Chakras",
+      "sku": "MI-SB-HM-ET-C-6"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Chakras / 6in",
+      "sku": "MI-SB-HM-ET-C-6"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "285b6cb8-f6d4-4635-a607-19f30800a7be",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Chakras / 6in",
+      "sku": "MI-SB-HM-ET-C-6",
+      "qty": 999,
+      "costInPaise": null,
+      "mrpInPaise": 1365000,
+      "saleInPaise": 1050000,
+      "mrpUsdCents": 16690,
+      "saleUsdCents": 14900,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 16690,
+      "saleGbpPence": 14900,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-C-7",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "7 in / Chakras",
+      "sku": "MI-SB-HM-ET-C-7"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Chakras / 7in",
+      "sku": "MI-SB-HM-ET-C-7"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "3ae602c2-50a7-4f71-8314-72eca7d52cb5",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Chakras / 7in",
+      "sku": "MI-SB-HM-ET-C-7",
+      "qty": 999,
+      "costInPaise": null,
+      "mrpInPaise": 1625000,
+      "saleInPaise": 1250000,
+      "mrpUsdCents": 21170,
+      "saleUsdCents": 18900,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 21170,
+      "saleGbpPence": 18900,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-C-8",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "8 in / Chakras",
+      "sku": "MI-SB-HM-ET-C-8"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Chakras / 8in",
+      "sku": "MI-SB-HM-ET-C-8"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "a2b8aa0a-1ca2-408e-ba7c-9b923f15ed75",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Chakras / 8in",
+      "sku": "MI-SB-HM-ET-C-8",
+      "qty": 999,
+      "costInPaise": null,
+      "mrpInPaise": 1885000,
+      "saleInPaise": 1450000,
+      "mrpUsdCents": 25200,
+      "saleUsdCents": 22500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 25200,
+      "saleGbpPence": 22500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-C-9",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "9 in / Chakras",
+      "sku": "MI-SB-HM-ET-C-9"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Chakras / 9in",
+      "sku": "MI-SB-HM-ET-C-9"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "efd2de8a-8aad-4af2-8da3-293ad49b6402",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Chakras / 9in",
+      "sku": "MI-SB-HM-ET-C-9",
+      "qty": 999,
+      "costInPaise": null,
+      "mrpInPaise": 2145000,
+      "saleInPaise": 1650000,
+      "mrpUsdCents": 28000,
+      "saleUsdCents": 25000,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 28000,
+      "saleGbpPence": 25000,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-C-10",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "10 in / Chakras",
+      "sku": "MI-SB-HM-ET-C-10"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Chakras / 10in",
+      "sku": "MI-SB-HM-ET-C-10"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "cbf81fd1-f9be-45c4-9bb2-00748583d8c3",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Chakras / 10in",
+      "sku": "MI-SB-HM-ET-C-10",
+      "qty": 999,
+      "costInPaise": null,
+      "mrpInPaise": 2405000,
+      "saleInPaise": 1850000,
+      "mrpUsdCents": 30800,
+      "saleUsdCents": 27500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 30800,
+      "saleGbpPence": 27500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-C-12",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "12 in / Chakras",
+      "sku": "MI-SB-HM-ET-C-12"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Chakras / 12in",
+      "sku": "MI-SB-HM-ET-C-12"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "d164fa34-07bb-4a3c-ba51-2f9eda058d99",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Chakras / 12in",
+      "sku": "MI-SB-HM-ET-C-12",
+      "qty": 999,
+      "costInPaise": null,
+      "mrpInPaise": 3185000,
+      "saleInPaise": 2450000,
+      "mrpUsdCents": 38640,
+      "saleUsdCents": 34500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 38640,
+      "saleGbpPence": 34500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-C-13",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "13 in / Chakras",
+      "sku": "MI-SB-HM-ET-C-13"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Chakras / 13in",
+      "sku": "MI-SB-HM-ET-C-13"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "b62d139b-7b09-4655-8361-fe04964c5ce3",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Chakras / 13in",
+      "sku": "MI-SB-HM-ET-C-13",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 2795000,
+      "saleInPaise": 2150000,
+      "mrpUsdCents": 35280,
+      "saleUsdCents": 31500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 35280,
+      "saleGbpPence": 31500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-DJ-8",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "8 in / Dorje",
+      "sku": "MI-SB-HM-ET-DJ-8"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Dorje / 8in",
+      "sku": "MI-SB-HM-ET-DJ-8"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "d685821d-10a7-49e4-b65d-f5fe4a4daff8",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Dorje / 8in",
+      "sku": "MI-SB-HM-ET-DJ-8",
+      "qty": 999,
+      "costInPaise": null,
+      "mrpInPaise": 1625000,
+      "saleInPaise": 1250000,
+      "mrpUsdCents": 21840,
+      "saleUsdCents": 19500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 21840,
+      "saleGbpPence": 19500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-FL-8",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "8 in / Flower of Life",
+      "sku": "MI-SB-HM-ET-FL-8"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Flower of Life / 8in",
+      "sku": "MI-SB-HM-ET-FL-8"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "58c5b197-ac02-44b4-87c3-6cdac7bc8bed",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Flower of Life / 8in",
+      "sku": "MI-SB-HM-ET-FL-8",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 1625000,
+      "saleInPaise": 1250000,
+      "mrpUsdCents": 21840,
+      "saleUsdCents": 19500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 21840,
+      "saleGbpPence": 19500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-OM-6",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "6 in / Om",
+      "sku": "MI-SB-HM-ET-OM-6"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Om / 6in",
+      "sku": "MI-SB-HM-ET-OM-6"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "074885a4-26d6-4ad3-89f7-cdee2cde573c",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Om / 6in",
+      "sku": "MI-SB-HM-ET-OM-6",
+      "qty": 999,
+      "costInPaise": null,
+      "mrpInPaise": 1105000,
+      "saleInPaise": 850000,
+      "mrpUsdCents": 15120,
+      "saleUsdCents": 13500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 15120,
+      "saleGbpPence": 13500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-OM-7",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "7 in / Om",
+      "sku": "MI-SB-HM-ET-OM-7"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Om / 7in",
+      "sku": "MI-SB-HM-ET-OM-7"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "b224ac31-ec21-4b7c-9700-4ad923adf674",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Om / 7in",
+      "sku": "MI-SB-HM-ET-OM-7",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 1365000,
+      "saleInPaise": 1050000,
+      "mrpUsdCents": 17810,
+      "saleUsdCents": 15900,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 17810,
+      "saleGbpPence": 15900,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-OM-8",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "8 in / Om",
+      "sku": "MI-SB-HM-ET-OM-8"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Om / 8in",
+      "sku": "MI-SB-HM-ET-OM-8"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "ee8801df-5560-4318-9684-64a26eed4aba",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Om / 8in",
+      "sku": "MI-SB-HM-ET-OM-8",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 1625000,
+      "saleInPaise": 1250000,
+      "mrpUsdCents": 21840,
+      "saleUsdCents": 19500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 21840,
+      "saleGbpPence": 19500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-OM-9",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "9 in / Om",
+      "sku": "MI-SB-HM-ET-OM-9"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Om / 9in",
+      "sku": "MI-SB-HM-ET-OM-9"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "6763112e-a3b3-41ce-869a-39d748a7da22",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Om / 9in",
+      "sku": "MI-SB-HM-ET-OM-9",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 1885000,
+      "saleInPaise": 1450000,
+      "mrpUsdCents": 25200,
+      "saleUsdCents": 22500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 25200,
+      "saleGbpPence": 22500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-OM-10",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "10 in / Om",
+      "sku": "MI-SB-HM-ET-OM-10"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Om / 10in",
+      "sku": "MI-SB-HM-ET-OM-10"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "bd3fc6fd-b248-4d06-9d1e-5b18f96d716c",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Om / 10in",
+      "sku": "MI-SB-HM-ET-OM-10",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 2145000,
+      "saleInPaise": 1650000,
+      "mrpUsdCents": 28000,
+      "saleUsdCents": 25000,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 28000,
+      "saleGbpPence": 25000,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-OM-12",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "12 in / Om",
+      "sku": "MI-SB-HM-ET-OM-12"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Om / 12in",
+      "sku": "MI-SB-HM-ET-OM-12"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "12949866-a47a-4753-af4c-faa222fd74bf",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Om / 12in",
+      "sku": "MI-SB-HM-ET-OM-12",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 2925000,
+      "saleInPaise": 2250000,
+      "mrpUsdCents": 36400,
+      "saleUsdCents": 32500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 36400,
+      "saleGbpPence": 32500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-OM-13",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "13 in / Om",
+      "sku": "MI-SB-HM-ET-OM-13"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Om / 13in",
+      "sku": "MI-SB-HM-ET-OM-13"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "aab52f5f-9db1-434e-8d5f-62e0a255a026",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Om / 13in",
+      "sku": "MI-SB-HM-ET-OM-13",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 2535000,
+      "saleInPaise": 1950000,
+      "mrpUsdCents": 33040,
+      "saleUsdCents": 29500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 33040,
+      "saleGbpPence": 29500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-T-8",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "8 in / Tara",
+      "sku": "MI-SB-HM-ET-T-8"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Tara / 8in",
+      "sku": "MI-SB-HM-ET-T-8"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "49b60df0-36ca-4fcc-a5e0-4d2aee73aaf0",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Tara / 8in",
+      "sku": "MI-SB-HM-ET-T-8",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 1885000,
+      "saleInPaise": 1450000,
+      "mrpUsdCents": 25200,
+      "saleUsdCents": 22500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 25200,
+      "saleGbpPence": 22500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-YY-8",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "8 in / Yin Yang",
+      "sku": "MI-SB-HM-ET-YY-8"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Yin Yang / 8in",
+      "sku": "MI-SB-HM-ET-YY-8"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "17b52f55-4e90-494e-aaa5-74a117829999",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Yin Yang / 8in",
+      "sku": "MI-SB-HM-ET-YY-8",
+      "qty": 999,
+      "costInPaise": null,
+      "mrpInPaise": 1625000,
+      "saleInPaise": 1250000,
+      "mrpUsdCents": 21840,
+      "saleUsdCents": 19500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 21840,
+      "saleGbpPence": 19500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-M-6",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "6 in / Mantra",
+      "sku": "MI-SB-HM-ET-M-6"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Mantra / 6in",
+      "sku": "MI-SB-HM-ET-M-6"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "1cdb2986-21a6-477e-a438-6c897b31fcda",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Mantra / 6in",
+      "sku": "MI-SB-HM-ET-M-6",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 1365000,
+      "saleInPaise": 1050000,
+      "mrpUsdCents": 16690,
+      "saleUsdCents": 14900,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 16690,
+      "saleGbpPence": 14900,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-M-7",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "7 in / Mantra",
+      "sku": "MI-SB-HM-ET-M-7"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Mantra / 7in",
+      "sku": "MI-SB-HM-ET-M-7"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "666c92f2-1866-4eab-8575-828d75878899",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Mantra / 7in",
+      "sku": "MI-SB-HM-ET-M-7",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 1625000,
+      "saleInPaise": 1250000,
+      "mrpUsdCents": 21170,
+      "saleUsdCents": 18900,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 21170,
+      "saleGbpPence": 18900,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-M-8",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "8 in / Mantra",
+      "sku": "MI-SB-HM-ET-M-8"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Mantra / 8in",
+      "sku": "MI-SB-HM-ET-M-8"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "92069416-fc29-4b81-822b-28a678a0779c",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Mantra / 8in",
+      "sku": "MI-SB-HM-ET-M-8",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 1885000,
+      "saleInPaise": 1450000,
+      "mrpUsdCents": 25200,
+      "saleUsdCents": 22500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 25200,
+      "saleGbpPence": 22500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-M-9",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "9 in / Mantra",
+      "sku": "MI-SB-HM-ET-M-9"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Mantra / 9in",
+      "sku": "MI-SB-HM-ET-M-9"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "9713c6d9-9032-4aa8-a78b-8fb6e5140133",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Mantra / 9in",
+      "sku": "MI-SB-HM-ET-M-9",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 2145000,
+      "saleInPaise": 1650000,
+      "mrpUsdCents": 28000,
+      "saleUsdCents": 25000,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 28000,
+      "saleGbpPence": 25000,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-M-10",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "10 in / Mantra",
+      "sku": "MI-SB-HM-ET-M-10"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Mantra / 10in",
+      "sku": "MI-SB-HM-ET-M-10"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "5a7075df-663e-4fc2-8c9e-c574509d53b6",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Mantra / 10in",
+      "sku": "MI-SB-HM-ET-M-10",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 2405000,
+      "saleInPaise": 1850000,
+      "mrpUsdCents": 30800,
+      "saleUsdCents": 27500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 30800,
+      "saleGbpPence": 27500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-M-12",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "12 in / Mantra",
+      "sku": "MI-SB-HM-ET-M-12"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Mantra / 12in",
+      "sku": "MI-SB-HM-ET-M-12"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "15e7fcf4-91ca-463c-905f-762997d737ea",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Mantra / 12in",
+      "sku": "MI-SB-HM-ET-M-12",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 3185000,
+      "saleInPaise": 2450000,
+      "mrpUsdCents": 38640,
+      "saleUsdCents": 34500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 38640,
+      "saleGbpPence": 34500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-ET-M-13",
+    "from": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "13 in / Mantra",
+      "sku": "MI-SB-HM-ET-M-13"
+    },
+    "to": {
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Mantra / 13in",
+      "sku": "MI-SB-HM-ET-M-13"
+    },
+    "row": {
+      "productId": "cdaa4e4f-697b-4efa-9576-e3f8fea5740f",
+      "variantId": "a808f63a-fb8f-4969-bce0-342f034a0a9f",
+      "productName": "Etched Handmade Singing Bowls",
+      "variantName": "Mantra / 13in",
+      "sku": "MI-SB-HM-ET-M-13",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 2795000,
+      "saleInPaise": 2150000,
+      "mrpUsdCents": 35280,
+      "saleUsdCents": 31500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 35280,
+      "saleGbpPence": 31500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-ME-ET-20",
+    "from": {
+      "productName": "Extra Large Meridian Singing Bowls",
+      "variantName": "20 in / Etched",
+      "sku": "MI-SB-ME-ET-20"
+    },
+    "to": {
+      "productName": "Extra Large Meridian Singing Bowls",
+      "variantName": "Etched / 20in",
+      "sku": "MI-SB-ME-ET-20"
+    },
+    "row": {
+      "productId": "ec0c53e8-737d-4d26-85ff-c1db9005e692",
+      "variantId": "f560a695-8be1-4589-a69f-7beda4d6e4f5",
+      "productName": "Extra Large Meridian Singing Bowls",
+      "variantName": "Etched / 20in",
+      "sku": "MI-SB-ME-ET-20",
+      "qty": 999,
+      "costInPaise": null,
+      "mrpInPaise": 8350000,
+      "saleInPaise": 7950000,
+      "mrpUsdCents": 99500,
+      "saleUsdCents": 89500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 99500,
+      "saleGbpPence": 89500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-ME-ET-22",
+    "from": {
+      "productName": "Extra Large Meridian Singing Bowls",
+      "variantName": "22 in / Etched",
+      "sku": "MI-SB-ME-ET-22"
+    },
+    "to": {
+      "productName": "Extra Large Meridian Singing Bowls",
+      "variantName": "Etched / 22in",
+      "sku": "MI-SB-ME-ET-22"
+    },
+    "row": {
+      "productId": "ec0c53e8-737d-4d26-85ff-c1db9005e692",
+      "variantId": "dfc69f0f-ee0d-4879-a716-d8e35ee55c5f",
+      "productName": "Extra Large Meridian Singing Bowls",
+      "variantName": "Etched / 22in",
+      "sku": "MI-SB-ME-ET-22",
+      "qty": 999,
+      "costInPaise": null,
+      "mrpInPaise": 10500000,
+      "saleInPaise": 9750000,
+      "mrpUsdCents": 129500,
+      "saleUsdCents": 119500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 129500,
+      "saleGbpPence": 119500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-ME-ET-23",
+    "from": {
+      "productName": "Extra Large Meridian Singing Bowls",
+      "variantName": "23 In / Etched",
+      "sku": "MI-SB-ME-ET-23"
+    },
+    "to": {
+      "productName": "Extra Large Meridian Singing Bowls",
+      "variantName": "Etched / 23in",
+      "sku": "MI-SB-ME-ET-23"
+    },
+    "row": {
+      "productId": "ec0c53e8-737d-4d26-85ff-c1db9005e692",
+      "variantId": "b3a8e143-c9f8-4a85-9ff6-77ec02334b0f",
+      "productName": "Extra Large Meridian Singing Bowls",
+      "variantName": "Etched / 23in",
+      "sku": "MI-SB-ME-ET-23",
+      "qty": 999,
+      "costInPaise": null,
+      "mrpInPaise": 11750000,
+      "saleInPaise": 11450000,
+      "mrpUsdCents": 144500,
+      "saleUsdCents": 134500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 144500,
+      "saleGbpPence": 134500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-ME-ET-24",
+    "from": {
+      "productName": "Extra Large Meridian Singing Bowls",
+      "variantName": "24 in / Etched",
+      "sku": "MI-SB-ME-ET-24"
+    },
+    "to": {
+      "productName": "Extra Large Meridian Singing Bowls",
+      "variantName": "Etched /24in",
+      "sku": "MI-SB-ME-ET-24"
+    },
+    "row": {
+      "productId": "ec0c53e8-737d-4d26-85ff-c1db9005e692",
+      "variantId": "4ad322ca-0507-40d5-bd30-01a1408cdfb3",
+      "productName": "Extra Large Meridian Singing Bowls",
+      "variantName": "Etched /24in",
+      "sku": "MI-SB-ME-ET-24",
+      "qty": 999,
+      "costInPaise": null,
+      "mrpInPaise": 13250000,
+      "saleInPaise": 12950000,
+      "mrpUsdCents": 159500,
+      "saleUsdCents": 149500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 159500,
+      "saleGbpPence": 149500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-8",
+    "from": {
+      "productName": "Handmade Singing Bowls - All Sizes",
+      "variantName": "8 in / Matte",
+      "sku": "MI-SB-HM-8"
+    },
+    "to": {
+      "productName": "Handmade Singing Bowls - All Sizes",
+      "variantName": "Matte / 8in",
+      "sku": "MI-SB-HM-8"
+    },
+    "row": {
+      "productId": "0a80b02e-4e90-4e14-a5f6-ae83c145aae2",
+      "variantId": "7ffa2856-17f7-402c-b622-3e2adbfeedc9",
+      "productName": "Handmade Singing Bowls - All Sizes",
+      "variantName": "Matte / 8in",
+      "sku": "MI-SB-HM-8",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 925000,
+      "saleInPaise": 825000,
+      "mrpUsdCents": 12900,
+      "saleUsdCents": 10900,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 12900,
+      "saleGbpPence": 10900,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SB-HM-13",
+    "from": {
+      "productName": "Handmade Singing Bowls - All Sizes",
+      "variantName": "13 in / Matte",
+      "sku": "MI-SB-HM-13"
+    },
+    "to": {
+      "productName": "Handmade Singing Bowls - All Sizes",
+      "variantName": "Matte / 13in",
+      "sku": "MI-SB-HM-13"
+    },
+    "row": {
+      "productId": "0a80b02e-4e90-4e14-a5f6-ae83c145aae2",
+      "variantId": "bafe6dbe-8464-4226-8e06-3af1cb0e2599",
+      "productName": "Handmade Singing Bowls - All Sizes",
+      "variantName": "Matte / 13in",
+      "sku": "MI-SB-HM-13",
+      "qty": 999,
+      "costInPaise": null,
+      "mrpInPaise": 1465000,
+      "saleInPaise": 1365000,
+      "mrpUsdCents": 17900,
+      "saleUsdCents": 15900,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 17900,
+      "saleGbpPence": 15900,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "product name same, vairant adapt from sheet, Sku same",
+    "db_sku": "MI-SBC-B-20",
+    "from": {
+      "productName": "Singing Bowls Silk Ring Cushion Accessories",
+      "variantName": "Blue / 18cms",
+      "sku": "MI-SBC-B-20"
+    },
+    "to": {
+      "productName": "Singing Bowls Silk Ring Cushion Accessories",
+      "variantName": "Blue / 20cms",
+      "sku": "MI-SBC-B-20"
+    },
+    "row": {
+      "productId": "8973a710-7663-4804-bdbb-34737729e1f3",
+      "variantId": "3b611533-ef0e-4684-ba59-fb13c4391af7",
+      "productName": "Singing Bowls Silk Ring Cushion Accessories",
+      "variantName": "Blue / 20cms",
+      "sku": "MI-SBC-B-20",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 89500,
+      "saleInPaise": 79500,
+      "mrpUsdCents": 1230,
+      "saleUsdCents": 1030,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 1230,
+      "saleGbpPence": 1030,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "adapt sheet product name, vairant same, Sku same",
+    "db_sku": "MI-NF-T",
+    "from": {
+      "productName": "Native American Style Flutes",
+      "variantName": "Triple",
+      "sku": "MI-NF-T"
+    },
+    "to": {
+      "productName": "Native American Flute - Triple",
+      "variantName": "Triple",
+      "sku": "MI-NF-T"
+    },
+    "row": {
+      "productId": "c35b829e-612d-4c10-9d37-616a7a4a9763",
+      "variantId": "cc5da362-93bb-41fb-8e5c-16db1e0dd26e",
+      "productName": "Native American Flute - Triple",
+      "variantName": "Triple",
+      "sku": "MI-NF-T",
+      "qty": 997,
+      "costInPaise": null,
+      "mrpInPaise": 1990000,
+      "saleInPaise": 1790000,
+      "mrpUsdCents": 25000,
+      "saleUsdCents": 19000,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 25000,
+      "saleGbpPence": 19000,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "adapt sheet product name, vairant same, Sku same",
+    "db_sku": "MI-NF-D",
+    "from": {
+      "productName": "Native American Style Flutes",
+      "variantName": "Double",
+      "sku": "MI-NF-D"
+    },
+    "to": {
+      "productName": "Native American Flute - Double",
+      "variantName": "Double",
+      "sku": "MI-NF-D"
+    },
+    "row": {
+      "productId": "c35b829e-612d-4c10-9d37-616a7a4a9763",
+      "variantId": "aedbda60-fa67-448b-ab33-a65cf14c1b5f",
+      "productName": "Native American Flute - Double",
+      "variantName": "Double",
+      "sku": "MI-NF-D",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 2250000,
+      "saleInPaise": 1850000,
+      "mrpUsdCents": 3500,
+      "saleUsdCents": 2500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 3500,
+      "saleGbpPence": 2500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "adapt sheet product name, vairant same, Sku same",
+    "db_sku": "MI-NF-S-L",
+    "from": {
+      "productName": "Native American Style Flutes",
+      "variantName": "Single Large",
+      "sku": "MI-NF-S-L"
+    },
+    "to": {
+      "productName": "Native American Flute - Single Large",
+      "variantName": "Single Large",
+      "sku": "MI-NF-S-L"
+    },
+    "row": {
+      "productId": "c35b829e-612d-4c10-9d37-616a7a4a9763",
+      "variantId": "95c55410-323e-4cbe-b0f9-930bdc5793a9",
+      "productName": "Native American Flute - Single Large",
+      "variantName": "Single Large",
+      "sku": "MI-NF-S-L",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 1250000,
+      "saleInPaise": 1195000,
+      "mrpUsdCents": 3500,
+      "saleUsdCents": 2500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 3500,
+      "saleGbpPence": 2500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "adapt sheet product name, vairant same, Sku same",
+    "db_sku": "MI-NF-S-M",
+    "from": {
+      "productName": "Native American Style Flutes",
+      "variantName": "Single Medium",
+      "sku": "MI-NF-S-M"
+    },
+    "to": {
+      "productName": "Native American Flute - Single Medium",
+      "variantName": "Single Medium",
+      "sku": "MI-NF-S-M"
+    },
+    "row": {
+      "productId": "c35b829e-612d-4c10-9d37-616a7a4a9763",
+      "variantId": "8eccf135-3a0a-4e18-90f1-4b5a2f4c5f74",
+      "productName": "Native American Flute - Single Medium",
+      "variantName": "Single Medium",
+      "sku": "MI-NF-S-M",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 1150000,
+      "saleInPaise": 1025000,
+      "mrpUsdCents": 3500,
+      "saleUsdCents": 2500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 3500,
+      "saleGbpPence": 2500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "adapt sheet product name, vairant same, Sku same",
+    "db_sku": "MI-NF-S-S",
+    "from": {
+      "productName": "Native American Style Flutes",
+      "variantName": "Single Small",
+      "sku": "MI-NF-S-S"
+    },
+    "to": {
+      "productName": "Native American Flute - Single Small",
+      "variantName": "Single Small",
+      "sku": "MI-NF-S-S"
+    },
+    "row": {
+      "productId": "c35b829e-612d-4c10-9d37-616a7a4a9763",
+      "variantId": "a52b42b9-42b4-447c-83a3-71947a04a33a",
+      "productName": "Native American Flute - Single Small",
+      "variantName": "Single Small",
+      "sku": "MI-NF-S-S",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 950000,
+      "saleInPaise": 850000,
+      "mrpUsdCents": 3500,
+      "saleUsdCents": 2500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 3500,
+      "saleGbpPence": 2500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "adapt sheet product name, vairant same, Sku same",
+    "db_sku": "MI-OC-S",
+    "from": {
+      "productName": "Clay Ocarinas",
+      "variantName": "Small",
+      "sku": "MI-OC-S"
+    },
+    "to": {
+      "productName": "Ocarina - Small",
+      "variantName": "Small",
+      "sku": "MI-OC-S"
+    },
+    "row": {
+      "productId": "8f36ffd5-bb4b-4923-b4cc-7d84c569a9d8",
+      "variantId": "f16d9b5b-a353-49f4-b64f-e1588b4c1533",
+      "productName": "Ocarina - Small",
+      "variantName": "Small",
+      "sku": "MI-OC-S",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 295000,
+      "saleInPaise": 245000,
+      "mrpUsdCents": 3500,
+      "saleUsdCents": 2500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 3500,
+      "saleGbpPence": 2500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "adapt sheet product name, vairant same, Sku same",
+    "db_sku": "MI-OC-B",
+    "from": {
+      "productName": "Clay Ocarinas",
+      "variantName": "Big",
+      "sku": "MI-OC-B"
+    },
+    "to": {
+      "productName": "Ocarina - Big",
+      "variantName": "Big",
+      "sku": "MI-OC-B"
+    },
+    "row": {
+      "productId": "8f36ffd5-bb4b-4923-b4cc-7d84c569a9d8",
+      "variantId": "bc22dad2-b78b-486a-b47f-dfc0ae01ec74",
+      "productName": "Ocarina - Big",
+      "variantName": "Big",
+      "sku": "MI-OC-B",
+      "qty": 999,
+      "costInPaise": null,
+      "mrpInPaise": 395000,
+      "saleInPaise": 345000,
+      "mrpUsdCents": null,
+      "saleUsdCents": null,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": null,
+      "saleGbpPence": null,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  },
+  {
+    "decision": "adapt sheet product name, vairant same, Sku same",
+    "db_sku": "MI-BC-25",
+    "from": {
+      "productName": "25 Rods \u2013 Bar Chime",
+      "variantName": "",
+      "sku": "MI-BC-25"
+    },
+    "to": {
+      "productName": "Bar Chime - 25 Rods",
+      "variantName": "",
+      "sku": "MI-BC-25"
+    },
+    "row": {
+      "productId": "1dbf30be-7a51-4859-bf5b-bd04472e12be",
+      "variantId": "bfc5280a-fb8c-430c-9436-e4e7ad85ae60",
+      "productName": "Bar Chime - 25 Rods",
+      "variantName": "",
+      "sku": "MI-BC-25",
+      "qty": 0,
+      "costInPaise": null,
+      "mrpInPaise": 760500,
+      "saleInPaise": 495000,
+      "mrpUsdCents": 3500,
+      "saleUsdCents": 2500,
+      "mrpAedFils": null,
+      "saleAedFils": null,
+      "mrpGbpPence": 3500,
+      "saleGbpPence": 2500,
+      "hsnCode": "",
+      "productStatus": "ACTIVE",
+      "variantStatus": "ACTIVE"
+    }
+  }
+]
