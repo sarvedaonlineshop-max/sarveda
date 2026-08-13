@@ -9,6 +9,12 @@
 
 **Read this section first on every new machine or new Cursor chat.**
 
+### REMINDER — live catalog compare (Aug 2026)
+- **Staging:** https://sarveda-demo.xyz → Lightsail Postgres (`13.204.112.165`) — always query live, not local dev DB.
+- **Production:** https://sarveda.com → DigitalOcean Woo MySQL (`root@134.209.146.175`, DB from `wp-config.php`) — always fresh dump via `data/compare/dump_do_woo.py`; **never** trust old `data/compare/*.csv` or `woo_live_products.json` without re-dumping.
+- Compare scope: **products only** (exclude courses/events/checkout stubs unless asked).
+- Cursor rule: `.cursor/rules/live-catalog-compare.mdc`
+
 ### REMINDER — production go-live credential rotation (~2026-08-05)
 - **Before cutting DNS to `sarveda.com`**, run the full checklist: [`docs/PRODUCTION-GO-LIVE-CREDENTIAL-ROTATION.md`](docs/PRODUCTION-GO-LIVE-CREDENTIAL-ROTATION.md)
 - Rotate DB password, `JWT_SECRET`, payments, AWS keys, OAuth, etc. Do **not** paste secrets into chat.

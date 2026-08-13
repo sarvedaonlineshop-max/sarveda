@@ -1,0 +1,25 @@
+# Live catalog compare — always fresh data
+
+## Comparison target
+
+| Side | What it is | Source (never use stale local exports) |
+|------|------------|----------------------------------------|
+| **New stack (staging)** | https://sarveda-demo.xyz | **Lightsail Postgres** — SSH `ubuntu@13.204.112.165`, run scripts against `backend/.env` `DATABASE_URL` |
+| **Production (live now)** | https://sarveda.com | **DigitalOcean WordPress MySQL** — SSH `root@134.209.146.175`, DB from `/var/www/sarveda_wp_new_1/wp-config.php` |
+
+## Hard rules
+
+1. **Do not** use cached files under `data/compare/*.csv`, `woo_live_products.json`, `do_variants.csv`, etc. as source of truth unless they were **just generated in the same session** from live DB/API.
+2. **DO (sarveda.com):** SSH to DO → run `data/compare/dump_do_woo.py` (or equivalent read-only MySQL query) → write fresh CSV/JSON to `data/compare/` with timestamp if needed.
+3. **Lightsail (sarveda-demo.xyz):** Query live Postgres via Prisma scripts on the server, or public API `http://13.204.112.165/api/products` for storefront-visible catalog — not local dev DB.
+4. **Scope:** Product catalog only — exclude courses, events, course-checkout stubs, and event checkout from counts and compare unless user explicitly asks.
+5. **Team inventory sheet** (`latest_inventory.xlsx`) was used for SKU alignment; ongoing compare is **live demo vs live production**, not sheet vs DB.
+
+## Credentials
+
+- DO SSH/DB: not in git — ask user if `root@134.209.146.175` key or MySQL login is missing on this machine.
+- Lightsail: `~/sarveda-lightsail.pem`, `ubuntu@13.204.112.165`.
+
+## Reference script
+
+- `data/compare/dump_do_woo.py` — read-only Woo product/variant dump from DO MySQL (runs on DO server).
