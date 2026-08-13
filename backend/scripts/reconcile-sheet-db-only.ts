@@ -9,7 +9,7 @@
  * Usage:
  *   npx tsx scripts/reconcile-sheet-db-only.ts
  *   npx tsx scripts/reconcile-sheet-db-only.ts --apply
- *   npx tsx scripts/reconcile-sheet-db-only.ts --apply --plan ../../data/compare/sheet-db-only-remaining-plan.json
+ *   npx tsx scripts/reconcile-sheet-db-only.ts --apply --plan data/compare/sheet-db-only-remaining-plan.json
  */
 import fs from "fs";
 import path from "path";
@@ -22,13 +22,21 @@ import { slugify } from "../src/utils/slugify";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
+const REPO_ROOT = path.resolve(__dirname, "../..");
+
+function resolvePlanPath(raw: string): string {
+  if (path.isAbsolute(raw)) return raw;
+  const normalized = raw.replace(/^(\.\.(\/|\\))+/, "");
+  return path.join(REPO_ROOT, normalized);
+}
+
 const APPLY = process.argv.includes("--apply");
 const planArgIdx = process.argv.indexOf("--plan");
 const PLAN_PATH =
   planArgIdx >= 0 && process.argv[planArgIdx + 1]
-    ? path.resolve(process.argv[planArgIdx + 1])
-    : path.join(__dirname, "../../data/compare/sheet-db-only-plan.json");
-const BACKUP_DIR = path.join(__dirname, "../../data/compare/live-sheet-db-only-backups");
+    ? resolvePlanPath(process.argv[planArgIdx + 1])
+    : path.join(REPO_ROOT, "data/compare/sheet-db-only-plan.json");
+const BACKUP_DIR = path.join(REPO_ROOT, "data/compare/live-sheet-db-only-backups");
 const TEMPLATE_SLUG = "standard-shankh";
 
 const prisma = new PrismaClient();
