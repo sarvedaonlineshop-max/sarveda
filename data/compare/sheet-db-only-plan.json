@@ -3,7 +3,7 @@
   "summary": {
     "sheet_only_input": 24,
     "db_only_input": 46,
-    "rename_skus": 7,
+    "rename_skus": 6,
     "create_variants": 7,
     "create_products": 10,
     "draft_variants": 42,
@@ -39,30 +39,25 @@
       "fromSku": "ME-CZ-C-R",
       "toSku": "ME-CZ-C-RP",
       "reason": "Sheet SKU is source of truth"
-    },
-    {
-      "fromSku": "ME-CZ-W-RP",
-      "toSku": "ME-CZ-W-MB",
-      "reason": "Sheet SKU is source of truth"
     }
   ],
   "create_variants": [
     {
-      "productSlug": "zafu-zabuton-meditation-cushion-combo",
+      "productSlug": "zafu-zabuton-combo-plain",
       "sku": "ME-Z-Zn-DG",
       "variantName": "Dark Grey",
       "productName": "Zafu & Zabuton Combo - Plain",
       "reason": "Missing variant on existing product"
     },
     {
-      "productSlug": "zafu-zabuton-meditation-cushion-combo-lotus-embroidery",
+      "productSlug": "zafu-zabuton-combo-lotus-embroidery",
       "sku": "ME-Z-Zn-EM-L-NB",
       "variantName": "Navy Blue",
       "productName": "Zafu & Zabuton Combo - Lotus Embroidery",
       "reason": "Missing variant on existing product"
     },
     {
-      "productSlug": "zafu-zabuton-meditation-cushion-combo-lotus-embroidery",
+      "productSlug": "zafu-zabuton-combo-lotus-embroidery",
       "sku": "ME-Z-Zn-EM-L-DG",
       "variantName": "Dark Grey",
       "productName": "Zafu & Zabuton Combo - Lotus Embroidery",

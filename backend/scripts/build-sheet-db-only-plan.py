@@ -28,14 +28,14 @@ SKU_RENAME_TO_SHEET = {
     "CB-BM-B-.5": "CB-AD-BM-.5-B",
     "CB-C-V": "CB-CDG-V",
     "ME-CZ-C-R": "ME-CZ-C-RP",
-    "ME-CZ-W-RP": "ME-CZ-W-MB",  # sheet Me-CZ-W-MB = Rose Pink
 }
 
 # Sheet-only SKU -> add variant on this product slug (not a new product)
+# Slugs match stage2 rename: zafu-zabuton-combo-plain / zafu-zabuton-combo-lotus-embroidery
 CREATE_VARIANT_ON = {
-    "ME-Z-Zn-DG": "zafu-zabuton-meditation-cushion-combo",
-    "ME-Z-Zn-EM-L-NB": "zafu-zabuton-meditation-cushion-combo-lotus-embroidery",
-    "ME-Z-Zn-EM-L-DG": "zafu-zabuton-meditation-cushion-combo-lotus-embroidery",
+    "ME-Z-Zn-DG": "zafu-zabuton-combo-plain",
+    "ME-Z-Zn-EM-L-NB": "zafu-zabuton-combo-lotus-embroidery",
+    "ME-Z-Zn-EM-L-DG": "zafu-zabuton-combo-lotus-embroidery",
     "ME-CZ-C-LG": "crescent-zafu-cushion-compact-buck-wheat",
     "Me-CZ-W-S": "crescent-zafu-cushion-wide-cotton",
     "Me-CZ-W-DG": "crescent-zafu-cushion-wide-cotton",

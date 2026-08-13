@@ -9,6 +9,7 @@
  * Usage:
  *   npx tsx scripts/reconcile-sheet-db-only.ts
  *   npx tsx scripts/reconcile-sheet-db-only.ts --apply
+ *   npx tsx scripts/reconcile-sheet-db-only.ts --apply --plan ../../data/compare/sheet-db-only-remaining-plan.json
  */
 import fs from "fs";
 import path from "path";
@@ -22,7 +23,11 @@ import { slugify } from "../src/utils/slugify";
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const APPLY = process.argv.includes("--apply");
-const PLAN_PATH = path.join(__dirname, "../../data/compare/sheet-db-only-plan.json");
+const planArgIdx = process.argv.indexOf("--plan");
+const PLAN_PATH =
+  planArgIdx >= 0 && process.argv[planArgIdx + 1]
+    ? path.resolve(process.argv[planArgIdx + 1])
+    : path.join(__dirname, "../../data/compare/sheet-db-only-plan.json");
 const BACKUP_DIR = path.join(__dirname, "../../data/compare/live-sheet-db-only-backups");
 const TEMPLATE_SLUG = "standard-shankh";
 
@@ -128,10 +133,20 @@ async function main() {
     }
   }
 
-  for (const row of plan.create_variants) {
-    const product = await prisma.product.findFirst({
+  async function findProductForVariant(row: Plan["create_variants"][number]) {
+    const bySlug = await prisma.product.findFirst({
       where: { slug: row.productSlug, deletedAt: null },
     });
+    if (bySlug) return bySlug;
+    if (!row.productName?.trim()) return null;
+    return prisma.product.findFirst({
+      where: { name: row.productName.trim(), deletedAt: null },
+      orderBy: { updatedAt: "desc" },
+    });
+  }
+
+  for (const row of plan.create_variants) {
+    const product = await findProductForVariant(row);
     if (!product) {
       log.push(`MISS product slug ${row.productSlug} for create ${row.sku}`);
       continue;
@@ -153,7 +168,7 @@ async function main() {
       }
       continue;
     }
-    log.push(`CREATE variant ${row.sku} on ${row.productSlug} (${row.variantName})`);
+    log.push(`CREATE variant ${row.sku} on ${product.slug} (${row.variantName})`);
     if (APPLY) {
       await cloneVariantFromSibling(product.id, row.sku, row.variantName);
     }
