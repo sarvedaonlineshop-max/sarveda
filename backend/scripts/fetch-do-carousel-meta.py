@@ -150,12 +150,19 @@ mysql -usarveda_wp -h127.0.0.1 sarveda_wp_new_1 -N -e "{escaped}" """
             if not val:
                 continue
             raw = html.unescape(val.strip())
-            by_slug = slug_to_id.get(raw.lower()) or slug_to_id.get(slugify(raw))
-            by_name = name_to_id.get(norm(raw))
-            if by_slug:
-                found.append(by_slug)
-            elif by_name:
-                found.append(by_name)
+            candidates = [
+                raw,
+                raw.replace("-", " "),
+                slugify(raw),
+                norm(raw),
+            ]
+            for c in candidates:
+                by_slug = slug_to_id.get(c.lower()) or slug_to_id.get(slugify(c))
+                by_name = name_to_id.get(norm(c))
+                if by_slug and by_slug not in found:
+                    found.append(by_slug)
+                elif by_name and by_name not in found:
+                    found.append(by_name)
         return list(dict.fromkeys(found))
 
     var_rows = mysql_tsv(

@@ -21,6 +21,7 @@ import { unitSaleMinor, zoneToCurrency } from "@/lib/currency";
 import { resolveMediaUrl } from "@/lib/media-cdn";
 import { formatINRFromPaise, formatMinorFromPaise } from "@/lib/money";
 import { galleryImagesForVariant, imageIndexForVariant, resolveVariantVideoUrl } from "@/lib/variant-gallery";
+import { galleryHasVideoItems } from "@/lib/gallery-media";
 import {
   availableStock,
   stockDisplay,
@@ -122,8 +123,8 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
   }, [product.images, variant]);
 
   const activeVideoUrl = useMemo(
-    () => resolveVariantVideoUrl(variant, product),
-    [variant, product]
+    () => (galleryHasVideoItems(sortedImages) ? null : resolveVariantVideoUrl(variant, product)),
+    [variant, product, sortedImages]
   );
 
   useEffect(() => {

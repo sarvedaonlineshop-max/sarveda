@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { resolveMediaUrl } from "@/lib/media-cdn";
 import { parseVideoSource, type VideoSource } from "@/lib/video-embed";
+import { isGalleryVideoUrl } from "@/lib/gallery-media";
 
 type GalleryImage = {
   id: string;
@@ -19,6 +20,8 @@ type Props = {
   onActiveChange?: (index: number) => void;
   enableZoom?: boolean;
   videoUrl?: string | null;
+  /** When false, skip appending videoUrl if images already include embed URLs (carousel sync). */
+  appendLegacyVideo?: boolean;
 };
 
 type MediaItem =
@@ -31,7 +34,8 @@ export function ProductGallery({
   activeIndex,
   onActiveChange,
   enableZoom = true,
-  videoUrl
+  videoUrl,
+  appendLegacyVideo = true
 }: Props) {
   const [internalActive, setInternalActive] = useState(0);
   const [zoomActive, setZoomActive] = useState(false);
@@ -50,13 +54,30 @@ export function ProductGallery({
   );
 
   const media = useMemo<MediaItem[]>(() => {
-    const items: MediaItem[] = images.map((img) => ({
-      kind: "image" as const,
-      id: img.id,
-      url: resolveMediaUrl(img.url) ?? img.url,
-      altText: img.altText
-    }));
-    if (videoUrl && videoUrl.trim()) {
+    const items: MediaItem[] = [];
+    for (const img of images) {
+      const resolved = resolveMediaUrl(img.url) ?? img.url;
+      if (isGalleryVideoUrl(resolved)) {
+        const source = parseVideoSource(resolved.trim());
+        const playUrl =
+          source.type === "file" ? resolveMediaUrl(source.url) ?? source.url : resolved.trim();
+        items.push({
+          kind: "video",
+          id: img.id,
+          url: playUrl,
+          altText: img.altText,
+          source
+        });
+      } else {
+        items.push({
+          kind: "image",
+          id: img.id,
+          url: resolved,
+          altText: img.altText
+        });
+      }
+    }
+    if (appendLegacyVideo && videoUrl && videoUrl.trim() && !items.some((i) => i.kind === "video")) {
       const source = parseVideoSource(videoUrl.trim());
       const playUrl = source.type === "file" ? resolveMediaUrl(source.url) ?? source.url : videoUrl.trim();
       items.push({
@@ -68,7 +89,7 @@ export function ProductGallery({
       });
     }
     return items;
-  }, [images, videoUrl, productName]);
+  }, [images, videoUrl, productName, appendLegacyVideo]);
 
   const safeActive = Math.min(Math.max(active, 0), Math.max(media.length - 1, 0));
   const current = media[safeActive];
