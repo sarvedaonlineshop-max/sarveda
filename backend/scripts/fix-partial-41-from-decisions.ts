@@ -457,6 +457,8 @@ function dedupeDoPool(pool: DoVar[]): DoVar[] {
   }
   return [...seen.values()];
 }
+
+function fuzzyLsSkuForDo(
   doVar: DoVar,
   lsByTokens: Map<string, string>,
   slug: string
