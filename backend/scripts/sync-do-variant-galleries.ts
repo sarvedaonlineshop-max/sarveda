@@ -359,14 +359,70 @@ function buildDoToLsVariantMap(
   return map;
 }
 
+function carouselVariationsLackTermIds(carousel: CarouselProduct): boolean {
+  return carousel.variations.length > 0 && carousel.variations.every((v) => v.termIds.length === 0);
+}
+
+/** DO variation ids that use this Woo attachment as their featured thumb. */
+function buildThumbToDoVariationIds(
+  carousel: CarouselProduct,
+  doVariantMedia: Map<string, { thumbId: string; video: string }>
+): Map<string, string[]> {
+  const map = new Map<string, string[]>();
+  for (const v of carousel.variations) {
+    const media = doVariantMedia.get(String(v.variationId));
+    if (!media?.thumbId) continue;
+    const list = map.get(media.thumbId) || [];
+    list.push(String(v.variationId));
+    map.set(media.thumbId, list);
+  }
+  return map;
+}
+
+/** When ACF termIds are missing on variations, route slots by featured thumb attachment id. */
+function lsVariantsForSlotByThumb(
+  slot: CarouselSlot,
+  carousel: CarouselProduct,
+  doToLs: Map<string, string>,
+  doVariantMedia: Map<string, { thumbId: string; video: string }>
+): Set<string> {
+  const out = new Set<string>();
+  if (!slot.imageId) return out;
+
+  const thumbToDo = buildThumbToDoVariationIds(carousel, doVariantMedia);
+  const matchedDo = thumbToDo.get(slot.imageId) || [];
+
+  if (matchedDo.length) {
+    for (const doId of matchedDo) {
+      const ls = doToLs.get(doId);
+      if (ls) out.add(ls);
+    }
+    return out;
+  }
+
+  // Shared accessory / lifestyle images (e.g. mallet) — all synced LS variants.
+  for (const ls of doToLs.values()) out.add(ls);
+  return out;
+}
+
 function lsVariantsForSlot(
   slot: CarouselSlot,
   carousel: CarouselProduct,
   doToLs: Map<string, string>,
   termNames: Record<string, string>,
-  ignoreTermFilter = false
+  ignoreTermFilter = false,
+  doVariantMedia?: Map<string, { thumbId: string; video: string }>
 ): Set<string> {
   const out = new Set<string>();
+
+  if (
+    doVariantMedia &&
+    carouselVariationsLackTermIds(carousel) &&
+    slot.imageId &&
+    !ignoreTermFilter
+  ) {
+    return lsVariantsForSlotByThumb(slot, carousel, doToLs, doVariantMedia);
+  }
 
   if (ignoreTermFilter || !slot.termIds.length) {
     for (const vid of doToLs.values()) out.add(vid);
@@ -389,7 +445,8 @@ async function planCarouselProduct(
   attachments: Map<string, string>,
   cdnMap: Map<string, string>,
   termNames: Record<string, string>,
-  ignoreTermFilter = false
+  ignoreTermFilter = false,
+  doVariantMedia?: Map<string, { thumbId: string; video: string }>
 ): Promise<{ media: PlannedMedia[]; videoByVariantId: Map<string, string> }> {
   const resolvedTerms = enrichTermNames(
     carousel,
@@ -403,7 +460,14 @@ async function planCarouselProduct(
   const sortedSlots = [...carousel.slots].sort((a, b) => a.index - b.index);
 
   for (const slot of sortedSlots) {
-    const targetVariants = lsVariantsForSlot(slot, carousel, doToLs, resolvedTerms, ignoreTermFilter);
+    const targetVariants = lsVariantsForSlot(
+      slot,
+      carousel,
+      doToLs,
+      resolvedTerms,
+      ignoreTermFilter,
+      doVariantMedia
+    );
 
     let embedUrl = slot.youtube ?? null;
     if (!embedUrl && slot.iframe) {
@@ -683,7 +747,8 @@ async function syncProduct(
       attachments,
       cdnMap,
       termNames,
-      isFallback
+      isFallback,
+      doVariantMedia
     );
     media = planned.media;
     videoByVariantId = planned.videoByVariantId;

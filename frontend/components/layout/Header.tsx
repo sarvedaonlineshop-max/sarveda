@@ -174,6 +174,11 @@ function isShopListingPath(pathname: string | null): boolean {
   return pathname === "/shop" || pathname.startsWith("/shop/") || pathname.startsWith("/product-category");
 }
 
+function isProductPdpPath(pathname: string | null): boolean {
+  if (!pathname) return false;
+  return pathname.startsWith("/product/");
+}
+
 function isProfilePath(pathname: string | null): boolean {
   if (!pathname) return false;
   return pathname === "/profile" || pathname.startsWith("/profile/") || pathname === "/my-account";
@@ -194,8 +199,13 @@ export function Header() {
 
   const hideMarquee = isProfilePath(pathname);
   const isShopPage = isShopListingPath(pathname);
+  const isProductPdp = isProductPdpPath(pathname);
   const headerCompact = hideMarquee || marqueeHidden;
-  const showGlobalSearch = !isShopPage;
+  /** Shop listing uses ShopProductToolbar search; PDP keeps header layer-2 search always visible. */
+  const showSearchToggle = !isShopPage && !isProductPdp;
+  const showPersistentStoreSearch = isProductPdp;
+  const showHeaderSearchLayer = showSearchToggle || showPersistentStoreSearch;
+  const searchLayerExpanded = showPersistentStoreSearch || searchOpen;
   const isNavLoading = pendingHref != null || isPending;
 
   useEffect(() => {
@@ -234,13 +244,15 @@ export function Header() {
     const root = document.documentElement;
     root.dataset.headerScrolled = headerCompact ? "true" : "false";
     root.dataset.headerNoMarquee = hideMarquee ? "true" : "false";
-    root.dataset.headerSearchOpen = searchOpen && showGlobalSearch ? "true" : "false";
+    root.dataset.headerSearchOpen = searchLayerExpanded && showHeaderSearchLayer ? "true" : "false";
+    root.dataset.headerPersistentSearch = showPersistentStoreSearch ? "true" : "false";
     return () => {
       delete root.dataset.headerScrolled;
       delete root.dataset.headerNoMarquee;
       delete root.dataset.headerSearchOpen;
+      delete root.dataset.headerPersistentSearch;
     };
-  }, [headerCompact, hideMarquee, searchOpen, showGlobalSearch]);
+  }, [headerCompact, hideMarquee, searchLayerExpanded, showHeaderSearchLayer, showPersistentStoreSearch]);
 
   if (
     pathname?.startsWith("/admin") ||
@@ -350,7 +362,7 @@ export function Header() {
               <div className="ml-auto hidden shrink-0 items-center gap-1.5 md:flex">
                 <TrackOrderButton onClick={onTrackClick} />
 
-                {showGlobalSearch ? (
+                {showSearchToggle ? (
                   <button
                     type="button"
                     onClick={() => setSearchOpen((v) => !v)}
@@ -409,7 +421,7 @@ export function Header() {
 
               {/* Mobile: search + track (+ store category menu) — profile/cart live in bottom nav */}
               <div className="ml-auto flex shrink-0 items-center gap-1.5 md:hidden">
-                {showGlobalSearch ? (
+                {showSearchToggle ? (
                   <button
                     type="button"
                     onClick={() => setSearchOpen((v) => !v)}
@@ -442,16 +454,20 @@ export function Header() {
             </div>
           </div>
 
-          {/* Layer 2: expands only when search icon is clicked (hidden on shop — shop has its own search). */}
-          {showGlobalSearch ? (
+          {/* Layer 2: always visible on PDP; toggle on other pages; shop listing uses ShopProductToolbar instead. */}
+          {showHeaderSearchLayer ? (
             <div
               id="header-search-panel"
-              className={`bg-brand-cream/95 transition-[max-height,opacity] duration-300 ease-out ${
-                searchOpen
+              className={`bg-brand-cream/95 ${
+                showPersistentStoreSearch
                   ? "max-h-[min(70vh,28rem)] overflow-visible opacity-100"
-                  : "max-h-0 overflow-hidden opacity-0"
+                  : `transition-[max-height,opacity] duration-300 ease-out ${
+                      searchLayerExpanded
+                        ? "max-h-[min(70vh,28rem)] overflow-visible opacity-100"
+                        : "max-h-0 overflow-hidden opacity-0"
+                    }`
               }`}
-              aria-hidden={!searchOpen}
+              aria-hidden={!searchLayerExpanded}
             >
               <div className="mx-auto flex max-w-7xl items-start gap-2.5 px-4 py-1.5 sm:gap-3 sm:px-6 lg:px-8">
                 <div className="relative z-[60] min-w-0 flex-1">
@@ -469,26 +485,34 @@ export function Header() {
                       d="M21 21l-4.35-4.35M16.5 10.5a6 6 0 11-12 0 6 6 0 0112 0z"
                     />
                   </svg>
-                  {searchOpen ? (
+                  {searchLayerExpanded ? (
                     <SearchWithSuggestions
-                      id="desktop-search"
-                      autoFocus
-                      placeholder="Search products, courses, insights…"
+                      id={showPersistentStoreSearch ? "pdp-store-search" : "desktop-search"}
+                      autoFocus={showSearchToggle && searchOpen}
+                      placeholder={
+                        showPersistentStoreSearch
+                          ? "Search products…"
+                          : "Search products, courses, insights…"
+                      }
                       inputClassName="w-full rounded-full border border-brand-forest/12 bg-white py-1.5 pl-10 pr-3 text-sm text-brand-ink placeholder:text-brand-muted transition-all focus:border-brand-gold/50 focus:outline-none focus:ring-1 focus:ring-brand-gold/30"
-                      onNavigate={() => setSearchOpen(false)}
+                      onNavigate={() => {
+                        if (!showPersistentStoreSearch) setSearchOpen(false);
+                      }}
                     />
                   ) : null}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setSearchOpen(false)}
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-forest/10 text-brand-forest transition-colors hover:bg-brand-forest hover:text-brand-cream active:bg-brand-night active:text-brand-cream"
-                  aria-label="Close search"
-                >
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" aria-hidden>
-                    <path strokeWidth={2.25} strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />
-                  </svg>
-                </button>
+                {showSearchToggle ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearchOpen(false)}
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-forest/10 text-brand-forest transition-colors hover:bg-brand-forest hover:text-brand-cream active:bg-brand-night active:text-brand-cream"
+                    aria-label="Close search"
+                  >
+                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" aria-hidden>
+                      <path strokeWidth={2.25} strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />
+                    </svg>
+                  </button>
+                ) : null}
               </div>
             </div>
           ) : null}

@@ -5075,24 +5075,13 @@
     {
       "ls_product": "Sacred Symbols Singing Bowls",
       "do_product": "Sacred Symbols Singing Bowls",
-      "ls_variant": "Gold / 5.5 in",
+      "ls_variant": "Green / 5.5 in",
       "do_variant": "Green / 5.5 in",
-      "ls_sku": "MI-SB-SS-GO-5.5",
+      "ls_sku": "MI-SB-SS-G-5.5",
       "do_sku": "MI-SB-P-SS-G-5.5",
-      "note": "secondary fuzzy variant (92%)",
+      "note": "exact variant name (fixed from bad fuzzy)",
       "action": "pull",
       "do_variation_id": "10011"
-    },
-    {
-      "ls_product": "Sacred Symbols Singing Bowls",
-      "do_product": "Sacred Symbols Singing Bowls",
-      "ls_variant": "Green / 5.5 in",
-      "do_variant": "Black / 5.5 in",
-      "ls_sku": "MI-SB-SS-G-5.5",
-      "do_sku": "MI-SB-P-SS-BK-5.5",
-      "note": "secondary fuzzy variant (92%)",
-      "action": "pull",
-      "do_variation_id": "10014"
     },
     {
       "ls_product": "Sacred Symbols Singing Bowls",
@@ -5120,12 +5109,12 @@
       "ls_product": "Sacred Symbols Singing Bowls",
       "do_product": "Sacred Symbols Singing Bowls",
       "ls_variant": "Black / 5.5 in",
-      "do_variant": "Blue / 5.5 in",
+      "do_variant": "Black / 5.5 in",
       "ls_sku": "MI-SB-SS-BK-5.5",
-      "do_sku": "MI-SB-P-SS-B-5.5",
-      "note": "secondary fuzzy variant (92%)",
+      "do_sku": "MI-SB-P-SS-BK-5.5",
+      "note": "exact variant name (fixed from bad fuzzy)",
       "action": "pull",
-      "do_variation_id": "10017"
+      "do_variation_id": "10014"
     },
     {
       "ls_product": "Sacred Symbols Singing Bowls",
@@ -5142,12 +5131,12 @@
       "ls_product": "Sacred Symbols Singing Bowls",
       "do_product": "Sacred Symbols Singing Bowls",
       "ls_variant": "Blue / 5.5 in",
-      "do_variant": "Red / 5.5 in",
+      "do_variant": "Blue / 5.5 in",
       "ls_sku": "MI-SB-SS-B-5.5",
-      "do_sku": "MI-SB-P-SS-R-5.5",
-      "note": "secondary fuzzy variant (92%)",
+      "do_sku": "MI-SB-P-SS-B-5.5",
+      "note": "exact variant name (fixed from bad fuzzy)",
       "action": "pull",
-      "do_variation_id": "10020"
+      "do_variation_id": "10017"
     },
     {
       "ls_product": "Sacred Symbols Singing Bowls",
@@ -5175,12 +5164,12 @@
       "ls_product": "Sacred Symbols Singing Bowls",
       "do_product": "Sacred Symbols Singing Bowls",
       "ls_variant": "Red / 5.5 in",
-      "do_variant": "Yellow / 5.5 in",
+      "do_variant": "Red / 5.5 in",
       "ls_sku": "MI-SB-SS-R-5.5",
-      "do_sku": "MI-SB-P-SS-Y-5.5",
-      "note": "secondary fuzzy variant (92%)",
+      "do_sku": "MI-SB-P-SS-R-5.5",
+      "note": "exact variant name (fixed from bad fuzzy)",
       "action": "pull",
-      "do_variation_id": "10023"
+      "do_variation_id": "10020"
     },
     {
       "ls_product": "Sacred Symbols Singing Bowls",
@@ -5208,12 +5197,12 @@
       "ls_product": "Sacred Symbols Singing Bowls",
       "do_product": "Sacred Symbols Singing Bowls",
       "ls_variant": "Yellow / 5.5 in",
-      "do_variant": "\u2014",
+      "do_variant": "Yellow / 5.5 in",
       "ls_sku": "MI-SB-SS-Y-5.5",
-      "do_sku": "",
-      "note": "Lightsail-only variant \u2014 no DO match",
-      "action": "skip_ls_only",
-      "do_variation_id": ""
+      "do_sku": "MI-SB-P-SS-Y-5.5",
+      "note": "exact variant name (fixed — was wrongly skip_ls_only)",
+      "action": "pull",
+      "do_variation_id": "10023"
     },
     {
       "ls_product": "Sacred Symbols Singing Bowls",

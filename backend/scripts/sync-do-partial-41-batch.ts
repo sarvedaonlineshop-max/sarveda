@@ -28,7 +28,18 @@ dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const APPLY = process.argv.includes("--apply");
 const SKIP_GALLERY = process.argv.includes("--skip-gallery");
+const SLUGS_FILE_ARG = process.argv.find((a) => a.startsWith("--slugs-file="));
+const SLUGS_FILE = SLUGS_FILE_ARG ? path.resolve(SLUGS_FILE_ARG.split("=")[1]!) : null;
 const prisma = new PrismaClient();
+
+function activeSlugs(): string[] {
+  if (!SLUGS_FILE) return PARTIAL_SLUGS;
+  const raw = JSON.parse(fs.readFileSync(SLUGS_FILE, "utf8")) as { slugs?: string[] };
+  if (!Array.isArray(raw.slugs) || !raw.slugs.length) {
+    throw new Error(`--slugs-file must contain { "slugs": string[] }: ${SLUGS_FILE}`);
+  }
+  return raw.slugs;
+}
 
 const REPO = path.resolve(__dirname, "../..");
 const DO_PRODUCTS = path.join(REPO, "data/compare/do_products.csv");
@@ -36,7 +47,9 @@ const DO_VARIANTS = path.join(REPO, "data/compare/do_variants.csv");
 const DO_ATTACHMENTS = path.join(REPO, "data/compare/do_attachments.csv");
 const WC_PRODUCTS = path.join(REPO, "backend/prisma/wc-products.csv");
 const PULL_V2 = path.join(REPO, "data/compare/do-ls-media-pull-v2.json");
-const BACKUP_DIR = path.join(REPO, "data/compare/live-partial-41-sync-backups");
+const BACKUP_DIR = SLUGS_FILE
+  ? path.join(REPO, "data/compare/live-remaining-85-sync-backups")
+  : path.join(REPO, "data/compare/live-partial-41-sync-backups");
 
 const STOCK_DEFAULT = 100;
 
@@ -661,12 +674,15 @@ async function main() {
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   const catalog = loadDoCatalog();
 
-  log(`Mode: ${APPLY ? "APPLY" : "DRY-RUN"} | products: ${PARTIAL_SLUGS.length}`);
+  const slugs = activeSlugs();
+  log(
+    `Mode: ${APPLY ? "APPLY" : "DRY-RUN"} | products: ${slugs.length}${SLUGS_FILE ? ` (from ${path.basename(SLUGS_FILE)})` : ""}${SKIP_GALLERY ? " | gallery skipped" : ""}`
+  );
 
   let totalSynced = 0;
   let totalMissed = 0;
 
-  for (const slug of PARTIAL_SLUGS) {
+  for (const slug of slugs) {
     const { synced, missed } = await syncSlug(slug, catalog);
     totalSynced += synced;
     totalMissed += missed;
@@ -676,7 +692,7 @@ async function main() {
 
   if (APPLY && !SKIP_GALLERY) {
     log("\n=== Variant carousel gallery pass ===");
-    for (const slug of PARTIAL_SLUGS) {
+    for (const slug of slugs) {
       await runGallerySync(slug);
     }
   }
