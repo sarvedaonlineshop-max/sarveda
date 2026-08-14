@@ -8,6 +8,7 @@ import { fetchMe } from "@/lib/auth-client";
 import { EnquiryFilePicker } from "@/components/enquiries/EnquiryFilePicker";
 import { submitEnquiry } from "@/lib/enquiry-api";
 import { customerPhoneDisplay, customerPhoneTelHref } from "@/lib/enquiry";
+import { ENQUIRY_SUBJECT_OPTIONS, type EnquirySubjectValue } from "@/lib/enquiry-subjects";
 
 const inputCls =
   "min-h-[42px] w-full rounded-xl border border-brand-cream-dark bg-brand-ivory px-3 text-sm text-brand-ink focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/25";

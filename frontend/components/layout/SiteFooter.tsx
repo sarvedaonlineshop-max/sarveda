@@ -180,7 +180,6 @@ export function SiteFooter() {
                 <a href={customerPhoneTelHref()} className="hover:text-brand-gold">
                   {customerPhoneDisplay()}
                 </a>
-                </a>
               </li>
               <li className="flex gap-2.5">
                 <span className="mt-0.5 shrink-0 text-brand-gold" aria-hidden>
