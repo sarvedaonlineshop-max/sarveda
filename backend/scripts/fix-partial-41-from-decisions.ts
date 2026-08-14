@@ -399,10 +399,13 @@ async function upsertVariantFromDo(opts: {
     });
   }
 
-  // Filter attrs: drop constant type=Large etc when only 1 colour axis intended
+  // Filter attrs when product uses subset of DO axes
   let attrs = opts.doVar.attrList;
   if (opts.axisOrder.length === 1 && opts.axisOrder[0] === "colour") {
     attrs = attrs.filter((a) => a.slug === "colour");
+  }
+  if (opts.axisOrder.join(",") === "color,grip") {
+    attrs = attrs.filter((a) => a.slug === "color" || a.slug === "grip");
   }
 
   await syncVariantAttributes(variant.id, attrs);
@@ -442,7 +445,18 @@ async function deactivateVariant(variantId: string, sku: string) {
   });
 }
 
-function fuzzyLsSkuForDo(
+function dedupeDoPool(pool: DoVar[]): DoVar[] {
+  const seen = new Map<string, DoVar>();
+  for (const v of pool) {
+    const key = Object.entries(v.attrs)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([k, val]) => `${k}=${norm(val)}`)
+      .join("|");
+    const prev = seen.get(key);
+    if (!prev || (!prev.sku && v.sku)) seen.set(key, v);
+  }
+  return [...seen.values()];
+}
   doVar: DoVar,
   lsByTokens: Map<string, string>,
   slug: string
@@ -577,6 +591,7 @@ async function fixAttrsForProduct(
     if (decStr.toLowerCase().includes("same as rouge")) tokens = ["Rouge Pink"];
     if (decStr.toLowerCase().includes("same as all3")) tokens = ["Set of 3"];
     if (decStr.toLowerCase().includes("same as big")) tokens = ["Large"];
+    if (v.sku === "MI-PT-L") tokens = ["Large"];
 
     let doVar = matchDoVar(pool, tokens);
     if (!doVar && dec?.doVariantName) {
@@ -779,22 +794,22 @@ async function main() {
   log(`Mode: ${APPLY ? "APPLY" : "DRY-RUN"}`);
 
   // --- Product-specific rebuilds ---
-  const dottedPool = catalog.byParent.get("6892") || [];
+  const dottedPool = dedupeDoPool(catalog.byParent.get("6892") || []);
   await handleDottedSingingBowl(dottedPool, catalog.attachments, catalog.products.get("6892")!);
 
-  const silkPool = catalog.byParent.get("6988") || [];
+  const silkPool = dedupeDoPool(catalog.byParent.get("6988") || []);
   await handleSilkCushion(silkPool, catalog.attachments, catalog.products.get("6988")!);
 
-  const etchedPool = catalog.byParent.get("9795") || [];
+  const etchedPool = dedupeDoPool(catalog.byParent.get("9795") || []);
   await handleEtchedHandmade(etchedPool, catalog.attachments, catalog.products.get("9795")!);
 
-  const mantraPool = catalog.byParent.get("6807") || [];
+  const mantraPool = dedupeDoPool(catalog.byParent.get("6807") || []);
   await handleMantraBowls(mantraPool, catalog.attachments, catalog.products.get("6807")!);
 
-  const tingshaPool = catalog.byParent.get("5763") || [];
+  const tingshaPool = dedupeDoPool(catalog.byParent.get("5763") || []);
   await handleTingsha(tingshaPool, catalog.attachments, catalog.products.get("5763")!);
 
-  const zafuPool = catalog.byParent.get("47494") || [];
+  const zafuPool = dedupeDoPool(catalog.byParent.get("47494") || []);
   await handleCrescentZafuWide(zafuPool, catalog.attachments, catalog.products.get("47494")!);
 
   // --- Attribute fix pass for all 41 variable products ---
