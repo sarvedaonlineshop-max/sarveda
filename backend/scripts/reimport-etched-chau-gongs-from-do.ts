@@ -39,7 +39,7 @@ const WOO_PRODUCT_ID = 49115;
 const WOO_SLUG = "etched-gongs";
 const PRODUCT_NAME = "Etched Chau Gongs";
 const STOCK_ON_HAND = 100;
-const TEMPLATE_SLUG = "standard-shankh";
+const TEMPLATE_SLUGS = ["standard-shankh", "etched-gongs", "wind-gong-plain", "handpan"];
 
 const TYPE_CODES: Record<string, string> = {
   Chakra: "CH",
@@ -257,12 +257,32 @@ async function main() {
     console.log(`  ${skuFor(dv.type, dv.size)}  ${dv.type} / ${dv.size}  ₹${sale}`);
   }
 
-  const template = await prisma.product.findFirst({
-    where: { slug: TEMPLATE_SLUG, deletedAt: null },
-    include: {
-      variants: { where: { status: "ACTIVE" }, include: { shippingRates: true }, take: 1 },
-    },
-  });
+  let template = null;
+  for (const slug of TEMPLATE_SLUGS) {
+    template = await prisma.product.findFirst({
+      where: { slug, deletedAt: null },
+      include: {
+        variants: { where: { status: "ACTIVE" }, include: { shippingRates: true }, take: 1 },
+      },
+    });
+    if (template?.variants[0]?.shippingRates.length) break;
+  }
+  if (!template?.variants[0]) {
+    template = await prisma.product.findFirst({
+      where: {
+        deletedAt: null,
+        status: "ACTIVE",
+        variants: { some: { status: "ACTIVE", shippingRates: { some: {} } } },
+      },
+      include: {
+        variants: {
+          where: { status: "ACTIVE", shippingRates: { some: {} } },
+          include: { shippingRates: true },
+          take: 1,
+        },
+      },
+    });
+  }
   if (!template?.variants[0]) throw new Error("Missing shipping template");
   const donorRates = template.variants[0].shippingRates;
   const donorUsd = {
