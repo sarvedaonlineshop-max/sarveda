@@ -314,6 +314,7 @@ async function main() {
         shortDescription: woo.short_description,
         seoTitle: PRODUCT_NAME,
         seoDescription: stripHtml(woo.short_description).slice(0, 160),
+        variantAxisOrder: ["type", "size"],
       },
       include: { variants: true, images: true, accordionItems: true },
     });
@@ -356,6 +357,7 @@ async function main() {
       shortDescription: woo.short_description,
       seoTitle: PRODUCT_NAME,
       seoDescription: stripHtml(woo.short_description).slice(0, 160),
+      variantAxisOrder: ["type", "size"],
       deletedAt: null,
     },
   });
@@ -446,8 +448,8 @@ async function main() {
     });
 
     await syncVariantAttributes(variant.id, [
-      { name: "Size", slug: "size", value: dv.size },
       { name: "Type", slug: "type", value: dv.type },
+      { name: "Size", slug: "size", value: dv.size },
     ]);
 
     if (!firstVariantId) firstVariantId = variant.id;
