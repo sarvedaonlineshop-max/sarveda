@@ -186,6 +186,18 @@ async function main(): Promise<void> {
           pending.push({ fromWooId, toSku: sku, type: "CROSS_SELL", position: 350 + idx });
         });
       }
+
+      // ACF pair_it_with from WooCommerce CSV export (Meta: pair_it_with_*_select_product_12)
+      for (const [key, value] of Object.entries(row)) {
+        if (key.includes("Meta: _")) continue;
+        const m = /pair_it_with_product_pair_it_with_(\d+)_select_product_12$/.exec(key);
+        if (!m) continue;
+        const idx = Number(m[1]);
+        const toId = parseInt((value ?? "").trim(), 10);
+        if (Number.isFinite(toId) && toId > 0 && toId !== fromWooId) {
+          pending.push({ fromWooId, toWooId: toId, type: "PAIR_WITH", position: idx });
+        }
+      }
     }
   }
 

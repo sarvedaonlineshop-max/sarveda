@@ -74,9 +74,12 @@ export default async function ProductDetailPage({ params }: Props) {
   }
 
   const primaryCategory = product.categories[0]?.category;
-  const pairWithItems = await fetchRelatedProducts(product.slug, primaryCategory?.slug, {
-    next: { revalidate: 120 }
-  });
+  const pairWithItems = await fetchRelatedProducts(
+    product.slug,
+    primaryCategory?.slug,
+    { next: { revalidate: 120 } },
+    2
+  );
 
   const breadcrumbItems = [
     { name: "Home", url: absoluteUrl("/") },

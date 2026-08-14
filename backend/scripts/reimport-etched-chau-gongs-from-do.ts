@@ -479,6 +479,38 @@ async function main() {
   await runGallerySync();
   actions.push("CAROUSEL variant images synced");
 
+  const pairTargets = [
+    { wooId: 45152, position: 0 },
+    { wooId: 45289, position: 1 }
+  ];
+  for (const { wooId, position } of pairTargets) {
+    const toProduct = await prisma.product.findFirst({
+      where: { wooCommerceId: wooId, deletedAt: null },
+      select: { id: true, name: true }
+    });
+    if (!toProduct) {
+      console.warn(`Pair-with target woo ${wooId} not found in LS`);
+      continue;
+    }
+    await prisma.productRelation.upsert({
+      where: {
+        fromProductId_toProductId_type: {
+          fromProductId: product.id,
+          toProductId: toProduct.id,
+          type: "PAIR_WITH"
+        }
+      },
+      create: {
+        fromProductId: product.id,
+        toProductId: toProduct.id,
+        type: "PAIR_WITH",
+        position
+      },
+      update: { position }
+    });
+    actions.push(`PAIR_WITH → ${toProduct.name} (woo ${wooId})`);
+  }
+
   fs.writeFileSync(
     path.join(BACKUP_DIR, `${stamp}-actions.json`),
     JSON.stringify({ productId: product.id, newSkus: [...newSkuSet], actions }, null, 2)

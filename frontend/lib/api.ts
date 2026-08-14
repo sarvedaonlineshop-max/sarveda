@@ -242,11 +242,13 @@ export async function fetchSiteSearchSuggestions(
 export async function fetchRelatedProducts(
   excludeSlug: string,
   categorySlug: string | undefined,
-  init?: RequestInit
+  init?: RequestInit,
+  limit = 4
 ): Promise<ProductListItem[]> {
+  const take = Math.min(8, Math.max(1, limit));
   try {
     const data = await fetchApi<{ items: ProductListItem[]; source?: string }>(
-      `/api/products/${encodeURIComponent(excludeSlug)}/related?limit=4`,
+      `/api/products/${encodeURIComponent(excludeSlug)}/related?limit=${take}`,
       init
     );
     if (data.items?.length) return data.items;
@@ -257,7 +259,7 @@ export async function fetchRelatedProducts(
   const list = categorySlug
     ? await fetchProductList({ category: categorySlug }, init, { limit: 16 })
     : await fetchProductList({}, init, { limit: 16 });
-  return list.items.filter((p) => p.slug !== excludeSlug).slice(0, 4);
+  return list.items.filter((p) => p.slug !== excludeSlug).slice(0, take);
 }
 
 /** Slugs for static generation (build-time; falls back to [] if API is offline). */

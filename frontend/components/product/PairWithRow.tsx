@@ -26,82 +26,57 @@ export function PairWithRow({ items, compact = false }: Props) {
 
   if (compact) {
     return (
-      <section className="rounded-xl border border-brand-cream-dark/80 bg-brand-ivory/60 p-3">
-        <h2 className="font-serif text-base font-semibold text-brand-ink">Complete Your Journey</h2>
-        <ul className="mt-2.5 space-y-2">
+      <section>
+        <h2 className="text-base font-semibold text-brand-ink">Pair it with</h2>
+        <ul className="mt-3 grid grid-cols-2 gap-4">
           {displayItems.map((item) => {
             const img = resolveMediaUrl(item.primaryImageUrl) ?? item.primaryImageUrl;
             const currency = zoneToCurrency(zone);
-            const price =
+            const minor =
               item.fromPriceInPaise != null
-                ? formatMinorFromPaise(
-                    unitSaleMinor(
-                      {
-                        saleInPaise: item.fromPriceInPaise,
-                        mrpInPaise: item.fromMrpInPaise ?? item.fromPriceInPaise,
-                        saleUsdCents: item.fromSaleUsdCents,
-                        mrpUsdCents: item.fromMrpUsdCents,
-                        saleGbpPence: item.fromSaleGbpPence,
-                        mrpGbpPence: item.fromMrpGbpPence
-                      },
-                      zone
-                    ),
-                    currency
+                ? unitSaleMinor(
+                    {
+                      saleInPaise: item.fromPriceInPaise,
+                      mrpInPaise: item.fromMrpInPaise ?? item.fromPriceInPaise,
+                      saleUsdCents: item.fromSaleUsdCents,
+                      mrpUsdCents: item.fromMrpUsdCents,
+                      saleGbpPence: item.fromSaleGbpPence,
+                      mrpGbpPence: item.fromMrpGbpPence
+                    },
+                    zone
                   )
+                : null;
+            const priceLabel =
+              minor != null
+                ? zone === "IN"
+                  ? `+${Math.round(minor / 100)}`
+                  : `+${formatMinorFromPaise(minor, currency)}`
                 : null;
 
             return (
-              <li key={item.id} className="flex items-center gap-2.5">
-                <Link
-                  href={`/product/${item.slug}`}
-                  className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-[#EDE4D3]"
-                >
-                  {img ? (
-                    <Image src={img} alt={item.name} fill className="object-cover" sizes="48px" unoptimized />
-                  ) : (
-                    <span className="flex h-full items-center justify-center text-[10px] text-stone-400">—</span>
-                  )}
-                </Link>
-                <div className="min-w-0 flex-1">
-                  <Link
-                    href={`/product/${item.slug}`}
-                    className="line-clamp-1 text-sm font-medium text-brand-ink hover:text-brand-forest"
-                  >
-                    {item.name}
-                  </Link>
-                  <div className="mt-0.5 flex items-center gap-0.5 text-[10px] text-brand-gold" aria-hidden>
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <span key={i}>★</span>
-                    ))}
+              <li key={item.id} className="min-w-0 text-center">
+                <Link href={`/product/${item.slug}`} className="group block">
+                  <div className="relative mx-auto aspect-square w-full overflow-hidden bg-[#EDE4D3]">
+                    {img ? (
+                      <Image
+                        src={img}
+                        alt={item.name}
+                        fill
+                        className="object-cover transition-opacity group-hover:opacity-90"
+                        sizes="(max-width: 640px) 40vw, 180px"
+                        unoptimized
+                      />
+                    ) : (
+                      <span className="flex h-full items-center justify-center text-xs text-stone-400">—</span>
+                    )}
                   </div>
-                  {price ? (
-                    <p className="mt-0.5 text-sm font-semibold text-brand-ink">{price}</p>
+                  {priceLabel ? (
+                    <p className="mt-2 text-sm font-semibold text-brand-ink">{priceLabel}</p>
                   ) : null}
-                </div>
-                {item.defaultVariantId ? (
-                  <button
-                    type="button"
-                    disabled={addingId === item.id}
-                    onClick={() => {
-                      setAddingId(item.id);
-                      void cartAdd(item.defaultVariantId!, 1)
-                        .catch((err) => {
-                          alert(err instanceof Error ? err.message : "Could not add to cart");
-                        })
-                        .finally(() => setAddingId(null));
-                    }}
-                    className="shrink-0 rounded-full bg-brand-night px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-                  >
-                    {addingId === item.id ? "…" : "Add"}
-                  </button>
-                ) : (
-                  <Link
-                    href={`/product/${item.slug}`}
-                    className="shrink-0 rounded-full bg-brand-night px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white"
-                  >
-                    View
-                  </Link>
-                )}
+                  <p className="mt-1 text-sm font-semibold text-brand-ink group-hover:text-brand-forest">
+                    {item.name}
+                  </p>
+                </Link>
               </li>
             );
           })}
