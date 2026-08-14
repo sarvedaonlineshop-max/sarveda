@@ -127,7 +127,6 @@ const TOKEN_ALIASES: Record<string, string[]> = {
   navy: ["navy blue"],
   "light grey": ["grey", "light gray"],
   grey: ["light grey"],
-  "misty blue": ["blue"],
   "rouge pink": ["rose", "pink"],
   sage: ["green"],
   golden: ["gold"],
