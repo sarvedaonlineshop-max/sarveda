@@ -9,9 +9,20 @@ export type GalleryImageRef = {
   isPrimary?: boolean;
 };
 
+function dedupeByUrl<T extends GalleryImageRef>(images: T[]): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const im of images) {
+    if (seen.has(im.url)) continue;
+    seen.add(im.url);
+    out.push(im);
+  }
+  return out;
+}
+
 /**
- * When a variant has linked gallery rows, show only those (DO carousel per variation).
- * Otherwise fall back to shared product gallery (simple products / legacy imports).
+ * Variable products with DO carousel: show only that variant's linked rows (2+ images).
+ * Simple / legacy imports often have one variant thumb plus shared gallery — merge those.
  */
 export function galleryImagesForVariant<T extends GalleryImageRef>(
   variantId: string,
@@ -23,9 +34,18 @@ export function galleryImagesForVariant<T extends GalleryImageRef>(
     .filter((im) => im.variantId === variantId)
     .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 
+  const shared = images
+    .filter((im) => !im.variantId)
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+
+  if (variantImages.length >= 2) return variantImages;
+
+  if (variantImages.length === 1 && shared.length > 0) {
+    return dedupeByUrl([...shared, ...variantImages]);
+  }
+
   if (variantImages.length > 0) return variantImages;
 
-  const shared = images.filter((im) => !im.variantId);
   if (shared.length > 0) return shared;
   return images;
 }

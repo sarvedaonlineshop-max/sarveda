@@ -246,49 +246,21 @@ export async function listProducts(query: ListProductsQuery) {
       : await prisma.product.findMany({
           where: { id: { in: orderedIds } },
           include: {
-            images: {
-              where: { isPrimary: true },
-              take: 1
-            },
+            ...listInclude,
             variants: {
               where: { status: "ACTIVE" },
               orderBy: [{ isDefault: "desc" }, { saleInPaise: "asc" }],
-              take: 1
-            },
-            categories: {
-              include: { category: true },
-              take: 3
+              take: 1,
+              include: {
+                images: { orderBy: { position: "asc" }, take: 1 }
+              }
             }
           }
         });
   const byId = new Map(rowsUnsorted.map((p) => [p.id, p]));
   const rows = orderedIds.map((id) => byId.get(id)).filter(Boolean) as typeof rowsUnsorted;
 
-  const items = rows.map((p) => {
-    const img = p.images[0]?.url ?? null;
-    const v = p.variants[0];
-    return {
-      id: p.id,
-      slug: p.slug,
-      name: p.name,
-      shortDescription: p.shortDescription,
-      status: p.status,
-      productType: p.productType,
-      hasAudio: p.hasAudio,
-      primaryImageUrl: img,
-      fromPriceInPaise: v?.saleInPaise ?? null,
-      fromMrpInPaise: v?.mrpInPaise ?? null,
-      fromSaleUsdCents: v?.saleUsdCents ?? null,
-      fromMrpUsdCents: v?.mrpUsdCents ?? null,
-      fromSaleGbpPence: v?.saleGbpPence ?? null,
-      fromMrpGbpPence: v?.mrpGbpPence ?? null,
-      defaultVariantId: v?.id ?? null,
-      categories: p.categories.map((pc) => ({
-        slug: pc.category.slug,
-        name: pc.category.name
-      }))
-    };
-  });
+  const items = rows.map((p) => mapProductListRow({ ...p, hasAudio: p.hasAudio }));
 
   return {
     items,
@@ -379,6 +351,19 @@ const RELATION_TYPE_ORDER: Record<string, number> = {
   CROSS_SELL: 2
 };
 
+function resolvePrimaryImageUrl(product: {
+  images: Array<{ url: string; isPrimary?: boolean; variantId?: string | null; position?: number }>;
+  variants?: Array<{ images?: Array<{ url: string; position?: number }> }>;
+}): string | null {
+  const sorted = [...product.images].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+  const shared = sorted.filter((im) => !im.variantId);
+  const primaryShared = shared.find((im) => im.isPrimary)?.url ?? shared[0]?.url;
+  if (primaryShared) return primaryShared;
+  if (sorted[0]?.url) return sorted[0].url;
+  const variantImg = product.variants?.[0]?.images?.[0]?.url;
+  return variantImg ?? null;
+}
+
 function mapProductListRow(p: {
   id: string;
   slug: string;
@@ -387,7 +372,7 @@ function mapProductListRow(p: {
   status: ProductStatus;
   productType: ProductType;
   hasAudio: boolean;
-  images: Array<{ url: string }>;
+  images: Array<{ url: string; isPrimary?: boolean; variantId?: string | null; position?: number }>;
   variants: Array<{
     id: string;
     saleInPaise: number;
@@ -396,10 +381,11 @@ function mapProductListRow(p: {
     mrpUsdCents: number | null;
     saleGbpPence: number | null;
     mrpGbpPence: number | null;
+    images?: Array<{ url: string; position?: number }>;
   }>;
   categories: Array<{ category: { slug: string; name: string } }>;
 }) {
-  const img = p.images[0]?.url ?? null;
+  const img = resolvePrimaryImageUrl(p);
   const v = p.variants[0];
   return {
     id: p.id,
@@ -426,13 +412,15 @@ function mapProductListRow(p: {
 
 const listInclude = {
   images: {
-    where: { isPrimary: true },
-    take: 1
+    orderBy: { position: "asc" as const }
   },
   variants: {
     where: { status: "ACTIVE" as const },
     orderBy: [{ isDefault: "desc" as const }, { saleInPaise: "asc" as const }],
-    take: 1
+    take: 1,
+    include: {
+      images: { orderBy: { position: "asc" as const }, take: 1 }
+    }
   },
   categories: {
     include: { category: true },
