@@ -568,7 +568,7 @@ export async function getProductBySlug(slug: string) {
         }
       },
       images: { orderBy: { position: "asc" } },
-      categories: { include: { category: true } },
+      categories: { include: { category: true }, orderBy: { position: "asc" } },
       accordionItems: { orderBy: { position: "asc" } }
     }
   });

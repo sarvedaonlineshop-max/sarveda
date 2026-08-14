@@ -8,6 +8,7 @@
  * - Remove types-of-bottles / option1 / option2 / coconut-fiber-brush on these SKUs
  * - Rename sunshine-within-me-artistic-design -> copper-bottle-orange-light
  * - Set wooCommerceId where DO has a dedicated product
+ * - Prefix "Copper Bottle - " on titles; assign Eco-Living Bottles categories
  *
  * Usage (Lightsail):
  *   npx tsx scripts/fix-artistic-copper-split.ts
@@ -26,6 +27,23 @@ dotenv.config({ path: path.resolve(__dirname, "../.env") });
 const APPLY = process.argv.includes("--apply");
 const BACKUP_DIR = path.join(__dirname, "../../data/compare/live-artistic-copper-backups");
 const prisma = new PrismaClient();
+
+const COPPER_BOTTLE_PREFIX = "Copper Bottle - ";
+const BOTTLE_CATEGORY_SLUGS = [
+  "eco-living-sustainable-bottles",
+  "eco-living-sustainable-all",
+  "yoga-meditation-bottles-accessories"
+];
+
+const BOTTLE_CATEGORY_POSITIONS: Record<string, number> = {
+  "eco-living-sustainable-bottles": 0,
+  "eco-living-sustainable-all": 2,
+  "yoga-meditation-bottles-accessories": 2
+};
+
+function withCopperBottlePrefix(name: string): string {
+  return name.startsWith(COPPER_BOTTLE_PREFIX) ? name : `${COPPER_BOTTLE_PREFIX}${name}`;
+}
 
 type Attr = { name: string; slug: string; value: string };
 
@@ -88,7 +106,7 @@ const PRODUCTS: ProductFix[] = [
   },
   {
     slug: "copper-bottle-with-brush-tattvamasi",
-    name: "Tattvamasi-I am Infinite",
+    name: "Copper Bottle - Tattvamasi-I am Infinite",
     wooCommerceId: 5466,
     variantAxisOrder: ["size", "cleaning-brush"],
     skus: {
@@ -128,7 +146,7 @@ const PRODUCTS: ProductFix[] = [
   },
   {
     slug: "copper-bottle-with-brush-true-happiness-lies-within",
-    name: "Happiness is Inside",
+    name: "Copper Bottle - Happiness is Inside",
     wooCommerceId: 5459,
     variantAxisOrder: ["size", "cleaning-brush"],
     skus: {
@@ -168,7 +186,7 @@ const PRODUCTS: ProductFix[] = [
   },
   {
     slug: "copper-bottle-orange-light",
-    name: "Sunshine within Me",
+    name: "Copper Bottle - Sunshine within Me",
     wooCommerceId: 5669,
     fromSlug: "sunshine-within-me-artistic-design",
     variantAxisOrder: ["size", "cleaning-brush"],
@@ -209,7 +227,7 @@ const PRODUCTS: ProductFix[] = [
   },
   {
     slug: "copper-bottle-pink-noble-toughts",
-    name: "Pink & Positive",
+    name: "Copper Bottle - Pink & Positive",
     wooCommerceId: 5663,
     variantAxisOrder: ["size", "cleaning-brush"],
     skus: {
@@ -249,6 +267,24 @@ const PRODUCTS: ProductFix[] = [
   }
 ];
 
+async function syncBottleCategories(productId: string) {
+  const targetCats = await prisma.category.findMany({
+    where: { slug: { in: BOTTLE_CATEGORY_SLUGS } }
+  });
+  const targetIds = new Set(targetCats.map((c) => c.id));
+
+  const current = await prisma.productCategory.findMany({
+    where: { productId },
+    include: { category: true }
+  });
+
+  const toRemove = current.filter((pc) => !targetIds.has(pc.categoryId));
+  const existingIds = new Set(current.map((pc) => pc.categoryId));
+  const toAdd = targetCats.filter((c) => !existingIds.has(c.id));
+
+  return { toRemove, toAdd, targetCats };
+}
+
 async function resolveProduct(fix: ProductFix) {
   let product = await prisma.product.findFirst({
     where: { slug: fix.slug, deletedAt: null }
@@ -287,11 +323,12 @@ async function main() {
       continue;
     }
 
+    const targetName = withCopperBottlePrefix(fix.name);
     const slugChange = product.slug !== fix.slug;
-    const nameChange = product.name !== fix.name;
+    const nameChange = product.name !== targetName;
     if (slugChange || nameChange || fix.wooCommerceId) {
       log.push(
-        `PRODUCT ${product.slug} -> slug=${fix.slug} name=${fix.name}` +
+        `PRODUCT ${product.slug} -> slug=${fix.slug} name=${targetName}` +
           (fix.wooCommerceId ? ` wooId=${fix.wooCommerceId}` : "")
       );
       console.log(log[log.length - 1]);
@@ -306,7 +343,7 @@ async function main() {
           where: { id: product.id },
           data: {
             slug: fix.slug,
-            name: fix.name,
+            name: targetName,
             wooCommerceId: fix.wooCommerceId ?? product.wooCommerceId,
             variantAxisOrder: fix.variantAxisOrder,
             catalogHidden: false,
@@ -319,6 +356,44 @@ async function main() {
         where: { id: product.id },
         data: { variantAxisOrder: fix.variantAxisOrder }
       });
+    }
+
+    const { toRemove, toAdd, targetCats } = await syncBottleCategories(product.id);
+    if (toRemove.length || toAdd.length) {
+      log.push(
+        `  CATEGORIES ${fix.slug}: -[${toRemove.map((r) => r.category.slug).join(", ")}] +[${toAdd.map((a) => a.slug).join(", ")}]`
+      );
+      console.log(`  CATEGORIES ${fix.slug}`);
+      if (APPLY) {
+        if (toRemove.length) {
+          await prisma.productCategory.deleteMany({
+            where: {
+              productId: product.id,
+              categoryId: { in: toRemove.map((r) => r.categoryId) }
+            }
+          });
+        }
+        if (toAdd.length) {
+          await prisma.productCategory.createMany({
+            data: toAdd.map((c) => ({
+              productId: product.id,
+              categoryId: c.id,
+              position: BOTTLE_CATEGORY_POSITIONS[c.slug] ?? 0
+            })),
+            skipDuplicates: true
+          });
+        }
+      }
+    }
+    if (APPLY) {
+      for (const cat of targetCats) {
+        const pos = BOTTLE_CATEGORY_POSITIONS[cat.slug];
+        if (pos === undefined) continue;
+        await prisma.productCategory.updateMany({
+          where: { productId: product.id, categoryId: cat.id },
+          data: { position: pos }
+        });
+      }
     }
 
     for (const [sku, spec] of Object.entries(fix.skus)) {
