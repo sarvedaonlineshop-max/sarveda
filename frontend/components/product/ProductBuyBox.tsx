@@ -6,7 +6,7 @@ import Link from "next/link";
 import { PairWithRow } from "@/components/product/PairWithRow";
 import { PriceDisplay } from "@/components/product/PriceDisplay";
 import type { Zone } from "@/lib/currency";
-import { stockDisplay, UNTRACKED_STOCK_ON_HAND } from "@/lib/variant-utils";
+import { sortAttributeOptionValues, stockDisplay, UNTRACKED_STOCK_ON_HAND } from "@/lib/variant-utils";
 import type { ProductListItem, ProductVariantDetail } from "@/lib/types";
 
 type Props = {
@@ -87,7 +87,10 @@ export function ProductBuyBox({
         map.get(key)!.add(row.attributeValue.value);
       }
     }
-    const groups = Array.from(map.entries()).map(([name, values]) => ({ name, values: Array.from(values) }));
+    const groups = Array.from(map.entries()).map(([name, values]) => ({
+      name,
+      values: sortAttributeOptionValues(name, Array.from(values))
+    }));
     if (groups.length > 0) {
       if (axisOrder?.length) {
         const orderKey = (label: string, slug?: string) => {

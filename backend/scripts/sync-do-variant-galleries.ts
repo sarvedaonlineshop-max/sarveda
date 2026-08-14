@@ -178,6 +178,21 @@ function extractYoutube(url: string): string | null {
   return m ? `https://www.youtube.com/embed/${m[1]}` : null;
 }
 
+/** Woo pa_type term ids on etched-gongs (DO carousel slots). */
+const ETCHED_CHAU_TYPE_TERM_NAMES: Record<string, string> = {
+  "49222": "Chakra",
+  "49224": "Mantra",
+  "42040": "Buddhist Om",
+};
+
+function withEtchedChauTypeTerms(
+  wooProductId: number,
+  termNames: Record<string, string>
+): Record<string, string> {
+  if (wooProductId !== 49115) return termNames;
+  return { ...termNames, ...ETCHED_CHAU_TYPE_TERM_NAMES };
+}
+
 function buildCarouselMeta(): {
   byWooId: Map<number, CarouselProduct>;
   termNames: Record<string, string>;
@@ -319,8 +334,12 @@ function slotAppliesToVariation(
     }
   }
 
+  // Size-only carousels: when term labels are missing, apply shared slots to all variations.
   if ((slot.imageId || slot.youtube || slot.iframe) && slot.termIds.length >= 2) {
-    if (!slotTermsResolve(slot, termNames)) return true;
+    if (!slotTermsResolve(slot, termNames)) {
+      const hasTypeAxis = Boolean(variation.attrs.type || variation.attrs.Type);
+      if (!hasTypeAxis) return true;
+    }
   }
 
   return false;
@@ -372,7 +391,10 @@ async function planCarouselProduct(
   termNames: Record<string, string>,
   ignoreTermFilter = false
 ): Promise<{ media: PlannedMedia[]; videoByVariantId: Map<string, string> }> {
-  const resolvedTerms = enrichTermNames(carousel, termNames);
+  const resolvedTerms = enrichTermNames(
+    carousel,
+    withEtchedChauTypeTerms(carousel.wooProductId, termNames)
+  );
   const doToLs = buildDoToLsVariantMap(pullRows, skuToVariantId);
   const media: PlannedMedia[] = [];
   const videoByVariantId = new Map<string, string>();

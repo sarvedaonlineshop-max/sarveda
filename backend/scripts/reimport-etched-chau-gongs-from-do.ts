@@ -47,6 +47,8 @@ const TYPE_CODES: Record<string, string> = {
   "Buddhist Om": "BO",
 };
 
+const TYPE_SORT_ORDER = ["Chakra", "Mantra", "Buddhist Om"];
+
 type DoVariantRow = {
   id: string;
   size: string;
@@ -111,7 +113,13 @@ function loadDoVariants(): DoVariantRow[] {
       };
     })
     .filter((r) => r.size && r.type)
-    .sort((a, b) => a.type.localeCompare(b.type) || parseInt(a.size, 10) - parseInt(b.size, 10));
+    .sort((a, b) => {
+      const ta = TYPE_SORT_ORDER.indexOf(a.type);
+      const tb = TYPE_SORT_ORDER.indexOf(b.type);
+      const typeCmp = (ta === -1 ? 999 : ta) - (tb === -1 ? 999 : tb);
+      if (typeCmp !== 0) return typeCmp;
+      return parseInt(a.size, 10) - parseInt(b.size, 10);
+    });
 }
 
 function loadProductGalleryUrls(): string[] {
@@ -457,8 +465,12 @@ async function main() {
   }
 
   await prisma.productVariant.updateMany({ where: { productId: product.id }, data: { isDefault: false } });
-  if (firstVariantId) {
-    await prisma.productVariant.update({ where: { id: firstVariantId }, data: { isDefault: true } });
+  const defaultVariant = await prisma.productVariant.findFirst({
+    where: { productId: product.id, sku: "MI-GO-CH-ET-CH-18", status: "ACTIVE" },
+  });
+  const defaultId = defaultVariant?.id ?? firstVariantId;
+  if (defaultId) {
+    await prisma.productVariant.update({ where: { id: defaultId }, data: { isDefault: true } });
   }
 
   patchPullV2ForGallery(galleryPullRows);

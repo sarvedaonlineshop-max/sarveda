@@ -23,6 +23,30 @@ export function attributeDisplayName(slug: string, fallback: string): string {
   return ATTRIBUTE_LABELS[slug.toLowerCase()] ?? fallback;
 }
 
+const GONG_TYPE_ORDER = ["Chakra", "Mantra", "Buddhist Om"];
+
+function parseInches(label: string): number {
+  const m = label.match(/(\d+(?:\.\d+)?)/);
+  return m ? parseFloat(m[1]!) : 9999;
+}
+
+/** Stable option order for storefront pills (matches live sarveda.com). */
+export function sortAttributeOptionValues(labelOrSlug: string, values: string[]): string[] {
+  const key = labelOrSlug.toLowerCase();
+  if (key.includes("type")) {
+    return [...values].sort((a, b) => {
+      const ai = GONG_TYPE_ORDER.indexOf(a);
+      const bi = GONG_TYPE_ORDER.indexOf(b);
+      if (ai >= 0 || bi >= 0) return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+      return a.localeCompare(b);
+    });
+  }
+  if (key.includes("size")) {
+    return [...values].sort((a, b) => parseInches(a) - parseInches(b));
+  }
+  return [...values].sort((a, b) => a.localeCompare(b));
+}
+
 export function buildAttributeAxes(
   variants: ProductVariantDetail[],
   axisOrder?: string[]
@@ -40,11 +64,12 @@ export function buildAttributeAxes(
     }
   }
 
-  const axes = Array.from(map.entries()).map(([slug, { name, values }]) => ({
-    slug,
-    name,
-    values: Array.from(values.entries()).map(([valueSlug, value]) => ({ slug: valueSlug, value }))
-  }));
+  const axes = Array.from(map.entries()).map(([slug, { name, values }]) => {
+    const raw = Array.from(values.entries()).map(([valueSlug, value]) => ({ slug: valueSlug, value }));
+    const sorted = sortAttributeOptionValues(slug, raw.map((r) => r.value));
+    const ordered = sorted.map((value) => raw.find((r) => r.value === value)!);
+    return { slug, name, values: ordered };
+  });
 
   if (!axisOrder?.length) return axes;
 
