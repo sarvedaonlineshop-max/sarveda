@@ -1,4 +1,5 @@
 import { corporateThemeAsset } from "@/lib/media-cdn";
+import { SARVEDA_WHATSAPP_E164 } from "./enquiry";
 
 const c = corporateThemeAsset;
 
@@ -127,7 +128,9 @@ export const CORPORATE_TESTIMONIALS = [
   }
 ] as const;
 
+const primaryPhoneDisplay = `+91 ${SARVEDA_WHATSAPP_E164.replace(/^91/, "")}`;
+
 export const CORPORATE_CONTACT = {
   emails: ["care@sarveda.com", "vivek@sarveda.com", "arjun@sarveda.com"],
-  phones: ["+91 9535975075", "+91 6363608737", "+91 8861568960"]
-} as const;
+  phones: [primaryPhoneDisplay] as const
+};

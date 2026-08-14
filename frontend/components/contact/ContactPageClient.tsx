@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { fetchMe } from "@/lib/auth-client";
 import { EnquiryFilePicker } from "@/components/enquiries/EnquiryFilePicker";
 import { submitEnquiry } from "@/lib/enquiry-api";
-import { ENQUIRY_SUBJECT_OPTIONS, type EnquirySubjectValue } from "@/lib/enquiry-subjects";
+import { customerPhoneDisplay, customerPhoneTelHref } from "@/lib/enquiry";
 
 const inputCls =
   "min-h-[42px] w-full rounded-xl border border-brand-cream-dark bg-brand-ivory px-3 text-sm text-brand-ink focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/25";
@@ -239,8 +239,8 @@ export function ContactPageClient() {
               care@sarveda.com
             </a>{" "}
             — we usually reply within 1–2 business days. 📞 Call or WhatsApp{" "}
-            <a href="tel:+919535975075" className="font-medium text-brand-gold hover:text-brand-forest">
-              +91 95359 75075
+            <a href={customerPhoneTelHref()} className="font-medium text-brand-gold hover:text-brand-forest">
+              {customerPhoneDisplay()}
             </a>
             .
           </p>

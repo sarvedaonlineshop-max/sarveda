@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { SarvedaLogo } from "@/components/brand/SarvedaLogo";
+import { customerPhoneDisplay, customerPhoneTelHref } from "@/lib/enquiry";
 
 const quickLinks = [
   { label: "Store", href: "/shop" },
@@ -176,8 +177,9 @@ export function SiteFooter() {
                 <span className="shrink-0 text-brand-gold" aria-hidden>
                   ☎
                 </span>
-                <a href="tel:+919611361100" className="hover:text-brand-gold">
-                  +91 9611361100
+                <a href={customerPhoneTelHref()} className="hover:text-brand-gold">
+                  {customerPhoneDisplay()}
+                </a>
                 </a>
               </li>
               <li className="flex gap-2.5">

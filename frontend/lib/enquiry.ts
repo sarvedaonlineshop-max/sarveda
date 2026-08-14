@@ -23,6 +23,27 @@ export function enquiryWhatsAppE164(): string {
   return raw.replace(/\D/g, "");
 }
 
+/** E.164 with leading + for tel: / wa.me links. */
+export function customerPhoneE164(): string {
+  const digits = enquiryWhatsAppE164();
+  return digits.startsWith("+") ? digits : `+${digits}`;
+}
+
+export function customerPhoneTelHref(): string {
+  return `tel:${customerPhoneE164()}`;
+}
+
+/** Human-readable Indian mobile, e.g. +91 9611361100 */
+export function customerPhoneDisplay(): string {
+  const e164 = customerPhoneE164();
+  if (/^\+91\d{10}$/.test(e164)) return `+91 ${e164.slice(3)}`;
+  return e164;
+}
+
+export function customerSupportPhones(): string[] {
+  return [customerPhoneDisplay()];
+}
+
 export function buildCourseEnquiryMessage(courseTitle: string): string {
   return `Hi, Im trying to join the ${courseTitle} course, I have some queries regarding the same , please clarify me`;
 }

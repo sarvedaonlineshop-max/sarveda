@@ -117,7 +117,7 @@ const content = `
   <h2>Get In Touch With Us</h2>
   <p>Fill up the form and our Team will get back to you within 24 hours.</p>
   <p><a href="mailto:care@sarveda.com">care@sarveda.com</a></p>
-  <p>Phone: +91 9535975075 · +91 6363608737 · +91 8861568960</p>
+  <p>Phone: +91 9611361100</p>
 </section>
 `.trim();
 

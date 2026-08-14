@@ -4,13 +4,13 @@
  */
 
 export type CustomerWhatsAppContact = {
-  /** Original env value, e.g. +919972238158 */
+  /** Original env value, e.g. +919611361100 */
   raw: string;
-  /** Digits only for wa.me, e.g. 919972238158 */
+  /** Digits only for wa.me, e.g. 919611361100 */
   e164Digits: string;
-  /** Human display, e.g. +91 99722 38158 */
+  /** Human display, e.g. +91 9611361100 */
   displayPhone: string;
-  /** https://wa.me/919972238158 */
+  /** https://wa.me/919611361100 */
   waLink: string;
 };
 
