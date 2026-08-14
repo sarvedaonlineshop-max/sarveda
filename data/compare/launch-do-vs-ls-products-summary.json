@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-08-14T05:27:15.662820+00:00",
+  "generatedAt": "2026-08-14T06:28:08.493131+00:00",
   "do_products_publish": 157,
   "lightsail_products_active": 154,
   "matched_total": 147,
-  "exact_slug_matches": 71,
-  "exact_woo_id_matches": 75,
+  "exact_slug_matches": 72,
+  "exact_woo_id_matches": 74,
   "fuzzy_name_matches": 1,
   "lightsail_only": 7,
   "do_only": 10,
