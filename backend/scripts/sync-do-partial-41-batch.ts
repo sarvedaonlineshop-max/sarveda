@@ -111,6 +111,30 @@ function log(msg: string) {
   actions.push(msg);
 }
 
+const NOISE_TOKENS = new Set([
+  "plain",
+  "standard",
+  "vintage",
+  "with handle",
+  "7 chakras plain",
+  "7 chakras vintage",
+]);
+
+/** LS/DO label drift — expand before tokenMatch. */
+const TOKEN_ALIASES: Record<string, string[]> = {
+  medium: ["standard"],
+  standard: ["medium"],
+  "navy blue": ["navy"],
+  navy: ["navy blue"],
+  "light grey": ["grey", "light gray"],
+  grey: ["light grey"],
+  "misty blue": ["blue"],
+  "rouge pink": ["rose", "pink"],
+  sage: ["green"],
+  golden: ["gold"],
+  etched: ["dark"],
+};
+
 function normToken(raw: string): string {
   return raw
     .trim()
@@ -126,12 +150,23 @@ function normToken(raw: string): string {
     .trim();
 }
 
+function stripNoise(tokens: string[]): string[] {
+  return tokens.filter((t) => t && !NOISE_TOKENS.has(t));
+}
+
 function tokenMatch(a: string, b: string): boolean {
   if (a === b) return true;
   if (a.includes(b) || b.includes(a)) return true;
   const na = a.replace(/[^a-z0-9]/g, "");
   const nb = b.replace(/[^a-z0-9]/g, "");
-  return na === nb || na.includes(nb) || nb.includes(na);
+  if (na === nb || na.includes(nb) || nb.includes(na)) return true;
+  for (const alias of TOKEN_ALIASES[a] || []) {
+    if (tokenMatch(alias, b)) return true;
+  }
+  for (const alias of TOKEN_ALIASES[b] || []) {
+    if (tokenMatch(a, alias)) return true;
+  }
+  return false;
 }
 
 function parseDoAttrs(attrs: string): string[] {
@@ -157,28 +192,26 @@ function lsVariantTokens(
         (order.get(b.attributeValue.attribute.slug) ?? 999)
     );
   }
-  const tokens = rows
-    .map((r) => normToken(r.attributeValue.value))
-    .filter(Boolean)
-    .filter((t) => t !== "plain" && t !== "standard");
+  const tokens = stripNoise(
+    rows.map((r) => normToken(r.attributeValue.value)).filter(Boolean)
+  );
   return [...new Set(tokens)];
 }
 
 function doVariantTokenList(dv: DoVariant): string[] {
-  return [...new Set(parseDoAttrs(dv.attrs).map(normToken).filter(Boolean))];
+  return [...new Set(stripNoise(parseDoAttrs(dv.attrs).map(normToken).filter(Boolean)))];
 }
 
 function tokensCompatible(lsTokens: string[], doTokens: string[]): boolean {
-  if (!lsTokens.length) return doTokens.length === 0;
-  if (lsTokens.length !== doTokens.length) {
-    // allow LS extra "plain" already stripped; try subset match
-    if (lsTokens.length > doTokens.length) return false;
+  const ls = stripNoise(lsTokens);
+  const dt = stripNoise(doTokens);
+  if (!ls.length && !dt.length) return true;
+  if (!ls.length || !dt.length) return false;
+  for (const lt of ls) {
+    if (!dt.some((d) => tokenMatch(lt, d))) return false;
   }
-  for (const lt of lsTokens) {
-    if (!doTokens.some((dt) => tokenMatch(lt, dt))) return false;
-  }
-  for (const dt of doTokens) {
-    if (!lsTokens.some((lt) => tokenMatch(lt, dt))) return false;
+  for (const d of dt) {
+    if (!ls.some((lt) => tokenMatch(lt, d))) return false;
   }
   return true;
 }
