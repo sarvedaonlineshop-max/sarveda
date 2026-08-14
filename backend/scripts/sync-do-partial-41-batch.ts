@@ -132,7 +132,6 @@ const TOKEN_ALIASES: Record<string, string[]> = {
   "rouge pink": ["rose", "pink"],
   sage: ["green"],
   golden: ["gold"],
-  etched: ["dark"],
 };
 
 function normToken(raw: string): string {
