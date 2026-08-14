@@ -176,8 +176,8 @@ export function SiteFooter() {
                 <span className="shrink-0 text-brand-gold" aria-hidden>
                   ☎
                 </span>
-                <a href="tel:+919972238158" className="hover:text-brand-gold">
-                  +91 9972238158
+                <a href="tel:+919611361100" className="hover:text-brand-gold">
+                  +91 9611361100
                 </a>
               </li>
               <li className="flex gap-2.5">

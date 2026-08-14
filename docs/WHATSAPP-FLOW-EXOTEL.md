@@ -66,7 +66,7 @@ Footer button: **Continue** → `complete` (all options exit for now).
 - Submitted issue + chat rating are stored in the existing admin Chats thread.
 
 ## WhatsApp business number
-- `EXOTEL_WHATSAPP_FROM=+919972238158` (backend `.env`)
+- `EXOTEL_WHATSAPP_FROM=+919611361100` (backend `.env`)
 - Frontend `NEXT_PUBLIC_WHATSAPP_NUMBER` must match same digits.
 
 ## Exotel send-flow API params (from Meta → Flows → Manage)

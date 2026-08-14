@@ -72,6 +72,29 @@ function firstNameFromOrder(fullName: string | null | undefined, email: string):
   return (local || "there").slice(0, 60);
 }
 
+/** Compact line-item block for WhatsApp template {{3}} on order_confirmed. */
+function formatOrderItemsForWhatsApp(
+  items: Array<{ nameSnapshot: string; qtyOrdered: number; lineTotalInPaise: number }>,
+  currency: string
+): string {
+  if (!items.length) return "—";
+  const lines = items.map(
+    (i) => `${i.nameSnapshot} × ${i.qtyOrdered} — ${formatOrderTotal(i.lineTotalInPaise, currency)}`
+  );
+  let text = lines.join("\n");
+  if (text.length <= 1024) return text;
+
+  let kept: string[] = [];
+  for (const line of lines) {
+    const next = kept.length ? `${kept.join("\n")}\n${line}` : line;
+    if (next.length > 980) break;
+    kept.push(line);
+  }
+  const omitted = lines.length - kept.length;
+  const suffix = omitted > 0 ? `\n…and ${omitted} more item${omitted === 1 ? "" : "s"}` : "";
+  return `${kept.join("\n")}${suffix}`.slice(0, 1024);
+}
+
 function isExotelConfigured(): boolean {
   return Boolean(
     process.env.EXOTEL_ACCOUNT_SID?.trim() &&
@@ -202,6 +225,7 @@ function buildBodyParams(
     name: string;
     orderNumber: string;
     total: string;
+    itemsSummary: string;
     view: string;
     cancelledUrl: string;
     checkoutResume: string;
@@ -211,7 +235,7 @@ function buildBodyParams(
 ): TemplateParams {
   switch (event) {
     case "order_confirmed":
-      return [ctx.name, ctx.orderNumber, ctx.total, ctx.view];
+      return [ctx.name, ctx.orderNumber, ctx.itemsSummary, ctx.total];
     case "payment_failed":
       return [ctx.name, ctx.orderNumber, ctx.cancelledUrl];
     case "payment_reminder":
@@ -247,6 +271,7 @@ export async function sendOrderWhatsApp(orderId: string, event: OrderEmailEvent)
   const order = await prisma.order.findFirst({
     where: { id: orderId, deletedAt: null },
     include: {
+      items: { orderBy: { nameSnapshot: "asc" } },
       shipments: { orderBy: { createdAt: "desc" }, take: 1 },
       addresses: { where: { type: "SHIPPING" }, take: 1 }
     }
@@ -267,11 +292,13 @@ export async function sendOrderWhatsApp(orderId: string, event: OrderEmailEvent)
   const tracking = awb ? trackUrl(awb) : view;
   const checkoutResume = `${siteBaseUrl()}/checkout?orderNumber=${encodeURIComponent(order.orderNumber)}&email=${encodeURIComponent(order.email)}`;
   const name = firstNameFromOrder(order.addresses[0]?.fullName, order.email);
+  const itemsSummary = formatOrderItemsForWhatsApp(order.items, order.currency);
 
   const bodyParams = buildBodyParams(event, {
     name,
     orderNumber: order.orderNumber,
     total,
+    itemsSummary,
     view,
     cancelledUrl: orderCancelledUrl(order.orderNumber, order.email),
     checkoutResume,

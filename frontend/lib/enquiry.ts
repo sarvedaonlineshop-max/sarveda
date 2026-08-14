@@ -3,7 +3,7 @@
  * Keep NEXT_PUBLIC_WHATSAPP_NUMBER in sync with backend EXOTEL_WHATSAPP_FROM
  * (same digits). Fallback matches the live Exotel number.
  */
-export const SARVEDA_WHATSAPP_E164 = "919972238158";
+export const SARVEDA_WHATSAPP_E164 = "919611361100";
 
 const DEFAULT_EMAIL = "care@sarveda.com";
 
