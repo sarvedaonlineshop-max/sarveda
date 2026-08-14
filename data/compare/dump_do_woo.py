@@ -122,6 +122,7 @@ with conn.cursor() as cur:
           AND (
             meta_key IN (
               '_sku','_thumbnail_id','_regular_price','_sale_price','_price',
+              '_stock','_stock_status','_manage_stock',
               'video_url','_variation_video','youtube_url'
             )
             OR meta_key LIKE 'attribute_%'
@@ -239,6 +240,9 @@ with (out / "do_variants.csv").open("w", newline="", encoding="utf-8") as f:
             "attrs",
             "regular_price",
             "sale_price",
+            "stock_qty",
+            "stock_status",
+            "manage_stock",
         ]
     )
     for r in vrows:
@@ -264,6 +268,9 @@ with (out / "do_variants.csv").open("w", newline="", encoding="utf-8") as f:
                 attrs,
                 m.get("_regular_price", ""),
                 m.get("_sale_price", ""),
+                m.get("_stock", ""),
+                m.get("_stock_status", ""),
+                m.get("_manage_stock", ""),
             ]
         )
 

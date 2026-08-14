@@ -1,5 +1,5 @@
 {
-  "exportedAt": "2026-08-14T05:27:02.289Z",
+  "exportedAt": "2026-08-14T06:27:53.331Z",
   "productCount": 154,
   "variantRowCount": 826,
   "bySlug": {
@@ -38,6 +38,7 @@
     "copper-bottle-curved-vintage-hammered": "copper-bottle-curved-vintage-hammered",
     "copper-bottle-gift-set-7-chakra": "copper-bottle-gift-set-7-chakra",
     "copper-bottle-hammered-copper-set": "copper-bottle-hammered-copper-set",
+    "copper-bottle-orange-light": "copper-bottle-orange-light",
     "copper-bottle-pink-noble-toughts": "copper-bottle-pink-noble-toughts",
     "copper-bottle-vintage-plain-curved": "copper-bottle-vintage-plain-curved",
     "copper-bottle-with-brush-tattvamasi": "copper-bottle-with-brush-tattvamasi",
@@ -116,7 +117,6 @@
     "s-shaped-didgeridoo": "s-shaped-didgeridoo",
     "stainless-steel-straws": "stainless-steel-straws",
     "sughosh-shankh": "sughosh-shankh",
-    "sunshine-within-me-artistic-design": "sunshine-within-me-artistic-design",
     "swinging-chimes": "swinging-chimes",
     "teak-wood-stainless-steel-xylophone": "teak-wood-stainless-steel-xylophone",
     "the-four-bowl-set-root-heart-third-eye-and-universal": "the-four-bowl-set-root-heart-third-eye-and-universal",
@@ -264,16 +264,19 @@
     "hammered copper bottle": [
       "copper-bottle-hammered-copper-set"
     ],
-    "pink & positive": [
+    "copper bottle - sunshine within me": [
+      "copper-bottle-orange-light"
+    ],
+    "copper bottle - pink & positive": [
       "copper-bottle-pink-noble-toughts"
     ],
     "curved copper bottles": [
       "copper-bottle-vintage-plain-curved"
     ],
-    "tattvamasi-i am infinite": [
+    "copper bottle - tattvamasi-i am infinite": [
       "copper-bottle-with-brush-tattvamasi"
     ],
-    "happiness is inside": [
+    "copper bottle - happiness is inside": [
       "copper-bottle-with-brush-true-happiness-lies-within"
     ],
     "crescent zafu cushion - compact -buck wheat": [
@@ -497,9 +500,6 @@
     ],
     "sughosh shankh": [
       "sughosh-shankh"
-    ],
-    "sunshine within me (artistic design)": [
-      "sunshine-within-me-artistic-design"
     ],
     "swinging chimes": [
       "swinging-chimes"
@@ -3456,7 +3456,7 @@
       "hasProductVideo": false,
       "variantId": "80668a80-8d97-45b9-9818-f990884fb727",
       "sku": "CB-AD-BM",
-      "variantName": "Without Brush / 1L / Blue Tranquillity",
+      "variantName": "Without Brush / 1L",
       "variantImageCount": 0,
       "variantVideoUrl": "",
       "hasVariantVideo": false,
@@ -3487,7 +3487,7 @@
       "hasProductVideo": false,
       "variantId": "bb57a994-1e3c-431a-9069-def8f1599cd7",
       "sku": "CB-AD-BM-B",
-      "variantName": "With Brush / 1L / Blue Tranquillity",
+      "variantName": "With Brush / 1L",
       "variantImageCount": 0,
       "variantVideoUrl": "",
       "hasVariantVideo": false,
@@ -3518,7 +3518,7 @@
       "hasProductVideo": false,
       "variantId": "b6d3c275-d8fc-4e7f-b754-048ffef52b7e",
       "sku": "CB-AD-BM-.5",
-      "variantName": "Without Brush / 500ml / Blue Tranquillity",
+      "variantName": "Without Brush / 500ml",
       "variantImageCount": 0,
       "variantVideoUrl": "",
       "hasVariantVideo": false,
@@ -3549,7 +3549,7 @@
       "hasProductVideo": false,
       "variantId": "9c432510-11fc-45ce-9c3c-966e9e993a3d",
       "sku": "CB-AD-BM-.5-B",
-      "variantName": "With Brush / 500ml / Blue Tranquillity",
+      "variantName": "With Brush / 500ml",
       "variantImageCount": 0,
       "variantVideoUrl": "",
       "hasVariantVideo": false,
@@ -3755,18 +3755,80 @@
       }
     },
     {
-      "productId": "5c872fe5-9fc1-4223-ac44-c5b4d3e5e55c",
-      "slug": "copper-bottle-pink-noble-toughts",
-      "name": "Pink & Positive",
-      "wooCommerceId": 5778,
+      "productId": "423a3ce7-30b0-4b1b-a434-77941461906b",
+      "slug": "copper-bottle-orange-light",
+      "name": "Copper Bottle - Sunshine within Me",
+      "wooCommerceId": 5669,
       "hasDescription": false,
-      "hasShortDescription": false,
+      "hasShortDescription": true,
       "productImageCount": 0,
       "productVideoUrl": "",
       "hasProductVideo": false,
-      "variantId": "27ba8ede-5d48-4a95-b87a-a4f0a3f37f52",
-      "sku": "CB-AD-PP",
-      "variantName": "without-brush / 1L",
+      "variantId": "253af1ec-3006-4478-baad-49d55966d4e9",
+      "sku": "CB-AD-SS-.5-B",
+      "variantName": "With Brush / 500ml",
+      "variantImageCount": 1,
+      "variantVideoUrl": "",
+      "hasVariantVideo": false,
+      "prices": {
+        "inr": {
+          "mrp": 1281,
+          "sale": 985
+        },
+        "usd": {
+          "mrp": 17.3,
+          "sale": 15.4
+        },
+        "gbp": {
+          "mrp": 17.3,
+          "sale": 15.4
+        }
+      }
+    },
+    {
+      "productId": "423a3ce7-30b0-4b1b-a434-77941461906b",
+      "slug": "copper-bottle-orange-light",
+      "name": "Copper Bottle - Sunshine within Me",
+      "wooCommerceId": 5669,
+      "hasDescription": false,
+      "hasShortDescription": true,
+      "productImageCount": 0,
+      "productVideoUrl": "",
+      "hasProductVideo": false,
+      "variantId": "22284be9-7649-4af2-a620-fb06101bbc68",
+      "sku": "CB-AD-SS-.5",
+      "variantName": "Without Brush / 500ml",
+      "variantImageCount": 1,
+      "variantVideoUrl": "",
+      "hasVariantVideo": false,
+      "prices": {
+        "inr": {
+          "mrp": 1099,
+          "sale": 845
+        },
+        "usd": {
+          "mrp": 15.6,
+          "sale": 13.9
+        },
+        "gbp": {
+          "mrp": 15.6,
+          "sale": 13.9
+        }
+      }
+    },
+    {
+      "productId": "423a3ce7-30b0-4b1b-a434-77941461906b",
+      "slug": "copper-bottle-orange-light",
+      "name": "Copper Bottle - Sunshine within Me",
+      "wooCommerceId": 5669,
+      "hasDescription": false,
+      "hasShortDescription": true,
+      "productImageCount": 0,
+      "productVideoUrl": "",
+      "hasProductVideo": false,
+      "variantId": "cd0ebef0-26d0-4d79-8f5e-c4900bdc19ae",
+      "sku": "CB-AD-SS",
+      "variantName": "Without Brush / 1L",
       "variantImageCount": 1,
       "variantVideoUrl": "",
       "hasVariantVideo": false,
@@ -3776,20 +3838,51 @@
           "sale": 1245
         },
         "usd": {
-          "mrp": 35,
-          "sale": 25
+          "mrp": 21.8,
+          "sale": 19.5
         },
         "gbp": {
-          "mrp": 35,
-          "sale": 25
+          "mrp": 21.8,
+          "sale": 19.5
+        }
+      }
+    },
+    {
+      "productId": "423a3ce7-30b0-4b1b-a434-77941461906b",
+      "slug": "copper-bottle-orange-light",
+      "name": "Copper Bottle - Sunshine within Me",
+      "wooCommerceId": 5669,
+      "hasDescription": false,
+      "hasShortDescription": true,
+      "productImageCount": 0,
+      "productVideoUrl": "",
+      "hasProductVideo": false,
+      "variantId": "1fc75d0a-19e9-4e39-a51d-fcf187a12a6b",
+      "sku": "CB-AD-SS-B",
+      "variantName": "With Brush / 1L",
+      "variantImageCount": 1,
+      "variantVideoUrl": "",
+      "hasVariantVideo": false,
+      "prices": {
+        "inr": {
+          "mrp": 1749,
+          "sale": 1345
+        },
+        "usd": {
+          "mrp": 23.6,
+          "sale": 21.1
+        },
+        "gbp": {
+          "mrp": 23.6,
+          "sale": 21.1
         }
       }
     },
     {
       "productId": "5c872fe5-9fc1-4223-ac44-c5b4d3e5e55c",
       "slug": "copper-bottle-pink-noble-toughts",
-      "name": "Pink & Positive",
-      "wooCommerceId": 5778,
+      "name": "Copper Bottle - Pink & Positive",
+      "wooCommerceId": 5663,
       "hasDescription": false,
       "hasShortDescription": false,
       "productImageCount": 0,
@@ -3797,14 +3890,14 @@
       "hasProductVideo": false,
       "variantId": "560273c2-540f-4621-a7e6-ec6dcb6146d4",
       "sku": "CB-AD-PP-B",
-      "variantName": "with-brush / 1L",
+      "variantName": "With Brush / 1L",
       "variantImageCount": 1,
       "variantVideoUrl": "",
       "hasVariantVideo": false,
       "prices": {
         "inr": {
-          "mrp": 1619,
-          "sale": 1245
+          "mrp": 1749,
+          "sale": 1345
         },
         "usd": {
           "mrp": 35,
@@ -3819,16 +3912,16 @@
     {
       "productId": "5c872fe5-9fc1-4223-ac44-c5b4d3e5e55c",
       "slug": "copper-bottle-pink-noble-toughts",
-      "name": "Pink & Positive",
-      "wooCommerceId": 5778,
+      "name": "Copper Bottle - Pink & Positive",
+      "wooCommerceId": 5663,
       "hasDescription": false,
       "hasShortDescription": false,
       "productImageCount": 0,
       "productVideoUrl": "",
       "hasProductVideo": false,
-      "variantId": "c4564e73-d646-40d8-ae41-57ccf6f1332c",
-      "sku": "CB-AD-PP-.5-B",
-      "variantName": "with-brush / 500ml",
+      "variantId": "27ba8ede-5d48-4a95-b87a-a4f0a3f37f52",
+      "sku": "CB-AD-PP",
+      "variantName": "Without Brush / 1L",
       "variantImageCount": 1,
       "variantVideoUrl": "",
       "hasVariantVideo": false,
@@ -3850,8 +3943,8 @@
     {
       "productId": "5c872fe5-9fc1-4223-ac44-c5b4d3e5e55c",
       "slug": "copper-bottle-pink-noble-toughts",
-      "name": "Pink & Positive",
-      "wooCommerceId": 5778,
+      "name": "Copper Bottle - Pink & Positive",
+      "wooCommerceId": 5663,
       "hasDescription": false,
       "hasShortDescription": false,
       "productImageCount": 0,
@@ -3859,14 +3952,45 @@
       "hasProductVideo": false,
       "variantId": "9cfc762e-7064-440e-8e85-d0462e5dc3ff",
       "sku": "CB-AD-PP-.5",
-      "variantName": "without-brush / 500ml",
+      "variantName": "Without Brush / 500ml",
       "variantImageCount": 1,
       "variantVideoUrl": "",
       "hasVariantVideo": false,
       "prices": {
         "inr": {
-          "mrp": 1619,
-          "sale": 1245
+          "mrp": 1157,
+          "sale": 890
+        },
+        "usd": {
+          "mrp": 35,
+          "sale": 25
+        },
+        "gbp": {
+          "mrp": 35,
+          "sale": 25
+        }
+      }
+    },
+    {
+      "productId": "5c872fe5-9fc1-4223-ac44-c5b4d3e5e55c",
+      "slug": "copper-bottle-pink-noble-toughts",
+      "name": "Copper Bottle - Pink & Positive",
+      "wooCommerceId": 5663,
+      "hasDescription": false,
+      "hasShortDescription": false,
+      "productImageCount": 0,
+      "productVideoUrl": "",
+      "hasProductVideo": false,
+      "variantId": "c4564e73-d646-40d8-ae41-57ccf6f1332c",
+      "sku": "CB-AD-PP-.5-B",
+      "variantName": "With Brush / 500ml",
+      "variantImageCount": 1,
+      "variantVideoUrl": "",
+      "hasVariantVideo": false,
+      "prices": {
+        "inr": {
+          "mrp": 1281,
+          "sale": 985
         },
         "usd": {
           "mrp": 35,
@@ -4005,39 +4129,8 @@
     {
       "productId": "b08ef60e-2cd5-4be5-a8e4-3d1572c0ed10",
       "slug": "copper-bottle-with-brush-tattvamasi",
-      "name": "Tattvamasi-I am Infinite",
-      "wooCommerceId": 5632,
-      "hasDescription": false,
-      "hasShortDescription": false,
-      "productImageCount": 0,
-      "productVideoUrl": "",
-      "hasProductVideo": false,
-      "variantId": "91271809-1fd1-45b0-a132-a47dd3cae72d",
-      "sku": "CB-AD-TM-.5",
-      "variantName": "without-brush / 500ml",
-      "variantImageCount": 1,
-      "variantVideoUrl": "",
-      "hasVariantVideo": false,
-      "prices": {
-        "inr": {
-          "mrp": 1749,
-          "sale": 1345
-        },
-        "usd": {
-          "mrp": 35,
-          "sale": 25
-        },
-        "gbp": {
-          "mrp": 35,
-          "sale": 25
-        }
-      }
-    },
-    {
-      "productId": "b08ef60e-2cd5-4be5-a8e4-3d1572c0ed10",
-      "slug": "copper-bottle-with-brush-tattvamasi",
-      "name": "Tattvamasi-I am Infinite",
-      "wooCommerceId": 5632,
+      "name": "Copper Bottle - Tattvamasi-I am Infinite",
+      "wooCommerceId": 5466,
       "hasDescription": false,
       "hasShortDescription": false,
       "productImageCount": 0,
@@ -4045,7 +4138,7 @@
       "hasProductVideo": false,
       "variantId": "6ed0369b-7f4c-4384-9004-ff0422774d8f",
       "sku": "CB-AD-TM-B",
-      "variantName": "with-brush / 1L",
+      "variantName": "With Brush / 1L",
       "variantImageCount": 1,
       "variantVideoUrl": "",
       "hasVariantVideo": false,
@@ -4067,8 +4160,8 @@
     {
       "productId": "b08ef60e-2cd5-4be5-a8e4-3d1572c0ed10",
       "slug": "copper-bottle-with-brush-tattvamasi",
-      "name": "Tattvamasi-I am Infinite",
-      "wooCommerceId": 5632,
+      "name": "Copper Bottle - Tattvamasi-I am Infinite",
+      "wooCommerceId": 5466,
       "hasDescription": false,
       "hasShortDescription": false,
       "productImageCount": 0,
@@ -4076,14 +4169,14 @@
       "hasProductVideo": false,
       "variantId": "4f187b5d-b9ed-4787-bfd1-22851715244d",
       "sku": "CB-AD-TM",
-      "variantName": "without-brush / 1L",
+      "variantName": "Without Brush / 1L",
       "variantImageCount": 1,
       "variantVideoUrl": "",
       "hasVariantVideo": false,
       "prices": {
         "inr": {
-          "mrp": 1749,
-          "sale": 1345
+          "mrp": 1619,
+          "sale": 1245
         },
         "usd": {
           "mrp": 35,
@@ -4098,8 +4191,39 @@
     {
       "productId": "b08ef60e-2cd5-4be5-a8e4-3d1572c0ed10",
       "slug": "copper-bottle-with-brush-tattvamasi",
-      "name": "Tattvamasi-I am Infinite",
-      "wooCommerceId": 5632,
+      "name": "Copper Bottle - Tattvamasi-I am Infinite",
+      "wooCommerceId": 5466,
+      "hasDescription": false,
+      "hasShortDescription": false,
+      "productImageCount": 0,
+      "productVideoUrl": "",
+      "hasProductVideo": false,
+      "variantId": "91271809-1fd1-45b0-a132-a47dd3cae72d",
+      "sku": "CB-AD-TM-.5",
+      "variantName": "Without Brush / 500ml",
+      "variantImageCount": 1,
+      "variantVideoUrl": "",
+      "hasVariantVideo": false,
+      "prices": {
+        "inr": {
+          "mrp": 1157,
+          "sale": 890
+        },
+        "usd": {
+          "mrp": 35,
+          "sale": 25
+        },
+        "gbp": {
+          "mrp": 35,
+          "sale": 25
+        }
+      }
+    },
+    {
+      "productId": "b08ef60e-2cd5-4be5-a8e4-3d1572c0ed10",
+      "slug": "copper-bottle-with-brush-tattvamasi",
+      "name": "Copper Bottle - Tattvamasi-I am Infinite",
+      "wooCommerceId": 5466,
       "hasDescription": false,
       "hasShortDescription": false,
       "productImageCount": 0,
@@ -4107,14 +4231,14 @@
       "hasProductVideo": false,
       "variantId": "a9723077-64e2-4f49-9078-e5fd145ccaf9",
       "sku": "CB-AD-TM-B-.5",
-      "variantName": "with-brush / 500ml",
+      "variantName": "With Brush / 500ml",
       "variantImageCount": 1,
       "variantVideoUrl": "",
       "hasVariantVideo": false,
       "prices": {
         "inr": {
-          "mrp": 1749,
-          "sale": 1345
+          "mrp": 1281,
+          "sale": 985
         },
         "usd": {
           "mrp": 35,
@@ -4129,8 +4253,8 @@
     {
       "productId": "0cff80c6-de49-4786-afca-91c10dd20f43",
       "slug": "copper-bottle-with-brush-true-happiness-lies-within",
-      "name": "Happiness is Inside",
-      "wooCommerceId": 5634,
+      "name": "Copper Bottle - Happiness is Inside",
+      "wooCommerceId": 5459,
       "hasDescription": false,
       "hasShortDescription": false,
       "productImageCount": 0,
@@ -4138,14 +4262,14 @@
       "hasProductVideo": false,
       "variantId": "1f933006-0272-46da-b15a-3cd2fdee189c",
       "sku": "CB-AD-HI-.5-B",
-      "variantName": "with-brush / 500ml",
+      "variantName": "With Brush / 500ml",
       "variantImageCount": 1,
       "variantVideoUrl": "",
       "hasVariantVideo": false,
       "prices": {
         "inr": {
-          "mrp": 1749,
-          "sale": 1345
+          "mrp": 1281,
+          "sale": 985
         },
         "usd": {
           "mrp": 35,
@@ -4160,8 +4284,8 @@
     {
       "productId": "0cff80c6-de49-4786-afca-91c10dd20f43",
       "slug": "copper-bottle-with-brush-true-happiness-lies-within",
-      "name": "Happiness is Inside",
-      "wooCommerceId": 5634,
+      "name": "Copper Bottle - Happiness is Inside",
+      "wooCommerceId": 5459,
       "hasDescription": false,
       "hasShortDescription": false,
       "productImageCount": 0,
@@ -4169,14 +4293,14 @@
       "hasProductVideo": false,
       "variantId": "6f8f4117-99d6-4d1a-95e4-11e611544128",
       "sku": "CB-AD-HI-.5",
-      "variantName": "without-brush / 500ml",
+      "variantName": "Without Brush / 500ml",
       "variantImageCount": 1,
       "variantVideoUrl": "",
       "hasVariantVideo": false,
       "prices": {
         "inr": {
-          "mrp": 1749,
-          "sale": 1345
+          "mrp": 1157,
+          "sale": 890
         },
         "usd": {
           "mrp": 35,
@@ -4191,39 +4315,8 @@
     {
       "productId": "0cff80c6-de49-4786-afca-91c10dd20f43",
       "slug": "copper-bottle-with-brush-true-happiness-lies-within",
-      "name": "Happiness is Inside",
-      "wooCommerceId": 5634,
-      "hasDescription": false,
-      "hasShortDescription": false,
-      "productImageCount": 0,
-      "productVideoUrl": "",
-      "hasProductVideo": false,
-      "variantId": "1ea675d0-edcf-4438-936a-13dd6ed214e6",
-      "sku": "CB-AD-HI",
-      "variantName": "without-brush / 1L",
-      "variantImageCount": 1,
-      "variantVideoUrl": "",
-      "hasVariantVideo": false,
-      "prices": {
-        "inr": {
-          "mrp": 1749,
-          "sale": 1345
-        },
-        "usd": {
-          "mrp": 35,
-          "sale": 25
-        },
-        "gbp": {
-          "mrp": 35,
-          "sale": 25
-        }
-      }
-    },
-    {
-      "productId": "0cff80c6-de49-4786-afca-91c10dd20f43",
-      "slug": "copper-bottle-with-brush-true-happiness-lies-within",
-      "name": "Happiness is Inside",
-      "wooCommerceId": 5634,
+      "name": "Copper Bottle - Happiness is Inside",
+      "wooCommerceId": 5459,
       "hasDescription": false,
       "hasShortDescription": false,
       "productImageCount": 0,
@@ -4231,7 +4324,7 @@
       "hasProductVideo": false,
       "variantId": "378e495f-7df6-4681-8efe-44534af5d4ab",
       "sku": "CB-AD-HI-B",
-      "variantName": "with-brush / 1L",
+      "variantName": "With Brush / 1L",
       "variantImageCount": 1,
       "variantVideoUrl": "",
       "hasVariantVideo": false,
@@ -4239,6 +4332,37 @@
         "inr": {
           "mrp": 1749,
           "sale": 1345
+        },
+        "usd": {
+          "mrp": 35,
+          "sale": 25
+        },
+        "gbp": {
+          "mrp": 35,
+          "sale": 25
+        }
+      }
+    },
+    {
+      "productId": "0cff80c6-de49-4786-afca-91c10dd20f43",
+      "slug": "copper-bottle-with-brush-true-happiness-lies-within",
+      "name": "Copper Bottle - Happiness is Inside",
+      "wooCommerceId": 5459,
+      "hasDescription": false,
+      "hasShortDescription": false,
+      "productImageCount": 0,
+      "productVideoUrl": "",
+      "hasProductVideo": false,
+      "variantId": "1ea675d0-edcf-4438-936a-13dd6ed214e6",
+      "sku": "CB-AD-HI",
+      "variantName": "Without Brush / 1L",
+      "variantImageCount": 1,
+      "variantVideoUrl": "",
+      "hasVariantVideo": false,
+      "prices": {
+        "inr": {
+          "mrp": 1619,
+          "sale": 1245
         },
         "usd": {
           "mrp": 35,
@@ -18786,130 +18910,6 @@
         "gbp": {
           "mrp": 30,
           "sale": 20
-        }
-      }
-    },
-    {
-      "productId": "423a3ce7-30b0-4b1b-a434-77941461906b",
-      "slug": "sunshine-within-me-artistic-design",
-      "name": "Sunshine within Me (Artistic Design)",
-      "wooCommerceId": 5669,
-      "hasDescription": false,
-      "hasShortDescription": true,
-      "productImageCount": 0,
-      "productVideoUrl": "",
-      "hasProductVideo": false,
-      "variantId": "253af1ec-3006-4478-baad-49d55966d4e9",
-      "sku": "CB-AD-SS-.5-B",
-      "variantName": "with-brush / 500ml",
-      "variantImageCount": 1,
-      "variantVideoUrl": "",
-      "hasVariantVideo": false,
-      "prices": {
-        "inr": {
-          "mrp": 1281,
-          "sale": 985
-        },
-        "usd": {
-          "mrp": 17.3,
-          "sale": 15.4
-        },
-        "gbp": {
-          "mrp": 17.3,
-          "sale": 15.4
-        }
-      }
-    },
-    {
-      "productId": "423a3ce7-30b0-4b1b-a434-77941461906b",
-      "slug": "sunshine-within-me-artistic-design",
-      "name": "Sunshine within Me (Artistic Design)",
-      "wooCommerceId": 5669,
-      "hasDescription": false,
-      "hasShortDescription": true,
-      "productImageCount": 0,
-      "productVideoUrl": "",
-      "hasProductVideo": false,
-      "variantId": "22284be9-7649-4af2-a620-fb06101bbc68",
-      "sku": "CB-AD-SS-.5",
-      "variantName": "without-brush / 500ml",
-      "variantImageCount": 1,
-      "variantVideoUrl": "",
-      "hasVariantVideo": false,
-      "prices": {
-        "inr": {
-          "mrp": 1157,
-          "sale": 890
-        },
-        "usd": {
-          "mrp": 15.6,
-          "sale": 13.9
-        },
-        "gbp": {
-          "mrp": 15.6,
-          "sale": 13.9
-        }
-      }
-    },
-    {
-      "productId": "423a3ce7-30b0-4b1b-a434-77941461906b",
-      "slug": "sunshine-within-me-artistic-design",
-      "name": "Sunshine within Me (Artistic Design)",
-      "wooCommerceId": 5669,
-      "hasDescription": false,
-      "hasShortDescription": true,
-      "productImageCount": 0,
-      "productVideoUrl": "",
-      "hasProductVideo": false,
-      "variantId": "cd0ebef0-26d0-4d79-8f5e-c4900bdc19ae",
-      "sku": "CB-AD-SS",
-      "variantName": "without-brush / 1L",
-      "variantImageCount": 1,
-      "variantVideoUrl": "",
-      "hasVariantVideo": false,
-      "prices": {
-        "inr": {
-          "mrp": 1619,
-          "sale": 1245
-        },
-        "usd": {
-          "mrp": 21.8,
-          "sale": 19.5
-        },
-        "gbp": {
-          "mrp": 21.8,
-          "sale": 19.5
-        }
-      }
-    },
-    {
-      "productId": "423a3ce7-30b0-4b1b-a434-77941461906b",
-      "slug": "sunshine-within-me-artistic-design",
-      "name": "Sunshine within Me (Artistic Design)",
-      "wooCommerceId": 5669,
-      "hasDescription": false,
-      "hasShortDescription": true,
-      "productImageCount": 0,
-      "productVideoUrl": "",
-      "hasProductVideo": false,
-      "variantId": "1fc75d0a-19e9-4e39-a51d-fcf187a12a6b",
-      "sku": "CB-AD-SS-B",
-      "variantName": "with-brush / 1L",
-      "variantImageCount": 1,
-      "variantVideoUrl": "",
-      "hasVariantVideo": false,
-      "prices": {
-        "inr": {
-          "mrp": 1749,
-          "sale": 1345
-        },
-        "usd": {
-          "mrp": 23.6,
-          "sale": 21.1
-        },
-        "gbp": {
-          "mrp": 23.6,
-          "sale": 21.1
         }
       }
     },

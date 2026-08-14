@@ -1,0 +1,26 @@
+{
+  "generatedAt": "2026-08-14T06:35:33.070782+00:00",
+  "do_products": 157,
+  "ls_products": 154,
+  "matched_product_pairs": 147,
+  "exact_match_variant_rows": 67,
+  "fuzzy_match_variant_rows": 922,
+  "do_only_product_rows": 43,
+  "ls_only_product_rows": 22,
+  "do_only_products_raw": 10,
+  "ls_only_products_raw": 7,
+  "do_only_products_adjusted": 9,
+  "ls_only_products_adjusted": 6,
+  "columns": [
+    "DO Product name",
+    "LS Product name",
+    "DO Variant name",
+    "LS Variant name",
+    "DO SKU",
+    "LS SKU"
+  ],
+  "outputs": {
+    "xlsx": "/home/radha/sarveda/data/compare/pending-do-vs-ls-launch.xlsx",
+    "json": "/home/radha/sarveda/data/compare/pending-do-vs-ls-launch-summary.json"
+  }
+}
