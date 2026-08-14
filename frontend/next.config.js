@@ -146,6 +146,16 @@ const nextConfig = {
         source: "/cancellation-and-returns/",
         destination: "/refunds",
         permanent: true
+      },
+      {
+        source: "/product/sunshine-within-me-artistic-design",
+        destination: "/product/copper-bottle-orange-light",
+        permanent: true
+      },
+      {
+        source: "/product/sunshine-within-me-artistic-design/",
+        destination: "/product/copper-bottle-orange-light",
+        permanent: true
       }
     ];
   },
