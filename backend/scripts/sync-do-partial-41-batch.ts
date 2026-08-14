@@ -123,7 +123,6 @@ const NOISE_TOKENS = new Set([
 /** LS/DO label drift — expand before tokenMatch. */
 const TOKEN_ALIASES: Record<string, string[]> = {
   medium: ["standard"],
-  standard: ["medium"],
   "navy blue": ["navy"],
   navy: ["navy blue"],
   "light grey": ["grey", "light gray"],
@@ -133,6 +132,25 @@ const TOKEN_ALIASES: Record<string, string[]> = {
   sage: ["green"],
   golden: ["gold"],
 };
+
+function expandAliases(token: string): string[] {
+  const out = new Set<string>([token]);
+  for (const alias of TOKEN_ALIASES[token] || []) out.add(alias);
+  return [...out];
+}
+
+function tokenMatch(a: string, b: string): boolean {
+  for (const ta of expandAliases(a)) {
+    for (const tb of expandAliases(b)) {
+      if (ta === tb) return true;
+      if (ta.includes(tb) || tb.includes(ta)) return true;
+      const na = ta.replace(/[^a-z0-9]/g, "");
+      const nb = tb.replace(/[^a-z0-9]/g, "");
+      if (na === nb || na.includes(nb) || nb.includes(na)) return true;
+    }
+  }
+  return false;
+}
 
 function normToken(raw: string): string {
   return raw
@@ -151,21 +169,6 @@ function normToken(raw: string): string {
 
 function stripNoise(tokens: string[]): string[] {
   return tokens.filter((t) => t && !NOISE_TOKENS.has(t));
-}
-
-function tokenMatch(a: string, b: string): boolean {
-  if (a === b) return true;
-  if (a.includes(b) || b.includes(a)) return true;
-  const na = a.replace(/[^a-z0-9]/g, "");
-  const nb = b.replace(/[^a-z0-9]/g, "");
-  if (na === nb || na.includes(nb) || nb.includes(na)) return true;
-  for (const alias of TOKEN_ALIASES[a] || []) {
-    if (tokenMatch(alias, b)) return true;
-  }
-  for (const alias of TOKEN_ALIASES[b] || []) {
-    if (tokenMatch(a, alias)) return true;
-  }
-  return false;
 }
 
 function parseDoAttrs(attrs: string): string[] {
