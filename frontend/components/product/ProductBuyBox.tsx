@@ -32,7 +32,7 @@ type Props = {
   axisOrder?: string[];
   /** Auroville-style inline PDP vs legacy card sidebar */
   layout?: "card" | "inline";
-  /** Compact "Complete your journey" items above purchase buttons */
+  /** Compact "Pair it with" items above purchase buttons */
   pairWithItems?: ProductListItem[];
 };
 
