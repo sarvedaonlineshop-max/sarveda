@@ -80,11 +80,33 @@ function normText(s: string): string {
 }
 
 function normVariant(s: string): string {
-  return normText(s).replace(/[\s|/·,–—-]+/g, " ").trim();
+  return normText(s)
+    .replace(/[\s|/·,–—-]+/g, " ")
+    .replace(/(\d)\s*in\b/g, "$1 in")
+    .replace(/\b(striker|rimmer)\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function normSku(s: string): string {
   return (s || "").trim().toUpperCase();
+}
+
+function normSkuFuzzy(s: string): string {
+  return normSku(s)
+    .replace(/-HM-/g, "-H-")
+    .replace(/-SBM-/g, "-SB-M-")
+    .replace(/-GO-WI-/g, "-GO-W-");
+}
+
+function variantTokens(s: string): Set<string> {
+  return new Set(normVariant(s).split(" ").filter(Boolean));
+}
+
+function swapVariantParts(name: string): string {
+  const parts = name.split(/\s*\/\s*/).map((p) => p.trim()).filter(Boolean);
+  if (parts.length !== 2) return "";
+  return `${parts[1]} / ${parts[0]}`;
 }
 
 function parseDoVariantName(attrs: string, title: string, productName: string): string {
@@ -203,7 +225,9 @@ function loadDoData() {
   }
 
   const bySku = new Map<string, DoVariant>();
+  const bySkuFuzzy = new Map<string, DoVariant>();
   const byKey = new Map<string, DoVariant>();
+  const byProduct = new Map<string, DoVariant[]>();
 
   const variants = parse(fs.readFileSync(DO_VARIANTS, "utf8"), {
     columns: true,
@@ -228,9 +252,16 @@ function loadDoData() {
       stockQty: v.stock_qty || "",
       stockStatus: v.stock_status || "",
     };
-    if (dv.sku) bySku.set(normSku(dv.sku), dv);
-    byKey.set(`${normText(productName)}::${normVariant(dv.variantName)}`, dv);
+    if (dv.sku) {
+      bySku.set(normSku(dv.sku), dv);
+      bySkuFuzzy.set(normSkuFuzzy(dv.sku), dv);
+    }
+    const pKey = normText(productName);
+    byKey.set(`${pKey}::${normVariant(dv.variantName)}`, dv);
     byKey.set(`${normText(v.parent_slug || "")}::${normVariant(dv.variantName)}`, dv);
+    const list = byProduct.get(pKey) || [];
+    list.push(dv);
+    byProduct.set(pKey, list);
   }
 
   for (const p of products) {
@@ -249,32 +280,60 @@ function loadDoData() {
       stockQty: "",
       stockStatus: "",
     };
-    if (dv.sku) bySku.set(normSku(dv.sku), dv);
+    if (dv.sku) {
+      bySku.set(normSku(dv.sku), dv);
+      bySkuFuzzy.set(normSkuFuzzy(dv.sku), dv);
+    }
     byKey.set(`${normText(p.name || "")}::`, dv);
   }
 
-  return { attachments, bySku, byKey, productVideoById, productThumbById, productGalleryById };
+  return {
+    attachments,
+    bySku,
+    bySkuFuzzy,
+    byKey,
+    byProduct,
+    productVideoById,
+    productThumbById,
+    productGalleryById,
+  };
 }
 
 function resolveDoVariant(row: FuzzyRow, doData: ReturnType<typeof loadDoData>): DoVariant | null {
-  if (row.doSku) {
-    const hit = doData.bySku.get(normSku(row.doSku));
+  const skuCandidates = [row.doSku, row.lsSku].filter(Boolean);
+  for (const sku of skuCandidates) {
+    const hit = doData.bySku.get(normSku(sku)) || doData.bySkuFuzzy.get(normSkuFuzzy(sku));
     if (hit) return hit;
   }
-  if (row.lsSku) {
-    const hit = doData.bySku.get(normSku(row.lsSku));
-    if (hit) return hit;
+
+  const productKeys = [...new Set([row.doProduct, row.lsProduct].map(normText).filter(Boolean))];
+  const nameCandidates = [...new Set([row.doVariant, row.lsVariant].filter(Boolean))];
+
+  for (const pKey of productKeys) {
+    for (const name of nameCandidates) {
+      const direct = doData.byKey.get(`${pKey}::${normVariant(name)}`);
+      if (direct) return direct;
+
+      const swapped = swapVariantParts(name);
+      if (swapped) {
+        const hit = doData.byKey.get(`${pKey}::${normVariant(swapped)}`);
+        if (hit) return hit;
+      }
+
+      const tokens = variantTokens(name);
+      if (tokens.size) {
+        const pool = doData.byProduct.get(pKey) || [];
+        const hits = pool.filter((dv) => {
+          const dt = variantTokens(dv.variantName);
+          if (dt.size !== tokens.size) return false;
+          for (const t of tokens) if (!dt.has(t)) return false;
+          return true;
+        });
+        if (hits.length === 1) return hits[0];
+      }
+    }
   }
-  const keys = [
-    `${normText(row.doProduct)}::${normVariant(row.doVariant)}`,
-    `${normText(row.doProduct)}::${normVariant(row.lsVariant)}`,
-    `${normText(row.lsProduct)}::${normVariant(row.doVariant)}`,
-    `${normText(row.lsProduct)}::${normVariant(row.lsVariant)}`,
-  ];
-  for (const k of keys) {
-    const hit = doData.byKey.get(k);
-    if (hit) return hit;
-  }
+
   return null;
 }
 
