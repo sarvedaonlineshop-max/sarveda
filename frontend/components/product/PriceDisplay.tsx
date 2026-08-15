@@ -25,7 +25,7 @@ export function PriceDisplay({
   const isCompact = size === "compact";
   const isStorefront = presentation === "storefront";
   const saleClass = isStorefront
-    ? "font-sans text-2xl font-bold tabular-nums tracking-tight text-brand-forest sm:text-3xl"
+    ? "font-sans text-2xl font-bold tabular-nums tracking-tight text-[#108967] sm:text-3xl"
     : isCompact
       ? "font-sans text-lg font-bold tabular-nums tracking-tight text-stone-900"
       : "font-sans text-3xl font-semibold tabular-nums tracking-tight text-stone-900 sm:text-4xl";

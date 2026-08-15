@@ -59,8 +59,7 @@ export function ProductOffersBanner({ codAvailable = false }: Props) {
             </svg>
           </span>
           <div className="min-w-0">
-            <p className="text-sm font-bold text-[#108967]">Cash on delivery</p>
-            <p className="text-xs text-stone-600">Pay when your order arrives</p>
+            <p className="text-sm font-bold leading-snug text-[#108967]">Cash on delivery Available</p>
           </div>
         </div>
       ) : null}

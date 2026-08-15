@@ -308,8 +308,71 @@ export function Header() {
         {hideMarquee ? null : <AnnouncementBar hidden={marqueeHidden} />}
 
         <header className="border-b border-brand-forest/10 bg-white shadow-[0_4px_16px_rgba(16,32,26,0.05)]">
-          {/* Layer 1: logo + nav + track / search / auth / cart */}
-          <div className="border-b border-brand-cream-dark/60 bg-white">
+          {/* Search first so it sits above the nav (taller bar on PDP). */}
+          {showHeaderSearchLayer ? (
+            <div
+              id="header-search-panel"
+              className={`border-b border-brand-cream-dark/60 bg-brand-cream/95 ${
+                showPersistentStoreSearch
+                  ? "max-h-[min(70vh,28rem)] overflow-visible opacity-100"
+                  : `transition-[max-height,opacity] duration-300 ease-out ${
+                      searchLayerExpanded
+                        ? "max-h-[min(70vh,28rem)] overflow-visible opacity-100"
+                        : "max-h-0 overflow-hidden opacity-0"
+                    }`
+              }`}
+              aria-hidden={!searchLayerExpanded}
+            >
+              <div className="mx-auto flex max-w-7xl items-start gap-2.5 px-4 py-2.5 sm:gap-3 sm:px-6 lg:px-8">
+                <div className="relative z-[60] min-w-0 flex-1">
+                  <svg
+                    className="pointer-events-none absolute left-4 top-[22px] z-10 h-4 w-4 text-brand-muted"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-4.35-4.35M16.5 10.5a6 6 0 11-12 0 6 6 0 0112 0z"
+                    />
+                  </svg>
+                  {searchLayerExpanded ? (
+                    <SearchWithSuggestions
+                      id={showPersistentStoreSearch ? "pdp-store-search" : "desktop-search"}
+                      autoFocus={showSearchToggle && searchOpen}
+                      placeholder={
+                        showPersistentStoreSearch
+                          ? "Search products…"
+                          : "Search products, courses, insights…"
+                      }
+                      inputClassName="w-full min-h-[44px] rounded-full border border-brand-forest/12 bg-white py-2.5 pl-11 pr-4 text-sm text-brand-ink placeholder:text-brand-muted transition-all focus:border-brand-gold/50 focus:outline-none focus:ring-1 focus:ring-brand-gold/30"
+                      onNavigate={() => {
+                        if (!showPersistentStoreSearch) setSearchOpen(false);
+                      }}
+                    />
+                  ) : null}
+                </div>
+                {showSearchToggle ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearchOpen(false)}
+                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-forest/10 text-brand-forest transition-colors hover:bg-brand-forest hover:text-brand-cream active:bg-brand-night active:text-brand-cream"
+                    aria-label="Close search"
+                  >
+                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" aria-hidden>
+                      <path strokeWidth={2.25} strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />
+                    </svg>
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
+          {/* Logo + nav + track / search toggle / auth / cart */}
+          <div className="bg-white">
             <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-1.5 sm:px-6 lg:px-8">
               <SarvedaLogo iconHeight={42} />
 
@@ -453,69 +516,6 @@ export function Header() {
               </div>
             </div>
           </div>
-
-          {/* Layer 2: always visible on PDP; toggle on other pages; shop listing uses ShopProductToolbar instead. */}
-          {showHeaderSearchLayer ? (
-            <div
-              id="header-search-panel"
-              className={`bg-brand-cream/95 ${
-                showPersistentStoreSearch
-                  ? "max-h-[min(70vh,28rem)] overflow-visible opacity-100"
-                  : `transition-[max-height,opacity] duration-300 ease-out ${
-                      searchLayerExpanded
-                        ? "max-h-[min(70vh,28rem)] overflow-visible opacity-100"
-                        : "max-h-0 overflow-hidden opacity-0"
-                    }`
-              }`}
-              aria-hidden={!searchLayerExpanded}
-            >
-              <div className="mx-auto flex max-w-7xl items-start gap-2.5 px-4 py-1.5 sm:gap-3 sm:px-6 lg:px-8">
-                <div className="relative z-[60] min-w-0 flex-1">
-                  <svg
-                    className="pointer-events-none absolute left-3.5 top-[0.85rem] z-10 h-3.5 w-3.5 text-brand-muted"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-4.35-4.35M16.5 10.5a6 6 0 11-12 0 6 6 0 0112 0z"
-                    />
-                  </svg>
-                  {searchLayerExpanded ? (
-                    <SearchWithSuggestions
-                      id={showPersistentStoreSearch ? "pdp-store-search" : "desktop-search"}
-                      autoFocus={showSearchToggle && searchOpen}
-                      placeholder={
-                        showPersistentStoreSearch
-                          ? "Search products…"
-                          : "Search products, courses, insights…"
-                      }
-                      inputClassName="w-full rounded-full border border-brand-forest/12 bg-white py-1.5 pl-10 pr-3 text-sm text-brand-ink placeholder:text-brand-muted transition-all focus:border-brand-gold/50 focus:outline-none focus:ring-1 focus:ring-brand-gold/30"
-                      onNavigate={() => {
-                        if (!showPersistentStoreSearch) setSearchOpen(false);
-                      }}
-                    />
-                  ) : null}
-                </div>
-                {showSearchToggle ? (
-                  <button
-                    type="button"
-                    onClick={() => setSearchOpen(false)}
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-forest/10 text-brand-forest transition-colors hover:bg-brand-forest hover:text-brand-cream active:bg-brand-night active:text-brand-cream"
-                    aria-label="Close search"
-                  >
-                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" aria-hidden>
-                      <path strokeWidth={2.25} strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />
-                    </svg>
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          ) : null}
         </header>
       </div>
 

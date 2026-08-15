@@ -177,7 +177,7 @@ export function ProductBuyBox({
         : "border-[#108967] bg-white text-[#108967] hover:bg-[#108967]/10"
     }`;
 
-  const wrapperClass = isInline ? "space-y-4" : "rounded-xl border border-stone-200 bg-white p-5 shadow-md ring-1 ring-stone-100";
+  const wrapperClass = isInline ? "space-y-0" : "rounded-xl border border-stone-200 bg-white p-5 shadow-md ring-1 ring-stone-100";
 
   return (
     <div className={wrapperClass}>
@@ -214,17 +214,14 @@ export function ProductBuyBox({
       ) : null}
 
       {!isDigital ? (
-        <div className={isInline ? "py-5" : "mt-4 py-5"}>
+        <div className="py-6">
           <DeliveryTimeline preparationDays="5 - 6 Days" shippingDays={shippingDays} />
         </div>
+      ) : attributeGroups.length > 0 ? (
+        <div className="h-6" />
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-        {stock ? (
-          <p className={`text-sm font-bold ${stock.inStock ? "text-[#108967]" : "text-amber-800"}`}>
-            {stock.label}
-          </p>
-        ) : null}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <p className="font-sans text-base font-bold text-[#108967]">Quantity</p>
         <div className="inline-flex items-center overflow-hidden rounded-[3px] border border-[#108967]/30 bg-white">
           <button
@@ -236,7 +233,7 @@ export function ProductBuyBox({
           >
             −
           </button>
-          <span className="min-w-[2.75rem] text-center text-sm font-semibold tabular-nums text-brand-ink">{qty}</span>
+          <span className="min-w-[2.75rem] text-center text-sm font-semibold tabular-nums text-[#108967]">{qty}</span>
           <button
             type="button"
             disabled={qty >= qtyLimit}
@@ -247,6 +244,19 @@ export function ProductBuyBox({
             +
           </button>
         </div>
+        {stock ? (
+          <span
+            className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold ${
+              !stock.inStock
+                ? "border-amber-300 bg-amber-50 text-amber-800"
+                : stock.showCount
+                  ? "border-amber-300 bg-amber-50 text-amber-800"
+                  : "border-[#108967]/30 bg-[#e8f6f1] text-[#108967]"
+            }`}
+          >
+            {stock.label}
+          </span>
+        ) : null}
         {stockCap != null && qty >= stockCap ? (
           <p className="w-full text-sm font-medium text-amber-800" role="status">
             {qtyMessage ?? `Only ${stockCap} available`}
@@ -258,8 +268,8 @@ export function ProductBuyBox({
         ) : null}
       </div>
 
-      {showPurchaseActions ? (
-        <div className={isInline ? "space-y-3" : undefined}>
+          {showPurchaseActions ? (
+            <div className={isInline ? "mt-4 space-y-3" : undefined}>
           {isInline && pairWithItems.length > 0 ? <PairWithRow items={pairWithItems} compact /> : null}
           <div className={isInline ? "flex gap-2" : undefined}>
             <button

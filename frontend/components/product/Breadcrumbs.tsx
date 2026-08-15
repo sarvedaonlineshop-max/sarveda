@@ -18,7 +18,7 @@ export function Breadcrumbs({ items }: Props) {
                 {item.label}
               </Link>
             ) : (
-              <span className="font-medium text-stone-900">{item.label}</span>
+              <span className="font-medium text-[#108967]">{item.label}</span>
             )}
           </li>
         ))}
