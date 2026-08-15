@@ -94,7 +94,7 @@ function CarouselIcon() {
 export function HomeInstagram() {
   return (
     <section className="bg-white py-14 md:py-16 lg:py-20" aria-labelledby="home-instagram-heading">
-      <div className="mx-auto w-[90%] max-w-[1600px] md:w-[80%]">
+      <div className="page-shell">
         <div className="text-center">
           <h2
             id="home-instagram-heading"

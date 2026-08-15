@@ -92,7 +92,7 @@ export function ShopInfiniteProductGrid({
           <span className="font-medium text-brand-ink">{total}</span> products
         </p>
       ) : null}
-      <ul className="grid grid-cols-2 gap-x-2.5 gap-y-3 px-3 sm:grid-cols-3 md:gap-x-4 md:gap-y-3.5 md:px-0 xl:grid-cols-4">
+      <ul className="grid grid-cols-2 gap-x-2.5 gap-y-3 px-3 sm:grid-cols-3 md:gap-x-4 md:gap-y-4 md:px-0 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
         {items.map((product) => (
           <li key={product.id}>
             <ProductCard product={product} />

@@ -19,13 +19,13 @@ export default async function OffersPage() {
   return (
     <>
       <div className="border-b border-stone-100 bg-stone-50">
-        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="page-shell py-10">
           <h1 className="font-serif text-3xl font-semibold tracking-tight text-stone-900 md:text-4xl">Offers</h1>
           <p className="mt-3 max-w-2xl text-stone-600">Current promotions on courses, events, and wellness programs.</p>
         </div>
       </div>
 
-      <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <main className="page-shell py-10">
         {offers.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-stone-200 bg-white p-12 text-center text-stone-500">
             No active offers right now.{" "}

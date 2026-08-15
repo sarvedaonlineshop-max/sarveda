@@ -92,7 +92,7 @@ export function SiteHeader() {
       <header className="sticky top-0 z-50 border-b shadow-lg"
         style={{ background:"linear-gradient(180deg,#0f1a14 0%,#111d17 100%)", borderColor:"rgba(255,255,255,0.08)" }}
       >
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+        <div className="page-shell flex items-center justify-between gap-3 py-3">
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <button type="button"
               className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl text-stone-300 transition-colors hover:bg-white/8 hover:text-amber-400 md:hidden"

@@ -192,7 +192,7 @@ export default async function SlugContentPage({ params }: Props) {
       <>
         <JsonLd data={breadcrumbJsonLd(breadcrumbItems)} />
         <div className="border-b border-brand-cream-dark/60 bg-white">
-          <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-6 lg:px-8">
+          <div className="page-shell py-5 md:py-6">
             <Breadcrumbs items={uiBreadcrumbs} />
           </div>
         </div>
@@ -208,7 +208,7 @@ export default async function SlugContentPage({ params }: Props) {
       <>
         <JsonLd data={breadcrumbJsonLd(breadcrumbItems)} />
         <div className="border-b border-brand-cream-dark/60 bg-white">
-          <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-6 lg:px-8">
+          <div className="page-shell py-5 md:py-6">
             <Breadcrumbs items={uiBreadcrumbs} />
           </div>
         </div>
@@ -226,12 +226,12 @@ export default async function SlugContentPage({ params }: Props) {
       ) : null}
 
       <div className="border-b border-brand-cream-dark/60 bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-6 lg:px-8">
+        <div className="page-shell py-5 md:py-6">
           <Breadcrumbs items={uiBreadcrumbs} />
         </div>
       </div>
 
-      <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 md:py-14">
+      <main className="page-shell py-10 md:py-14">
         <div className={content.kind === "blog" ? "mx-auto max-w-prose" : undefined}>
           {content.kind === "blog" ? (
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">

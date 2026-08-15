@@ -70,7 +70,7 @@ export function HomeExperienceSections({ courses, events }: Props) {
           className="bg-[#f9f6f0] py-14 md:py-16 lg:py-20"
           aria-labelledby="home-courses-events-heading"
         >
-          <div className="mx-auto w-[90%] max-w-[1600px] md:w-[80%]">
+          <div className="page-shell">
             <div className="text-center">
               <h2
                 id="home-courses-events-heading"
@@ -116,7 +116,7 @@ export function HomeExperienceSections({ courses, events }: Props) {
         className="bg-white py-14 md:py-16 lg:py-20"
         aria-labelledby="home-corporate-heading"
       >
-        <div className="mx-auto grid w-[90%] max-w-[1600px] items-center gap-10 md:w-[80%] lg:grid-cols-2 lg:gap-14">
+        <div className="page-shell grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
           <div className="min-w-0">
             <p className="flex items-center gap-2 text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-brand-gold sm:text-xs">
               <LotusIcon />

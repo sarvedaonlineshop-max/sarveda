@@ -25,8 +25,8 @@ function ContentBlock({
   );
 
   return (
-    <section className="px-4 py-12 md:py-16 lg:px-8" style={{ backgroundColor: background }}>
-      <div className="mx-auto grid max-w-7xl items-center gap-8 md:grid-cols-2 md:gap-12">
+    <section className="py-12 md:py-16" style={{ backgroundColor: background }}>
+      <div className="page-shell grid items-center gap-8 md:grid-cols-2 md:gap-12">
         {imagePosition === "left" ? (
           <>
             {imageCol}
@@ -55,7 +55,7 @@ export function CorporateProgramPage({ data }: Props) {
           backgroundPosition: "center"
         }}
       >
-        <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="page-shell py-16">
           <h1 className="max-w-4xl font-serif text-4xl font-bold uppercase tracking-wide text-white md:text-5xl lg:text-6xl">
             {data.title}
           </h1>
@@ -64,8 +64,8 @@ export function CorporateProgramPage({ data }: Props) {
       </section>
 
       {/* Framework pillars */}
-      <section className="bg-white px-4 py-14 md:py-16 lg:px-8">
-        <div className="mx-auto max-w-7xl">
+      <section className="bg-white py-14 md:py-16">
+        <div className="page-shell">
           <p className="mx-auto max-w-3xl text-center text-sm leading-relaxed text-stone-600 md:text-base">
             {data.frameworkIntro}
           </p>
@@ -98,8 +98,8 @@ export function CorporateProgramPage({ data }: Props) {
 
       {/* Optional quote block (SAMSARA) */}
       {data.quoteBlock ? (
-        <section className="bg-white px-4 py-12 md:py-16 lg:px-8">
-          <div className="mx-auto grid max-w-7xl items-start gap-8 md:grid-cols-2 md:gap-12">
+        <section className="bg-white py-12 md:py-16">
+          <div className="page-shell grid items-start gap-8 md:grid-cols-2 md:gap-12">
             <h2 className="font-serif text-xl font-semibold leading-snug text-stone-900 md:text-2xl lg:text-3xl">
               {data.quoteBlock.title}
             </h2>

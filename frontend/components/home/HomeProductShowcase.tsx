@@ -86,8 +86,8 @@ export function HomeProductShowcase({ products }: Props) {
         ))}
 
         {/* Content overlay */}
-        <div className="absolute inset-x-0 bottom-0 px-4 pb-8 pt-20 sm:px-6 md:px-8 md:pb-10">
-          <div className="mx-auto flex max-w-7xl flex-col gap-5 md:flex-row md:items-end md:justify-between">
+        <div className="absolute inset-x-0 bottom-0 pb-8 pt-20 md:pb-10">
+          <div className="page-shell flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
 
             {/* Left: text */}
             <div className="max-w-xl">

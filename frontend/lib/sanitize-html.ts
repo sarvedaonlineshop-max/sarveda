@@ -1,14 +1,30 @@
+const CURRENT_WHATSAPP_DISPLAY = "+91 96113 61100";
+const CURRENT_WHATSAPP_DIGITS = "919611361100";
+
+/** Retired Woo copy still has the old support mobile in shipping accordion HTML. */
+export function replaceRetiredSupportPhone(text: string): string {
+  return text
+    .replace(/wa\.me\/(?:91)?9535975075/gi, `wa.me/${CURRENT_WHATSAPP_DIGITS}`)
+    .replace(/api\.whatsapp\.com\/send\?phone=(?:91)?9535975075/gi, `api.whatsapp.com/send?phone=${CURRENT_WHATSAPP_DIGITS}`)
+    .replace(/tel:\+?(?:91)?9535975075/gi, `tel:+${CURRENT_WHATSAPP_DIGITS}`)
+    .replace(/\+91[\s\u00a0\-]*95359[\s\u00a0\-]*75075/g, CURRENT_WHATSAPP_DISPLAY)
+    .replace(/919535975075/g, CURRENT_WHATSAPP_DIGITS)
+    .replace(/9535975075/g, "9611361100");
+}
+
 /** Woo/CSV sometimes stores literal backslash-n instead of line breaks. */
 export function normalizeProductText(text: string): string {
-  return text
-    // CR + literal `\n` from Woo dumps (`\r\\n`) must be one break, not two.
-    .replace(/\r\\n/g, "\n")
-    .replace(/\\r\\n/g, "\n")
-    .replace(/\r\n/g, "\n")
-    .replace(/\r/g, "\n")
-    .replace(/\\n/g, "\n")
-    .replace(/\\r/g, "\n")
-    .replace(/\n{3,}/g, "\n\n");
+  return replaceRetiredSupportPhone(
+    text
+      // CR + literal `\n` from Woo dumps (`\r\\n`) must be one break, not two.
+      .replace(/\r\\n/g, "\n")
+      .replace(/\\r\\n/g, "\n")
+      .replace(/\r\n/g, "\n")
+      .replace(/\r/g, "\n")
+      .replace(/\\n/g, "\n")
+      .replace(/\\r/g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+  );
 }
 
 /** Strip editor metadata and render-safe HTML for product copy.

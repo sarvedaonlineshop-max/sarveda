@@ -121,7 +121,7 @@ function RichContent({ html, title }: { html: string; title?: string }) {
       .filter((line) => line.length > 0);
     if (lines.length > 0) {
       return (
-        <ul className="border-t border-brand-cream-dark/60 px-4 pb-4 pt-3 text-sm leading-relaxed text-brand-ink/80">
+        <ul className="border-t border-brand-cream-dark/60 px-4 pb-4 pt-3 text-base leading-relaxed text-brand-ink/80">
           {lines.map((line, i) => (
             <li key={i} className="relative py-1 pl-7">
               <svg
@@ -148,14 +148,14 @@ function RichContent({ html, title }: { html: string; title?: string }) {
   if (looksHtml) {
     return (
       <div
-        className="accordion-rich rich-features border-t border-brand-cream-dark/60 px-4 pb-4 pt-3 text-sm leading-relaxed text-brand-ink/80 prose prose-stone max-w-none prose-p:my-1.5 prose-ul:my-2 prose-li:my-1 prose-headings:font-sans prose-headings:font-bold prose-headings:text-brand-ink [&_.sarveda-acc-p]:my-1.5 [&_.sarveda-acc-ul]:my-2 [&_.sarveda-acc-li]:my-1"
+        className="accordion-rich rich-features border-t border-brand-cream-dark/60 px-4 pb-4 pt-3 text-base leading-relaxed text-brand-ink/80 prose prose-stone max-w-none prose-p:my-1.5 prose-ul:my-2 prose-li:my-1 prose-headings:font-sans prose-headings:font-bold prose-headings:text-brand-ink [&_.sarveda-acc-p]:my-1.5 [&_.sarveda-acc-ul]:my-2 [&_.sarveda-acc-li]:my-1"
         dangerouslySetInnerHTML={{ __html: cleaned }}
       />
     );
   }
 
   return (
-    <div className="border-t border-brand-cream-dark/60 px-4 pb-4 pt-3 text-sm leading-relaxed whitespace-pre-wrap text-brand-ink/80">
+    <div className="border-t border-brand-cream-dark/60 px-4 pb-4 pt-3 text-base leading-relaxed whitespace-pre-wrap text-brand-ink/80">
       {decodeHtmlEntities(cleaned)}
     </div>
   );

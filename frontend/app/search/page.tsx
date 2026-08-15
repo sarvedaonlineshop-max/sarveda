@@ -58,7 +58,7 @@ function SearchResults() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 pb-24 md:px-6 md:py-8">
+    <div className="page-shell py-6 pb-24 md:py-8">
       <h1 className="font-serif text-2xl font-semibold text-stone-900 md:text-3xl">Search & browse</h1>
       <p className="mt-2 max-w-2xl text-sm text-stone-600">
         Find products, courses, events, and insights across Sarveda.

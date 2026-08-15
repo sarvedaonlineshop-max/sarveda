@@ -99,7 +99,7 @@ export default async function ProductDetailPage({ params }: Props) {
     <>
       <JsonLd data={[productJsonLd(product), breadcrumbJsonLd(breadcrumbItems)]} />
       <div className="border-b border-stone-100 bg-brand-cream/90">
-        <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
+        <div className="page-shell py-3">
           <Breadcrumbs
             items={[
               { label: "Home", href: "/" },
@@ -121,7 +121,7 @@ export default async function ProductDetailPage({ params }: Props) {
 
       <main className="bg-stone-50">
         <ProductDetailExperience product={product} pairWithItems={pairWithItems} />
-        <div className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
+        <div className="page-shell pb-12">
           <ProductRelatedArticles slugs={product.relatedArticleSlugs ?? []} />
         </div>
       </main>

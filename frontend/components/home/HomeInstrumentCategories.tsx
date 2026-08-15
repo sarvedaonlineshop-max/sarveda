@@ -143,42 +143,42 @@ const CATEGORIES: Category[] = [
   {
     key: "singing-bowls",
     name: "Singing Bowls & Bells",
-    href: "/product-category/sound-musical-instruments-singing-bowls-bells",
+    href: "/product-category/singing-bowls-bells",
     image: "/images/home/instruments/singing-bowls.png",
     Icon: IconBowl
   },
   {
     key: "gongs",
     name: "Gongs",
-    href: "/product-category/sound-musical-instruments-gongs",
+    href: "/product-category/gongs-musical-instruments",
     image: "/images/home/instruments/gongs.png",
     Icon: IconGong
   },
   {
     key: "handpans",
     name: "Handpans & Tongue Drums",
-    href: "/product-category/sound-musical-instruments-handpans-tongue-drum",
+    href: "/product-category/handpans-tongue-drum",
     image: "/images/home/instruments/handpans.png",
     Icon: IconHandpan
   },
   {
     key: "rattles",
     name: "Rattles & Shakers",
-    href: "/product-category/sound-musical-instruments-rattles-shakers",
+    href: "/product-category/rattles-shakers",
     image: "/images/home/instruments/rattles-shakers.jpg",
     Icon: IconRattle
   },
   {
     key: "tuning-forks",
     name: "Tuning Forks",
-    href: "/product-category/sound-musical-instruments-tuning-forks",
+    href: "/product-category/tuning-forks",
     image: "/images/home/instruments/tuning-forks.png",
     Icon: IconTuningFork
   },
   {
     key: "percussion",
     name: "Percussion",
-    href: "/product-category/sound-musical-instruments-percussion",
+    href: "/product-category/percussion",
     image: "/images/home/instruments/percussion.png",
     Icon: IconPercussion
   },
@@ -193,35 +193,35 @@ const CATEGORIES: Category[] = [
   {
     key: "chimes",
     name: "Chimes",
-    href: "/product-category/sound-musical-instruments-chimes",
+    href: "/product-category/chimes",
     image: "/images/home/instruments/chimes.png",
     Icon: IconChimes
   },
   {
     key: "wind",
     name: "Wind Instruments",
-    href: "/product-category/sound-musical-instruments-wind",
+    href: "/product-category/wind",
     image: "/images/home/instruments/wind.png",
     Icon: IconWind
   },
   {
     key: "indian-classical",
     name: "Indian Classical",
-    href: "/product-category/sound-musical-instruments-indian-classical",
+    href: "/product-category/indian-classical",
     image: "/images/home/instruments/indian-classical.png",
     Icon: IconClassical
   },
   {
     key: "kids",
     name: "Kids Instruments",
-    href: "/product-category/sound-musical-instruments-kids",
+    href: "/product-category/kids",
     image: "/images/home/instruments/kids.png",
     Icon: IconKids
   },
   {
     key: "yoga",
     name: "Yoga / Meditation Accessories",
-    href: "/product-category/yoga-meditation",
+    href: "/product-category/yoga-and-meditation",
     image: "/images/home/instruments/yoga-meditation.png",
     Icon: IconYoga
   }
@@ -244,23 +244,23 @@ function Flourish() {
 export function HomeInstrumentCategories() {
   return (
     <section className="bg-white" aria-labelledby="home-instruments-heading">
-      <div className="mx-auto w-[90%] max-w-[1600px] py-14 md:w-[80%] md:py-16 lg:py-20">
+      <div className="page-shell py-14 md:py-16 lg:py-20">
         <div className="text-center">
           <h2
             id="home-instruments-heading"
-            className="font-serif text-[1.65rem] font-semibold tracking-tight text-brand-ink sm:text-3xl md:text-[2.15rem]"
+            className="font-serif text-[1.85rem] font-semibold tracking-tight text-brand-ink sm:text-4xl md:text-[2.45rem]"
           >
             Explore our range of{" "}
             <span className="text-brand-gold">Instruments</span>
           </h2>
           <Flourish />
-          <p className="mx-auto mt-3 max-w-2xl text-sm text-brand-ink/70 sm:text-[0.95rem]">
+          <p className="mx-auto mt-3 max-w-3xl text-[0.95rem] text-brand-ink/70 sm:text-base">
             Authentic instruments &amp; accessories for sound healing, music, yoga,
             and conscious living
           </p>
         </div>
 
-        <ul className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 md:mt-12 md:grid-cols-3 lg:grid-cols-6 lg:gap-4">
+        <ul className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 md:mt-12 md:grid-cols-3 lg:grid-cols-6 lg:gap-5">
           {CATEGORIES.map(({ key, name, href, image, Icon }) => (
             <li key={key}>
               <Link
@@ -278,7 +278,7 @@ export function HomeInstrumentCategories() {
                 </div>
                 <div className="flex min-h-[3.25rem] items-center gap-2 border-t border-brand-cream-dark/70 px-2.5 py-2.5 sm:min-h-[3.5rem] sm:px-3">
                   <Icon />
-                  <span className="min-w-0 flex-1 text-[0.7rem] font-medium leading-snug text-brand-ink sm:text-xs">
+                  <span className="min-w-0 flex-1 text-[0.78rem] font-medium leading-snug text-brand-ink sm:text-sm">
                     {name}
                   </span>
                   <span className="shrink-0 text-brand-gold transition-transform group-hover:translate-x-0.5" aria-hidden>

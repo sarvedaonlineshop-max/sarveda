@@ -117,7 +117,7 @@ export function ProductCard({ product, layout = "grid" }: Props) {
             </p>
           ) : null}
 
-          <h2 className="line-clamp-2 font-sans text-[0.95rem] font-semibold leading-snug text-brand-ink transition-colors group-hover:text-brand-forest md:text-base">
+          <h2 className="line-clamp-2 font-sans text-[1rem] font-semibold leading-snug text-brand-ink transition-colors group-hover:text-brand-forest md:text-[1.05rem]">
             {product.name}
           </h2>
 

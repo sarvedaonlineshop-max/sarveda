@@ -66,7 +66,7 @@ export function ShopShell({ categories, children }: Props) {
   return (
     <ShopCategoriesProvider categories={categories}>
       <ShopProductsMetaProvider>
-        <div className="mx-auto max-w-7xl pb-16 pt-0 md:px-4 md:pb-0 lg:px-8">
+        <div className="page-shell pb-16 pt-0 md:pb-0">
           <h1 className="sr-only">{activeCategoryName ?? "Shop"}</h1>
 
           <div className="flex flex-col lg:h-[calc(100dvh-var(--storefront-header-offset)-var(--storefront-slim-footer-offset))] lg:flex-row lg:items-stretch lg:gap-10 lg:py-6">

@@ -33,10 +33,13 @@ export function customerPhoneTelHref(): string {
   return `tel:${customerPhoneE164()}`;
 }
 
-/** Human-readable Indian mobile, e.g. +91 9611361100 */
+/** Human-readable Indian mobile, e.g. +91 96113 61100 */
 export function customerPhoneDisplay(): string {
   const e164 = customerPhoneE164();
-  if (/^\+91\d{10}$/.test(e164)) return `+91 ${e164.slice(3)}`;
+  if (/^\+91\d{10}$/.test(e164)) {
+    const local = e164.slice(3);
+    return `+91 ${local.slice(0, 5)} ${local.slice(5)}`;
+  }
   return e164;
 }
 

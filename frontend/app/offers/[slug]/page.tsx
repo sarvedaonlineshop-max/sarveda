@@ -39,7 +39,7 @@ export default async function OfferPage({ params }: Props) {
         ])}
       />
       <div className="border-b border-stone-100 bg-stone-50">
-        <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
+        <div className="page-shell py-5">
           <Breadcrumbs
             items={[
               { label: "Home", href: "/" },
@@ -49,7 +49,7 @@ export default async function OfferPage({ params }: Props) {
           />
         </div>
       </div>
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="page-shell py-8">
         <h1 className="font-serif text-3xl font-semibold text-stone-900">{offer.title}</h1>
         {offer.description ? (
           <p className="mt-8 max-w-2xl text-lg text-stone-700">{offer.description}</p>

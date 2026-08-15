@@ -26,7 +26,7 @@ export default async function CoursesPage() {
         background: "linear-gradient(160deg, var(--brand-forest) 0%, var(--brand-night) 100%)",
         borderBottom: "3px solid var(--brand-gold)"
       }}>
-        <div className="mx-auto max-w-7xl px-6 py-16 lg:px-12 lg:py-20">
+        <div className="page-shell py-16 lg:py-20">
           <p style={{ color: "var(--brand-gold-pale)", fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", marginBottom: "14px" }}>
             Sarveda Learning
           </p>
@@ -40,7 +40,7 @@ export default async function CoursesPage() {
         </div>
       </section>
 
-      <main className="mx-auto max-w-7xl px-6 py-14 lg:px-12">
+      <main className="page-shell py-14">
         {courses.length === 0 ? (
           <div style={{ border: "1px dashed var(--brand-cream-dark)", padding: "64px 24px", textAlign: "center", borderRadius: "2px" }}>
             <p className="font-serif" style={{ color: "var(--brand-ink)", fontSize: "1.2rem" }}>Courses are being updated</p>

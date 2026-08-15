@@ -139,7 +139,7 @@ export default async function CourseDetailPage({ params }: Props) {
             background: "linear-gradient(to bottom, rgba(15,26,20,0.25) 0%, rgba(15,26,20,0.65) 60%, var(--brand-cream) 100%)"
           }} />
           {/* Title on hero */}
-          <div className="absolute inset-x-0 bottom-0 mx-auto max-w-7xl px-6 pb-10 lg:px-12">
+          <div className="page-shell absolute inset-x-0 bottom-0 pb-10">
             <span style={{ display:"inline-block", background:"var(--brand-gold)", color:"#fff", fontSize:"9px", fontWeight:700, letterSpacing:"0.18em", textTransform:"uppercase", padding:"5px 12px", marginBottom:"14px" }}>Course</span>
             <h1 className="font-serif" style={{ color:"#fffbf5", fontSize:"clamp(1.7rem,4vw,2.8rem)", fontWeight:700, lineHeight:1.15, maxWidth:"700px", textShadow:"0 2px 12px rgba(0,0,0,0.4)" }}>
               {course.title}
@@ -150,7 +150,7 @@ export default async function CourseDetailPage({ params }: Props) {
 
       {/* Breadcrumb */}
       <div style={{ borderBottom:"1px solid var(--brand-cream-dark)", background:"var(--brand-ivory)" }}>
-        <div className="mx-auto max-w-7xl px-6 py-3 lg:px-12">
+        <div className="page-shell py-3">
           <nav style={{ display:"flex", gap:"6px", alignItems:"center", fontSize:"12px", color:"var(--brand-muted)" }}>
             <Link href="/" style={{ color:"var(--brand-muted)" }}>Home</Link>
             <span>/</span>
@@ -164,7 +164,7 @@ export default async function CourseDetailPage({ params }: Props) {
       {/* No image fallback title */}
       {!course.imageUrl && (
         <div style={{ background:"linear-gradient(160deg,var(--brand-forest),var(--brand-night))", borderBottom:"3px solid var(--brand-gold)" }}>
-          <div className="mx-auto max-w-7xl px-6 py-14 lg:px-12">
+          <div className="page-shell py-14">
             <span style={{ display:"inline-block", background:"var(--brand-gold)", color:"#fff", fontSize:"9px", fontWeight:700, letterSpacing:"0.18em", textTransform:"uppercase", padding:"5px 12px", marginBottom:"14px" }}>Course</span>
             <h1 className="font-serif" style={{ color:"#fffbf5", fontSize:"clamp(1.8rem,4vw,3rem)", fontWeight:700, lineHeight:1.15 }}>{course.title}</h1>
           </div>
@@ -172,7 +172,7 @@ export default async function CourseDetailPage({ params }: Props) {
       )}
 
       {/* Main */}
-      <main className="mx-auto max-w-7xl overflow-x-hidden px-4 py-12 sm:px-6 lg:px-12">
+      <main className="page-shell overflow-x-hidden py-12">
         <div className="grid min-w-0 gap-12 lg:grid-cols-[1fr_340px]">
 
           {/* Left */}

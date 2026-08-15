@@ -64,8 +64,8 @@ export function CorporateWellnessPage({ page: _page }: Props) {
   return (
     <main className="corporate-wellness bg-white text-stone-900">
       {/* Curated Wellness Programs */}
-      <section className="px-4 py-14 md:py-20 lg:px-8">
-        <div className="mx-auto max-w-7xl">
+      <section className="py-14 md:py-20">
+        <div className="page-shell">
           <SectionTitle className="mb-10 md:mb-14">Curated Wellness Programs</SectionTitle>
           <div className="grid gap-4 md:grid-cols-2 md:gap-5">
             {CORPORATE_PROGRAMS.map((program) => (
@@ -76,8 +76,8 @@ export function CorporateWellnessPage({ page: _page }: Props) {
       </section>
 
       {/* Tailored Solutions */}
-      <section className="bg-white px-4 py-14 md:py-20 lg:px-8">
-        <div className="mx-auto max-w-7xl">
+      <section className="bg-white py-14 md:py-20">
+        <div className="page-shell">
           <SectionTitle className="mb-10 md:mb-14">Tailored Wellness Solutions for Every Need</SectionTitle>
           <div className="grid gap-5 md:grid-cols-3">
             {CORPORATE_SOLUTIONS.map((solution) => (
@@ -124,8 +124,8 @@ export function CorporateWellnessPage({ page: _page }: Props) {
       </section>
 
       {/* Holistic approach */}
-      <section className="bg-[#f0f7f4] px-4 py-14 md:py-20 lg:px-8">
-        <div className="mx-auto max-w-7xl">
+      <section className="bg-[#f0f7f4] py-14 md:py-20">
+        <div className="page-shell">
           <div className="mx-auto max-w-2xl text-center">
             <SectionTitle>Our Holistic Approach to Wellness</SectionTitle>
             <p className="mt-4 text-sm text-stone-600 md:text-base">
@@ -204,8 +204,8 @@ export function CorporateWellnessPage({ page: _page }: Props) {
       </section>
 
       {/* Wellness in Action — masonry-style gallery */}
-      <section className="px-4 py-14 md:py-20 lg:px-8">
-        <div className="mx-auto max-w-7xl">
+      <section className="py-14 md:py-20">
+        <div className="page-shell">
           <h2 className="mb-8 font-serif text-2xl font-semibold text-stone-900 md:text-3xl">
             Our Wellness in Action
           </h2>
@@ -228,8 +228,8 @@ export function CorporateWellnessPage({ page: _page }: Props) {
       </section>
 
       {/* Testimonials */}
-      <section className="bg-stone-50 px-4 py-14 md:py-20 lg:px-8">
-        <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-2">
+      <section className="bg-stone-50 py-14 md:py-20">
+        <div className="page-shell grid gap-8 md:grid-cols-2">
           {CORPORATE_TESTIMONIALS.map((t) => (
             <blockquote key={t.author} className="rounded-2xl bg-white p-8 shadow-sm">
               <div className="mb-4 flex gap-1">
@@ -254,7 +254,7 @@ export function CorporateWellnessPage({ page: _page }: Props) {
       </section>
 
       {/* Contact */}
-      <section className="px-4 py-14 md:py-20 lg:px-8">
+      <section className="py-14 md:py-20">
         <div className="mx-auto max-w-6xl overflow-hidden rounded-3xl border border-stone-200 bg-stone-100 shadow-sm">
           <div className="grid md:grid-cols-5">
             <div className="bg-brand-forest p-8 text-white md:col-span-2 md:p-10">

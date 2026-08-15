@@ -94,19 +94,22 @@ function NavIcon({ label }: { label: string }) {
   }
 }
 
+const headerIconBtn =
+  "relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white shadow-[0_4px_12px_rgba(16,32,26,0.18)] ring-1 ring-black/5 transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_18px_rgba(16,32,26,0.22)] sm:h-10 sm:w-10";
+
 function CartIcon({ count }: { count: number }) {
   return (
-    <span className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-orange-500/40 bg-orange-50 text-orange-600 transition-all hover:border-orange-500 hover:bg-orange-100 hover:text-orange-700">
-      <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" aria-hidden>
+    <span className={`${headerIconBtn} bg-gradient-to-br from-[#d4a24e] to-[#9a7030]`}>
+      <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] sm:h-5 sm:w-5" fill="none" stroke="currentColor" aria-hidden>
         <path
-          strokeWidth={1.75}
+          strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"
           d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.25 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
         />
       </svg>
       {count > 0 ? (
-        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-orange-600 px-1 text-[9px] font-bold text-white">
+        <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#c43b2e] px-1 text-[10px] font-bold leading-none text-white ring-2 ring-white">
           {count > 99 ? "99+" : count}
         </span>
       ) : null}
@@ -116,11 +119,11 @@ function CartIcon({ count }: { count: number }) {
 
 function ProfileIcon() {
   return (
-    <svg className="h-[18px] w-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+    <svg className="h-[18px] w-[18px] sm:h-5 sm:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth={1.75}
+        strokeWidth={2}
         d="M15.75 7.5a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM5.25 19.5a7.5 7.5 0 0113.5 0"
       />
     </svg>
@@ -129,13 +132,25 @@ function ProfileIcon() {
 
 function SearchIcon() {
   return (
-    <svg className="h-[18px] w-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+    <svg className="h-[18px] w-[18px] sm:h-5 sm:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth={1.75}
+        strokeWidth={2}
         d="M21 21l-4.35-4.35M16.5 10.5a6 6 0 11-12 0 6 6 0 0112 0z"
       />
+    </svg>
+  );
+}
+
+function MenuIcon({ open }: { open: boolean }) {
+  return (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+      {open ? (
+        <path strokeLinecap="round" strokeWidth={2.2} d="M6 6l12 12M18 6L6 18" />
+      ) : (
+        <path strokeLinecap="round" strokeWidth={2.2} d="M4 7h16M4 12h16M4 17h16" />
+      )}
     </svg>
   );
 }
@@ -147,8 +162,8 @@ function TrackOrderButton({ onClick, compact }: { onClick: () => void; compact?:
       onClick={onClick}
       className={
         compact
-          ? "inline-flex min-h-[36px] max-w-[9.5rem] items-center gap-1 rounded-full bg-red-600 px-2.5 text-[11px] font-semibold leading-tight text-white shadow-sm transition-colors hover:bg-red-700 active:bg-red-800"
-          : "inline-flex min-h-[36px] shrink-0 items-center gap-1.5 rounded-full bg-red-600 px-4 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-red-700 active:bg-red-800"
+          ? "inline-flex min-h-[36px] max-w-[9.5rem] items-center gap-1 rounded-full bg-red-600 px-2.5 text-[11px] font-semibold leading-tight text-white shadow-[0_4px_12px_rgba(196,59,46,0.28)] transition-colors hover:bg-red-700 active:bg-red-800"
+          : "inline-flex min-h-[40px] shrink-0 items-center gap-1.5 rounded-full bg-red-600 px-4 text-xs font-semibold text-white shadow-[0_4px_12px_rgba(196,59,46,0.28)] transition-all hover:-translate-y-0.5 hover:bg-red-700 active:bg-red-800 sm:px-5 sm:text-[13px]"
       }
     >
       {/* Package / parcel — reads clearly as order tracking */}
@@ -202,6 +217,7 @@ export function Header() {
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [trackOpen, setTrackOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const hideMarquee = isProfilePath(pathname);
   const isShopPage = isShopListingPath(pathname);
@@ -216,6 +232,7 @@ export function Header() {
   useEffect(() => {
     setPendingHref(null);
     setSearchOpen(false);
+    setMenuOpen(false);
   }, [pathname]);
 
   // Safety: clear stuck pending if navigation never settles.
@@ -237,13 +254,16 @@ export function Header() {
   }, [hideMarquee]);
 
   useEffect(() => {
-    if (!searchOpen) return;
+    if (!searchOpen && !menuOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setSearchOpen(false);
+      if (e.key === "Escape") {
+        setSearchOpen(false);
+        setMenuOpen(false);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [searchOpen]);
+  }, [searchOpen, menuOpen]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -310,14 +330,14 @@ export function Header() {
       <div className={`fixed inset-x-0 top-0 z-50 ${chromeVisibility}`}>
         {hideMarquee ? null : <AnnouncementBar hidden={marqueeHidden} />}
 
-        <header className="border-b border-brand-forest/10 bg-white shadow-[0_4px_16px_rgba(16,32,26,0.05)]">
+        <header className="overflow-visible border-b border-brand-forest/10 bg-white shadow-[0_4px_16px_rgba(16,32,26,0.05)]">
           {/* Logo + nav + track / search toggle / auth / cart */}
-          <div className="bg-white">
-            <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6 md:py-3.5 lg:px-8">
-              <SarvedaLogo iconHeight={64} />
+          <div className="overflow-visible bg-white">
+            <div className="page-shell flex items-center gap-2 overflow-visible py-3.5 sm:gap-3 sm:py-4 md:py-5">
+              <SarvedaLogo iconHeight={68} responsive />
 
               <nav
-                className="ml-1 hidden flex-1 items-center justify-center gap-0.5 lg:gap-1 md:flex"
+                className="ml-1 hidden min-w-0 flex-1 items-center justify-center gap-0.5 xl:flex 2xl:gap-1"
                 aria-label="Main"
               >
                 {MAIN_NAV_LINKS.map((link) => {
@@ -333,7 +353,7 @@ export function Header() {
                         e.preventDefault();
                         goNav(link.href);
                       }}
-                      className={`group relative flex items-center gap-1.5 px-2 py-2 text-[13px] font-semibold uppercase tracking-[0.08em] transition-colors lg:px-2.5 lg:text-[15px] ${
+                      className={`group relative flex items-center gap-1.5 px-1.5 py-2 text-[13px] font-semibold uppercase tracking-[0.08em] transition-colors 2xl:px-2.5 2xl:text-[15px] ${
                         active
                           ? "text-brand-gold"
                           : "text-brand-forest hover:text-brand-gold"
@@ -349,8 +369,8 @@ export function Header() {
                       <span className="whitespace-nowrap">
                         {link.label === "Corporate Wellness" ? (
                           <>
-                            <span className="hidden xl:inline">Corporate Wellness</span>
-                            <span className="xl:hidden">Corporate</span>
+                            <span className="hidden 2xl:inline">Corporate Wellness</span>
+                            <span className="2xl:hidden">Corporate</span>
                           </>
                         ) : (
                           link.label
@@ -367,77 +387,98 @@ export function Header() {
                 })}
               </nav>
 
-              {/* Desktop: track + search + auth + cart */}
-              <div className="ml-auto hidden shrink-0 items-center gap-1.5 md:flex">
+              {/* Desktop / tablet: track + search + auth + cart */}
+              <div className="ml-auto hidden shrink-0 items-center gap-3 md:flex lg:gap-4">
                 <TrackOrderButton onClick={onTrackClick} />
 
-                {showSearchToggle ? (
+                <div className="flex items-center gap-2.5 lg:gap-3">
+                  {showSearchToggle ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        setSearchOpen((v) => !v);
+                      }}
+                      className={`${headerIconBtn} ${
+                        searchOpen
+                          ? "bg-gradient-to-br from-[#2a4a3c] to-[#10201a] ring-2 ring-brand-gold/70"
+                          : "bg-gradient-to-br from-[#2a4a3c] to-[#1c352a]"
+                      }`}
+                      aria-label={searchOpen ? "Close search" : "Open search"}
+                      aria-expanded={searchOpen}
+                      aria-controls="header-search-panel"
+                    >
+                      <SearchIcon />
+                    </button>
+                  ) : null}
+
+                  {sessionUser ? (
+                    <Link
+                      href="/profile"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        goNav("/profile");
+                      }}
+                      className={`${headerIconBtn} bg-gradient-to-br from-[#155e4d] to-[#0d3d32]`}
+                      aria-label={displayName ? `Account, ${displayName}` : "Profile"}
+                      title={displayName ? `Hello, ${displayName}` : "Profile"}
+                    >
+                      <ProfileIcon />
+                    </Link>
+                  ) : (
+                    <>
+                      <Link
+                        href="/login"
+                        className="inline-flex min-h-[40px] items-center rounded-full border border-brand-forest/20 bg-white px-3.5 text-xs font-semibold text-brand-forest shadow-sm transition-all hover:border-brand-gold/50 hover:bg-brand-gold/10 sm:px-4"
+                      >
+                        Login
+                      </Link>
+                      <Link
+                        href="/signup"
+                        className="inline-flex min-h-[40px] items-center rounded-full bg-brand-gold px-3.5 text-xs font-semibold text-brand-night shadow-[0_4px_12px_rgba(185,138,62,0.28)] transition-all hover:-translate-y-0.5 hover:bg-[#a37934] sm:px-4"
+                      >
+                        Register
+                      </Link>
+                    </>
+                  )}
+
                   <button
                     type="button"
-                    onClick={() => setSearchOpen((v) => !v)}
-                    className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition-all ${
-                      searchOpen
-                        ? "border-blue-600 bg-blue-600 text-white"
-                        : "border-blue-500/40 bg-blue-50 text-blue-600 hover:border-blue-600 hover:bg-blue-100 hover:text-blue-700"
-                    }`}
-                    aria-label={searchOpen ? "Close search" : "Open search"}
-                    aria-expanded={searchOpen}
-                    aria-controls="header-search-panel"
+                    onClick={goToCart}
+                    className="inline-flex items-center"
+                    aria-label={`Open cart, ${cartCount} items`}
                   >
-                    <SearchIcon />
+                    <CartIcon count={cartCount} />
                   </button>
-                ) : null}
-
-                {sessionUser ? (
-                  <Link
-                    href="/profile"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      goNav("/profile");
-                    }}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-green-600/40 bg-green-50 text-green-700 transition-all hover:border-green-700 hover:bg-green-100 hover:text-green-800"
-                    aria-label={displayName ? `Account, ${displayName}` : "Profile"}
-                    title={displayName ? `Hello, ${displayName}` : "Profile"}
-                  >
-                    <ProfileIcon />
-                  </Link>
-                ) : (
-                  <>
-                    <Link
-                      href="/login"
-                      className="inline-flex min-h-[36px] items-center rounded-full border border-brand-forest/20 bg-white px-3.5 text-xs font-semibold text-brand-forest transition-all hover:border-brand-gold/50 hover:bg-brand-gold/10"
-                    >
-                      Login
-                    </Link>
-                    <Link
-                      href="/signup"
-                      className="inline-flex min-h-[36px] items-center rounded-full bg-brand-gold px-3.5 text-xs font-semibold text-brand-night shadow-sm transition-colors hover:bg-[#a37934]"
-                    >
-                      Register
-                    </Link>
-                  </>
-                )}
+                </div>
 
                 <button
                   type="button"
-                  onClick={goToCart}
-                  className="inline-flex items-center"
-                  aria-label={`Open cart, ${cartCount} items`}
+                  onClick={() => {
+                    setSearchOpen(false);
+                    setMenuOpen((v) => !v);
+                  }}
+                  className={`${headerIconBtn} bg-gradient-to-br from-[#2a4a3c] to-[#1c352a] xl:hidden`}
+                  aria-label={menuOpen ? "Close menu" : "Open menu"}
+                  aria-expanded={menuOpen}
                 >
-                  <CartIcon count={cartCount} />
+                  <MenuIcon open={menuOpen} />
                 </button>
               </div>
 
-              {/* Mobile: search + track (+ store category menu) — profile/cart live in bottom nav */}
-              <div className="ml-auto flex shrink-0 items-center gap-1.5 md:hidden">
+              {/* Mobile: search + track + menu (+ store category menu) */}
+              <div className="ml-auto flex shrink-0 items-center gap-2 md:hidden">
                 {showSearchToggle ? (
                   <button
                     type="button"
-                    onClick={() => setSearchOpen((v) => !v)}
-                    className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition-all ${
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setSearchOpen((v) => !v);
+                    }}
+                    className={`${headerIconBtn} ${
                       searchOpen
-                        ? "border-blue-600 bg-blue-600 text-white"
-                        : "border-blue-500/40 bg-blue-50 text-blue-600 hover:border-blue-600 hover:bg-blue-100"
+                        ? "bg-gradient-to-br from-[#2a4a3c] to-[#10201a] ring-2 ring-brand-gold/70"
+                        : "bg-gradient-to-br from-[#2a4a3c] to-[#1c352a]"
                     }`}
                     aria-label={searchOpen ? "Close search" : "Open search"}
                     aria-expanded={searchOpen}
@@ -451,16 +492,62 @@ export function Header() {
                   <button
                     type="button"
                     onClick={openShopMenu}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-brand-forest/12 bg-white text-brand-forest transition-all hover:border-brand-gold/45 hover:bg-brand-gold/10"
+                    className={`${headerIconBtn} bg-gradient-to-br from-[#d4a24e] to-[#9a7030]`}
                     aria-label="Open store categories"
                   >
-                    <svg className="h-5 w-5 text-brand-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
                       <path strokeLinecap="round" strokeWidth={2} d="M3 4h18M3 12h18M3 20h18" />
                     </svg>
                   </button>
                 ) : null}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchOpen(false);
+                    setMenuOpen((v) => !v);
+                  }}
+                  className={`${headerIconBtn} bg-gradient-to-br from-[#2a4a3c] to-[#1c352a]`}
+                  aria-label={menuOpen ? "Close menu" : "Open menu"}
+                  aria-expanded={menuOpen}
+                >
+                  <MenuIcon open={menuOpen} />
+                </button>
               </div>
             </div>
+
+            {menuOpen ? (
+              <nav className="border-t border-brand-cream-dark/70 bg-white xl:hidden" aria-label="Mobile">
+                <div className="page-shell grid grid-cols-2 gap-1 py-3 sm:grid-cols-3 md:grid-cols-4">
+                  {MAIN_NAV_LINKS.map((link) => {
+                    const routeActive = isMainNavActive(pathname, link.href);
+                    const pendingActive = pendingHref != null && isMainNavActive(pendingHref, link.href);
+                    const active = pendingHref != null ? pendingActive : routeActive;
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        aria-current={active ? "page" : undefined}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setMenuOpen(false);
+                          goNav(link.href);
+                        }}
+                        className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold uppercase tracking-[0.06em] transition-colors ${
+                          active
+                            ? "bg-brand-gold/12 text-brand-gold"
+                            : "text-brand-forest hover:bg-brand-cream hover:text-brand-gold"
+                        }`}
+                      >
+                        <span className={active ? "text-brand-gold" : "text-brand-sage"}>
+                          <NavIcon label={link.label} />
+                        </span>
+                        {link.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </nav>
+            ) : null}
           </div>
 
           {showHeaderSearchLayer ? (
@@ -473,7 +560,7 @@ export function Header() {
               }`}
               aria-hidden={!searchLayerExpanded}
             >
-              <div className="mx-auto flex max-w-7xl items-start gap-2.5 px-4 py-2.5 sm:gap-3 sm:px-6 lg:px-8">
+              <div className="page-shell flex items-start gap-2.5 py-2.5 sm:gap-3">
                 <div className="relative z-[60] min-w-0 flex-1">
                   <svg
                     className="pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-brand-muted"

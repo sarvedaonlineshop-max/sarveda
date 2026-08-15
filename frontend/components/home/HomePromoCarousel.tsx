@@ -54,9 +54,9 @@ export function HomePromoCarousel() {
     <section className="border-b border-stone-800 bg-stone-950" aria-label="Promotions and highlights">
       <div className="relative overflow-hidden">
         <div
-          className={`bg-gradient-to-r px-4 py-6 text-white transition-[background] duration-700 sm:px-6 md:px-8 md:py-8 ${slide.tone}`}
+          className={`bg-gradient-to-r py-6 text-white transition-[background] duration-700 md:py-8 ${slide.tone}`}
         >
-          <div className="mx-auto flex max-w-7xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="page-shell flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-200/90">{slide.eyebrow}</p>
               <h2 className="mt-2 font-serif text-xl font-semibold leading-snug sm:text-2xl md:text-3xl">{slide.title}</h2>

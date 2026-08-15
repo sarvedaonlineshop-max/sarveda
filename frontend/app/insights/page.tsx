@@ -22,7 +22,7 @@ export default async function InsightsPage() {
   return (
     <>
       <div className="border-b border-brand-cream-dark/60 bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 md:py-16">
+        <div className="page-shell py-12 md:py-16">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">
             From our teachers
           </p>
@@ -35,7 +35,7 @@ export default async function InsightsPage() {
         </div>
       </div>
 
-      <main className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+      <main className="page-shell py-14">
         {posts.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-brand-cream-dark bg-white p-12 text-center text-brand-muted">
             Articles are being updated.{" "}

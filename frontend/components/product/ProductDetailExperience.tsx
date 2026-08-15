@@ -221,7 +221,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
 
   return (
     <>
-      <div className="mx-auto max-w-7xl px-4 py-8 pb-32 sm:px-6 lg:px-8 lg:py-14 lg:pb-16">
+      <div className="page-shell py-8 pb-32 lg:py-14 lg:pb-16">
         {/* Primary two-column block — left column sticks while right column scrolls */}
         <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16">
           <div
@@ -252,7 +252,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
 
           <div className="min-w-0 space-y-6">
             <div>
-              <h1 className="font-serif text-[1.85rem] font-semibold leading-[1.15] tracking-tight text-[#155e4d] sm:text-4xl">
+              <h1 className="font-serif text-[2rem] font-semibold leading-[1.15] tracking-tight text-[#155e4d] sm:text-[2.5rem]">
                 {product.name}
               </h1>
             </div>

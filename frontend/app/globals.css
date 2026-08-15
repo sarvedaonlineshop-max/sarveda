@@ -20,9 +20,9 @@
   --brand-ink:        #26251f;
   --brand-muted:      #7d7263;
   --sarveda-bottom-nav: 4.5rem;
-  /* Mobile: announcement + brand row (search expands on demand). */
-  --storefront-header-offset: 7.15rem;
-  --storefront-header-offset-scrolled: 6.15rem;
+  /* Mobile: announcement + taller brand row so the spiral tails are not clipped. */
+  --storefront-header-offset: 7.85rem;
+  --storefront-header-offset-scrolled: 6.75rem;
   /* Live sticky top — Header syncs this when the marquee hides on scroll. */
   --storefront-header-live-offset: var(--storefront-header-offset);
   --storefront-slim-footer-offset: 2.5rem;
@@ -31,20 +31,30 @@
 @media (min-width: 768px) {
   :root {
     /* Desktop default: single brand row (search layer collapsed). */
-    --storefront-header-offset: 8.15rem;
-    --storefront-header-offset-scrolled: 6.35rem;
+    --storefront-header-offset: 9.15rem;
+    --storefront-header-offset-scrolled: 7.15rem;
   }
 }
 
 html[data-header-search-open="true"] {
-  --storefront-header-offset: 10.35rem;
-  --storefront-header-offset-scrolled: 9.35rem;
+  --storefront-header-offset: 11.05rem;
+  --storefront-header-offset-scrolled: 9.95rem;
 }
 
 @media (min-width: 768px) {
   html[data-header-search-open="true"] {
-    --storefront-header-offset: 11.35rem;
-    --storefront-header-offset-scrolled: 9.55rem;
+    --storefront-header-offset: 12.35rem;
+    --storefront-header-offset-scrolled: 10.35rem;
+  }
+}
+
+/* Shared storefront width — same left/right gap on home, shop, PDP, and inner pages. */
+@layer components {
+  .page-shell {
+    width: 92%;
+    max-width: 1680px;
+    margin-left: auto;
+    margin-right: auto;
   }
 }
 

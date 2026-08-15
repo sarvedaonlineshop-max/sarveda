@@ -29,8 +29,8 @@ export function CorporateExplorePrograms({ excludeSlug }: { excludeSlug?: string
   });
 
   return (
-    <section className="bg-white px-4 py-14 md:py-20 lg:px-8">
-      <div className="mx-auto max-w-7xl">
+    <section className="bg-white py-14 md:py-20">
+      <div className="page-shell">
         <SectionTitle className="mb-10">Explore Wellness Programs</SectionTitle>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {cards.map((card) => (
@@ -66,8 +66,8 @@ export function CorporateExplorePrograms({ excludeSlug }: { excludeSlug?: string
 
 export function CorporateGallery() {
   return (
-    <section className="px-4 py-14 md:py-20 lg:px-8">
-      <div className="mx-auto max-w-7xl">
+    <section className="py-14 md:py-20">
+      <div className="page-shell">
         <h2 className="mb-8 font-serif text-2xl font-semibold text-stone-900 md:text-3xl">
           Our Wellness in Action
         </h2>
@@ -112,8 +112,8 @@ export function CorporatePartners() {
 
 export function CorporateTestimonials() {
   return (
-    <section className="bg-stone-50 px-4 py-14 md:py-20 lg:px-8">
-      <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-2">
+    <section className="bg-stone-50 py-14 md:py-20">
+      <div className="page-shell grid gap-8 md:grid-cols-2">
         {CORPORATE_TESTIMONIALS.map((t) => (
           <blockquote key={t.author} className="rounded-2xl bg-white p-8 shadow-sm">
             <div className="mb-4 flex gap-1">
@@ -141,7 +141,7 @@ export function CorporateTestimonials() {
 
 export function CorporateContact() {
   return (
-    <section className="px-4 py-14 md:py-20 lg:px-8">
+    <section className="py-14 md:py-20">
       <div className="mx-auto max-w-6xl overflow-hidden rounded-3xl border border-stone-200 bg-stone-100 shadow-sm">
         <div className="grid md:grid-cols-5">
           <div className="bg-brand-forest p-8 text-white md:col-span-2 md:p-10">

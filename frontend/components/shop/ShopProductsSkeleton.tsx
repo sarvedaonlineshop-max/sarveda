@@ -1,7 +1,7 @@
 export function ShopProductsSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-3 px-3 pt-3 sm:gap-4 md:grid-cols-3 md:px-0 lg:grid-cols-3 xl:grid-cols-4">
-      {Array.from({ length: 8 }, (_, i) => (
+    <div className="grid grid-cols-2 gap-3 px-3 pt-3 sm:gap-4 md:grid-cols-3 md:px-0 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+          {Array.from({ length: 12 }, (_, i) => (
         <div
           key={i}
           className="overflow-hidden rounded-2xl border border-brand-cream-dark bg-white shadow-card"

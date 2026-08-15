@@ -81,7 +81,7 @@ const social = [
 export function SiteFooter() {
   return (
     <footer className="hidden bg-brand-forest md:block">
-      <div className="mx-auto w-[90%] max-w-[1600px] py-14 md:w-[80%]">
+      <div className="page-shell py-14">
         <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr_1fr_1.3fr] lg:gap-12">
           {/* Brand */}
           <div>
@@ -197,7 +197,7 @@ export function SiteFooter() {
       </div>
 
       <div className="border-t border-brand-cream/10">
-        <div className="mx-auto flex w-[90%] max-w-[1600px] flex-col gap-6 py-6 md:w-[80%] lg:flex-row lg:items-center lg:justify-between">
+        <div className="page-shell flex flex-col gap-6 py-6 lg:flex-row lg:items-center lg:justify-between">
           <ul className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:gap-6">
             {values.map((v) => (
               <li key={v.title} className="flex gap-2.5">

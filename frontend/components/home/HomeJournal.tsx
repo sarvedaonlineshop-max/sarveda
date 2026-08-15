@@ -32,7 +32,7 @@ export function HomeJournal({ posts }: Props) {
 
   return (
     <section className="bg-[#f9f6f0] py-14 md:py-16 lg:py-20" aria-labelledby="home-journal-heading">
-      <div className="mx-auto w-[90%] max-w-[1600px] md:w-[80%]">
+      <div className="page-shell">
         <div className="text-center">
           <h2
             id="home-journal-heading"
