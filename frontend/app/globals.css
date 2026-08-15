@@ -188,15 +188,40 @@ body {
 /* ─── Rich text (PDP, legal, about, blog) ─────────────────────── */
 .rich-features h4,
 .rich-features h5 {
-  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   color: var(--brand-ink);
-  font-weight: 600;
-  margin-top: 1.75rem;
-  margin-bottom: 0.75rem;
+  font-weight: 700;
+  margin-top: 1.25rem;
+  margin-bottom: 0.4rem;
 }
 .rich-features h4 { font-size: 1.125rem; }
 .rich-features h5 { font-size: 1rem; }
-.rich-features p { margin: 0.75rem 0; }
+.rich-features p { margin: 0.4rem 0 0.7rem; }
+.rich-features p:last-child { margin-bottom: 0; }
+
+.pdp-description.rich-features p {
+  margin: 0.15rem 0 0.7rem;
+  line-height: 1.65;
+}
+.pdp-description.rich-features p strong {
+  color: var(--brand-ink);
+  font-weight: 700;
+}
+
+.accordion-rich.rich-features h4,
+.accordion-rich.rich-features h5,
+.accordion-rich.rich-features h3 {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-top: 0.85rem;
+  margin-bottom: 0.3rem;
+}
+.accordion-rich.rich-features p {
+  margin: 0.25rem 0 0.55rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+}
 .rich-features a {
   color: var(--brand-gold);
   text-decoration: underline;

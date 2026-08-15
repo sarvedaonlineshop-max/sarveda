@@ -9,7 +9,6 @@ import { AccordionDescription } from "@/components/product/AccordionDescription"
 import { NotifyMeButton } from "@/components/product/NotifyMeButton";
 import { ProductAudio } from "@/components/product/ProductAudio";
 import { ProductBuyBox } from "@/components/product/ProductBuyBox";
-import { ProductOffersBanner } from "@/components/product/ProductOffersBanner";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductReviewsSection } from "@/components/product/ProductReviewsSection";
 import { ProductRichText } from "@/components/product/ProductRichText";
@@ -59,6 +58,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
   const hasCartRail = itemCount > 0 || items.length > 0;
   const cartCount = itemCount > 0 ? itemCount : items.reduce((n, i) => n + i.quantity, 0);
 
+  const [catalog, setCatalog] = useState(product);
   const [variants, setVariants] = useState(product.variants);
   const initial = useMemo(() => pickInitialVariant(variants), [variants]);
   const [variantId, setVariantId] = useState<string | null>(initial?.id ?? null);
@@ -67,6 +67,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
   const zone = usePricingZone();
   const [addedFlash, setAddedFlash] = useState(false);
   const [reviewSummary, setReviewSummary] = useState<{ total: number; average: number } | null>(null);
+  const [mediaFading, setMediaFading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -86,9 +87,15 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
   }, [product.id]);
 
   useEffect(() => {
+    setCatalog(product);
+    setVariants(product.variants);
+  }, [product]);
+
+  useEffect(() => {
     let cancelled = false;
     void fetchProductBySlug(product.slug, { cache: "no-store" }).then((fresh) => {
       if (!cancelled && fresh?.variants?.length) {
+        setCatalog(fresh);
         setVariants(fresh.variants);
       }
     });
@@ -122,10 +129,10 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
   );
 
   const sortedImages = useMemo(() => {
-    const all = [...product.images].sort((a, b) => a.position - b.position);
+    const all = [...catalog.images].sort((a, b) => a.position - b.position);
     if (!variant) return all;
     return galleryImagesForVariant(variant.id, all);
-  }, [product.images, variant]);
+  }, [catalog.images, variant]);
 
   const activeVideoUrl = useMemo(
     () => (galleryHasVideoItems(sortedImages) ? null : resolveVariantVideoUrl(variant, product)),
@@ -179,10 +186,19 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
     }
   };
 
+  const handleVariantChange = (nextId: string) => {
+    if (nextId === variantId) return;
+    setMediaFading(true);
+    window.setTimeout(() => {
+      setVariantId(nextId);
+      window.setTimeout(() => setMediaFading(false), 90);
+    }, 160);
+  };
+
   const buyBoxProps = {
     variant,
     variants,
-    onVariantChange: setVariantId,
+    onVariantChange: handleVariantChange,
     zone,
     saleMinor,
     qty,
@@ -208,7 +224,11 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
       <div className="mx-auto max-w-7xl px-4 py-8 pb-32 sm:px-6 lg:px-8 lg:py-14 lg:pb-16">
         {/* Primary two-column block — left column sticks while right column scrolls */}
         <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16">
-          <div className={`lg:sticky ${STICKY_TOP} lg:self-start`}>
+          <div
+            className={`lg:sticky ${STICKY_TOP} lg:self-start transition-opacity duration-200 ease-out ${
+              mediaFading ? "opacity-25" : "opacity-100"
+            }`}
+          >
             <ProductGallery
               images={sortedImages}
               productName={product.name}
@@ -250,8 +270,6 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
               </h1>
             </div>
 
-            <ProductOffersBanner />
-
             <div
               className="flex items-center gap-1 text-sm text-brand-muted"
               aria-label={
@@ -289,8 +307,8 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
             </div>
 
             {codAvailable ? (
-              <div className="inline-flex w-fit items-center gap-2 rounded-full border border-brand-forest/25 px-4 py-2 text-sm text-brand-forest">
-                <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <div className="inline-flex w-fit items-center gap-2 rounded-md bg-brand-forest px-3.5 py-2 text-sm font-semibold tracking-wide text-brand-cream shadow-sm ring-1 ring-brand-gold/40">
+                <svg className="h-4 w-4 shrink-0 text-brand-gold-pale" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -301,7 +319,13 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
               </div>
             ) : null}
 
-            <ProductBuyBox {...buyBoxProps} />
+            <div
+              className={`transition-opacity duration-200 ease-out ${
+                mediaFading ? "opacity-30" : "opacity-100"
+              }`}
+            >
+              <ProductBuyBox {...buyBoxProps} />
+            </div>
 
             {addDisabled && variant ? (
               <NotifyMeButton productSlug={product.slug} variantId={variant.id} />
@@ -309,17 +333,25 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
 
             {product.description ? (
               <div className="border-t border-brand-cream-dark pt-8">
-                <ProductRichText html={product.description} className="max-w-none text-[15px] leading-7 text-brand-ink/80 prose-stone" />
+                <ProductRichText
+                  html={product.description}
+                  emphasize
+                  className="pdp-description max-w-none text-[15px] leading-7 text-brand-ink/80 prose-stone"
+                />
               </div>
             ) : null}
 
             {product.shortDescription && !product.description ? (
-              <ProductRichText html={product.shortDescription} className="text-[15px] leading-7 text-brand-ink/70" />
+              <ProductRichText
+                html={product.shortDescription}
+                emphasize
+                className="pdp-description text-[15px] leading-7 text-brand-ink/70"
+              />
             ) : null}
 
             {accordionItems.length > 0 ? (
               <div className="border-t border-brand-cream-dark pt-8">
-                <h2 className="font-serif text-lg font-semibold text-brand-ink">Product details</h2>
+                <h2 className="font-sans text-lg font-bold text-brand-ink">Product details</h2>
                 <div className="mt-4">
                   <AccordionDescription items={accordionItems} />
                 </div>

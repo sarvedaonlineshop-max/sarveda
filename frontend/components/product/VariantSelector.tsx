@@ -8,6 +8,7 @@ import {
   findVariantBySelection,
   isValueAvailable,
   selectionFromVariant,
+  variantAttributeMap,
   variantDisplayLabel,
   type AttributeAxis
 } from "@/lib/variant-utils";
@@ -29,8 +30,8 @@ function pillClasses(selected: boolean, available: boolean, style: "default" | "
       return "cursor-not-allowed border-stone-100 bg-stone-50 text-stone-300 line-through";
     }
     return selected
-      ? "border-[#108967] bg-[#108967] text-white shadow-sm"
-      : "border-[#108967] bg-white text-[#108967] hover:bg-[#108967]/5";
+      ? "border-[#3d4a38] bg-[#3d4a38] text-white shadow-sm"
+      : "border-[#3d4a38] bg-white text-[#3d4a38] hover:bg-[#3d4a38]/5";
   }
   if (!available) {
     return "cursor-not-allowed border-stone-100 bg-stone-50 text-stone-300 line-through";
@@ -87,7 +88,7 @@ export function VariantSelector({
                 role="option"
                 aria-selected={selected}
                 onClick={() => onVariantChange(item.id)}
-                className={`min-h-[44px] rounded-md border px-4 py-2.5 text-sm font-medium transition-colors ${pillClasses(selected, true, pillStyle)}`}
+                className={`min-h-[44px] rounded-[3px] border px-4 py-2.5 text-sm font-medium transition-colors ${pillClasses(selected, true, pillStyle)}`}
               >
                 {variantDisplayLabel(item, index)}
               </button>
@@ -108,7 +109,19 @@ export function VariantSelector({
           variants={variants}
           pillStyle={pillStyle}
           onPick={(attrSlug, valueSlug) => {
-            setSelection((prev) => ({ ...prev, [attrSlug]: valueSlug }));
+            const next = { ...selection, [attrSlug]: valueSlug };
+            const candidates = variants.filter((v) => variantAttributeMap(v).get(attrSlug) === valueSlug);
+            const tight = candidates.filter((v) => {
+              const map = variantAttributeMap(v);
+              return Object.entries(next).every(([key, val]) => !map.has(key) || map.get(key) === val);
+            });
+            const pick = (tight.length ? tight : candidates)[0];
+            if (pick) {
+              onVariantChange(pick.id);
+              setSelection(selectionFromVariant(pick));
+              return;
+            }
+            setSelection(next);
           }}
         />
       ))}
@@ -132,7 +145,7 @@ function AttributeRow({
   const label = attributeDisplayName(axis.slug, axis.name);
   return (
     <div>
-      <p className="mb-3 text-sm font-semibold text-stone-800">{label}</p>
+      <p className="mb-3 font-sans text-base font-bold text-stone-800">{label}</p>
       <div className="flex flex-wrap gap-2" role="listbox" aria-label={axis.name}>
         {axis.values.map((val) => {
           const selected = selection[axis.slug] === val.slug;
@@ -145,7 +158,7 @@ function AttributeRow({
               aria-selected={selected}
               disabled={!available}
               onClick={() => onPick(axis.slug, val.slug)}
-              className={`min-h-[44px] rounded-md border px-4 py-2.5 text-sm font-medium transition-colors ${pillClasses(selected, available, pillStyle)}`}
+              className={`min-h-[44px] rounded-[3px] border px-4 py-2.5 text-sm font-medium transition-colors ${pillClasses(selected, available, pillStyle)}`}
             >
               {val.value}
             </button>

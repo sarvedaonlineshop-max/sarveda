@@ -238,6 +238,25 @@ export async function fetchSiteSearchSuggestions(
   return data.items;
 }
 
+/** Woo ACF "pair it with" only — empty when the live product has no pairs. */
+export async function fetchPairWithProducts(
+  slug: string,
+  init?: RequestInit,
+  limit = 2
+): Promise<ProductListItem[]> {
+  const take = Math.min(8, Math.max(1, limit));
+  try {
+    const data = await fetchApi<{ items: ProductListItem[]; source?: string }>(
+      `/api/products/${encodeURIComponent(slug)}/related?limit=${take}&pairOnly=1`,
+      init
+    );
+    if (data.source === "category" || data.source === "none") return [];
+    return data.items ?? [];
+  } catch {
+    return [];
+  }
+}
+
 /** Related picks: curated Woo pair/upsell first, then same-category fallback. */
 export async function fetchRelatedProducts(
   excludeSlug: string,

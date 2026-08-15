@@ -16,23 +16,38 @@ const ATTRIBUTE_LABELS: Record<string, string> = {
   "comb-type": "Comb Types",
   comb_type: "Comb Types",
   packs: "Packs",
-  "bottle-type": "Bottle Type"
+  "bottle-type": "Bottle Type",
+  note: "Note"
 };
 
 export function attributeDisplayName(slug: string, fallback: string): string {
   return ATTRIBUTE_LABELS[slug.toLowerCase()] ?? fallback;
 }
 
-const GONG_TYPE_ORDER = ["Chakra", "Mantra", "Buddhist Om"];
+const GONG_TYPE_ORDER = ["Plain", "Etched", "Chakra", "Mantra", "Buddhist Om"];
+const NOTE_ORDER = ["A Plate", "B Plate", "C Plate", "D Plate", "E Plate", "F Plate", "G Plate", "Full Set"];
 
 function parseInches(label: string): number {
   const m = label.match(/(\d+(?:\.\d+)?)/);
   return m ? parseFloat(m[1]!) : 9999;
 }
 
+function sizeSortKey(label: string): number {
+  if (/combo/i.test(label)) return 1000 + parseInches(label);
+  return parseInches(label);
+}
+
 /** Stable option order for storefront pills (matches live sarveda.com). */
 export function sortAttributeOptionValues(labelOrSlug: string, values: string[]): string[] {
   const key = labelOrSlug.toLowerCase();
+  if (key.includes("note")) {
+    return [...values].sort((a, b) => {
+      const ai = NOTE_ORDER.indexOf(a);
+      const bi = NOTE_ORDER.indexOf(b);
+      if (ai >= 0 || bi >= 0) return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+      return a.localeCompare(b);
+    });
+  }
   if (key.includes("type")) {
     return [...values].sort((a, b) => {
       const ai = GONG_TYPE_ORDER.indexOf(a);
@@ -42,7 +57,7 @@ export function sortAttributeOptionValues(labelOrSlug: string, values: string[])
     });
   }
   if (key.includes("size")) {
-    return [...values].sort((a, b) => parseInches(a) - parseInches(b));
+    return [...values].sort((a, b) => sizeSortKey(a) - sizeSortKey(b));
   }
   return [...values].sort((a, b) => a.localeCompare(b));
 }
@@ -106,7 +121,7 @@ export function findVariantBySelection(
   return (
     variants.find((variant) => {
       const map = variantAttributeMap(variant);
-      return keys.every((key) => map.get(key) === selection[key]);
+      return keys.every((key) => map.has(key) && map.get(key) === selection[key]);
     }) ?? null
   );
 }
@@ -122,6 +137,8 @@ export function isValueAvailable(
     if (map.get(attrSlug) !== valueSlug) return false;
     for (const [key, selected] of Object.entries(selection)) {
       if (key === attrSlug) continue;
+      // Size-only SKUs (Combo of 3/5/7) have no colour — still selectable.
+      if (!map.has(key)) continue;
       if (map.get(key) !== selected) return false;
     }
     return true;

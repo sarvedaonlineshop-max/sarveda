@@ -67,3 +67,35 @@ export function htmlToPlainText(html: string): string {
 export function looksLikeHtml(value: string): boolean {
   return /<[a-z][\s\S]*>/i.test(value.trim());
 }
+
+/** Drop empty Woo paragraphs that inflate PDP spacing. */
+export function stripEmptyHtmlParagraphs(html: string): string {
+  return html
+    .replace(/<p[^>]*>\s*(?:&nbsp;|\u00a0|<br\s*\/?>|\s)*<\/p>/gi, "")
+    .replace(/(<br\s*\/?>\s*){2,}/gi, "<br />")
+    .trim();
+}
+
+function wrapFirstSentence(inner: string): string {
+  if (/<strong[\s>]/i.test(inner)) return inner;
+  let inTag = false;
+  for (let i = 0; i < inner.length; i += 1) {
+    const ch = inner[i];
+    if (ch === "<") inTag = true;
+    else if (ch === ">") inTag = false;
+    else if (!inTag && (ch === "." || ch === "!" || ch === "?")) {
+      const next = inner[i + 1];
+      if (next === undefined || /\s/.test(next) || next === "<") {
+        return `<strong>${inner.slice(0, i + 1)}</strong>${inner.slice(i + 1)}`;
+      }
+    }
+  }
+  return inner;
+}
+
+/** Bold the lead sentence of each paragraph so long PDP copy is easier to scan. */
+export function emphasizeDescriptionParagraphs(html: string): string {
+  return stripEmptyHtmlParagraphs(html).replace(/<p(\s[^>]*)?>([\s\S]*?)<\/p>/gi, (_full, attrs = "", inner: string) => {
+    return `<p${attrs}>${wrapFirstSentence(inner)}</p>`;
+  });
+}

@@ -24,7 +24,7 @@ function parseRange(text: string): { min: number; max: number } {
 
 /** Compact delivery estimate for narrow buy box (no overlapping timeline). */
 export function EstimatedDelivery({
-  preparationDays = "5 - 10 Days",
+  preparationDays = "5 - 6 Days",
   shippingDays = "4 - 7 Days"
 }: Props) {
   const today = new Date();

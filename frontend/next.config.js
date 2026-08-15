@@ -48,6 +48,138 @@ const nextConfig = {
         destination: "/shop",
         permanent: true
       },
+      // Woo top-level All is the same catalog as /shop — do not add a fourth nav root.
+      {
+        source: "/product-category/all",
+        destination: "/shop",
+        permanent: true
+      },
+      {
+        source: "/product/shruthi-thali-gong-plates-etched",
+        destination: "/product/gong-plates-shruti-plates-plain",
+        permanent: true
+      },
+      // Old demo prefixed slugs → live Woo slugs (SEO + bookmarks)
+      {
+        source: "/product-category/yoga-meditation",
+        destination: "/product-category/yoga-and-meditation",
+        permanent: true
+      },
+      {
+        source: "/product-category/sound-musical-instruments-accessories",
+        destination: "/product-category/accessories",
+        permanent: true
+      },
+      {
+        source: "/product-category/sound-musical-instruments-all",
+        destination: "/product-category/all-musical-instruments",
+        permanent: true
+      },
+      {
+        source: "/product-category/sound-musical-instruments-chimes",
+        destination: "/product-category/chimes",
+        permanent: true
+      },
+      {
+        source: "/product-category/sound-musical-instruments-crystal-bowls",
+        destination: "/product-category/crystal-bowls",
+        permanent: true
+      },
+      {
+        source: "/product-category/sound-musical-instruments-gongs",
+        destination: "/product-category/gongs-musical-instruments",
+        permanent: true
+      },
+      {
+        source: "/product-category/sound-musical-instruments-handpans-tongue-drum",
+        destination: "/product-category/handpans-tongue-drum",
+        permanent: true
+      },
+      {
+        source: "/product-category/sound-musical-instruments-indian-classical",
+        destination: "/product-category/indian-classical",
+        permanent: true
+      },
+      {
+        source: "/product-category/sound-musical-instruments-kids",
+        destination: "/product-category/kids",
+        permanent: true
+      },
+      {
+        source: "/product-category/sound-musical-instruments-percussion",
+        destination: "/product-category/percussion",
+        permanent: true
+      },
+      {
+        source: "/product-category/sound-musical-instruments-rattles-shakers",
+        destination: "/product-category/rattles-shakers",
+        permanent: true
+      },
+      {
+        source: "/product-category/sound-musical-instruments-singing-bowls-bells",
+        destination: "/product-category/singing-bowls-bells",
+        permanent: true
+      },
+      {
+        source: "/product-category/sound-musical-instruments-tuning-forks",
+        destination: "/product-category/tuning-forks",
+        permanent: true
+      },
+      {
+        source: "/product-category/sound-musical-instruments-wind",
+        destination: "/product-category/wind",
+        permanent: true
+      },
+      {
+        source: "/product-category/sound-musical-instruments-xylophones",
+        destination: "/product-category/xylophones",
+        permanent: true
+      },
+      {
+        source: "/product-category/eco-living-sustainable-all",
+        destination: "/product-category/all-handpans-tonguedrum",
+        permanent: true
+      },
+      {
+        source: "/product-category/eco-living-sustainable-bottles",
+        destination: "/product-category/bottles",
+        permanent: true
+      },
+      {
+        source: "/product-category/eco-living-sustainable-gift-sets",
+        destination: "/product-category/gift-sets",
+        permanent: true
+      },
+      {
+        source: "/product-category/eco-living-sustainable-home-workspace",
+        destination: "/product-category/home-workspace",
+        permanent: true
+      },
+      {
+        source: "/product-category/eco-living-sustainable-personal-care",
+        destination: "/product-category/personal-care",
+        permanent: true
+      },
+      {
+        source: "/product-category/yoga-meditation-all",
+        destination: "/product-category/all-yoga-and-meditation",
+        permanent: true
+      },
+      {
+        source: "/product-category/yoga-meditation-bottles-accessories",
+        destination: "/product-category/bottles-accessories",
+        permanent: true
+      },
+      {
+        source: "/product-category/yoga-meditation-meditation-cushions-benches",
+        destination: "/product-category/meditation-cushions-benches",
+        permanent: true
+      },
+      {
+        source: "/product-category/yoga-meditation-yoga-mats-props",
+        destination: "/product-category/yoga-mats-props",
+        permanent: true
+      },
       // WooCommerce blog → new insights
       {
         source: "/blog/:slug",

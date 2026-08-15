@@ -5,7 +5,7 @@ import { Breadcrumbs } from "@/components/product/Breadcrumbs";
 import { ProductDetailExperience } from "@/components/product/ProductDetailExperience";
 import { ProductRelatedArticles } from "@/components/product/ProductRelatedArticles";
 import { RelatedProducts } from "@/components/product/RelatedProducts";
-import { fetchAllProductSlugs, fetchProductBySlug, fetchRelatedProducts, skipBuildTimeStaticParams } from "@/lib/api";
+import { fetchAllProductSlugs, fetchPairWithProducts, fetchProductBySlug, skipBuildTimeStaticParams } from "@/lib/api";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { breadcrumbJsonLd, productJsonLd } from "@/lib/seo-product";
 import { htmlToPlainText } from "@/lib/sanitize-html";
@@ -74,9 +74,8 @@ export default async function ProductDetailPage({ params }: Props) {
   }
 
   const primaryCategory = product.categories[0]?.category;
-  const pairWithItems = await fetchRelatedProducts(
+  const pairWithItems = await fetchPairWithProducts(
     product.slug,
-    primaryCategory?.slug,
     { next: { revalidate: 120 } },
     2
   );
