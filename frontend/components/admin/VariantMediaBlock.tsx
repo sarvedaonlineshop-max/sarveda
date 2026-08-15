@@ -14,8 +14,10 @@ export type VariantImageForm = {
 type Props = {
   images: VariantImageForm[];
   videoUrl: string;
+  audioUrl?: string;
   onImagesChange: (images: VariantImageForm[]) => void;
   onVideoUrlChange: (url: string) => void;
+  onAudioUrlChange?: (url: string) => void;
   fieldPrefix: string;
   fieldErrors: Record<string, string>;
   /** Show image gallery block */
@@ -35,8 +37,10 @@ const sectionCls =
 export function VariantMediaBlock({
   images,
   videoUrl,
+  audioUrl = "",
   onImagesChange,
   onVideoUrlChange,
+  onAudioUrlChange,
   fieldPrefix,
   fieldErrors,
   showImages = true,
@@ -158,6 +162,20 @@ export function VariantMediaBlock({
             value={videoUrl}
             onChange={(e) => onVideoUrlChange(e.target.value)}
             placeholder="https://… (optional)"
+            className={inputCls}
+          />
+        </div>
+      ) : null}
+
+      {onAudioUrlChange ? (
+        <div className={sectionCls}>
+          <label className="text-xs font-semibold uppercase tracking-wider text-[var(--admin-label,#4a3728)]">
+            Variant audio sample
+          </label>
+          <input
+            value={audioUrl}
+            onChange={(e) => onAudioUrlChange(e.target.value)}
+            placeholder="https://… (plays when this variant is selected)"
             className={inputCls}
           />
         </div>

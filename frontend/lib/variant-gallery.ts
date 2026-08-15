@@ -41,7 +41,7 @@ export function galleryImagesForVariant<T extends GalleryImageRef>(
   if (variantImages.length >= 2) return variantImages;
 
   if (variantImages.length === 1 && shared.length > 0) {
-    return dedupeByUrl([...shared, ...variantImages]);
+    return dedupeByUrl([...variantImages, ...shared]);
   }
 
   if (variantImages.length > 0) return variantImages;
@@ -57,6 +57,16 @@ export function resolveVariantVideoUrl(
   const v = variant?.videoUrl?.trim();
   if (v) return v;
   const p = product.videoUrl?.trim();
+  return p || null;
+}
+
+export function resolveVariantAudioUrl(
+  variant: { audioUrl?: string | null } | null | undefined,
+  product: { audioUrl?: string | null }
+): string | null {
+  const v = variant?.audioUrl?.trim();
+  if (v) return v;
+  const p = product.audioUrl?.trim();
   return p || null;
 }
 

@@ -47,6 +47,7 @@ export type VariantAdminInput = {
   onHand?: number;
   shippingRates?: ShippingRateInput[];
   videoUrl?: string | null;
+  audioUrl?: string | null;
   attributes?: VariantAttributeInput[];
   images?: ImageAdminInput[];
 };
@@ -149,6 +150,7 @@ async function syncVariants(
     const v = variants[i];
     const isDefault = i === primaryIdx;
     const videoUrl = v.videoUrl === "" ? null : v.videoUrl ?? null;
+    const audioUrl = v.audioUrl === undefined ? undefined : v.audioUrl === "" ? null : v.audioUrl;
 
     if (v.id) {
       const clash = await prisma.productVariant.findFirst({
@@ -168,6 +170,7 @@ async function syncVariants(
           saleGbpPence: v.saleGbpPence ?? null,
           weightGrams: v.weightGrams ?? null,
           videoUrl,
+          ...(audioUrl !== undefined ? { audioUrl } : {}),
           isDefault,
           status: v.status ?? "ACTIVE"
         }
@@ -206,6 +209,7 @@ async function syncVariants(
           saleGbpPence: v.saleGbpPence ?? null,
           weightGrams: v.weightGrams ?? null,
           videoUrl,
+          audioUrl: audioUrl ?? null,
           isDefault,
           status: v.status ?? "ACTIVE",
           inventory: { create: { onHand: v.onHand ?? 0 } }

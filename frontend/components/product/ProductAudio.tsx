@@ -38,6 +38,17 @@ export function ProductAudio({ audioUrl, productName, title, variant = "default"
   useEffect(() => {
     const el = audioRef.current;
     if (!el) return;
+    el.pause();
+    el.currentTime = 0;
+    setPlaying(false);
+    setProgress(0);
+    setDuration(0);
+    el.load();
+  }, [src]);
+
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el) return;
     const onPlay = () => setPlaying(true);
     const onPause = () => setPlaying(false);
     const onMeta = () => setDuration(el.duration || 0);

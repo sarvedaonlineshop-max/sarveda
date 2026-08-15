@@ -79,6 +79,7 @@ export type ProductVariantDetail = {
   attributeValues: VariantAttributeRow[];
   shippingRates?: VariantShippingRate[];
   videoUrl?: string | null;
+  audioUrl?: string | null;
 };
 
 export type ProductDetail = {

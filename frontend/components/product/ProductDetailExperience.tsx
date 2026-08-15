@@ -20,7 +20,12 @@ import { usePricingZone } from "@/hooks/usePricingZone";
 import { unitSaleMinor, zoneToCurrency } from "@/lib/currency";
 import { resolveMediaUrl } from "@/lib/media-cdn";
 import { formatINRFromPaise, formatMinorFromPaise } from "@/lib/money";
-import { galleryImagesForVariant, imageIndexForVariant, resolveVariantVideoUrl } from "@/lib/variant-gallery";
+import {
+  galleryImagesForVariant,
+  imageIndexForVariant,
+  resolveVariantAudioUrl,
+  resolveVariantVideoUrl
+} from "@/lib/variant-gallery";
 import { galleryHasVideoItems } from "@/lib/gallery-media";
 import {
   availableStock,
@@ -132,7 +137,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
     setGalleryIndex(imageIndexForVariant(variant, sortedImages));
   }, [variant, sortedImages]);
 
-  const audioUrl = resolveMediaUrl(product.audioUrl);
+  const audioUrl = resolveMediaUrl(resolveVariantAudioUrl(variant, product));
   const variantLabel = variant ? variantDisplayLabel(variant, 0) : product.name;
 
   const inRate = variant?.shippingRates?.find((r) => r.country === "IN");
@@ -213,9 +218,14 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
               videoUrl={activeVideoUrl}
             />
 
-            {product.hasAudio && audioUrl ? (
+            {audioUrl ? (
               <div className="mt-5">
-                <ProductAudio audioUrl={audioUrl} productName={product.name} variant="storefront" />
+                <ProductAudio
+                  key={audioUrl}
+                  audioUrl={audioUrl}
+                  productName={variantLabel || product.name}
+                  variant="storefront"
+                />
               </div>
             ) : null}
           </div>

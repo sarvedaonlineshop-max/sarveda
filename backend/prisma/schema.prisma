@@ -181,6 +181,7 @@ model ProductVariant {
   status          VariantStatus           @default(ACTIVE)
   zohoItemId      String?                 @db.VarChar(64)
   videoUrl        String?
+  audioUrl        String?
   productRel      Product                 @relation(fields: [productId], references: [id])
   inventory       Inventory?
   attributeValues VariantAttributeValue[]

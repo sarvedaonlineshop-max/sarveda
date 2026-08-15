@@ -71,6 +71,7 @@ type VariantForm = {
   status: "ACTIVE" | "INACTIVE";
   shippingRates: ShippingRateForm[];
   videoUrl: string;
+  audioUrl: string;
   images: VariantImageForm[];
   attributes: VariantAttributeForm[];
 };
@@ -133,6 +134,7 @@ function newVariant(): VariantForm {
     status: "ACTIVE",
     shippingRates: emptyShipping(),
     videoUrl: "",
+    audioUrl: "",
     images: [{ url: "", altText: "", isPrimary: true }],
     attributes: []
   };
@@ -320,6 +322,7 @@ export function ProductForm({ productId }: { productId?: string }) {
             isDefault: Boolean(v.isDefault),
             status: (v.status as "ACTIVE" | "INACTIVE") ?? "ACTIVE",
             videoUrl: String((v as { videoUrl?: string | null }).videoUrl ?? ""),
+            audioUrl: String((v as { audioUrl?: string | null }).audioUrl ?? ""),
             attributes,
             images:
               variantImgs.length > 0
@@ -722,6 +725,7 @@ export function ProductForm({ productId }: { productId?: string }) {
         status: v.status,
         onHand: parseInt(v.onHand, 10) || 0,
         videoUrl: v.videoUrl.trim() || null,
+        audioUrl: v.audioUrl.trim() || null,
         attributes: v.attributes
           .filter((a) => a.value.trim())
           .map((a) => ({
@@ -1468,6 +1472,7 @@ export function ProductForm({ productId }: { productId?: string }) {
                   <VariantMediaBlock
                     images={v.images}
                     videoUrl={v.videoUrl}
+                    audioUrl={v.audioUrl}
                     fieldPrefix={`variants.${vi}`}
                     fieldErrors={fieldErrors}
                     showImages
@@ -1480,6 +1485,11 @@ export function ProductForm({ productId }: { productId?: string }) {
                     onVideoUrlChange={(url) =>
                       setVariants((prev) =>
                         prev.map((x, i) => (i === vi ? { ...x, videoUrl: url } : x))
+                      )
+                    }
+                    onAudioUrlChange={(url) =>
+                      setVariants((prev) =>
+                        prev.map((x, i) => (i === vi ? { ...x, audioUrl: url } : x))
                       )
                     }
                   />

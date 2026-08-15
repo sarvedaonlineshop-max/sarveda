@@ -43,6 +43,7 @@ const variantInputSchema = z.object({
   onHand: z.number().int().min(0).optional(),
   shippingRates: z.array(shippingRateSchema).optional(),
   videoUrl: z.union([z.string().url().max(2000), z.literal(""), z.null()]).optional(),
+  audioUrl: z.union([z.string().url().max(2000), z.literal(""), z.null()]).optional(),
   attributes: z.array(variantAttributeSchema).optional(),
   images: z.array(imageAdminSchema).optional()
 });
