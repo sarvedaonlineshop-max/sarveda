@@ -10,6 +10,7 @@ import { NotifyMeButton } from "@/components/product/NotifyMeButton";
 import { ProductAudio } from "@/components/product/ProductAudio";
 import { ProductBuyBox } from "@/components/product/ProductBuyBox";
 import { ProductGallery } from "@/components/product/ProductGallery";
+import { ProductOffersBanner } from "@/components/product/ProductOffersBanner";
 import { ProductReviewsSection } from "@/components/product/ProductReviewsSection";
 import { ProductRichText } from "@/components/product/ProductRichText";
 import { PriceDisplay } from "@/components/product/PriceDisplay";
@@ -116,7 +117,6 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
   const variant = variants.find((v) => v.id === variantId) ?? initial;
   const isDigital = product.productType === "DIGITAL";
   const currency = zoneToCurrency(zone);
-  const categoryTags = product.categories.map((c) => c.category).filter(Boolean);
 
   const hasMeaningfulHtml = (html: string | null | undefined) => {
     const raw = (html ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
@@ -216,8 +216,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
     showPurchaseActions: true,
     expressShippingEnabled: product.expressShippingEnabled !== false,
     axisOrder: product.variantAxisOrder,
-    pairWithItems,
-    codAvailable
+    pairWithItems
   };
 
   return (
@@ -253,19 +252,6 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
 
           <div className="min-w-0 space-y-6">
             <div>
-              {categoryTags.length > 0 ? (
-                <div className="mb-3 flex flex-wrap gap-x-3 gap-y-1">
-                  {categoryTags.map((cat) => (
-                    <Link
-                      key={cat.slug}
-                      href={`/product-category/${cat.slug}`}
-                      className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-gold transition-colors hover:text-brand-forest"
-                    >
-                      {cat.name}
-                    </Link>
-                  ))}
-                </div>
-              ) : null}
               <h1 className="font-sans text-3xl font-semibold leading-tight text-brand-ink sm:text-4xl">
                 {product.name}
               </h1>
@@ -305,6 +291,9 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
             <div>
               <PriceDisplay variant={variant} variants={product.variants} zone={zone} presentation="storefront" />
               <p className="mt-1 text-xs text-brand-muted">Taxes included. Shipping calculated at checkout.</p>
+              <div className="mt-4">
+                <ProductOffersBanner codAvailable={codAvailable} />
+              </div>
             </div>
 
             <div
@@ -339,7 +328,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
 
             {accordionItems.length > 0 ? (
               <div className="border-t border-brand-cream-dark pt-8">
-                <h2 className="flex items-center gap-2 font-sans text-lg font-bold text-brand-ink">
+                <h2 className="flex items-center gap-2 font-sans text-lg font-bold text-[#108967]">
                   <svg viewBox="0 0 24 24" className="h-5 w-5 text-brand-gold" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>

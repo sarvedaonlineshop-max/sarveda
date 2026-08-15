@@ -6,7 +6,6 @@ import Link from "next/link";
 import { DeliveryTimeline } from "@/components/product/DeliveryTimeline";
 import { PairWithRow } from "@/components/product/PairWithRow";
 import { PriceDisplay } from "@/components/product/PriceDisplay";
-import { ProductOffersBanner } from "@/components/product/ProductOffersBanner";
 import { ProductTrustBadges } from "@/components/product/ProductTrustBadges";
 import type { Zone } from "@/lib/currency";
 import { sortAttributeOptionValues, stockDisplay, UNTRACKED_STOCK_ON_HAND } from "@/lib/variant-utils";
@@ -37,8 +36,6 @@ type Props = {
   layout?: "card" | "inline";
   /** Compact "Pair it with" items above purchase buttons */
   pairWithItems?: ProductListItem[];
-  /** Show COD badge beside the coupon row */
-  codAvailable?: boolean;
 };
 
 export function ProductBuyBox({
@@ -60,8 +57,7 @@ export function ProductBuyBox({
   showPurchaseActions = true,
   axisOrder,
   layout = "card",
-  pairWithItems = [],
-  codAvailable = false
+  pairWithItems = []
 }: Props) {
   const stock = variantForStock ? stockDisplay(variantForStock) : null;
   const isInline = layout === "inline";
@@ -181,7 +177,7 @@ export function ProductBuyBox({
         : "border-[#108967] bg-white text-[#108967] hover:bg-[#108967]/10"
     }`;
 
-  const wrapperClass = isInline ? "space-y-5" : "rounded-xl border border-stone-200 bg-white p-5 shadow-md ring-1 ring-stone-100";
+  const wrapperClass = isInline ? "space-y-4" : "rounded-xl border border-stone-200 bg-white p-5 shadow-md ring-1 ring-stone-100";
 
   return (
     <div className={wrapperClass}>
@@ -191,7 +187,7 @@ export function ProductBuyBox({
             const selected = selectedAttrValues.get(group.name);
             return (
               <div key={group.name}>
-                <p className="mb-2 font-sans text-base font-bold text-brand-ink">{group.name}</p>
+                <p className="mb-2 font-sans text-base font-bold text-[#108967]">{group.name}</p>
                 <div className="flex flex-wrap gap-2">
                   {group.values.map((value) => {
                     const active = selected === value;
@@ -218,19 +214,18 @@ export function ProductBuyBox({
       ) : null}
 
       {!isDigital ? (
-        <div className={isInline ? "space-y-1" : "mt-4 space-y-1"}>
+        <div className={isInline ? "py-5" : "mt-4 py-5"}>
           <DeliveryTimeline preparationDays="5 - 6 Days" shippingDays={shippingDays} />
         </div>
       ) : null}
 
-      {stock ? (
-        <p className={`text-sm ${stock.inStock ? "text-brand-sage" : "text-amber-800"}`}>
-          <span className="font-bold">{stock.label}</span>
-        </p>
-      ) : null}
-
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <p className="font-sans text-base font-bold text-brand-ink">Quantity</p>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        {stock ? (
+          <p className={`text-sm font-bold ${stock.inStock ? "text-[#108967]" : "text-amber-800"}`}>
+            {stock.label}
+          </p>
+        ) : null}
+        <p className="font-sans text-base font-bold text-[#108967]">Quantity</p>
         <div className="inline-flex items-center overflow-hidden rounded-[3px] border border-[#108967]/30 bg-white">
           <button
             type="button"
@@ -265,23 +260,6 @@ export function ProductBuyBox({
 
       {showPurchaseActions ? (
         <div className={isInline ? "space-y-3" : undefined}>
-          {isInline ? (
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
-              {codAvailable ? (
-                <div className="inline-flex shrink-0 items-center gap-2 rounded-md bg-[#108967] px-3.5 py-2 text-sm font-semibold text-white shadow-sm">
-                  <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9H5.25"
-                    />
-                  </svg>
-                  Cash On Delivery Available
-                </div>
-              ) : null}
-              <ProductOffersBanner />
-            </div>
-          ) : null}
           {isInline && pairWithItems.length > 0 ? <PairWithRow items={pairWithItems} compact /> : null}
           <div className={isInline ? "flex gap-2" : undefined}>
             <button

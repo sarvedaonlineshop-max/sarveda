@@ -68,7 +68,7 @@ export function PriceDisplay({
           </span>
         ) : null}
         {discountPercent && isStorefront ? (
-          <span className="inline-flex rounded-full bg-brand-forest px-2.5 py-0.5 text-xs font-semibold text-brand-cream">
+          <span className="inline-flex rounded-full bg-[#108967] px-2.5 py-0.5 text-xs font-semibold text-white">
             Save {discountPercent}%
           </span>
         ) : null}

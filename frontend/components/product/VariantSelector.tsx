@@ -145,7 +145,7 @@ function AttributeRow({
   const label = attributeDisplayName(axis.slug, axis.name);
   return (
     <div>
-      <p className="mb-3 font-sans text-base font-bold text-stone-800">{label}</p>
+      <p className="mb-3 font-sans text-base font-bold text-[#108967]">{label}</p>
       <div className="flex flex-wrap gap-2" role="listbox" aria-label={axis.name}>
         {axis.values.map((val) => {
           const selected = selection[axis.slug] === val.slug;

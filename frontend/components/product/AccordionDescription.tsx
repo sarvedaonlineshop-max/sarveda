@@ -176,7 +176,7 @@ export function AccordionDescription({ items }: Props) {
               type="button"
               aria-expanded={open}
               onClick={() => setOpenId((current) => (current === item.id ? null : item.id))}
-              className="flex min-h-[52px] w-full cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-left font-sans text-base font-bold text-brand-ink transition-colors hover:bg-brand-cream"
+              className="flex min-h-[52px] w-full cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-left font-sans text-base font-bold text-[#108967] transition-colors hover:bg-brand-cream"
             >
               <span className="flex min-w-0 items-center gap-2.5">
                 <AccordionHeaderIcon title={item.title} />

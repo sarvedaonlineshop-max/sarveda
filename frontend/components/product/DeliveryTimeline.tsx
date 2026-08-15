@@ -96,7 +96,7 @@ export function DeliveryTimeline({
               {step.icon}
             </div>
             <p className="mt-2 text-[11px] leading-tight text-stone-500 sm:text-xs">{step.label}</p>
-            <p className="mt-0.5 text-xs font-bold text-brand-ink sm:text-sm">{step.detail}</p>
+            <p className="mt-0.5 text-xs font-bold text-[#108967] sm:text-sm">{step.detail}</p>
           </div>
         ))}
       </div>
