@@ -1,9 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
 
-const MARK_SRC = "/brand/sarveda-logo.png";
+const MARK_SRC = "/brand/sarveda-mark.png";
 const WORDMARK_SRC = "/brand/sarveda-wordmark.png";
 
+/** Native mark is tall (spiral + tails). Wordmark is wide and short. */
+const MARK_W = 40;
+const MARK_H = 68;
 const WORDMARK_W = 200;
 const WORDMARK_H = 40;
 
@@ -22,22 +25,23 @@ type SarvedaLogoProps = {
 export function SarvedaLogo({
   href = "/",
   className = "",
-  iconHeight = 44,
+  iconHeight = 64,
   showWordmark = true
 }: SarvedaLogoProps) {
-  // Wider mark: stretch aspect slightly for more presence in the nav.
-  const iconWidth = Math.round(iconHeight * (620 / 1024));
-  const wordmarkHeight = Math.max(20, Math.round(iconHeight * 0.78));
-  const wordmarkWidth = Math.round(wordmarkHeight * (WORDMARK_W / WORDMARK_H) * 1.15);
+  const iconWidth = Math.round(iconHeight * (MARK_W / MARK_H));
+  // Wordmark sits beside the spiral body, not as tall as the tails (SS2 ratio).
+  const wordmarkHeight = Math.max(22, Math.round(iconHeight * 0.55));
+  const wordmarkWidth = Math.round(wordmarkHeight * (WORDMARK_W / WORDMARK_H));
 
   const content = (
-    <div className={`flex items-center gap-1.5 sm:gap-2 md:gap-2.5 ${className}`}>
+    <div className={`flex items-center gap-2 sm:gap-2.5 md:gap-3 ${className}`}>
       <Image
         src={MARK_SRC}
         alt=""
         width={iconWidth}
         height={iconHeight}
-        className="h-7 w-auto shrink-0 object-contain sm:h-9 md:h-[2.625rem]"
+        className="w-auto shrink-0 object-contain object-center"
+        style={{ height: iconHeight, width: "auto" }}
         priority
         aria-hidden
       />
@@ -47,7 +51,8 @@ export function SarvedaLogo({
           alt="Sarveda"
           width={wordmarkWidth}
           height={wordmarkHeight}
-          className="h-[1.35rem] w-auto object-contain object-left sm:h-[1.7rem] md:h-[2.05rem]"
+          className="w-auto object-contain object-left"
+          style={{ height: wordmarkHeight, width: "auto" }}
           priority
         />
       ) : null}

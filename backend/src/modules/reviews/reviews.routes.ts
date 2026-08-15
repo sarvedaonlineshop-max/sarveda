@@ -22,7 +22,77 @@ function normalizeCountryCode(raw?: string | null): string | null {
   const code = raw?.trim().toUpperCase();
   if (!code) return null;
   if (code === "UK") return "GB";
-  return code.length === 2 ? code : null;
+  if (code === "OTHER") return null;
+  return /^[A-Z]{2}$/.test(code) ? code : null;
+}
+
+/** Longest unique dial prefixes. Skip +1 (US/CA/Caribbean). */
+const PHONE_PREFIX_TO_COUNTRY: Array<[string, string]> = [
+  ["+971", "AE"],
+  ["+852", "HK"],
+  ["+353", "IE"],
+  ["+351", "PT"],
+  ["+44", "GB"],
+  ["+91", "IN"],
+  ["+61", "AU"],
+  ["+64", "NZ"],
+  ["+65", "SG"],
+  ["+81", "JP"],
+  ["+82", "KR"],
+  ["+86", "CN"],
+  ["+49", "DE"],
+  ["+33", "FR"],
+  ["+39", "IT"],
+  ["+34", "ES"],
+  ["+31", "NL"],
+  ["+32", "BE"],
+  ["+41", "CH"],
+  ["+46", "SE"],
+  ["+47", "NO"],
+  ["+45", "DK"],
+  ["+48", "PL"],
+  ["+43", "AT"],
+  ["+27", "ZA"],
+  ["+55", "BR"],
+  ["+52", "MX"],
+  ["+20", "EG"],
+  ["+90", "TR"],
+  ["+66", "TH"],
+  ["+60", "MY"],
+  ["+62", "ID"],
+  ["+63", "PH"],
+  ["+84", "VN"],
+  ["+92", "PK"],
+  ["+94", "LK"],
+  ["+977", "NP"],
+  ["+880", "BD"],
+  ["+966", "SA"],
+  ["+974", "QA"],
+  ["+973", "BH"],
+  ["+968", "OM"],
+  ["+965", "KW"]
+];
+
+function countryFromPhone(raw?: string | null): string | null {
+  if (!raw?.trim()) return null;
+  const compact = raw.replace(/[^\d+]/g, "");
+  if (!compact) return null;
+  const withPlus = compact.startsWith("00")
+    ? `+${compact.slice(2)}`
+    : compact.startsWith("+")
+      ? compact
+      : `+${compact}`;
+  const sorted = [...PHONE_PREFIX_TO_COUNTRY].sort((a, b) => b[0].length - a[0].length);
+  for (const [prefix, country] of sorted) {
+    if (withPlus.startsWith(prefix)) return country;
+  }
+  return null;
+}
+
+function rememberCountry(map: Map<string, string>, userId: string | null | undefined, raw?: string | null) {
+  if (!userId || map.has(userId)) return;
+  const code = normalizeCountryCode(raw) ?? countryFromPhone(raw);
+  if (code) map.set(userId, code);
 }
 
 router.get("/admin/pending", requireAdmin, async (_req, res, next) => {
@@ -80,14 +150,14 @@ router.get("/:productId", optionalAuth, async (req, res, next) => {
         createdAt: true,
         reviewerCountry: true,
         userId: true,
-        user: { select: { name: true } }
+        user: { select: { name: true, phone: true, email: true } }
       }
     });
 
     const missingCountryUserIds = Array.from(
       new Set(
         reviews
-          .filter((r) => !r.reviewerCountry)
+          .filter((r) => !normalizeCountryCode(r.reviewerCountry))
           .map((r) => r.userId)
           .filter(Boolean)
       )
@@ -95,11 +165,20 @@ router.get("/:productId", optionalAuth, async (req, res, next) => {
 
     const countryByUserId = new Map<string, string>();
     if (missingCountryUserIds.length) {
-      const [addresses, orderAddresses] = await Promise.all([
+      const emails = Array.from(
+        new Set(
+          reviews
+            .filter((r) => r.userId && missingCountryUserIds.includes(r.userId))
+            .map((r) => r.user?.email?.trim().toLowerCase())
+            .filter((email): email is string => Boolean(email && email.includes("@")))
+        )
+      );
+
+      const [addresses, orderAddresses, orders] = await Promise.all([
         prisma.address.findMany({
           where: { userId: { in: missingCountryUserIds } },
           orderBy: [{ isDefault: "desc" }, { id: "asc" }],
-          select: { userId: true, country: true }
+          select: { userId: true, country: true, phone: true }
         }),
         prisma.orderAddress.findMany({
           where: {
@@ -110,28 +189,76 @@ router.get("/:productId", optionalAuth, async (req, res, next) => {
             }
           },
           orderBy: { order: { createdAt: "desc" } },
-          select: { country: true, order: { select: { customerId: true } } }
-        })
+          select: {
+            country: true,
+            phone: true,
+            order: { select: { customerId: true, phone: true, ipCountry: true, shippingZone: true } }
+          }
+        }),
+        emails.length
+          ? prisma.order.findMany({
+              where: {
+                deletedAt: null,
+                OR: [{ customerId: { in: missingCountryUserIds } }, { email: { in: emails } }]
+              },
+              orderBy: { createdAt: "desc" },
+              select: {
+                customerId: true,
+                email: true,
+                phone: true,
+                ipCountry: true,
+                shippingZone: true,
+                addresses: { where: { type: "SHIPPING" }, select: { country: true, phone: true }, take: 1 }
+              }
+            })
+          : prisma.order.findMany({
+              where: { customerId: { in: missingCountryUserIds }, deletedAt: null },
+              orderBy: { createdAt: "desc" },
+              select: {
+                customerId: true,
+                email: true,
+                phone: true,
+                ipCountry: true,
+                shippingZone: true,
+                addresses: { where: { type: "SHIPPING" }, select: { country: true, phone: true }, take: 1 }
+              }
+            })
       ]);
 
-      // Prefer the latest shipping country (actual purchase), then saved address.
-      // Never default to India — missing country means no flag.
+      const emailToUserId = new Map<string, string>();
+      for (const r of reviews) {
+        const email = r.user?.email?.trim().toLowerCase();
+        if (r.userId && email) emailToUserId.set(email, r.userId);
+      }
+
+      // 1) Latest shipping country, 2) order IP / zone, 3) phones, 4) saved address.
       for (const row of orderAddresses) {
-        const userId = row.order.customerId;
-        if (!userId || countryByUserId.has(userId)) continue;
-        const code = normalizeCountryCode(row.country);
-        if (code) countryByUserId.set(userId, code);
+        rememberCountry(countryByUserId, row.order.customerId, row.country);
+        rememberCountry(countryByUserId, row.order.customerId, row.order.ipCountry);
+        rememberCountry(countryByUserId, row.order.customerId, row.order.shippingZone);
+        rememberCountry(countryByUserId, row.order.customerId, row.phone);
+        rememberCountry(countryByUserId, row.order.customerId, row.order.phone);
+      }
+      for (const order of orders) {
+        const userId = order.customerId || emailToUserId.get(order.email.trim().toLowerCase());
+        rememberCountry(countryByUserId, userId, order.addresses[0]?.country);
+        rememberCountry(countryByUserId, userId, order.ipCountry);
+        rememberCountry(countryByUserId, userId, order.shippingZone);
+        rememberCountry(countryByUserId, userId, order.addresses[0]?.phone);
+        rememberCountry(countryByUserId, userId, order.phone);
       }
       for (const addr of addresses) {
-        const code = normalizeCountryCode(addr.country);
-        if (code && !countryByUserId.has(addr.userId)) {
-          countryByUserId.set(addr.userId, code);
-        }
+        rememberCountry(countryByUserId, addr.userId, addr.country);
+        rememberCountry(countryByUserId, addr.userId, addr.phone);
+      }
+      for (const r of reviews) {
+        rememberCountry(countryByUserId, r.userId, r.user?.phone);
       }
     }
 
-    const enriched = reviews.map(({ userId, ...r }) => ({
+    const enriched = reviews.map(({ userId, user, ...r }) => ({
       ...r,
+      user: user ? { name: user.name } : null,
       reviewerCountry:
         normalizeCountryCode(r.reviewerCountry) ||
         (userId ? countryByUserId.get(userId) ?? null : null)

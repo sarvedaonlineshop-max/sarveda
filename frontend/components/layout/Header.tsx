@@ -44,7 +44,7 @@ function AnnouncementBar({ hidden }: { hidden: boolean }) {
 }
 
 function NavIcon({ label }: { label: string }) {
-  const common = "h-[17px] w-[17px] shrink-0";
+  const common = "h-[18px] w-[18px] shrink-0";
   switch (label) {
     case "Home":
       return (
@@ -81,6 +81,12 @@ function NavIcon({ label }: { label: string }) {
       return (
         <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" aria-hidden>
           <path strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" d="M12 3a7 7 0 00-4 12.7V18h8v-2.3A7 7 0 0012 3zM10 21h4" />
+        </svg>
+      );
+    case "Contact":
+      return (
+        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" aria-hidden>
+          <path strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" d="M4 6h16v12H4V6zm0 0 8 7 8-7" />
         </svg>
       );
     default:
@@ -307,8 +313,8 @@ export function Header() {
         <header className="border-b border-brand-forest/10 bg-white shadow-[0_4px_16px_rgba(16,32,26,0.05)]">
           {/* Logo + nav + track / search toggle / auth / cart */}
           <div className="bg-white">
-            <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-1.5 sm:px-6 lg:px-8">
-              <SarvedaLogo iconHeight={42} />
+            <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6 md:py-3.5 lg:px-8">
+              <SarvedaLogo iconHeight={64} />
 
               <nav
                 className="ml-1 hidden flex-1 items-center justify-center gap-0.5 lg:gap-1 md:flex"
@@ -327,10 +333,10 @@ export function Header() {
                         e.preventDefault();
                         goNav(link.href);
                       }}
-                      className={`group relative flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] font-semibold tracking-wide transition-colors ${
+                      className={`group relative flex items-center gap-1.5 px-2 py-2 text-[13px] font-semibold uppercase tracking-[0.08em] transition-colors lg:px-2.5 lg:text-[15px] ${
                         active
-                          ? "bg-brand-gold/20 text-brand-forest ring-1 ring-brand-gold/45"
-                          : "text-brand-forest/75 hover:bg-brand-cream hover:text-brand-forest"
+                          ? "text-brand-gold"
+                          : "text-brand-forest hover:text-brand-gold"
                       }`}
                     >
                       <span
@@ -350,6 +356,12 @@ export function Header() {
                           link.label
                         )}
                       </span>
+                      <span
+                        className={`absolute inset-x-2 -bottom-0.5 h-[3px] rounded-full bg-brand-gold transition-opacity ${
+                          active ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                        }`}
+                        aria-hidden
+                      />
                     </Link>
                   );
                 })}

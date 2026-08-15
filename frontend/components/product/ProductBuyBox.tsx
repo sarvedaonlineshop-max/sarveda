@@ -177,7 +177,9 @@ export function ProductBuyBox({
         : "border-[#108967] bg-white text-[#108967] hover:bg-[#108967]/10"
     }`;
 
-  const wrapperClass = isInline ? "space-y-0" : "rounded-xl border border-stone-200 bg-white p-5 shadow-md ring-1 ring-stone-100";
+  const wrapperClass = isInline
+    ? "flex flex-col gap-8"
+    : "rounded-xl border border-stone-200 bg-white p-5 shadow-md ring-1 ring-stone-100";
 
   return (
     <div className={wrapperClass}>
@@ -214,16 +216,16 @@ export function ProductBuyBox({
       ) : null}
 
       {!isDigital ? (
-        <div className="mt-2 border-t border-stone-100 pt-10 pb-7">
+        <div className="border-t border-stone-100 pt-8">
           <DeliveryTimeline preparationDays="5 - 6 Days" shippingDays={shippingDays} />
         </div>
       ) : attributeGroups.length > 0 ? (
         <div className="h-6" />
       ) : null}
 
-      <div className="relative z-10 mb-8 flex flex-wrap items-center gap-x-3 gap-y-2">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <p className="font-sans text-base font-bold text-[#108967]">Quantity</p>
-        <div className="inline-flex items-stretch overflow-hidden rounded-[3px] border border-[#108967]/35 bg-white">
+        <div className="inline-flex h-10 items-stretch overflow-hidden rounded-[3px] border border-[#108967]/35 bg-white">
           <button
             type="button"
             disabled={qty <= 1}
@@ -270,8 +272,8 @@ export function ProductBuyBox({
         ) : null}
       </div>
 
-          {showPurchaseActions ? (
-            <div className={isInline ? "relative z-0 mt-0 space-y-3" : undefined}>
+      {showPurchaseActions ? (
+        <div className={isInline ? "flex flex-col gap-4" : undefined}>
           {isInline && pairWithItems.length > 0 ? <PairWithRow items={pairWithItems} compact /> : null}
           <div className={isInline ? "flex gap-2" : undefined}>
             <button

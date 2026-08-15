@@ -5,7 +5,8 @@ const links = [
   { href: "/courses", label: "Courses" },
   { href: "/events", label: "Events" },
   { href: "/corporate-wellness", label: "Corporate Wellness" },
-  { href: "/insights", label: "Insights" }
+  { href: "/insights", label: "Insights" },
+  { href: "/contact", label: "Contact" }
 ];
 
 /** Quick explore links on mobile (footer is desktop-only). */

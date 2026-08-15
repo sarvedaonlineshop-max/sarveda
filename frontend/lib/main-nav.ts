@@ -5,7 +5,8 @@ export const MAIN_NAV_LINKS = [
   { href: "/courses", label: "Courses" },
   { href: "/events", label: "Events" },
   { href: "/corporate-wellness", label: "Corporate Wellness" },
-  { href: "/insights", label: "Insights" }
+  { href: "/insights", label: "Insights" },
+  { href: "/contact", label: "Contact" }
 ] as const;
 
 export function isMainNavActive(pathname: string | null, href: string): boolean {
