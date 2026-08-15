@@ -206,6 +206,12 @@ export function courseTeachers(extra: CourseExtra): string[] {
   return parseCourseTeachers(extra).map((t) => t.name);
 }
 
+export function parseEventTeachers(extra: EventListItem["extra"] | unknown): CourseTeacher[] {
+  if (!extra || typeof extra !== "object") return [];
+  const record = extra as CourseExtra;
+  return parseCourseTeachers(record);
+}
+
 export function isEventUpcoming(event: EventListItem, now = new Date()): boolean {
   const start = new Date(event.startDate);
   return !Number.isNaN(start.getTime()) && start >= now;

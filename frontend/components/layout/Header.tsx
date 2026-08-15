@@ -11,7 +11,7 @@ import { isMainNavActive, MAIN_NAV_LINKS } from "@/lib/main-nav";
 
 import { SarvedaLogo } from "@/components/brand/SarvedaLogo";
 
-import { TrackOrderModal } from "./TrackOrderModal";
+import { TrackOrderModal, OPEN_TRACK_ORDER_EVENT } from "./TrackOrderModal";
 import { useStorefrontSession } from "./useStorefrontSession";
 
 const immersiveMobileRoutes = new Set(["/cart", "/profile", "/chat"]);
@@ -222,6 +222,7 @@ export function Header() {
   const hideMarquee = isProfilePath(pathname);
   const isShopPage = isShopListingPath(pathname);
   const isProductPdp = isProductPdpPath(pathname);
+  const isHomePage = pathname === "/";
   const headerCompact = hideMarquee || marqueeHidden;
   /** Shop listing uses ShopProductToolbar; PDP search sits under breadcrumbs on the page. */
   const showSearchToggle = !isShopPage && !isProductPdp;
@@ -276,6 +277,21 @@ export function Header() {
       delete root.dataset.headerSearchOpen;
     };
   }, [headerCompact, hideMarquee, searchLayerExpanded, showHeaderSearchLayer]);
+
+  useEffect(() => {
+    const onOpenTrack = () => {
+      if (sessionUser) {
+        setPendingHref("/profile");
+        startTransition(() => {
+          router.push("/profile?tab=orders");
+        });
+        return;
+      }
+      setTrackOpen(true);
+    };
+    window.addEventListener(OPEN_TRACK_ORDER_EVENT, onOpenTrack);
+    return () => window.removeEventListener(OPEN_TRACK_ORDER_EVENT, onOpenTrack);
+  }, [sessionUser, router]);
 
   if (
     pathname?.startsWith("/admin") ||
@@ -466,7 +482,7 @@ export function Header() {
                 </button>
               </div>
 
-              {/* Mobile: search + track + menu (+ store category menu) */}
+              {/* Mobile: search + track on home + shop categories only */}
               <div className="ml-auto flex shrink-0 items-center gap-2 md:hidden">
                 {showSearchToggle ? (
                   <button
@@ -487,7 +503,7 @@ export function Header() {
                     <SearchIcon />
                   </button>
                 ) : null}
-                <TrackOrderButton onClick={onTrackClick} compact />
+                {isHomePage ? <TrackOrderButton onClick={onTrackClick} compact /> : null}
                 {isShopPage ? (
                   <button
                     type="button"
@@ -500,23 +516,11 @@ export function Header() {
                     </svg>
                   </button>
                 ) : null}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchOpen(false);
-                    setMenuOpen((v) => !v);
-                  }}
-                  className={`${headerIconBtn} bg-gradient-to-br from-[#2a4a3c] to-[#1c352a]`}
-                  aria-label={menuOpen ? "Close menu" : "Open menu"}
-                  aria-expanded={menuOpen}
-                >
-                  <MenuIcon open={menuOpen} />
-                </button>
               </div>
             </div>
 
             {menuOpen ? (
-              <nav className="border-t border-brand-cream-dark/70 bg-white xl:hidden" aria-label="Mobile">
+              <nav className="hidden border-t border-brand-cream-dark/70 bg-white md:block xl:hidden" aria-label="More">
                 <div className="page-shell grid grid-cols-2 gap-1 py-3 sm:grid-cols-3 md:grid-cols-4">
                   {MAIN_NAV_LINKS.map((link) => {
                     const routeActive = isMainNavActive(pathname, link.href);

@@ -15,6 +15,7 @@ export type EventListItem = {
   priceInPaise: number;
   enrollmentMode: CourseEnrollmentMode;
   checkoutVariantId: string | null;
+  extra: unknown;
 };
 
 export type EventDetail = EventListItem & {
@@ -41,7 +42,8 @@ export async function listPublishedEvents(): Promise<EventListItem[]> {
       isOnline: true,
       priceInPaise: true,
       enrollmentMode: true,
-      checkoutVariantId: true
+      checkoutVariantId: true,
+      extra: true
     }
   });
   return rows.map((r) => ({

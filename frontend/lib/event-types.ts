@@ -13,6 +13,7 @@ export type EventListItem = {
   priceInPaise: number;
   enrollmentMode: EnrollmentMode;
   checkoutVariantId: string | null;
+  extra?: Record<string, unknown> | null;
 };
 
 export type EventDetail = EventListItem & {

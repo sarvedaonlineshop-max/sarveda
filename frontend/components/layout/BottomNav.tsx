@@ -8,6 +8,8 @@ import { useCartData } from "@/components/cart/CartProvider";
 import { MOBILE_MENU_POLICY_LINKS } from "@/lib/policy-links";
 import { isShopBrowsePath } from "@/lib/shop-navigation";
 
+import { OPEN_TRACK_ORDER_EVENT } from "./TrackOrderModal";
+
 const menuLinks = [
   { href: "/courses", label: "Courses" },
   { href: "/corporate-wellness", label: "Corporate Wellness" },
@@ -153,6 +155,27 @@ export function BottomNav() {
           <div className="max-h-[min(70dvh,32rem)] overflow-y-auto">
             <div className="border-b border-white/10 px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-200/80">Explore</p>
+            </div>
+            <div className="px-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  window.dispatchEvent(new Event(OPEN_TRACK_ORDER_EVENT));
+                }}
+                className="flex w-full items-center gap-2.5 rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-700"
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" aria-hidden>
+                  <path
+                    strokeWidth={1.85}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M21 8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16V8z"
+                  />
+                  <path strokeWidth={1.85} strokeLinecap="round" strokeLinejoin="round" d="M3.3 7L12 12l8.7-5M12 22V12" />
+                </svg>
+                Track my order
+              </button>
             </div>
             <ul className="py-2">
               {menuLinks.map((link) => {

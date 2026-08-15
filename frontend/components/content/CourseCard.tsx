@@ -4,8 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import type { CourseListItem } from "@/lib/course-types";
-import { courseTeachers, formatCourseDuration, parseCourseExtra } from "@/lib/content-meta";
+import { formatCourseDuration, parseCourseExtra, parseCourseTeachers } from "@/lib/content-meta";
 import { formatINRFromPaise } from "@/lib/money";
+
+import { InstructorAvatars } from "./InstructorAvatars";
 
 type Props = { course: CourseListItem; compact?: boolean };
 
@@ -29,7 +31,8 @@ function MetaRow({ label, value }: { label: string; value: string }) {
 
 export function CourseCard({ course, compact = false }: Props) {
   const extra = parseCourseExtra(course.extra);
-  const teachers = courseTeachers(extra);
+  const teachers = parseCourseTeachers(extra);
+  const teacherNames = teachers.map((t) => t.name);
   const s = prettyDate(extra.startDate);
   const e = prettyDate(extra.endDate);
   const dateRange = s && e && s !== e ? `${s} – ${e}` : s ?? null;
@@ -58,27 +61,32 @@ export function CourseCard({ course, compact = false }: Props) {
           "opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s ease"
       }}
     >
-      {/* Image */}
-      <div className={`relative w-full shrink-0 overflow-hidden bg-[#EDE4D3] ${compact ? "aspect-[4/3]" : "aspect-[4/3] md:aspect-[3/2]"}`}>
-        {course.imageUrl ? (
-          <Image
-            src={course.imageUrl}
-            alt={course.title}
-            fill
-            className="object-cover object-center transition-transform duration-500 ease-out group-hover:scale-[1.04]"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            unoptimized
-          />
-        ) : (
-          <div className="absolute inset-0 bg-brand-forest" />
-        )}
-        <span className="absolute left-2.5 top-2.5 inline-flex rounded-full border border-brand-gold/40 bg-brand-cream/95 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-brand-gold">
-          {course.isFree ? "Free" : "Paid"}
-        </span>
+      <div className={`relative w-full shrink-0 overflow-visible bg-[#EDE4D3] ${compact ? "" : ""}`}>
+        <div className="relative aspect-[16/10] w-full overflow-hidden">
+          {course.imageUrl ? (
+            <Image
+              src={course.imageUrl}
+              alt={course.title}
+              fill
+              className="object-cover object-center transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+              style={{ objectFit: "cover", objectPosition: "center" }}
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              unoptimized
+            />
+          ) : (
+            <div className="absolute inset-0 bg-brand-forest" />
+          )}
+          <span className="absolute left-2.5 top-2.5 z-10 inline-flex rounded-full border border-brand-gold/40 bg-brand-cream/95 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-brand-gold">
+            {course.isFree ? "Free" : "Paid"}
+          </span>
+        </div>
+        <InstructorAvatars
+          people={teachers}
+          className="absolute bottom-0 right-3 z-10 translate-y-1/2"
+        />
       </div>
 
-      {/* Body */}
-      <div className="flex min-w-0 flex-1 flex-col gap-3 p-5">
+      <div className={`flex min-w-0 flex-1 flex-col gap-3 p-5 ${teachers.length ? "pt-7" : ""}`}>
         <h3 className="break-words font-serif text-xl font-semibold leading-snug text-brand-ink md:text-[1.35rem]">
           {course.title}
         </h3>
@@ -91,19 +99,17 @@ export function CourseCard({ course, compact = false }: Props) {
 
         <div className="h-px bg-brand-cream-dark" />
 
-        {/* Meta rows */}
         <div className="flex flex-col gap-2">
-          {teachers.length > 0 && (
+          {teacherNames.length > 0 && (
             <MetaRow
               label="With"
-              value={`${teachers.slice(0, 3).join(" · ")}${teachers.length > 3 ? ` +${teachers.length - 3}` : ""}`}
+              value={`${teacherNames.slice(0, 3).join(" · ")}${teacherNames.length > 3 ? ` +${teacherNames.length - 3}` : ""}`}
             />
           )}
           {dateRange && <MetaRow label="When" value={dateRange} />}
           {duration && <MetaRow label="Duration" value={duration} />}
         </div>
 
-        {/* Price + CTA */}
         <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-2">
           <p className="font-sans text-base font-semibold tabular-nums text-brand-forest">
             {course.isFree || course.priceInPaise === 0 ? "Free" : formatINRFromPaise(course.priceInPaise)}

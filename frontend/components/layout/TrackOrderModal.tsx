@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 
 import { fetchOrderPublic } from "@/lib/orders-api";
 
+export const OPEN_TRACK_ORDER_EVENT = "sarveda-open-track-order";
+
 type Props = {
   open: boolean;
   onClose: () => void;
