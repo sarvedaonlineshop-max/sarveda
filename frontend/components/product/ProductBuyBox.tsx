@@ -221,7 +221,7 @@ export function ProductBuyBox({
         <div className="h-6" />
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      <div className="relative z-10 mb-8 flex flex-wrap items-center gap-x-3 gap-y-2">
         <p className="font-sans text-base font-bold text-[#108967]">Quantity</p>
         <div className="inline-flex items-stretch overflow-hidden rounded-[3px] border border-[#108967]/35 bg-white">
           <button
@@ -271,7 +271,7 @@ export function ProductBuyBox({
       </div>
 
           {showPurchaseActions ? (
-            <div className={isInline ? "mt-4 space-y-3" : undefined}>
+            <div className={isInline ? "relative z-0 mt-0 space-y-3" : undefined}>
           {isInline && pairWithItems.length > 0 ? <PairWithRow items={pairWithItems} compact /> : null}
           <div className={isInline ? "flex gap-2" : undefined}>
             <button

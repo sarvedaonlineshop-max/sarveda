@@ -67,9 +67,9 @@ export function ProductOffersBanner({ codAvailable = false }: Props) {
       {offers.map((offer) => (
         <div
           key={offer.code}
-          className="flex items-center gap-3 rounded-xl border border-[#e2c98a] bg-[#fbf6ea] px-3.5 py-3"
+          className="flex items-center gap-3 rounded-xl border border-[#c9a24a] bg-gradient-to-r from-[#f8edcc] to-[#ead08a] px-3.5 py-3"
         >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-gold text-white">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#b98a3e] text-white">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden>
               <path
                 strokeLinecap="round"
@@ -80,10 +80,10 @@ export function ProductOffersBanner({ codAvailable = false }: Props) {
             </svg>
           </span>
           <div className="min-w-0">
-            <p className="text-sm font-bold text-brand-ink">{offer.label}</p>
-            <p className="text-xs text-stone-600">
+            <p className="text-sm font-bold text-[#7a5a1e]">{offer.label}</p>
+            <p className="text-xs text-[#8a6a28]">
               Use code{" "}
-              <span className="rounded bg-white px-1.5 py-0.5 font-mono text-[11px] font-bold tracking-wide text-[#108967]">
+              <span className="rounded bg-[#b98a3e] px-1.5 py-0.5 font-mono text-[11px] font-bold tracking-wide text-white">
                 {offer.code}
               </span>
             </p>

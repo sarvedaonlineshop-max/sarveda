@@ -84,19 +84,19 @@ export function DeliveryTimeline({
   ];
 
   return (
-    <div className="overflow-x-auto pb-1">
+    <div className="overflow-x-auto overflow-y-hidden pb-1">
       <div className="relative flex min-w-[640px] items-start justify-between sm:min-w-0">
         <span
-          className="absolute left-[12%] right-[12%] top-5 h-px bg-[#7eb8a8]/70"
+          className="absolute left-[12%] right-[12%] top-5 h-px bg-[#e0c57a]"
           aria-hidden
         />
         {steps.map((step) => (
           <div key={step.label} className="relative z-10 w-[23%] min-w-[8.5rem] text-center">
-            <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-md bg-[#dceee8] text-[#1a8a72]">
+            <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-md bg-[#f4e6c0] text-[#b98a3e]">
               {step.icon}
             </div>
             <p className="mt-2 text-[11px] leading-tight text-stone-500 sm:text-xs">{step.label}</p>
-            <p className="mt-0.5 text-xs font-bold text-[#108967] sm:text-sm">{step.detail}</p>
+            <p className="mt-0.5 text-xs font-bold text-[#9a7030] sm:text-sm">{step.detail}</p>
           </div>
         ))}
       </div>

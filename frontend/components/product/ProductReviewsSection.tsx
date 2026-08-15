@@ -284,9 +284,7 @@ export function ProductReviewsSection({ productId }: Props) {
                         {displayName}
                       </span>
                       {r.isVerified ? (
-                        <span
-                          className="inline-flex items-center rounded-full border border-[#108967]/30 bg-[#e8f6f1] px-2 py-0.5 text-[11px] font-semibold leading-none text-[#108967]"
-                        >
+                        <span className="inline-flex items-center rounded-full border border-[#108967]/35 bg-[#e8f6f1] px-2.5 py-[3px] text-[11px] font-semibold leading-none text-[#108967]">
                           Verified Buyer
                         </span>
                       ) : null}

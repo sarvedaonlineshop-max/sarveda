@@ -92,7 +92,7 @@ export function PairWithRow({ items, compact = false }: Props) {
 
   if (compact) {
     return (
-      <section className="rounded-xl border border-brand-forest/15 bg-gradient-to-r from-[#eef7f3] to-[#faf6ee] px-3 py-2.5 shadow-[0_4px_14px_rgba(16,137,103,0.1)]">
+      <section className="relative z-0 overflow-hidden rounded-xl border border-brand-forest/15 bg-gradient-to-r from-[#eef7f3] to-[#faf6ee] px-3 py-3 shadow-[0_4px_14px_rgba(16,137,103,0.1)]">
         <h2 className="flex items-center gap-1.5 text-sm font-semibold text-[#108967]">
           <span aria-hidden className="text-base">
             🔗
