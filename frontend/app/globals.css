@@ -36,15 +36,13 @@
   }
 }
 
-html[data-header-search-open="true"],
-html[data-header-persistent-search="true"] {
+html[data-header-search-open="true"] {
   --storefront-header-offset: 8.85rem;
   --storefront-header-offset-scrolled: 8rem;
 }
 
 @media (min-width: 768px) {
-  html[data-header-search-open="true"],
-  html[data-header-persistent-search="true"] {
+  html[data-header-search-open="true"] {
     --storefront-header-offset: 9.6rem;
     --storefront-header-offset-scrolled: 8.1rem;
   }

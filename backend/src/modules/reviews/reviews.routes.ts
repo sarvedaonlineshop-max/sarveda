@@ -18,6 +18,13 @@ const CreateReviewSchema = z.object({
 
 const PAID_LIKE_STATUSES = ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"] as const;
 
+function normalizeCountryCode(raw?: string | null): string | null {
+  const code = raw?.trim().toUpperCase();
+  if (!code) return null;
+  if (code === "UK") return "GB";
+  return code.length === 2 ? code : null;
+}
+
 router.get("/admin/pending", requireAdmin, async (_req, res, next) => {
   try {
     const reviews = await prisma.review.findMany({
@@ -107,26 +114,27 @@ router.get("/:productId", optionalAuth, async (req, res, next) => {
         })
       ]);
 
-      for (const addr of addresses) {
-        const code = addr.country?.trim().toUpperCase();
-        if (code?.length === 2 && !countryByUserId.has(addr.userId)) {
-          countryByUserId.set(addr.userId, code);
-        }
-      }
+      // Prefer the latest shipping country (actual purchase), then saved address.
+      // Never default to India — missing country means no flag.
       for (const row of orderAddresses) {
         const userId = row.order.customerId;
         if (!userId || countryByUserId.has(userId)) continue;
-        const code = row.country?.trim().toUpperCase();
-        if (code?.length === 2) countryByUserId.set(userId, code);
+        const code = normalizeCountryCode(row.country);
+        if (code) countryByUserId.set(userId, code);
+      }
+      for (const addr of addresses) {
+        const code = normalizeCountryCode(addr.country);
+        if (code && !countryByUserId.has(addr.userId)) {
+          countryByUserId.set(addr.userId, code);
+        }
       }
     }
 
     const enriched = reviews.map(({ userId, ...r }) => ({
       ...r,
       reviewerCountry:
-        r.reviewerCountry?.toUpperCase() ||
-        (userId ? countryByUserId.get(userId) ?? null : null) ||
-        "IN"
+        normalizeCountryCode(r.reviewerCountry) ||
+        (userId ? countryByUserId.get(userId) ?? null : null)
     }));
 
     const total = enriched.length;

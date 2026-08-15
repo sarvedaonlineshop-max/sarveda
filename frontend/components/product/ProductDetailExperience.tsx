@@ -252,7 +252,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
 
           <div className="min-w-0 space-y-6">
             <div>
-              <h1 className="font-sans text-3xl font-semibold leading-tight text-brand-ink sm:text-4xl">
+              <h1 className="font-serif text-[1.85rem] font-semibold leading-[1.15] tracking-tight text-[#155e4d] sm:text-4xl">
                 {product.name}
               </h1>
             </div>

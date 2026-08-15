@@ -214,30 +214,32 @@ export function ProductBuyBox({
       ) : null}
 
       {!isDigital ? (
-        <div className="py-6">
+        <div className="mt-2 border-t border-stone-100 pt-10 pb-7">
           <DeliveryTimeline preparationDays="5 - 6 Days" shippingDays={shippingDays} />
         </div>
       ) : attributeGroups.length > 0 ? (
         <div className="h-6" />
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <p className="font-sans text-base font-bold text-[#108967]">Quantity</p>
-        <div className="inline-flex items-center overflow-hidden rounded-[3px] border border-[#108967]/30 bg-white">
+        <div className="inline-flex items-stretch overflow-hidden rounded-[3px] border border-[#108967]/35 bg-white">
           <button
             type="button"
             disabled={qty <= 1}
-            className="flex h-10 w-10 items-center justify-center bg-[#108967] text-lg font-semibold text-white hover:bg-[#0d7353] disabled:opacity-40"
+            className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#108967] text-lg font-semibold leading-none text-white hover:bg-[#0d7353] disabled:bg-[#108967]/40 disabled:text-white disabled:opacity-100"
             aria-label="Decrease quantity"
             onClick={() => changeQty(qty - 1)}
           >
             −
           </button>
-          <span className="min-w-[2.75rem] text-center text-sm font-semibold tabular-nums text-[#108967]">{qty}</span>
+          <span className="flex min-w-[3rem] items-center justify-center px-3 text-sm font-semibold tabular-nums text-[#108967]">
+            {qty}
+          </span>
           <button
             type="button"
             disabled={qty >= qtyLimit}
-            className="flex h-10 w-10 items-center justify-center bg-[#108967] text-lg font-semibold text-white hover:bg-[#0d7353] disabled:opacity-40"
+            className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#108967] text-lg font-semibold leading-none text-white hover:bg-[#0d7353] disabled:bg-[#108967]/40 disabled:text-white disabled:opacity-100"
             aria-label="Increase quantity"
             onClick={() => changeQty(qty + 1)}
           >

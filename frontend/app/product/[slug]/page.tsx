@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { Breadcrumbs } from "@/components/product/Breadcrumbs";
+import { ProductPageSearchBar } from "@/components/product/ProductPageSearchBar";
 import { ProductDetailExperience } from "@/components/product/ProductDetailExperience";
 import { ProductRelatedArticles } from "@/components/product/ProductRelatedArticles";
 import { RelatedProducts } from "@/components/product/RelatedProducts";
@@ -97,8 +98,8 @@ export default async function ProductDetailPage({ params }: Props) {
   return (
     <>
       <JsonLd data={[productJsonLd(product), breadcrumbJsonLd(breadcrumbItems)]} />
-      <div className="hidden border-b border-stone-100 bg-white md:block">
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+      <div className="border-b border-stone-100 bg-brand-cream/90">
+        <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
           <Breadcrumbs
             items={[
               { label: "Home", href: "/" },
@@ -114,6 +115,7 @@ export default async function ProductDetailPage({ params }: Props) {
               { label: product.name }
             ]}
           />
+          <ProductPageSearchBar />
         </div>
       </div>
 
