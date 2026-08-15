@@ -37,6 +37,8 @@ type Props = {
   layout?: "card" | "inline";
   /** Compact "Pair it with" items above purchase buttons */
   pairWithItems?: ProductListItem[];
+  /** Show COD badge beside the coupon row */
+  codAvailable?: boolean;
 };
 
 export function ProductBuyBox({
@@ -58,7 +60,8 @@ export function ProductBuyBox({
   showPurchaseActions = true,
   axisOrder,
   layout = "card",
-  pairWithItems = []
+  pairWithItems = [],
+  codAvailable = false
 }: Props) {
   const stock = variantForStock ? stockDisplay(variantForStock) : null;
   const isInline = layout === "inline";
@@ -172,17 +175,11 @@ export function ProductBuyBox({
   };
 
   const pillClass = (active: boolean) =>
-    isInline
-      ? `rounded-[3px] border px-3.5 py-2 text-sm font-medium transition ${
-          active
-            ? "border-[#3d4a38] bg-[#3d4a38] text-brand-cream"
-            : "border-brand-forest/25 bg-white text-brand-ink hover:border-[#3d4a38]"
-        }`
-      : `rounded-[3px] border px-3 py-2 text-sm font-medium transition ${
-          active
-            ? "border-[#3d4a38] bg-[#3d4a38] text-white"
-            : "border-stone-300 bg-white text-stone-700 hover:border-[#3d4a38]"
-        }`;
+    `rounded-[3px] border px-3.5 py-2 text-sm font-medium transition ${
+      active
+        ? "border-[#108967] bg-[#108967] text-white shadow-sm"
+        : "border-[#108967] bg-white text-[#108967] hover:bg-[#108967]/10"
+    }`;
 
   const wrapperClass = isInline ? "space-y-5" : "rounded-xl border border-stone-200 bg-white p-5 shadow-md ring-1 ring-stone-100";
 
@@ -234,11 +231,11 @@ export function ProductBuyBox({
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <p className="font-sans text-base font-bold text-brand-ink">Quantity</p>
-        <div className="inline-flex items-center overflow-hidden rounded-[3px] border border-brand-forest/20 bg-white">
+        <div className="inline-flex items-center overflow-hidden rounded-[3px] border border-[#108967]/30 bg-white">
           <button
             type="button"
             disabled={qty <= 1}
-            className="flex h-10 w-10 items-center justify-center bg-brand-forest text-lg font-semibold text-brand-cream hover:bg-brand-night disabled:opacity-40"
+            className="flex h-10 w-10 items-center justify-center bg-[#108967] text-lg font-semibold text-white hover:bg-[#0d7353] disabled:opacity-40"
             aria-label="Decrease quantity"
             onClick={() => changeQty(qty - 1)}
           >
@@ -248,7 +245,7 @@ export function ProductBuyBox({
           <button
             type="button"
             disabled={qty >= qtyLimit}
-            className="flex h-10 w-10 items-center justify-center bg-brand-forest text-lg font-semibold text-brand-cream hover:bg-brand-night disabled:opacity-40"
+            className="flex h-10 w-10 items-center justify-center bg-[#108967] text-lg font-semibold text-white hover:bg-[#0d7353] disabled:opacity-40"
             aria-label="Increase quantity"
             onClick={() => changeQty(qty + 1)}
           >
@@ -268,7 +265,23 @@ export function ProductBuyBox({
 
       {showPurchaseActions ? (
         <div className={isInline ? "space-y-3" : undefined}>
-          {isInline ? <ProductOffersBanner /> : null}
+          {isInline ? (
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+              {codAvailable ? (
+                <div className="inline-flex shrink-0 items-center gap-2 rounded-md bg-[#108967] px-3.5 py-2 text-sm font-semibold text-white shadow-sm">
+                  <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9H5.25"
+                    />
+                  </svg>
+                  Cash On Delivery Available
+                </div>
+              ) : null}
+              <ProductOffersBanner />
+            </div>
+          ) : null}
           {isInline && pairWithItems.length > 0 ? <PairWithRow items={pairWithItems} compact /> : null}
           <div className={isInline ? "flex gap-2" : undefined}>
             <button
@@ -277,7 +290,7 @@ export function ProductBuyBox({
               disabled={addDisabled}
               className={
                 isInline
-                  ? "min-h-[44px] flex-1 rounded-full bg-brand-forest px-3 text-xs font-semibold tracking-wide text-brand-cream transition-colors hover:bg-brand-night disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
+                  ? "min-h-[44px] flex-1 rounded-full bg-[#108967] px-3 text-xs font-semibold tracking-wide text-white transition-colors hover:bg-[#0d7353] disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
                   : "mt-4 w-full rounded-lg bg-[#108967] py-3.5 text-sm font-semibold uppercase tracking-wide text-white shadow-sm transition hover:bg-[#0d7353] disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500"
               }
             >

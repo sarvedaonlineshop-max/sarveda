@@ -196,12 +196,12 @@ body {
 }
 .rich-features h4 { font-size: 1.125rem; }
 .rich-features h5 { font-size: 1rem; }
-.rich-features p { margin: 0.4rem 0 0.7rem; }
+.rich-features p { margin: 0.15rem 0 0.45rem; }
 .rich-features p:last-child { margin-bottom: 0; }
 
 .pdp-description.rich-features p {
-  margin: 0.15rem 0 0.7rem;
-  line-height: 1.65;
+  margin: 0 0 0.45rem;
+  line-height: 1.55;
 }
 .pdp-description.rich-features p strong {
   color: var(--brand-ink);

@@ -44,7 +44,7 @@ export function ProductOffersBanner() {
   }, []);
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex min-w-0 flex-1 flex-wrap gap-2">
       {offers.map((offer) => (
         <div
           key={offer.code}

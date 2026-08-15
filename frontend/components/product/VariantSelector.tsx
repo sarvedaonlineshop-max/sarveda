@@ -30,8 +30,8 @@ function pillClasses(selected: boolean, available: boolean, style: "default" | "
       return "cursor-not-allowed border-stone-100 bg-stone-50 text-stone-300 line-through";
     }
     return selected
-      ? "border-[#3d4a38] bg-[#3d4a38] text-white shadow-sm"
-      : "border-[#3d4a38] bg-white text-[#3d4a38] hover:bg-[#3d4a38]/5";
+      ? "border-[#108967] bg-[#108967] text-white shadow-sm"
+      : "border-[#108967] bg-white text-[#108967] hover:bg-[#108967]/10";
   }
   if (!available) {
     return "cursor-not-allowed border-stone-100 bg-stone-50 text-stone-300 line-through";

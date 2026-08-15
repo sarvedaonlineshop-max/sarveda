@@ -216,7 +216,8 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
     showPurchaseActions: true,
     expressShippingEnabled: product.expressShippingEnabled !== false,
     axisOrder: product.variantAxisOrder,
-    pairWithItems
+    pairWithItems,
+    codAvailable
   };
 
   return (
@@ -306,19 +307,6 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
               <p className="mt-1 text-xs text-brand-muted">Taxes included. Shipping calculated at checkout.</p>
             </div>
 
-            {codAvailable ? (
-              <div className="inline-flex w-fit items-center gap-2 rounded-md bg-brand-forest px-3.5 py-2 text-sm font-semibold tracking-wide text-brand-cream shadow-sm ring-1 ring-brand-gold/40">
-                <svg className="h-4 w-4 shrink-0 text-brand-gold-pale" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m0 0H21m-1.5 0h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5 0H21"
-                  />
-                </svg>
-                Cash On Delivery Available
-              </div>
-            ) : null}
-
             <div
               className={`transition-opacity duration-200 ease-out ${
                 mediaFading ? "opacity-30" : "opacity-100"
@@ -336,7 +324,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
                 <ProductRichText
                   html={product.description}
                   emphasize
-                  className="pdp-description max-w-none text-[15px] leading-7 text-brand-ink/80 prose-stone"
+                  className="pdp-description max-w-none text-[15px] leading-[1.55] text-brand-ink/85"
                 />
               </div>
             ) : null}
@@ -345,13 +333,18 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
               <ProductRichText
                 html={product.shortDescription}
                 emphasize
-                className="pdp-description text-[15px] leading-7 text-brand-ink/70"
+                className="pdp-description text-[15px] leading-[1.55] text-brand-ink/80"
               />
             ) : null}
 
             {accordionItems.length > 0 ? (
               <div className="border-t border-brand-cream-dark pt-8">
-                <h2 className="font-sans text-lg font-bold text-brand-ink">Product details</h2>
+                <h2 className="flex items-center gap-2 font-sans text-lg font-bold text-brand-ink">
+                  <svg viewBox="0 0 24 24" className="h-5 w-5 text-brand-gold" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Product details
+                </h2>
                 <div className="mt-4">
                   <AccordionDescription items={accordionItems} />
                 </div>
@@ -387,7 +380,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
             type="button"
             onClick={() => void add()}
             disabled={addDisabled}
-            className="min-h-[44px] rounded-full border border-brand-forest px-4 text-xs font-semibold text-brand-forest"
+            className="min-h-[44px] rounded-full border border-[#108967] px-4 text-xs font-semibold text-[#108967]"
           >
             Add
           </button>
@@ -395,7 +388,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
             type="button"
             onClick={() => void buyNow()}
             disabled={addDisabled}
-            className="min-h-[44px] flex-1 rounded-full bg-brand-forest px-4 text-xs font-semibold text-brand-cream"
+            className="min-h-[44px] flex-1 rounded-full bg-[#108967] px-4 text-xs font-semibold text-white"
           >
             Buy now
           </button>

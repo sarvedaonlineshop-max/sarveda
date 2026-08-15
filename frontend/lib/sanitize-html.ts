@@ -1,11 +1,14 @@
 /** Woo/CSV sometimes stores literal backslash-n instead of line breaks. */
 export function normalizeProductText(text: string): string {
   return text
+    // CR + literal `\n` from Woo dumps (`\r\\n`) must be one break, not two.
+    .replace(/\r\\n/g, "\n")
+    .replace(/\\r\\n/g, "\n")
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n")
-    .replace(/\\r\\n/g, "\n")
     .replace(/\\n/g, "\n")
-    .replace(/\\r/g, "\n");
+    .replace(/\\r/g, "\n")
+    .replace(/\n{3,}/g, "\n\n");
 }
 
 /** Strip editor metadata and render-safe HTML for product copy.
@@ -98,4 +101,25 @@ export function emphasizeDescriptionParagraphs(html: string): string {
   return stripEmptyHtmlParagraphs(html).replace(/<p(\s[^>]*)?>([\s\S]*?)<\/p>/gi, (_full, attrs = "", inner: string) => {
     return `<p${attrs}>${wrapFirstSentence(inner)}</p>`;
   });
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+export function descriptionParagraphs(text: string): string[] {
+  return normalizeProductText(text)
+    .split(/\n+/)
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
+}
+
+export function emphasizePlainParagraph(text: string): string {
+  const escaped = escapeHtml(text);
+  const match = escaped.match(/^(.+?[.!?])(\s+[\s\S]*)?$/);
+  if (!match) return `<strong>${escaped}</strong>`;
+  return `<strong>${match[1]}</strong>${match[2] ?? ""}`;
 }
