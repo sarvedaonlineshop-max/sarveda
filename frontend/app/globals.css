@@ -324,6 +324,52 @@ select:-webkit-autofill {
   animation: admin-nav-spin 0.7s linear infinite;
 }
 
+/* Order success / payment confirm */
+@keyframes sv-success-pop {
+  0% { transform: scale(0.45); opacity: 0; }
+  60% { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes sv-success-draw-circle {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes sv-success-draw-check {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes sv-success-ring {
+  0% { transform: scale(0.7); opacity: 0.55; }
+  100% { transform: scale(1.85); opacity: 0; }
+}
+@keyframes sv-success-confetti {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0.35); opacity: 0; }
+}
+@keyframes sv-pay-spin {
+  to { transform: rotate(360deg); }
+}
+.sv-success-mark {
+  animation: sv-success-pop 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.sv-success-circle {
+  stroke-dasharray: 63;
+  stroke-dashoffset: 63;
+  animation: sv-success-draw-circle 0.55s ease-out 0.08s forwards;
+}
+.sv-success-check {
+  stroke-dasharray: 18;
+  stroke-dashoffset: 18;
+  animation: sv-success-draw-check 0.35s ease-out 0.42s forwards;
+}
+.sv-success-ring {
+  animation: sv-success-ring 0.9s ease-out 0.15s both;
+}
+.sv-success-confetti {
+  animation: sv-success-confetti 0.95s ease-out 0.2s both;
+}
+.sv-pay-spinner {
+  animation: sv-pay-spin 0.85s linear infinite;
+}
+
 /* ─── Reduced Motion ────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   html:focus-within { scroll-behavior: auto; }

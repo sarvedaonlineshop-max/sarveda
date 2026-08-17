@@ -1,26 +1,27 @@
 import { getApiBase } from "./api";
 
 export const CANCEL_BEFORE_DELIVERY_REASONS = [
-  { code: "mistake", label: "Order placed by mistake" },
-  { code: "price_high", label: "Item price is too high / found cheaper elsewhere" },
-  { code: "delivery_slow", label: "Delivery time is too long" },
-  { code: "change_address", label: "Want to change delivery address" },
-  { code: "wrong_item", label: "Ordered wrong item / wrong size or variant" },
-  { code: "change_quantity", label: "Need to change quantity" },
+  { code: "mistake", label: "Placed the order by mistake" },
+  { code: "price_high", label: "Found it cheaper somewhere else" },
+  { code: "delivery_slow", label: "Delivery is taking too long" },
+  { code: "change_address", label: "Need to change the delivery address" },
+  { code: "wrong_item", label: "Ordered the wrong item, size, or colour" },
+  { code: "change_quantity", label: "Need to change the quantity" },
   { code: "no_longer_needed", label: "No longer needed" },
   { code: "other", label: "Other" }
 ] as const;
 
 export const REFUND_AFTER_DELIVERY_REASONS = [
-  { code: "defective", label: "Item defective or doesn't work" },
+  { code: "defective", label: "Item is defective or doesn't work" },
   { code: "wrong_item_sent", label: "Wrong item was sent" },
-  { code: "damaged_delivery", label: "Item damaged during delivery" },
-  { code: "different_description", label: "Item different from description/images" },
+  { code: "damaged_delivery", label: "Damaged during delivery" },
+  { code: "different_description", label: "Different from the description or photos" },
   { code: "missing_parts", label: "Missing parts or accessories" },
-  { code: "quality_issue", label: "Quality not as expected" },
-  { code: "extra_item", label: "Received extra item I didn't order" },
+  { code: "replace_variant", label: "Want to replace with a different size or colour" },
+  { code: "quality_issue", label: "Quality is not as expected" },
+  { code: "extra_item", label: "Received an extra item I didn't order" },
   { code: "arrived_late", label: "Arrived too late" },
-  { code: "changed_mind", label: "No longer needed / changed my mind" },
+  { code: "changed_mind", label: "Changed my mind / no longer needed" },
   { code: "other", label: "Other" }
 ] as const;
 

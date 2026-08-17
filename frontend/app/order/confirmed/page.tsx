@@ -10,6 +10,7 @@ import { DEFAULT_DISPLAY_GST_RATE, extractGst } from "@/lib/gst";
 import { formatMinorFromPaise } from "@/lib/money";
 import type { OrderPublic } from "@/lib/orders-api";
 import { fetchOrderPublic, orderCancelledPageUrl, orderInvoiceDownloadUrl } from "@/lib/orders-api";
+import { PaymentSuccessMark } from "@/components/orders/PaymentSuccessMark";
 
 function formatAddress(addr: NonNullable<OrderPublic["shippingAddress"]>): string {
   const lines = [
@@ -153,18 +154,15 @@ function ConfirmedInner() {
       </nav>
 
       {paid || isCod ? (
-        <div className="mt-6 rounded-2xl border border-brand-cream-dark bg-brand-cream p-8 text-center shadow-card">
-          <span className="mx-auto flex h-14 w-14 items-center justify-center text-brand-gold">
-            <svg viewBox="0 0 24 24" className="h-14 w-14" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <circle cx="12" cy="12" r="10" />
-              <path d="m9 12 2 2 4-4" />
-            </svg>
-          </span>
-          <h1 className="mt-4 font-serif text-3xl font-semibold text-brand-ink">Thank you for your order</h1>
-          <p className="mt-2 text-sm text-brand-muted">
+        <div className="relative mt-6 overflow-hidden rounded-3xl border border-brand-gold/25 bg-gradient-to-br from-[#1c352a] via-[#2d5040] to-[#48705a] p-8 text-center shadow-lg">
+          <span className="pointer-events-none absolute -left-10 top-6 h-32 w-32 rounded-full bg-brand-gold/20 blur-2xl" aria-hidden />
+          <span className="pointer-events-none absolute -right-8 bottom-4 h-28 w-28 rounded-full bg-brand-gold-pale/25 blur-2xl" aria-hidden />
+          <PaymentSuccessMark />
+          <h1 className="mt-5 font-serif text-3xl font-semibold text-white sm:text-4xl">Thank you for your order</h1>
+          <p className="mt-2 text-sm text-brand-gold-pale">
             {statusTitle(order, codFromUrl)} · Placed {formatPlacedDate(order.placedAt ?? order.createdAt)}
           </p>
-          <span className="mt-3 inline-flex rounded-full border border-brand-cream-dark bg-brand-ivory px-3 py-1 font-mono text-xs font-semibold text-brand-forest">
+          <span className="mt-4 inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-1.5 font-mono text-xs font-semibold tracking-wide text-white">
             {order.orderNumber}
           </span>
         </div>

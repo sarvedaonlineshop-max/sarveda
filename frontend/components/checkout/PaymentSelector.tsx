@@ -28,6 +28,7 @@ import {
   savePendingCheckout
 } from "@/lib/pending-checkout";
 import { saveCheckoutShipping } from "@/lib/checkout-prefill";
+import { PaymentConfirmOverlay } from "@/components/checkout/PaymentConfirmOverlay";
 
 declare global {
   interface Window {
@@ -676,11 +677,7 @@ export function PaymentSelector({
         </div>
       ) : null}
 
-      {processing ? (
-        <p className="mt-4 text-sm font-medium text-amber-800" role="status">
-          {paymentMode === "cod" ? "Placing your order…" : "Confirming payment…"}
-        </p>
-      ) : null}
+      {processing ? <PaymentConfirmOverlay open mode={paymentMode} /> : null}
 
       <button
         type="button"
@@ -692,8 +689,10 @@ export function PaymentSelector({
         onClick={() => void onSubmit()}
         className="mt-6 flex min-h-[52px] w-full items-center justify-center rounded-full bg-brand-forest py-3.5 text-base font-semibold tracking-wide text-brand-cream shadow-card transition-colors hover:bg-brand-night disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600"
       >
-        {busy || processing
-          ? "Please wait…"
+          {busy || processing
+          ? paymentMode === "cod"
+            ? "Placing order…"
+            : "Confirming payment…"
           : paymentMode === "cod"
             ? "Place order (COD)"
             : paymentMode === "stripe"

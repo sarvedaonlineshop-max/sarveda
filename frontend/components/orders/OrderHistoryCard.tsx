@@ -224,6 +224,11 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
   const requestPending = serviceRequest?.status === "PENDING_APPROVAL";
   const showCancel = order.canCancelRequest === true;
   const showRefund = order.canRefundRequest === true;
+  const showRefundClosed =
+    !showRefund &&
+    order.status === "DELIVERED" &&
+    order.returnWindowExpired === true &&
+    order.serviceRequest?.status !== "PENDING_APPROVAL";
 
   return (
     <article
@@ -531,8 +536,18 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
             className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-[#D99A2B]/40 bg-[#FAEEDA] px-4 text-sm font-semibold text-[#633806] transition-colors hover:bg-[#FAC775]/40"
           >
             <span aria-hidden="true">↩</span>
-            Return / refund
+            Return or replace items
           </Link>
+        ) : null}
+
+        {showRefundClosed ? (
+          <span
+            className="inline-flex min-h-[36px] cursor-not-allowed items-center justify-center gap-1.5 rounded-full border border-stone-200 bg-stone-100 px-4 text-sm font-semibold text-stone-400"
+            title="Return window is 7 days from delivery"
+          >
+            <span aria-hidden="true">↩</span>
+            Return window closed
+          </span>
         ) : null}
 
         <Link

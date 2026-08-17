@@ -20,7 +20,9 @@ import {
 import {
   canRequestCancel,
   canRequestRefund,
-  customerReasonsFromApprovedCancel
+  customerReasonsFromApprovedCancel,
+  resolveDeliveredAt,
+  returnWindowEnd
 } from "./order-service-request.service";
 import { buildCancellationInfo } from "./order-cancellation-info";
 
@@ -142,6 +144,7 @@ function serializeOrderSummary(order: {
     awb: string | null;
     trackingUrl: string | null;
     status: string;
+    deliveredAt?: Date | null;
     carrierMeta?: unknown;
   }>;
   serviceRequests?: Array<{
@@ -185,6 +188,8 @@ function serializeOrderSummary(order: {
   } | null;
   canCancelRequest?: boolean;
   canRefundRequest?: boolean;
+  returnWindowEndsAt?: Date | null;
+  returnWindowExpired?: boolean;
   paymentReference?: string | null;
   cancellationInfo?: ReturnType<typeof buildCancellationInfo>;
 } {
@@ -213,13 +218,18 @@ function serializeOrderSummary(order: {
     (r) => r.status === "APPROVED" && r.type === "CANCEL_BEFORE_DELIVERY"
   );
   const hasPending = latestRequest?.status === "PENDING_APPROVAL";
+  const deliveredAt = resolveDeliveredAt(order);
+  const windowEnd = deliveredAt ? returnWindowEnd(deliveredAt) : null;
+  const returnExpired =
+    order.status === "DELIVERED" && windowEnd != null && Date.now() > windowEnd.getTime();
   const eligibility = {
     orderNumber: order.orderNumber,
     email: order.email,
     status: order.status,
     paymentStatus: order.paymentStatus,
     customerId: null as string | null,
-    payments: order.payments
+    payments: order.payments,
+    deliveredAt
   };
 
   return {
@@ -258,6 +268,8 @@ function serializeOrderSummary(order: {
       ...eligibility,
       status: eligibility.status as import("@prisma/client").OrderStatus
     }) && !hasPending,
+    returnWindowEndsAt: windowEnd,
+    returnWindowExpired: returnExpired,
     paymentReference,
     cancellationInfo: buildCancellationInfo(
       order.status,
@@ -288,9 +300,16 @@ export async function listMine(req: Request, res: Response, next: NextFunction) 
         payments: { orderBy: { createdAt: "desc" }, take: 1 },
         statusHistory: { orderBy: { createdAt: "desc" }, take: 12 },
         shipments: {
-          where: { awb: { not: null } },
           orderBy: { createdAt: "desc" },
-          take: 3
+          take: 3,
+          select: {
+            courier: true,
+            awb: true,
+            trackingUrl: true,
+            status: true,
+            deliveredAt: true,
+            carrierMeta: true
+          }
         },
         serviceRequests: {
           orderBy: { createdAt: "desc" },

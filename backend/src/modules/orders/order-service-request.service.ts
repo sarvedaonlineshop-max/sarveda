@@ -6,6 +6,7 @@ import { uploadAsset } from "../../config/s3";
 import {
   cancelReasonLabel,
   refundReasonLabel,
+  RETURN_WINDOW_DAYS,
   type CANCEL_BEFORE_DELIVERY_REASONS,
   type REFUND_AFTER_DELIVERY_REASONS
 } from "./order-service-request.constants";
@@ -47,6 +48,7 @@ type OrderRow = {
   paymentStatus: string;
   customerId: string | null;
   payments?: Array<{ provider: string }>;
+  deliveredAt?: Date | null;
 };
 
 export type ServiceRequestPublic = {
@@ -68,6 +70,27 @@ export function orderIsPaidForService(order: OrderRow): boolean {
   return false;
 }
 
+export function resolveDeliveredAt(order: {
+  status: string;
+  shipments?: Array<{ deliveredAt?: Date | null }>;
+  statusHistory?: Array<{ toStatus: string; createdAt: Date }>;
+}): Date | null {
+  if (order.status !== "DELIVERED") return null;
+  const fromShip = (order.shipments ?? [])
+    .map((s) => s.deliveredAt)
+    .filter((d): d is Date => d instanceof Date && !Number.isNaN(d.getTime()))
+    .sort((a, b) => a.getTime() - b.getTime())[0];
+  if (fromShip) return fromShip;
+  const hist = (order.statusHistory ?? [])
+    .filter((h) => h.toStatus === "DELIVERED")
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())[0];
+  return hist?.createdAt ?? null;
+}
+
+export function returnWindowEnd(deliveredAt: Date): Date {
+  return new Date(deliveredAt.getTime() + RETURN_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+}
+
 export function canRequestCancel(order: OrderRow): boolean {
   if (["DELIVERED", "CANCELLED", "REFUNDED"].includes(order.status)) return false;
   return orderIsPaidForService(order);
@@ -75,7 +98,9 @@ export function canRequestCancel(order: OrderRow): boolean {
 
 export function canRequestRefund(order: OrderRow): boolean {
   if (order.status !== "DELIVERED") return false;
-  return orderIsPaidForService(order);
+  if (!orderIsPaidForService(order)) return false;
+  if (!order.deliveredAt) return true;
+  return Date.now() <= returnWindowEnd(order.deliveredAt).getTime();
 }
 
 export function serializeServiceRequest(
@@ -177,7 +202,9 @@ export async function submitServiceRequest(opts: {
     },
     include: {
       payments: { orderBy: { createdAt: "desc" }, take: 1 },
-      items: true
+      items: true,
+      shipments: { select: { deliveredAt: true } },
+      statusHistory: { select: { toStatus: true, createdAt: true } }
     }
   });
 
@@ -201,7 +228,10 @@ export async function submitServiceRequest(opts: {
       code: "NOT_ELIGIBLE"
     });
   }
-  if (opts.type === "REFUND_AFTER_DELIVERY" && !canRequestRefund(order)) {
+  if (opts.type === "REFUND_AFTER_DELIVERY" && !canRequestRefund({
+    ...order,
+    deliveredAt: resolveDeliveredAt(order)
+  })) {
     throw Object.assign(new Error("This order is not eligible for return/refund"), {
       statusCode: 400,
       code: "NOT_ELIGIBLE"

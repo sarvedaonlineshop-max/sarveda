@@ -80,7 +80,7 @@ export default function CancelOrderRequestPage() {
             currency={currency}
             kind="cancel"
             title="Cancel this order"
-            subtitle="Tell us which items to cancel before delivery. Our team will review your request."
+            subtitle="Tell us why you want to cancel before the order is delivered. Our team will review your request."
             reasons={CANCEL_BEFORE_DELIVERY_REASONS}
             lineItems={lineItems}
             backHref="/profile"

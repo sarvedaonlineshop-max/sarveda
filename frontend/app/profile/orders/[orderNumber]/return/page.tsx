@@ -43,7 +43,7 @@ export default function ReturnOrderRequestPage() {
           setBlocked(
             order.serviceRequest?.status === "PENDING_APPROVAL"
               ? "A return/refund request is already waiting for approval."
-              : "This order is not eligible for return or refund online."
+              : "This order is not eligible for return or replace online. The 7-day window after delivery may have ended."
           );
         }
         return;
@@ -65,7 +65,7 @@ export default function ReturnOrderRequestPage() {
 
   return (
     <div className="min-h-[60vh] bg-brand-cream md:py-10">
-      <MobileSubpageHeader title="Return / refund" backHref="/profile" />
+      <MobileSubpageHeader title="Return or replace" backHref="/profile" />
       <div className="mx-auto max-w-xl px-4 py-4 md:rounded-3xl md:border md:border-brand-cream-dark md:bg-white md:p-8">
         {blocked ? (
           <div className="rounded-2xl border border-brand-cream-dark bg-white p-6 text-center shadow-card">
@@ -79,8 +79,8 @@ export default function ReturnOrderRequestPage() {
             orderNumber={orderNumber}
             currency={currency}
             kind="refund"
-            title="Return or refund"
-            subtitle="Select delivered item(s), share a reason and photos for each."
+            title="Return or replace items"
+            subtitle="Select delivered item(s) and a reason. Returns and replacements are available for 7 days after delivery."
             reasons={REFUND_AFTER_DELIVERY_REASONS}
             lineItems={lineItems}
             backHref="/profile"

@@ -72,7 +72,7 @@ function firstNameFromOrder(fullName: string | null | undefined, email: string):
   return (local || "there").slice(0, 60);
 }
 
-/** Compact line-item block for WhatsApp template {{3}} on order_confirmed. */
+/** Compact line-item block for WhatsApp template {{3}} on order_confirmed. {{4}} is shipping, {{5}} is grand total. */
 function formatOrderItemsForWhatsApp(
   items: Array<{ nameSnapshot: string; qtyOrdered: number; lineTotalInPaise: number }>,
   currency: string
@@ -226,6 +226,7 @@ function buildBodyParams(
     orderNumber: string;
     total: string;
     itemsSummary: string;
+    shipping: string;
     view: string;
     cancelledUrl: string;
     checkoutResume: string;
@@ -235,7 +236,7 @@ function buildBodyParams(
 ): TemplateParams {
   switch (event) {
     case "order_confirmed":
-      return [ctx.name, ctx.orderNumber, ctx.itemsSummary, ctx.total];
+      return [ctx.name, ctx.orderNumber, ctx.itemsSummary, ctx.shipping, ctx.total];
     case "payment_failed":
       return [ctx.name, ctx.orderNumber, ctx.cancelledUrl];
     case "payment_reminder":
@@ -287,6 +288,10 @@ export async function sendOrderWhatsApp(orderId: string, event: OrderEmailEvent)
 
   const templateName = TEMPLATE_BY_EVENT[event];
   const total = formatOrderTotal(order.grandTotalInPaise, order.currency);
+  const shipping =
+    order.shippingInPaise > 0
+      ? formatOrderTotal(order.shippingInPaise, order.currency)
+      : "Free";
   const view = orderViewUrl(order.orderNumber, order.email);
   const awb = order.shipments[0]?.awb?.trim() || "";
   const tracking = awb ? trackUrl(awb) : view;
@@ -299,6 +304,7 @@ export async function sendOrderWhatsApp(orderId: string, event: OrderEmailEvent)
     orderNumber: order.orderNumber,
     total,
     itemsSummary,
+    shipping,
     view,
     cancelledUrl: orderCancelledUrl(order.orderNumber, order.email),
     checkoutResume,

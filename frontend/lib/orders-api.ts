@@ -112,6 +112,8 @@ export type OrderSummary = {
   } | null;
   canCancelRequest?: boolean;
   canRefundRequest?: boolean;
+  returnWindowEndsAt?: string | null;
+  returnWindowExpired?: boolean;
   paymentReference?: string | null;
   cancellationInfo?: {
     title: string;
