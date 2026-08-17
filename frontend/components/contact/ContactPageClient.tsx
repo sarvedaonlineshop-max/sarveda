@@ -20,7 +20,7 @@ import {
 } from "@/lib/enquiry-subjects";
 
 const inputCls =
-  "min-h-[46px] w-full rounded-xl border border-brand-cream-dark bg-brand-ivory py-2 pl-11 pr-3 text-sm text-brand-ink transition-shadow duration-200 focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/30";
+  "min-h-[38px] w-full rounded-lg border border-brand-cream-dark bg-brand-ivory py-1.5 pl-10 pr-3 text-sm text-brand-ink transition-shadow duration-200 focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/30";
 
 const SLIDES = [
   {
@@ -33,10 +33,10 @@ const SLIDES = [
   }
 ] as const;
 
-function IconTopic() {
+function IconChevron() {
   return (
-    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" aria-hidden>
-      <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden>
+      <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -102,10 +102,24 @@ function IconClip() {
   );
 }
 
-function FieldShell({ icon, children }: { icon: ReactNode; children: ReactNode }) {
+function FieldShell({
+  icon,
+  children,
+  iconTop
+}: {
+  icon: ReactNode;
+  children: ReactNode;
+  iconTop?: boolean;
+}) {
   return (
     <div className="relative">
-      <span className="pointer-events-none absolute left-3.5 top-3.5 text-brand-gold">{icon}</span>
+      <span
+        className={`pointer-events-none absolute left-3 text-brand-gold ${
+          iconTop ? "top-2.5" : "top-1/2 -translate-y-1/2"
+        }`}
+      >
+        {icon}
+      </span>
       {children}
     </div>
   );
@@ -142,7 +156,7 @@ function ContactVisual() {
   }, []);
 
   return (
-    <div className="relative min-h-[320px] overflow-hidden lg:min-h-full">
+    <div className="relative h-[min(28vh,200px)] overflow-hidden lg:h-full lg:min-h-0">
       {SLIDES.map((item, i) => (
         <img
           key={item.src}
@@ -153,19 +167,30 @@ function ContactVisual() {
           }`}
         />
       ))}
-      <div className="absolute inset-0 bg-gradient-to-t from-brand-night/85 via-brand-forest/25 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-b from-brand-night/80 via-brand-night/35 to-brand-night/55" />
       <div className="sv-contact-float pointer-events-none absolute right-6 top-8 h-16 w-16 rounded-full bg-brand-gold/35 blur-md" />
       <div className="pointer-events-none absolute left-8 top-16 h-10 w-10 rounded-full bg-brand-sage/40 blur-sm" />
 
-      <div className="absolute inset-x-0 bottom-0 space-y-4 p-6 text-white md:p-8">
-        <p className="font-serif text-3xl font-semibold leading-tight md:text-4xl">Write to us</p>
-        <p className="max-w-sm text-sm leading-relaxed text-brand-gold-pale">
+      <div className="absolute inset-x-0 top-0 space-y-2.5 p-4 text-white md:p-6 lg:space-y-3 lg:p-7">
+        <p
+          className="font-serif text-[2rem] font-semibold leading-none tracking-wide text-[#fff6df] md:text-5xl lg:text-[3.25rem]"
+          style={{ textShadow: "0 2px 18px rgba(0,0,0,0.75), 0 0 2px rgba(0,0,0,0.9)" }}
+        >
+          Write to us
+        </p>
+        <p
+          className="max-w-md text-sm font-medium leading-snug text-brand-gold-pale md:text-base"
+          style={{ textShadow: "0 1px 10px rgba(0,0,0,0.7)" }}
+        >
           Orders, payments, courses, or wellness programmes — we usually reply within 1–2 business days.
         </p>
-        <div className="flex flex-wrap gap-2">
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white md:text-sm">
+          Calls: Monday to Friday, 9 am to 5 pm
+        </p>
+        <div className="flex flex-wrap gap-2 pt-1">
           <a
             href={`mailto:${email}`}
-            className="inline-flex min-h-[40px] items-center rounded-full border border-white/25 bg-white/10 px-4 text-sm font-medium text-white backdrop-blur-sm transition-colors hover:bg-brand-gold hover:text-brand-night"
+            className="inline-flex min-h-[34px] items-center rounded-full border border-white/30 bg-black/35 px-3.5 text-xs font-medium text-white backdrop-blur-sm transition-colors hover:bg-brand-gold hover:text-brand-night md:min-h-[38px] md:text-sm"
           >
             {email}
           </a>
@@ -173,30 +198,30 @@ function ContactVisual() {
             href={whatsAppSiteUrl("Hi Sarveda, I have a question.")}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex min-h-[40px] items-center rounded-full border border-white/25 bg-white/10 px-4 text-sm font-medium text-white backdrop-blur-sm transition-colors hover:bg-[#25D366] hover:text-white"
+            className="inline-flex min-h-[34px] items-center rounded-full border border-white/30 bg-black/35 px-3.5 text-xs font-medium text-white backdrop-blur-sm transition-colors hover:bg-[#25D366] hover:text-white md:min-h-[38px] md:text-sm"
           >
             WhatsApp {customerPhoneDisplay()}
           </a>
           <a
             href={customerPhoneTelHref()}
-            className="inline-flex min-h-[40px] items-center rounded-full border border-white/25 bg-white/10 px-4 text-sm font-medium text-white backdrop-blur-sm transition-colors hover:bg-white hover:text-brand-forest"
+            className="inline-flex min-h-[34px] items-center rounded-full border border-white/30 bg-black/35 px-3.5 text-xs font-medium text-white backdrop-blur-sm transition-colors hover:bg-white hover:text-brand-forest md:min-h-[38px] md:text-sm"
           >
-            Call
+            Call · Mon–Fri 9am–5pm
           </a>
         </div>
-        <div className="flex gap-2 pt-1">
-          {SLIDES.map((item, i) => (
-            <button
-              key={item.src}
-              type="button"
-              aria-label={`Show photo ${i + 1}`}
-              onClick={() => setSlide(i)}
-              className={`h-2 rounded-full transition-all ${
-                i === slide ? "w-8 bg-brand-gold" : "w-2 bg-white/50 hover:bg-white"
-              }`}
-            />
-          ))}
-        </div>
+      </div>
+      <div className="absolute bottom-3 left-4 flex gap-2 md:bottom-4 md:left-6">
+        {SLIDES.map((item, i) => (
+          <button
+            key={item.src}
+            type="button"
+            aria-label={`Show photo ${i + 1}`}
+            onClick={() => setSlide(i)}
+            className={`h-2 rounded-full transition-all ${
+              i === slide ? "w-8 bg-brand-gold" : "w-2 bg-white/50 hover:bg-white"
+            }`}
+          />
+        ))}
       </div>
     </div>
   );
@@ -290,7 +315,7 @@ function ContactFormInner() {
 
   if (submitted) {
     return (
-      <div className="flex h-full min-h-[420px] flex-col items-center justify-center bg-white p-8 text-center">
+      <div className="flex h-full min-h-0 flex-col items-center justify-center bg-white p-6 text-center">
         <p className="font-serif text-2xl font-semibold text-brand-forest">Message sent</p>
         <p className="mt-3 text-sm text-brand-ink">{confirmText}</p>
         <p className="mt-2 text-xs text-brand-muted">We will reply to {email}.</p>
@@ -315,30 +340,32 @@ function ContactFormInner() {
   }
 
   return (
-    <form onSubmit={(event) => void onSubmit(event)} className="flex h-full flex-col bg-white p-5 sm:p-7 lg:p-8">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-gold">Contact</p>
-      <h1 className="mt-1 font-serif text-2xl font-semibold text-brand-ink md:text-3xl">Send a message</h1>
-      <p className="mt-2 text-sm text-brand-muted">Only order number and attachments are optional.</p>
+    <form
+      onSubmit={(event) => void onSubmit(event)}
+      className="flex h-full min-h-0 flex-col overflow-hidden bg-white px-4 py-3 sm:px-5 sm:py-4 lg:px-6 lg:py-4"
+    >
+      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-gold">Contact</p>
+      <h1 className="font-serif text-xl font-semibold leading-tight text-brand-ink md:text-2xl">Send a message</h1>
 
       {presetOrder ? (
-        <p className="mt-4 rounded-xl border border-brand-gold-pale/60 bg-brand-cream px-4 py-3 text-sm text-brand-ink">
+        <p className="mt-2 rounded-lg border border-brand-gold-pale/60 bg-brand-cream px-3 py-2 text-xs text-brand-ink">
           {complaint ? "Payment complaint for order " : "Order reference: "}
           <span className="font-mono font-medium">{presetOrder}</span>
         </p>
       ) : null}
 
-      <div className="mt-5 flex-1 space-y-4">
-        <div>
-          <label htmlFor="contact-subject" className="mb-2 block text-sm font-medium text-brand-ink">
+      <div className="mt-3 grid min-h-0 flex-1 grid-cols-1 content-start gap-2.5 overflow-y-auto sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <label htmlFor="contact-subject" className="mb-1 block text-xs font-medium text-brand-ink">
             What is this about? <span className="text-brand-terra">*</span>
           </label>
-          <FieldShell icon={<IconTopic />}>
+          <div className="relative">
             <select
               id="contact-subject"
               value={subjectCategory}
               onChange={(e) => setSubjectCategory(e.target.value as EnquirySubjectValue)}
               required
-              className={`${inputCls} appearance-none`}
+              className={`${inputCls} appearance-none pl-3 pr-10`}
             >
               {ENQUIRY_SUBJECT_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -346,47 +373,48 @@ function ContactFormInner() {
                 </option>
               ))}
             </select>
-          </FieldShell>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="contact-name" className="mb-2 block text-sm font-medium text-brand-ink">
-              Name <span className="text-brand-terra">*</span>
-            </label>
-            <FieldShell icon={<IconUser />}>
-              <input
-                id="contact-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                autoComplete="name"
-                placeholder="Your name"
-                className={inputCls}
-              />
-            </FieldShell>
-          </div>
-          <div>
-            <label htmlFor="contact-phone" className="mb-2 block text-sm font-medium text-brand-ink">
-              Phone <span className="text-brand-terra">*</span>
-            </label>
-            <FieldShell icon={<IconPhone />}>
-              <input
-                id="contact-phone"
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                required
-                autoComplete="tel"
-                placeholder="Phone number"
-                className={inputCls}
-              />
-            </FieldShell>
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-brand-gold">
+              <IconChevron />
+            </span>
           </div>
         </div>
 
         <div>
-          <label htmlFor="contact-email" className="mb-2 block text-sm font-medium text-brand-ink">
+          <label htmlFor="contact-name" className="mb-1 block text-xs font-medium text-brand-ink">
+            Name <span className="text-brand-terra">*</span>
+          </label>
+          <FieldShell icon={<IconUser />}>
+            <input
+              id="contact-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              autoComplete="name"
+              placeholder="Your name"
+              className={inputCls}
+            />
+          </FieldShell>
+        </div>
+        <div>
+          <label htmlFor="contact-phone" className="mb-1 block text-xs font-medium text-brand-ink">
+            Phone <span className="text-brand-terra">*</span>
+          </label>
+          <FieldShell icon={<IconPhone />}>
+            <input
+              id="contact-phone"
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              required
+              autoComplete="tel"
+              placeholder="Phone number"
+              className={inputCls}
+            />
+          </FieldShell>
+        </div>
+
+        <div>
+          <label htmlFor="contact-email" className="mb-1 block text-xs font-medium text-brand-ink">
             Email <span className="text-brand-terra">*</span>
           </label>
           <FieldShell icon={<IconMail />}>
@@ -404,7 +432,7 @@ function ContactFormInner() {
         </div>
 
         <div>
-          <label htmlFor="contact-order" className="mb-2 block text-sm font-medium text-brand-ink">
+          <label htmlFor="contact-order" className="mb-1 block text-xs font-medium text-brand-ink">
             Order number <span className="font-normal text-brand-muted">(optional)</span>
           </label>
           <FieldShell icon={<IconOrder />}>
@@ -418,68 +446,63 @@ function ContactFormInner() {
           </FieldShell>
         </div>
 
-        <div>
-          <label htmlFor="contact-message" className="mb-2 block text-sm font-medium text-brand-ink">
+        <div className="flex min-h-0 flex-col sm:col-span-2">
+          <label htmlFor="contact-message" className="mb-1 block text-xs font-medium text-brand-ink">
             Message {complaint ? <span className="font-normal text-brand-muted">(optional)</span> : <span className="text-brand-terra">*</span>}
           </label>
-          <FieldShell icon={<IconMessage />}>
+          <FieldShell icon={<IconMessage />} iconTop>
             <textarea
               id="contact-message"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               required={!complaint}
-              rows={5}
+              rows={3}
               placeholder={messagePlaceholder}
-              className="w-full resize-y rounded-xl border border-brand-cream-dark bg-brand-ivory py-3 pl-11 pr-4 text-sm text-brand-ink transition-shadow duration-200 focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/30"
+              className="min-h-[72px] w-full resize-none rounded-lg border border-brand-cream-dark bg-brand-ivory py-2 pl-10 pr-3 text-sm text-brand-ink transition-shadow duration-200 focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/30"
             />
           </FieldShell>
         </div>
 
-        <div>
-          <label className="mb-2 flex items-center gap-2 text-sm font-medium text-brand-ink">
+        <div className="sm:col-span-2">
+          <label className="mb-1 flex items-center gap-2 text-xs font-medium text-brand-ink">
             <span className="text-brand-gold">
               <IconClip />
             </span>
             Attachments <span className="font-normal text-brand-muted">(optional)</span>
           </label>
-          <p className="mb-2 text-xs text-brand-muted">
-            Photos, PDF, Word, audio, or video. After you pick files, they appear in the list below.
-          </p>
-          <EnquiryFilePicker files={files} onChange={setFiles} onError={setError} disabled={loading} />
+          <EnquiryFilePicker compact files={files} onChange={setFiles} onError={setError} disabled={loading} />
         </div>
 
         {error ? (
-          <p className="text-sm text-red-600" role="alert">
+          <p className="text-sm text-red-600 sm:col-span-2" role="alert">
             {error}
           </p>
         ) : null}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="sv-contact-cta mt-2 inline-flex min-h-[50px] w-full items-center justify-center rounded-xl px-6 text-sm font-semibold text-white shadow-gold transition-opacity hover:opacity-95 disabled:opacity-60"
-        >
-          {loading ? "Uploading & sending…" : "Send message"}
-        </button>
       </div>
+
+      <button
+        type="submit"
+        disabled={loading}
+        className="sv-contact-cta mt-3 inline-flex min-h-[42px] w-full shrink-0 items-center justify-center rounded-xl px-6 text-sm font-semibold text-white shadow-gold transition-opacity hover:opacity-95 disabled:opacity-60"
+      >
+        {loading ? "Uploading & sending…" : "Send message"}
+      </button>
     </form>
   );
 }
 
 export function ContactPageClient() {
   return (
-    <main className="relative overflow-hidden bg-brand-cream p-4 md:p-5 lg:p-6">
+    <div className="relative h-[calc(100dvh-var(--storefront-header-live-offset)-4.5rem-env(safe-area-inset-bottom,0px))] overflow-hidden bg-brand-cream p-2 md:h-[calc(100dvh-var(--storefront-header-live-offset)-var(--storefront-slim-footer-offset))] md:p-2.5">
       <span className="sv-contact-blob pointer-events-none absolute -left-24 top-10 h-64 w-64 rounded-full bg-brand-gold/20 blur-3xl" aria-hidden />
       <span className="sv-contact-blob-delay pointer-events-none absolute -right-16 top-40 h-72 w-72 rounded-full bg-brand-sage/20 blur-3xl" aria-hidden />
 
-      <div
-        className="relative z-[1] grid min-h-[calc(100dvh-var(--storefront-header-live-offset)-var(--storefront-slim-footer-offset)-2rem)] overflow-hidden rounded-3xl border border-brand-cream-dark bg-white shadow-card lg:grid-cols-2"
-      >
+      <div className="relative z-[1] grid h-full min-h-0 grid-rows-[min(28vh,200px)_minmax(0,1fr)] overflow-hidden rounded-2xl border border-brand-cream-dark bg-white shadow-card lg:grid-cols-2 lg:grid-rows-none">
         <ContactVisual />
         <Suspense fallback={<p className="p-8 text-sm text-brand-muted">Loading form…</p>}>
           <ContactFormInner />
         </Suspense>
       </div>
-    </main>
+    </div>
   );
 }
