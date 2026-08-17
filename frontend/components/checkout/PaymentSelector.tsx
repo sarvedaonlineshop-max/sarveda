@@ -127,6 +127,7 @@ export function PaymentSelector({
   const [shippingBreakdown, setShippingBreakdown] = useState<ShippingBreakdown | null>(null);
   const [shippingLoading, setShippingLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const payStarted = useRef(false);
   const payFailedAtGateway = useRef(false);
   const checkoutTracked = useRef(false);
   const isIndia = (form.country ?? "IN").toUpperCase() === "IN";
