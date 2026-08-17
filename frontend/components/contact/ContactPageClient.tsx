@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, Suspense, useEffect, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { fetchMe } from "@/lib/auth-client";
@@ -20,7 +20,7 @@ import {
 } from "@/lib/enquiry-subjects";
 
 const inputCls =
-  "min-h-[46px] w-full rounded-xl border border-brand-cream-dark bg-brand-ivory px-3 text-sm text-brand-ink transition-shadow duration-200 focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/30";
+  "min-h-[46px] w-full rounded-xl border border-brand-cream-dark bg-brand-ivory py-2 pl-11 pr-3 text-sm text-brand-ink transition-shadow duration-200 focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/30";
 
 const SLIDES = [
   {
@@ -32,6 +32,84 @@ const SLIDES = [
     alt: "Sound healing room with gong and plants"
   }
 ] as const;
+
+function IconTopic() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" aria-hidden>
+      <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+function IconUser() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" aria-hidden>
+      <circle cx="12" cy="8" r="3.2" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M5 19.2c1.4-3 3.9-4.5 7-4.5s5.6 1.5 7 4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+function IconPhone() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" aria-hidden>
+      <path
+        d="M6.5 3.8h2.2l1.2 3-1.6 1.2a12.5 12.5 0 0 0 6.5 6.5l1.2-1.6 3 1.2v2.2c0 .8-.7 1.5-1.5 1.5C9.8 18.8 5.2 14.2 5 7.3c0-.8.7-1.5 1.5-1.5Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+function IconMail() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" aria-hidden>
+      <rect x="3.5" y="6" width="17" height="12" rx="2" stroke="currentColor" strokeWidth="1.8" />
+      <path d="m4.5 7.5 7.5 6 7.5-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function IconOrder() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" aria-hidden>
+      <path d="M7 7h10l1.5 4.5H5.5L7 7Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M5.5 11.5h13V19H5.5v-7.5Z" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M9 15.5h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+function IconMessage() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" aria-hidden>
+      <path
+        d="M5 6.5h14a1.5 1.5 0 0 1 1.5 1.5v7a1.5 1.5 0 0 1-1.5 1.5H9l-4 3v-3H5A1.5 1.5 0 0 1 3.5 15V8A1.5 1.5 0 0 1 5 6.5Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+function IconClip() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" aria-hidden>
+      <path
+        d="m8.5 12.5 6-6a3.2 3.2 0 0 1 4.5 4.5l-7.2 7.2a4.2 4.2 0 0 1-6-6l7.4-7.4"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function FieldShell({ icon, children }: { icon: ReactNode; children: ReactNode }) {
+  return (
+    <div className="relative">
+      <span className="pointer-events-none absolute left-3.5 top-3.5 text-brand-gold">{icon}</span>
+      {children}
+    </div>
+  );
+}
 
 function resolveSubject(
   presetSubjectRaw: string,
@@ -64,7 +142,7 @@ function ContactVisual() {
   }, []);
 
   return (
-    <div className="relative min-h-[420px] overflow-hidden rounded-3xl shadow-gold-lg md:min-h-full">
+    <div className="relative min-h-[320px] overflow-hidden lg:min-h-full">
       {SLIDES.map((item, i) => (
         <img
           key={item.src}
@@ -184,6 +262,10 @@ function ContactFormInner() {
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!phone.trim()) {
+      setError("Please enter your phone number.");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -192,7 +274,7 @@ function ContactFormInner() {
         subjectCategory,
         name: name.trim(),
         email: email.trim(),
-        phone: phone.trim() || undefined,
+        phone: phone.trim(),
         message: message.trim() || defaultComplaintMessage() || "I need help with my order.",
         orderNumber: orderNumber.trim() || undefined,
         attachments: files
@@ -208,7 +290,7 @@ function ContactFormInner() {
 
   if (submitted) {
     return (
-      <div className="flex min-h-[420px] flex-col items-center justify-center rounded-3xl border border-brand-sage/25 bg-white p-8 text-center shadow-card animate-fade-up">
+      <div className="flex h-full min-h-[420px] flex-col items-center justify-center bg-white p-8 text-center">
         <p className="font-serif text-2xl font-semibold text-brand-forest">Message sent</p>
         <p className="mt-3 text-sm text-brand-ink">{confirmText}</p>
         <p className="mt-2 text-xs text-brand-muted">We will reply to {email}.</p>
@@ -233,13 +315,10 @@ function ContactFormInner() {
   }
 
   return (
-    <form
-      onSubmit={(event) => void onSubmit(event)}
-      className="rounded-3xl border border-brand-cream-dark bg-white p-5 shadow-card animate-fade-up sm:p-7"
-    >
+    <form onSubmit={(event) => void onSubmit(event)} className="flex h-full flex-col bg-white p-5 sm:p-7 lg:p-8">
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-gold">Contact</p>
       <h1 className="mt-1 font-serif text-2xl font-semibold text-brand-ink md:text-3xl">Send a message</h1>
-      <p className="mt-2 text-sm text-brand-muted">Fields with a star are required. Attachments are optional.</p>
+      <p className="mt-2 text-sm text-brand-muted">Only order number and attachments are optional.</p>
 
       {presetOrder ? (
         <p className="mt-4 rounded-xl border border-brand-gold-pale/60 bg-brand-cream px-4 py-3 text-sm text-brand-ink">
@@ -248,102 +327,121 @@ function ContactFormInner() {
         </p>
       ) : null}
 
-      <div className="mt-5 space-y-4">
+      <div className="mt-5 flex-1 space-y-4">
         <div>
           <label htmlFor="contact-subject" className="mb-2 block text-sm font-medium text-brand-ink">
-            What is this about?
+            What is this about? <span className="text-brand-terra">*</span>
           </label>
-          <select
-            id="contact-subject"
-            value={subjectCategory}
-            onChange={(e) => setSubjectCategory(e.target.value as EnquirySubjectValue)}
-            className={inputCls}
-          >
-            {ENQUIRY_SUBJECT_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+          <FieldShell icon={<IconTopic />}>
+            <select
+              id="contact-subject"
+              value={subjectCategory}
+              onChange={(e) => setSubjectCategory(e.target.value as EnquirySubjectValue)}
+              required
+              className={`${inputCls} appearance-none`}
+            >
+              {ENQUIRY_SUBJECT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </FieldShell>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="contact-name" className="mb-2 block text-sm font-medium text-brand-ink">
-              Name
+              Name <span className="text-brand-terra">*</span>
             </label>
-            <input
-              id="contact-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              autoComplete="name"
-              placeholder="Name"
-              className={inputCls}
-            />
+            <FieldShell icon={<IconUser />}>
+              <input
+                id="contact-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                autoComplete="name"
+                placeholder="Your name"
+                className={inputCls}
+              />
+            </FieldShell>
           </div>
           <div>
             <label htmlFor="contact-phone" className="mb-2 block text-sm font-medium text-brand-ink">
-              Phone (optional)
+              Phone <span className="text-brand-terra">*</span>
             </label>
-            <input
-              id="contact-phone"
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              autoComplete="tel"
-              placeholder="Phone number"
-              className={inputCls}
-            />
+            <FieldShell icon={<IconPhone />}>
+              <input
+                id="contact-phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+                autoComplete="tel"
+                placeholder="Phone number"
+                className={inputCls}
+              />
+            </FieldShell>
           </div>
         </div>
 
         <div>
           <label htmlFor="contact-email" className="mb-2 block text-sm font-medium text-brand-ink">
-            Email
+            Email <span className="text-brand-terra">*</span>
           </label>
-          <input
-            id="contact-email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoComplete="email"
-            placeholder="Email"
-            className={inputCls}
-          />
+          <FieldShell icon={<IconMail />}>
+            <input
+              id="contact-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+              placeholder="Email"
+              className={inputCls}
+            />
+          </FieldShell>
         </div>
 
         <div>
           <label htmlFor="contact-order" className="mb-2 block text-sm font-medium text-brand-ink">
-            Order number {subjectCategory === "ORDER" || subjectCategory === "PAYMENT" ? "" : "(optional)"}
+            Order number <span className="font-normal text-brand-muted">(optional)</span>
           </label>
-          <input
-            id="contact-order"
-            value={orderNumber}
-            onChange={(e) => setOrderNumber(e.target.value)}
-            placeholder="SRV-20260600001"
-            className={`${inputCls} font-mono`}
-          />
+          <FieldShell icon={<IconOrder />}>
+            <input
+              id="contact-order"
+              value={orderNumber}
+              onChange={(e) => setOrderNumber(e.target.value)}
+              placeholder="SRV-20260600001"
+              className={`${inputCls} font-mono`}
+            />
+          </FieldShell>
         </div>
 
         <div>
           <label htmlFor="contact-message" className="mb-2 block text-sm font-medium text-brand-ink">
-            Message {complaint ? "(optional)" : ""}
+            Message {complaint ? <span className="font-normal text-brand-muted">(optional)</span> : <span className="text-brand-terra">*</span>}
           </label>
-          <textarea
-            id="contact-message"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            required={!complaint}
-            rows={5}
-            placeholder={messagePlaceholder}
-            className="w-full resize-y rounded-xl border border-brand-cream-dark bg-brand-ivory px-4 py-3 text-sm text-brand-ink transition-shadow duration-200 focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/30"
-          />
+          <FieldShell icon={<IconMessage />}>
+            <textarea
+              id="contact-message"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              required={!complaint}
+              rows={5}
+              placeholder={messagePlaceholder}
+              className="w-full resize-y rounded-xl border border-brand-cream-dark bg-brand-ivory py-3 pl-11 pr-4 text-sm text-brand-ink transition-shadow duration-200 focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/30"
+            />
+          </FieldShell>
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium text-brand-ink">Attachments (optional)</label>
+          <label className="mb-2 flex items-center gap-2 text-sm font-medium text-brand-ink">
+            <span className="text-brand-gold">
+              <IconClip />
+            </span>
+            Attachments <span className="font-normal text-brand-muted">(optional)</span>
+          </label>
           <p className="mb-2 text-xs text-brand-muted">
             Photos, PDF, Word, audio, or video. After you pick files, they appear in the list below.
           </p>
@@ -359,7 +457,7 @@ function ContactFormInner() {
         <button
           type="submit"
           disabled={loading}
-          className="sv-contact-cta inline-flex min-h-[50px] w-full items-center justify-center rounded-xl px-6 text-sm font-semibold text-white shadow-gold transition-opacity hover:opacity-95 disabled:opacity-60"
+          className="sv-contact-cta mt-2 inline-flex min-h-[50px] w-full items-center justify-center rounded-xl px-6 text-sm font-semibold text-white shadow-gold transition-opacity hover:opacity-95 disabled:opacity-60"
         >
           {loading ? "Uploading & sending…" : "Send message"}
         </button>
@@ -370,18 +468,17 @@ function ContactFormInner() {
 
 export function ContactPageClient() {
   return (
-    <main className="relative overflow-hidden bg-brand-cream">
+    <main className="relative overflow-hidden bg-brand-cream p-4 md:p-5 lg:p-6">
       <span className="sv-contact-blob pointer-events-none absolute -left-24 top-10 h-64 w-64 rounded-full bg-brand-gold/20 blur-3xl" aria-hidden />
       <span className="sv-contact-blob-delay pointer-events-none absolute -right-16 top-40 h-72 w-72 rounded-full bg-brand-sage/20 blur-3xl" aria-hidden />
-      <span className="pointer-events-none absolute bottom-0 left-1/3 h-48 w-48 rounded-full bg-brand-terra/10 blur-3xl" aria-hidden />
 
-      <div className="page-shell relative z-[1] py-8 md:py-12">
-        <div className="grid items-stretch gap-6 lg:grid-cols-2 lg:gap-8">
-          <ContactVisual />
-          <Suspense fallback={<p className="text-sm text-brand-muted">Loading form…</p>}>
-            <ContactFormInner />
-          </Suspense>
-        </div>
+      <div
+        className="relative z-[1] grid min-h-[calc(100dvh-var(--storefront-header-live-offset)-var(--storefront-slim-footer-offset)-2rem)] overflow-hidden rounded-3xl border border-brand-cream-dark bg-white shadow-card lg:grid-cols-2"
+      >
+        <ContactVisual />
+        <Suspense fallback={<p className="p-8 text-sm text-brand-muted">Loading form…</p>}>
+          <ContactFormInner />
+        </Suspense>
       </div>
     </main>
   );
