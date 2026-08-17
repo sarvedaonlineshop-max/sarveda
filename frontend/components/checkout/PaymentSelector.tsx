@@ -29,6 +29,7 @@ import {
 } from "@/lib/pending-checkout";
 import { saveCheckoutShipping } from "@/lib/checkout-prefill";
 import { PaymentConfirmOverlay } from "@/components/checkout/PaymentConfirmOverlay";
+import { playPaymentSuccessChime, unlockPaymentSuccessAudio } from "@/lib/payment-success-chime";
 
 declare global {
   interface Window {
@@ -209,6 +210,7 @@ export function PaymentSelector({
 
   const goSuccess = useCallback(
     (orderNumber: string, cod: boolean) => {
+      void playPaymentSuccessChime(orderNumber);
       clearPendingCheckout();
       clearSession();
       onCheckoutCompleting();
@@ -388,6 +390,7 @@ export function PaymentSelector({
     onFieldErrors({});
     setErr(null);
     saveCheckoutShipping(addressForm);
+    unlockPaymentSuccessAudio();
     setBusy(true);
     payStarted.current = true;
     if (!checkoutTracked.current) {

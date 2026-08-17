@@ -28,11 +28,7 @@ export function PaymentSuccessMark({
     if (!playSound) return;
     const lock = soundKey ? `sarveda_pay_chime:${soundKey}` : "";
     if (lock && sessionStorage.getItem(lock)) return;
-    const t = window.setTimeout(() => {
-      playPaymentSuccessChime();
-      if (lock) sessionStorage.setItem(lock, "1");
-    }, 40);
-    return () => window.clearTimeout(t);
+    void playPaymentSuccessChime(soundKey);
   }, [playSound, soundKey]);
   return (
     <span className={`relative mx-auto inline-flex h-24 w-24 items-center justify-center ${className}`}>

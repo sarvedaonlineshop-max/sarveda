@@ -428,6 +428,42 @@ select:-webkit-autofill {
   animation: sv-fail-spark 0.9s ease-out 0.18s both;
 }
 
+@keyframes sv-contact-kenburns {
+  0% { transform: scale(1) translate(0, 0); }
+  50% { transform: scale(1.08) translate(-1.5%, 1%); }
+  100% { transform: scale(1.04) translate(1%, -1%); }
+}
+@keyframes sv-contact-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes sv-contact-blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(18px, -12px) scale(1.08); }
+  66% { transform: translate(-14px, 10px) scale(0.96); }
+}
+@keyframes sv-contact-shimmer {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+.sv-contact-kenburns {
+  animation: sv-contact-kenburns 18s ease-in-out infinite alternate;
+}
+.sv-contact-float {
+  animation: sv-contact-float 5s ease-in-out infinite;
+}
+.sv-contact-blob {
+  animation: sv-contact-blob 14s ease-in-out infinite;
+}
+.sv-contact-blob-delay {
+  animation: sv-contact-blob 18s ease-in-out infinite reverse;
+}
+.sv-contact-cta {
+  background-size: 200% 100%;
+  background-image: linear-gradient(90deg, #1c352a 0%, #48705a 40%, #b98a3e 70%, #1c352a 100%);
+  animation: sv-contact-shimmer 4.5s linear infinite;
+}
+
 /* ─── Reduced Motion ────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   html:focus-within { scroll-behavior: auto; }
