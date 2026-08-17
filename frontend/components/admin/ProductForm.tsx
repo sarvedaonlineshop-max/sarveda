@@ -34,6 +34,8 @@ import { fetchCategoryTree } from "@/lib/api";
 import { TAX_CLASS_OPTIONS, taxClassForForm } from "@/lib/tax-classes";
 import type { CategoryNode } from "@/lib/types";
 import {
+  cartesianCombos,
+  comboKey,
   deriveOptionAxes,
   optionsForAxis,
   slugifyAttribute,
@@ -41,6 +43,7 @@ import {
   type OptionAxisForm,
   type VariantAttributeForm
 } from "@/lib/variant-admin";
+import { VariantTreeNav } from "@/components/admin/VariantTreeNav";
 
 const ZONES = ["IN", "US", "GB", "OTHER"] as const;
 type Zone = (typeof ZONES)[number];
@@ -234,6 +237,7 @@ export function ProductForm({ productId }: { productId?: string }) {
   const [optionAxes, setOptionAxes] = useState<OptionAxisForm[]>([
     { name: "Size", slug: "size", values: [] }
   ]);
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const [images, setImages] = useState<ImageForm[]>([
     { url: "", altText: "", isPrimary: true }
   ]);
@@ -644,7 +648,38 @@ export function ProductForm({ productId }: { productId?: string }) {
     );
   }
 
-  const showVariantAxes = variants.length > 1;
+  const showVariantAxes = productType === "VARIABLE" || variants.length > 1;
+
+  useEffect(() => {
+    if (selectedVariantIndex > variants.length - 1) {
+      setSelectedVariantIndex(Math.max(0, variants.length - 1));
+    }
+  }, [variants.length, selectedVariantIndex]);
+
+  function generateVariantsFromLevels() {
+    const combos = cartesianCombos(optionAxes);
+    if (!combos.length) return;
+    setProductType("VARIABLE");
+    setVariants((prev) => {
+      const byKey = new Map(
+        prev.map((v) => [comboKey(v.attributes.map((a) => a.value)), v] as const)
+      );
+      const next = combos.map((values, i) => {
+        const key = comboKey(values);
+        const existing = byKey.get(key);
+        const attributes = optionAxes.map((axis, ai) => ({
+          name: axis.name,
+          slug: axis.slug,
+          value: values[ai] ?? ""
+        }));
+        if (existing) return { ...existing, attributes };
+        return { ...newVariant(), isDefault: i === 0 && !prev.some((p) => p.isDefault), attributes };
+      });
+      if (!next.some((v) => v.isDefault) && next[0]) next[0] = { ...next[0], isDefault: true };
+      return next;
+    });
+    setSelectedVariantIndex(0);
+  }
 
   async function fillSeoWithAi() {
     setSeoAiLoading(true);
@@ -971,7 +1006,7 @@ export function ProductForm({ productId }: { productId?: string }) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-5 pb-28 font-sans">
+    <div className="mx-auto w-full max-w-[1680px] space-y-5 pb-28 font-sans">
       <AdminToast toast={toast} onDismiss={() => setToast(null)} />
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--admin-card-border,#e8e2d9)] pb-4">
         <div>
@@ -1311,9 +1346,45 @@ export function ProductForm({ productId }: { productId?: string }) {
             ) : null}
             <FieldErr message={fieldErrors.variants} />
             {showVariantAxes ? (
-              <VariantOptionAxesEditor axes={optionAxes} onChange={handleOptionAxesChange} />
+              <div className="space-y-3">
+                <VariantOptionAxesEditor axes={optionAxes} onChange={handleOptionAxesChange} />
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={generateVariantsFromLevels}
+                    disabled={cartesianCombos(optionAxes).length === 0}
+                    className="rounded-lg bg-[#1c352a] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#152820] disabled:opacity-40"
+                  >
+                    Create all combinations
+                  </button>
+                  <p className="text-xs text-[var(--admin-text-muted,#8a7060)]">
+                    {cartesianCombos(optionAxes).length
+                      ? `Builds ${cartesianCombos(optionAxes).length} SKU rows from the option levels (keeps prices you already entered).`
+                      : "Add values to every option level first, then create the rows."}
+                  </p>
+                </div>
+              </div>
             ) : null}
-            {variants.map((v, vi) => (
+            <div
+              className={
+                showVariantAxes
+                  ? "grid items-start gap-5 lg:grid-cols-[minmax(220px,300px)_minmax(0,1fr)]"
+                  : ""
+              }
+            >
+              {showVariantAxes ? (
+                <VariantTreeNav
+                  axes={optionAxes}
+                  variants={variants}
+                  selectedIndex={selectedVariantIndex}
+                  onSelect={setSelectedVariantIndex}
+                />
+              ) : null}
+              <div className="min-w-0 space-y-6">
+            {(showVariantAxes ? [selectedVariantIndex] : variants.map((_, i) => i)).map((vi) => {
+              const v = variants[vi];
+              if (!v) return null;
+              return (
               <div
                 key={v.id ?? `new-${vi}`}
                 className="rounded-xl border-2 border-[#1c352a]/35 bg-[var(--admin-card-bg,#fff)] p-5 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-[#b98a3e]/45"
@@ -1495,7 +1566,10 @@ export function ProductForm({ productId }: { productId?: string }) {
                   />
                 </div>
               </div>
-            ))}
+              );
+            })}
+              </div>
+            </div>
           </div>
         ) : null}
 
@@ -1687,21 +1761,25 @@ export function ProductForm({ productId }: { productId?: string }) {
       </form>
 
       <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-[var(--admin-card-border,#e8e2d9)] bg-[var(--admin-card-bg,#fff)]/95 px-4 py-3 backdrop-blur md:left-64">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+        <div className="mx-auto flex max-w-[1680px] flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
             {tab === "variants" ? (
               <button
                 type="button"
                 onClick={() => {
                   setProductType("VARIABLE");
-                  setVariants((prev) => [
-                    ...prev.map((x) => ({ ...x, isDefault: false })),
-                    {
-                      ...newVariant(),
-                      isDefault: prev.length === 0,
-                      attributes: syncVariantAttributesToAxes([], optionAxes)
-                    }
-                  ]);
+                  setVariants((prev) => {
+                    const next = [
+                      ...prev.map((x) => ({ ...x, isDefault: false })),
+                      {
+                        ...newVariant(),
+                        isDefault: prev.length === 0,
+                        attributes: syncVariantAttributesToAxes([], optionAxes)
+                      }
+                    ];
+                    setSelectedVariantIndex(next.length - 1);
+                    return next;
+                  });
                 }}
                 className={floatAddBtnCls}
               >

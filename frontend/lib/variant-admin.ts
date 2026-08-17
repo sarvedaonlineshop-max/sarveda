@@ -87,6 +87,20 @@ export function optionsForAxis(axis: OptionAxisForm, selectedValue = ""): string
   return base;
 }
 
+export function comboKey(values: string[]): string {
+  return values.map((v) => v.trim().toLowerCase()).join("\u0001");
+}
+
+/** All combinations of option-level values, in axis order. Empty if any level has no options. */
+export function cartesianCombos(axes: OptionAxisForm[]): string[][] {
+  const lists = axes.map((a) => a.values.map((v) => v.trim()).filter(Boolean));
+  if (!lists.length || lists.some((list) => list.length === 0)) return [];
+  return lists.reduce<string[][]>((acc, vals) => {
+    if (acc.length === 0) return vals.map((v) => [v]);
+    return acc.flatMap((prefix) => vals.map((v) => [...prefix, v]));
+  }, []);
+}
+
 export function variantLabelFromAttributes(attributes: VariantAttributeForm[]): string {
   const vals = attributes.map((a) => a.value.trim()).filter(Boolean);
   return vals.length ? vals.join(" / ") : "";
