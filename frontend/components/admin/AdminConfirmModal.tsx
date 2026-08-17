@@ -3,7 +3,8 @@
 type AdminConfirmModalProps = {
   open: boolean;
   title: string;
-  message: string;
+  message?: string;
+  details?: string[];
   confirmLabel?: string;
   cancelLabel?: string;
   secondaryConfirmLabel?: string;
@@ -15,7 +16,7 @@ type AdminConfirmModalProps = {
 };
 
 export function AdminConfirmModal({
-  open, title, message,
+  open, title, message, details,
   confirmLabel = "Confirm", cancelLabel = "Cancel",
   secondaryConfirmLabel, onSecondaryConfirm,
   danger, busy, onConfirm, onClose
@@ -33,7 +34,7 @@ export function AdminConfirmModal({
       role="dialog" aria-modal="true" aria-labelledby="confirm-title"
     >
       <div style={{
-        width: "100%", maxWidth: "440px",
+        width: "100%", maxWidth: details?.length ? "520px" : "440px",
         background: "#ffffff", borderRadius: "16px",
         boxShadow: "0 24px 64px rgba(0,0,0,0.2)",
         overflow: "hidden"
@@ -70,7 +71,28 @@ export function AdminConfirmModal({
 
         {/* Body */}
         <div style={{ padding: "20px 24px" }}>
-          <p style={{ fontSize: "14px", lineHeight: 1.65, color: "#6b5c52" }}>{message}</p>
+          {message ? (
+            <p style={{ fontSize: "14px", lineHeight: 1.65, color: "#6b5c52" }}>{message}</p>
+          ) : null}
+          {details && details.length > 0 ? (
+            <ul
+              style={{
+                margin: message ? "12px 0 0" : 0,
+                paddingLeft: 18,
+                maxHeight: 220,
+                overflowY: "auto",
+                fontSize: 13,
+                lineHeight: 1.55,
+                color: "#6b5c52"
+              }}
+            >
+              {details.map((item) => (
+                <li key={item} style={{ marginBottom: 6 }}>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
 
         {/* Actions */}

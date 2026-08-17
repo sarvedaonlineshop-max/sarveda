@@ -21,6 +21,7 @@ import {
 import { formatAccordionSection, plainTextFromAccordionContent } from "@/lib/accordion-format";
 import { applyApiError, tabForFieldPath } from "@/lib/admin-errors";
 import { AdminToast } from "@/components/admin/AdminToast";
+import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
 import { AdminLoadingOverlay } from "@/components/admin/AdminLoadingOverlay";
 import { ProductAudioUpload } from "@/components/admin/ProductAudioUpload";
 import { ProductBarcodeTab } from "@/components/admin/ProductBarcodeTab";
@@ -198,6 +199,21 @@ const FORM_TABS = [
 ];
 type FormTab = (typeof FORM_TABS)[number]["id"];
 
+function collectIssueLines(errors: Record<string, string>): string[] {
+  const lines: string[] = [];
+  const seen = new Set<string>();
+  for (const [path, msg] of Object.entries(errors)) {
+    if (!msg) continue;
+    const tabLabel = FORM_TABS.find((t) => t.id === tabForFieldPath(path))?.label ?? "Form";
+    const line = `${tabLabel} — ${msg}`;
+    if (!seen.has(line)) {
+      seen.add(line);
+      lines.push(line);
+    }
+  }
+  return lines;
+}
+
 export function ProductForm({ productId }: { productId?: string }) {
   const router = useRouter();
   const isNew = !productId;
@@ -209,7 +225,9 @@ export function ProductForm({ productId }: { productId?: string }) {
   const [categoryTree, setCategoryTree] = useState<CategoryNode[]>([]);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
+  const [savingIntent, setSavingIntent] = useState<"save" | "publish" | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [publishIssues, setPublishIssues] = useState<string[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -938,17 +956,40 @@ export function ProductForm({ productId }: { productId?: string }) {
     seoKeyword
   ]);
 
-  async function handleSave() {
-    const clientErrors = validateAll();
-    if (Object.keys(clientErrors).length > 0) {
-      applyClientErrors(clientErrors);
+  async function persistProduct(opts: {
+    intent: "save" | "publish";
+    skipValidation?: boolean;
+  }) {
+    const nextStatus = opts.intent === "publish" ? "ACTIVE" : isNew ? "DRAFT" : status;
+    if (!name.trim() || !slug.trim()) {
+      setErr("Enter a product name and slug before saving.");
+      setFieldErrors({
+        ...(!name.trim() ? { name: "Product name is required." } : {}),
+        ...(!slug.trim() ? { slug: "Slug is required." } : {})
+      });
+      selectTab("general");
+      setToast({ message: "Enter a product name and slug before saving.", error: true });
       return;
     }
+
     setSaving(true);
+    setSavingIntent(opts.intent);
     setErr(null);
-    setFieldErrors({});
+    if (!opts.skipValidation) setFieldErrors({});
     try {
-      const payload = buildPayload();
+      const payload = buildPayload() as Record<string, unknown> & {
+        status: string;
+        variants: Array<{ sku: string; variantSku?: string | null }>;
+      };
+      payload.status = nextStatus;
+      if (opts.intent === "save" || opts.skipValidation) {
+        const family = slug.trim() || "draft";
+        payload.variants = payload.variants.map((v, i) => {
+          const sku = v.sku.trim() || `${family}-${i + 1}`.slice(0, 120);
+          return { ...v, sku };
+        });
+      }
+
       const formatZoho = (z?: {
         ok?: boolean;
         created?: number;
@@ -967,8 +1008,13 @@ export function ProductForm({ productId }: { productId?: string }) {
         const { product, zohoSync } = await postAdminProduct(payload);
         sessionStorage.removeItem(DRAFT_KEY);
         const id = String(product.id);
+        setStatus(nextStatus);
+        setPublishIssues(null);
         setToast({
-          message: `Product created — you can keep editing.${formatZoho(zohoSync)}`,
+          message:
+            opts.intent === "publish"
+              ? `Product published.${formatZoho(zohoSync)}`
+              : `Draft saved — you can keep editing.${formatZoho(zohoSync)}`,
           error: zohoSync?.ok === false
         });
         setSavedAt(Date.now());
@@ -976,9 +1022,14 @@ export function ProductForm({ productId }: { productId?: string }) {
         router.refresh();
       } else {
         const { zohoSync } = await putAdminProduct(productId!, payload);
+        setStatus(nextStatus);
         await loadProduct();
+        setPublishIssues(null);
         setToast({
-          message: `Changes saved.${formatZoho(zohoSync)}`,
+          message:
+            opts.intent === "publish"
+              ? `Product published.${formatZoho(zohoSync)}`
+              : `Changes saved.${formatZoho(zohoSync)}`,
           error: zohoSync?.ok === false
         });
         setSavedAt(Date.now());
@@ -993,7 +1044,21 @@ export function ProductForm({ productId }: { productId?: string }) {
       });
     } finally {
       setSaving(false);
+      setSavingIntent(null);
     }
+  }
+
+  function handleSaveChanges() {
+    void persistProduct({ intent: "save", skipValidation: true });
+  }
+
+  function handlePublishClick() {
+    const issues = collectIssueLines(validateAll());
+    if (issues.length) {
+      setPublishIssues(issues);
+      return;
+    }
+    void persistProduct({ intent: "publish" });
   }
 
   async function handleDelete() {
@@ -1038,7 +1103,26 @@ export function ProductForm({ productId }: { productId?: string }) {
   return (
     <div className="mx-auto w-full max-w-[1680px] space-y-5 pb-28 font-sans">
       <AdminToast toast={toast} onDismiss={() => setToast(null)} />
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--admin-card-border,#e8e2d9)] pb-4">
+      <AdminConfirmModal
+        open={Boolean(publishIssues?.length)}
+        title="This product isn’t ready to publish"
+        message="These items are missing or invalid. Cancel to keep editing, Ignore to save a draft, or Publish to put it on the store anyway."
+        details={publishIssues ?? []}
+        cancelLabel="Cancel"
+        secondaryConfirmLabel="Ignore"
+        confirmLabel="Publish"
+        busy={saving}
+        onClose={() => {
+          if (!saving) setPublishIssues(null);
+        }}
+        onSecondaryConfirm={() => {
+          void persistProduct({ intent: "save", skipValidation: true });
+        }}
+        onConfirm={() => {
+          void persistProduct({ intent: "publish", skipValidation: true });
+        }}
+      />
+      <div className="sticky top-0 z-20 -mx-1 mb-1 flex flex-wrap items-start justify-between gap-4 border-b border-[var(--admin-card-border,#e8e2d9)] bg-[var(--admin-page-bg,#f7f4ef)] px-1 py-3">
         <div>
           <Link
             href="/admin/products"
@@ -1055,24 +1139,35 @@ export function ProductForm({ productId }: { productId?: string }) {
               Saved {new Date(savedAt).toLocaleTimeString()}
             </p>
           ) : null}
-          {isNew ? (
-            <p className="mt-1 max-w-xl text-sm text-[var(--admin-text-muted,#8a7060)]">
-              Work through each step — nothing is saved until you click{" "}
-              <strong className="font-medium text-[var(--admin-text,#2c2420)]">Create product</strong> on
-              the SEO step. You can move back anytime to change earlier sections.
-            </p>
-          ) : null}
         </div>
-        {!isNew ? (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {!isNew ? (
+            <button
+              type="button"
+              disabled={deleting || saving}
+              onClick={() => void handleDelete()}
+              className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-700 transition-colors duration-150 hover:bg-red-50 hover:shadow-sm disabled:opacity-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/40"
+            >
+              {deleting ? "Archiving…" : "Archive product"}
+            </button>
+          ) : null}
           <button
             type="button"
-            disabled={deleting}
-            onClick={() => void handleDelete()}
-            className="rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-700 transition-colors duration-150 hover:bg-red-50 hover:shadow-sm disabled:opacity-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/40"
+            disabled={saving}
+            onClick={handleSaveChanges}
+            className="rounded-lg border border-[var(--admin-card-border,#e0d8ce)] bg-[var(--admin-card-bg,#fff)] px-4 py-2 text-sm font-semibold text-[var(--admin-text,#2c2420)] shadow-sm hover:bg-[var(--admin-row-hover,#faf5ec)] disabled:opacity-60"
           >
-            {deleting ? "Archiving…" : "Archive product"}
+            {savingIntent === "save" ? "Saving…" : "Save changes"}
           </button>
-        ) : null}
+          <button
+            type="button"
+            disabled={saving}
+            onClick={handlePublishClick}
+            className="rounded-lg bg-[#1c352a] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#152820] disabled:opacity-60"
+          >
+            {savingIntent === "publish" ? "Publishing…" : "Publish product"}
+          </button>
+        </div>
       </div>
 
       <nav
@@ -1876,26 +1971,6 @@ export function ProductForm({ productId }: { productId?: string }) {
                 className="rounded-lg bg-gradient-to-r from-[#1c352a] to-[#2d5040] px-5 py-2 text-sm font-semibold text-white hover:opacity-90"
               >
                 Next
-              </button>
-            ) : null}
-            {isNew && onLastTab ? (
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => void handleSave()}
-                className="rounded-lg bg-[#1e3a2f] px-5 py-2 text-sm font-semibold text-[#fffbf5] hover:bg-[#2d5240] disabled:opacity-60"
-              >
-                {saving ? "Creating…" : "Create product"}
-              </button>
-            ) : null}
-            {!isNew ? (
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => void handleSave()}
-                className="rounded-md bg-amber-500 px-5 py-2 text-sm font-semibold text-stone-900 shadow-sm hover:bg-amber-400 disabled:opacity-60"
-              >
-                {saving ? "Saving…" : "Save changes"}
               </button>
             ) : null}
           </div>
