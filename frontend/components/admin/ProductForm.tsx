@@ -38,6 +38,7 @@ import {
   comboKey,
   deriveOptionAxes,
   optionsForAxis,
+  pruneVariantRows,
   slugifyAttribute,
   syncVariantAttributesToAxes,
   type OptionAxisForm,
@@ -238,6 +239,7 @@ export function ProductForm({ productId }: { productId?: string }) {
     { name: "Size", slug: "size", values: [] }
   ]);
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
+  const [variantLevelsOpen, setVariantLevelsOpen] = useState(false);
   const [images, setImages] = useState<ImageForm[]>([
     { url: "", altText: "", isPrimary: true }
   ]);
@@ -372,6 +374,8 @@ export function ProductForm({ productId }: { productId?: string }) {
         setOptionAxes(
           axes.length > 0 ? axes : [{ name: "Size", slug: "size", values: [] }]
         );
+        const hasLevelValues = axes.some((a) => a.values.some((v) => v.trim()));
+        setVariantLevelsOpen(hasLevelValues || loadedVariants.length > 1);
         if (axes.length > 0) {
           setVariants((prev) =>
             prev.map((v) => ({
@@ -507,8 +511,9 @@ export function ProductForm({ productId }: { productId?: string }) {
         if (!v.sku.trim()) errors[`variants.${i}.sku`] = "SKU is required.";
         if (variants.length > 1) {
           v.attributes.forEach((attr, ai) => {
-            if (!attr.value.trim()) {
-              const label = attr.name || `Option level ${ai + 1}`;
+            const axisHasValues = optionAxes[ai]?.values.some((val) => val.trim());
+            if (axisHasValues && !attr.value.trim()) {
+              const label = attr.name || `Variant level ${ai + 1}`;
               errors[`variants.${i}.attr.${ai}`] = `${label} is required.`;
             }
           });
@@ -638,17 +643,38 @@ export function ProductForm({ productId }: { productId?: string }) {
     ]);
   }
 
-  function handleOptionAxesChange(axes: OptionAxisForm[]) {
+  function handleOptionAxesChange(axes: OptionAxisForm[], _opts?: { prune?: boolean }) {
     setOptionAxes(axes);
-    setVariants((prev) =>
-      prev.map((v) => ({
-        ...v,
-        attributes: syncVariantAttributesToAxes(v.attributes, axes)
-      }))
-    );
   }
 
-  const showVariantAxes = productType === "VARIABLE" || variants.length > 1;
+  const axesValuesKey = optionAxes.map((a) => `${a.slug}:${a.values.join("\u0001")}`).join("|");
+  const showVariantTree =
+    variants.length > 1 || optionAxes.some((a) => a.values.some((v) => v.trim()));
+
+  useEffect(() => {
+    setVariants((prev) => {
+      const next = pruneVariantRows(prev, optionAxes, newVariant);
+      if (
+        next.length === prev.length &&
+        next.every((row, i) => {
+          const cur = prev[i];
+          if (!cur || row.isDefault !== cur.isDefault) return false;
+          if (row.attributes.length !== cur.attributes.length) return false;
+          return row.attributes.every(
+            (a, ai) =>
+              a.slug === cur.attributes[ai]?.slug &&
+              a.value === cur.attributes[ai]?.value &&
+              a.name === cur.attributes[ai]?.name
+          );
+        })
+      ) {
+        return prev;
+      }
+      return next;
+    });
+    // Only when dropdown options or slugs change — not while typing a level name.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [axesValuesKey]);
 
   useEffect(() => {
     if (selectedVariantIndex > variants.length - 1) {
@@ -839,17 +865,21 @@ export function ProductForm({ productId }: { productId?: string }) {
         setSkuFamily(d.skuFamily);
       }
       if (typeof d.tab === "string") setTab(d.tab as FormTab);
-      if (Array.isArray(d.variants)) setVariants(d.variants as VariantForm[]);
       if (Array.isArray(d.images)) setImages(d.images as ImageForm[]);
-      if (Array.isArray(d.optionAxes)) {
-        setOptionAxes(
-          (d.optionAxes as OptionAxisForm[]).map((a) => ({
+      const restoredAxes = Array.isArray(d.optionAxes)
+        ? (d.optionAxes as OptionAxisForm[]).map((a) => ({
             name: a.name ?? "",
             slug: a.slug ?? "",
             values: Array.isArray(a.values) ? a.values : []
           }))
-        );
-      }
+        : null;
+      if (restoredAxes) setOptionAxes(restoredAxes);
+      const axesForPrune = restoredAxes ?? optionAxes;
+      const restoredVariants = Array.isArray(d.variants) ? (d.variants as VariantForm[]) : null;
+      const pruned = pruneVariantRows(restoredVariants ?? [newVariant()], axesForPrune, newVariant);
+      if (restoredVariants || restoredAxes) setVariants(pruned);
+      const hasLevelValues = axesForPrune.some((a) => a.values.some((v) => v.trim()));
+      setVariantLevelsOpen(hasLevelValues || pruned.length > 1);
       if (typeof d.videoUrl === "string") setVideoUrl(d.videoUrl);
       if (Array.isArray(d.accordion)) setAccordion(d.accordion as AccordionForm[]);
       if (Array.isArray(d.categoryIds)) setSelectedCats(new Set(d.categoryIds as string[]));
@@ -1345,9 +1375,14 @@ export function ProductForm({ productId }: { productId?: string }) {
               </div>
             ) : null}
             <FieldErr message={fieldErrors.variants} />
-            {showVariantAxes ? (
-              <div className="space-y-3">
-                <VariantOptionAxesEditor axes={optionAxes} onChange={handleOptionAxesChange} />
+            <div className="space-y-3">
+              <VariantOptionAxesEditor
+                axes={optionAxes}
+                open={variantLevelsOpen}
+                onToggle={() => setVariantLevelsOpen((v) => !v)}
+                onChange={handleOptionAxesChange}
+              />
+              {variantLevelsOpen ? (
                 <div className="flex flex-wrap items-center gap-3">
                   <button
                     type="button"
@@ -1359,20 +1394,20 @@ export function ProductForm({ productId }: { productId?: string }) {
                   </button>
                   <p className="text-xs text-[var(--admin-text-muted,#8a7060)]">
                     {cartesianCombos(optionAxes).length
-                      ? `Builds ${cartesianCombos(optionAxes).length} SKU rows from the option levels (keeps prices you already entered).`
-                      : "Add values to every option level first, then create the rows."}
+                      ? `Builds ${cartesianCombos(optionAxes).length} SKU rows from the variant levels (keeps prices you already entered).`
+                      : "Add values to every variant level first, then create the rows."}
                   </p>
                 </div>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
             <div
               className={
-                showVariantAxes
+                showVariantTree
                   ? "grid items-start gap-5 lg:grid-cols-[minmax(220px,300px)_minmax(0,1fr)]"
                   : ""
               }
             >
-              {showVariantAxes ? (
+              {showVariantTree ? (
                 <VariantTreeNav
                   axes={optionAxes}
                   variants={variants}
@@ -1381,7 +1416,7 @@ export function ProductForm({ productId }: { productId?: string }) {
                 />
               ) : null}
               <div className="min-w-0 space-y-6">
-            {(showVariantAxes ? [selectedVariantIndex] : variants.map((_, i) => i)).map((vi) => {
+            {(showVariantTree ? [selectedVariantIndex] : variants.map((_, i) => i)).map((vi) => {
               const v = variants[vi];
               if (!v) return null;
               return (
@@ -1391,7 +1426,7 @@ export function ProductForm({ productId }: { productId?: string }) {
               >
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                   <p className="font-medium text-[var(--admin-text,#2c2420)]">
-                    {showVariantAxes && v.attributes.some((a) => a.value.trim())
+                    {showVariantTree && v.attributes.some((a) => a.value.trim())
                       ? v.attributes
                           .filter((a) => a.value.trim())
                           .map((a) => a.value)
@@ -1424,7 +1459,7 @@ export function ProductForm({ productId }: { productId?: string }) {
                     ) : null}
                   </div>
                 </div>
-                {showVariantAxes && optionAxes.length > 0 ? (
+                {showVariantTree && optionAxes.length > 0 ? (
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     {v.attributes.map((attr, ai) => {
                       const axis = optionAxes[ai];
@@ -1461,7 +1496,7 @@ export function ProductForm({ productId }: { productId?: string }) {
                             </select>
                           ) : (
                             <p className="mt-1 rounded-lg border border-dashed border-[var(--admin-card-border,#e0d8ce)] bg-[var(--admin-input-bg,#faf9f7)] px-3 py-2 text-xs text-[var(--admin-text-muted,#8a7060)]">
-                              Add {label} options in the option levels box above first.
+                              Add {label} options in Variant level above first.
                             </p>
                           )}
                           <FieldErr message={fieldErrors[`variants.${vi}.attr.${ai}`]} />

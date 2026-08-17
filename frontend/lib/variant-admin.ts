@@ -75,9 +75,68 @@ export function syncVariantAttributesToAxes(
     return {
       name: axis.name,
       slug: axis.slug,
-      value: value && (allowed.size === 0 || allowed.has(value)) ? value : ""
+      value: value && allowed.has(value) ? value : ""
     };
   });
+}
+
+/** Drop SKU rows that no longer match the current dropdown options. */
+export function pruneVariantRows<T extends { attributes: VariantAttributeForm[]; isDefault: boolean }>(
+  rows: T[],
+  axes: OptionAxisForm[],
+  emptyRow: () => T
+): T[] {
+  const synced = rows.map((row) => ({
+    ...row,
+    attributes: syncVariantAttributesToAxes(row.attributes, axes)
+  }));
+  const anyValues = axes.some((axis) => axis.values.some((v) => v.trim()));
+
+  if (!anyValues) {
+    const keep = synced[0] ?? emptyRow();
+    return [
+      {
+        ...keep,
+        isDefault: true,
+        attributes: syncVariantAttributesToAxes(keep.attributes, axes)
+      }
+    ];
+  }
+
+  const complete = axes.length > 0 && axes.every((axis) => axis.values.some((v) => v.trim()));
+  if (!complete) {
+    if (!synced.length) return [{ ...emptyRow(), isDefault: true, attributes: syncVariantAttributesToAxes([], axes) }];
+    if (!synced.some((row) => row.isDefault)) {
+      synced[0] = { ...synced[0], isDefault: true };
+    }
+    return synced;
+  }
+
+  const combos = cartesianCombos(axes);
+  const allowed = new Set(combos.map((combo) => comboKey(combo)));
+  const kept = synced.filter((row) => {
+    const values = row.attributes.map((a) => a.value);
+    const allEmpty = values.every((v) => !v.trim());
+    if (allEmpty) return true;
+    if (values.some((v) => !v.trim())) return false;
+    return allowed.has(comboKey(values));
+  });
+
+  if (kept.length === 0) {
+    const keep = synced[0] ?? emptyRow();
+    return [
+      {
+        ...keep,
+        isDefault: true,
+        attributes: axes.map((axis) => ({ name: axis.name, slug: axis.slug, value: "" }))
+      }
+    ];
+  }
+
+  if (!kept.some((row) => row.isDefault)) {
+    kept[0] = { ...kept[0], isDefault: true };
+  }
+  return kept;
 }
 
 export function optionsForAxis(axis: OptionAxisForm, selectedValue = ""): string[] {

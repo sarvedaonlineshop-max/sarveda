@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 
 import type { OptionAxisForm } from "@/lib/variant-admin";
 import { slugifyAttribute } from "@/lib/variant-admin";
 
 type Props = {
   axes: OptionAxisForm[];
-  onChange: (axes: OptionAxisForm[]) => void;
+  open: boolean;
+  onToggle: () => void;
+  onChange: (axes: OptionAxisForm[], opts?: { prune?: boolean }) => void;
 };
 
 const inputCls =
@@ -88,65 +91,119 @@ function AxisValuesEditor({
   );
 }
 
-export function VariantOptionAxesEditor({ axes, onChange }: Props) {
+function AxisNameInput({
+  name,
+  placeholder,
+  onCommit
+}: {
+  name: string;
+  placeholder: string;
+  onCommit: (name: string) => void;
+}) {
+  const [draft, setDraft] = useState(name);
+  const focused = useRef(false);
+
+  useEffect(() => {
+    if (!focused.current) setDraft(name);
+  }, [name]);
+
+  return (
+    <input
+      value={draft}
+      onFocus={() => {
+        focused.current = true;
+      }}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => {
+        focused.current = false;
+        onCommit(draft);
+      }}
+      placeholder={placeholder}
+      className={inputCls}
+    />
+  );
+}
+
+export function VariantOptionAxesEditor({ axes, open, onToggle, onChange }: Props) {
   return (
     <div className="rounded-lg border border-amber-200/80 bg-amber-50/50 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
-      <p className="text-sm font-semibold text-[var(--admin-text,#2c2420)]">Option levels</p>
-      <div className="mt-3 space-y-4">
-        {axes.map((axis, i) => (
-          <div
-            key={`${axis.slug}-${i}`}
-            className="space-y-3 rounded-lg border border-amber-200/60 bg-white/70 p-3 dark:border-amber-900/40 dark:bg-stone-950/40"
-          >
-            <div className="flex flex-wrap items-end gap-2">
-              <div className="min-w-[140px] flex-1">
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--admin-label,#4a3728)]">
-                  Level {i + 1} name
-                </label>
-                <input
-                  value={axis.name}
-                  onChange={(e) => {
-                    const name = e.target.value;
-                    onChange(
-                      axes.map((a, j) =>
-                        j === i ? { ...a, name, slug: slugifyAttribute(name) } : a
-                      )
-                    );
-                  }}
-                  placeholder={i === 0 ? "Size" : "Color"}
-                  className={inputCls}
-                />
-              </div>
-              <button
-                type="button"
-                disabled={axes.length <= 1}
-                onClick={() => onChange(axes.filter((_, j) => j !== i))}
-                className="mb-0.5 text-xs font-medium text-red-600 hover:underline disabled:opacity-40 dark:text-red-400"
-              >
-                Remove level
-              </button>
-            </div>
-            <AxisValuesEditor
-              axis={axis}
-              onChange={(values) =>
-                onChange(axes.map((a, j) => (j === i ? { ...a, values } : a)))
-              }
-            />
-          </div>
-        ))}
-      </div>
       <button
         type="button"
-        onClick={() =>
-          onChange([
-            ...axes,
-            { name: "", slug: `level-${axes.length + 1}`, values: [] }
-          ])
-        }
-        className="mt-3 text-sm font-medium text-amber-700 hover:underline dark:text-amber-400"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex w-full items-start justify-between gap-3 text-left"
       >
-        + Add option level
+        <span>
+          <span className="text-sm font-semibold text-[var(--admin-text,#2c2420)]">Variant level</span>
+          <span className="mt-0.5 block text-xs text-[var(--admin-text-muted,#8a7060)]">
+            {open
+              ? "Level 1 is Color or Size. Add another level for the next choice shoppers pick."
+              : "Collapsed for a single SKU. Expand to add Color, Size, or other shopper choices."}
+          </span>
+        </span>
+        <span className="inline-flex shrink-0 items-center gap-1 pt-0.5 text-xs font-medium text-amber-800 dark:text-amber-400">
+          {open ? "Hide" : "Show"}
+          <ChevronDown size={14} className={open ? "rotate-180 transition-transform" : "transition-transform"} />
+        </span>
       </button>
+      {open ? (
+        <>
+          <div className="mt-3 space-y-4">
+            {axes.map((axis, i) => (
+              <div
+                key={`variant-level-${i}`}
+                className="space-y-3 rounded-lg border border-amber-200/60 bg-white/70 p-3 dark:border-amber-900/40 dark:bg-stone-950/40"
+              >
+                <div className="flex flex-wrap items-end gap-2">
+                  <div className="min-w-[140px] flex-1">
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--admin-label,#4a3728)]">
+                      Level {i + 1} name
+                    </label>
+                    <AxisNameInput
+                      name={axis.name}
+                      placeholder={i === 0 ? "Size" : "Color"}
+                      onCommit={(name) =>
+                        onChange(
+                          axes.map((a, j) =>
+                            j === i ? { ...a, name, slug: slugifyAttribute(name) } : a
+                          ),
+                          { prune: false }
+                        )
+                      }
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    disabled={axes.length <= 1}
+                    onClick={() => onChange(axes.filter((_, j) => j !== i))}
+                    className="mb-0.5 text-xs font-medium text-red-600 hover:underline disabled:opacity-40 dark:text-red-400"
+                  >
+                    Remove level
+                  </button>
+                </div>
+                <AxisValuesEditor
+                  axis={axis}
+                  onChange={(values) =>
+                    onChange(axes.map((a, j) => (j === i ? { ...a, values } : a)))
+                  }
+                />
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() =>
+              onChange([
+                ...axes,
+                { name: "", slug: `level-${axes.length + 1}`, values: [] }
+              ])
+            }
+            className="mt-3 text-sm font-medium text-amber-700 hover:underline dark:text-amber-400"
+          >
+            + Add variant level
+          </button>
+        </>
+      ) : null}
     </div>
   );
 }

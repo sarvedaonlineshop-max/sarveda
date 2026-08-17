@@ -128,7 +128,7 @@ export function VariantTreeNav({ axes, variants, selectedIndex, onSelect }: Prop
       </p>
       {tree.size === 0 ? (
         <p className="px-1 text-xs text-[var(--admin-text-muted,#8a7060)]">
-          Add option values, then create combinations.
+          Add dropdown options, then create combinations.
         </p>
       ) : (
         <TreeNodes nodes={tree} depth={0} selectedIndex={selectedIndex} onSelect={onSelect} />
