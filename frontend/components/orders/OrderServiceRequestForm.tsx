@@ -52,6 +52,7 @@ export function OrderServiceRequestForm({
   onSubmit
 }: Props) {
   const router = useRouter();
+  const isCancel = kind === "cancel";
   const [drafts, setDrafts] = useState<Record<string, ItemDraft>>(() =>
     Object.fromEntries(
       lineItems.map((item) => [
@@ -120,7 +121,7 @@ export function OrderServiceRequestForm({
         setError(`Choose a reason for ${item.title}.`);
         return;
       }
-      if (!draft.photos.length) {
+      if (!isCancel && !draft.photos.length) {
         setError(`Add at least one photo for ${item.title}.`);
         return;
       }
@@ -128,20 +129,20 @@ export function OrderServiceRequestForm({
         orderItemId: item.id,
         reasonCode: draft.reasonCode,
         otherMessage: draft.reasonCode === "other" ? draft.otherMessage : undefined,
-        message: draft.message || undefined
+        message: isCancel ? undefined : draft.message || undefined
       });
-      photosByIndex.set(index, draft.photos);
+      if (!isCancel) photosByIndex.set(index, draft.photos);
     }
 
     setSubmitting(true);
     try {
       await onSubmit({
         items: payloadItems,
-        message: overallMessage,
+        message: isCancel ? undefined : overallMessage,
         photosByIndex
       });
       setDone(true);
-      setTimeout(() => router.push("/profile"), 2200);
+      setTimeout(() => router.push(backHref), 2200);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not submit your request.");
     } finally {
@@ -157,28 +158,39 @@ export function OrderServiceRequestForm({
         </p>
         <h2 className="mt-3 font-serif text-xl font-semibold text-brand-ink">Request submitted</h2>
         <p className="mt-2 text-sm text-brand-muted">
-          Your refund or cancellation is waiting for approval. We will email you once our team reviews it.
+          Your {isCancel ? "cancellation" : "return"} is waiting for approval. We will email you once our team reviews it.
         </p>
         <Link
-          href="/profile"
+          href={backHref}
           className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-full bg-brand-forest px-6 text-sm font-semibold text-brand-cream"
         >
-          Back to My account
+          Back to orders
         </Link>
       </div>
     );
   }
 
   return (
-    <form onSubmit={(e) => void handleSubmit(e)} className="space-y-6">
-      <div className="rounded-2xl border border-brand-cream-dark bg-white p-5 shadow-card sm:p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">Order {orderNumber}</p>
-        <h1 className="mt-1 font-serif text-2xl font-semibold text-brand-ink">{title}</h1>
-        <p className="mt-2 text-sm text-brand-muted">{subtitle}</p>
-        <p className="mt-3 text-xs text-brand-muted">
-          Select the item(s) you want to {kind === "cancel" ? "cancel" : "return"}. Each item needs its own reason and
-          photos.
-        </p>
+    <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5">
+      <div>
+        <Link
+          href={backHref}
+          className="mb-3 hidden min-h-[40px] items-center gap-1 rounded-full border border-brand-forest/20 bg-white px-4 text-sm font-semibold text-brand-forest shadow-sm hover:bg-brand-cream md:inline-flex"
+        >
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" aria-hidden>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 18l-6-6 6-6" />
+          </svg>
+          Back to orders
+        </Link>
+        <div className="rounded-2xl border border-brand-cream-dark bg-white p-5 shadow-card sm:p-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">Order {orderNumber}</p>
+          <h1 className="mt-1 font-serif text-2xl font-semibold text-brand-ink md:text-3xl">{title}</h1>
+          <p className="mt-2 text-sm text-brand-muted">{subtitle}</p>
+          <p className="mt-3 text-xs text-brand-muted">
+            Select the item(s) you want to {isCancel ? "cancel" : "return"}. Each item needs its own reason
+            {isCancel ? "." : " and photos."}
+          </p>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -192,123 +204,136 @@ export function OrderServiceRequestForm({
                 draft?.selected ? "border-brand-forest/40 ring-1 ring-brand-forest/10" : "border-brand-cream-dark"
               }`}
             >
-              <label className="flex cursor-pointer items-start gap-3 border-b border-brand-cream-dark px-4 py-4 sm:px-5">
-                <input
-                  type="checkbox"
-                  checked={draft?.selected ?? false}
-                  onChange={(e) => patchItem(item.id, { selected: e.target.checked })}
-                  className="mt-1 h-4 w-4 accent-brand-forest"
-                />
-                <span className="min-w-0 flex-1">
-                  <span className="block font-medium text-brand-ink">{item.title}</span>
-                  <span className="mt-0.5 block text-xs text-brand-muted">
-                    Qty {item.quantity}
-                    {item.skuSnapshot ? ` · ${item.skuSnapshot}` : ""} ·{" "}
-                    {formatMinorFromPaise(item.lineTotalInPaise, currency)}
+              <div
+                className={
+                  draft?.selected
+                    ? "lg:grid lg:grid-cols-[minmax(240px,0.9fr)_minmax(0,1.4fr)] lg:items-start"
+                    : ""
+                }
+              >
+                <label className="flex cursor-pointer items-start gap-3 px-4 py-4 sm:px-5 lg:border-r lg:border-brand-cream-dark">
+                  <input
+                    type="checkbox"
+                    checked={draft?.selected ?? false}
+                    onChange={(e) => patchItem(item.id, { selected: e.target.checked })}
+                    className="mt-1 h-4 w-4 accent-brand-forest"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-medium text-brand-ink">{item.title}</span>
+                    <span className="mt-0.5 block text-xs text-brand-muted">
+                      Qty {item.quantity}
+                      {item.skuSnapshot ? ` · ${item.skuSnapshot}` : ""} ·{" "}
+                      {formatMinorFromPaise(item.lineTotalInPaise, currency)}
+                    </span>
                   </span>
-                </span>
-              </label>
+                </label>
 
-              {draft?.selected ? (
-                <div className="space-y-4 px-4 py-4 sm:px-5">
-                  <fieldset>
-                    <legend className="text-sm font-semibold text-brand-ink">Reason for this item</legend>
-                    <div className="mt-2 space-y-2">
-                      {reasons.map((reason) => (
-                        <label
-                          key={reason.code}
-                          className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-2.5 ${
-                            draft.reasonCode === reason.code
-                              ? "border-brand-forest bg-brand-forest/5"
-                              : "border-brand-cream-dark"
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name={`reason-${item.id}`}
-                            checked={draft.reasonCode === reason.code}
-                            onChange={() => patchItem(item.id, { reasonCode: reason.code })}
-                            className="mt-0.5 accent-brand-forest"
-                          />
-                          <span className="text-sm text-brand-ink">{reason.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                    {isOther ? (
-                      <textarea
-                        rows={2}
-                        value={draft.otherMessage}
-                        onChange={(e) => patchItem(item.id, { otherMessage: e.target.value })}
-                        placeholder="Please describe (optional)"
-                        className="mt-3 w-full rounded-xl border border-brand-cream-dark px-3 py-2 text-sm"
-                      />
-                    ) : null}
-                  </fieldset>
-
-                  <div>
-                    <label className="text-sm font-medium text-brand-ink">
-                      Note for this item <span className="text-brand-muted">(optional)</span>
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={draft.message}
-                      onChange={(e) => patchItem(item.id, { message: e.target.value })}
-                      className="mt-1 w-full rounded-xl border border-brand-cream-dark px-3 py-2 text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-semibold text-brand-ink">
-                      Photos for this item <span className="text-[#993C1D]">*</span>
-                    </p>
-                    <label className="mt-2 flex min-h-[96px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-brand-cream-dark bg-brand-cream/30 px-3 py-4">
-                      <span className="text-sm font-medium text-brand-forest">Add photos</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        className="sr-only"
-                        onChange={(e) => {
-                          handleItemPhotos(item.id, e.target.files);
-                          e.target.value = "";
-                        }}
-                      />
-                    </label>
-                    {draft.previews.length ? (
-                      <ul className="mt-2 grid grid-cols-4 gap-2">
-                        {draft.previews.map((src, i) => (
-                          <li key={src} className="relative aspect-square overflow-hidden rounded-lg border">
-                            <Image src={src} alt="" fill className="object-cover" unoptimized />
-                            <button
-                              type="button"
-                              onClick={() => removeItemPhoto(item.id, i)}
-                              className="absolute right-1 top-1 rounded-full bg-black/60 px-1.5 text-[10px] text-white"
-                            >
-                              ✕
-                            </button>
-                          </li>
+                {draft?.selected ? (
+                  <div className="space-y-4 border-t border-brand-cream-dark px-4 py-4 sm:px-5 lg:border-t-0">
+                    <fieldset>
+                      <legend className="text-sm font-semibold text-brand-ink">Reason for this item</legend>
+                      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                        {reasons.map((reason) => (
+                          <label
+                            key={reason.code}
+                            className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-2.5 ${
+                              draft.reasonCode === reason.code
+                                ? "border-brand-forest bg-brand-forest/5"
+                                : "border-brand-cream-dark"
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name={`reason-${item.id}`}
+                              checked={draft.reasonCode === reason.code}
+                              onChange={() => patchItem(item.id, { reasonCode: reason.code })}
+                              className="mt-0.5 accent-brand-forest"
+                            />
+                            <span className="text-sm text-brand-ink">{reason.label}</span>
+                          </label>
                         ))}
-                      </ul>
+                      </div>
+                      {isOther ? (
+                        <textarea
+                          rows={2}
+                          value={draft.otherMessage}
+                          onChange={(e) => patchItem(item.id, { otherMessage: e.target.value })}
+                          placeholder="Please describe (optional)"
+                          className="mt-3 w-full rounded-xl border border-brand-cream-dark px-3 py-2 text-sm"
+                        />
+                      ) : null}
+                    </fieldset>
+
+                    {!isCancel ? (
+                      <>
+                        <div>
+                          <label className="text-sm font-medium text-brand-ink">
+                            Note for this item <span className="text-brand-muted">(optional)</span>
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={draft.message}
+                            onChange={(e) => patchItem(item.id, { message: e.target.value })}
+                            className="mt-1 w-full rounded-xl border border-brand-cream-dark px-3 py-2 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-brand-ink">
+                            Photos for this item <span className="text-[#993C1D]">*</span>
+                          </p>
+                          <label className="mt-2 flex min-h-[96px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-brand-cream-dark bg-brand-cream/30 px-3 py-4">
+                            <span className="text-sm font-medium text-brand-forest">Add photos</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              className="sr-only"
+                              onChange={(e) => {
+                                handleItemPhotos(item.id, e.target.files);
+                                e.target.value = "";
+                              }}
+                            />
+                          </label>
+                          {draft.previews.length ? (
+                            <ul className="mt-2 grid grid-cols-4 gap-2 lg:grid-cols-6">
+                              {draft.previews.map((src, i) => (
+                                <li key={src} className="relative aspect-square overflow-hidden rounded-lg border">
+                                  <Image src={src} alt="" fill className="object-cover" unoptimized />
+                                  <button
+                                    type="button"
+                                    onClick={() => removeItemPhoto(item.id, i)}
+                                    className="absolute right-1 top-1 rounded-full bg-black/60 px-1.5 text-[10px] text-white"
+                                  >
+                                    ✕
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : null}
+                        </div>
+                      </>
                     ) : null}
                   </div>
-                </div>
-              ) : null}
+                ) : null}
+              </div>
             </article>
           );
         })}
       </div>
 
-      <div className="rounded-2xl border border-brand-cream-dark bg-white p-5 shadow-card">
-        <label className="block text-sm font-semibold text-brand-ink">
-          Overall message <span className="font-normal text-brand-muted">(optional)</span>
-        </label>
-        <textarea
-          rows={3}
-          value={overallMessage}
-          onChange={(e) => setOverallMessage(e.target.value)}
-          className="mt-2 w-full rounded-xl border border-brand-cream-dark px-3 py-2 text-sm"
-        />
-      </div>
+      {!isCancel ? (
+        <div className="rounded-2xl border border-brand-cream-dark bg-white p-5 shadow-card">
+          <label className="block text-sm font-semibold text-brand-ink">
+            Overall message <span className="font-normal text-brand-muted">(optional)</span>
+          </label>
+          <textarea
+            rows={3}
+            value={overallMessage}
+            onChange={(e) => setOverallMessage(e.target.value)}
+            className="mt-2 w-full rounded-xl border border-brand-cream-dark px-3 py-2 text-sm"
+          />
+        </div>
+      ) : null}
 
       {error ? (
         <p className="rounded-xl bg-[#FCEBEB] px-4 py-3 text-sm text-[#791F1F]" role="alert">
@@ -316,20 +341,20 @@ export function OrderServiceRequestForm({
         </p>
       ) : null}
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3 lg:sticky lg:bottom-4">
+        <Link
+          href={backHref}
+          className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-brand-forest/25 bg-white px-6 text-sm font-semibold text-brand-forest"
+        >
+          Back to orders
+        </Link>
         <button
           type="submit"
           disabled={submitting}
           className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-full bg-brand-forest px-6 text-sm font-semibold text-brand-cream disabled:opacity-60 sm:flex-none"
         >
-          {submitting ? "Submitting…" : "Submit request"}
+          {submitting ? "Submitting…" : isCancel ? "Submit cancellation" : "Submit request"}
         </button>
-        <Link
-          href={backHref}
-          className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-brand-forest/25 px-6 text-sm font-semibold text-brand-forest"
-        >
-          Cancel
-        </Link>
       </div>
     </form>
   );

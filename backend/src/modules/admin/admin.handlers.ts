@@ -26,6 +26,11 @@ import { auditSarvedaVariant, computeZohoSyncSummary, listZohoOnlyItems } from "
 import { mirrorStockToZohoForSkus } from "../zoho/zoho-items";
 import type { ZohoItemAuditRow } from "../zoho/zoho-sync-types";
 import { shopCatalogProductWhere, shopInventoryWhere } from "../../utils/shop-catalog";
+import {
+  genuineCancelledWhere,
+  unpaidAttemptCancelledWhere,
+  unpaidCheckoutAttemptWhere
+} from "../orders/abandoned-checkout";
 import { buildZohoDashboardAnalytics, dashboardInsightsFromZoho } from "../zoho/zoho-dashboard-analytics.service";
 
 const revenueStatuses: OrderStatus[] = [
@@ -532,7 +537,7 @@ export async function ordersExportPdf(req: Request, res: Response, next: NextFun
   }
 }
 
-/** Unpaid orders older than this are treated as abandoned checkout (separate from cancelled). */
+/** Unpaid orders older than this still sitting on PENDING_PAYMENT (timeout job missed). */
 const ABANDON_CHECKOUT_MS = 48 * 60 * 60 * 1000;
 
 type OrderBucket =
@@ -546,49 +551,37 @@ type OrderBucket =
   | "shipped"
   | "delivered";
 
-/** Checkout started but payment never captured (gateway exit, timeout, superseded). */
-const unpaidAttemptCancelledWhere = {
-  status: "CANCELLED" as const,
-  paymentStatus: { notIn: ["CAPTURED", "PARTIALLY_REFUNDED"] as const },
-  NOT: {
-    payments: { some: { provider: "COD" as const } }
-  }
-};
-
-/** Cancelled after payment was captured, or COD order cancelled. */
-const genuineCancelledWhere = {
-  status: "CANCELLED" as const,
-  OR: [
-    { paymentStatus: { in: ["CAPTURED", "PARTIALLY_REFUNDED"] as const } },
-    { payments: { some: { provider: "COD" as const } } }
-  ]
-};
-
-function bucketWhere(bucket: Exclude<OrderBucket, "all">, now: Date): Record<string, unknown> {
+function bucketWhere(bucket: Exclude<OrderBucket, "all">, now: Date): Prisma.OrderWhereInput {
   const abandonedCutoff = new Date(now.getTime() - ABANDON_CHECKOUT_MS);
   switch (bucket) {
     case "pending":
       return {
-        status: "PENDING_PAYMENT" as const,
+        status: "PENDING_PAYMENT",
         createdAt: { gte: abandonedCutoff }
       };
     case "abandoned":
-      return {
-        status: "PENDING_PAYMENT" as const,
-        createdAt: { lt: abandonedCutoff }
-      };
     case "attempted":
-      return unpaidAttemptCancelledWhere;
+      return {
+        OR: [
+          unpaidAttemptCancelledWhere,
+          {
+            AND: [
+              unpaidCheckoutAttemptWhere,
+              { status: "PENDING_PAYMENT", createdAt: { lt: abandonedCutoff } }
+            ]
+          }
+        ]
+      };
     case "cancelled":
       return genuineCancelledWhere;
     case "refunded":
-      return { status: "REFUNDED" as const };
+      return { status: "REFUNDED" };
     case "paid":
       return { status: { in: ["PAID", "PROCESSING", "PACKED"] } };
     case "shipped":
-      return { status: "SHIPPED" as const };
+      return { status: "SHIPPED" };
     case "delivered":
-      return { status: "DELIVERED" as const };
+      return { status: "DELIVERED" };
     default:
       return {};
   }
@@ -697,7 +690,8 @@ export async function ordersList(req: Request, res: Response, next: NextFunction
               lineTotalInPaise: true
             }
           },
-          customer: { select: { id: true, email: true, name: true } }
+          customer: { select: { id: true, email: true, name: true } },
+          payments: { orderBy: { createdAt: "desc" }, take: 1, select: { provider: true } }
         }
       })
     ]);
@@ -712,6 +706,7 @@ export async function ordersList(req: Request, res: Response, next: NextFunction
           customerName: o.customer?.name ?? null,
           status: o.status,
           paymentStatus: o.paymentStatus,
+          paymentProvider: o.payments[0]?.provider ?? null,
           grandTotalInPaise: o.grandTotalInPaise,
           currency: o.currency,
           itemCount: o.items.reduce((s, i) => s + i.qtyOrdered, 0),

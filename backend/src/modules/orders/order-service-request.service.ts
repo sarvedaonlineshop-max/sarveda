@@ -268,7 +268,7 @@ export async function submitServiceRequest(opts: {
       throw Object.assign(new Error("Invalid reason for an item"), { statusCode: 400, code: "BAD_REQUEST" });
     }
     const photos = opts.photosByIndex.get(index) ?? [];
-    if (!photos.length) {
+    if (opts.type === "REFUND_AFTER_DELIVERY" && !photos.length) {
       throw Object.assign(new Error(`Add at least one photo for ${row.nameSnapshot}`), {
         statusCode: 400,
         code: "PHOTOS_REQUIRED"

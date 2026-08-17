@@ -16,13 +16,49 @@ const inputCls =
 function ContactFormInner() {
   const search = useSearchParams();
   const presetOrder = search.get("orderNumber")?.trim() ?? "";
+  const presetEmail = search.get("email")?.trim() ?? "";
+  const presetSubjectRaw = search.get("subject")?.trim().toUpperCase() ?? "";
+  const complaint = search.get("complaint")?.trim().toLowerCase() ?? "";
+  const presetSubject: EnquirySubjectValue =
+    presetSubjectRaw === "PAYMENT" ||
+    presetSubjectRaw === "ORDER" ||
+    presetSubjectRaw === "COURSE" ||
+    presetSubjectRaw === "CORPORATE" ||
+    presetSubjectRaw === "OTHER"
+      ? (presetSubjectRaw as EnquirySubjectValue)
+      : complaint
+        ? "PAYMENT"
+        : presetOrder
+          ? "ORDER"
+          : "OTHER";
+
+  const messagePlaceholder =
+    complaint === "debited"
+      ? "Optional — tell us if money left your account, and when."
+      : complaint === "failed"
+        ? "Optional — tell us what you saw when payment failed."
+        : complaint === "exit"
+          ? "Optional — add a note if you need help."
+          : "Tell us how we can help…";
+
+  const defaultComplaintMessage = (): string => {
+    const orderBit = presetOrder ? ` for order ${presetOrder}` : "";
+    if (complaint === "debited") {
+      return `I want to raise a payment complaint${orderBit}. Money may have been deducted, but the order is not showing as paid.`;
+    }
+    if (complaint === "failed") {
+      return `I want to raise a payment complaint${orderBit}. Payment failed.`;
+    }
+    if (complaint === "exit") {
+      return `I want to raise a payment complaint${orderBit}.`;
+    }
+    return "";
+  };
 
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(presetEmail);
   const [phone, setPhone] = useState("");
-  const [subjectCategory, setSubjectCategory] = useState<EnquirySubjectValue>(
-    presetOrder ? "ORDER" : "OTHER"
-  );
+  const [subjectCategory, setSubjectCategory] = useState<EnquirySubjectValue>(presetSubject);
   const [orderNumber, setOrderNumber] = useState(presetOrder);
   const [message, setMessage] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -33,8 +69,9 @@ function ContactFormInner() {
 
   useEffect(() => {
     setOrderNumber(presetOrder);
-    if (presetOrder) setSubjectCategory("ORDER");
-  }, [presetOrder]);
+    setSubjectCategory(presetSubject);
+    if (presetEmail) setEmail((c) => c || presetEmail);
+  }, [presetOrder, presetSubject, presetEmail]);
 
   useEffect(() => {
     void fetchMe().then((user) => {
@@ -56,7 +93,7 @@ function ContactFormInner() {
         name: name.trim(),
         email: email.trim(),
         phone: phone.trim() || undefined,
-        message: message.trim(),
+        message: message.trim() || defaultComplaintMessage() || "I need help with my order.",
         orderNumber:
           subjectCategory === "ORDER" ? orderNumber.trim() || undefined : orderNumber.trim() || undefined,
         attachments: files
@@ -100,7 +137,8 @@ function ContactFormInner() {
     <form onSubmit={(event) => void onSubmit(event)} className="space-y-4">
       {presetOrder ? (
         <p className="rounded-xl border border-brand-gold-pale/60 bg-brand-cream px-4 py-3 text-sm text-brand-ink">
-          Order reference: <span className="font-mono font-medium">{presetOrder}</span>
+          {complaint ? "Payment complaint for order " : "Order reference: "}
+          <span className="font-mono font-medium">{presetOrder}</span>
         </p>
       ) : null}
 
@@ -182,15 +220,15 @@ function ContactFormInner() {
 
       <div>
         <label htmlFor="contact-message" className="mb-2 block text-sm font-medium text-brand-ink">
-          Message
+          Message {complaint ? "(optional)" : ""}
         </label>
         <textarea
           id="contact-message"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          required
+          required={!complaint}
           rows={4}
-          placeholder="Tell us how we can help…"
+          placeholder={messagePlaceholder}
           className="w-full resize-y rounded-xl border border-brand-cream-dark bg-brand-ivory px-4 py-3 text-sm text-brand-ink focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/25"
         />
       </div>

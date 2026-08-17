@@ -64,9 +64,9 @@ export default function ReturnOrderRequestPage() {
   }, [orderNumber, router]);
 
   return (
-    <div className="min-h-[60vh] bg-brand-cream md:py-10">
-      <MobileSubpageHeader title="Return or replace" backHref="/profile" />
-      <div className="mx-auto max-w-xl px-4 py-4 md:rounded-3xl md:border md:border-brand-cream-dark md:bg-white md:p-8">
+    <div className="min-h-[60vh] bg-brand-cream md:py-8">
+      <MobileSubpageHeader title="Return or replace" backHref="/profile" backLabel="Back to orders" />
+      <div className="mx-auto w-[92%] max-w-[1100px] py-4">
         {blocked ? (
           <div className="rounded-2xl border border-brand-cream-dark bg-white p-6 text-center shadow-card">
             <p className="text-sm text-brand-muted">{blocked}</p>

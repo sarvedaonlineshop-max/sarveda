@@ -18,8 +18,13 @@ function PayPalReturnInner() {
 
   useEffect(() => {
     if (!token) {
-      setStatus("err");
-      setMessage("Missing PayPal session. Please try checkout again.");
+      const email = search.get("email")?.trim() || loadPendingCheckout()?.email || "";
+      const q = new URLSearchParams({
+        orderNumber,
+        email,
+        outcome: "dismiss"
+      });
+      router.replace(`/payment-failed?${q.toString()}`);
       return;
     }
     void (async () => {
@@ -48,8 +53,17 @@ function PayPalReturnInner() {
         });
         router.replace(`/order/confirmed?${q.toString()}`);
       } catch (e) {
-        setStatus("err");
-        setMessage(e instanceof Error ? e.message : "Payment could not be completed.");
+        const pending = loadPendingCheckout();
+        const email =
+          search.get("email")?.trim() ||
+          pending?.email ||
+          "";
+        const q = new URLSearchParams({
+          orderNumber: orderNumber || pending?.orderNumber || "",
+          email,
+          outcome: "pending"
+        });
+        router.replace(`/payment-failed?${q.toString()}`);
       }
     })();
   }, [orderNumber, router, search, token]);

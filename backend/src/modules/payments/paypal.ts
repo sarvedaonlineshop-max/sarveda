@@ -73,7 +73,11 @@ export async function createPayPalOrder(input: {
         brand_name: "Sarveda",
         user_action: "PAY_NOW",
         return_url: `${siteUrl()}/checkout/paypal-return?orderNumber=${encodeURIComponent(input.orderNumber)}&email=${encodeURIComponent(input.email)}`,
-        cancel_url: `${siteUrl()}/checkout?orderNumber=${encodeURIComponent(input.orderNumber)}&email=${encodeURIComponent(input.email)}`
+        cancel_url: `${siteUrl()}/payment-failed?${new URLSearchParams({
+          orderNumber: input.orderNumber,
+          email: input.email,
+          outcome: "dismiss"
+        }).toString()}`
       }
     })
   });

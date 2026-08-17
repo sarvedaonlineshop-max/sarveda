@@ -60,7 +60,11 @@ export async function createStripeCheckoutSession(input: {
     customer: customer.id,
     billing_address_collection: "auto",
     success_url: `${siteUrl()}/order/confirmed?orderNumber=${encodeURIComponent(input.orderNumber)}&email=${encodeURIComponent(email)}&stripe=1`,
-    cancel_url: `${siteUrl()}/checkout?orderNumber=${encodeURIComponent(input.orderNumber)}&email=${encodeURIComponent(email)}`,
+    cancel_url: `${siteUrl()}/payment-failed?${new URLSearchParams({
+      orderNumber: input.orderNumber,
+      email,
+      outcome: "dismiss"
+    }).toString()}`,
     client_reference_id: input.orderId,
     metadata: {
       sarveda_payment_id: input.paymentId,

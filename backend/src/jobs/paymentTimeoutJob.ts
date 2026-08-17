@@ -2,7 +2,6 @@ import { Queue, Worker, type Job } from "bullmq";
 
 import { getRedisConnection } from "../config/redisConnection";
 import { logger } from "../config/logger";
-import { notifyOrderEmail } from "../modules/notifications/email";
 import { prisma } from "../config/db";
 import { cancelUnpaidOrderWithRelease } from "../modules/orders/orders.service";
 
@@ -56,7 +55,7 @@ async function processTimeout(job: Job<{ orderId: string }>): Promise<void> {
     { source: "payment_timeout_job" }
   );
   if (changed) {
-    notifyOrderEmail(orderId, "payment_failed");
+    // Do not email the customer — this is an abandoned checkout, not a cancelled shop order.
     logger.info("payment_timeout_cancelled_order", { orderId });
   }
 }

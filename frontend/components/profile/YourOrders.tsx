@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { OrderHistoryCard, orderIsPaid } from "@/components/orders/OrderHistoryCard";
+import { isAbandonedCheckoutAttempt } from "@/lib/order-status-display";
 import { fetchMyOrders, type OrderSummary } from "@/lib/orders-api";
 
 type Props = {
@@ -13,8 +14,18 @@ type Props = {
 
 type OrderFilter = "all" | "paid" | "cancelled" | "refunded";
 
+function isCustomerVisibleOrder(order: OrderSummary): boolean {
+  return !isAbandonedCheckoutAttempt(
+    order.status,
+    order.paymentStatus,
+    order.paymentProvider,
+    order.isCod
+  );
+}
+
 /** Bucket an order using existing statuses only. Paid covers online + COD. */
 function classifyOrder(order: OrderSummary): "paid" | "cancelled" | "refunded" | "other" {
+  if (!isCustomerVisibleOrder(order)) return "other";
   if (order.status === "REFUNDED") return "refunded";
   if (order.status === "CANCELLED") return "cancelled";
   if (orderIsPaid(order)) return "paid";
@@ -39,9 +50,10 @@ export function YourOrders({ accountEmail, onCount }: Props) {
     void fetchMyOrders()
       .then((rows) => {
         if (!cancelled) {
-          setOrders(rows);
+          const visible = rows.filter(isCustomerVisibleOrder);
+          setOrders(visible);
           setLoading(false);
-          onCount?.(rows.length);
+          onCount?.(visible.length);
         }
       })
       .catch((err) => {

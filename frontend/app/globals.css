@@ -370,6 +370,64 @@ select:-webkit-autofill {
   animation: sv-pay-spin 0.85s linear infinite;
 }
 
+@keyframes sv-fail-draw-x {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes sv-fail-shake {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(-8deg); }
+  40% { transform: rotate(7deg); }
+  60% { transform: rotate(-5deg); }
+  80% { transform: rotate(3deg); }
+}
+@keyframes sv-fail-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+@keyframes sv-fail-ring {
+  0% { transform: scale(0.7); opacity: 0.5; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+@keyframes sv-fail-spark {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0.3); opacity: 0; }
+}
+.sv-fail-mark {
+  animation: sv-success-pop 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.sv-fail-shake {
+  animation:
+    sv-success-pop 0.55s cubic-bezier(0.22, 1, 0.36, 1) both,
+    sv-fail-shake 0.45s ease-in-out 0.7s 2;
+}
+.sv-fail-pulse {
+  animation:
+    sv-success-pop 0.65s cubic-bezier(0.22, 1, 0.36, 1) both,
+    sv-fail-pulse 1.6s ease-in-out 0.8s infinite;
+}
+.sv-fail-circle {
+  stroke-dasharray: 63;
+  stroke-dashoffset: 63;
+  animation: sv-success-draw-circle 0.5s ease-out 0.06s forwards;
+}
+.sv-fail-x-a,
+.sv-fail-x-b {
+  stroke-dasharray: 14;
+  stroke-dashoffset: 14;
+}
+.sv-fail-x-a {
+  animation: sv-fail-draw-x 0.28s ease-out 0.38s forwards;
+}
+.sv-fail-x-b {
+  animation: sv-fail-draw-x 0.28s ease-out 0.52s forwards;
+}
+.sv-fail-ring {
+  animation: sv-fail-ring 0.95s ease-out 0.12s both;
+}
+.sv-fail-spark {
+  animation: sv-fail-spark 0.9s ease-out 0.18s both;
+}
+
 /* ─── Reduced Motion ────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   html:focus-within { scroll-behavior: auto; }

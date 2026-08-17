@@ -13,7 +13,6 @@ const buckets = [
   { value: "all", label: "All" },
   { value: "pending", label: "Pending (48h)" },
   { value: "abandoned", label: "Abandoned" },
-  { value: "attempted", label: "Attempted" },
   { value: "cancelled", label: "Cancelled" },
   { value: "refunded", label: "Refunded" },
   { value: "paid", label: "Paid" },
@@ -21,14 +20,22 @@ const buckets = [
   { value: "delivered", label: "Delivered" }
 ] as const;
 
-function StatusBadge({ status, paymentStatus }: { status: string; paymentStatus: string }) {
-  const label = formatAdminOrderStatusLabel(status, paymentStatus);
+function StatusBadge({
+  status,
+  paymentStatus,
+  paymentProvider
+}: {
+  status: string;
+  paymentStatus: string;
+  paymentProvider?: string | null;
+}) {
+  const label = formatAdminOrderStatusLabel(status, paymentStatus, paymentProvider);
   const s = label.toUpperCase().replace(/\s/g, "");
   let bg = "#f3f4f6", color = "#374151";
   if (s.includes("PAID") || s.includes("PROCESSING")) { bg = "#dcfce7"; color = "#166534"; }
   else if (s.includes("SHIPPED")) { bg = "#dbeafe"; color = "#1e40af"; }
   else if (s.includes("DELIVERED")) { bg = "#f0fdf4"; color = "#15803d"; }
-  else if (s === "ATTEMPTED") { bg = "#fef3c7"; color = "#92400e"; }
+  else if (s === "ABANDONED" || s === "ATTEMPTED") { bg = "#fef3c7"; color = "#92400e"; }
   else if (s.includes("CANCEL")) { bg = "#fee2e2"; color = "#991b1b"; }
   else if (s.includes("REFUND")) { bg = "#fef3c7"; color = "#92400e"; }
   else if (s.includes("PENDING")) { bg = "#f3f4f6"; color = "#374151"; }
@@ -78,7 +85,7 @@ export default function AdminOrdersPage() {
           <div>
             <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec", margin: 0 }}>🛒 Orders</h1>
             <p style={{ fontSize: "12px", color: "#a8c4b0", marginTop: "6px", marginBottom: 0 }}>
-              Attempted = payment never completed · Cancelled = paid/COD order cancelled · Abandoned = unpaid over 48h
+              Abandoned = payment never completed · Cancelled = paid or COD order cancelled · Pending = unpaid in last 48h
             </p>
           </div>
           <div
@@ -260,7 +267,11 @@ export default function AdminOrdersPage() {
                       {formatMinorFromPaise(o.grandTotalInPaise, o.currency)}
                     </td>
                     <td style={tdSt}>
-                      <StatusBadge status={o.status} paymentStatus={o.paymentStatus} />
+                      <StatusBadge
+                        status={o.status}
+                        paymentStatus={o.paymentStatus}
+                        paymentProvider={o.paymentProvider}
+                      />
                     </td>
                     <td style={{ ...tdSt, fontSize: "12px", color: "var(--admin-text-muted, #8a7060)", whiteSpace: "nowrap" }}>
                       {new Date(o.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}

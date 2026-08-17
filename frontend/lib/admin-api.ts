@@ -433,6 +433,7 @@ export type OrdersListData = {
     customerName: string | null;
     status: string;
     paymentStatus: string;
+    paymentProvider?: string | null;
     grandTotalInPaise: number;
     currency: string;
     itemCount: number;
@@ -1031,12 +1032,26 @@ export async function uploadAdminMedia(body: {
   );
 }
 
+export type CatalogGapRow = {
+  productId: string;
+  productName: string;
+  productSlug: string;
+  variantId: string;
+  sku: string;
+  issue: string;
+  zone?: string;
+};
+
 export type CatalogGapsReport = {
   summary: {
     activeProducts: number;
     activeVariants: number;
     pricingGapCount: number;
     shippingGapCount: number;
+    imageGapCount: number;
+    videoGapCount: number;
+    pairWithGapCount: number;
+    copyGapCount: number;
     productsWithoutImage: number;
     payment: {
       razorpay: boolean;
@@ -1045,24 +1060,12 @@ export type CatalogGapsReport = {
       paypal: boolean;
     };
   };
-  pricingGaps: Array<{
-    productId: string;
-    productName: string;
-    productSlug: string;
-    variantId: string;
-    sku: string;
-    issue: string;
-    zone?: string;
-  }>;
-  shippingGaps: Array<{
-    productId: string;
-    productName: string;
-    productSlug: string;
-    variantId: string;
-    sku: string;
-    issue: string;
-    zone?: string;
-  }>;
+  pricingGaps: CatalogGapRow[];
+  shippingGaps: CatalogGapRow[];
+  imageGaps: CatalogGapRow[];
+  videoGaps: CatalogGapRow[];
+  pairWithGaps: CatalogGapRow[];
+  copyGaps: CatalogGapRow[];
   productsWithoutPrimaryImage: Array<{ productId: string; name: string; slug: string }>;
 };
 

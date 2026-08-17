@@ -1340,8 +1340,8 @@ export default function AdminOrderDetailPage() {
               order.payments?.[0]?.provider
             ) ? (
               <p className="mt-1 text-xs text-amber-800 dark:text-amber-200/90">
-                Payment was not completed (checkout abandoned, gateway exit, or replaced by a newer order). System
-                status remains <span className="font-mono">CANCELLED</span> for stock and reporting.
+                Abandoned checkout — the customer never completed payment. Hidden from My Orders. Stock was released.
+                Database status stays CANCELLED so inventory and reporting stay consistent.
               </p>
             ) : null}
           </div>
@@ -1359,7 +1359,16 @@ export default function AdminOrderDetailPage() {
               >
                 {ORDER_STATUSES.map((s) => (
                   <option key={s} value={s}>
-                    {s === "CANCELLED" ? "Cancelled" : s.replace(/_/g, " ")}
+                    {s === "CANCELLED" &&
+                    isUnpaidCheckoutAttempt(
+                      order.status,
+                      order.paymentStatus,
+                      order.payments?.[0]?.provider
+                    )
+                      ? "Abandoned"
+                      : s === "CANCELLED"
+                        ? "Cancelled"
+                        : s.replace(/_/g, " ")}
                   </option>
                 ))}
               </select>

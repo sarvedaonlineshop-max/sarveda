@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 
 import { clearCartAfterPayment } from "@/lib/clear-cart-after-payment";
@@ -59,10 +59,12 @@ async function downloadInvoicePdf(orderNumber: string, email: string) {
 }
 
 function ConfirmedInner() {
+  const router = useRouter();
   const search = useSearchParams();
   const orderNumber = search.get("orderNumber") ?? "";
   const email = search.get("email") ?? "";
   const codFromUrl = search.get("cod") === "1";
+  const stripeReturn = search.get("stripe") === "1";
   const [order, setOrder] = useState<OrderPublic | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [cartCleared, setCartCleared] = useState(false);
@@ -85,6 +87,15 @@ function ConfirmedInner() {
           await clearCartAfterPayment();
         }
         const paid = o.paymentStatus === "CAPTURED" || o.status === "PAID" || o.isCod;
+        if (
+          stripeReturn &&
+          !paid &&
+          o.status !== "CANCELLED"
+        ) {
+          const q = new URLSearchParams({ orderNumber, email, outcome: "pending" });
+          router.replace(`/payment-failed?${q.toString()}`);
+          return;
+        }
         if (paid && !purchaseTracked.current) {
           purchaseTracked.current = true;
           trackPurchase({
@@ -103,7 +114,7 @@ function ConfirmedInner() {
         setErr(e instanceof Error ? e.message : "Could not load order");
       }
     })();
-  }, [orderNumber, email, cartCleared]);
+  }, [orderNumber, email, cartCleared, stripeReturn, router]);
 
   if (!orderNumber || !email) {
     return (
@@ -157,7 +168,7 @@ function ConfirmedInner() {
         <div className="relative mt-6 overflow-hidden rounded-3xl border border-brand-gold/25 bg-gradient-to-br from-[#1c352a] via-[#2d5040] to-[#48705a] p-8 text-center shadow-lg">
           <span className="pointer-events-none absolute -left-10 top-6 h-32 w-32 rounded-full bg-brand-gold/20 blur-2xl" aria-hidden />
           <span className="pointer-events-none absolute -right-8 bottom-4 h-28 w-28 rounded-full bg-brand-gold-pale/25 blur-2xl" aria-hidden />
-          <PaymentSuccessMark />
+          <PaymentSuccessMark playSound soundKey={order.orderNumber} />
           <h1 className="mt-5 font-serif text-3xl font-semibold text-white sm:text-4xl">Thank you for your order</h1>
           <p className="mt-2 text-sm text-brand-gold-pale">
             {statusTitle(order, codFromUrl)} · Placed {formatPlacedDate(order.placedAt ?? order.createdAt)}

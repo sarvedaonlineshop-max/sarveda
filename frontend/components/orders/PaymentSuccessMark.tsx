@@ -1,5 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
+
+import { playPaymentSuccessChime } from "@/lib/payment-success-chime";
+
 const CONFETTI = [
   { dx: "-42px", dy: "-38px", color: "#b98a3e", delay: "0ms" },
   { dx: "46px", dy: "-34px", color: "#48705a", delay: "40ms" },
@@ -10,7 +14,26 @@ const CONFETTI = [
   { dx: "52px", dy: "6px", color: "#b4552d", delay: "30ms" }
 ] as const;
 
-export function PaymentSuccessMark({ className = "" }: { className?: string }) {
+export function PaymentSuccessMark({
+  className = "",
+  playSound = false,
+  soundKey
+}: {
+  className?: string;
+  playSound?: boolean;
+  /** Play the chime once per browser session for this key (usually the order number). */
+  soundKey?: string;
+}) {
+  useEffect(() => {
+    if (!playSound) return;
+    const lock = soundKey ? `sarveda_pay_chime:${soundKey}` : "";
+    if (lock && sessionStorage.getItem(lock)) return;
+    const t = window.setTimeout(() => {
+      playPaymentSuccessChime();
+      if (lock) sessionStorage.setItem(lock, "1");
+    }, 40);
+    return () => window.clearTimeout(t);
+  }, [playSound, soundKey]);
   return (
     <span className={`relative mx-auto inline-flex h-24 w-24 items-center justify-center ${className}`}>
       <span className="sv-success-ring absolute inset-0 rounded-full bg-brand-gold/25" aria-hidden />

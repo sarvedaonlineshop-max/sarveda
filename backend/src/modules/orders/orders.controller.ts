@@ -24,6 +24,7 @@ import {
   resolveDeliveredAt,
   returnWindowEnd
 } from "./order-service-request.service";
+import { unpaidCheckoutAttemptWhere } from "./abandoned-checkout";
 import { buildCancellationInfo } from "./order-cancellation-info";
 
 function serializePublicOrderView(order: {
@@ -289,7 +290,10 @@ export async function listMine(req: Request, res: Response, next: NextFunction) 
     const orders = await prisma.order.findMany({
       where: {
         deletedAt: null,
-        OR: [{ customerId: user.id }, { email }]
+        AND: [
+          { OR: [{ customerId: user.id }, { email }] },
+          { NOT: unpaidCheckoutAttemptWhere }
+        ]
       },
       orderBy: { createdAt: "desc" },
       take: 50,

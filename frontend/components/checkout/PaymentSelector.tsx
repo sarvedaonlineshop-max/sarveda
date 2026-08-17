@@ -126,7 +126,7 @@ export function PaymentSelector({
   const [shippingBreakdown, setShippingBreakdown] = useState<ShippingBreakdown | null>(null);
   const [shippingLoading, setShippingLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const payStarted = useRef(false);
+  const payFailedAtGateway = useRef(false);
   const checkoutTracked = useRef(false);
   const isIndia = (form.country ?? "IN").toUpperCase() === "IN";
   const checkoutIdempotencyKey = useMemo(
@@ -144,6 +144,7 @@ export function PaymentSelector({
 
   useEffect(() => {
     payStarted.current = false;
+    payFailedAtGateway.current = false;
     setErr(null);
   }, [paymentMode]);
 
@@ -223,14 +224,14 @@ export function PaymentSelector({
   );
 
   const goFailure = useCallback(
-    (orderNumber: string, reason: string) => {
+    (orderNumber: string, outcome: "dismiss" | "failed" | "pending") => {
       payStarted.current = false;
       setBusy(false);
       setProcessing(false);
       const q = new URLSearchParams({
         orderNumber,
         email: form.email.trim().toLowerCase(),
-        reason
+        outcome
       });
       router.push(`/payment-failed?${q.toString()}`);
     },
@@ -280,12 +281,10 @@ export function PaymentSelector({
               if (polled === "PAID") {
                 goSuccess(order.orderNumber, false);
               } else if (polled === "CANCELLED") {
-                goFailure(order.orderNumber, "Payment was not completed");
+                goFailure(order.orderNumber, "failed");
               } else {
                 payStarted.current = false;
-                setErr(
-                  "We could not confirm payment immediately. Your cart is unchanged. If money was debited, your order will update within a few minutes."
-                );
+                goFailure(order.orderNumber, "pending");
               }
             }
           } catch (e) {
@@ -302,7 +301,8 @@ export function PaymentSelector({
             setBusy(false);
             setProcessing(false);
             payStarted.current = false;
-            goFailure(order.orderNumber, "Payment was cancelled. Your cart is still saved.");
+            goFailure(order.orderNumber, payFailedAtGateway.current ? "failed" : "dismiss");
+            payFailedAtGateway.current = false;
           }
         }
       });
@@ -311,6 +311,7 @@ export function PaymentSelector({
         on?: (ev: string, fn: (failure?: { error?: { description?: string; code?: string } }) => void) => void;
       };
       rzpAny.on?.("payment.failed", (failure) => {
+        payFailedAtGateway.current = true;
         setErr(mapRazorpayClientError(failure));
         setProcessing(false);
         setBusy(false);
