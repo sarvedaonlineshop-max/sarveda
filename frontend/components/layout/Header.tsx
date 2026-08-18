@@ -407,7 +407,7 @@ export function Header() {
                         e.preventDefault();
                         goNav("/profile");
                       }}
-                      className={`${headerIconBtn} bg-gradient-to-br from-[#155e4d] to-[#0d3d32]`}
+                      className={`${headerIconBtn} bg-gradient-to-br from-[#22c55e] to-[#16a34a]`}
                       aria-label={displayName ? `Account, ${displayName}` : "Profile"}
                       title={displayName ? `Hello, ${displayName}` : "Profile"}
                     >

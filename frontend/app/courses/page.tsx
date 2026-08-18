@@ -23,20 +23,20 @@ export default async function CoursesPage() {
 
       {/* Hero banner */}
       <section style={{
-        background: "linear-gradient(160deg, var(--brand-forest) 0%, var(--brand-night) 100%)",
+        background: "linear-gradient(160deg, #157a4a 0%, #0f5c38 100%)",
         borderBottom: "3px solid var(--brand-gold)"
       }}>
-        <div className="page-shell-classic py-16 lg:py-20">
-          <p style={{ color: "var(--brand-gold-pale)", fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", marginBottom: "14px" }}>
+        <div className="page-shell-classic py-8 lg:py-10">
+          <p className="sv-listing-hero-fade" style={{ color: "var(--brand-gold-pale)", fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", marginBottom: "10px" }}>
             Sarveda Learning
           </p>
-          <h1 className="font-serif" style={{ color: "#fffbf5", fontSize: "clamp(2rem, 5vw, 3.5rem)", fontWeight: 700, lineHeight: 1.1 }}>
+          <h1 className="font-serif sv-listing-hero-fade" style={{ color: "#fffbf5", fontSize: "clamp(1.75rem, 4vw, 2.75rem)", fontWeight: 700, lineHeight: 1.1 }}>
             Courses &amp; Programmes
           </h1>
-          <p style={{ color: "rgba(253,246,237,0.72)", fontSize: "1.05rem", lineHeight: 1.75, marginTop: "16px", maxWidth: "540px" }}>
+          <p className="sv-listing-hero-fade-late" style={{ color: "rgba(253,246,237,0.78)", fontSize: "1rem", lineHeight: 1.65, marginTop: "10px", maxWidth: "540px" }}>
             Deepen your practice through guided immersions in sound therapy, yoga, and mindful living — online and in person.
           </p>
-          <div style={{ marginTop: "20px", height: "2px", width: "48px", background: "var(--brand-gold)" }} />
+          <div className="sv-listing-hero-fade-late" style={{ marginTop: "14px", height: "2px", width: "48px", background: "var(--brand-gold)" }} />
         </div>
       </section>
 

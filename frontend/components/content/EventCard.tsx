@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 
 import type { EventListItem } from "@/lib/event-types";
 import { eventTypeLabel } from "@/lib/content-meta";
@@ -10,11 +13,36 @@ type Props = {
 
 export function EventCard({ event }: Props) {
   const typeLabel = eventTypeLabel(event);
+  const ref = useRef<HTMLAnchorElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          el.style.opacity = "1";
+          el.style.transform = "translateY(0)";
+          obs.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   return (
     <Link
+      ref={ref}
       href={`/event/${event.slug}`}
       className="group flex h-full flex-col overflow-hidden rounded-xl shadow-card transition-shadow duration-300 hover:shadow-card-hover"
+      style={{
+        opacity: 0,
+        transform: "translateY(24px)",
+        transition:
+          "opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s ease"
+      }}
     >
       <div className="bg-[#EDE4D3]">
         {event.imageUrl ? (

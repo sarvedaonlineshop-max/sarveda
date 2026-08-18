@@ -9,7 +9,7 @@ export const ENQUIRY_SUBJECT_OPTIONS = [
 export type EnquirySubjectValue = (typeof ENQUIRY_SUBJECT_OPTIONS)[number]["value"];
 
 /** Default “What is this about?” when the URL does not set a topic. */
-export const DEFAULT_ENQUIRY_SUBJECT: EnquirySubjectValue = "ORDER";
+export const DEFAULT_ENQUIRY_SUBJECT: EnquirySubjectValue | "" = "";
 
 export type EnquirySource =
   | "CONTACT"

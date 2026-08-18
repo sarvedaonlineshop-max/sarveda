@@ -37,8 +37,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <div className={pdpCartRail ? cartSidebarContentPadClass : ""}>
       <Header />
       <main
-        className={`bg-brand-cream pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] ${
-          useSlimFooter ? "md:pb-[var(--storefront-slim-footer-offset)]" : "md:pb-0"
+        className={`bg-brand-cream ${
+          isHomePage
+            ? "pb-0"
+            : `pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] ${
+                useSlimFooter ? "md:pb-[var(--storefront-slim-footer-offset)]" : "md:pb-0"
+              }`
         }`}
       >
         <PageTransition>{children}</PageTransition>

@@ -160,10 +160,10 @@ export function HomeNewsletter() {
   return (
     <section
       id="newsletter"
-      className="scroll-mt-24 overflow-hidden bg-[#f9f6f1]"
+      className="scroll-mt-24 overflow-hidden bg-[#f9f6f1] pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0"
       aria-labelledby="home-newsletter-heading"
     >
-      <div className="grid w-full items-center lg:grid-cols-2">
+      <div className="grid w-full items-stretch lg:grid-cols-2">
         <div className="min-w-0 px-[5%] py-14 md:px-[10%] md:py-16 lg:mx-auto lg:w-full lg:max-w-[720px] lg:py-20 lg:pl-[10%] lg:pr-8 xl:pr-12">
           <h2
             id="home-newsletter-heading"
@@ -240,7 +240,7 @@ export function HomeNewsletter() {
         </div>
 
         {/* Full-bleed to the right edge — avoids dark photo edge reading as a black line. */}
-        <div className="relative mt-2 min-h-[240px] sm:min-h-[300px] lg:mt-0 lg:min-h-[420px]">
+        <div className="relative min-h-[240px] sm:min-h-[300px] lg:min-h-full lg:self-stretch">
           <Image
             src="/images/home/newsletter-lifestyle.jpg"
             alt="Sarveda notebook, singing bowl and pen arranged for mindful journaling"

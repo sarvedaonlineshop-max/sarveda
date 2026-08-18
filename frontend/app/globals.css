@@ -306,6 +306,14 @@ select:-webkit-autofill {
   to   { opacity:1; }
 }
 
+.sv-listing-hero-fade {
+  animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sv-listing-hero-fade-late {
+  animation: fadeUp 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+}
+
 @keyframes marquee {
   0%   { transform:translateX(0%);   }
   100% { transform:translateX(-50%); }
@@ -544,6 +552,12 @@ select:-webkit-autofill {
   }
   .shop-card-reveal,
   .shop-card-reveal.is-visible {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .sv-listing-hero-fade,
+  .sv-listing-hero-fade-late {
+    animation: none !important;
     opacity: 1 !important;
     transform: none !important;
   }
