@@ -35,9 +35,9 @@ export function HomeHero() {
           aria-hidden
         />
 
-        {/* Original Sarveda spiral watermark (gold, transparent PNG) */}
+        {/* Spiral watermark — desktop only; on mobile it reads as a blurred box behind the copy */}
         <div
-          className="pointer-events-none absolute inset-y-[4%] left-[-2%] z-[1] w-[min(48%,16rem)] opacity-55 sm:left-0 sm:w-[min(40%,22rem)] sm:opacity-65 md:w-[min(32%,28rem)] md:opacity-80 lg:w-[min(30%,32rem)] xl:w-[min(28%,36rem)]"
+          className="pointer-events-none absolute inset-y-[4%] left-0 z-[1] hidden w-[min(32%,28rem)] opacity-80 md:block lg:w-[min(30%,32rem)] xl:w-[min(28%,36rem)]"
           aria-hidden
         >
           <Image
