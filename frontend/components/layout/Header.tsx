@@ -363,7 +363,13 @@ export function Header() {
       <div ref={chromeRef} className={`fixed inset-x-0 top-0 z-50 ${chromeVisibility}`}>
         {hideMarquee ? null : <AnnouncementBar hidden={marqueeHidden} />}
 
-        <header className="overflow-visible border-b border-brand-forest/10 bg-white shadow-[0_4px_16px_rgba(16,32,26,0.05)]">
+        <header
+          className={`overflow-visible bg-white ${
+            isHomePage
+              ? "border-b-0 shadow-none md:border-b md:border-brand-forest/10 md:shadow-[0_4px_16px_rgba(16,32,26,0.05)]"
+              : "border-b border-brand-forest/10 shadow-[0_4px_16px_rgba(16,32,26,0.05)]"
+          }`}
+        >
           {/* Logo + nav + track / search toggle / auth / cart */}
           <div className="overflow-visible bg-white">
             <div className="page-shell flex items-center gap-2 overflow-visible py-3.5 sm:gap-3 sm:py-4 md:py-5">
@@ -525,7 +531,7 @@ export function Header() {
                   <button
                     type="button"
                     onClick={openShopMenu}
-                    className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-brand-forest px-3 text-sm font-semibold text-brand-cream shadow-[0_4px_12px_rgba(16,32,26,0.18)] ring-1 ring-black/5 transition-colors hover:bg-brand-night sm:h-10 sm:px-3.5"
+                    className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-[#019875] px-3 text-sm font-semibold text-white shadow-sm ring-1 ring-black/5 transition-colors hover:bg-[#01856a] sm:h-10 sm:px-3.5"
                     aria-label="Open store categories"
                   >
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>

@@ -8,7 +8,7 @@ import Image from "next/image";
 export function HomeHero() {
   return (
     <section
-      className="relative isolate overflow-hidden bg-[#ebe4d6]"
+      className="relative isolate -mt-[8px] overflow-hidden bg-[#ebe4d6] md:mt-0"
       aria-label="Your partner on the journey within"
     >
       <div
@@ -29,7 +29,7 @@ export function HomeHero() {
           className={[
             "object-cover",
             /* Mobile: tighter crop / more zoom; face clear above copy */
-            "scale-[1.18] object-[74%_18%] sm:scale-[1.12] sm:object-[72%_20%]",
+            "scale-[1.22] object-[74%_12%] sm:scale-[1.12] sm:object-[72%_16%]",
             "md:scale-100 md:object-center"
           ].join(" ")}
           aria-hidden
@@ -62,7 +62,7 @@ export function HomeHero() {
               "md:static md:top-auto md:max-w-[min(36rem,46vw)] lg:max-w-[min(44rem,42vw)]"
             ].join(" ")}
           >
-            <div className="rounded-2xl bg-[#f7f1e6]/82 px-3.5 py-3 shadow-[0_8px_28px_rgba(26,46,38,0.08)] backdrop-blur-[2px] sm:px-4 sm:py-3.5 md:rounded-none md:bg-transparent md:px-0 md:py-0 md:shadow-none md:backdrop-blur-none">
+            <div className="rounded-2xl bg-[#f7f1e6]/92 px-3.5 py-3 shadow-[0_8px_28px_rgba(26,46,38,0.08)] sm:px-4 sm:py-3.5 md:rounded-none md:bg-transparent md:px-0 md:py-0 md:shadow-none">
               <h1
                 className="font-serif font-semibold leading-[1.12] tracking-tight text-[#1a2e26]"
                 style={{

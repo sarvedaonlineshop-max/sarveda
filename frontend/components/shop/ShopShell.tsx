@@ -87,6 +87,10 @@ export function ShopShell({ categories, children }: Props) {
     () => navigate(categorySlug, currentQuery({ tag: "" })),
     [navigate, categorySlug, currentQuery]
   );
+  const clearPrice = useCallback(
+    () => navigate(categorySlug, currentQuery({ minPrice: SHOP_PRICE_MIN, maxPrice: SHOP_PRICE_MAX })),
+    [navigate, categorySlug, currentQuery]
+  );
 
   const activeCategoryName = useMemo(() => {
     if (!categorySlug) return null;
@@ -134,6 +138,7 @@ export function ShopShell({ categories, children }: Props) {
                 onClearCategory={clearCategory}
                 onClearSearch={clearSearch}
                 onClearTag={clearTag}
+                onClearPrice={clearPrice}
               />
 
               <div

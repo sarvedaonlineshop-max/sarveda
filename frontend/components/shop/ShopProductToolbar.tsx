@@ -25,6 +25,7 @@ type Props = {
   onClearCategory: () => void;
   onClearSearch: () => void;
   onClearTag: () => void;
+  onClearPrice: () => void;
 };
 
 export function ShopProductToolbar({
@@ -41,18 +42,26 @@ export function ShopProductToolbar({
   onPriceChange,
   onClearCategory,
   onClearSearch,
-  onClearTag
+  onClearTag,
+  onClearPrice
 }: Props) {
   const { loaded, total } = useShopProductsMeta();
-  const [filterOpen, setFilterOpen] = useState(
-    Boolean(tag) || minPrice > SHOP_PRICE_MIN || maxPrice < SHOP_PRICE_MAX
-  );
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [localTag, setLocalTag] = useState(tag);
+  const [localMin, setLocalMin] = useState(minPrice);
+  const [localMax, setLocalMax] = useState(maxPrice);
+  const [localSearch, setLocalSearch] = useState(searchQ);
 
   useEffect(() => {
-    if (tag || minPrice > SHOP_PRICE_MIN || maxPrice < SHOP_PRICE_MAX) {
-      setFilterOpen(true);
-    }
-  }, [tag, minPrice, maxPrice]);
+    setLocalTag(tag);
+  }, [tag]);
+  useEffect(() => {
+    setLocalMin(minPrice);
+    setLocalMax(maxPrice);
+  }, [minPrice, maxPrice]);
+  useEffect(() => {
+    setLocalSearch(searchQ);
+  }, [searchQ]);
 
   const activeCategoryName = useMemo(() => {
     if (!categorySlug) return null;
@@ -69,7 +78,36 @@ export function ShopProductToolbar({
     return walk(categories) ?? categorySlug;
   }, [categories, categorySlug]);
 
-  const tagLabel = shopMerchFilterLabel(tag);
+  const tagLabel = shopMerchFilterLabel(localTag);
+  const priceActive = localMin > SHOP_PRICE_MIN || localMax < SHOP_PRICE_MAX;
+
+  function applyTag(next: string | undefined) {
+    setLocalTag(next ?? "");
+    setFilterOpen(false);
+    onTagChange(next);
+  }
+
+  function applyPrice(nextMin: number, nextMax: number) {
+    setLocalMin(nextMin);
+    setLocalMax(nextMax);
+    onPriceChange(nextMin, nextMax);
+  }
+
+  function removeTag() {
+    setLocalTag("");
+    onClearTag();
+  }
+
+  function removePrice() {
+    setLocalMin(SHOP_PRICE_MIN);
+    setLocalMax(SHOP_PRICE_MAX);
+    onClearPrice();
+  }
+
+  function removeSearch() {
+    setLocalSearch("");
+    onClearSearch();
+  }
 
   return (
     <>
@@ -84,18 +122,25 @@ export function ShopProductToolbar({
           </div>
 
           <div className="relative px-3 py-1.5 md:px-0 lg:py-0">
-            <div className="flex items-center gap-2">
-              <ShopSearchBar value={searchQ} onSearch={onSearch} />
+            <div className="flex items-center gap-1.5">
+              <ShopSearchBar
+                value={searchQ}
+                onSearch={(term) => {
+                  setLocalSearch(term.trim());
+                  onSearch(term);
+                }}
+              />
               <ShopFilterToggle open={filterOpen} onOpenChange={setFilterOpen} />
             </div>
             <div className="hidden lg:block">
               <ShopFilterPanel
-                tag={tag}
-                minPrice={minPrice}
-                maxPrice={maxPrice}
+                tag={localTag}
+                minPrice={localMin}
+                maxPrice={localMax}
                 open={filterOpen}
-                onTagChange={onTagChange}
-                onPriceChange={onPriceChange}
+                onTagChange={applyTag}
+                onPriceChange={applyPrice}
+                onClose={() => setFilterOpen(false)}
               />
             </div>
 
@@ -114,13 +159,13 @@ export function ShopProductToolbar({
                     <span className="sr-only">Remove category filter</span>
                   </button>
                 ) : null}
-                {searchQ ? (
+                {localSearch ? (
                   <button
                     type="button"
-                    onClick={onClearSearch}
+                    onClick={removeSearch}
                     className="inline-flex items-center gap-1.5 rounded-full border border-brand-forest/25 bg-white px-3 py-1 text-xs font-medium text-brand-forest transition-colors duration-150 hover:bg-brand-forest/5"
                   >
-                    &ldquo;{searchQ}&rdquo;
+                    &ldquo;{localSearch}&rdquo;
                     <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" aria-hidden>
                       <path d="M18 6 6 18M6 6l12 12" />
                     </svg>
@@ -130,7 +175,7 @@ export function ShopProductToolbar({
                 {tagLabel ? (
                   <button
                     type="button"
-                    onClick={onClearTag}
+                    onClick={removeTag}
                     className="inline-flex items-center gap-1.5 rounded-full border border-brand-forest/25 bg-white px-3 py-1 text-xs font-medium text-brand-forest transition-colors duration-150 hover:bg-brand-forest/5"
                   >
                     {tagLabel}
@@ -138,6 +183,19 @@ export function ShopProductToolbar({
                       <path d="M18 6 6 18M6 6l12 12" />
                     </svg>
                     <span className="sr-only">Remove tag filter</span>
+                  </button>
+                ) : null}
+                {priceActive ? (
+                  <button
+                    type="button"
+                    onClick={removePrice}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-brand-forest/25 bg-white px-3 py-1 text-xs font-medium text-brand-forest transition-colors duration-150 hover:bg-brand-forest/5"
+                  >
+                    ₹{localMin}–₹{localMax}
+                    <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" aria-hidden>
+                      <path d="M18 6 6 18M6 6l12 12" />
+                    </svg>
+                    <span className="sr-only">Remove price filter</span>
                   </button>
                 ) : null}
               </div>
@@ -161,12 +219,13 @@ export function ShopProductToolbar({
 
       <div className="px-3 lg:hidden">
         <ShopFilterPanel
-          tag={tag}
-          minPrice={minPrice}
-          maxPrice={maxPrice}
+          tag={localTag}
+          minPrice={localMin}
+          maxPrice={localMax}
           open={filterOpen}
-          onTagChange={onTagChange}
-          onPriceChange={onPriceChange}
+          onTagChange={applyTag}
+          onPriceChange={applyPrice}
+          onClose={() => setFilterOpen(false)}
         />
       </div>
     </>

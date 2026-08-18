@@ -74,40 +74,48 @@ export function ShopSearchBar({ value, onSearch }: Props) {
   }
 
   return (
-    <div ref={wrapRef} className="relative z-20 min-w-0 flex-1">
-      <form onSubmit={submit} role="search" className="relative">
+    <div ref={wrapRef} className="relative z-20 flex min-w-0 flex-1 items-center gap-1.5">
+      <form onSubmit={submit} role="search" className="flex min-w-0 flex-1 items-center gap-1.5">
         <label htmlFor="shop-search" className="sr-only">
           Search products
         </label>
-        <svg
-          className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-muted"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          aria-hidden
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M21 21l-4.35-4.35M16.5 10.5a6 6 0 11-12 0 6 6 0 0112 0z"
+        <div className="relative min-w-0 flex-1">
+          <svg
+            className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-brand-muted"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-4.35-4.35M16.5 10.5a6 6 0 11-12 0 6 6 0 0112 0z"
+            />
+          </svg>
+          <input
+            id="shop-search"
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => {
+              if (suggestions.length > 0) setOpen(true);
+            }}
+            placeholder="Search"
+            autoComplete="off"
+            aria-autocomplete="list"
+            aria-expanded={open}
+            aria-controls="shop-search-suggestions"
+            className="min-h-[40px] w-full rounded-full border border-[#E3D9C8] bg-white py-2 pl-8 pr-3 text-sm text-brand-ink placeholder:text-brand-muted/70 focus:border-[#019875] focus:outline-none focus:ring-2 focus:ring-[#019875]/20"
           />
-        </svg>
-        <input
-          id="shop-search"
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => {
-            if (suggestions.length > 0) setOpen(true);
-          }}
-          placeholder="Search"
-          autoComplete="off"
-          aria-autocomplete="list"
-          aria-expanded={open}
-          aria-controls="shop-search-suggestions"
-          className="min-h-[40px] w-full rounded-full border border-[#E3D9C8] bg-white py-2 pl-10 pr-4 text-sm text-brand-ink placeholder:text-brand-muted/70 focus:border-brand-forest focus:outline-none focus:ring-2 focus:ring-brand-forest/20"
-        />
+        </div>
+        <button
+          type="submit"
+          className="inline-flex h-[40px] shrink-0 items-center rounded-full bg-[#019875] px-3 text-sm font-semibold text-white shadow-sm ring-1 ring-black/5 transition-colors hover:bg-[#01856a]"
+        >
+          Search
+        </button>
       </form>
 
       {open ? (

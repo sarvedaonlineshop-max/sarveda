@@ -11,7 +11,11 @@ type Props = {
   open: boolean;
   onTagChange: (tag: string | undefined) => void;
   onPriceChange: (min: number, max: number) => void;
+  onClose?: () => void;
 };
+
+const SHOP_TEAL_BTN =
+  "inline-flex h-[40px] shrink-0 items-center justify-center gap-1.5 rounded-full bg-[#019875] px-3.5 text-sm font-semibold text-white shadow-sm ring-1 ring-black/5 transition-colors hover:bg-[#01856a]";
 
 export function ShopFilterToggle({
   open,
@@ -24,9 +28,7 @@ export function ShopFilterToggle({
     <button
       type="button"
       onClick={() => onOpenChange(!open)}
-      className={`inline-flex h-[40px] shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold text-brand-cream shadow-sm ring-1 ring-black/5 transition-colors hover:bg-brand-night ${
-        open ? "bg-brand-night" : "bg-brand-forest"
-      }`}
+      className={`${SHOP_TEAL_BTN} ${open ? "bg-[#016f58] hover:bg-[#016f58]" : ""}`}
       aria-expanded={open}
     >
       Filter
@@ -42,7 +44,7 @@ export function ShopFilterToggle({
   );
 }
 
-export function ShopFilterPanel({ tag, minPrice, maxPrice, open, onTagChange, onPriceChange }: Props) {
+export function ShopFilterPanel({ tag, minPrice, maxPrice, open, onTagChange, onPriceChange, onClose }: Props) {
   const [localMin, setLocalMin] = useState(minPrice);
   const [localMax, setLocalMax] = useState(maxPrice);
   const debounceRef = useRef<number | undefined>(undefined);
@@ -88,7 +90,10 @@ export function ShopFilterPanel({ tag, minPrice, maxPrice, open, onTagChange, on
             <li key={chip.slug}>
               <button
                 type="button"
-                onClick={() => onTagChange(active ? undefined : chip.slug)}
+                onClick={() => {
+                  onTagChange(active ? undefined : chip.slug);
+                  onClose?.();
+                }}
                 className="relative rounded-lg py-2 pl-9 pr-4 text-sm font-medium shadow-sm transition-colors md:text-base"
                 style={{
                   border: `1px solid ${chip.border}`,
