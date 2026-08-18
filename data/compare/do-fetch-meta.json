@@ -1,5 +1,0 @@
-{
-  "fetchedAt": "2026-08-13T12:38:54.133055+00:00",
-  "source": "DigitalOcean MySQL via SSH root@134.209.146.175",
-  "script": "data/compare/dump_do_woo.py"
-}

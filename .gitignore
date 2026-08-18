@@ -45,3 +45,55 @@ data/zoho_export_run.log
 data/May-30/*
 !data/May-30/README.md
 frontend/.claude/
+
+# Catalog compare dumps — regenerate from live DO/Lightsail; keep *.md *.py *.ts *.sql in git
+data/compare/**/*.csv
+data/compare/**/*.xlsx
+data/compare/**/*.xls
+data/compare/**/*.json
+data/compare/**/*.tsv
+data/compare/**/*.txt
+data/compare/**/.~lock.*
+data/compare/.~lock.*
+data/media-migration-map.json
+
+# Operator scratch + Python caches (keep on disk, never commit)
+backend/scripts/_tmp-*
+backend/scripts/_peek-*
+backend/scripts/_debug-*
+backend/scripts/__pycache__/
+**/__pycache__/
+*.pyc
+backend/.rtm-pip/
+
+# One-off catalog jobs (local/EC2 disk only)
+backend/scripts/apply-catalog-*.ts
+backend/scripts/apply-confident-*.ts
+backend/scripts/apply-do-*.ts
+backend/scripts/apply-do-*.py
+backend/scripts/apply-ls-*.ts
+backend/scripts/apply-pair-*.ts
+backend/scripts/apply-unique-*.ts
+backend/scripts/audit-image-*.ts
+backend/scripts/audit-wrong-*.ts
+backend/scripts/build-catalog-status-xlsx.py
+backend/scripts/build-lightsail-sku-decision-xlsx.py
+backend/scripts/complete-test-product-checkout.ts
+backend/scripts/delete-ls-inactive-leftover-variants.ts
+backend/scripts/do-introduce-*.py
+backend/scripts/draft-pending-price-variants.ts
+backend/scripts/fetch-do-*.py
+backend/scripts/fix-all-shared-galleries.ts
+backend/scripts/fix-missing-variant-galleries.ts
+backend/scripts/fix-simple-do-galleries.ts
+backend/scripts/fix-swapped-variant-attributes.ts
+backend/scripts/merge-etched-gong-plates-into-plain.ts
+backend/scripts/rebuild-pull-v2-from-sku.py
+backend/scripts/rematch-galleries-from-do-ids.ts
+backend/scripts/strip-foreign-product-images.ts
+backend/scripts/sync-do-copy-accordion.ts
+
+# Next.js incremental cache
+**/tsbuildinfo
+*.tsbuildinfo
+
