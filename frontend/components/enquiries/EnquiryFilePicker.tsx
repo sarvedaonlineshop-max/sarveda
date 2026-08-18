@@ -19,13 +19,14 @@ type Props = {
   onChange: (files: File[]) => void;
   onError?: (message: string | null) => void;
   disabled?: boolean;
+  compact?: boolean;
 };
 
 function isImageFile(file: File): boolean {
   return file.type.startsWith("image/") || /\.(jpe?g|png|gif|webp|heic|heif)$/i.test(file.name);
 }
 
-export function EnquiryFilePicker({ files, onChange, onError, disabled }: Props) {
+export function EnquiryFilePicker({ files, onChange, onError, disabled, compact }: Props) {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [previews, setPreviews] = useState<Record<string, string>>({});
@@ -77,7 +78,11 @@ export function EnquiryFilePicker({ files, onChange, onError, disabled }: Props)
   }
 
   return (
-    <div className="rounded-xl border border-dashed border-stone-300 bg-stone-50/80 p-4">
+    <div
+      className={`rounded-xl border border-dashed border-stone-300 bg-stone-50/80 ${
+        compact ? "p-2" : "p-4"
+      }`}
+    >
       <input
         ref={inputRef}
         id={inputId}
@@ -92,16 +97,18 @@ export function EnquiryFilePicker({ files, onChange, onError, disabled }: Props)
         }}
       />
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className={`flex flex-wrap items-center ${compact ? "gap-2" : "gap-3"}`}>
         <button
           type="button"
           disabled={disabled || files.length >= MAX_ENQUIRY_ATTACHMENTS}
           onClick={() => inputRef.current?.click()}
-          className="inline-flex min-h-[40px] items-center justify-center rounded-lg border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-800 shadow-sm hover:border-amber-400 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50"
+          className={`inline-flex items-center justify-center rounded-lg border border-stone-300 bg-white px-3 text-sm font-semibold text-stone-800 shadow-sm hover:border-amber-400 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50 ${
+            compact ? "min-h-[34px]" : "min-h-[40px] px-4"
+          }`}
         >
           {files.length > 0 ? "Add more files" : "Choose files"}
         </button>
-        <span className="text-sm text-stone-600">
+        <span className={`${compact ? "text-xs" : "text-sm"} text-stone-600`}>
           {files.length > 0 ? (
             <strong>
               {files.length} file{files.length > 1 ? "s" : ""} selected
@@ -110,33 +117,45 @@ export function EnquiryFilePicker({ files, onChange, onError, disabled }: Props)
             "No files added yet"
           )}
         </span>
-        <span className="text-xs text-stone-500">
-          Up to {MAX_ENQUIRY_ATTACHMENTS} files · {MAX_ENQUIRY_ATTACHMENT_MB} MB each
-        </span>
+        {compact ? null : (
+          <span className="text-xs text-stone-500">
+            Up to {MAX_ENQUIRY_ATTACHMENTS} files · {MAX_ENQUIRY_ATTACHMENT_MB} MB each
+          </span>
+        )}
       </div>
 
       {files.length > 0 ? (
-        <ul className="mt-4 space-y-2">
+        <ul className={`space-y-1 ${compact ? "mt-2 max-h-16 overflow-y-auto" : "mt-4 space-y-2"}`}>
           {files.map((file, index) => {
             const previewKey = `${file.name}-${file.size}-${index}`;
             const thumb = previews[previewKey];
             return (
               <li
                 key={previewKey}
-                className="flex items-center gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2"
+                className={`flex items-center gap-2 rounded-lg border border-stone-200 bg-white ${
+                  compact ? "px-2 py-1" : "gap-3 px-3 py-2"
+                }`}
               >
                 {thumb ? (
-                  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-stone-100">
+                  <div
+                    className={`relative shrink-0 overflow-hidden rounded-md bg-stone-100 ${
+                      compact ? "h-8 w-8" : "h-12 w-12"
+                    }`}
+                  >
                     <Image src={thumb} alt="" fill unoptimized className="object-cover" />
                   </div>
                 ) : (
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-stone-100 text-lg">
+                  <div
+                    className={`flex shrink-0 items-center justify-center rounded-md bg-stone-100 ${
+                      compact ? "h-8 w-8 text-sm" : "h-12 w-12 text-lg"
+                    }`}
+                  >
                     📎
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-stone-800">{file.name}</p>
-                  <p className="text-xs text-stone-500">{formatFileSize(file.size)}</p>
+                  {compact ? null : <p className="text-xs text-stone-500">{formatFileSize(file.size)}</p>}
                 </div>
                 <button
                   type="button"

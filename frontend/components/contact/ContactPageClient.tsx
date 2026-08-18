@@ -492,6 +492,19 @@ function ContactFormInner() {
 }
 
 export function ContactPageClient() {
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtml = html.style.overflow;
+    const prevBody = body.style.overflow;
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    return () => {
+      html.style.overflow = prevHtml;
+      body.style.overflow = prevBody;
+    };
+  }, []);
+
   return (
     <div className="relative h-[calc(100dvh-var(--storefront-header-live-offset)-4.5rem-env(safe-area-inset-bottom,0px))] overflow-hidden bg-brand-cream p-2 md:h-[calc(100dvh-var(--storefront-header-live-offset)-var(--storefront-slim-footer-offset))] md:p-2.5">
       <span className="sv-contact-blob pointer-events-none absolute -left-24 top-10 h-64 w-64 rounded-full bg-brand-gold/20 blur-3xl" aria-hidden />
