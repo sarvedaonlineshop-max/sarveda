@@ -179,6 +179,14 @@ export async function fetchProductList(
         ? searchParams.search
         : undefined;
   if (searchQ?.trim()) q.set("q", searchQ.trim());
+  const tag = typeof searchParams.tag === "string" ? searchParams.tag : undefined;
+  if (tag?.trim()) q.set("tag", tag.trim());
+  const minPrice =
+    typeof searchParams.minPrice === "string" ? searchParams.minPrice : undefined;
+  const maxPrice =
+    typeof searchParams.maxPrice === "string" ? searchParams.maxPrice : undefined;
+  if (minPrice) q.set("minPrice", minPrice);
+  if (maxPrice) q.set("maxPrice", maxPrice);
   return fetchApi<ProductListResponse>(`/api/products?${q.toString()}`, init);
 }
 

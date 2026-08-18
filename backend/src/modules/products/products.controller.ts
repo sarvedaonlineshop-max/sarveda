@@ -94,6 +94,9 @@ export async function list(req: Request, res: Response, next: NextFunction) {
     const categorySlug =
       typeof req.query.category === "string" ? req.query.category : undefined;
     const q = typeof req.query.q === "string" ? req.query.q : undefined;
+    const tag = typeof req.query.tag === "string" ? req.query.tag : undefined;
+    const minPrice = req.query.minPrice != null ? Number(req.query.minPrice) : undefined;
+    const maxPrice = req.query.maxPrice != null ? Number(req.query.maxPrice) : undefined;
     const rawStatus = typeof req.query.status === "string" ? req.query.status : undefined;
     const status =
       rawStatus && productStatuses.includes(rawStatus as ProductStatus)
@@ -105,6 +108,9 @@ export async function list(req: Request, res: Response, next: NextFunction) {
       limit: Number.isFinite(limit) ? limit : undefined,
       categorySlug,
       q,
+      tag,
+      minPrice: Number.isFinite(minPrice) ? minPrice : undefined,
+      maxPrice: Number.isFinite(maxPrice) ? maxPrice : undefined,
       status
     });
     res.json({ success: true, data });

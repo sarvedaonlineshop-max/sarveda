@@ -102,6 +102,9 @@ export default async function ProductCategoryPage({ params, searchParams }: Prop
         }}
         categorySlug={params.slug}
         searchQ={typeof searchParams.q === "string" ? searchParams.q : Array.isArray(searchParams.q) ? searchParams.q[0] ?? "" : ""}
+        tag={typeof searchParams.tag === "string" ? searchParams.tag : Array.isArray(searchParams.tag) ? searchParams.tag[0] ?? "" : ""}
+        minPrice={Number.parseInt(typeof searchParams.minPrice === "string" ? searchParams.minPrice : "", 10) || undefined}
+        maxPrice={Number.parseInt(typeof searchParams.maxPrice === "string" ? searchParams.maxPrice : "", 10) || undefined}
       />
     </>
   );

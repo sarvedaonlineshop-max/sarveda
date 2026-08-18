@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { CategoryNode } from "@/lib/types";
+import { shopMerchFilterLabel, SHOP_PRICE_MAX, SHOP_PRICE_MIN } from "@/lib/shop-merch-filters";
 
+import { ShopFilterPanel, ShopFilterToggle } from "./ShopFilterPanel";
 import { ShopMobileCategoryDrawer } from "./ShopMobileCategoryDrawer";
 import { ShopSearchBar } from "./ShopSearchBar";
 import { useShopProductsMeta } from "./ShopProductsMetaContext";
@@ -12,24 +14,45 @@ type Props = {
   categories: CategoryNode[];
   categorySlug: string | undefined;
   searchQ: string;
+  tag: string;
+  minPrice: number;
+  maxPrice: number;
   isPending: boolean;
   onSelectCategory: (slug: string | undefined) => void;
   onSearch: (term: string) => void;
+  onTagChange: (tag: string | undefined) => void;
+  onPriceChange: (min: number, max: number) => void;
   onClearCategory: () => void;
   onClearSearch: () => void;
+  onClearTag: () => void;
 };
 
 export function ShopProductToolbar({
   categories,
   categorySlug,
   searchQ,
+  tag,
+  minPrice,
+  maxPrice,
   isPending,
   onSelectCategory,
   onSearch,
+  onTagChange,
+  onPriceChange,
   onClearCategory,
-  onClearSearch
+  onClearSearch,
+  onClearTag
 }: Props) {
   const { loaded, total } = useShopProductsMeta();
+  const [filterOpen, setFilterOpen] = useState(
+    Boolean(tag) || minPrice > SHOP_PRICE_MIN || maxPrice < SHOP_PRICE_MAX
+  );
+
+  useEffect(() => {
+    if (tag || minPrice > SHOP_PRICE_MIN || maxPrice < SHOP_PRICE_MAX) {
+      setFilterOpen(true);
+    }
+  }, [tag, minPrice, maxPrice]);
 
   const activeCategoryName = useMemo(() => {
     if (!categorySlug) return null;
@@ -46,11 +69,12 @@ export function ShopProductToolbar({
     return walk(categories) ?? categorySlug;
   }, [categories, categorySlug]);
 
+  const tagLabel = shopMerchFilterLabel(tag);
+
   return (
     <>
       <div className="lg:contents">
         <div className="fixed inset-x-0 top-[var(--storefront-header-live-offset)] z-30 border-b border-brand-cream-dark/60 bg-brand-cream/95 shadow-sm lg:static lg:z-auto lg:border-b-0 lg:bg-transparent lg:shadow-none">
-          {/* Drawer only — hamburger lives in the mobile header on store pages. */}
           <div className="lg:hidden">
             <ShopMobileCategoryDrawer
               categories={categories}
@@ -61,6 +85,17 @@ export function ShopProductToolbar({
 
           <div className="relative px-3 py-2 md:px-0 lg:py-0">
             <ShopSearchBar value={searchQ} onSearch={onSearch} />
+            <ShopFilterToggle open={filterOpen} onOpenChange={setFilterOpen} />
+            <div className="hidden lg:block">
+              <ShopFilterPanel
+                tag={tag}
+                minPrice={minPrice}
+                maxPrice={maxPrice}
+                open={filterOpen}
+                onTagChange={onTagChange}
+                onPriceChange={onPriceChange}
+              />
+            </div>
 
             <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
               <div className="flex flex-wrap items-center gap-2">
@@ -90,6 +125,19 @@ export function ShopProductToolbar({
                     <span className="sr-only">Clear search</span>
                   </button>
                 ) : null}
+                {tagLabel ? (
+                  <button
+                    type="button"
+                    onClick={onClearTag}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-brand-forest/25 bg-white px-3 py-1 text-xs font-medium text-brand-forest transition-colors duration-150 hover:bg-brand-forest/5"
+                  >
+                    {tagLabel}
+                    <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" aria-hidden>
+                      <path d="M18 6 6 18M6 6l12 12" />
+                    </svg>
+                    <span className="sr-only">Remove tag filter</span>
+                  </button>
+                ) : null}
               </div>
 
               <p className="text-xs text-brand-muted">
@@ -106,8 +154,18 @@ export function ShopProductToolbar({
           </div>
         </div>
 
-        {/* Reserve space for the fixed mobile toolbar (search + pills). */}
-        <div className="h-[5.75rem] shrink-0 lg:hidden" aria-hidden />
+        <div className="h-[6.5rem] shrink-0 lg:hidden" aria-hidden />
+      </div>
+
+      <div className="px-3 lg:hidden">
+        <ShopFilterPanel
+          tag={tag}
+          minPrice={minPrice}
+          maxPrice={maxPrice}
+          open={filterOpen}
+          onTagChange={onTagChange}
+          onPriceChange={onPriceChange}
+        />
       </div>
     </>
   );

@@ -2,10 +2,25 @@ export function shopPathForCategory(slug: string | undefined): string {
   return slug ? `/product-category/${encodeURIComponent(slug)}` : "/shop";
 }
 
-export function buildShopHref(slug: string | undefined, searchQ: string | undefined): string {
+export type ShopBrowseQuery = {
+  q?: string;
+  tag?: string;
+  minPrice?: number;
+  maxPrice?: number;
+};
+
+export function buildShopHref(slug: string | undefined, query: ShopBrowseQuery = {}): string {
   const base = shopPathForCategory(slug);
-  const q = searchQ?.trim();
-  return q ? `${base}?q=${encodeURIComponent(q)}` : base;
+  const params = new URLSearchParams();
+  const q = query.q?.trim();
+  if (q) params.set("q", q);
+  if (query.tag?.trim()) params.set("tag", query.tag.trim());
+  if (query.minPrice != null && query.minPrice > 0) params.set("minPrice", String(query.minPrice));
+  if (query.maxPrice != null && query.maxPrice > 0 && query.maxPrice < 200000) {
+    params.set("maxPrice", String(query.maxPrice));
+  }
+  const qs = params.toString();
+  return qs ? `${base}?${qs}` : base;
 }
 
 export function categorySlugFromPathname(pathname: string | null): string | undefined {

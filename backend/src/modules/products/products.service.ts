@@ -3,12 +3,23 @@ import type { Prisma, ProductStatus, ProductType } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { getCategorySlugScope } from "../categories/categories.service";
 
+import {
+  productSearchOrClause,
+  scoreProductSearch,
+  tokenizeProductQuery
+} from "./productSearch";
+import { merchTagProductSlugs } from "./shopMerchTags";
+
 export type ListProductsQuery = {
   page?: number;
   limit?: number;
   categorySlug?: string;
   status?: ProductStatus;
   q?: string;
+  tag?: string;
+  /** INR rupees, inclusive — same scale as live Woo price slider. */
+  minPrice?: number;
+  maxPrice?: number;
 };
 
 const defaultPage = 1;
@@ -70,6 +81,46 @@ async function findOrderedProductIds(
   });
 
   return rows.slice(skip, skip + take).map((r) => r.id);
+}
+
+async function findSearchRankedProductIds(
+  where: Prisma.ProductWhereInput,
+  tokens: string[],
+  skip: number,
+  take: number
+): Promise<{ ids: string[]; total: number }> {
+  const rows = await prisma.product.findMany({
+    where,
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      shortDescription: true,
+      seoTitle: true,
+      seoKeyword: true,
+      sortOrder: true,
+      updatedAt: true,
+      categories: { select: { category: { select: { name: true, slug: true } } } },
+      variants: {
+        where: { status: "ACTIVE" },
+        select: {
+          sku: true,
+          attributeValues: { select: { attributeValue: { select: { value: true, slug: true } } } }
+        }
+      }
+    }
+  });
+  rows.sort((a, b) => {
+    const sa = scoreProductSearch(a, tokens);
+    const sb = scoreProductSearch(b, tokens);
+    if (sa !== sb) return sb - sa;
+    if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+    return b.updatedAt.getTime() - a.updatedAt.getTime();
+  });
+  return {
+    ids: rows.slice(skip, skip + take).map((r) => r.id),
+    total: rows.length
+  };
 }
 
 export type ListProductsAdminQuery = {
@@ -218,28 +269,59 @@ export async function listProducts(query: ListProductsQuery) {
     catalogHidden: false
   };
 
-  if (query.q?.trim()) {
-    const q = query.q.trim();
-    where.OR = [
-      { name: { contains: q, mode: "insensitive" } },
-      { description: { contains: q, mode: "insensitive" } },
-      { shortDescription: { contains: q, mode: "insensitive" } },
-      { categories: { some: { category: { name: { contains: q, mode: "insensitive" } } } } }
-    ];
+  const andFilters: Prisma.ProductWhereInput[] = [];
+  const searchTokens = query.q?.trim() ? tokenizeProductQuery(query.q) : [];
+  if (searchTokens.length) {
+    andFilters.push(productSearchOrClause(searchTokens));
   }
 
   let categorySlugs: string[] | null = null;
   if (query.categorySlug?.trim()) {
     categorySlugs = await getCategorySlugScope(query.categorySlug.trim());
-    where.categories = {
-      some: {
-        category: { slug: { in: categorySlugs } }
+    andFilters.push({
+      categories: {
+        some: {
+          category: { slug: { in: categorySlugs } }
+        }
       }
-    };
+    });
   }
 
-  const total = await prisma.product.count({ where });
-  const orderedIds = await findOrderedProductIds(where, categorySlugs, skip, limit);
+  const tagSlugs = merchTagProductSlugs(query.tag);
+  if (tagSlugs) {
+    andFilters.push({ slug: { in: tagSlugs } });
+  }
+
+  const minRupees = Number.isFinite(query.minPrice) ? Math.max(0, query.minPrice as number) : 0;
+  const maxRupees = Number.isFinite(query.maxPrice) ? Math.max(0, query.maxPrice as number) : 0;
+  const priceActive = minRupees > 0 || (maxRupees > 0 && maxRupees < 200000);
+  if (priceActive) {
+    const minPaise = minRupees * 100;
+    const maxPaise = (maxRupees > 0 ? maxRupees : 200000) * 100;
+    andFilters.push({
+      variants: {
+        some: {
+          status: "ACTIVE",
+          saleInPaise: { gte: minPaise, lte: maxPaise }
+        }
+      }
+    });
+  }
+
+  if (andFilters.length) {
+    where.AND = andFilters;
+  }
+
+  let orderedIds: string[];
+  let total: number;
+  if (searchTokens.length) {
+    const ranked = await findSearchRankedProductIds(where, searchTokens, skip, limit);
+    orderedIds = ranked.ids;
+    total = ranked.total;
+  } else {
+    total = await prisma.product.count({ where });
+    orderedIds = await findOrderedProductIds(where, categorySlugs, skip, limit);
+  }
   const rowsUnsorted =
     orderedIds.length === 0
       ? []
@@ -511,22 +593,19 @@ export async function listRelatedProducts(
 }
 
 export async function suggestProducts(q: string, limit = 8) {
-  const term = q.trim();
-  if (term.length < 2) {
+  const tokens = tokenizeProductQuery(q);
+  if (tokens.length < 1 || q.trim().length < 2) {
     return [];
   }
   const rows = await prisma.product.findMany({
     where: {
       deletedAt: null,
       status: "ACTIVE",
-      OR: [
-        { name: { contains: term, mode: "insensitive" } },
-        { shortDescription: { contains: term, mode: "insensitive" } },
-        { categories: { some: { category: { name: { contains: term, mode: "insensitive" } } } } }
-      ]
+      catalogHidden: false,
+      ...productSearchOrClause(tokens)
     },
-    take: Math.min(12, Math.max(1, limit)),
-    orderBy: { updatedAt: "desc" },
+    take: Math.min(16, Math.max(1, limit)),
+    orderBy: { sortOrder: "asc" },
     include: {
       images: { where: { isPrimary: true }, take: 1 },
       variants: {

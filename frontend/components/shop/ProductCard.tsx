@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 
 import { usePricingZone } from "@/hooks/usePricingZone";
 import {
@@ -18,6 +19,8 @@ import type { ProductListItem } from "@/lib/types";
 type Props = {
   product: ProductListItem;
   layout?: "grid" | "rail";
+  revealOnView?: boolean;
+  revealDelayMs?: number;
 };
 
 function listItemAsVariantPrice(product: ProductListItem): VariantPriceFields | null {
@@ -39,7 +42,12 @@ function formatListPrice(product: ProductListItem, zone: Zone): string | null {
   return formatMinorFromPaise(minor, zoneToCurrency(zone));
 }
 
-export function ProductCard({ product, layout = "grid" }: Props) {
+export function ProductCard({
+  product,
+  layout = "grid",
+  revealOnView = false,
+  revealDelayMs = 0
+}: Props) {
   const zone = usePricingZone();
   const priceLabel = formatListPrice(product, zone);
   const fields = listItemAsVariantPrice(product);
@@ -54,8 +62,27 @@ export function ProductCard({ product, layout = "grid" }: Props) {
   const primaryCat = product.categories[0];
   const rail = layout === "rail";
   const currency = zoneToCurrency(zone);
+  const revealRef = useRef<HTMLDivElement | null>(null);
+  const [visible, setVisible] = useState(!revealOnView);
 
-  return (
+  useEffect(() => {
+    if (!revealOnView) return;
+    const el = revealRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setVisible(true);
+          obs.disconnect();
+        }
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [revealOnView]);
+
+  const card = (
     <article
       className={`group relative flex h-full flex-col overflow-hidden bg-brand-ivory transition-all duration-300 ${
         rail
@@ -140,5 +167,17 @@ export function ProductCard({ product, layout = "grid" }: Props) {
         </div>
       </Link>
     </article>
+  );
+
+  if (!revealOnView) return card;
+
+  return (
+    <div
+      ref={revealRef}
+      className={`shop-card-reveal h-full ${visible ? "is-visible" : ""}`}
+      style={{ transitionDelay: `${revealDelayMs}ms` }}
+    >
+      {card}
+    </div>
   );
 }

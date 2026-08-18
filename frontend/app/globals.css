@@ -474,11 +474,77 @@ select:-webkit-autofill {
   animation: sv-contact-shimmer 4.5s linear infinite;
 }
 
+/* Shop product cards — AOS zoom-in-right / fade as they enter the viewport */
+.shop-card-reveal {
+  opacity: 0;
+  transform: translate3d(28px, 0, 0) scale(0.96);
+  transition: opacity 0.65s ease, transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.shop-card-reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Dual price slider (live Woo Filter panel) */
+.shop-price-thumb {
+  pointer-events: none;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.shop-price-thumb::-webkit-slider-runnable-track {
+  height: 8px;
+  background: transparent;
+}
+.shop-price-thumb::-webkit-slider-thumb {
+  pointer-events: auto;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #111;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
+  margin-top: -5px;
+  cursor: pointer;
+}
+.shop-price-thumb::-moz-range-track {
+  height: 8px;
+  background: transparent;
+}
+.shop-price-thumb::-moz-range-thumb {
+  pointer-events: auto;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #111;
+  cursor: pointer;
+}
+.shop-price-thumb-min {
+  z-index: 2;
+}
+.shop-price-thumb-max {
+  z-index: 3;
+}
+
 /* ─── Reduced Motion ────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   html:focus-within { scroll-behavior: auto; }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+  .shop-card-reveal,
+  .shop-card-reveal.is-visible {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }

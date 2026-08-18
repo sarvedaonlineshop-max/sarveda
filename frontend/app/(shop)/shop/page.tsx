@@ -49,6 +49,9 @@ export default async function ShopPage({ searchParams }: Props) {
         total: list.pagination.total
       }}
       searchQ={firstSearchParam(searchParams.q)}
+      tag={firstSearchParam(searchParams.tag)}
+      minPrice={Number.parseInt(firstSearchParam(searchParams.minPrice), 10) || undefined}
+      maxPrice={Number.parseInt(firstSearchParam(searchParams.maxPrice), 10) || undefined}
     />
   );
 }

@@ -4,13 +4,14 @@ import { useCallback, useMemo } from "react";
 import { usePathname } from "next/navigation";
 
 import type { CategoryNode } from "@/lib/types";
-import { categorySlugFromPathname } from "@/lib/shop-navigation";
+import { categorySlugFromPathname, type ShopBrowseQuery } from "@/lib/shop-navigation";
+import { SHOP_PRICE_MAX, SHOP_PRICE_MIN } from "@/lib/shop-merch-filters";
 
 import { ShopCategoriesProvider } from "./ShopCategoriesContext";
 import { ShopCategoryFilterSidebar } from "./ShopCategoryFilterSidebar";
 import { ShopProductToolbar } from "./ShopProductToolbar";
 import { ShopProductsMetaProvider } from "./ShopProductsMetaContext";
-import { useLocationQueryParam } from "./useLocationQueryParam";
+import { useShopBrowseQuery } from "./useShopBrowseQuery";
 import { useShopNavigate } from "./useShopNavigate";
 
 type Props = {
@@ -25,28 +26,67 @@ type Props = {
 export function ShopShell({ categories, children }: Props) {
   const pathname = usePathname();
   const { navigate, isPending } = useShopNavigate();
-  const searchQ = useLocationQueryParam("q");
+  const browseQuery = useShopBrowseQuery();
 
   const categorySlug = categorySlugFromPathname(pathname);
+  const searchQ = browseQuery.q ?? "";
+  const tag = browseQuery.tag ?? "";
+  const minPrice = browseQuery.minPrice ?? SHOP_PRICE_MIN;
+  const maxPrice = browseQuery.maxPrice ?? SHOP_PRICE_MAX;
+
+  const currentQuery = useCallback(
+    (overrides: ShopBrowseQuery = {}): ShopBrowseQuery => ({
+      q: overrides.q !== undefined ? overrides.q : searchQ,
+      tag: overrides.tag !== undefined ? overrides.tag : tag,
+      minPrice: overrides.minPrice !== undefined ? overrides.minPrice : minPrice,
+      maxPrice: overrides.maxPrice !== undefined ? overrides.maxPrice : maxPrice
+    }),
+    [searchQ, tag, minPrice, maxPrice]
+  );
 
   const handleSelectCategory = useCallback(
     (slug: string | undefined) => {
       if (slug === categorySlug) return;
-      navigate(slug, searchQ);
+      navigate(slug, currentQuery());
     },
-    [categorySlug, navigate, searchQ]
+    [categorySlug, navigate, currentQuery]
   );
 
   const handleSearch = useCallback(
     (term: string) => {
       if (term.trim() === searchQ.trim()) return;
-      navigate(categorySlug, term);
+      navigate(categorySlug, currentQuery({ q: term }));
     },
-    [categorySlug, navigate, searchQ]
+    [categorySlug, navigate, currentQuery, searchQ]
   );
 
-  const clearCategory = useCallback(() => navigate(undefined, searchQ), [navigate, searchQ]);
-  const clearSearch = useCallback(() => navigate(categorySlug, ""), [navigate, categorySlug]);
+  const handleTagChange = useCallback(
+    (nextTag: string | undefined) => {
+      navigate(categorySlug, currentQuery({ tag: nextTag ?? "" }));
+    },
+    [categorySlug, navigate, currentQuery]
+  );
+
+  const handlePriceChange = useCallback(
+    (nextMin: number, nextMax: number) => {
+      if (nextMin === minPrice && nextMax === maxPrice) return;
+      navigate(categorySlug, currentQuery({ minPrice: nextMin, maxPrice: nextMax }));
+    },
+    [categorySlug, navigate, currentQuery, minPrice, maxPrice]
+  );
+
+  const clearCategory = useCallback(
+    () => navigate(undefined, currentQuery()),
+    [navigate, currentQuery]
+  );
+  const clearSearch = useCallback(
+    () => navigate(categorySlug, currentQuery({ q: "" })),
+    [navigate, categorySlug, currentQuery]
+  );
+  const clearTag = useCallback(
+    () => navigate(categorySlug, currentQuery({ tag: "" })),
+    [navigate, categorySlug, currentQuery]
+  );
 
   const activeCategoryName = useMemo(() => {
     if (!categorySlug) return null;
@@ -83,11 +123,17 @@ export function ShopShell({ categories, children }: Props) {
                 categories={categories}
                 categorySlug={categorySlug}
                 searchQ={searchQ}
+                tag={tag}
+                minPrice={minPrice}
+                maxPrice={maxPrice}
                 isPending={isPending}
                 onSelectCategory={handleSelectCategory}
                 onSearch={handleSearch}
+                onTagChange={handleTagChange}
+                onPriceChange={handlePriceChange}
                 onClearCategory={clearCategory}
                 onClearSearch={clearSearch}
+                onClearTag={clearTag}
               />
 
               <div

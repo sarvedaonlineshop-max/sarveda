@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-import { buildShopHref } from "@/lib/shop-navigation";
+import { buildShopHref, type ShopBrowseQuery } from "@/lib/shop-navigation";
 
 /**
  * Soft-nav between shop browse URLs.
@@ -20,11 +20,10 @@ export function useShopNavigate() {
   }, [isPending]);
 
   const navigate = useCallback(
-    (nextSlug: string | undefined, nextSearchQ: string) => {
-      const href = buildShopHref(nextSlug, nextSearchQ.trim() || undefined);
+    (nextSlug: string | undefined, query: ShopBrowseQuery) => {
+      const href = buildShopHref(nextSlug, query);
       setIsPending(true);
       router.push(href, { scroll: false });
-      // Clear pending once the URL has updated (pathname/search change).
       window.setTimeout(() => setIsPending(false), 600);
     },
     [router]

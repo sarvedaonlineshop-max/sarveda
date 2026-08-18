@@ -3,14 +3,30 @@
 import { useEffect, useRef, useState } from "react";
 
 import { SearchSuggestionRow } from "@/components/search/SearchSuggestionRow";
-import { fetchSiteSearchSuggestions, type SiteSearchSuggestion } from "@/lib/api";
+import { fetchProductList, type SiteSearchSuggestion } from "@/lib/api";
 
 type Props = {
   value: string;
   onSearch: (term: string) => void;
 };
 
-/** Shop-local search: filters the current shop/category listing in place (no /search nav). */
+function toSuggestion(item: {
+  slug: string;
+  name: string;
+  primaryImageUrl: string | null;
+  fromPriceInPaise: number | null;
+}): SiteSearchSuggestion {
+  return {
+    type: "product",
+    slug: item.slug,
+    title: item.name,
+    imageUrl: item.primaryImageUrl,
+    priceInPaise: item.fromPriceInPaise,
+    label: "Product"
+  };
+}
+
+/** Shop-local search: product-only matches, same token rules as the listing. */
 export function ShopSearchBar({ value, onSearch }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState(value);
@@ -29,8 +45,9 @@ export function ShopSearchBar({ value, onSearch }: Props) {
       return;
     }
     const timer = window.setTimeout(() => {
-      void fetchSiteSearchSuggestions(term)
-        .then((items) => {
+      void fetchProductList({ q: term }, undefined, { limit: 12 })
+        .then((list) => {
+          const items = list.items.map(toSuggestion);
           setSuggestions(items);
           setOpen(items.length > 0);
         })
@@ -38,7 +55,7 @@ export function ShopSearchBar({ value, onSearch }: Props) {
           setSuggestions([]);
           setOpen(false);
         });
-    }, 300);
+    }, 220);
     return () => window.clearTimeout(timer);
   }, [query]);
 
@@ -70,7 +87,7 @@ export function ShopSearchBar({ value, onSearch }: Props) {
           onFocus={() => {
             if (suggestions.length > 0) setOpen(true);
           }}
-          placeholder="Search products…"
+          placeholder="Search"
           autoComplete="off"
           aria-autocomplete="list"
           aria-expanded={open}
@@ -96,6 +113,18 @@ export function ShopSearchBar({ value, onSearch }: Props) {
               <SearchSuggestionRow item={item} onNavigate={() => setOpen(false)} />
             </li>
           ))}
+          <li className="border-t border-brand-cream-dark/80">
+            <button
+              type="button"
+              className="w-full px-4 py-2.5 text-left text-sm font-medium text-brand-forest transition-colors hover:bg-brand-cream"
+              onClick={() => {
+                setOpen(false);
+                onSearch(query.trim());
+              }}
+            >
+              See all matches for &ldquo;{query.trim()}&rdquo;
+            </button>
+          </li>
         </ul>
       ) : null}
     </div>

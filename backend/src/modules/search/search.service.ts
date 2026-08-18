@@ -1,5 +1,6 @@
 import { prisma } from "../../config/db";
 import { isCourseUpcomingExtra } from "../../utils/courseSchedule";
+import { productSearchOrClause, tokenizeProductQuery } from "../products/productSearch";
 
 export type SiteSearchType = "product" | "course" | "event" | "insight";
 
@@ -43,22 +44,23 @@ export async function suggestSiteSearch(q: string, limit = 10): Promise<SiteSear
   if (term.length < 2) return [];
 
   const perType = Math.max(3, Math.ceil(limit / 4));
+  const productLimit = Math.min(12, Math.max(limit, perType * 2));
   const excludeProductIds = await checkoutOnlyProductIds();
   const now = new Date();
+  const tokens = tokenizeProductQuery(term);
+  const productWhere = tokens.length ? productSearchOrClause(tokens) : undefined;
 
   const [products, courses, events, posts] = await Promise.all([
     prisma.product.findMany({
       where: {
         deletedAt: null,
         status: "ACTIVE",
+        catalogHidden: false,
         id: excludeProductIds.size ? { notIn: [...excludeProductIds] } : undefined,
-        OR: [
-          { name: { contains: term, mode: "insensitive" } },
-          { shortDescription: { contains: term, mode: "insensitive" } }
-        ]
+        ...(productWhere ?? {})
       },
-      take: perType,
-      orderBy: { updatedAt: "desc" },
+      take: productLimit,
+      orderBy: { sortOrder: "asc" },
       include: {
         images: { where: { isPrimary: true }, take: 1 },
         variants: { where: { status: "ACTIVE", isDefault: true }, take: 1 }

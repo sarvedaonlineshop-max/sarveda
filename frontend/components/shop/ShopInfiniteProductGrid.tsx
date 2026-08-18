@@ -7,6 +7,8 @@ import { ProductCard } from "@/components/shop/ProductCard";
 import { fetchShopProductsPage } from "@/lib/shop-products-client";
 import type { ProductListItem } from "@/lib/types";
 
+import { useShopProductsMeta } from "./ShopProductsMetaContext";
+
 type Props = {
   initialItems: ProductListItem[];
   initialPage: number;
@@ -14,6 +16,9 @@ type Props = {
   total: number;
   categorySlug?: string;
   searchQ?: string;
+  tag?: string;
+  minPrice?: number;
+  maxPrice?: number;
   /** ShopBrowser renders its own sticky "Showing X of Y" + filter pills instead. */
   hideSummary?: boolean;
 };
@@ -27,6 +32,9 @@ export function ShopInfiniteProductGrid({
   total,
   categorySlug,
   searchQ,
+  tag,
+  minPrice,
+  maxPrice,
   hideSummary = false
 }: Props) {
   const [items, setItems] = useState(initialItems);
@@ -34,12 +42,17 @@ export function ShopInfiniteProductGrid({
   const [pages, setPages] = useState(totalPages);
   const [loading, setLoading] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const { setProductsMeta } = useShopProductsMeta();
 
   useEffect(() => {
     setItems(initialItems);
     setPage(initialPage);
     setPages(totalPages);
   }, [initialItems, initialPage, totalPages]);
+
+  useEffect(() => {
+    setProductsMeta({ loaded: items.length, total });
+  }, [items.length, total, setProductsMeta]);
 
   const loadMore = useCallback(async () => {
     if (loading || page >= pages) return;
@@ -50,7 +63,10 @@ export function ShopInfiniteProductGrid({
         page: next,
         limit: PAGE_SIZE,
         categorySlug,
-        searchQ
+        searchQ,
+        tag,
+        minPrice,
+        maxPrice
       });
       setItems((prev) => [...prev, ...data.items]);
       setPage(next);
@@ -58,7 +74,7 @@ export function ShopInfiniteProductGrid({
     } finally {
       setLoading(false);
     }
-  }, [loading, page, pages, categorySlug, searchQ]);
+  }, [loading, page, pages, categorySlug, searchQ, tag, minPrice, maxPrice]);
 
   useEffect(() => {
     const el = sentinelRef.current;
@@ -93,9 +109,9 @@ export function ShopInfiniteProductGrid({
         </p>
       ) : null}
       <ul className="grid grid-cols-2 gap-x-2.5 gap-y-3 px-3 sm:grid-cols-3 md:gap-x-4 md:gap-y-4 md:px-0 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-        {items.map((product) => (
+        {items.map((product, index) => (
           <li key={product.id}>
-            <ProductCard product={product} />
+            <ProductCard product={product} revealOnView revealDelayMs={(index % 8) * 45} />
           </li>
         ))}
       </ul>
