@@ -74,11 +74,25 @@ export function ShopSearchBar({ value, onSearch }: Props) {
   }
 
   return (
-    <div ref={wrapRef} className="relative z-20 flex-1">
-      <form onSubmit={submit} role="search" className="flex flex-1 items-center gap-2">
+    <div ref={wrapRef} className="relative z-20 min-w-0 flex-1">
+      <form onSubmit={submit} role="search" className="relative">
         <label htmlFor="shop-search" className="sr-only">
           Search products
         </label>
+        <svg
+          className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-muted"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M21 21l-4.35-4.35M16.5 10.5a6 6 0 11-12 0 6 6 0 0112 0z"
+          />
+        </svg>
         <input
           id="shop-search"
           type="search"
@@ -92,14 +106,8 @@ export function ShopSearchBar({ value, onSearch }: Props) {
           aria-autocomplete="list"
           aria-expanded={open}
           aria-controls="shop-search-suggestions"
-          className="min-h-[40px] flex-1 rounded-full border border-[#E3D9C8] bg-white px-4 text-sm text-brand-ink placeholder:text-brand-muted/70 focus:border-brand-forest focus:outline-none focus:ring-2 focus:ring-brand-forest/20"
+          className="min-h-[40px] w-full rounded-full border border-[#E3D9C8] bg-white py-2 pl-10 pr-4 text-sm text-brand-ink placeholder:text-brand-muted/70 focus:border-brand-forest focus:outline-none focus:ring-2 focus:ring-brand-forest/20"
         />
-        <button
-          type="submit"
-          className="shrink-0 rounded-full bg-brand-forest px-4 py-2 text-sm font-semibold text-brand-cream transition-colors duration-150 hover:bg-brand-night"
-        >
-          Search
-        </button>
       </form>
 
       {open ? (

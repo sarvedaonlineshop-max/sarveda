@@ -74,7 +74,7 @@ export function ShopProductToolbar({
   return (
     <>
       <div className="lg:contents">
-        <div className="fixed inset-x-0 top-[var(--storefront-header-live-offset)] z-30 border-b border-brand-cream-dark/60 bg-brand-cream/95 shadow-sm lg:static lg:z-auto lg:border-b-0 lg:bg-transparent lg:shadow-none">
+        <div className="fixed inset-x-0 top-[var(--storefront-header-live-offset)] z-40 border-b border-brand-cream-dark/60 bg-brand-cream/95 lg:static lg:z-auto lg:border-b-0 lg:bg-transparent">
           <div className="lg:hidden">
             <ShopMobileCategoryDrawer
               categories={categories}
@@ -83,9 +83,11 @@ export function ShopProductToolbar({
             />
           </div>
 
-          <div className="relative px-3 py-2 md:px-0 lg:py-0">
-            <ShopSearchBar value={searchQ} onSearch={onSearch} />
-            <ShopFilterToggle open={filterOpen} onOpenChange={setFilterOpen} />
+          <div className="relative px-3 py-1.5 md:px-0 lg:py-0">
+            <div className="flex items-center gap-2">
+              <ShopSearchBar value={searchQ} onSearch={onSearch} />
+              <ShopFilterToggle open={filterOpen} onOpenChange={setFilterOpen} />
+            </div>
             <div className="hidden lg:block">
               <ShopFilterPanel
                 tag={tag}
@@ -154,7 +156,7 @@ export function ShopProductToolbar({
           </div>
         </div>
 
-        <div className="h-[6.5rem] shrink-0 lg:hidden" aria-hidden />
+        <div className="h-[5.25rem] shrink-0 lg:hidden" aria-hidden />
       </div>
 
       <div className="px-3 lg:hidden">

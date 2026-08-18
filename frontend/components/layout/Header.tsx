@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
 
 import { useCartData, useCartUi } from "@/components/cart/CartProvider";
 import { SearchWithSuggestions } from "@/components/search/SearchWithSuggestions";
@@ -218,6 +218,7 @@ export function Header() {
   const [trackOpen, setTrackOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const chromeRef = useRef<HTMLDivElement>(null);
 
   const hideMarquee = isProfilePath(pathname);
   const isShopPage = isShopListingPath(pathname);
@@ -278,6 +279,24 @@ export function Header() {
     };
   }, [headerCompact, hideMarquee, searchLayerExpanded, showHeaderSearchLayer]);
 
+  useLayoutEffect(() => {
+    const el = chromeRef.current;
+    if (!el) return;
+    const sync = () => {
+      const height = Math.round(el.getBoundingClientRect().height);
+      if (height > 0) {
+        document.documentElement.style.setProperty("--storefront-header-live-offset", `${height}px`);
+      }
+    };
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      document.documentElement.style.removeProperty("--storefront-header-live-offset");
+    };
+  }, []);
+
   useEffect(() => {
     const onOpenTrack = () => {
       if (sessionUser) {
@@ -337,13 +356,11 @@ export function Header() {
     window.dispatchEvent(new Event(OPEN_SHOP_MENU_EVENT));
   }
 
-  const spacerHeight = headerCompact
-    ? "var(--storefront-header-offset-scrolled)"
-    : "var(--storefront-header-offset)";
+  const spacerHeight = "var(--storefront-header-live-offset)";
 
   return (
     <>
-      <div className={`fixed inset-x-0 top-0 z-50 ${chromeVisibility}`}>
+      <div ref={chromeRef} className={`fixed inset-x-0 top-0 z-50 ${chromeVisibility}`}>
         {hideMarquee ? null : <AnnouncementBar hidden={marqueeHidden} />}
 
         <header className="overflow-visible border-b border-brand-forest/10 bg-white shadow-[0_4px_16px_rgba(16,32,26,0.05)]">
@@ -508,12 +525,13 @@ export function Header() {
                   <button
                     type="button"
                     onClick={openShopMenu}
-                    className={`${headerIconBtn} bg-gradient-to-br from-[#d4a24e] to-[#9a7030]`}
+                    className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-brand-forest px-3 text-sm font-semibold text-brand-cream shadow-[0_4px_12px_rgba(16,32,26,0.18)] ring-1 ring-black/5 transition-colors hover:bg-brand-night sm:h-10 sm:px-3.5"
                     aria-label="Open store categories"
                   >
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
-                      <path strokeLinecap="round" strokeWidth={2} d="M3 4h18M3 12h18M3 20h18" />
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+                      <path strokeLinecap="round" strokeWidth={2} d="M4 7h16M4 12h16M4 17h16" />
                     </svg>
+                    Menu
                   </button>
                 ) : null}
               </div>

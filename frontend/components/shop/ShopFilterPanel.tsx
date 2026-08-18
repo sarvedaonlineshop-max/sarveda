@@ -21,24 +21,24 @@ export function ShopFilterToggle({
   onOpenChange: (open: boolean) => void;
 }) {
   return (
-    <div className="mt-2 flex justify-end">
-      <button
-        type="button"
-        onClick={() => onOpenChange(!open)}
-        className="inline-flex items-center gap-2 rounded-lg bg-[#019875] px-3 py-1.5 text-[15px] font-medium text-white shadow-sm transition-colors hover:bg-[#01856a]"
-        aria-expanded={open}
-      >
-        Filter
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden>
-          <path
-            d="M4 7h16M7 12h10M10 17h4"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </svg>
-      </button>
-    </div>
+    <button
+      type="button"
+      onClick={() => onOpenChange(!open)}
+      className={`inline-flex h-[40px] shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold text-brand-cream shadow-sm ring-1 ring-black/5 transition-colors hover:bg-brand-night ${
+        open ? "bg-brand-night" : "bg-brand-forest"
+      }`}
+      aria-expanded={open}
+    >
+      Filter
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden>
+        <path
+          d="M4 7h16M7 12h10M10 17h4"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      </svg>
+    </button>
   );
 }
 
