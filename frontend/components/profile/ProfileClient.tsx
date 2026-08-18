@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
 import { MobileSubpageHeader } from "@/components/layout/MobileSubpageHeader";
@@ -18,6 +18,17 @@ import { INDIAN_STATES } from "@/lib/indian-states";
 import { validateProfileForm, type ProfileFieldErrors } from "@/lib/profile-validation";
 
 type TabKey = "details" | "orders" | "courses" | "events";
+
+const MOBILE_TITLES: Record<TabKey, string> = {
+  details: "My profile",
+  orders: "My orders",
+  courses: "My Courses",
+  events: "My events"
+};
+
+function isTabKey(value: string | null): value is TabKey {
+  return value === "details" || value === "orders" || value === "courses" || value === "events";
+}
 
 const tabIconProps = {
   xmlns: "http://www.w3.org/2000/svg",
@@ -113,6 +124,7 @@ function TabButton({
 
 export function ProfileClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<PublicUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
@@ -134,9 +146,7 @@ export function ProfileClient() {
   const [activeTab, setActiveTab] = useState<TabKey>(() => {
     if (typeof window === "undefined") return "details";
     const tab = new URLSearchParams(window.location.search).get("tab");
-    return tab === "orders" || tab === "courses" || tab === "events" || tab === "details"
-      ? tab
-      : "details";
+    return isTabKey(tab) ? tab : "details";
   });
   const [orderCount, setOrderCount] = useState<number | null>(null);
   const [courseCount, setCourseCount] = useState<number | null>(null);
@@ -149,6 +159,17 @@ export function ProfileClient() {
     },
     []
   );
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    setActiveTab(isTabKey(tab) ? tab : "details");
+  }, [searchParams]);
+
+  function selectTab(tab: TabKey) {
+    setActiveTab(tab);
+    const next = tab === "details" ? "/profile" : `/profile?tab=${tab}`;
+    router.replace(next, { scroll: false });
+  }
 
   function applyPrimaryAddress(addr: PrimaryAddress | null, sessionUser: PublicUser) {
     if (!addr) return;
@@ -287,13 +308,13 @@ export function ProfileClient() {
           </p>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
             <Link
-              href="/login?next=/profile"
+              href={`/login?next=${encodeURIComponent(`/profile?tab=${activeTab}`)}`}
               className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#22c55e] px-6 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#16a34a]"
             >
               Sign in
             </Link>
             <Link
-              href="/signup?next=/profile"
+              href={`/signup?next=${encodeURIComponent(`/profile?tab=${activeTab}`)}`}
               className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#dc2626] px-6 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#b91c1c]"
             >
               Create account
@@ -323,23 +344,23 @@ export function ProfileClient() {
       className="flex flex-col gap-4 md:px-0"
       style={{ height: "calc(100dvh - var(--profile-offset, 10rem))", minHeight: "24rem" }}
     >
-      <MobileSubpageHeader title="My account" backHref="/" trailing={accountActions} />
+      <MobileSubpageHeader title={MOBILE_TITLES[activeTab]} backHref="/" />
 
       <div className="hidden items-center justify-between gap-4 px-4 md:flex md:px-0">
         <h1 className="font-serif text-3xl font-semibold text-brand-ink">My account</h1>
         {accountActions}
       </div>
 
-      {/* ── Tab bar (pinned): 2×2 on mobile, 4-across on desktop, no scrollbar ── */}
+      {/* Desktop: four sections in one page. Mobile: each section is its own menu link. */}
       <nav
         role="tablist"
         aria-label="Account sections"
-        className="grid shrink-0 grid-cols-2 gap-2 px-4 sm:grid-cols-4 md:px-0"
+        className="hidden shrink-0 gap-2 md:grid md:grid-cols-4"
       >
-        <TabButton tab="details" label="My Details" active={activeTab === "details"} onSelect={setActiveTab} />
-        <TabButton tab="orders" label="My Orders" count={orderCount} active={activeTab === "orders"} onSelect={setActiveTab} />
-        <TabButton tab="courses" label="My Courses" count={courseCount} active={activeTab === "courses"} onSelect={setActiveTab} />
-        <TabButton tab="events" label="My Events" count={eventCount} active={activeTab === "events"} onSelect={setActiveTab} />
+        <TabButton tab="details" label="My Details" active={activeTab === "details"} onSelect={selectTab} />
+        <TabButton tab="orders" label="My Orders" count={orderCount} active={activeTab === "orders"} onSelect={selectTab} />
+        <TabButton tab="courses" label="My Courses" count={courseCount} active={activeTab === "courses"} onSelect={selectTab} />
+        <TabButton tab="events" label="My Events" count={eventCount} active={activeTab === "events"} onSelect={selectTab} />
       </nav>
 
       {/* ── Scrollable content ── */}

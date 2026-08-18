@@ -26,7 +26,7 @@ export function CartPageClient() {
         <p className="text-brand-muted">Your cart is empty.</p>
         <Link
           href="/shop"
-          className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-full bg-brand-forest px-8 font-semibold text-brand-cream transition-colors hover:bg-brand-night"
+          className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#dc2626] px-8 font-semibold text-white transition-colors hover:bg-[#b91c1c]"
         >
           Browse the shop
         </Link>
