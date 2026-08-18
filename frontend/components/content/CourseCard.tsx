@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import type { CourseListItem } from "@/lib/course-types";
-import { formatCourseDuration, parseCourseExtra, parseCourseTeachers, type CourseTeacher } from "@/lib/content-meta";
+import { formatCourseDuration, parseCourseExtra, parseCourseTeachers } from "@/lib/content-meta";
 import { formatINRFromPaise } from "@/lib/money";
 
 type Props = { course: CourseListItem; compact?: boolean };
@@ -13,30 +13,6 @@ function prettyDate(s: string | null | undefined) {
   const d = new Date(s);
   if (isNaN(d.getTime())) return null;
   return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
-}
-
-function FacilitatorPortraits({ people }: { people: CourseTeacher[] }) {
-  const shown = people.filter((p) => p.name.trim()).slice(0, 6);
-  if (shown.length === 0) return null;
-
-  return (
-    <ul className="flex flex-wrap justify-center gap-x-5 gap-y-3" aria-label="Facilitators">
-      {shown.map((person) => (
-        <li key={person.name} className="flex w-[5.25rem] flex-col items-center text-center">
-          <span className="relative block h-[5.25rem] w-[5.25rem] overflow-hidden rounded-full border-[3px] border-[#e9c46a] bg-white/15">
-            {person.imageUrl ? (
-              <img src={person.imageUrl} alt="" className="h-full w-full object-cover object-center" />
-            ) : (
-              <span className="flex h-full w-full items-center justify-center font-serif text-xl font-semibold text-white">
-                {person.name.charAt(0).toUpperCase()}
-              </span>
-            )}
-          </span>
-          <span className="mt-2 text-[12px] font-medium leading-tight text-white">{person.name}</span>
-        </li>
-      ))}
-    </ul>
-  );
 }
 
 export function CourseCard({ course }: Props) {
@@ -90,10 +66,8 @@ export function CourseCard({ course }: Props) {
         )}
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col bg-[#2d7ac2] px-4 pb-4 pt-5 text-white">
-        <FacilitatorPortraits people={teachers} />
-
-        <p className="mt-4 text-[11px] font-normal uppercase tracking-[0.2em] text-white/90">Course</p>
+      <div className="flex min-w-0 flex-1 flex-col bg-[#2d7ac2] px-4 py-5 text-white">
+        <p className="text-[11px] font-normal uppercase tracking-[0.2em] text-white/90">Course</p>
         <h3 className="mt-1 font-serif text-[1.35rem] font-semibold leading-snug text-white">
           {course.title}
         </h3>
