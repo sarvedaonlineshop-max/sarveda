@@ -6,6 +6,8 @@ import type { CourseListItem } from "@/lib/course-types";
 import { formatCourseDuration, parseCourseExtra, parseCourseTeachers } from "@/lib/content-meta";
 import { formatINRFromPaise } from "@/lib/money";
 
+import { InstructorAvatars } from "./InstructorAvatars";
+
 type Props = { course: CourseListItem; compact?: boolean };
 
 function prettyDate(s: string | null | undefined) {
@@ -66,7 +68,12 @@ export function CourseCard({ course }: Props) {
         )}
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col bg-[#2d7ac2] px-4 py-5 text-white">
+      <div className="relative flex min-w-0 flex-1 flex-col bg-[#2d7ac2] px-4 pb-5 pt-6 text-white">
+        <InstructorAvatars
+          seam
+          people={teachers}
+          className="absolute -top-[25px] right-2.5 z-10"
+        />
         <p className="text-[11px] font-normal uppercase tracking-[0.2em] text-white/90">Course</p>
         <h3 className="mt-1 font-serif text-[1.35rem] font-semibold leading-snug text-white">
           {course.title}
