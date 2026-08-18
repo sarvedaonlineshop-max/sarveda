@@ -23,7 +23,7 @@ export default async function EventsPage() {
   return (
     <>
       <div className="border-b border-brand-cream-dark/60 bg-white">
-        <div className="page-shell py-12 md:py-16">
+        <div className="page-shell-classic py-12 md:py-16">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">
             Gather with us
           </p>
@@ -36,7 +36,7 @@ export default async function EventsPage() {
         </div>
       </div>
 
-      <main className="page-shell space-y-14 py-14">
+      <main className="page-shell-classic space-y-14 py-14">
         {events.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-brand-cream-dark bg-white p-12 text-center text-brand-muted">
             Events are being updated.{" "}

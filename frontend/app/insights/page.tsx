@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { InsightCard } from "@/components/content/InsightCard";
-import { ContentCardGrid } from "@/components/content/ContentListingSection";
 import { EnquiryPanelForm } from "@/components/enquiries/EnquiryPanelForm";
 import { fetchBlogPosts } from "@/lib/api";
 import { canonical, isProductionSite } from "@/lib/site";
@@ -22,7 +21,7 @@ export default async function InsightsPage() {
   return (
     <>
       <div className="border-b border-brand-cream-dark/60 bg-white">
-        <div className="page-shell py-12 md:py-16">
+        <div className="page-shell-classic py-12 md:py-16">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">
             From our teachers
           </p>
@@ -35,7 +34,7 @@ export default async function InsightsPage() {
         </div>
       </div>
 
-      <main className="page-shell py-14">
+      <main className="page-shell-classic py-14">
         {posts.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-brand-cream-dark bg-white p-12 text-center text-brand-muted">
             Articles are being updated.{" "}
@@ -44,13 +43,13 @@ export default async function InsightsPage() {
             </Link>
           </p>
         ) : (
-          <ContentCardGrid>
+          <ul className="grid gap-8 sm:grid-cols-2">
             {posts.map((post) => (
               <li key={post.id}>
                 <InsightCard post={post} />
               </li>
             ))}
-          </ContentCardGrid>
+          </ul>
         )}
         <section className="mt-16 rounded-2xl border border-brand-cream-dark bg-white p-6 shadow-card sm:p-8">
           <EnquiryPanelForm

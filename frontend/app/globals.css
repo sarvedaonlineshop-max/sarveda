@@ -56,6 +56,16 @@ html[data-header-search-open="true"] {
     margin-left: auto;
     margin-right: auto;
   }
+
+  /* Old WordPress Bootstrap container (~1140px) for courses, events, insights, corporate. */
+  .page-shell-classic {
+    width: 100%;
+    max-width: 1140px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 15px;
+    padding-right: 15px;
+  }
 }
 
 html[data-header-scrolled="true"] {
