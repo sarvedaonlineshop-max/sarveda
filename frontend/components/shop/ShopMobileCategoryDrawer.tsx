@@ -39,6 +39,11 @@ export function ShopMobileCategoryDrawer({ categories, selectedSlug, onSelect }:
     setOpenSlug(slug);
   }
 
+  function selectAndClose(slug: string | undefined) {
+    onSelect(slug);
+    setOpen(false);
+  }
+
   return (
     <SlideDrawer
       open={open}
@@ -52,7 +57,7 @@ export function ShopMobileCategoryDrawer({ categories, selectedSlug, onSelect }:
       <div className="px-4 py-4">
         <button
           type="button"
-          onClick={() => onSelect(undefined)}
+          onClick={() => selectAndClose(undefined)}
           className={`mb-3 flex min-h-[48px] w-full items-center rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors duration-150 ${
             !selectedSlug
               ? "border-brand-forest bg-brand-forest/10 text-brand-forest"
@@ -66,7 +71,8 @@ export function ShopMobileCategoryDrawer({ categories, selectedSlug, onSelect }:
             nodes={sorted}
             selectedSlug={selectedSlug}
             depth={0}
-            onSelect={onSelect}
+            onSelect={selectAndClose}
+            onNavigate={() => setOpen(false)}
             openSlug={openSlug}
             onOpen={openBranch}
           />

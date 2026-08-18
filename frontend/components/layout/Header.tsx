@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
 
 import { useCartData, useCartUi } from "@/components/cart/CartProvider";
-import { SearchWithSuggestions } from "@/components/search/SearchWithSuggestions";
 import { OPEN_SHOP_MENU_EVENT } from "@/components/shop/ShopMobileCategoryDrawer";
 import { isMainNavActive, MAIN_NAV_LINKS } from "@/lib/main-nav";
 
@@ -130,19 +129,6 @@ function ProfileIcon() {
   );
 }
 
-function SearchIcon() {
-  return (
-    <svg className="h-[18px] w-[18px] sm:h-5 sm:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M21 21l-4.35-4.35M16.5 10.5a6 6 0 11-12 0 6 6 0 0112 0z"
-      />
-    </svg>
-  );
-}
-
 function MenuIcon({ open }: { open: boolean }) {
   return (
     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
@@ -195,11 +181,6 @@ function isShopListingPath(pathname: string | null): boolean {
   return pathname === "/shop" || pathname.startsWith("/shop/") || pathname.startsWith("/product-category");
 }
 
-function isProductPdpPath(pathname: string | null): boolean {
-  if (!pathname) return false;
-  return pathname.startsWith("/product/");
-}
-
 function isProfilePath(pathname: string | null): boolean {
   if (!pathname) return false;
   return pathname === "/profile" || pathname.startsWith("/profile/") || pathname === "/my-account";
@@ -216,24 +197,17 @@ export function Header() {
   const [marqueeHidden, setMarqueeHidden] = useState(false);
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [trackOpen, setTrackOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const chromeRef = useRef<HTMLDivElement>(null);
 
   const hideMarquee = isProfilePath(pathname);
   const isShopPage = isShopListingPath(pathname);
-  const isProductPdp = isProductPdpPath(pathname);
   const isHomePage = pathname === "/";
   const headerCompact = hideMarquee || marqueeHidden;
-  /** Shop listing uses ShopProductToolbar; PDP search sits under breadcrumbs on the page. */
-  const showSearchToggle = !isShopPage && !isProductPdp;
-  const showHeaderSearchLayer = showSearchToggle;
-  const searchLayerExpanded = searchOpen;
   const isNavLoading = pendingHref != null || isPending;
 
   useEffect(() => {
     setPendingHref(null);
-    setSearchOpen(false);
     setMenuOpen(false);
   }, [pathname]);
 
@@ -256,28 +230,23 @@ export function Header() {
   }, [hideMarquee]);
 
   useEffect(() => {
-    if (!searchOpen && !menuOpen) return;
+    if (!menuOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setSearchOpen(false);
-        setMenuOpen(false);
-      }
+      if (e.key === "Escape") setMenuOpen(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [searchOpen, menuOpen]);
+  }, [menuOpen]);
 
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.headerScrolled = headerCompact ? "true" : "false";
     root.dataset.headerNoMarquee = hideMarquee ? "true" : "false";
-    root.dataset.headerSearchOpen = searchLayerExpanded && showHeaderSearchLayer ? "true" : "false";
     return () => {
       delete root.dataset.headerScrolled;
       delete root.dataset.headerNoMarquee;
-      delete root.dataset.headerSearchOpen;
     };
-  }, [headerCompact, hideMarquee, searchLayerExpanded, showHeaderSearchLayer]);
+  }, [headerCompact, hideMarquee]);
 
   useLayoutEffect(() => {
     const el = chromeRef.current;
@@ -370,7 +339,7 @@ export function Header() {
               : "border-b border-brand-forest/10 shadow-[0_4px_16px_rgba(16,32,26,0.05)]"
           }`}
         >
-          {/* Logo + nav + track / search toggle / auth / cart */}
+          {/* Logo + nav + track / auth / cart */}
           <div className="overflow-visible bg-white">
             <div className="page-shell flex items-center gap-2 overflow-visible py-3.5 sm:gap-3 sm:py-4 md:py-5">
               <SarvedaLogo iconHeight={68} responsive />
@@ -426,31 +395,11 @@ export function Header() {
                 })}
               </nav>
 
-              {/* Desktop / tablet: track + search + auth + cart */}
+              {/* Desktop / tablet: track + auth + cart */}
               <div className="ml-auto hidden shrink-0 items-center gap-3 md:flex lg:gap-4">
                 <TrackOrderButton onClick={onTrackClick} />
 
                 <div className="flex items-center gap-2.5 lg:gap-3">
-                  {showSearchToggle ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        setSearchOpen((v) => !v);
-                      }}
-                      className={`${headerIconBtn} ${
-                        searchOpen
-                          ? "bg-gradient-to-br from-[#2a4a3c] to-[#10201a] ring-2 ring-brand-gold/70"
-                          : "bg-gradient-to-br from-[#2a4a3c] to-[#1c352a]"
-                      }`}
-                      aria-label={searchOpen ? "Close search" : "Open search"}
-                      aria-expanded={searchOpen}
-                      aria-controls="header-search-panel"
-                    >
-                      <SearchIcon />
-                    </button>
-                  ) : null}
-
                   {sessionUser ? (
                     <Link
                       href="/profile"
@@ -468,7 +417,7 @@ export function Header() {
                     <>
                       <Link
                         href="/login"
-                        className="inline-flex min-h-[40px] items-center rounded-full border border-brand-forest/20 bg-white px-3.5 text-xs font-semibold text-brand-forest shadow-sm transition-all hover:border-brand-gold/50 hover:bg-brand-gold/10 sm:px-4"
+                        className="inline-flex min-h-[40px] items-center rounded-full bg-[#93c5fd] px-3.5 text-xs font-semibold text-[#1e3a8a] shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[#60a5fa] sm:px-4"
                       >
                         Login
                       </Link>
@@ -493,11 +442,8 @@ export function Header() {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setSearchOpen(false);
-                    setMenuOpen((v) => !v);
-                  }}
-                  className={`${headerIconBtn} bg-gradient-to-br from-[#2a4a3c] to-[#1c352a] xl:hidden`}
+                  onClick={() => setMenuOpen((v) => !v)}
+                  className={`${headerIconBtn} bg-gradient-to-br from-[#2563eb] to-[#1d4ed8] xl:hidden`}
                   aria-label={menuOpen ? "Close menu" : "Open menu"}
                   aria-expanded={menuOpen}
                 >
@@ -505,33 +451,14 @@ export function Header() {
                 </button>
               </div>
 
-              {/* Mobile: search + track on home + shop categories only */}
+              {/* Mobile: track on home + shop categories */}
               <div className="ml-auto flex shrink-0 items-center gap-2 md:hidden">
-                {showSearchToggle ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setSearchOpen((v) => !v);
-                    }}
-                    className={`${headerIconBtn} ${
-                      searchOpen
-                        ? "bg-gradient-to-br from-[#2a4a3c] to-[#10201a] ring-2 ring-brand-gold/70"
-                        : "bg-gradient-to-br from-[#2a4a3c] to-[#1c352a]"
-                    }`}
-                    aria-label={searchOpen ? "Close search" : "Open search"}
-                    aria-expanded={searchOpen}
-                    aria-controls="header-search-panel"
-                  >
-                    <SearchIcon />
-                  </button>
-                ) : null}
                 {isHomePage ? <TrackOrderButton onClick={onTrackClick} compact /> : null}
                 {isShopPage ? (
                   <button
                     type="button"
                     onClick={openShopMenu}
-                    className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-[#019875] px-3 text-sm font-semibold text-white shadow-sm ring-1 ring-black/5 transition-colors hover:bg-[#01856a] sm:h-10 sm:px-3.5"
+                    className="inline-flex h-8 min-h-[32px] shrink-0 items-center gap-1.5 rounded-full bg-[#2563eb] px-3 text-[13px] font-semibold text-white shadow-[0_4px_0_rgba(0,0,0,0.16),0_8px_14px_rgba(0,0,0,0.14)] ring-1 ring-black/5 transition-all duration-150 hover:-translate-y-0.5 hover:bg-[#1d4ed8] hover:shadow-[0_6px_0_rgba(0,0,0,0.14),0_12px_18px_rgba(0,0,0,0.16)] active:translate-y-[2px] active:bg-[#1e40af] active:shadow-[0_1px_0_rgba(0,0,0,0.18),0_3px_8px_rgba(0,0,0,0.12)]"
                     aria-label="Open store categories"
                   >
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
@@ -577,56 +504,6 @@ export function Header() {
               </nav>
             ) : null}
           </div>
-
-          {showHeaderSearchLayer ? (
-            <div
-              id="header-search-panel"
-              className={`border-t border-brand-cream-dark/60 bg-brand-cream/95 transition-[max-height,opacity] duration-300 ease-out ${
-                searchLayerExpanded
-                  ? "max-h-[min(70vh,28rem)] overflow-visible opacity-100"
-                  : "max-h-0 overflow-hidden opacity-0"
-              }`}
-              aria-hidden={!searchLayerExpanded}
-            >
-              <div className="page-shell flex items-start gap-2.5 py-2.5 sm:gap-3">
-                <div className="relative z-[60] min-w-0 flex-1">
-                  <svg
-                    className="pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-brand-muted"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-4.35-4.35M16.5 10.5a6 6 0 11-12 0 6 6 0 0112 0z"
-                    />
-                  </svg>
-                  {searchLayerExpanded ? (
-                    <SearchWithSuggestions
-                      id="desktop-search"
-                      autoFocus={searchOpen}
-                      placeholder="Search products, courses, insights…"
-                      inputClassName="w-full min-h-[44px] rounded-full border border-brand-forest/12 bg-white py-2.5 pl-11 pr-4 text-sm text-brand-ink placeholder:text-brand-muted transition-all focus:border-brand-gold/50 focus:outline-none focus:ring-1 focus:ring-brand-gold/30"
-                      onNavigate={() => setSearchOpen(false)}
-                    />
-                  ) : null}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSearchOpen(false)}
-                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-forest/10 text-brand-forest transition-colors hover:bg-brand-forest hover:text-brand-cream active:bg-brand-night active:text-brand-cream"
-                  aria-label="Close search"
-                >
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" aria-hidden>
-                    <path strokeWidth={2.25} strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          ) : null}
         </header>
       </div>
 

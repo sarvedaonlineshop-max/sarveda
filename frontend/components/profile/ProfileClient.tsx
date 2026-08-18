@@ -288,13 +288,13 @@ export function ProfileClient() {
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
             <Link
               href="/login?next=/profile"
-              className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-brand-forest px-6 text-sm font-semibold text-brand-cream transition-colors hover:bg-brand-night"
+              className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#22c55e] px-6 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#16a34a]"
             >
               Sign in
             </Link>
             <Link
               href="/signup?next=/profile"
-              className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-brand-forest/25 px-6 text-sm font-semibold text-brand-forest hover:bg-brand-forest/5"
+              className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#dc2626] px-6 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#b91c1c]"
             >
               Create account
             </Link>

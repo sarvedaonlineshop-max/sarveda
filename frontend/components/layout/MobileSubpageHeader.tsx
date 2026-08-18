@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
@@ -33,11 +32,9 @@ export function MobileSubpageHeader({
           </svg>
         </button>
         <h1 className="min-w-0 flex-1 truncate font-serif text-lg font-semibold text-stone-900">{title}</h1>
-        {trailing ? <div className="flex max-w-[55%] flex-wrap items-center justify-end gap-1.5">{trailing}</div> : (
-        <Link href="/" className="text-xs font-medium text-amber-700">
-          Home
-        </Link>
-        )}
+        {trailing ? (
+          <div className="flex max-w-[55%] flex-wrap items-center justify-end gap-1.5">{trailing}</div>
+        ) : null}
       </div>
     </div>
   );

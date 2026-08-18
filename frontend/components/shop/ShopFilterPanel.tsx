@@ -12,10 +12,11 @@ type Props = {
   onTagChange: (tag: string | undefined) => void;
   onPriceChange: (min: number, max: number) => void;
   onClose?: () => void;
+  className?: string;
 };
 
-const SHOP_TEAL_BTN =
-  "inline-flex h-[40px] shrink-0 items-center justify-center gap-1.5 rounded-full bg-[#019875] px-3.5 text-sm font-semibold text-white shadow-sm ring-1 ring-black/5 transition-colors hover:bg-[#01856a]";
+const EMERGED_PILL =
+  "inline-flex h-8 min-h-[32px] shrink-0 items-center justify-center gap-1 rounded-full px-3 text-[13px] font-semibold shadow-[0_4px_0_rgba(0,0,0,0.16),0_8px_14px_rgba(0,0,0,0.14)] ring-1 ring-black/5 transition-all duration-150 hover:-translate-y-0.5 hover:brightness-110 hover:shadow-[0_6px_0_rgba(0,0,0,0.14),0_12px_18px_rgba(0,0,0,0.16)] active:translate-y-[2px] active:brightness-95 active:shadow-[0_1px_0_rgba(0,0,0,0.18),0_3px_8px_rgba(0,0,0,0.12)]";
 
 export function ShopFilterToggle({
   open,
@@ -28,7 +29,9 @@ export function ShopFilterToggle({
     <button
       type="button"
       onClick={() => onOpenChange(!open)}
-      className={`${SHOP_TEAL_BTN} ${open ? "bg-[#016f58] hover:bg-[#016f58]" : ""}`}
+      className={`${EMERGED_PILL} bg-[#fca5a5] text-[#7f1d1d] hover:bg-[#f87171] hover:text-white ${
+        open ? "bg-[#f87171] text-white" : ""
+      }`}
       aria-expanded={open}
     >
       Filter
@@ -44,7 +47,16 @@ export function ShopFilterToggle({
   );
 }
 
-export function ShopFilterPanel({ tag, minPrice, maxPrice, open, onTagChange, onPriceChange, onClose }: Props) {
+export function ShopFilterPanel({
+  tag,
+  minPrice,
+  maxPrice,
+  open,
+  onTagChange,
+  onPriceChange,
+  onClose,
+  className
+}: Props) {
   const [localMin, setLocalMin] = useState(minPrice);
   const [localMax, setLocalMax] = useState(maxPrice);
   const debounceRef = useRef<number | undefined>(undefined);
@@ -82,7 +94,7 @@ export function ShopFilterPanel({ tag, minPrice, maxPrice, open, onTagChange, on
   if (!open) return null;
 
   return (
-    <div className="mt-3 rounded-xl bg-[#019875]/30 px-3 py-4 md:px-5">
+    <div className={`mt-3 rounded-xl bg-[#019875]/30 px-3 py-4 md:px-5 ${className ?? ""}`}>
       <ul className="flex flex-wrap items-center gap-2">
         {SHOP_MERCH_FILTERS.map((chip) => {
           const active = tag === chip.slug;

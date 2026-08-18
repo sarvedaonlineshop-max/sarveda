@@ -107,12 +107,12 @@ export function ShopSearchBar({ value, onSearch }: Props) {
             aria-autocomplete="list"
             aria-expanded={open}
             aria-controls="shop-search-suggestions"
-            className="min-h-[40px] w-full rounded-full border border-[#E3D9C8] bg-white py-2 pl-8 pr-3 text-sm text-brand-ink placeholder:text-brand-muted/70 focus:border-[#019875] focus:outline-none focus:ring-2 focus:ring-[#019875]/20"
+            className="h-8 min-h-[32px] w-full rounded-full border border-[#E3D9C8] bg-white py-1.5 pl-8 pr-3 text-sm text-brand-ink placeholder:text-brand-muted/70 focus:border-[#22c55e] focus:outline-none focus:ring-2 focus:ring-[#22c55e]/25"
           />
         </div>
         <button
           type="submit"
-          className="inline-flex h-[40px] shrink-0 items-center rounded-full bg-[#019875] px-3 text-sm font-semibold text-white shadow-sm ring-1 ring-black/5 transition-colors hover:bg-[#01856a]"
+          className="inline-flex h-8 min-h-[32px] shrink-0 items-center rounded-full bg-[#22c55e] px-3 text-[13px] font-semibold text-white shadow-[0_4px_0_rgba(0,0,0,0.16),0_8px_14px_rgba(0,0,0,0.14)] ring-1 ring-black/5 transition-all duration-150 hover:-translate-y-0.5 hover:bg-[#16a34a] hover:shadow-[0_6px_0_rgba(0,0,0,0.14),0_12px_18px_rgba(0,0,0,0.16)] active:translate-y-[2px] active:bg-[#15803d] active:shadow-[0_1px_0_rgba(0,0,0,0.18),0_3px_8px_rgba(0,0,0,0.12)]"
         >
           Search
         </button>

@@ -2,7 +2,7 @@ import Image from "next/image";
 
 /**
  * Homepage hero — original banner photo + spiral overlay + HTML type.
- * Mobile: zoomed on the subject; copy near neck with a light text scrim (no full-image fade).
+ * Mobile: zoomed on the subject; copy near neck as plain text (no box).
  * Desktop: natural landscape ratio with copy on the open mist at left.
  */
 export function HomeHero() {
@@ -51,7 +51,7 @@ export function HomeHero() {
 
         {/*
           Copy placement:
-          - Mobile: starts near neck (face clear); light scrim on text only — image stays sharp
+          - Mobile: starts near neck (face clear); text only — same as desktop
           - Desktop: elevated on the mist at left
         */}
         <div className="absolute inset-0 z-[2] md:flex md:items-start md:px-[6%] md:pt-[9%] lg:px-[8%] lg:pt-[8%] xl:px-[9%] xl:pt-[7.5%]">
@@ -62,28 +62,27 @@ export function HomeHero() {
               "md:static md:top-auto md:max-w-[min(36rem,46vw)] lg:max-w-[min(44rem,42vw)]"
             ].join(" ")}
           >
-            <div className="rounded-2xl bg-[#f7f1e6]/92 px-3.5 py-3 shadow-[0_8px_28px_rgba(26,46,38,0.08)] sm:px-4 sm:py-3.5 md:rounded-none md:bg-transparent md:px-0 md:py-0 md:shadow-none">
-              <h1
-                className="font-serif font-semibold leading-[1.12] tracking-tight text-[#1a2e26]"
-                style={{
-                  fontSize: "clamp(1.65rem, 1rem + 3.2vw, 4rem)",
-                  textShadow: "0 1px 0 rgba(247,241,230,0.35)"
-                }}
-              >
-                Your Partner on the Journey{" "}
-                <span className="text-[#b98a3e]">Within</span>
-              </h1>
-              <p
-                className="mt-2.5 leading-relaxed text-[#1a2e26]/90 sm:mt-3.5 md:mt-5 md:text-[#1a2e26]/85"
-                style={{
-                  fontSize: "clamp(0.85rem, 0.7rem + 0.7vw, 1.25rem)",
-                  maxWidth: "36ch"
-                }}
-              >
-                Curated sound healing instruments, yoga essentials, and authentic learning
-                experiences for every stage of your practice.
-              </p>
-            </div>
+            <h1
+              className="font-serif font-semibold leading-[1.12] tracking-tight text-[#1a2e26]"
+              style={{
+                fontSize: "clamp(1.65rem, 1rem + 3.2vw, 4rem)",
+                textShadow: "0 1px 2px rgba(247,241,230,0.55)"
+              }}
+            >
+              Your Partner on the Journey{" "}
+              <span className="text-[#b98a3e]">Within</span>
+            </h1>
+            <p
+              className="mt-2.5 leading-relaxed text-[#1a2e26]/90 sm:mt-3.5 md:mt-5 md:text-[#1a2e26]/85"
+              style={{
+                fontSize: "clamp(0.85rem, 0.7rem + 0.7vw, 1.25rem)",
+                maxWidth: "36ch",
+                textShadow: "0 1px 2px rgba(247,241,230,0.5)"
+              }}
+            >
+              Curated sound healing instruments, yoga essentials, and authentic learning
+              experiences for every stage of your practice.
+            </p>
           </div>
         </div>
       </div>

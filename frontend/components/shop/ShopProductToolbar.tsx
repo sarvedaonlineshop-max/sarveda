@@ -112,7 +112,7 @@ export function ShopProductToolbar({
   return (
     <>
       <div className="lg:contents">
-        <div className="fixed inset-x-0 top-[var(--storefront-header-live-offset)] z-40 border-b border-brand-cream-dark/60 bg-brand-cream/95 lg:static lg:z-auto lg:border-b-0 lg:bg-transparent">
+        <div className="fixed inset-x-0 top-[var(--storefront-header-live-offset)] z-40 overflow-visible border-b border-brand-cream-dark/60 bg-brand-cream/95 lg:static lg:z-auto lg:border-b-0 lg:bg-transparent">
           <div className="lg:hidden">
             <ShopMobileCategoryDrawer
               categories={categories}
@@ -122,15 +122,39 @@ export function ShopProductToolbar({
           </div>
 
           <div className="relative px-3 py-1.5 md:px-0 lg:py-0">
-            <div className="flex items-center gap-1.5">
-              <ShopSearchBar
-                value={searchQ}
-                onSearch={(term) => {
-                  setLocalSearch(term.trim());
-                  onSearch(term);
-                }}
-              />
-              <ShopFilterToggle open={filterOpen} onOpenChange={setFilterOpen} />
+            <div className="relative">
+              <div className="relative z-[41] flex items-center gap-1.5">
+                <ShopSearchBar
+                  value={searchQ}
+                  onSearch={(term) => {
+                    setLocalSearch(term.trim());
+                    onSearch(term);
+                  }}
+                />
+                <ShopFilterToggle open={filterOpen} onOpenChange={setFilterOpen} />
+              </div>
+              {filterOpen ? (
+                <>
+                  <button
+                    type="button"
+                    className="fixed inset-0 z-[39] bg-black/30 lg:hidden"
+                    aria-label="Close filters"
+                    onClick={() => setFilterOpen(false)}
+                  />
+                  <div className="absolute inset-x-0 top-full z-50 mt-1.5 max-h-[min(70vh,32rem)] overflow-y-auto rounded-xl border border-stone-200 bg-white shadow-[0_18px_40px_rgba(0,0,0,0.2)] lg:hidden">
+                    <ShopFilterPanel
+                      tag={localTag}
+                      minPrice={localMin}
+                      maxPrice={localMax}
+                      open={filterOpen}
+                      onTagChange={applyTag}
+                      onPriceChange={applyPrice}
+                      onClose={() => setFilterOpen(false)}
+                      className="!mt-0"
+                    />
+                  </div>
+                </>
+              ) : null}
             </div>
             <div className="hidden lg:block">
               <ShopFilterPanel
@@ -214,19 +238,7 @@ export function ShopProductToolbar({
           </div>
         </div>
 
-        <div className="h-[5.25rem] shrink-0 lg:hidden" aria-hidden />
-      </div>
-
-      <div className="px-3 lg:hidden">
-        <ShopFilterPanel
-          tag={localTag}
-          minPrice={localMin}
-          maxPrice={localMax}
-          open={filterOpen}
-          onTagChange={applyTag}
-          onPriceChange={applyPrice}
-          onClose={() => setFilterOpen(false)}
-        />
+        <div className="h-[4.75rem] shrink-0 lg:hidden" aria-hidden />
       </div>
     </>
   );

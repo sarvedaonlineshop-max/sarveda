@@ -67,6 +67,8 @@ export function BottomNav() {
     });
   }
 
+  const hideHome = pathname === "/cart";
+
   const items: NavItem[] = [
     {
       key: "home",
@@ -224,8 +226,12 @@ export function BottomNav() {
         style={{ background: "linear-gradient(180deg,#0f1a14 0%,#0c1510 100%)", backdropFilter: "blur(16px)" }}
         aria-label="Primary"
       >
-        <div className="mx-auto grid h-[4.5rem] max-w-lg grid-cols-5 items-stretch">
-          {items.map((item) => {
+        <div
+          className={`mx-auto grid h-[4.5rem] max-w-lg items-stretch ${
+            hideHome ? "grid-cols-4" : "grid-cols-5"
+          }`}
+        >
+          {items.filter((item) => !(hideHome && item.key === "home")).map((item) => {
             const active = item.isActive;
             const inner = (
               <>
