@@ -1,5 +1,37 @@
 import { prisma } from "../../config/db";
 
+/** Old demo slugs → live Woo slugs. Keep resolving so old links still load. */
+const CATEGORY_SLUG_ALIASES: Record<string, string> = {
+  "yoga-meditation": "yoga-and-meditation",
+  "sound-musical-instruments-accessories": "accessories",
+  "sound-musical-instruments-all": "all-musical-instruments",
+  "sound-musical-instruments-chimes": "chimes",
+  "sound-musical-instruments-crystal-bowls": "crystal-bowls",
+  "sound-musical-instruments-gongs": "gongs-musical-instruments",
+  "sound-musical-instruments-handpans-tongue-drum": "handpans-tongue-drum",
+  "sound-musical-instruments-indian-classical": "indian-classical",
+  "sound-musical-instruments-kids": "kids",
+  "sound-musical-instruments-percussion": "percussion",
+  "sound-musical-instruments-rattles-shakers": "rattles-shakers",
+  "sound-musical-instruments-singing-bowls-bells": "singing-bowls-bells",
+  "sound-musical-instruments-tuning-forks": "tuning-forks",
+  "sound-musical-instruments-wind": "wind",
+  "sound-musical-instruments-xylophones": "xylophones",
+  "eco-living-sustainable-all": "all-handpans-tonguedrum",
+  "eco-living-sustainable-bottles": "bottles",
+  "eco-living-sustainable-gift-sets": "gift-sets",
+  "eco-living-sustainable-home-workspace": "home-workspace",
+  "eco-living-sustainable-personal-care": "personal-care",
+  "yoga-meditation-all": "all-yoga-and-meditation",
+  "yoga-meditation-bottles-accessories": "bottles-accessories",
+  "yoga-meditation-meditation-cushions-benches": "meditation-cushions-benches",
+  "yoga-meditation-yoga-mats-props": "yoga-mats-props"
+};
+
+export function resolveCategorySlug(slug: string): string {
+  return CATEGORY_SLUG_ALIASES[slug] || slug;
+}
+
 export type CategoryNode = {
   id: string;
   slug: string;
@@ -56,7 +88,7 @@ export async function getCategoryTree(): Promise<CategoryNode[]> {
 
 export async function getCategoryBySlug(slug: string): Promise<CategoryPublic | null> {
   const row = await prisma.category.findUnique({
-    where: { slug },
+    where: { slug: resolveCategorySlug(slug) },
     include: {
       parent: { select: { slug: true, name: true } }
     }
@@ -79,7 +111,7 @@ export async function getCategorySlugScope(rootSlug: string): Promise<string[]> 
   const rows = await prisma.category.findMany({
     select: { id: true, slug: true, parentId: true }
   });
-  const root = rows.find((r) => r.slug === rootSlug);
+  const root = rows.find((r) => r.slug === resolveCategorySlug(rootSlug));
   if (!root) return [rootSlug];
 
   const childrenByParent = new Map<string, string[]>();

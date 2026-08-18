@@ -22,7 +22,23 @@ const SLUG_FILTER = (() => {
 })();
 
 const OUT_JSON = path.join(__dirname, "../../data/compare/variant-gallery-switch-audit.json");
+const PULL_V2 = path.join(__dirname, "../../data/compare/do-ls-media-pull-v2.json");
 const prisma = new PrismaClient();
+
+/** LS-only SKUs (skip_ls_only in pull map) — sharing galleries across these is OK. */
+function loadLsOnlySkus(): Set<string> {
+  const out = new Set<string>();
+  if (!fs.existsSync(PULL_V2)) return out;
+  const raw = JSON.parse(fs.readFileSync(PULL_V2, "utf8")) as {
+    rows: Array<{ ls_sku: string; action: string }>;
+  };
+  for (const r of raw.rows) {
+    if (r.action === "skip_ls_only" && r.ls_sku?.trim()) {
+      out.add(r.ls_sku.trim());
+    }
+  }
+  return out;
+}
 
 type VariantRow = {
   sku: string;
@@ -57,6 +73,33 @@ function fingerprint(urls: string[]): string {
   return [...urls].sort().join("|");
 }
 
+function looksLikeSizeValue(value: string): boolean {
+  return /\d+(?:\.\d+)?\s*-?\s*(in(?:ch(?:es)?)?|cm(?:s)?)\b/i.test(value.trim());
+}
+
+/** Match sync-do-variant-galleries.ts — type/size values are swapped on some LS variants. */
+function axisValueForAudit(attrs: Record<string, string>, colorKey: string, sku: string): string {
+  const normalized = { ...attrs };
+  const typeVal = (normalized.type || "").trim();
+  const sizeVal = (normalized.size || "").trim();
+  if (typeVal && sizeVal && looksLikeSizeValue(typeVal) && !looksLikeSizeValue(sizeVal)) {
+    normalized.type = sizeVal;
+    normalized.size = typeVal;
+  }
+  const direct = (normalized[colorKey] || "").trim();
+  if (direct) return direct;
+  if (colorKey === "colours" || colorKey === "colour" || colorKey === "color") {
+    return (
+      (normalized.option || "").trim() ||
+      (normalized.colours || "").trim() ||
+      (normalized.colour || "").trim() ||
+      (normalized.color || "").trim() ||
+      sku
+    );
+  }
+  return sku;
+}
+
 async function main() {
   const products = await prisma.product.findMany({
     where: {
@@ -78,6 +121,7 @@ async function main() {
     orderBy: { slug: "asc" },
   });
 
+  const lsOnlySkus = loadLsOnlySkus();
   const issues: ProductIssue[] = [];
   let ok = 0;
 
@@ -102,7 +146,7 @@ async function main() {
       continue;
     }
 
-    const rows: VariantRow[] = p.variants.map((v) => {
+    const allRows: VariantRow[] = p.variants.map((v) => {
       const urls = v.images.map((i) => i.url);
       return {
         sku: v.sku,
@@ -112,38 +156,63 @@ async function main() {
       };
     });
 
-    const noImages = rows.filter((r) => r.imageUrls.length === 0);
+    const rowsForAudit = allRows.filter((r) => !lsOnlySkus.has(r.sku.trim()));
+    if (rowsForAudit.length < 2) {
+      ok++;
+      continue;
+    }
+
+    const noImages = rowsForAudit.filter((r) => r.imageUrls.length === 0);
     if (noImages.length) {
       issues.push({
         slug: p.slug,
         name: p.name,
         activeVariants: p.variants.length,
         issue: "missing_images",
-        detail: `${noImages.length} active variant(s) with 0 linked images: ${noImages.map((r) => r.sku).join(", ")}`,
-        variants: rows,
+        detail: `${noImages.length} active DO-mapped variant(s) with 0 linked images: ${noImages.map((r) => r.sku).join(", ")}`,
+        variants: allRows,
       });
       continue;
     }
 
-    const byFp = new Map<string, VariantRow[]>();
-    for (const r of rows) {
-      const list = byFp.get(r.imageFingerprint) || [];
+    const byPrimary = new Map<string, VariantRow[]>();
+    for (const r of rowsForAudit) {
+      const primary = r.imageUrls[0] || "";
+      if (!primary) continue;
+      const list = byPrimary.get(primary) || [];
       list.push(r);
-      byFp.set(r.imageFingerprint, list);
+      byPrimary.set(primary, list);
     }
 
-    const colorKey = attrSlugs.has("color") ? "color" : attrSlugs.values().next().value || null;
+    const colorKey = (() => {
+      const priority = [
+        "color",
+        "colour",
+        "colours",
+        "type",
+        "size",
+        "style",
+        "hertz",
+        "no-of-holes",
+        "option",
+        "tunes",
+      ];
+      for (const slug of priority) {
+        if (attrSlugs.has(slug)) return slug;
+      }
+      return attrSlugs.values().next().value || null;
+    })();
     if (!colorKey) {
       ok++;
       continue;
     }
 
-    const sharedGroups = [...byFp.entries()]
+    const sharedGroups = [...byPrimary.entries()]
       .filter(([, group]) => group.length > 1)
-      .map(([fp, group]) => ({
-        fingerprint: fp.slice(0, 80) + (fp.length > 80 ? "…" : ""),
+      .map(([primary, group]) => ({
+        fingerprint: primary.slice(0, 80) + (primary.length > 80 ? "…" : ""),
         skus: group.map((g) => g.sku),
-        colors: [...new Set(group.map((g) => g.attrs[colorKey] || "?"))],
+        colors: [...new Set(group.map((g) => axisValueForAudit(g.attrs, colorKey, g.sku)))],
       }))
       .filter((g) => g.colors.length > 1);
 
@@ -153,9 +222,9 @@ async function main() {
         name: p.name,
         activeVariants: p.variants.length,
         issue: "shared_gallery",
-        detail: `${sharedGroups.length} image-set group(s) cover multiple colors — PDP won't switch thumbs`,
+        detail: `${sharedGroups.length} primary-thumb group(s) cover multiple axis values — PDP won't switch hero image`,
         groups: sharedGroups,
-        variants: rows,
+        variants: allRows,
       });
     } else {
       ok++;

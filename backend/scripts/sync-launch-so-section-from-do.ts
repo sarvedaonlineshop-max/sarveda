@@ -249,6 +249,13 @@ async function fetchWooStoreProduct(slug: string): Promise<{
   }
 }
 
+function s3KeyForWpUpload(url: string, productSlug: string, index: number): string {
+  const prefix = "https://sarveda.com/wp-content/uploads/";
+  if (url.startsWith(prefix)) return `media/wp/uploads/${url.slice(prefix.length)}`;
+  const ext = path.extname(new URL(url).pathname) || ".jpg";
+  return `media/wp/uploads/products/${productSlug}/${index === 0 ? "primary" : `gallery-${index}`}${ext}`;
+}
+
 async function mirrorImages(productSlug: string, urls: string[]): Promise<string[]> {
   const out: string[] = [];
   for (let i = 0; i < urls.length; i++) {
@@ -259,8 +266,7 @@ async function mirrorImages(productSlug: string, urls: string[]): Promise<string
       continue;
     }
     try {
-      const ext = path.extname(new URL(url).pathname) || ".jpg";
-      const key = `products/${productSlug}/${i === 0 ? "primary" : `gallery-${i}`}${ext}`;
+      const key = s3KeyForWpUpload(url, productSlug, i);
       out.push((await mirrorUrlToS3(url, key)) || url);
     } catch {
       out.push(url);

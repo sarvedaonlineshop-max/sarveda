@@ -429,7 +429,11 @@ const listInclude = {
 };
 
 /** Curated pair-with / upsell first; category fallback when empty. */
-export async function listRelatedProducts(slug: string, limit = 4) {
+export async function listRelatedProducts(
+  slug: string,
+  limit = 4,
+  options: { pairOnly?: boolean } = {}
+) {
   const take = Math.min(8, Math.max(1, limit));
   const product = await prisma.product.findFirst({
     where: { slug, deletedAt: null, status: "ACTIVE" },
@@ -443,7 +447,10 @@ export async function listRelatedProducts(slug: string, limit = 4) {
   }
 
   const relations = await prisma.productRelation.findMany({
-    where: { fromProductId: product.id },
+    where: {
+      fromProductId: product.id,
+      ...(options.pairOnly ? { type: "PAIR_WITH" } : {})
+    },
     orderBy: [{ position: "asc" }],
     include: {
       toProduct: {
@@ -470,7 +477,11 @@ export async function listRelatedProducts(slug: string, limit = 4) {
     if (curated.length >= take) break;
   }
 
-  if (curated.length >= take) {
+  if (options.pairOnly) {
+    return { items: curated, source: curated.length ? ("curated" as const) : ("none" as const) };
+  }
+
+  if (curated.length > 0) {
     return { items: curated, source: "curated" as const };
   }
 

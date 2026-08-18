@@ -132,11 +132,18 @@ export async function getOne(req: Request, res: Response, next: NextFunction) {
   }
 }
 
+const relatedQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(8).optional(),
+  pairOnly: z.enum(["1", "true", "yes"]).optional()
+});
+
 export async function related(req: Request, res: Response, next: NextFunction) {
   try {
     const { slug } = req.params;
-    const limit = req.query.limit ? Number(req.query.limit) : 4;
-    const data = await listRelatedProducts(slug, Number.isFinite(limit) ? limit : 4);
+    const q = relatedQuerySchema.parse(req.query);
+    const data = await listRelatedProducts(slug, q.limit ?? 4, {
+      pairOnly: Boolean(q.pairOnly)
+    });
     res.json({ success: true, data });
   } catch (err) {
     next(err);

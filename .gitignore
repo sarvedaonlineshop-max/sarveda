@@ -97,3 +97,6 @@ backend/scripts/sync-do-copy-accordion.ts
 **/tsbuildinfo
 *.tsbuildinfo
 
+
+backend/start.sh
+backend/scripts/*.json
