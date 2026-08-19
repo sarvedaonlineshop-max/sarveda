@@ -14,7 +14,81 @@ import { OPEN_TRACK_ORDER_EVENT } from "./TrackOrderModal";
 import { dispatchNavStart } from "./RouteLoadingSpinner";
 import { useStorefrontSession } from "./useStorefrontSession";
 
-const NAV_GREEN = "#0f5c38";
+const NAV_GREEN = "#25D366";
+const NAV_GREEN_DARK = "#1ebe57";
+
+function MenuRowIcon({ kind }: { kind: string }) {
+  const cls = "mr-3 h-5 w-5 shrink-0 opacity-95";
+  switch (kind) {
+    case "track":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" aria-hidden>
+          <path strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" d="M21 8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16V8z" />
+          <path strokeWidth={1.8} strokeLinecap="round" d="M3.3 7L12 12l8.7-5M12 22V12" />
+        </svg>
+      );
+    case "orders":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" aria-hidden>
+          <path strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+        </svg>
+      );
+    case "details":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" aria-hidden>
+          <path strokeWidth={1.8} strokeLinecap="round" d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+          <circle cx="12" cy="7" r="4" strokeWidth={1.8} />
+        </svg>
+      );
+    case "courses":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" aria-hidden>
+          <path strokeWidth={1.8} strokeLinecap="round" d="M4 19.5A2.5 2.5 0 006.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+        </svg>
+      );
+    case "events":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" aria-hidden>
+          <rect x="3" y="4" width="18" height="18" rx="2" strokeWidth={1.8} />
+          <path strokeWidth={1.8} strokeLinecap="round" d="M16 2v4M8 2v4M3 10h18" />
+        </svg>
+      );
+    case "corporate":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" aria-hidden>
+          <path strokeWidth={1.8} strokeLinecap="round" d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M9 10h.01M15 10h.01M9 14h.01M15 14h.01" />
+        </svg>
+      );
+    case "insights":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" aria-hidden>
+          <path strokeWidth={1.8} strokeLinecap="round" d="M4 19.5h16M8 19V9m4 10V5m4 14v-6" />
+        </svg>
+      );
+    case "explore-events":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" aria-hidden>
+          <circle cx="12" cy="12" r="9" strokeWidth={1.8} />
+          <path strokeWidth={1.8} strokeLinecap="round" d="M12 7v5l3 2" />
+        </svg>
+      );
+    case "policy":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" aria-hidden>
+          <path strokeWidth={1.8} strokeLinecap="round" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+          <path strokeWidth={1.8} strokeLinecap="round" d="M14 2v6h6M8 13h8M8 17h5" />
+        </svg>
+      );
+    case "auth":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" aria-hidden>
+          <path strokeWidth={1.8} strokeLinecap="round" d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" />
+        </svg>
+      );
+    default:
+      return null;
+  }
+}
 
 const accountLinks = [
   { href: "/profile?tab=orders", label: "My orders", tab: "orders" },
@@ -41,7 +115,7 @@ type NavItem = {
 
 function menuItemClass(active: boolean) {
   return `flex w-full items-center px-4 py-3 text-sm font-medium transition-colors ${
-    active ? "bg-white/15 text-white" : "text-white hover:bg-white/10"
+    active ? "bg-white/25 text-white" : "text-white hover:bg-white/15"
   }`;
 }
 
@@ -233,6 +307,7 @@ export function BottomNav() {
                     }}
                     className={menuItemClass(false)}
                   >
+                    <MenuRowIcon kind="track" />
                     Track my order
                   </button>
                 </li>
@@ -241,6 +316,7 @@ export function BottomNav() {
                   return (
                     <li key={link.href}>
                       <Link href={link.href} className={menuItemClass(!!active)} onClick={() => setMenuOpen(false)}>
+                        <MenuRowIcon kind={link.tab} />
                         {link.label}
                       </Link>
                     </li>
@@ -253,9 +329,16 @@ export function BottomNav() {
               <ul>
                 {exploreLinks.map((link) => {
                   const active = isMainNavActive(pathname, link.href);
+                  const iconKind =
+                    link.href === "/corporate-wellness"
+                      ? "corporate"
+                      : link.href === "/insights"
+                        ? "insights"
+                        : "explore-events";
                   return (
                     <li key={link.href}>
                       <Link href={link.href} className={menuItemClass(active)} onClick={() => setMenuOpen(false)}>
+                        <MenuRowIcon kind={iconKind} />
                         {link.label}
                       </Link>
                     </li>
@@ -266,7 +349,7 @@ export function BottomNav() {
               <div className="mx-4 border-t border-white/25" />
 
               <div className="px-4 py-2">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-white/70">Policies</p>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-white/80">Policies</p>
               </div>
               <ul>
                 {MOBILE_MENU_POLICY_LINKS.map((link) => {
@@ -274,6 +357,7 @@ export function BottomNav() {
                   return (
                     <li key={link.href}>
                       <Link href={link.href} className={menuItemClass(active)} onClick={() => setMenuOpen(false)}>
+                        <MenuRowIcon kind="policy" />
                         {link.label}
                       </Link>
                     </li>
@@ -284,10 +368,12 @@ export function BottomNav() {
               <div className="border-t border-white/25 px-3 py-2 pb-3">
                 {sessionUser ? (
                   <button type="button" onClick={() => void handleSignOut()} className={menuItemClass(false)}>
+                    <MenuRowIcon kind="auth" />
                     Sign out
                   </button>
                 ) : (
                   <Link href="/login?next=/profile" className={menuItemClass(false)} onClick={() => setMenuOpen(false)}>
+                    <MenuRowIcon kind="auth" />
                     Sign in
                   </Link>
                 )}
@@ -295,7 +381,7 @@ export function BottomNav() {
             </div>
 
             {showMoreHint ? (
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center bg-gradient-to-t from-[#1c352a] via-[#1c352a]/90 to-transparent pb-1 pt-8">
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center bg-gradient-to-t from-[#1ebe57] via-[#1ebe57]/90 to-transparent pb-1 pt-8">
                 <svg viewBox="0 0 24 24" className="h-6 w-6 animate-bounce text-white" fill="none" stroke="currentColor" aria-hidden>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M6 9l6 6 6-6" />
                 </svg>

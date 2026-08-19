@@ -199,7 +199,7 @@ function ContactInfoPanel() {
   const salesWhatsApp = companySalesWhatsAppDisplay();
 
   return (
-    <aside className="h-full min-h-0 overflow-y-auto border-t border-brand-cream-dark bg-white px-5 py-6 font-sans sm:px-7 sm:py-8 lg:border-b-0 lg:border-r lg:border-t-0 lg:py-10">
+    <aside className="min-h-0 overflow-y-auto border-t border-brand-cream-dark bg-white px-5 py-6 font-sans sm:px-7 sm:py-8 lg:h-full lg:border-b-0 lg:border-r lg:border-t-0 lg:py-10">
       <div className="space-y-8">
         <ContactInfoRow icon={<IconMailOutline />}>
           <p className={infoHeadingCls}>
@@ -383,7 +383,7 @@ function ContactFormInner() {
   return (
     <form
       onSubmit={(event) => void onSubmit(event)}
-      className="flex h-full min-h-0 flex-col overflow-hidden bg-white px-4 py-4 font-sans sm:px-6 sm:py-5 lg:px-8 lg:py-6"
+      className="flex min-h-0 flex-col bg-white px-4 py-4 font-sans sm:px-6 sm:py-5 lg:h-full lg:overflow-hidden lg:px-8 lg:py-6"
     >
       <h1 className="text-2xl font-semibold leading-tight text-brand-ink md:text-3xl lg:text-[2rem]">
         Contact US
@@ -396,7 +396,7 @@ function ContactFormInner() {
         </p>
       ) : null}
 
-      <div className="mt-5 grid min-h-0 flex-1 grid-cols-1 content-start gap-5 overflow-y-auto sm:grid-cols-2">
+      <div className="mt-5 grid grid-cols-1 content-start gap-5 sm:grid-cols-2 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
         <div className="sm:col-span-2">
           <label htmlFor="contact-subject" className={labelCls}>
             What is this about? <span className="text-brand-terra">*</span>
@@ -535,30 +535,52 @@ function ContactFormInner() {
 
 export function ContactPageClient() {
   useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
     const html = document.documentElement;
     const body = document.body;
     const prevHtml = html.style.overflow;
     const prevBody = body.style.overflow;
-    html.style.overflow = "hidden";
-    body.style.overflow = "hidden";
+
+    const apply = () => {
+      if (mq.matches) {
+        html.style.overflow = "hidden";
+        body.style.overflow = "hidden";
+      } else {
+        html.style.overflow = prevHtml;
+        body.style.overflow = prevBody;
+      }
+    };
+
+    apply();
+    mq.addEventListener("change", apply);
     return () => {
+      mq.removeEventListener("change", apply);
       html.style.overflow = prevHtml;
       body.style.overflow = prevBody;
     };
   }, []);
 
   return (
-    <div className="relative h-[calc(100dvh-var(--storefront-header-live-offset)-4.5rem-env(safe-area-inset-bottom,0px))] overflow-hidden bg-brand-cream p-2 md:h-[calc(100dvh-var(--storefront-header-live-offset)-var(--storefront-slim-footer-offset))] md:p-2.5">
-      <div className="relative z-[1] grid h-full min-h-0 grid-rows-[minmax(0,1fr)_auto] overflow-hidden rounded-2xl border border-brand-cream-dark bg-white shadow-card lg:grid-cols-2 lg:grid-rows-none">
-        <div className="order-2 min-h-0 lg:order-1 lg:h-full">
+    <>
+      {/* Mobile / tablet: scrollable stack — form first, addresses second */}
+      <div className="bg-brand-cream p-2 pb-4 lg:hidden">
+        <div className="overflow-hidden rounded-2xl border border-brand-cream-dark bg-white shadow-card">
+          <Suspense fallback={<p className="p-8 text-sm text-brand-muted">Loading form…</p>}>
+            <ContactFormInner />
+          </Suspense>
           <ContactInfoPanel />
         </div>
-        <div className="order-1 min-h-0 overflow-hidden lg:order-2 lg:h-full">
+      </div>
+
+      {/* Desktop: side-by-side locked viewport */}
+      <div className="relative hidden h-[calc(100dvh-var(--storefront-header-live-offset)-var(--storefront-slim-footer-offset))] overflow-hidden bg-brand-cream p-2.5 lg:block">
+        <div className="relative z-[1] grid h-full min-h-0 grid-cols-2 overflow-hidden rounded-2xl border border-brand-cream-dark bg-white shadow-card">
+          <ContactInfoPanel />
           <Suspense fallback={<p className="p-8 text-sm text-brand-muted">Loading form…</p>}>
             <ContactFormInner />
           </Suspense>
         </div>
       </div>
-    </div>
+    </>
   );
 }

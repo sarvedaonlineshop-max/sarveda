@@ -351,36 +351,37 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
         {hasCartRail ? (
           <Link
             href="/checkout"
-            className="mx-auto mb-3 flex min-h-[44px] w-full max-w-lg items-center justify-center rounded-full bg-brand-gold text-sm font-semibold text-brand-night transition-colors hover:bg-[#a37934]"
+            className="mx-auto flex min-h-[48px] w-full max-w-lg items-center justify-center rounded-full bg-[#25D366] text-sm font-semibold text-white transition-colors hover:bg-[#1ebe57]"
           >
             Proceed to Buy · {formatINRFromPaise(subtotalInPaise)}
             {cartCount > 0 ? ` (${cartCount})` : ""}
           </Link>
-        ) : null}
-        <div className="mx-auto flex max-w-lg items-center gap-2">
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-xs text-brand-muted">{product.name}</p>
-            <p className="text-lg font-bold tracking-tight text-brand-forest">
-              {variant ? formatMinorFromPaise(saleMinor, currency) : "—"}
-            </p>
+        ) : (
+          <div className="mx-auto flex max-w-lg items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs text-brand-muted">{product.name}</p>
+              <p className="text-lg font-bold tracking-tight text-brand-forest">
+                {variant ? formatMinorFromPaise(saleMinor, currency) : "—"}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void add()}
+              disabled={addDisabled}
+              className="min-h-[44px] rounded-full border border-[#108967] px-4 text-xs font-semibold text-[#108967]"
+            >
+              Add
+            </button>
+            <button
+              type="button"
+              onClick={() => void buyNow()}
+              disabled={addDisabled}
+              className="min-h-[44px] flex-1 rounded-full bg-[#108967] px-4 text-xs font-semibold text-white"
+            >
+              Buy now
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => void add()}
-            disabled={addDisabled}
-            className="min-h-[44px] rounded-full border border-[#108967] px-4 text-xs font-semibold text-[#108967]"
-          >
-            Add
-          </button>
-          <button
-            type="button"
-            onClick={() => void buyNow()}
-            disabled={addDisabled}
-            className="min-h-[44px] flex-1 rounded-full bg-[#108967] px-4 text-xs font-semibold text-white"
-          >
-            Buy now
-          </button>
-        </div>
+        )}
       </div>
     </>
   );

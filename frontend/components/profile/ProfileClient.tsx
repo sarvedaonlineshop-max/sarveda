@@ -332,7 +332,7 @@ export function ProfileClient() {
       <button
         type="button"
         onClick={() => void handleSignOut()}
-        className="inline-flex min-h-[36px] items-center justify-center rounded-full bg-brand-terra px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#9a4825]"
+        className="inline-flex min-h-[36px] items-center justify-center rounded-full bg-[#25D366] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#1ebe57]"
       >
         Sign out
       </button>
@@ -535,7 +535,7 @@ export function ProfileClient() {
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-brand-forest px-8 text-sm font-semibold text-brand-cream transition-colors hover:bg-brand-night disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500"
+              className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#25D366] px-8 text-sm font-semibold text-white transition-colors hover:bg-[#1ebe57] disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500"
             >
               {saving ? "Saving…" : "Save changes"}
             </button>

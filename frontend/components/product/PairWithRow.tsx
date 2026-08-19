@@ -60,8 +60,8 @@ function AddButton({
         }}
         className={
           compact
-            ? "shrink-0 rounded-full bg-brand-night px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-            : "mt-2 inline-flex min-w-[72px] items-center justify-center rounded-full border border-brand-forest px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand-forest transition-colors hover:bg-brand-forest hover:text-brand-cream disabled:opacity-50"
+            ? "shrink-0 rounded-full bg-[#25D366] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            : "mt-2 inline-flex min-w-[72px] items-center justify-center rounded-full border border-[#25D366] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#128C7E] transition-colors hover:bg-[#25D366] hover:text-white disabled:opacity-50"
         }
       >
         {addingId === item.id ? "…" : "Add"}
@@ -74,7 +74,7 @@ function AddButton({
       href={`/product/${item.slug}`}
       className={
         compact
-          ? "shrink-0 rounded-full bg-brand-night px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white"
+          ? "shrink-0 rounded-full bg-[#25D366] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white"
           : "mt-2 inline-block text-xs font-semibold uppercase tracking-wide text-brand-forest hover:underline"
       }
     >

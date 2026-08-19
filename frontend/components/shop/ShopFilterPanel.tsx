@@ -94,8 +94,20 @@ export function ShopFilterPanel({
   if (!open) return null;
 
   return (
-    <div className={`mt-3 rounded-xl bg-[#019875]/30 px-3 py-4 md:px-5 ${className ?? ""}`}>
-      <ul className="flex flex-wrap items-center gap-2">
+    <div className={`relative mt-3 rounded-xl bg-[#019875]/30 px-3 py-4 md:px-5 ${className ?? ""}`}>
+      {onClose ? (
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-2 top-2 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand-ink shadow-sm ring-1 ring-black/10 transition-colors hover:bg-brand-cream"
+          aria-label="Close filters"
+        >
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" aria-hidden>
+            <path strokeLinecap="round" strokeWidth={2} d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+      ) : null}
+      <ul className="flex flex-wrap items-center gap-2 pr-10">
         {SHOP_MERCH_FILTERS.map((chip) => {
           const active = tag === chip.slug;
           return (

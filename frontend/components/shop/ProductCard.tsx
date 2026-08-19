@@ -161,7 +161,7 @@ export function ProductCard({
             ) : null}
           </div>
 
-          <span className="mt-1 inline-flex w-fit items-center rounded-full bg-brand-forest px-3 py-1 text-[11px] font-semibold text-brand-cream transition-colors group-hover:bg-brand-night">
+          <span className="mt-1 inline-flex w-fit items-center rounded-full bg-[#25D366] px-3 py-1 text-[11px] font-semibold text-white transition-colors group-hover:bg-[#1ebe57]">
             View product
           </span>
         </div>
