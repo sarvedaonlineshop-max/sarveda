@@ -346,12 +346,12 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
         </div>
       </div>
 
-      {/* Mobile / tablet sticky purchase bar (desktop uses fixed cart rail at lg+) */}
-      <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] z-50 border-t border-brand-cream-dark bg-brand-ivory/95 px-4 py-3 shadow-[0_-8px_24px_rgba(28,53,42,0.10)] backdrop-blur-md safe-area-pb lg:hidden">
+      {/* Mobile sticky purchase bar — sits above bottom nav with a clear gap */}
+      <div className="fixed inset-x-0 bottom-[calc(4.5rem+0.65rem+env(safe-area-inset-bottom,0px))] z-[60] border-t border-brand-cream-dark bg-brand-ivory/95 px-4 py-2.5 shadow-[0_-8px_24px_rgba(28,53,42,0.12)] backdrop-blur-md lg:hidden">
         {hasCartRail ? (
           <Link
             href="/checkout"
-            className="mx-auto flex min-h-[48px] w-full max-w-lg items-center justify-center rounded-full bg-[#25D366] text-sm font-semibold text-white transition-colors hover:bg-[#1ebe57]"
+            className="mx-auto flex min-h-[48px] w-full max-w-lg items-center justify-center rounded-full bg-brand-gold text-sm font-semibold text-brand-night shadow-[0_4px_14px_rgba(185,138,62,0.35)] transition-colors hover:bg-[#a37934]"
           >
             Proceed to Buy · {formatINRFromPaise(subtotalInPaise)}
             {cartCount > 0 ? ` (${cartCount})` : ""}
