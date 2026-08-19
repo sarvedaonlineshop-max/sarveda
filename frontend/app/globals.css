@@ -204,18 +204,44 @@ body {
 }
 
 /* ─── Rich text (PDP, legal, about, blog) ─────────────────────── */
+.rich-features h2,
+.rich-features h3,
 .rich-features h4,
 .rich-features h5 {
-  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  color: var(--brand-ink);
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  color: var(--brand-forest);
   font-weight: 700;
+  line-height: 1.3;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+}
+.rich-features h2 { font-size: clamp(1.35rem, 2.4vw, 1.65rem); }
+.rich-features h3 { font-size: clamp(1.15rem, 2vw, 1.3rem); }
+.rich-features h4 {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.125rem;
   margin-top: 1.25rem;
   margin-bottom: 0.4rem;
 }
-.rich-features h4 { font-size: 1.125rem; }
-.rich-features h5 { font-size: 1rem; }
-.rich-features p { margin: 0.15rem 0 0.45rem; }
+.rich-features h5 {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1rem;
+  margin-top: 1.25rem;
+  margin-bottom: 0.4rem;
+}
+.rich-features p { margin: 0 0 1rem; line-height: 1.75; }
 .rich-features p:last-child { margin-bottom: 0; }
+
+.insight-rich.rich-features {
+  max-width: 42rem;
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--brand-ink);
+}
+.insight-rich.rich-features p { margin: 0 0 1.15rem; }
+.insight-rich.rich-features ul,
+.insight-rich.rich-features ol { margin: 0 0 1.25rem; }
+.insight-rich.rich-features li { margin-bottom: 0.55rem; line-height: 1.65; }
 
 .pdp-description.rich-features p {
   margin: 0 0 0.45rem;

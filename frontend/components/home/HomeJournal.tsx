@@ -42,8 +42,7 @@ export function HomeJournal({ posts }: Props) {
           </h2>
           <Flourish />
           <p className="mx-auto mt-3 max-w-2xl text-sm text-brand-ink/70 sm:text-[0.95rem]">
-            Explore articles, guides and reflections on sound, yoga, mindfulness and conscious
-            living.
+            Practical guides and teachings on sound, yoga, mindfulness and conscious living.
           </p>
         </div>
 

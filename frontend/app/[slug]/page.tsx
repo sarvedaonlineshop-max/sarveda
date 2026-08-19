@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ContentHeroBanner } from "@/components/content/ContentHeroBanner";
+import { InsightArticleExtras } from "@/components/content/InsightArticleExtras";
 import { Breadcrumbs } from "@/components/product/Breadcrumbs";
 import { ProductRichText } from "@/components/product/ProductRichText";
 import { CorporateProgramPage } from "@/components/cms/CorporateProgramPage";
@@ -14,6 +15,7 @@ import type { BlogDetail } from "@/lib/blog-types";
 import type { CmsPage } from "@/lib/cms-types";
 import {
   fetchBlogBySlug,
+  fetchBlogPosts,
   fetchBlogSlugs,
   fetchCmsPageBySlug,
   fetchCmsPageSlugs,
@@ -47,6 +49,7 @@ type ContentPage = {
   extra: Record<string, unknown> | null;
   seoTitle: string | null;
   seoDescription: string | null;
+  seoKeyword: string | null;
   kind: "cms" | "blog";
   publishedAt: string | null;
 };
@@ -68,6 +71,7 @@ function fromCmsPage(page: CmsPage): ContentPage {
     extra: page.extra,
     seoTitle: page.seoTitle,
     seoDescription: page.seoDescription,
+    seoKeyword: null,
     kind: "cms",
     publishedAt: null
   };
@@ -83,6 +87,7 @@ function fromBlogPost(post: BlogDetail): ContentPage {
     extra: null,
     seoTitle: post.seoTitle,
     seoDescription: post.seoDescription,
+    seoKeyword: post.seoKeyword,
     kind: "blog",
     publishedAt: post.publishedAt
   };
@@ -203,6 +208,21 @@ export default async function SlugContentPage({ params }: Props) {
 
   if (!content) notFound();
 
+  let relatedPosts: Awaited<ReturnType<typeof fetchBlogPosts>> = [];
+  if (content.kind === "blog") {
+    const keyword = content.seoKeyword?.trim().toLowerCase() ?? "";
+    const others = (await fetchBlogPosts({ next: { revalidate: 300 } })).filter(
+      (post) => post.slug !== content.slug
+    );
+    relatedPosts = [...others]
+      .sort((a, b) => {
+        const aMatch = keyword && a.seoKeyword?.toLowerCase().includes(keyword.slice(0, 18)) ? 1 : 0;
+        const bMatch = keyword && b.seoKeyword?.toLowerCase().includes(keyword.slice(0, 18)) ? 1 : 0;
+        return bMatch - aMatch;
+      })
+      .slice(0, 2);
+  }
+
   if (cmsPage && isCorporateWellnessPage(cmsPage)) {
     return (
       <>
@@ -232,7 +252,7 @@ export default async function SlugContentPage({ params }: Props) {
       </div>
 
       <main className="page-shell py-10 md:py-14">
-        <div className={content.kind === "blog" ? "mx-auto max-w-prose" : undefined}>
+        <div className={content.kind === "blog" ? "mx-auto max-w-3xl" : undefined}>
           {content.kind === "blog" ? (
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">
               <Link href="/insights" className="hover:underline">
@@ -246,7 +266,7 @@ export default async function SlugContentPage({ params }: Props) {
               ) : null}
             </p>
           ) : null}
-          <h1 className="mt-2 font-serif text-3xl font-semibold tracking-tight text-brand-ink md:text-4xl">
+          <h1 className="mt-3 font-serif text-3xl font-semibold tracking-tight text-brand-ink md:text-4xl lg:text-[2.65rem] lg:leading-[1.15]">
             {content.title}
           </h1>
           {content.kind !== "blog" && content.imageUrl ? (
@@ -263,11 +283,23 @@ export default async function SlugContentPage({ params }: Props) {
             </div>
           ) : null}
           {content.content ? (
-            <div className="mt-10 max-w-prose">
-              <ProductRichText html={content.content} className="leading-8" />
+            <div className={content.kind === "blog" ? "mt-8" : "mt-10 max-w-prose"}>
+              <ProductRichText
+                html={content.content}
+                className={content.kind === "blog" ? "insight-rich leading-[1.8]" : "leading-8"}
+              />
             </div>
           ) : null}
         </div>
+
+        {content.kind === "blog" ? (
+          <InsightArticleExtras
+            slug={content.slug}
+            title={content.title}
+            seoKeyword={content.seoKeyword}
+            related={relatedPosts}
+          />
+        ) : null}
       </main>
     </>
   );

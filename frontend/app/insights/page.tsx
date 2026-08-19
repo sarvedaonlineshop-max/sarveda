@@ -10,7 +10,8 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Insights",
-  description: "Articles on yoga, Ayurveda, meditation, sound healing, and conscious living from Sarveda.",
+  description:
+    "Practical guides and teachings on yoga, Ayurveda, meditation, sound healing, and conscious living from Sarveda.",
   robots: isProductionSite() ? { index: true, follow: true } : { index: false, follow: false },
   alternates: { canonical: canonical("/insights") }
 };
@@ -32,22 +33,22 @@ export default async function InsightsPage() {
             Insights
           </h1>
           <p className="sv-listing-hero-fade-late mt-2.5 max-w-2xl text-base leading-relaxed text-white/75">
-            Stories and guides on yoga, Ayurveda, sound healing, and living with intention.
+            Practical guides and teachings on yoga, Ayurveda, sound healing, and living with intention.
           </p>
           <div className="sv-listing-hero-fade-late mt-3.5 h-0.5 w-12 bg-brand-gold" />
         </div>
       </div>
 
-      <main className="page-shell-classic py-14">
+      <main className="page-shell-classic py-12 md:py-14">
         {posts.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-brand-cream-dark bg-white p-12 text-center text-brand-muted">
-            Articles are being updated.{" "}
+            Insights are being updated.{" "}
             <Link href="/shop" className="font-medium text-brand-gold underline hover:text-brand-forest">
               Browse the shop
             </Link>
           </p>
         ) : (
-          <ul className="grid gap-8 sm:grid-cols-2">
+          <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-7">
             {posts.map((post) => (
               <li key={post.id}>
                 <InsightCard post={post} />
@@ -58,8 +59,8 @@ export default async function InsightsPage() {
         <section className="mt-16 rounded-2xl border border-brand-cream-dark bg-white p-6 shadow-card sm:p-8">
           <EnquiryPanelForm
             source="INSIGHTS"
-            title="Questions or story ideas?"
-            subtitle="Reach our editorial team — we reply by email."
+            title="Questions about an insight?"
+            subtitle="Reach our team — we reply by email."
           />
         </section>
       </main>
