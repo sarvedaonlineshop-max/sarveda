@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { InsightShareBar } from "@/components/content/InsightShareBar";
+import { InsightCommentsSection } from "@/components/content/InsightCommentsSection";
 import type { BlogListItem } from "@/lib/blog-types";
 import { absoluteUrl } from "@/lib/site";
 
@@ -82,6 +83,8 @@ export function InsightArticleExtras({ slug, title, seoKeyword, related }: Props
           ))}
         </ul>
       </div>
+
+      <InsightCommentsSection slug={slug} />
 
       {related.length > 0 ? (
         <section className="border-t border-brand-cream-dark pt-10">

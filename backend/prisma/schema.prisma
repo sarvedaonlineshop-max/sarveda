@@ -39,6 +39,7 @@ model User {
   fcmToken                    String?
   emailNotificationsEnabled   Boolean  @default(true)
   pushNotificationsEnabled    Boolean  @default(true)
+  blogComments                BlogComment[]
 }
 
 /// Admin login/logout audit for the admin header history panel.
@@ -1214,6 +1215,31 @@ model BlogPost {
   seoKeyword     String?
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
+  comments       BlogComment[]
+  commentSubscriptions BlogCommentSubscription[]
+}
+
+model BlogComment {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  postId    String   @db.Uuid
+  userId    String   @db.Uuid
+  body      String
+  createdAt DateTime @default(now())
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt(sort: Desc)])
+}
+
+model BlogCommentSubscription {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  postId    String   @db.Uuid
+  email     String
+  createdAt DateTime @default(now())
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, email])
+  @@index([postId])
 }
 
 enum PostStatus {
