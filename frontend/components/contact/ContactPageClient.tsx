@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 
 import { fetchMe } from "@/lib/auth-client";
 import { EnquiryFilePicker } from "@/components/enquiries/EnquiryFilePicker";
+import { PaymentSuccessMark } from "@/components/orders/PaymentSuccessMark";
 import { submitEnquiry } from "@/lib/enquiry-api";
 import {
   enquiryEmail,
@@ -351,6 +352,7 @@ function ContactFormInner() {
   if (submitted) {
     return (
       <div className="flex h-full min-h-0 flex-col items-center justify-center bg-white p-6 text-center">
+        <PaymentSuccessMark className="mb-2" />
         <p className="font-serif text-2xl font-semibold text-brand-forest">Message sent</p>
         <p className="mt-3 text-sm text-brand-ink">{confirmText}</p>
         <p className="mt-2 text-xs text-brand-muted">We will reply to {email}.</p>
@@ -377,10 +379,11 @@ function ContactFormInner() {
   return (
     <form
       onSubmit={(event) => void onSubmit(event)}
-      className="flex h-full min-h-0 flex-col overflow-hidden bg-white px-4 py-3 sm:px-5 sm:py-4 lg:px-6 lg:py-4"
+      className="flex h-full min-h-0 flex-col overflow-hidden bg-white px-4 py-3 sm:px-5 sm:py-4 lg:px-6 lg:py-5"
     >
-      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-gold">Contact</p>
-      <h1 className="font-serif text-xl font-semibold leading-tight text-brand-ink md:text-2xl">Send a message</h1>
+      <h1 className="font-serif text-2xl font-semibold leading-tight text-brand-ink md:text-3xl lg:text-[2rem]">
+        Contact US
+      </h1>
 
       {presetOrder ? (
         <p className="mt-2 rounded-lg border border-brand-gold-pale/60 bg-brand-cream px-3 py-2 text-xs text-brand-ink">

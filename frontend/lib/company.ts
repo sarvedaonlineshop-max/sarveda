@@ -7,7 +7,7 @@ export const COMPANY_LEGAL_NAME =
 
 export const COMPANY_WAREHOUSE_ADDRESS =
   process.env.NEXT_PUBLIC_SELLER_WAREHOUSE_ADDRESS?.trim() ||
-  "Sarveda Life Private Limited, 5th Cross, Basaveshwara Nagar, Near Lions Community Hall Road, Kollegal, Karnataka Pin Code: 571440 India";
+  "Sarveda Life Private Limited, Plot No. B, Part 2, RASUDHI WAREHOUSE, KIADB Industrial Housing Layout, Hebbal 2nd stage, Mysore, Karnataka 570016, India";
 
 export const COMPANY_REGISTERED_ADDRESS =
   process.env.NEXT_PUBLIC_SELLER_REGISTERED_ADDRESS?.trim() ||

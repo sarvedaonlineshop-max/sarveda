@@ -121,7 +121,7 @@ router.post(
         success: true,
         data: {
           id: thread.id,
-          message: "Thank you — we received your message and will reply within 1–2 business days."
+          message: "Thank you — we received your message and will reply shortly."
         }
       });
     } catch (err) {
