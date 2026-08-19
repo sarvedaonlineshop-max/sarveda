@@ -346,18 +346,26 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
         </div>
       </div>
 
-      {/* Mobile sticky purchase bar — sits above bottom nav with a clear gap */}
-      <div className="fixed inset-x-0 bottom-[calc(4.5rem+0.65rem+env(safe-area-inset-bottom,0px))] z-[60] border-t border-brand-cream-dark bg-brand-ivory/95 px-4 py-2.5 shadow-[0_-8px_24px_rgba(28,53,42,0.12)] backdrop-blur-md lg:hidden">
+      {/* Mobile sticky purchase — floats above bottom nav */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(4.5rem+0.85rem+env(safe-area-inset-bottom,0px))] z-[60] px-4 lg:hidden">
         {hasCartRail ? (
           <Link
             href="/checkout"
-            className="mx-auto flex min-h-[48px] w-full max-w-lg items-center justify-center rounded-full bg-brand-gold text-sm font-semibold text-brand-night shadow-[0_4px_14px_rgba(185,138,62,0.35)] transition-colors hover:bg-[#a37934]"
+            className="pointer-events-auto mx-auto flex min-h-[52px] w-full max-w-md items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#d4a84a] to-brand-gold px-5 text-sm font-semibold text-brand-night shadow-[0_0_0_1px_rgba(255,255,255,0.35)_inset,0_0_28px_rgba(185,138,62,0.55),0_10px_28px_rgba(28,53,42,0.28)] ring-2 ring-[#f0d48a]/70 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.45)_inset,0_0_36px_rgba(185,138,62,0.7),0_14px_32px_rgba(28,53,42,0.32)] active:translate-y-0"
           >
-            Proceed to Buy · {formatINRFromPaise(subtotalInPaise)}
-            {cartCount > 0 ? ` (${cartCount})` : ""}
+            <span aria-hidden className="text-base leading-none">
+              🛒
+            </span>
+            <span>
+              Proceed to Buy · {formatINRFromPaise(subtotalInPaise)}
+              {cartCount > 0 ? ` (${cartCount})` : ""}
+            </span>
+            <span aria-hidden className="text-base leading-none">
+              ✨
+            </span>
           </Link>
         ) : (
-          <div className="mx-auto flex max-w-lg items-center gap-2">
+          <div className="pointer-events-auto mx-auto flex max-w-lg items-center gap-2 rounded-2xl border border-white/40 bg-brand-ivory/90 px-3 py-2.5 shadow-[0_8px_28px_rgba(28,53,42,0.18)] backdrop-blur-md">
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs text-brand-muted">{product.name}</p>
               <p className="text-lg font-bold tracking-tight text-brand-forest">

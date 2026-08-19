@@ -14,6 +14,7 @@ import {
   updateProfile,
   type PrimaryAddress
 } from "@/lib/auth-client";
+import { COUNTRIES } from "@/lib/countries";
 import { INDIAN_STATES } from "@/lib/indian-states";
 import { validateProfileForm, type ProfileFieldErrors } from "@/lib/profile-validation";
 
@@ -480,6 +481,35 @@ export function ProfileClient() {
               />
             </div>
 
+            <div>
+              <label htmlFor="profile-country" className="mb-2 block text-sm font-medium text-brand-ink">
+                Country
+              </label>
+              <select
+                id="profile-country"
+                value={country}
+                onChange={(event) => {
+                  const next = event.target.value;
+                  setCountry(next);
+                  if (next === "IN") {
+                    setPostalCode((prev) => prev.replace(/\D/g, "").slice(0, 6));
+                  }
+                  if (next !== "IN" && INDIAN_STATES.includes(state as (typeof INDIAN_STATES)[number])) {
+                    setState("");
+                  }
+                }}
+                className={fieldClass("country")}
+                autoComplete="country"
+              >
+                {COUNTRIES.map((row) => (
+                  <option key={row.code} value={row.code}>
+                    {row.name} ({row.code})
+                  </option>
+                ))}
+              </select>
+              <FieldError name="country" />
+            </div>
+
             <div className="grid gap-4 md:grid-cols-3">
               <div>
                 <label htmlFor="profile-city" className="mb-2 block text-sm font-medium text-brand-ink">
@@ -496,33 +526,49 @@ export function ProfileClient() {
               </div>
               <div>
                 <label htmlFor="profile-state" className="mb-2 block text-sm font-medium text-brand-ink">
-                  State
+                  State / Province
                 </label>
-                <select
-                  id="profile-state"
-                  value={state}
-                  onChange={(event) => setState(event.target.value)}
-                  className={fieldClass("state")}
-                  autoComplete="address-level1"
-                >
-                  <option value="">Select state</option>
-                  {INDIAN_STATES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
+                {country === "IN" ? (
+                  <select
+                    id="profile-state"
+                    value={state}
+                    onChange={(event) => setState(event.target.value)}
+                    className={fieldClass("state")}
+                    autoComplete="address-level1"
+                  >
+                    <option value="">Select state</option>
+                    {INDIAN_STATES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    id="profile-state"
+                    value={state}
+                    onChange={(event) => setState(event.target.value)}
+                    className={fieldClass("state")}
+                    autoComplete="address-level1"
+                  />
+                )}
                 <FieldError name="state" />
               </div>
               <div>
                 <label htmlFor="profile-pin" className="mb-2 block text-sm font-medium text-brand-ink">
-                  PIN code
+                  {country === "IN" ? "PIN code" : "Postal / ZIP"}
                 </label>
                 <input
                   id="profile-pin"
                   value={postalCode}
-                  onChange={(event) => setPostalCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
-                  inputMode="numeric"
+                  onChange={(event) =>
+                    setPostalCode(
+                      country === "IN"
+                        ? event.target.value.replace(/\D/g, "").slice(0, 6)
+                        : event.target.value.slice(0, 12)
+                    )
+                  }
+                  inputMode={country === "IN" ? "numeric" : "text"}
                   className={fieldClass("postalCode")}
                   autoComplete="postal-code"
                 />
