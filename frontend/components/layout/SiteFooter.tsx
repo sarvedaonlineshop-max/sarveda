@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { SarvedaLogo } from "@/components/brand/SarvedaLogo";
+import { COMPANY_WAREHOUSE_ADDRESS } from "@/lib/company";
 import { customerPhoneDisplay, customerPhoneTelHref } from "@/lib/enquiry";
 
 const quickLinks = [
@@ -161,9 +162,7 @@ export function SiteFooter() {
                 <span className="mt-0.5 shrink-0 text-brand-gold" aria-hidden>
                   ⌖
                 </span>
-                <span>
-                  Sarveda Warehouse, Hebbal Industrial Area, Mysore – 570 016, Karnataka, India.
-                </span>
+                <span>{COMPANY_WAREHOUSE_ADDRESS}</span>
               </li>
               <li className="flex gap-2.5">
                 <span className="shrink-0 text-brand-gold" aria-hidden>

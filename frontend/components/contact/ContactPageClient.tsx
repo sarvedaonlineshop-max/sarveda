@@ -8,11 +8,15 @@ import { fetchMe } from "@/lib/auth-client";
 import { EnquiryFilePicker } from "@/components/enquiries/EnquiryFilePicker";
 import { submitEnquiry } from "@/lib/enquiry-api";
 import {
-  customerPhoneDisplay,
   enquiryEmail,
   whatsAppSiteUrl
 } from "@/lib/enquiry";
-import { COMPANY_LEGAL_NAME, COMPANY_WAREHOUSE_ADDRESS } from "@/lib/company";
+import {
+  COMPANY_REGISTERED_ADDRESS,
+  COMPANY_WAREHOUSE_ADDRESS,
+  companySalesWhatsAppDisplay,
+  companySalesWhatsAppUrl
+} from "@/lib/company";
 import {
   DEFAULT_ENQUIRY_SUBJECT,
   ENQUIRY_SUBJECT_SELECT_OPTIONS,
@@ -23,16 +27,56 @@ import {
 const inputCls =
   "min-h-[38px] w-full rounded-lg border border-brand-cream-dark bg-brand-ivory py-1.5 pl-10 pr-3 text-sm text-brand-ink transition-shadow duration-200 focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/30";
 
-const SLIDES = [
-  {
-    src: "/images/contact/singing-bowls.jpg",
-    alt: "Tibetan singing bowls in warm gold light"
-  },
-  {
-    src: "/images/contact/sound-space.jpg",
-    alt: "Sound healing room with gong and plants"
-  }
-] as const;
+function IconMailOutline() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" aria-hidden>
+      <rect x="3" y="5.5" width="18" height="13" rx="2" stroke="currentColor" strokeWidth="1.6" />
+      <path d="m4 7 8 6.5L20 7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IconPhoneOutline() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" aria-hidden>
+      <path
+        d="M6.8 4.5h2.4l1.3 3.2-1.7 1.3a11 11 0 0 0 6.8 6.8l1.3-1.7 3.2 1.3v2.4c0 .9-.8 1.6-1.7 1.6-7.8-.2-14-6.4-14.2-14.2 0-.9.7-1.7 1.6-1.7Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function IconLocationOutline() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" aria-hidden>
+      <path
+        d="M12 21s6-5.2 6-10.5a6 6 0 1 0-12 0C6 15.8 12 21 12 21Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="10.5" r="2.2" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+function ContactInfoRow({
+  icon,
+  children
+}: {
+  icon: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex gap-4">
+      <div className="shrink-0 text-brand-forest">{icon}</div>
+      <div className="min-w-0 text-sm leading-relaxed text-brand-ink">{children}</div>
+    </div>
+  );
+}
 
 function IconChevron() {
   return (
@@ -145,85 +189,72 @@ function resolveSubject(
   return DEFAULT_ENQUIRY_SUBJECT;
 }
 
-function ContactVisual() {
-  const [slide, setSlide] = useState(0);
+function ContactInfoPanel() {
   const email = enquiryEmail();
-
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      setSlide((i) => (i + 1) % SLIDES.length);
-    }, 7000);
-    return () => window.clearInterval(id);
-  }, []);
+  const salesWhatsApp = companySalesWhatsAppDisplay();
 
   return (
-    <div className="relative h-[min(28vh,200px)] overflow-hidden lg:h-full lg:min-h-0">
-      {SLIDES.map((item, i) => (
-        <img
-          key={item.src}
-          src={item.src}
-          alt={item.alt}
-          className={`sv-contact-kenburns absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
-            i === slide ? "opacity-100" : "opacity-0"
-          }`}
-        />
-      ))}
-      <div className="absolute inset-0 bg-gradient-to-b from-brand-night/80 via-brand-night/35 to-brand-night/55" />
-      <div className="sv-contact-float pointer-events-none absolute right-6 top-8 h-16 w-16 rounded-full bg-brand-gold/35 blur-md" />
-      <div className="pointer-events-none absolute left-8 top-16 h-10 w-10 rounded-full bg-brand-sage/40 blur-sm" />
+    <aside className="h-full min-h-0 overflow-y-auto border-b border-brand-cream-dark bg-white px-5 py-6 sm:px-7 sm:py-8 lg:border-b-0 lg:border-r lg:py-10">
+      <div className="space-y-8">
+        <ContactInfoRow icon={<IconMailOutline />}>
+          <p className="font-semibold text-brand-forest">
+            For feedback or general or bulk enquiries, contact
+          </p>
+          <p className="mt-2">
+            Email:{" "}
+            <a href={`mailto:${email}`} className="font-medium text-brand-forest underline-offset-2 hover:underline">
+              {email}
+            </a>
+          </p>
+        </ContactInfoRow>
 
-      <div className="absolute inset-x-0 top-0 space-y-2.5 p-4 text-white md:p-6 lg:space-y-3 lg:p-7">
-        <p
-          className="font-serif text-[2rem] font-semibold leading-none tracking-wide text-[#fff6df] md:text-5xl lg:text-[3.25rem]"
-          style={{ textShadow: "0 2px 18px rgba(0,0,0,0.75), 0 0 2px rgba(0,0,0,0.9)" }}
-        >
-          Write to us
-        </p>
-        <p
-          className="max-w-md text-sm font-medium leading-snug text-brand-gold-pale md:text-base"
-          style={{ textShadow: "0 1px 10px rgba(0,0,0,0.7)" }}
-        >
-          Orders, payments, courses, or wellness programmes — we usually reply within 1–2 business days.
-        </p>
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white md:text-sm">
-          Calls: Monday to Friday, 9 am to 5 pm
-        </p>
-        <p className="max-w-md text-xs leading-relaxed text-white/85 md:text-sm">
-          <span className="font-semibold text-brand-gold-pale">{COMPANY_LEGAL_NAME}</span>
-          <br />
-          {COMPANY_WAREHOUSE_ADDRESS}
-        </p>
-        <div className="flex flex-wrap gap-2 pt-1">
-          <a
-            href={`mailto:${email}`}
-            className="inline-flex min-h-[34px] items-center rounded-full border border-white/30 bg-black/35 px-3.5 text-xs font-medium text-white backdrop-blur-sm transition-colors hover:bg-brand-gold hover:text-brand-night md:min-h-[38px] md:text-sm"
-          >
-            {email}
-          </a>
-          <a
-            href={whatsAppSiteUrl("Hi Sarveda, I have a question.")}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex min-h-[34px] items-center rounded-full border border-white/30 bg-black/35 px-3.5 text-xs font-medium text-white backdrop-blur-sm transition-colors hover:bg-[#25D366] hover:text-white md:min-h-[38px] md:text-sm"
-          >
-            WhatsApp {customerPhoneDisplay()}
-          </a>
+        <div className="space-y-5">
+          <p className="font-semibold text-brand-forest">
+            Need help with finding the right instrument or accessory?
+          </p>
+          <p className="text-sm leading-relaxed text-brand-ink">
+            Drop us a message on the Chatbox on the bottom right or WhatsApp us on the numbers below!
+          </p>
+
+          <ContactInfoRow icon={<IconPhoneOutline />}>
+            <p className="font-semibold text-brand-forest">
+              For any queries related to Sales/tracking or bulk enquiry, please WhatsApp at
+            </p>
+            <p className="mt-2">
+              <a
+                href={companySalesWhatsAppUrl()}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-brand-forest underline-offset-2 hover:underline"
+              >
+                {salesWhatsApp}
+              </a>
+            </p>
+            <p className="mt-3 text-xs text-brand-muted">
+              General support:{" "}
+              <a
+                href={whatsAppSiteUrl("Hi Sarveda, I need help.")}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-brand-forest underline-offset-2 hover:underline"
+              >
+                WhatsApp chat
+              </a>
+            </p>
+          </ContactInfoRow>
         </div>
+
+        <ContactInfoRow icon={<IconLocationOutline />}>
+          <p className="font-semibold text-brand-forest">Warehouse Address:</p>
+          <p className="mt-2">{COMPANY_WAREHOUSE_ADDRESS}</p>
+        </ContactInfoRow>
+
+        <ContactInfoRow icon={<IconLocationOutline />}>
+          <p className="font-semibold text-brand-forest">Registered Address:</p>
+          <p className="mt-2">{COMPANY_REGISTERED_ADDRESS}</p>
+        </ContactInfoRow>
       </div>
-      <div className="absolute bottom-3 left-4 flex gap-2 md:bottom-4 md:left-6">
-        {SLIDES.map((item, i) => (
-          <button
-            key={item.src}
-            type="button"
-            aria-label={`Show photo ${i + 1}`}
-            onClick={() => setSlide(i)}
-            className={`h-2 rounded-full transition-all ${
-              i === slide ? "w-8 bg-brand-gold" : "w-2 bg-white/50 hover:bg-white"
-            }`}
-          />
-        ))}
-      </div>
-    </div>
+    </aside>
   );
 }
 
@@ -511,11 +542,8 @@ export function ContactPageClient() {
 
   return (
     <div className="relative h-[calc(100dvh-var(--storefront-header-live-offset)-4.5rem-env(safe-area-inset-bottom,0px))] overflow-hidden bg-brand-cream p-2 md:h-[calc(100dvh-var(--storefront-header-live-offset)-var(--storefront-slim-footer-offset))] md:p-2.5">
-      <span className="sv-contact-blob pointer-events-none absolute -left-24 top-10 h-64 w-64 rounded-full bg-brand-gold/20 blur-3xl" aria-hidden />
-      <span className="sv-contact-blob-delay pointer-events-none absolute -right-16 top-40 h-72 w-72 rounded-full bg-brand-sage/20 blur-3xl" aria-hidden />
-
-      <div className="relative z-[1] grid h-full min-h-0 grid-rows-[min(28vh,200px)_minmax(0,1fr)] overflow-hidden rounded-2xl border border-brand-cream-dark bg-white shadow-card lg:grid-cols-2 lg:grid-rows-none">
-        <ContactVisual />
+      <div className="relative z-[1] grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-2xl border border-brand-cream-dark bg-white shadow-card lg:grid-cols-2 lg:grid-rows-none">
+        <ContactInfoPanel />
         <Suspense fallback={<p className="p-8 text-sm text-brand-muted">Loading form…</p>}>
           <ContactFormInner />
         </Suspense>
