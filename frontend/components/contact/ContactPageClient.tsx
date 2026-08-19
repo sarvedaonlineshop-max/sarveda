@@ -29,6 +29,8 @@ const inputCls =
   "min-h-[44px] w-full rounded-lg border border-brand-cream-dark bg-brand-ivory py-2 pl-10 pr-3 text-sm text-brand-ink transition-shadow duration-200 focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/30";
 
 const labelCls = "mb-2.5 block text-sm font-medium text-brand-ink";
+const infoHeadingCls = "text-sm font-semibold leading-snug text-brand-forest";
+const infoBodyCls = "text-sm leading-relaxed text-brand-ink";
 
 function IconMailOutline() {
   return (
@@ -76,7 +78,7 @@ function ContactInfoRow({
   return (
     <div className="flex gap-4">
       <div className="shrink-0 text-brand-forest">{icon}</div>
-      <div className="min-w-0 text-sm leading-relaxed text-brand-ink">{children}</div>
+      <div className="min-w-0 font-sans text-sm leading-relaxed text-brand-ink">{children}</div>
     </div>
   );
 }
@@ -200,10 +202,10 @@ function ContactInfoPanel() {
     <aside className="h-full min-h-0 overflow-y-auto border-b border-brand-cream-dark bg-white px-5 py-6 font-sans sm:px-7 sm:py-8 lg:border-b-0 lg:border-r lg:py-10">
       <div className="space-y-8">
         <ContactInfoRow icon={<IconMailOutline />}>
-          <p className="font-semibold text-brand-forest">
+          <p className={infoHeadingCls}>
             For feedback or general or bulk enquiries, contact
           </p>
-          <p className="mt-2">
+          <p className={`mt-2 ${infoBodyCls}`}>
             Email:{" "}
             <a href={`mailto:${email}`} className="font-medium text-brand-forest underline-offset-2 hover:underline">
               {email}
@@ -212,18 +214,18 @@ function ContactInfoPanel() {
         </ContactInfoRow>
 
         <div className="space-y-5">
-          <p className="font-semibold text-brand-forest">
+          <p className={infoHeadingCls}>
             Need help with finding the right instrument or accessory?
           </p>
-          <p className="text-sm leading-relaxed text-brand-ink">
+          <p className={infoBodyCls}>
             Drop us a message on the Chatbox on the bottom right or WhatsApp us on the numbers below!
           </p>
 
           <ContactInfoRow icon={<IconPhoneOutline />}>
-            <p className="font-semibold text-brand-forest">
+            <p className={infoHeadingCls}>
               For any queries related to Sales/tracking or bulk enquiry, please WhatsApp at
             </p>
-            <p className="mt-2">
+            <p className={`mt-2 ${infoBodyCls}`}>
               <a
                 href={companySalesWhatsAppUrl()}
                 target="_blank"
@@ -233,7 +235,7 @@ function ContactInfoPanel() {
                 {salesWhatsApp}
               </a>
             </p>
-            <p className="mt-3 text-xs text-brand-muted">
+            <p className="mt-3 text-sm text-brand-muted">
               General support:{" "}
               <a
                 href={whatsAppSiteUrl("Hi Sarveda, I need help.")}
@@ -248,13 +250,13 @@ function ContactInfoPanel() {
         </div>
 
         <ContactInfoRow icon={<IconLocationOutline />}>
-          <p className="font-semibold text-brand-forest">Warehouse Address:</p>
-          <p className="mt-2">{COMPANY_WAREHOUSE_ADDRESS}</p>
+          <p className={infoHeadingCls}>Warehouse Address:</p>
+          <p className={`mt-2 ${infoBodyCls}`}>{COMPANY_WAREHOUSE_ADDRESS}</p>
         </ContactInfoRow>
 
         <ContactInfoRow icon={<IconLocationOutline />}>
-          <p className="font-semibold text-brand-forest">Registered Address:</p>
-          <p className="mt-2">{COMPANY_REGISTERED_ADDRESS}</p>
+          <p className={infoHeadingCls}>Registered Address:</p>
+          <p className={`mt-2 ${infoBodyCls}`}>{COMPANY_REGISTERED_ADDRESS}</p>
         </ContactInfoRow>
       </div>
     </aside>
