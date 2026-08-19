@@ -26,7 +26,9 @@ import {
 } from "@/lib/enquiry-subjects";
 
 const inputCls =
-  "min-h-[38px] w-full rounded-lg border border-brand-cream-dark bg-brand-ivory py-1.5 pl-10 pr-3 text-sm text-brand-ink transition-shadow duration-200 focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/30";
+  "min-h-[44px] w-full rounded-lg border border-brand-cream-dark bg-brand-ivory py-2 pl-10 pr-3 text-sm text-brand-ink transition-shadow duration-200 focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/30";
+
+const labelCls = "mb-2.5 block text-sm font-medium text-brand-ink";
 
 function IconMailOutline() {
   return (
@@ -195,7 +197,7 @@ function ContactInfoPanel() {
   const salesWhatsApp = companySalesWhatsAppDisplay();
 
   return (
-    <aside className="h-full min-h-0 overflow-y-auto border-b border-brand-cream-dark bg-white px-5 py-6 sm:px-7 sm:py-8 lg:border-b-0 lg:border-r lg:py-10">
+    <aside className="h-full min-h-0 overflow-y-auto border-b border-brand-cream-dark bg-white px-5 py-6 font-sans sm:px-7 sm:py-8 lg:border-b-0 lg:border-r lg:py-10">
       <div className="space-y-8">
         <ContactInfoRow icon={<IconMailOutline />}>
           <p className="font-semibold text-brand-forest">
@@ -351,9 +353,9 @@ function ContactFormInner() {
 
   if (submitted) {
     return (
-      <div className="flex h-full min-h-0 flex-col items-center justify-center bg-white p-6 text-center">
+      <div className="flex h-full min-h-0 flex-col items-center justify-center bg-white p-6 text-center font-sans">
         <PaymentSuccessMark className="mb-2" />
-        <p className="font-serif text-2xl font-semibold text-brand-forest">Message sent</p>
+        <p className="text-2xl font-semibold text-brand-forest">Message sent</p>
         <p className="mt-3 text-sm text-brand-ink">{confirmText}</p>
         <p className="mt-2 text-xs text-brand-muted">We will reply to {email}.</p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
@@ -379,22 +381,22 @@ function ContactFormInner() {
   return (
     <form
       onSubmit={(event) => void onSubmit(event)}
-      className="flex h-full min-h-0 flex-col overflow-hidden bg-white px-4 py-3 sm:px-5 sm:py-4 lg:px-6 lg:py-5"
+      className="flex h-full min-h-0 flex-col overflow-hidden bg-white px-4 py-4 font-sans sm:px-6 sm:py-5 lg:px-8 lg:py-6"
     >
-      <h1 className="font-serif text-2xl font-semibold leading-tight text-brand-ink md:text-3xl lg:text-[2rem]">
+      <h1 className="text-2xl font-semibold leading-tight text-brand-ink md:text-3xl lg:text-[2rem]">
         Contact US
       </h1>
 
       {presetOrder ? (
-        <p className="mt-2 rounded-lg border border-brand-gold-pale/60 bg-brand-cream px-3 py-2 text-xs text-brand-ink">
+        <p className="mt-4 rounded-lg border border-brand-gold-pale/60 bg-brand-cream px-3 py-2.5 text-sm text-brand-ink">
           {complaint ? "Payment complaint for order " : "Order reference: "}
           <span className="font-mono font-medium">{presetOrder}</span>
         </p>
       ) : null}
 
-      <div className="mt-3 grid min-h-0 flex-1 grid-cols-1 content-start gap-2.5 overflow-y-auto sm:grid-cols-2">
+      <div className="mt-5 grid min-h-0 flex-1 grid-cols-1 content-start gap-5 overflow-y-auto sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <label htmlFor="contact-subject" className="mb-1 block text-xs font-medium text-brand-ink">
+          <label htmlFor="contact-subject" className={labelCls}>
             What is this about? <span className="text-brand-terra">*</span>
           </label>
           <div className="relative">
@@ -418,7 +420,7 @@ function ContactFormInner() {
         </div>
 
         <div>
-          <label htmlFor="contact-name" className="mb-1 block text-xs font-medium text-brand-ink">
+          <label htmlFor="contact-name" className={labelCls}>
             Name <span className="text-brand-terra">*</span>
           </label>
           <FieldShell icon={<IconUser />}>
@@ -434,7 +436,7 @@ function ContactFormInner() {
           </FieldShell>
         </div>
         <div>
-          <label htmlFor="contact-phone" className="mb-1 block text-xs font-medium text-brand-ink">
+          <label htmlFor="contact-phone" className={labelCls}>
             Phone <span className="text-brand-terra">*</span>
           </label>
           <FieldShell icon={<IconPhone />}>
@@ -452,7 +454,7 @@ function ContactFormInner() {
         </div>
 
         <div>
-          <label htmlFor="contact-email" className="mb-1 block text-xs font-medium text-brand-ink">
+          <label htmlFor="contact-email" className={labelCls}>
             Email <span className="text-brand-terra">*</span>
           </label>
           <FieldShell icon={<IconMail />}>
@@ -470,7 +472,7 @@ function ContactFormInner() {
         </div>
 
         <div>
-          <label htmlFor="contact-order" className="mb-1 block text-xs font-medium text-brand-ink">
+          <label htmlFor="contact-order" className={labelCls}>
             Order number <span className="font-normal text-brand-muted">(optional)</span>
           </label>
           <FieldShell icon={<IconOrder />}>
@@ -485,7 +487,7 @@ function ContactFormInner() {
         </div>
 
         <div className="flex min-h-0 flex-col sm:col-span-2">
-          <label htmlFor="contact-message" className="mb-1 block text-xs font-medium text-brand-ink">
+          <label htmlFor="contact-message" className={labelCls}>
             Message {complaint ? <span className="font-normal text-brand-muted">(optional)</span> : <span className="text-brand-terra">*</span>}
           </label>
           <FieldShell icon={<IconMessage />} iconTop>
@@ -494,15 +496,15 @@ function ContactFormInner() {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               required={!complaint}
-              rows={3}
+              rows={4}
               placeholder={messagePlaceholder}
-              className="min-h-[72px] w-full resize-none rounded-lg border border-brand-cream-dark bg-brand-ivory py-2 pl-10 pr-3 text-sm text-brand-ink transition-shadow duration-200 focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/30"
+              className="min-h-[96px] w-full resize-none rounded-lg border border-brand-cream-dark bg-brand-ivory py-2.5 pl-10 pr-3 text-sm text-brand-ink transition-shadow duration-200 focus:border-brand-gold focus:outline-none focus:ring-2 focus:ring-brand-gold/30"
             />
           </FieldShell>
         </div>
 
         <div className="sm:col-span-2">
-          <label className="mb-1 flex items-center gap-2 text-xs font-medium text-brand-ink">
+          <label className={`${labelCls} flex items-center gap-2`}>
             <span className="text-brand-gold">
               <IconClip />
             </span>
@@ -521,7 +523,7 @@ function ContactFormInner() {
       <button
         type="submit"
         disabled={loading}
-        className="sv-contact-cta mt-3 inline-flex min-h-[42px] w-full shrink-0 items-center justify-center rounded-xl px-6 text-sm font-semibold text-white shadow-gold transition-opacity hover:opacity-95 disabled:opacity-60"
+        className="sv-contact-cta mt-5 inline-flex min-h-[46px] w-full shrink-0 items-center justify-center rounded-xl px-6 text-sm font-semibold text-white shadow-gold transition-opacity hover:opacity-95 disabled:opacity-60"
       >
         {loading ? "Uploading & sending…" : "Send message"}
       </button>
