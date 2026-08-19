@@ -49,9 +49,9 @@ export function ShopMobileCategoryDrawer({ categories, selectedSlug, onSelect }:
       open={open}
       onClose={() => setOpen(false)}
       side="left"
-      title="Categories"
-      subtitle="Browse by intention"
-      ariaLabel="Shop categories"
+      title="Product menu"
+      subtitle="Browse by category"
+      ariaLabel="Product menu"
       panelClassName="max-w-sm"
     >
       <div className="px-4 py-4">

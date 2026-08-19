@@ -494,7 +494,7 @@ export function ProfileClient() {
                   if (next === "IN") {
                     setPostalCode((prev) => prev.replace(/\D/g, "").slice(0, 6));
                   }
-                  if (next !== "IN" && INDIAN_STATES.includes(state as (typeof INDIAN_STATES)[number])) {
+                  if (next !== "IN" && (INDIAN_STATES as readonly string[]).includes(state)) {
                     setState("");
                   }
                 }}

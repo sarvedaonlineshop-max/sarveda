@@ -489,13 +489,19 @@ export function Header() {
                   <button
                     type="button"
                     onClick={openShopMenu}
-                    className="inline-flex h-8 min-h-[32px] shrink-0 items-center gap-1.5 rounded-full bg-[#2563eb] px-3 text-[13px] font-semibold text-white shadow-[0_4px_0_rgba(0,0,0,0.16),0_8px_14px_rgba(0,0,0,0.14)] ring-1 ring-black/5 transition-all duration-150 hover:-translate-y-0.5 hover:bg-[#1d4ed8] hover:shadow-[0_6px_0_rgba(0,0,0,0.14),0_12px_18px_rgba(0,0,0,0.16)] active:translate-y-[2px] active:bg-[#1e40af] active:shadow-[0_1px_0_rgba(0,0,0,0.18),0_3px_8px_rgba(0,0,0,0.12)]"
-                    aria-label="Open store categories"
+                    className="inline-flex h-8 min-h-[32px] shrink-0 items-center gap-1.5 rounded-full bg-[#25D366] px-3 text-[12px] font-semibold text-white shadow-[0_4px_0_rgba(0,0,0,0.16),0_8px_14px_rgba(0,0,0,0.14)] ring-1 ring-black/5 transition-all duration-150 hover:-translate-y-0.5 hover:bg-[#1ebe57] hover:shadow-[0_6px_0_rgba(0,0,0,0.14),0_12px_18px_rgba(0,0,0,0.16)] active:translate-y-[2px] active:bg-[#1aa34d] active:shadow-[0_1px_0_rgba(0,0,0,0.18),0_3px_8px_rgba(0,0,0,0.12)]"
+                    aria-label="Open product menu"
                   >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
-                      <path strokeLinecap="round" strokeWidth={2} d="M4 7h16M4 12h16M4 17h16" />
+                    {/* Grid — catalog, not the bottom-nav site menu */}
+                    <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z"
+                      />
                     </svg>
-                    Menu
+                    Product menu
                   </button>
                 ) : null}
               </div>
