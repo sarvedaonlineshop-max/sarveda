@@ -20,17 +20,21 @@ export default async function InsightsPage() {
 
   return (
     <>
-      <div className="border-b border-brand-cream-dark/60 bg-white">
-        <div className="page-shell-classic py-12 md:py-16">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">
+      <div
+        className="border-b-[3px] border-brand-gold"
+        style={{ background: "linear-gradient(160deg, #157a4a 0%, #0f5c38 100%)" }}
+      >
+        <div className="page-shell-classic py-8 lg:py-10">
+          <p className="sv-listing-hero-fade text-[10px] font-bold uppercase tracking-[0.22em] text-brand-gold-pale">
             From our teachers
           </p>
-          <h1 className="mt-2 font-serif text-3xl font-semibold tracking-tight text-brand-ink md:text-4xl">
+          <h1 className="sv-listing-hero-fade mt-2.5 font-serif text-[clamp(1.75rem,4vw,2.75rem)] font-bold leading-tight tracking-tight text-[#fffbf5]">
             Insights
           </h1>
-          <p className="mt-3 max-w-2xl text-brand-muted">
+          <p className="sv-listing-hero-fade-late mt-2.5 max-w-2xl text-base leading-relaxed text-white/75">
             Stories and guides on yoga, Ayurveda, sound healing, and living with intention.
           </p>
+          <div className="sv-listing-hero-fade-late mt-3.5 h-0.5 w-12 bg-brand-gold" />
         </div>
       </div>
 

@@ -19,7 +19,6 @@ const customerService = [
   { label: "Login / Sign Up", href: "/login" },
   { label: "Shipping & Delivery", href: "/shipping" },
   { label: "Returns & Exchanges", href: "/refunds" },
-  { label: "FAQs", href: "/contact" },
   { label: "Terms of Use", href: "/terms" },
   { label: "Privacy Policy", href: "/privacy" }
 ];
@@ -56,25 +55,26 @@ const values = [
   }
 ];
 
+/** Same profiles linked from live sarveda.com footer */
 const social = [
   {
     label: "Instagram",
-    href: "https://www.instagram.com/sarveda.shaala/",
+    href: "https://www.instagram.com/sarvedalife/",
     d: "M7.75 2h8.5A5.75 5.75 0 0122 7.75v8.5A5.75 5.75 0 0116.25 22h-8.5A5.75 5.75 0 012 16.25v-8.5A5.75 5.75 0 017.75 2zm0 1.5A4.25 4.25 0 003.5 7.75v8.5A4.25 4.25 0 007.75 20.5h8.5a4.25 4.25 0 004.25-4.25v-8.5A4.25 4.25 0 0016.25 3.5h-8.5zM12 7a5 5 0 110 10A5 5 0 0112 7zm0 1.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm5.25-.75a.875.875 0 110 1.75.875.875 0 010-1.75z"
   },
   {
     label: "Facebook",
-    href: "https://facebook.com/sarveda",
+    href: "https://www.facebook.com/sarvedalife",
     d: "M14 8h3V5h-3c-2.2 0-4 1.8-4 4v2H7v3h3v7h3v-7h3l1-3h-4V9c0-.6.4-1 1-1z"
   },
   {
     label: "YouTube",
-    href: "https://youtube.com/@sarveda",
+    href: "https://www.youtube.com/@sarvedalife",
     d: "M21.8 8s-.2-1.4-.8-2c-.8-.8-1.7-.8-2.1-.9C16.1 5 12 5 12 5s-4.1 0-6.9.1c-.4 0-1.3.1-2.1.9-.6.6-.8 2-.8 2S2 9.6 2 11.2v1.5c0 1.6.2 3.2.2 3.2s.2 1.4.8 2c.8.8 1.8.8 2.3.9C6.8 19 12 19 12 19s4.1 0 6.9-.2c.4 0 1.3-.1 2.1-.9.6-.6.8-2 .8-2s.2-1.6.2-3.2v-1.5C22 9.6 21.8 8 21.8 8zM9.8 14.5v-5.1l5.7 2.6-5.7 2.5z"
   },
   {
     label: "LinkedIn",
-    href: "https://www.linkedin.com/company/sarveda",
+    href: "https://www.linkedin.com/company/14769426/",
     d: "M6.5 9H3v12h3.5V9zM4.75 3A2.1 2.1 0 102.7 5.1 2.1 2.1 0 004.75 3zM21 21h-3.5v-6.2c0-1.7-.6-2.8-2.1-2.8-1.1 0-1.8.8-2.1 1.5-.1.3-.1.6-.1.9V21H9.8s.05-10.8 0-12H13.3v1.9c.5-.8 1.4-1.9 3.4-1.9 2.5 0 4.3 1.6 4.3 5.1V21z"
   }
 ];
@@ -86,11 +86,8 @@ export function SiteFooter() {
         <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr_1fr_1.3fr] lg:gap-12">
           {/* Brand */}
           <div>
-            <SarvedaLogo
-              iconHeight={40}
-              wordmarkClassName="font-serif text-2xl tracking-[0.08em] text-brand-cream uppercase"
-            />
-            <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-gold">
+            <SarvedaLogo iconHeight={56} tone="onDark" />
+            <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-gold">
               Sound. Yoga. Conscious Living.
             </p>
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-brand-cream/75">
@@ -159,31 +156,44 @@ export function SiteFooter() {
             </p>
             <ul className="space-y-3.5 text-sm text-brand-cream/75">
               <li className="flex gap-2.5">
-                <span className="mt-0.5 shrink-0 text-brand-gold" aria-hidden>
-                  ⌖
-                </span>
+                <svg viewBox="0 0 24 24" className="mt-0.5 h-5 w-5 shrink-0 text-brand-gold" fill="none" aria-hidden>
+                  <path
+                    d="M12 21s6-5.2 6-10.5a6 6 0 1 0-12 0C6 15.8 12 21 12 21Z"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinejoin="round"
+                  />
+                  <circle cx="12" cy="10.5" r="2.2" stroke="currentColor" strokeWidth="1.6" />
+                </svg>
                 <span>{COMPANY_WAREHOUSE_ADDRESS}</span>
               </li>
               <li className="flex gap-2.5">
-                <span className="shrink-0 text-brand-gold" aria-hidden>
-                  ✉
-                </span>
+                <svg viewBox="0 0 24 24" className="mt-0.5 h-5 w-5 shrink-0 text-brand-gold" fill="none" aria-hidden>
+                  <rect x="3" y="5.5" width="18" height="13" rx="2" stroke="currentColor" strokeWidth="1.6" />
+                  <path d="m4 7 8 6.5L20 7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
                 <a href="mailto:care@sarveda.com" className="hover:text-brand-gold">
                   care@sarveda.com
                 </a>
               </li>
               <li className="flex gap-2.5">
-                <span className="shrink-0 text-brand-gold" aria-hidden>
-                  ☎
-                </span>
+                <svg viewBox="0 0 24 24" className="mt-0.5 h-5 w-5 shrink-0 text-brand-gold" fill="none" aria-hidden>
+                  <path
+                    d="M6.8 4.5h2.4l1.3 3.2-1.7 1.3a11 11 0 0 0 6.8 6.8l1.3-1.7 3.2 1.3v2.4c0 .9-.8 1.6-1.7 1.6-7.8-.2-14-6.4-14.2-14.2 0-.9.7-1.7 1.6-1.7Z"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinejoin="round"
+                  />
+                </svg>
                 <a href={customerPhoneTelHref()} className="hover:text-brand-gold">
                   {customerPhoneDisplay()}
                 </a>
               </li>
               <li className="flex gap-2.5">
-                <span className="mt-0.5 shrink-0 text-brand-gold" aria-hidden>
-                  ◷
-                </span>
+                <svg viewBox="0 0 24 24" className="mt-0.5 h-5 w-5 shrink-0 text-brand-gold" fill="none" aria-hidden>
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" />
+                  <path d="M12 7v5.5l3.5 2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
                 <span>
                   Mon – Fri: 9:30 AM – 5:30 PM (IST)
                   <br />

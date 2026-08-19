@@ -102,8 +102,8 @@ function TabButton({
       onClick={() => onSelect(tab)}
       className={`inline-flex min-h-[40px] w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2 text-[13px] font-semibold transition-colors sm:gap-2 sm:px-3 sm:text-sm ${
         active
-          ? "bg-brand-forest text-brand-cream"
-          : "border border-brand-cream-dark bg-white text-brand-ink hover:bg-brand-forest/5"
+          ? "bg-[#108967] text-white shadow-sm"
+          : "border border-brand-cream-dark bg-white text-brand-ink hover:bg-[#108967]/10"
       }`}
       title={label}
     >
@@ -340,31 +340,30 @@ export function ProfileClient() {
   );
 
   return (
-    <div
-      className="flex flex-col gap-4 md:px-0"
-      style={{ height: "calc(100dvh - var(--profile-offset, 10rem))", minHeight: "24rem" }}
-    >
+    <div className="flex flex-col gap-4 md:px-0">
       <MobileSubpageHeader title={MOBILE_TITLES[activeTab]} backHref="/" />
 
-      <div className="hidden items-center justify-between gap-4 px-4 md:flex md:px-0">
-        <h1 className="font-serif text-3xl font-semibold text-brand-ink">My account</h1>
-        {accountActions}
+      <div className="sticky top-[var(--storefront-header-live-offset)] z-20 -mx-4 space-y-4 border-b border-brand-cream-dark/70 bg-brand-cream/95 px-4 pb-3 pt-1 backdrop-blur-md md:mx-0 md:bg-white/95 md:px-0 md:pb-4">
+        <div className="hidden items-center justify-between gap-4 md:flex">
+          <h1 className="font-serif text-3xl font-semibold text-brand-ink">My account</h1>
+          {accountActions}
+        </div>
+
+        {/* Desktop: four sections in one page. Mobile: each section is its own menu link. */}
+        <nav
+          role="tablist"
+          aria-label="Account sections"
+          className="hidden shrink-0 gap-2 md:grid md:grid-cols-4"
+        >
+          <TabButton tab="details" label="My Details" active={activeTab === "details"} onSelect={selectTab} />
+          <TabButton tab="orders" label="My Orders" count={orderCount} active={activeTab === "orders"} onSelect={selectTab} />
+          <TabButton tab="courses" label="My Courses" count={courseCount} active={activeTab === "courses"} onSelect={selectTab} />
+          <TabButton tab="events" label="My Events" count={eventCount} active={activeTab === "events"} onSelect={selectTab} />
+        </nav>
       </div>
 
-      {/* Desktop: four sections in one page. Mobile: each section is its own menu link. */}
-      <nav
-        role="tablist"
-        aria-label="Account sections"
-        className="hidden shrink-0 gap-2 md:grid md:grid-cols-4"
-      >
-        <TabButton tab="details" label="My Details" active={activeTab === "details"} onSelect={selectTab} />
-        <TabButton tab="orders" label="My Orders" count={orderCount} active={activeTab === "orders"} onSelect={selectTab} />
-        <TabButton tab="courses" label="My Courses" count={courseCount} active={activeTab === "courses"} onSelect={selectTab} />
-        <TabButton tab="events" label="My Events" count={eventCount} active={activeTab === "events"} onSelect={selectTab} />
-      </nav>
-
-      {/* ── Scrollable content ── */}
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl px-4 md:px-0">
+      {/* Single page scroll — no nested overflow */}
+      <div className="px-4 pb-6 md:px-0 md:pb-0">
         <section
           role="tabpanel"
           id="profile-panel-details"

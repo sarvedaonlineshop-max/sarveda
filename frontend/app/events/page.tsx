@@ -22,18 +22,21 @@ export default async function EventsPage() {
 
   return (
     <>
-      <div className="border-b-[3px] border-brand-gold" style={{ background: "linear-gradient(160deg, #1c352a 0%, #10201a 100%)" }}>
-        <div className="page-shell-classic py-8 lg:py-10">
+      <div
+        className="border-b-[3px] border-brand-gold"
+        style={{ background: "linear-gradient(160deg, #157a4a 0%, #0f5c38 100%)" }}
+      >
+        <div className="page-shell-classic py-6 lg:py-7">
           <p className="sv-listing-hero-fade text-[10px] font-bold uppercase tracking-[0.22em] text-brand-gold-pale">
             Gather with us
           </p>
-          <h1 className="sv-listing-hero-fade mt-2.5 font-serif text-[clamp(1.75rem,4vw,2.75rem)] font-bold leading-tight tracking-tight text-[#fffbf5]">
+          <h1 className="sv-listing-hero-fade mt-2 font-serif text-[clamp(1.75rem,4vw,2.75rem)] font-bold leading-tight tracking-tight text-[#fffbf5]">
             Events
           </h1>
-          <p className="sv-listing-hero-fade-late mt-2.5 max-w-xl text-base leading-relaxed text-white/75">
+          <p className="sv-listing-hero-fade-late mt-2 max-w-xl text-base leading-relaxed text-white/75">
             Enlightening talks &amp; webinars on yoga, meditation &amp; Ayurveda — join live online or in person.
           </p>
-          <div className="sv-listing-hero-fade-late mt-3.5 h-0.5 w-12 bg-brand-gold" />
+          <div className="sv-listing-hero-fade-late mt-3 h-0.5 w-12 bg-brand-gold" />
         </div>
       </div>
 

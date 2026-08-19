@@ -18,6 +18,11 @@ type SarvedaLogoProps = {
   showWordmark?: boolean;
   /** Scale mark/wordmark down on small screens so the header stays usable. */
   responsive?: boolean;
+  /**
+   * `onDark` — cream wordmark (PNG is forest green and disappears on footer).
+   * Default keeps the dark green wordmark for light headers.
+   */
+  tone?: "onLight" | "onDark";
   /** @deprecated Tagline removed from header; kept for call-site compat. */
   showTagline?: boolean;
   wordmarkClassName?: string;
@@ -29,15 +34,18 @@ export function SarvedaLogo({
   className = "",
   iconHeight = 64,
   showWordmark = true,
-  responsive = false
+  responsive = false,
+  tone = "onLight",
+  wordmarkClassName = ""
 }: SarvedaLogoProps) {
   const iconWidth = Math.round(iconHeight * (MARK_W / MARK_H));
   // Wordmark sits beside the spiral body, not as tall as the tails (SS2 ratio).
   const wordmarkHeight = Math.max(22, Math.round(iconHeight * 0.55));
   const wordmarkWidth = Math.round(wordmarkHeight * (WORDMARK_W / WORDMARK_H));
+  const onDark = tone === "onDark";
 
   const content = (
-    <div className={`flex items-center overflow-visible gap-2 sm:gap-2.5 md:gap-3 ${className}`}>
+    <div className={`flex items-center overflow-visible gap-2.5 sm:gap-3 md:gap-3.5 ${className}`}>
       <Image
         src={MARK_SRC}
         alt=""
@@ -45,27 +53,35 @@ export function SarvedaLogo({
         height={iconHeight}
         className={
           responsive
-            ? "h-[52px] w-auto shrink-0 object-contain object-bottom sm:h-[60px] md:h-[68px]"
-            : "w-auto shrink-0 object-contain object-bottom"
+            ? "h-[52px] w-auto shrink-0 object-contain object-center sm:h-[60px] md:h-[68px]"
+            : "w-auto shrink-0 object-contain object-center"
         }
         style={responsive ? { width: "auto" } : { height: iconHeight, width: "auto" }}
         priority
         aria-hidden
       />
       {showWordmark ? (
-        <Image
-          src={WORDMARK_SRC}
-          alt="Sarveda"
-          width={wordmarkWidth}
-          height={wordmarkHeight}
-          className={
-            responsive
-              ? "h-[24px] w-auto object-contain object-left sm:h-[30px] md:h-[38px]"
-              : "w-auto object-contain object-left"
-          }
-          style={responsive ? { width: "auto" } : { height: wordmarkHeight, width: "auto" }}
-          priority
-        />
+        onDark ? (
+          <span
+            className={`font-serif text-[1.65rem] font-semibold lowercase leading-none tracking-[0.06em] text-brand-cream sm:text-[1.85rem] ${wordmarkClassName}`}
+          >
+            sarveda
+          </span>
+        ) : (
+          <Image
+            src={WORDMARK_SRC}
+            alt="Sarveda"
+            width={wordmarkWidth}
+            height={wordmarkHeight}
+            className={
+              responsive
+                ? "h-[24px] w-auto object-contain object-left sm:h-[30px] md:h-[38px]"
+                : `w-auto object-contain object-left ${wordmarkClassName}`
+            }
+            style={responsive ? { width: "auto" } : { height: wordmarkHeight, width: "auto" }}
+            priority
+          />
+        )
       ) : null}
     </div>
   );
