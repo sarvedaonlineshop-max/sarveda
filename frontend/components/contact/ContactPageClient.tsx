@@ -9,13 +9,14 @@ import { EnquiryFilePicker } from "@/components/enquiries/EnquiryFilePicker";
 import { submitEnquiry } from "@/lib/enquiry-api";
 import {
   customerPhoneDisplay,
-  customerPhoneTelHref,
   enquiryEmail,
   whatsAppSiteUrl
 } from "@/lib/enquiry";
+import { COMPANY_LEGAL_NAME, COMPANY_WAREHOUSE_ADDRESS } from "@/lib/company";
 import {
   DEFAULT_ENQUIRY_SUBJECT,
-  ENQUIRY_SUBJECT_OPTIONS,
+  ENQUIRY_SUBJECT_SELECT_OPTIONS,
+  type EnquirySubjectFormValue,
   type EnquirySubjectValue
 } from "@/lib/enquiry-subjects";
 
@@ -129,7 +130,7 @@ function resolveSubject(
   presetSubjectRaw: string,
   complaint: string,
   presetOrder: string
-): EnquirySubjectValue {
+): EnquirySubjectFormValue {
   if (
     presetSubjectRaw === "PAYMENT" ||
     presetSubjectRaw === "ORDER" ||
@@ -187,6 +188,11 @@ function ContactVisual() {
         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white md:text-sm">
           Calls: Monday to Friday, 9 am to 5 pm
         </p>
+        <p className="max-w-md text-xs leading-relaxed text-white/85 md:text-sm">
+          <span className="font-semibold text-brand-gold-pale">{COMPANY_LEGAL_NAME}</span>
+          <br />
+          {COMPANY_WAREHOUSE_ADDRESS}
+        </p>
         <div className="flex flex-wrap gap-2 pt-1">
           <a
             href={`mailto:${email}`}
@@ -201,12 +207,6 @@ function ContactVisual() {
             className="inline-flex min-h-[34px] items-center rounded-full border border-white/30 bg-black/35 px-3.5 text-xs font-medium text-white backdrop-blur-sm transition-colors hover:bg-[#25D366] hover:text-white md:min-h-[38px] md:text-sm"
           >
             WhatsApp {customerPhoneDisplay()}
-          </a>
-          <a
-            href={customerPhoneTelHref()}
-            className="inline-flex min-h-[34px] items-center rounded-full border border-white/30 bg-black/35 px-3.5 text-xs font-medium text-white backdrop-blur-sm transition-colors hover:bg-white hover:text-brand-forest md:min-h-[38px] md:text-sm"
-          >
-            Call · Mon–Fri 9am–5pm
           </a>
         </div>
       </div>
@@ -261,7 +261,7 @@ function ContactFormInner() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState(presetEmail);
   const [phone, setPhone] = useState("");
-  const [subjectCategory, setSubjectCategory] = useState<EnquirySubjectValue>(presetSubject);
+  const [subjectCategory, setSubjectCategory] = useState<EnquirySubjectFormValue>(presetSubject);
   const [orderNumber, setOrderNumber] = useState(presetOrder);
   const [message, setMessage] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -289,6 +289,10 @@ function ContactFormInner() {
     event.preventDefault();
     if (!phone.trim()) {
       setError("Please enter your phone number.");
+      return;
+    }
+    if (!subjectCategory) {
+      setError("Please select a category.");
       return;
     }
     setLoading(true);
@@ -363,12 +367,12 @@ function ContactFormInner() {
             <select
               id="contact-subject"
               value={subjectCategory}
-              onChange={(e) => setSubjectCategory(e.target.value as EnquirySubjectValue)}
+              onChange={(e) => setSubjectCategory(e.target.value as EnquirySubjectFormValue)}
               required
               className={`${inputCls} appearance-none pl-3 pr-10`}
             >
-              {ENQUIRY_SUBJECT_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
+              {ENQUIRY_SUBJECT_SELECT_OPTIONS.map((opt) => (
+                <option key={opt.value || "placeholder"} value={opt.value} disabled={opt.value === ""}>
                   {opt.label}
                 </option>
               ))}

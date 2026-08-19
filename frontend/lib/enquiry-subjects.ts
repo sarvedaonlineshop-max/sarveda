@@ -8,8 +8,16 @@ export const ENQUIRY_SUBJECT_OPTIONS = [
 
 export type EnquirySubjectValue = (typeof ENQUIRY_SUBJECT_OPTIONS)[number]["value"];
 
+/** Form select value — empty until the customer picks a category. */
+export type EnquirySubjectFormValue = EnquirySubjectValue | "";
+
+export const ENQUIRY_SUBJECT_SELECT_OPTIONS: ReadonlyArray<{
+  value: EnquirySubjectFormValue;
+  label: string;
+}> = [{ value: "", label: "Select category" }, ...ENQUIRY_SUBJECT_OPTIONS];
+
 /** Default “What is this about?” when the URL does not set a topic. */
-export const DEFAULT_ENQUIRY_SUBJECT: EnquirySubjectValue | "" = "";
+export const DEFAULT_ENQUIRY_SUBJECT: EnquirySubjectFormValue = "";
 
 export type EnquirySource =
   | "CONTACT"

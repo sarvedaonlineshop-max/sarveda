@@ -47,7 +47,7 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="overflow-x-hidden">
+    <div className="overflow-x-hidden bg-brand-cream md:bg-brand-cream">
       <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
 
       <HomeHero />

@@ -160,7 +160,7 @@ export function HomeNewsletter() {
   return (
     <section
       id="newsletter"
-      className="scroll-mt-24 overflow-hidden bg-[#f9f6f1] pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0"
+      className="scroll-mt-24 overflow-hidden bg-[#f9f6f1] pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:mb-0 md:pb-0"
       aria-labelledby="home-newsletter-heading"
     >
       <div className="grid w-full items-stretch lg:grid-cols-2">

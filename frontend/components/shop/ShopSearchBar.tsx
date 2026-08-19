@@ -79,7 +79,7 @@ export function ShopSearchBar({ value, onSearch }: Props) {
         <label htmlFor="shop-search" className="sr-only">
           Search products
         </label>
-        <div className="relative min-w-0 flex-1">
+        <div className="relative min-w-0 flex-1" role="combobox" aria-expanded={open} aria-haspopup="listbox" aria-controls="shop-search-suggestions">
           <svg
             className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-brand-muted"
             fill="none"
@@ -105,7 +105,6 @@ export function ShopSearchBar({ value, onSearch }: Props) {
             placeholder="Search"
             autoComplete="off"
             aria-autocomplete="list"
-            aria-expanded={open}
             aria-controls="shop-search-suggestions"
             className="h-8 min-h-[32px] w-full rounded-full border border-[#E3D9C8] bg-white py-1.5 pl-8 pr-3 text-sm text-brand-ink placeholder:text-brand-muted/70 focus:border-[#22c55e] focus:outline-none focus:ring-2 focus:ring-[#22c55e]/25"
           />
