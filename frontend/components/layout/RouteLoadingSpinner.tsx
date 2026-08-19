@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
-/** Brief full-screen spinner while route / tab changes settle. */
+/** Mobile-only full-screen spinner while bottom-nav / tab changes settle.
+ *  Desktop already uses Header’s PageLoadingSpinner — keep them from stacking. */
 export function RouteLoadingSpinner() {
   const pathname = usePathname();
   const [visible, setVisible] = useState(false);
@@ -24,7 +25,7 @@ export function RouteLoadingSpinner() {
 
   return (
     <div
-      className="pointer-events-none fixed inset-0 z-[80] flex items-center justify-center bg-brand-cream/35 backdrop-blur-[1px]"
+      className="pointer-events-none fixed inset-0 z-[80] flex items-center justify-center bg-brand-cream/35 backdrop-blur-[1px] md:hidden"
       role="status"
       aria-live="polite"
       aria-label="Loading"
