@@ -11,9 +11,10 @@ import { MOBILE_MENU_POLICY_LINKS } from "@/lib/policy-links";
 import { isShopBrowsePath } from "@/lib/shop-navigation";
 
 import { OPEN_TRACK_ORDER_EVENT } from "./TrackOrderModal";
+import { dispatchNavStart } from "./RouteLoadingSpinner";
 import { useStorefrontSession } from "./useStorefrontSession";
 
-const NAV_GREEN = "#1c352a";
+const NAV_GREEN = "#0f5c38";
 
 const accountLinks = [
   { href: "/profile?tab=orders", label: "My orders", tab: "orders" },
@@ -111,6 +112,7 @@ export function BottomNav() {
 
   function go(href: string) {
     setPendingHref(href);
+    dispatchNavStart();
     if (isShopBrowsePath(href)) {
       router.push(href);
       return;

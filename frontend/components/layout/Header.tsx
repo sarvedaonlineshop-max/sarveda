@@ -11,6 +11,7 @@ import { isMainNavActive, MAIN_NAV_LINKS } from "@/lib/main-nav";
 import { SarvedaLogo } from "@/components/brand/SarvedaLogo";
 
 import { TrackOrderModal, OPEN_TRACK_ORDER_EVENT } from "./TrackOrderModal";
+import { dispatchNavStart } from "./RouteLoadingSpinner";
 import { useStorefrontSession } from "./useStorefrontSession";
 
 const immersiveMobileRoutes = new Set(["/cart", "/profile", "/chat"]);
@@ -167,6 +168,24 @@ function TrackOrderButton({ onClick, compact }: { onClick: () => void; compact?:
   );
 }
 
+function WelcomeUserChip({ name }: { name: string }) {
+  const first = name.trim().split(/\s+/)[0] || name;
+  return (
+    <Link
+      href="/profile"
+      className="inline-flex max-w-[11rem] items-center gap-1.5 rounded-full border border-[#108967]/25 bg-gradient-to-r from-[#ecfdf5] to-[#d1fae5] px-2.5 py-1.5 shadow-sm"
+      aria-label={`Welcome ${first}`}
+    >
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#108967] text-[11px] font-bold text-white">
+        {first.charAt(0).toUpperCase()}
+      </span>
+      <span className="min-w-0 truncate text-[12px] font-semibold leading-tight text-[#0f5c38]">
+        Welcome, {first}
+      </span>
+    </Link>
+  );
+}
+
 function PageLoadingSpinner() {
   return (
     <span
@@ -297,6 +316,7 @@ export function Header() {
     if (isMainNavActive(pathname, href)) return;
     // Paint selected state first, then navigate.
     setPendingHref(href);
+    dispatchNavStart();
     // Shop browse uses a Suspense-heavy layout — startTransition soft-nav can leave
     // /shop blank. Push outside a transition so the RSC tree commits normally.
     if (isShopListingPath(href)) {
@@ -451,9 +471,20 @@ export function Header() {
                 </button>
               </div>
 
-              {/* Mobile: track on home + shop categories */}
+              {/* Mobile: welcome on home + shop categories */}
               <div className="ml-auto flex shrink-0 items-center gap-2 md:hidden">
-                {isHomePage ? <TrackOrderButton onClick={onTrackClick} compact /> : null}
+                {isHomePage ? (
+                  displayName ? (
+                    <WelcomeUserChip name={displayName} />
+                  ) : (
+                    <Link
+                      href="/login"
+                      className="inline-flex min-h-[36px] items-center rounded-full bg-[#108967] px-3 text-[12px] font-semibold text-white shadow-sm"
+                    >
+                      Welcome
+                    </Link>
+                  )
+                ) : null}
                 {isShopPage ? (
                   <button
                     type="button"

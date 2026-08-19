@@ -103,7 +103,7 @@ function NewsletterConfirmModal({
             ref={closeRef}
             type="button"
             onClick={onClose}
-            className="mt-7 inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-brand-forest px-6 text-sm font-semibold tracking-wide text-brand-cream transition-colors hover:bg-brand-night sm:w-auto sm:min-w-[220px]"
+            className="mt-7 inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-[#108967] px-6 text-sm font-semibold tracking-wide text-white transition-colors hover:bg-[#0d6f54] sm:w-auto sm:min-w-[220px]"
           >
             Continue exploring
             <span aria-hidden>→</span>

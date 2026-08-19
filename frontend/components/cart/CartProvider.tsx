@@ -207,22 +207,30 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const user = await fetchMe();
-      if (cancelled || authSyncedRef.current) return;
-      if (user) {
-        authSyncedRef.current = true;
-        const merged = await mergeGuestCartSession();
+      try {
+        const user = await fetchMe();
         if (cancelled) return;
-        if (merged) {
-          applyCartResponse(merged);
+        if (user) {
+          authSyncedRef.current = true;
+          const merged = await mergeGuestCartSession();
+          if (cancelled) return;
+          if (merged) {
+            applyCartResponse(merged);
+            return;
+          }
+          setAccountCartOnly(true);
+          await refreshCart();
           return;
         }
-        setAccountCartOnly(true);
-      } else {
+        authSyncedRef.current = false;
         setAccountCartOnly(false);
+        await refreshCart();
+      } catch {
+        if (!cancelled) {
+          setLoading(false);
+          setError("Cart failed to load");
+        }
       }
-      if (cancelled || authSyncedRef.current) return;
-      await refreshCart();
     })();
     return () => {
       cancelled = true;

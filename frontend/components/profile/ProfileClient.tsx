@@ -340,20 +340,19 @@ export function ProfileClient() {
   );
 
   return (
-    <div className="flex flex-col gap-4 md:px-0">
+    <div className="flex flex-col gap-2 md:gap-4 md:px-0">
       <MobileSubpageHeader title={MOBILE_TITLES[activeTab]} backHref="/" />
 
-      <div className="sticky top-[var(--storefront-header-live-offset)] z-20 -mx-4 space-y-4 border-b border-brand-cream-dark/70 bg-brand-cream/95 px-4 pb-3 pt-1 backdrop-blur-md md:mx-0 md:bg-white/95 md:px-0 md:pb-4">
-        <div className="hidden items-center justify-between gap-4 md:flex">
+      <div className="hidden sticky top-[var(--storefront-header-live-offset)] z-20 space-y-4 border-b border-brand-cream-dark/70 bg-white/95 pb-4 backdrop-blur-md md:block">
+        <div className="flex items-center justify-between gap-4">
           <h1 className="font-serif text-3xl font-semibold text-brand-ink">My account</h1>
           {accountActions}
         </div>
 
-        {/* Desktop: four sections in one page. Mobile: each section is its own menu link. */}
         <nav
           role="tablist"
           aria-label="Account sections"
-          className="hidden shrink-0 gap-2 md:grid md:grid-cols-4"
+          className="shrink-0 gap-2 md:grid md:grid-cols-4"
         >
           <TabButton tab="details" label="My Details" active={activeTab === "details"} onSelect={selectTab} />
           <TabButton tab="orders" label="My Orders" count={orderCount} active={activeTab === "orders"} onSelect={selectTab} />
@@ -363,13 +362,13 @@ export function ProfileClient() {
       </div>
 
       {/* Single page scroll — no nested overflow */}
-      <div className="px-4 pb-6 md:px-0 md:pb-0">
+      <div className="px-3 pb-6 md:px-0 md:pb-0">
         <section
           role="tabpanel"
           id="profile-panel-details"
           aria-labelledby="profile-tab-details"
           hidden={activeTab !== "details"}
-          className="rounded-2xl border border-brand-cream-dark bg-white p-6 shadow-card md:p-8"
+          className="rounded-2xl border border-brand-cream-dark bg-white p-5 shadow-card md:p-8"
         >
           <form onSubmit={(event) => void handleSave(event)} className="space-y-6">
             <div>

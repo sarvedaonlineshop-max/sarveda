@@ -20,7 +20,7 @@ export function MobileSubpageHeader({
 
   return (
     <div className="sticky top-0 z-40 border-b border-stone-200 bg-white/95 backdrop-blur-md md:hidden">
-      <div className="flex items-center gap-3 px-4 py-3">
+      <div className="flex items-center gap-3 px-4 py-2.5">
         <button
           type="button"
           onClick={() => (backHref ? router.push(backHref) : router.back())}

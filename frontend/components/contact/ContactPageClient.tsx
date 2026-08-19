@@ -199,7 +199,7 @@ function ContactInfoPanel() {
   const salesWhatsApp = companySalesWhatsAppDisplay();
 
   return (
-    <aside className="h-full min-h-0 overflow-y-auto border-b border-brand-cream-dark bg-white px-5 py-6 font-sans sm:px-7 sm:py-8 lg:border-b-0 lg:border-r lg:py-10">
+    <aside className="h-full min-h-0 overflow-y-auto border-t border-brand-cream-dark bg-white px-5 py-6 font-sans sm:px-7 sm:py-8 lg:border-b-0 lg:border-r lg:border-t-0 lg:py-10">
       <div className="space-y-8">
         <ContactInfoRow icon={<IconMailOutline />}>
           <p className={infoHeadingCls}>
@@ -549,11 +549,15 @@ export function ContactPageClient() {
 
   return (
     <div className="relative h-[calc(100dvh-var(--storefront-header-live-offset)-4.5rem-env(safe-area-inset-bottom,0px))] overflow-hidden bg-brand-cream p-2 md:h-[calc(100dvh-var(--storefront-header-live-offset)-var(--storefront-slim-footer-offset))] md:p-2.5">
-      <div className="relative z-[1] grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-2xl border border-brand-cream-dark bg-white shadow-card lg:grid-cols-2 lg:grid-rows-none">
-        <ContactInfoPanel />
-        <Suspense fallback={<p className="p-8 text-sm text-brand-muted">Loading form…</p>}>
-          <ContactFormInner />
-        </Suspense>
+      <div className="relative z-[1] grid h-full min-h-0 grid-rows-[minmax(0,1fr)_auto] overflow-hidden rounded-2xl border border-brand-cream-dark bg-white shadow-card lg:grid-cols-2 lg:grid-rows-none">
+        <div className="order-2 min-h-0 lg:order-1 lg:h-full">
+          <ContactInfoPanel />
+        </div>
+        <div className="order-1 min-h-0 overflow-hidden lg:order-2 lg:h-full">
+          <Suspense fallback={<p className="p-8 text-sm text-brand-muted">Loading form…</p>}>
+            <ContactFormInner />
+          </Suspense>
+        </div>
       </div>
     </div>
   );

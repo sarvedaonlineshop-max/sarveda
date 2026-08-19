@@ -90,7 +90,7 @@ export function HomeJournal({ posts }: Props) {
         <div className="mt-10 text-center md:mt-12">
           <Link
             href="/insights"
-            className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-[#3d2e24] px-8 text-sm font-semibold tracking-wide text-white transition-colors hover:bg-[#2c211a]"
+            className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-[#108967] px-8 text-sm font-semibold tracking-wide text-white transition-colors hover:bg-[#0d6f54]"
           >
             Explore our Latest Insights
             <span aria-hidden>→</span>

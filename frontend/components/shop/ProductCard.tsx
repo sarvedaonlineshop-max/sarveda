@@ -144,7 +144,7 @@ export function ProductCard({
             </p>
           ) : null}
 
-          <h2 className="line-clamp-2 font-sans text-[1rem] font-semibold leading-snug text-brand-ink transition-colors group-hover:text-brand-forest md:text-[1.05rem]">
+          <h2 className="line-clamp-2 font-sans text-[0.9375rem] font-semibold leading-snug text-[#108967] transition-colors group-hover:text-[#0d6f54] md:text-[1rem]">
             {product.name}
           </h2>
 

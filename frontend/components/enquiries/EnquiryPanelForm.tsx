@@ -90,7 +90,7 @@ export function EnquiryPanelForm({
         <button
           type="submit"
           disabled={loading}
-          className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-stone-900 px-5 text-sm font-semibold text-amber-50 disabled:opacity-60"
+          className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-[#108967] px-5 text-sm font-semibold text-white disabled:opacity-60"
         >
           {loading ? "Sending…" : "Send message"}
         </button>

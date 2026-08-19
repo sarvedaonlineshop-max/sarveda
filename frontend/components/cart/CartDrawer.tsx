@@ -76,7 +76,7 @@ export function CartDrawer({ open, onClose }: Props) {
             <Link
               href="/checkout"
               onClick={onClose}
-              className="mt-5 flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-stone-900 py-3.5 text-center text-base font-semibold tracking-wide text-amber-400 shadow-lg transition-colors hover:bg-amber-700 hover:text-white"
+              className="mt-5 flex min-h-[52px] w-full items-center justify-center rounded-2xl bg-[#108967] py-3.5 text-center text-base font-semibold tracking-wide text-white shadow-lg transition-colors hover:bg-[#0d6f54]"
             >
               Proceed to checkout
             </Link>
@@ -98,7 +98,7 @@ export function CartDrawer({ open, onClose }: Props) {
             <Link
               href="/shop"
               onClick={onClose}
-              className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-xl bg-stone-900 px-8 font-semibold text-amber-400 transition-colors hover:bg-amber-700 hover:text-white"
+              className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-xl bg-[#108967] px-8 font-semibold text-white transition-colors hover:bg-[#0d6f54]"
             >
               Continue shopping
             </Link>

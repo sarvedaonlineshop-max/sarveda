@@ -14,9 +14,13 @@ export function CartPageClient() {
 
   if (loading && items.length === 0) {
     return (
-      <p className="mt-10 text-center text-stone-500" role="status">
-        Loading cart…
-      </p>
+      <div className="mt-10 flex flex-col items-center justify-center gap-3 text-center" role="status">
+        <span
+          className="h-8 w-8 animate-spin rounded-full border-2 border-brand-cream-dark border-t-[#108967]"
+          aria-hidden
+        />
+        <p className="text-sm text-stone-500">Loading cart…</p>
+      </div>
     );
   }
 

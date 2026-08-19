@@ -14,8 +14,8 @@ export function HomeHero() {
       <div
         className={[
           "relative w-full",
-          /* Mobile: portrait frame with extra zoom on the subject */
-          "aspect-[3/4] sm:aspect-[4/5]",
+          /* Mobile: shorter frame so bowls stay in view */
+          "aspect-[4/5] sm:aspect-[5/6]",
           /* Desktop: natural photo ratio */
           "md:aspect-[2400/1049]"
         ].join(" ")}
@@ -28,8 +28,8 @@ export function HomeHero() {
           sizes="100vw"
           className={[
             "object-cover",
-            /* Mobile: tighter crop / more zoom; face clear above copy */
-            "scale-[1.22] object-[74%_12%] sm:scale-[1.12] sm:object-[72%_16%]",
+            /* Mobile: less zoom so foreground bowls are visible */
+            "scale-100 object-[68%_28%] sm:object-[70%_24%]",
             "md:scale-100 md:object-center"
           ].join(" ")}
           aria-hidden

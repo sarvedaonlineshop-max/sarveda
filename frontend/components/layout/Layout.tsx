@@ -10,6 +10,7 @@ import { whatsAppSiteUrl } from "@/lib/enquiry";
 import { BottomNav } from "./BottomNav";
 import { Header } from "./Header";
 import { PageTransition } from "./PageTransition";
+import { RouteLoadingSpinner } from "./RouteLoadingSpinner";
 import { SiteFooter } from "./SiteFooter";
 import { SlimFooter } from "./SlimFooter";
 
@@ -36,6 +37,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {onProductPage ? <PdpCartRail /> : null}
       <div className={pdpCartRail ? cartSidebarContentPadClass : ""}>
       <Header />
+      <RouteLoadingSpinner />
       <main
         className={`bg-brand-cream ${
           isHomePage
