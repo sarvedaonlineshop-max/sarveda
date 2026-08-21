@@ -15,11 +15,32 @@ import { InstructorAvatars } from "./InstructorAvatars";
 
 type Props = { course: CourseListItem; compact?: boolean };
 
+/** Fixed card height so carousel / grid rows stay even. */
+const CARD_HEIGHT = "h-[34rem] sm:h-[36rem]";
+
 function prettyDate(s: string | null | undefined) {
   if (!s) return null;
   const d = new Date(s);
   if (isNaN(d.getTime())) return null;
   return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function plainText(raw: string | null | undefined): string | null {
+  if (!raw?.trim()) return null;
+  const text = raw
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/\s+/g, " ")
+    .trim();
+  return text || null;
+}
+
+function courseExplanation(course: CourseListItem, aboutTheCourse?: string | null): string | null {
+  return plainText(course.shortDescription) || plainText(aboutTheCourse);
 }
 
 export function CourseCard({ course }: Props) {
@@ -31,6 +52,7 @@ export function CourseCard({ course }: Props) {
   const dateRange = s && e && s !== e ? `${s} – ${e}` : s ?? null;
   const duration = formatCourseDuration(extra);
   const tagLabel = courseCardTypeLabel(extra);
+  const explanation = courseExplanation(course, extra.aboutTheCourse);
   const ref = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
@@ -54,7 +76,7 @@ export function CourseCard({ course }: Props) {
     <Link
       ref={ref}
       href={`/course/${course.slug}`}
-      className="group flex flex-col overflow-hidden rounded-xl shadow-card transition-shadow duration-300 hover:shadow-card-hover"
+      className={`group flex ${CARD_HEIGHT} flex-col overflow-hidden rounded-xl shadow-card transition-shadow duration-300 hover:shadow-card-hover`}
       style={{
         opacity: 0,
         transform: "translateY(24px)",
@@ -62,7 +84,7 @@ export function CourseCard({ course }: Props) {
           "opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s ease"
       }}
     >
-      <div className="relative overflow-hidden bg-[#EDE4D3]">
+      <div className="relative h-[11.5rem] shrink-0 overflow-hidden bg-[#EDE4D3] sm:h-[12.5rem]">
         <span className="absolute left-3 top-3 z-10 inline-flex max-w-[calc(100%-1.5rem)] items-center rounded-full border border-brand-gold/70 bg-white/95 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-ink shadow-sm backdrop-blur-sm">
           {tagLabel}
         </span>
@@ -70,25 +92,35 @@ export function CourseCard({ course }: Props) {
           <img
             src={course.imageUrl}
             alt={course.title}
-            className="block h-auto w-full object-contain object-top transition-transform duration-500 group-hover:scale-[1.03]"
+            className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]"
           />
         ) : (
-          <div className="aspect-[4/5] bg-brand-forest transition-transform duration-500 group-hover:scale-[1.03]" />
+          <div className="h-full w-full bg-brand-forest transition-transform duration-500 group-hover:scale-[1.03]" />
         )}
       </div>
 
-      <div className="relative flex min-w-0 flex-col bg-[#166D46] px-4 pb-4 pt-5 text-white">
+      <div className="relative flex min-h-0 flex-1 flex-col bg-[#166D46] text-white">
         <InstructorAvatars
           seam
           people={teachers}
           className="absolute -top-[25px] right-2.5 z-10"
         />
-        <h3 className="font-serif text-[1.25rem] font-semibold leading-snug text-white sm:text-[1.35rem]">
-          {course.title}
-        </h3>
 
-        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0 border-l-4 border-white/90 pl-3">
+        {/* Scrollable body — title, explanation, schedule */}
+        <div
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-2 pt-5 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.45)_transparent]"
+          onWheel={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
+        >
+          <h3 className="font-serif text-[1.2rem] font-semibold leading-snug text-white sm:text-[1.3rem]">
+            {course.title}
+          </h3>
+
+          {explanation ? (
+            <p className="mt-2 text-[13px] leading-relaxed text-white/85 sm:text-[14px]">{explanation}</p>
+          ) : null}
+
+          <div className="mt-3 min-w-0 border-l-4 border-white/90 pl-3">
             {teacherNames.map((name) => (
               <p key={name} className="text-[14px] leading-snug text-white sm:text-[15px]">
                 {name}
@@ -97,14 +129,17 @@ export function CourseCard({ course }: Props) {
             {dateRange ? <p className="mt-1 text-[14px] text-white/90 sm:text-[15px]">{dateRange}</p> : null}
             {duration ? <p className="text-[14px] text-white sm:text-[15px]">{duration}</p> : null}
           </div>
+        </div>
+
+        {/* Fixed footer inside green panel */}
+        <div className="flex shrink-0 items-end justify-between gap-3 border-t border-white/15 px-4 pb-4 pt-3">
+          <p className="text-sm font-semibold tabular-nums text-white/95">
+            {course.isFree || course.priceInPaise === 0 ? "Free" : formatINRFromPaise(course.priceInPaise)}
+          </p>
           <span className="inline-flex min-h-[40px] shrink-0 items-center justify-center rounded-sm bg-[#e87e04] px-5 text-sm font-medium uppercase tracking-wide text-white transition-colors group-hover:bg-[#d47103]">
             Explore
           </span>
         </div>
-
-        <p className="mt-2.5 text-sm font-semibold tabular-nums text-white/95">
-          {course.isFree || course.priceInPaise === 0 ? "Free" : formatINRFromPaise(course.priceInPaise)}
-        </p>
       </div>
     </Link>
   );

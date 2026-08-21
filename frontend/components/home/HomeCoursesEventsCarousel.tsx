@@ -126,13 +126,15 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
             {slots.map((slot) => (
               <li
                 key={slot.kind === "course" ? `course-${slot.item.id}` : `event-${slot.item.id}`}
-                className="w-[min(86vw,22rem)] shrink-0 snap-start sm:w-[min(48%,20rem)] lg:w-[calc((100%-3rem)/3)]"
+                className="flex w-[min(86vw,22rem)] shrink-0 snap-start self-stretch sm:w-[min(48%,20rem)] lg:w-[calc((100%-3rem)/3)]"
               >
-                {slot.kind === "course" ? (
-                  <CourseCard course={slot.item} compact />
-                ) : (
-                  <EventCard event={slot.item} compact />
-                )}
+                <div className="w-full">
+                  {slot.kind === "course" ? (
+                    <CourseCard course={slot.item} compact />
+                  ) : (
+                    <EventCard event={slot.item} compact />
+                  )}
+                </div>
               </li>
             ))}
           </ul>
