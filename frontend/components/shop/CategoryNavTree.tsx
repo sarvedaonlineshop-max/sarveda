@@ -72,7 +72,7 @@ export function CategoryNavTree({
                       : "font-semibold text-brand-forest hover:bg-brand-cream"
                   : active
                     ? "bg-brand-forest/10 font-medium text-brand-forest"
-                    : "text-brand-muted hover:bg-brand-cream hover:text-brand-ink"
+                    : "font-medium text-brand-ink/85 hover:bg-brand-cream hover:text-brand-ink"
               }`}
             >
               {cat.name}

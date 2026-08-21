@@ -16,7 +16,7 @@ type Props = {
 };
 
 const PLAIN_GREEN_PILL =
-  "inline-flex h-8 min-h-[32px] shrink-0 items-center justify-center gap-1 rounded-full bg-[#166D46] px-3 text-[13px] font-semibold text-white transition-colors hover:bg-[#145a3a]";
+  "inline-flex h-8 min-h-[32px] shrink-0 items-center justify-center gap-1 rounded-full bg-[#3d9a6a] px-3 text-[13px] font-semibold text-white transition-colors hover:bg-[#34875c]";
 
 export function ShopFilterToggle({
   open,
@@ -29,7 +29,7 @@ export function ShopFilterToggle({
     <button
       type="button"
       onClick={() => onOpenChange(!open)}
-      className={`${PLAIN_GREEN_PILL} ${open ? "bg-[#145a3a]" : ""}`}
+      className={`${PLAIN_GREEN_PILL} ${open ? "bg-[#34875c]" : ""}`}
       aria-expanded={open}
     >
       Filter

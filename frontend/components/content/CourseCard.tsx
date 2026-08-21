@@ -15,8 +15,8 @@ import { InstructorAvatars } from "./InstructorAvatars";
 
 type Props = { course: CourseListItem; compact?: boolean };
 
-/** Shared fixed height with EventCard so carousel rows stay even. */
-export const CONTENT_CARD_HEIGHT = "h-[36rem] sm:h-[38rem]";
+/** Fixed card height so carousel / grid rows stay even. */
+const CONTENT_CARD_HEIGHT = "h-[36rem] sm:h-[38rem]";
 const IMAGE_BAND = "h-[15.5rem] sm:h-[17rem]";
 
 function prettyDate(s: string | null | undefined) {

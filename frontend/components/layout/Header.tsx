@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
 
 import { useCartData, useCartUi } from "@/components/cart/CartProvider";
-import { OPEN_SHOP_MENU_EVENT } from "@/components/shop/ShopMobileCategoryDrawer";
 import { isMainNavActive, MAIN_NAV_LINKS } from "@/lib/main-nav";
 
 import { SarvedaLogo } from "@/components/brand/SarvedaLogo";
@@ -175,7 +174,6 @@ export function Header() {
   const chromeRef = useRef<HTMLDivElement>(null);
 
   const hideMarquee = isProfilePath(pathname);
-  const isShopPage = isShopListingPath(pathname);
   const isHomePage = pathname === "/";
   const headerCompact = hideMarquee || marqueeHidden;
   const isNavLoading = pendingHref != null || isPending;
@@ -296,10 +294,6 @@ export function Header() {
     setTrackOpen(true);
   }
 
-  function openShopMenu() {
-    window.dispatchEvent(new Event(OPEN_SHOP_MENU_EVENT));
-  }
-
   const spacerHeight = "var(--storefront-header-live-offset)";
 
   return (
@@ -411,7 +405,7 @@ export function Header() {
                 </button>
               </div>
 
-              {/* Mobile: welcome on home + shop categories */}
+              {/* Mobile: welcome on home */}
               <div className="ml-auto flex shrink-0 items-center gap-2 md:hidden">
                 {isHomePage ? (
                   displayName ? (
@@ -425,25 +419,6 @@ export function Header() {
                       <ProfileIcon />
                     </Link>
                   )
-                ) : null}
-                {isShopPage ? (
-                  <button
-                    type="button"
-                    onClick={openShopMenu}
-                    className="inline-flex h-8 min-h-[32px] shrink-0 items-center gap-1.5 rounded-full bg-[#166D46] px-3 text-[12px] font-semibold text-white transition-colors hover:bg-[#145a3a]"
-                    aria-label="Open product menu"
-                  >
-                    {/* Grid — catalog, not the bottom-nav site menu */}
-                    <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z"
-                      />
-                    </svg>
-                    Product menu
-                  </button>
                 ) : null}
               </div>
             </div>

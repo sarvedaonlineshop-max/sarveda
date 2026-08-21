@@ -7,13 +7,13 @@ import type { EventListItem } from "@/lib/event-types";
 import { eventCardTypeLabel, formatEventCardWhen } from "@/lib/content-meta";
 import { formatINRFromPaise } from "@/lib/money";
 
-import { CONTENT_CARD_HEIGHT } from "./CourseCard";
-
 type Props = {
   event: EventListItem;
   compact?: boolean;
 };
 
+/** Match CourseCard fixed height. */
+const CONTENT_CARD_HEIGHT = "h-[36rem] sm:h-[38rem]";
 const IMAGE_BAND = "h-[15.5rem] sm:h-[17rem]";
 
 function plainText(raw: string | null | undefined): string | null {

@@ -111,7 +111,7 @@ export function ShopSearchBar({ value, onSearch }: Props) {
         </div>
         <button
           type="submit"
-          className="inline-flex h-8 min-h-[32px] shrink-0 items-center rounded-full bg-[#166D46] px-3 text-[13px] font-semibold text-white transition-colors hover:bg-[#145a3a]"
+          className="inline-flex h-8 min-h-[32px] shrink-0 items-center rounded-full bg-[#3d9a6a] px-3 text-[13px] font-semibold text-white transition-colors hover:bg-[#34875c]"
         >
           Search
         </button>
