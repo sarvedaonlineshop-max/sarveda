@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import type { CourseListItem } from "@/lib/course-types";
-import { formatCourseDuration, parseCourseExtra, parseCourseTeachers } from "@/lib/content-meta";
+import {
+  courseCardTypeLabel,
+  formatCourseDuration,
+  parseCourseExtra,
+  parseCourseTeachers
+} from "@/lib/content-meta";
 import { formatINRFromPaise } from "@/lib/money";
 
 import { InstructorAvatars } from "./InstructorAvatars";
@@ -25,7 +30,7 @@ export function CourseCard({ course }: Props) {
   const e = prettyDate(extra.endDate);
   const dateRange = s && e && s !== e ? `${s} – ${e}` : s ?? null;
   const duration = formatCourseDuration(extra);
-  const tagLabel = duration?.trim() || "Course";
+  const tagLabel = courseCardTypeLabel(extra);
   const ref = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {

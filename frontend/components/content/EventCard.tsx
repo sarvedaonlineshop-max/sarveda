@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 
 import type { EventListItem } from "@/lib/event-types";
-import { eventTypeLabel } from "@/lib/content-meta";
+import { eventCardTypeLabel } from "@/lib/content-meta";
 
 type Props = {
   event: EventListItem;
@@ -12,7 +12,7 @@ type Props = {
 };
 
 export function EventCard({ event }: Props) {
-  const typeLabel = eventTypeLabel(event);
+  const typeLabel = eventCardTypeLabel(event);
   const ref = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {

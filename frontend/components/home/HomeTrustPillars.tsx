@@ -55,19 +55,19 @@ export function HomeTrustPillars() {
               yoga, and meditation.
             </p>
 
-            <ul className="mt-8 grid grid-cols-2 gap-x-4 gap-y-7 sm:mt-10 sm:gap-x-6 md:gap-y-8">
+            <ul className="mt-8 grid grid-cols-4 gap-x-2 gap-y-0 sm:mt-10 sm:gap-x-3 md:gap-x-4">
               {PILLARS.map((pillar) => (
-                <li key={pillar.lines[0]} className="flex flex-col items-center text-center">
-                  <div className="relative mb-2.5 h-14 w-full max-w-[7.5rem] sm:mb-3 sm:h-16 sm:max-w-[8.5rem]">
+                <li key={pillar.lines[0]} className="flex min-w-0 flex-col items-center text-center">
+                  <div className="relative mb-1.5 h-8 w-full max-w-[3.75rem] sm:mb-2 sm:h-10 sm:max-w-[4.5rem] md:h-11 md:max-w-[5rem]">
                     <Image
                       src={pillar.src}
                       alt={pillar.alt}
                       fill
-                      sizes="140px"
+                      sizes="80px"
                       className="object-contain object-center"
                     />
                   </div>
-                  <p className="text-[0.7rem] font-semibold leading-snug text-brand-ink sm:text-xs md:text-[0.8rem]">
+                  <p className="text-[0.58rem] font-semibold leading-snug text-brand-ink sm:text-[0.65rem] md:text-[0.72rem]">
                     {pillar.lines.map((line) => (
                       <span key={line} className="block">
                         {line}

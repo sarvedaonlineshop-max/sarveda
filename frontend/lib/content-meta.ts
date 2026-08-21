@@ -65,6 +65,38 @@ export function formatCourseDuration(extra: CourseExtra): string | null {
   return hours === 1 ? "1 hour" : `${hours} hours`;
 }
 
+function modeLooksOnline(raw: string | null | undefined): boolean | null {
+  const m = raw?.toLowerCase().trim() ?? "";
+  if (!m) return null;
+  if (/(offline|in[- ]?person|residential|on[- ]?site|campus)/.test(m)) return false;
+  if (/(online|virtual|webinar|zoom|live online)/.test(m)) return true;
+  return null;
+}
+
+/** Whether a course is delivered online (from mode / venue / schedule). */
+export function isCourseOnline(extra: CourseExtra): boolean {
+  const fromMode = modeLooksOnline(extra.mode);
+  if (fromMode != null) return fromMode;
+  const fromVenue = modeLooksOnline(extra.venue);
+  if (fromVenue != null) return fromVenue;
+  for (const row of extra.schedule ?? []) {
+    const fromRow = modeLooksOnline(row.mode) ?? modeLooksOnline(row.location);
+    if (fromRow != null) return fromRow;
+  }
+  // Most catalog courses are live-online when mode is unset.
+  return true;
+}
+
+/** Card badge: Online Course / Offline Course (not duration hours). */
+export function courseCardTypeLabel(extra: CourseExtra): string {
+  return isCourseOnline(extra) ? "Online Course" : "Offline Course";
+}
+
+/** Card badge: Online Event / Offline Event. */
+export function eventCardTypeLabel(event: EventListItem): string {
+  return event.isOnline ? "Online Event" : "Offline Event";
+}
+
 export function parseCourseExtra(extra: CourseListItem["extra"]): CourseExtra {
   if (!extra || typeof extra !== "object") return {};
   return extra as CourseExtra;

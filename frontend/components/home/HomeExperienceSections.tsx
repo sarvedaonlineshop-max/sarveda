@@ -14,22 +14,16 @@ type Props = {
   events: EventListItem[];
 };
 
-function LotusIcon() {
+function LotusMark() {
   return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4 text-brand-gold" fill="none" aria-hidden>
-      <path
-        d="M12 20c-2-3-5-5-5-9 2 1 4 1 5 0 1 1 3 1 5 0 0 4-3 6-5 9Z"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M12 11c-1-3 0-6 0-6s1 3 0 6ZM7 12c-3-2-4-5-4-5s3 1 4 5ZM17 12c3-2 4-5 4-5s-3 1-4 5Z"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
-    </svg>
+    <Image
+      src="/images/brand/lotus-mark.png"
+      alt=""
+      width={18}
+      height={14}
+      className="h-[14px] w-auto shrink-0 object-contain"
+      aria-hidden
+    />
   );
 }
 
@@ -45,7 +39,7 @@ export function HomeExperienceSections({ courses, events }: Props) {
         <div className="page-shell grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
           <div className="min-w-0">
             <p className="flex items-center gap-2 text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-brand-gold sm:text-xs">
-              <LotusIcon />
+              <LotusMark />
               Corporate Wellness Programs
             </p>
             <h2

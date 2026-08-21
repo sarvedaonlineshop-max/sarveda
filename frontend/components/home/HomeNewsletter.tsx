@@ -152,6 +152,14 @@ export function HomeNewsletter() {
     >
       <div className="grid w-full items-stretch lg:grid-cols-2">
         <div className="min-w-0 px-[5%] py-14 md:px-[10%] md:py-16 lg:mx-auto lg:w-full lg:max-w-[720px] lg:py-20 lg:pl-[10%] lg:pr-8 xl:pr-12">
+          <Image
+            src="/images/brand/lotus-bloom.png"
+            alt=""
+            width={56}
+            height={38}
+            className="mb-4 h-8 w-auto object-contain sm:mb-5 sm:h-9"
+            aria-hidden
+          />
           <h2
             id="home-newsletter-heading"
             className="font-serif text-[1.85rem] font-semibold leading-[1.12] tracking-tight sm:text-[2.2rem] md:text-[2.45rem]"
