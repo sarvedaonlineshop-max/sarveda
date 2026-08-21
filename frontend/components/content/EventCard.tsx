@@ -36,7 +36,7 @@ export function EventCard({ event }: Props) {
     <Link
       ref={ref}
       href={`/event/${event.slug}`}
-      className="group flex h-full flex-col overflow-hidden rounded-xl shadow-card transition-shadow duration-300 hover:shadow-card-hover"
+      className="group flex flex-col overflow-hidden rounded-xl shadow-card transition-shadow duration-300 hover:shadow-card-hover"
       style={{
         opacity: 0,
         transform: "translateY(24px)",
