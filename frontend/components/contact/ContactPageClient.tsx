@@ -577,7 +577,7 @@ export function ContactPageClient() {
       </div>
 
       {/* Desktop: side-by-side locked viewport */}
-      <div className="relative hidden h-[calc(100dvh-var(--storefront-header-live-offset)-var(--storefront-slim-footer-offset))] overflow-hidden bg-brand-cream p-2.5 lg:block">
+      <div className="relative hidden h-[calc(100dvh-var(--storefront-header-live-offset))] overflow-hidden bg-brand-cream p-2.5 lg:block">
         <div className="relative z-[1] grid h-full min-h-0 grid-cols-2 overflow-hidden rounded-2xl border border-brand-cream-dark bg-white shadow-card">
           <ContactInfoPanel />
           <Suspense fallback={<p className="p-8 text-sm text-brand-muted">Loading form…</p>}>

@@ -7,6 +7,7 @@ import { PdpCartRail } from "@/components/cart/PdpCartRail";
 import { useCartData } from "@/components/cart/CartProvider";
 import { cartSidebarContentPadClass, cartSidebarWhatsAppRightClass } from "@/lib/cart-sidebar-layout";
 import { whatsAppSiteUrl } from "@/lib/enquiry";
+import { isShopBrowsePath } from "@/lib/shop-navigation";
 import { BottomNav } from "./BottomNav";
 import { FloatingSocialSubscribe } from "./FloatingSocialSubscribe";
 import { Header } from "./Header";
@@ -20,6 +21,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { itemCount, items } = useCartData();
   const onProductPage = pathname?.startsWith("/product/") ?? false;
   const isHomePage = pathname === "/";
+  /** Full SiteFooter everywhere except Store browse (/shop + category listings). */
+  const isStorePage = isShopBrowsePath(pathname);
   const hasCartItems = itemCount > 0 || items.length > 0;
   const pdpCartRail = onProductPage && hasCartItems;
   const chromeless =
@@ -27,7 +30,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     pathname?.startsWith("/complaints") ||
     pathname?.startsWith("/login") ||
     pathname?.startsWith("/signup");
-  const useSlimFooter = !isHomePage;
+  const useSlimFooter = isStorePage;
 
   if (chromeless) {
     return <>{children}</>;
