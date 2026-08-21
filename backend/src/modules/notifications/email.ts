@@ -205,13 +205,14 @@ function escapeHtml(value: string): string {
 function emailLogoMarkUrl(): string {
   const override = process.env.EMAIL_LOGO_URL?.trim();
   if (override) return override;
-  return `${siteBaseUrl()}/brand/sarveda-logo.png`;
+  return `${siteBaseUrl()}/brand/sarveda-logo-with-name.png`;
 }
 
 function emailWordmarkUrl(): string {
   const override = process.env.EMAIL_WORDMARK_URL?.trim();
   if (override) return override;
-  return `${siteBaseUrl()}/brand/sarveda-wordmark.png`;
+  // Combined lockup already includes the wordmark — reuse for older templates.
+  return `${siteBaseUrl()}/brand/sarveda-logo-with-name.png`;
 }
 
 function supportContactConfig(): {
@@ -257,7 +258,6 @@ export function shopEmailHtml(opts: {
   ctas?: EmailCta[];
 }): string {
   const mark = emailLogoMarkUrl();
-  const wordmark = emailWordmarkUrl();
   const home = siteBaseUrl();
   const contact = supportContactConfig();
   const ctas = (opts.ctas ?? [])
@@ -296,8 +296,7 @@ ${gmailOpenSpacer()}
   <tr>
     <td style="padding:20px 20px 14px;background:#ffffff">
       <a href="${home}" style="text-decoration:none">
-        <img src="${mark}" alt="" width="32" height="40" style="display:inline-block;vertical-align:middle;height:40px;width:auto;border:0;outline:none" />
-        <img src="${wordmark}" alt="Sarveda" width="140" height="28" style="display:inline-block;vertical-align:middle;height:28px;width:auto;margin-left:10px;border:0;outline:none" />
+        <img src="${mark}" alt="Sarveda" width="180" height="64" style="display:inline-block;vertical-align:middle;height:48px;width:auto;border:0;outline:none" />
       </a>
       ${addressLine}
       ${emailLine}

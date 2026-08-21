@@ -1,4 +1,6 @@
 import PDFDocument from "pdfkit";
+import fs from "node:fs";
+import path from "node:path";
 
 import { resolveCustomerWhatsApp, resolveSupportContactEmail } from "./customerContact";
 import { amountInCurrencyWords } from "./numberWords";
@@ -143,6 +145,22 @@ const TEXT_MUTED  = "#7A7870";
 const TEXT_BODY   = "#1A1A18";
 const INV_WHITE   = "#FFFFFF";
 
+function resolveInvoiceLogoPath(): string | null {
+  const candidates = [
+    path.join(__dirname, "../../assets/labels/sarveda-logo-with-name.png"),
+    path.join(process.cwd(), "assets/labels/sarveda-logo-with-name.png"),
+    path.join(process.cwd(), "backend/assets/labels/sarveda-logo-with-name.png")
+  ];
+  for (const file of candidates) {
+    try {
+      if (fs.existsSync(file)) return file;
+    } catch {
+      /* try next */
+    }
+  }
+  return null;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // renderInvoiceHeader
 // ─────────────────────────────────────────────────────────────────────────────
@@ -162,16 +180,40 @@ function renderInvoiceHeader(
   const rightColX        = left + leftColW + 18;
   const rightColW        = pageWidth - leftColW - 18;
 
-  // ── 1. Company name (left) + "Tax Invoice" title (right) ───────────────────
-  doc.fontSize(13).font("Helvetica-Bold").fillColor(TEXT_BODY)
-     .text(seller.name, left, top, { width: leftColW });
+  // ── 1. Brand logo (left) + invoice title (right) ───────────────────────────
+  const logoPath = resolveInvoiceLogoPath();
+  const logoH = 28;
+  const logoW = Math.round(logoH * (1855 / 654));
+  let sellerTextTop = top;
+  if (logoPath) {
+    try {
+      doc.image(logoPath, left, top, { width: logoW, height: logoH });
+      sellerTextTop = top + logoH + 8;
+    } catch {
+      doc.fontSize(13).font("Helvetica-Bold").fillColor(TEXT_BODY)
+         .text(seller.name, left, top, { width: leftColW });
+      sellerTextTop = top + 18;
+    }
+  } else {
+    doc.fontSize(13).font("Helvetica-Bold").fillColor(TEXT_BODY)
+       .text(seller.name, left, top, { width: leftColW });
+    sellerTextTop = top + 18;
+  }
 
   doc.fontSize(24).font("Helvetica-Bold").fillColor(TEXT_BODY)
      .text(title, left, top - 4, { width: pageWidth, align: "right" });
 
   // ── 2. Seller details ──────────────────────────────────────────────────────
-  let sy = top + 18;
+  let sy = sellerTextTop;
   doc.fontSize(7.5).font("Helvetica").fillColor(TEXT_MUTED);
+
+  // Legal name under logo when logo is present
+  if (logoPath) {
+    doc.fontSize(8).font("Helvetica-Bold").fillColor(TEXT_BODY)
+       .text(seller.name, left, sy, { width: leftColW });
+    sy = doc.y + 2;
+    doc.fontSize(7.5).font("Helvetica").fillColor(TEXT_MUTED);
+  }
 
   for (const line of seller.addressLines) {
     doc.text(line, left, sy, { width: leftColW });
@@ -193,7 +235,7 @@ function renderInvoiceHeader(
      .text(`Invoice# ${displayInvoiceNo}`, left, top + 28, { width: pageWidth, align: "right" });
 
   // ── 4. Bill To (right column) ──────────────────────────────────────────────
-  const billStartY = top + 48;
+  const billStartY = Math.max(top + 48, sellerTextTop);
   doc.fontSize(7.5).font("Helvetica").fillColor(TEXT_MUTED)
      .text("Bill To", rightColX, billStartY, { width: rightColW });
   let byY = billStartY + 12;

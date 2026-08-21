@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, Suspense, useEffect, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 
+import { SarvedaLogo } from "@/components/brand/SarvedaLogo";
 import { fetchMe } from "@/lib/auth-client";
 import { EnquiryFilePicker } from "@/components/enquiries/EnquiryFilePicker";
 import { PaymentSuccessMark } from "@/components/orders/PaymentSuccessMark";
@@ -200,6 +201,9 @@ function ContactInfoPanel() {
 
   return (
     <aside className="min-h-0 overflow-y-auto border-t border-brand-cream-dark bg-white px-5 py-6 font-sans sm:px-7 sm:py-8 lg:h-full lg:border-b-0 lg:border-r lg:border-t-0 lg:py-10">
+      <div className="mb-8">
+        <SarvedaLogo iconHeight={52} />
+      </div>
       <div className="space-y-8">
         <ContactInfoRow icon={<IconMailOutline />}>
           <p className={infoHeadingCls}>
