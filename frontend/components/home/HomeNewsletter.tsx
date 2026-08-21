@@ -3,21 +3,8 @@
 import Image from "next/image";
 import { FormEvent, useEffect, useId, useRef, useState } from "react";
 
+import { SectionFlourish } from "@/components/brand/SectionFlourish";
 import { getApiBase } from "@/lib/api";
-
-function Flourish() {
-  return (
-    <svg viewBox="0 0 120 20" className="mx-auto mt-4 h-4 w-28 text-brand-gold" fill="none" aria-hidden>
-      <path
-        d="M8 10h28M84 10h28M52 10c-6-8 6-8 0 0 6 8-6 8 0 0M60 10c-6-8 6-8 0 0 6 8-6 8 0 0M68 10c-6-8 6-8 0 0 6 8-6 8 0 0"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-      />
-      <circle cx="60" cy="10" r="1.6" fill="currentColor" />
-    </svg>
-  );
-}
 
 function NewsletterConfirmModal({
   open,
@@ -83,7 +70,7 @@ function NewsletterConfirmModal({
           >
             {alreadySubscribed ? "You're already with us" : "Welcome to the community"}
           </h2>
-          <Flourish />
+          <SectionFlourish />
           <p className="mt-4 text-sm leading-relaxed text-brand-ink/75 sm:text-[0.95rem]">
             {alreadySubscribed ? (
               <>

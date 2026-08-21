@@ -33,15 +33,17 @@ export function AuthShell({
         className="pointer-events-none absolute left-1/2 top-1/3 -translate-x-1/2 -translate-y-1/2"
         aria-hidden="true"
       >
-        <SarvedaLogoWatermark className={isLight ? "opacity-[0.06]" : "opacity-[0.08]"} height={240} />
+        <SarvedaLogoWatermark
+          className={isLight ? "opacity-[0.06]" : "opacity-[0.08]"}
+          height={240}
+          tone={isLight ? "onLight" : "onDark"}
+        />
       </div>
       <div className="relative mx-auto grid max-w-6xl gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] lg:items-center lg:gap-16">
         <div className="hidden text-center lg:block lg:text-left">
           <SarvedaLogo
             iconHeight={40}
-            wordmarkClassName={`font-serif text-3xl italic ${
-              isLight ? "text-brand-forest group-hover:text-brand-sage" : "text-amber-400 group-hover:text-amber-300"
-            }`}
+            tone={isLight ? "onLight" : "onDark"}
           />
           <p
             className={`mt-4 max-w-md font-serif text-3xl leading-tight ${

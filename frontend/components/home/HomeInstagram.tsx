@@ -1,24 +1,12 @@
 import Image from "next/image";
 
+import { SectionFlourish } from "@/components/brand/SectionFlourish";
+
 /**
  * Homepage Instagram strip — mockup heading + live sarveda.com post links/media.
  */
 
 const PROFILE_URL = "https://www.instagram.com/sarveda.shaala/";
-
-function Flourish() {
-  return (
-    <svg viewBox="0 0 120 20" className="mx-auto mt-3 h-4 w-28 text-brand-gold" fill="none" aria-hidden>
-      <path
-        d="M8 10h28M84 10h28M52 10c-6-8 6-8 0 0 6 8-6 8 0 0M60 10c-6-8 6-8 0 0 6 8-6 8 0 0M68 10c-6-8 6-8 0 0 6 8-6 8 0 0"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-      />
-      <circle cx="60" cy="10" r="1.6" fill="currentColor" />
-    </svg>
-  );
-}
 
 const POSTS = [
   {
@@ -102,7 +90,7 @@ export function HomeInstagram() {
           >
             Follow us on <span className="text-brand-gold">Instagram</span>
           </h2>
-          <Flourish />
+          <SectionFlourish />
           <p className="mx-auto mt-3 max-w-2xl text-sm text-[#4a453c] sm:text-[0.95rem]">
             Stay connected with our latest workshops, new arrivals, sound healing insights and
             moments from our growing community.

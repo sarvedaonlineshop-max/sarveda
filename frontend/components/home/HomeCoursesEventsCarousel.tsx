@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { SectionFlourish } from "@/components/brand/SectionFlourish";
 import { CourseCard } from "@/components/content/CourseCard";
 import { EventCard } from "@/components/content/EventCard";
 import type { CourseListItem } from "@/lib/course-types";
@@ -19,20 +20,6 @@ type Props = {
 type Slot =
   | { kind: "course"; item: CourseListItem }
   | { kind: "event"; item: EventListItem };
-
-function Flourish() {
-  return (
-    <svg viewBox="0 0 120 20" className="mx-auto mt-3 h-4 w-28 text-brand-gold" fill="none" aria-hidden>
-      <path
-        d="M8 10h28M84 10h28M52 10c-6-8 6-8 0 0 6 8-6 8 0 0M60 10c-6-8 6-8 0 0 6 8-6 8 0 0M68 10c-6-8 6-8 0 0 6 8-6 8 0 0"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinecap="round"
-      />
-      <circle cx="60" cy="10" r="1.6" fill="currentColor" />
-    </svg>
-  );
-}
 
 export function HomeCoursesEventsCarousel({ courses, events }: Props) {
   const upcomingCourses = courses.filter((c) => isCourseUpcoming(c));
@@ -93,7 +80,7 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
             <span style={{ color: HOME_GREEN }}>Explore Our Upcoming</span>{" "}
             <span className="text-brand-gold">Courses &amp; Events</span>
           </h2>
-          <Flourish />
+          <SectionFlourish />
           <p className="mx-auto mt-3 max-w-2xl text-sm text-[#4a453c] sm:text-[0.95rem]">
             Learn from experienced musicians, sound practitioners and teachers through online
             courses, workshops and immersive experiences.

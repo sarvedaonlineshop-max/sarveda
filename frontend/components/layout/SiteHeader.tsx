@@ -104,10 +104,8 @@ export function SiteHeader() {
             </button>
             <SarvedaLogo
               className="min-w-0"
-              showTagline
               iconHeight={34}
-              wordmarkClassName="font-serif text-xl italic leading-tight text-amber-400 transition-colors group-hover:text-amber-300 md:text-2xl"
-              taglineClassName="mt-0.5 hidden text-[10px] font-normal tracking-[0.22em] text-stone-500 md:block"
+              tone="onDark"
             />
           </div>
 

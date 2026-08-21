@@ -1,26 +1,24 @@
 import Image from "next/image";
 import Link from "next/link";
 
-const MARK_SRC = "/brand/sarveda-mark.png";
-const WORDMARK_SRC = "/brand/sarveda-wordmark.png";
+const LOGO_LIGHT = "/images/brand/sarveda-logo.png";
+const LOGO_DARK = "/images/brand/sarveda-logo-on-dark.png";
 
-/** Native mark is tall (spiral + tails). Wordmark is wide and short. */
-const MARK_W = 40;
-const MARK_H = 68;
-const WORDMARK_W = 200;
-const WORDMARK_H = 40;
+/** Combined mark + wordmark asset aspect. */
+const LOGO_W = 872;
+const LOGO_H = 305;
 
 type SarvedaLogoProps = {
   href?: string;
   className?: string;
-  /** Spiral mark height in px (desktop baseline; mobile scales via CSS) */
+  /** Logo height in px (desktop baseline; mobile scales via CSS when responsive). */
   iconHeight?: number;
   showWordmark?: boolean;
-  /** Scale mark/wordmark down on small screens so the header stays usable. */
+  /** Scale logo down on small screens so the header stays usable. */
   responsive?: boolean;
   /**
-   * `onDark` — cream wordmark (PNG is forest green and disappears on footer).
-   * Default keeps the dark green wordmark for light headers.
+   * `onDark` — cream wordmark for forest footer / dark surfaces.
+   * Default keeps the forest-green wordmark for light headers.
    */
   tone?: "onLight" | "onDark";
   /** @deprecated Tagline removed from header; kept for call-site compat. */
@@ -35,54 +33,29 @@ export function SarvedaLogo({
   iconHeight = 64,
   showWordmark = true,
   responsive = false,
-  tone = "onLight",
-  wordmarkClassName = ""
+  tone = "onLight"
 }: SarvedaLogoProps) {
-  const iconWidth = Math.round(iconHeight * (MARK_W / MARK_H));
-  // Wordmark sits beside the spiral body, not as tall as the tails (SS2 ratio).
-  const wordmarkHeight = Math.max(22, Math.round(iconHeight * 0.55));
-  const wordmarkWidth = Math.round(wordmarkHeight * (WORDMARK_W / WORDMARK_H));
-  const onDark = tone === "onDark";
+  const src = tone === "onDark" ? LOGO_DARK : LOGO_LIGHT;
+  // iconHeight historically sized the spiral only; combined logo is wider — use ~0.72 of that height.
+  const height = Math.max(36, Math.round(iconHeight * (showWordmark ? 0.72 : 0.9)));
+  const width = Math.round(height * (LOGO_W / LOGO_H));
 
   const content = (
-    <div className={`flex items-center overflow-visible gap-2.5 sm:gap-3 md:gap-3.5 ${className}`}>
+    <div className={`flex items-center overflow-visible ${className}`}>
       <Image
-        src={MARK_SRC}
-        alt=""
-        width={iconWidth}
-        height={iconHeight}
+        src={src}
+        alt={showWordmark ? "Sarveda" : ""}
+        width={width}
+        height={height}
         className={
           responsive
-            ? "h-[52px] w-auto shrink-0 object-contain object-center sm:h-[60px] md:h-[68px]"
-            : "w-auto shrink-0 object-contain object-center"
+            ? "h-[40px] w-auto shrink-0 object-contain object-left sm:h-[48px] md:h-[56px]"
+            : "w-auto shrink-0 object-contain object-left"
         }
-        style={responsive ? { width: "auto" } : { height: iconHeight, width: "auto" }}
+        style={responsive ? { width: "auto" } : { height, width: "auto" }}
         priority
-        aria-hidden
+        aria-hidden={!showWordmark}
       />
-      {showWordmark ? (
-        onDark ? (
-          <span
-            className={`font-serif text-[1.65rem] font-semibold lowercase leading-none tracking-[0.06em] text-brand-cream sm:text-[1.85rem] ${wordmarkClassName}`}
-          >
-            sarveda
-          </span>
-        ) : (
-          <Image
-            src={WORDMARK_SRC}
-            alt="Sarveda"
-            width={wordmarkWidth}
-            height={wordmarkHeight}
-            className={
-              responsive
-                ? "h-[24px] w-auto object-contain object-left sm:h-[30px] md:h-[38px]"
-                : `w-auto object-contain object-left ${wordmarkClassName}`
-            }
-            style={responsive ? { width: "auto" } : { height: wordmarkHeight, width: "auto" }}
-            priority
-          />
-        )
-      ) : null}
     </div>
   );
 
@@ -95,18 +68,20 @@ export function SarvedaLogo({
   );
 }
 
-/** Large watermark for hero / auth backgrounds */
+/** Large watermark for hero / auth backgrounds — uses the spiral mark portion via full logo. */
 export function SarvedaLogoWatermark({
   className = "opacity-[0.08]",
-  height = 280
+  height = 280,
+  tone = "onLight"
 }: {
   className?: string;
   height?: number;
+  tone?: "onLight" | "onDark";
 }) {
-  const width = Math.round(height * (520 / 1024));
+  const width = Math.round(height * (LOGO_W / LOGO_H));
   return (
     <Image
-      src={MARK_SRC}
+      src={tone === "onDark" ? LOGO_DARK : LOGO_LIGHT}
       alt=""
       width={width}
       height={height}
