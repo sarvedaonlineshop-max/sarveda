@@ -15,8 +15,9 @@ import { InstructorAvatars } from "./InstructorAvatars";
 
 type Props = { course: CourseListItem; compact?: boolean };
 
-/** Fixed card height so carousel / grid rows stay even. */
-const CARD_HEIGHT = "h-[34rem] sm:h-[36rem]";
+/** Shared fixed height with EventCard so carousel rows stay even. */
+export const CONTENT_CARD_HEIGHT = "h-[36rem] sm:h-[38rem]";
+const IMAGE_BAND = "h-[15.5rem] sm:h-[17rem]";
 
 function prettyDate(s: string | null | undefined) {
   if (!s) return null;
@@ -76,7 +77,7 @@ export function CourseCard({ course }: Props) {
     <Link
       ref={ref}
       href={`/course/${course.slug}`}
-      className={`group flex ${CARD_HEIGHT} flex-col overflow-hidden rounded-xl shadow-card transition-shadow duration-300 hover:shadow-card-hover`}
+      className={`group flex ${CONTENT_CARD_HEIGHT} flex-col overflow-hidden rounded-xl shadow-card transition-shadow duration-300 hover:shadow-card-hover`}
       style={{
         opacity: 0,
         transform: "translateY(24px)",
@@ -84,7 +85,7 @@ export function CourseCard({ course }: Props) {
           "opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s ease"
       }}
     >
-      <div className="relative h-[11.5rem] shrink-0 overflow-hidden bg-[#EDE4D3] sm:h-[12.5rem]">
+      <div className={`relative ${IMAGE_BAND} shrink-0 overflow-hidden bg-[#EDE4D3]`}>
         <span className="absolute left-3 top-3 z-10 inline-flex max-w-[calc(100%-1.5rem)] items-center rounded-full border border-brand-gold/70 bg-white/95 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-ink shadow-sm backdrop-blur-sm">
           {tagLabel}
         </span>
@@ -106,7 +107,6 @@ export function CourseCard({ course }: Props) {
           className="absolute -top-[25px] right-2.5 z-10"
         />
 
-        {/* Scrollable body — title, explanation, schedule */}
         <div
           className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-2 pt-5 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.45)_transparent]"
           onWheel={(e) => e.stopPropagation()}
@@ -117,7 +117,9 @@ export function CourseCard({ course }: Props) {
           </h3>
 
           {explanation ? (
-            <p className="mt-2 text-[13px] leading-relaxed text-white/85 sm:text-[14px]">{explanation}</p>
+            <p className="mt-2 line-clamp-3 text-[13px] leading-relaxed text-white/85 sm:text-[14px]">
+              {explanation}
+            </p>
           ) : null}
 
           <div className="mt-3 min-w-0 border-l-4 border-white/90 pl-3">
@@ -131,7 +133,6 @@ export function CourseCard({ course }: Props) {
           </div>
         </div>
 
-        {/* Fixed footer inside green panel */}
         <div className="flex shrink-0 items-end justify-between gap-3 border-t border-white/15 px-4 pb-4 pt-3">
           <p className="text-sm font-semibold tabular-nums text-white/95">
             {course.isFree || course.priceInPaise === 0 ? "Free" : formatINRFromPaise(course.priceInPaise)}
