@@ -248,13 +248,13 @@ export function HomeInstrumentCategories() {
         <div className="text-center">
           <h2
             id="home-instruments-heading"
-            className="font-serif text-[1.85rem] font-semibold tracking-tight text-brand-ink sm:text-4xl md:text-[2.45rem]"
+            className="font-serif text-[1.85rem] font-semibold tracking-tight sm:text-4xl md:text-[2.45rem]"
           >
-            Explore our range of{" "}
+            <span style={{ color: "#166D46" }}>Explore our range of</span>{" "}
             <span className="text-brand-gold">Instruments</span>
           </h2>
           <Flourish />
-          <p className="mx-auto mt-3 max-w-3xl text-[0.95rem] text-brand-ink/70 sm:text-base">
+          <p className="mx-auto mt-3 max-w-3xl text-[0.95rem] text-[#4a453c] sm:text-base">
             Authentic instruments &amp; accessories for sound healing, music, yoga,
             and conscious living
           </p>
@@ -265,7 +265,7 @@ export function HomeInstrumentCategories() {
             <li key={key}>
               <Link
                 href={href}
-                className="group flex h-full flex-col overflow-hidden rounded-xl border border-brand-cream-dark/80 bg-white transition-shadow hover:shadow-card"
+                className="group flex h-full flex-col overflow-hidden rounded-xl border border-brand-cream-dark/80 bg-white shadow-card transition-shadow hover:shadow-card-hover"
               >
                 <div className="relative aspect-[5/4] overflow-hidden bg-brand-cream">
                   <Image
@@ -293,7 +293,8 @@ export function HomeInstrumentCategories() {
         <div className="mt-10 text-center md:mt-12">
           <Link
             href="/shop"
-            className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-brand-forest px-8 text-sm font-semibold tracking-wide text-brand-cream transition-colors hover:bg-brand-night"
+            className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full px-8 text-sm font-semibold tracking-wide text-white transition-colors hover:brightness-95"
+            style={{ backgroundColor: "#166D46" }}
           >
             Explore Our Store
             <span aria-hidden>→</span>

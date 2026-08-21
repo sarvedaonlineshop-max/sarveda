@@ -164,3 +164,50 @@ export async function sendPushToEmails(
   }
   return sent;
 }
+
+/**
+ * Push to all ADMIN / SUPER_ADMIN users with an FCM token (Sarveda Admin app).
+ * `data` should include `type` (`order` | `chat`) and optional `orderId` / `chatId`.
+ */
+export async function sendPushToAdmins(
+  title: string,
+  body: string,
+  data: Record<string, string> = {}
+): Promise<number> {
+  try {
+    if (!isFirebaseConfigured()) {
+      logger.warn("fcm_admin_skip_not_configured", { title });
+      return 0;
+    }
+    const users = await prisma.user.findMany({
+      where: {
+        role: { in: ["ADMIN", "SUPER_ADMIN"] },
+        deletedAt: null,
+        fcmToken: { not: null },
+        pushNotificationsEnabled: true
+      },
+      select: { email: true, fcmToken: true }
+    });
+    if (users.length === 0) {
+      logger.warn("fcm_no_admin_tokens", { title });
+      return 0;
+    }
+    let sent = 0;
+    for (const user of users) {
+      if (!user.fcmToken) continue;
+      const ok = await sendPushNotification(user.fcmToken, title, body, {
+        ...data,
+        audience: "admin"
+      });
+      if (ok) sent += 1;
+    }
+    logger.info("fcm_admin_push_done", { title, sent, candidates: users.length });
+    return sent;
+  } catch (err) {
+    logger.error("fcm_admin_push_failed", {
+      title,
+      error: err instanceof Error ? err.message : String(err)
+    });
+    return 0;
+  }
+}

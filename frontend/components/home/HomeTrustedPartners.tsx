@@ -45,17 +45,18 @@ export function HomeTrustedPartners() {
   }
 
   return (
-    <section className="bg-[#f9f6f0] py-14 md:py-16" aria-labelledby="home-partners-heading">
+    <section className="bg-white py-14 md:py-16" aria-labelledby="home-partners-heading">
       <div className="page-shell">
         <div className="text-center">
           <h2
             id="home-partners-heading"
-            className="font-serif text-[1.65rem] font-semibold tracking-tight text-brand-ink sm:text-3xl md:text-[2.15rem]"
+            className="font-serif text-[1.65rem] font-semibold tracking-tight sm:text-3xl md:text-[2.15rem]"
           >
-            Trusted by Leading Organizations
+            <span style={{ color: "#166D46" }}>Trusted by</span>{" "}
+            <span className="text-brand-gold">Leading Organizations</span>
           </h2>
           <Flourish />
-          <p className="mx-auto mt-3 max-w-2xl text-sm text-brand-ink/65 sm:text-[0.95rem]">
+          <p className="mx-auto mt-3 max-w-2xl text-sm text-[#4a453c] sm:text-[0.95rem]">
             We&apos;re honoured to partner with forward-thinking organizations that value
             well-being, creativity, and meaningful impact.
           </p>

@@ -10,10 +10,44 @@ import { createZohoInvoiceForOrder } from "../zoho";
 import { recordZohoPaymentForOrder } from "../zoho/zoho-financials";
 import { fulfillDigitalPurchases } from "./fulfillDigitalPurchases";
 import { mirrorOrderStockToZoho } from "./orders.service";
+import { sendPushToAdmins } from "../../config/firebase";
 
 function autoFulfillmentEnabled(): boolean {
   const v = (process.env.AUTO_START_FULFILLMENT_ON_PAID ?? "0").trim().toLowerCase();
   return ["1", "true", "yes"].includes(v);
+}
+
+function notifyAdminsNewOrder(orderId: string): void {
+  void (async () => {
+    try {
+      const order = await prisma.order.findFirst({
+        where: { id: orderId, deletedAt: null },
+        select: {
+          id: true,
+          orderNumber: true,
+          email: true,
+          grandTotalInPaise: true,
+          customer: { select: { name: true } }
+        }
+      });
+      if (!order) return;
+      const rupees = (order.grandTotalInPaise / 100).toLocaleString("en-IN", {
+        maximumFractionDigits: 0
+      });
+      const who = order.customer?.name?.trim() || order.email;
+      await sendPushToAdmins(
+        "New order",
+        `${order.orderNumber} · ₹${rupees} · ${who}`,
+        {
+          type: "order",
+          orderId: order.id,
+          orderNumber: order.orderNumber
+        }
+      );
+    } catch (err) {
+      logger.error("admin_push_new_order_failed", { orderId, err });
+    }
+  })();
 }
 
 /** Post-payment: invoice PDF, confirmation email, clear cart. */
@@ -30,6 +64,8 @@ export async function afterOrderPaid(orderId: string): Promise<void> {
     logger.info("after_paid_already_ran", { orderId });
     return;
   }
+
+  notifyAdminsNewOrder(orderId);
 
   void ensureOrderInvoicePdf(orderId).catch((err) => {
     logger.error("after_order_paid_invoice_failed", { orderId, err });

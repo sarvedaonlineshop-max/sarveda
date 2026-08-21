@@ -366,6 +366,21 @@ async function upsertInboundMessage(msg: ParsedInbound): Promise<StoredInbound |
 
   logger.info("whatsapp_inbound_stored", { threadId: thread.id, from: msg.from, sid: msg.sid });
   publishEnquiryEvent({ type: "message_changed", threadId: thread.id });
+
+  void import("../../config/firebase")
+    .then(({ sendPushToAdmins }) =>
+      sendPushToAdmins(
+        "New WhatsApp chat",
+        `${displayName}: ${(msg.body || "New message").slice(0, 140)}`,
+        {
+          type: "chat",
+          chatId: thread.id,
+          source: "WHATSAPP"
+        }
+      )
+    )
+    .catch(() => undefined);
+
   return { threadId: thread.id, customerName: displayName };
 }
 

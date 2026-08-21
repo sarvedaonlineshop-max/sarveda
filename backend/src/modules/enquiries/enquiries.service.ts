@@ -246,6 +246,20 @@ ${attachmentLinesHtml(uploaded)}
     input.customerEmail
   );
 
+  void import("../../config/firebase")
+    .then(({ sendPushToAdmins }) =>
+      sendPushToAdmins(
+        "New chat",
+        `${input.customerName}: ${subjectLine}`.slice(0, 180),
+        {
+          type: "chat",
+          chatId: thread.id,
+          source: input.source
+        }
+      )
+    )
+    .catch(() => undefined);
+
   logger.info("enquiry_created", {
     threadId: thread.id,
     source: input.source,

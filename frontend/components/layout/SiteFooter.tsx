@@ -9,7 +9,7 @@ const quickLinks = [
   { label: "Courses", href: "/courses" },
   { label: "Workshops & Events", href: "/events" },
   { label: "Corporate Wellness", href: "/corporate-wellness" },
-  { label: "Journal", href: "/insights" },
+  { label: "Insights", href: "/insights" },
   { label: "About Us", href: "/about" },
   { label: "Contact Us", href: "/contact" }
 ];
@@ -37,7 +37,7 @@ const values = [
     icon: <path d="M11 20A7 7 0 019.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10zM2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
   },
   {
-    title: "Ships Worldwide",
+    title: "Worldwide Shipping",
     body: "Delivered with care across borders",
     icon: (
       <>

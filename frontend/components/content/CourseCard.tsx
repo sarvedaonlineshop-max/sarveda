@@ -25,6 +25,7 @@ export function CourseCard({ course }: Props) {
   const e = prettyDate(extra.endDate);
   const dateRange = s && e && s !== e ? `${s} – ${e}` : s ?? null;
   const duration = formatCourseDuration(extra);
+  const tagLabel = duration?.trim() || "Course";
   const ref = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
@@ -56,15 +57,18 @@ export function CourseCard({ course }: Props) {
           "opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s ease"
       }}
     >
-      <div className="bg-[#EDE4D3]">
+      <div className="relative overflow-hidden bg-[#EDE4D3]">
+        <span className="absolute left-3 top-3 z-10 inline-flex max-w-[calc(100%-1.5rem)] items-center rounded-full border border-brand-gold/70 bg-white/95 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-ink shadow-sm backdrop-blur-sm">
+          {tagLabel}
+        </span>
         {course.imageUrl ? (
           <img
             src={course.imageUrl}
             alt={course.title}
-            className="block h-auto w-full object-contain object-top"
+            className="block h-auto w-full object-contain object-top transition-transform duration-500 group-hover:scale-[1.03]"
           />
         ) : (
-          <div className="aspect-[4/5] bg-brand-forest" />
+          <div className="aspect-[4/5] bg-brand-forest transition-transform duration-500 group-hover:scale-[1.03]" />
         )}
       </div>
 
@@ -74,8 +78,7 @@ export function CourseCard({ course }: Props) {
           people={teachers}
           className="absolute -top-[25px] right-2.5 z-10"
         />
-        <p className="text-[11px] font-normal uppercase tracking-[0.2em] text-white/90">Course</p>
-        <h3 className="mt-1 font-serif text-[1.35rem] font-semibold leading-snug text-white">
+        <h3 className="font-serif text-[1.35rem] font-semibold leading-snug text-white">
           {course.title}
         </h3>
 

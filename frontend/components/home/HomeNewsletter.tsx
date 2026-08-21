@@ -167,9 +167,9 @@ export function HomeNewsletter() {
         <div className="min-w-0 px-[5%] py-14 md:px-[10%] md:py-16 lg:mx-auto lg:w-full lg:max-w-[720px] lg:py-20 lg:pl-[10%] lg:pr-8 xl:pr-12">
           <h2
             id="home-newsletter-heading"
-            className="font-serif text-[1.85rem] font-semibold leading-[1.12] tracking-tight text-[#1a2e26] sm:text-[2.2rem] md:text-[2.45rem]"
+            className="font-serif text-[1.85rem] font-semibold leading-[1.12] tracking-tight sm:text-[2.2rem] md:text-[2.45rem]"
           >
-            A Little Inspiration,
+            <span style={{ color: "#166D46" }}>A Little Inspiration,</span>
             <br />
             <span className="italic text-[#a67c52]">Once in a While.</span>
           </h2>
@@ -209,7 +209,8 @@ export function HomeNewsletter() {
               <button
                 type="submit"
                 disabled={loading}
-                className="inline-flex min-h-[40px] shrink-0 items-center justify-center gap-1.5 rounded-full bg-[#1c352a] px-4 text-xs font-semibold tracking-wide text-white transition-colors hover:bg-[#10201a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a67c52]/55 disabled:cursor-wait disabled:opacity-70 sm:px-5 sm:text-sm"
+                className="inline-flex min-h-[40px] shrink-0 items-center justify-center gap-1.5 rounded-full px-4 text-xs font-semibold tracking-wide text-white transition-colors hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a67c52]/55 disabled:cursor-wait disabled:opacity-70 sm:px-5 sm:text-sm"
+                style={{ backgroundColor: "#166D46" }}
               >
                 {loading ? "Joining…" : "Join the Community"}
                 {!loading ? <span aria-hidden>→</span> : null}

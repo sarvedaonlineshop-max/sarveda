@@ -31,17 +31,18 @@ export function HomeJournal({ posts }: Props) {
   if (cards.length === 0) return null;
 
   return (
-    <section className="bg-[#f9f6f0] py-14 md:py-16 lg:py-20" aria-labelledby="home-journal-heading">
+    <section className="bg-white py-14 md:py-16 lg:py-20" aria-labelledby="home-journal-heading">
       <div className="page-shell">
         <div className="text-center">
           <h2
             id="home-journal-heading"
-            className="font-serif text-[1.65rem] font-semibold tracking-tight text-brand-ink sm:text-3xl md:text-[2.15rem]"
+            className="font-serif text-[1.65rem] font-semibold tracking-tight sm:text-3xl md:text-[2.15rem]"
           >
-            From the <span className="text-brand-gold">Journal</span>
+            <span style={{ color: "#166D46" }}>From the</span>{" "}
+            <span className="text-brand-gold">Journal</span>
           </h2>
           <Flourish />
-          <p className="mx-auto mt-3 max-w-2xl text-sm text-brand-ink/70 sm:text-[0.95rem]">
+          <p className="mx-auto mt-3 max-w-2xl text-sm text-[#4a453c] sm:text-[0.95rem]">
             Practical guides and teachings on sound, yoga, mindfulness and conscious living.
           </p>
         </div>
@@ -52,8 +53,11 @@ export function HomeJournal({ posts }: Props) {
             const date = formatDate(post.publishedAt);
             return (
               <li key={post.id}>
-                <Link href={`/${post.slug}`} className="group flex h-full flex-col">
-                  <div className="relative aspect-[16/10] overflow-hidden rounded-xl bg-brand-cream">
+                <Link
+                  href={`/${post.slug}`}
+                  className="group flex h-full flex-col overflow-hidden rounded-xl bg-white shadow-card transition-shadow hover:shadow-card-hover"
+                >
+                  <div className="relative aspect-[16/10] overflow-hidden bg-brand-cream">
                     {post.imageUrl ? (
                       <Image
                         src={post.imageUrl}
@@ -67,20 +71,20 @@ export function HomeJournal({ posts }: Props) {
                       <div className="absolute inset-0 bg-brand-forest/20" />
                     )}
                   </div>
-                  <p className="mt-4 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-brand-sage">
-                    {category}
-                  </p>
-                  <h3 className="mt-1.5 font-serif text-lg font-semibold leading-snug text-brand-ink group-hover:text-brand-forest sm:text-xl">
-                    {post.title}
-                  </h3>
-                  {post.excerpt ? (
-                    <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-brand-ink/65">
-                      {post.excerpt}
+                  <div className="flex flex-1 flex-col p-4 sm:p-5">
+                    <p className="text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-brand-sage">
+                      {category}
                     </p>
-                  ) : null}
-                  {date ? (
-                    <p className="mt-3 text-xs text-brand-muted">{date}</p>
-                  ) : null}
+                    <h3 className="mt-1.5 font-serif text-lg font-semibold leading-snug text-brand-ink group-hover:text-brand-forest sm:text-xl">
+                      {post.title}
+                    </h3>
+                    {post.excerpt ? (
+                      <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-[#4a453c]">
+                        {post.excerpt}
+                      </p>
+                    ) : null}
+                    {date ? <p className="mt-3 text-xs text-brand-muted">{date}</p> : null}
+                  </div>
                 </Link>
               </li>
             );
@@ -90,7 +94,8 @@ export function HomeJournal({ posts }: Props) {
         <div className="mt-10 text-center md:mt-12">
           <Link
             href="/insights"
-            className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-[#108967] px-8 text-sm font-semibold tracking-wide text-white transition-colors hover:bg-[#0d6f54]"
+            className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full px-8 text-sm font-semibold tracking-wide text-white transition-colors hover:brightness-95"
+            style={{ backgroundColor: "#166D46" }}
           >
             Explore our Latest Insights
             <span aria-hidden>→</span>

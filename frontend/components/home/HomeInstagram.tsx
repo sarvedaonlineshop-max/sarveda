@@ -98,12 +98,12 @@ export function HomeInstagram() {
         <div className="text-center">
           <h2
             id="home-instagram-heading"
-            className="font-serif text-[1.65rem] font-semibold tracking-tight text-brand-ink sm:text-3xl md:text-[2.15rem]"
+            className="font-serif text-[1.65rem] font-semibold tracking-tight sm:text-3xl md:text-[2.15rem]"
           >
             Follow us on <span className="text-brand-gold">Instagram</span>
           </h2>
           <Flourish />
-          <p className="mx-auto mt-3 max-w-2xl text-sm text-brand-ink/70 sm:text-[0.95rem]">
+          <p className="mx-auto mt-3 max-w-2xl text-sm text-[#4a453c] sm:text-[0.95rem]">
             Stay connected with our latest workshops, new arrivals, sound healing insights and
             moments from our growing community.
           </p>
@@ -116,7 +116,7 @@ export function HomeInstagram() {
                 href={post.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group relative block aspect-square overflow-hidden bg-brand-cream"
+                className="group relative block aspect-square overflow-hidden bg-brand-cream shadow-card"
                 aria-label={post.alt}
               >
                 <Image
@@ -139,7 +139,8 @@ export function HomeInstagram() {
             href={PROFILE_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-brand-forest px-8 text-sm font-semibold tracking-wide text-brand-cream transition-colors hover:bg-brand-night"
+            className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full px-8 text-sm font-semibold tracking-wide text-white transition-colors hover:brightness-95"
+            style={{ backgroundColor: "#166D46" }}
           >
             Follow us on Instagram
             <span aria-hidden>→</span>

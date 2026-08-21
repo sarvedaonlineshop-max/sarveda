@@ -43,73 +43,24 @@ function AnnouncementBar({ hidden }: { hidden: boolean }) {
   );
 }
 
-function NavIcon({ label }: { label: string }) {
-  const common = "h-[18px] w-[18px] shrink-0";
-  switch (label) {
-    case "Home":
-      return (
-        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" aria-hidden>
-          <path strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" d="M3 10.5 12 3l9 7.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1v-9.5z" />
-        </svg>
-      );
-    case "Store":
-    case "Shop":
-      return (
-        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" aria-hidden>
-          <path strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" d="M3 9.5 5 4h14l2 5.5M3 9.5h18M3 9.5l2 11h14l2-11M9 13.5v5M15 13.5v5" />
-        </svg>
-      );
-    case "Courses":
-      return (
-        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" aria-hidden>
-          <path strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" d="M4 19.5A2.5 2.5 0 016.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
-        </svg>
-      );
-    case "Events":
-      return (
-        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" aria-hidden>
-          <path strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" d="M8 2v3M16 2v3M3.5 9h17M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z" />
-        </svg>
-      );
-    case "Corporate Wellness":
-      return (
-        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" aria-hidden>
-          <path strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M5 21V8l7-4 7 4v13M9 21v-6h6v6" />
-        </svg>
-      );
-    case "Insights":
-      return (
-        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" aria-hidden>
-          <path strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" d="M12 3a7 7 0 00-4 12.7V18h8v-2.3A7 7 0 0012 3zM10 21h4" />
-        </svg>
-      );
-    case "Contact":
-      return (
-        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" aria-hidden>
-          <path strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" d="M4 6h16v12H4V6zm0 0 8 7 8-7" />
-        </svg>
-      );
-    default:
-      return null;
-  }
-}
+const headerIconBtnPlain =
+  "relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-brand-forest transition-colors hover:bg-brand-cream sm:h-10 sm:w-10";
 
-const headerIconBtn =
-  "relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white shadow-[0_4px_12px_rgba(16,32,26,0.18)] ring-1 ring-black/5 transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_18px_rgba(16,32,26,0.22)] sm:h-10 sm:w-10";
+const HOME_GREEN = "#166D46";
 
 function CartIcon({ count }: { count: number }) {
   return (
-    <span className={`${headerIconBtn} bg-gradient-to-br from-[#d4a24e] to-[#9a7030]`}>
+    <span className={headerIconBtnPlain}>
       <svg viewBox="0 0 24 24" className="h-[18px] w-[18px] sm:h-5 sm:w-5" fill="none" stroke="currentColor" aria-hidden>
         <path
-          strokeWidth={2}
+          strokeWidth={1.85}
           strokeLinecap="round"
           strokeLinejoin="round"
           d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.25 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
         />
       </svg>
       {count > 0 ? (
-        <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#c43b2e] px-1 text-[10px] font-bold leading-none text-white ring-2 ring-white">
+        <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#c43b2e] px-1 text-[10px] font-bold leading-none text-white ring-2 ring-white">
           {count > 99 ? "99+" : count}
         </span>
       ) : null}
@@ -149,11 +100,11 @@ function TrackOrderButton({ onClick, compact }: { onClick: () => void; compact?:
       onClick={onClick}
       className={
         compact
-          ? "inline-flex min-h-[36px] max-w-[9.5rem] items-center gap-1 rounded-full bg-red-600 px-2.5 text-[11px] font-semibold leading-tight text-white shadow-[0_4px_12px_rgba(196,59,46,0.28)] transition-colors hover:bg-red-700 active:bg-red-800"
-          : "inline-flex min-h-[40px] shrink-0 items-center gap-1.5 rounded-full bg-red-600 px-4 text-xs font-semibold text-white shadow-[0_4px_12px_rgba(196,59,46,0.28)] transition-all hover:-translate-y-0.5 hover:bg-red-700 active:bg-red-800 sm:px-5 sm:text-[13px]"
+          ? "inline-flex min-h-[36px] max-w-[9.5rem] items-center gap-1 rounded-full px-2.5 text-[11px] font-semibold leading-tight text-white shadow-[0_4px_12px_rgba(22,109,70,0.28)] transition-colors hover:brightness-95 active:brightness-90"
+          : "inline-flex min-h-[40px] shrink-0 items-center gap-1.5 rounded-full px-4 text-xs font-semibold text-white shadow-[0_4px_12px_rgba(22,109,70,0.28)] transition-all hover:-translate-y-0.5 hover:brightness-95 active:brightness-90 sm:px-5 sm:text-[13px]"
       }
+      style={{ backgroundColor: HOME_GREEN }}
     >
-      {/* Package / parcel — reads clearly as order tracking */}
       <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" aria-hidden>
         <path
           strokeWidth={1.85}
@@ -381,19 +332,12 @@ export function Header() {
                         e.preventDefault();
                         goNav(link.href);
                       }}
-                      className={`group relative flex items-center gap-1.5 px-1.5 py-2 text-[13px] font-semibold uppercase tracking-[0.08em] transition-colors 2xl:px-2.5 2xl:text-[15px] ${
+                      className={`group relative flex items-center px-1.5 py-2 text-[13px] font-semibold uppercase tracking-[0.08em] transition-colors 2xl:px-2.5 2xl:text-[15px] ${
                         active
                           ? "text-brand-gold"
                           : "text-brand-forest hover:text-brand-gold"
                       }`}
                     >
-                      <span
-                        className={`transition-colors ${
-                          active ? "text-brand-gold" : "text-brand-sage group-hover:text-brand-gold"
-                        }`}
-                      >
-                        <NavIcon label={link.label} />
-                      </span>
                       <span className="whitespace-nowrap">
                         {link.label === "Corporate Wellness" ? (
                           <>
@@ -427,27 +371,19 @@ export function Header() {
                         e.preventDefault();
                         goNav("/profile");
                       }}
-                      className={`${headerIconBtn} bg-gradient-to-br from-[#22c55e] to-[#16a34a]`}
+                      className={headerIconBtnPlain}
                       aria-label={displayName ? `Account, ${displayName}` : "Profile"}
                       title={displayName ? `Hello, ${displayName}` : "Profile"}
                     >
                       <ProfileIcon />
                     </Link>
                   ) : (
-                    <>
-                      <Link
-                        href="/login"
-                        className="inline-flex min-h-[40px] items-center rounded-full bg-[#93c5fd] px-3.5 text-xs font-semibold text-[#1e3a8a] shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[#60a5fa] sm:px-4"
-                      >
-                        Login
-                      </Link>
-                      <Link
-                        href="/signup"
-                        className="inline-flex min-h-[40px] items-center rounded-full bg-brand-gold px-3.5 text-xs font-semibold text-brand-night shadow-[0_4px_12px_rgba(185,138,62,0.28)] transition-all hover:-translate-y-0.5 hover:bg-[#a37934] sm:px-4"
-                      >
-                        Register
-                      </Link>
-                    </>
+                    <Link
+                      href="/login"
+                      className="inline-flex min-h-[40px] items-center rounded-full border border-brand-forest/20 bg-white px-3.5 text-xs font-semibold text-brand-forest transition-colors hover:bg-brand-cream sm:px-4"
+                    >
+                      Login/Register
+                    </Link>
                   )}
 
                   <button
@@ -463,7 +399,7 @@ export function Header() {
                 <button
                   type="button"
                   onClick={() => setMenuOpen((v) => !v)}
-                  className={`${headerIconBtn} bg-gradient-to-br from-[#2563eb] to-[#1d4ed8] xl:hidden`}
+                  className={`${headerIconBtnPlain} xl:hidden`}
                   aria-label={menuOpen ? "Close menu" : "Open menu"}
                   aria-expanded={menuOpen}
                 >
@@ -524,15 +460,12 @@ export function Header() {
                           setMenuOpen(false);
                           goNav(link.href);
                         }}
-                        className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold uppercase tracking-[0.06em] transition-colors ${
+                        className={`flex items-center rounded-xl px-3 py-2.5 text-[13px] font-semibold uppercase tracking-[0.06em] transition-colors ${
                           active
                             ? "bg-brand-gold/12 text-brand-gold"
                             : "text-brand-forest hover:bg-brand-cream hover:text-brand-gold"
                         }`}
                       >
-                        <span className={active ? "text-brand-gold" : "text-brand-sage"}>
-                          <NavIcon label={link.label} />
-                        </span>
                         {link.label}
                       </Link>
                     );
