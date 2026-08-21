@@ -399,7 +399,7 @@ export function BottomNav() {
             </div>
 
             {showMoreHint ? (
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center bg-gradient-to-t from-[#1ebe57] via-[#1ebe57]/90 to-transparent pb-1 pt-8">
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center bg-gradient-to-t from-[#166D46] via-[#166D46]/95 to-transparent pb-1 pt-8">
                 <svg viewBox="0 0 24 24" className="h-6 w-6 animate-bounce text-white" fill="none" stroke="currentColor" aria-hidden>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M6 9l6 6 6-6" />
                 </svg>

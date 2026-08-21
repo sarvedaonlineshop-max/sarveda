@@ -87,7 +87,7 @@ export function ProductCard({
       className={`group relative flex h-full flex-col overflow-hidden bg-brand-ivory transition-all duration-300 ${
         rail
           ? "w-[72vw] max-w-[18rem] rounded-3xl border border-brand-cream-dark shadow-card hover:-translate-y-1 hover:scale-[1.01] hover:shadow-card-hover"
-          : "rounded-none border-b border-brand-cream-dark md:rounded-3xl md:border md:border-brand-cream-dark md:shadow-card md:hover:-translate-y-1 md:hover:scale-[1.01] md:hover:shadow-card-hover"
+          : "rounded-xl border border-brand-cream-dark shadow-card hover:-translate-y-1 hover:scale-[1.01] hover:shadow-card-hover active:-translate-y-0.5 active:shadow-card-hover focus-within:-translate-y-1 focus-within:shadow-card-hover md:rounded-3xl"
       }`}
     >
       <Link href={href} className="flex min-h-0 flex-1 flex-col focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-forest focus-visible:ring-offset-2">

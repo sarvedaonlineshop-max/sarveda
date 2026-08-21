@@ -15,8 +15,8 @@ type Props = {
   className?: string;
 };
 
-const EMERGED_PILL =
-  "inline-flex h-8 min-h-[32px] shrink-0 items-center justify-center gap-1 rounded-full px-3 text-[13px] font-semibold shadow-[0_4px_0_rgba(0,0,0,0.16),0_8px_14px_rgba(0,0,0,0.14)] ring-1 ring-black/5 transition-all duration-150 hover:-translate-y-0.5 hover:brightness-110 hover:shadow-[0_6px_0_rgba(0,0,0,0.14),0_12px_18px_rgba(0,0,0,0.16)] active:translate-y-[2px] active:brightness-95 active:shadow-[0_1px_0_rgba(0,0,0,0.18),0_3px_8px_rgba(0,0,0,0.12)]";
+const PLAIN_GREEN_PILL =
+  "inline-flex h-8 min-h-[32px] shrink-0 items-center justify-center gap-1 rounded-full bg-[#166D46] px-3 text-[13px] font-semibold text-white transition-colors hover:bg-[#145a3a]";
 
 export function ShopFilterToggle({
   open,
@@ -29,9 +29,7 @@ export function ShopFilterToggle({
     <button
       type="button"
       onClick={() => onOpenChange(!open)}
-      className={`${EMERGED_PILL} bg-[#166D46] text-white hover:bg-[#145a3a] ${
-        open ? "bg-[#145a3a]" : ""
-      }`}
+      className={`${PLAIN_GREEN_PILL} ${open ? "bg-[#145a3a]" : ""}`}
       aria-expanded={open}
     >
       Filter

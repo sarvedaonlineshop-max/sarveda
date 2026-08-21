@@ -54,7 +54,7 @@ export function CourseCard({ course }: Props) {
     <Link
       ref={ref}
       href={`/course/${course.slug}`}
-      className="group flex h-full flex-col overflow-hidden rounded-xl shadow-card transition-shadow duration-300 hover:shadow-card-hover"
+      className="group flex flex-col overflow-hidden rounded-xl shadow-card transition-shadow duration-300 hover:shadow-card-hover"
       style={{
         opacity: 0,
         transform: "translateY(24px)",
@@ -77,7 +77,7 @@ export function CourseCard({ course }: Props) {
         )}
       </div>
 
-      <div className="relative flex min-w-0 flex-1 flex-col bg-[#166D46] px-4 pb-4 pt-5 text-white">
+      <div className="relative flex min-w-0 flex-col bg-[#166D46] px-4 pb-4 pt-5 text-white">
         <InstructorAvatars
           seam
           people={teachers}
@@ -87,7 +87,7 @@ export function CourseCard({ course }: Props) {
           {course.title}
         </h3>
 
-        <div className="mt-3 flex flex-1 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0 border-l-4 border-white/90 pl-3">
             {teacherNames.map((name) => (
               <p key={name} className="text-[14px] leading-snug text-white sm:text-[15px]">
