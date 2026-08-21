@@ -59,7 +59,7 @@ export function EventCard({ event }: Props) {
         )}
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col bg-[#23827c] px-4 py-5 text-white">
+      <div className="flex min-w-0 flex-col bg-[#23827c] px-4 py-5 text-white">
         <h3 className="font-serif text-[1.35rem] font-semibold leading-snug text-white">
           {event.title}
         </h3>
