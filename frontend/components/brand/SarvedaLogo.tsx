@@ -5,8 +5,8 @@ const LOGO_LIGHT = "/images/brand/sarveda-logo.png";
 const LOGO_DARK = "/images/brand/sarveda-logo-on-dark.png";
 
 /** Combined mark + wordmark asset aspect (gap between icon and wordmark). */
-const LOGO_W = 456;
-const LOGO_H = 162;
+const LOGO_W = 880;
+const LOGO_H = 296;
 
 type SarvedaLogoProps = {
   href?: string;

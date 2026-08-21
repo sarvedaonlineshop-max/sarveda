@@ -183,7 +183,7 @@ function renderInvoiceHeader(
   // ── 1. Brand logo (left) + invoice title (right) ───────────────────────────
   const logoPath = resolveInvoiceLogoPath();
   const logoH = 28;
-  const logoW = Math.round(logoH * (456 / 162));
+  const logoW = Math.round(logoH * (880 / 296));
   let sellerTextTop = top;
   if (logoPath) {
     try {
