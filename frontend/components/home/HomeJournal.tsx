@@ -31,7 +31,7 @@ export function HomeJournal({ posts }: Props) {
   if (cards.length === 0) return null;
 
   return (
-    <section className="bg-white py-14 md:py-16 lg:py-20" aria-labelledby="home-journal-heading">
+    <section className="bg-[#F7F7F2] py-14 md:py-16 lg:py-20" aria-labelledby="home-journal-heading">
       <div className="page-shell">
         <div className="text-center">
           <h2
