@@ -68,9 +68,15 @@ function CartIcon({ count }: { count: number }) {
   );
 }
 
-function ProfileIcon() {
+function ProfileIcon({ className = "h-[18px] w-[18px] sm:h-5 sm:w-5" }: { className?: string }) {
   return (
-    <svg className="h-[18px] w-[18px] sm:h-5 sm:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+    <svg
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      aria-hidden
+    >
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -116,20 +122,6 @@ function TrackOrderButton({ onClick, compact }: { onClick: () => void; compact?:
       </svg>
       {compact ? "Track order" : "Track my order"}
     </button>
-  );
-}
-
-function ProfileIcon({ className = "h-5 w-5" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" aria-hidden>
-      <path
-        strokeWidth={1.8}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"
-      />
-      <circle cx="12" cy="7" r="4" strokeWidth={1.8} />
-    </svg>
   );
 }
 
