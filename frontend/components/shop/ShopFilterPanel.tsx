@@ -29,8 +29,8 @@ export function ShopFilterToggle({
     <button
       type="button"
       onClick={() => onOpenChange(!open)}
-      className={`${EMERGED_PILL} bg-[#fca5a5] text-[#7f1d1d] hover:bg-[#f87171] hover:text-white ${
-        open ? "bg-[#f87171] text-white" : ""
+      className={`${EMERGED_PILL} bg-[#166D46] text-white hover:bg-[#145a3a] ${
+        open ? "bg-[#145a3a]" : ""
       }`}
       aria-expanded={open}
     >

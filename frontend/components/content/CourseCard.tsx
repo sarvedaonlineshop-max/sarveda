@@ -77,32 +77,32 @@ export function CourseCard({ course }: Props) {
         )}
       </div>
 
-      <div className="relative flex min-w-0 flex-1 flex-col bg-[#2d7ac2] px-4 pb-5 pt-6 text-white">
+      <div className="relative flex min-w-0 flex-1 flex-col bg-[#166D46] px-4 pb-4 pt-5 text-white">
         <InstructorAvatars
           seam
           people={teachers}
           className="absolute -top-[25px] right-2.5 z-10"
         />
-        <h3 className="font-serif text-[1.35rem] font-semibold leading-snug text-white">
+        <h3 className="font-serif text-[1.25rem] font-semibold leading-snug text-white sm:text-[1.35rem]">
           {course.title}
         </h3>
 
-        <div className="mt-4 flex flex-1 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0 border-l-4 border-white pl-3">
+        <div className="mt-3 flex flex-1 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0 border-l-4 border-white/90 pl-3">
             {teacherNames.map((name) => (
-              <p key={name} className="text-[15px] leading-snug text-white">
+              <p key={name} className="text-[14px] leading-snug text-white sm:text-[15px]">
                 {name}
               </p>
             ))}
-            {dateRange ? <p className="mt-1 text-[15px] text-white/90">{dateRange}</p> : null}
-            {duration ? <p className="text-[15px] text-white">{duration}</p> : null}
+            {dateRange ? <p className="mt-1 text-[14px] text-white/90 sm:text-[15px]">{dateRange}</p> : null}
+            {duration ? <p className="text-[14px] text-white sm:text-[15px]">{duration}</p> : null}
           </div>
-          <span className="inline-flex min-h-[42px] shrink-0 items-center justify-center rounded-sm bg-[#e87e04] px-6 text-sm font-medium uppercase tracking-wide text-white transition-colors group-hover:bg-[#d47103]">
+          <span className="inline-flex min-h-[40px] shrink-0 items-center justify-center rounded-sm bg-[#e87e04] px-5 text-sm font-medium uppercase tracking-wide text-white transition-colors group-hover:bg-[#d47103]">
             Explore
           </span>
         </div>
 
-        <p className="mt-3 text-sm font-semibold tabular-nums text-white/95">
+        <p className="mt-2.5 text-sm font-semibold tabular-nums text-white/95">
           {course.isFree || course.priceInPaise === 0 ? "Free" : formatINRFromPaise(course.priceInPaise)}
         </p>
       </div>

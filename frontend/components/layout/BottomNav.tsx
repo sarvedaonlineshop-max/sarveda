@@ -14,7 +14,7 @@ import { OPEN_TRACK_ORDER_EVENT } from "./TrackOrderModal";
 import { dispatchNavStart } from "./RouteLoadingSpinner";
 import { useStorefrontSession } from "./useStorefrontSession";
 
-const NAV_GREEN = "#25D366";
+const NAV_GREEN = "#166D46";
 
 function MenuRowIcon({ kind }: { kind: string }) {
   const cls = "mr-3 h-5 w-5 shrink-0 opacity-95";

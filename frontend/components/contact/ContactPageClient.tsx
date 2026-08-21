@@ -389,8 +389,8 @@ function ContactFormInner() {
       onSubmit={(event) => void onSubmit(event)}
       className="flex min-h-0 flex-col bg-white px-4 py-4 font-sans sm:px-6 sm:py-5 lg:h-full lg:overflow-hidden lg:px-8 lg:py-6"
     >
-      <h1 className="text-2xl font-semibold leading-tight text-brand-ink md:text-3xl lg:text-[2rem]">
-        Contact US
+      <h1 className="font-serif text-2xl font-semibold leading-tight tracking-tight text-brand-ink md:text-3xl lg:text-[2rem]">
+        Contact Us
       </h1>
 
       {presetOrder ? (

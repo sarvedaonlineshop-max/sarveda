@@ -239,11 +239,11 @@ export function FloatingSocialSubscribe() {
   return (
     <>
       <div
-        className="pointer-events-none fixed left-3 top-1/2 z-[55] hidden -translate-y-1/2 md:block lg:left-4"
+        className="pointer-events-none fixed right-3 top-1/2 z-[55] -translate-y-1/2 sm:right-4 lg:right-5"
         aria-label="Social links and subscribe"
       >
-        <div className="pointer-events-auto flex flex-col items-center overflow-hidden rounded-full border border-black/10 bg-white/95 shadow-[0_8px_28px_rgba(16,32,26,0.14)] backdrop-blur-sm">
-          <div className="flex flex-col items-center gap-3 px-2.5 py-4">
+        <div className="pointer-events-auto flex flex-col items-center overflow-hidden rounded-full border border-black/10 bg-white/95 shadow-[0_10px_32px_rgba(16,32,26,0.18)] backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3.5 px-3 py-5 sm:gap-4 sm:px-3.5 sm:py-6">
             {SOCIAL.map((s) => (
               <a
                 key={s.label}
@@ -253,7 +253,7 @@ export function FloatingSocialSubscribe() {
                 aria-label={s.label}
                 className="text-brand-ink transition hover:text-[#166D46]"
               >
-                <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="currentColor" aria-hidden>
+                <svg viewBox="0 0 24 24" className="h-5 w-5 sm:h-[22px] sm:w-[22px]" fill="currentColor" aria-hidden>
                   <path d={s.path} />
                 </svg>
               </a>
@@ -262,7 +262,7 @@ export function FloatingSocialSubscribe() {
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="flex w-full items-center justify-center border-t border-black/8 bg-[#f3f1ec] px-2 py-5 text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-ink transition hover:bg-[#ebe7df]"
+            className="flex w-full items-center justify-center border-t border-black/8 bg-[#f3f1ec] px-2.5 py-6 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-ink transition hover:bg-[#ebe7df] sm:px-3 sm:py-7 sm:text-xs"
             aria-haspopup="dialog"
             aria-expanded={open}
           >
@@ -270,17 +270,6 @@ export function FloatingSocialSubscribe() {
           </button>
         </div>
       </div>
-
-      {/* Mobile: compact subscribe chip above bottom nav */}
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="fixed bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))] left-3 z-[55] inline-flex min-h-[40px] items-center rounded-full border border-black/10 bg-white px-3.5 text-xs font-semibold uppercase tracking-wide text-brand-ink shadow-lg md:hidden"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-      >
-        Subscribe
-      </button>
 
       <SubscribeModal open={open} onClose={() => setOpen(false)} />
     </>

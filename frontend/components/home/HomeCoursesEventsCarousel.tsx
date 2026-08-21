@@ -68,7 +68,7 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
 
   return (
     <section
-      className="bg-[#f9f6f0] py-14 md:py-16 lg:py-20"
+      className="bg-[#f9f6f0] pb-6 pt-14 md:pb-8 md:pt-16 lg:pb-10 lg:pt-20"
       aria-labelledby="home-courses-events-heading"
     >
       <div className="page-shell">

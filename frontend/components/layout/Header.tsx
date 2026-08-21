@@ -119,18 +119,30 @@ function TrackOrderButton({ onClick, compact }: { onClick: () => void; compact?:
   );
 }
 
+function ProfileIcon({ className = "h-5 w-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" aria-hidden>
+      <path
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"
+      />
+      <circle cx="12" cy="7" r="4" strokeWidth={1.8} />
+    </svg>
+  );
+}
+
 function WelcomeUserChip({ name }: { name: string }) {
   const first = name.trim().split(/\s+/)[0] || name;
   return (
     <Link
       href="/profile"
-      className="inline-flex max-w-[11rem] items-center gap-1.5 rounded-full border border-[#108967]/25 bg-gradient-to-r from-[#ecfdf5] to-[#d1fae5] px-2.5 py-1.5 shadow-sm"
+      className="inline-flex max-w-[12rem] items-center gap-1.5 text-[#166D46]"
       aria-label={`Welcome ${first}`}
     >
-      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#108967] text-[11px] font-bold text-white">
-        {first.charAt(0).toUpperCase()}
-      </span>
-      <span className="min-w-0 truncate text-[12px] font-semibold leading-tight text-[#0f5c38]">
+      <ProfileIcon className="h-[18px] w-[18px] shrink-0" />
+      <span className="min-w-0 truncate text-[12px] font-semibold leading-tight">
         Welcome, {first}
       </span>
     </Link>
@@ -415,9 +427,10 @@ export function Header() {
                   ) : (
                     <Link
                       href="/login"
-                      className="inline-flex min-h-[36px] items-center rounded-full bg-[#108967] px-3 text-[12px] font-semibold text-white shadow-sm"
+                      className="inline-flex h-9 w-9 items-center justify-center text-[#166D46]"
+                      aria-label="Sign in"
                     >
-                      Welcome
+                      <ProfileIcon />
                     </Link>
                   )
                 ) : null}
@@ -425,7 +438,7 @@ export function Header() {
                   <button
                     type="button"
                     onClick={openShopMenu}
-                    className="inline-flex h-8 min-h-[32px] shrink-0 items-center gap-1.5 rounded-full bg-[#25D366] px-3 text-[12px] font-semibold text-white shadow-[0_4px_0_rgba(0,0,0,0.16),0_8px_14px_rgba(0,0,0,0.14)] ring-1 ring-black/5 transition-all duration-150 hover:-translate-y-0.5 hover:bg-[#1ebe57] hover:shadow-[0_6px_0_rgba(0,0,0,0.14),0_12px_18px_rgba(0,0,0,0.16)] active:translate-y-[2px] active:bg-[#1aa34d] active:shadow-[0_1px_0_rgba(0,0,0,0.18),0_3px_8px_rgba(0,0,0,0.12)]"
+                    className="inline-flex h-8 min-h-[32px] shrink-0 items-center gap-1.5 rounded-full bg-[#166D46] px-3 text-[12px] font-semibold text-white shadow-[0_4px_0_rgba(0,0,0,0.16),0_8px_14px_rgba(0,0,0,0.14)] ring-1 ring-black/5 transition-all duration-150 hover:-translate-y-0.5 hover:bg-[#145a3a] hover:shadow-[0_6px_0_rgba(0,0,0,0.14),0_12px_18px_rgba(0,0,0,0.16)] active:translate-y-[2px] active:bg-[#124f33] active:shadow-[0_1px_0_rgba(0,0,0,0.18),0_3px_8px_rgba(0,0,0,0.12)]"
                     aria-label="Open product menu"
                   >
                     {/* Grid — catalog, not the bottom-nav site menu */}
