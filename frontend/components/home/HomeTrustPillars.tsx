@@ -34,7 +34,7 @@ export function HomeTrustPillars() {
       className="border-b border-brand-cream-dark/50 bg-[#f9f6f0]"
       aria-labelledby="home-curated-heading"
     >
-      <div className="page-shell py-14 md:py-16 lg:py-20">
+      <div className="page-shell pb-12 pt-6 md:pb-14 md:pt-8 lg:pb-16 lg:pt-10">
         <div className="grid items-center gap-10 md:gap-12 lg:grid-cols-2 lg:gap-14">
           <div className="min-w-0">
             <h2
