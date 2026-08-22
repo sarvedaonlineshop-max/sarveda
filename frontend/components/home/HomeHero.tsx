@@ -2,7 +2,7 @@ import Image from "next/image";
 
 /**
  * Homepage hero — ultra-wide lakeside banner.
- * Mobile: right slice of wide photo (full height → bowls visible); original copy position.
+ * Mobile: tighter crop on the right (practitioner); copy position locked.
  * Desktop: full banner with copy on open water at left.
  */
 export function HomeHero() {
