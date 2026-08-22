@@ -33,15 +33,13 @@ export function ShopFilterToggle({
       aria-expanded={open}
       aria-label={open ? "Close filters" : "Open filters"}
     >
-      {/* Sliders / settings filter icon */}
-      <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" aria-hidden>
-        <path
-          d="M4 7h10M18 7h2M14 7a2 2 0 11-4 0 2 2 0 014 0zM4 12h2M10 12h10M8 12a2 2 0 11-4 0 2 2 0 014 0zM4 17h6M14 17h6M12 17a2 2 0 11-4 0 2 2 0 014 0z"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+      <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" aria-hidden>
+        <path d="M2.5 4.5h6.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+        <circle cx="12.5" cy="4.5" r="1.15" fill="currentColor" />
+        <path d="M2.5 10h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+        <circle cx="10.5" cy="10" r="1.15" fill="currentColor" />
+        <path d="M2.5 15.5h8.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+        <circle cx="14.5" cy="15.5" r="1.15" fill="currentColor" />
       </svg>
     </button>
   );

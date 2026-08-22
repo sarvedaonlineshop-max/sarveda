@@ -14,8 +14,8 @@ type Props = {
   /** Opens a top-level branch (pass same slug again to collapse when expandParentsOnly). */
   onOpen?: (slug: string) => void;
   /**
-   * Mobile products sheet: parent click only expands/collapses.
-   * Subcategory click loads products. Chevrons, no rail line, no parent highlight.
+   * Accordion mode: parent click only expands/collapses.
+   * Subcategory click loads products. Chevrons, dividers, no parent highlight.
    */
   expandParentsOnly?: boolean;
 };
@@ -51,6 +51,7 @@ export function CategoryNavTree({
   expandParentsOnly = false
 }: Props) {
   const visible = depth === 0 ? nodes : visibleChildren(nodes);
+  const isSubList = depth > 0;
 
   return (
     <ul
@@ -58,7 +59,7 @@ export function CategoryNavTree({
         depth === 0
           ? "space-y-0.5"
           : expandParentsOnly
-            ? "ml-3 mt-0.5 space-y-0 pl-1"
+            ? "mt-1 divide-y divide-stone-200/90 border-t border-stone-200/90"
             : "ml-3 mt-0.5 space-y-0 border-l-2 border-brand-cream-dark pl-3"
       }
     >
@@ -72,17 +73,17 @@ export function CategoryNavTree({
 
         return (
           <li key={cat.id}>
-            {/* Plain button, not next/link — a category switch here is a pure
-                client-side state+fetch update (see ShopBrowser), and a <Link>'s
-                own internal click/prefetch handling has no business anywhere
-                near it. Crawlable URLs to every category still exist via the
-                breadcrumbs and direct /product-category/[slug] pages. */}
             <button
               type="button"
               onClick={(event) => {
                 event.stopPropagation();
-                if (expandParentsOnly && isParent && hasChildren) {
-                  onOpen?.(cat.slug);
+                if (expandParentsOnly && isParent) {
+                  if (hasChildren) {
+                    onOpen?.(cat.slug);
+                    return;
+                  }
+                  onSelect(cat.slug);
+                  onNavigate?.();
                   return;
                 }
                 onSelect(cat.slug);
@@ -90,18 +91,26 @@ export function CategoryNavTree({
                 onNavigate?.();
               }}
               aria-expanded={isParent && hasChildren ? isOpen : undefined}
-              className={`flex w-full min-h-[36px] items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-sm leading-snug transition-colors duration-150 ${
-                isParent
-                  ? expandParentsOnly
-                    ? "font-medium text-stone-700 hover:bg-stone-50"
-                    : active
-                      ? "bg-brand-forest font-semibold text-brand-cream"
-                      : showAsOpenBranch
-                        ? "bg-brand-cream font-semibold text-brand-forest"
-                        : "font-semibold text-brand-forest hover:bg-brand-cream"
-                  : active
-                    ? "bg-brand-forest/10 font-medium text-brand-forest"
-                    : "font-medium text-brand-ink/85 hover:bg-brand-cream hover:text-brand-ink"
+              className={`flex w-full items-center justify-between gap-2 text-left text-sm leading-snug transition-colors duration-150 ${
+                isSubList && expandParentsOnly
+                  ? `min-h-[40px] px-1 py-2.5 ${
+                      active
+                        ? "font-semibold text-brand-forest"
+                        : "font-normal text-brand-ink/90 hover:text-brand-ink"
+                    }`
+                  : `min-h-[36px] rounded-md px-2.5 py-1.5 ${
+                      isParent
+                        ? expandParentsOnly
+                          ? "font-bold text-stone-800 hover:bg-stone-50"
+                          : active
+                            ? "bg-brand-forest font-semibold text-brand-cream"
+                            : showAsOpenBranch
+                              ? "bg-brand-cream font-semibold text-brand-forest"
+                              : "font-semibold text-brand-forest hover:bg-brand-cream"
+                        : active
+                          ? "bg-brand-forest/10 font-medium text-brand-forest"
+                          : "font-medium text-brand-ink/85 hover:bg-brand-cream hover:text-brand-ink"
+                    }`
               }`}
             >
               <span className="min-w-0">{cat.name}</span>

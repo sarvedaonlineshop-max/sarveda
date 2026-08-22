@@ -17,8 +17,7 @@ type Props = {
 };
 
 /** Sits just above the fixed WhatsApp FAB on store pages (mobile). */
-const FAB_BOTTOM =
-  "bottom-[calc(5.5rem+3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-[calc(var(--storefront-slim-footer-offset)+0.75rem+3.5rem)]";
+const FAB_BOTTOM = "bottom-[calc(5.5rem+3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-[calc(1.5rem+3.5rem)]";
 
 export function ShopMobileCategoryDrawer({ categories, selectedSlug, onSelect }: Props) {
   const reduceMotion = useReducedMotion();

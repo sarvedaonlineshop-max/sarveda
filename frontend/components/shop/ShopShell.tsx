@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { usePathname } from "next/navigation";
 
 import type { CategoryNode } from "@/lib/types";
@@ -19,6 +19,16 @@ type Props = {
   children: React.ReactNode;
 };
 
+function scrollProductsToTop(anchor: HTMLElement | null) {
+  if (!anchor) return;
+  const headerOffset = parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue("--storefront-header-live-offset")
+  );
+  const extra = window.matchMedia("(min-width: 1024px)").matches ? 12 : 8;
+  const top = anchor.getBoundingClientRect().top + window.scrollY - headerOffset - extra;
+  window.scrollTo({ top: Math.max(0, top), behavior: "auto" });
+}
+
 /**
  * Persistent shop chrome. Avoid Suspense around server `children` and avoid
  * `useSearchParams` here — both caused soft-nav to hang on blank/skeleton /shop.
@@ -27,6 +37,7 @@ export function ShopShell({ categories, children }: Props) {
   const pathname = usePathname();
   const { navigate, isPending } = useShopNavigate();
   const browseQuery = useShopBrowseQuery();
+  const productsAnchorRef = useRef<HTMLDivElement>(null);
 
   const categorySlug = categorySlugFromPathname(pathname);
   const searchQ = browseQuery.q ?? "";
@@ -107,14 +118,19 @@ export function ShopShell({ categories, children }: Props) {
     return walk(categories) ?? categorySlug;
   }, [categories, categorySlug]);
 
+  /** Jump to top of product grid when browse filters change. */
+  useEffect(() => {
+    scrollProductsToTop(productsAnchorRef.current);
+  }, [categorySlug, searchQ, tag, minPrice, maxPrice]);
+
   return (
     <ShopCategoriesProvider categories={categories}>
       <ShopProductsMetaProvider>
-        <div className="page-shell pb-16 pt-0 md:pb-0">
+        <div className="page-shell pb-16 pt-0 md:pb-8">
           <h1 className="sr-only">{activeCategoryName ?? "Shop"}</h1>
 
-          <div className="flex flex-col lg:h-[calc(100dvh-var(--storefront-header-offset)-var(--storefront-slim-footer-offset))] lg:flex-row lg:items-stretch lg:gap-10 lg:py-6">
-            <div className="hidden lg:flex lg:h-full lg:w-72 lg:flex-shrink-0 lg:flex-col lg:overflow-hidden">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:gap-10 lg:py-6">
+            <div className="hidden lg:sticky lg:top-[calc(var(--storefront-header-live-offset)+0.75rem)] lg:block lg:w-72 lg:flex-shrink-0 lg:self-start">
               <ShopCategoryFilterSidebar
                 categories={categories}
                 selectedSlug={categorySlug}
@@ -122,7 +138,7 @@ export function ShopShell({ categories, children }: Props) {
               />
             </div>
 
-            <div className="min-w-0 flex-1 lg:flex lg:h-full lg:flex-col lg:overflow-hidden">
+            <div className="min-w-0 flex-1 overflow-x-hidden">
               <ShopProductToolbar
                 categories={categories}
                 categorySlug={categorySlug}
@@ -142,7 +158,8 @@ export function ShopShell({ categories, children }: Props) {
               />
 
               <div
-                className={`relative z-0 lg:flex-1 lg:overflow-y-auto ${
+                ref={productsAnchorRef}
+                className={`relative z-0 pt-3 lg:pt-4 ${
                   isPending ? "pointer-events-none opacity-50 transition-opacity duration-150" : ""
                 }`}
                 aria-busy={isPending}

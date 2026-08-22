@@ -20,39 +20,30 @@ export function ShopCategoryFilterSidebar({ categories, selectedSlug, onSelect }
   );
 
   useEffect(() => {
+    if (!selectedSlug) return;
     const next = defaultOpenBranchSlug(sorted, selectedSlug);
-    setOpenSlug((current) => (current === next ? current : next));
+    if (next) setOpenSlug(next);
   }, [selectedSlug, sorted]);
 
-  function open(slug: string) {
-    setOpenSlug(slug);
+  function toggleBranch(slug: string) {
+    setOpenSlug((current) => (current === slug ? null : slug));
   }
 
   return (
-    <aside className="flex h-full flex-col overflow-hidden rounded-2xl border border-brand-cream-dark bg-white shadow-card">
+    <aside className="flex flex-col overflow-hidden rounded-2xl border border-brand-cream-dark bg-white shadow-card lg:max-h-[calc(100dvh-var(--storefront-header-live-offset)-2rem)]">
       <div className="flex-shrink-0 border-b border-brand-cream-dark/60 p-5 pb-3">
         <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-gold">Browse</p>
         <h2 className="mt-1 font-serif text-lg font-semibold text-brand-ink">Categories</h2>
       </div>
-      <div className="flex-1 overflow-y-auto p-5 pt-3">
-        <button
-          type="button"
-          onClick={() => onSelect(undefined)}
-          className={`mb-2 flex min-h-[36px] w-full items-center rounded-lg px-3 py-1.5 text-left text-sm font-medium transition-colors duration-150 ${
-            !selectedSlug
-              ? "bg-brand-forest/10 font-semibold text-brand-forest"
-              : "text-brand-muted hover:bg-brand-cream hover:text-brand-ink"
-          }`}
-        >
-          All products
-        </button>
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 pt-3 [scrollbar-width:thin]">
         <CategoryNavTree
           nodes={sorted}
           selectedSlug={selectedSlug}
           depth={0}
+          expandParentsOnly
           onSelect={onSelect}
           openSlug={openSlug}
-          onOpen={open}
+          onOpen={toggleBranch}
         />
       </div>
     </aside>

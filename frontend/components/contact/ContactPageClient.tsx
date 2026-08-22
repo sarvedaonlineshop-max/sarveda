@@ -538,53 +538,23 @@ function ContactFormInner() {
 }
 
 export function ContactPageClient() {
-  useEffect(() => {
-    const mq = window.matchMedia("(min-width: 1024px)");
-    const html = document.documentElement;
-    const body = document.body;
-    const prevHtml = html.style.overflow;
-    const prevBody = body.style.overflow;
-
-    const apply = () => {
-      if (mq.matches) {
-        html.style.overflow = "hidden";
-        body.style.overflow = "hidden";
-      } else {
-        html.style.overflow = prevHtml;
-        body.style.overflow = prevBody;
-      }
-    };
-
-    apply();
-    mq.addEventListener("change", apply);
-    return () => {
-      mq.removeEventListener("change", apply);
-      html.style.overflow = prevHtml;
-      body.style.overflow = prevBody;
-    };
-  }, []);
-
   return (
-    <>
-      {/* Mobile / tablet: scrollable stack — form first, addresses second */}
-      <div className="bg-brand-cream p-2 pb-4 lg:hidden">
-        <div className="overflow-hidden rounded-2xl border border-brand-cream-dark bg-white shadow-card">
-          <Suspense fallback={<p className="p-8 text-sm text-brand-muted">Loading form…</p>}>
-            <ContactFormInner />
-          </Suspense>
-          <ContactInfoPanel />
-        </div>
+    <div className="page-shell bg-brand-cream py-4 pb-8 md:py-6 lg:py-8">
+      {/* Mobile / tablet: form first, addresses second */}
+      <div className="overflow-hidden rounded-2xl border border-brand-cream-dark bg-white shadow-card lg:hidden">
+        <Suspense fallback={<p className="p-8 text-sm text-brand-muted">Loading form…</p>}>
+          <ContactFormInner />
+        </Suspense>
+        <ContactInfoPanel />
       </div>
 
-      {/* Desktop: side-by-side locked viewport */}
-      <div className="relative hidden h-[calc(100dvh-var(--storefront-header-live-offset))] overflow-hidden bg-brand-cream p-2.5 lg:block">
-        <div className="relative z-[1] grid h-full min-h-0 grid-cols-2 overflow-hidden rounded-2xl border border-brand-cream-dark bg-white shadow-card">
-          <ContactInfoPanel />
-          <Suspense fallback={<p className="p-8 text-sm text-brand-muted">Loading form…</p>}>
-            <ContactFormInner />
-          </Suspense>
-        </div>
+      {/* Desktop: side-by-side, page scrolls to full footer */}
+      <div className="hidden overflow-hidden rounded-2xl border border-brand-cream-dark bg-white shadow-card lg:grid lg:min-h-[min(720px,calc(100dvh-var(--storefront-header-live-offset)-12rem))] lg:grid-cols-2">
+        <ContactInfoPanel />
+        <Suspense fallback={<p className="p-8 text-sm text-brand-muted">Loading form…</p>}>
+          <ContactFormInner />
+        </Suspense>
       </div>
-    </>
+    </div>
   );
 }
