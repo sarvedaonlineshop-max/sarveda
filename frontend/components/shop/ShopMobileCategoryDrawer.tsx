@@ -16,8 +16,23 @@ type Props = {
   onSelect: (slug: string | undefined) => void;
 };
 
-/** Sits just above the fixed WhatsApp FAB on store pages (mobile). */
-const FAB_BOTTOM = "bottom-[calc(5.5rem+3.5rem+env(safe-area-inset-bottom,0px))] md:bottom-[calc(1.5rem+3.5rem)]";
+/** Sits above bottom nav on mobile store (WhatsApp hidden there). */
+const FAB_BOTTOM = "bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))]";
+
+function ProductsFabCurvedLabel() {
+  return (
+    <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 64 64" aria-hidden>
+      <defs>
+        <path id="shop-products-curve" d="M 11 40 A 21 21 0 0 1 53 40" fill="none" />
+      </defs>
+      <text fill="white" fontSize="7.5" fontWeight="700" letterSpacing="0.12em">
+        <textPath href="#shop-products-curve" startOffset="50%" textAnchor="middle">
+          PRODUCTS
+        </textPath>
+      </text>
+    </svg>
+  );
+}
 
 export function ShopMobileCategoryDrawer({ categories, selectedSlug, onSelect }: Props) {
   const reduceMotion = useReducedMotion();
@@ -128,11 +143,18 @@ export function ShopMobileCategoryDrawer({ categories, selectedSlug, onSelect }:
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className={`fixed right-4 z-50 flex h-14 w-14 flex-col items-center justify-center rounded-full bg-[#1c1c1c] text-white shadow-lg transition hover:scale-105 hover:bg-black lg:hidden ${FAB_BOTTOM}`}
+          className={`fixed right-4 z-50 flex h-16 w-16 items-center justify-center rounded-full bg-[#166D46] text-white shadow-[0_8px_28px_rgba(22,109,70,0.45)] transition hover:scale-105 hover:bg-[#145a3a] lg:hidden ${FAB_BOTTOM}`}
           aria-label="Open products menu"
           aria-expanded={open}
         >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+          <ProductsFabCurvedLabel />
+          <svg
+            className="relative h-5 w-5 -mt-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -140,7 +162,6 @@ export function ShopMobileCategoryDrawer({ categories, selectedSlug, onSelect }:
               d="M4 6h16M4 12h16M4 18h10"
             />
           </svg>
-          <span className="mt-0.5 text-[9px] font-semibold uppercase tracking-wide">Products</span>
         </button>,
         document.body
       )
