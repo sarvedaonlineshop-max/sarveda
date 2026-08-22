@@ -26,7 +26,7 @@ export function HomeHero() {
           fill
           priority
           sizes="100vw"
-          className="object-cover object-[78%_52%] sm:object-[76%_50%] md:object-left md:object-center"
+          className="origin-[88%_100%] scale-[0.86] object-cover object-right-bottom sm:scale-[0.9] md:scale-100 md:origin-center md:object-left md:object-center"
           aria-hidden
         />
 
