@@ -74,26 +74,18 @@ export function ShopSearchBar({ value, onSearch }: Props) {
   }
 
   return (
-    <div ref={wrapRef} className="relative z-20 flex min-w-0 flex-1 items-center gap-1.5">
-      <form onSubmit={submit} role="search" className="flex min-w-0 flex-1 items-center gap-1.5">
+    <div ref={wrapRef} className="relative z-20 min-w-0 flex-1">
+      <form onSubmit={submit} role="search" className="min-w-0">
         <label htmlFor="shop-search" className="sr-only">
           Search products
         </label>
-        <div className="relative min-w-0 flex-1" role="combobox" aria-expanded={open} aria-haspopup="listbox" aria-controls="shop-search-suggestions">
-          <svg
-            className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-brand-muted"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-4.35-4.35M16.5 10.5a6 6 0 11-12 0 6 6 0 0112 0z"
-            />
-          </svg>
+        <div
+          className="relative min-w-0"
+          role="combobox"
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          aria-controls="shop-search-suggestions"
+        >
           <input
             id="shop-search"
             type="search"
@@ -106,15 +98,23 @@ export function ShopSearchBar({ value, onSearch }: Props) {
             autoComplete="off"
             aria-autocomplete="list"
             aria-controls="shop-search-suggestions"
-            className="h-8 min-h-[32px] w-full rounded-full border border-[#E3D9C8] bg-white py-1.5 pl-8 pr-3 text-sm text-brand-ink placeholder:text-brand-muted/70 focus:border-[#166D46] focus:outline-none focus:ring-2 focus:ring-[#166D46]/25"
+            className="h-8 min-h-[32px] w-full rounded-full border border-[#E3D9C8] bg-white py-1.5 pl-3.5 pr-10 text-sm text-brand-ink placeholder:text-brand-muted/70 focus:border-[#3d9a6a] focus:outline-none focus:ring-2 focus:ring-[#3d9a6a]/25"
           />
+          <button
+            type="submit"
+            className="absolute right-1 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-[#3d9a6a] transition-colors hover:bg-[#3d9a6a]/10 hover:text-[#34875c]"
+            aria-label="Search"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-4.35-4.35M16.5 10.5a6 6 0 11-12 0 6 6 0 0112 0z"
+              />
+            </svg>
+          </button>
         </div>
-        <button
-          type="submit"
-          className="inline-flex h-8 min-h-[32px] shrink-0 items-center rounded-full bg-[#3d9a6a] px-3 text-[13px] font-semibold text-white transition-colors hover:bg-[#34875c]"
-        >
-          Search
-        </button>
       </form>
 
       {open ? (

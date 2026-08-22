@@ -25,6 +25,7 @@ export function ShopMobileCategoryDrawer({ categories, selectedSlug, onSelect }:
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const sorted = useMemo(() => sortShopCategories(categories), [categories]);
+  /** Remember last expanded parent across sheet open/close. */
   const [openSlug, setOpenSlug] = useState<string | null>(() =>
     defaultOpenBranchSlug(sorted, selectedSlug)
   );
@@ -33,9 +34,11 @@ export function ShopMobileCategoryDrawer({ categories, selectedSlug, onSelect }:
     setMounted(true);
   }, []);
 
+  /** When a subcategory is selected (URL/state), keep its parent branch open. */
   useEffect(() => {
+    if (!selectedSlug) return;
     const next = defaultOpenBranchSlug(sorted, selectedSlug);
-    setOpenSlug((current) => (current === next ? current : next));
+    if (next) setOpenSlug(next);
   }, [selectedSlug, sorted]);
 
   useEffect(() => {
@@ -47,11 +50,11 @@ export function ShopMobileCategoryDrawer({ categories, selectedSlug, onSelect }:
     };
   }, [open]);
 
-  function openBranch(slug: string) {
-    setOpenSlug(slug);
+  function toggleBranch(slug: string) {
+    setOpenSlug((current) => (current === slug ? null : slug));
   }
 
-  function selectAndClose(slug: string | undefined) {
+  function selectSubcategory(slug: string | undefined) {
     onSelect(slug);
     setOpen(false);
   }
@@ -102,29 +105,16 @@ export function ShopMobileCategoryDrawer({ categories, selectedSlug, onSelect }:
                   </div>
                 </div>
 
-                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
-                  <button
-                    type="button"
-                    onClick={() => selectAndClose(undefined)}
-                    className={`mb-3 flex min-h-[48px] w-full items-center rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors duration-150 ${
-                      !selectedSlug
-                        ? "border-brand-forest bg-brand-forest/10 text-brand-forest"
-                        : "border-brand-cream-dark bg-white text-brand-ink hover:border-brand-gold/50"
-                    }`}
-                  >
-                    All products
-                  </button>
-                  <div className="rounded-2xl border border-brand-cream-dark bg-white p-4 shadow-card">
-                    <CategoryNavTree
-                      nodes={sorted}
-                      selectedSlug={selectedSlug}
-                      depth={0}
-                      onSelect={selectAndClose}
-                      onNavigate={() => setOpen(false)}
-                      openSlug={openSlug}
-                      onOpen={openBranch}
-                    />
-                  </div>
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
+                  <CategoryNavTree
+                    nodes={sorted}
+                    selectedSlug={selectedSlug}
+                    depth={0}
+                    expandParentsOnly
+                    onSelect={selectSubcategory}
+                    openSlug={openSlug}
+                    onOpen={toggleBranch}
+                  />
                 </div>
               </motion.aside>
             </div>

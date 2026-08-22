@@ -15,8 +15,8 @@ type Props = {
   className?: string;
 };
 
-const PLAIN_GREEN_PILL =
-  "inline-flex h-8 min-h-[32px] shrink-0 items-center justify-center gap-1 rounded-full bg-[#3d9a6a] px-3 text-[13px] font-semibold text-white transition-colors hover:bg-[#34875c]";
+const FILTER_ICON_BTN =
+  "inline-flex h-8 w-8 min-h-[32px] shrink-0 items-center justify-center rounded-full bg-[#3d9a6a] text-white transition-colors hover:bg-[#34875c]";
 
 export function ShopFilterToggle({
   open,
@@ -29,16 +29,18 @@ export function ShopFilterToggle({
     <button
       type="button"
       onClick={() => onOpenChange(!open)}
-      className={`${PLAIN_GREEN_PILL} ${open ? "bg-[#34875c]" : ""}`}
+      className={`${FILTER_ICON_BTN} ${open ? "bg-[#34875c]" : ""}`}
       aria-expanded={open}
+      aria-label={open ? "Close filters" : "Open filters"}
     >
-      Filter
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden>
+      {/* Sliders / settings filter icon */}
+      <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" aria-hidden>
         <path
-          d="M4 7h16M7 12h10M10 17h4"
+          d="M4 7h10M18 7h2M14 7a2 2 0 11-4 0 2 2 0 014 0zM4 12h2M10 12h10M8 12a2 2 0 11-4 0 2 2 0 014 0zM4 17h6M14 17h6M12 17a2 2 0 11-4 0 2 2 0 014 0z"
           stroke="currentColor"
-          strokeWidth="2"
+          strokeWidth="1.8"
           strokeLinecap="round"
+          strokeLinejoin="round"
         />
       </svg>
     </button>
