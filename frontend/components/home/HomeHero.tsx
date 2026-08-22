@@ -2,7 +2,7 @@ import Image from "next/image";
 
 /**
  * Homepage hero — ultra-wide lakeside banner.
- * Mobile: crop toward practitioner + bowls; copy placement unchanged from original hero.
+ * Mobile: right slice of wide photo (full height → bowls visible); original copy position.
  * Desktop: full banner with copy on open water at left.
  */
 export function HomeHero() {
@@ -13,10 +13,9 @@ export function HomeHero() {
     >
       <div
         className={[
-          "relative w-full",
-          /* Mobile: taller frame, subject (woman + bowls) on the right */
-          "aspect-[4/5] sm:aspect-[5/6]",
-          /* Desktop: natural ultra-wide banner */
+          "relative w-full overflow-hidden",
+          /* Mobile: portrait frame; image width overflows to show right crop */
+          "aspect-[5/6] sm:aspect-[4/5]",
           "md:aspect-[1024/447]"
         ].join(" ")}
       >
@@ -26,7 +25,13 @@ export function HomeHero() {
           fill
           priority
           sizes="100vw"
-          className="origin-[88%_100%] scale-[0.86] object-cover object-right-bottom sm:scale-[0.9] md:scale-100 md:origin-center md:object-left md:object-center"
+          className={[
+            "object-cover object-right",
+            /* Show right ~40% of ultra-wide banner at full image height (bowls included) */
+            "!left-auto !right-0 !top-0 !h-full !w-[275%] !max-w-none",
+            "sm:!w-[250%]",
+            "md:!inset-0 md:!left-0 md:!w-full md:!max-w-full md:object-left md:object-center"
+          ].join(" ")}
           aria-hidden
         />
 
