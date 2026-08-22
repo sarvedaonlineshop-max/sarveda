@@ -6,6 +6,7 @@ import { getZohoAuditMap, patchZohoAuditCache } from "./zoho-stock-sync-cache";
 import { appendZohoStockSyncHistory } from "./zoho-stock-sync-history";
 import type { ZohoActionResult } from "./zoho-sync-types";
 import { zohoGet, zohoPost, zohoPut } from "./zoho-client";
+import { isZohoInventorySyncEnabled, ZOHO_INVENTORY_SYNC_DISABLED_MESSAGE } from "./zoho-inventory-sync-flag";
 
 type ZohoItemRow = {
   item_id: string;
@@ -209,6 +210,12 @@ export async function syncProductVariantsToZoho(productId: string): Promise<Zoho
     errors: []
   };
 
+  if (!isZohoInventorySyncEnabled()) {
+    result.ok = false;
+    result.errors.push(ZOHO_INVENTORY_SYNC_DISABLED_MESSAGE);
+    return result;
+  }
+
   if (!zohoConfigured()) {
     result.ok = false;
     result.errors.push("Zoho Books is not configured on the server");
@@ -258,6 +265,11 @@ export async function resolveZohoItemIdForSku(sku: string): Promise<string | nul
 export async function pushVariantsToZoho(variantIds: string[]): Promise<ZohoActionResult> {
   const result: ZohoActionResult = { ok: 0, errors: 0, messages: [] };
 
+  if (!isZohoInventorySyncEnabled()) {
+    result.messages.push(ZOHO_INVENTORY_SYNC_DISABLED_MESSAGE);
+    return result;
+  }
+
   if (!zohoConfigured()) {
     result.errors = variantIds.length;
     result.messages.push("Zoho Books is not configured");
@@ -306,6 +318,10 @@ export async function pushStockToZohoForSkus(
   opts?: { live?: boolean; reason?: string }
 ): Promise<ZohoActionResult> {
   const result: ZohoActionResult = { ok: 0, errors: 0, messages: [] };
+  if (!isZohoInventorySyncEnabled()) {
+    result.messages.push(ZOHO_INVENTORY_SYNC_DISABLED_MESSAGE);
+    return result;
+  }
   const live = opts?.live ?? false;
   const reason = opts?.reason ?? "Sarveda admin stock sync";
   const processedSkus: string[] = [];
@@ -380,6 +396,10 @@ export async function mirrorStockToZohoForSkus(
   meta?: Record<string, unknown>,
   opts?: { live?: boolean }
 ): Promise<void> {
+  if (!isZohoInventorySyncEnabled()) {
+    logger.debug("zoho_stock_mirror_skipped_disabled", { context, ...meta });
+    return;
+  }
   const unique = Array.from(new Set(skus.map((sku) => sku.trim()).filter(Boolean)));
   if (unique.length === 0) return;
 
@@ -413,6 +433,11 @@ export async function mirrorStockToZohoForSkus(
 export async function markZohoItemsInactiveForSkus(skus: string[]): Promise<ZohoActionResult> {
   const auditMap = await getZohoAuditMap();
   const result: ZohoActionResult = { ok: 0, errors: 0, messages: [] };
+
+  if (!isZohoInventorySyncEnabled()) {
+    result.messages.push(ZOHO_INVENTORY_SYNC_DISABLED_MESSAGE);
+    return result;
+  }
 
   if (!zohoConfigured()) {
     result.errors = skus.length;

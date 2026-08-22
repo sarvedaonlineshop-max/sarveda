@@ -1205,6 +1205,7 @@ export type InventoryListData = {
   items: InventoryRow[];
   pagination: { page: number; limit: number; total: number; totalPages: number };
   meta: {
+    zohoInventorySyncEnabled: boolean;
     lastZohoStockSyncAt: string | null;
     zohoSkuAuditAvailable: boolean;
     productCount: number;

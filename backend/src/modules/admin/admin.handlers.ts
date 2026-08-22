@@ -22,6 +22,7 @@ import {
 import { notifyOrderEmail } from "../notifications/email";
 import { onOrderEnteredProcessing } from "../shipping/orderLifecycle";
 import { getZohoStockSyncMeta } from "../zoho/zoho-stock-sync-cache";
+import { isZohoInventorySyncEnabled } from "../zoho/zoho-inventory-sync-flag";
 import { auditSarvedaVariant, computeZohoSyncSummary, listZohoOnlyItems } from "../zoho/zoho-sync-audit";
 import { mirrorStockToZohoForSkus } from "../zoho/zoho-items";
 import type { ZohoItemAuditRow } from "../zoho/zoho-sync-types";
@@ -1111,27 +1112,42 @@ export async function inventoryList(req: Request, res: Response, next: NextFunct
     const skip = loadAll ? 0 : (page - 1) * limit;
 
     const where = shopInventoryWhere;
+    const zohoInventorySyncEnabled = isZohoInventorySyncEnabled();
 
-    const [{ lastSyncAt, skuSet: zohoSkuSet, auditMap }, total, productCount, rows, syncSummary, zohoOnlyItems] =
-      await Promise.all([
-        getZohoStockSyncMeta(),
-        prisma.inventory.count({ where }),
-        prisma.product.count({
-          where: {
-            ...shopCatalogProductWhere,
-            variants: { some: { inventory: { isNot: null } } }
-          }
-        }),
-        prisma.inventory.findMany({
-          where,
-          orderBy: [{ onHand: "asc" }],
-          skip,
-          take: limit,
-          include: inventoryInclude
-        }),
-        computeZohoSyncSummary(),
-        listZohoOnlyItems()
-      ]);
+    const emptyZohoSummary = {
+      synced: 0,
+      countMismatch: 0,
+      zohoOnly: 0,
+      sarvedaOnly: 0,
+      outOfSync: 0
+    };
+
+    const zohoBundle = zohoInventorySyncEnabled
+      ? await Promise.all([getZohoStockSyncMeta(), computeZohoSyncSummary(), listZohoOnlyItems()])
+      : [
+          { lastSyncAt: null as Date | null, skuSet: null, auditMap: null },
+          emptyZohoSummary,
+          [] as Awaited<ReturnType<typeof listZohoOnlyItems>>
+        ] as const;
+
+    const [{ lastSyncAt, skuSet: zohoSkuSet, auditMap }, syncSummary, zohoOnlyItems] = zohoBundle;
+
+    const [total, productCount, rows] = await Promise.all([
+      prisma.inventory.count({ where }),
+      prisma.product.count({
+        where: {
+          ...shopCatalogProductWhere,
+          variants: { some: { inventory: { isNot: null } } }
+        }
+      }),
+      prisma.inventory.findMany({
+        where,
+        orderBy: [{ onHand: "asc" }],
+        skip,
+        take: limit,
+        include: inventoryInclude
+      })
+    ]);
 
     const variantIds = rows.map((row) => row.variantId);
     const since = new Date();
@@ -1190,8 +1206,9 @@ export async function inventoryList(req: Request, res: Response, next: NextFunct
         items,
         pagination: { page: loadAll ? 1 : page, limit, total, totalPages },
         meta: {
+          zohoInventorySyncEnabled,
           lastZohoStockSyncAt: lastSyncAt,
-          zohoSkuAuditAvailable: auditMap !== null || zohoSkuSet !== null,
+          zohoSkuAuditAvailable: zohoInventorySyncEnabled && (auditMap !== null || zohoSkuSet !== null),
           productCount,
           zohoSyncSummary: syncSummary,
           zohoOnlyItems

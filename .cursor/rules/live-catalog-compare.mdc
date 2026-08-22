@@ -11,9 +11,10 @@
 
 1. **Do not** use cached files under `data/compare/*.csv`, `woo_live_products.json`, `do_variants.csv`, etc. as source of truth unless they were **just generated in the same session** from live DB/API.
 2. **DO (sarveda.com):** SSH to DO → run `data/compare/dump_do_woo.py` (or equivalent read-only MySQL query) → write fresh CSV/JSON to `data/compare/` with timestamp if needed.
-3. **Lightsail (sarveda-demo.xyz):** Query live Postgres via Prisma scripts on the server, or public API `http://13.204.112.165/api/products` for storefront-visible catalog — not local dev DB.
-4. **Scope:** Product catalog only — exclude courses, events, course-checkout stubs, and event checkout from counts and compare unless user explicitly asks.
-5. **Team inventory sheet** (`latest_inventory.xlsx`) was used for SKU alignment; ongoing compare is **live demo vs live production**, not sheet vs DB.
+3. **Lightsail (sarveda-demo.xyz):** Query live Postgres via Prisma scripts **on the server** (`ubuntu@13.204.112.165`), or public API `https://sarveda-demo.xyz/api/products` for storefront-visible catalog.
+4. **NEVER use local Docker Postgres** (`localhost:5432`) for catalog counts, HSN export, inventory compare, or any staging/production decision. Local dev DB is stale and wrong (e.g. 145 vs 153 shop products).
+5. **Scope:** Product catalog only — exclude courses, events, course-checkout stubs, and event checkout from counts and compare unless user explicitly asks.
+6. **Team inventory sheet** (`latest_inventory.xlsx`) was used for SKU alignment; ongoing compare is **live demo vs live production**, not sheet vs DB.
 
 ## Credentials
 

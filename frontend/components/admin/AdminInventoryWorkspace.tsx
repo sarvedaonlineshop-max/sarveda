@@ -241,6 +241,7 @@ export function AdminInventoryWorkspace() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [lastZohoSync, setLastZohoSync] = useState<string | null>(null);
+  const [zohoInventorySyncEnabled, setZohoInventorySyncEnabled] = useState(false);
   const [zohoAuditAvailable, setZohoAuditAvailable] = useState(false);
   const [zohoSyncSummary, setZohoSyncSummary] = useState<ZohoSyncSummary>({
     synced: 0,
@@ -304,6 +305,7 @@ export function AdminInventoryWorkspace() {
       setSavedThresholds(th);
       setThresholdDrafts(thDraft);
       setLastZohoSync(data.meta.lastZohoStockSyncAt);
+      setZohoInventorySyncEnabled(data.meta.zohoInventorySyncEnabled === true);
       setZohoAuditAvailable(data.meta.zohoSkuAuditAvailable);
       setZohoSyncSummary(
         data.meta.zohoSyncSummary ?? {
@@ -315,7 +317,11 @@ export function AdminInventoryWorkspace() {
         }
       );
       setZohoOnlyItems(data.meta.zohoOnlyItems ?? []);
-      await loadHistory();
+      if (data.meta.zohoInventorySyncEnabled) {
+        await loadHistory();
+      } else {
+        setSyncHistory([]);
+      }
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Failed to load inventory");
       setAllRows([]);
@@ -327,6 +333,14 @@ export function AdminInventoryWorkspace() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!zohoInventorySyncEnabled && stockFilter === "out_of_sync") {
+      setStockFilter("all");
+    }
+  }, [zohoInventorySyncEnabled, stockFilter]);
+
+  const showZohoSync = zohoInventorySyncEnabled;
 
   const thresholdChanges = useMemo(() => {
     const changes: Array<{ variantId: string; lowStockThreshold: number }> = [];
@@ -601,7 +615,7 @@ export function AdminInventoryWorkspace() {
       }
       const result = await importAdminInventoryCsv(rows);
       pushToast(
-        `Imported ${result.updated} rows (${result.notFound} SKU${result.notFound === 1 ? "" : "s"} not found). Refresh Zoho audit to compare counts.`
+        `Imported ${result.updated} rows (${result.notFound} SKU${result.notFound === 1 ? "" : "s"} not found).`
       );
       await load();
     } catch (e) {
@@ -617,7 +631,7 @@ export function AdminInventoryWorkspace() {
     { id: "in_stock", label: "In stock" },
     { id: "low_stock", label: "Low stock" },
     { id: "out_of_stock", label: "Out of stock" },
-    { id: "out_of_sync", label: "Out of Sync with Zoho" }
+    ...(showZohoSync ? [{ id: "out_of_sync" as const, label: "Out of Sync with Zoho" }] : [])
   ];
 
   const STOCK_TAB_ICONS: Record<string, string> = {
@@ -732,29 +746,31 @@ export function AdminInventoryWorkspace() {
           <span className="text-base font-semibold text-stone-900 dark:text-stone-100">{g.productName}</span>
           <p className="mt-0.5 text-xs text-stone-500">
             {g.variantCount} variant{g.variantCount === 1 ? "" : "s"}
-            {g.zohoOutOfSync > 0 ? ` · ${g.zohoOutOfSync} out of sync` : ""}
+            {showZohoSync && g.zohoOutOfSync > 0 ? ` · ${g.zohoOutOfSync} out of sync` : ""}
           </p>
         </td>
-        <td className="px-4 py-3">
-          {g.zohoOutOfSync > 0 ? (
-            <span
-              style={{
-                background: "#fef3c7",
-                color: "#92400e",
-                borderRadius: "999px",
-                padding: "2px 8px",
-                fontSize: "11px",
-                fontWeight: 700
-              }}
-            >
-              Review SKUs
-            </span>
-          ) : g.zohoSynced > 0 ? (
-            <span className="text-xs text-emerald-700 dark:text-emerald-400">Synced</span>
-          ) : (
-            <span className="text-xs text-stone-400">—</span>
-          )}
-        </td>
+        {showZohoSync ? (
+          <td className="px-4 py-3">
+            {g.zohoOutOfSync > 0 ? (
+              <span
+                style={{
+                  background: "#fef3c7",
+                  color: "#92400e",
+                  borderRadius: "999px",
+                  padding: "2px 8px",
+                  fontSize: "11px",
+                  fontWeight: 700
+                }}
+              >
+                Review SKUs
+              </span>
+            ) : g.zohoSynced > 0 ? (
+              <span className="text-xs text-emerald-700 dark:text-emerald-400">Synced</span>
+            ) : (
+              <span className="text-xs text-stone-400">—</span>
+            )}
+          </td>
+        ) : null}
         <td className="px-4 py-3 text-right font-mono font-semibold tabular-nums">{g.totalAvailable}</td>
         <td className="px-4 py-3 text-xs text-stone-500">
           {g.rows.reduce((sum, row) => sum + row.marketplaceListings.length, 0)} listing
@@ -769,15 +785,17 @@ export function AdminInventoryWorkspace() {
             >
               Edit
             </Link>
-            <button
-              type="button"
-              disabled={zohoSyncing !== null}
-              onClick={() => void runProductAudit(g.productId, g.productName)}
-              className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold ${actionForest}`}
-            >
-              <IconRefresh className={`h-3 w-3 ${productSyncing ? "animate-spin" : ""}`} />
-              Audit
-            </button>
+            {showZohoSync ? (
+              <button
+                type="button"
+                disabled={zohoSyncing !== null}
+                onClick={() => void runProductAudit(g.productId, g.productName)}
+                className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold ${actionForest}`}
+              >
+                <IconRefresh className={`h-3 w-3 ${productSyncing ? "animate-spin" : ""}`} />
+                Audit
+              </button>
+            ) : null}
           </div>
         </td>
       </tr>
@@ -803,12 +821,14 @@ export function AdminInventoryWorkspace() {
             ) : null}
           </td>
           <td className="px-4 py-2.5 font-mono text-xs text-stone-500">{r.sku}</td>
-          <td className="px-4 py-2.5">
-            <ZohoBadge row={r} auditAvailable={zohoAuditAvailable} />
-          </td>
+          {showZohoSync ? (
+            <td className="px-4 py-2.5">
+              <ZohoBadge row={r} auditAvailable={zohoAuditAvailable} />
+            </td>
+          ) : null}
           <td className="px-4 py-2.5 text-right font-mono font-medium tabular-nums">
             {r.available}
-            {r.zohoStockOnHand !== null && effectiveZohoScenario(r) === 2 ? (
+            {showZohoSync && r.zohoStockOnHand !== null && effectiveZohoScenario(r) === 2 ? (
               <span className="block text-[10px] font-normal text-stone-400">Zoho: {r.zohoStockOnHand}</span>
             ) : null}
             {r.reserved > 0 ? (
@@ -838,7 +858,7 @@ export function AdminInventoryWorkspace() {
               >
                 Open marketplaces
               </Link>
-              {renderZohoRowActions(r)}
+              {showZohoSync ? renderZohoRowActions(r) : null}
               <button
                 type="button"
                 disabled={busy === r.variantId || !thresholdDirty}
@@ -939,8 +959,9 @@ export function AdminInventoryWorkspace() {
       >
         <h1 className="text-3xl font-bold text-[#faf5ec]">📦 Inventory</h1>
         <p className="mt-1 text-xs text-[#a8c4b0]">
-          Last Zoho audit: {formatRelativeTime(lastZohoSync)} · Sarveda admin is source of truth for website
-          products
+          {showZohoSync
+            ? `Last Zoho audit: ${formatRelativeTime(lastZohoSync)} · Sarveda admin is source of truth for website products`
+            : "Sarveda is the stock master — counts here drive the shop. Zoho is used for invoices and accounting only."}
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -963,7 +984,7 @@ export function AdminInventoryWorkspace() {
             disabled={importing}
             onClick={() => importInputRef.current?.click()}
             className="inline-flex items-center gap-2 rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-[#faf5ec]/50 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-            title="CSV columns: SKU, On Hand — overwritten on next Zoho sync"
+            title="CSV columns: SKU, On Hand"
           >
             <IconUpload className="h-4 w-4" />
             {importing ? "Importing…" : "Import CSV"}
@@ -990,25 +1011,30 @@ export function AdminInventoryWorkspace() {
           >
             {bulkSaving ? "Saving…" : thresholdChanges.length > 0 ? `Save ${thresholdChanges.length} thresholds` : "Save thresholds"}
           </button>
-          <button
-            type="button"
-            disabled
-            className="inline-flex cursor-not-allowed items-center gap-2 rounded-md border border-[#1e3a2f]/30 bg-white px-4 py-2 text-sm font-semibold text-[#1e3a2f] opacity-50 shadow-sm dark:border-[#2d5240] dark:bg-stone-800 dark:text-[#8fd3b6]"
-            title="Temporarily disabled — Zoho audit refresh is turned off for now"
-          >
-            🔒 Refresh Zoho audit
-          </button>
-          <button
-            type="button"
-            disabled
-            className="inline-flex cursor-not-allowed items-center gap-2 rounded-md bg-[#1e3a2f] px-4 py-2 text-sm font-semibold text-[#fffbf5] opacity-50 shadow-sm"
-            title="Temporarily disabled — bulk Zoho sync is turned off for now"
-          >
-            🔒 Sync all from Zoho
-          </button>
+          {showZohoSync ? (
+            <>
+              <button
+                type="button"
+                disabled={zohoSyncing === "audit"}
+                onClick={() => void runZohoAudit()}
+                className="inline-flex items-center gap-2 rounded-md border border-[#1e3a2f]/30 bg-white px-4 py-2 text-sm font-semibold text-[#1e3a2f] shadow-sm hover:bg-[#faf5ec]/60 disabled:opacity-50 dark:border-[#2d5240] dark:bg-stone-800 dark:text-[#8fd3b6]"
+              >
+                <IconRefresh className={`h-4 w-4 ${zohoSyncing === "audit" ? "animate-spin" : ""}`} />
+                Refresh Zoho audit
+              </button>
+              <button
+                type="button"
+                disabled={zohoSyncing === "pull_all"}
+                onClick={() => void runPullAllFromZoho()}
+                className="inline-flex items-center gap-2 rounded-md bg-[#1e3a2f] px-4 py-2 text-sm font-semibold text-[#fffbf5] shadow-sm hover:bg-[#2d5240] disabled:opacity-50"
+              >
+                Sync all from Zoho
+              </button>
+            </>
+          ) : null}
       </div>
 
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-stone-200 bg-stone-200 sm:grid-cols-3 lg:grid-cols-6 dark:border-stone-700 dark:bg-stone-700">
+      <div className={`grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-stone-200 bg-stone-200 sm:grid-cols-3 ${showZohoSync ? "lg:grid-cols-6" : "lg:grid-cols-5"} dark:border-stone-700 dark:bg-stone-700`}>
         <div className="bg-white dark:bg-stone-900">
           <MetricCard label="Products" value={productCount} />
         </div>
@@ -1024,23 +1050,26 @@ export function AdminInventoryWorkspace() {
         <div className="bg-white dark:bg-stone-900">
           <MetricCard label="Out of stock" value={stats.outOfStock} tone="red" />
         </div>
-        <div className="bg-white dark:bg-stone-900">
-          <MetricCard
-            label="Out of Sync with Zoho"
-            value={zohoAuditAvailable ? outOfSyncTotal : "—"}
-            tone="amber"
-            onClick={
-              zohoAuditAvailable && outOfSyncTotal > 0
-                ? () => {
-                    setStockFilter("out_of_sync");
-                    setZohoSubFilter("count_mismatch");
-                  }
-                : undefined
-            }
-          />
-        </div>
+        {showZohoSync ? (
+          <div className="bg-white dark:bg-stone-900">
+            <MetricCard
+              label="Out of Sync with Zoho"
+              value={zohoAuditAvailable ? outOfSyncTotal : "—"}
+              tone="amber"
+              onClick={
+                zohoAuditAvailable && outOfSyncTotal > 0
+                  ? () => {
+                      setStockFilter("out_of_sync");
+                      setZohoSubFilter("count_mismatch");
+                    }
+                  : undefined
+              }
+            />
+          </div>
+        ) : null}
       </div>
 
+      {showZohoSync ? (
       <div className="rounded-lg border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-stone-900">
         <button
           type="button"
@@ -1089,6 +1118,7 @@ export function AdminInventoryWorkspace() {
           </div>
         ) : null}
       </div>
+      ) : null}
 
       <div
         className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900"
@@ -1147,7 +1177,7 @@ export function AdminInventoryWorkspace() {
             </button>
           ))}
         </div>
-        {stockFilter === "out_of_sync" ? (
+        {showZohoSync && stockFilter === "out_of_sync" ? (
           <div className="mt-3 space-y-3 border-t border-stone-100 pt-3 dark:border-stone-800">
             <div className="flex flex-wrap gap-1">
               {zohoSubTabs.map((tab) => (
@@ -1208,7 +1238,7 @@ export function AdminInventoryWorkspace() {
         ) : null}
       </div>
 
-      {staleBackend ? (
+      {showZohoSync && staleBackend ? (
         <div
           className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100"
           role="status"
@@ -1253,7 +1283,7 @@ export function AdminInventoryWorkspace() {
             />
           ))}
         </div>
-      ) : stockFilter === "out_of_sync" && zohoSubFilter === "zoho_only" ? (
+      ) : showZohoSync && stockFilter === "out_of_sync" && zohoSubFilter === "zoho_only" ? (
         renderZohoOnlyTable()
       ) : productGroups.length === 0 ? (
         <div className="rounded-lg border border-dashed border-stone-300 px-8 py-16 text-center text-sm text-stone-500">
@@ -1271,7 +1301,7 @@ export function AdminInventoryWorkspace() {
                   <th className={`${thClass} w-10`} aria-label="Expand" />
                   <th className={thClass}>Product / variant</th>
                   <th className={thClass}>SKU</th>
-                  <th className={thClass}>Zoho</th>
+                  {showZohoSync ? <th className={thClass}>Zoho</th> : null}
                   <th className={`${thClass} text-right`}>Available</th>
                   <th className={thClass}>Marketplaces</th>
                   <th className={`${thClass} text-right`}>Low-stock at</th>

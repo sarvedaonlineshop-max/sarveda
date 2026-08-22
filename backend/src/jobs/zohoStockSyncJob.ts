@@ -3,6 +3,7 @@ import { Queue, Worker } from "bullmq";
 import { logger } from "../config/logger";
 import { getRedisConnection } from "../config/redisConnection";
 import { syncStockFromZoho } from "../modules/zoho/zoho-inventory";
+import { isZohoInventorySyncEnabled } from "../modules/zoho/zoho-inventory-sync-flag";
 
 const QUEUE_NAME = "zoho_stock_sync";
 /** 2:00 AM IST daily */
@@ -21,6 +22,10 @@ function getQueue(): Queue | null {
 }
 
 export async function startZohoStockSyncWorker(): Promise<void> {
+  if (!isZohoInventorySyncEnabled()) {
+    logger.info("zoho_stock_sync_worker_skipped_disabled");
+    return;
+  }
   const connection = getRedisConnection();
   if (!connection) {
     logger.warn("zoho_stock_sync_worker_skipped_no_redis");

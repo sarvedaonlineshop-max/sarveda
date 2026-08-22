@@ -21,6 +21,10 @@ import {
 } from "./zoho-items";
 import { computeZohoSyncSummary, listZohoOnlyItems } from "./zoho-sync-audit";
 import { getZohoStockSyncHistory } from "./zoho-stock-sync-history";
+import {
+  isZohoInventorySyncEnabled,
+  ZOHO_INVENTORY_SYNC_DISABLED_MESSAGE
+} from "./zoho-inventory-sync-flag";
 
 export { createZohoInvoiceForOrder } from "./zoho-invoices";
 export { syncStockFromZoho, refreshZohoAuditCache } from "./zoho-inventory";
@@ -31,15 +35,30 @@ export const zohoRouter = Router();
 zohoRouter.get("/status", async (_req, res) => {
   try {
     await getZohoAccessToken();
-    res.json({ success: true, message: "Zoho Books connected ✅" });
+    res.json({
+      success: true,
+      message: "Zoho Books connected ✅",
+      data: { inventorySyncEnabled: isZohoInventorySyncEnabled() }
+    });
   } catch (err) {
     res.json({ success: false, message: "Zoho Books connection failed", error: String(err) });
   }
 });
 
+function inventorySyncDisabled(res: import("express").Response): boolean {
+  if (isZohoInventorySyncEnabled()) return false;
+  res.status(200).json({
+    success: false,
+    code: "ZOHO_INVENTORY_SYNC_DISABLED",
+    error: ZOHO_INVENTORY_SYNC_DISABLED_MESSAGE
+  });
+  return true;
+}
+
 /** Refresh Zoho SKU + stock audit cache (does not change Sarveda inventory). */
 zohoRouter.post("/sync/audit", requireAdmin, async (_req, res, next) => {
   try {
+    if (inventorySyncDisabled(res)) return;
     const data = await refreshZohoAuditCache();
     const summary = await computeZohoSyncSummary();
     res.json({ success: true, data: { ...data, summary } });
@@ -50,6 +69,7 @@ zohoRouter.post("/sync/audit", requireAdmin, async (_req, res, next) => {
 
 zohoRouter.get("/sync/summary", requireAdmin, async (_req, res, next) => {
   try {
+    if (inventorySyncDisabled(res)) return;
     const [summary, zohoOnlyItems] = await Promise.all([
       computeZohoSyncSummary(),
       listZohoOnlyItems()
@@ -62,6 +82,7 @@ zohoRouter.get("/sync/summary", requireAdmin, async (_req, res, next) => {
 
 zohoRouter.post("/sync/stock", requireAdmin, async (req, res, next) => {
   try {
+    if (inventorySyncDisabled(res)) return;
     const productId =
       typeof req.body?.productId === "string" ? req.body.productId.trim() : undefined;
     const unmatchedOnly = req.body?.unmatchedOnly === true;
@@ -102,6 +123,7 @@ function readStringArray(body: unknown, key: string): string[] {
 
 zohoRouter.post("/sync/pull-stock", requireAdmin, async (req, res, next) => {
   try {
+    if (inventorySyncDisabled(res)) return;
     const skus = readStringArray(req.body, "skus");
     if (skus.length === 0) {
       res.status(400).json({ success: false, error: "Provide skus array", code: "VALIDATION" });
@@ -116,6 +138,7 @@ zohoRouter.post("/sync/pull-stock", requireAdmin, async (req, res, next) => {
 
 zohoRouter.post("/sync/push-stock", requireAdmin, async (req, res, next) => {
   try {
+    if (inventorySyncDisabled(res)) return;
     const skus = readStringArray(req.body, "skus");
     if (skus.length === 0) {
       res.status(400).json({ success: false, error: "Provide skus array", code: "VALIDATION" });
@@ -130,6 +153,7 @@ zohoRouter.post("/sync/push-stock", requireAdmin, async (req, res, next) => {
 
 zohoRouter.post("/sync/push-items", requireAdmin, async (req, res, next) => {
   try {
+    if (inventorySyncDisabled(res)) return;
     const variantIds = readStringArray(req.body, "variantIds");
     if (variantIds.length === 0) {
       res.status(400).json({
@@ -148,6 +172,7 @@ zohoRouter.post("/sync/push-items", requireAdmin, async (req, res, next) => {
 
 zohoRouter.post("/sync/ignore-zoho", requireAdmin, async (req, res, next) => {
   try {
+    if (inventorySyncDisabled(res)) return;
     const skus = readStringArray(req.body, "skus");
     if (skus.length === 0) {
       res.status(400).json({ success: false, error: "Provide skus array", code: "VALIDATION" });
@@ -162,6 +187,7 @@ zohoRouter.post("/sync/ignore-zoho", requireAdmin, async (req, res, next) => {
 
 zohoRouter.get("/test/stock-sync", async (_req, res, next) => {
   try {
+    if (inventorySyncDisabled(res)) return;
     const result = await refreshZohoAuditCache();
     res.json({ success: true, ...result });
   } catch (err) {

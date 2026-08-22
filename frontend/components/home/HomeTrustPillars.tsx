@@ -2,8 +2,8 @@ import Image from "next/image";
 
 /**
  * Homepage section 2 — “Thoughtfully Curated. Globally Trusted.”
- * Mobile: text + pillars first, image below.
- * Desktop: 50/50 text and image; image height matches left column.
+ * Mobile: text + pillars first, full-width image below (same page-shell as Instruments).
+ * Desktop: 50/50 text and image; image fills the right column edge-to-edge.
  */
 
 const PILLARS = [
@@ -35,8 +35,8 @@ export function HomeTrustPillars() {
       className="overflow-hidden border-b border-brand-cream-dark/50 bg-[#f9f6f0]"
       aria-labelledby="home-curated-heading"
     >
-      <div className="page-shell grid grid-cols-1 items-start gap-6 pb-8 pt-3 sm:pb-10 sm:pt-4 md:pb-12 md:pt-6 lg:grid-cols-2 lg:items-stretch lg:gap-8 lg:pb-14 lg:pt-8 xl:gap-10">
-        <div className="min-w-0 lg:flex lg:flex-col lg:justify-center lg:py-2 lg:pr-4 xl:pr-6">
+      <div className="page-shell flex flex-col gap-6 pb-8 pt-3 sm:pb-10 sm:pt-4 md:pb-12 md:pt-6 lg:grid lg:grid-cols-2 lg:items-stretch lg:gap-8 lg:pb-14 lg:pt-8 xl:gap-10">
+        <div className="min-w-0 w-full lg:flex lg:flex-col lg:justify-center lg:py-2 lg:pr-4 xl:pr-6">
           <h2
             id="home-curated-heading"
             className="font-serif text-[1.65rem] font-semibold leading-tight tracking-tight text-brand-ink sm:text-3xl md:text-[2rem] lg:text-[2.35rem]"
@@ -79,13 +79,13 @@ export function HomeTrustPillars() {
           </ul>
         </div>
 
-        <div className="relative min-w-0 lg:self-stretch">
-          <div className="relative aspect-[16/10] overflow-hidden rounded-2xl sm:aspect-[2/1] lg:mr-[4.25rem] lg:aspect-auto lg:h-full lg:min-h-[320px] lg:rounded-[1.75rem] lg:rounded-r-2xl xl:mr-[5rem] 2xl:mr-[5.5rem]">
+        <div className="relative w-full min-w-0 shrink-0 lg:self-stretch">
+          <div className="relative aspect-[16/10] w-full max-w-none overflow-hidden rounded-2xl sm:aspect-[2/1] lg:aspect-auto lg:h-full lg:min-h-[320px] lg:rounded-[1.75rem]">
             <Image
               src="/images/home/curated-trusted-studio.jpg"
               alt="Practitioners meditating together in a bright yoga studio"
               fill
-              sizes="(max-width: 1024px) 92vw, 55vw"
+              sizes="(max-width: 1024px) 92vw, 50vw"
               className="object-cover object-center"
             />
           </div>

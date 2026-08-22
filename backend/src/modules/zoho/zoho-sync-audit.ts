@@ -10,6 +10,7 @@ import {
   type ZohoItemAuditRow,
   type ZohoSyncScenario
 } from "./zoho-sync-types";
+import { isZohoInventorySyncEnabled } from "./zoho-inventory-sync-flag";
 
 interface ZohoItemResponse {
   item_id: string;
@@ -52,6 +53,10 @@ export async function refreshZohoAuditCache(): Promise<{
   zohoSkuCount: number;
   sarvedaSkuCount: number;
 }> {
+  if (!isZohoInventorySyncEnabled()) {
+    logger.info("refresh_zoho_audit_skipped_disabled");
+    return { zohoSkuCount: 0, sarvedaSkuCount: 0 };
+  }
   logger.info("Refreshing Zoho audit cache");
   const items = await fetchAllActiveZohoItems();
   await recordZohoAuditCache(items);

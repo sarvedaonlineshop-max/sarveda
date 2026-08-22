@@ -5,6 +5,7 @@ import { refreshZohoAuditCache } from "./zoho-sync-audit";
 import { getZohoAuditMap } from "./zoho-stock-sync-cache";
 import { appendZohoStockSyncHistory } from "./zoho-stock-sync-history";
 import type { ZohoActionResult, ZohoItemAuditRow, ZohoStockSyncResult } from "./zoho-sync-types";
+import { isZohoInventorySyncEnabled, ZOHO_INVENTORY_SYNC_DISABLED_MESSAGE } from "./zoho-inventory-sync-flag";
 
 export type { ZohoStockSyncResult };
 
@@ -49,6 +50,10 @@ async function applyZohoRowsToSarveda(
 }
 
 export async function syncStockFromZoho(): Promise<ZohoStockSyncResult> {
+  if (!isZohoInventorySyncEnabled()) {
+    logger.info("sync_stock_from_zoho_skipped_disabled");
+    return { synced: 0, errors: 0, skipped: 0 };
+  }
   logger.info("sync_stock_from_zoho_started");
   const { zohoSkuCount } = await refreshZohoAuditCache();
   const auditMap = await getZohoAuditMap();
@@ -107,8 +112,12 @@ export async function syncUnmatchedSkusFromZoho(): Promise<ZohoStockSyncResult> 
 }
 
 export async function pullStockFromZohoForSkus(skus: string[]): Promise<ZohoActionResult> {
-  const auditMap = await getZohoAuditMap();
   const result: ZohoActionResult = { ok: 0, errors: 0, messages: [] };
+  if (!isZohoInventorySyncEnabled()) {
+    result.messages.push(ZOHO_INVENTORY_SYNC_DISABLED_MESSAGE);
+    return result;
+  }
+  const auditMap = await getZohoAuditMap();
 
   if (!auditMap) {
     result.errors = skus.length;
