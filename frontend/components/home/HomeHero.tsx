@@ -14,10 +14,10 @@ export function HomeHero() {
       <div
         className={[
           "relative w-full",
-          /* Mobile: shorter frame so bowls stay in view */
-          "aspect-[4/5] sm:aspect-[5/6]",
-          /* Desktop: natural photo ratio */
-          "md:aspect-[2400/1049]"
+          /* Mobile: slightly taller crop; subject sits right, copy on left water */
+          "aspect-[4/5] sm:aspect-[3/4]",
+          /* Desktop: natural 16:9 banner */
+          "md:aspect-[16/9] lg:aspect-[1024/576]"
         ].join(" ")}
       >
         <Image
@@ -28,9 +28,8 @@ export function HomeHero() {
           sizes="100vw"
           className={[
             "object-cover",
-            /* Mobile: less zoom so foreground bowls are visible */
-            "scale-100 object-[68%_28%] sm:object-[70%_24%]",
-            "md:scale-100 md:object-center"
+            "object-[42%_42%] sm:object-[40%_40%]",
+            "md:object-[38%_center] lg:object-left"
           ].join(" ")}
           aria-hidden
         />
