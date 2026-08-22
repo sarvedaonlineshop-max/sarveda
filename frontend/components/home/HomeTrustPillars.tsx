@@ -35,8 +35,8 @@ export function HomeTrustPillars() {
       className="overflow-hidden border-b border-brand-cream-dark/50 bg-[#f9f6f0]"
       aria-labelledby="home-curated-heading"
     >
-      <div className="grid grid-cols-1 items-start gap-6 px-[4%] pb-8 pt-3 sm:pb-10 sm:pt-4 md:pb-12 md:pt-6 lg:grid-cols-[minmax(0,44%)_1fr] lg:items-stretch lg:gap-8 lg:pb-14 lg:pt-8 xl:grid-cols-[minmax(0,520px)_1fr] xl:gap-10">
-        <div className="min-w-0 lg:flex lg:flex-col lg:justify-center lg:py-2 lg:pr-6 xl:pr-10">
+      <div className="grid grid-cols-1 items-start gap-6 px-[4%] pb-8 pt-3 sm:pb-10 sm:pt-4 md:pb-12 md:pt-6 lg:grid-cols-2 lg:items-stretch lg:gap-8 lg:pb-14 lg:pt-8 xl:gap-10">
+        <div className="min-w-0 lg:flex lg:flex-col lg:justify-center lg:py-2 lg:pr-4 xl:pr-6">
           <h2
             id="home-curated-heading"
             className="font-serif text-[1.65rem] font-semibold leading-tight tracking-tight text-brand-ink sm:text-3xl md:text-[2rem] lg:text-[2.35rem]"
