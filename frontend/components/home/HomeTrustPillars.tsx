@@ -3,7 +3,7 @@ import Image from "next/image";
 /**
  * Homepage section 2 — “Thoughtfully Curated. Globally Trusted.”
  * Mobile: text + pillars first, image below.
- * Desktop: left copy; image stretches to content height and bleeds right (before subscribe rail).
+ * Desktop: 50/50 text and image; image height matches left column.
  */
 
 const PILLARS = [
