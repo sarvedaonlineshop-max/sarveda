@@ -14,10 +14,10 @@ export function HomeHero() {
       <div
         className={[
           "relative w-full",
-          /* Mobile: slightly taller crop; subject sits right, copy on left water */
-          "aspect-[4/5] sm:aspect-[3/4]",
-          /* Desktop: natural 16:9 banner */
-          "md:aspect-[16/9] lg:aspect-[1024/576]"
+          /* Mobile: shorter crop — open water left, practitioner right */
+          "aspect-[3/2] sm:aspect-[16/10]",
+          /* Desktop: natural ultra-wide banner */
+          "md:aspect-[1024/447]"
         ].join(" ")}
       >
         <Image
@@ -26,11 +26,7 @@ export function HomeHero() {
           fill
           priority
           sizes="100vw"
-          className={[
-            "object-cover",
-            "object-[42%_42%] sm:object-[40%_40%]",
-            "md:object-[38%_center] lg:object-left"
-          ].join(" ")}
+          className="object-cover object-left"
           aria-hidden
         />
 
@@ -57,7 +53,7 @@ export function HomeHero() {
           <div
             className={[
               "px-4 sm:px-8 md:px-0",
-              "absolute left-0 right-0 top-[32%] w-full max-w-[22rem] sm:top-[30%] sm:max-w-[26rem]",
+              "absolute left-0 right-0 top-[18%] w-full max-w-[20rem] sm:top-[20%] sm:max-w-[24rem]",
               "md:static md:top-auto md:max-w-[min(36rem,46vw)] lg:max-w-[min(44rem,42vw)]"
             ].join(" ")}
           >
