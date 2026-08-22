@@ -14,8 +14,7 @@ export function HomeHero() {
       <div
         className={[
           "relative w-full overflow-hidden",
-          /* Mobile: portrait frame; image width overflows to show right crop */
-          "aspect-[5/6] sm:aspect-[4/5]",
+          "aspect-[4/5] sm:aspect-[5/6]",
           "md:aspect-[1024/447]"
         ].join(" ")}
       >
@@ -25,13 +24,7 @@ export function HomeHero() {
           fill
           priority
           sizes="100vw"
-          className={[
-            "object-cover object-right",
-            /* Show right ~40% of ultra-wide banner at full image height (bowls included) */
-            "!left-auto !right-0 !top-0 !h-full !w-[275%] !max-w-none",
-            "sm:!w-[250%]",
-            "md:!inset-0 md:!left-0 md:!w-full md:!max-w-full md:object-left md:object-center"
-          ].join(" ")}
+          className="object-cover object-[86%_48%] sm:object-[84%_46%] md:object-left md:object-center"
           aria-hidden
         />
 
