@@ -40,10 +40,12 @@ export default function AdminAccountingLayout({ children }: { children: React.Re
   }
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-5 p-1 font-sans">
+    <div className="mx-auto max-w-[1600px] space-y-4 p-1 font-sans">
       <AccountingUatBanner />
-      <AdminAccountingNav />
-      {children}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
+        <AdminAccountingNav />
+        <div className="min-w-0 flex-1 space-y-5">{children}</div>
+      </div>
     </div>
   );
 }

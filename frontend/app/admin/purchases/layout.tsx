@@ -12,7 +12,6 @@ export default function AdminPurchasesLayout({ children }: { children: React.Rea
 
   useEffect(() => {
     setChecked(true);
-    if (!enabled) return;
   }, [enabled]);
 
   if (!checked) return null;
@@ -34,13 +33,15 @@ export default function AdminPurchasesLayout({ children }: { children: React.Rea
   }
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-5 p-1 font-sans">
+    <div className="mx-auto max-w-[1600px] space-y-4 p-1 font-sans">
       <AdminPurchasesHeader
         title="Purchases"
-        subtitle="Sarveda operational master — vendors, POs, bills & expenses. Zoho gets accounting docs only."
+        subtitle="Operational purchasing — vendors, POs, bills & expenses."
       />
-      <AdminPurchasesNav />
-      {children}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
+        <AdminPurchasesNav />
+        <div className="min-w-0 flex-1 space-y-5">{children}</div>
+      </div>
     </div>
   );
 }
