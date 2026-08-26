@@ -24,6 +24,7 @@ import {
   isAccountingGstReconciliationEnabled,
   isAccountingItcVerificationEnabled,
   isAccountingGstReportingEnabled,
+  isAccountingOpeningBalanceEnabled,
   isNativeAccountingEnabled
 } from "./accounting-flag";
 import { SHIPPING_GST_POLICY } from "./gst.constants";
@@ -184,6 +185,14 @@ const refundDiscoverSchema = z.object({
 });
 
 export async function accountingStatus(_req: Request, res: Response) {
+  const { isAccountingProductionPostingAllowed, isProductionLikeEnvironment } = await import(
+    "./production-guard"
+  );
+  const productionPostingAllowed = isAccountingProductionPostingAllowed();
+  const productionLike = isProductionLikeEnvironment();
+  const uatMode =
+    isNativeAccountingEnabled() && (!productionPostingAllowed || productionLike);
+
   res.json({
     success: true,
     data: {
@@ -207,7 +216,13 @@ export async function accountingStatus(_req: Request, res: Response) {
       gstReportingEnabled: isAccountingGstReportingEnabled(),
       shippingGstPolicy: SHIPPING_GST_POLICY,
       reportsEnabled: isAccountingReportsEnabled(),
+      openingBalanceEnabled: isAccountingOpeningBalanceEnabled(),
       cutover: getCutoverConfigSummary(),
+      productionLikeEnvironment: productionLike,
+      productionPostingAllowed,
+      uatMode,
+      uatBanner:
+        "ACCOUNTING UAT MODE — Training/Test Data Only — Production Accounting Starts 01-Sep-2026",
       mode: "shadow_order_paid_refund_settlement_vendor_bill_vendor_payment_expense_inventory_opening_capitalization_cogs_reversal_v1",
       discoveryWorkerActive: isNativeAccountingEnabled(),
       calcVersions: {
@@ -260,7 +275,8 @@ export async function accountingDashboard(_req: Request, res: Response) {
       failedPostingEvents: failedEvents,
       orderPaidPostedCount: orderPaidPosted,
       orderRefundedFullPostedCount: orderRefundedFullPosted,
-      banner: "Native Accounting — Shadow / Development (Zoho remains authoritative)"
+      banner:
+        "ACCOUNTING UAT MODE — Training/Test Data Only — Production Accounting Starts 01-Sep-2026"
     }
   });
 }

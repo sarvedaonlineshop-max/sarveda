@@ -6,6 +6,7 @@ import {
   AdminAccountingHeader,
   AdminAccountingNav
 } from "@/components/admin/accounting/AdminAccountingNav";
+import { AccountingUatBanner } from "@/components/admin/accounting/AccountingUatBanner";
 import { isAccountingEnabled } from "@/lib/accounting-api";
 
 export default function AdminAccountingLayout({ children }: { children: React.ReactNode }) {
@@ -40,6 +41,7 @@ export default function AdminAccountingLayout({ children }: { children: React.Re
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-5 p-1 font-sans">
+      <AccountingUatBanner />
       <AdminAccountingNav />
       {children}
     </div>

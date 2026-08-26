@@ -64,6 +64,13 @@ export type AccountingStatus = {
     cutoverDate: string | null;
     forwardOnly: boolean;
   };
+  productionLikeEnvironment?: boolean;
+  productionPostingAllowed?: boolean;
+  uatMode?: boolean;
+  uatBanner?: string;
+  openingBalanceEnabled?: boolean;
+  itcVerificationEnabled?: boolean;
+  gstReportingEnabled?: boolean;
   mode: string;
   discoveryWorkerActive: boolean;
   calcVersions?: {

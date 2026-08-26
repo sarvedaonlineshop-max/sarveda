@@ -58,6 +58,11 @@ function isProductionPostingOverrideEnabled(): boolean {
   return ["1", "true", "yes"].includes(v);
 }
 
+/** Public read for admin status / UAT banner — defaults false. */
+export function isAccountingProductionPostingAllowed(): boolean {
+  return isProductionPostingOverrideEnabled();
+}
+
 export type BulkDiscoveryGuardInput = {
   orderId?: string;
   orderNumber?: string;

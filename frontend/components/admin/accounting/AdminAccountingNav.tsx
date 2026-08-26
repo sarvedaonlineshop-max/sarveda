@@ -92,7 +92,7 @@ export function AdminAccountingHeader({
   return (
     <div className="space-y-1">
       <p className="text-xs font-medium uppercase tracking-wide text-amber-700">
-        Native Accounting — Shadow / Development (Zoho remains authoritative)
+        Native Accounting — UAT / Training (not official books until 01-Sep-2026)
       </p>
       <h1 className="text-2xl font-semibold text-[#1e3a2f]">{title}</h1>
       {subtitle ? <p className="text-sm text-neutral-600">{subtitle}</p> : null}

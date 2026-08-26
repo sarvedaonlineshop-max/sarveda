@@ -34,7 +34,7 @@ export default function AdminAccountingDashboardPage() {
     <div className="space-y-6">
       <AdminAccountingHeader
         title="Accounting Dashboard"
-        subtitle="Shadow ledger only — not the official books. Zoho Books remains the accounting source of truth."
+        subtitle="UAT / training ledger — not official company books. Production accounting starts 01-Sep-2026."
       />
 
       {error ? (
