@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AdminAccountingNav } from "@/components/admin/accounting/AdminAccountingNav";
 import { AccountingUatBanner } from "@/components/admin/accounting/AccountingUatBanner";
 import { AdminPurchasesHeader, AdminPurchasesNav } from "@/components/admin/purchases/AdminPurchasesNav";
 import { useAdminUser } from "@/components/admin/AdminUserContext";
@@ -34,14 +33,12 @@ export default function AdminPurchasesLayout({ children }: { children: React.Rea
     );
   }
 
+  // Accounting users: nav lives in main OPS sidebar — content only here.
   if (accountingOn && purchasesOn) {
     return (
       <div className="mx-auto max-w-[1600px] space-y-4 p-1 font-sans">
         <AccountingUatBanner />
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
-          <AdminAccountingNav />
-          <div className="min-w-0 flex-1 space-y-5">{children}</div>
-        </div>
+        <div className="min-w-0 space-y-5">{children}</div>
       </div>
     );
   }

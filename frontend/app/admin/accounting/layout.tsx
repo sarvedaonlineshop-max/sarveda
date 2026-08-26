@@ -2,10 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  AdminAccountingHeader,
-  AdminAccountingNav
-} from "@/components/admin/accounting/AdminAccountingNav";
+import { AdminAccountingHeader } from "@/components/admin/accounting/AdminAccountingNav";
 import { AccountingUatBanner } from "@/components/admin/accounting/AccountingUatBanner";
 import { useAdminUser } from "@/components/admin/AdminUserContext";
 import { isAccountingEnabled } from "@/lib/accounting-api";
@@ -59,10 +56,7 @@ export default function AdminAccountingLayout({ children }: { children: React.Re
   return (
     <div className="mx-auto max-w-[1600px] space-y-4 p-1 font-sans">
       <AccountingUatBanner />
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
-        <AdminAccountingNav />
-        <div className="min-w-0 flex-1 space-y-5">{children}</div>
-      </div>
+      <div className="min-w-0 space-y-5">{children}</div>
     </div>
   );
 }

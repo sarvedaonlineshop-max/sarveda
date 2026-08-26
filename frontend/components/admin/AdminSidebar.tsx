@@ -13,7 +13,6 @@ import {
   ClipboardList,
   GraduationCap,
   LayoutDashboard,
-  Landmark,
   MapPinHouse,
   PackageSearch,
   ScanSearch,
@@ -26,6 +25,7 @@ import {
 } from "lucide-react";
 import { logoutSession } from "@/lib/auth-client";
 import { isAccountingEmailAllowed } from "@/lib/accounting-access";
+import { AdminAccountingSidebarTree } from "@/components/admin/accounting/AdminAccountingNav";
 import { AdminChatsSidebarLink } from "@/components/admin/AdminChatsSidebarLink";
 import { AdminOrdersSidebarLink } from "@/components/admin/AdminOrdersSidebarLink";
 import { useAdminNavOptional } from "@/components/admin/AdminNavContext";
@@ -64,7 +64,6 @@ const icon = {
   pickup: <MapPinHouse {...iconProps} />,
   catalogGaps: <ScanSearch {...iconProps} />,
   purchases: <ShoppingCart {...iconProps} />,
-  accounting: <Landmark {...iconProps} />,
   activity: <Activity {...iconProps} />
 };
 
@@ -123,7 +122,7 @@ function NavLink({
       ? activePath === hrefPath
       : activePath === hrefPath || activePath.startsWith(`${hrefPath}/`);
 
-  // Books workspace: Purchases ops live under Accounting when Accounting is enabled.
+  // Books workspace highlight for flat Accounting link (when tree not used).
   if (hrefPath === "/admin/accounting" && item.match !== "exact") {
     isActive = isActive || activePath.startsWith("/admin/purchases");
   }
@@ -173,7 +172,6 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
     ...(!accountingEnabled && purchasesEnabled
       ? [{ href: "/admin/purchases", label: "Purchases", icon: icon.purchases }]
       : []),
-    ...(accountingEnabled ? [{ href: "/admin/accounting", label: "Accounting", icon: icon.accounting }] : []),
     ...opsNavBase
   ];
   const nav = useAdminNavOptional();
@@ -230,6 +228,9 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
       </NavGroup>
 
       <NavGroup label="Ops">
+        {accountingEnabled ? (
+          <AdminAccountingSidebarTree onNavigate={onNavigate} beginNavigation={beginNavigation} />
+        ) : null}
         {opsNav.map((item) => (
           <NavLink
             key={item.href}
