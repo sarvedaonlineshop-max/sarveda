@@ -16,7 +16,7 @@ type Props = {
 };
 
 const FILTER_ICON_BTN =
-  "inline-flex h-8 w-8 min-h-[32px] shrink-0 items-center justify-center rounded-full bg-[#3d9a6a] text-white transition-colors hover:bg-[#34875c]";
+  "inline-flex h-8 w-8 min-h-[32px] shrink-0 items-center justify-center rounded-full bg-brand-forest text-brand-cream transition-colors hover:bg-brand-forest/90";
 
 export function ShopFilterToggle({
   open,
@@ -29,7 +29,7 @@ export function ShopFilterToggle({
     <button
       type="button"
       onClick={() => onOpenChange(!open)}
-      className={`${FILTER_ICON_BTN} ${open ? "bg-[#34875c]" : ""}`}
+      className={`${FILTER_ICON_BTN} ${open ? "ring-2 ring-brand-gold/50" : ""}`}
       aria-expanded={open}
       aria-label={open ? "Close filters" : "Open filters"}
     >
@@ -92,12 +92,14 @@ export function ShopFilterPanel({
   if (!open) return null;
 
   return (
-    <div className={`relative mt-3 rounded-xl bg-[#019875]/30 px-3 py-4 md:px-5 ${className ?? ""}`}>
+    <div
+      className={`relative mt-3 rounded-xl border border-brand-cream-dark/80 bg-brand-cream/90 px-3 py-4 md:px-5 ${className ?? ""}`}
+    >
       {onClose ? (
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-2 top-2 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-brand-ink shadow-sm ring-1 ring-black/10 transition-colors hover:bg-brand-cream"
+          className="absolute right-2 top-2 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-brand-ivory text-brand-ink shadow-sm ring-1 ring-brand-cream-dark transition-colors hover:bg-white"
           aria-label="Close filters"
         >
           <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" aria-hidden>
@@ -119,8 +121,8 @@ export function ShopFilterPanel({
                 className="relative rounded-lg py-2 pl-9 pr-4 text-sm font-medium shadow-sm transition-colors md:text-base"
                 style={{
                   border: `1px solid ${chip.border}`,
-                  backgroundColor: active ? chip.dot : "#fff",
-                  color: active ? "#fff" : "#212529"
+                  backgroundColor: active ? chip.dot : "var(--brand-ivory, #fffdf7)",
+                  color: active ? "#fff" : "var(--brand-ink)"
                 }}
               >
                 <span
@@ -136,11 +138,11 @@ export function ShopFilterPanel({
       </ul>
 
       <div className="shop-price-range mt-8 md:mt-10">
-        <h3 className="mb-6 text-lg font-semibold text-[#212529]">Price Range</h3>
+        <h3 className="mb-6 font-serif text-lg font-semibold text-brand-ink">Price Range</h3>
         <div className="relative h-8">
-          <div className="absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-[#d7efe8]" />
+          <div className="absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-brand-cream-dark/70" />
           <div
-            className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-[#019875]"
+            className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-brand-forest"
             style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
           />
           <label htmlFor={minId} className="sr-only">
@@ -170,7 +172,7 @@ export function ShopFilterPanel({
             className="shop-price-thumb shop-price-thumb-max"
           />
         </div>
-        <div className="mt-2 flex justify-between text-sm text-brand-ink">
+        <div className="mt-2 flex justify-between text-sm text-brand-muted">
           <span>₹{localMin}</span>
           <span>₹{localMax}</span>
         </div>

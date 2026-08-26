@@ -225,14 +225,24 @@ function RefundCancelPanel({
   const terminal = ["CANCELLED", "REFUNDED", "DELIVERED"].includes(status);
   const canRefund =
     !terminal &&
-    paymentStatus === "CAPTURED" &&
+    (paymentStatus === "CAPTURED" || paymentStatus === "PARTIALLY_REFUNDED") &&
     ["PAID", "PROCESSING", "PACKED", "SHIPPED"].includes(status);
   const canCancel =
     !terminal &&
     !canRefund &&
     (status === "PENDING_PAYMENT" || paymentStatus === "PENDING" || paymentStatus === "FAILED");
 
+  const paymentStateLabel =
+    paymentStatus === "REFUNDED"
+      ? "REFUNDED"
+      : paymentStatus === "PARTIALLY_REFUNDED"
+        ? "PARTIALLY_REFUNDED"
+        : busy
+          ? "PROCESSING"
+          : paymentStatus;
+
   async function execute(action: "cancel" | "refund") {
+    if (busy) return;
     setBusy(true);
     setMsg(null);
     setConfirm(null);
@@ -246,18 +256,26 @@ function RefundCancelPanel({
       const data = (await res.json()) as {
         message?: string;
         error?: string;
+        code?: string;
         refundId?: string;
+        success?: boolean;
       };
-      if (!res.ok) throw new Error(data.error ?? "Failed");
-      const detail =
-        action === "refund" && data.refundId
-          ? `${data.message ?? "Refund initiated."} Refund ID: ${data.refundId}`
+      if (!res.ok) {
+        throw new Error(data.error ?? (data.code ? `${data.code}` : "Failed"));
+      }
+      if (action === "refund") {
+        // Gateway success returns refundId; COD manual path has success message without gateway id.
+        const detail = data.refundId
+          ? `${data.message ?? "Refund accepted by provider."} Refund ID: ${data.refundId}`
           : (data.message ?? "Done");
-      setMsg({ text: detail, ok: true });
+        setMsg({ text: detail, ok: true });
+      } else {
+        setMsg({ text: data.message ?? "Done", ok: true });
+      }
       onDone();
     } catch (err) {
       setMsg({
-        text: err instanceof Error ? err.message : "Failed",
+        text: err instanceof Error ? err.message : "FAILED",
         ok: false
       });
     } finally {
@@ -275,6 +293,9 @@ function RefundCancelPanel({
     <div className={shell}>
       <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">
         {canRefund ? "Refund" : "Cancel order"}
+      </p>
+      <p className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-stone-500 dark:text-stone-400">
+        Payment state: {paymentStateLabel}
       </p>
 
       <input

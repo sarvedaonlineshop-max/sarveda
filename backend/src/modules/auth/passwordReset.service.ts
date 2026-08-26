@@ -3,24 +3,30 @@ import { randomBytes } from "crypto";
 import { prisma } from "../../config/db";
 import { hashPassword } from "../../utils/hash";
 import { buildShopEmail, sendMail } from "../notifications/email";
+import { syncComplaintPassword } from "../complaints/whitelist-auth";
 
 import { getPrimaryFrontendBase } from "./redirect";
 
 const RESET_EXPIRY_MINUTES = 30;
 
+function httpError(status: number, message: string, code: string): Error {
+  const e = new Error(message) as Error & { statusCode: number; code: string };
+  e.statusCode = status;
+  e.code = code;
+  return e;
+}
+
 export async function requestPasswordReset(email: string): Promise<void> {
   const user = await prisma.user.findUnique({
     where: { email: email.trim().toLowerCase() },
-    select: { id: true, email: true, name: true }
+    select: { id: true, email: true, name: true, deletedAt: true }
   });
 
-  if (!user) {
-    throw Object.assign(
-      new Error(
-        "No account found with this email address. " +
-          "Please check and try again, or register a new account."
-      ),
-      { statusCode: 404, code: "EMAIL_NOT_FOUND" }
+  if (!user || user.deletedAt) {
+    throw httpError(
+      404,
+      "No account found for this email. Contact admin for access.",
+      "ACCOUNT_NOT_FOUND"
     );
   }
 
@@ -56,6 +62,60 @@ export async function requestPasswordReset(email: string): Promise<void> {
   await sendMail(user.email, "Reset your Sarveda password", html, text);
 }
 
+/**
+ * Verify a login OTP and issue a short-lived password-reset token
+ * (does not sign the user in).
+ */
+export async function verifyOtpForPasswordReset(
+  target: string,
+  code: string
+): Promise<{ resetToken: string }> {
+  const normalized = target.trim().toLowerCase();
+  const row = await prisma.otpCode.findFirst({
+    where: {
+      target: normalized,
+      code,
+      usedAt: null,
+      expiresAt: { gt: new Date() }
+    },
+    orderBy: { createdAt: "desc" }
+  });
+
+  if (!row) {
+    throw httpError(400, "Invalid or expired code", "INVALID_OTP");
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email: normalized },
+    select: { id: true, deletedAt: true }
+  });
+
+  if (!user || user.deletedAt) {
+    throw httpError(
+      404,
+      "No account found for this email. Contact admin for access.",
+      "ACCOUNT_NOT_FOUND"
+    );
+  }
+
+  await prisma.otpCode.update({
+    where: { id: row.id },
+    data: { usedAt: new Date() }
+  });
+
+  await prisma.passwordResetToken.deleteMany({
+    where: { userId: user.id }
+  });
+
+  const resetToken = randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + RESET_EXPIRY_MINUTES * 60 * 1000);
+  await prisma.passwordResetToken.create({
+    data: { userId: user.id, token: resetToken, expiresAt }
+  });
+
+  return { resetToken };
+}
+
 export async function resetPassword(token: string, newPassword: string): Promise<void> {
   if (!newPassword || newPassword.length < 8) {
     throw Object.assign(new Error("Password must be at least 8 characters"), {
@@ -71,14 +131,14 @@ export async function resetPassword(token: string, newPassword: string): Promise
 
   if (!resetToken || resetToken.expiresAt < new Date()) {
     throw Object.assign(
-      new Error("This reset link has expired or is invalid. Please request a new one."),
+      new Error("This reset session has expired or is invalid. Please request a new OTP."),
       { statusCode: 400, code: "TOKEN_INVALID" }
     );
   }
 
   if (resetToken.user.deletedAt) {
     throw Object.assign(
-      new Error("This reset link has expired or is invalid. Please request a new one."),
+      new Error("This reset session has expired or is invalid. Please request a new OTP."),
       { statusCode: 400, code: "TOKEN_INVALID" }
     );
   }
@@ -94,4 +154,6 @@ export async function resetPassword(token: string, newPassword: string): Promise
       where: { token }
     })
   ]);
+
+  await syncComplaintPassword(resetToken.user.email, hash);
 }

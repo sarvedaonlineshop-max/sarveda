@@ -166,6 +166,7 @@ function ServiceRequestRefundPanel({
   const allItemsFullyRefunded = items.every((item) => remainingForItem(item) <= 0);
 
   async function handleRefund() {
+    if (busy) return;
     setBusy(true);
     setMsg(null);
     try {
@@ -218,8 +219,9 @@ function ServiceRequestRefundPanel({
 
       {isCod ? (
         <div className="mt-3 rounded-md border border-amber-300/60 bg-amber-50 px-3 py-2 text-xs text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
-          <strong>COD — manual payout.</strong> No automatic transfer. Collect the customer&apos;s UPI ID or bank
-          details, pay them offline, and save those details below for future reference.
+          <strong>Manual refund required (COD).</strong> No automatic payout. Collect the customer&apos;s UPI ID or
+          bank details, pay them offline, and save those details below. Accounting stays fail-closed without gateway
+          evidence.
         </div>
       ) : canRefundOnline ? (
         <div className="mt-3 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-950 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-100">

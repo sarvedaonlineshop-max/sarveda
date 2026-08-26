@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { usePricingZone } from "@/hooks/usePricingZone";
 import {
@@ -13,7 +13,9 @@ import {
   type Zone
 } from "@/lib/currency";
 import { discountPercentOff, formatMinorFromPaise } from "@/lib/money";
+import { blockProductImageContextMenu, productImageClassName } from "@/lib/product-image-guard";
 import { productListBadges } from "@/lib/product-badges";
+import { saveShopScroll } from "@/lib/shop-scroll-restore";
 import type { ProductListItem } from "@/lib/types";
 
 type Props = {
@@ -22,6 +24,8 @@ type Props = {
   revealOnView?: boolean;
   revealDelayMs?: number;
 };
+
+const HOVER_INTERVAL_MS = 1200;
 
 function listItemAsVariantPrice(product: ProductListItem): VariantPriceFields | null {
   if (product.fromPriceInPaise == null) return null;
@@ -40,6 +44,12 @@ function formatListPrice(product: ProductListItem, zone: Zone): string | null {
   if (!fields) return null;
   const minor = unitSaleMinor(fields, zone);
   return formatMinorFromPaise(minor, zoneToCurrency(zone));
+}
+
+function cardImageUrls(product: ProductListItem): string[] {
+  const fromList = product.imageUrls?.filter(Boolean) ?? [];
+  if (fromList.length > 0) return fromList.slice(0, 4);
+  return product.primaryImageUrl ? [product.primaryImageUrl] : [];
 }
 
 export function ProductCard({
@@ -64,6 +74,10 @@ export function ProductCard({
   const currency = zoneToCurrency(zone);
   const revealRef = useRef<HTMLDivElement | null>(null);
   const [visible, setVisible] = useState(!revealOnView);
+  const images = useMemo(() => cardImageUrls(product), [product]);
+  const [hoverIndex, setHoverIndex] = useState(0);
+  const [hovering, setHovering] = useState(false);
+  const hoverTimerRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     if (!revealOnView) return;
@@ -82,6 +96,23 @@ export function ProductCard({
     return () => obs.disconnect();
   }, [revealOnView]);
 
+  useEffect(() => {
+    if (!hovering || images.length <= 1) {
+      window.clearInterval(hoverTimerRef.current);
+      return;
+    }
+    hoverTimerRef.current = window.setInterval(() => {
+      setHoverIndex((current) => (current + 1) % images.length);
+    }, HOVER_INTERVAL_MS);
+    return () => window.clearInterval(hoverTimerRef.current);
+  }, [hovering, images.length]);
+
+  useEffect(() => {
+    if (!hovering) setHoverIndex(0);
+  }, [hovering]);
+
+  const activeImage = images[hoverIndex] ?? images[0] ?? null;
+
   const card = (
     <article
       className={`group relative flex h-full flex-col overflow-hidden bg-brand-ivory transition-all duration-300 ${
@@ -89,15 +120,24 @@ export function ProductCard({
           ? "w-[72vw] max-w-[18rem] rounded-3xl border border-brand-cream-dark shadow-card hover:-translate-y-1 hover:scale-[1.01] hover:shadow-card-hover"
           : "rounded-xl border border-brand-cream-dark shadow-card hover:-translate-y-1 hover:scale-[1.01] hover:shadow-card-hover active:-translate-y-0.5 active:shadow-card-hover focus-within:-translate-y-1 focus-within:shadow-card-hover md:rounded-3xl"
       }`}
+      onMouseEnter={() => setHovering(true)}
+      onMouseLeave={() => setHovering(false)}
     >
-      <Link href={href} className="flex min-h-0 flex-1 flex-col focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-forest focus-visible:ring-offset-2">
-        <div className="relative aspect-square overflow-hidden bg-[#EDE4D3]">
-          {product.primaryImageUrl ? (
+      <Link
+        href={href}
+        onClick={() => saveShopScroll()}
+        className="flex min-h-0 flex-1 flex-col focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-forest focus-visible:ring-offset-2"
+      >
+        <div
+          className="relative aspect-square overflow-hidden bg-brand-cream-dark/40"
+          onContextMenu={blockProductImageContextMenu}
+        >
+          {activeImage ? (
             <Image
-              src={product.primaryImageUrl}
+              src={activeImage}
               alt={product.name}
               fill
-              className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05]"
+              className={`object-cover transition-transform duration-500 ease-out group-hover:scale-[1.05] ${productImageClassName}`}
               sizes={rail ? "72vw" : "(max-width:768px) 50vw,(max-width:1024px) 50vw,33vw"}
             />
           ) : (
@@ -130,7 +170,7 @@ export function ProductCard({
             </p>
           ) : null}
 
-          <h2 className="line-clamp-2 font-sans text-[0.9375rem] font-semibold leading-snug text-[#108967] transition-colors group-hover:text-[#0d6f54] md:text-[1rem]">
+          <h2 className="line-clamp-2 font-sans text-[0.9375rem] font-semibold leading-snug text-brand-forest transition-colors group-hover:text-brand-forest/85 md:text-[1rem]">
             {product.name}
           </h2>
 
@@ -147,7 +187,7 @@ export function ProductCard({
             ) : null}
           </div>
 
-          <span className="mt-1 inline-flex w-fit items-center rounded-full bg-[#3d9a6a] px-3 py-1 text-[11px] font-semibold text-white transition-colors group-hover:bg-[#34875c]">
+          <span className="mt-1 inline-flex w-fit items-center rounded-full bg-brand-forest px-3 py-1 text-[11px] font-semibold text-brand-cream transition-colors group-hover:bg-brand-forest/90">
             View product
           </span>
         </div>

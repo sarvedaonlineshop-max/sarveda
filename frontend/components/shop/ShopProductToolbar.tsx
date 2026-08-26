@@ -141,7 +141,7 @@ export function ShopProductToolbar({
                     aria-label="Close filters"
                     onClick={() => setFilterOpen(false)}
                   />
-                  <div className="absolute inset-x-0 top-full z-50 mt-1.5 max-h-[min(70vh,32rem)] overflow-y-auto rounded-xl border border-stone-200 bg-white shadow-[0_18px_40px_rgba(0,0,0,0.2)] lg:hidden">
+                  <div className="absolute inset-x-0 top-full z-50 mt-1.5 max-h-[min(70vh,32rem)] overflow-y-auto rounded-xl border border-brand-cream-dark bg-brand-cream shadow-[0_18px_40px_rgba(0,0,0,0.12)] lg:hidden">
                     <ShopFilterPanel
                       tag={localTag}
                       minPrice={localMin}

@@ -304,6 +304,12 @@ body {
   content: "";
 }
 
+.product-image-protect {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+}
+
 /* ─── Autofill: warm white instead of browser blue ─────────────── */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,

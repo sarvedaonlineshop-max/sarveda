@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { resolveMediaUrl } from "@/lib/media-cdn";
+import { blockProductImageContextMenu, productImageClassName } from "@/lib/product-image-guard";
 import { parseVideoSource, type VideoSource } from "@/lib/video-embed";
 import { isGalleryVideoUrl } from "@/lib/gallery-media";
 
@@ -131,10 +132,11 @@ export function ProductGallery({
   return (
     <div className="flex flex-col gap-3">
       <div
-        className="relative aspect-square w-full overflow-hidden rounded-2xl border border-brand-cream-dark bg-[#EDE4D3] shadow-sm"
+        className="relative aspect-square w-full overflow-hidden rounded-2xl border border-brand-cream-dark bg-brand-cream-dark/40 shadow-sm"
         onMouseEnter={() => zoomEnabled && setZoomActive(true)}
         onMouseLeave={() => setZoomActive(false)}
         onMouseMove={onMainPointerMove}
+        onContextMenu={blockProductImageContextMenu}
       >
         {isVideo && current.source.type !== "file" ? (
           <iframe
@@ -167,7 +169,7 @@ export function ProductGallery({
               src={current.url}
               alt={current.altText || productName}
               fill
-              className="object-contain p-3"
+              className={`object-contain p-3 ${productImageClassName}`}
               sizes="(max-width: 1024px) 100vw, 48vw"
               priority
               unoptimized
@@ -225,11 +227,12 @@ export function ProductGallery({
               key={item.id}
               type="button"
               onClick={() => setActive(index)}
-              className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-[#EDE4D3] transition-colors ${
+              className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-brand-cream-dark/40 transition-colors ${
                 index === safeActive ? "border-brand-forest" : "border-brand-cream-dark hover:border-brand-gold"
               }`}
               aria-label={item.kind === "video" ? "Play video" : `View image ${index + 1}`}
               aria-current={index === safeActive}
+              onContextMenu={item.kind === "image" ? blockProductImageContextMenu : undefined}
             >
               {item.kind === "video" ? (
                 <>
@@ -238,7 +241,7 @@ export function ProductGallery({
                     <img
                       src={item.source.thumbnailUrl}
                       alt=""
-                      className="h-full w-full bg-black object-cover"
+                      className={`h-full w-full bg-black object-cover ${productImageClassName}`}
                     />
                   ) : item.source.type === "file" ? (
                     <video
@@ -259,7 +262,14 @@ export function ProductGallery({
                   </span>
                 </>
               ) : (
-                <Image src={item.url} alt="" fill className="object-cover" sizes="64px" unoptimized />
+                <Image
+                  src={item.url}
+                  alt=""
+                  fill
+                  className={`object-cover ${productImageClassName}`}
+                  sizes="64px"
+                  unoptimized
+                />
               )}
             </button>
           ))}

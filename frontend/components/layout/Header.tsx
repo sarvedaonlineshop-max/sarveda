@@ -31,7 +31,7 @@ function AnnouncementBar({ hidden }: { hidden: boolean }) {
       }`}
       aria-hidden={hidden}
     >
-      <div className="flex whitespace-nowrap" style={{ animation: "marquee 32s linear infinite" }}>
+      <div className="flex whitespace-nowrap" style={{ animation: "marquee 12s linear infinite" }}>
         {items.map((msg, i) => (
           <span key={i} className="mx-8 shrink-0">
             {msg}

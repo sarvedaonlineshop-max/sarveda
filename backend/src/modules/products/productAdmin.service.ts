@@ -82,6 +82,7 @@ export type ProductAdminSaveInput = {
   audioUrl?: string | null;
   videoUrl?: string | null;
   expressShippingEnabled?: boolean;
+  productCouponEnabled?: boolean;
   relatedArticleSlugs?: string[];
   seoTitle?: string | null;
   seoDescription?: string | null;
@@ -344,6 +345,7 @@ export async function saveProductAdmin(
         audioUrl: input.audioUrl === "" ? null : input.audioUrl,
         videoUrl: input.videoUrl === "" ? null : input.videoUrl,
         expressShippingEnabled: input.expressShippingEnabled ?? undefined,
+        productCouponEnabled: input.productCouponEnabled ?? undefined,
         relatedArticleSlugs: input.relatedArticleSlugs ?? undefined,
         variantAxisOrder: input.variantAxisOrder ?? undefined,
         seoTitle: input.seoTitle ?? undefined,
@@ -395,6 +397,7 @@ export async function saveProductAdmin(
       audioUrl: input.audioUrl || undefined,
       videoUrl: input.videoUrl || undefined,
       expressShippingEnabled: input.expressShippingEnabled ?? true,
+      productCouponEnabled: input.productCouponEnabled ?? false,
       relatedArticleSlugs: input.relatedArticleSlugs ?? [],
       variantAxisOrder: input.variantAxisOrder ?? [],
       seoTitle: input.seoTitle ?? undefined,

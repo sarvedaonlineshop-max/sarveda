@@ -1,7 +1,7 @@
 {
   "name": "Sarveda Tasks",
   "short_name": "Tasks",
-  "description": "Internal task and complaint management for Sarveda team",
+  "description": "Sound. Yoga. Conscious Living. — Sarveda internal task manager",
   "start_url": "/complaints",
   "scope": "/complaints",
   "display": "standalone",

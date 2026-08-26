@@ -7,6 +7,7 @@ import { notifyOrderEmail } from "../notifications/email";
 import { cancelUnpaidOrderWithRelease } from "../orders/orders.service";
 
 import { completeStripePaidOrder } from "./stripe.service";
+import { applyExternalProviderRefund } from "./refund-sync.service";
 
 function stripeClient(): Stripe | null {
   const key = process.env.STRIPE_SECRET_KEY?.trim();
@@ -69,6 +70,73 @@ export async function stripeWebhookHandler(req: Request, res: Response): Promise
       if (payRow) {
         const cancelled = await cancelUnpaidOrderWithRelease(payRow.orderId, "Stripe payment failed");
         if (cancelled) notifyOrderEmail(payRow.orderId, "payment_failed");
+      }
+    } else if (
+      event.type === "charge.refunded" ||
+      event.type.startsWith("refund.")
+    ) {
+      let stripeRefund: Stripe.Refund | null = null;
+      let paymentIntentId: string | undefined;
+
+      if (event.type === "charge.refunded") {
+        const charge = event.data.object as Stripe.Charge;
+        paymentIntentId =
+          typeof charge.payment_intent === "string" ? charge.payment_intent : charge.payment_intent?.id;
+        const refunds = charge.refunds?.data ?? [];
+        for (const r of refunds) {
+          const refundStatus =
+            r.status === "succeeded"
+              ? "processed"
+              : r.status === "failed"
+                ? "failed"
+                : r.status === "pending"
+                  ? "pending"
+                  : "created";
+          if (!paymentIntentId) continue;
+          const result = await applyExternalProviderRefund({
+            provider: "STRIPE",
+            providerRefundId: r.id,
+            providerPaymentId: paymentIntentId,
+            amountInPaise: r.amount,
+            reason: `Stripe webhook ${event.type}`,
+            refundStatus,
+            rawEvent: event.type
+          });
+          if (result.newlyRecorded && refundStatus === "processed" && result.orderId) {
+            notifyOrderEmail(result.orderId, "refund_initiated");
+          }
+        }
+      } else {
+        stripeRefund = event.data.object as Stripe.Refund;
+        paymentIntentId =
+          typeof stripeRefund.payment_intent === "string"
+            ? stripeRefund.payment_intent
+            : stripeRefund.payment_intent?.id;
+
+        if (stripeRefund && paymentIntentId) {
+          const refundStatus =
+            stripeRefund.status === "succeeded"
+              ? "processed"
+              : stripeRefund.status === "failed"
+                ? "failed"
+                : stripeRefund.status === "pending"
+                  ? "pending"
+                  : "created";
+
+          const result = await applyExternalProviderRefund({
+            provider: "STRIPE",
+            providerRefundId: stripeRefund.id,
+            providerPaymentId: paymentIntentId,
+            amountInPaise: stripeRefund.amount,
+            reason: `Stripe webhook ${event.type}`,
+            refundStatus,
+            rawEvent: event.type
+          });
+
+          if (result.newlyRecorded && refundStatus === "processed" && result.orderId) {
+            notifyOrderEmail(result.orderId, "refund_initiated");
+          }
+        }
       }
     }
   } catch (err) {

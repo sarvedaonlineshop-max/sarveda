@@ -941,10 +941,25 @@ router.post("/check-whitelist", async (req, res, next) => {
       res.status(400).json({ success: false, error: "Email required", code: "BAD_REQUEST" });
       return;
     }
+    const normalized = email.toLowerCase().trim();
     const found = await prisma.complaintWhitelist.findFirst({
-      where: { email: email.toLowerCase().trim(), isActive: true }
+      where: { email: normalized, isActive: true }
     });
-    res.status(found ? 200 : 403).json({ success: true, allowed: !!found });
+    if (found) {
+      res.status(200).json({ success: true, allowed: true });
+      return;
+    }
+    const inactive = await prisma.complaintWhitelist.findFirst({
+      where: { email: normalized, isActive: false }
+    });
+    res.status(403).json({
+      success: false,
+      allowed: false,
+      code: inactive ? "ACCOUNT_INACTIVE" : "ACCOUNT_NOT_FOUND",
+      error: inactive
+        ? "This account is deactivated. Contact admin to reactivate."
+        : "No account found for this email. Contact admin for access."
+    });
   } catch (err) {
     next(err);
   }
@@ -1517,6 +1532,63 @@ router.post("/:id/comment", verifyComplaintAuth, upload.array("files", 20), asyn
     }
 
     res.json({ success: true, event });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch("/:id/events/:eventId", verifyComplaintAuth, async (req, res, next) => {
+  try {
+    const actor = req.complaintUser!;
+    const { message } = req.body as { message?: string };
+    const trimmed = message?.trim();
+    if (!trimmed) {
+      res.status(400).json({ success: false, error: "Message cannot be empty", code: "BAD_REQUEST" });
+      return;
+    }
+    const event = await prisma.complaintEvent.findFirst({
+      where: {
+        id: req.params.eventId,
+        complaintId: req.params.id,
+        deletedAt: null,
+        type: "COMMENT"
+      },
+      include: { attachments: { take: 1 } }
+    });
+    if (!event) {
+      res.status(404).json({ success: false, error: "Message not found", code: "NOT_FOUND" });
+      return;
+    }
+    if (event.authorEmail.toLowerCase() !== actor.email.toLowerCase()) {
+      res.status(403).json({ success: false, error: "Not authorized", code: "FORBIDDEN" });
+      return;
+    }
+    if (event.message?.startsWith("@@SYSTEM@@")) {
+      res.status(403).json({ success: false, error: "Cannot edit system message", code: "FORBIDDEN" });
+      return;
+    }
+    if (event.attachments.length > 0) {
+      res.status(403).json({
+        success: false,
+        error: "Messages with attachments cannot be edited",
+        code: "FORBIDDEN"
+      });
+      return;
+    }
+    const ageMs = Date.now() - event.createdAt.getTime();
+    if (ageMs > 15 * 60 * 1000) {
+      res.status(403).json({
+        success: false,
+        error: "Messages can only be edited within 15 minutes",
+        code: "EDIT_WINDOW_EXPIRED"
+      });
+      return;
+    }
+    const updated = await prisma.complaintEvent.update({
+      where: { id: event.id },
+      data: { message: trimmed }
+    });
+    res.json({ success: true, event: updated });
   } catch (err) {
     next(err);
   }

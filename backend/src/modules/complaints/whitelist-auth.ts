@@ -82,8 +82,8 @@ export async function loginComplaintWithPassword(
   if (!whitelist) {
     throw httpError(
       403,
-      "This email is not authorised for Sarveda Tasks. Contact admin for access.",
-      "FORBIDDEN"
+      "No account found for this email. Contact admin for access.",
+      "ACCOUNT_NOT_FOUND"
     );
   }
   if (!whitelist.passwordHash) {

@@ -7,7 +7,10 @@ import { logger } from "../../config/logger";
 import { sendMail, sendWelcomeEmail } from "../notifications/email";
 import { hashPassword, verifyPassword } from "../../utils/hash";
 import { clearAuthCookie, setAuthCookie } from "../../utils/jwt";
-import { syncComplaintPassword } from "../complaints/whitelist-auth";
+import {
+  ensureComplaintUser,
+  syncComplaintPassword
+} from "../complaints/whitelist-auth";
 import type { LoginBody, RegisterBody, SendOtpBody, VerifyOtpBody, ChangePasswordBody } from "./schemas";
 import {
   getOrSeedPrimaryAddress,
@@ -215,7 +218,7 @@ export async function loginUser(res: Response, body: LoginBody) {
   const email = body.email.trim().toLowerCase();
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || user.deletedAt) {
-    throw httpError(404, "No account found with this email address.", "EMAIL_NOT_FOUND");
+    throw httpError(404, "No account found for this email. Contact admin for access.", "ACCOUNT_NOT_FOUND");
   }
   // BUG 7: migrated Woo customers have no password — give a clear path to OTP/Google
   if (!user.passwordHash) {
@@ -258,7 +261,29 @@ export async function sendOtp(body: SendOtpBody) {
       select: { id: true, deletedAt: true }
     });
     if (!existing || existing.deletedAt) {
-      throw httpError(404, "No account found with this email address.", "EMAIL_NOT_FOUND");
+      // Active Tasks whitelist members may not have a User row yet — provision then send OTP.
+      const whitelist = await prisma.complaintWhitelist.findFirst({
+        where: { email: normalized.value, isActive: true }
+      });
+      if (whitelist) {
+        await ensureComplaintUser(whitelist.email, whitelist.name, whitelist.passwordHash);
+      } else {
+        const inactive = await prisma.complaintWhitelist.findFirst({
+          where: { email: normalized.value, isActive: false }
+        });
+        if (inactive) {
+          throw httpError(
+            403,
+            "This account is deactivated. Contact admin to reactivate.",
+            "ACCOUNT_INACTIVE"
+          );
+        }
+        throw httpError(
+          404,
+          "No account found for this email. Contact admin for access.",
+          "ACCOUNT_NOT_FOUND"
+        );
+      }
     }
   } else {
     const existing = await prisma.user.findUnique({
@@ -574,4 +599,61 @@ export async function updateNotificationPreferences(
   });
 
   return publicUser(user);
+}
+
+const CLOSURE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+
+export async function requestAccountClosure(
+  userId: string,
+  body: { reason: string; confirm: true }
+) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || user.deletedAt) {
+    throw httpError(404, "User not found", "USER_NOT_FOUND");
+  }
+
+  const recent = await prisma.accountClosureRequest.findFirst({
+    where: {
+      userId,
+      createdAt: { gte: new Date(Date.now() - CLOSURE_COOLDOWN_MS) }
+    },
+    orderBy: { createdAt: "desc" }
+  });
+  if (recent) {
+    throw httpError(
+      429,
+      "An account closure request was already submitted recently. Our team will follow up by email.",
+      "CLOSURE_RECENT"
+    );
+  }
+
+  const reason = body.reason.trim();
+  await prisma.accountClosureRequest.create({
+    data: {
+      userId,
+      email: user.email,
+      reason
+    }
+  });
+
+  const { sendMail } = await import("../notifications/email");
+  const careEmail = process.env.SUPPORT_EMAIL?.trim() || "care@sarveda.com";
+  const html = `
+    <p><strong>Account closure request</strong></p>
+    <p>User: ${user.name ?? "—"} &lt;${user.email}&gt;</p>
+    <p>User ID: ${user.id}</p>
+    <p>Reason:</p>
+    <blockquote style="margin:0;padding:12px;border-left:4px solid #c8960a;background:#f9f7f4">${reason.replace(/</g, "&lt;")}</blockquote>
+  `;
+  void sendMail(
+    careEmail,
+    `Account closure request — ${user.email}`,
+    html,
+    `Account closure request from ${user.email}\n\n${reason}`
+  );
+
+  return {
+    message:
+      "Your account closure request has been received. Our team will email you within 2–3 business days."
+  };
 }

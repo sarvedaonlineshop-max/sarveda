@@ -5,6 +5,8 @@ import { logger } from "../../config/logger";
 import { mirrorStockToZohoForSkus } from "../zoho/zoho-items";
 import { voidZohoInvoiceForCancelledOrder } from "../zoho/zoho-financials";
 
+import { restockPaidOrderLinesTx } from "./order-inventory-restock.service";
+
 /** Reserve stock when checkout creates an order (increment `reserved` per line qty). */
 export async function reserveStockTx(tx: Prisma.TransactionClient, orderId: string): Promise<void> {
   const items = await tx.orderItem.findMany({
@@ -164,21 +166,19 @@ export async function cancelUnpaidOrderWithRelease(
 
 /**
  * Restock inventory when a paid order is cancelled or refunded (reverse confirmStock).
+ * Records OrderInventoryRestockEvent rows (SELLABLE) for accounting provenance.
+ * Idempotent per (FULL_ORDER_STATUS_CHANGE, sourceId, orderItemId).
  */
-export async function restockPaidOrderTx(tx: Prisma.TransactionClient, orderId: string): Promise<void> {
-  const items = await tx.orderItem.findMany({
-    where: { orderId },
-    select: { qtyOrdered: true, variantId: true }
+export async function restockPaidOrderTx(
+  tx: Prisma.TransactionClient,
+  orderId: string,
+  opts?: { sourceId?: string; reason?: string; createdByUserId?: string }
+): Promise<void> {
+  await restockPaidOrderLinesTx(tx, orderId, {
+    sourceId: opts?.sourceId ?? `${orderId}:RESTOCK`,
+    reason: opts?.reason,
+    createdByUserId: opts?.createdByUserId
   });
-
-  for (const item of items) {
-    const inv = await tx.inventory.findUnique({ where: { variantId: item.variantId } });
-    if (!inv) continue;
-    await tx.inventory.update({
-      where: { id: inv.id },
-      data: { onHand: { increment: item.qtyOrdered } }
-    });
-  }
 }
 
 /** Stock was decremented at checkout (online captured, or COD placed as PAID). */
@@ -190,8 +190,22 @@ function orderStockWasConfirmed(order: {
   const inPaidPipeline = ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"].includes(order.status);
   if (!inPaidPipeline) return false;
 
-  if (order.paymentStatus === "CAPTURED") return true;
-  if (order.payments.some((p) => p.status === "CAPTURED")) return true;
+  // Include post-refund payment statuses: refund finalize may mark Payment REFUNDED
+  // before handlePaidOrderStatusChange runs — stock was still confirmed at capture.
+  if (
+    order.paymentStatus === "CAPTURED" ||
+    order.paymentStatus === "PARTIALLY_REFUNDED" ||
+    order.paymentStatus === "REFUNDED"
+  ) {
+    return true;
+  }
+  if (
+    order.payments.some((p) =>
+      ["CAPTURED", "PARTIALLY_REFUNDED", "REFUNDED"].includes(p.status)
+    )
+  ) {
+    return true;
+  }
   // COD: stock confirmed at checkout while payment stays PENDING until cash collection.
   if (order.payments.some((p) => p.provider === "COD")) return true;
 
@@ -229,7 +243,10 @@ export async function handlePaidOrderStatusChange(
     const stockWasConfirmed = orderStockWasConfirmed(order);
 
     if (wasPaidPipeline && stockWasConfirmed) {
-      await restockPaidOrderTx(tx, orderId);
+      await restockPaidOrderTx(tx, orderId, {
+        sourceId: `${orderId}:${toStatus}`,
+        reason
+      });
       if (toStatus === "REFUNDED" || toStatus === "CANCELLED") {
         await revokeDigitalPurchasesTx(tx, orderId);
       }

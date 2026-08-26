@@ -246,6 +246,7 @@ export function ProductForm({ productId }: { productId?: string }) {
   const [expressShippingEnabled, setExpressShippingEnabled] = useState(true);
   const [expressShippingIndia, setExpressShippingIndia] = useState(true);
   const [expressShippingIntl, setExpressShippingIntl] = useState(true);
+  const [productCouponEnabled, setProductCouponEnabled] = useState(false);
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDescription, setSeoDescription] = useState("");
   const [seoKeyword, setSeoKeyword] = useState("");
@@ -296,6 +297,9 @@ export function ProductForm({ productId }: { productId?: string }) {
       const exOn = (p as { expressShippingEnabled?: boolean }).expressShippingEnabled !== false;
       setExpressShippingIndia(exOn);
       setExpressShippingIntl(exOn);
+      setProductCouponEnabled(
+        Boolean((p as { productCouponEnabled?: boolean }).productCouponEnabled)
+      );
       setSeoTitle(String(p.seoTitle ?? ""));
       setSeoDescription(String(p.seoDescription ?? ""));
       setSeoKeyword(String(p.seoKeyword ?? ""));
@@ -785,6 +789,7 @@ export function ProductForm({ productId }: { productId?: string }) {
       audioUrl: hasAudio ? audioUrl.trim() || null : null,
       videoUrl: videoUrl.trim() || null,
       expressShippingEnabled,
+      productCouponEnabled,
       seoTitle: seoTitle.trim() || null,
       seoDescription: seoDescription.trim() || null,
       seoKeyword: seoKeyword.trim() || null,
@@ -1385,6 +1390,15 @@ export function ProductForm({ productId }: { productId?: string }) {
                 />
               </div>
             </div>
+            <label className="flex items-center gap-2 text-sm text-[var(--admin-text,#2c2420)]">
+              <input
+                type="checkbox"
+                checked={productCouponEnabled}
+                onChange={(e) => setProductCouponEnabled(e.target.checked)}
+                className="rounded text-amber-600"
+              />
+              Product-wise coupon eligible
+            </label>
             <label className="flex items-center gap-2 text-sm text-[var(--admin-text,#2c2420)]">
               <input
                 type="checkbox"

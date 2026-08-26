@@ -7,6 +7,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { MobileSubpageHeader } from "@/components/layout/MobileSubpageHeader";
 import { YourLearning } from "@/components/profile/YourLearning";
 import { YourOrders } from "@/components/profile/YourOrders";
+import { getApiBase } from "@/lib/api";
 import type { PublicUser } from "@/lib/auth-client";
 import {
   fetchProfileDetails,
@@ -29,6 +30,87 @@ const MOBILE_TITLES: Record<TabKey, string> = {
 
 function isTabKey(value: string | null): value is TabKey {
   return value === "details" || value === "orders" || value === "courses" || value === "events";
+}
+
+function AccountClosureSection({ userEmail }: { userEmail: string }) {
+  const [reason, setReason] = useState("");
+  const [confirm, setConfirm] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submitClosure(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const res = await fetch(`${getApiBase()}/api/auth/me/closure-request`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: reason.trim(), confirm: true })
+      });
+      const json = (await res.json()) as { data?: { message?: string }; error?: string };
+      if (!res.ok) throw new Error(json.error ?? "Could not submit your request");
+      setMessage(json.data?.message ?? "Your request has been received.");
+      setReason("");
+      setConfirm(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-10 border-t border-brand-cream-dark pt-8">
+      <h3 className="font-serif text-lg font-semibold text-brand-ink">Request account closure</h3>
+      <p className="mt-2 text-sm text-brand-muted">
+        Submit a request to close your Sarveda account ({userEmail}). Our team will follow up by email within 2–3
+        business days.
+      </p>
+      <form onSubmit={(event) => void submitClosure(event)} className="mt-4 space-y-4">
+        <div>
+          <label htmlFor="closure-reason" className="mb-2 block text-sm font-medium text-brand-ink">
+            Reason (optional details help us improve)
+          </label>
+          <textarea
+            id="closure-reason"
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+            rows={3}
+            minLength={10}
+            required
+            className="w-full rounded-xl border border-brand-cream-dark bg-white px-3 py-2 text-sm text-brand-ink"
+            placeholder="Tell us briefly why you'd like to close your account…"
+          />
+        </div>
+        <label className="flex items-start gap-2 text-sm text-brand-ink/80">
+          <input
+            type="checkbox"
+            checked={confirm}
+            onChange={(event) => setConfirm(event.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-brand-cream-dark text-brand-forest"
+          />
+          <span>I understand this submits a closure request and does not delete my account immediately.</span>
+        </label>
+        {error ? (
+          <p className="text-sm text-red-600" role="alert">
+            {error}
+          </p>
+        ) : null}
+        {message ? <p className="text-sm text-brand-forest">{message}</p> : null}
+        <button
+          type="submit"
+          disabled={busy || !confirm || reason.trim().length < 10}
+          className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-red-200 bg-white px-6 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {busy ? "Submitting…" : "Request account closure"}
+        </button>
+      </form>
+    </div>
+  );
 }
 
 const tabIconProps = {
@@ -586,6 +668,8 @@ export function ProfileClient() {
               {saving ? "Saving…" : "Save changes"}
             </button>
           </form>
+
+          <AccountClosureSection userEmail={user.email} />
         </section>
 
         <section

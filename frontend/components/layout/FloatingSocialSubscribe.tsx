@@ -1,13 +1,15 @@
 "use client";
 
 import Image from "next/image";
-import { FormEvent, useEffect, useId, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { getApiBase } from "@/lib/api";
 import { whatsAppSiteUrl } from "@/lib/enquiry";
 
 const HOME_GREEN = "#166D46";
+const STORAGE_HIDDEN = "sarveda-float-widget-hidden";
+const STORAGE_POS = "sarveda-float-widget-pos";
 
 const SOCIAL = [
   {
@@ -17,7 +19,7 @@ const SOCIAL = [
   },
   {
     label: "Instagram",
-    href: "https://www.instagram.com/sarvedalife/",
+    href: "https://www.instagram.com/sarveda_life/",
     path: "M7.75 2h8.5A5.75 5.75 0 0122 7.75v8.5A5.75 5.75 0 0116.25 22h-8.5A5.75 5.75 0 012 16.25v-8.5A5.75 5.75 0 017.75 2zm0 1.5A4.25 4.25 0 003.5 7.75v8.5A4.25 4.25 0 007.75 20.5h8.5a4.25 4.25 0 004.25-4.25v-8.5A4.25 4.25 0 0016.25 3.5h-8.5zM12 7a5 5 0 110 10A5 5 0 0112 7zm0 1.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm5.25-.75a.875.875 0 110 1.75.875.875 0 010-1.75z"
   },
   {
@@ -31,6 +33,28 @@ const SOCIAL = [
     path: "M6.5 9H3v12h3.5V9zM4.75 3A2.1 2.1 0 102.7 5.1 2.1 2.1 0 004.75 3zM21 21h-3.5v-6.2c0-1.7-.6-2.8-2.1-2.8-1.1 0-1.8.8-2.1 1.5-.1.3-.1.6-.1.9V21H9.8s.05-10.8 0-12H13.3v1.9c.5-.8 1.4-1.9 3.4-1.9 2.5 0 4.3 1.6 4.3 5.1V21z"
   }
 ] as const;
+
+type WidgetPos = { x: number; y: number };
+
+function clampPos(x: number, y: number, width: number, height: number): WidgetPos {
+  const margin = 8;
+  const maxX = Math.max(margin, window.innerWidth - width - margin);
+  const maxY = Math.max(margin, window.innerHeight - height - margin);
+  return {
+    x: Math.min(Math.max(margin, x), maxX),
+    y: Math.min(Math.max(margin, y), maxY)
+  };
+}
+
+function defaultMobilePos(width: number, height: number): WidgetPos {
+  const margin = 12;
+  return clampPos(
+    window.innerWidth - width - margin,
+    window.innerHeight * 0.38 - height / 2,
+    width,
+    height
+  );
+}
 
 function SubscribeModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const titleId = useId();
@@ -226,50 +250,180 @@ function SubscribeModal({ open, onClose }: { open: boolean; onClose: () => void 
   );
 }
 
+function WidgetCloseButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="absolute -left-2 -top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-black/10 bg-white text-brand-ink shadow-sm transition hover:bg-brand-cream"
+      aria-label="Hide social widget"
+    >
+      <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.2">
+        <path strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />
+      </svg>
+    </button>
+  );
+}
+
 export function FloatingSocialSubscribe() {
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [pos, setPos] = useState<WidgetPos | null>(null);
+  const widgetRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ pointerId: number; startX: number; startY: number; originX: number; originY: number } | null>(null);
 
   useEffect(() => {
     setMounted(true);
+    setHidden(sessionStorage.getItem(STORAGE_HIDDEN) === "1");
+
+    const saved = sessionStorage.getItem(STORAGE_POS);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as WidgetPos;
+        if (typeof parsed.x === "number" && typeof parsed.y === "number") {
+          setPos(parsed);
+        }
+      } catch {
+        /* ignore invalid saved position */
+      }
+    }
+
+    const mq = window.matchMedia("(max-width: 767px)");
+    const syncMobile = () => setIsMobile(mq.matches);
+    syncMobile();
+    mq.addEventListener("change", syncMobile);
+    return () => mq.removeEventListener("change", syncMobile);
   }, []);
 
-  if (!mounted) return null;
+  useEffect(() => {
+    if (!isMobile || pos || !widgetRef.current) return;
+    const rect = widgetRef.current.getBoundingClientRect();
+    setPos(defaultMobilePos(rect.width, rect.height));
+  }, [isMobile, pos]);
+
+  const persistPos = useCallback((next: WidgetPos) => {
+    setPos(next);
+    sessionStorage.setItem(STORAGE_POS, JSON.stringify(next));
+  }, []);
+
+  const dismissWidget = useCallback(() => {
+    setHidden(true);
+    sessionStorage.setItem(STORAGE_HIDDEN, "1");
+  }, []);
+
+  const onDragHandlePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (!isMobile || !widgetRef.current || !pos) return;
+      e.preventDefault();
+      dragRef.current = {
+        pointerId: e.pointerId,
+        startX: e.clientX,
+        startY: e.clientY,
+        originX: pos.x,
+        originY: pos.y
+      };
+      e.currentTarget.setPointerCapture(e.pointerId);
+    },
+    [isMobile, pos]
+  );
+
+  const onDragHandlePointerMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      const drag = dragRef.current;
+      if (!drag || drag.pointerId !== e.pointerId || !widgetRef.current) return;
+      const rect = widgetRef.current.getBoundingClientRect();
+      const next = clampPos(
+        drag.originX + (e.clientX - drag.startX),
+        drag.originY + (e.clientY - drag.startY),
+        rect.width,
+        rect.height
+      );
+      persistPos(next);
+    },
+    [persistPos]
+  );
+
+  const onDragHandlePointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (dragRef.current?.pointerId === e.pointerId) {
+      dragRef.current = null;
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+  }, []);
+
+  if (!mounted || hidden) return null;
+
+  const widgetBody = (
+    <>
+      <WidgetCloseButton onClick={dismissWidget} />
+      {isMobile ? (
+        <div
+          className="flex w-full cursor-grab items-center justify-center border-b border-black/8 bg-[#f3f1ec]/80 py-1.5 active:cursor-grabbing"
+          aria-label="Drag to reposition"
+          onPointerDown={onDragHandlePointerDown}
+          onPointerMove={onDragHandlePointerMove}
+          onPointerUp={onDragHandlePointerUp}
+          onPointerCancel={onDragHandlePointerUp}
+        >
+          <span className="h-1 w-8 rounded-full bg-black/20" aria-hidden />
+        </div>
+      ) : null}
+      <div className="flex flex-col items-center gap-3.5 px-3 py-5 sm:gap-4 sm:px-3.5 sm:py-6">
+        {SOCIAL.map((s) => (
+          <a
+            key={s.label}
+            href={s.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={s.label}
+            className="text-brand-ink transition hover:text-[#166D46]"
+          >
+            <svg viewBox="0 0 24 24" className="h-5 w-5 sm:h-[22px] sm:w-[22px]" fill="currentColor" aria-hidden>
+              <path d={s.path} />
+            </svg>
+          </a>
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex w-full items-center justify-center border-t border-black/8 bg-[#f3f1ec] px-2.5 py-6 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-ink transition hover:bg-[#ebe7df] sm:px-3 sm:py-7 sm:text-xs"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+      >
+        <span className="inline-block rotate-180 [writing-mode:vertical-rl]">Subscribe</span>
+      </button>
+    </>
+  );
 
   return (
     <>
-      <div
-        className="pointer-events-none fixed right-3 top-1/2 z-[55] -translate-y-1/2 sm:right-4 lg:right-5"
-        aria-label="Social links and subscribe"
-      >
-        <div className="pointer-events-auto flex flex-col items-center overflow-hidden rounded-full border border-black/10 bg-white/95 shadow-[0_10px_32px_rgba(16,32,26,0.18)] backdrop-blur-sm">
-          <div className="flex flex-col items-center gap-3.5 px-3 py-5 sm:gap-4 sm:px-3.5 sm:py-6">
-            {SOCIAL.map((s) => (
-              <a
-                key={s.label}
-                href={s.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={s.label}
-                className="text-brand-ink transition hover:text-[#166D46]"
-              >
-                <svg viewBox="0 0 24 24" className="h-5 w-5 sm:h-[22px] sm:w-[22px]" fill="currentColor" aria-hidden>
-                  <path d={s.path} />
-                </svg>
-              </a>
-            ))}
+      {isMobile ? (
+        <div
+          ref={widgetRef}
+          className="pointer-events-auto fixed z-[55] touch-none md:hidden"
+          style={
+            pos
+              ? { left: pos.x, top: pos.y }
+              : { right: 12, top: "38%", transform: "translateY(-50%)" }
+          }
+          aria-label="Social links and subscribe"
+        >
+          <div className="relative flex flex-col items-center overflow-hidden rounded-full border border-black/10 bg-white/95 shadow-[0_10px_32px_rgba(16,32,26,0.18)] backdrop-blur-sm">
+            {widgetBody}
           </div>
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            className="flex w-full items-center justify-center border-t border-black/8 bg-[#f3f1ec] px-2.5 py-6 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-ink transition hover:bg-[#ebe7df] sm:px-3 sm:py-7 sm:text-xs"
-            aria-haspopup="dialog"
-            aria-expanded={open}
-          >
-            <span className="inline-block rotate-180 [writing-mode:vertical-rl]">Subscribe</span>
-          </button>
         </div>
-      </div>
+      ) : (
+        <div
+          className="pointer-events-none fixed right-3 top-1/2 z-[55] hidden -translate-y-1/2 sm:right-4 md:block lg:right-5"
+          aria-label="Social links and subscribe"
+        >
+          <div className="pointer-events-auto relative flex flex-col items-center overflow-hidden rounded-full border border-black/10 bg-white/95 shadow-[0_10px_32px_rgba(16,32,26,0.18)] backdrop-blur-sm">
+            {widgetBody}
+          </div>
+        </div>
+      )}
 
       <SubscribeModal open={open} onClose={() => setOpen(false)} />
     </>

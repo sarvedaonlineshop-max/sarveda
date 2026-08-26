@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { CorporateContactForm } from "@/components/cms/CorporateContactForm";
+import { AutoScrollRail } from "@/components/cms/AutoScrollRail";
 import { InfiniteMarquee } from "@/components/cms/InfiniteMarquee";
 import type { CmsPage } from "@/lib/cms-types";
 import {
@@ -190,17 +191,20 @@ export function CorporateWellnessPage({ page: _page }: Props) {
         </InfiniteMarquee>
       </section>
 
-      {/* Partners — rolling logos */}
+      {/* Partners — rolling logos (manual scroll + auto) */}
       <section className="bg-white py-14 md:py-20">
         <SectionTitle className="mb-10 px-4">Our Partners in Workplace Wellness</SectionTitle>
-        <InfiniteMarquee duration={50}>
+        <AutoScrollRail speed={0.6} className="px-2" trackClassName="gap-0 py-2">
           {CORPORATE_PARTNER_LOGOS.map((logo) => (
-            <div key={logo.src} className="mx-10 flex h-16 w-28 shrink-0 items-center justify-center md:mx-16 md:h-20 md:w-32">
+            <div
+              key={logo.src}
+              className="mx-10 flex h-16 w-28 shrink-0 items-center justify-center md:mx-16 md:h-20 md:w-32"
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={logo.src} alt={logo.alt} className="max-h-full max-w-full object-contain" />
             </div>
           ))}
-        </InfiniteMarquee>
+        </AutoScrollRail>
       </section>
 
       {/* Wellness in Action — masonry-style gallery */}

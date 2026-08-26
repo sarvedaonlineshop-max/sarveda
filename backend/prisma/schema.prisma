@@ -40,6 +40,18 @@ model User {
   emailNotificationsEnabled   Boolean  @default(true)
   pushNotificationsEnabled    Boolean  @default(true)
   blogComments                BlogComment[]
+  accountClosureRequests      AccountClosureRequest[]
+}
+
+model AccountClosureRequest {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @db.Uuid
+  email     String
+  reason    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }
 
 /// Admin login/logout audit for the admin header history panel.
@@ -125,6 +137,7 @@ model Product {
   audioUrl         String?
   videoUrl         String?
   expressShippingEnabled Boolean    @default(true)
+  productCouponEnabled Boolean      @default(false)
   relatedArticleSlugs String[]      @default([])
   // Ordered attribute slugs for storefront variant pills (e.g. size before type).
   variantAxisOrder   String[]        @default([])
@@ -188,6 +201,9 @@ model ProductVariant {
   attributeValues VariantAttributeValue[]
   shippingRates   VariantShippingRate[]
   images          ProductImage[]
+  inventoryCostLayers AccountingInventoryCostLayer[]
+  inventoryCostConsumptions AccountingInventoryCostConsumption[]
+  inventoryOpeningBatchItems AccountingInventoryOpeningBatchItem[]
   cartItems       CartItem[]
   orderItems      OrderItem[]
   marketplaceListings   MarketplaceListing[]
@@ -195,6 +211,8 @@ model ProductVariant {
   courseCheckout  Course?
   eventCheckout   Event?
   stockNotifications StockNotification[]
+  purchaseOrderLines PurchaseOrderLine[]
+  vendorBillLines    VendorBillLine[]
   createdAt       DateTime                @default(now())
   updatedAt       DateTime                @updatedAt
 }
@@ -654,6 +672,7 @@ model Order {
   enrollments       Enrollment[]
   bookings          Booking[]
   serviceRequests   OrderServiceRequest[]
+  inventoryRestocks OrderInventoryRestockEvent[]
 }
 
 enum OrderStatus {
@@ -777,6 +796,48 @@ model OrderItem {
   order            Order           @relation(fields: [orderId], references: [id])
   variant          ProductVariant  @relation(fields: [variantId], references: [id])
   pickupLocation   PickupLocation? @relation(fields: [pickupLocationId], references: [id])
+  inventoryRestocks OrderInventoryRestockEvent[]
+}
+
+/// Physical return / restock disposition for a sold OrderItem.
+/// Accounting Phase 3D4 will post COGS reversal only from SELLABLE events that incremented stock.
+/// Financial Refund rows remain separate and must not be used as restock provenance.
+enum OrderInventoryRestockDisposition {
+  SELLABLE
+  DAMAGED
+  NON_RESTOCKABLE
+}
+
+enum OrderInventoryRestockSourceType {
+  /// Full paid-order CANCELLED / REFUNDED via handlePaidOrderStatusChange → restockPaidOrderTx
+  FULL_ORDER_STATUS_CHANGE
+  /// Admin explicit line-level restock (partial returns, damaged receipt, etc.)
+  ADMIN_EXPLICIT
+}
+
+model OrderInventoryRestockEvent {
+  id                   String                           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId              String                           @db.Uuid
+  orderItemId          String                           @db.Uuid
+  variantId            String                           @db.Uuid
+  quantity             Int
+  disposition          OrderInventoryRestockDisposition
+  /// True only when this event incremented Inventory.onHand (SELLABLE + inventory row present).
+  inventoryIncremented Boolean                          @default(false)
+  sourceType           OrderInventoryRestockSourceType
+  /// Idempotency scope: e.g. "{orderId}:REFUNDED" or admin batch UUID / Idempotency-Key.
+  sourceId             String
+  reason               String?
+  createdByUserId      String?                          @db.Uuid
+  createdAt            DateTime                         @default(now())
+  order                Order                            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItem            OrderItem                        @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceType, sourceId, orderItemId])
+  @@index([orderId, createdAt])
+  @@index([orderItemId])
+  @@index([variantId])
+  @@map("order_inventory_restock_events")
 }
 
 model OrderAddress {
@@ -837,6 +898,7 @@ enum PaymentProvider {
   COD
 }
 
+/// Gateway refunds: providerRefundId is unique when set (partial index via migration SQL).
 model Refund {
   id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   paymentId        String   @db.Uuid
@@ -846,6 +908,8 @@ model Refund {
   status           String   @default("pending")
   createdAt        DateTime @default(now())
   payment          Payment  @relation(fields: [paymentId], references: [id])
+
+  @@index([paymentId, status])
 }
 
 model Invoice {
@@ -892,6 +956,7 @@ model PickupLocation {
   updatedAt            DateTime   @updatedAt
   shipments            Shipment[]
   orderItems           OrderItem[]
+  purchaseOrders       PurchaseOrder[]
 }
 
 model Shipment {
@@ -1526,4 +1591,1245 @@ model AppVersion {
   updatedAt    DateTime @updatedAt
 
   @@index([platform, isActive])
+}
+
+// --- Purchases module (Phase 1 — Sarveda operational master) ---
+
+model Vendor {
+  id                 String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String
+  displayName        String?
+  email              String?
+  phone              String?
+  gstin              String?
+  pan                String?
+  paymentTerms       String?         @default("Due on Receipt")
+  currency           String          @default("INR")
+  billingLine1       String?
+  billingLine2       String?
+  billingCity        String?
+  billingState       String?
+  billingPostalCode  String?
+  billingCountry     String          @default("IN")
+  shippingLine1      String?
+  shippingLine2      String?
+  shippingCity       String?
+  shippingState      String?
+  shippingPostalCode String?
+  shippingCountry    String          @default("IN")
+  notes              String?
+  zohoContactId      String?
+  isActive           Boolean         @default(true)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  purchaseOrders     PurchaseOrder[]
+  bills              VendorBill[]
+  expenses           Expense[]
+  accountingVendorPayments AccountingVendorPayment[]
+
+  @@index([name])
+  @@index([isActive])
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  SENT
+  PARTIALLY_RECEIVED
+  RECEIVED
+  CANCELLED
+}
+
+model PurchaseOrder {
+  id                   String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  poNumber             String              @unique
+  vendorId             String              @db.Uuid
+  status               PurchaseOrderStatus @default(DRAFT)
+  referenceNumber      String?
+  orderDate            DateTime            @default(now())
+  expectedDeliveryDate DateTime?
+  paymentTerms         String?
+  shipmentPreference   String?
+  reverseCharge        Boolean             @default(false)
+  pickupLocationId     String?             @db.Uuid
+  taxTreatment         String?             @default("At Transaction Level")
+  notes                String?
+  termsAndConditions   String?
+  subtotalInPaise      Int                 @default(0)
+  discountPercent      Int                 @default(0)
+  discountInPaise      Int                 @default(0)
+  adjustmentInPaise    Int                 @default(0)
+  adjustmentLabel      String?             @default("Adjustment")
+  taxInPaise           Int                 @default(0)
+  totalInPaise         Int                 @default(0)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  vendor               Vendor              @relation(fields: [vendorId], references: [id])
+  pickupLocation       PickupLocation?     @relation(fields: [pickupLocationId], references: [id])
+  lines                PurchaseOrderLine[]
+  receipts             PurchaseReceipt[]
+  bills                VendorBill[]
+
+  @@index([vendorId])
+  @@index([status])
+  @@index([orderDate])
+}
+
+model PurchaseOrderLine {
+  id               String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  purchaseOrderId  String                @db.Uuid
+  variantId        String?               @db.Uuid
+  itemName         String
+  sku              String?
+  hsnCode          String?
+  quantity         Int
+  receivedQty      Int                   @default(0)
+  rateInPaise      Int
+  taxClass         String?
+  taxInPaise       Int                   @default(0)
+  lineTotalInPaise Int
+  sortOrder        Int                   @default(0)
+  purchaseOrder    PurchaseOrder         @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  variant          ProductVariant?       @relation(fields: [variantId], references: [id])
+  receiptLines     PurchaseReceiptLine[]
+
+  @@index([purchaseOrderId])
+  @@index([variantId])
+}
+
+model PurchaseReceipt {
+  id              String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  purchaseOrderId String                @db.Uuid
+  receivedAt      DateTime              @default(now())
+  notes           String?
+  createdAt       DateTime              @default(now())
+  purchaseOrder   PurchaseOrder         @relation(fields: [purchaseOrderId], references: [id])
+  lines           PurchaseReceiptLine[]
+
+  @@index([purchaseOrderId])
+}
+
+model PurchaseReceiptLine {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  receiptId        String            @db.Uuid
+  poLineId         String            @db.Uuid
+  quantityReceived Int
+  receipt          PurchaseReceipt   @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  poLine           PurchaseOrderLine @relation(fields: [poLineId], references: [id])
+
+  @@index([receiptId])
+  @@index([poLineId])
+}
+
+enum VendorBillStatus {
+  DRAFT
+  OPEN
+  PAID
+  VOID
+}
+
+model VendorBill {
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  billNumber        String           @unique
+  vendorId          String           @db.Uuid
+  purchaseOrderId   String?          @db.Uuid
+  status            VendorBillStatus @default(DRAFT)
+  referenceNumber   String?
+  billDate          DateTime         @default(now())
+  dueDate           DateTime?
+  paymentTerms      String?
+  reverseCharge     Boolean          @default(false)
+  subject           String?
+  notes             String?
+  subtotalInPaise   Int              @default(0)
+  discountInPaise   Int              @default(0)
+  adjustmentInPaise Int              @default(0)
+  taxInPaise        Int              @default(0)
+  totalInPaise      Int              @default(0)
+  paidInPaise       Int              @default(0)
+  zohoBillId        String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  vendor            Vendor           @relation(fields: [vendorId], references: [id])
+  purchaseOrder     PurchaseOrder?   @relation(fields: [purchaseOrderId], references: [id])
+  lines             VendorBillLine[]
+
+  @@index([vendorId])
+  @@index([status])
+  @@index([billDate])
+}
+
+model VendorBillLine {
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  billId           String          @db.Uuid
+  variantId        String?         @db.Uuid
+  itemName         String
+  sku              String?
+  quantity         Int
+  rateInPaise      Int
+  taxClass         String?
+  taxInPaise       Int             @default(0)
+  lineTotalInPaise Int
+  sortOrder        Int             @default(0)
+  bill             VendorBill      @relation(fields: [billId], references: [id], onDelete: Cascade)
+  variant          ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@index([billId])
+}
+
+enum ExpenseStatus {
+  DRAFT
+  RECORDED
+}
+
+model Expense {
+  id                  String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  expenseAccount      String
+  vendorId            String?       @db.Uuid
+  amountInPaise       Int
+  currency            String        @default("INR")
+  expenseDate         DateTime      @default(now())
+  paidThrough         String?
+  expenseType         String        @default("SERVICES")
+  hsnSac              String?
+  gstTreatment        String?
+  sourceOfSupply      String?
+  destinationOfSupply String?       @default("KA")
+  reverseCharge       Boolean       @default(false)
+  taxInPaise          Int           @default(0)
+  taxInclusive        Boolean       @default(false)
+  invoiceNumber       String?
+  referenceNumber     String?
+  notes               String?
+  status              ExpenseStatus @default(RECORDED)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  vendor              Vendor?       @relation(fields: [vendorId], references: [id])
+
+  @@index([expenseDate])
+  @@index([vendorId])
+}
+
+// ─── Native accounting (isolated from commerce tables) ───────────────────────
+
+enum AccountingAccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum AccountingJournalStatus {
+  DRAFT
+  POSTED
+  VOID
+}
+
+enum AccountingPostingEventStatus {
+  PENDING
+  RETRYING
+  POSTED
+  FAILED
+  SKIPPED
+}
+
+enum AccountingPeriodStatus {
+  OPEN
+  CLOSED
+}
+
+enum AccountingGatewaySettlementStatus {
+  IMPORTED
+  PREVIEWED
+  POSTED
+  MISMATCH
+  SKIPPED
+  FAILED
+}
+
+enum AccountingGatewaySettlementLineType {
+  PAYMENT
+  REFUND
+  TRANSFER
+  ADJUSTMENT
+  UNKNOWN
+}
+
+enum AccountingGatewaySettlementLineMappingStatus {
+  MAPPED
+  UNMAPPED
+  DATA_GAP
+  UNMAPPED_PAYMENT
+  UNMAPPED_REFUND
+  UNKNOWN_ADJUSTMENT
+}
+
+model AccountingAccount {
+  id            String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code          String                @unique
+  name          String
+  type          AccountingAccountType
+  parentId      String?               @db.Uuid
+  parent        AccountingAccount?    @relation("AccountingAccountTree", fields: [parentId], references: [id])
+  children      AccountingAccount[]   @relation("AccountingAccountTree")
+  currency      String                @default("INR")
+  isActive      Boolean               @default(true)
+  isSystem      Boolean               @default(false)
+  zohoAccountId String?
+  description   String?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  journalLines  AccountingJournalLine[]
+
+  @@index([type])
+  @@index([isActive])
+  @@index([parentId])
+}
+
+model AccountingJournalEntry {
+  id                 String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entryNumber        String                    @unique
+  entryDate          DateTime                  @db.Date
+  memo               String?
+  status             AccountingJournalStatus   @default(DRAFT)
+  postedAt           DateTime?
+  postedByUserId     String?                   @db.Uuid
+  totalDebitInPaise  Int                       @default(0)
+  totalCreditInPaise Int                       @default(0)
+  currency           String                    @default("INR")
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  lines              AccountingJournalLine[]
+  documentLinks      AccountingDocumentLink[]
+  postingEvent       AccountingPostingEvent?
+  gatewaySettlement  AccountingGatewaySettlement?
+  vendorPayment      AccountingVendorPayment?
+  inventoryOpeningBatch AccountingInventoryOpeningBatch?
+  productionOpeningBatch AccountingOpeningBatch?
+  bankTransfer       AccountingBankTransfer?
+  bankStatementMatches AccountingBankStatementMatch[]
+
+  @@index([entryDate])
+  @@index([status])
+  @@index([postedAt])
+}
+
+model AccountingJournalLine {
+  id             String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  journalEntryId String                  @db.Uuid
+  journalEntry   AccountingJournalEntry  @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  accountId      String                  @db.Uuid
+  account        AccountingAccount       @relation(fields: [accountId], references: [id])
+  debitInPaise   Int                     @default(0)
+  creditInPaise  Int                     @default(0)
+  lineMemo       String?
+  sortOrder      Int                     @default(0)
+  documentLinkId String?                 @db.Uuid
+  documentLink   AccountingDocumentLink? @relation(fields: [documentLinkId], references: [id])
+  createdAt      DateTime                @default(now())
+
+  @@index([journalEntryId])
+  @@index([accountId])
+}
+
+model AccountingPostingEvent {
+  id             String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventType      String
+  sourceType     String
+  sourceId       String
+  uniqueKey      String
+  payloadJson    Json?
+  status         AccountingPostingEventStatus @default(PENDING)
+  attemptCount   Int                          @default(0)
+  lastError      String?
+  processedAt    DateTime?
+  journalEntryId String?                      @unique @db.Uuid
+  journalEntry   AccountingJournalEntry?      @relation(fields: [journalEntryId], references: [id])
+  createdAt      DateTime                     @default(now())
+  updatedAt      DateTime                     @updatedAt
+  gatewaySettlement AccountingGatewaySettlement?
+  vendorPayment     AccountingVendorPayment?
+  bankTransfer      AccountingBankTransfer?
+
+  @@unique([eventType, uniqueKey])
+  @@index([status])
+  @@index([createdAt])
+  @@index([sourceType, sourceId])
+}
+
+model AccountingDocumentLink {
+  id               String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  documentType     String
+  documentId       String
+  journalEntryId   String                 @db.Uuid
+  journalEntry     AccountingJournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  zohoDocumentId   String?
+  zohoDocumentType String?
+  journalLines     AccountingJournalLine[]
+
+  @@unique([documentType, documentId, journalEntryId])
+  @@index([documentType, documentId])
+}
+
+model AccountingPeriod {
+  id        String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  startDate DateTime               @db.Date
+  endDate   DateTime               @db.Date
+  status    AccountingPeriodStatus @default(OPEN)
+  closedAt  DateTime?
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
+
+  @@unique([startDate, endDate])
+  @@index([status])
+}
+
+model AccountingSequence {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sequenceType String
+  prefix       String   @default("")
+  yearMonth    String
+  lastSeq      Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([sequenceType, yearMonth])
+}
+
+model AccountingAuditLog {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actorUserId String?  @db.Uuid
+  action      String
+  entityType  String
+  entityId    String
+  beforeJson  Json?
+  afterJson   Json?
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+/// Razorpay (etc.) settlement batch — accounting-owned; not commerce Payment.settlement* authority.
+model AccountingGatewaySettlement {
+  id                   String                             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider             PaymentProvider
+  providerSettlementId String
+  currency             String                             @default("INR")
+  settledAt            DateTime
+  utr                  String?
+  targetBankAccountId  String?                            @db.Uuid
+  targetBankAccount    AccountingBankAccount?             @relation("SettlementTargetBank", fields: [targetBankAccountId], references: [id])
+  grossInPaise         Int                                @default(0)
+  feeInPaise           Int                                @default(0)
+  taxInPaise           Int                                @default(0)
+  netInPaise           Int                                @default(0)
+  status               AccountingGatewaySettlementStatus  @default(IMPORTED)
+  gstItcStatus         String                             @default("UNVERIFIED_PENDING_TAX_INVOICE")
+  sourcePayloadHash    String
+  rawPayload           Json?
+  postingEventId       String?                            @unique @db.Uuid
+  postingEvent         AccountingPostingEvent?            @relation(fields: [postingEventId], references: [id])
+  journalEntryId       String?                            @unique @db.Uuid
+  journalEntry         AccountingJournalEntry?            @relation(fields: [journalEntryId], references: [id])
+  lastError            String?
+  createdAt            DateTime                           @default(now())
+  updatedAt            DateTime                           @updatedAt
+  lines                AccountingGatewaySettlementLine[]
+
+  @@unique([provider, providerSettlementId])
+  @@index([settledAt])
+  @@index([status])
+  @@index([utr])
+}
+
+model AccountingGatewaySettlementLine {
+  id               String                                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  settlementId     String                                      @db.Uuid
+  settlement       AccountingGatewaySettlement                 @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+  lineType         AccountingGatewaySettlementLineType
+  providerEntityId String
+  amountInPaise    Int                                         @default(0)
+  feeInPaise       Int                                         @default(0)
+  taxInPaise       Int                                         @default(0)
+  debitInPaise     Int                                         @default(0)
+  creditInPaise    Int                                         @default(0)
+  providerPaymentId String?
+  providerRefundId  String?
+  paymentId        String?                                     @db.Uuid
+  orderId          String?                                     @db.Uuid
+  mappingStatus    AccountingGatewaySettlementLineMappingStatus @default(UNMAPPED)
+  rawPayload       Json?
+  sortOrder        Int                                         @default(0)
+  createdAt        DateTime                                    @default(now())
+
+  @@unique([settlementId, providerEntityId])
+  @@index([settlementId])
+  @@index([providerPaymentId])
+  @@index([providerRefundId])
+  @@index([paymentId])
+  @@index([orderId])
+  @@index([mappingStatus])
+}
+
+enum AccountingVendorPaymentMethod {
+  BANK_TRANSFER
+  UPI
+  CHEQUE
+  CASH
+}
+
+enum AccountingVendorPaymentStatus {
+  DRAFT
+  POSTED
+  VOID
+}
+
+/// Accounting-owned supplier payment — not derived from VendorBill.paidInPaise.
+model AccountingVendorPayment {
+  id              String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paymentNumber   String                          @unique
+  vendorId        String                          @db.Uuid
+  vendor          Vendor                          @relation(fields: [vendorId], references: [id])
+  paymentDate     DateTime                        @db.Date
+  amountInPaise   Int
+  currency        String                          @default("INR")
+  paymentMethod   AccountingVendorPaymentMethod
+  paidAccountCode String
+  bankAccountId   String?                         @db.Uuid
+  bankAccount     AccountingBankAccount?          @relation(fields: [bankAccountId], references: [id])
+  utr             String?
+  notes           String?
+  status          AccountingVendorPaymentStatus   @default(DRAFT)
+  sourcePayloadHash String
+  postingEventId  String?                         @unique @db.Uuid
+  postingEvent    AccountingPostingEvent?         @relation(fields: [postingEventId], references: [id])
+  journalEntryId  String?                         @unique @db.Uuid
+  journalEntry    AccountingJournalEntry?         @relation(fields: [journalEntryId], references: [id])
+  createdByUserId String?                         @db.Uuid
+  lastError       String?
+  createdAt       DateTime                        @default(now())
+  updatedAt       DateTime                        @updatedAt
+  allocations     AccountingVendorPaymentAllocation[]
+
+  @@index([vendorId])
+  @@index([paymentDate])
+  @@index([status])
+  @@index([bankAccountId])
+}
+
+model AccountingVendorPaymentAllocation {
+  id           String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paymentId    String                   @db.Uuid
+  payment      AccountingVendorPayment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  vendorBillId String                   @db.Uuid
+  amountInPaise Int
+  createdAt    DateTime                 @default(now())
+
+  @@unique([paymentId, vendorBillId])
+  @@index([paymentId])
+  @@index([vendorBillId])
+}
+
+/// Maps free-text Expense.expenseAccount → EXPENSE-type CoA (Phase 3C2).
+model AccountingExpenseAccountMapping {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  normalizedSourceName String
+  displayName          String
+  accountingAccountCode String
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@unique([normalizedSourceName])
+  @@index([accountingAccountCode])
+  @@index([isActive])
+}
+
+/// Maps free-text Expense.paidThrough → bank/cash account (Phase 3C2 / 4B).
+model AccountingExpensePaymentMapping {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  normalizedSourceName String
+  displayName          String
+  paidAccountCode      String
+  bankAccountId        String?  @db.Uuid
+  bankAccount          AccountingBankAccount? @relation(fields: [bankAccountId], references: [id])
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@unique([normalizedSourceName])
+  @@index([paidAccountCode])
+  @@index([bankAccountId])
+  @@index([isActive])
+}
+
+// ─── Phase 4B: banking & cash registry + transfers ───────────────────────────
+
+enum AccountingBankAccountType {
+  BANK
+  CASH
+  PETTY_CASH
+}
+
+enum AccountingBankTransferKind {
+  INTERNAL_TRANSFER
+  CASH_DEPOSIT
+  CASH_WITHDRAWAL
+}
+
+enum AccountingBankTransferStatus {
+  DRAFT
+  POSTED
+  VOID
+}
+
+/// Registry linking operational bank/cash identity to a GL ASSET account.
+model AccountingBankAccount {
+  id                     String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                   String
+  bankName               String?
+  maskedAccountNumber    String?
+  ifsc                   String?
+  currency               String                    @default("INR")
+  glAccountCode          String                    @unique
+  accountType            AccountingBankAccountType
+  isActive               Boolean                   @default(true)
+  isDefault              Boolean                   @default(false)
+  statementImportEnabled Boolean                   @default(false)
+  razorpaySettlementTarget Boolean                 @default(false)
+  createdByUserId        String?                   @db.Uuid
+  createdAt              DateTime                  @default(now())
+  updatedAt              DateTime                  @updatedAt
+  vendorPayments         AccountingVendorPayment[]
+  expensePaymentMappings AccountingExpensePaymentMapping[]
+  settlementTargets      AccountingGatewaySettlement[] @relation("SettlementTargetBank")
+  sourceTransfers        AccountingBankTransfer[]  @relation("TransferSource")
+  destTransfers          AccountingBankTransfer[]  @relation("TransferDest")
+  statementImports       AccountingBankStatementImport[]
+  statementLines         AccountingBankStatementLine[]
+  reconciliations        AccountingBankReconciliation[]
+
+  @@index([accountType])
+  @@index([isActive])
+  @@index([razorpaySettlementTarget])
+}
+
+model AccountingBankTransfer {
+  id                    String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  transferNumber        String                       @unique
+  transferDate          DateTime                     @db.Date
+  amountInPaise         Int
+  currency              String                       @default("INR")
+  transferKind          AccountingBankTransferKind
+  sourceBankAccountId   String                       @db.Uuid
+  sourceBankAccount     AccountingBankAccount        @relation("TransferSource", fields: [sourceBankAccountId], references: [id])
+  destinationBankAccountId String                    @db.Uuid
+  destinationBankAccount AccountingBankAccount       @relation("TransferDest", fields: [destinationBankAccountId], references: [id])
+  reference             String?
+  memo                  String?
+  status                AccountingBankTransferStatus @default(DRAFT)
+  sourcePayloadHash     String
+  postingEventId        String?                      @unique @db.Uuid
+  postingEvent          AccountingPostingEvent?      @relation(fields: [postingEventId], references: [id])
+  journalEntryId        String?                      @unique @db.Uuid
+  journalEntry          AccountingJournalEntry?      @relation(fields: [journalEntryId], references: [id])
+  createdByUserId       String?                      @db.Uuid
+  lastError             String?
+  createdAt             DateTime                     @default(now())
+  updatedAt             DateTime                     @updatedAt
+
+  @@index([transferDate])
+  @@index([status])
+  @@index([sourceBankAccountId])
+  @@index([destinationBankAccountId])
+}
+
+enum AccountingBankStatementImportStatus {
+  IMPORTED
+  FAILED
+}
+
+enum AccountingBankStatementLineMatchStatus {
+  UNMATCHED
+  MATCHED_EXACT
+  MATCHED_MANUAL
+  MATCHED_CATEGORIZED
+  POSSIBLE
+  DUPLICATE
+  REVIEW_REQUIRED
+  IGNORED
+}
+
+enum AccountingBankStatementMatchConfidence {
+  EXACT
+  HIGH
+  POSSIBLE
+}
+
+enum AccountingBankStatementMatchStatus {
+  CANDIDATE
+  CONFIRMED
+  REJECTED
+}
+
+enum AccountingBankStatementMatchType {
+  RAZORPAY_SETTLEMENT
+  VENDOR_PAYMENT
+  EXPENSE
+  BANK_TRANSFER
+  BANK_OPENING
+  BANK_CHARGE
+  BANK_INTEREST
+  JOURNAL_OTHER
+}
+
+/// Committed bank statement evidence (Phase 4C). No GL posting from import.
+model AccountingBankStatementImport {
+  id                     String                              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bankAccountId          String                              @db.Uuid
+  bankAccount            AccountingBankAccount               @relation(fields: [bankAccountId], references: [id])
+  fileName               String
+  fileHash               String
+  statementFrom          DateTime?                           @db.Date
+  statementTo            DateTime?                           @db.Date
+  openingBalanceInPaise  Int?
+  closingBalanceInPaise  Int?
+  currency               String                              @default("INR")
+  importStatus           AccountingBankStatementImportStatus @default(IMPORTED)
+  rowCount               Int                                 @default(0)
+  debitTotalInPaise      Int                                 @default(0)
+  creditTotalInPaise     Int                                 @default(0)
+  failureReason          String?
+  importedByUserId       String?                             @db.Uuid
+  createdAt              DateTime                            @default(now())
+  committedAt            DateTime?
+  lines                  AccountingBankStatementLine[]
+  reconciliations        AccountingBankReconciliation[]
+
+  @@unique([bankAccountId, fileHash])
+  @@index([bankAccountId])
+  @@index([importStatus])
+  @@index([committedAt])
+}
+
+model AccountingBankStatementLine {
+  id                     String                               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  statementImportId      String                               @db.Uuid
+  statementImport        AccountingBankStatementImport        @relation(fields: [statementImportId], references: [id], onDelete: Cascade)
+  bankAccountId          String                               @db.Uuid
+  bankAccount            AccountingBankAccount                @relation(fields: [bankAccountId], references: [id])
+  rowNumber              Int
+  transactionDate        DateTime                             @db.Date
+  valueDate              DateTime?                            @db.Date
+  description            String
+  reference              String?
+  debitInPaise           Int                                  @default(0)
+  creditInPaise          Int                                  @default(0)
+  runningBalanceInPaise  Int?
+  transactionFingerprint String
+  matchStatus            AccountingBankStatementLineMatchStatus @default(UNMATCHED)
+  category               AccountingBankStatementLineCategory?
+  categoryNote           String?
+  categorizedAt          DateTime?
+  categorizedByUserId    String?                              @db.Uuid
+  reconciliationId       String?                              @db.Uuid
+  reconciliation         AccountingBankReconciliation?        @relation(fields: [reconciliationId], references: [id])
+  createdAt              DateTime                             @default(now())
+  matches                AccountingBankStatementMatch[]
+
+  @@unique([bankAccountId, transactionFingerprint])
+  @@index([statementImportId])
+  @@index([bankAccountId])
+  @@index([transactionDate])
+  @@index([matchStatus])
+  @@index([reference])
+  @@index([category])
+  @@index([reconciliationId])
+}
+
+model AccountingBankStatementMatch {
+  id                   String                               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  statementLineId      String                               @db.Uuid
+  statementLine        AccountingBankStatementLine          @relation(fields: [statementLineId], references: [id], onDelete: Cascade)
+  journalEntryId       String                               @db.Uuid
+  journalEntry         AccountingJournalEntry               @relation(fields: [journalEntryId], references: [id])
+  matchType            AccountingBankStatementMatchType
+  confidence           AccountingBankStatementMatchConfidence
+  status               AccountingBankStatementMatchStatus   @default(CANDIDATE)
+  matchedAmountInPaise Int
+  bankGlAccountCode    String
+  sourceEntityType     String?
+  sourceEntityId       String?
+  evidenceJson         Json?
+  matchedByUserId      String?                              @db.Uuid
+  matchedAt            DateTime?
+  createdAt            DateTime                             @default(now())
+
+  @@index([statementLineId])
+  @@index([journalEntryId])
+  @@index([status])
+  @@index([confidence])
+}
+
+enum AccountingBankStatementLineCategory {
+  BANK_CHARGE
+  BANK_INTEREST
+  IGNORE
+  UNKNOWN
+  POSSIBLE_DUPLICATE_GATEWAY_FEE
+}
+
+enum AccountingBankReconciliationStatus {
+  OPEN
+  IN_PROGRESS
+  RECONCILED
+  REOPENED
+}
+
+/// Formal per-bank reconciliation period (Phase 4D). Does not post GL by itself.
+model AccountingBankReconciliation {
+  id                             String                            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bankAccountId                  String                            @db.Uuid
+  bankAccount                    AccountingBankAccount             @relation(fields: [bankAccountId], references: [id])
+  periodStart                    DateTime                          @db.Date
+  periodEnd                      DateTime                          @db.Date
+  statementImportId              String?                           @db.Uuid
+  statementImport                AccountingBankStatementImport?    @relation(fields: [statementImportId], references: [id])
+  statementOpeningBalanceInPaise Int?
+  statementClosingBalanceInPaise Int?
+  bookOpeningBalanceInPaise      Int                               @default(0)
+  bookClosingBalanceInPaise      Int                               @default(0)
+  bookDebitTotalInPaise          Int                               @default(0)
+  bookCreditTotalInPaise         Int                               @default(0)
+  differenceInPaise              Int                               @default(0)
+  status                         AccountingBankReconciliationStatus @default(OPEN)
+  snapshotJson                   Json?
+  reconciledAt                   DateTime?
+  reconciledByUserId             String?                           @db.Uuid
+  reopenedAt                     DateTime?
+  reopenedByUserId               String?                           @db.Uuid
+  reopenReason                   String?
+  notes                          String?
+  createdAt                      DateTime                          @default(now())
+  updatedAt                      DateTime                          @updatedAt
+  statementLines                 AccountingBankStatementLine[]
+
+  @@unique([bankAccountId, periodStart, periodEnd])
+  @@index([bankAccountId])
+  @@index([status])
+  @@index([periodEnd])
+}
+
+// ─── Phase 3D1: accounting-owned inventory cost layers (parallel to ops Inventory) ─
+
+enum AccountingInventoryCostLayerSourceType {
+  OPENING
+  PURCHASE_RECEIPT
+  RETURN_RESTOCK
+}
+
+enum AccountingInventoryCostLayerStatus {
+  ACTIVE
+  DEPLETED
+  VOID
+}
+
+enum AccountingInventoryOpeningBatchStatus {
+  DRAFT
+  VALIDATED
+  POSTED
+  VOID
+}
+
+model AccountingInventoryCostLayer {
+  id                   String                               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  variantId            String                               @db.Uuid
+  variant              ProductVariant                       @relation(fields: [variantId], references: [id])
+  sourceType           AccountingInventoryCostLayerSourceType
+  sourceId             String
+  sourceLineId         String?                              @db.Uuid
+  quantityOriginal     Int
+  quantityRemaining    Int
+  unitCostInPaise      Int
+  totalCostInPaise     Int
+  currency             String                               @default("INR")
+  effectiveAt          DateTime
+  sourceFingerprint    String
+  status               AccountingInventoryCostLayerStatus   @default(ACTIVE)
+  openingBatchItemId   String?                              @unique @db.Uuid
+  openingBatchItem     AccountingInventoryOpeningBatchItem? @relation(fields: [openingBatchItemId], references: [id])
+  createdAt            DateTime                             @default(now())
+  updatedAt            DateTime                             @updatedAt
+  consumptions         AccountingInventoryCostConsumption[]
+
+  @@unique([sourceType, sourceId, sourceLineId, sourceFingerprint])
+  @@index([variantId, status, effectiveAt, createdAt, id])
+  @@index([variantId, quantityRemaining])
+  @@index([sourceType, sourceId])
+}
+
+model AccountingInventoryCostConsumption {
+  id                String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  costLayerId       String                       @db.Uuid
+  costLayer         AccountingInventoryCostLayer @relation(fields: [costLayerId], references: [id])
+  variantId         String                       @db.Uuid
+  variant           ProductVariant               @relation(fields: [variantId], references: [id])
+  orderId           String?                      @db.Uuid
+  orderItemId       String?                      @db.Uuid
+  quantityConsumed  Int
+  unitCostInPaise   Int
+  totalCostInPaise  Int
+  consumedAt        DateTime
+  postingEventId    String?                      @db.Uuid
+  journalEntryId    String?                      @db.Uuid
+  sourceFingerprint String?
+  createdAt         DateTime                     @default(now())
+
+  @@index([costLayerId])
+  @@index([variantId])
+  @@index([orderId])
+  @@index([orderItemId])
+}
+
+model AccountingInventoryOpeningBatch {
+  id                    String                                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batchNumber           String                                @unique
+  effectiveDate         DateTime                              @db.Date
+  valuationSource       String
+  sourceDocumentRef     String?
+  preparedBy            String?
+  reviewedBy            String?
+  status                AccountingInventoryOpeningBatchStatus @default(DRAFT)
+  totalQuantity         Int                                   @default(0)
+  totalValueInPaise     Int                                   @default(0)
+  sourceFileName        String?
+  sourcePayloadHash     String
+  allowQuantityMismatch Boolean                               @default(false)
+  journalEntryId        String?                               @unique @db.Uuid
+  journalEntry          AccountingJournalEntry?               @relation(fields: [journalEntryId], references: [id])
+  postingEventId        String?                               @unique @db.Uuid
+  createdByUserId       String?                               @db.Uuid
+  postedAt              DateTime?
+  createdAt             DateTime                              @default(now())
+  updatedAt             DateTime                              @updatedAt
+  items                 AccountingInventoryOpeningBatchItem[]
+
+  @@index([status])
+  @@index([effectiveDate])
+}
+
+model AccountingInventoryOpeningBatchItem {
+  id                 String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batchId            String                          @db.Uuid
+  batch              AccountingInventoryOpeningBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  variantId          String                          @db.Uuid
+  variant            ProductVariant                  @relation(fields: [variantId], references: [id])
+  sku                String
+  openingQuantity    Int
+  unitCostInPaise    Int
+  totalCostInPaise   Int
+  operationalOnHand  Int
+  quantityMismatch   Boolean                         @default(false)
+  classification     String
+  notes              String?
+  validationErrors   Json?
+  costLayerId        String?                         @db.Uuid
+  sortOrder          Int                             @default(0)
+  createdAt          DateTime                        @default(now())
+  costLayer          AccountingInventoryCostLayer?
+
+  @@unique([batchId, variantId])
+  @@unique([batchId, sku])
+  @@index([batchId])
+  @@index([variantId])
+}
+
+// ─── Phase 5C — ITC evidence (claimability ≠ GL recognition) ─────────────────
+
+enum AccountingItcStatus {
+  UNVERIFIED_PENDING_TAX_INVOICE
+  ELIGIBLE
+  BLOCKED
+  REVERSED
+  CLAIMED
+  DATA_GAP
+}
+
+enum AccountingItcSourceType {
+  VENDOR_BILL
+  EXPENSE
+  GATEWAY_SETTLEMENT
+}
+
+/// Accounting-owned ITC evidence / claimability. Does not own commerce records or rewrite GL.
+model AccountingItcEvidence {
+  id                      String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sourceType              AccountingItcSourceType
+  sourceId                String                   @db.Uuid
+  uniqueKey               String                   @unique
+  documentReference       String?
+  supplierGstin           String?
+  supplierName            String?
+  documentDate            DateTime?
+  taxableValueInPaise     Int                      @default(0)
+  cgstInPaise             Int                      @default(0)
+  sgstInPaise             Int                      @default(0)
+  igstInPaise             Int                      @default(0)
+  totalGstInPaise         Int                      @default(0)
+  /// True when Input GST was posted to 2200–2202. False for gateway fee-tax (5100).
+  recognizedInInputGl     Boolean                  @default(false)
+  postingEventId          String?                  @db.Uuid
+  journalEntryId          String?                  @db.Uuid
+  status                  AccountingItcStatus      @default(UNVERIFIED_PENDING_TAX_INVOICE)
+  assessmentCode          String?
+  assessmentJson          Json?
+  evidenceWarnings        Json?
+  verificationNotes       String?
+  verifiedAt              DateTime?
+  verifiedByUserId        String?                  @db.Uuid
+  claimedAt               DateTime?
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  statusHistory           AccountingItcStatusHistory[]
+
+  @@unique([sourceType, sourceId])
+  @@index([status])
+  @@index([sourceType])
+  @@index([documentDate])
+  @@index([supplierGstin])
+}
+
+model AccountingItcStatusHistory {
+  id           String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  evidenceId   String              @db.Uuid
+  evidence     AccountingItcEvidence @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  oldStatus    AccountingItcStatus?
+  newStatus    AccountingItcStatus
+  actorUserId  String?             @db.Uuid
+  reason       String?
+  createdAt    DateTime            @default(now())
+
+  @@index([evidenceId, createdAt])
+  @@index([createdAt])
+}
+
+// ─── Phase 7B — Production opening batch (cutover infrastructure) ────────────
+
+enum AccountingOpeningBatchStatus {
+  DRAFT
+  VALIDATED
+  POSTED
+  CANCELLED
+}
+
+enum AccountingOpeningMatchStatus {
+  EXACT
+  MANUAL_MATCH
+  NEW_SKU
+  LEGACY_ONLY
+  UNKNOWN
+}
+
+enum AccountingOpeningReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// Single production cutover opening batch. At most one POSTED.
+model AccountingOpeningBatch {
+  id                    String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batchNumber           String                       @unique
+  effectiveDate         DateTime                     @db.Date
+  status                AccountingOpeningBatchStatus @default(DRAFT)
+  source                String                       @default("MANUAL")
+  description           String?
+  createdByUserId       String?                      @db.Uuid
+  validatedAt           DateTime?
+  postedAt              DateTime?
+  cancelledAt           DateTime?
+  totalDebitInPaise     Int                          @default(0)
+  totalCreditInPaise    Int                          @default(0)
+  validationSummary     Json?
+  sourceFingerprint     String?
+  arApprovedZero        Boolean                      @default(false)
+  equity3900Reason      String?
+  equity3900Reviewer    String?
+  equity3900Approved    Boolean                      @default(false)
+  journalEntryId        String?                      @unique @db.Uuid
+  journalEntry          AccountingJournalEntry?      @relation(fields: [journalEntryId], references: [id])
+  postingEventId        String?                      @unique @db.Uuid
+  createdAt             DateTime                     @default(now())
+  updatedAt             DateTime                     @updatedAt
+  skuMappings           AccountingOpeningSkuMapping[]
+  inventoryLines        AccountingOpeningInventoryLine[]
+  bankLines             AccountingOpeningBankLine[]
+  gatewayLines          AccountingOpeningGatewayLine[]
+  apLines               AccountingOpeningApLine[]
+  arLines               AccountingOpeningArLine[]
+  gstLines              AccountingOpeningGstLine[]
+  equityLines           AccountingOpeningEquityLine[]
+
+  @@index([status])
+  @@index([effectiveDate])
+}
+
+model AccountingOpeningSkuMapping {
+  id              String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batchId         String                        @db.Uuid
+  batch           AccountingOpeningBatch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  newSarvedaSku   String
+  legacySku       String?
+  productName     String?
+  variantLabel    String?
+  matchStatus     AccountingOpeningMatchStatus  @default(UNKNOWN)
+  openingQty      Int                           @default(0)
+  unitCostInPaise Int                           @default(0)
+  source          String?
+  reviewStatus    AccountingOpeningReviewStatus @default(PENDING)
+  variantId       String?                       @db.Uuid
+  notes           String?
+  sortOrder       Int                           @default(0)
+  createdAt       DateTime                      @default(now())
+
+  @@unique([batchId, newSarvedaSku])
+  @@index([batchId])
+}
+
+model AccountingOpeningInventoryLine {
+  id              String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batchId         String                        @db.Uuid
+  batch           AccountingOpeningBatch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  sku             String
+  variantId       String?                       @db.Uuid
+  quantity        Int
+  unitCostInPaise Int
+  totalCostInPaise Int
+  operationalOnHand Int                         @default(0)
+  quantityMismatch Boolean                      @default(false)
+  source          String?
+  reviewStatus    AccountingOpeningReviewStatus @default(PENDING)
+  costLayerId     String?                       @db.Uuid
+  sortOrder       Int                           @default(0)
+  createdAt       DateTime                      @default(now())
+
+  @@unique([batchId, sku])
+  @@index([batchId])
+}
+
+model AccountingOpeningBankLine {
+  id                    String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batchId               String                        @db.Uuid
+  batch                 AccountingOpeningBatch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  name                  String
+  bankName              String?
+  maskedAccountNumber   String?
+  ifsc                  String?
+  accountType           String                        @default("BANK")
+  glAccountCode         String
+  openingBookBalanceInPaise Int
+  statementBalanceInPaise Int?
+  source                String?
+  reviewStatus          AccountingOpeningReviewStatus @default(PENDING)
+  sortOrder             Int                           @default(0)
+  createdAt             DateTime                      @default(now())
+
+  @@unique([batchId, glAccountCode])
+  @@index([batchId])
+}
+
+model AccountingOpeningGatewayLine {
+  id                   String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batchId              String                        @db.Uuid
+  batch                AccountingOpeningBatch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  provider             String
+  glAccountCode        String
+  unsettledAmountInPaise Int
+  /// ASSET = debit clearing; LIABILITY = credit clearing
+  direction            String                        @default("ASSET")
+  sourceReference      String?
+  reviewStatus         AccountingOpeningReviewStatus @default(PENDING)
+  sortOrder            Int                           @default(0)
+  createdAt            DateTime                      @default(now())
+
+  @@unique([batchId, provider])
+  @@index([batchId])
+}
+
+model AccountingOpeningApLine {
+  id                    String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batchId               String                        @db.Uuid
+  batch                 AccountingOpeningBatch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  vendorName            String
+  vendorId              String?                       @db.Uuid
+  billNumber            String
+  billDate              DateTime?                     @db.Date
+  dueDate               DateTime?                     @db.Date
+  outstandingInPaise    Int
+  gstComponentInPaise   Int                           @default(0)
+  tdsInPaise            Int                           @default(0)
+  currency              String                        @default("INR")
+  reference             String?
+  source                String?
+  reviewStatus          AccountingOpeningReviewStatus @default(PENDING)
+  remainingOutstandingInPaise Int?
+  sortOrder             Int                           @default(0)
+  createdAt             DateTime                      @default(now())
+
+  @@unique([batchId, vendorName, billNumber])
+  @@index([batchId])
+}
+
+model AccountingOpeningArLine {
+  id                 String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batchId            String                        @db.Uuid
+  batch              AccountingOpeningBatch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  customerName       String
+  customerId         String?                       @db.Uuid
+  invoiceReference   String
+  invoiceDate        DateTime?                     @db.Date
+  dueDate            DateTime?                     @db.Date
+  outstandingInPaise Int
+  currency           String                        @default("INR")
+  source             String?
+  reviewStatus       AccountingOpeningReviewStatus @default(PENDING)
+  sortOrder          Int                           @default(0)
+  createdAt          DateTime                      @default(now())
+
+  @@unique([batchId, invoiceReference])
+  @@index([batchId])
+}
+
+model AccountingOpeningGstLine {
+  id              String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batchId         String                        @db.Uuid
+  batch           AccountingOpeningBatch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  accountCode     String
+  /// Signed net: positive = debit (asset/input), negative = credit (liability/output)
+  balanceInPaise  Int
+  source          String?
+  reviewStatus    AccountingOpeningReviewStatus @default(PENDING)
+  sortOrder       Int                           @default(0)
+  createdAt       DateTime                      @default(now())
+
+  @@unique([batchId, accountCode])
+  @@index([batchId])
+}
+
+model AccountingOpeningEquityLine {
+  id             String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batchId        String                        @db.Uuid
+  batch          AccountingOpeningBatch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  accountCode    String
+  /// Credit positive for capital/RE/OBE credit balances
+  amountInPaise  Int
+  reason         String?
+  reviewStatus   AccountingOpeningReviewStatus @default(PENDING)
+  sortOrder      Int                           @default(0)
+  createdAt      DateTime                      @default(now())
+
+  @@unique([batchId, accountCode])
+  @@index([batchId])
 }

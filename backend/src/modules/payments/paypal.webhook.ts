@@ -3,9 +3,10 @@ import type { Request, Response } from "express";
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { notifyOrderEmail } from "../notifications/email";
-import { cancelUnpaidOrderWithRelease, handlePaidOrderStatusChange } from "../orders/orders.service";
+import { cancelUnpaidOrderWithRelease } from "../orders/orders.service";
 
 import { completePayPalPaidOrder } from "./paypal.complete";
+import { applyExternalProviderRefund } from "./refund-sync.service";
 
 function paypalBase(): string {
   const mode = (process.env.PAYPAL_MODE ?? "sandbox").trim().toLowerCase();
@@ -72,10 +73,70 @@ type PayPalWebhookEvent = {
     id?: string;
     status?: string;
     custom_id?: string;
-    supplementary_data?: { related_ids?: { order_id?: string } };
+    amount?: { value?: string; currency_code?: string };
+    supplementary_data?: {
+      related_ids?: { order_id?: string; capture_id?: string };
+    };
     purchase_units?: Array<{ custom_id?: string; reference_id?: string }>;
+    links?: Array<{ rel?: string; href?: string }>;
   };
 };
+
+function parsePayPalAmountInPaise(value: string | undefined): number {
+  if (!value) return 0;
+  const num = Number.parseFloat(value);
+  if (!Number.isFinite(num) || num <= 0) return 0;
+  return Math.round(num * 100);
+}
+
+function extractPayPalCaptureId(resource: PayPalWebhookEvent["resource"]): string | undefined {
+  const fromSupplementary = resource?.supplementary_data?.related_ids?.capture_id;
+  if (fromSupplementary) return fromSupplementary;
+  const upLink = resource?.links?.find((l) => l.rel === "up" && l.href?.includes("/captures/"));
+  if (upLink?.href) {
+    const match = upLink.href.match(/\/captures\/([^/?]+)/);
+    if (match?.[1]) return match[1];
+  }
+  return undefined;
+}
+
+async function handlePayPalRefundWebhook(
+  event: PayPalWebhookEvent,
+  eventLabel: string
+): Promise<void> {
+  const resource = event.resource;
+  const refundId = resource?.id;
+  const amountPaise = parsePayPalAmountInPaise(resource?.amount?.value);
+  const paymentDbId = resource?.custom_id?.trim() || undefined;
+  const captureId = extractPayPalCaptureId(resource);
+
+  if (!refundId || amountPaise <= 0) {
+    logger.warn("paypal_refund_webhook_missing_fields", { eventLabel, refundId, amountPaise });
+    return;
+  }
+
+  const refundStatus =
+    resource?.status?.toUpperCase() === "COMPLETED"
+      ? "processed"
+      : resource?.status?.toUpperCase() === "FAILED"
+        ? "failed"
+        : "created";
+
+  const result = await applyExternalProviderRefund({
+    provider: "PAYPAL",
+    providerRefundId: refundId,
+    paymentDbId: paymentDbId ?? null,
+    providerPaymentId: captureId ?? null,
+    amountInPaise: amountPaise,
+    reason: `PayPal webhook ${eventLabel}`,
+    refundStatus,
+    rawEvent: eventLabel
+  });
+
+  if (result.newlyRecorded && refundStatus === "processed" && result.orderId) {
+    notifyOrderEmail(result.orderId, "refund_initiated");
+  }
+}
 
 export async function paypalWebhookHandler(req: Request, res: Response): Promise<void> {
   let event: PayPalWebhookEvent;
@@ -142,24 +203,21 @@ export async function paypalWebhookHandler(req: Request, res: Response): Promise
           if (cancelled) notifyOrderEmail(pay.orderId, "payment_failed");
         }
       }
-    } else if (type === "PAYMENT.CAPTURE.REFUNDED") {
-      // BUG 2: refund paid orders (restock + REFUNDED), not only PENDING_PAYMENT
+    } else if (type === "PAYMENT.CAPTURE.REFUNDED" || type === "PAYMENT.REFUND.COMPLETED") {
       const paymentId = event.resource?.custom_id;
       if (paymentId) {
         const pay = await prisma.payment.findFirst({
           where: { id: paymentId, provider: "PAYPAL" },
           include: { order: true }
         });
-        if (pay) {
-          if (pay.order.status === "PENDING_PAYMENT") {
-            const cancelled = await cancelUnpaidOrderWithRelease(pay.orderId, `PayPal ${type}`);
-            if (cancelled) notifyOrderEmail(pay.orderId, "payment_failed");
-          } else {
-            await handlePaidOrderStatusChange(pay.orderId, "REFUNDED", "PayPal PAYMENT.CAPTURE.REFUNDED");
-            notifyOrderEmail(pay.orderId, "refund_initiated");
-          }
+        if (pay?.order.status === "PENDING_PAYMENT") {
+          const cancelled = await cancelUnpaidOrderWithRelease(pay.orderId, `PayPal ${type}`);
+          if (cancelled) notifyOrderEmail(pay.orderId, "payment_failed");
+          res.status(200).json({ received: true });
+          return;
         }
       }
+      await handlePayPalRefundWebhook(event, type);
     }
   } catch (err) {
     logger.error("paypal_webhook_handler_error", { err, type });

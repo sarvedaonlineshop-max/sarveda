@@ -19,6 +19,11 @@ import {
   cancelUnpaidOrderWithRelease,
   handlePaidOrderStatusChange
 } from "../orders/orders.service";
+import {
+  adminApplyInventoryRestock,
+  adminInventoryRestockBodySchema,
+  listOrderInventoryRestocks
+} from "../orders/order-inventory-restock.service";
 import { notifyOrderEmail } from "../notifications/email";
 import { onOrderEnteredProcessing } from "../shipping/orderLifecycle";
 import { getZohoStockSyncMeta } from "../zoho/zoho-stock-sync-cache";
@@ -760,7 +765,8 @@ export async function orderDetail(req: Request, res: Response, next: NextFunctio
             photos: true,
             items: { include: { photos: true } }
           }
-        }
+        },
+        inventoryRestocks: { orderBy: { createdAt: "asc" } }
       }
     });
     if (!order) {
@@ -932,6 +938,51 @@ export async function refundOrder(req: Request, res: Response, next: NextFunctio
     const reason = (req.body as { reason?: string }).reason;
     const result = await initiateGatewayRefund(id, reason);
     res.json(result);
+  } catch (err) {
+    const code = (err as { code?: string }).code;
+    const statusCode = (err as { statusCode?: number }).statusCode;
+    if (
+      code === "DUPLICATE_REFUND" ||
+      code === "AMOUNT_TOO_HIGH" ||
+      code === "ALREADY_REFUNDED"
+    ) {
+      res.status(statusCode ?? 409).json({
+        success: false,
+        error: err instanceof Error ? err.message : "Refund conflict",
+        code
+      });
+      return;
+    }
+    next(err);
+  }
+}
+
+/** Explicit physical return / restock — independent of gateway monetary refund. */
+export async function restockOrderInventory(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const body = adminInventoryRestockBodySchema.parse(req.body);
+    const adminUser = (req as Request & { authUser?: { id?: string } }).authUser;
+    const { events, sourceId } = await adminApplyInventoryRestock({
+      orderId: id,
+      body,
+      createdByUserId: adminUser?.id
+    });
+    res.json({
+      success: true,
+      data: { sourceId, events },
+      message: `Recorded ${events.length} restock line(s). Sellable lines increment onHand once; accounting COGS reversal is a separate Phase 3D4 posting step.`
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function listOrderRestocks(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const events = await listOrderInventoryRestocks(id);
+    res.json({ success: true, data: { events } });
   } catch (err) {
     next(err);
   }

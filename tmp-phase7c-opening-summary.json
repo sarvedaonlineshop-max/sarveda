@@ -1,0 +1,254 @@
+{
+  "batchId": "61534b89-25f9-4c49-baa7-fcd595c04de4",
+  "batchNumber": "OPEN-202608-00001",
+  "status": "DRAFT",
+  "journalEntryId": null,
+  "postedOpeningJournals": 0,
+  "cutoverDate": "2026-08-25",
+  "inventory": {
+    "stockedSkus": 693,
+    "stagedSkus": 1,
+    "missingCostSkus": 692,
+    "valuationPaise": 80000000,
+    "valuationInr": 800000,
+    "gl": "1200"
+  },
+  "bankCash": {
+    "iciciPaise": 10704936,
+    "pettyCashPaise": 2452498,
+    "totalPaise": 13157434
+  },
+  "gatewayStagedPaise": 0,
+  "ap": {
+    "vendors": 22,
+    "totalPaise": 368365156
+  },
+  "ar": {
+    "customers": 15,
+    "totalPaise": 21800018
+  },
+  "gst": {
+    "inputCgst": 8405603,
+    "inputSgst": 8405603,
+    "inputIgst": 54634785,
+    "outputCgst": 38861011,
+    "outputSgst": 38861011,
+    "outputIgst": 10414810
+  },
+  "proposedEquityPaise": -270098545,
+  "totals": {
+    "assetsPaise": 186403443,
+    "liabilitiesPaise": 456501988,
+    "proposedEquityPaise": -270098545,
+    "debitPaise": 186403443,
+    "creditPaise": 456501988,
+    "differencePaise": -270098545
+  },
+  "validationStatus": "FAIL",
+  "validationFails": [
+    "OPENING_DR_EQ_CR"
+  ],
+  "gaps": [
+    {
+      "code": "CONTROL_OR_TB_GAP",
+      "category": "Razorpay Account",
+      "message": "TB credit balance is not a clean unsettled receivable — exclude",
+      "amountInr": 385295.09
+    },
+    {
+      "code": "CONTROL_OR_TB_GAP",
+      "category": "Stripe Control Account",
+      "message": "TB credit balance — exclude pending owner confirmation of unsettled",
+      "amountInr": 4190.59
+    },
+    {
+      "code": "CONTROL_OR_TB_GAP",
+      "category": "Amala Earth Control Account",
+      "message": "Marketplace receivable candidate — needs owner confirm",
+      "amountInr": 7707.2
+    },
+    {
+      "code": "CONTROL_OR_TB_GAP",
+      "category": "Etsy Control Account",
+      "message": "Marketplace receivable candidate — needs owner confirm",
+      "amountInr": 43230.46
+    },
+    {
+      "code": "CONTROL_OR_TB_GAP",
+      "category": "Accounts Receivable (TB control)",
+      "message": "TB shows CR; use Customer Balance Summary for AR staging",
+      "amountInr": 260504.51
+    },
+    {
+      "code": "CONTROL_OR_TB_GAP",
+      "category": "Accounts Payable (TB control)",
+      "message": "TB total ≠ vendor schedule sum — schedule is staged source",
+      "amountInr": 4031538.66
+    },
+    {
+      "code": "AP_SCHEDULE_VS_TB",
+      "category": "AP",
+      "message": "Vendor schedule sum ₹3683651.56 ≠ TB AP ₹4031538.66",
+      "amountInr": 347887.1000000001
+    },
+    {
+      "code": "INVENTORY_COST_DATA_GAP",
+      "category": "Inventory",
+      "message": "692 Sarveda stocked SKUs (68235 units) lack positive Zoho valuation unit cost — excluded from opening valuation"
+    },
+    {
+      "code": "INVENTORY_BACKEND_FIFO_EMPTY",
+      "category": "Inventory",
+      "message": "Native AccountingInventoryCostLayer has no non-TEST costs for stocked SKUs; unit costs taken from Zoho Inventory Valuation Summary as cost evidence only (qty remains Sarveda)"
+    },
+    {
+      "code": "PROPOSED_OPENING_EQUITY",
+      "category": "Equity",
+      "message": "Opening credits exceed debits by 270098545 paise — missing asset or overstated liability (DATA_GAP)",
+      "amountInr": -2700985.45
+    }
+  ],
+  "classifications": [
+    {
+      "zohoAccount": "ICICI Bank - SARVEDA LIFE PRIVATE LIMITED",
+      "classification": "BANK",
+      "tbDebitInr": 107049.36,
+      "tbCreditInr": 0,
+      "staged": true,
+      "reason": "Stage book balance to GL 1010"
+    },
+    {
+      "zohoAccount": "Petty Cash",
+      "classification": "CASH",
+      "tbDebitInr": 24524.98,
+      "tbCreditInr": 0,
+      "staged": true,
+      "reason": "Stage book balance to GL 1000"
+    },
+    {
+      "zohoAccount": "Razorpay Account",
+      "classification": "DATA_GAP",
+      "tbDebitInr": 0,
+      "tbCreditInr": 385295.09,
+      "staged": false,
+      "reason": "TB credit balance is not a clean unsettled receivable — exclude"
+    },
+    {
+      "zohoAccount": "Stripe Control Account",
+      "classification": "DATA_GAP",
+      "tbDebitInr": 0,
+      "tbCreditInr": 4190.59,
+      "staged": false,
+      "reason": "TB credit balance — exclude pending owner confirmation of unsettled"
+    },
+    {
+      "zohoAccount": "PayPal (no TB control A/c)",
+      "classification": "ZERO",
+      "tbDebitInr": 0,
+      "tbCreditInr": 0,
+      "staged": false,
+      "reason": "No PayPal control balance on TB — stage nothing"
+    },
+    {
+      "zohoAccount": "Amazon Control Account",
+      "classification": "NOT_MIGRATING",
+      "tbDebitInr": 0,
+      "tbCreditInr": 45760.76,
+      "staged": false,
+      "reason": "Marketplace recon control — not native gateway clearing"
+    },
+    {
+      "zohoAccount": "Flipkart Control Account",
+      "classification": "NOT_MIGRATING",
+      "tbDebitInr": 0,
+      "tbCreditInr": 8831.06,
+      "staged": false,
+      "reason": "Marketplace recon control"
+    },
+    {
+      "zohoAccount": "Firstcry Control Account",
+      "classification": "NOT_MIGRATING",
+      "tbDebitInr": 0,
+      "tbCreditInr": 10209,
+      "staged": false,
+      "reason": "Marketplace recon control"
+    },
+    {
+      "zohoAccount": "Tata 1Mg Control Account",
+      "classification": "NOT_MIGRATING",
+      "tbDebitInr": 0,
+      "tbCreditInr": 967.06,
+      "staged": false,
+      "reason": "Marketplace recon control"
+    },
+    {
+      "zohoAccount": "Amala Earth Control Account",
+      "classification": "DATA_GAP",
+      "tbDebitInr": 7707.2,
+      "tbCreditInr": 0,
+      "staged": false,
+      "reason": "Marketplace receivable candidate — needs owner confirm"
+    },
+    {
+      "zohoAccount": "Etsy Control Account",
+      "classification": "DATA_GAP",
+      "tbDebitInr": 43230.46,
+      "tbCreditInr": 0,
+      "staged": false,
+      "reason": "Marketplace receivable candidate — needs owner confirm"
+    },
+    {
+      "zohoAccount": "Delhivery Control Account",
+      "classification": "LOGISTICS_CONTROL",
+      "tbDebitInr": 0,
+      "tbCreditInr": 243857.04,
+      "staged": false,
+      "reason": "Logistics control — not opening AP/gateway"
+    },
+    {
+      "zohoAccount": "Undeposited Funds",
+      "classification": "NOT_MIGRATING",
+      "tbDebitInr": 3001976.63,
+      "tbCreditInr": 0,
+      "staged": false,
+      "reason": "Historical recon dump — exclude"
+    },
+    {
+      "zohoAccount": "Clearining A/c",
+      "classification": "NOT_MIGRATING",
+      "tbDebitInr": 1224327,
+      "tbCreditInr": 0,
+      "staged": false,
+      "reason": "Legacy clearing — exclude"
+    },
+    {
+      "zohoAccount": "Accounts Receivable (TB control)",
+      "classification": "DATA_GAP",
+      "tbDebitInr": 0,
+      "tbCreditInr": 260504.51,
+      "staged": false,
+      "reason": "TB shows CR; use Customer Balance Summary for AR staging"
+    },
+    {
+      "zohoAccount": "Accounts Payable (TB control)",
+      "classification": "DATA_GAP",
+      "tbDebitInr": 0,
+      "tbCreditInr": 4031538.66,
+      "staged": false,
+      "reason": "TB total ≠ vendor schedule sum — schedule is staged source"
+    }
+  ],
+  "fingerprintBefore": {
+    "orders": 4396,
+    "payments": 3520,
+    "inventoryOnHandSum": 93758
+  },
+  "fingerprintAfter": {
+    "orders": 4396,
+    "payments": 3520,
+    "inventoryOnHandSum": 93758
+  },
+  "commerceUnchanged": true,
+  "reviewPath": "/home/ubuntu/sarveda/backend/tmp/phase7c-opening-review-2026-08-25.xlsx",
+  "flagsNote": "NATIVE_ACCOUNTING_ENABLED and ACCOUNTING_OPENING_BALANCE_ENABLED set in-process only; .env not written"
+}

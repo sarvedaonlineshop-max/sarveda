@@ -1117,6 +1117,9 @@ export default function TasksApp() {
   const [membersDraft,setMembersDraft] = useState<string[]>([]);
   const [membersSaving,setMembersSaving] = useState(false);
   const [msgMenuId,setMsgMenuId] = useState<string|null>(null);
+  const [editingMessageId,setEditingMessageId] = useState<string|null>(null);
+  const [editDraft,setEditDraft] = useState("");
+  const [editSaving,setEditSaving] = useState(false);
   const [selectedDelete,setSelectedDelete] = useState<{
     kind: "message" | "task-attachment";
     id: string;
@@ -2608,6 +2611,47 @@ export default function TasksApp() {
     if (ev.message?.startsWith("@@SYSTEM@@")) return false;
     const age = Date.now()-new Date(ev.createdAt).getTime();
     return age<=15*60*1000;
+  }
+
+  function messageCanEdit(ev: TaskEvent): boolean {
+    if (!messageCanDelete(ev)) return false;
+    if (ev.attachments && ev.attachments.length > 0) return false;
+    return Boolean(ev.message?.trim());
+  }
+
+  async function handleSaveMessageEdit(eventId: string) {
+    const active = subtaskPanel ?? selected;
+    if (!active || !token) return;
+    const trimmed = editDraft.trim();
+    if (!trimmed) {
+      alert("Message cannot be empty.");
+      return;
+    }
+    setEditSaving(true);
+    try {
+      const r = await fetch(
+        `${API}/complaints/${active.id}/events/${eventId}`,
+        {
+          method: "PATCH",
+          headers: ah(),
+          body: JSON.stringify({ message: trimmed })
+        }
+      );
+      const d = await r.json().catch(() => ({})) as { error?: string };
+      if (!r.ok) {
+        alert(d.error ?? "Cannot edit message");
+        return;
+      }
+      setEditingMessageId(null);
+      setEditDraft("");
+      setMsgMenuId(null);
+      if (subtaskPanel) await loadSubtaskPanel(active.id);
+      else await loadDetail(active.id);
+    } catch {
+      alert("Failed to edit message.");
+    } finally {
+      setEditSaving(false);
+    }
   }
 
   async function markAllRead() {
@@ -4842,6 +4886,7 @@ export default function TasksApp() {
             }
             const isMine = ev.authorEmail===myEmail;
             const canDel = canAct && messageCanDelete(ev);
+            const canEdit = canAct && messageCanEdit(ev);
             return (
               <div key={ev.id} style={{
                 display:"flex",
@@ -4859,7 +4904,7 @@ export default function TasksApp() {
                 <div
                   className={isMine?"wa-bubble-out":"wa-bubble-in"}
                   style={{position:"relative",maxWidth:"75%"}}>
-                  {canDel && (
+                  {(canDel || canEdit) && (
                     <button type="button"
                       onMouseDown={(e)=>e.stopPropagation()}
                       onClick={(e)=>{
@@ -4877,48 +4922,111 @@ export default function TasksApp() {
                       }}
                       aria-label="Message options">⋮</button>
                   )}
-                  {msgMenuId === ev.id && canDel && (
+                  {msgMenuId === ev.id && (canDel || canEdit) && (
                     <div style={{
                       position:"absolute",top:30,right:4,zIndex:20,
                       background:"#233138",borderRadius:10,
                       boxShadow:"0 8px 24px rgba(0,0,0,.28)",
                       minWidth:120,overflow:"hidden"
                     }}>
-                      <button type="button"
-                        onClick={()=>{
-                          setMsgMenuId(null);
-                          setSelectedDelete({
-                            kind: "message",
-                            id: ev.id,
-                          });
-                        }}
-                        style={{
-                          width:"100%",padding:"12px 14px",
-                          border:"none",background:"transparent",
-                          color:"#ea7070",fontSize:14,fontWeight:500,
-                          display:"flex",alignItems:"center",gap:12,
-                          cursor:"pointer",textAlign:"left"
-                        }}>
-                        <span style={{fontSize:16}}>🗑</span> Delete
-                      </button>
+                      {canEdit ? (
+                        <button type="button"
+                          onClick={()=>{
+                            setMsgMenuId(null);
+                            setEditingMessageId(ev.id);
+                            setEditDraft(ev.message ?? "");
+                          }}
+                          style={{
+                            width:"100%",padding:"12px 14px",
+                            border:"none",background:"transparent",
+                            color:"#fff",fontSize:14,fontWeight:500,
+                            display:"flex",alignItems:"center",gap:12,
+                            cursor:"pointer",textAlign:"left"
+                          }}>
+                          <span style={{fontSize:16}}>✎</span> Edit
+                        </button>
+                      ) : null}
+                      {canDel ? (
+                        <button type="button"
+                          onClick={()=>{
+                            setMsgMenuId(null);
+                            setSelectedDelete({
+                              kind: "message",
+                              id: ev.id,
+                            });
+                          }}
+                          style={{
+                            width:"100%",padding:"12px 14px",
+                            border:"none",background:"transparent",
+                            color:"#ea7070",fontSize:14,fontWeight:500,
+                            display:"flex",alignItems:"center",gap:12,
+                            cursor:"pointer",textAlign:"left"
+                          }}>
+                          <span style={{fontSize:16}}>🗑</span> Delete
+                        </button>
+                      ) : null}
                     </div>
                   )}
                   {!isMine&&(
                     <p style={{
                       fontSize:"11px",fontWeight:700,
                       color:"#075E54",marginBottom:"3px",
-                      paddingRight:canDel?22:0
+                      paddingRight:(canDel || canEdit)?22:0
                     }}>
                       {personName(ev.authorEmail,activeTask)}
                     </p>
                   )}
-                  {ev.message&&(
+                  {editingMessageId === ev.id ? (
+                    <div style={{ paddingRight: (canDel || canEdit) ? 18 : 0 }}>
+                      <textarea
+                        value={editDraft}
+                        onChange={(e)=>setEditDraft(e.target.value)}
+                        rows={3}
+                        style={{
+                          width:"100%",minWidth:180,
+                          borderRadius:8,border:"1px solid #e0d8ce",
+                          padding:"8px 10px",fontSize:14,
+                          lineHeight:1.5,resize:"vertical",
+                          fontFamily:"inherit",color:"#1a1614"
+                        }}
+                      />
+                      <div style={{
+                        display:"flex",justifyContent:"flex-end",
+                        gap:8,marginTop:8
+                      }}>
+                        <button type="button"
+                          disabled={editSaving}
+                          onClick={()=>{
+                            setEditingMessageId(null);
+                            setEditDraft("");
+                          }}
+                          style={{
+                            padding:"6px 12px",borderRadius:8,
+                            border:"1px solid #e0d8ce",
+                            background:"#fff",fontSize:13,cursor:"pointer"
+                          }}>
+                          Cancel
+                        </button>
+                        <button type="button"
+                          disabled={editSaving || !editDraft.trim()}
+                          onClick={()=>void handleSaveMessageEdit(ev.id)}
+                          style={{
+                            padding:"6px 12px",borderRadius:8,
+                            border:"none",background:"#25D366",
+                            color:"#fff",fontSize:13,fontWeight:600,
+                            cursor:"pointer"
+                          }}>
+                          {editSaving ? "Saving…" : "Save"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : ev.message ? (
                     <p style={{
                       fontSize:"14px",color:"#1a1614",
                       lineHeight:1.5,margin:0,
-                      paddingRight:canDel?18:0
+                      paddingRight:(canDel || canEdit)?18:0
                     }}>{renderLinkedText(ev.message)}</p>
-                  )}
+                  ) : null}
                   {ev.attachments&&ev.attachments.length>0&&(
                     <ChatMedia
                       attachments={ev.attachments}

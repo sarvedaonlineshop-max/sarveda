@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { CorporateContactForm } from "@/components/cms/CorporateContactForm";
-import { InfiniteMarquee } from "@/components/cms/InfiniteMarquee";
+import { AutoScrollRail } from "@/components/cms/AutoScrollRail";
 import {
   CORPORATE_CONTACT,
   CORPORATE_IMG,
@@ -95,7 +95,7 @@ export function CorporatePartners() {
   return (
     <section className="bg-white py-14 md:py-20">
       <SectionTitle className="mb-10 px-4">Our Partners in Workplace Wellness</SectionTitle>
-      <InfiniteMarquee duration={50}>
+      <AutoScrollRail speed={0.6} className="px-2" trackClassName="gap-0 py-2">
         {CORPORATE_PARTNER_LOGOS.map((logo) => (
           <div
             key={logo.src}
@@ -105,7 +105,7 @@ export function CorporatePartners() {
             <img src={logo.src} alt={logo.alt} className="max-h-full max-w-full object-contain" />
           </div>
         ))}
-      </InfiniteMarquee>
+      </AutoScrollRail>
     </section>
   );
 }

@@ -6,7 +6,7 @@ import { SectionFlourish } from "@/components/brand/SectionFlourish";
  * Homepage Instagram strip — mockup heading + live sarveda.com post links/media.
  */
 
-const PROFILE_URL = "https://www.instagram.com/sarveda.shaala/";
+const PROFILE_URL = "https://www.instagram.com/sarveda_life/";
 
 const POSTS = [
   {
@@ -140,7 +140,7 @@ export function HomeInstagram() {
               rel="noopener noreferrer"
               className="text-sm font-medium text-brand-gold hover:underline"
             >
-              @sarveda.shaala
+              @sarveda_life
             </a>
           </p>
         </div>

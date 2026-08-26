@@ -19,6 +19,8 @@ export type ProductListItem = {
   productType: string;
   hasAudio: boolean;
   primaryImageUrl: string | null;
+  /** Up to 4 gallery URLs for listing hover carousel */
+  imageUrls?: string[];
   fromPriceInPaise: number | null;
   fromMrpInPaise?: number | null;
   fromSaleUsdCents?: number | null;

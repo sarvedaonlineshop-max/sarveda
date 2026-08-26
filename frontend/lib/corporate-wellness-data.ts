@@ -3,6 +3,9 @@ import { SARVEDA_WHATSAPP_E164 } from "./enquiry";
 
 const c = corporateThemeAsset;
 
+/** Shared PayPal partner logo — same asset on homepage and corporate pages. */
+export const PAYPAL_PARTNER_LOGO = "/images/home/partners/paypal.png";
+
 export const CORPORATE_IMG = {
   programs: {
     sahyog: c("corporate/prayog.jpg"),
@@ -94,7 +97,6 @@ export const CORPORATE_FACILITATORS = [
   { name: "Chetan", role: "Mudgar Swing", image: c("facilitatos/Chetan.jpg") },
   { name: "Tejal Rathod", role: "Sound and meditation therapist", image: c("facilitatos/tejal_rathod.jpg") },
   { name: "Saloni", role: "Terrarium workshop", image: c("facilitatos/Saloni.jpg") },
-  { name: "Vivek", role: "Breathwork and Animal Flow", image: c("facilitatos/Vivek.jpg") },
   { name: "Saatvika", role: "EFT and Inner Child Healing", image: c("facilitatos/Saatvika.jpg") },
   { name: "Xenkat", role: "Drum Circle", image: c("facilitatos/Xenkat.jpg") },
   { name: "Riya", role: "Yoga", image: c("facilitatos/Riya.jpg") }
@@ -105,7 +107,7 @@ export const CORPORATE_PARTNER_LOGOS = [
   { src: c("t-logo-9.svg"), alt: "Publicis Groupe" },
   { src: c("t-logo-10.webp"), alt: "The Times Group" },
   { src: c("Veeam_logo.png"), alt: "Veeam" },
-  { src: c("paypal_logo.png"), alt: "PayPal" },
+  { src: PAYPAL_PARTNER_LOGO, alt: "PayPal" },
   { src: c("t-logo-12.svg"), alt: "Rotary" },
   { src: c("t-logo-13.jpeg"), alt: "Partner" },
   { src: c("t-logo-14.png"), alt: "Partner" }
@@ -131,6 +133,6 @@ export const CORPORATE_TESTIMONIALS = [
 const primaryPhoneDisplay = `+91 ${SARVEDA_WHATSAPP_E164.replace(/^91/, "")}`;
 
 export const CORPORATE_CONTACT = {
-  emails: ["care@sarveda.com", "vivek@sarveda.com", "arjun@sarveda.com"],
+  emails: ["care@sarveda.com", "arjun@sarveda.com"],
   phones: [primaryPhoneDisplay] as const
 };

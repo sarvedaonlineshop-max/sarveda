@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
+const HIDE_MS = 450;
+/** Safety: if nav-start fires but pathname never changes (same-route / aborted), hide anyway. */
+const NAV_START_MAX_MS = 1200;
+
 /** Mobile-only full-screen spinner while bottom-nav / tab changes settle.
  *  Desktop already uses Header’s PageLoadingSpinner — keep them from stacking. */
 export function RouteLoadingSpinner() {
@@ -11,14 +15,22 @@ export function RouteLoadingSpinner() {
 
   useEffect(() => {
     setVisible(true);
-    const t = window.setTimeout(() => setVisible(false), 450);
+    const t = window.setTimeout(() => setVisible(false), HIDE_MS);
     return () => window.clearTimeout(t);
   }, [pathname]);
 
   useEffect(() => {
-    const onStart = () => setVisible(true);
+    let safety: number | undefined;
+    const onStart = () => {
+      setVisible(true);
+      window.clearTimeout(safety);
+      safety = window.setTimeout(() => setVisible(false), NAV_START_MAX_MS);
+    };
     window.addEventListener("sarveda-nav-start", onStart);
-    return () => window.removeEventListener("sarveda-nav-start", onStart);
+    return () => {
+      window.removeEventListener("sarveda-nav-start", onStart);
+      window.clearTimeout(safety);
+    };
   }, []);
 
   if (!visible) return null;

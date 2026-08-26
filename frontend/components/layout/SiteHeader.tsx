@@ -22,7 +22,7 @@ function AnnouncementBar() {
   const items = [...ANNOUNCEMENTS, ...ANNOUNCEMENTS];
   return (
     <div className="overflow-hidden py-2 text-xs font-medium tracking-wide" style={{ background:"#1e3a2f", color:"#f5d88a" }}>
-      <div className="flex whitespace-nowrap" style={{ animation:"marquee 32s linear infinite" }}>
+      <div className="flex whitespace-nowrap" style={{ animation:"marquee 12s linear infinite" }}>
         {items.map((msg, i) => (
           <span key={i} className="mx-8 shrink-0">{msg}</span>
         ))}

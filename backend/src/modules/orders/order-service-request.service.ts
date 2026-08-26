@@ -546,7 +546,7 @@ export async function processServiceRequestRefund(opts: {
     return {
       totalRefundedInPaise: totalInPaise,
       message:
-        "COD manual refund recorded. Transfer money to the customer using the saved details — no automatic payout."
+        "Manual refund required. COD refund note saved — transfer money to the customer using those details. No automatic payout."
     };
   }
 

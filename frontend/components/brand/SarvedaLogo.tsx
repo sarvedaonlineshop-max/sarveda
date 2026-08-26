@@ -4,9 +4,9 @@ import Link from "next/link";
 const LOGO_LIGHT = "/images/brand/sarveda-logo.png";
 const LOGO_DARK = "/images/brand/sarveda-logo-on-dark.png";
 
-/** Combined mark + wordmark asset aspect. */
-const LOGO_W = 933;
-const LOGO_H = 313;
+/** Combined mark + wordmark asset aspect (processed YG/YW PNGs ~142×48). */
+const LOGO_W = 142;
+const LOGO_H = 48;
 
 type SarvedaLogoProps = {
   href?: string;

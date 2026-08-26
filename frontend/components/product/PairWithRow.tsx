@@ -9,6 +9,7 @@ import { usePricingZone } from "@/hooks/usePricingZone";
 import { unitSaleMinor, zoneToCurrency, type Zone } from "@/lib/currency";
 import { formatMinorFromPaise } from "@/lib/money";
 import { resolveMediaUrl } from "@/lib/media-cdn";
+import { blockProductImageContextMenu, productImageClassName } from "@/lib/product-image-guard";
 import type { ProductListItem } from "@/lib/types";
 
 type Props = {
@@ -112,10 +113,18 @@ export function PairWithRow({ items, compact = false }: Props) {
               <li key={item.id} className="flex items-center gap-2.5 py-2 first:pt-1.5 last:pb-0">
                 <Link
                   href={`/product/${item.slug}`}
-                  className="relative h-11 w-11 shrink-0 overflow-hidden rounded-md bg-[#EDE4D3] ring-1 ring-brand-cream-dark/80"
+                  className="relative h-11 w-11 shrink-0 overflow-hidden rounded-md bg-brand-cream-dark/40 ring-1 ring-brand-cream-dark/80"
+                  onContextMenu={blockProductImageContextMenu}
                 >
                   {img ? (
-                    <Image src={img} alt={item.name} fill className="object-cover" sizes="44px" unoptimized />
+                    <Image
+                      src={img}
+                      alt={item.name}
+                      fill
+                      className={`object-cover ${productImageClassName}`}
+                      sizes="44px"
+                      unoptimized
+                    />
                   ) : (
                     <span className="flex h-full items-center justify-center text-[10px] text-stone-400">—</span>
                   )}
@@ -166,10 +175,18 @@ export function PairWithRow({ items, compact = false }: Props) {
               <div className="flex min-w-0 flex-1 gap-3 rounded-xl border border-white/80 bg-white/95 p-3 shadow-sm">
                 <Link
                   href={`/product/${item.slug}`}
-                  className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-[#EDE4D3]"
+                  className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-brand-cream-dark/40"
+                  onContextMenu={blockProductImageContextMenu}
                 >
                   {img ? (
-                    <Image src={img} alt={item.name} fill className="object-cover" sizes="64px" unoptimized />
+                    <Image
+                      src={img}
+                      alt={item.name}
+                      fill
+                      className={`object-cover ${productImageClassName}`}
+                      sizes="64px"
+                      unoptimized
+                    />
                   ) : (
                     <span className="flex h-full items-center justify-center text-xs text-stone-400">—</span>
                   )}

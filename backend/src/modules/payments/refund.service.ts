@@ -5,12 +5,31 @@ import { handlePaidOrderStatusChange } from "../orders/orders.service";
 import { createZohoRefundDocumentsForOrder } from "../zoho/zoho-financials";
 
 import { getPayPalAccessToken, getPayPalApiBase } from "./paypal";
+import {
+  failReservedRefund,
+  finalizeGatewayRefund,
+  getRefundableRemainingInPaise,
+  reserveGatewayRefund
+} from "./refund-sync.service";
 
 export type RefundResult = {
   success: boolean;
   refundId?: string;
   message: string;
 };
+
+function providerLabel(provider: string): string {
+  if (provider === "RAZORPAY") return "Razorpay";
+  if (provider === "STRIPE") return "Stripe";
+  if (provider === "PAYPAL") return "PayPal";
+  return provider;
+}
+
+function formatAmountLabel(currency: string, amountInPaise: number): string {
+  return currency === "INR"
+    ? `₹${(amountInPaise / 100).toLocaleString("en-IN")}`
+    : `${currency} ${(amountInPaise / 100).toFixed(2)}`;
+}
 
 export async function initiatePartialGatewayRefund(
   orderId: string,
@@ -44,36 +63,44 @@ export async function initiatePartialGatewayRefund(
     });
   }
 
-  const alreadyRefunded = capturedPayment.refundedInPaise ?? 0;
-  const remaining = order.grandTotalInPaise - alreadyRefunded;
-  if (amountInPaise > remaining) {
-    throw Object.assign(new Error(`Refund cannot exceed ${remaining / 100} remaining`), {
-      statusCode: 400,
-      code: "AMOUNT_TOO_HIGH"
-    });
-  }
-
-  const provider = capturedPayment.provider;
   const refundReason = reason?.trim() || "Admin initiated refund";
+  const provider = capturedPayment.provider;
+
+  let reservedRefundId: string | undefined;
 
   try {
-    let refundId: string | undefined;
+    const { refundRow, remainingAfter } = await reserveGatewayRefund({
+      paymentId: capturedPayment.id,
+      amountInPaise,
+      reason: refundReason
+    });
+    reservedRefundId = refundRow.id;
+
+    let providerRefundId: string;
 
     if (provider === "RAZORPAY") {
       if (!capturedPayment.providerPaymentId) {
         throw new Error("Razorpay payment id missing on order");
       }
-      refundId = await refundRazorpay(capturedPayment.providerPaymentId, amountInPaise, refundReason);
+      providerRefundId = await refundRazorpay(
+        capturedPayment.providerPaymentId,
+        amountInPaise,
+        refundReason
+      );
     } else if (provider === "STRIPE") {
       if (!capturedPayment.providerPaymentId) {
         throw new Error("Stripe payment intent id missing on order");
       }
-      refundId = await refundStripe(capturedPayment.providerPaymentId, amountInPaise, refundReason);
+      providerRefundId = await refundStripe(
+        capturedPayment.providerPaymentId,
+        amountInPaise,
+        refundReason
+      );
     } else if (provider === "PAYPAL") {
       if (!capturedPayment.providerPaymentId) {
         throw new Error("PayPal capture id missing on order");
       }
-      refundId = await refundPayPal(
+      providerRefundId = await refundPayPal(
         capturedPayment.providerPaymentId,
         amountInPaise,
         order.currency,
@@ -83,58 +110,45 @@ export async function initiatePartialGatewayRefund(
       throw new Error(`Refund not supported for provider ${provider}`);
     }
 
-    const newRefundedTotal = alreadyRefunded + amountInPaise;
-    const fullyRefunded = newRefundedTotal >= order.grandTotalInPaise;
-
-    await prisma.refund.create({
-      data: {
-        paymentId: capturedPayment.id,
-        amountInPaise,
-        providerRefundId: refundId,
-        status: "processed",
-        reason: refundReason
-      }
-    });
-
-    await prisma.payment.update({
-      where: { id: capturedPayment.id },
-      data: {
-        status: fullyRefunded ? "REFUNDED" : "PARTIALLY_REFUNDED",
-        refundedInPaise: newRefundedTotal
-      }
+    const { fullyRefunded } = await finalizeGatewayRefund({
+      refundId: refundRow.id,
+      providerRefundId,
+      orderId,
+      reason: refundReason
     });
 
     if (fullyRefunded) {
-      await handlePaidOrderStatusChange(orderId, "REFUNDED", refundReason);
       void createZohoRefundDocumentsForOrder(orderId, refundReason).catch((err) => {
         logger.error("zoho_credit_note_refund_failed", { orderId, err });
-      });
-    } else {
-      await prisma.order.update({
-        where: { id: orderId },
-        data: { paymentStatus: "PARTIALLY_REFUNDED" }
       });
     }
 
     notifyOrderEmail(orderId, "refund_initiated");
-    logger.info("admin_partial_refund_initiated", { orderId, provider, refundId, amountInPaise });
-
-    const providerLabel =
-      provider === "RAZORPAY" ? "Razorpay" : provider === "STRIPE" ? "Stripe" : "PayPal";
-
-    const amountLabel =
-      order.currency === "INR"
-        ? `₹${(amountInPaise / 100).toLocaleString("en-IN")}`
-        : `${order.currency} ${(amountInPaise / 100).toFixed(2)}`;
+    logger.info("admin_partial_refund_initiated", {
+      orderId,
+      provider,
+      refundId: providerRefundId,
+      amountInPaise,
+      remainingAfter
+    });
 
     return {
       success: true,
-      refundId,
-      message: `${providerLabel} refund of ${amountLabel} initiated to the customer's original payment method. Typically reflects in 5–7 business days.`
+      refundId: providerRefundId,
+      message: `${providerLabel(provider)} refund of ${formatAmountLabel(order.currency, amountInPaise)} initiated to the customer's original payment method. Typically reflects in 5–7 business days.`
     };
   } catch (err) {
+    if (reservedRefundId) {
+      const msg = err instanceof Error ? err.message : String(err);
+      await failReservedRefund(reservedRefundId, msg);
+    }
     const msg = err instanceof Error ? err.message : String(err);
+    const code = (err as { code?: string }).code;
+    const statusCode = (err as { statusCode?: number }).statusCode;
     logger.error("admin_partial_refund_failed", { orderId, provider, amountInPaise, err });
+    if (code === "AMOUNT_TOO_HIGH" || code === "ALREADY_REFUNDED" || code === "DUPLICATE_REFUND") {
+      throw Object.assign(new Error(msg), { statusCode: statusCode ?? 409, code });
+    }
     throw Object.assign(new Error(`Refund failed: ${msg}`), { statusCode: 502, code: "REFUND_FAILED" });
   }
 }
@@ -152,7 +166,9 @@ export async function initiateGatewayRefund(
     throw Object.assign(new Error("Order not found"), { statusCode: 404, code: "NOT_FOUND" });
   }
 
-  const capturedPayment = order.payments.find((p) => p.status === "CAPTURED");
+  const capturedPayment = order.payments.find(
+    (p) => p.status === "CAPTURED" || p.status === "PARTIALLY_REFUNDED"
+  );
   const codPayment = order.payments.find((p) => p.provider === "COD");
 
   if (!capturedPayment) {
@@ -165,7 +181,7 @@ export async function initiateGatewayRefund(
       notifyOrderEmail(orderId, "order_cancelled");
       return {
         success: true,
-        message: "COD order cancelled. Arrange cash refund manually."
+        message: "Manual refund required. COD order cancelled — arrange cash/UPI refund outside the gateway."
       };
     }
 
@@ -180,87 +196,105 @@ export async function initiateGatewayRefund(
   const provider = capturedPayment.provider;
   const refundReason = reason?.trim() || "Admin initiated refund";
 
+  if (provider === "COD") {
+    await handlePaidOrderStatusChange(
+      orderId,
+      "CANCELLED",
+      refundReason || "COD order cancelled — arrange cash refund manually"
+    );
+    notifyOrderEmail(orderId, "order_cancelled");
+    return {
+      success: true,
+      message: "Manual refund required. COD has no automatic payout — record cash/UPI transfer separately."
+    };
+  }
+
+  const { remaining } = await getRefundableRemainingInPaise(capturedPayment.id);
+  if (remaining <= 0) {
+    throw Object.assign(new Error("Payment is already fully refunded"), {
+      statusCode: 409,
+      code: "ALREADY_REFUNDED"
+    });
+  }
+
+  let reservedRefundId: string | undefined;
+
   try {
-    let refundId: string | undefined;
+    const { refundRow } = await reserveGatewayRefund({
+      paymentId: capturedPayment.id,
+      amountInPaise: remaining,
+      reason: refundReason
+    });
+    reservedRefundId = refundRow.id;
+
+    let providerRefundId: string;
 
     if (provider === "RAZORPAY") {
       if (!capturedPayment.providerPaymentId) {
         throw new Error("Razorpay payment id missing on order");
       }
-      refundId = await refundRazorpay(
+      providerRefundId = await refundRazorpay(
         capturedPayment.providerPaymentId,
-        order.grandTotalInPaise,
+        remaining,
         refundReason
       );
     } else if (provider === "STRIPE") {
       if (!capturedPayment.providerPaymentId) {
         throw new Error("Stripe payment intent id missing on order");
       }
-      refundId = await refundStripe(capturedPayment.providerPaymentId, order.grandTotalInPaise, refundReason);
+      providerRefundId = await refundStripe(capturedPayment.providerPaymentId, remaining, refundReason);
     } else if (provider === "PAYPAL") {
       if (!capturedPayment.providerPaymentId) {
         throw new Error("PayPal capture id missing on order");
       }
-      refundId = await refundPayPal(
+      providerRefundId = await refundPayPal(
         capturedPayment.providerPaymentId,
-        order.grandTotalInPaise,
+        remaining,
         order.currency,
         refundReason
       );
-    } else if (provider === "COD") {
-      await handlePaidOrderStatusChange(
-        orderId,
-        "CANCELLED",
-        refundReason || "COD order cancelled — arrange cash refund manually"
-      );
-      notifyOrderEmail(orderId, "order_cancelled");
-      return {
-        success: true,
-        message: "COD order cancelled. Arrange cash refund manually."
-      };
     } else {
       throw new Error(`Refund not supported for provider ${provider}`);
     }
 
-    await prisma.refund.create({
-      data: {
-        paymentId: capturedPayment.id,
-        amountInPaise: order.grandTotalInPaise,
-        providerRefundId: refundId,
-        status: "processed",
-        reason: refundReason
-      }
+    const { fullyRefunded } = await finalizeGatewayRefund({
+      refundId: refundRow.id,
+      providerRefundId,
+      orderId,
+      reason: refundReason
     });
 
-    await prisma.payment.update({
-      where: { id: capturedPayment.id },
-      data: {
-        status: "REFUNDED",
-        refundedInPaise: order.grandTotalInPaise
-      }
-    });
+    if (fullyRefunded) {
+      void createZohoRefundDocumentsForOrder(orderId, refundReason).catch((err) => {
+        logger.error("zoho_credit_note_refund_failed", { orderId, err });
+      });
+    }
 
-    await handlePaidOrderStatusChange(orderId, "REFUNDED", refundReason);
-    void createZohoRefundDocumentsForOrder(orderId, refundReason).catch((err) => {
-      logger.error("zoho_credit_note_refund_failed", { orderId, err });
-    });
     notifyOrderEmail(orderId, "refund_initiated");
-
-    logger.info("admin_refund_initiated", { orderId, provider, refundId });
+    logger.info("admin_refund_initiated", { orderId, provider, refundId: providerRefundId, amountInPaise: remaining });
 
     return {
       success: true,
-      refundId,
-      message: `Refund initiated via ${provider}. Takes 5–7 business days to reflect.`
+      refundId: providerRefundId,
+      message: `Refund initiated via ${providerLabel(provider)}. Takes 5–7 business days to reflect.`
     };
   } catch (err) {
+    if (reservedRefundId) {
+      const msg = err instanceof Error ? err.message : String(err);
+      await failReservedRefund(reservedRefundId, msg);
+    }
     const msg = err instanceof Error ? err.message : String(err);
+    const code = (err as { code?: string }).code;
+    const statusCode = (err as { statusCode?: number }).statusCode;
     logger.error("admin_refund_failed", { orderId, provider, err });
+    if (code === "AMOUNT_TOO_HIGH" || code === "ALREADY_REFUNDED" || code === "DUPLICATE_REFUND") {
+      throw Object.assign(new Error(msg), { statusCode: statusCode ?? 409, code });
+    }
     throw Object.assign(new Error(`Refund failed: ${msg}`), { statusCode: 502, code: "REFUND_FAILED" });
   }
 }
 
-async function refundRazorpay(
+export async function refundRazorpay(
   paymentId: string,
   amountInPaise: number,
   notes?: string
@@ -277,7 +311,7 @@ async function refundRazorpay(
   return refund.id;
 }
 
-async function refundStripe(
+export async function refundStripe(
   paymentIntentId: string,
   amountInPaise: number,
   reason?: string
@@ -295,7 +329,7 @@ async function refundStripe(
   return refund.id;
 }
 
-async function refundPayPal(
+export async function refundPayPal(
   captureId: string,
   amountInPaise: number,
   currency: string,

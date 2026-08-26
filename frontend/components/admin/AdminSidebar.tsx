@@ -13,9 +13,11 @@ import {
   ClipboardList,
   GraduationCap,
   LayoutDashboard,
+  Landmark,
   MapPinHouse,
   PackageSearch,
   ScanSearch,
+  ShoppingCart,
   Star,
   Tags,
   Truck,
@@ -60,8 +62,18 @@ const icon = {
   reconciliation: <CircleDollarSign {...iconProps} />,
   pickup: <MapPinHouse {...iconProps} />,
   catalogGaps: <ScanSearch {...iconProps} />,
+  purchases: <ShoppingCart {...iconProps} />,
+  accounting: <Landmark {...iconProps} />,
   activity: <Activity {...iconProps} />
 };
+
+const purchasesEnabled =
+  process.env.NEXT_PUBLIC_PURCHASES_ENABLED === "1" ||
+  process.env.NEXT_PUBLIC_PURCHASES_ENABLED === "true";
+
+const accountingEnabled =
+  process.env.NEXT_PUBLIC_ACCOUNTING_ENABLED === "1" ||
+  process.env.NEXT_PUBLIC_ACCOUNTING_ENABLED === "true";
 
 const primaryNav: NavItem[] = [
   { href: "/admin", label: "Dashboard", icon: icon.dashboard, match: "exact" },
@@ -83,6 +95,8 @@ const secondaryNav: NavItem[] = [
 ];
 
 const opsNav: NavItem[] = [
+  ...(purchasesEnabled ? [{ href: "/admin/purchases", label: "Purchases", icon: icon.purchases }] : []),
+  ...(accountingEnabled ? [{ href: "/admin/accounting", label: "Accounting", icon: icon.accounting }] : []),
   { href: "/admin/settings/pickup-locations", label: "Pickup Locations", icon: icon.pickup },
   { href: "/admin/catalog-gaps", label: "Catalog Gaps", icon: icon.catalogGaps }
 ];

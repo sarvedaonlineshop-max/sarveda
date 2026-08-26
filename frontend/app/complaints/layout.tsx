@@ -9,11 +9,35 @@ export const viewport: Viewport = {
   interactiveWidget: "resizes-content",
 };
 
+const complaintsOgTitle = "Sarveda – Sound. Yoga. Conscious Living.";
+const complaintsOgDescription =
+  "Sound. Yoga. Conscious Living. Authentic wellness · Ships worldwide.";
+
 export const metadata: Metadata = {
   title: "Sarveda Task Manager",
-  description: "Internal task manager",
+  description: complaintsOgDescription,
   manifest: "/complaints-manifest.json",
   robots: { index: false, follow: false },
+  openGraph: {
+    type: "website",
+    siteName: "Sarveda",
+    title: complaintsOgTitle,
+    description: complaintsOgDescription,
+    images: [
+      {
+        url: "/og-complaints.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Sarveda – Sound. Yoga. Conscious Living."
+      }
+    ]
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: complaintsOgTitle,
+    description: complaintsOgDescription,
+    images: ["/og-complaints.jpg"]
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

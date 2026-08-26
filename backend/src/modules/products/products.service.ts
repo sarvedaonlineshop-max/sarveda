@@ -446,6 +446,24 @@ function resolvePrimaryImageUrl(product: {
   return variantImg ?? null;
 }
 
+function listImageUrls(product: {
+  images: Array<{ url: string; isPrimary?: boolean; variantId?: string | null; position?: number }>;
+}): string[] {
+  const sorted = [...product.images].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+  const shared = sorted.filter((im) => !im.variantId);
+  const pool = shared.length > 0 ? shared : sorted;
+  const seen = new Set<string>();
+  const urls: string[] = [];
+  for (const im of pool) {
+    const url = im.url?.trim();
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    urls.push(url);
+    if (urls.length >= 4) break;
+  }
+  return urls;
+}
+
 function mapProductListRow(p: {
   id: string;
   slug: string;
@@ -468,6 +486,7 @@ function mapProductListRow(p: {
   categories: Array<{ category: { slug: string; name: string } }>;
 }) {
   const img = resolvePrimaryImageUrl(p);
+  const imageUrls = listImageUrls(p);
   const v = p.variants[0];
   return {
     id: p.id,
@@ -478,6 +497,7 @@ function mapProductListRow(p: {
     productType: p.productType,
     hasAudio: p.hasAudio,
     primaryImageUrl: img,
+    imageUrls: imageUrls.length > 0 ? imageUrls : img ? [img] : [],
     fromPriceInPaise: v?.saleInPaise ?? null,
     fromMrpInPaise: v?.mrpInPaise ?? null,
     fromSaleUsdCents: v?.saleUsdCents ?? null,

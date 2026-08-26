@@ -1,4 +1,9 @@
 /** GST rates (% inclusive) keyed by WooCommerce tax class slug. */
+import {
+  normalizeGstState,
+  resolveSellerGstIdentity
+} from "./gst-state";
+
 export const GST_RATES: Record<string, number> = {
   standard: 18,
   gst18: 18,
@@ -7,14 +12,49 @@ export const GST_RATES: Record<string, number> = {
   "gst-zero-rate": 0
 };
 
+export type GstRateLookup = {
+  ratePercent: number;
+  taxClassRaw: string | null;
+  known: boolean;
+  defaulted: boolean;
+};
+
 export function gstRatePercent(taxClass: string | null | undefined): number {
-  if (!taxClass) return GST_RATES.standard;
+  return lookupGstRate(taxClass).ratePercent;
+}
+
+/** Explicit lookup — unknown taxClass still defaults to 18 for ORDER_PAID_V1 compatibility. */
+export function lookupGstRate(taxClass: string | null | undefined): GstRateLookup {
+  if (!taxClass?.trim()) {
+    return {
+      ratePercent: GST_RATES.standard,
+      taxClassRaw: taxClass ?? null,
+      known: false,
+      defaulted: true
+    };
+  }
   const key = taxClass.trim().toLowerCase();
-  return GST_RATES[key] ?? GST_RATES.standard;
+  if (Object.prototype.hasOwnProperty.call(GST_RATES, key)) {
+    return {
+      ratePercent: GST_RATES[key]!,
+      taxClassRaw: taxClass,
+      known: true,
+      defaulted: false
+    };
+  }
+  return {
+    ratePercent: GST_RATES.standard,
+    taxClassRaw: taxClass,
+    known: false,
+    defaulted: true
+  };
 }
 
 /** Extract GST from tax-inclusive line total (minor units). */
-export function gstFromInclusiveLine(lineTotalMinor: number, ratePercent: number): {
+export function gstFromInclusiveLine(
+  lineTotalMinor: number,
+  ratePercent: number
+): {
   taxableMinor: number;
   taxMinor: number;
 } {
@@ -49,8 +89,15 @@ export function sellerStateCode(): string {
   return (process.env.SELLER_STATE ?? "Karnataka").trim();
 }
 
+/**
+ * Uses canonical GST state codes so KA ≡ Karnataka.
+ * Unresolved place/seller → true (inter); posting path fails closed via resolvePlaceOfSupply.
+ */
 export function isInterState(buyerState: string, buyerCountry: string): boolean {
   const country = buyerCountry.trim().toUpperCase();
   if (country !== "IN") return true;
-  return buyerState.trim().toLowerCase() !== sellerStateCode().toLowerCase();
+  const seller = resolveSellerGstIdentity();
+  const place = normalizeGstState(buyerState);
+  if (!seller.ok || !place.ok) return true;
+  return seller.sellerStateCode !== place.state.code;
 }

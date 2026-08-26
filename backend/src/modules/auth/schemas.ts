@@ -67,6 +67,13 @@ export const notificationPreferencesSchema = z.object({
   pushNotificationsEnabled: z.boolean().optional()
 });
 
+export const accountClosureRequestSchema = z.object({
+  reason: z.string().trim().min(10, "Please share a brief reason (at least 10 characters).").max(2000),
+  confirm: z.literal(true, {
+    errorMap: () => ({ message: "Please confirm you want to request account closure." })
+  })
+});
+
 export type RegisterBody = z.infer<typeof registerSchema>;
 export type LoginBody = z.infer<typeof loginSchema>;
 export type SendOtpBody = z.infer<typeof sendOtpSchema>;
@@ -77,3 +84,4 @@ export type SetPasswordBody = z.infer<typeof setPasswordSchema>;
 export type NotificationPreferencesBody = z.infer<
   typeof notificationPreferencesSchema
 >;
+export type AccountClosureRequestBody = z.infer<typeof accountClosureRequestSchema>;

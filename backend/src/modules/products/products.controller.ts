@@ -220,6 +220,7 @@ function normalizeAdminBody(body: CreateProductBody | UpdateProductBody): Produc
     audioUrl: body.audioUrl === undefined ? undefined : body.audioUrl || null,
     videoUrl: body.videoUrl === undefined ? undefined : body.videoUrl || null,
     expressShippingEnabled: body.expressShippingEnabled,
+    productCouponEnabled: body.productCouponEnabled,
     relatedArticleSlugs: body.relatedArticleSlugs,
     seoTitle: body.seoTitle,
     seoDescription: body.seoDescription,
@@ -340,6 +341,10 @@ export async function update(req: Request, res: Response, next: NextFunction) {
         body.expressShippingEnabled ??
         (existing as { expressShippingEnabled?: boolean }).expressShippingEnabled ??
         true,
+      productCouponEnabled:
+        body.productCouponEnabled ??
+        (existing as { productCouponEnabled?: boolean }).productCouponEnabled ??
+        false,
       relatedArticleSlugs:
         body.relatedArticleSlugs ??
         (existing as { relatedArticleSlugs?: string[] }).relatedArticleSlugs ??

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import type { CategoryNode } from "@/lib/types";
 import { categorySlugFromPathname, type ShopBrowseQuery } from "@/lib/shop-navigation";
 import { SHOP_PRICE_MAX, SHOP_PRICE_MIN } from "@/lib/shop-merch-filters";
+import { clearShopScroll, currentShopPath, readShopScroll } from "@/lib/shop-scroll-restore";
 
 import { ShopCategoriesProvider } from "./ShopCategoriesContext";
 import { ShopCategoryFilterSidebar } from "./ShopCategoryFilterSidebar";
@@ -38,6 +39,7 @@ export function ShopShell({ categories, children }: Props) {
   const { navigate, isPending } = useShopNavigate();
   const browseQuery = useShopBrowseQuery();
   const productsAnchorRef = useRef<HTMLDivElement>(null);
+  const skipScrollToGridRef = useRef(false);
 
   const categorySlug = categorySlugFromPathname(pathname);
   const searchQ = browseQuery.q ?? "";
@@ -118,8 +120,26 @@ export function ShopShell({ categories, children }: Props) {
     return walk(categories) ?? categorySlug;
   }, [categories, categorySlug]);
 
+  /** Restore scroll when returning from PDP on the same shop URL. */
+  useEffect(() => {
+    const saved = readShopScroll();
+    const currentPath = currentShopPath();
+    if (!saved || saved.path !== currentPath) return;
+    skipScrollToGridRef.current = true;
+    const restore = () => window.scrollTo({ top: saved.scrollY, behavior: "auto" });
+    requestAnimationFrame(() => {
+      restore();
+      window.setTimeout(restore, 80);
+    });
+    clearShopScroll();
+  }, [pathname]);
+
   /** Jump to top of product grid when browse filters change. */
   useEffect(() => {
+    if (skipScrollToGridRef.current) {
+      skipScrollToGridRef.current = false;
+      return;
+    }
     scrollProductsToTop(productsAnchorRef.current);
   }, [categorySlug, searchQ, tag, minPrice, maxPrice]);
 

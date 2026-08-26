@@ -6,9 +6,10 @@ import type { Request, Response } from "express";
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { notifyOrderEmail } from "../notifications/email";
-import { cancelUnpaidOrderWithRelease, handlePaidOrderStatusChange } from "../orders/orders.service";
+import { cancelUnpaidOrderWithRelease } from "../orders/orders.service";
 
 import { completePaidOrder } from "./razorpay.verify";
+import { applyExternalProviderRefund } from "./refund-sync.service";
 
 function getWebhookSecret(): string | null {
   return process.env.RAZORPAY_WEBHOOK_SECRET?.trim() || null;
@@ -143,34 +144,39 @@ export async function razorpayWebhookHandler(req: Request, res: Response): Promi
       const refundId = ent?.id;
       const paymentProviderId = ent?.payment_id;
       const amountPaise = typeof ent?.amount === "number" ? ent.amount : 0;
-      if (refundId && paymentProviderId) {
+      const entityStatus = typeof ent?.status === "string" ? ent.status : undefined;
+
+      if (refundId && paymentProviderId && amountPaise > 0) {
         const payRow = await prisma.payment.findFirst({
           where: { provider: "RAZORPAY", providerPaymentId: paymentProviderId }
         });
         if (payRow) {
           await mergePaymentRawPayload(payRow.id, event, (ent ?? {}) as Record<string, unknown>);
 
-          const existing = await prisma.refund.findFirst({
-            where: { providerRefundId: refundId }
+          // Map Razorpay refund entity status: processed|failed|else created (reserved).
+          // Order REFUNDED only when cumulative processed >= captured (inside applyExternal).
+          const refundStatus =
+            entityStatus === "processed"
+              ? "processed"
+              : entityStatus === "failed"
+                ? "failed"
+                : event === "refund.processed"
+                  ? "processed"
+                  : "created";
+
+          const result = await applyExternalProviderRefund({
+            provider: "RAZORPAY",
+            providerRefundId: refundId,
+            providerPaymentId: paymentProviderId,
+            amountInPaise: amountPaise,
+            reason: `Razorpay webhook ${event}`,
+            refundStatus,
+            rawEvent: event
           });
-          if (!existing) {
-            await prisma.refund.create({
-              data: {
-                paymentId: payRow.id,
-                amountInPaise: amountPaise,
-                providerRefundId: refundId,
-                status: event === "refund.processed" ? "processed" : "created",
-                reason: `Razorpay webhook ${event}`
-              }
-            });
-          } else if (event === "refund.processed") {
-            await prisma.refund.update({
-              where: { id: existing.id },
-              data: { status: "processed" }
-            });
-          }
-          if (event === "refund.processed") {
-            await handlePaidOrderStatusChange(payRow.orderId, "REFUNDED", "Razorpay refund.processed");
+
+          if (result.newlyRecorded && refundStatus === "processed") {
+            notifyOrderEmail(payRow.orderId, "refund_initiated");
+          } else if (result.duplicate && refundStatus === "processed" && result.fullyRefunded) {
             notifyOrderEmail(payRow.orderId, "refund_initiated");
           }
         }

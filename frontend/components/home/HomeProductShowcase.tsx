@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import type { ProductListItem } from "@/lib/types";
+import { blockProductImageContextMenu, productImageClassName } from "@/lib/product-image-guard";
 
 type Props = { products: ProductListItem[] };
 
@@ -60,12 +61,13 @@ export function HomeProductShowcase({ products }: Props) {
               index === active ? "opacity-100" : "pointer-events-none opacity-0"
             }`}
             aria-hidden={index !== active}
+            onContextMenu={blockProductImageContextMenu}
           >
             <Image
               src={slide.primaryImageUrl as string}
               alt={slide.name}
               fill
-              className="object-cover"
+              className={`object-cover ${productImageClassName}`}
               sizes="100vw"
               priority={index === 0}
               unoptimized

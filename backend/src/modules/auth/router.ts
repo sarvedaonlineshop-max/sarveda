@@ -31,9 +31,14 @@ import {
   verifyOtpAndLogin,
   changePassword,
   setPassword,
-  updateNotificationPreferences
+  updateNotificationPreferences,
+  requestAccountClosure
 } from "./service";
-import { requestPasswordReset, resetPassword } from "./passwordReset.service";
+import {
+  requestPasswordReset,
+  resetPassword,
+  verifyOtpForPasswordReset
+} from "./passwordReset.service";
 import {
   loginSchema,
   registerSchema,
@@ -42,7 +47,8 @@ import {
   verifyOtpSchema,
   changePasswordSchema,
   setPasswordSchema,
-  notificationPreferencesSchema
+  notificationPreferencesSchema,
+  accountClosureRequestSchema
 } from "./schemas";
 
 function asyncHandler(
@@ -96,6 +102,19 @@ const adminLoginLimiter = rateLimit({
     const body = req.body as { email?: string };
     return `admin-login:${req.ip}:${body.email ?? ""}`;
   }
+});
+
+const closureRequestLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 3,
+  message: {
+    success: false,
+    error: "Too many closure requests. Please try again later.",
+    code: "RATE_LIMITED"
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `closure:${req.authUser?.id ?? req.ip}`
 });
 
 authRouter.post(
@@ -191,7 +210,23 @@ authRouter.post(
     await requestPasswordReset(email.trim());
     res.json({
       success: true,
-      message: "If this email exists, a reset link has been sent."
+      message: "Password reset email sent."
+    });
+  })
+);
+
+/** Verify OTP for password reset (no session). Returns a short-lived reset token. */
+authRouter.post(
+  "/verify-otp-for-reset",
+  otpVerifyLimiter,
+  validateBody(verifyOtpSchema),
+  asyncHandler(async (req, res) => {
+    const body = req.body as { target: string; code: string };
+    const result = await verifyOtpForPasswordReset(body.target, body.code);
+    res.json({
+      success: true,
+      data: result,
+      message: "OTP verified. Set your new password."
     });
   })
 );
@@ -269,6 +304,17 @@ authRouter.patch(
       req.body
     );
     res.json({ success: true, data: { user } });
+  })
+);
+
+authRouter.post(
+  "/me/closure-request",
+  requireAuth,
+  closureRequestLimiter,
+  validateBody(accountClosureRequestSchema),
+  asyncHandler(async (req, res) => {
+    const result = await requestAccountClosure(req.authUser!.id, req.body);
+    res.json({ success: true, data: result });
   })
 );
 

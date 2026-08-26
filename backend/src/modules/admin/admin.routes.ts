@@ -17,6 +17,9 @@ import {
   orderItemWarehousesSchema,
   orderPreferredCourierSchema
 } from "./admin.handlers";
+import {
+  adminInventoryRestockBodySchema
+} from "../orders/order-inventory-restock.service";
 import * as pickupLocations from "./pickupLocations.handlers";
 import { createPickupLocationSchema, updatePickupLocationSchema } from "./pickupLocations.handlers";
 import { contentRoutes } from "./content/content.routes";
@@ -25,6 +28,8 @@ import * as seoSuggest from "./seo-suggest.handlers";
 import { couponAdminRoutes } from "../coupons/coupon.admin.routes";
 import { enquiriesAdminRoutes } from "../enquiries/enquiries.admin.routes";
 import { marketplaceAdminRoutes } from "../marketplaces/marketplaces.routes";
+import { purchasesAdminRoutes } from "../purchases/purchases.routes";
+import { accountingAdminRoutes } from "../accounting/accounting.routes";
 import * as serviceRequest from "../orders/order-service-request.controller";
 
 const router = Router();
@@ -92,6 +97,12 @@ router.post("/orders/:orderId/service-requests/:requestId/approve", serviceReque
 router.post("/orders/:orderId/service-requests/:requestId/reject", serviceRequest.adminRejectServiceRequest);
 router.post("/orders/:orderId/service-requests/:requestId/refund", serviceRequest.adminProcessServiceRequestRefund);
 router.post("/orders/:id/refund", admin.refundOrder);
+router.post(
+  "/orders/:id/inventory-restock",
+  validateBody(adminInventoryRestockBodySchema),
+  admin.restockOrderInventory
+);
+router.get("/orders/:id/inventory-restocks", admin.listOrderRestocks);
 router.post("/orders/:id/cancel", admin.cancelOrder);
 router.patch(
   "/orders/:id/status",
@@ -107,6 +118,8 @@ router.post("/courses/seo-suggest", seoSuggest.suggestCourseSeo);
 router.post("/mentors/seo-suggest", seoSuggest.suggestMentorSeo);
 
 router.get("/inventory", admin.inventoryList);
+router.use("/purchases", purchasesAdminRoutes);
+router.use("/accounting", accountingAdminRoutes);
 router.use("/marketplaces", marketplaceAdminRoutes);
 router.post(
   "/inventory/bulk",

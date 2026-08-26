@@ -30,7 +30,7 @@ export function ShopCategoryFilterSidebar({ categories, selectedSlug, onSelect }
   }
 
   return (
-    <aside className="flex flex-col overflow-hidden rounded-2xl border border-brand-cream-dark bg-white shadow-card lg:max-h-[calc(100dvh-var(--storefront-header-live-offset)-2rem)]">
+    <aside className="flex flex-col overflow-hidden rounded-2xl border border-brand-cream-dark bg-brand-ivory shadow-card lg:max-h-[calc(100dvh-var(--storefront-header-live-offset)-2rem)]">
       <div className="flex-shrink-0 border-b border-brand-cream-dark/60 p-5 pb-3">
         <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-gold">Browse</p>
         <h2 className="mt-1 font-serif text-lg font-semibold text-brand-ink">Categories</h2>

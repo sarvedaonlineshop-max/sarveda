@@ -180,16 +180,30 @@ export function BottomNav() {
     (pathname?.startsWith("/profile") ?? false) ||
     (pathname?.startsWith("/corporate-wellness") ?? false) ||
     (pathname?.startsWith("/insights") ?? false) ||
+    pathname === "/about" ||
     isMainNavActive(activePath, "/events") ||
     MOBILE_MENU_POLICY_LINKS.some((l) => activePath === l.href);
 
+  function navTargetPath(href: string): string {
+    if (typeof window === "undefined") return href.split("?")[0] ?? href;
+    return new URL(href, window.location.origin).pathname;
+  }
+
+  function isSameNavTarget(href: string): boolean {
+    const targetPath = navTargetPath(href);
+    if (pathname === targetPath) return true;
+    if (href === "/shop" && isShopBrowsePath(pathname)) return false;
+    return false;
+  }
+
   function go(href: string) {
-    setPendingHref(href);
-    dispatchNavStart();
-    if (isShopBrowsePath(href)) {
-      router.push(href);
+    if (isSameNavTarget(href)) {
+      setMenuOpen(false);
+      setPendingHref(null);
       return;
     }
+    setPendingHref(href);
+    dispatchNavStart();
     startTransition(() => {
       router.push(href);
     });

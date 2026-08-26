@@ -9,8 +9,10 @@ import { EventCard } from "@/components/content/EventCard";
 import type { CourseListItem } from "@/lib/course-types";
 import type { EventListItem } from "@/lib/event-types";
 import { isCourseUpcoming, isEventUpcoming } from "@/lib/content-meta";
+import { usePauseOnInteraction } from "@/lib/use-pause-on-interaction";
 
 const HOME_GREEN = "#166D46";
+const AUTO_SPEED = 0.45;
 
 type Props = {
   courses: CourseListItem[];
@@ -20,6 +22,14 @@ type Props = {
 type Slot =
   | { kind: "course"; item: CourseListItem }
   | { kind: "event"; item: EventListItem };
+
+function SlotCard({ slot }: { slot: Slot }) {
+  return slot.kind === "course" ? (
+    <CourseCard course={slot.item} compact />
+  ) : (
+    <EventCard event={slot.item} compact />
+  );
+}
 
 export function HomeCoursesEventsCarousel({ courses, events }: Props) {
   const upcomingCourses = courses.filter((c) => isCourseUpcoming(c));
@@ -33,6 +43,8 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
   ];
 
   const scrollerRef = useRef<HTMLUListElement>(null);
+  const rafRef = useRef<number | null>(null);
+  const { paused, bind: pauseBind } = usePauseOnInteraction();
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
 
@@ -57,6 +69,33 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
     };
   }, [syncArrows, slots.length]);
 
+  useEffect(() => {
+    if (slots.length <= 1 || paused) return;
+
+    const step = () => {
+      const el = scrollerRef.current;
+      if (!el) return;
+
+      const loopWidth = el.scrollWidth / 2;
+      if (loopWidth <= el.clientWidth + 4) {
+        rafRef.current = requestAnimationFrame(step);
+        return;
+      }
+
+      el.scrollLeft += AUTO_SPEED;
+      if (el.scrollLeft >= loopWidth) {
+        el.scrollLeft -= loopWidth;
+      }
+
+      rafRef.current = requestAnimationFrame(step);
+    };
+
+    rafRef.current = requestAnimationFrame(step);
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+  }, [paused, slots.length]);
+
   function scrollByDir(dir: -1 | 1) {
     const el = scrollerRef.current;
     if (!el) return;
@@ -65,6 +104,18 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
   }
 
   if (slots.length === 0) return null;
+
+  const renderSlots = (suffix: string) =>
+    slots.map((slot) => (
+      <li
+        key={`${suffix}-${slot.kind === "course" ? `course-${slot.item.id}` : `event-${slot.item.id}`}`}
+        className="flex w-[min(86vw,22rem)] shrink-0 self-stretch sm:w-[min(48%,20rem)] lg:w-[calc((100%-3rem)/3)]"
+      >
+        <div className="w-full">
+          <SlotCard slot={slot} />
+        </div>
+      </li>
+    ));
 
   return (
     <section
@@ -121,22 +172,12 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
 
           <ul
             ref={scrollerRef}
-            className="flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] lg:gap-6 [&::-webkit-scrollbar]:hidden"
+            className="flex gap-5 overflow-x-auto pb-2 [scrollbar-width:none] lg:gap-6 [&::-webkit-scrollbar]:hidden"
+            style={{ WebkitOverflowScrolling: "touch" }}
+            {...pauseBind}
           >
-            {slots.map((slot) => (
-              <li
-                key={slot.kind === "course" ? `course-${slot.item.id}` : `event-${slot.item.id}`}
-                className="flex w-[min(86vw,22rem)] shrink-0 snap-start self-stretch sm:w-[min(48%,20rem)] lg:w-[calc((100%-3rem)/3)]"
-              >
-                <div className="w-full">
-                  {slot.kind === "course" ? (
-                    <CourseCard course={slot.item} compact />
-                  ) : (
-                    <EventCard event={slot.item} compact />
-                  )}
-                </div>
-              </li>
-            ))}
+            {renderSlots("a")}
+            {slots.length > 1 ? renderSlots("b") : null}
           </ul>
         </div>
 

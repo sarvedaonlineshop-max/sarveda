@@ -1,8 +1,8 @@
 import Image from "next/image";
 
 const FLOURISH_SRC = "/images/brand/section-flourish.png";
-const FLOURISH_W = 982;
-const FLOURISH_H = 143;
+const FLOURISH_W = 298;
+const FLOURISH_H = 53;
 
 type Props = {
   className?: string;

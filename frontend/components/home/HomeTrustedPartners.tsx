@@ -1,12 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import { SectionFlourish } from "@/components/brand/SectionFlourish";
+import { PAYPAL_PARTNER_LOGO } from "@/lib/corporate-wellness-data";
+import { usePauseOnInteraction } from "@/lib/use-pause-on-interaction";
 
 const PARTNERS = [
-  { src: "/images/home/partners/paypal.png", alt: "PayPal", wide: true },
+  { src: PAYPAL_PARTNER_LOGO, alt: "PayPal", wide: true },
   { src: "/images/home/partners/publicis-groupe.png", alt: "Publicis Groupe" },
   { src: "/images/home/partners/times-group.png", alt: "The Times Group" },
   { src: "/images/home/partners/veeam.png", alt: "Veeam", wide: true },
@@ -23,14 +25,61 @@ const PARTNERS = [
   }
 ] as const;
 
+function PartnerLogo({ partner }: { partner: (typeof PARTNERS)[number] }) {
+  return (
+    <div
+      className={`relative flex h-16 shrink-0 items-center justify-center sm:h-20 ${
+        "wide" in partner && partner.wide ? "w-40 sm:w-52" : "w-28 sm:w-36"
+      }`}
+    >
+      <Image
+        src={partner.src}
+        alt={partner.alt}
+        fill
+        sizes="208px"
+        className="object-contain object-center"
+      />
+    </div>
+  );
+}
+
 export function HomeTrustedPartners() {
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
+  const { paused, bind: pauseBind } = usePauseOnInteraction();
 
-  function scrollBy(dir: -1 | 1) {
+  const scrollBy = useCallback((dir: -1 | 1) => {
     const el = scrollerRef.current;
     if (!el) return;
     el.scrollBy({ left: dir * Math.min(320, el.clientWidth * 0.6), behavior: "smooth" });
-  }
+  }, []);
+
+  useEffect(() => {
+    if (paused) return;
+
+    const el = scrollerRef.current;
+    if (!el) return;
+
+    const step = () => {
+      const node = scrollerRef.current;
+      if (!node) return;
+
+      const loopWidth = node.scrollWidth / 2;
+      if (loopWidth <= node.clientWidth) return;
+
+      node.scrollLeft += 0.6;
+      if (node.scrollLeft >= loopWidth) {
+        node.scrollLeft -= loopWidth;
+      }
+
+      rafRef.current = requestAnimationFrame(step);
+    };
+
+    rafRef.current = requestAnimationFrame(step);
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+  }, [paused]);
 
   return (
     <section className="bg-white py-14 md:py-16" aria-labelledby="home-partners-heading">
@@ -74,23 +123,12 @@ export function HomeTrustedPartners() {
 
           <div
             ref={scrollerRef}
-            className="flex gap-6 overflow-x-auto scroll-smooth px-2 py-4 [scrollbar-width:none] sm:gap-10 sm:px-4 [&::-webkit-scrollbar]:hidden"
+            className="flex gap-6 overflow-x-auto px-2 py-4 [scrollbar-width:none] sm:gap-10 sm:px-4 [&::-webkit-scrollbar]:hidden"
+            style={{ WebkitOverflowScrolling: "touch" }}
+            {...pauseBind}
           >
-            {PARTNERS.map((p) => (
-              <div
-                key={p.alt}
-                className={`relative flex h-16 shrink-0 items-center justify-center sm:h-20 ${
-                  "wide" in p && p.wide ? "w-40 sm:w-52" : "w-28 sm:w-36"
-                }`}
-              >
-                <Image
-                  src={p.src}
-                  alt={p.alt}
-                  fill
-                  sizes="208px"
-                  className="object-contain object-center"
-                />
-              </div>
+            {[...PARTNERS, ...PARTNERS].map((p, i) => (
+              <PartnerLogo key={`${p.alt}-${i}`} partner={p} />
             ))}
           </div>
         </div>

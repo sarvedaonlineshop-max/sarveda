@@ -59,7 +59,7 @@ const values = [
 const social = [
   {
     label: "Instagram",
-    href: "https://www.instagram.com/sarvedalife/",
+    href: "https://www.instagram.com/sarveda_life/",
     d: "M7.75 2h8.5A5.75 5.75 0 0122 7.75v8.5A5.75 5.75 0 0116.25 22h-8.5A5.75 5.75 0 012 16.25v-8.5A5.75 5.75 0 017.75 2zm0 1.5A4.25 4.25 0 003.5 7.75v8.5A4.25 4.25 0 007.75 20.5h8.5a4.25 4.25 0 004.25-4.25v-8.5A4.25 4.25 0 0016.25 3.5h-8.5zM12 7a5 5 0 110 10A5 5 0 0112 7zm0 1.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zm5.25-.75a.875.875 0 110 1.75.875.875 0 010-1.75z"
   },
   {
@@ -81,9 +81,9 @@ const social = [
 
 export function SiteFooter() {
   return (
-    <footer className="hidden bg-brand-forest md:block">
-      <div className="page-shell py-14">
-        <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr_1fr_1.3fr] lg:gap-12">
+    <footer className="bg-brand-forest pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
+      <div className="page-shell py-10 md:py-14">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.3fr] lg:gap-12">
           {/* Brand */}
           <div>
             <SarvedaLogo iconHeight={56} tone="onDark" />
@@ -207,7 +207,7 @@ export function SiteFooter() {
 
       <div className="border-t border-brand-cream/10">
         <div className="page-shell flex flex-col gap-6 py-6 lg:flex-row lg:items-center lg:justify-between">
-          <ul className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:gap-6">
+          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
             {values.map((v) => (
               <li key={v.title} className="flex gap-2.5">
                 <svg

@@ -1,0 +1,1062 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { AdminAccountingHeader } from "@/components/admin/accounting/AdminAccountingNav";
+import {
+  downloadFinancialStatementPdf,
+  downloadFinancialStatementsXlsx,
+  downloadGeneralLedgerXlsx,
+  fetchBalanceSheet,
+  fetchFinancialDashboard,
+  fetchFinancialIntegrity,
+  fetchFinancialYearConfig,
+  fetchGeneralLedger,
+  fetchProfitLoss,
+  fetchReportAccounts,
+  fetchTrialBalance,
+  formatInrPaise,
+  type BalanceSheetReport,
+  type FinancialDashboardReport,
+  type FinancialIntegrityReport,
+  type FinancialYearSummary,
+  type GeneralLedgerReport,
+  type ProfitLossReport,
+  type ReportAccountRow,
+  type StatementLine,
+  type TrialBalanceReport
+} from "@/lib/accounting-api";
+import { AdminApiError } from "@/lib/admin-errors";
+
+type TabId = "overview" | "tb" | "gl" | "pl" | "bs" | "integrity";
+
+const TABS: { id: TabId; label: string; phase: "6B" | "6C" | "6D" }[] = [
+  { id: "overview", label: "Overview", phase: "6C" },
+  { id: "tb", label: "Trial Balance", phase: "6B" },
+  { id: "gl", label: "General Ledger", phase: "6B" },
+  { id: "pl", label: "Profit & Loss", phase: "6C" },
+  { id: "bs", label: "Balance Sheet", phase: "6C" },
+  { id: "integrity", label: "Reconciliation / Integrity", phase: "6D" }
+];
+
+function todayYmd(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function PaiseCell({ value }: { value: number }) {
+  if (!value) return <span className="text-neutral-300">—</span>;
+  return <span className="tabular-nums">{formatInrPaise(value)}</span>;
+}
+
+function StatementRows({
+  lines,
+  onDrill
+}: {
+  lines: StatementLine[];
+  onDrill: (codes: string[]) => void;
+}) {
+  return (
+    <>
+      {lines.map((line) => (
+        <div key={line.key} className="border-t border-neutral-100">
+          <div
+            className={`flex items-center justify-between gap-4 px-3 py-2 text-sm ${
+              line.kind === "total"
+                ? "bg-neutral-50 font-semibold"
+                : line.kind === "subtotal"
+                  ? "font-medium"
+                  : ""
+            }`}
+          >
+            <div className="min-w-0">
+              {line.accountCodes.length > 0 && line.kind === "line" ? (
+                <button
+                  type="button"
+                  className="text-left text-[#1e3a2f] underline"
+                  onClick={() => onDrill(line.accountCodes)}
+                >
+                  {line.label}
+                </button>
+              ) : (
+                <span>{line.label}</span>
+              )}
+              {line.warning ? (
+                <p className="text-xs text-amber-700">{line.warning}</p>
+              ) : null}
+            </div>
+            <span className="shrink-0 tabular-nums">{formatInrPaise(line.amountInPaise)}</span>
+          </div>
+          {line.children?.length ? (
+            <div className="border-l-2 border-neutral-200 pl-4">
+              <StatementRows lines={line.children} onDrill={onDrill} />
+            </div>
+          ) : null}
+        </div>
+      ))}
+    </>
+  );
+}
+
+export default function AdminAccountingReportsPage() {
+  const [tab, setTab] = useState<TabId>("overview");
+  const [fy, setFy] = useState<FinancialYearSummary | null>(null);
+  const [accounts, setAccounts] = useState<ReportAccountRow[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  const [asOf, setAsOf] = useState(todayYmd());
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState(todayYmd());
+
+  const [tbMode, setTbMode] = useState<"asOf" | "period">("asOf");
+  const [includeZero, setIncludeZero] = useState(false);
+  const [tb, setTb] = useState<TrialBalanceReport | null>(null);
+  const [tbLoading, setTbLoading] = useState(false);
+
+  const [glAccount, setGlAccount] = useState("1010");
+  const [glFrom, setGlFrom] = useState("");
+  const [glTo, setGlTo] = useState(todayYmd());
+  const [gl, setGl] = useState<GeneralLedgerReport | null>(null);
+  const [glLoading, setGlLoading] = useState(false);
+  const [glOffset, setGlOffset] = useState(0);
+
+  const [pl, setPl] = useState<ProfitLossReport | null>(null);
+  const [plLoading, setPlLoading] = useState(false);
+  const [bs, setBs] = useState<BalanceSheetReport | null>(null);
+  const [bsLoading, setBsLoading] = useState(false);
+  const [dash, setDash] = useState<FinancialDashboardReport | null>(null);
+  const [dashLoading, setDashLoading] = useState(false);
+  const [integrity, setIntegrity] = useState<FinancialIntegrityReport | null>(null);
+  const [integrityLoading, setIntegrityLoading] = useState(false);
+  const [exportBusy, setExportBusy] = useState(false);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const [fyData, acctData] = await Promise.all([
+          fetchFinancialYearConfig(),
+          fetchReportAccounts()
+        ]);
+        setFy(fyData);
+        setAccounts(acctData.items);
+        if (!from) setFrom(fyData.currentFy.startDate);
+        if (!glFrom) setGlFrom(fyData.currentFy.startDate);
+      } catch (err) {
+        setError(err instanceof AdminApiError ? err.message : "Failed to load report metadata");
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const applyFy = useCallback((startDate: string, endDate: string) => {
+    setFrom(startDate);
+    setTo(endDate);
+    setGlFrom(startDate);
+    setGlTo(endDate);
+    setAsOf(endDate);
+    setTbMode("period");
+  }, []);
+
+  const loadTb = useCallback(async () => {
+    setTbLoading(true);
+    setError(null);
+    try {
+      setTb(
+        await fetchTrialBalance(
+          tbMode === "asOf"
+            ? { asOf, includeZeroBalanceAccounts: includeZero }
+            : { from, to, includeZeroBalanceAccounts: includeZero }
+        )
+      );
+    } catch (err) {
+      setTb(null);
+      setError(err instanceof AdminApiError ? err.message : "Trial Balance failed");
+    } finally {
+      setTbLoading(false);
+    }
+  }, [tbMode, asOf, from, to, includeZero]);
+
+  const loadGl = useCallback(
+    async (opts?: { accountCode?: string; from?: string; to?: string; offset?: number }) => {
+      const code = opts?.accountCode ?? glAccount;
+      const f = opts?.from ?? glFrom;
+      const t = opts?.to ?? glTo;
+      const offset = opts?.offset ?? 0;
+      setGlLoading(true);
+      setError(null);
+      try {
+        const data = await fetchGeneralLedger({
+          accountCode: code,
+          from: f,
+          to: t,
+          limit: 50,
+          offset
+        });
+        setGl(data);
+        setGlOffset(offset);
+      } catch (err) {
+        setGl(null);
+        setError(err instanceof AdminApiError ? err.message : "General Ledger failed");
+      } finally {
+        setGlLoading(false);
+      }
+    },
+    [glAccount, glFrom, glTo]
+  );
+
+  const openGl = useCallback(
+    (codes: string[]) => {
+      const code = codes[0];
+      if (!code) return;
+      const nextFrom = from || fy?.currentFy.startDate || "1970-01-01";
+      const nextTo = to || asOf;
+      setGlAccount(code);
+      setGlFrom(nextFrom);
+      setGlTo(nextTo);
+      setTab("gl");
+      void loadGl({ accountCode: code, from: nextFrom, to: nextTo, offset: 0 });
+    },
+    [from, to, asOf, fy, loadGl]
+  );
+
+  const loadPl = useCallback(async () => {
+    setPlLoading(true);
+    setError(null);
+    try {
+      setPl(await fetchProfitLoss({ from, to, comparison: true }));
+    } catch (err) {
+      setPl(null);
+      setError(err instanceof AdminApiError ? err.message : "P&L failed");
+    } finally {
+      setPlLoading(false);
+    }
+  }, [from, to]);
+
+  const loadBs = useCallback(async () => {
+    setBsLoading(true);
+    setError(null);
+    try {
+      setBs(await fetchBalanceSheet({ asOf, comparison: true }));
+    } catch (err) {
+      setBs(null);
+      setError(err instanceof AdminApiError ? err.message : "Balance Sheet failed");
+    } finally {
+      setBsLoading(false);
+    }
+  }, [asOf]);
+
+  const loadDash = useCallback(async () => {
+    setDashLoading(true);
+    setError(null);
+    try {
+      setDash(await fetchFinancialDashboard({ from, to, asOf }));
+    } catch (err) {
+      setDash(null);
+      setError(err instanceof AdminApiError ? err.message : "Dashboard failed");
+    } finally {
+      setDashLoading(false);
+    }
+  }, [from, to, asOf]);
+
+  const loadIntegrity = useCallback(async () => {
+    setIntegrityLoading(true);
+    setError(null);
+    try {
+      setIntegrity(await fetchFinancialIntegrity({ asOf, from, to }));
+    } catch (err) {
+      setIntegrity(null);
+      setError(err instanceof AdminApiError ? err.message : "Integrity report failed");
+    } finally {
+      setIntegrityLoading(false);
+    }
+  }, [asOf, from, to]);
+
+  const runExport = useCallback(
+    async (fn: () => Promise<void>) => {
+      setExportBusy(true);
+      setError(null);
+      try {
+        await fn();
+      } catch (err) {
+        setError(err instanceof AdminApiError ? err.message : "Export failed");
+      } finally {
+        setExportBusy(false);
+      }
+    },
+    []
+  );
+
+  const accountOptions = useMemo(
+    () => accounts.filter((a) => a.hasPostedActivity || a.isBankRegistryGl || a.isSystem),
+    [accounts]
+  );
+
+  const integrityStatusColor = (s: string) => {
+    if (s === "PASS") return "bg-emerald-100 text-emerald-900";
+    if (s === "WARNING") return "bg-amber-100 text-amber-950";
+    if (s === "FAIL") return "bg-red-100 text-red-900";
+    return "bg-sky-100 text-sky-950";
+  };
+
+  return (
+    <div className="space-y-4">
+      <AdminAccountingHeader
+        title="Financial Reports"
+        subtitle="POSTED GL authority — statements, integrity & exports (Phase 6D)."
+      />
+
+      {error ? (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+          {error}
+        </div>
+      ) : null}
+
+      <div className="flex flex-wrap gap-2">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            className={`rounded-md px-3 py-2 text-sm ${
+              tab === t.id
+                ? "bg-[#1e3a2f] text-white"
+                : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
+            }`}
+          >
+            {t.label}
+            {t.phase === "6D" ? (
+              <span className="ml-1 text-[10px] opacity-70">6D</span>
+            ) : null}
+          </button>
+        ))}
+      </div>
+
+      {/* Shared period / FY filters for statement tabs */}
+      {(tab === "overview" || tab === "pl" || tab === "bs" || tab === "integrity") && (
+        <div className="flex flex-wrap items-end gap-3 rounded-lg border border-neutral-200 bg-white p-4">
+          <label className="text-sm">
+            From
+            <input
+              type="date"
+              className="mt-1 block rounded border border-neutral-300 px-2 py-1.5"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+            />
+          </label>
+          <label className="text-sm">
+            To
+            <input
+              type="date"
+              className="mt-1 block rounded border border-neutral-300 px-2 py-1.5"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+            />
+          </label>
+          <label className="text-sm">
+            As of (BS)
+            <input
+              type="date"
+              className="mt-1 block rounded border border-neutral-300 px-2 py-1.5"
+              value={asOf}
+              onChange={(e) => setAsOf(e.target.value)}
+            />
+          </label>
+          {fy ? (
+            <label className="text-sm">
+              Financial year
+              <select
+                className="mt-1 block rounded border border-neutral-300 px-2 py-1.5"
+                defaultValue=""
+                onChange={(e) => {
+                  const opt = fy.options.find((o) => o.label === e.target.value);
+                  if (opt) applyFy(opt.startDate, opt.endDate);
+                }}
+              >
+                <option value="">Select FY…</option>
+                {fy.options.map((o) => (
+                  <option key={o.label} value={o.label}>
+                    {o.label} ({o.startDate} → {o.endDate})
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          <button
+            type="button"
+            disabled={exportBusy || !from || !to || !asOf}
+            className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm disabled:opacity-50"
+            onClick={() =>
+              void runExport(() => downloadFinancialStatementsXlsx({ asOf, from, to }))
+            }
+          >
+            {exportBusy ? "Exporting…" : "Download XLSX workbook"}
+          </button>
+        </div>
+      )}
+
+      {tab === "integrity" ? (
+        <div className="space-y-4">
+          <button
+            type="button"
+            onClick={() => void loadIntegrity()}
+            disabled={integrityLoading || !from || !to}
+            className="rounded-md bg-[#1e3a2f] px-4 py-2 text-sm text-white disabled:opacity-50"
+          >
+            {integrityLoading ? "Running…" : "Run Integrity / Reconciliation"}
+          </button>
+          {integrity ? (
+            <>
+              <div
+                className={`rounded-lg border px-4 py-3 text-sm ${
+                  integrity.overallStatus === "FINANCIAL_REPORTING_ENGINE_HEALTHY"
+                    ? "border-emerald-300 bg-emerald-50 text-emerald-950"
+                    : "border-amber-300 bg-amber-50 text-amber-950"
+                }`}
+              >
+                <p className="font-semibold tracking-wide">
+                  {integrity.overallStatus === "FINANCIAL_REPORTING_ENGINE_HEALTHY"
+                    ? "FINANCIAL REPORTING ENGINE HEALTHY"
+                    : "REVIEW REQUIRED"}
+                </p>
+                <p className="mt-1 text-xs">
+                  Engine validation only — not production cutover ready (Phase 7 incomplete).
+                  productionCutoverReady={String(integrity.productionCutoverReady)}
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-4">
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
+                  <p className="text-xs uppercase tracking-wide text-neutral-600">PASS</p>
+                  <p className="mt-1 text-2xl font-semibold tabular-nums">{integrity.summary.pass}</p>
+                </div>
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                  <p className="text-xs uppercase tracking-wide text-neutral-600">WARNING</p>
+                  <p className="mt-1 text-2xl font-semibold tabular-nums">
+                    {integrity.summary.warning}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+                  <p className="text-xs uppercase tracking-wide text-neutral-600">FAIL</p>
+                  <p className="mt-1 text-2xl font-semibold tabular-nums">{integrity.summary.fail}</p>
+                </div>
+                <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3">
+                  <p className="text-xs uppercase tracking-wide text-neutral-600">DATA GAP</p>
+                  <p className="mt-1 text-2xl font-semibold tabular-nums">
+                    {integrity.summary.dataGap}
+                  </p>
+                </div>
+              </div>
+              <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-neutral-50 text-left text-xs uppercase tracking-wide text-neutral-500">
+                    <tr>
+                      <th className="px-3 py-2">Check</th>
+                      <th className="px-3 py-2">Status</th>
+                      <th className="px-3 py-2">Severity</th>
+                      <th className="px-3 py-2 text-right">Variance</th>
+                      <th className="px-3 py-2">Message</th>
+                      <th className="px-3 py-2">Drill</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {integrity.checks.map((c) => (
+                      <tr key={c.code} className="border-t border-neutral-100 align-top">
+                        <td className="px-3 py-2 font-mono text-xs">{c.code}</td>
+                        <td className="px-3 py-2">
+                          <span
+                            className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${integrityStatusColor(c.status)}`}
+                          >
+                            {c.status}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-xs">{c.severity}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">
+                          {c.varianceInPaise == null ? "—" : formatInrPaise(c.varianceInPaise)}
+                        </td>
+                        <td className="px-3 py-2 max-w-md text-xs text-neutral-700">{c.message}</td>
+                        <td className="px-3 py-2 text-xs">
+                          {c.code === "INVENTORY_GL_VS_FIFO" ? (
+                            <button
+                              type="button"
+                              className="text-[#1e3a2f] underline"
+                              onClick={() => openGl(["1200"])}
+                            >
+                              GL 1200
+                            </button>
+                          ) : null}
+                          {c.code === "AP_GL_VS_SUBLEDGER" ? (
+                            <button
+                              type="button"
+                              className="text-[#1e3a2f] underline"
+                              onClick={() => openGl(["2000"])}
+                            >
+                              GL 2000
+                            </button>
+                          ) : null}
+                          {c.code === "ORPHAN_JOURNALS" ? (
+                            <Link
+                              href="/admin/accounting/journals"
+                              className="text-[#1e3a2f] underline"
+                            >
+                              Journals
+                            </Link>
+                          ) : null}
+                          {c.code === "GST_GL_VS_GST_REPORT" ? (
+                            <Link href="/admin/accounting/gst" className="text-[#1e3a2f] underline">
+                              GST
+                            </Link>
+                          ) : null}
+                          {c.code === "PURCHASE_CLEARING_1210_CONTROL" ? (
+                            <button
+                              type="button"
+                              className="text-[#1e3a2f] underline"
+                              onClick={() => openGl(["1210"])}
+                            >
+                              GL 1210
+                            </button>
+                          ) : null}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-xs text-neutral-700">
+                <p className="font-medium">Phase 7 carry-forward (not solved in 6D)</p>
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  {integrity.phase7CarryForward.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-neutral-600">
+              Run integrity to surface GL truth, known variances, and DATA_GAP statuses.
+            </p>
+          )}
+        </div>
+      ) : null}
+
+      {tab === "overview" ? (
+        <div className="space-y-4">
+          <button
+            type="button"
+            onClick={() => void loadDash()}
+            disabled={dashLoading || !from || !to}
+            className="rounded-md bg-[#1e3a2f] px-4 py-2 text-sm text-white disabled:opacity-50"
+          >
+            {dashLoading ? "Loading…" : "Refresh Dashboard"}
+          </button>
+          {dash ? (
+            <>
+              <p className="text-xs text-neutral-500">
+                {dash.fy.label} · Period {dash.period.from} → {dash.period.to} · As of {dash.asOf}
+                {!dash.balanceSheet.balanced ? (
+                  <span className="ml-2 text-red-700">BS OUT OF BALANCE</span>
+                ) : (
+                  <span className="ml-2 text-emerald-700">BS BALANCED</span>
+                )}
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {[
+                  ["Revenue", dash.profitAndLoss.revenueInPaise, () => setTab("pl")],
+                  ["Net Revenue", dash.profitAndLoss.netRevenueInPaise, () => setTab("pl")],
+                  ["COGS", dash.profitAndLoss.cogsInPaise, () => setTab("pl")],
+                  ["Gross Profit", dash.profitAndLoss.grossProfitInPaise, () => setTab("pl")],
+                  [
+                    "Gross Margin %",
+                    dash.profitAndLoss.grossMarginPercent,
+                    () => setTab("pl"),
+                    true
+                  ],
+                  ["OpEx", dash.profitAndLoss.operatingExpensesInPaise, () => setTab("pl")],
+                  ["Net Profit", dash.profitAndLoss.netProfitInPaise, () => setTab("pl")],
+                  ["Cash + Bank", dash.balanceSheet.cashAndBankInPaise, () => setTab("bs")],
+                  ["AR", dash.balanceSheet.accountsReceivableInPaise, () => setTab("bs")],
+                  ["AP", dash.balanceSheet.accountsPayableInPaise, () => setTab("bs")],
+                  ["Inventory", dash.balanceSheet.inventoryInPaise, () => setTab("bs")],
+                  ["Gateway Clearing", dash.balanceSheet.gatewayClearingInPaise, () => setTab("bs")],
+                  ["Input GST", dash.balanceSheet.inputGstAssetInPaise, () => setTab("bs")],
+                  ["Output GST", dash.balanceSheet.outputGstLiabilityInPaise, () => setTab("bs")]
+                ].map(([label, val, go, pct]) => (
+                  <button
+                    key={String(label)}
+                    type="button"
+                    onClick={go as () => void}
+                    className="rounded-lg border border-neutral-200 bg-white px-4 py-3 text-left hover:border-[#1e3a2f]"
+                  >
+                    <p className="text-xs uppercase tracking-wide text-neutral-500">{label as string}</p>
+                    <p className="mt-1 text-lg font-medium tabular-nums">
+                      {pct
+                        ? val == null
+                          ? "—"
+                          : `${val}%`
+                        : formatInrPaise(val as number)}
+                    </p>
+                  </button>
+                ))}
+              </div>
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-950">
+                {dash.disclosures.map((d) => (
+                  <div key={d}>{d}</div>
+                ))}
+                {dash.comparison.previousPeriodNetProfitInPaise != null ? (
+                  <div>
+                    Prior period net:{" "}
+                    {formatInrPaise(dash.comparison.previousPeriodNetProfitInPaise)}
+                  </div>
+                ) : null}
+                {dash.comparison.ytdNetProfitInPaise != null ? (
+                  <div>YTD net: {formatInrPaise(dash.comparison.ytdNetProfitInPaise)}</div>
+                ) : null}
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-neutral-600">Run Refresh Dashboard to load GL-backed KPIs.</p>
+          )}
+        </div>
+      ) : null}
+
+      {tab === "pl" ? (
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void loadPl()}
+              disabled={plLoading || !from || !to}
+              className="rounded-md bg-[#1e3a2f] px-4 py-2 text-sm text-white disabled:opacity-50"
+            >
+              {plLoading ? "Loading…" : "Run Profit & Loss"}
+            </button>
+            <button
+              type="button"
+              disabled={exportBusy || !from || !to}
+              className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm disabled:opacity-50"
+              onClick={() =>
+                void runExport(() =>
+                  downloadFinancialStatementPdf({ kind: "profit-loss", from, to })
+                )
+              }
+            >
+              PDF
+            </button>
+          </div>
+          {pl ? (
+            <>
+              <div
+                className={`rounded-lg border px-4 py-3 text-sm ${
+                  pl.integrity.status === "PASS"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                    : "border-red-200 bg-red-50 text-red-900"
+                }`}
+              >
+                Net Profit {formatInrPaise(pl.totals.netProfitInPaise)}
+                {pl.totals.grossMarginPercent != null
+                  ? ` · Gross margin ${pl.totals.grossMarginPercent}%`
+                  : " · Gross margin n/a"}
+                {" · "}
+                {pl.integrity.status === "PASS" ? "Integrity PASS" : `Integrity FAIL var ${pl.integrity.varianceInPaise}`}
+              </div>
+              {pl.comparison ? (
+                <p className="text-xs text-neutral-600">
+                  Prior period net:{" "}
+                  {pl.comparison.previousPeriod
+                    ? formatInrPaise(pl.comparison.previousPeriod.netProfitInPaise)
+                    : "—"}
+                  {pl.comparison.ytd
+                    ? ` · YTD (${pl.comparison.ytd.from}→${pl.comparison.ytd.to}): ${formatInrPaise(pl.comparison.ytd.netProfitInPaise)}`
+                    : null}
+                </p>
+              ) : null}
+              <div className="rounded-lg border border-neutral-200 bg-white">
+                <StatementRows
+                  lines={[
+                    ...pl.sections.revenue,
+                    ...pl.sections.cogs,
+                    ...pl.sections.operatingExpenses,
+                    ...pl.sections.otherIncome,
+                    ...pl.sections.otherExpenses
+                  ]}
+                  onDrill={openGl}
+                />
+              </div>
+            </>
+          ) : null}
+        </div>
+      ) : null}
+
+      {tab === "bs" ? (
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void loadBs()}
+              disabled={bsLoading || !asOf}
+              className="rounded-md bg-[#1e3a2f] px-4 py-2 text-sm text-white disabled:opacity-50"
+            >
+              {bsLoading ? "Loading…" : "Run Balance Sheet"}
+            </button>
+            <button
+              type="button"
+              disabled={exportBusy || !asOf}
+              className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm disabled:opacity-50"
+              onClick={() =>
+                void runExport(() =>
+                  downloadFinancialStatementPdf({ kind: "balance-sheet", asOf })
+                )
+              }
+            >
+              PDF
+            </button>
+          </div>
+          {bs ? (
+            <>
+              <div
+                className={`rounded-lg border px-4 py-3 text-sm ${
+                  bs.totals.balanced
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                    : "border-red-200 bg-red-50 text-red-900"
+                }`}
+              >
+                {bs.totals.balanced ? (
+                  <strong>BALANCED</strong>
+                ) : (
+                  <>
+                    <strong>OUT OF BALANCE</strong> — difference{" "}
+                    {formatInrPaise(Math.abs(bs.totals.differenceInPaise))}
+                  </>
+                )}
+                <span className="ml-2 text-neutral-600">
+                  · {bs.fy.label} · Current earnings {formatInrPaise(bs.earnings.currentFyEarningsInPaise)} (
+                  {bs.earnings.currentFyFrom} → {bs.earnings.currentFyTo})
+                </span>
+              </div>
+              <p className="text-xs text-neutral-500">{bs.earnings.formula}</p>
+              {bs.disclosures.warnings.length ? (
+                <div className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+                  {bs.disclosures.warnings.map((w) => (
+                    <div key={w}>{w}</div>
+                  ))}
+                  <div>{bs.disclosures.arSubledger}</div>
+                </div>
+              ) : (
+                <p className="text-xs text-neutral-500">{bs.disclosures.arSubledger}</p>
+              )}
+              <div className="grid gap-4 lg:grid-cols-3">
+                {(
+                  [
+                    ["Assets", bs.sections.assets, bs.totals.totalAssetsInPaise],
+                    ["Liabilities", bs.sections.liabilities, bs.totals.totalLiabilitiesInPaise],
+                    ["Equity", bs.sections.equity, bs.totals.totalEquityInPaise]
+                  ] as const
+                ).map(([title, lines, total]) => (
+                  <div key={title} className="rounded-lg border border-neutral-200 bg-white">
+                    <div className="border-b border-neutral-100 px-3 py-2 font-medium">{title}</div>
+                    <StatementRows lines={lines} onDrill={openGl} />
+                    <div className="border-t border-neutral-200 px-3 py-2 text-sm font-semibold flex justify-between">
+                      <span>Total</span>
+                      <span className="tabular-nums">{formatInrPaise(total)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="text-sm text-[#1e3a2f] underline"
+                onClick={() => {
+                  setTab("pl");
+                  setFrom(bs.earnings.currentFyFrom);
+                  setTo(bs.earnings.currentFyTo);
+                }}
+              >
+                Open P&L for current earnings period
+              </button>
+            </>
+          ) : null}
+        </div>
+      ) : null}
+
+      {tab === "tb" ? (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-end gap-3 rounded-lg border border-neutral-200 bg-white p-4">
+            <label className="text-sm">
+              Mode
+              <select
+                className="mt-1 block rounded border border-neutral-300 px-2 py-1.5"
+                value={tbMode}
+                onChange={(e) => setTbMode(e.target.value as "asOf" | "period")}
+              >
+                <option value="asOf">As-of</option>
+                <option value="period">From / To</option>
+              </select>
+            </label>
+            {tbMode === "asOf" ? (
+              <label className="text-sm">
+                As of
+                <input
+                  type="date"
+                  className="mt-1 block rounded border border-neutral-300 px-2 py-1.5"
+                  value={asOf}
+                  onChange={(e) => setAsOf(e.target.value)}
+                />
+              </label>
+            ) : (
+              <>
+                <label className="text-sm">
+                  From
+                  <input
+                    type="date"
+                    className="mt-1 block rounded border border-neutral-300 px-2 py-1.5"
+                    value={from}
+                    onChange={(e) => setFrom(e.target.value)}
+                  />
+                </label>
+                <label className="text-sm">
+                  To
+                  <input
+                    type="date"
+                    className="mt-1 block rounded border border-neutral-300 px-2 py-1.5"
+                    value={to}
+                    onChange={(e) => setTo(e.target.value)}
+                  />
+                </label>
+              </>
+            )}
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={includeZero}
+                onChange={(e) => setIncludeZero(e.target.checked)}
+              />
+              Include zero balances
+            </label>
+            <button
+              type="button"
+              onClick={() => void loadTb()}
+              disabled={tbLoading}
+              className="rounded-md bg-[#1e3a2f] px-4 py-2 text-sm text-white disabled:opacity-50"
+            >
+              {tbLoading ? "Loading…" : "Run Trial Balance"}
+            </button>
+            <button
+              type="button"
+              disabled={exportBusy || !asOf}
+              className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm disabled:opacity-50"
+              onClick={() =>
+                void runExport(() =>
+                  downloadFinancialStatementPdf({ kind: "trial-balance", asOf })
+                )
+              }
+            >
+              PDF
+            </button>
+          </div>
+          {tb ? (
+            <>
+              <div
+                className={`rounded-lg border px-4 py-3 text-sm ${
+                  tb.balanced
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                    : "border-red-200 bg-red-50 text-red-900"
+                }`}
+              >
+                {tb.balanced ? <strong>BALANCED</strong> : (
+                  <>
+                    <strong>OUT OF BALANCE</strong> — Variance{" "}
+                    {formatInrPaise(Math.abs(tb.varianceInPaise))}
+                  </>
+                )}
+              </div>
+              <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-neutral-50 text-left text-xs uppercase tracking-wide text-neutral-500">
+                    <tr>
+                      <th className="px-3 py-2">Code</th>
+                      <th className="px-3 py-2">Account</th>
+                      <th className="px-3 py-2">Class</th>
+                      <th className="px-3 py-2 text-right">Close Dr</th>
+                      <th className="px-3 py-2 text-right">Close Cr</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tb.rows.map((row) => (
+                      <tr key={row.accountId} className="border-t border-neutral-100">
+                        <td className="px-3 py-2">
+                          <button
+                            type="button"
+                            className="font-mono text-[#1e3a2f] underline"
+                            onClick={() => openGl([row.accountCode])}
+                          >
+                            {row.accountCode}
+                          </button>
+                        </td>
+                        <td className="px-3 py-2">{row.accountName}</td>
+                        <td className="px-3 py-2 text-xs text-neutral-500">{row.reportClass}</td>
+                        <td className="px-3 py-2 text-right">
+                          <PaiseCell value={row.closingDebitInPaise} />
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          <PaiseCell value={row.closingCreditInPaise} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          ) : null}
+        </div>
+      ) : null}
+
+      {tab === "gl" ? (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-end gap-3 rounded-lg border border-neutral-200 bg-white p-4">
+            <label className="text-sm">
+              Account
+              <select
+                className="mt-1 block min-w-[220px] rounded border border-neutral-300 px-2 py-1.5"
+                value={glAccount}
+                onChange={(e) => setGlAccount(e.target.value)}
+              >
+                {accountOptions.map((a) => (
+                  <option key={a.id} value={a.code}>
+                    {a.code} — {a.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-sm">
+              From
+              <input
+                type="date"
+                className="mt-1 block rounded border border-neutral-300 px-2 py-1.5"
+                value={glFrom}
+                onChange={(e) => setGlFrom(e.target.value)}
+              />
+            </label>
+            <label className="text-sm">
+              To
+              <input
+                type="date"
+                className="mt-1 block rounded border border-neutral-300 px-2 py-1.5"
+                value={glTo}
+                onChange={(e) => setGlTo(e.target.value)}
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => void loadGl({ offset: 0 })}
+              disabled={glLoading}
+              className="rounded-md bg-[#1e3a2f] px-4 py-2 text-sm text-white disabled:opacity-50"
+            >
+              {glLoading ? "Loading…" : "Run General Ledger"}
+            </button>
+            <button
+              type="button"
+              disabled={exportBusy || !glFrom || !glTo || !glAccount}
+              className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm disabled:opacity-50"
+              onClick={() =>
+                void runExport(() =>
+                  downloadGeneralLedgerXlsx({
+                    accountCode: glAccount,
+                    from: glFrom,
+                    to: glTo
+                  })
+                )
+              }
+            >
+              GL XLSX
+            </button>
+          </div>
+          {gl ? (
+            <>
+              <div className="grid gap-3 sm:grid-cols-4">
+                {[
+                  ["Opening", gl.openingBalanceInPaise],
+                  ["Period Debits", gl.periodDebitInPaise],
+                  ["Period Credits", gl.periodCreditInPaise],
+                  ["Closing", gl.closingBalanceInPaise]
+                ].map(([label, val]) => (
+                  <div
+                    key={String(label)}
+                    className="rounded-lg border border-neutral-200 bg-white px-4 py-3"
+                  >
+                    <p className="text-xs uppercase tracking-wide text-neutral-500">{label}</p>
+                    <p className="mt-1 text-lg font-medium tabular-nums">
+                      {formatInrPaise(val as number)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-neutral-50 text-left text-xs uppercase tracking-wide text-neutral-500">
+                    <tr>
+                      <th className="px-3 py-2">Date</th>
+                      <th className="px-3 py-2">Journal</th>
+                      <th className="px-3 py-2">Description</th>
+                      <th className="px-3 py-2">Event</th>
+                      <th className="px-3 py-2 text-right">Debit</th>
+                      <th className="px-3 py-2 text-right">Credit</th>
+                      <th className="px-3 py-2 text-right">Running</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {gl.lines.map((line) => (
+                      <tr key={line.lineId} className="border-t border-neutral-100">
+                        <td className="px-3 py-2 whitespace-nowrap">{line.entryDate}</td>
+                        <td className="px-3 py-2">
+                          <Link
+                            href="/admin/accounting/journals"
+                            className="font-mono text-[#1e3a2f] underline"
+                          >
+                            {line.journalNumber}
+                          </Link>
+                          {line.orphanJournal ? (
+                            <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium uppercase text-amber-900">
+                              Orphan
+                            </span>
+                          ) : null}
+                        </td>
+                        <td className="px-3 py-2 max-w-xs truncate">
+                          {line.description ?? line.lineMemo ?? "—"}
+                        </td>
+                        <td className="px-3 py-2 text-xs">{line.eventType ?? "—"}</td>
+                        <td className="px-3 py-2 text-right">
+                          <PaiseCell value={line.debitInPaise} />
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          <PaiseCell value={line.creditInPaise} />
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums">
+                          {formatInrPaise(line.runningBalanceInPaise)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={glOffset <= 0 || glLoading}
+                  className="rounded border border-neutral-300 px-3 py-1.5 text-sm disabled:opacity-40"
+                  onClick={() => void loadGl({ offset: Math.max(0, glOffset - 50) })}
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  disabled={!gl.pagination.hasMore || glLoading}
+                  className="rounded border border-neutral-300 px-3 py-1.5 text-sm disabled:opacity-40"
+                  onClick={() => void loadGl({ offset: glOffset + 50 })}
+                >
+                  Next
+                </button>
+              </div>
+            </>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}

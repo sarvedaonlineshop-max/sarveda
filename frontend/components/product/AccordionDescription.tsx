@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 
-import { decodeHtmlEntities, htmlToPlainText, sanitizeProductHtml } from "@/lib/sanitize-html";
+import { decodeHtmlEntities, sanitizeProductHtml } from "@/lib/sanitize-html";
 
 type Item = {
   id: string;
@@ -110,41 +110,11 @@ function AccordionHeaderIcon({ title }: { title: string }) {
   );
 }
 
-function RichContent({ html, title }: { html: string; title?: string }) {
+function RichContent({ html }: { html: string; title?: string }) {
   const cleaned = sanitizeProductHtml(html);
   const looksHtml = /<[a-z][\s\S]*>/i.test(cleaned.trim());
 
-  if (title && /key\s*features?/i.test(title)) {
-    const lines = htmlToPlainText(cleaned)
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0);
-    if (lines.length > 0) {
-      return (
-        <ul className="border-t border-brand-cream-dark/60 px-4 pb-4 pt-3 text-base leading-relaxed text-brand-ink/80">
-          {lines.map((line, i) => (
-            <li key={i} className="relative py-1 pl-7">
-              <svg
-                viewBox="0 0 24 24"
-                className="absolute left-0 top-[0.45em] h-4 w-4 text-brand-gold"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden
-              >
-                <circle cx="12" cy="12" r="10" />
-                <path d="m9 12 2 2 4-4" />
-              </svg>
-              {line}
-            </li>
-          ))}
-        </ul>
-      );
-    }
-  }
-
+  // Key Features and description share the same rich-features brass checkmarks.
   if (looksHtml) {
     return (
       <div
@@ -195,7 +165,7 @@ export function AccordionDescription({ items }: Props) {
                 <path d="m6 9 6 6 6-6" />
               </svg>
             </button>
-            {open ? <RichContent html={item.content} title={item.title} /> : null}
+            {open ? <RichContent html={item.content} /> : null}
           </div>
         );
       })}

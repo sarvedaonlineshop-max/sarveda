@@ -1,0 +1,440 @@
+{
+  "mode": "dry-run",
+  "generatedAt": "2026-08-25T13:55:59.508Z",
+  "dbName": "sarveda_db",
+  "dbHostHint": "localhost",
+  "dependency_order": [
+    "AccountingBankStatementMatch",
+    "AccountingBankStatementLine",
+    "AccountingBankStatementImport",
+    "AccountingBankReconciliation",
+    "AccountingBankTransfer",
+    "AccountingVendorPaymentAllocation",
+    "AccountingVendorPayment",
+    "AccountingGatewaySettlementLine",
+    "AccountingGatewaySettlement",
+    "AccountingInventoryCostConsumption",
+    "AccountingInventoryCostLayer",
+    "AccountingItcStatusHistory",
+    "AccountingItcEvidence",
+    "AccountingOpeningBatch",
+    "AccountingInventoryOpeningBatchItem",
+    "AccountingInventoryOpeningBatch",
+    "AccountingDocumentLink",
+    "AccountingJournalLine",
+    "AccountingPostingEvent",
+    "AccountingJournalEntry",
+    "AccountingAuditLog",
+    "AccountingExpenseAccountMapping",
+    "AccountingExpensePaymentMapping",
+    "AccountingBankAccount"
+  ],
+  "entries": [
+    {
+      "table": "AccountingBankStatementMatch",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "Bank statement match candidates (depends on lines + journals)",
+      "dependency_order": 1,
+      "commerce_impact": false,
+      "reversible_via_backup": true
+    },
+    {
+      "table": "AccountingBankStatementLine",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "Imported bank statement evidence lines",
+      "dependency_order": 2,
+      "commerce_impact": false,
+      "reversible_via_backup": true
+    },
+    {
+      "table": "AccountingBankStatementImport",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "Committed bank statement imports",
+      "dependency_order": 3,
+      "commerce_impact": false,
+      "reversible_via_backup": true
+    },
+    {
+      "table": "AccountingBankReconciliation",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "Formal bank reconciliation periods",
+      "dependency_order": 4,
+      "commerce_impact": false,
+      "reversible_via_backup": true
+    },
+    {
+      "table": "AccountingBankTransfer",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "Accounting-owned internal bank transfers",
+      "dependency_order": 5,
+      "commerce_impact": false,
+      "reversible_via_backup": true
+    },
+    {
+      "table": "AccountingVendorPaymentAllocation",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "AP payment allocations (accounting-owned; VendorBill preserved)",
+      "dependency_order": 6,
+      "commerce_impact": false,
+      "reversible_via_backup": true
+    },
+    {
+      "table": "AccountingVendorPayment",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "Accounting-owned supplier payments",
+      "dependency_order": 7,
+      "commerce_impact": false,
+      "reversible_via_backup": true
+    },
+    {
+      "table": "AccountingGatewaySettlementLine",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "Gateway settlement line items",
+      "dependency_order": 8,
+      "commerce_impact": false,
+      "reversible_via_backup": true
+    },
+    {
+      "table": "AccountingGatewaySettlement",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "Gateway settlement batches",
+      "dependency_order": 9,
+      "commerce_impact": false,
+      "reversible_via_backup": true
+    },
+    {
+      "table": "AccountingInventoryCostConsumption",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "FIFO consumption records",
+      "dependency_order": 10,
+      "commerce_impact": false,
+      "reversible_via_backup": true
+    },
+    {
+      "table": "AccountingInventoryCostLayer",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "FIFO cost layers (ops Inventory.onHand preserved)",
+      "dependency_order": 11,
+      "commerce_impact": false,
+      "reversible_via_backup": true
+    },
+    {
+      "table": "AccountingItcStatusHistory",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "ITC status audit trail",
+      "dependency_order": 12,
+      "commerce_impact": false,
+      "reversible_via_backup": true
+    },
+    {
+      "table": "AccountingItcEvidence",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "ITC evidence records",
+      "dependency_order": 13,
+      "commerce_impact": false,
+      "reversible_via_backup": true
+    },
+    {
+      "table": "AccountingOpeningBatch",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "Phase 7B production opening batches (+ staging children cascade)",
+      "dependency_order": 14,
+      "commerce_impact": false,
+      "reversible_via_backup": true
+    },
+    {
+      "table": "AccountingInventoryOpeningBatchItem",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "Phase 3D1 inventory opening batch items",
+      "dependency_order": 15,
+      "commerce_impact": false,
+      "reversible_via_backup": true
+    },
+    {
+      "table": "AccountingInventoryOpeningBatch",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "Phase 3D1 inventory opening batches",
+      "dependency_order": 16,
+      "commerce_impact": false,
+      "reversible_via_backup": true
+    },
+    {
+      "table": "AccountingDocumentLink",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "Document ↔ journal links",
+      "dependency_order": 17,
+      "commerce_impact": false,
+      "reversible_via_backup": true
+    },
+    {
+      "table": "AccountingJournalLine",
+      "rows_to_remove": 20,
+      "rows_to_preserve": 0,
+      "reason": "Journal lines (before journal entries)",
+      "dependency_order": 18,
+      "commerce_impact": false,
+      "reversible_via_backup": true
+    },
+    {
+      "table": "AccountingPostingEvent",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "Idempotent posting events",
+      "dependency_order": 19,
+      "commerce_impact": false,
+      "reversible_via_backup": true
+    },
+    {
+      "table": "AccountingJournalEntry",
+      "rows_to_remove": 10,
+      "rows_to_preserve": 0,
+      "reason": "Native journal entries",
+      "dependency_order": 20,
+      "commerce_impact": false,
+      "reversible_via_backup": true
+    },
+    {
+      "table": "AccountingAuditLog",
+      "rows_to_remove": 10,
+      "rows_to_preserve": 0,
+      "reason": "Accounting audit trail",
+      "dependency_order": 21,
+      "commerce_impact": false,
+      "reversible_via_backup": true
+    },
+    {
+      "table": "AccountingExpenseAccountMapping",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "Expense → CoA mappings",
+      "dependency_order": 22,
+      "commerce_impact": false,
+      "reversible_via_backup": true
+    },
+    {
+      "table": "AccountingExpensePaymentMapping",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "Expense paid-through → bank mappings",
+      "dependency_order": 23,
+      "commerce_impact": false,
+      "reversible_via_backup": true
+    },
+    {
+      "table": "AccountingBankAccount",
+      "rows_to_remove": 1,
+      "rows_to_preserve": 0,
+      "reason": "Bank/cash registry (CoA codes preserved on AccountingAccount)",
+      "dependency_order": 24,
+      "commerce_impact": false,
+      "reversible_via_backup": true
+    },
+    {
+      "table": "AccountingAccount",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "Commerce or canonical CoA — never truncated by accounting reset",
+      "dependency_order": 0,
+      "commerce_impact": true,
+      "reversible_via_backup": false
+    },
+    {
+      "table": "AccountingPeriod",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "Commerce or canonical CoA — never truncated by accounting reset",
+      "dependency_order": 0,
+      "commerce_impact": true,
+      "reversible_via_backup": false
+    },
+    {
+      "table": "AccountingSequence",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "Commerce or canonical CoA — never truncated by accounting reset",
+      "dependency_order": 0,
+      "commerce_impact": true,
+      "reversible_via_backup": false
+    },
+    {
+      "table": "Order",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 4,
+      "reason": "Commerce or canonical CoA — never truncated by accounting reset",
+      "dependency_order": 0,
+      "commerce_impact": true,
+      "reversible_via_backup": false
+    },
+    {
+      "table": "OrderItem",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 4,
+      "reason": "Commerce or canonical CoA — never truncated by accounting reset",
+      "dependency_order": 0,
+      "commerce_impact": true,
+      "reversible_via_backup": false
+    },
+    {
+      "table": "Payment",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 4,
+      "reason": "Commerce or canonical CoA — never truncated by accounting reset",
+      "dependency_order": 0,
+      "commerce_impact": true,
+      "reversible_via_backup": false
+    },
+    {
+      "table": "Refund",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "Commerce or canonical CoA — never truncated by accounting reset",
+      "dependency_order": 0,
+      "commerce_impact": true,
+      "reversible_via_backup": false
+    },
+    {
+      "table": "Product",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 2265,
+      "reason": "Commerce or canonical CoA — never truncated by accounting reset",
+      "dependency_order": 0,
+      "commerce_impact": true,
+      "reversible_via_backup": false
+    },
+    {
+      "table": "ProductVariant",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 3165,
+      "reason": "Commerce or canonical CoA — never truncated by accounting reset",
+      "dependency_order": 0,
+      "commerce_impact": true,
+      "reversible_via_backup": false
+    },
+    {
+      "table": "Inventory",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 1055992,
+      "reason": "Commerce or canonical CoA — never truncated by accounting reset",
+      "dependency_order": 0,
+      "commerce_impact": true,
+      "reversible_via_backup": false
+    },
+    {
+      "table": "User",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 1,
+      "reason": "Commerce or canonical CoA — never truncated by accounting reset",
+      "dependency_order": 0,
+      "commerce_impact": true,
+      "reversible_via_backup": false
+    },
+    {
+      "table": "Vendor",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 319,
+      "reason": "Commerce or canonical CoA — never truncated by accounting reset",
+      "dependency_order": 0,
+      "commerce_impact": true,
+      "reversible_via_backup": false
+    },
+    {
+      "table": "VendorBill",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 19,
+      "reason": "Commerce or canonical CoA — never truncated by accounting reset",
+      "dependency_order": 0,
+      "commerce_impact": true,
+      "reversible_via_backup": false
+    },
+    {
+      "table": "PurchaseOrder",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "Commerce or canonical CoA — never truncated by accounting reset",
+      "dependency_order": 0,
+      "commerce_impact": true,
+      "reversible_via_backup": false
+    },
+    {
+      "table": "PurchaseReceipt",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "Commerce or canonical CoA — never truncated by accounting reset",
+      "dependency_order": 0,
+      "commerce_impact": true,
+      "reversible_via_backup": false
+    },
+    {
+      "table": "Expense",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 0,
+      "reason": "Commerce or canonical CoA — never truncated by accounting reset",
+      "dependency_order": 0,
+      "commerce_impact": true,
+      "reversible_via_backup": false
+    },
+    {
+      "table": "AccountingAccount",
+      "rows_to_remove": 0,
+      "rows_to_preserve": 83,
+      "reason": "Canonical system CoA — preserved; optional TEST bank GL deactivation flagged separately",
+      "dependency_order": 0,
+      "commerce_impact": false,
+      "reversible_via_backup": false
+    }
+  ],
+  "commerce_fingerprint_before": {
+    "orders": 4,
+    "payments": 4,
+    "refunds": 0,
+    "products": 2265,
+    "productVariants": 3165,
+    "inventoryOnHandSum": 1055992
+  },
+  "blocking_reasons": [],
+  "preserved_tables": [
+    "AccountingAccount",
+    "AccountingPeriod",
+    "AccountingSequence",
+    "Order",
+    "OrderItem",
+    "Payment",
+    "Refund",
+    "Product",
+    "ProductVariant",
+    "Inventory",
+    "User",
+    "Vendor",
+    "VendorBill",
+    "PurchaseOrder",
+    "PurchaseReceipt",
+    "Expense",
+    "AccountingAccount"
+  ],
+  "test_bank_gl_deactivation_candidates": [
+    {
+      "glAccountCode": "9088",
+      "bankAccountId": "3408fad7-ac27-4cc7-b1e8-59c835e9ebfa",
+      "name": "TEST-ACC-FS-HDFC",
+      "wouldDeactivate": false
+    }
+  ],
+  "execute_allowed": true
+}
