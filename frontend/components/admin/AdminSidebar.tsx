@@ -87,6 +87,8 @@ const primaryNav: NavItem[] = [
 
 const secondaryNav: NavItem[] = [
   { href: "/admin/marketplaces", label: "Marketplaces", icon: icon.marketplaces },
+  { href: "/admin/old-orders", label: "Old Orders", icon: icon.reports },
+  { href: "/admin/old-marketplaces", label: "Old Marketplaces", icon: icon.marketplaces },
   { href: "/admin/reports", label: "Reports", icon: icon.reports },
   { href: "/admin/coupons", label: "Coupons", icon: icon.coupons },
   { href: "/admin/mentors", label: "Mentors", icon: icon.mentors },

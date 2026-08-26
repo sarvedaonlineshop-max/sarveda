@@ -58,7 +58,10 @@ async function main() {
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 
   const orders = await prisma.order.findMany({
-    where: { orderNumber: { startsWith: "SRV-" } },
+    where: {
+      orderNumber: { startsWith: "SRV-" },
+      NOT: { orderNumber: { startsWith: "SRV-ACCT-" } }
+    },
     select: {
       id: true,
       orderNumber: true,
@@ -71,7 +74,7 @@ async function main() {
   });
 
   console.log(`Mode: ${APPLY ? "APPLY" : "DRY_RUN"}`);
-  console.log(`SRV-* orders found: ${orders.length}`);
+  console.log(`SRV-* orders found (excluding SRV-ACCT-*): ${orders.length}`);
   if (orders.length) {
     for (const o of orders) {
       console.log(
@@ -94,7 +97,12 @@ async function main() {
 
   await deleteOrders(orders.map((o) => o.id));
 
-  const remaining = await prisma.order.count({ where: { orderNumber: { startsWith: "SRV-" } } });
+  const remaining = await prisma.order.count({
+    where: {
+      orderNumber: { startsWith: "SRV-" },
+      NOT: { orderNumber: { startsWith: "SRV-ACCT-" } }
+    }
+  });
   const total = await prisma.order.count();
   console.log(`\nDeleted ${orders.length} SRV-* orders. Remaining SRV-*: ${remaining}. Total orders in DB: ${total}`);
 }

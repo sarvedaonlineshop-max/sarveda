@@ -530,6 +530,80 @@ export function fetchAdminOrders(
   return adminFetch<OrdersListData>(`/api/admin/orders${qs ? `?${qs}` : ""}`, { signal });
 }
 
+export type LegacyOrderListItem = {
+  id: string;
+  source: "D2C" | "MARKETPLACE";
+  channelCode: string | null;
+  externalOrderId: string | null;
+  orderNumber: string | null;
+  customerName: string | null;
+  customerEmail: string | null;
+  status: string;
+  paymentProvider: string | null;
+  paymentStatus: string | null;
+  currency: string;
+  grandTotalInPaise: number;
+  itemCount: number;
+  linePreview: string[];
+  orderDate: string;
+  placedAt: string | null;
+};
+
+export type LegacyOrdersListData = {
+  items: LegacyOrderListItem[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+};
+
+export function fetchLegacyOrders(params: {
+  source?: "D2C" | "MARKETPLACE";
+  channel?: string;
+  q?: string;
+  page?: number;
+  limit?: number;
+}) {
+  const search = new URLSearchParams();
+  if (params.source) search.set("source", params.source);
+  if (params.channel) search.set("channel", params.channel);
+  if (params.q) search.set("q", params.q);
+  if (params.page) search.set("page", String(params.page));
+  if (params.limit) search.set("limit", String(params.limit));
+  const qs = search.toString();
+  return adminFetch<LegacyOrdersListData>(`/api/admin/legacy-orders${qs ? `?${qs}` : ""}`);
+}
+
+export function fetchLegacyOrderDetail(id: string) {
+  return adminFetch<{ order: Record<string, unknown> }>(`/api/admin/legacy-orders/${id}`).then((d) => d.order);
+}
+
+export type LegacyMarketplaceOrderRow = Record<string, unknown>;
+
+export function fetchLegacyMarketplaceOrders(params: {
+  channel?: string;
+  q?: string;
+  page?: number;
+  limit?: number;
+}) {
+  const search = new URLSearchParams();
+  if (params.channel) search.set("channel", params.channel);
+  if (params.q) search.set("q", params.q);
+  if (params.page) search.set("page", String(params.page));
+  if (params.limit) search.set("limit", String(params.limit));
+  const qs = search.toString();
+  return adminFetch<{ items: LegacyMarketplaceOrderRow[]; pagination: LegacyOrdersListData["pagination"] }>(
+    `/api/admin/legacy-marketplaces/orders${qs ? `?${qs}` : ""}`
+  );
+}
+
+export function fetchLegacyOrdersStats() {
+  return adminFetch<{
+    legacyOrdersTotal: number;
+    legacyOrdersD2c: number;
+    legacyOrdersMarketplaceMerged: number;
+    legacyMarketplaceArchiveTotal: number;
+    channels: Array<{ code: string; count: number }>;
+  }>("/api/admin/legacy-orders/stats");
+}
+
 export type OrderDetail = Record<string, unknown>;
 
 export function fetchAdminOrderDetail(id: string, signal?: AbortSignal) {

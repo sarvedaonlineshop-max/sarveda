@@ -8,7 +8,13 @@ export const shopCatalogProductWhere: Prisma.ProductWhereInput = {
 
 export const shopCatalogVariantSkuWhere: Prisma.ProductVariantWhereInput = {
   NOT: {
-    OR: [{ sku: { startsWith: "COURSE-" } }, { sku: { startsWith: "EVENT-" } }]
+    OR: [
+      { sku: { startsWith: "COURSE-" } },
+      { sku: { startsWith: "EVENT-" } },
+      { sku: { startsWith: "ACCT-SKU-" } },
+      { sku: { startsWith: "TEST-SKU-" } },
+      { sku: { startsWith: "TEST-ACC-" } }
+    ]
   }
 };
 

@@ -412,6 +412,95 @@ model MarketplaceEventLog {
   @@index([source, createdAt(sort: Desc)])
 }
 
+// ─── Launch cutover archives (pre-go-live orders / marketplace ops) ───────────
+
+enum LegacyOrderSource {
+  D2C
+  MARKETPLACE
+}
+
+/// Unified pre-launch order history (D2C + marketplace, deduped for analytics).
+model LegacyOrderArchive {
+  id                         String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dedupeKey                  String             @unique
+  source                     LegacyOrderSource
+  channelCode                String?
+  externalOrderId            String?
+  orderNumber                String?
+  originalOrderId            String?            @db.Uuid
+  originalMarketplaceOrderId String?            @db.Uuid
+  customerName               String?
+  customerEmail              String?
+  customerPhone              String?
+  billingAddress             Json?
+  shippingAddress            Json?
+  status                     String
+  paymentProvider            String?
+  paymentStatus              String?
+  currency                   String             @default("INR")
+  subtotalInPaise            Int                @default(0)
+  discountInPaise            Int                @default(0)
+  shippingInPaise            Int                @default(0)
+  taxInPaise                 Int                @default(0)
+  grandTotalInPaise          Int
+  orderDate                  DateTime
+  placedAt                   DateTime?
+  itemCount                  Int                @default(0)
+  linePreview                String[]           @default([])
+  items                      Json
+  payments                   Json?
+  shipments                  Json?
+  wooCommerceId              Int?
+  zohoInvoiceId              String?
+  zohoInvoiceNo              String?
+  notes                      String?
+  rawSnapshot                Json?
+  migratedAt                 DateTime           @default(now())
+  createdAt                  DateTime           @default(now())
+
+  @@index([orderDate(sort: Desc)])
+  @@index([source, orderDate(sort: Desc)])
+  @@index([channelCode, orderDate(sort: Desc)])
+  @@index([orderNumber])
+  @@index([customerEmail])
+  @@index([originalOrderId])
+  @@index([originalMarketplaceOrderId])
+}
+
+/// Snapshot of pre-launch marketplace orders (live ops table cleared at cutover).
+model LegacyMarketplaceOrderArchive {
+  id                         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  originalMarketplaceOrderId String   @unique @db.Uuid
+  channelId                  String   @db.Uuid
+  channelCode                String
+  externalOrderId            String
+  orderDate                  DateTime
+  customerName               String?
+  customerEmail              String?
+  customerPhone              String?
+  shipToCity                 String?
+  shipToState                String?
+  shipToCountry              String?
+  shipToPostalCode           String?
+  status                     String
+  source                     String
+  grandTotalInPaise          Int      @default(0)
+  currency                   String   @default("INR")
+  items                      Json
+  returns                    Json?
+  rawPayload                 Json?
+  notes                      String?
+  dispatchedAt               DateTime?
+  deliveredAt                DateTime?
+  cancelledAt                DateTime?
+  migratedAt                 DateTime @default(now())
+  createdAt                  DateTime @default(now())
+
+  @@index([channelCode, orderDate(sort: Desc)])
+  @@index([orderDate(sort: Desc)])
+  @@index([externalOrderId])
+}
+
 /// Historical Zoho Books invoices (all channels). Separate from Order / MarketplaceOrder.
 /// Append-only upsert by zohoInvoiceId — used for pre-cutover analytics reference.
 model ZohoHistoricalInvoice {

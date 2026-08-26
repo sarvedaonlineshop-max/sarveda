@@ -68,7 +68,11 @@
     "test:commerce": "vitest run test/commerce",
     "test:accounting": "vitest run test/accounting",
     "test:hardening": "vitest run test/accounting/hardening.test.ts test/accounting/api-security.test.ts",
-    "seed:accounting-coa": "prisma generate && tsx scripts/seed-accounting-coa.ts"
+    "seed:accounting-coa": "prisma generate && tsx scripts/seed-accounting-coa.ts",
+    "hide:accounting-products:dry": "tsx scripts/hide-accounting-test-products.ts",
+    "hide:accounting-products": "tsx scripts/hide-accounting-test-products.ts --apply",
+    "launch:orders-cutover:dry": "tsx scripts/launch-orders-cutover.ts",
+    "launch:orders-cutover": "tsx scripts/launch-orders-cutover.ts --apply"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

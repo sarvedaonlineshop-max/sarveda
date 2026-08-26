@@ -32,6 +32,7 @@ import { auditSarvedaVariant, computeZohoSyncSummary, listZohoOnlyItems } from "
 import { mirrorStockToZohoForSkus } from "../zoho/zoho-items";
 import type { ZohoItemAuditRow } from "../zoho/zoho-sync-types";
 import { shopCatalogProductWhere, shopInventoryWhere } from "../../utils/shop-catalog";
+import { liveAdminOrderWhere } from "./live-order-filter";
 import {
   genuineCancelledWhere,
   unpaidAttemptCancelledWhere,
@@ -678,7 +679,7 @@ export async function ordersList(req: Request, res: Response, next: NextFunction
     const bucket: OrderBucket = valid.includes(rawBucket as OrderBucket) ? (rawBucket as OrderBucket) : "all";
     const bWhere = bucket === "all" ? {} : bucketWhere(bucket, now);
 
-    const where = { deletedAt: null as null, ...bWhere };
+    const where = { AND: [liveAdminOrderWhere(), bWhere] };
 
     const [total, rows] = await prisma.$transaction([
       prisma.order.count({ where }),
