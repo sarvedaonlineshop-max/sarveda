@@ -13,6 +13,7 @@ type Priority = "LOW"|"MEDIUM"|"HIGH";
 type ApiStatus = "OPEN"|"IN_PROGRESS"|"RESOLVED"|"REOPENED";
 type Status = "NEW"|"IN_PROGRESS"|"CLOSED"|"REOPENED";
 type LoginMode = "password"|"otp";
+type ForgotStep = "email"|"otp"|"newPassword";
 
 type Member = {
   email: string;
@@ -1031,7 +1032,13 @@ export default function TasksApp() {
   const [lOtp,setLOtp] = useState("");
   const [otpSent,setOtpSent] = useState(false);
   const [lErr,setLErr] = useState("");
+  const [lInfo,setLInfo] = useState("");
   const [lLoading,setLLoading] = useState(false);
+  const [forgotMode,setForgotMode] = useState(false);
+  const [forgotStep,setForgotStep] = useState<ForgotStep>("email");
+  const [resetToken,setResetToken] = useState<string|null>(null);
+  const [newPwdReset,setNewPwdReset] = useState("");
+  const [confirmPwdReset,setConfirmPwdReset] = useState("");
 
   // Data state
   const [dashTasks,setDashTasks] = useState<Task[]>([]);
@@ -1881,15 +1888,74 @@ export default function TasksApp() {
       msgFiles.length]);
 
   // ── Auth ─────────────────────────────────────────────
+  function friendlyAuthError(raw: string): string {
+    const lower = (raw || "").toLowerCase();
+    if (
+      lower.includes("not authorised") ||
+      lower.includes("not authorized") ||
+      lower.includes("no account found") ||
+      lower.includes("account_not_found") ||
+      lower.includes("email_not_found")
+    ) {
+      return "No account found for this email. Contact admin for access.";
+    }
+    if (lower.includes("deactivated") || lower.includes("account_inactive")) {
+      return "This account is deactivated. Contact admin to reactivate.";
+    }
+    return raw || "Something went wrong";
+  }
+
+  async function assertWhitelisted(email: string): Promise<void> {
+    const r = await fetch(`${API}/complaints/check-whitelist`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
+    const d = (await r.json().catch(() => ({}))) as {
+      allowed?: boolean;
+      error?: string;
+      code?: string;
+    };
+    if (r.ok && d.allowed !== false) return;
+    throw new Error(
+      d.error ||
+        "No account found for this email. Contact admin for access."
+    );
+  }
+
+  function enterForgot() {
+    setForgotMode(true);
+    setForgotStep("email");
+    setOtpSent(false);
+    setResetToken(null);
+    setLOtp("");
+    setNewPwdReset("");
+    setConfirmPwdReset("");
+    setLErr("");
+    setLInfo("");
+  }
+
+  function exitForgot(opts?: { passwordUpdated?: boolean }) {
+    setForgotMode(false);
+    setForgotStep("email");
+    setResetToken(null);
+    setLOtp("");
+    setNewPwdReset("");
+    setConfirmPwdReset("");
+    setLErr("");
+    setLInfo(
+      opts?.passwordUpdated
+        ? "Password updated. Sign in with your new password."
+        : ""
+    );
+    setLMode("password");
+  }
+
   async function handleLogin(e:React.FormEvent) {
     e.preventDefault();
-    setLLoading(true);setLErr("");
+    setLLoading(true);setLErr("");setLInfo("");
     try {
-      const allowed = await checkWhitelist(lEmail.trim());
-      if (!allowed) {
-        setLErr("This email is not authorised for Sarveda Tasks. Contact admin for access.");
-        setLLoading(false); return;
-      }
+      await assertWhitelisted(lEmail.trim());
       const r = await fetch(`${API}/complaints/auth/login`,{
         method:"POST",
         headers:{"Content-Type":"application/json"},
@@ -1909,46 +1975,36 @@ export default function TasksApp() {
         ()=>void loadNotifications(t),30000
       );
     } catch(err:any) {
-      setLErr(err.message??"Login failed");
+      setLErr(friendlyAuthError(err.message??"Login failed"));
     } finally { setLLoading(false); }
   }
 
-  async function checkWhitelist(email:string): Promise<boolean> {
-    try {
-      const r = await fetch(`${API}/complaints/check-whitelist`,{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({email}),
-      });
-      return r.ok;
-    } catch { return false; }
-  }
-
-  async function handleSendOtp(e:React.FormEvent) {
+  async function handleSendOtp(e:React.FormEvent, forReset = false) {
     e.preventDefault();
-    setLLoading(true);setLErr("");
+    setLLoading(true);setLErr("");setLInfo("");
     try {
-      const allowed = await checkWhitelist(lEmail.trim());
-      if (!allowed) {
-        setLErr("This email is not authorised for Sarveda Tasks. Contact admin for access.");
-        setLLoading(false); return;
-      }
+      await assertWhitelisted(lEmail.trim());
       const r = await fetch(`${API}/auth/send-otp`,{
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({target:lEmail.trim()}),
       });
       const d = await r.json() as any;
-      if (!r.ok) throw new Error(d.error??"Failed");
-      setOtpSent(true);
+      if (!r.ok) throw new Error(d.error??"Failed to send OTP");
+      if (forReset) {
+        setForgotStep("otp");
+        setLInfo("OTP sent to your email. Enter it below.");
+      } else {
+        setOtpSent(true);
+      }
     } catch(err:any) {
-      setLErr(err.message??"Failed to send OTP");
+      setLErr(friendlyAuthError(err.message??"Failed to send OTP"));
     } finally { setLLoading(false); }
   }
 
   async function handleVerifyOtp(e:React.FormEvent) {
     e.preventDefault();
-    setLLoading(true);setLErr("");
+    setLLoading(true);setLErr("");setLInfo("");
     try {
       const r = await fetch(`${API}/auth/verify-otp`,{
         method:"POST",
@@ -1969,8 +2025,73 @@ export default function TasksApp() {
         ()=>void loadNotifications(t),30000
       );
     } catch(err:any) {
-      setLErr(err.message??"Failed");
+      setLErr(friendlyAuthError(err.message??"Failed"));
     } finally { setLLoading(false); }
+  }
+
+  async function handleVerifyResetOtp(e:React.FormEvent) {
+    e.preventDefault();
+    if (lOtp.trim().length !== 6) {
+      setLErr("Please enter the 6-digit OTP");
+      return;
+    }
+    setLLoading(true);setLErr("");setLInfo("");
+    try {
+      const r = await fetch(`${API}/auth/verify-otp-for-reset`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          target: lEmail.trim(),
+          code: lOtp.trim()
+        })
+      });
+      const d = (await r.json()) as any;
+      if (!r.ok) throw new Error(d.error ?? "Invalid OTP");
+      const token = d.data?.resetToken ?? d.resetToken;
+      if (!token) throw new Error("Could not start password reset");
+      setResetToken(token);
+      setForgotStep("newPassword");
+      setLInfo("OTP verified. Choose a new password.");
+    } catch (err: any) {
+      setLErr(friendlyAuthError(err.message ?? "Failed"));
+    } finally {
+      setLLoading(false);
+    }
+  }
+
+  async function handleResetPassword(e:React.FormEvent) {
+    e.preventDefault();
+    if (newPwdReset.length < 8) {
+      setLErr("Password must be at least 8 characters");
+      return;
+    }
+    if (newPwdReset !== confirmPwdReset) {
+      setLErr("Passwords do not match");
+      return;
+    }
+    if (!resetToken) {
+      setLErr("Reset session expired. Request a new OTP.");
+      return;
+    }
+    setLLoading(true);setLErr("");setLInfo("");
+    try {
+      const r = await fetch(`${API}/auth/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: resetToken,
+          password: newPwdReset
+        })
+      });
+      const d = (await r.json()) as any;
+      if (!r.ok) throw new Error(d.error ?? "Failed to reset password");
+      exitForgot({ passwordUpdated: true });
+      setLPwd("");
+    } catch (err: any) {
+      setLErr(friendlyAuthError(err.message ?? "Failed"));
+    } finally {
+      setLLoading(false);
+    }
   }
 
   // ── Create task ───────────────────────────────────────
@@ -3273,7 +3394,7 @@ export default function TasksApp() {
           }}>Sarveda Task Manager</h1>
           <p style={{
             fontSize:"14px",color:"#a8d5b5",marginTop:"6px"
-          }}>Team task management</p>
+          }}>{forgotMode?"Reset your password":"Team task management"}</p>
         </div>
 
         {/* Login card */}
@@ -3283,31 +3404,44 @@ export default function TasksApp() {
           border:"1px solid rgba(255,255,255,.12)",
           borderRadius:"24px",padding:"24px"
         }}>
-          {/* Mode switcher */}
-          <div style={{
-            display:"grid",gridTemplateColumns:"1fr 1fr",
-            gap:"6px",marginBottom:"20px",
-            background:"rgba(0,0,0,.25)",
-            borderRadius:"12px",padding:"4px"
-          }}>
-            {(["password","otp"] as LoginMode[]).map(m=>(
-              <button key={m} onClick={()=>{
-                setLMode(m);setLErr("");
-                setOtpSent(false);setLOtp("");
-              }} style={{
-                padding:"9px",borderRadius:"9px",
-                border:"none",cursor:"pointer",
-                fontSize:"13px",fontWeight:700,
-                background:lMode===m
-                  ?"#c8960a":"transparent",
-                color:lMode===m
-                  ?"#1e3a2f":"rgba(255,255,255,.55)",
-                transition:"all .2s"
+          {!forgotMode?(
+            <div style={{
+              display:"grid",gridTemplateColumns:"1fr 1fr",
+              gap:"6px",marginBottom:"20px",
+              background:"rgba(0,0,0,.25)",
+              borderRadius:"12px",padding:"4px"
+            }}>
+              {(["password","otp"] as LoginMode[]).map(m=>(
+                <button key={m} onClick={()=>{
+                  setLMode(m);setLErr("");setLInfo("");
+                  setOtpSent(false);setLOtp("");
+                }} style={{
+                  padding:"9px",borderRadius:"9px",
+                  border:"none",cursor:"pointer",
+                  fontSize:"13px",fontWeight:700,
+                  background:lMode===m
+                    ?"#c8960a":"transparent",
+                  color:lMode===m
+                    ?"#1e3a2f":"rgba(255,255,255,.55)",
+                  transition:"all .2s"
+                }}>
+                  {m==="password"?"🔑 Password":"📱 OTP"}
+                </button>
+              ))}
+            </div>
+          ):(
+            <button type="button" onClick={()=>exitForgot()}
+              disabled={lLoading}
+              style={{
+                display:"flex",alignItems:"center",gap:"6px",
+                marginBottom:"12px",border:"none",
+                background:"transparent",color:"#f5d88a",
+                fontSize:"13px",fontWeight:600,cursor:"pointer",
+                padding:0
               }}>
-                {m==="password"?"🔑 Password":"📱 OTP"}
-              </button>
-            ))}
-          </div>
+              ← Back to sign in
+            </button>
+          )}
 
           {/* Email */}
           <div style={{marginBottom:"12px"}}>
@@ -3322,12 +3456,143 @@ export default function TasksApp() {
               type="email" value={lEmail}
               onChange={e=>setLEmail(e.target.value)}
               placeholder="your@email.com"
-              autoCapitalize="none"/>
+              autoCapitalize="none"
+              disabled={forgotMode && forgotStep!=="email"}/>
           </div>
 
-          {lMode==="password"?(
+          {forgotMode?(
+            forgotStep==="email"?(
+              <form onSubmit={e=>void handleSendOtp(e, true)}>
+                {lErr&&<p style={{
+                  color:"#fca5a5",fontSize:"13px",
+                  marginBottom:"12px",textAlign:"center"
+                }}>{lErr}</p>}
+                {lInfo&&<p style={{
+                  color:"#86efac",fontSize:"13px",
+                  marginBottom:"12px",textAlign:"center"
+                }}>{lInfo}</p>}
+                <button type="submit" disabled={lLoading}
+                  style={{
+                    width:"100%",padding:"14px",
+                    borderRadius:"14px",border:"none",
+                    background:"#25D366",color:"#fff",
+                    fontWeight:900,fontSize:"15px",
+                    cursor:"pointer"
+                  }}>
+                  {lLoading?"Sending...":"Send OTP →"}
+                </button>
+              </form>
+            ):forgotStep==="otp"?(
+              <form onSubmit={e=>void handleVerifyResetOtp(e)}>
+                <p style={{
+                  color:"rgba(255,255,255,.75)",fontSize:"13px",
+                  marginBottom:"10px",textAlign:"center"
+                }}>OTP sent to your email. Enter it below.</p>
+                <div style={{marginBottom:"16px"}}>
+                  <label style={{
+                    fontSize:"11px",fontWeight:700,
+                    color:"rgba(245,216,138,.7)",
+                    textTransform:"uppercase",
+                    letterSpacing:"0.1em",
+                    display:"block",marginBottom:"6px"
+                  }}>Enter OTP</label>
+                  <input className="dark-input"
+                    type="text" inputMode="numeric"
+                    value={lOtp}
+                    onChange={e=>setLOtp(e.target.value.replace(/\D/g,"").slice(0,6))}
+                    placeholder="123456"
+                    maxLength={6}
+                    style={{
+                      letterSpacing:"8px",
+                      textAlign:"center",
+                      fontSize:"24px"
+                    }}/>
+                </div>
+                {lErr&&<p style={{
+                  color:"#fca5a5",fontSize:"13px",
+                  marginBottom:"12px",textAlign:"center"
+                }}>{lErr}</p>}
+                {lInfo&&<p style={{
+                  color:"#86efac",fontSize:"13px",
+                  marginBottom:"12px",textAlign:"center"
+                }}>{lInfo}</p>}
+                <button type="submit" disabled={lLoading}
+                  style={{
+                    width:"100%",padding:"14px",
+                    borderRadius:"14px",border:"none",
+                    background:"#25D366",color:"#fff",
+                    fontWeight:900,fontSize:"15px",
+                    cursor:"pointer"
+                  }}>
+                  {lLoading?"Verifying...":"Verify OTP →"}
+                </button>
+                <button type="button"
+                  onClick={e=>void handleSendOtp(e as any, true)}
+                  style={{
+                    width:"100%",padding:"10px",
+                    border:"none",background:"transparent",
+                    color:"#f5d88a",fontSize:"13px",
+                    cursor:"pointer",marginTop:"8px",
+                    fontWeight:600
+                  }}>
+                  Resend OTP
+                </button>
+              </form>
+            ):(
+              <form onSubmit={e=>void handleResetPassword(e)}>
+                <p style={{
+                  color:"rgba(255,255,255,.75)",fontSize:"13px",
+                  marginBottom:"10px",textAlign:"center"
+                }}>Choose a new password (min 8 characters).</p>
+                <div style={{marginBottom:"12px"}}>
+                  <label style={{
+                    fontSize:"11px",fontWeight:700,
+                    color:"rgba(245,216,138,.7)",
+                    textTransform:"uppercase",
+                    letterSpacing:"0.1em",
+                    display:"block",marginBottom:"6px"
+                  }}>New password</label>
+                  <input className="dark-input"
+                    type="password" value={newPwdReset}
+                    onChange={e=>setNewPwdReset(e.target.value)}
+                    placeholder="••••••••"/>
+                </div>
+                <div style={{marginBottom:"16px"}}>
+                  <label style={{
+                    fontSize:"11px",fontWeight:700,
+                    color:"rgba(245,216,138,.7)",
+                    textTransform:"uppercase",
+                    letterSpacing:"0.1em",
+                    display:"block",marginBottom:"6px"
+                  }}>Confirm password</label>
+                  <input className="dark-input"
+                    type="password" value={confirmPwdReset}
+                    onChange={e=>setConfirmPwdReset(e.target.value)}
+                    placeholder="••••••••"/>
+                </div>
+                {lErr&&<p style={{
+                  color:"#fca5a5",fontSize:"13px",
+                  marginBottom:"12px",textAlign:"center"
+                }}>{lErr}</p>}
+                {lInfo&&<p style={{
+                  color:"#86efac",fontSize:"13px",
+                  marginBottom:"12px",textAlign:"center"
+                }}>{lInfo}</p>}
+                <button type="submit" disabled={lLoading}
+                  style={{
+                    width:"100%",padding:"14px",
+                    borderRadius:"14px",border:"none",
+                    background:"#25D366",color:"#fff",
+                    fontWeight:900,fontSize:"15px",
+                    cursor:"pointer"
+                  }}>
+                  {lLoading?"Saving...":"Reset password →"}
+                </button>
+              </form>
+            )
+          ):lMode==="password"?(
             <form onSubmit={e=>void handleLogin(e)}>
-              <div style={{marginBottom:"16px"}}>
+              <div style={{marginBottom:"8px"}}>
                 <label style={{
                   fontSize:"11px",fontWeight:700,
                   color:"rgba(245,216,138,.7)",
@@ -3340,10 +3605,29 @@ export default function TasksApp() {
                   onChange={e=>setLPwd(e.target.value)}
                   placeholder="••••••••"/>
               </div>
+              <div style={{
+                display:"flex",justifyContent:"flex-end",
+                marginBottom:"8px"
+              }}>
+                <button type="button" onClick={enterForgot}
+                  disabled={lLoading}
+                  style={{
+                    border:"none",background:"transparent",
+                    color:"#f5d88a",fontSize:"13px",
+                    fontWeight:600,cursor:"pointer",
+                    padding:0
+                  }}>
+                  Forgot password?
+                </button>
+              </div>
               {lErr&&<p style={{
                 color:"#fca5a5",fontSize:"13px",
                 marginBottom:"12px",textAlign:"center"
               }}>{lErr}</p>}
+              {lInfo&&<p style={{
+                color:"#86efac",fontSize:"13px",
+                marginBottom:"12px",textAlign:"center"
+              }}>{lInfo}</p>}
               <div style={{
                 display:"flex",alignItems:"center",
                 gap:"8px",marginBottom:"12px"
@@ -3380,6 +3664,10 @@ export default function TasksApp() {
                     color:"#fca5a5",fontSize:"13px",
                     marginBottom:"12px",textAlign:"center"
                   }}>{lErr}</p>}
+                  {lInfo&&<p style={{
+                    color:"#86efac",fontSize:"13px",
+                    marginBottom:"12px",textAlign:"center"
+                  }}>{lInfo}</p>}
                   <div style={{
                     display:"flex",alignItems:"center",
                     gap:"8px",marginBottom:"12px"
