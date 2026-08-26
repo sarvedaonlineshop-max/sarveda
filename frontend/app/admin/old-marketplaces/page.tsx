@@ -15,6 +15,7 @@ export default function AdminOldMarketplacesPage() {
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<Array<Record<string, unknown>>>([]);
   const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [channelStats, setChannelStats] = useState<Array<{ code: string; count: number }>>([]);
   const [err, setErr] = useState<string | null>(null);
 
@@ -27,6 +28,7 @@ export default function AdminOldMarketplacesPage() {
       ]);
       setItems(list.items);
       setTotalPages(list.pagination.totalPages);
+      setTotal(list.pagination.total);
       if (stats) setChannelStats(stats.channels);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Failed to load");
@@ -169,7 +171,14 @@ export default function AdminOldMarketplacesPage() {
         </table>
       </div>
 
-      <AdminPagination page={page} totalPages={totalPages} onPageChange={setPage} />
+      <AdminPagination
+        page={page}
+        totalPages={totalPages}
+        total={total}
+        itemLabel="archived marketplace orders"
+        onPrev={() => setPage((p) => Math.max(1, p - 1))}
+        onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+      />
     </div>
   );
 }

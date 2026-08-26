@@ -20,6 +20,7 @@ export default function AdminOldOrdersPage() {
   const [page, setPage] = useState(1);
   const [items, setItems] = useState<LegacyOrderListItem[]>([]);
   const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [stats, setStats] = useState<{ legacyOrdersTotal: number; legacyOrdersD2c: number; legacyOrdersMarketplaceMerged: number } | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -32,6 +33,7 @@ export default function AdminOldOrdersPage() {
       ]);
       setItems(list.items);
       setTotalPages(list.pagination.totalPages);
+      setTotal(list.pagination.total);
       if (s) setStats(s);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Failed to load old orders");
@@ -175,7 +177,14 @@ export default function AdminOldOrdersPage() {
         </table>
       </div>
 
-      <AdminPagination page={page} totalPages={totalPages} onPageChange={setPage} />
+      <AdminPagination
+        page={page}
+        totalPages={totalPages}
+        total={total}
+        itemLabel="archived orders"
+        onPrev={() => setPage((p) => Math.max(1, p - 1))}
+        onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+      />
     </div>
   );
 }
