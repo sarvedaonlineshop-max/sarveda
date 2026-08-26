@@ -25,10 +25,11 @@ import {
   Users
 } from "lucide-react";
 import { logoutSession } from "@/lib/auth-client";
+import { isAccountingEmailAllowed } from "@/lib/accounting-access";
 import { AdminChatsSidebarLink } from "@/components/admin/AdminChatsSidebarLink";
 import { AdminOrdersSidebarLink } from "@/components/admin/AdminOrdersSidebarLink";
 import { useAdminNavOptional } from "@/components/admin/AdminNavContext";
-import { useIsSuperAdmin } from "@/components/admin/AdminUserContext";
+import { useAdminUser, useIsSuperAdmin } from "@/components/admin/AdminUserContext";
 import { adminTheme as t } from "@/lib/admin-theme";
 import {
   applySidebarHover,
@@ -71,7 +72,7 @@ const purchasesEnabled =
   process.env.NEXT_PUBLIC_PURCHASES_ENABLED === "1" ||
   process.env.NEXT_PUBLIC_PURCHASES_ENABLED === "true";
 
-const accountingEnabled =
+const accountingFlagOn =
   process.env.NEXT_PUBLIC_ACCOUNTING_ENABLED === "1" ||
   process.env.NEXT_PUBLIC_ACCOUNTING_ENABLED === "true";
 
@@ -94,12 +95,7 @@ const secondaryNav: NavItem[] = [
   { href: "/admin/reconciliation", label: "Reconciliation", icon: icon.reconciliation }
 ];
 
-const opsNav: NavItem[] = [
-  // When Accounting (Books) is on, Purchases lives under Books → Purchases — not a second OPS item.
-  ...(!accountingEnabled && purchasesEnabled
-    ? [{ href: "/admin/purchases", label: "Purchases", icon: icon.purchases }]
-    : []),
-  ...(accountingEnabled ? [{ href: "/admin/accounting", label: "Accounting", icon: icon.accounting }] : []),
+const opsNavBase: NavItem[] = [
   { href: "/admin/settings/pickup-locations", label: "Pickup Locations", icon: icon.pickup },
   { href: "/admin/catalog-gaps", label: "Catalog Gaps", icon: icon.catalogGaps }
 ];
@@ -170,6 +166,16 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const searchParams = useSearchParams();
   const contentType = searchParams.get("type");
   const isSuper = useIsSuperAdmin();
+  const adminUser = useAdminUser();
+  const accountingEnabled =
+    accountingFlagOn && isAccountingEmailAllowed(adminUser?.email);
+  const opsNav: NavItem[] = [
+    ...(!accountingEnabled && purchasesEnabled
+      ? [{ href: "/admin/purchases", label: "Purchases", icon: icon.purchases }]
+      : []),
+    ...(accountingEnabled ? [{ href: "/admin/accounting", label: "Accounting", icon: icon.accounting }] : []),
+    ...opsNavBase
+  ];
   const nav = useAdminNavOptional();
   const activePath = nav?.activePath ?? pathname;
   const pendingHref = nav?.pendingHref ?? null;

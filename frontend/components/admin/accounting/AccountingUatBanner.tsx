@@ -1,9 +1,8 @@
 "use client";
 
 /**
- * Prominent UAT warning on every accounting admin page.
- * Shown whenever NEXT_PUBLIC_ACCOUNTING_ENABLED is on, unless explicitly
- * disabled with NEXT_PUBLIC_ACCOUNTING_UAT_MODE=0 (post Phase 7D).
+ * One-line UAT notice on accounting admin pages.
+ * Hide after go-live with NEXT_PUBLIC_ACCOUNTING_UAT_MODE=0.
  */
 export function AccountingUatBanner() {
   const uatOff =
@@ -14,15 +13,15 @@ export function AccountingUatBanner() {
   return (
     <div
       role="status"
-      className="rounded-lg border-2 border-amber-500 bg-amber-50 px-4 py-3 text-amber-950 shadow-sm"
+      className="rounded-lg border border-amber-400/80 bg-amber-50 px-3 py-2 text-sm text-amber-950"
     >
-      <p className="text-sm font-bold tracking-wide uppercase">Accounting UAT Mode</p>
-      <p className="mt-1 text-sm font-medium">Training / Test Data Only</p>
-      <p className="mt-1 text-sm">
-        Production Accounting Starts <strong>01-Sep-2026</strong>. Do not treat reports or journals
-        created before cutover as official company books. Tag training docs with{" "}
-        <code className="rounded bg-amber-100 px-1 text-xs">TEST-UAT-ACC-*</code>.
-      </p>
+      <span className="font-semibold">Accounting UAT mode</span>
+      <span className="text-amber-900/90">
+        {" "}
+        — Do not treat reports or journals created before cutover as official company books. Tag
+        training docs with{" "}
+      </span>
+      <code className="rounded bg-amber-100/80 px-1 text-xs">TEST-UAT-ACC-*</code>.
     </div>
   );
 }

@@ -5,18 +5,16 @@ import { useRouter } from "next/navigation";
 import { AdminAccountingNav } from "@/components/admin/accounting/AdminAccountingNav";
 import { AccountingUatBanner } from "@/components/admin/accounting/AccountingUatBanner";
 import { AdminPurchasesHeader, AdminPurchasesNav } from "@/components/admin/purchases/AdminPurchasesNav";
+import { useAdminUser } from "@/components/admin/AdminUserContext";
 import { isAccountingEnabled } from "@/lib/accounting-api";
+import { isAccountingEmailAllowed } from "@/lib/accounting-access";
 import { isPurchasesEnabled } from "@/lib/purchases-api";
 
-/**
- * Purchases ops pages:
- * - If Accounting/Books is enabled → same left Books rail (Zoho-style), no duplicate OPS item.
- * - Else → standalone Purchases rail (legacy / purchases-only mode).
- */
 export default function AdminPurchasesLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const user = useAdminUser();
   const purchasesOn = isPurchasesEnabled();
-  const accountingOn = isAccountingEnabled();
+  const accountingOn = isAccountingEnabled() && isAccountingEmailAllowed(user?.email);
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
@@ -29,9 +27,6 @@ export default function AdminPurchasesLayout({ children }: { children: React.Rea
     return (
       <div className="mx-auto max-w-3xl space-y-4 p-6">
         <AdminPurchasesHeader title="Purchases (preview)" subtitle="Module gated until enabled on staging." />
-        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-          Enable Purchases and/or Accounting flags on Vercel + backend, then redeploy.
-        </div>
         <button type="button" onClick={() => router.push("/admin")} className="text-sm text-[#1e3a2f] underline">
           Back to dashboard
         </button>
@@ -39,22 +34,7 @@ export default function AdminPurchasesLayout({ children }: { children: React.Rea
     );
   }
 
-  if (!purchasesOn && accountingOn) {
-    return (
-      <div className="mx-auto max-w-3xl space-y-4 p-6">
-        <AdminPurchasesHeader
-          title="Purchases ops unavailable"
-          subtitle="Accounting is on, but PURCHASES_MODULE / NEXT_PUBLIC_PURCHASES_ENABLED is off."
-        />
-        <button type="button" onClick={() => router.push("/admin/accounting")} className="text-sm text-[#1e3a2f] underline">
-          Back to Accounting
-        </button>
-      </div>
-    );
-  }
-
-  // Books mode: shared Accounting left nav
-  if (accountingOn) {
+  if (accountingOn && purchasesOn) {
     return (
       <div className="mx-auto max-w-[1600px] space-y-4 p-1 font-sans">
         <AccountingUatBanner />
@@ -66,7 +46,17 @@ export default function AdminPurchasesLayout({ children }: { children: React.Rea
     );
   }
 
-  // Purchases-only mode
+  if (!purchasesOn) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-4 p-6">
+        <AdminPurchasesHeader title="Purchases ops unavailable" />
+        <button type="button" onClick={() => router.push("/admin")} className="text-sm text-[#1e3a2f] underline">
+          Back to dashboard
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-[1600px] space-y-4 p-1 font-sans">
       <AdminPurchasesHeader

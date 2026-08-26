@@ -30,7 +30,21 @@ import { enquiriesAdminRoutes } from "../enquiries/enquiries.admin.routes";
 import { marketplaceAdminRoutes } from "../marketplaces/marketplaces.routes";
 import { purchasesAdminRoutes } from "../purchases/purchases.routes";
 import { accountingAdminRoutes } from "../accounting/accounting.routes";
+import { isAccountingEmailAllowed } from "../accounting/accounting-access";
 import * as serviceRequest from "../orders/order-service-request.controller";
+import type { NextFunction, Request, Response } from "express";
+
+function requireAccountingAccess(req: Request, res: Response, next: NextFunction) {
+  const email = req.authUser?.email;
+  if (!isAccountingEmailAllowed(email)) {
+    return res.status(403).json({
+      success: false,
+      error: "Accounting access is limited to designated finance users",
+      code: "ACCOUNTING_ACCESS_DENIED"
+    });
+  }
+  return next();
+}
 
 const router = Router();
 router.use(requireAdmin);
@@ -119,7 +133,7 @@ router.post("/mentors/seo-suggest", seoSuggest.suggestMentorSeo);
 
 router.get("/inventory", admin.inventoryList);
 router.use("/purchases", purchasesAdminRoutes);
-router.use("/accounting", accountingAdminRoutes);
+router.use("/accounting", requireAccountingAccess, accountingAdminRoutes);
 router.use("/marketplaces", marketplaceAdminRoutes);
 router.post(
   "/inventory/bulk",

@@ -32,10 +32,7 @@ export default function AdminAccountingDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <AdminAccountingHeader
-        title="Accounting Dashboard"
-        subtitle="UAT / training ledger — not official company books. Production accounting starts 01-Sep-2026."
-      />
+      <AdminAccountingHeader title="Accounting Dashboard" />
 
       {error ? (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">{error}</div>

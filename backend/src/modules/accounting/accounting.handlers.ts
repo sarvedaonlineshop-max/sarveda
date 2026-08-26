@@ -222,7 +222,7 @@ export async function accountingStatus(_req: Request, res: Response) {
       productionPostingAllowed,
       uatMode,
       uatBanner:
-        "ACCOUNTING UAT MODE — Training/Test Data Only — Production Accounting Starts 01-Sep-2026",
+        "Accounting UAT mode — Do not treat reports or journals created before cutover as official company books. Tag training docs with TEST-UAT-ACC-*.",
       mode: "shadow_order_paid_refund_settlement_vendor_bill_vendor_payment_expense_inventory_opening_capitalization_cogs_reversal_v1",
       discoveryWorkerActive: isNativeAccountingEnabled(),
       calcVersions: {
@@ -276,7 +276,7 @@ export async function accountingDashboard(_req: Request, res: Response) {
       orderPaidPostedCount: orderPaidPosted,
       orderRefundedFullPostedCount: orderRefundedFullPosted,
       banner:
-        "ACCOUNTING UAT MODE — Training/Test Data Only — Production Accounting Starts 01-Sep-2026"
+        "Accounting UAT mode — Do not treat reports or journals created before cutover as official company books. Tag training docs with TEST-UAT-ACC-*."
     }
   });
 }

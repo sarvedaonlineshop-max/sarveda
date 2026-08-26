@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   BookOpen,
   Building2,
+  ChevronDown,
   ClipboardList,
   DoorOpen,
   FileText,
@@ -33,8 +34,11 @@ type NavItem = {
 };
 
 type NavGroup = {
+  id: string;
   title: string;
-  items: NavItem[];
+  /** Single top-level link (Dashboard) — no accordion. */
+  link?: NavItem;
+  items?: NavItem[];
 };
 
 function buildNav(includePurchasesOps: boolean): NavGroup[] {
@@ -53,12 +57,19 @@ function buildNav(includePurchasesOps: boolean): NavGroup[] {
 
   return [
     {
-      title: "Home",
+      id: "dashboard",
+      title: "Dashboard",
       items: [
-        { href: "/admin/accounting", label: "Dashboard", icon: <LayoutDashboard {...iconProps} />, exact: true }
+        {
+          href: "/admin/accounting",
+          label: "Overview",
+          icon: <LayoutDashboard {...iconProps} />,
+          exact: true
+        }
       ]
     },
     {
+      id: "sales",
       title: "Sales",
       items: [
         { href: "/admin/accounting/order-paid", label: "Sales receipts", icon: <ShoppingBag {...iconProps} /> },
@@ -67,6 +78,7 @@ function buildNav(includePurchasesOps: boolean): NavGroup[] {
       ]
     },
     {
+      id: "purchases",
       title: "Purchases",
       items: [
         ...purchasesOps,
@@ -78,10 +90,14 @@ function buildNav(includePurchasesOps: boolean): NavGroup[] {
       ]
     },
     {
+      id: "banking",
       title: "Banking",
-      items: [{ href: "/admin/accounting/banking", label: "Banking", icon: <Wallet {...iconProps} /> }]
+      items: [
+        { href: "/admin/accounting/banking", label: "Accounts & transfers", icon: <Wallet {...iconProps} /> }
+      ]
     },
     {
+      id: "accountant",
       title: "Accountant",
       items: [
         { href: "/admin/accounting/accounts", label: "Chart of accounts", icon: <BookOpen {...iconProps} /> },
@@ -91,12 +107,14 @@ function buildNav(includePurchasesOps: boolean): NavGroup[] {
       ]
     },
     {
+      id: "gst",
       title: "GST",
       items: [{ href: "/admin/accounting/gst", label: "GST & ITC", icon: <Receipt {...iconProps} /> }]
     },
     {
+      id: "reports",
       title: "Reports",
-      items: [{ href: "/admin/accounting/reports", label: "Reports", icon: <PieChart {...iconProps} /> }]
+      items: [{ href: "/admin/accounting/reports", label: "Financial reports", icon: <PieChart {...iconProps} /> }]
     }
   ];
 }
@@ -104,6 +122,11 @@ function buildNav(includePurchasesOps: boolean): NavGroup[] {
 function itemActive(pathname: string, item: NavItem): boolean {
   if (item.exact) return pathname === item.href;
   return pathname === item.href || pathname.startsWith(`${item.href}/`);
+}
+
+function groupHasActive(pathname: string, group: NavGroup): boolean {
+  if (group.link) return itemActive(pathname, group.link);
+  return (group.items ?? []).some((item) => itemActive(pathname, item));
 }
 
 export function AdminAccountingHeader({
@@ -115,19 +138,99 @@ export function AdminAccountingHeader({
 }) {
   return (
     <div className="space-y-1">
-      <p className="text-xs font-medium uppercase tracking-wide text-amber-700">
-        Native Accounting — UAT / Training (not official books until 01-Sep-2026)
-      </p>
       <h1 className="text-2xl font-semibold text-[#1e3a2f]">{title}</h1>
       {subtitle ? <p className="text-sm text-neutral-600">{subtitle}</p> : null}
     </div>
   );
 }
 
-/** Zoho Books–style left module nav for Accounting. */
+function AccordionGroup({
+  group,
+  pathname,
+  open,
+  onToggle
+}: {
+  group: NavGroup;
+  pathname: string;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  if (group.link) {
+    const active = itemActive(pathname, group.link);
+    return (
+      <Link
+        href={group.link.href}
+        className={`flex items-center gap-2 rounded-md px-2.5 py-2 text-[13px] transition-colors ${
+          active ? "bg-[#1e3a2f] font-medium text-white shadow-sm" : "text-[#2c3d34] hover:bg-[#e8f0eb]"
+        }`}
+      >
+        <span className={active ? "text-brand-gold" : "text-[#6b7c72]"}>{group.link.icon}</span>
+        {group.link.label}
+      </Link>
+    );
+  }
+
+  const items = group.items ?? [];
+  const sectionActive = groupHasActive(pathname, group);
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className={`flex w-full items-center justify-between rounded-md px-2.5 py-2 text-left text-[13px] font-semibold transition-colors ${
+          sectionActive ? "bg-[#e8f0eb] text-[#1e3a2f]" : "text-[#2c3d34] hover:bg-[#eef3f0]"
+        }`}
+      >
+        <span>{group.title}</span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-[#6b7c72] transition-transform ${open ? "rotate-180" : ""}`}
+          aria-hidden
+        />
+      </button>
+      {open ? (
+        <ul className="mt-0.5 space-y-0.5 border-l border-[#d9e2dc] ml-3 pl-2">
+          {items.map((item) => {
+            const active = itemActive(pathname, item);
+            return (
+              <li key={`${group.id}-${item.href}`}>
+                <Link
+                  href={item.href}
+                  className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-[12.5px] transition-colors ${
+                    active
+                      ? "bg-[#1e3a2f] font-medium text-white shadow-sm"
+                      : "text-[#3d4f45] hover:bg-[#e8f0eb]"
+                  }`}
+                >
+                  <span className={active ? "text-brand-gold" : "text-[#6b7c72]"}>{item.icon}</span>
+                  <span className="leading-tight">{item.label}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+/** Zoho Books–style left module nav with section dropdowns. */
 export function AdminAccountingNav() {
   const pathname = usePathname();
-  const groups = buildNav(isPurchasesEnabled());
+  const groups = useMemo(() => buildNav(isPurchasesEnabled()), []);
+  const [openIds, setOpenIds] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    setOpenIds((prev) => {
+      const next = { ...prev };
+      for (const group of groups) {
+        if (group.link) continue;
+        if (groupHasActive(pathname, group)) next[group.id] = true;
+      }
+      return next;
+    });
+  }, [pathname, groups]);
 
   return (
     <aside
@@ -138,33 +241,20 @@ export function AdminAccountingNav() {
         <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6b7c72]">Books</p>
         <p className="mt-0.5 text-sm font-semibold text-[#1e3a2f]">Accounting</p>
       </div>
-      <nav className="max-h-[min(70vh,40rem)] space-y-3 overflow-y-auto px-2 py-3 [scrollbar-width:thin]">
+      <nav className="max-h-[min(70vh,40rem)] space-y-1 overflow-y-auto px-2 py-3 [scrollbar-width:thin]">
         {groups.map((group) => (
-          <div key={group.title}>
-            <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a9a90]">
-              {group.title}
-            </p>
-            <ul className="space-y-0.5">
-              {group.items.map((item) => {
-                const active = itemActive(pathname, item);
-                return (
-                  <li key={`${group.title}-${item.href}-${item.label}`}>
-                    <Link
-                      href={item.href}
-                      className={`flex items-center gap-2 rounded-md px-2.5 py-2 text-[13px] transition-colors ${
-                        active
-                          ? "bg-[#1e3a2f] font-medium text-white shadow-sm"
-                          : "text-[#2c3d34] hover:bg-[#e8f0eb]"
-                      }`}
-                    >
-                      <span className={active ? "text-brand-gold" : "text-[#6b7c72]"}>{item.icon}</span>
-                      <span className="leading-tight">{item.label}</span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+          <AccordionGroup
+            key={group.id}
+            group={group}
+            pathname={pathname}
+            open={Boolean(openIds[group.id])}
+            onToggle={() =>
+              setOpenIds((prev) => ({
+                ...prev,
+                [group.id]: !prev[group.id]
+              }))
+            }
+          />
         ))}
       </nav>
     </aside>
