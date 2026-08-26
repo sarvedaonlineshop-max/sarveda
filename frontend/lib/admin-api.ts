@@ -575,25 +575,6 @@ export function fetchLegacyOrderDetail(id: string) {
   return adminFetch<{ order: Record<string, unknown> }>(`/api/admin/legacy-orders/${id}`).then((d) => d.order);
 }
 
-export type LegacyMarketplaceOrderRow = Record<string, unknown>;
-
-export function fetchLegacyMarketplaceOrders(params: {
-  channel?: string;
-  q?: string;
-  page?: number;
-  limit?: number;
-}) {
-  const search = new URLSearchParams();
-  if (params.channel) search.set("channel", params.channel);
-  if (params.q) search.set("q", params.q);
-  if (params.page) search.set("page", String(params.page));
-  if (params.limit) search.set("limit", String(params.limit));
-  const qs = search.toString();
-  return adminFetch<{ items: LegacyMarketplaceOrderRow[]; pagination: LegacyOrdersListData["pagination"] }>(
-    `/api/admin/legacy-marketplaces/orders${qs ? `?${qs}` : ""}`
-  );
-}
-
 export function fetchLegacyOrdersStats() {
   return adminFetch<{
     legacyOrdersTotal: number;
@@ -1531,6 +1512,54 @@ export type MarketplaceInboxEvent = {
 
 export function fetchMarketplaceOverview() {
   return adminFetch<MarketplaceOverviewData>("/api/admin/marketplaces/overview");
+}
+
+export function fetchLegacyMarketplaceOverview() {
+  return adminFetch<MarketplaceOverviewData>("/api/admin/legacy-marketplaces/overview");
+}
+
+export function fetchLegacyMarketplaceListings(params?: {
+  channelCode?: MarketplaceChannelCode;
+  search?: string;
+}) {
+  const q = new URLSearchParams();
+  if (params?.channelCode) q.set("channelCode", params.channelCode);
+  if (params?.search) q.set("search", params.search);
+  const qs = q.toString();
+  return adminFetch<{ items: MarketplaceListingRow[] }>(
+    `/api/admin/legacy-marketplaces/listings${qs ? `?${qs}` : ""}`
+  );
+}
+
+export function fetchLegacyMarketplaceOrders(params?: {
+  channelCode?: MarketplaceChannelCode;
+  search?: string;
+  from?: string;
+  to?: string;
+}) {
+  const q = new URLSearchParams({ shape: "workspace" });
+  if (params?.channelCode) q.set("channelCode", params.channelCode);
+  if (params?.search) q.set("search", params.search);
+  if (params?.from) q.set("from", params.from);
+  if (params?.to) q.set("to", params.to);
+  return adminFetch<{ items: MarketplaceOrderRow[] }>(`/api/admin/legacy-marketplaces/orders?${q.toString()}`);
+}
+
+export function fetchLegacyMarketplaceReturns(params?: {
+  channelCode?: MarketplaceChannelCode;
+  search?: string;
+  from?: string;
+  to?: string;
+}) {
+  const q = new URLSearchParams();
+  if (params?.channelCode) q.set("channelCode", params.channelCode);
+  if (params?.search) q.set("search", params.search);
+  if (params?.from) q.set("from", params.from);
+  if (params?.to) q.set("to", params.to);
+  const qs = q.toString();
+  return adminFetch<{ items: MarketplaceReturnRow[] }>(
+    `/api/admin/legacy-marketplaces/returns${qs ? `?${qs}` : ""}`
+  );
 }
 
 export function fetchMarketplaceListings(params?: {

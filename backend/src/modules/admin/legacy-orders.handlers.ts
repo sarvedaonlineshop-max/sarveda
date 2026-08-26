@@ -1,6 +1,12 @@
 import type { NextFunction, Request, Response } from "express";
 
 import { prisma } from "../../config/db";
+import {
+  getLegacyMarketplaceOverview,
+  listLegacyMarketplaceListings,
+  listLegacyMarketplaceOrders,
+  listLegacyMarketplaceReturns
+} from "./legacy-marketplaces.service";
 
 export async function legacyOrdersList(req: Request, res: Response, next: NextFunction) {
   try {
@@ -85,11 +91,24 @@ export async function legacyOrderDetail(req: Request, res: Response, next: NextF
 
 export async function legacyMarketplaceOrdersList(req: Request, res: Response, next: NextFunction) {
   try {
+    const channelCode = typeof req.query.channelCode === "string" ? req.query.channelCode : undefined;
+    const search = typeof req.query.search === "string" ? req.query.search : undefined;
+    const from = typeof req.query.from === "string" ? req.query.from : undefined;
+    const to = typeof req.query.to === "string" ? req.query.to : undefined;
+
     const page = Math.max(1, Number(req.query.page) || 1);
-    const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
+    const limit = Math.min(200, Math.max(1, Number(req.query.limit) || 50));
+    const useLegacyShape = req.query.shape === "workspace";
+
+    if (useLegacyShape) {
+      const data = await listLegacyMarketplaceOrders({ channelCode, search, from, to });
+      res.json({ success: true, data });
+      return;
+    }
+
     const skip = (page - 1) * limit;
-    const channel = String(req.query.channel ?? "").trim();
-    const q = String(req.query.q ?? "").trim();
+    const channel = String(req.query.channel ?? channelCode ?? "").trim();
+    const q = String(req.query.q ?? search ?? "").trim();
 
     const where = {
       ...(channel ? { channelCode: channel.toUpperCase() } : {}),
@@ -120,6 +139,37 @@ export async function legacyMarketplaceOrdersList(req: Request, res: Response, n
         items: rows,
         pagination: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 }
       }
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function legacyMarketplaceOverview(_req: Request, res: Response, next: NextFunction) {
+  try {
+    res.json({ success: true, data: await getLegacyMarketplaceOverview() });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function legacyMarketplaceListings(_req: Request, res: Response, next: NextFunction) {
+  try {
+    res.json({ success: true, data: await listLegacyMarketplaceListings() });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function legacyMarketplaceReturnsList(req: Request, res: Response, next: NextFunction) {
+  try {
+    const channelCode = typeof req.query.channelCode === "string" ? req.query.channelCode : undefined;
+    const search = typeof req.query.search === "string" ? req.query.search : undefined;
+    const from = typeof req.query.from === "string" ? req.query.from : undefined;
+    const to = typeof req.query.to === "string" ? req.query.to : undefined;
+    res.json({
+      success: true,
+      data: await listLegacyMarketplaceReturns({ channelCode, search, from, to })
     });
   } catch (err) {
     next(err);

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
@@ -18,6 +19,10 @@ import {
   fetchAmazonSpConnection,
   fetchEtsyConnection,
   fetchFlipkartConnection,
+  fetchLegacyMarketplaceListings,
+  fetchLegacyMarketplaceOrders,
+  fetchLegacyMarketplaceOverview,
+  fetchLegacyMarketplaceReturns,
   fetchMarketplaceListings,
   fetchMarketplaceOrders,
   fetchMarketplaceOverview,
@@ -537,12 +542,17 @@ function OrderDetailModal({
   );
 }
 
-export function MarketplaceOpsWorkspace() {
+export function MarketplaceOpsWorkspace({ mode = "live" }: { mode?: "live" | "legacy" }) {
+  const isLegacy = mode === "legacy";
   const searchParams = useSearchParams();
   const initialChannel = searchParams.get("channel") as MarketplaceChannelCode | null;
 
   const [activeTab, setActiveTab] = useState<ViewTab>(
-    initialChannel && CHANNELS.some((c) => c.code === initialChannel) ? initialChannel : "overview"
+    initialChannel && CHANNELS.some((c) => c.code === initialChannel)
+      ? initialChannel
+      : isLegacy
+        ? "zoho_books"
+        : "overview"
   );
   const [channelSubTab, setChannelSubTab] = useState<ChannelSubTab>("overview");
   const [error, setError] = useState<string | null>(null);
@@ -595,6 +605,7 @@ export function MarketplaceOpsWorkspace() {
   }, [activeChannel]);
 
   useEffect(() => {
+    if (isLegacy || !activeChannel) return;
     if (activeChannel === "AMAZON") {
       void loadAmazonConnection();
     } else {
@@ -610,7 +621,7 @@ export function MarketplaceOpsWorkspace() {
     } else {
       setEtsyConnection(null);
     }
-  }, [activeChannel]);
+  }, [activeChannel, isLegacy]);
 
   useEffect(() => {
     const next = currentMonthRange();
@@ -628,7 +639,9 @@ export function MarketplaceOpsWorkspace() {
   async function loadOverview() {
     try {
       setError(null);
-      setOverview(await fetchMarketplaceOverview());
+      setOverview(
+        isLegacy ? await fetchLegacyMarketplaceOverview() : await fetchMarketplaceOverview()
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load overview");
     }
@@ -636,6 +649,17 @@ export function MarketplaceOpsWorkspace() {
 
   async function loadGlobalChartData() {
     try {
+      if (isLegacy) {
+        const [listingsData, ordersData, returnsData] = await Promise.all([
+          fetchLegacyMarketplaceListings(),
+          fetchLegacyMarketplaceOrders(),
+          fetchLegacyMarketplaceReturns()
+        ]);
+        setGlobalListings(listingsData.items);
+        setGlobalOrders(ordersData.items);
+        setGlobalReturns(returnsData.items);
+        return;
+      }
       const [listingsData, ordersData, returnsData] = await Promise.all([
         fetchMarketplaceListings(),
         fetchMarketplaceOrders(),
@@ -650,17 +674,23 @@ export function MarketplaceOpsWorkspace() {
   }
 
   async function loadListings(channel: MarketplaceChannelCode) {
-    const data = await fetchMarketplaceListings({ channelCode: channel });
+    const data = isLegacy
+      ? await fetchLegacyMarketplaceListings({ channelCode: channel })
+      : await fetchMarketplaceListings({ channelCode: channel });
     setListings(data.items);
   }
 
   async function loadOrders(channel: MarketplaceChannelCode) {
-    const data = await fetchMarketplaceOrders({ channelCode: channel });
+    const data = isLegacy
+      ? await fetchLegacyMarketplaceOrders({ channelCode: channel })
+      : await fetchMarketplaceOrders({ channelCode: channel });
     setOrders(data.items);
   }
 
   async function loadReturns(channel: MarketplaceChannelCode) {
-    const data = await fetchMarketplaceReturns({ channelCode: channel });
+    const data = isLegacy
+      ? await fetchLegacyMarketplaceReturns({ channelCode: channel })
+      : await fetchMarketplaceReturns({ channelCode: channel });
     setReturns(data.items);
   }
 
@@ -1111,8 +1141,14 @@ export function MarketplaceOpsWorkspace() {
   return (
     <div className="mx-auto max-w-[1440px] space-y-4 pt-2">
       <div style={{ background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)", borderRadius: "16px", padding: "22px 28px" }}>
-        <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec" }}>🛒 Marketplace Operations</h1>
-        <p style={{ fontSize: "13px", color: "#a8c4b0", marginTop: "4px" }}>Multi-channel sales, listings, returns & syncs</p>
+        <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec" }}>
+          {isLegacy ? "📦 Old Marketplace Operations" : "🛒 Marketplace Operations"}
+        </h1>
+        <p style={{ fontSize: "13px", color: "#a8c4b0", marginTop: "4px" }}>
+          {isLegacy
+            ? "Pre-launch archive — Zoho Books history + native channel orders before cutover"
+            : "Post-launch channel ops — new syncs and orders from 01-Sep-2026 onward"}
+        </p>
       </div>
 
       <div className="flex flex-wrap gap-5 border-b border-[#e8e2d9]">
@@ -1145,7 +1181,20 @@ export function MarketplaceOpsWorkspace() {
       {error ? <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" style={{ borderLeft: "3px solid #dc2626", borderRadius: "10px" }}>{error}</div> : null}
       {notice ? <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900" style={{ borderLeft: "3px solid #16a34a", borderRadius: "10px" }}>{notice}</div> : null}
 
-      {activeTab === "zoho_books" ? <ZohoBooksHistoricalPanel /> : null}
+      {activeTab === "zoho_books" ? (
+        isLegacy ? (
+          <ZohoBooksHistoricalPanel />
+        ) : (
+          <SectionCard title="Pre-launch analytics moved">
+            <EmptyState message="Historical marketplace product analytics (Zoho Books) live under Old Marketplaces." />
+            <p className="mt-4 text-center text-sm">
+              <Link href="/admin/old-marketplaces" className="font-semibold text-[#1c352a] underline">
+                Open Old Marketplaces →
+              </Link>
+            </p>
+          </SectionCard>
+        )
+      ) : null}
 
       {activeTab === "overview" && overview ? (
         <div className="space-y-4">
@@ -1284,7 +1333,7 @@ export function MarketplaceOpsWorkspace() {
                 </button>
               ))}
             </div>
-            {activeChannel === "AMAZON" ? (
+            {!isLegacy && activeChannel === "AMAZON" ? (
               <button
                 type="button"
                 onClick={() => void runAmazonManualSync()}
@@ -1300,7 +1349,7 @@ export function MarketplaceOpsWorkspace() {
               >
                 {busy === "amazon-sync" ? "Syncing..." : "Sync now"}
               </button>
-            ) : activeChannel === "FLIPKART" ? (
+            ) : !isLegacy && activeChannel === "FLIPKART" ? (
               <button
                 type="button"
                 onClick={() => void runFlipkartManualSync()}
@@ -1316,7 +1365,7 @@ export function MarketplaceOpsWorkspace() {
               >
                 {busy === "flipkart-sync" ? "Syncing..." : "Sync now"}
               </button>
-            ) : activeChannel === "ETSY" ? (
+            ) : !isLegacy && activeChannel === "ETSY" ? (
               <button
                 type="button"
                 onClick={() => void runEtsyManualSync()}
@@ -1332,6 +1381,8 @@ export function MarketplaceOpsWorkspace() {
               >
                 {busy === "etsy-sync" ? "Syncing..." : "Sync now"}
               </button>
+            ) : isLegacy ? (
+              <span className="mb-1 text-xs font-medium text-[#8a7060]">Read-only archive</span>
             ) : null}
           </div>
 

@@ -7,23 +7,19 @@ import {
   launchOrderCutoverDate
 } from "./launch-order-rules";
 
-/** Prisma filter: orders visible in live admin Orders tab (post-cutover + accounting fixtures). */
+/** Prisma filter: live admin Orders — post-cutover website orders only (no test/accounting fixtures). */
 export function liveAdminOrderWhere(): Prisma.OrderWhereInput {
   const cutover = launchOrderCutoverDate();
 
   return {
     deletedAt: null,
-    OR: [
-      { orderNumber: { contains: "SRV-ACCT-", mode: "insensitive" } },
+    AND: [
+      { NOT: { orderNumber: { contains: "SRV-ACCT-", mode: "insensitive" } } },
+      { NOT: { orderNumber: { contains: "TEST-ACC", mode: "insensitive" } } },
+      { NOT: { orderNumber: { startsWith: "WOO-" } } },
+      { NOT: { orderNumber: { startsWith: "SRV-TEST-" } } },
       {
-        AND: [
-          { NOT: { orderNumber: { startsWith: "WOO-" } } },
-          { NOT: { orderNumber: { startsWith: "SRV-TEST-" } } },
-          { NOT: { orderNumber: { contains: "SRV-ACCT-", mode: "insensitive" } } },
-          {
-            OR: [{ placedAt: { gte: cutover } }, { placedAt: null, createdAt: { gte: cutover } }]
-          }
-        ]
+        OR: [{ placedAt: { gte: cutover } }, { placedAt: null, createdAt: { gte: cutover } }]
       }
     ]
   };
