@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
@@ -30,6 +29,7 @@ import { AdminChatsSidebarLink } from "@/components/admin/AdminChatsSidebarLink"
 import { AdminOrdersSidebarLink } from "@/components/admin/AdminOrdersSidebarLink";
 import { useAdminNavOptional } from "@/components/admin/AdminNavContext";
 import { useAdminUser, useIsSuperAdmin } from "@/components/admin/AdminUserContext";
+import { SarvedaLogo } from "@/components/brand/SarvedaLogo";
 import { adminTheme as t } from "@/lib/admin-theme";
 import {
   applySidebarHover,
@@ -306,32 +306,27 @@ export function AdminSidebar({
       className="flex h-full flex-col"
       style={{ background: t.sidebarBg, borderRight: `1px solid ${t.sidebarBorder}` }}
     >
-      <div style={{ padding: "24px 20px 20px", borderBottom: "1px solid rgba(185,138,62,0.15)" }}>
-        <Link href="/admin" onClick={onNavigate} style={{ display: "block" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <Image
-              src="/brand/sarveda-logo.png"
-              alt=""
-              width={34}
-              height={34}
-              style={{ objectFit: "contain", flexShrink: 0 }}
-              aria-hidden
-            />
-            <div>
-              <p style={{ color: "#fff", fontSize: "15px", fontWeight: 700, lineHeight: 1.1 }}>Sarveda</p>
-              <p
-                style={{
-                  color: t.primary,
-                  fontSize: "10px",
-                  fontWeight: 600,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase"
-                }}
-              >
-                Admin
-              </p>
-            </div>
-          </div>
+      <div style={{ padding: "20px 16px 16px", borderBottom: "1px solid rgba(185,138,62,0.15)" }}>
+        <Link
+          href="/admin"
+          onClick={onNavigate}
+          style={{ display: "block", textDecoration: "none" }}
+          aria-label="Sarveda admin home"
+        >
+          <SarvedaLogo href={undefined} tone="onDark" iconHeight={52} showWordmark />
+          <p
+            style={{
+              color: t.accent,
+              fontSize: "10px",
+              fontWeight: 600,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              paddingLeft: "2px",
+              margin: "6px 0 0"
+            }}
+          >
+            Admin
+          </p>
         </Link>
       </div>
 
