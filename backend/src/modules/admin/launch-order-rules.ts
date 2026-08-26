@@ -13,7 +13,8 @@ export function launchOrderCutoverDate(): Date {
 
 /** Accounting UAT synthetic orders — keep in live Order table for posting tests. */
 export function isAccountingFixtureOrderNumber(orderNumber: string): boolean {
-  return orderNumber.startsWith("SRV-ACCT-");
+  const n = orderNumber.toUpperCase();
+  return n.startsWith("SRV-ACCT-") || n.includes("SRV-ACCT-");
 }
 
 /** Commerce / COGS validation orders — delete at cutover (journals may remain). */

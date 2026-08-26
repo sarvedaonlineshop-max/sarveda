@@ -14,11 +14,12 @@ export function liveAdminOrderWhere(): Prisma.OrderWhereInput {
   return {
     deletedAt: null,
     OR: [
-      { orderNumber: { startsWith: "SRV-ACCT-" } },
+      { orderNumber: { contains: "SRV-ACCT-", mode: "insensitive" } },
       {
         AND: [
           { NOT: { orderNumber: { startsWith: "WOO-" } } },
           { NOT: { orderNumber: { startsWith: "SRV-TEST-" } } },
+          { NOT: { orderNumber: { contains: "SRV-ACCT-", mode: "insensitive" } } },
           {
             OR: [{ placedAt: { gte: cutover } }, { placedAt: null, createdAt: { gte: cutover } }]
           }
