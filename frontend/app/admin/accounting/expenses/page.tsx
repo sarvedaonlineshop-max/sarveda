@@ -8,7 +8,7 @@ import {
   postAccountingExpense,
   previewAccountingExpense
 } from "@/lib/accounting-api";
-import { AdminAccountingHeader, AdminAccountingNav } from "@/components/admin/accounting/AdminAccountingNav";
+import { AdminAccountingHeader } from "@/components/admin/accounting/AdminAccountingNav";
 
 function formatPaise(p: number | undefined | null) {
   if (p == null) return "—";
@@ -102,7 +102,6 @@ export default function AccountingExpensesPage() {
         title="Standalone Expenses Shadow"
         subtitle="EXPENSE_RECORDED_V1 — mapped opex Dr + provisional Input GST, Cr Bank/Cash. Purchases Expense CRUD unchanged. Zoho remains authoritative."
       />
-      <AdminAccountingNav />
 
       <p className="text-sm text-neutral-600">
         Posting flag:{" "}

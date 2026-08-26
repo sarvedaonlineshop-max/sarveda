@@ -7,7 +7,7 @@ import {
   type AccountingStatus,
   type PurchaseAccountingDashboard
 } from "@/lib/accounting-api";
-import { AdminAccountingHeader, AdminAccountingNav } from "@/components/admin/accounting/AdminAccountingNav";
+import { AdminAccountingHeader } from "@/components/admin/accounting/AdminAccountingNav";
 import { AdminApiError } from "@/lib/admin-errors";
 
 function formatPaise(p: number | undefined | null) {
@@ -46,7 +46,6 @@ export default function PurchaseAccountingPage() {
 
   return (
     <div className="space-y-6">
-      <AdminAccountingNav />
       <AdminAccountingHeader
         title="Purchase Accounting"
         subtitle="Native AP, vendor payments, and standalone expenses — reconciliation V5. Ops paid status is evidence only."

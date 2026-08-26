@@ -2,12 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Building2,
-  ClipboardList,
-  FileText,
-  Receipt
-} from "lucide-react";
+import { Building2, ClipboardList, FileText, Receipt } from "lucide-react";
 
 const iconProps = { size: 16, strokeWidth: 2 } as const;
 
@@ -22,7 +17,7 @@ const tabs = [
   { href: "/admin/purchases/expenses", label: "Expenses", icon: <Receipt {...iconProps} /> }
 ];
 
-/** Zoho-style left nav for Purchases ops. */
+/** Standalone Purchases rail — only used when Accounting/Books is disabled. */
 export function AdminPurchasesNav() {
   const pathname = usePathname();
   return (
@@ -31,7 +26,7 @@ export function AdminPurchasesNav() {
       aria-label="Purchases modules"
     >
       <div className="border-b border-[#d9e2dc] px-3 py-3">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6b7c72]">Books</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6b7c72]">Ops</p>
         <p className="mt-0.5 text-sm font-semibold text-[#1e3a2f]">Purchases</p>
       </div>
       <nav className="space-y-0.5 px-2 py-3">
@@ -52,14 +47,6 @@ export function AdminPurchasesNav() {
             </Link>
           );
         })}
-        <div className="mt-3 border-t border-[#d9e2dc] px-2 pt-3">
-          <Link
-            href="/admin/accounting"
-            className="text-xs font-medium text-[#1e3a2f] underline-offset-2 hover:underline"
-          >
-            ← Back to Accounting
-          </Link>
-        </div>
       </nav>
     </aside>
   );

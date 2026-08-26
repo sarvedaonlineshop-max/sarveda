@@ -19,7 +19,7 @@ import {
   previewPurchaseCapitalization,
   saveInventoryOpeningDraft
 } from "@/lib/accounting-api";
-import { AdminAccountingHeader, AdminAccountingNav } from "@/components/admin/accounting/AdminAccountingNav";
+import { AdminAccountingHeader } from "@/components/admin/accounting/AdminAccountingNav";
 
 function formatPaise(p: number | undefined | null) {
   if (p == null) return "—";
@@ -143,7 +143,6 @@ export default function AccountingInventoryPage() {
         title="Inventory / Native Value Layers"
         subtitle="Phase 3D1 opening layers + Phase 3D2 purchase capitalization + Phase 3D3 FIFO COGS. Does not modify operational stock."
       />
-      <AdminAccountingNav />
 
       {err ? (
         <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{err}</div>

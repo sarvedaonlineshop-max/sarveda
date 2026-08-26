@@ -95,7 +95,10 @@ const secondaryNav: NavItem[] = [
 ];
 
 const opsNav: NavItem[] = [
-  ...(purchasesEnabled ? [{ href: "/admin/purchases", label: "Purchases", icon: icon.purchases }] : []),
+  // When Accounting (Books) is on, Purchases lives under Books → Purchases — not a second OPS item.
+  ...(!accountingEnabled && purchasesEnabled
+    ? [{ href: "/admin/purchases", label: "Purchases", icon: icon.purchases }]
+    : []),
   ...(accountingEnabled ? [{ href: "/admin/accounting", label: "Accounting", icon: icon.accounting }] : []),
   { href: "/admin/settings/pickup-locations", label: "Pickup Locations", icon: icon.pickup },
   { href: "/admin/catalog-gaps", label: "Catalog Gaps", icon: icon.catalogGaps }
@@ -123,6 +126,11 @@ function NavLink({
     item.match === "exact"
       ? activePath === hrefPath
       : activePath === hrefPath || activePath.startsWith(`${hrefPath}/`);
+
+  // Books workspace: Purchases ops live under Accounting when Accounting is enabled.
+  if (hrefPath === "/admin/accounting" && item.match !== "exact") {
+    isActive = isActive || activePath.startsWith("/admin/purchases");
+  }
 
   if (item.href.includes("type=events")) {
     isActive =

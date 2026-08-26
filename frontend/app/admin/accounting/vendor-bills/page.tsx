@@ -7,7 +7,7 @@ import {
   postAccountingVendorBill,
   previewAccountingVendorBill
 } from "@/lib/accounting-api";
-import { AdminAccountingHeader, AdminAccountingNav } from "@/components/admin/accounting/AdminAccountingNav";
+import { AdminAccountingHeader } from "@/components/admin/accounting/AdminAccountingNav";
 
 function formatPaise(p: number | undefined | null) {
   if (p == null) return "—";
@@ -97,7 +97,6 @@ export default function VendorBillsAccountingPage() {
         title="Vendor Bill / AP Shadow"
         subtitle="VENDOR_BILL_POSTED_V1 — Dr 1210 clearing / 5300 expense + provisional Input GST, Cr 2000 AP. Zoho remains authoritative."
       />
-      <AdminAccountingNav />
 
       <div className="flex flex-wrap gap-2">
         <input

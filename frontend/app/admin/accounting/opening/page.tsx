@@ -19,7 +19,7 @@ import {
   type OpeningStatus,
   type OpeningValidationResult
 } from "@/lib/accounting-api";
-import { AdminAccountingHeader, AdminAccountingNav } from "@/components/admin/accounting/AdminAccountingNav";
+import { AdminAccountingHeader } from "@/components/admin/accounting/AdminAccountingNav";
 import { AdminApiError } from "@/lib/admin-errors";
 
 function formatPaise(p: number | undefined | null) {
@@ -303,7 +303,6 @@ export default function AccountingOpeningPage() {
         title="Production Opening / Cutover"
         subtitle="Phase 7B — stage opening balances, validate, preview journal, and post a single cutover batch. Zoho remains authoritative until 7C."
       />
-      <AdminAccountingNav />
 
       <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
         {status?.resetNotice ?? "Accounting reset must be performed by authorized operations."}

@@ -12,7 +12,7 @@ import {
   previewAccountingVendorPayment,
   type VendorPaymentMethod
 } from "@/lib/accounting-api";
-import { AdminAccountingHeader, AdminAccountingNav } from "@/components/admin/accounting/AdminAccountingNav";
+import { AdminAccountingHeader } from "@/components/admin/accounting/AdminAccountingNav";
 import { fetchPurchasesVendors } from "@/lib/purchases-api";
 
 function formatPaise(p: number | undefined | null) {
@@ -194,7 +194,6 @@ export default function VendorPaymentsAccountingPage() {
         title="Vendor Payments / AP Settlement"
         subtitle="VENDOR_PAYMENT_MADE_V1 — Dr 2000 AP, Cr 1010 Bank / 1000 Cash. Mark paid alone never creates this journal. Zoho remains authoritative."
       />
-      <AdminAccountingNav />
 
       <p className="text-sm text-neutral-600">
         Posting flag:{" "}

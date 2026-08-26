@@ -8,7 +8,7 @@ import {
   upsertExpenseAccountMappingApi,
   upsertExpensePaymentMappingApi
 } from "@/lib/accounting-api";
-import { AdminAccountingHeader, AdminAccountingNav } from "@/components/admin/accounting/AdminAccountingNav";
+import { AdminAccountingHeader } from "@/components/admin/accounting/AdminAccountingNav";
 
 export default function ExpenseMappingsPage() {
   const [data, setData] = useState<{
@@ -46,7 +46,6 @@ export default function ExpenseMappingsPage() {
         title="Expense Account / Payment Mappings"
         subtitle="Free-text Expense.expenseAccount and paidThrough are not GL authority. Map to EXPENSE CoA and 1000/1010 before posting."
       />
-      <AdminAccountingNav />
       {err ? <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">{err}</p> : null}
 
       <section className="grid gap-4 md:grid-cols-2">
