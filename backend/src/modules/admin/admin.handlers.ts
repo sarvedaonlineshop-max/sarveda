@@ -165,10 +165,12 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
     const chart12mStart = addUtcMonths(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)), -11);
 
     const revenueWhere = {
-      deletedAt: null as null,
+      ...liveAdminOrderWhere(now),
       status: { in: revenueStatuses },
       reportingTotalInInrPaise: { not: null as null }
     };
+
+    const liveOrders = liveAdminOrderWhere(now);
 
     const [
       revenueAgg,
@@ -189,25 +191,25 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
         _sum: { reportingTotalInInrPaise: true }
       }),
       prisma.order.aggregate({
-        where: { ...revenueWhere, placedAt: { gte: today, lt: tomorrow } },
+        where: { AND: [revenueWhere, { placedAt: { gte: today, lt: tomorrow } }] },
         _sum: { reportingTotalInInrPaise: true }
       }),
       prisma.order.aggregate({
-        where: { ...revenueWhere, placedAt: { gte: weekStart } },
+        where: { AND: [revenueWhere, { placedAt: { gte: weekStart } }] },
         _sum: { reportingTotalInInrPaise: true }
       }),
       prisma.order.aggregate({
-        where: { ...revenueWhere, placedAt: { gte: monthStart } },
+        where: { AND: [revenueWhere, { placedAt: { gte: monthStart } }] },
         _sum: { reportingTotalInInrPaise: true }
       }),
       prisma.order.count({
-        where: { deletedAt: null, placedAt: { gte: today, lt: tomorrow } }
+        where: { AND: [liveOrders, { placedAt: { gte: today, lt: tomorrow } }] }
       }),
       prisma.order.count({
-        where: { deletedAt: null, placedAt: { gte: weekStart } }
+        where: { AND: [liveOrders, { placedAt: { gte: weekStart } }] }
       }),
       prisma.order.count({
-        where: { deletedAt: null, placedAt: { gte: monthStart } }
+        where: { AND: [liveOrders, { placedAt: { gte: monthStart } }] }
       }),
       prisma.product.groupBy({
         by: ["status"],
@@ -215,7 +217,7 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
         _count: { id: true }
       }),
       prisma.order.findMany({
-        where: { deletedAt: null },
+        where: liveOrders,
         orderBy: { createdAt: "desc" },
         take: 5,
         select: {
@@ -228,15 +230,15 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
         }
       }),
       prisma.order.findMany({
-        where: { ...revenueWhere, placedAt: { gte: chart7Start } },
+        where: { AND: [revenueWhere, { placedAt: { gte: chart7Start } }] },
         select: { reportingTotalInInrPaise: true, placedAt: true, createdAt: true }
       }),
       prisma.order.findMany({
-        where: { ...revenueWhere, placedAt: { gte: chart30Start } },
+        where: { AND: [revenueWhere, { placedAt: { gte: chart30Start } }] },
         select: { reportingTotalInInrPaise: true, placedAt: true, createdAt: true }
       }),
       prisma.order.findMany({
-        where: { ...revenueWhere, placedAt: { gte: chart12mStart } },
+        where: { AND: [revenueWhere, { placedAt: { gte: chart12mStart } }] },
         select: { reportingTotalInInrPaise: true, placedAt: true, createdAt: true }
       })
     ]);
@@ -471,7 +473,7 @@ export async function ordersExportPdf(req: Request, res: Response, next: NextFun
     }
 
     const orders = await prisma.order.findMany({
-      where: { deletedAt: null, createdAt: { gte: from } },
+      where: { AND: [liveAdminOrderWhere(now), { createdAt: { gte: from } }] },
       orderBy: { createdAt: "desc" },
       take: 4000,
       select: {

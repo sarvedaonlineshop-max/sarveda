@@ -3,21 +3,41 @@ import type { Prisma } from "@prisma/client";
 import {
   isAccountingFixtureOrderNumber,
   isCommerceTestOrderNumber,
+  isBeforeLaunchOrderCutover,
   isLiveAdminOrder,
   launchOrderCutoverDate
 } from "./launch-order-rules";
 
-/** Prisma filter: live admin Orders — post-cutover website orders only (no test/accounting fixtures). */
-export function liveAdminOrderWhere(): Prisma.OrderWhereInput {
-  const cutover = launchOrderCutoverDate();
+/** Shared exclusions: accounting fixtures, commerce TEST rows, Woo imports. */
+function liveOrderNumberExclusions(): Prisma.OrderWhereInput[] {
+  return [
+    { NOT: { orderNumber: { contains: "SRV-ACCT-", mode: "insensitive" } } },
+    { NOT: { orderNumber: { contains: "TEST-ACC", mode: "insensitive" } } },
+    { NOT: { orderNumber: { startsWith: "WOO-" } } },
+    { NOT: { orderNumber: { startsWith: "SRV-TEST-" } } }
+  ];
+}
 
+/**
+ * Prisma filter: live admin Orders + dashboard commerce stats.
+ * Pre-cutover (before LAUNCH_ORDER_CUTOVER_ISO): all real website orders.
+ * Post-cutover: only orders placed on/after the cutover instant.
+ */
+export function liveAdminOrderWhere(now = new Date()): Prisma.OrderWhereInput {
+  const exclusions = liveOrderNumberExclusions();
+
+  if (isBeforeLaunchOrderCutover(now)) {
+    return {
+      deletedAt: null,
+      AND: exclusions
+    };
+  }
+
+  const cutover = launchOrderCutoverDate();
   return {
     deletedAt: null,
     AND: [
-      { NOT: { orderNumber: { contains: "SRV-ACCT-", mode: "insensitive" } } },
-      { NOT: { orderNumber: { contains: "TEST-ACC", mode: "insensitive" } } },
-      { NOT: { orderNumber: { startsWith: "WOO-" } } },
-      { NOT: { orderNumber: { startsWith: "SRV-TEST-" } } },
+      ...exclusions,
       {
         OR: [{ placedAt: { gte: cutover } }, { placedAt: null, createdAt: { gte: cutover } }]
       }

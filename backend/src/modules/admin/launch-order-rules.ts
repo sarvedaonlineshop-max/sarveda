@@ -1,9 +1,15 @@
 /**
  * Launch cutover rules — which orders stay live vs archive vs delete.
- * Live admin Orders (post-cutover): SRV-ACCT-* accounting fixtures + website orders on/after cutover.
+ *
+ * Before the cutover instant: live admin Orders show all real website checkouts
+ * (excluding Woo / accounting / TEST fixtures) so staging and pre-launch ops work.
+ * On/after cutover: only orders placed on/after that instant stay in live Orders;
+ * older rows belong in Old Orders after the archive script runs.
+ *
+ * Override with env LAUNCH_ORDER_CUTOVER_ISO (ISO date or datetime).
  */
 
-/** India launch cutover — website orders on/after this instant are "live". */
+/** Default India go-live cutover — website orders on/after this instant are "live" post-launch. */
 export const LAUNCH_ORDER_CUTOVER_ISO = "2026-09-01T00:00:00+05:30";
 
 export function launchOrderCutoverDate(): Date {
@@ -11,7 +17,12 @@ export function launchOrderCutoverDate(): Date {
   return new Date(raw);
 }
 
-/** Accounting UAT synthetic orders — keep in live Order table for posting tests. */
+/** True while wall-clock is still before the configured cutover (pre-launch / staging). */
+export function isBeforeLaunchOrderCutover(now = new Date()): boolean {
+  return now.getTime() < launchOrderCutoverDate().getTime();
+}
+
+/** Accounting UAT synthetic orders — keep in Order table for posting tests; hidden from live Orders UI. */
 export function isAccountingFixtureOrderNumber(orderNumber: string): boolean {
   const n = orderNumber.toUpperCase();
   return n.startsWith("SRV-ACCT-") || n.includes("SRV-ACCT-");
@@ -32,10 +43,15 @@ export function isWooLegacyOrderNumber(orderNumber: string): boolean {
 }
 
 /** Pre-cutover website checkout orders (SRV-YYYYMM*) — archive, do not delete. */
-export function isPreLaunchWebsiteOrder(order: { orderNumber: string; placedAt: Date | null; createdAt: Date }): boolean {
+export function isPreLaunchWebsiteOrder(order: {
+  orderNumber: string;
+  placedAt: Date | null;
+  createdAt: Date;
+}): boolean {
   if (isAccountingFixtureOrderNumber(order.orderNumber)) return false;
   if (isCommerceTestOrderNumber(order.orderNumber)) return false;
   if (isWooLegacyOrderNumber(order.orderNumber)) return true;
+  if (isBeforeLaunchOrderCutover()) return false;
   const at = order.placedAt ?? order.createdAt;
   return at < launchOrderCutoverDate();
 }
@@ -48,6 +64,8 @@ export function isLiveAdminOrder(order: {
   if (isAccountingFixtureOrderNumber(order.orderNumber)) return true;
   if (isCommerceTestOrderNumber(order.orderNumber)) return false;
   if (isWooLegacyOrderNumber(order.orderNumber)) return false;
+  // Pre-launch: every real website order is operable in live admin.
+  if (isBeforeLaunchOrderCutover()) return true;
   const at = order.placedAt ?? order.createdAt;
   return at >= launchOrderCutoverDate();
 }
