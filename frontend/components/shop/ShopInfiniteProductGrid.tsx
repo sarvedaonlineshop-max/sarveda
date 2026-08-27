@@ -99,9 +99,10 @@ export function ShopInfiniteProductGrid({
     if (!saved || saved.path !== currentShopPath()) return;
 
     restoreStartedRef.current = true;
+    const snapshot = saved;
     const targetPages = Math.min(
-      Math.max(saved.loadedPages ?? 1, 1),
-      totalPages || saved.loadedPages || 1
+      Math.max(snapshot.loadedPages ?? 1, 1),
+      totalPages || snapshot.loadedPages || 1
     );
 
     let cancelled = false;
@@ -137,13 +138,13 @@ export function ShopInfiniteProductGrid({
 
         // Wait a paint so cards exist in the DOM, then scroll silently.
         requestAnimationFrame(() => {
-          restoreScrollSilent(saved.scrollY, saved.productSlug);
+          restoreScrollSilent(snapshot.scrollY, snapshot.productSlug);
           clearShopScroll();
           setRestoring(false);
         });
       } catch {
         if (!cancelled) {
-          restoreScrollSilent(saved.scrollY, saved.productSlug);
+          restoreScrollSilent(snapshot.scrollY, snapshot.productSlug);
           clearShopScroll();
           setRestoring(false);
         }
@@ -152,7 +153,7 @@ export function ShopInfiniteProductGrid({
 
     if (targetPages <= initialPage) {
       requestAnimationFrame(() => {
-        restoreScrollSilent(saved.scrollY, saved.productSlug);
+        restoreScrollSilent(snapshot.scrollY, snapshot.productSlug);
         clearShopScroll();
       });
       return;
