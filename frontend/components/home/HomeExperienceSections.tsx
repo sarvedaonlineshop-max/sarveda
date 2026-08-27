@@ -67,9 +67,9 @@ export function HomeExperienceSections({ courses, events }: Props) {
           </div>
 
           <div className="relative w-full">
-            <div className="relative aspect-[4/3] overflow-hidden rounded-[1.75rem] shadow-card sm:rounded-[2rem]">
+            <div className="relative aspect-[67/46] overflow-hidden rounded-[1.75rem] shadow-card sm:rounded-[2rem]">
               <Image
-                src="/images/home/corporate-wellness.jpg"
+                src="/images/home/corporate-wellness.png"
                 alt="Corporate sound healing and mindfulness session with singing bowls"
                 fill
                 sizes="(max-width: 1024px) 90vw, 40vw"
