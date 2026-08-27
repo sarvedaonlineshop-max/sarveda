@@ -2,6 +2,8 @@ import Link from "next/link";
 
 const LOGO_LIGHT = "/images/brand/sarveda-logo.svg";
 const LOGO_DARK = "/images/brand/sarveda-logo-on-dark.svg";
+/** Admin sidebar — dedicated YW admin export (426×144). */
+const LOGO_ADMIN = "/images/brand/sarveda-logo-admin.svg";
 
 /** YG/YW header logos — 426×144 artboard (same 142:48 aspect as legacy PNG). */
 const LOGO_W = 426;
@@ -16,15 +18,22 @@ type SarvedaLogoProps = {
   /** Scale logo down on small screens so the header stays usable. */
   responsive?: boolean;
   /**
-   * `onDark` — white wordmark for forest footer / dark surfaces.
+   * `onDark` — cream/white wordmark for forest footer / dark surfaces.
+   * `admin` — dedicated admin-sidebar YW mark.
    * Default keeps the forest-green wordmark for light headers.
    */
-  tone?: "onLight" | "onDark";
+  tone?: "onLight" | "onDark" | "admin";
   /** @deprecated Tagline removed from header; kept for call-site compat. */
   showTagline?: boolean;
   wordmarkClassName?: string;
   taglineClassName?: string;
 };
+
+function logoSrc(tone: SarvedaLogoProps["tone"]): string {
+  if (tone === "admin") return LOGO_ADMIN;
+  if (tone === "onDark") return LOGO_DARK;
+  return LOGO_LIGHT;
+}
 
 export function SarvedaLogo({
   href = "/",
@@ -34,7 +43,7 @@ export function SarvedaLogo({
   responsive = false,
   tone = "onLight"
 }: SarvedaLogoProps) {
-  const src = tone === "onDark" ? LOGO_DARK : LOGO_LIGHT;
+  const src = logoSrc(tone);
   const height = Math.max(36, Math.round(iconHeight * (showWordmark ? 0.72 : 0.9)));
   const width = Math.round(height * (LOGO_W / LOGO_H));
 
@@ -76,13 +85,13 @@ export function SarvedaLogoWatermark({
 }: {
   className?: string;
   height?: number;
-  tone?: "onLight" | "onDark";
+  tone?: "onLight" | "onDark" | "admin";
 }) {
   const width = Math.round(height * (LOGO_W / LOGO_H));
   return (
     // eslint-disable-next-line @next/next/no-img-element -- SVG watermark
     <img
-      src={tone === "onDark" ? LOGO_DARK : LOGO_LIGHT}
+      src={logoSrc(tone)}
       alt=""
       width={width}
       height={height}
