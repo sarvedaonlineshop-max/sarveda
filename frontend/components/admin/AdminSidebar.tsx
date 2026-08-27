@@ -315,7 +315,7 @@ export function AdminSidebar({
           style={{ display: "block", textDecoration: "none" }}
           aria-label="Sarveda admin home"
         >
-          <SarvedaLogo href={undefined} tone="onDark" iconHeight={52} showWordmark />
+          <SarvedaLogo href={undefined} tone="admin" iconHeight={52} showWordmark />
           <p
             style={{
               color: t.accent,
