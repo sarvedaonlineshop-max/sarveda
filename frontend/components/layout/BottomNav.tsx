@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useCartData } from "@/components/cart/CartProvider";
 import { logoutSession } from "@/lib/auth-client";
@@ -127,13 +127,19 @@ export function BottomNav() {
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [showMoreHint, setShowMoreHint] = useState(false);
   const [profileTab, setProfileTab] = useState("details");
-  const [, startTransition] = useTransition();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMenuOpen(false);
     setPendingHref(null);
   }, [pathname]);
+
+  // If soft-nav never commits, clear the optimistic tab highlight.
+  useEffect(() => {
+    if (!pendingHref) return;
+    const t = window.setTimeout(() => setPendingHref(null), 4_000);
+    return () => window.clearTimeout(t);
+  }, [pendingHref]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -203,10 +209,10 @@ export function BottomNav() {
       return;
     }
     setPendingHref(href);
+    setMenuOpen(false);
     dispatchNavStart();
-    startTransition(() => {
-      router.push(href);
-    });
+    // Direct push — startTransition soft-nav can stall on mobile (tab highlight changes, page never loads).
+    router.push(href);
   }
 
   async function handleSignOut() {
