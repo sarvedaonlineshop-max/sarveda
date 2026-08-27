@@ -5,13 +5,15 @@ import { SarvedaLogo, SarvedaLogoWatermark } from "@/components/brand/SarvedaLog
 
 type AuthShellProps = {
   title: string;
-  subtitle: string;
+  subtitle?: string;
   children: ReactNode;
   footer?: ReactNode;
   /** Login page uses light mode per product spec. */
   variant?: "light" | "dark";
   /** Show Sarveda logo above the title on small screens (login). */
   showMobileLogo?: boolean;
+  /** Tighter mobile layout — fit login on one screen without scroll. */
+  compactMobile?: boolean;
 };
 
 export function AuthShell({
@@ -20,7 +22,8 @@ export function AuthShell({
   children,
   footer,
   variant = "dark",
-  showMobileLogo = false
+  showMobileLogo = false,
+  compactMobile = false
 }: AuthShellProps) {
   const isLight = variant === "light";
 
@@ -28,7 +31,9 @@ export function AuthShell({
     <div
       className={
         isLight
-          ? "relative min-h-screen overflow-hidden bg-brand-cream px-4 py-10 font-sans sm:px-6 sm:py-12 lg:py-16"
+          ? compactMobile
+            ? "relative flex min-h-dvh items-center overflow-hidden bg-brand-cream px-3 py-3 font-sans sm:px-6 sm:py-10 lg:min-h-screen lg:py-16"
+            : "relative min-h-screen overflow-hidden bg-brand-cream px-4 py-10 font-sans sm:px-6 sm:py-12 lg:py-16"
           : "relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-stone-900 via-stone-950 to-black px-4 py-12 font-sans sm:px-6 lg:py-16"
       }
     >
@@ -42,7 +47,7 @@ export function AuthShell({
           tone={isLight ? "onLight" : "onDark"}
         />
       </div>
-      <div className="relative mx-auto grid max-w-6xl gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] lg:items-center lg:gap-16">
+      <div className="relative mx-auto grid w-full max-w-6xl gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] lg:items-center lg:gap-16">
         <div className="hidden text-center lg:block lg:text-left">
           <SarvedaLogo
             iconHeight={40}
@@ -89,35 +94,42 @@ export function AuthShell({
         <div
           className={
             isLight
-              ? "rounded-3xl border border-brand-cream-dark bg-white p-7 shadow-card-hover sm:p-10"
+              ? compactMobile
+                ? "w-full rounded-2xl border border-brand-cream-dark bg-white px-5 py-5 shadow-card-hover sm:rounded-3xl sm:p-10"
+                : "rounded-3xl border border-brand-cream-dark bg-white p-7 shadow-card-hover sm:p-10"
               : "rounded-3xl border border-stone-700/80 bg-stone-900/90 p-8 shadow-2xl shadow-black/40 backdrop-blur-sm sm:p-10"
           }
         >
           {showMobileLogo ? (
-            <div className="mb-5 flex justify-center lg:hidden">
-              <SarvedaLogo iconHeight={44} tone={isLight ? "onLight" : "onDark"} />
+            <div className={`flex justify-center lg:hidden ${compactMobile ? "mb-3" : "mb-5"}`}>
+              <SarvedaLogo
+                iconHeight={compactMobile ? 58 : 44}
+                tone={isLight ? "onLight" : "onDark"}
+              />
             </div>
           ) : null}
           <div className="text-center lg:text-left">
             <h1
-              className={`font-serif text-[1.85rem] font-bold tracking-tight sm:text-3xl ${
-                isLight ? "text-brand-ink" : "text-amber-400"
-              }`}
+              className={`font-serif font-bold tracking-tight ${
+                compactMobile ? "text-[1.65rem] sm:text-3xl" : "text-[1.85rem] sm:text-3xl"
+              } ${isLight ? "text-brand-ink" : "text-amber-400"}`}
             >
               {title}
             </h1>
-            <p
-              className={`mt-2 text-sm leading-relaxed ${
-                isLight ? "text-brand-ink/75" : "text-stone-400"
-              }`}
-            >
-              {subtitle}
-            </p>
+            {subtitle ? (
+              <p
+                className={`mt-2 text-sm leading-relaxed ${
+                  isLight ? "text-brand-ink/75" : "text-stone-400"
+                }`}
+              >
+                {subtitle}
+              </p>
+            ) : null}
           </div>
-          <div className="mt-8">{children}</div>
+          <div className={compactMobile ? "mt-4 sm:mt-8" : "mt-8"}>{children}</div>
           {footer ? (
             <div
-              className={`mt-8 border-t pt-6 ${
+              className={`${compactMobile ? "mt-4 border-t pt-3 sm:mt-8 sm:pt-6" : "mt-8 border-t pt-6"} ${
                 isLight ? "border-brand-cream-dark/60" : "border-stone-800"
               }`}
             >

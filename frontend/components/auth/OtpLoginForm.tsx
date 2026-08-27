@@ -6,23 +6,30 @@ import type { PublicUser } from "@/lib/auth-client";
 import { sendLoginOtp, verifyLoginOtp } from "@/lib/auth-client";
 
 const BTN_GREEN =
-  "w-full rounded-full bg-[#166D46] py-3 text-sm font-semibold text-white transition-colors hover:bg-[#145a3a] disabled:opacity-60";
+  "w-full rounded-full bg-[#166D46] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#145a3a] disabled:opacity-60 sm:py-3";
 
 type OtpLoginFormProps = {
   inputClass: string;
   onSuccess: (user: PublicUser) => void;
   initialEmail?: string;
+  compact?: boolean;
 };
 
 type OtpStep = "email" | "code";
 
-export function OtpLoginForm({ inputClass, onSuccess, initialEmail = "" }: OtpLoginFormProps) {
+export function OtpLoginForm({
+  inputClass,
+  onSuccess,
+  initialEmail = "",
+  compact = false
+}: OtpLoginFormProps) {
   const [step, setStep] = useState<OtpStep>("email");
   const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [info, setInfo] = useState("");
+  const stack = compact ? "space-y-3" : "space-y-4";
 
   async function handleSendOtp(e: FormEvent) {
     e.preventDefault();
@@ -71,9 +78,9 @@ export function OtpLoginForm({ inputClass, onSuccess, initialEmail = "" }: OtpLo
 
   if (step === "code") {
     return (
-      <form className="space-y-4" onSubmit={handleVerifyOtp}>
+      <form className={stack} onSubmit={handleVerifyOtp}>
         {info ? (
-          <p className="rounded-xl border border-[#166D46]/20 bg-[#166D46]/5 px-3 py-2.5 text-sm text-brand-ink">
+          <p className="rounded-xl border border-[#166D46]/20 bg-[#166D46]/5 px-3 py-2 text-sm text-brand-ink">
             {info}
           </p>
         ) : null}
@@ -130,7 +137,7 @@ export function OtpLoginForm({ inputClass, onSuccess, initialEmail = "" }: OtpLo
   }
 
   return (
-    <form className="space-y-4" onSubmit={handleSendOtp}>
+    <form className={stack} onSubmit={handleSendOtp}>
       <p className="text-sm text-brand-ink/80">An OTP will be sent to the email below.</p>
       <div>
         <label htmlFor="otp-email" className="sr-only">

@@ -3,13 +3,20 @@ import { googleSignInUrl } from "@/lib/auth-client";
 type GoogleSignInButtonProps = {
   nextPath: string;
   label?: string;
+  compact?: boolean;
 };
 
-export function GoogleSignInButton({ nextPath, label = "Continue with Google" }: GoogleSignInButtonProps) {
+export function GoogleSignInButton({
+  nextPath,
+  label = "Continue with Google",
+  compact = false
+}: GoogleSignInButtonProps) {
   return (
     <a
       href={googleSignInUrl(nextPath)}
-      className="inline-flex min-h-[48px] w-full items-center justify-center gap-3 rounded-xl border border-[#E3D9C8] bg-white px-4 py-3 text-sm font-semibold text-brand-ink transition-colors hover:border-brand-gold/60 hover:bg-brand-cream"
+      className={`inline-flex w-full items-center justify-center gap-3 rounded-xl border border-[#E3D9C8] bg-white px-4 text-sm font-semibold text-brand-ink transition-colors hover:border-brand-gold/60 hover:bg-brand-cream ${
+        compact ? "min-h-[44px] py-2.5" : "min-h-[48px] py-3"
+      }`}
     >
       <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
         <path
