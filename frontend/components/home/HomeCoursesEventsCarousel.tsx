@@ -11,6 +11,10 @@ import type { EventListItem } from "@/lib/event-types";
 import { isCourseUpcoming, isEventUpcoming } from "@/lib/content-meta";
 
 const HOME_GREEN = "#166D46";
+/** Auto-advance speed (px per frame @ ~60fps). */
+const AUTO_SPEED = 0.4;
+/** Horizontal swipe past this snaps to the next/prev card. */
+const SWIPE_SNAP_PX = 36;
 
 type Props = {
   courses: CourseListItem[];
@@ -29,11 +33,15 @@ function SlotCard({ slot }: { slot: Slot }) {
   );
 }
 
+function slotKey(slot: Slot, suffix: string) {
+  return slot.kind === "course"
+    ? `${suffix}-course-${slot.item.id}`
+    : `${suffix}-event-${slot.item.id}`;
+}
+
 /**
- * Manual horizontal rail with NO overflow-x scroll container.
- * CSS forces overflow-y:auto whenever overflow-x is not visible, which traps
- * vertical page scroll on mobile. We translate the track instead so vertical
- * swipes always scroll the page; horizontal swipes move the cards.
+ * Transform-based rail (not overflow-x) so vertical page scroll still works.
+ * Auto-scrolls when idle; horizontal swipe snaps one full card at a time.
  */
 export function HomeCoursesEventsCarousel({ courses, events }: Props) {
   const upcomingCourses = courses.filter((c) => isCourseUpcoming(c));
@@ -46,11 +54,25 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
     ...eventPool.map((item) => ({ kind: "event" as const, item }))
   ];
 
+  const loop = slots.length > 1;
+  const displaySlots = loop ? [...slots, ...slots] : slots;
+
   const viewportRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLUListElement>(null);
+  const offsetRef = useRef(0);
+  const maxOffsetRef = useRef(0);
+  const loopWidthRef = useRef(0);
+  const stepRef = useRef(320);
+  const pausedRef = useRef(false);
+  const draggingRef = useRef(false);
+  const rafRef = useRef<number | null>(null);
+  const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [offset, setOffset] = useState(0);
   const [maxOffset, setMaxOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
+  const [snapAnimating, setSnapAnimating] = useState(false);
+  const snapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const gestureRef = useRef<{
     startX: number;
@@ -58,18 +80,43 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
     startOffset: number;
     axis: "undecided" | "h" | "v";
     pointerId: number | null;
-    moved: boolean;
   } | null>(null);
   const suppressClickRef = useRef(false);
+
+  const applyOffset = useCallback((value: number) => {
+    let next = value;
+    const loopW = loopWidthRef.current;
+    if (loop && loopW > 0) {
+      while (next >= loopW) next -= loopW;
+      while (next < 0) next += loopW;
+    } else {
+      next = Math.min(Math.max(0, next), maxOffsetRef.current);
+    }
+    offsetRef.current = next;
+    setOffset(next);
+    return next;
+  }, [loop]);
 
   const measure = useCallback(() => {
     const viewport = viewportRef.current;
     const track = trackRef.current;
     if (!viewport || !track) return;
-    const max = Math.max(0, track.scrollWidth - viewport.clientWidth);
+
+    const first = track.querySelector("li");
+    if (first) {
+      const styles = getComputedStyle(track);
+      const gap = parseFloat(styles.columnGap || styles.gap || "20") || 20;
+      stepRef.current = first.getBoundingClientRect().width + gap;
+    }
+
+    const total = track.scrollWidth;
+    const loopW = loop ? total / 2 : total;
+    loopWidthRef.current = loopW;
+    const max = Math.max(0, loop ? loopW : total - viewport.clientWidth);
+    maxOffsetRef.current = max;
     setMaxOffset(max);
-    setOffset((o) => Math.min(Math.max(0, o), max));
-  }, []);
+    applyOffset(offsetRef.current);
+  }, [applyOffset, loop]);
 
   useEffect(() => {
     measure();
@@ -80,30 +127,72 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
     ro.observe(viewport);
     ro.observe(track);
     return () => ro.disconnect();
-  }, [measure, slots.length]);
+  }, [measure, displaySlots.length]);
 
-  const clampOffset = useCallback(
-    (value: number) => Math.min(Math.max(0, value), maxOffset),
-    [maxOffset]
+  const clearResumeTimer = useCallback(() => {
+    if (resumeTimerRef.current) {
+      clearTimeout(resumeTimerRef.current);
+      resumeTimerRef.current = null;
+    }
+  }, []);
+
+  const pauseAuto = useCallback(() => {
+    clearResumeTimer();
+    pausedRef.current = true;
+  }, [clearResumeTimer]);
+
+  const scheduleResume = useCallback(
+    (ms = 2200) => {
+      clearResumeTimer();
+      resumeTimerRef.current = setTimeout(() => {
+        resumeTimerRef.current = null;
+        pausedRef.current = false;
+      }, ms);
+    },
+    [clearResumeTimer]
   );
 
+  useEffect(() => {
+    if (!loop) return;
+
+    const step = () => {
+      if (!pausedRef.current && !draggingRef.current) {
+        applyOffset(offsetRef.current + AUTO_SPEED);
+      }
+      rafRef.current = requestAnimationFrame(step);
+    };
+
+    rafRef.current = requestAnimationFrame(step);
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+  }, [applyOffset, loop]);
+
+  useEffect(() => () => clearResumeTimer(), [clearResumeTimer]);
+
+  function snapToCard(fromOffset: number, direction: -1 | 0 | 1) {
+    const step = stepRef.current || 320;
+    const baseIndex = Math.round(fromOffset / step);
+    const targetIndex = baseIndex + direction;
+    applyOffset(targetIndex * step);
+  }
+
   function scrollByDir(dir: -1 | 1) {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-    const step = Math.min(viewport.clientWidth * 0.85, 420);
-    setOffset((o) => clampOffset(o + dir * step));
+    pauseAuto();
+    snapToCard(offsetRef.current, dir);
+    scheduleResume(2500);
   }
 
   function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (e.pointerType === "mouse" && e.button !== 0) return;
+    pauseAuto();
     suppressClickRef.current = false;
     gestureRef.current = {
       startX: e.clientX,
       startY: e.clientY,
-      startOffset: offset,
+      startOffset: offsetRef.current,
       axis: "undecided",
-      pointerId: e.pointerId,
-      moved: false
+      pointerId: e.pointerId
     };
   }
 
@@ -116,32 +205,45 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
 
     if (g.axis === "undecided") {
       if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
-      // Vertical wins → release gesture; page scrolls (touch-action: pan-y)
       g.axis = Math.abs(dy) > Math.abs(dx) ? "v" : "h";
       if (g.axis === "v") {
         gestureRef.current = null;
+        draggingRef.current = false;
         setDragging(false);
+        scheduleResume(1400);
         return;
       }
+      draggingRef.current = true;
       setDragging(true);
       e.currentTarget.setPointerCapture(e.pointerId);
     }
 
     if (g.axis !== "h") return;
-    g.moved = true;
     suppressClickRef.current = true;
     e.preventDefault();
-    setOffset(clampOffset(g.startOffset - dx));
+    applyOffset(g.startOffset - dx);
   }
 
   function endPointer(e: React.PointerEvent<HTMLDivElement>) {
     const g = gestureRef.current;
     if (!g || g.pointerId !== e.pointerId) return;
+
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId);
     }
+
+    if (g.axis === "h") {
+      const delta = offsetRef.current - g.startOffset;
+      // Finger left → offset up → next card; finger right → previous card
+      if (delta > SWIPE_SNAP_PX) snapToCard(g.startOffset, 1);
+      else if (delta < -SWIPE_SNAP_PX) snapToCard(g.startOffset, -1);
+      else snapToCard(g.startOffset, 0);
+    }
+
     gestureRef.current = null;
+    draggingRef.current = false;
     setDragging(false);
+    scheduleResume(2200);
   }
 
   function onClickCapture(e: React.MouseEvent<HTMLDivElement>) {
@@ -153,8 +255,8 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
 
   if (slots.length === 0) return null;
 
-  const canPrev = offset > 4;
-  const canNext = offset < maxOffset - 4;
+  const canPrev = loop || offset > 4;
+  const canNext = loop || offset < maxOffset - 4;
 
   return (
     <section
@@ -204,7 +306,6 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
             </button>
           ) : null}
 
-          {/* overflow-hidden clips cards only — not a scrollport (no overflow-x/y:auto) */}
           <div
             ref={viewportRef}
             className="overflow-hidden pb-2"
@@ -213,20 +314,17 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
             onPointerMove={onPointerMove}
             onPointerUp={endPointer}
             onPointerCancel={endPointer}
+            onClickCapture={onClickCapture}
           >
             <ul
               ref={trackRef}
               className={`flex w-max gap-5 lg:gap-6 ${dragging ? "" : "transition-transform duration-300 ease-out"}`}
               style={{ transform: `translate3d(${-offset}px, 0, 0)` }}
             >
-              {slots.map((slot) => (
+              {displaySlots.map((slot, i) => (
                 <li
-                  key={
-                    slot.kind === "course"
-                      ? `course-${slot.item.id}`
-                      : `event-${slot.item.id}`
-                  }
-                  className="flex w-[min(86vw,22rem)] shrink-0 self-stretch sm:w-[min(48%,20rem)] lg:w-[calc((100vw-8rem-3rem)/3)] xl:w-[calc((72rem-3rem)/3)]"
+                  key={slotKey(slot, i < slots.length ? "a" : "b")}
+                  className="flex w-[min(86vw,22rem)] shrink-0 self-stretch sm:w-[min(48%,20rem)] lg:w-[22rem]"
                 >
                   <div className="w-full">
                     <SlotCard slot={slot} />
