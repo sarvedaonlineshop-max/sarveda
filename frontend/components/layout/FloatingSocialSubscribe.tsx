@@ -8,8 +8,10 @@ import { getApiBase } from "@/lib/api";
 import { whatsAppSiteUrl } from "@/lib/enquiry";
 
 const HOME_GREEN = "#166D46";
-const STORAGE_HIDDEN = "sarveda-float-widget-hidden";
+/** Remember drag position for this tab only. */
 const STORAGE_POS = "sarveda-float-widget-pos";
+/** Cleared on full reload so dismiss does not survive refresh. */
+const STORAGE_HIDDEN_LEGACY = "sarveda-float-widget-hidden";
 
 const SOCIAL = [
   {
@@ -316,7 +318,12 @@ export function FloatingSocialSubscribe() {
 
   useEffect(() => {
     setMounted(true);
-    setHidden(sessionStorage.getItem(STORAGE_HIDDEN) === "1");
+    // Strategy: X hides for this browse session (SPA). Full page refresh shows it again.
+    try {
+      sessionStorage.removeItem(STORAGE_HIDDEN_LEGACY);
+    } catch {
+      /* ignore */
+    }
 
     const saved = sessionStorage.getItem(STORAGE_POS);
     if (saved) {
@@ -350,7 +357,6 @@ export function FloatingSocialSubscribe() {
 
   const dismissWidget = useCallback(() => {
     setHidden(true);
-    sessionStorage.setItem(STORAGE_HIDDEN, "1");
   }, []);
 
   /** Drag from anywhere on the floating pill (mobile). */

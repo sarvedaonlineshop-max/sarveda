@@ -148,6 +148,27 @@ export function Header() {
     setMenuOpen(false);
   }, [pathname]);
 
+  // Hard reload often restores mid-page scroll, which clips the announcement + hero top.
+  // Keep Home pinned to the top on entry; shop scroll-restore stays untouched.
+  useLayoutEffect(() => {
+    if (!isHomePage) return;
+    const prev = history.scrollRestoration;
+    try {
+      history.scrollRestoration = "manual";
+    } catch {
+      /* ignore */
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    setMarqueeHidden(false);
+    return () => {
+      try {
+        history.scrollRestoration = prev || "auto";
+      } catch {
+        /* ignore */
+      }
+    };
+  }, [isHomePage]);
+
   // Safety: clear stuck pending if navigation never settles.
   useEffect(() => {
     if (!pendingHref) return;
@@ -164,7 +185,7 @@ export function Header() {
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [hideMarquee]);
+  }, [hideMarquee, isHomePage]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -259,7 +280,7 @@ export function Header() {
 
   return (
     <>
-      <div ref={chromeRef} className={`fixed inset-x-0 top-0 z-50 ${chromeVisibility}`}>
+      <div ref={chromeRef} className={`fixed inset-x-0 top-0 z-50 pt-[env(safe-area-inset-top,0px)] ${chromeVisibility}`}>
         {hideMarquee || marqueeHidden ? null : <AnnouncementBar />}
 
         <header
