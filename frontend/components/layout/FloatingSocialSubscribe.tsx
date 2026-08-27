@@ -30,7 +30,7 @@ const SOCIAL = [
   {
     label: "LinkedIn",
     href: "https://www.linkedin.com/company/14769426/",
-    path: "M6.5 9H3v12h3.5V9zM4.75 3A2.1 2.1 0 102.7 5.1 2.1 2.1 0 004.75 3zM21 21h-3.5v-6.2c0-1.7-.6-2.8-2.1-2.8-1.1 0-1.8.8-2.1 1.5-.1.3-.1.6-.1.9V21H9.8s.05-10.8 0-12H13.3v1.9c.5-.8 1.4-1.9 3.4-1.9 2.5 0 4.3 1.6 4.3 5.1V21z"
+    imageSrc: "/images/brand/linkedin-logo.png"
   }
 ] as const;
 
@@ -237,9 +237,13 @@ function SubscribeModal({ open, onClose }: { open: boolean; onClose: () => void 
                 aria-label={s.label}
                 className="text-brand-ink/80 transition hover:text-[#166D46]"
               >
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden>
-                  <path d={s.path} />
-                </svg>
+                {"imageSrc" in s ? (
+                  <Image src={s.imageSrc} alt="" width={20} height={20} className="h-5 w-5 object-contain" />
+                ) : (
+                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden>
+                    <path d={s.path} />
+                  </svg>
+                )}
               </a>
             ))}
           </div>
@@ -254,14 +258,37 @@ function WidgetCloseButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       type="button"
-      onClick={onClick}
-      className="absolute -left-2 -top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-black/10 bg-white text-brand-ink shadow-sm transition hover:bg-brand-cream"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      onPointerDown={(e) => e.stopPropagation()}
+      className="absolute -right-1.5 -top-1.5 z-20 flex h-7 w-7 items-center justify-center rounded-full border border-black/15 bg-white text-brand-ink shadow-[0_2px_8px_rgba(0,0,0,0.18)] transition hover:bg-brand-cream"
       aria-label="Hide social widget"
     >
-      <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.2">
+      <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.4">
         <path strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />
       </svg>
     </button>
+  );
+}
+
+function SocialIcon({ item }: { item: (typeof SOCIAL)[number] }) {
+  if ("imageSrc" in item) {
+    return (
+      <Image
+        src={item.imageSrc}
+        alt=""
+        width={22}
+        height={22}
+        className="h-5 w-5 object-contain sm:h-[22px] sm:w-[22px]"
+      />
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5 sm:h-[22px] sm:w-[22px]" fill="currentColor" aria-hidden>
+      <path d={item.path} />
+    </svg>
   );
 }
 
@@ -272,7 +299,15 @@ export function FloatingSocialSubscribe() {
   const [isMobile, setIsMobile] = useState(false);
   const [pos, setPos] = useState<WidgetPos | null>(null);
   const widgetRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{ pointerId: number; startX: number; startY: number; originX: number; originY: number } | null>(null);
+  const dragRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+    moved: boolean;
+  } | null>(null);
+  const suppressClickRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -286,7 +321,7 @@ export function FloatingSocialSubscribe() {
           setPos(parsed);
         }
       } catch {
-        /* ignore invalid saved position */
+        /* ignore */
       }
     }
 
@@ -313,88 +348,93 @@ export function FloatingSocialSubscribe() {
     sessionStorage.setItem(STORAGE_HIDDEN, "1");
   }, []);
 
-  const onDragHandlePointerDown = useCallback(
+  /** Drag from anywhere on the floating pill (mobile). */
+  const onWidgetPointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       if (!isMobile || !widgetRef.current || !pos) return;
-      e.preventDefault();
+      if ((e.target as HTMLElement).closest("button[aria-label='Hide social widget']")) return;
+
+      suppressClickRef.current = false;
       dragRef.current = {
         pointerId: e.pointerId,
         startX: e.clientX,
         startY: e.clientY,
         originX: pos.x,
-        originY: pos.y
+        originY: pos.y,
+        moved: false
       };
       e.currentTarget.setPointerCapture(e.pointerId);
     },
     [isMobile, pos]
   );
 
-  const onDragHandlePointerMove = useCallback(
+  const onWidgetPointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       const drag = dragRef.current;
       if (!drag || drag.pointerId !== e.pointerId || !widgetRef.current) return;
+      const dx = e.clientX - drag.startX;
+      const dy = e.clientY - drag.startY;
+      if (!drag.moved && Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      drag.moved = true;
+      suppressClickRef.current = true;
       const rect = widgetRef.current.getBoundingClientRect();
-      const next = clampPos(
-        drag.originX + (e.clientX - drag.startX),
-        drag.originY + (e.clientY - drag.startY),
-        rect.width,
-        rect.height
+      persistPos(
+        clampPos(drag.originX + dx, drag.originY + dy, rect.width, rect.height)
       );
-      persistPos(next);
     },
     [persistPos]
   );
 
-  const onDragHandlePointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (dragRef.current?.pointerId === e.pointerId) {
-      dragRef.current = null;
+  const onWidgetPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (dragRef.current?.pointerId !== e.pointerId) return;
+    dragRef.current = null;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId);
     }
   }, []);
 
+  const onClickCapture = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!suppressClickRef.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+    suppressClickRef.current = false;
+  }, []);
+
   if (!mounted || hidden) return null;
 
-  const widgetBody = (
-    <>
-      <WidgetCloseButton onClick={dismissWidget} />
-      {isMobile ? (
-        <div
-          className="flex w-full cursor-grab items-center justify-center border-b border-black/8 bg-[#f3f1ec]/80 py-1.5 active:cursor-grabbing"
-          aria-label="Drag to reposition"
-          onPointerDown={onDragHandlePointerDown}
-          onPointerMove={onDragHandlePointerMove}
-          onPointerUp={onDragHandlePointerUp}
-          onPointerCancel={onDragHandlePointerUp}
+  const socialLinks = (
+    <div className="flex flex-col items-center gap-3.5 px-3 py-5 sm:gap-4 sm:px-3.5 sm:py-6">
+      {SOCIAL.map((s) => (
+        <a
+          key={s.label}
+          href={s.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={s.label}
+          className="text-brand-ink transition hover:text-[#166D46]"
+          onClick={(e) => {
+            if (suppressClickRef.current) e.preventDefault();
+          }}
         >
-          <span className="h-1 w-8 rounded-full bg-black/20" aria-hidden />
-        </div>
-      ) : null}
-      <div className="flex flex-col items-center gap-3.5 px-3 py-5 sm:gap-4 sm:px-3.5 sm:py-6">
-        {SOCIAL.map((s) => (
-          <a
-            key={s.label}
-            href={s.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={s.label}
-            className="text-brand-ink transition hover:text-[#166D46]"
-          >
-            <svg viewBox="0 0 24 24" className="h-5 w-5 sm:h-[22px] sm:w-[22px]" fill="currentColor" aria-hidden>
-              <path d={s.path} />
-            </svg>
-          </a>
-        ))}
-      </div>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="flex w-full items-center justify-center border-t border-black/8 bg-[#f3f1ec] px-2.5 py-6 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-ink transition hover:bg-[#ebe7df] sm:px-3 sm:py-7 sm:text-xs"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-      >
-        <span className="inline-block rotate-180 [writing-mode:vertical-rl]">Subscribe</span>
-      </button>
-    </>
+          <SocialIcon item={s} />
+        </a>
+      ))}
+    </div>
+  );
+
+  const subscribeBtn = (
+    <button
+      type="button"
+      onClick={() => {
+        if (suppressClickRef.current) return;
+        setOpen(true);
+      }}
+      className="flex w-full items-center justify-center border-t border-black/8 bg-[#f3f1ec] px-2.5 py-6 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-ink transition hover:bg-[#ebe7df] sm:px-3 sm:py-7 sm:text-xs"
+      aria-haspopup="dialog"
+      aria-expanded={open}
+    >
+      <span className="inline-block rotate-180 [writing-mode:vertical-rl]">Subscribe</span>
+    </button>
   );
 
   return (
@@ -409,9 +449,19 @@ export function FloatingSocialSubscribe() {
               : { right: 12, top: "38%", transform: "translateY(-50%)" }
           }
           aria-label="Social links and subscribe"
+          onPointerDown={onWidgetPointerDown}
+          onPointerMove={onWidgetPointerMove}
+          onPointerUp={onWidgetPointerUp}
+          onPointerCancel={onWidgetPointerUp}
+          onClickCapture={onClickCapture}
         >
-          <div className="relative flex flex-col items-center overflow-hidden rounded-full border border-black/10 bg-white/95 shadow-[0_10px_32px_rgba(16,32,26,0.18)] backdrop-blur-sm">
-            {widgetBody}
+          {/* Outer relative shell — close sits outside overflow clip */}
+          <div className="relative">
+            <WidgetCloseButton onClick={dismissWidget} />
+            <div className="flex cursor-grab flex-col items-center overflow-hidden rounded-full border border-black/10 bg-white/95 shadow-[0_10px_32px_rgba(16,32,26,0.18)] backdrop-blur-sm active:cursor-grabbing">
+              {socialLinks}
+              {subscribeBtn}
+            </div>
           </div>
         </div>
       ) : (
@@ -419,8 +469,12 @@ export function FloatingSocialSubscribe() {
           className="pointer-events-none fixed right-3 top-1/2 z-[55] hidden -translate-y-1/2 sm:right-4 md:block lg:right-5"
           aria-label="Social links and subscribe"
         >
-          <div className="pointer-events-auto relative flex flex-col items-center overflow-hidden rounded-full border border-black/10 bg-white/95 shadow-[0_10px_32px_rgba(16,32,26,0.18)] backdrop-blur-sm">
-            {widgetBody}
+          <div className="pointer-events-auto relative">
+            <WidgetCloseButton onClick={dismissWidget} />
+            <div className="flex flex-col items-center overflow-hidden rounded-full border border-black/10 bg-white/95 shadow-[0_10px_32px_rgba(16,32,26,0.18)] backdrop-blur-sm">
+              {socialLinks}
+              {subscribeBtn}
+            </div>
           </div>
         </div>
       )}

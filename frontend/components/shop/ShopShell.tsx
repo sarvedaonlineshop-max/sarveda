@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import type { CategoryNode } from "@/lib/types";
 import { categorySlugFromPathname, type ShopBrowseQuery } from "@/lib/shop-navigation";
 import { SHOP_PRICE_MAX, SHOP_PRICE_MIN } from "@/lib/shop-merch-filters";
-import { clearShopScroll, currentShopPath, readShopScroll } from "@/lib/shop-scroll-restore";
+import { currentShopPath, readShopScroll } from "@/lib/shop-scroll-restore";
 
 import { ShopCategoriesProvider } from "./ShopCategoriesContext";
 import { ShopCategoryFilterSidebar } from "./ShopCategoryFilterSidebar";
@@ -120,18 +120,12 @@ export function ShopShell({ categories, children }: Props) {
     return walk(categories) ?? categorySlug;
   }, [categories, categorySlug]);
 
-  /** Restore scroll when returning from PDP on the same shop URL. */
+  /** When returning from PDP, skip jump-to-grid — the product grid restores place. */
   useEffect(() => {
     const saved = readShopScroll();
     const currentPath = currentShopPath();
     if (!saved || saved.path !== currentPath) return;
     skipScrollToGridRef.current = true;
-    const restore = () => window.scrollTo({ top: saved.scrollY, behavior: "auto" });
-    requestAnimationFrame(() => {
-      restore();
-      window.setTimeout(restore, 80);
-    });
-    clearShopScroll();
   }, [pathname]);
 
   /** Jump to top of product grid when browse filters change. */

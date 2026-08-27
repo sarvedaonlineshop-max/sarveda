@@ -1,7 +1,9 @@
 import Image from "next/image";
 
 /**
- * Homepage hero — full-width banner from brand asset (photo + spiral + headline).
+ * Homepage hero — full-width banner (photo + spiral + headline baked in).
+ * Mobile uses a wide aspect close to the asset so text + face stay visible
+ * (tall 4:5 crop was cutting them off).
  */
 export function HomeHero() {
   return (
@@ -17,7 +19,8 @@ export function HomeHero() {
       <div
         className={[
           "relative w-full overflow-hidden",
-          "aspect-[4/5] sm:aspect-[5/6]",
+          /* Near-native banner ratio on phones so left copy + right face remain in frame */
+          "aspect-[2.1/1] sm:aspect-[2.2/1]",
           "md:aspect-[2939/1285]"
         ].join(" ")}
       >
@@ -26,8 +29,9 @@ export function HomeHero() {
           alt=""
           fill
           priority
+          quality={90}
           sizes="100vw"
-          className="object-cover object-[22%_42%] sm:object-[28%_44%] md:object-cover md:object-center"
+          className="object-cover object-[42%_42%] sm:object-[45%_40%] md:object-center"
           aria-hidden
         />
       </div>
