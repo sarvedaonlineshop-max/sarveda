@@ -238,28 +238,6 @@ export function fetchAdminWooAnalytics(params?: {
   );
 }
 
-export async function downloadAdminOrdersPdf(range: "today" | "week" | "month" | "year") {
-  const url = `${getApiBase()}/api/admin/orders/export/pdf?range=${encodeURIComponent(range)}`;
-  const res = await fetch(url, { credentials: "include" });
-  if (!res.ok) {
-    let msg = `Export failed (${res.status})`;
-    try {
-      const j = (await res.json()) as { error?: string };
-      if (j.error) msg = j.error;
-    } catch {
-      /* ignore */
-    }
-    throw new Error(msg);
-  }
-  const blob = await res.blob();
-  const href = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = href;
-  a.download = `sarveda-orders-${range}.pdf`;
-  a.click();
-  URL.revokeObjectURL(href);
-}
-
 export type AdminReportType =
   | "sales"
   | "products"
@@ -431,6 +409,9 @@ export type OrdersListData = {
     orderNumber: string;
     email: string;
     customerName: string | null;
+    city?: string | null;
+    state?: string | null;
+    country?: string | null;
     status: string;
     paymentStatus: string;
     paymentProvider?: string | null;
@@ -440,8 +421,97 @@ export type OrdersListData = {
     linePreview: string[];
     createdAt: string;
   }>;
+  counts?: Partial<
+    Record<
+      "all" | "paid" | "pending" | "abandoned" | "cancelled" | "refunded" | "shipped" | "delivered",
+      number
+    >
+  >;
   pagination: { page: number; limit: number; total: number; totalPages: number };
 };
+
+export type AdminOrdersQuery = {
+  bucket?: string;
+  page?: number;
+  limit?: number;
+  orderNumber?: string;
+  customerName?: string;
+  place?: string;
+  country?: string;
+  from?: string;
+  to?: string;
+  today?: boolean;
+};
+
+function buildAdminOrdersQuery(params: AdminOrdersQuery): URLSearchParams {
+  const q = new URLSearchParams();
+  if (params.bucket && params.bucket !== "all") q.set("bucket", params.bucket);
+  if (params.page) q.set("page", String(params.page));
+  if (params.limit) q.set("limit", String(params.limit));
+  if (params.orderNumber?.trim()) q.set("orderNumber", params.orderNumber.trim());
+  if (params.customerName?.trim()) q.set("customerName", params.customerName.trim());
+  if (params.place?.trim()) q.set("place", params.place.trim());
+  if (params.country?.trim()) q.set("country", params.country.trim());
+  if (params.today) q.set("today", "1");
+  else {
+    if (params.from?.trim()) q.set("from", params.from.trim());
+    if (params.to?.trim()) q.set("to", params.to.trim());
+  }
+  return q;
+}
+
+export function fetchAdminOrders(params: AdminOrdersQuery, signal?: AbortSignal) {
+  const q = buildAdminOrdersQuery(params);
+  const qs = q.toString();
+  return adminFetch<OrdersListData>(`/api/admin/orders${qs ? `?${qs}` : ""}`, { signal });
+}
+
+export async function downloadAdminOrdersExport(
+  format: "pdf" | "xlsx",
+  params: Omit<AdminOrdersQuery, "page" | "limit">
+) {
+  const q = buildAdminOrdersQuery(params);
+  q.set("format", format);
+  const url = `${getApiBase()}/api/admin/orders/export?${q.toString()}`;
+  const res = await fetch(url, { credentials: "include" });
+  if (!res.ok) {
+    let msg = `Export failed (${res.status})`;
+    try {
+      const j = (await res.json()) as { error?: string };
+      if (j.error) msg = j.error;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(msg);
+  }
+  const blob = await res.blob();
+  const href = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = href;
+  a.download = `sarveda-orders.${format === "xlsx" ? "xlsx" : "pdf"}`;
+  a.click();
+  URL.revokeObjectURL(href);
+}
+
+/** @deprecated use downloadAdminOrdersExport */
+export async function downloadAdminOrdersPdf(range: "today" | "week" | "month" | "year") {
+  const params: AdminOrdersQuery = {};
+  if (range === "today") params.today = true;
+  else {
+    const now = new Date();
+    const to = now.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+    const start = new Date(now);
+    if (range === "week") start.setDate(start.getDate() - 6);
+    if (range === "month") start.setDate(1);
+    if (range === "year") {
+      start.setMonth(0);
+      start.setDate(1);
+    }
+    params.from = start.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+    params.to = to;
+  }
+  return downloadAdminOrdersExport("pdf", params);
+}
 
 export type CustomersListData = {
   items: Array<{
@@ -516,18 +586,6 @@ export function fetchAdminEnrollmentCourses() {
   return adminFetch<{ courses: CourseEnrollmentFilterCourse[] }>("/api/admin/enrollments/courses").then(
     (d) => d.courses
   );
-}
-
-export function fetchAdminOrders(
-  params: { bucket?: string; page?: number; limit?: number },
-  signal?: AbortSignal
-) {
-  const q = new URLSearchParams();
-  if (params.bucket) q.set("bucket", params.bucket);
-  if (params.page) q.set("page", String(params.page));
-  if (params.limit) q.set("limit", String(params.limit));
-  const qs = q.toString();
-  return adminFetch<OrdersListData>(`/api/admin/orders${qs ? `?${qs}` : ""}`, { signal });
 }
 
 export type LegacyOrderListItem = {

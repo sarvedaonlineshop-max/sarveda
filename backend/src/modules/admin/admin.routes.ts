@@ -82,6 +82,7 @@ router.get("/customers", admin.customersList);
 router.get("/enrollments/courses", enrollments.courseEnrollmentsCourses);
 router.get("/enrollments", enrollments.courseEnrollmentsList);
 router.get("/payments/reconciliation", admin.paymentsReconciliation);
+router.get("/orders/export", admin.ordersExport);
 router.get("/orders/export/pdf", admin.ordersExportPdf);
 router.get("/legacy-orders/stats", legacyOrders.legacyOrdersStats);
 router.get("/legacy-orders", legacyOrders.legacyOrdersList);

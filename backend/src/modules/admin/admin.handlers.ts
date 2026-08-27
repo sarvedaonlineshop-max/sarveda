@@ -1,5 +1,6 @@
 import { AddressType, OrderStatus, Prisma } from "@prisma/client";
 import type { NextFunction, Request, Response } from "express";
+import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 import { z } from "zod";
 
@@ -430,124 +431,8 @@ export async function adminNotifications(_req: Request, res: Response, next: Nex
   }
 }
 
-const ordersExportPdfQuery = z.object({
-  range: z.enum(["today", "week", "month", "year"])
-});
-
-export async function ordersExportPdf(req: Request, res: Response, next: NextFunction) {
-  try {
-    const parsed = ordersExportPdfQuery.safeParse(req.query);
-    if (!parsed.success) {
-      res.status(400).json({
-        success: false,
-        error: "range must be one of: today, week, month, year",
-        code: "VALIDATION_ERROR"
-      });
-      return;
-    }
-    const now = new Date();
-    const today = startOfUtcDay(now);
-    const range = parsed.data.range;
-    let from: Date;
-    let title: string;
-    switch (range) {
-      case "today":
-        from = today;
-        title = "Sarveda — Orders (today)";
-        break;
-      case "week":
-        from = addUtcDays(today, -6);
-        title = "Sarveda — Orders (last 7 days)";
-        break;
-      case "month":
-        from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-        title = "Sarveda — Orders (this calendar month)";
-        break;
-      case "year":
-        from = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
-        title = `Sarveda — Orders (${now.getUTCFullYear()}, month-wise)`;
-        break;
-      default:
-        from = today;
-        title = "Sarveda — Orders";
-    }
-
-    const orders = await prisma.order.findMany({
-      where: { AND: [liveAdminOrderWhere(now), { createdAt: { gte: from } }] },
-      orderBy: { createdAt: "desc" },
-      take: 4000,
-      select: {
-        orderNumber: true,
-        email: true,
-        status: true,
-        paymentStatus: true,
-        grandTotalInPaise: true,
-        createdAt: true,
-        items: {
-          select: { nameSnapshot: true, qtyOrdered: true, lineTotalInPaise: true }
-        }
-      }
-    });
-
-    const doc = new PDFDocument({ margin: 48, size: "A4" });
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="sarveda-orders-${range}.pdf"`);
-    doc.pipe(res);
-
-    doc.fontSize(16).text(title, { align: "left" });
-    doc.moveDown(0.5);
-    doc.fontSize(9).fillColor("#555").text(`Generated ${now.toISOString()} · ${orders.length} orders`, {
-      align: "left"
-    });
-    doc.fillColor("#000");
-    doc.moveDown();
-
-    if (range === "year") {
-      const buckets = new Map<string, typeof orders>();
-      for (const o of orders) {
-        const mk = `${o.createdAt.getUTCFullYear()}-${String(o.createdAt.getUTCMonth() + 1).padStart(2, "0")}`;
-        const list = buckets.get(mk) ?? [];
-        list.push(o);
-        buckets.set(mk, list);
-      }
-      const months = [...buckets.keys()].sort();
-      for (const mk of months) {
-        const list = buckets.get(mk) ?? [];
-        const subtotal = list.reduce((s, o) => s + o.grandTotalInPaise, 0);
-        doc.fontSize(12).text(`Month ${mk}`, { underline: true });
-        doc.fontSize(9).text(`${list.length} orders · ₹${(subtotal / 100).toLocaleString("en-IN")}`);
-        doc.moveDown(0.3);
-        for (const o of list) {
-          doc
-            .fontSize(8)
-            .text(
-              `${o.orderNumber}  ${o.status}  ${o.paymentStatus}  ₹${(o.grandTotalInPaise / 100).toLocaleString("en-IN")}  ${o.email}`
-            );
-        }
-        doc.moveDown();
-      }
-    } else {
-      for (const o of orders) {
-        const lines = o.items.map((i) => `${i.qtyOrdered}× ${i.nameSnapshot}`).join("; ");
-        doc
-          .fontSize(9)
-          .text(
-            `${o.orderNumber} · ${o.status} · ${o.paymentStatus} · ₹${(o.grandTotalInPaise / 100).toLocaleString("en-IN")} · ${o.createdAt.toISOString().slice(0, 10)}`
-          );
-        doc.fontSize(8).fillColor("#444").text(`${o.email} — ${lines}`, { width: 500 });
-        doc.fillColor("#000");
-        doc.moveDown(0.25);
-      }
-    }
-
-    doc.end();
-  } catch (err) {
-    next(err);
-  }
-}
-
-/** Unpaid orders older than this still sitting on PENDING_PAYMENT (timeout job missed). */
-const ABANDON_CHECKOUT_MS = 48 * 60 * 60 * 1000;
+/** Matches payment-timeout job (15 min). Pending = still awaiting pay; older unpaid → Abandoned. */
+const PAYMENT_PENDING_MS = 15 * 60 * 1000;
 
 type OrderBucket =
   | "all"
@@ -560,13 +445,25 @@ type OrderBucket =
   | "shipped"
   | "delivered";
 
+const ORDER_BUCKETS: OrderBucket[] = [
+  "all",
+  "pending",
+  "abandoned",
+  "attempted",
+  "cancelled",
+  "refunded",
+  "paid",
+  "shipped",
+  "delivered"
+];
+
 function bucketWhere(bucket: Exclude<OrderBucket, "all">, now: Date): Prisma.OrderWhereInput {
-  const abandonedCutoff = new Date(now.getTime() - ABANDON_CHECKOUT_MS);
+  const pendingCutoff = new Date(now.getTime() - PAYMENT_PENDING_MS);
   switch (bucket) {
     case "pending":
       return {
         status: "PENDING_PAYMENT",
-        createdAt: { gte: abandonedCutoff }
+        createdAt: { gte: pendingCutoff }
       };
     case "abandoned":
     case "attempted":
@@ -576,7 +473,7 @@ function bucketWhere(bucket: Exclude<OrderBucket, "all">, now: Date): Prisma.Ord
           {
             AND: [
               unpaidCheckoutAttemptWhere,
-              { status: "PENDING_PAYMENT", createdAt: { lt: abandonedCutoff } }
+              { status: "PENDING_PAYMENT", createdAt: { lt: pendingCutoff } }
             ]
           }
         ]
@@ -594,6 +491,293 @@ function bucketWhere(bucket: Exclude<OrderBucket, "all">, now: Date): Prisma.Ord
     default:
       return {};
   }
+}
+
+type OrdersListFilters = {
+  now: Date;
+  bucket: OrderBucket;
+  orderNumber: string;
+  customerName: string;
+  place: string;
+  country: string;
+  from: Date | null;
+  toExclusive: Date | null;
+};
+
+function parseYmdToKolkataStart(raw: string): Date | null {
+  const m = raw.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  const d = new Date(`${m[1]}-${m[2]}-${m[3]}T00:00:00+05:30`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function parseOrdersListFilters(req: Request): OrdersListFilters {
+  const now = new Date();
+  const rawBucket = String(req.query.bucket ?? "all");
+  const bucket: OrderBucket = ORDER_BUCKETS.includes(rawBucket as OrderBucket)
+    ? (rawBucket as OrderBucket)
+    : "all";
+
+  const orderNumber = String(req.query.orderNumber ?? req.query.orderId ?? "").trim();
+  const customerName = String(req.query.customerName ?? "").trim();
+  const place = String(req.query.place ?? req.query.city ?? "").trim();
+  const country = String(req.query.country ?? "").trim();
+
+  const todayFlag =
+    String(req.query.today ?? "").trim() === "1" ||
+    String(req.query.today ?? "").toLowerCase() === "true";
+
+  let from: Date | null = null;
+  let toExclusive: Date | null = null;
+
+  if (todayFlag) {
+    from = startOfDayKolkata(now);
+    toExclusive = addDaysInstant(from, 1);
+  } else {
+    const fromRaw = String(req.query.from ?? req.query.dateFrom ?? "").trim();
+    const toRaw = String(req.query.to ?? req.query.dateTo ?? "").trim();
+    if (fromRaw) from = parseYmdToKolkataStart(fromRaw);
+    if (toRaw) {
+      const toStart = parseYmdToKolkataStart(toRaw);
+      if (toStart) toExclusive = addDaysInstant(toStart, 1);
+    }
+  }
+
+  return { now, bucket, orderNumber, customerName, place, country, from, toExclusive };
+}
+
+function ordersSearchWhere(f: OrdersListFilters): Prisma.OrderWhereInput {
+  const parts: Prisma.OrderWhereInput[] = [liveAdminOrderWhere(f.now)];
+
+  if (f.orderNumber) {
+    parts.push({ orderNumber: { contains: f.orderNumber, mode: "insensitive" } });
+  }
+  if (f.customerName) {
+    parts.push({
+      OR: [
+        { email: { contains: f.customerName, mode: "insensitive" } },
+        { phone: { contains: f.customerName } },
+        { customer: { name: { contains: f.customerName, mode: "insensitive" } } },
+        {
+          addresses: {
+            some: { fullName: { contains: f.customerName, mode: "insensitive" } }
+          }
+        }
+      ]
+    });
+  }
+  if (f.place) {
+    parts.push({
+      addresses: {
+        some: {
+          OR: [
+            { city: { contains: f.place, mode: "insensitive" } },
+            { state: { contains: f.place, mode: "insensitive" } },
+            { postalCode: { contains: f.place, mode: "insensitive" } }
+          ]
+        }
+      }
+    });
+  }
+  if (f.country) {
+    parts.push({
+      addresses: {
+        some: { country: { contains: f.country, mode: "insensitive" } }
+      }
+    });
+  }
+  if (f.from || f.toExclusive) {
+    parts.push({
+      createdAt: {
+        ...(f.from ? { gte: f.from } : {}),
+        ...(f.toExclusive ? { lt: f.toExclusive } : {})
+      }
+    });
+  }
+
+  return { AND: parts };
+}
+
+function ordersListWhere(f: OrdersListFilters): Prisma.OrderWhereInput {
+  const search = ordersSearchWhere(f);
+  if (f.bucket === "all") return search;
+  return { AND: [search, bucketWhere(f.bucket, f.now)] };
+}
+
+async function loadOrdersForExport(f: OrdersListFilters) {
+  return prisma.order.findMany({
+    where: ordersListWhere(f),
+    orderBy: { createdAt: "desc" },
+    take: 4000,
+    select: {
+      orderNumber: true,
+      email: true,
+      phone: true,
+      status: true,
+      paymentStatus: true,
+      currency: true,
+      grandTotalInPaise: true,
+      createdAt: true,
+      customer: { select: { name: true } },
+      addresses: {
+        select: { type: true, fullName: true, city: true, state: true, country: true, postalCode: true }
+      },
+      items: {
+        select: { nameSnapshot: true, qtyOrdered: true, lineTotalInPaise: true }
+      },
+      payments: { orderBy: { createdAt: "desc" }, take: 1, select: { provider: true } }
+    }
+  });
+}
+
+function shippingAddress(addresses: Array<{
+  type: AddressType;
+  fullName: string;
+  city: string;
+  state: string;
+  country: string;
+  postalCode: string;
+}>) {
+  return addresses.find((a) => a.type === "SHIPPING") ?? addresses[0] ?? null;
+}
+
+/** Unified filtered export — Excel or PDF (same filters as Orders list). */
+export async function ordersExport(req: Request, res: Response, next: NextFunction) {
+  try {
+    const formatRaw = String(req.query.format ?? "pdf").toLowerCase();
+    const format = formatRaw === "xlsx" || formatRaw === "excel" || formatRaw === "xls" ? "xlsx" : "pdf";
+    const f = parseOrdersListFilters(req);
+    const orders = await loadOrdersForExport(f);
+    const stamp = dateKeyKolkata(f.now);
+
+    const filterLabel = [
+      f.bucket !== "all" ? `bucket=${f.bucket}` : null,
+      f.orderNumber ? `order=${f.orderNumber}` : null,
+      f.customerName ? `customer=${f.customerName}` : null,
+      f.place ? `place=${f.place}` : null,
+      f.country ? `country=${f.country}` : null,
+      f.from ? `from=${dateKeyKolkata(f.from)}` : null,
+      f.toExclusive ? `to=${dateKeyKolkata(addDaysInstant(f.toExclusive, -1))}` : null
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    if (format === "xlsx") {
+      const wb = new ExcelJS.Workbook();
+      wb.creator = "Sarveda Admin";
+      wb.created = f.now;
+      const sheet = wb.addWorksheet("Orders");
+      sheet.columns = [
+        { header: "Order", key: "orderNumber", width: 18 },
+        { header: "Customer", key: "customer", width: 22 },
+        { header: "Email", key: "email", width: 28 },
+        { header: "Phone", key: "phone", width: 16 },
+        { header: "Place", key: "place", width: 18 },
+        { header: "State", key: "state", width: 14 },
+        { header: "Country", key: "country", width: 10 },
+        { header: "Status", key: "status", width: 14 },
+        { header: "Payment", key: "paymentStatus", width: 14 },
+        { header: "Provider", key: "provider", width: 12 },
+        { header: "Currency", key: "currency", width: 10 },
+        { header: "Amount", key: "amount", width: 12 },
+        { header: "Items", key: "items", width: 40 },
+        { header: "Created", key: "createdAt", width: 22 }
+      ];
+      sheet.getRow(1).font = { bold: true };
+      for (const o of orders) {
+        const ship = shippingAddress(o.addresses);
+        sheet.addRow({
+          orderNumber: o.orderNumber,
+          customer: o.customer?.name ?? ship?.fullName ?? "",
+          email: o.email,
+          phone: o.phone ?? "",
+          place: ship?.city ?? "",
+          state: ship?.state ?? "",
+          country: ship?.country ?? "",
+          status: o.status,
+          paymentStatus: o.paymentStatus,
+          provider: o.payments[0]?.provider ?? "",
+          currency: o.currency,
+          amount: Math.round(o.grandTotalInPaise) / 100,
+          items: o.items.map((i) => `${i.qtyOrdered}× ${i.nameSnapshot}`).join("; "),
+          createdAt: o.createdAt.toISOString()
+        });
+      }
+      const buf = Buffer.from(await wb.xlsx.writeBuffer());
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      );
+      res.setHeader("Content-Disposition", `attachment; filename="sarveda-orders-${stamp}.xlsx"`);
+      res.send(buf);
+      return;
+    }
+
+    const doc = new PDFDocument({ margin: 48, size: "A4" });
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="sarveda-orders-${stamp}.pdf"`);
+    doc.pipe(res);
+
+    doc.fontSize(16).text("Sarveda — Orders export", { align: "left" });
+    doc.moveDown(0.4);
+    doc
+      .fontSize(9)
+      .fillColor("#555")
+      .text(
+        `Generated ${f.now.toISOString()} · ${orders.length} orders${filterLabel ? ` · ${filterLabel}` : ""}`,
+        { align: "left" }
+      );
+    doc.fillColor("#000");
+    doc.moveDown();
+
+    for (const o of orders) {
+      const ship = shippingAddress(o.addresses);
+      const lines = o.items.map((i) => `${i.qtyOrdered}× ${i.nameSnapshot}`).join("; ");
+      const place = [ship?.city, ship?.state, ship?.country].filter(Boolean).join(", ");
+      doc
+        .fontSize(9)
+        .text(
+          `${o.orderNumber} · ${o.status} · ${o.paymentStatus} · ${o.currency} ${(o.grandTotalInPaise / 100).toLocaleString("en-IN")} · ${o.createdAt.toISOString().slice(0, 10)}`
+        );
+      doc
+        .fontSize(8)
+        .fillColor("#444")
+        .text(
+          `${o.customer?.name ?? ship?.fullName ?? "—"} · ${o.email}${place ? ` · ${place}` : ""} — ${lines}`,
+          { width: 500 }
+        );
+      doc.fillColor("#000");
+      doc.moveDown(0.25);
+    }
+
+    doc.end();
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** @deprecated Prefer ordersExport — kept so old PDF links still work. */
+export async function ordersExportPdf(req: Request, res: Response, next: NextFunction) {
+  if (!req.query.format) req.query.format = "pdf";
+  // Legacy range=today|week|month|year → map onto from/to when no explicit dates
+  const range = String(req.query.range ?? "").trim();
+  if (range && !req.query.from && !req.query.today) {
+    const now = new Date();
+    const today = startOfDayKolkata(now);
+    if (range === "today") {
+      req.query.today = "1";
+    } else if (range === "week") {
+      req.query.from = dateKeyKolkata(addDaysInstant(today, -6));
+      req.query.to = dateKeyKolkata(today);
+    } else if (range === "month") {
+      req.query.from = dateKeyKolkata(startOfMonthKolkata(now));
+      req.query.to = dateKeyKolkata(today);
+    } else if (range === "year") {
+      req.query.from = `${now.getFullYear()}-01-01`;
+      req.query.to = dateKeyKolkata(today);
+    }
+  }
+  return ordersExport(req, res, next);
 }
 
 export async function customersList(req: Request, res: Response, next: NextFunction) {
@@ -665,25 +849,22 @@ export async function ordersList(req: Request, res: Response, next: NextFunction
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
     const skip = (page - 1) * limit;
-    const now = new Date();
-    const rawBucket = String(req.query.bucket ?? "all");
-    const valid: OrderBucket[] = [
+    const f = parseOrdersListFilters(req);
+    const where = ordersListWhere(f);
+    const searchBase = ordersSearchWhere(f);
+
+    const countBuckets = [
       "all",
+      "paid",
       "pending",
       "abandoned",
-      "attempted",
       "cancelled",
       "refunded",
-      "paid",
       "shipped",
       "delivered"
-    ];
-    const bucket: OrderBucket = valid.includes(rawBucket as OrderBucket) ? (rawBucket as OrderBucket) : "all";
-    const bWhere = bucket === "all" ? {} : bucketWhere(bucket, now);
+    ] as const;
 
-    const where = { AND: [liveAdminOrderWhere(), bWhere] };
-
-    const [total, rows] = await prisma.$transaction([
+    const [total, rows, ...bucketCounts] = await prisma.$transaction([
       prisma.order.count({ where }),
       prisma.order.findMany({
         where,
@@ -700,10 +881,27 @@ export async function ordersList(req: Request, res: Response, next: NextFunction
             }
           },
           customer: { select: { id: true, email: true, name: true } },
-          payments: { orderBy: { createdAt: "desc" }, take: 1, select: { provider: true } }
+          payments: { orderBy: { createdAt: "desc" }, take: 1, select: { provider: true } },
+          addresses: {
+            where: { type: "SHIPPING" },
+            take: 1,
+            select: { city: true, state: true, country: true }
+          }
         }
-      })
+      }),
+      ...countBuckets.map((b) =>
+        prisma.order.count({
+          where:
+            b === "all"
+              ? searchBase
+              : { AND: [searchBase, bucketWhere(b, f.now)] }
+        })
+      )
     ]);
+
+    const counts = Object.fromEntries(
+      countBuckets.map((b, i) => [b, bucketCounts[i] as number])
+    ) as Record<(typeof countBuckets)[number], number>;
 
     res.json({
       success: true,
@@ -713,6 +911,9 @@ export async function ordersList(req: Request, res: Response, next: NextFunction
           orderNumber: o.orderNumber,
           email: o.email,
           customerName: o.customer?.name ?? null,
+          city: o.addresses[0]?.city ?? null,
+          state: o.addresses[0]?.state ?? null,
+          country: o.addresses[0]?.country ?? null,
           status: o.status,
           paymentStatus: o.paymentStatus,
           paymentProvider: o.payments[0]?.provider ?? null,
@@ -722,6 +923,7 @@ export async function ordersList(req: Request, res: Response, next: NextFunction
           linePreview: o.items.slice(0, 2).map((i) => i.nameSnapshot),
           createdAt: o.createdAt
         })),
+        counts,
         pagination: {
           page,
           limit,
