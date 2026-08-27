@@ -81,33 +81,42 @@ export function EventCard({ event, compact = false }: Props) {
       </div>
 
       <div className="relative flex min-h-0 flex-1 flex-col bg-[#23827c] text-white">
-        <div
-          className={
-            compact
-              ? "min-h-0 flex-1 overflow-hidden px-4 pb-2 pt-5"
-              : "min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-2 pt-5 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.45)_transparent]"
-          }
-          onWheel={compact ? undefined : (e) => e.stopPropagation()}
-          onTouchMove={compact ? undefined : (e) => e.stopPropagation()}
-        >
-          <h3 className="font-serif text-[1.2rem] font-semibold leading-snug text-white sm:text-[1.3rem]">
+        {/* Never overflow-y:auto here — nested scroll traps page scroll on mobile. */}
+        <div className="min-h-0 flex-1 overflow-hidden px-4 pb-2 pt-5">
+          <h3
+            className={`font-serif font-semibold leading-snug text-white ${
+              compact ? "line-clamp-3 text-[1.15rem] sm:text-[1.25rem]" : "text-[1.2rem] sm:text-[1.3rem]"
+            }`}
+          >
             {event.title}
           </h3>
 
           {explanation ? (
-            <p className="mt-2 line-clamp-3 text-[13px] leading-relaxed text-white/85 sm:text-[14px]">
+            <p
+              className={`mt-2 leading-relaxed text-white/85 ${
+                compact
+                  ? "line-clamp-2 text-[13px] sm:text-[14px]"
+                  : "line-clamp-3 text-[13px] sm:text-[14px]"
+              }`}
+            >
               {explanation}
             </p>
           ) : null}
 
           <div className="mt-3 min-w-0 border-l-4 border-white/90 pl-3">
             {when ? (
-              <p className="whitespace-pre-line text-[14px] leading-snug text-white/90 sm:text-[15px]">
+              <p
+                className={`text-[14px] leading-snug text-white/90 sm:text-[15px] ${
+                  compact ? "line-clamp-3" : "whitespace-pre-line"
+                }`}
+              >
                 {when}
               </p>
             ) : null}
             {event.venue?.trim() ? (
-              <p className="mt-1 text-[14px] text-white sm:text-[15px]">{event.venue.trim()}</p>
+              <p className={`mt-1 text-[14px] text-white sm:text-[15px] ${compact ? "line-clamp-1" : ""}`}>
+                {event.venue.trim()}
+              </p>
             ) : null}
           </div>
         </div>

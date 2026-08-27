@@ -30,9 +30,10 @@ function SlotCard({ slot }: { slot: Slot }) {
 }
 
 /**
- * Manual horizontal rail only — no auto-scroll.
- * Important: do NOT set touch-pan-x; that blocks vertical page scroll on mobile
- * when the finger starts over this section.
+ * Manual horizontal rail with NO overflow-x scroll container.
+ * CSS forces overflow-y:auto whenever overflow-x is not visible, which traps
+ * vertical page scroll on mobile. We translate the track instead so vertical
+ * swipes always scroll the page; horizontal swipes move the cards.
  */
 export function HomeCoursesEventsCarousel({ courses, events }: Props) {
   const upcomingCourses = courses.filter((c) => isCourseUpcoming(c));
@@ -45,39 +46,115 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
     ...eventPool.map((item) => ({ kind: "event" as const, item }))
   ];
 
-  const scrollerRef = useRef<HTMLUListElement>(null);
-  const [canPrev, setCanPrev] = useState(false);
-  const [canNext, setCanNext] = useState(false);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLUListElement>(null);
+  const [offset, setOffset] = useState(0);
+  const [maxOffset, setMaxOffset] = useState(0);
+  const [dragging, setDragging] = useState(false);
 
-  const syncArrows = useCallback(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    const max = el.scrollWidth - el.clientWidth;
-    setCanPrev(el.scrollLeft > 8);
-    setCanNext(max > 8 && el.scrollLeft < max - 8);
+  const gestureRef = useRef<{
+    startX: number;
+    startY: number;
+    startOffset: number;
+    axis: "undecided" | "h" | "v";
+    pointerId: number | null;
+    moved: boolean;
+  } | null>(null);
+  const suppressClickRef = useRef(false);
+
+  const measure = useCallback(() => {
+    const viewport = viewportRef.current;
+    const track = trackRef.current;
+    if (!viewport || !track) return;
+    const max = Math.max(0, track.scrollWidth - viewport.clientWidth);
+    setMaxOffset(max);
+    setOffset((o) => Math.min(Math.max(0, o), max));
   }, []);
 
   useEffect(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    syncArrows();
-    el.addEventListener("scroll", syncArrows, { passive: true });
-    const ro = new ResizeObserver(syncArrows);
-    ro.observe(el);
-    return () => {
-      el.removeEventListener("scroll", syncArrows);
-      ro.disconnect();
-    };
-  }, [syncArrows, slots.length]);
+    measure();
+    const viewport = viewportRef.current;
+    const track = trackRef.current;
+    if (!viewport || !track) return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(viewport);
+    ro.observe(track);
+    return () => ro.disconnect();
+  }, [measure, slots.length]);
+
+  const clampOffset = useCallback(
+    (value: number) => Math.min(Math.max(0, value), maxOffset),
+    [maxOffset]
+  );
 
   function scrollByDir(dir: -1 | 1) {
-    const el = scrollerRef.current;
-    if (!el) return;
-    const amount = Math.min(el.clientWidth * 0.85, 420);
-    el.scrollBy({ left: dir * amount, behavior: "smooth" });
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const step = Math.min(viewport.clientWidth * 0.85, 420);
+    setOffset((o) => clampOffset(o + dir * step));
+  }
+
+  function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    suppressClickRef.current = false;
+    gestureRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      startOffset: offset,
+      axis: "undecided",
+      pointerId: e.pointerId,
+      moved: false
+    };
+  }
+
+  function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const g = gestureRef.current;
+    if (!g || g.pointerId !== e.pointerId) return;
+
+    const dx = e.clientX - g.startX;
+    const dy = e.clientY - g.startY;
+
+    if (g.axis === "undecided") {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      // Vertical wins → release gesture; page scrolls (touch-action: pan-y)
+      g.axis = Math.abs(dy) > Math.abs(dx) ? "v" : "h";
+      if (g.axis === "v") {
+        gestureRef.current = null;
+        setDragging(false);
+        return;
+      }
+      setDragging(true);
+      e.currentTarget.setPointerCapture(e.pointerId);
+    }
+
+    if (g.axis !== "h") return;
+    g.moved = true;
+    suppressClickRef.current = true;
+    e.preventDefault();
+    setOffset(clampOffset(g.startOffset - dx));
+  }
+
+  function endPointer(e: React.PointerEvent<HTMLDivElement>) {
+    const g = gestureRef.current;
+    if (!g || g.pointerId !== e.pointerId) return;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    gestureRef.current = null;
+    setDragging(false);
+  }
+
+  function onClickCapture(e: React.MouseEvent<HTMLDivElement>) {
+    if (!suppressClickRef.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+    suppressClickRef.current = false;
   }
 
   if (slots.length === 0) return null;
+
+  const canPrev = offset > 4;
+  const canNext = offset < maxOffset - 4;
 
   return (
     <section
@@ -127,25 +204,37 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
             </button>
           ) : null}
 
-          <ul
-            ref={scrollerRef}
-            className="flex gap-5 overflow-x-auto overscroll-x-contain pb-2 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] lg:gap-6 [&::-webkit-scrollbar]:hidden"
+          {/* overflow-hidden clips cards only — not a scrollport (no overflow-x/y:auto) */}
+          <div
+            ref={viewportRef}
+            className="overflow-hidden pb-2"
+            style={{ touchAction: "pan-y" }}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={endPointer}
+            onPointerCancel={endPointer}
           >
-            {slots.map((slot) => (
-              <li
-                key={
-                  slot.kind === "course"
-                    ? `course-${slot.item.id}`
-                    : `event-${slot.item.id}`
-                }
-                className="flex w-[min(86vw,22rem)] shrink-0 self-stretch sm:w-[min(48%,20rem)] lg:w-[calc((100%-3rem)/3)]"
-              >
-                <div className="w-full">
-                  <SlotCard slot={slot} />
-                </div>
-              </li>
-            ))}
-          </ul>
+            <ul
+              ref={trackRef}
+              className={`flex w-max gap-5 lg:gap-6 ${dragging ? "" : "transition-transform duration-300 ease-out"}`}
+              style={{ transform: `translate3d(${-offset}px, 0, 0)` }}
+            >
+              {slots.map((slot) => (
+                <li
+                  key={
+                    slot.kind === "course"
+                      ? `course-${slot.item.id}`
+                      : `event-${slot.item.id}`
+                  }
+                  className="flex w-[min(86vw,22rem)] shrink-0 self-stretch sm:w-[min(48%,20rem)] lg:w-[calc((100vw-8rem-3rem)/3)] xl:w-[calc((72rem-3rem)/3)]"
+                >
+                  <div className="w-full">
+                    <SlotCard slot={slot} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         <div className="mt-10 text-center md:mt-12">

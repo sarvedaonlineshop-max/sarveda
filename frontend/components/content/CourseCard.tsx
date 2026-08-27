@@ -107,27 +107,30 @@ export function CourseCard({ course, compact = false }: Props) {
           className="absolute -top-[25px] right-2.5 z-10"
         />
 
-        <div
-          className={
-            compact
-              ? "min-h-0 flex-1 overflow-hidden px-4 pb-2 pt-5"
-              : "min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-2 pt-5 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.45)_transparent]"
-          }
-          onWheel={compact ? undefined : (e) => e.stopPropagation()}
-          onTouchMove={compact ? undefined : (e) => e.stopPropagation()}
-        >
-          <h3 className="font-serif text-[1.2rem] font-semibold leading-snug text-white sm:text-[1.3rem]">
+        {/* Never overflow-y:auto here — nested scroll traps page scroll on mobile. */}
+        <div className="min-h-0 flex-1 overflow-hidden px-4 pb-2 pt-5">
+          <h3
+            className={`font-serif font-semibold leading-snug text-white ${
+              compact ? "line-clamp-3 text-[1.15rem] sm:text-[1.25rem]" : "text-[1.2rem] sm:text-[1.3rem]"
+            }`}
+          >
             {course.title}
           </h3>
 
           {explanation ? (
-            <p className="mt-2 line-clamp-3 text-[13px] leading-relaxed text-white/85 sm:text-[14px]">
+            <p
+              className={`mt-2 leading-relaxed text-white/85 ${
+                compact
+                  ? "line-clamp-2 text-[13px] sm:text-[14px]"
+                  : "line-clamp-3 text-[13px] sm:text-[14px]"
+              }`}
+            >
               {explanation}
             </p>
           ) : null}
 
           <div className="mt-3 min-w-0 border-l-4 border-white/90 pl-3">
-            {teacherNames.map((name) => (
+            {teacherNames.slice(0, compact ? 3 : teacherNames.length).map((name) => (
               <p key={name} className="text-[14px] leading-snug text-white sm:text-[15px]">
                 {name}
               </p>
