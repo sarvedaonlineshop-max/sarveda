@@ -68,11 +68,12 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
   const rafRef = useRef<number | null>(null);
   const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [offset, setOffset] = useState(0);
+  // React state only for UI chrome — never every RAF frame (that aborted mobile soft-nav from Home).
   const [maxOffset, setMaxOffset] = useState(0);
+  const [edgeOffset, setEdgeOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
-  const [snapAnimating, setSnapAnimating] = useState(false);
-  const snapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [snapEase, setSnapEase] = useState(false);
+  const snapEaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const gestureRef = useRef<{
     startX: number;
@@ -83,19 +84,29 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
   } | null>(null);
   const suppressClickRef = useRef(false);
 
-  const applyOffset = useCallback((value: number) => {
-    let next = value;
-    const loopW = loopWidthRef.current;
-    if (loop && loopW > 0) {
-      while (next >= loopW) next -= loopW;
-      while (next < 0) next += loopW;
-    } else {
-      next = Math.min(Math.max(0, next), maxOffsetRef.current);
-    }
-    offsetRef.current = next;
-    setOffset(next);
-    return next;
-  }, [loop]);
+  const paintOffset = useCallback((value: number) => {
+    const track = trackRef.current;
+    if (track) track.style.transform = `translate3d(${-value}px, 0, 0)`;
+  }, []);
+
+  const applyOffset = useCallback(
+    (value: number, syncReact = false) => {
+      let next = value;
+      const loopW = loopWidthRef.current;
+      if (loop && loopW > 0) {
+        while (next >= loopW) next -= loopW;
+        while (next < 0) next += loopW;
+      } else {
+        next = Math.min(Math.max(0, next), maxOffsetRef.current);
+      }
+      offsetRef.current = next;
+      paintOffset(next);
+      // Non-loop rails need React for prev/next button visibility only.
+      if (syncReact || !loop) setEdgeOffset(next);
+      return next;
+    },
+    [loop, paintOffset]
+  );
 
   const measure = useCallback(() => {
     const viewport = viewportRef.current;
@@ -115,7 +126,7 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
     const max = Math.max(0, loop ? loopW : total - viewport.clientWidth);
     maxOffsetRef.current = max;
     setMaxOffset(max);
-    applyOffset(offsetRef.current);
+    applyOffset(offsetRef.current, true);
   }, [applyOffset, loop]);
 
   useEffect(() => {
@@ -157,6 +168,7 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
 
     const step = () => {
       if (!pausedRef.current && !draggingRef.current) {
+        // DOM-only paint — no setState (keeps Home soft-nav responsive).
         applyOffset(offsetRef.current + AUTO_SPEED);
       }
       rafRef.current = requestAnimationFrame(step);
@@ -168,13 +180,29 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
     };
   }, [applyOffset, loop]);
 
-  useEffect(() => () => clearResumeTimer(), [clearResumeTimer]);
+  // Pause auto-scroll as soon as any storefront nav starts (bottom nav / header).
+  useEffect(() => {
+    const onNavStart = () => pauseAuto();
+    window.addEventListener("sarveda-nav-start", onNavStart);
+    return () => window.removeEventListener("sarveda-nav-start", onNavStart);
+  }, [pauseAuto]);
+
+  useEffect(() => () => {
+    clearResumeTimer();
+    if (snapEaseTimerRef.current) clearTimeout(snapEaseTimerRef.current);
+  }, [clearResumeTimer]);
 
   function snapToCard(fromOffset: number, direction: -1 | 0 | 1) {
     const step = stepRef.current || 320;
     const baseIndex = Math.round(fromOffset / step);
     const targetIndex = baseIndex + direction;
-    applyOffset(targetIndex * step);
+    if (snapEaseTimerRef.current) clearTimeout(snapEaseTimerRef.current);
+    setSnapEase(true);
+    applyOffset(targetIndex * step, true);
+    snapEaseTimerRef.current = setTimeout(() => {
+      snapEaseTimerRef.current = null;
+      setSnapEase(false);
+    }, 320);
   }
 
   function scrollByDir(dir: -1 | 1) {
@@ -255,8 +283,8 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
 
   if (slots.length === 0) return null;
 
-  const canPrev = loop || offset > 4;
-  const canNext = loop || offset < maxOffset - 4;
+  const canPrev = loop || edgeOffset > 4;
+  const canNext = loop || edgeOffset < maxOffset - 4;
 
   return (
     <section
@@ -318,8 +346,10 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
           >
             <ul
               ref={trackRef}
-              className={`flex w-max gap-5 lg:gap-6 ${dragging ? "" : "transition-transform duration-300 ease-out"}`}
-              style={{ transform: `translate3d(${-offset}px, 0, 0)` }}
+              className={`flex w-max gap-5 lg:gap-6 ${
+                snapEase && !dragging ? "transition-transform duration-300 ease-out" : ""
+              }`}
+              style={{ transform: "translate3d(0, 0, 0)", willChange: "transform" }}
             >
               {displaySlots.map((slot, i) => (
                 <li

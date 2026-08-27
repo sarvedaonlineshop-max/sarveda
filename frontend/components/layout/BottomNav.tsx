@@ -212,8 +212,13 @@ export function BottomNav() {
       setPendingHref(null);
       return;
     }
-    // Do NOT preventDefault — let Next.js <Link> own the navigation (reliable on mobile).
     go(href);
+    // From Home, soft-nav was getting starved by homepage work — push outside a transition.
+    // Still allow <Link> default as backup; preventDefault only when we own the push.
+    if (pathname === "/") {
+      e.preventDefault();
+      router.push(href);
+    }
   }
 
   async function handleSignOut() {
@@ -301,14 +306,14 @@ export function BottomNav() {
         <button
           type="button"
           aria-label="Close menu"
-          className="fixed inset-0 z-[60] bg-black/40 md:hidden"
+          className="fixed inset-0 z-[70] bg-black/40 md:hidden"
           onClick={() => setMenuOpen(false)}
         />
       ) : null}
 
       {menuOpen ? (
         <div
-          className="fixed inset-x-0 z-[70] md:hidden"
+          className="fixed inset-x-0 z-[80] md:hidden"
           style={{ bottom: "calc(4.5rem + env(safe-area-inset-bottom, 0px) + 8px)" }}
         >
           <div className="relative mx-auto max-w-lg px-3">
@@ -443,7 +448,7 @@ export function BottomNav() {
       ) : null}
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 safe-area-pb md:hidden"
+        className="fixed inset-x-0 bottom-0 z-[65] border-t border-white/10 safe-area-pb md:hidden"
         style={{ background: NAV_GREEN }}
         aria-label="Primary"
       >

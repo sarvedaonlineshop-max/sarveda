@@ -36,10 +36,15 @@ const SOCIAL = [
 
 type WidgetPos = { x: number; y: number };
 
+/** Keep the pill clear of the fixed mobile bottom nav (≈4.5rem + safe area). */
+function bottomNavReservePx(): number {
+  return 88;
+}
+
 function clampPos(x: number, y: number, width: number, height: number): WidgetPos {
   const margin = 8;
   const maxX = Math.max(margin, window.innerWidth - width - margin);
-  const maxY = Math.max(margin, window.innerHeight - height - margin);
+  const maxY = Math.max(margin, window.innerHeight - height - margin - bottomNavReservePx());
   return {
     x: Math.min(Math.max(margin, x), maxX),
     y: Math.min(Math.max(margin, y), maxY)
