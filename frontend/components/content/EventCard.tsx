@@ -30,7 +30,7 @@ function plainText(raw: string | null | undefined): string | null {
   return text || null;
 }
 
-export function EventCard({ event }: Props) {
+export function EventCard({ event, compact = false }: Props) {
   const typeLabel = eventCardTypeLabel(event);
   const explanation = plainText(event.shortDescription);
   const when = formatEventCardWhen(event);
@@ -82,9 +82,13 @@ export function EventCard({ event }: Props) {
 
       <div className="relative flex min-h-0 flex-1 flex-col bg-[#23827c] text-white">
         <div
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-2 pt-5 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.45)_transparent]"
-          onWheel={(e) => e.stopPropagation()}
-          onTouchMove={(e) => e.stopPropagation()}
+          className={
+            compact
+              ? "min-h-0 flex-1 overflow-hidden px-4 pb-2 pt-5"
+              : "min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-2 pt-5 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.45)_transparent]"
+          }
+          onWheel={compact ? undefined : (e) => e.stopPropagation()}
+          onTouchMove={compact ? undefined : (e) => e.stopPropagation()}
         >
           <h3 className="font-serif text-[1.2rem] font-semibold leading-snug text-white sm:text-[1.3rem]">
             {event.title}

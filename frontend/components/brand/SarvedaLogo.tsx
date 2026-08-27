@@ -3,9 +3,9 @@ import Link from "next/link";
 const LOGO_LIGHT = "/images/brand/sarveda-logo.svg";
 const LOGO_DARK = "/images/brand/sarveda-logo-on-dark.svg";
 
-/** Cropped YG/YW SVG wordmark aspect (Downloads Illustrator exports). */
-const LOGO_W = 955;
-const LOGO_H = 225;
+/** YG/YW header logos — 426×144 artboard (same 142:48 aspect as legacy PNG). */
+const LOGO_W = 426;
+const LOGO_H = 144;
 
 type SarvedaLogoProps = {
   href?: string;

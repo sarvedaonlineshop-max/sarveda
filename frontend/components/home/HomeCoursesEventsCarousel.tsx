@@ -9,10 +9,11 @@ import { EventCard } from "@/components/content/EventCard";
 import type { CourseListItem } from "@/lib/course-types";
 import type { EventListItem } from "@/lib/event-types";
 import { isCourseUpcoming, isEventUpcoming } from "@/lib/content-meta";
-import { usePauseOnInteraction } from "@/lib/use-pause-on-interaction";
 
 const HOME_GREEN = "#166D46";
 const AUTO_SPEED = 0.45;
+/** Ignore tiny pointer jitter before treating as a drag (px). */
+const DRAG_THRESHOLD = 6;
 
 type Props = {
   courses: CourseListItem[];
@@ -44,9 +45,41 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
 
   const scrollerRef = useRef<HTMLUListElement>(null);
   const rafRef = useRef<number | null>(null);
-  const { paused, bind: pauseBind } = usePauseOnInteraction();
+  const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dragRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startScroll: number;
+    dragging: boolean;
+  } | null>(null);
+  const suppressClickRef = useRef(false);
+
+  const [paused, setPaused] = useState(false);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
+
+  const clearResumeTimer = useCallback(() => {
+    if (resumeTimerRef.current) {
+      clearTimeout(resumeTimerRef.current);
+      resumeTimerRef.current = null;
+    }
+  }, []);
+
+  const pauseAuto = useCallback(() => {
+    clearResumeTimer();
+    setPaused(true);
+  }, [clearResumeTimer]);
+
+  const scheduleResume = useCallback(
+    (ms = 1400) => {
+      clearResumeTimer();
+      resumeTimerRef.current = setTimeout(() => {
+        resumeTimerRef.current = null;
+        setPaused(false);
+      }, ms);
+    },
+    [clearResumeTimer]
+  );
 
   const syncArrows = useCallback(() => {
     const el = scrollerRef.current;
@@ -96,11 +129,80 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
     };
   }, [paused, slots.length]);
 
+  useEffect(() => {
+    return () => clearResumeTimer();
+  }, [clearResumeTimer]);
+
   function scrollByDir(dir: -1 | 1) {
     const el = scrollerRef.current;
     if (!el) return;
+    pauseAuto();
     const amount = Math.min(el.clientWidth * 0.85, 420);
     el.scrollBy({ left: dir * amount, behavior: "smooth" });
+    scheduleResume(2000);
+  }
+
+  function onPointerDown(e: React.PointerEvent<HTMLUListElement>) {
+    // Mouse drag-to-scroll only — touch/pen use native overflow scrolling.
+    if (e.pointerType !== "mouse" || e.button !== 0) {
+      pauseAuto();
+      return;
+    }
+    const el = scrollerRef.current;
+    if (!el) return;
+
+    pauseAuto();
+    suppressClickRef.current = false;
+    dragRef.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startScroll: el.scrollLeft,
+      dragging: false
+    };
+    el.setPointerCapture(e.pointerId);
+  }
+
+  function onPointerMove(e: React.PointerEvent<HTMLUListElement>) {
+    if (e.pointerType !== "mouse") return;
+    const drag = dragRef.current;
+    const el = scrollerRef.current;
+    if (!drag || !el || drag.pointerId !== e.pointerId) return;
+
+    const dx = e.clientX - drag.startX;
+    if (!drag.dragging && Math.abs(dx) < DRAG_THRESHOLD) return;
+
+    if (!drag.dragging) {
+      drag.dragging = true;
+      suppressClickRef.current = true;
+      el.classList.add("cursor-grabbing");
+    }
+
+    e.preventDefault();
+    el.scrollLeft = drag.startScroll - dx;
+  }
+
+  function endPointer(e: React.PointerEvent<HTMLUListElement>) {
+    if (e.pointerType !== "mouse") {
+      scheduleResume(1400);
+      return;
+    }
+    const drag = dragRef.current;
+    const el = scrollerRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+
+    if (el?.hasPointerCapture(e.pointerId)) {
+      el.releasePointerCapture(e.pointerId);
+    }
+    el?.classList.remove("cursor-grabbing");
+    dragRef.current = null;
+    scheduleResume(drag.dragging ? 1800 : 1200);
+  }
+
+  function onClickCapture(e: React.MouseEvent<HTMLUListElement>) {
+    if (!suppressClickRef.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+    suppressClickRef.current = false;
   }
 
   if (slots.length === 0) return null;
@@ -172,9 +274,23 @@ export function HomeCoursesEventsCarousel({ courses, events }: Props) {
 
           <ul
             ref={scrollerRef}
-            className="flex gap-5 overflow-x-auto pb-2 [scrollbar-width:none] lg:gap-6 [&::-webkit-scrollbar]:hidden"
+            className="flex cursor-grab touch-pan-x gap-5 overflow-x-auto pb-2 [scrollbar-width:none] lg:gap-6 [&::-webkit-scrollbar]:hidden"
             style={{ WebkitOverflowScrolling: "touch" }}
-            {...pauseBind}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={endPointer}
+            onPointerCancel={endPointer}
+            onPointerLeave={(e) => {
+              // Only end if we captured this pointer (mouse leave mid-drag)
+              if (dragRef.current?.pointerId === e.pointerId) endPointer(e);
+            }}
+            onClickCapture={onClickCapture}
+            onWheel={() => {
+              pauseAuto();
+              scheduleResume(1600);
+            }}
+            onTouchStart={() => pauseAuto()}
+            onTouchEnd={() => scheduleResume(1400)}
           >
             {renderSlots("a")}
             {slots.length > 1 ? renderSlots("b") : null}

@@ -44,7 +44,7 @@ function courseExplanation(course: CourseListItem, aboutTheCourse?: string | nul
   return plainText(course.shortDescription) || plainText(aboutTheCourse);
 }
 
-export function CourseCard({ course }: Props) {
+export function CourseCard({ course, compact = false }: Props) {
   const extra = parseCourseExtra(course.extra);
   const teachers = parseCourseTeachers(extra);
   const teacherNames = teachers.map((t) => t.name);
@@ -108,9 +108,13 @@ export function CourseCard({ course }: Props) {
         />
 
         <div
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-2 pt-5 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.45)_transparent]"
-          onWheel={(e) => e.stopPropagation()}
-          onTouchMove={(e) => e.stopPropagation()}
+          className={
+            compact
+              ? "min-h-0 flex-1 overflow-hidden px-4 pb-2 pt-5"
+              : "min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-2 pt-5 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.45)_transparent]"
+          }
+          onWheel={compact ? undefined : (e) => e.stopPropagation()}
+          onTouchMove={compact ? undefined : (e) => e.stopPropagation()}
         >
           <h3 className="font-serif text-[1.2rem] font-semibold leading-snug text-white sm:text-[1.3rem]">
             {course.title}
