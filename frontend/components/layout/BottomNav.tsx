@@ -134,13 +134,6 @@ export function BottomNav() {
     setPendingHref(null);
   }, [pathname]);
 
-  // If soft-nav never commits, clear the optimistic tab highlight.
-  useEffect(() => {
-    if (!pendingHref) return;
-    const t = window.setTimeout(() => setPendingHref(null), 4_000);
-    return () => window.clearTimeout(t);
-  }, [pendingHref]);
-
   useEffect(() => {
     if (typeof window === "undefined") return;
     setProfileTab(new URLSearchParams(window.location.search).get("tab") || "details");
@@ -211,8 +204,16 @@ export function BottomNav() {
     setPendingHref(href);
     setMenuOpen(false);
     dispatchNavStart();
-    // Direct push — startTransition soft-nav can stall on mobile (tab highlight changes, page never loads).
-    router.push(href);
+  }
+
+  function onBottomLinkClick(e: React.MouseEvent<HTMLAnchorElement>, href: string) {
+    if (isSameNavTarget(href)) {
+      e.preventDefault();
+      setPendingHref(null);
+      return;
+    }
+    // Do NOT preventDefault — let Next.js <Link> own the navigation (reliable on mobile).
+    go(href);
   }
 
   async function handleSignOut() {
@@ -491,11 +492,9 @@ export function BottomNav() {
               <Link
                 key={item.key}
                 href={item.href!}
+                prefetch
                 aria-current={active ? "page" : undefined}
-                onClick={(e) => {
-                  e.preventDefault();
-                  go(item.href!);
-                }}
+                onClick={(e) => onBottomLinkClick(e, item.href!)}
                 className="relative flex flex-col items-center justify-center gap-1 transition-opacity active:opacity-70"
               >
                 {inner}
