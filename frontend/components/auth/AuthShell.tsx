@@ -10,6 +10,8 @@ type AuthShellProps = {
   footer?: ReactNode;
   /** Login page uses light mode per product spec. */
   variant?: "light" | "dark";
+  /** Show Sarveda logo above the title on small screens (login). */
+  showMobileLogo?: boolean;
 };
 
 export function AuthShell({
@@ -17,7 +19,8 @@ export function AuthShell({
   subtitle,
   children,
   footer,
-  variant = "dark"
+  variant = "dark",
+  showMobileLogo = false
 }: AuthShellProps) {
   const isLight = variant === "light";
 
@@ -25,8 +28,8 @@ export function AuthShell({
     <div
       className={
         isLight
-          ? "relative min-h-screen overflow-hidden bg-brand-cream px-4 py-12 sm:px-6 lg:py-16"
-          : "relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-stone-900 via-stone-950 to-black px-4 py-12 sm:px-6 lg:py-16"
+          ? "relative min-h-screen overflow-hidden bg-brand-cream px-4 py-10 font-sans sm:px-6 sm:py-12 lg:py-16"
+          : "relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-stone-900 via-stone-950 to-black px-4 py-12 font-sans sm:px-6 lg:py-16"
       }
     >
       <div
@@ -46,7 +49,7 @@ export function AuthShell({
             tone={isLight ? "onLight" : "onDark"}
           />
           <p
-            className={`mt-4 max-w-md font-serif text-3xl leading-tight ${
+            className={`mt-4 max-w-md font-serif text-3xl font-semibold leading-tight ${
               isLight ? "text-brand-ink" : "text-stone-100"
             }`}
           >
@@ -54,7 +57,7 @@ export function AuthShell({
           </p>
           <p
             className={`mt-4 max-w-md text-base leading-relaxed ${
-              isLight ? "text-brand-muted" : "text-stone-400"
+              isLight ? "text-brand-ink/80" : "text-stone-400"
             }`}
           >
             Sign in to save your cart, track orders, and return to the practices you love.
@@ -86,21 +89,26 @@ export function AuthShell({
         <div
           className={
             isLight
-              ? "rounded-3xl border border-brand-cream-dark bg-white p-8 shadow-card-hover sm:p-10"
+              ? "rounded-3xl border border-brand-cream-dark bg-white p-7 shadow-card-hover sm:p-10"
               : "rounded-3xl border border-stone-700/80 bg-stone-900/90 p-8 shadow-2xl shadow-black/40 backdrop-blur-sm sm:p-10"
           }
         >
+          {showMobileLogo ? (
+            <div className="mb-5 flex justify-center lg:hidden">
+              <SarvedaLogo iconHeight={44} tone={isLight ? "onLight" : "onDark"} />
+            </div>
+          ) : null}
           <div className="text-center lg:text-left">
             <h1
-              className={`font-serif text-3xl italic ${
-                isLight ? "text-brand-forest" : "text-amber-400"
+              className={`font-serif text-[1.85rem] font-bold tracking-tight sm:text-3xl ${
+                isLight ? "text-brand-ink" : "text-amber-400"
               }`}
             >
               {title}
             </h1>
             <p
               className={`mt-2 text-sm leading-relaxed ${
-                isLight ? "text-brand-muted" : "text-stone-400"
+                isLight ? "text-brand-ink/75" : "text-stone-400"
               }`}
             >
               {subtitle}

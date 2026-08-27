@@ -18,7 +18,10 @@ import {
 } from "@/lib/auth-client";
 
 const inputClass =
-  "w-full rounded-xl border border-[#E3D9C8] bg-white px-3 py-2.5 text-brand-ink placeholder:text-brand-muted/70 focus:border-brand-forest focus:outline-none focus:ring-2 focus:ring-brand-forest/20";
+  "w-full rounded-xl border border-[#E3D9C8] bg-white px-3 py-2.5 font-sans text-brand-ink placeholder:text-brand-ink/45 focus:border-[#166D46] focus:outline-none focus:ring-2 focus:ring-[#166D46]/20";
+
+const BTN_GREEN =
+  "w-full rounded-full bg-[#166D46] py-3 text-sm font-semibold text-white transition-colors hover:bg-[#145a3a] disabled:opacity-60";
 
 type LoginMode = "password" | "otp";
 
@@ -91,6 +94,12 @@ function LoginForm() {
     }
   }
 
+  function switchMode(nextMode: LoginMode) {
+    setMode(nextMode);
+    setMessage("");
+    setPasswordExpired(false);
+  }
+
   const subtitle =
     mode === "otp"
       ? adminOnly
@@ -103,15 +112,16 @@ function LoginForm() {
   return (
     <AuthShell
       variant="light"
+      showMobileLogo
       title={adminOnly ? "Admin sign-in" : "Welcome back"}
       subtitle={subtitle}
       footer={
         !adminOnly ? (
-          <p className="text-center text-sm text-stone-500">
+          <p className="text-center text-sm text-brand-ink/75">
             New here?{" "}
             <Link
               href={`/signup${next ? `?next=${encodeURIComponent(next)}` : ""}`}
-              className="font-medium text-brand-gold hover:text-brand-forest"
+              className="font-semibold text-[#166D46] hover:text-[#145a3a]"
             >
               Create an account
             </Link>
@@ -121,132 +131,141 @@ function LoginForm() {
     >
       <GoogleSignInButton nextPath={googleNextPath} />
 
-      <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-brand-muted">
+      <div className="my-6 flex items-center gap-3 text-xs font-medium uppercase tracking-[0.2em] text-brand-ink/55">
         <span className="h-px flex-1 bg-brand-cream-dark" />
         <span>or sign in with</span>
         <span className="h-px flex-1 bg-brand-cream-dark" />
       </div>
 
-      <div className="mb-6 flex rounded-full border border-brand-cream-dark bg-brand-cream p-1">
-        <button
-          type="button"
-          onClick={() => {
-            setMode("password");
-            setMessage("");
-            setPasswordExpired(false);
-          }}
-          className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition-colors ${
-            mode === "password"
-              ? "bg-brand-forest text-brand-cream"
-              : "text-brand-muted hover:text-brand-ink"
-          }`}
-        >
-          Login with Password
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setMode("otp");
-            setMessage("");
-            setPasswordExpired(false);
-          }}
-          className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition-colors ${
-            mode === "otp"
-              ? "bg-brand-forest text-brand-cream"
-              : "text-brand-muted hover:text-brand-ink"
-          }`}
-        >
-          Login with OTP
-        </button>
+      {/* Sliding mode toggle */}
+      <div className="relative mb-6 rounded-full border border-brand-cream-dark bg-brand-cream p-1">
+        <div
+          className="pointer-events-none absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-full bg-[#166D46] shadow-sm transition-transform duration-300 ease-out"
+          style={{ transform: mode === "otp" ? "translateX(100%)" : "translateX(0)" }}
+          aria-hidden
+        />
+        <div className="relative z-10 grid grid-cols-2">
+          <button
+            type="button"
+            onClick={() => switchMode("password")}
+            className={`rounded-full px-3 py-2.5 text-sm font-semibold transition-colors duration-300 ${
+              mode === "password" ? "text-white" : "text-brand-ink/70 hover:text-brand-ink"
+            }`}
+          >
+            Login with Password
+          </button>
+          <button
+            type="button"
+            onClick={() => switchMode("otp")}
+            className={`rounded-full px-3 py-2.5 text-sm font-semibold transition-colors duration-300 ${
+              mode === "otp" ? "text-white" : "text-brand-ink/70 hover:text-brand-ink"
+            }`}
+          >
+            Login with OTP
+          </button>
+        </div>
       </div>
 
-      {mode === "otp" ? (
-        <OtpLoginForm
-          key={email.trim().toLowerCase()}
-          inputClass={inputClass}
-          onSuccess={finishLogin}
-          initialEmail={email}
-        />
-      ) : (
-        <form className="space-y-4" onSubmit={handlePasswordSubmit}>
-          <div>
-            <label htmlFor="email" className="sr-only">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label htmlFor="password" className="sr-only">
-              Password
-            </label>
-            <PasswordInput
-              id="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={setPassword}
-              placeholder="Password"
-              className={inputClass}
-            />
-            <p className="mt-2 text-right text-sm">
-              <Link
-                href={
-                  email.trim()
-                    ? `/forgot-password?email=${encodeURIComponent(email.trim().toLowerCase())}`
-                    : "/forgot-password"
-                }
-                className="text-brand-gold hover:text-brand-forest"
-              >
-                Forgot password?
-              </Link>
-            </p>
-          </div>
-          {passwordExpired ? (
-            <p className="text-sm text-red-600" role="alert">
-              Password expired. Please set your new password using{" "}
-              <Link
-                href={`/forgot-password?email=${encodeURIComponent(email.trim().toLowerCase())}`}
-                className="font-medium text-brand-gold underline hover:text-brand-forest"
-              >
-                this link
-              </Link>{" "}
-              or{" "}
-              <button
-                type="button"
-                className="font-medium text-brand-gold underline hover:text-brand-forest"
-                onClick={() => {
-                  setMode("otp");
-                  setPasswordExpired(false);
-                  setMessage("");
-                }}
-              >
-                use OTP login
+      {/* Sliding panels */}
+      <div className="overflow-hidden">
+        <div
+          className="flex w-[200%] transition-transform duration-300 ease-out"
+          style={{ transform: mode === "otp" ? "translateX(-50%)" : "translateX(0)" }}
+        >
+          <div className="w-1/2 shrink-0 pr-0.5">
+            <form className="space-y-4" onSubmit={handlePasswordSubmit}>
+              <div>
+                <label htmlFor="email" className="sr-only">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  required={mode === "password"}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email"
+                  className={inputClass}
+                  tabIndex={mode === "password" ? 0 : -1}
+                />
+              </div>
+              <div>
+                <label htmlFor="password" className="sr-only">
+                  Password
+                </label>
+                <PasswordInput
+                  id="password"
+                  autoComplete="current-password"
+                  required={mode === "password"}
+                  value={password}
+                  onChange={setPassword}
+                  placeholder="Password"
+                  className={inputClass}
+                />
+                <p className="mt-2 text-right text-sm">
+                  <Link
+                    href={
+                      email.trim()
+                        ? `/forgot-password?email=${encodeURIComponent(email.trim().toLowerCase())}`
+                        : "/forgot-password"
+                    }
+                    className="font-medium text-[#166D46] hover:text-[#145a3a]"
+                    tabIndex={mode === "password" ? 0 : -1}
+                  >
+                    Forgot password?
+                  </Link>
+                </p>
+              </div>
+              {passwordExpired ? (
+                <p className="text-sm text-red-600" role="alert">
+                  Password expired. Please set your new password using{" "}
+                  <Link
+                    href={`/forgot-password?email=${encodeURIComponent(email.trim().toLowerCase())}`}
+                    className="font-medium text-[#166D46] underline hover:text-[#145a3a]"
+                  >
+                    this link
+                  </Link>{" "}
+                  or{" "}
+                  <button
+                    type="button"
+                    className="font-medium text-[#166D46] underline hover:text-[#145a3a]"
+                    onClick={() => switchMode("otp")}
+                  >
+                    use OTP login
+                  </button>
+                  .
+                </p>
+              ) : message && mode === "password" ? (
+                <p className="text-sm text-red-600" role="alert">
+                  {message}
+                </p>
+              ) : null}
+              <button type="submit" disabled={submitting} className={BTN_GREEN} tabIndex={mode === "password" ? 0 : -1}>
+                {submitting ? "Signing in…" : "Sign in"}
               </button>
-              .
-            </p>
-          ) : message ? (
-            <p className="text-sm text-red-600" role="alert">
-              {message}
-            </p>
-          ) : null}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full rounded-full bg-brand-forest py-3 text-sm font-semibold text-brand-cream transition-colors hover:bg-brand-night disabled:opacity-60"
-          >
-            {submitting ? "Signing in…" : "Sign in"}
-          </button>
-        </form>
-      )}
+            </form>
+          </div>
+
+          <div className="w-1/2 shrink-0 pl-0.5" aria-hidden={mode !== "otp"}>
+            <OtpLoginForm
+              key={`otp-${email.trim().toLowerCase()}`}
+              inputClass={inputClass}
+              onSuccess={finishLogin}
+              initialEmail={email}
+            />
+          </div>
+        </div>
+      </div>
+
+      {!adminOnly ? (
+        <Link
+          href="/shop"
+          className="mt-4 flex min-h-[48px] w-full items-center justify-center rounded-full border-2 border-[#166D46] bg-white text-sm font-semibold text-[#166D46] transition-colors hover:bg-[#166D46]/5 md:hidden"
+        >
+          Shop as guest
+        </Link>
+      ) : null}
     </AuthShell>
   );
 }
@@ -255,7 +274,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-brand-cream text-brand-muted">
+        <div className="flex min-h-screen items-center justify-center bg-brand-cream font-sans text-brand-ink/70">
           Loading…
         </div>
       }

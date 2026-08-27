@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { useCartData, useCartUi } from "@/components/cart/CartProvider";
+import { signOutToLogin } from "@/components/auth/LogoutTransitionOverlay";
 import type { PublicUser } from "@/lib/auth-client";
-import { fetchMe, logoutSession } from "@/lib/auth-client";
+import { fetchMe } from "@/lib/auth-client";
 import { SarvedaLogo } from "@/components/brand/SarvedaLogo";
 import { MAIN_NAV_LINKS } from "@/lib/main-nav";
 
@@ -17,7 +18,7 @@ function CartIcon({ count }: { count: number }) {
     <span className="relative inline-flex h-11 w-11 items-center justify-center rounded-xl transition-colors hover:bg-white/10 md:h-10 md:w-10" style={{ color:"#e8b012" }}>
       <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" aria-hidden="true">
         <path strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round"
-          d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.25 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.75 0 01.75 0z"
+          d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.25 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
         />
       </svg>
       {count > 0 && (
@@ -34,7 +35,6 @@ const sessionLinkClass = "text-sm font-medium tracking-wide text-stone-400 trans
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const router = useRouter();
   const { goToCart }             = useCartUi();
   const { itemCount: cartCount } = useCartData();
   const [menuOpen, setMenuOpen]  = useState(false);
@@ -56,11 +56,8 @@ export function SiteHeader() {
   }, [pathname]);
 
   async function handleSignOut() {
-    await logoutSession();
-    setSessionUser(null);
     setMenuOpen(false);
-    router.push("/");
-    router.refresh();
+    await signOutToLogin();
   }
 
   if (pathname?.startsWith("/admin") || pathname?.startsWith("/login") || pathname?.startsWith("/signup")) {

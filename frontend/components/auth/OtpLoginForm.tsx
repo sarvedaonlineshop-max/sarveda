@@ -5,6 +5,9 @@ import { FormEvent, useState } from "react";
 import type { PublicUser } from "@/lib/auth-client";
 import { sendLoginOtp, verifyLoginOtp } from "@/lib/auth-client";
 
+const BTN_GREEN =
+  "w-full rounded-full bg-[#166D46] py-3 text-sm font-semibold text-white transition-colors hover:bg-[#145a3a] disabled:opacity-60";
+
 type OtpLoginFormProps = {
   inputClass: string;
   onSuccess: (user: PublicUser) => void;
@@ -30,7 +33,7 @@ export function OtpLoginForm({ inputClass, onSuccess, initialEmail = "" }: OtpLo
       await sendLoginOtp(email);
       setStep("code");
       setCode("");
-      setInfo(`We sent a 6-digit code to ${email.trim().toLowerCase()}. Check your inbox and spam folder.`);
+      setInfo(`An OTP has been sent to ${email.trim().toLowerCase()}.`);
     } catch (ex) {
       setMessage(ex instanceof Error ? ex.message : "Could not send OTP");
     } finally {
@@ -58,7 +61,7 @@ export function OtpLoginForm({ inputClass, onSuccess, initialEmail = "" }: OtpLo
     setInfo("");
     try {
       await sendLoginOtp(email);
-      setInfo("A new code has been sent. The previous code no longer works.");
+      setInfo("A new code has been sent.");
     } catch (ex) {
       setMessage(ex instanceof Error ? ex.message : "Could not resend OTP");
     } finally {
@@ -70,7 +73,7 @@ export function OtpLoginForm({ inputClass, onSuccess, initialEmail = "" }: OtpLo
     return (
       <form className="space-y-4" onSubmit={handleVerifyOtp}>
         {info ? (
-          <p className="rounded-xl border border-brand-gold/40 bg-brand-cream px-3 py-2.5 text-sm text-brand-ink">
+          <p className="rounded-xl border border-[#166D46]/20 bg-[#166D46]/5 px-3 py-2.5 text-sm text-brand-ink">
             {info}
           </p>
         ) : null}
@@ -97,17 +100,13 @@ export function OtpLoginForm({ inputClass, onSuccess, initialEmail = "" }: OtpLo
             {message}
           </p>
         ) : null}
-        <button
-          type="submit"
-          disabled={submitting || code.length !== 6}
-          className="w-full rounded-full bg-brand-forest py-3 text-sm font-semibold text-brand-cream transition-colors hover:bg-brand-night disabled:opacity-60"
-        >
+        <button type="submit" disabled={submitting || code.length !== 6} className={BTN_GREEN}>
           {submitting ? "Verifying…" : "Verify & sign in"}
         </button>
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
           <button
             type="button"
-            className="text-brand-muted hover:text-brand-gold"
+            className="text-brand-ink/70 hover:text-[#166D46]"
             onClick={() => {
               setStep("email");
               setCode("");
@@ -119,7 +118,7 @@ export function OtpLoginForm({ inputClass, onSuccess, initialEmail = "" }: OtpLo
           </button>
           <button
             type="button"
-            className="text-brand-gold hover:text-brand-forest disabled:opacity-60"
+            className="font-medium text-[#166D46] hover:text-[#145a3a] disabled:opacity-60"
             disabled={submitting}
             onClick={() => void handleResend()}
           >
@@ -132,10 +131,7 @@ export function OtpLoginForm({ inputClass, onSuccess, initialEmail = "" }: OtpLo
 
   return (
     <form className="space-y-4" onSubmit={handleSendOtp}>
-      <p className="text-sm text-stone-400">
-        A one-time password will be sent to the email below. Please enter the correct email address.
-        Works for migrated customers without a password.
-      </p>
+      <p className="text-sm text-brand-ink/80">An OTP will be sent to the email below.</p>
       <div>
         <label htmlFor="otp-email" className="sr-only">
           Email
@@ -156,11 +152,7 @@ export function OtpLoginForm({ inputClass, onSuccess, initialEmail = "" }: OtpLo
           {message}
         </p>
       ) : null}
-      <button
-        type="submit"
-        disabled={submitting}
-        className="w-full rounded-full bg-brand-forest py-3 text-sm font-semibold text-brand-cream transition-colors hover:bg-brand-night disabled:opacity-60"
-      >
+      <button type="submit" disabled={submitting} className={BTN_GREEN}>
         {submitting ? "Sending…" : "Send OTP"}
       </button>
     </form>

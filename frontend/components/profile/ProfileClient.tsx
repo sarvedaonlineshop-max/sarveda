@@ -7,11 +7,11 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { MobileSubpageHeader } from "@/components/layout/MobileSubpageHeader";
 import { YourLearning } from "@/components/profile/YourLearning";
 import { YourOrders } from "@/components/profile/YourOrders";
+import { signOutToLogin } from "@/components/auth/LogoutTransitionOverlay";
 import { getApiBase } from "@/lib/api";
 import type { PublicUser } from "@/lib/auth-client";
 import {
   fetchProfileDetails,
-  logoutSession,
   updateProfile,
   type PrimaryAddress
 } from "@/lib/auth-client";
@@ -288,10 +288,7 @@ export function ProfileClient() {
   }, []);
 
   async function handleSignOut() {
-    await logoutSession();
-    setUser(null);
-    router.replace("/");
-    router.refresh();
+    await signOutToLogin();
   }
 
   async function handleSave(event: FormEvent<HTMLFormElement>) {

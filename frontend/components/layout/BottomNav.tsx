@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { useCartData } from "@/components/cart/CartProvider";
-import { logoutSession } from "@/lib/auth-client";
+import { signOutToLogin } from "@/components/auth/LogoutTransitionOverlay";
 import { isMainNavActive } from "@/lib/main-nav";
 import { MOBILE_MENU_POLICY_LINKS } from "@/lib/policy-links";
 import { isShopBrowsePath } from "@/lib/shop-navigation";
@@ -223,9 +223,7 @@ export function BottomNav() {
 
   async function handleSignOut() {
     setMenuOpen(false);
-    await logoutSession();
-    router.replace("/");
-    router.refresh();
+    await signOutToLogin();
   }
 
   const items: NavItem[] = [

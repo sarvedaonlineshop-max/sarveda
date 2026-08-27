@@ -109,22 +109,18 @@ async function deliverEmailOtp(target: string, code: string) {
     logger.info("otp_dev_code_email", { target, code });
     return;
   }
-  const text = `Your Sarveda verification code is ${code}. It expires in 10 minutes.`;
-  const { buildShopEmail } = await import("../notifications/email");
-  const html = buildShopEmail(
-    "",
-    [
-      `Your Sarveda verification code is:`,
-      `<strong style="font-size:28px;letter-spacing:4px">${code}</strong>`,
-      "This code expires in 10 minutes. If you did not request it, you can ignore this email."
-    ],
-    {
-      banner: "Verification code",
-      showTick: false,
-      greeting: "Dear Customer,",
-      intro: "Warm greetings from Sarveda."
-    }
-  );
+  const text = `Your Sarveda verification code for login
+
+${code}
+
+With gratitude,
+Team Sarveda.`;
+  const html = `
+<div style="font-family:Georgia,'Times New Roman',serif;color:#1a2e26;line-height:1.65;font-size:16px">
+  <p style="margin:0 0 12px">Your Sarveda verification code for login</p>
+  <p style="margin:0 0 20px;font-size:28px;letter-spacing:6px;font-weight:700">${code}</p>
+  <p style="margin:0">With gratitude,<br/>Team Sarveda.</p>
+</div>`.trim();
   await sendMail(target, "Your Sarveda verification code", html, text);
 }
 
