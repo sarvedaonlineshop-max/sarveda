@@ -115,15 +115,6 @@ function WelcomeUserChip({ name }: { name: string }) {
   );
 }
 
-function PageLoadingSpinner() {
-  return (
-    <span
-      className="inline-block h-10 w-10 animate-spin rounded-full border-[3px] border-brand-gold/25 border-t-brand-gold"
-      aria-hidden
-    />
-  );
-}
-
 function isShopListingPath(pathname: string | null): boolean {
   if (!pathname) return false;
   return pathname === "/shop" || pathname.startsWith("/shop/") || pathname.startsWith("/product-category");
@@ -140,7 +131,7 @@ export function Header() {
   const { goToCart } = useCartUi();
   const { itemCount: cartCount } = useCartData();
   const sessionUser = useStorefrontSession();
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   const [marqueeHidden, setMarqueeHidden] = useState(false);
   const [pendingHref, setPendingHref] = useState<string | null>(null);
@@ -151,7 +142,6 @@ export function Header() {
   const hideMarquee = isProfilePath(pathname);
   const isHomePage = pathname === "/";
   const headerCompact = hideMarquee || marqueeHidden;
-  const isNavLoading = pendingHref != null || isPending;
 
   useEffect(() => {
     setPendingHref(null);
@@ -161,7 +151,7 @@ export function Header() {
   // Safety: clear stuck pending if navigation never settles.
   useEffect(() => {
     if (!pendingHref) return;
-    const t = window.setTimeout(() => setPendingHref(null), 12_000);
+    const t = window.setTimeout(() => setPendingHref(null), 3_000);
     return () => window.clearTimeout(t);
   }, [pendingHref]);
 
@@ -242,19 +232,15 @@ export function Header() {
 
   function goNav(href: string) {
     if (isMainNavActive(pathname, href)) return;
-    // Paint selected state first, then navigate.
     setPendingHref(href);
     dispatchNavStart();
-    // Shop browse uses a Suspense-heavy layout — startTransition soft-nav can leave
-    // /shop blank. Push outside a transition so the RSC tree commits normally.
+    // Shop browse uses a Suspense-heavy layout — push outside a transition so the RSC tree commits.
     if (isShopListingPath(href)) {
       router.push(href);
       return;
     }
-    requestAnimationFrame(() => {
-      startTransition(() => {
-        router.push(href);
-      });
+    startTransition(() => {
+      router.push(href);
     });
   }
 
@@ -431,22 +417,6 @@ export function Header() {
           </div>
         </header>
       </div>
-
-      {isNavLoading ? (
-        <div
-          className="fixed inset-0 z-40 flex items-center justify-center bg-brand-cream/55 backdrop-blur-[1px]"
-          style={{ paddingTop: spacerHeight }}
-          role="status"
-          aria-live="polite"
-          aria-busy="true"
-          aria-label="Loading page"
-        >
-          <div className="flex flex-col items-center gap-3 rounded-2xl border border-brand-forest/10 bg-white px-8 py-7 shadow-xl">
-            <PageLoadingSpinner />
-            <span className="text-sm font-semibold text-brand-forest">Loading…</span>
-          </div>
-        </div>
-      ) : null}
 
       <div className={`shrink-0 ${chromeVisibility}`} style={{ height: spacerHeight }} aria-hidden="true" />
 

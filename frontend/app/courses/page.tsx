@@ -5,7 +5,7 @@ import { fetchCourses } from "@/lib/api";
 import { splitCourses } from "@/lib/content-meta";
 import { canonical, isProductionSite } from "@/lib/site";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 120;
 
 export const metadata: Metadata = {
   title: "Courses",
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 };
 
 export default async function CoursesPage() {
-  const courses = await fetchCourses({ cache: "no-store" });
+  const courses = await fetchCourses({ next: { revalidate: 120 } });
   const { upcoming, past } = splitCourses(courses);
 
   return (

@@ -1,48 +1,74 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
-const HIDE_MS = 450;
-/** Safety: if nav-start fires but pathname never changes (same-route / aborted), hide anyway. */
-const NAV_START_MAX_MS = 1200;
+/** Hide shortly after the new route commits so content can paint. */
+const HIDE_AFTER_ROUTE_MS = 180;
+/** Safety if navigation never settles. */
+const NAV_START_MAX_MS = 2500;
 
-/** Mobile-only full-screen spinner while bottom-nav / tab changes settle.
- *  Desktop already uses Header’s PageLoadingSpinner — keep them from stacking. */
+/**
+ * Single full-screen fade + spinner for storefront nav (header + bottom nav).
+ * Do not also render a second overlay in Header — that caused the double loader.
+ */
 export function RouteLoadingSpinner() {
   const pathname = usePathname();
   const [visible, setVisible] = useState(false);
+  const hideTimer = useRef<number | undefined>(undefined);
+  const safetyTimer = useRef<number | undefined>(undefined);
+  const navigating = useRef(false);
 
   useEffect(() => {
-    setVisible(true);
-    const t = window.setTimeout(() => setVisible(false), HIDE_MS);
-    return () => window.clearTimeout(t);
-  }, [pathname]);
-
-  useEffect(() => {
-    let safety: number | undefined;
-    const onStart = () => {
-      setVisible(true);
-      window.clearTimeout(safety);
-      safety = window.setTimeout(() => setVisible(false), NAV_START_MAX_MS);
+    const clearTimers = () => {
+      window.clearTimeout(hideTimer.current);
+      window.clearTimeout(safetyTimer.current);
     };
+
+    const onStart = () => {
+      navigating.current = true;
+      clearTimers();
+      setVisible(true);
+      safetyTimer.current = window.setTimeout(() => {
+        navigating.current = false;
+        setVisible(false);
+      }, NAV_START_MAX_MS);
+    };
+
     window.addEventListener("sarveda-nav-start", onStart);
     return () => {
       window.removeEventListener("sarveda-nav-start", onStart);
-      window.clearTimeout(safety);
+      clearTimers();
     };
   }, []);
+
+  useEffect(() => {
+    if (!navigating.current) return;
+    window.clearTimeout(hideTimer.current);
+    window.clearTimeout(safetyTimer.current);
+    hideTimer.current = window.setTimeout(() => {
+      navigating.current = false;
+      setVisible(false);
+    }, HIDE_AFTER_ROUTE_MS);
+  }, [pathname]);
 
   if (!visible) return null;
 
   return (
     <div
-      className="pointer-events-none fixed inset-0 z-[80] flex items-center justify-center bg-brand-cream/35 backdrop-blur-[1px] md:hidden"
+      className="pointer-events-none fixed inset-0 z-[80] flex items-center justify-center bg-brand-cream/60 backdrop-blur-[2px] transition-opacity duration-200"
       role="status"
       aria-live="polite"
-      aria-label="Loading"
+      aria-busy="true"
+      aria-label="Loading page"
     >
-      <span className="h-10 w-10 animate-spin rounded-full border-[3px] border-brand-cream-dark border-t-[#108967]" />
+      <div className="flex flex-col items-center gap-3 rounded-2xl border border-brand-forest/10 bg-white/95 px-8 py-7 shadow-xl">
+        <span
+          className="inline-block h-10 w-10 animate-spin rounded-full border-[3px] border-brand-gold/25 border-t-brand-gold"
+          aria-hidden
+        />
+        <span className="text-sm font-semibold text-brand-forest">Loading…</span>
+      </div>
     </div>
   );
 }

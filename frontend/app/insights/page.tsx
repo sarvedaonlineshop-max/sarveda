@@ -6,7 +6,7 @@ import { EnquiryPanelForm } from "@/components/enquiries/EnquiryPanelForm";
 import { fetchBlogPosts } from "@/lib/api";
 import { canonical, isProductionSite } from "@/lib/site";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 120;
 
 export const metadata: Metadata = {
   title: "Insights",
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 export default async function InsightsPage() {
-  const posts = await fetchBlogPosts({ cache: "no-store" });
+  const posts = await fetchBlogPosts({ next: { revalidate: 120 } });
 
   return (
     <>

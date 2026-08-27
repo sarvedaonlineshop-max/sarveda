@@ -7,7 +7,7 @@ import { fetchEvents } from "@/lib/api";
 import { splitEvents } from "@/lib/content-meta";
 import { canonical, isProductionSite } from "@/lib/site";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 120;
 
 export const metadata: Metadata = {
   title: "Events",
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 export default async function EventsPage() {
-  const events = await fetchEvents({ cache: "no-store" });
+  const events = await fetchEvents({ next: { revalidate: 120 } });
   const { upcoming, past } = splitEvents(events);
 
   return (

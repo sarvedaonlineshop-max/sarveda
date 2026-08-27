@@ -39,8 +39,8 @@ export default async function HomePage() {
   try {
     [courses, events, posts] = await Promise.all([
       fetchCourses({ next: { revalidate: 300 } }),
-      fetchEvents({ cache: "no-store" }),
-      fetchBlogPosts({ cache: "no-store" })
+      fetchEvents({ next: { revalidate: 120 } }),
+      fetchBlogPosts({ next: { revalidate: 120 } })
     ]);
   } catch {
     /* Keep buildable when API is unreachable */
