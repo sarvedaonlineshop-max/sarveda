@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -11,25 +10,7 @@ import { fetchMe, logoutSession } from "@/lib/auth-client";
 import { SarvedaLogo } from "@/components/brand/SarvedaLogo";
 import { MAIN_NAV_LINKS } from "@/lib/main-nav";
 
-const ANNOUNCEMENTS = [
-  "💳 Visa · Mastercard · PayPal · Stripe accepted",
-  "Use WELCOME5 for 5% off your first order",
-  "Shipping to India · US · UK · Worldwide",
-  "Audio samples on all singing bowls",
-];
-
-function AnnouncementBar() {
-  const items = [...ANNOUNCEMENTS, ...ANNOUNCEMENTS];
-  return (
-    <div className="overflow-hidden py-2 text-xs font-medium tracking-wide" style={{ background:"#1e3a2f", color:"#f5d88a" }}>
-      <div className="flex whitespace-nowrap" style={{ animation:"marquee 12s linear infinite" }}>
-        {items.map((msg, i) => (
-          <span key={i} className="mx-8 shrink-0">{msg}</span>
-        ))}
-      </div>
-    </div>
-  );
-}
+import { AnnouncementBar } from "./AnnouncementBar";
 
 function CartIcon({ count }: { count: number }) {
   return (
@@ -150,7 +131,7 @@ export function SiteHeader() {
         <div className="fixed inset-0 z-[60] flex flex-col md:hidden" role="dialog" aria-modal="true" aria-label="Navigation" style={{ background:"#0f1a14" }}>
           <div className="flex items-center justify-between border-b px-4 py-4" style={{ borderColor:"rgba(255,255,255,0.08)" }}>
             <div className="flex items-center gap-2">
-              <Image src="/brand/sarveda-logo.png" alt="" width={18} height={36} className="object-contain" aria-hidden />
+              <img src="/images/brand/sarveda-logo-on-dark.svg" alt="" width={18} height={36} className="h-9 w-auto object-contain" aria-hidden />
               <span className="font-serif text-xl italic text-amber-400">Menu</span>
             </div>
             <button type="button" className="flex h-11 min-w-[44px] items-center justify-center rounded-xl text-stone-300 hover:text-amber-400" onClick={() => setMenuOpen(false)} aria-label="Close menu">

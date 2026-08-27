@@ -1,12 +1,11 @@
-import Image from "next/image";
 import Link from "next/link";
 
-const LOGO_LIGHT = "/images/brand/sarveda-logo.png";
-const LOGO_DARK = "/images/brand/sarveda-logo-on-dark.png";
+const LOGO_LIGHT = "/images/brand/sarveda-logo.svg";
+const LOGO_DARK = "/images/brand/sarveda-logo-on-dark.svg";
 
-/** Combined mark + wordmark asset aspect (processed YG/YW PNGs ~142×48). */
-const LOGO_W = 142;
-const LOGO_H = 48;
+/** Cropped YG/YW SVG wordmark aspect (Downloads Illustrator exports). */
+const LOGO_W = 955;
+const LOGO_H = 225;
 
 type SarvedaLogoProps = {
   href?: string;
@@ -17,7 +16,7 @@ type SarvedaLogoProps = {
   /** Scale logo down on small screens so the header stays usable. */
   responsive?: boolean;
   /**
-   * `onDark` — cream wordmark for forest footer / dark surfaces.
+   * `onDark` — white wordmark for forest footer / dark surfaces.
    * Default keeps the forest-green wordmark for light headers.
    */
   tone?: "onLight" | "onDark";
@@ -36,13 +35,13 @@ export function SarvedaLogo({
   tone = "onLight"
 }: SarvedaLogoProps) {
   const src = tone === "onDark" ? LOGO_DARK : LOGO_LIGHT;
-  // iconHeight historically sized the spiral only; combined logo is wider — use ~0.72 of that height.
   const height = Math.max(36, Math.round(iconHeight * (showWordmark ? 0.72 : 0.9)));
   const width = Math.round(height * (LOGO_W / LOGO_H));
 
   const content = (
     <div className={`flex items-center overflow-visible ${className}`}>
-      <Image
+      {/* eslint-disable-next-line @next/next/no-img-element -- SVG brand mark; vector stays sharp at any size */}
+      <img
         src={src}
         alt={showWordmark ? "Sarveda" : ""}
         width={width}
@@ -53,7 +52,8 @@ export function SarvedaLogo({
             : "w-auto shrink-0 object-contain object-left"
         }
         style={responsive ? { width: "auto" } : { height, width: "auto" }}
-        priority
+        decoding="async"
+        fetchPriority="high"
         aria-hidden={!showWordmark}
       />
     </div>
@@ -68,7 +68,7 @@ export function SarvedaLogo({
   );
 }
 
-/** Large watermark for hero / auth backgrounds — uses the spiral mark portion via full logo. */
+/** Large watermark for hero / auth backgrounds. */
 export function SarvedaLogoWatermark({
   className = "opacity-[0.08]",
   height = 280,
@@ -80,7 +80,8 @@ export function SarvedaLogoWatermark({
 }) {
   const width = Math.round(height * (LOGO_W / LOGO_H));
   return (
-    <Image
+    // eslint-disable-next-line @next/next/no-img-element -- SVG watermark
+    <img
       src={tone === "onDark" ? LOGO_DARK : LOGO_LIGHT}
       alt=""
       width={width}

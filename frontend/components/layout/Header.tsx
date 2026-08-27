@@ -15,32 +15,7 @@ import { useStorefrontSession } from "./useStorefrontSession";
 
 const immersiveMobileRoutes = new Set(["/cart", "/profile", "/chat"]);
 
-const ANNOUNCEMENTS = [
-  "💳 Visa · Mastercard · PayPal · Stripe accepted",
-  "Use WELCOME5 for 5% off your first order",
-  "🌍 Shipping to India · US · UK · Worldwide",
-  "🎵 Audio samples on all singing bowls"
-];
-
-function AnnouncementBar({ hidden }: { hidden: boolean }) {
-  const items = [...ANNOUNCEMENTS, ...ANNOUNCEMENTS];
-  return (
-    <div
-      className={`overflow-hidden bg-brand-forest text-xs font-medium tracking-wide text-brand-gold-pale transition-[max-height,opacity,padding] duration-300 ease-out ${
-        hidden ? "max-h-0 py-0 opacity-0" : "max-h-10 py-2 opacity-100"
-      }`}
-      aria-hidden={hidden}
-    >
-      <div className="flex whitespace-nowrap" style={{ animation: "marquee 12s linear infinite" }}>
-        {items.map((msg, i) => (
-          <span key={i} className="mx-8 shrink-0">
-            {msg}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
+import { AnnouncementBar } from "./AnnouncementBar";
 
 const headerIconBtnPlain =
   "relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-brand-forest transition-colors hover:bg-brand-cream sm:h-10 sm:w-10";
@@ -299,7 +274,7 @@ export function Header() {
   return (
     <>
       <div ref={chromeRef} className={`fixed inset-x-0 top-0 z-50 ${chromeVisibility}`}>
-        {hideMarquee ? null : <AnnouncementBar hidden={marqueeHidden} />}
+        {hideMarquee || marqueeHidden ? null : <AnnouncementBar />}
 
         <header
           className={`overflow-visible bg-white ${
