@@ -8,10 +8,10 @@ import { getApiBase } from "@/lib/api";
 import { whatsAppSiteUrl } from "@/lib/enquiry";
 
 const HOME_GREEN = "#166D46";
-/** Remember drag position for this tab only. */
-const STORAGE_POS = "sarveda-float-widget-pos";
 /** Cleared on full reload so dismiss does not survive refresh. */
 const STORAGE_HIDDEN_LEGACY = "sarveda-float-widget-hidden";
+/** How much of the panel peeks when docked into the right wall (arrow tab). */
+const DOCK_PEEK_PX = 28;
 
 const SOCIAL = [
   {
@@ -35,33 +35,6 @@ const SOCIAL = [
     imageSrc: "/images/brand/linkedin-logo.png"
   }
 ] as const;
-
-type WidgetPos = { x: number; y: number };
-
-/** Keep the pill clear of the fixed mobile bottom nav (≈4.5rem + safe area). */
-function bottomNavReservePx(): number {
-  return 88;
-}
-
-function clampPos(x: number, y: number, width: number, height: number): WidgetPos {
-  const margin = 8;
-  const maxX = Math.max(margin, window.innerWidth - width - margin);
-  const maxY = Math.max(margin, window.innerHeight - height - margin - bottomNavReservePx());
-  return {
-    x: Math.min(Math.max(margin, x), maxX),
-    y: Math.min(Math.max(margin, y), maxY)
-  };
-}
-
-function defaultMobilePos(width: number, height: number): WidgetPos {
-  const margin = 12;
-  return clampPos(
-    window.innerWidth - width - margin,
-    window.innerHeight * 0.38 - height / 2,
-    width,
-    height
-  );
-}
 
 function SubscribeModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const titleId = useId();
@@ -304,14 +277,17 @@ export function FloatingSocialSubscribe() {
   const [open, setOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [pos, setPos] = useState<WidgetPos | null>(null);
-  const widgetRef = useRef<HTMLDivElement>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [panelWidth, setPanelWidth] = useState(72);
+  const [slideX, setSlideX] = useState<number | null>(null);
+  const [dragging, setDragging] = useState(false);
+
+  const panelRef = useRef<HTMLDivElement>(null);
+  const slideXRef = useRef(0);
   const dragRef = useRef<{
     pointerId: number;
     startX: number;
-    startY: number;
-    originX: number;
-    originY: number;
+    originOpen: boolean;
     moved: boolean;
   } | null>(null);
   const suppressClickRef = useRef(false);
@@ -325,18 +301,6 @@ export function FloatingSocialSubscribe() {
       /* ignore */
     }
 
-    const saved = sessionStorage.getItem(STORAGE_POS);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved) as WidgetPos;
-        if (typeof parsed.x === "number" && typeof parsed.y === "number") {
-          setPos(parsed);
-        }
-      } catch {
-        /* ignore */
-      }
-    }
-
     const mq = window.matchMedia("(max-width: 767px)");
     const syncMobile = () => setIsMobile(mq.matches);
     syncMobile();
@@ -345,70 +309,85 @@ export function FloatingSocialSubscribe() {
   }, []);
 
   useEffect(() => {
-    if (!isMobile || pos || !widgetRef.current) return;
-    const rect = widgetRef.current.getBoundingClientRect();
-    setPos(defaultMobilePos(rect.width, rect.height));
-  }, [isMobile, pos]);
-
-  const persistPos = useCallback((next: WidgetPos) => {
-    setPos(next);
-    sessionStorage.setItem(STORAGE_POS, JSON.stringify(next));
-  }, []);
+    if (!isMobile || !panelRef.current) return;
+    const measure = () => {
+      const w = panelRef.current?.offsetWidth;
+      if (w && w > 0) setPanelWidth(w);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(panelRef.current);
+    return () => ro.disconnect();
+  }, [isMobile, mounted]);
 
   const dismissWidget = useCallback(() => {
     setHidden(true);
   }, []);
 
-  /** Drag from anywhere on the floating pill (mobile). */
-  const onWidgetPointerDown = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!isMobile || !widgetRef.current || !pos) return;
-      if ((e.target as HTMLElement).closest("button[aria-label='Hide social widget']")) return;
+  const closedTranslate = Math.max(0, panelWidth - DOCK_PEEK_PX);
+  const liveTranslate = slideX ?? (drawerOpen ? 0 : closedTranslate);
 
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if ((e.target as HTMLElement).closest("button[aria-label='Hide social widget']")) return;
+      if ((e.target as HTMLElement).closest("button[aria-label='Show subscribe panel'], button[aria-label='Hide subscribe panel']")) {
+        return;
+      }
       suppressClickRef.current = false;
       dragRef.current = {
         pointerId: e.pointerId,
         startX: e.clientX,
-        startY: e.clientY,
-        originX: pos.x,
-        originY: pos.y,
+        originOpen: drawerOpen,
         moved: false
       };
       e.currentTarget.setPointerCapture(e.pointerId);
+      setDragging(true);
+      const start = drawerOpen ? 0 : closedTranslate;
+      slideXRef.current = start;
+      setSlideX(start);
     },
-    [isMobile, pos]
+    [drawerOpen, closedTranslate]
   );
 
-  const onWidgetPointerMove = useCallback(
+  const onPointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       const drag = dragRef.current;
-      if (!drag || drag.pointerId !== e.pointerId || !widgetRef.current) return;
+      if (!drag || drag.pointerId !== e.pointerId) return;
       const dx = e.clientX - drag.startX;
-      const dy = e.clientY - drag.startY;
-      if (!drag.moved && Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      if (!drag.moved && Math.abs(dx) < 8) return;
       drag.moved = true;
       suppressClickRef.current = true;
-      const rect = widgetRef.current.getBoundingClientRect();
-      persistPos(
-        clampPos(drag.originX + dx, drag.originY + dy, rect.width, rect.height)
-      );
+      const origin = drag.originOpen ? 0 : closedTranslate;
+      const next = Math.min(closedTranslate, Math.max(0, origin + dx));
+      slideXRef.current = next;
+      setSlideX(next);
     },
-    [persistPos]
+    [closedTranslate]
   );
 
-  const onWidgetPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (dragRef.current?.pointerId !== e.pointerId) return;
-    dragRef.current = null;
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    }
-  }, []);
+  const endPointer = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      const drag = dragRef.current;
+      if (!drag || drag.pointerId !== e.pointerId) return;
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+      if (drag.moved) {
+        setDrawerOpen(slideXRef.current < closedTranslate * 0.45);
+      }
+      dragRef.current = null;
+      setSlideX(null);
+      setDragging(false);
+    },
+    [closedTranslate]
+  );
 
-  const onClickCapture = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!suppressClickRef.current) return;
-    e.preventDefault();
-    e.stopPropagation();
-    suppressClickRef.current = false;
+  const toggleDrawer = useCallback(() => {
+    if (suppressClickRef.current) {
+      suppressClickRef.current = false;
+      return;
+    }
+    setDrawerOpen((v) => !v);
   }, []);
 
   if (!mounted || hidden) return null;
@@ -452,26 +431,46 @@ export function FloatingSocialSubscribe() {
     <>
       {isMobile ? (
         <div
-          ref={widgetRef}
-          className="pointer-events-auto fixed z-[55] touch-none md:hidden"
-          style={
-            pos
-              ? { left: pos.x, top: pos.y }
-              : { right: 12, top: "38%", transform: "translateY(-50%)" }
-          }
+          className="pointer-events-none fixed inset-y-0 right-0 z-[55] flex items-center md:hidden"
           aria-label="Social links and subscribe"
-          onPointerDown={onWidgetPointerDown}
-          onPointerMove={onWidgetPointerMove}
-          onPointerUp={onWidgetPointerUp}
-          onPointerCancel={onWidgetPointerUp}
-          onClickCapture={onClickCapture}
         >
-          {/* Outer relative shell — close sits outside overflow clip */}
-          <div className="relative">
-            <WidgetCloseButton onClick={dismissWidget} />
-            <div className="flex cursor-grab flex-col items-center overflow-hidden rounded-full border border-black/10 bg-white/95 shadow-[0_10px_32px_rgba(16,32,26,0.18)] backdrop-blur-sm active:cursor-grabbing">
-              {socialLinks}
-              {subscribeBtn}
+          <div
+            ref={panelRef}
+            className="pointer-events-auto relative touch-none will-change-transform"
+            style={{
+              transform: `translate3d(${liveTranslate}px, 0, 0)`,
+              transition: dragging ? "none" : "transform 320ms cubic-bezier(0.22, 1, 0.36, 1)"
+            }}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={endPointer}
+            onPointerCancel={endPointer}
+          >
+            <button
+              type="button"
+              onClick={toggleDrawer}
+              className="absolute left-0 top-1/2 z-30 flex h-11 w-7 -translate-x-full -translate-y-1/2 items-center justify-center rounded-l-lg border border-r-0 border-black/10 bg-white/95 text-[#166D46] shadow-[-4px_0_14px_rgba(16,32,26,0.14)] backdrop-blur-sm"
+              aria-label={drawerOpen ? "Hide subscribe panel" : "Show subscribe panel"}
+              aria-expanded={drawerOpen}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                className={`h-5 w-5 transition-transform duration-300 ${drawerOpen ? "rotate-180" : ""}`}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                aria-hidden
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+
+            <div className="relative">
+              <WidgetCloseButton onClick={dismissWidget} />
+              <div className="flex flex-col items-center overflow-hidden rounded-l-2xl border border-black/10 border-r-0 bg-white/95 shadow-[-8px_0_28px_rgba(16,32,26,0.16)] backdrop-blur-sm">
+                {socialLinks}
+                {subscribeBtn}
+              </div>
             </div>
           </div>
         </div>

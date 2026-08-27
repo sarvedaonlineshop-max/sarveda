@@ -19,9 +19,9 @@ function LotusMark() {
     <Image
       src="/images/brand/lotus-mark.png"
       alt=""
-      width={18}
-      height={14}
-      className="h-[14px] w-auto shrink-0 object-contain"
+      width={22}
+      height={17}
+      className="h-[14px] w-auto shrink-0 object-contain sm:h-[16px] lg:h-[18px]"
       aria-hidden
     />
   );
@@ -38,32 +38,24 @@ export function HomeExperienceSections({ courses, events }: Props) {
       >
         <div className="page-shell grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
           <div className="min-w-0">
-            <p className="flex items-center gap-2 text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-brand-gold sm:text-xs">
+            <p className="flex items-center gap-2 text-[0.78rem] font-semibold uppercase tracking-[0.18em] text-brand-gold sm:text-sm lg:text-[0.95rem] lg:tracking-[0.2em]">
               <LotusMark />
               Corporate Wellness Programs
             </p>
             <h2
               id="home-corporate-heading"
-              className="mt-3 font-serif text-[1.75rem] font-semibold leading-tight tracking-tight sm:text-3xl md:text-[2.25rem]"
+              className="mt-3 font-serif text-[1.75rem] font-semibold leading-tight tracking-tight sm:text-3xl md:text-[2.25rem] lg:text-[2.65rem] xl:text-[2.85rem]"
             >
               <span style={{ color: HOME_GREEN }}>Wellness that Resonates.</span>
               <br />
               <span className="text-brand-gold">Impact that Lasts.</span>
             </h2>
             <SectionFlourish />
-            <p className="mt-5 max-w-xl text-sm leading-relaxed text-[#4a453c] sm:text-[0.95rem] md:text-base">
+            <p className="mt-5 max-w-xl text-sm leading-relaxed text-[#4a453c] sm:text-[0.95rem] md:text-base lg:mt-6 lg:max-w-2xl lg:text-[1.1rem] lg:leading-relaxed">
               We partner with organizations to create long-term wellness journeys that nurture
               well-being, creativity and connection. From monthly mindfulness sessions to immersive
               retreats, our programs are tailored to your team&apos;s needs.
             </p>
-            <Link
-              href="/corporate-wellness"
-              className="mt-8 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full px-7 text-sm font-semibold tracking-wide text-white transition-colors hover:brightness-95"
-              style={{ backgroundColor: HOME_GREEN }}
-            >
-              Explore Our Corporate Programs
-              <span aria-hidden>→</span>
-            </Link>
           </div>
 
           <div className="relative w-full">
@@ -75,6 +67,16 @@ export function HomeExperienceSections({ courses, events }: Props) {
                 sizes="(max-width: 1024px) 90vw, 40vw"
                 className="object-cover object-center"
               />
+            </div>
+            <div className="mt-5 flex justify-center lg:mt-6 lg:justify-start">
+              <Link
+                href="/corporate-wellness"
+                className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full px-7 text-sm font-semibold tracking-wide text-white transition-colors hover:brightness-95 lg:min-h-[52px] lg:px-9 lg:text-base"
+                style={{ backgroundColor: HOME_GREEN }}
+              >
+                Explore Our Corporate Programs
+                <span aria-hidden>→</span>
+              </Link>
             </div>
           </div>
         </div>

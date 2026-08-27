@@ -1,11 +1,14 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 
 import { SectionFlourish } from "@/components/brand/SectionFlourish";
 
 /**
  * Homepage section 3 — “Explore our range of Instruments”
- * 12 category cards · ~10% side margins · Explore Our Store CTA
+ * 12 category cards · stronger in-view shadow + image zoom (and on hover)
  */
 
 type Category = {
@@ -230,8 +233,24 @@ const CATEGORIES: Category[] = [
 ];
 
 export function HomeInstrumentCategories() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) setInView(true);
+      },
+      { threshold: 0.22, rootMargin: "0px 0px -8% 0px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   return (
-    <section className="bg-white" aria-labelledby="home-instruments-heading">
+    <section ref={sectionRef} className="bg-white" aria-labelledby="home-instruments-heading">
       <div className="page-shell py-14 md:py-16 lg:py-20">
         <div className="text-center">
           <h2
@@ -249,11 +268,19 @@ export function HomeInstrumentCategories() {
         </div>
 
         <ul className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 md:mt-12 md:grid-cols-3 lg:grid-cols-6 lg:gap-5">
-          {CATEGORIES.map(({ key, name, href, image, Icon }) => (
-            <li key={key}>
+          {CATEGORIES.map(({ key, name, href, image, Icon }, index) => (
+            <li
+              key={key}
+              className={`transition-[transform,opacity] duration-700 ease-out ${
+                inView ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"
+              }`}
+              style={{ transitionDelay: inView ? `${Math.min(index, 8) * 55}ms` : "0ms" }}
+            >
               <Link
                 href={href}
-                className="group flex h-full flex-col overflow-hidden rounded-xl border border-brand-cream-dark/80 bg-white shadow-card transition-shadow hover:shadow-card-hover"
+                className={`group flex h-full flex-col overflow-hidden rounded-xl border border-brand-cream-dark/80 bg-white transition-[box-shadow,transform] duration-500 ease-out hover:-translate-y-1.5 hover:shadow-[0_18px_40px_rgba(16,32,26,0.18)] ${
+                  inView ? "shadow-[0_10px_28px_rgba(16,32,26,0.12)]" : "shadow-card"
+                }`}
               >
                 <div className="relative aspect-[5/4] overflow-hidden bg-brand-cream">
                   <Image
@@ -261,7 +288,9 @@ export function HomeInstrumentCategories() {
                     alt={name}
                     fill
                     sizes="(max-width: 768px) 45vw, (max-width: 1024px) 30vw, 13vw"
-                    className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.03]"
+                    className={`object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.12] ${
+                      inView ? "scale-[1.06]" : "scale-100"
+                    }`}
                   />
                 </div>
                 <div className="flex min-h-[3.25rem] items-center gap-2 border-t border-brand-cream-dark/70 px-2.5 py-2.5 sm:min-h-[3.5rem] sm:px-3">
@@ -269,7 +298,7 @@ export function HomeInstrumentCategories() {
                   <span className="min-w-0 flex-1 text-[0.78rem] font-medium leading-snug text-brand-ink sm:text-sm">
                     {name}
                   </span>
-                  <span className="shrink-0 text-brand-gold transition-transform group-hover:translate-x-0.5" aria-hidden>
+                  <span className="shrink-0 text-brand-gold transition-transform group-hover:translate-x-1" aria-hidden>
                     →
                   </span>
                 </div>
