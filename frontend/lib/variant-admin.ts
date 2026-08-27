@@ -20,21 +20,46 @@ export function slugifyAttribute(input: string): string {
   return s.slice(0, 120) || "option";
 }
 
-function uniqueSortedValues(values: string[]): string[] {
-  const set = new Set<string>();
-  for (let i = 0; i < values.length; i++) {
-    const t = values[i]!.trim();
-    if (t) set.add(t);
+function uniqueValuesPreserveOrder(values: string[]): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of values) {
+    const t = raw.trim();
+    if (!t) continue;
+    const key = t.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(t);
   }
-  return Array.from(set).sort((a, b) => a.localeCompare(b));
+  return out;
+}
+
+/** Apply saved per-attribute value order; append any new values at the end. */
+export function applyOptionValueOrder(values: string[], preferred?: string[] | null): string[] {
+  const unique = uniqueValuesPreserveOrder(values);
+  if (!preferred?.length) return unique;
+  const byLower = new Map(unique.map((v) => [v.toLowerCase(), v]));
+  const ordered: string[] = [];
+  const used = new Set<string>();
+  for (const p of preferred) {
+    const hit = byLower.get(p.trim().toLowerCase());
+    if (!hit || used.has(hit.toLowerCase())) continue;
+    ordered.push(hit);
+    used.add(hit.toLowerCase());
+  }
+  for (const v of unique) {
+    if (!used.has(v.toLowerCase())) ordered.push(v);
+  }
+  return ordered;
 }
 
 export function deriveOptionAxes(
   variants: { attributes: VariantAttributeForm[] }[],
-  savedOrder: string[] = []
+  savedOrder: string[] = [],
+  valueOrderBySlug: Record<string, string[]> = {}
 ): OptionAxisForm[] {
   const nameBySlug = new Map<string, string>();
-  const valuesBySlug = new Map<string, Set<string>>();
+  const valuesBySlug = new Map<string, string[]>();
 
   for (const v of variants) {
     for (const a of v.attributes) {
@@ -42,9 +67,9 @@ export function deriveOptionAxes(
       if (!nameBySlug.has(slug)) nameBySlug.set(slug, a.name || slug);
       const val = a.value.trim();
       if (val) {
-        const set = valuesBySlug.get(slug) ?? new Set<string>();
-        set.add(val);
-        valuesBySlug.set(slug, set);
+        const list = valuesBySlug.get(slug) ?? [];
+        if (!list.some((x) => x.toLowerCase() === val.toLowerCase())) list.push(val);
+        valuesBySlug.set(slug, list);
       }
     }
   }
@@ -52,7 +77,7 @@ export function deriveOptionAxes(
   const axes: OptionAxisForm[] = Array.from(nameBySlug.entries()).map(([slug, name]) => ({
     slug,
     name,
-    values: uniqueSortedValues(Array.from(valuesBySlug.get(slug) ?? []))
+    values: applyOptionValueOrder(Array.from(valuesBySlug.get(slug) ?? []), valueOrderBySlug[slug])
   }));
 
   if (!savedOrder.length) return axes;
@@ -140,9 +165,9 @@ export function pruneVariantRows<T extends { attributes: VariantAttributeForm[];
 }
 
 export function optionsForAxis(axis: OptionAxisForm, selectedValue = ""): string[] {
-  const base = uniqueSortedValues(axis.values);
+  const base = uniqueValuesPreserveOrder(axis.values);
   const sel = selectedValue.trim();
-  if (sel && !base.includes(sel)) return [...base, sel];
+  if (sel && !base.some((v) => v.toLowerCase() === sel.toLowerCase())) return [...base, sel];
   return base;
 }
 

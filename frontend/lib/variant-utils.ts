@@ -37,8 +37,29 @@ function sizeSortKey(label: string): number {
   return parseInches(label);
 }
 
-/** Stable option order for storefront pills (matches live sarveda.com). */
-export function sortAttributeOptionValues(labelOrSlug: string, values: string[]): string[] {
+/** Stable option order for storefront pills. Prefer admin-saved order when provided. */
+export function sortAttributeOptionValues(
+  labelOrSlug: string,
+  values: string[],
+  preferredOrder?: string[] | null
+): string[] {
+  if (preferredOrder?.length) {
+    const unique = Array.from(new Set(values.map((v) => v.trim()).filter(Boolean)));
+    const byLower = new Map(unique.map((v) => [v.toLowerCase(), v]));
+    const ordered: string[] = [];
+    const used = new Set<string>();
+    for (const p of preferredOrder) {
+      const hit = byLower.get(p.trim().toLowerCase());
+      if (!hit || used.has(hit.toLowerCase())) continue;
+      ordered.push(hit);
+      used.add(hit.toLowerCase());
+    }
+    for (const v of unique) {
+      if (!used.has(v.toLowerCase())) ordered.push(v);
+    }
+    return ordered;
+  }
+
   const key = labelOrSlug.toLowerCase();
   if (key.includes("note")) {
     return [...values].sort((a, b) => {
@@ -64,7 +85,8 @@ export function sortAttributeOptionValues(labelOrSlug: string, values: string[])
 
 export function buildAttributeAxes(
   variants: ProductVariantDetail[],
-  axisOrder?: string[]
+  axisOrder?: string[],
+  optionValueOrder?: Record<string, string[]>
 ): AttributeAxis[] {
   const map = new Map<string, { name: string; values: Map<string, string> }>();
 
@@ -81,7 +103,12 @@ export function buildAttributeAxes(
 
   const axes = Array.from(map.entries()).map(([slug, { name, values }]) => {
     const raw = Array.from(values.entries()).map(([valueSlug, value]) => ({ slug: valueSlug, value }));
-    const sorted = sortAttributeOptionValues(slug, raw.map((r) => r.value));
+    const preferred = optionValueOrder?.[slug];
+    const sorted = sortAttributeOptionValues(
+      slug,
+      raw.map((r) => r.value),
+      preferred
+    );
     const ordered = sorted.map((value) => raw.find((r) => r.value === value)!);
     return { slug, name, values: ordered };
   });

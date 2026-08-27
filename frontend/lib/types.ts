@@ -100,6 +100,8 @@ export type ProductDetail = {
   seoDescription: string | null;
   seoKeyword: string | null;
   variantAxisOrder?: string[];
+  /** Per attribute-slug option value order for storefront pills. */
+  variantOptionValueOrder?: Record<string, string[]>;
   variants: ProductVariantDetail[];
   images: {
     id: string;

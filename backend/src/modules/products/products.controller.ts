@@ -227,6 +227,7 @@ function normalizeAdminBody(body: CreateProductBody | UpdateProductBody): Produc
     seoKeyword: body.seoKeyword,
     categoryIds: body.categoryIds,
     variantAxisOrder: body.variantAxisOrder,
+    variantOptionValueOrder: body.variantOptionValueOrder,
     variants: body.variants,
     images: body.images,
     accordionItems: body.accordionItems
@@ -360,6 +361,10 @@ export async function update(req: Request, res: Response, next: NextFunction) {
         body.variantAxisOrder ??
         (existing as { variantAxisOrder?: string[] }).variantAxisOrder ??
         [],
+      variantOptionValueOrder:
+        body.variantOptionValueOrder ??
+        ((existing as { variantOptionValueOrder?: Record<string, string[]> }).variantOptionValueOrder ??
+          {}),
       variants: body.variants,
       images: body.images,
       accordionItems: body.accordionItems

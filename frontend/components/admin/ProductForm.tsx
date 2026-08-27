@@ -311,6 +311,8 @@ export function ProductForm({ productId }: { productId?: string }) {
 
       const savedAxisOrder = ((p as { variantAxisOrder?: string[] }).variantAxisOrder ??
         []) as string[];
+      const savedValueOrder = ((p as { variantOptionValueOrder?: Record<string, string[]> })
+        .variantOptionValueOrder ?? {}) as Record<string, string[]>;
 
       const vs = (p.variants as Array<Record<string, unknown>>) ?? [];
       const allImgs = (p.images as Array<Record<string, unknown>>) ?? [];
@@ -392,7 +394,7 @@ export function ProductForm({ productId }: { productId?: string }) {
         } else {
           setSkuFamily("");
         }
-        const axes = deriveOptionAxes(loadedVariants, savedAxisOrder);
+        const axes = deriveOptionAxes(loadedVariants, savedAxisOrder, savedValueOrder);
         setOptionAxes(
           axes.length > 0 ? axes : [{ name: "Size", slug: "size", values: [] }]
         );
@@ -666,7 +668,33 @@ export function ProductForm({ productId }: { productId?: string }) {
   }
 
   function handleOptionAxesChange(axes: OptionAxisForm[], _opts?: { prune?: boolean }) {
-    setOptionAxes(axes);
+    setOptionAxes((prev) => {
+      setVariants((rows) =>
+        rows.map((row) => ({
+          ...row,
+          attributes: row.attributes.map((attr, ai) => {
+            const oldAxis = prev[ai];
+            const newAxis = axes[ai];
+            if (!oldAxis || !newAxis) return attr;
+            const removed = oldAxis.values.filter(
+              (v) => !newAxis.values.some((n) => n.toLowerCase() === v.toLowerCase())
+            );
+            const added = newAxis.values.filter(
+              (v) => !oldAxis.values.some((o) => o.toLowerCase() === v.toLowerCase())
+            );
+            if (removed.length === 1 && added.length === 1 && attr.value === removed[0]) {
+              return { ...attr, name: newAxis.name, slug: newAxis.slug, value: added[0]! };
+            }
+            return {
+              ...attr,
+              name: newAxis.name || attr.name,
+              slug: newAxis.slug || attr.slug
+            };
+          })
+        }))
+      );
+      return axes;
+    });
   }
 
   const axesValuesKey = optionAxes.map((a) => `${a.slug}:${a.values.join("\u0001")}`).join("|");
@@ -795,6 +823,11 @@ export function ProductForm({ productId }: { productId?: string }) {
       seoKeyword: seoKeyword.trim() || null,
       categoryIds: Array.from(selectedCats),
       variantAxisOrder: optionAxes.map((a) => a.slug).filter(Boolean),
+      variantOptionValueOrder: Object.fromEntries(
+        optionAxes
+          .filter((a) => a.slug)
+          .map((a) => [a.slug, a.values.map((v) => v.trim()).filter(Boolean)])
+      ),
       variants: variants.map((v) => ({
         id: v.id,
         sku: v.sku.trim(),

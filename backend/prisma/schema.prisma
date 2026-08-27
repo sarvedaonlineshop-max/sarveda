@@ -141,6 +141,8 @@ model Product {
   relatedArticleSlugs String[]      @default([])
   // Ordered attribute slugs for storefront variant pills (e.g. size before type).
   variantAxisOrder   String[]        @default([])
+  /// Per-attribute option value order for storefront pills, e.g. { "color": ["Blue","Red"], "size": ["S","M","L"] }.
+  variantOptionValueOrder Json       @default("{}")
   seoTitle         String?
   seoDescription   String?
   seoKeyword       String?

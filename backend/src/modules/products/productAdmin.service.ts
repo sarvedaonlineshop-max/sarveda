@@ -89,6 +89,7 @@ export type ProductAdminSaveInput = {
   seoKeyword?: string | null;
   categoryIds?: string[];
   variantAxisOrder?: string[];
+  variantOptionValueOrder?: Record<string, string[]>;
   variants?: VariantAdminInput[];
   images?: ImageAdminInput[];
   accordionItems?: AccordionAdminInput[];
@@ -348,6 +349,7 @@ export async function saveProductAdmin(
         productCouponEnabled: input.productCouponEnabled ?? undefined,
         relatedArticleSlugs: input.relatedArticleSlugs ?? undefined,
         variantAxisOrder: input.variantAxisOrder ?? undefined,
+        variantOptionValueOrder: input.variantOptionValueOrder ?? undefined,
         seoTitle: input.seoTitle ?? undefined,
         seoDescription: input.seoDescription ?? undefined,
         seoKeyword: input.seoKeyword ?? undefined,
@@ -400,6 +402,7 @@ export async function saveProductAdmin(
       productCouponEnabled: input.productCouponEnabled ?? false,
       relatedArticleSlugs: input.relatedArticleSlugs ?? [],
       variantAxisOrder: input.variantAxisOrder ?? [],
+      variantOptionValueOrder: input.variantOptionValueOrder ?? {},
       seoTitle: input.seoTitle ?? undefined,
       seoDescription: input.seoDescription ?? undefined,
       seoKeyword: input.seoKeyword ?? undefined,

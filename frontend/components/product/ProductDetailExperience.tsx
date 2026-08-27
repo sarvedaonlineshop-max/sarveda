@@ -216,6 +216,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
     showPurchaseActions: true,
     expressShippingEnabled: product.expressShippingEnabled !== false,
     axisOrder: product.variantAxisOrder,
+    optionValueOrder: product.variantOptionValueOrder,
     pairWithItems
   };
 

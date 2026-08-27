@@ -20,6 +20,8 @@ type Props = {
   onVariantChange: (variantId: string) => void;
   /** Ordered attribute slugs from product (size before type, etc.) */
   axisOrder?: string[];
+  /** Per-attribute option value order from admin. */
+  optionValueOrder?: Record<string, string[]>;
   /** Teal bordered pills matching live sarveda.com storefront */
   pillStyle?: "default" | "storefront";
 };
@@ -50,9 +52,13 @@ export function VariantSelector({
   selectedVariantId,
   onVariantChange,
   axisOrder,
+  optionValueOrder,
   pillStyle = "default"
 }: Props) {
-  const axes = useMemo(() => buildAttributeAxes(variants, axisOrder), [variants, axisOrder]);
+  const axes = useMemo(
+    () => buildAttributeAxes(variants, axisOrder, optionValueOrder),
+    [variants, axisOrder, optionValueOrder]
+  );
   const hasAxes = axes.length > 0;
 
   const selectedVariant = variants.find((v) => v.id === selectedVariantId) ?? pickInitial(variants);

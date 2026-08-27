@@ -80,6 +80,7 @@ export const createProductSchema = z.object({
   wooCommerceId: z.number().int().positive().optional().nullable(),
   categoryIds: z.array(z.string().uuid()).optional(),
   variantAxisOrder: z.array(z.string().min(1).max(120)).optional(),
+  variantOptionValueOrder: z.record(z.string(), z.array(z.string().min(1).max(200))).optional(),
   variants: z.array(variantInputSchema).optional(),
   images: z.array(imageAdminSchema).optional(),
   accordionItems: z.array(accordionAdminSchema).optional()

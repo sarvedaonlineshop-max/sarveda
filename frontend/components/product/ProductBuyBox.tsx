@@ -32,6 +32,8 @@ type Props = {
   expressShippingEnabled?: boolean;
   /** Attribute slug order for variant pills on PDP */
   axisOrder?: string[];
+  /** Per-attribute option value order from admin */
+  optionValueOrder?: Record<string, string[]>;
   /** Auroville-style inline PDP vs legacy card sidebar */
   layout?: "card" | "inline";
   /** Compact "Pair it with" items above purchase buttons */
@@ -56,6 +58,7 @@ export function ProductBuyBox({
   variantForStock,
   showPurchaseActions = true,
   axisOrder,
+  optionValueOrder,
   layout = "card",
   pairWithItems = []
 }: Props) {
@@ -77,18 +80,21 @@ export function ProductBuyBox({
   }
 
   const attributeGroups = useMemo(() => {
-    const map = new Map<string, Set<string>>();
+    const map = new Map<string, { name: string; slug: string; values: Set<string> }>();
     for (const v of variants) {
       for (const row of v.attributeValues ?? []) {
-        const key = row.attributeValue.attribute.name || row.attributeValue.attribute.slug;
-        if (!key) continue;
-        if (!map.has(key)) map.set(key, new Set());
-        map.get(key)!.add(row.attributeValue.value);
+        const slug = row.attributeValue.attribute.slug;
+        const name = row.attributeValue.attribute.name || slug;
+        if (!slug && !name) continue;
+        const key = slug || name;
+        if (!map.has(key)) map.set(key, { name, slug: slug || name, values: new Set() });
+        map.get(key)!.values.add(row.attributeValue.value);
       }
     }
-    const groups = Array.from(map.entries()).map(([name, values]) => ({
+    const groups = Array.from(map.values()).map(({ name, slug, values }) => ({
       name,
-      values: sortAttributeOptionValues(name, Array.from(values))
+      slug,
+      values: sortAttributeOptionValues(slug || name, Array.from(values), optionValueOrder?.[slug])
     }));
     if (groups.length > 0) {
       if (axisOrder?.length) {
@@ -99,7 +105,7 @@ export function ProductBuyBox({
           return 999;
         };
         return groups.sort((a, b) => {
-          const p = orderKey(a.name) - orderKey(b.name);
+          const p = orderKey(a.name, a.slug) - orderKey(b.name, b.slug);
           if (p !== 0) return p;
           return a.name.localeCompare(b.name);
         });
@@ -122,8 +128,10 @@ export function ProductBuyBox({
       .filter(Boolean)
       .map((sku) => sku!.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim());
     const uniqueSkuLabels = Array.from(new Set(skuLabels));
-    return uniqueSkuLabels.length > 1 ? [{ name: "Option", values: uniqueSkuLabels }] : [];
-  }, [variants, axisOrder]);
+    return uniqueSkuLabels.length > 1
+      ? [{ name: "Option", slug: "option", values: uniqueSkuLabels }]
+      : [];
+  }, [variants, axisOrder, optionValueOrder]);
 
   const selectedAttrValues = useMemo(() => {
     const selected = new Map<string, string>();
