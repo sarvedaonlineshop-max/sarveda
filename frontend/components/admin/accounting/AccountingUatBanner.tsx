@@ -57,7 +57,16 @@ export function AccountingUatBanner() {
           ACCOUNTING UAT MODE
         </span>
         <span className="text-amber-900/85">
-          Production posting: <strong className="font-semibold">{postingLabel}</strong>
+          Production posting:{" "}
+          <strong
+            className={
+              productionPostingAllowed === false
+                ? "font-bold text-amber-950 underline decoration-amber-700/40 underline-offset-2"
+                : "font-semibold"
+            }
+          >
+            {postingLabel}
+          </strong>
         </span>
         {goLive ? (
           <span className="text-amber-900/85">

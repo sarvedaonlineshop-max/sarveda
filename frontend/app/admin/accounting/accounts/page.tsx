@@ -27,7 +27,7 @@ export default function AdminAccountingAccountsPage() {
     <div className="space-y-4">
       <AdminAccountingHeader
         title="Chart of Accounts"
-        subtitle="Sarveda / Indian e-commerce CoA seed (Phase 1)."
+        subtitle="Sarveda chart of accounts for Indian e-commerce."
       />
       {error ? (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">{error}</div>

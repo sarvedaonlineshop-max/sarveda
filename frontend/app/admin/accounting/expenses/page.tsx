@@ -99,8 +99,8 @@ export default function AccountingExpensesPage() {
   return (
     <div className="space-y-6">
       <AdminAccountingHeader
-        title="Standalone Expenses Shadow"
-        subtitle="EXPENSE_RECORDED_V1 — mapped opex Dr + provisional Input GST, Cr Bank/Cash. Purchases Expense CRUD unchanged. Zoho remains authoritative."
+        title="Expense Recognition"
+        subtitle="Post standalone operating expenses to the ledger with mapped accounts and GST where available."
       />
 
       <p className="text-sm text-neutral-600">

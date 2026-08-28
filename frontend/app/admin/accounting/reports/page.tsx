@@ -4,6 +4,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AdminAccountingHeader } from "@/components/admin/accounting/AdminAccountingNav";
 import {
+  AccountingEmptyState,
+  accountingButtonClass,
+  accountingInputClass,
+  accountingTabClass
+} from "@/components/admin/accounting/accounting-ui";
+import {
   downloadFinancialStatementPdf,
   downloadFinancialStatementsXlsx,
   downloadGeneralLedgerXlsx,
@@ -30,13 +36,13 @@ import { AdminApiError } from "@/lib/admin-errors";
 
 type TabId = "overview" | "tb" | "gl" | "pl" | "bs" | "integrity";
 
-const TABS: { id: TabId; label: string; phase: "6B" | "6C" | "6D" }[] = [
-  { id: "overview", label: "Overview", phase: "6C" },
-  { id: "tb", label: "Trial Balance", phase: "6B" },
-  { id: "gl", label: "General Ledger", phase: "6B" },
-  { id: "pl", label: "Profit & Loss", phase: "6C" },
-  { id: "bs", label: "Balance Sheet", phase: "6C" },
-  { id: "integrity", label: "Reconciliation / Integrity", phase: "6D" }
+const TABS: { id: TabId; label: string }[] = [
+  { id: "overview", label: "Overview" },
+  { id: "tb", label: "Trial Balance" },
+  { id: "gl", label: "General Ledger" },
+  { id: "pl", label: "Profit & Loss" },
+  { id: "bs", label: "Balance Sheet" },
+  { id: "integrity", label: "Reconciliation & Checks" }
 ];
 
 function todayYmd(): string {
@@ -298,10 +304,10 @@ export default function AdminAccountingReportsPage() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <AdminAccountingHeader
         title="Financial Reports"
-        subtitle="POSTED GL authority — statements, integrity & exports (Phase 6D)."
+        subtitle="Review financial statements, ledgers and reconciliation reports."
       />
 
       {error ? (
@@ -316,93 +322,125 @@ export default function AdminAccountingReportsPage() {
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
-            className={`rounded-md px-3 py-2 text-sm ${
-              tab === t.id
-                ? "bg-[#1e3a2f] text-white"
-                : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
-            }`}
+            className={accountingTabClass(tab === t.id)}
           >
             {t.label}
-            {t.phase === "6D" ? (
-              <span className="ml-1 text-[10px] opacity-70">6D</span>
-            ) : null}
           </button>
         ))}
       </div>
 
       {/* Shared period / FY filters for statement tabs */}
       {(tab === "overview" || tab === "pl" || tab === "bs" || tab === "integrity") && (
-        <div className="flex flex-wrap items-end gap-3 rounded-lg border border-neutral-200 bg-white p-4">
-          <label className="text-sm">
-            From
-            <input
-              type="date"
-              className="mt-1 block rounded border border-neutral-300 px-2 py-1.5"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-            />
-          </label>
-          <label className="text-sm">
-            To
-            <input
-              type="date"
-              className="mt-1 block rounded border border-neutral-300 px-2 py-1.5"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-            />
-          </label>
-          <label className="text-sm">
-            As of (BS)
-            <input
-              type="date"
-              className="mt-1 block rounded border border-neutral-300 px-2 py-1.5"
-              value={asOf}
-              onChange={(e) => setAsOf(e.target.value)}
-            />
-          </label>
-          {fy ? (
-            <label className="text-sm">
-              Financial year
-              <select
-                className="mt-1 block rounded border border-neutral-300 px-2 py-1.5"
-                defaultValue=""
-                onChange={(e) => {
-                  const opt = fy.options.find((o) => o.label === e.target.value);
-                  if (opt) applyFy(opt.startDate, opt.endDate);
-                }}
-              >
-                <option value="">Select FY…</option>
-                {fy.options.map((o) => (
-                  <option key={o.label} value={o.label}>
-                    {o.label} ({o.startDate} → {o.endDate})
-                  </option>
-                ))}
-              </select>
+        <div className="rounded-[12px] border border-[#e8e2d9] bg-white p-4 sm:p-5">
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="min-w-[12rem] flex-1">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a7060]">Period</p>
+              <div className="mt-1 flex flex-wrap gap-2">
+                <label className="text-xs text-[#8a7060]">
+                  From
+                  <input
+                    type="date"
+                    className={accountingInputClass()}
+                    value={from}
+                    onChange={(e) => setFrom(e.target.value)}
+                  />
+                </label>
+                <label className="text-xs text-[#8a7060]">
+                  To
+                  <input
+                    type="date"
+                    className={accountingInputClass()}
+                    value={to}
+                    onChange={(e) => setTo(e.target.value)}
+                  />
+                </label>
+              </div>
+            </div>
+            <label className="text-xs text-[#8a7060]">
+              <span className="hidden sm:inline">Balance Sheet Date</span>
+              <span className="sm:hidden">BS Date</span>
+              <input
+                type="date"
+                className={accountingInputClass()}
+                value={asOf}
+                onChange={(e) => setAsOf(e.target.value)}
+              />
             </label>
-          ) : null}
-          <button
-            type="button"
-            disabled={exportBusy || !from || !to || !asOf}
-            className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm disabled:opacity-50"
-            onClick={() =>
-              void runExport(() => downloadFinancialStatementsXlsx({ asOf, from, to }))
-            }
-          >
-            {exportBusy ? "Exporting…" : "Download XLSX workbook"}
-          </button>
+            {fy ? (
+              <label className="text-xs text-[#8a7060]">
+                Financial Year
+                <select
+                  className={accountingInputClass()}
+                  defaultValue=""
+                  onChange={(e) => {
+                    const opt = fy.options.find((o) => o.label === e.target.value);
+                    if (opt) applyFy(opt.startDate, opt.endDate);
+                  }}
+                >
+                  <option value="">Select FY…</option>
+                  {fy.options.map((o) => (
+                    <option key={o.label} value={o.label}>
+                      {o.label} ({o.startDate} → {o.endDate})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            <div className="flex flex-wrap gap-2">
+              {tab === "overview" ? (
+                <button
+                  type="button"
+                  onClick={() => void loadDash()}
+                  disabled={dashLoading || !from || !to}
+                  className={accountingButtonClass("primary")}
+                >
+                  {dashLoading ? "Refreshing…" : "Refresh Report"}
+                </button>
+              ) : tab === "integrity" ? (
+                <button
+                  type="button"
+                  onClick={() => void loadIntegrity()}
+                  disabled={integrityLoading || !from || !to}
+                  className={accountingButtonClass("primary")}
+                >
+                  {integrityLoading ? "Running…" : "Refresh Report"}
+                </button>
+              ) : tab === "pl" ? (
+                <button
+                  type="button"
+                  onClick={() => void loadPl()}
+                  disabled={plLoading || !from || !to}
+                  className={accountingButtonClass("primary")}
+                >
+                  {plLoading ? "Loading…" : "Refresh Report"}
+                </button>
+              ) : tab === "bs" ? (
+                <button
+                  type="button"
+                  onClick={() => void loadBs()}
+                  disabled={bsLoading || !asOf}
+                  className={accountingButtonClass("primary")}
+                >
+                  {bsLoading ? "Loading…" : "Refresh Report"}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                disabled={exportBusy || !from || !to || !asOf}
+                className={accountingButtonClass("secondary")}
+                onClick={() =>
+                  void runExport(() => downloadFinancialStatementsXlsx({ asOf, from, to }))
+                }
+              >
+                {exportBusy ? "Exporting…" : "Export XLSX"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
       {tab === "integrity" ? (
         <div className="space-y-4">
-          <button
-            type="button"
-            onClick={() => void loadIntegrity()}
-            disabled={integrityLoading || !from || !to}
-            className="rounded-md bg-[#1e3a2f] px-4 py-2 text-sm text-white disabled:opacity-50"
-          >
-            {integrityLoading ? "Running…" : "Run Integrity / Reconciliation"}
-          </button>
           {integrity ? (
             <>
               <div
@@ -414,31 +452,31 @@ export default function AdminAccountingReportsPage() {
               >
                 <p className="font-semibold tracking-wide">
                   {integrity.overallStatus === "FINANCIAL_REPORTING_ENGINE_HEALTHY"
-                    ? "FINANCIAL REPORTING ENGINE HEALTHY"
-                    : "REVIEW REQUIRED"}
+                    ? "Financial reports look healthy"
+                    : "Review required"}
                 </p>
                 <p className="mt-1 text-xs">
-                  Engine validation only — not production cutover ready (Phase 7 incomplete).
-                  productionCutoverReady={String(integrity.productionCutoverReady)}
+                  Automated checks against posted ledger balances. Use this to find variances before
+                  relying on statements.
                 </p>
               </div>
               <div className="grid gap-3 sm:grid-cols-4">
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
-                  <p className="text-xs uppercase tracking-wide text-neutral-600">PASS</p>
+                  <p className="text-xs uppercase tracking-wide text-neutral-600">Pass</p>
                   <p className="mt-1 text-2xl font-semibold tabular-nums">{integrity.summary.pass}</p>
                 </div>
                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
-                  <p className="text-xs uppercase tracking-wide text-neutral-600">WARNING</p>
+                  <p className="text-xs uppercase tracking-wide text-neutral-600">Warning</p>
                   <p className="mt-1 text-2xl font-semibold tabular-nums">
                     {integrity.summary.warning}
                   </p>
                 </div>
                 <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-                  <p className="text-xs uppercase tracking-wide text-neutral-600">FAIL</p>
+                  <p className="text-xs uppercase tracking-wide text-neutral-600">Fail</p>
                   <p className="mt-1 text-2xl font-semibold tabular-nums">{integrity.summary.fail}</p>
                 </div>
                 <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3">
-                  <p className="text-xs uppercase tracking-wide text-neutral-600">DATA GAP</p>
+                  <p className="text-xs uppercase tracking-wide text-neutral-600">Needs attention</p>
                   <p className="mt-1 text-2xl font-semibold tabular-nums">
                     {integrity.summary.dataGap}
                   </p>
@@ -520,7 +558,7 @@ export default function AdminAccountingReportsPage() {
                 </table>
               </div>
               <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-xs text-neutral-700">
-                <p className="font-medium">Phase 7 carry-forward (not solved in 6D)</p>
+                <p className="font-medium">Items still pending for go-live readiness</p>
                 <ul className="mt-2 list-disc space-y-1 pl-5">
                   {integrity.phase7CarryForward.map((item) => (
                     <li key={item}>{item}</li>
@@ -529,31 +567,24 @@ export default function AdminAccountingReportsPage() {
               </div>
             </>
           ) : (
-            <p className="text-sm text-neutral-600">
-              Run integrity to surface GL truth, known variances, and DATA_GAP statuses.
-            </p>
+            <AccountingEmptyState
+              title="No reconciliation results yet"
+              description="Select a reporting period and refresh to run automated ledger checks."
+            />
           )}
         </div>
       ) : null}
 
       {tab === "overview" ? (
         <div className="space-y-4">
-          <button
-            type="button"
-            onClick={() => void loadDash()}
-            disabled={dashLoading || !from || !to}
-            className="rounded-md bg-[#1e3a2f] px-4 py-2 text-sm text-white disabled:opacity-50"
-          >
-            {dashLoading ? "Loading…" : "Refresh Dashboard"}
-          </button>
           {dash ? (
             <>
               <p className="text-xs text-neutral-500">
                 {dash.fy.label} · Period {dash.period.from} → {dash.period.to} · As of {dash.asOf}
                 {!dash.balanceSheet.balanced ? (
-                  <span className="ml-2 text-red-700">BS OUT OF BALANCE</span>
+                  <span className="ml-2 text-red-700">Balance sheet out of balance</span>
                 ) : (
-                  <span className="ml-2 text-emerald-700">BS BALANCED</span>
+                  <span className="ml-2 text-emerald-700">Balance sheet balanced</span>
                 )}
               </p>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -611,7 +642,10 @@ export default function AdminAccountingReportsPage() {
               </div>
             </>
           ) : (
-            <p className="text-sm text-neutral-600">Run Refresh Dashboard to load GL-backed KPIs.</p>
+            <AccountingEmptyState
+              title="No report figures yet"
+              description="Select a reporting period and refresh to view the latest financial figures."
+            />
           )}
         </div>
       ) : null}
@@ -621,16 +655,8 @@ export default function AdminAccountingReportsPage() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => void loadPl()}
-              disabled={plLoading || !from || !to}
-              className="rounded-md bg-[#1e3a2f] px-4 py-2 text-sm text-white disabled:opacity-50"
-            >
-              {plLoading ? "Loading…" : "Run Profit & Loss"}
-            </button>
-            <button
-              type="button"
               disabled={exportBusy || !from || !to}
-              className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm disabled:opacity-50"
+              className={accountingButtonClass("secondary")}
               onClick={() =>
                 void runExport(() =>
                   downloadFinancialStatementPdf({ kind: "profit-loss", from, to })
@@ -654,7 +680,7 @@ export default function AdminAccountingReportsPage() {
                   ? ` · Gross margin ${pl.totals.grossMarginPercent}%`
                   : " · Gross margin n/a"}
                 {" · "}
-                {pl.integrity.status === "PASS" ? "Integrity PASS" : `Integrity FAIL var ${pl.integrity.varianceInPaise}`}
+                {pl.integrity.status === "PASS" ? "Checks passed" : `Checks failed · variance ${pl.integrity.varianceInPaise}`}
               </div>
               {pl.comparison ? (
                 <p className="text-xs text-neutral-600">
@@ -689,16 +715,8 @@ export default function AdminAccountingReportsPage() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => void loadBs()}
-              disabled={bsLoading || !asOf}
-              className="rounded-md bg-[#1e3a2f] px-4 py-2 text-sm text-white disabled:opacity-50"
-            >
-              {bsLoading ? "Loading…" : "Run Balance Sheet"}
-            </button>
-            <button
-              type="button"
               disabled={exportBusy || !asOf}
-              className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm disabled:opacity-50"
+              className={accountingButtonClass("secondary")}
               onClick={() =>
                 void runExport(() =>
                   downloadFinancialStatementPdf({ kind: "balance-sheet", asOf })

@@ -110,8 +110,8 @@ export default function AdminOrderRefundedFullShadowPage() {
   return (
     <div className="space-y-6">
       <AdminAccountingHeader
-        title="ORDER_REFUNDED_FULL Shadow"
-        subtitle="Single full-refund reversal of ORDER_PAID_V1 — discovery only; Zoho remains authoritative"
+        title="Refunds"
+        subtitle="Find and reverse full refunds against posted sales entries."
       />
 
       <div className="flex flex-wrap items-end gap-3">

@@ -30,7 +30,7 @@ export default function AdminAccountingJournalsPage() {
     <div className="space-y-4">
       <AdminAccountingHeader
         title="Journals"
-        subtitle={`${total} entries — synthetic/manual only in Phase 1.`}
+        subtitle={`${total} journal entries.`}
       />
       {error ? (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">{error}</div>

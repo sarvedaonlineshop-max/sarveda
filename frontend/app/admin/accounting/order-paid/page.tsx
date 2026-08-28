@@ -82,8 +82,8 @@ export default function AdminOrderPaidShadowPage() {
   return (
     <div className="space-y-6">
       <AdminAccountingHeader
-        title="ORDER_PAID Shadow Posting"
-        subtitle="Preview native accounting journals from committed commerce orders. Zoho Books remains authoritative."
+        title="Sales Entries"
+        subtitle="Preview and post accounting journals from paid commerce orders."
       />
 
       <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
@@ -115,7 +115,7 @@ export default function AdminOrderPaidShadowPage() {
           onClick={() => void handlePost()}
           className="rounded border border-[#1e3a2f] px-4 py-2 text-sm text-[#1e3a2f] disabled:opacity-50"
         >
-          Post (shadow)
+          Post to books
         </button>
         <button
           type="button"

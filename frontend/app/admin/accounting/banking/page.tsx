@@ -285,7 +285,7 @@ export default function BankingAccountingPage() {
     <div className="space-y-6">
       <AdminAccountingHeader
         title="Banking & Cash"
-        subtitle="Phase 4B–4D — transfers, statement evidence, reconciliation, gateway controls. Book ≠ bank ≠ reconciled."
+        subtitle="Bank transfers, statement import, reconciliation, and gateway clearing controls."
       />
 
       {!bankingEnabled ? (
@@ -494,7 +494,7 @@ export default function BankingAccountingPage() {
       </section>
 
       <section className="space-y-3 border border-neutral-200 p-4">
-        <h2 className="font-medium text-[#1e3a2f]">Bank statements (Phase 4C)</h2>
+        <h2 className="font-medium text-[#1e3a2f]">Bank statements</h2>
         {!statementImportEnabled ? (
           <p className="text-sm text-amber-900">
             Requires <code>NATIVE_ACCOUNTING_ENABLED=1</code>,{" "}
@@ -765,7 +765,7 @@ export default function BankingAccountingPage() {
       </section>
 
       <section className="space-y-3 border border-neutral-200 p-4">
-        <h2 className="font-medium text-[#1e3a2f]">Bank reconciliation (Phase 4D)</h2>
+        <h2 className="font-medium text-[#1e3a2f]">Bank reconciliation</h2>
         {!bankReconciliationEnabled ? (
           <p className="text-sm text-amber-900">
             Requires <code>ACCOUNTING_BANK_RECONCILIATION_ENABLED=1</code> (and banking + statement

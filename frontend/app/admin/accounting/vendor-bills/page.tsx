@@ -94,8 +94,8 @@ export default function VendorBillsAccountingPage() {
   return (
     <div className="space-y-6">
       <AdminAccountingHeader
-        title="Vendor Bill / AP Shadow"
-        subtitle="VENDOR_BILL_POSTED_V1 — Dr 1210 clearing / 5300 expense + provisional Input GST, Cr 2000 AP. Zoho remains authoritative."
+        title="Bill Recognition"
+        subtitle="Recognize supplier bills in accounts payable from purchase documents."
       />
 
       <div className="flex flex-wrap gap-2">
@@ -125,7 +125,7 @@ export default function VendorBillsAccountingPage() {
           onClick={() => void runPost()}
           className="rounded-md bg-amber-700 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
         >
-          Post shadow
+          Post to books
         </button>
         <button
           type="button"

@@ -44,10 +44,12 @@ type NavGroup = {
   id: string;
   title: string;
   items: NavItem[];
+  muted?: boolean;
 };
 
 /**
  * Business-friendly accounting IA. Routes unchanged — labels only.
+ * Dashboard is a direct child of Accounting (no Overview accordion).
  */
 export function buildAccountingNavGroups(includePurchasesOps: boolean): NavGroup[] {
   const purchasesOps: NavItem[] = includePurchasesOps
@@ -64,18 +66,6 @@ export function buildAccountingNavGroups(includePurchasesOps: boolean): NavGroup
     : [];
 
   return [
-    {
-      id: "overview",
-      title: "Overview",
-      items: [
-        {
-          href: "/admin/accounting",
-          label: "Dashboard",
-          icon: <LayoutDashboard {...iconProps} />,
-          exact: true
-        }
-      ]
-    },
     {
       id: "sales",
       title: "Sales",
@@ -148,6 +138,7 @@ export function buildAccountingNavGroups(includePurchasesOps: boolean): NavGroup
     {
       id: "advanced",
       title: "Advanced",
+      muted: true,
       items: [
         {
           href: "/admin/accounting/expense-mappings",
@@ -217,18 +208,15 @@ export function AdminAccountingSidebarTree({
   const pathname = usePathname();
   const groups = useMemo(() => buildAccountingNavGroups(isPurchasesEnabled()), []);
   const workspaceActive = isAccountingWorkspacePath(pathname);
+  const dashboardActive = pathname === "/admin/accounting";
   const [rootOpen, setRootOpen] = useState(workspaceActive);
-  const [openIds, setOpenIds] = useState<Record<string, boolean>>({});
+  /** Only one subsection open at a time. */
+  const [openId, setOpenId] = useState<string | null>(null);
 
   useEffect(() => {
     if (workspaceActive) setRootOpen(true);
-    setOpenIds((prev) => {
-      const next = { ...prev };
-      for (const group of groups) {
-        if (groupHasActive(pathname, group)) next[group.id] = true;
-      }
-      return next;
-    });
+    const activeGroup = groups.find((g) => groupHasActive(pathname, g));
+    setOpenId(activeGroup?.id ?? null);
   }, [pathname, groups, workspaceActive]);
 
   return (
@@ -287,20 +275,70 @@ export function AdminAccountingSidebarTree({
       </button>
 
       {rootOpen ? (
-        <div style={{ padding: "2px 0 6px 10px", marginLeft: "8px", borderLeft: "1px solid rgba(185,138,62,0.18)" }}>
+        <div
+          style={{
+            padding: "2px 0 6px 10px",
+            marginLeft: "8px",
+            borderLeft: "1px solid rgba(185,138,62,0.18)"
+          }}
+        >
+          {/* Dashboard — direct destination, no Overview accordion */}
+          <Link
+            href="/admin/accounting"
+            onClick={() => {
+              beginNavigation?.("/admin/accounting");
+              onNavigate?.();
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              width: "100%",
+              boxSizing: "border-box",
+              padding: "7px 10px",
+              borderRadius: "8px",
+              marginBottom: "4px",
+              textDecoration: "none",
+              fontSize: "12.5px",
+              fontWeight: dashboardActive ? 600 : 500,
+              color: dashboardActive ? sidebarNavStyles.activeColor : sidebarNavStyles.idleColor,
+              background: dashboardActive ? sidebarNavStyles.activeBg : "transparent",
+              borderLeft: dashboardActive
+                ? `2px solid ${sidebarNavStyles.activeBorder}`
+                : "2px solid transparent"
+            }}
+            onMouseEnter={(e) => applySidebarHover(e.currentTarget, dashboardActive)}
+            onMouseLeave={(e) => clearSidebarHover(e.currentTarget, dashboardActive)}
+          >
+            <span
+              data-nav-icon
+              style={{
+                color: dashboardActive ? sidebarNavStyles.activeIcon : sidebarNavStyles.idleIcon,
+                flexShrink: 0
+              }}
+            >
+              <LayoutDashboard {...iconProps} />
+            </span>
+            Dashboard
+          </Link>
+
           {groups.map((group) => {
             const sectionActive = groupHasActive(pathname, group);
-            const open = Boolean(openIds[group.id]);
+            const open = openId === group.id;
+            const muted = Boolean(group.muted);
             return (
-              <div key={group.id} style={{ marginBottom: "2px" }}>
+              <div key={group.id} style={{ marginBottom: "1px", opacity: muted && !sectionActive ? 0.72 : 1 }}>
                 <button
                   type="button"
                   aria-expanded={open}
                   onClick={() =>
-                    setOpenIds((prev) => ({
-                      ...prev,
-                      [group.id]: !prev[group.id]
-                    }))
+                    setOpenId((prev) => {
+                      if (prev === group.id) {
+                        if (sectionActive) return prev;
+                        return null;
+                      }
+                      return group.id;
+                    })
                   }
                   style={{
                     display: "flex",
@@ -308,14 +346,15 @@ export function AdminAccountingSidebarTree({
                     justifyContent: "space-between",
                     width: "100%",
                     boxSizing: "border-box",
-                    padding: "7px 10px",
+                    padding: muted ? "6px 10px" : "7px 10px",
                     borderRadius: "8px",
                     border: "none",
-                    background: sectionActive ? "rgba(185,138,62,0.10)" : "transparent",
-                    color: sectionActive ? "#f0e2b8" : "rgba(220,210,190,0.55)",
-                    fontSize: "12px",
+                    background: "transparent",
+                    color: muted ? "rgba(220,210,190,0.42)" : "rgba(220,210,190,0.58)",
+                    fontSize: muted ? "11px" : "12px",
                     fontWeight: 600,
-                    letterSpacing: "0.02em",
+                    letterSpacing: "0.03em",
+                    textTransform: muted ? "uppercase" : "none",
                     cursor: "pointer",
                     fontFamily: "inherit",
                     textAlign: "left"
@@ -341,6 +380,7 @@ export function AdminAccountingSidebarTree({
                         <li key={`${group.id}-${item.href}`}>
                           <Link
                             href={item.href}
+                            title={item.label}
                             onClick={() => {
                               beginNavigation?.(item.href);
                               onNavigate?.();
@@ -375,7 +415,17 @@ export function AdminAccountingSidebarTree({
                             >
                               {item.icon}
                             </span>
-                            <span style={{ lineHeight: 1.25 }}>{item.label}</span>
+                            <span
+                              style={{
+                                lineHeight: 1.25,
+                                overflow: "hidden",
+                                display: "-webkit-box",
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: "vertical"
+                              }}
+                            >
+                              {item.label}
+                            </span>
                           </Link>
                         </li>
                       );

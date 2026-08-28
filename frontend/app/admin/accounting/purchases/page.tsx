@@ -47,8 +47,8 @@ export default function PurchaseAccountingPage() {
   return (
     <div className="space-y-6">
       <AdminAccountingHeader
-        title="Purchase Accounting"
-        subtitle="Native AP, vendor payments, and standalone expenses — reconciliation V5. Ops paid status is evidence only."
+        title="Purchase Reconciliation"
+        subtitle="Review accounts payable, vendor payments, and standalone expenses against ops records."
       />
 
       {error ? (
@@ -68,9 +68,9 @@ export default function PurchaseAccountingPage() {
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              ["Native AP recognized", formatPaise(dashboard.vendorBills.totalNativeApRecognizedInPaise)],
-              ["Native AP paid", formatPaise(dashboard.vendorBills.totalNativePaidInPaise)],
-              ["Native AP outstanding", formatPaise(dashboard.vendorBills.totalNativeOutstandingInPaise)],
+              ["AP recognized", formatPaise(dashboard.vendorBills.totalNativeApRecognizedInPaise)],
+              ["AP paid", formatPaise(dashboard.vendorBills.totalNativePaidInPaise)],
+              ["AP outstanding", formatPaise(dashboard.vendorBills.totalNativeOutstandingInPaise)],
               ["Overdue AP", formatPaise(dashboard.vendorBills.overdueOutstandingInPaise)]
             ].map(([label, value]) => (
               <div key={label as string} className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
@@ -82,7 +82,7 @@ export default function PurchaseAccountingPage() {
 
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
-              <h2 className="text-sm font-semibold text-[#1e3a2f]">AP aging (native outstanding)</h2>
+              <h2 className="text-sm font-semibold text-[#1e3a2f]">AP aging (outstanding)</h2>
               <ul className="mt-3 space-y-2 text-sm">
                 {Object.entries(dashboard.aging).map(([key, row]) => (
                   <li key={key} className="flex justify-between">
@@ -137,9 +137,9 @@ export default function PurchaseAccountingPage() {
       ) : null}
 
       <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-        Operational <code className="text-xs">Mark paid</code> and <code className="text-xs">paidInPaise</code> are
-        not financial authority. Native AP requires <strong>VendorPayment</strong> allocations with bank/cash journals.
-        Pre-cutover bills/expenses belong in opening balances — not fabricated payment history.
+        Operational “Mark paid” status is evidence only — not the books. Accounts payable is settled through
+        vendor payment allocations with bank/cash journals. Pre-cutover bills and expenses belong in opening
+        balances.
       </div>
     </div>
   );

@@ -123,8 +123,8 @@ export default function AdminSettlementsShadowPage() {
   return (
     <div className="space-y-6">
       <AdminAccountingHeader
-        title="Razorpay Settlement Shadow"
-        subtitle="PAYMENT_GATEWAY_SETTLED_V1 — GET-only import. Zoho remains authoritative. Fee+tax expense to 5100 until tax invoice verified."
+        title="Gateway Settlements"
+        subtitle="Import and review payment gateway settlements for clearing and fee posting."
       />
 
       <div className="rounded-lg border border-neutral-200 bg-white p-4 space-y-3">

@@ -140,8 +140,8 @@ export default function AccountingInventoryPage() {
   return (
     <div className="space-y-6 p-6">
       <AdminAccountingHeader
-        title="Inventory / Native Value Layers"
-        subtitle="Phase 3D1 opening layers + Phase 3D2 purchase capitalization + Phase 3D3 FIFO COGS. Does not modify operational stock."
+        title="Inventory Valuation"
+        subtitle="Opening layers, purchase capitalization, and FIFO cost of goods sold. Does not change operational stock."
       />
 
       {err ? (
@@ -171,7 +171,7 @@ export default function AccountingInventoryPage() {
       ) : null}
 
       <section className="rounded-lg border bg-white p-4 space-y-3">
-        <h2 className="font-semibold">FIFO COGS (Phase 3D3)</h2>
+        <h2 className="font-semibold">FIFO Cost of Goods Sold</h2>
         <p className="text-sm text-neutral-600">
           Dr 5000 Cost of Goods Sold / Cr 1200 Inventory Asset from native FIFO layer consumption only.
         </p>
@@ -250,7 +250,7 @@ export default function AccountingInventoryPage() {
       </section>
 
       <section className="rounded-lg border bg-white p-4 space-y-3">
-        <h2 className="font-semibold">Return / Restock COGS reversal (Phase 3D4)</h2>
+        <h2 className="font-semibold">Return / Restock COGS reversal</h2>
         <p className="text-sm text-neutral-600">
           Dr 1200 Inventory Asset / Cr 5000 COGS from historical AccountingInventoryCostConsumption only.
           Source: SELLABLE OrderInventoryRestockEvent. Does not change onHand.
@@ -338,7 +338,7 @@ export default function AccountingInventoryPage() {
       </section>
 
       <section className="rounded-lg border bg-white p-4 space-y-3">
-        <h2 className="font-semibold">Purchase Capitalization (Phase 3D2)</h2>
+        <h2 className="font-semibold">Purchase Capitalization</h2>
         <p className="text-sm text-neutral-600">
           Dr 1200 Inventory Asset / Cr 1210 Clearing when a posted vendor bill matches a purchase receipt line.
         </p>

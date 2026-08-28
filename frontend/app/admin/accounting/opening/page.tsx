@@ -300,8 +300,8 @@ export default function AccountingOpeningPage() {
   return (
     <div className="space-y-6 p-6">
       <AdminAccountingHeader
-        title="Production Opening / Cutover"
-        subtitle="Phase 7B — stage opening balances, validate, preview journal, and post a single cutover batch. Zoho remains authoritative until 7C."
+        title="Opening Balances"
+        subtitle="Stage opening balances, validate, preview the journal, and post a single cutover batch."
       />
 
       <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">

@@ -6,10 +6,17 @@ import {
   AlertTriangle,
   ArrowRight,
   CheckCircle2,
+  ClipboardList,
+  FileText,
   Info,
   Landmark,
+  Package,
+  PieChart,
   Receipt,
-  ShoppingCart,
+  ScrollText,
+  ShoppingBag,
+  TrendingUp,
+  Upload,
   Wallet
 } from "lucide-react";
 
@@ -51,7 +58,11 @@ type AttentionItem = {
   detail?: string;
   href: string;
   tone: "warning" | "error" | "info";
+  severityLabel: string;
 };
+
+const kpiIcon = { size: 16, strokeWidth: 2 } as const;
+const qaIcon = { size: 16, strokeWidth: 2 } as const;
 
 function ymd(d: Date): string {
   return d.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
@@ -92,10 +103,9 @@ export default function AdminAccountingDashboardPage() {
         const basic = await fetchAccountingDashboard();
         setDashboard(basic);
 
-        let fyCfg: FinancialYearSummary | null = null;
         if (s.reportsEnabled) {
           try {
-            fyCfg = await fetchFinancialYearConfig();
+            const fyCfg = await fetchFinancialYearConfig();
             setFy(fyCfg);
             const from = fyCfg.currentFy.startDate.slice(0, 10);
             const to = ymd(new Date());
@@ -127,7 +137,9 @@ export default function AdminAccountingDashboardPage() {
               (g) => (g.warnings?.length ?? 0) > 0 || String(g.status).toUpperCase().includes("WARN")
             );
             if (gatewayIssues.length) {
-              setUnreconciledHint(`${gatewayIssues.length} gateway clearing item(s) need review`);
+              setUnreconciledHint(
+                `${gatewayIssues.length} gateway clearing item${gatewayIssues.length === 1 ? "" : "s"} need review`
+              );
             }
           } catch {
             /* optional */
@@ -155,7 +167,8 @@ export default function AdminAccountingDashboardPage() {
       title: `${dashboard.failedPostingEvents} failed posting event${dashboard.failedPostingEvents === 1 ? "" : "s"}`,
       detail: "Review sales entries and journals for failed posts.",
       href: "/admin/accounting/order-paid",
-      tone: "error"
+      tone: "error",
+      severityLabel: "Critical"
     });
   }
   if (dashboard && (dashboard.pendingPostingEvents ?? 0) > 0) {
@@ -164,16 +177,18 @@ export default function AdminAccountingDashboardPage() {
       title: `${dashboard.pendingPostingEvents} pending posting event${dashboard.pendingPostingEvents === 1 ? "" : "s"}`,
       detail: "Find unposted transactions from sales or settlements.",
       href: "/admin/accounting/order-paid",
-      tone: "warning"
+      tone: "warning",
+      severityLabel: "Warning"
     });
   }
   if (purchases?.dataQuality.opsPaidNativeUnpaidCount) {
     attention.push({
       id: "ops-paid-native",
-      title: `${purchases.dataQuality.opsPaidNativeUnpaidCount} bill(s) marked paid in ops without native payment`,
-      detail: "Record vendor payments so AP stays accurate.",
+      title: `${purchases.dataQuality.opsPaidNativeUnpaidCount} bill(s) marked paid in ops without book payment`,
+      detail: "Record vendor payments so accounts payable stays accurate.",
       href: "/admin/accounting/vendor-payments",
-      tone: "warning"
+      tone: "warning",
+      severityLabel: "Warning"
     });
   }
   if (purchases?.expenses.gstDataGapCount) {
@@ -182,7 +197,8 @@ export default function AdminAccountingDashboardPage() {
       title: `${purchases.expenses.gstDataGapCount} GST item(s) need attention`,
       detail: "Review GST & ITC for incomplete tax data.",
       href: "/admin/accounting/gst",
-      tone: "info"
+      tone: "info",
+      severityLabel: "Review"
     });
   }
   if (integrity && integrity.overallStatus === "REVIEW_REQUIRED") {
@@ -191,16 +207,18 @@ export default function AdminAccountingDashboardPage() {
       title: "Financial health needs review",
       detail: `${integrity.summary.fail} fail · ${integrity.summary.warning} warning · ${integrity.summary.dataGap} need attention`,
       href: "/admin/accounting/reports",
-      tone: "warning"
+      tone: "warning",
+      severityLabel: "Review"
     });
   }
   if (unreconciledHint) {
     attention.push({
       id: "gateway",
       title: unreconciledHint,
-      detail: "Open Banking to review gateway clearing balances.",
+      detail: "Review gateway clearing balances in Banking.",
       href: "/admin/accounting/banking",
-      tone: "info"
+      tone: "info",
+      severityLabel: "Info"
     });
   }
 
@@ -211,13 +229,15 @@ export default function AdminAccountingDashboardPage() {
   const purchasesEnabled = isPurchasesEnabled();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <AdminAccountingHeader
         title="Accounting Overview"
         subtitle="Monitor your financial position and items that need attention."
         meta={
           <div className="space-y-0.5">
-            {fy?.currentFy?.label ? <div className="font-semibold text-[#1c352a]">{fy.currentFy.label}</div> : null}
+            {fy?.currentFy?.label ? (
+              <div className="font-semibold text-[#1c352a]">{fy.currentFy.label}</div>
+            ) : null}
             <div>As of {asOfLabel}</div>
           </div>
         }
@@ -226,92 +246,114 @@ export default function AdminAccountingDashboardPage() {
       {error ? <AccountingAlert tone="error">{error}</AccountingAlert> : null}
 
       {status && !status.nativeAccountingEnabled ? (
-        <AccountingAlert tone="warning" title="Native accounting is off">
-          Enable native accounting on the API server to load books data here. Storefront commerce is unchanged.
+        <AccountingAlert tone="warning" title="Accounting is not enabled">
+          Native accounting is turned off on the server. Storefront commerce is unchanged.
         </AccountingAlert>
       ) : null}
 
-      {loading ? (
-        <p className="text-sm text-[#8a7060]">Loading overview…</p>
-      ) : null}
+      {loading ? <p className="text-sm text-[#8a7060]">Loading overview…</p> : null}
 
-      {/* Primary KPIs */}
       {financial || purchases ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {financial ? (
             <AccountingMetricCard
               label="Sales"
               value={formatInrPaise(financial.profitAndLoss.netRevenueInPaise)}
-              hint="Net product sales this FY to date"
+              hint="Net sales this FY"
               href="/admin/accounting/reports"
+              icon={<TrendingUp {...kpiIcon} />}
             />
           ) : (
-            <AccountingMetricCard label="Sales" unavailable hint="Enable financial reports to view" />
+            <AccountingMetricCard
+              label="Sales"
+              unavailable
+              hint="Enable financial reports to view"
+              icon={<TrendingUp {...kpiIcon} />}
+            />
           )}
           {purchases ? (
             <AccountingMetricCard
               label="Purchases"
               value={formatInrPaise(purchases.vendorBills.totalNativeApRecognizedInPaise)}
-              hint="Native AP recognized"
+              hint="Supplier bills recognized in books"
               href="/admin/accounting/purchases"
+              icon={<ShoppingBag {...kpiIcon} />}
             />
           ) : (
-            <AccountingMetricCard label="Purchases" unavailable hint="Purchase books not loaded" />
+            <AccountingMetricCard
+              label="Purchases"
+              unavailable
+              hint="Purchase books not loaded"
+              icon={<ShoppingBag {...kpiIcon} />}
+            />
           )}
           {purchases ? (
             <AccountingMetricCard
               label="Expenses"
               value={formatInrPaise(purchases.expenses.totalPostedStandaloneInPaise)}
-              hint={`${purchases.expenses.postedCount} posted standalone expense(s)`}
+              hint="Posted standalone expenses"
               href={purchasesEnabled ? "/admin/purchases/expenses" : "/admin/accounting/expenses"}
+              icon={<Wallet {...kpiIcon} />}
             />
           ) : financial ? (
             <AccountingMetricCard
               label="Expenses"
               value={formatInrPaise(financial.profitAndLoss.operatingExpensesInPaise)}
-              hint="Operating expenses (P&L)"
+              hint="Operating expenses this FY"
               href="/admin/accounting/reports"
+              icon={<Wallet {...kpiIcon} />}
             />
           ) : (
-            <AccountingMetricCard label="Expenses" unavailable />
+            <AccountingMetricCard label="Expenses" unavailable icon={<Wallet {...kpiIcon} />} />
           )}
           {financial ? (
             <AccountingMetricCard
               label="Net Profit"
               value={formatInrPaise(financial.profitAndLoss.netProfitInPaise)}
-              hint="FY to date"
+              hint="Current FY"
               href="/admin/accounting/reports"
+              icon={<PieChart {...kpiIcon} />}
+              emphasis
+              titleAttr="Net profit based on posted accounting entries for the selected financial period."
             />
           ) : (
-            <AccountingMetricCard label="Net Profit" unavailable hint="Enable financial reports to view" />
+            <AccountingMetricCard
+              label="Net Profit"
+              unavailable
+              hint="Enable financial reports to view"
+              icon={<PieChart {...kpiIcon} />}
+              emphasis
+            />
           )}
         </div>
       ) : null}
 
-      {/* Second row */}
       {(financial || bankingCashPaise != null || purchases) && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 opacity-95 sm:grid-cols-2 lg:grid-cols-4">
           {bankingCashPaise != null ? (
             <AccountingMetricCard
               label="Bank & Cash"
               value={formatInrPaise(bankingCashPaise)}
-              hint="Book balances from banking"
+              hint="Current book balance"
               href="/admin/accounting/banking"
+              icon={<Landmark {...kpiIcon} />}
             />
           ) : financial ? (
             <AccountingMetricCard
               label="Bank & Cash"
               value={formatInrPaise(financial.balanceSheet.cashAndBankInPaise)}
-              hint="From balance sheet"
+              hint="Current book balance"
               href="/admin/accounting/banking"
+              icon={<Landmark {...kpiIcon} />}
             />
           ) : null}
           {financial ? (
             <AccountingMetricCard
               label="Inventory Value"
               value={formatInrPaise(financial.balanceSheet.inventoryInPaise)}
-              hint="Balance sheet inventory"
+              hint="Current inventory value"
               href="/admin/accounting/inventory"
+              icon={<Package {...kpiIcon} />}
             />
           ) : null}
           {purchases ? (
@@ -321,16 +363,18 @@ export default function AdminAccountingDashboardPage() {
               hint={
                 purchases.vendorBills.overdueOutstandingInPaise
                   ? `${formatInrPaise(purchases.vendorBills.overdueOutstandingInPaise)} overdue`
-                  : "Outstanding AP"
+                  : "Outstanding supplier bills"
               }
               href="/admin/accounting/vendor-payments"
+              icon={<FileText {...kpiIcon} />}
             />
           ) : financial ? (
             <AccountingMetricCard
               label="Accounts Payable"
               value={formatInrPaise(financial.balanceSheet.accountsPayableInPaise)}
-              hint="From balance sheet"
+              hint="Outstanding supplier bills"
               href="/admin/accounting/vendor-payments"
+              icon={<FileText {...kpiIcon} />}
             />
           ) : null}
           {financial ? (
@@ -340,21 +384,22 @@ export default function AdminAccountingDashboardPage() {
                 financial.balanceSheet.outputGstLiabilityInPaise -
                   financial.balanceSheet.inputGstAssetInPaise
               )}
-              hint="Output GST − input GST (estimate)"
+              hint="Estimated net GST payable/credit"
               href="/admin/accounting/gst"
+              icon={<Receipt {...kpiIcon} />}
             />
           ) : null}
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <AccountingSectionCard>
+      <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
+        <AccountingSectionCard className={attention.length <= 1 ? "!p-4" : undefined}>
           <AccountingSectionHeader
             title="Needs Attention"
             description="Items that may need finance follow-up"
           />
           {attention.length === 0 ? (
-            <div className="flex items-start gap-2 rounded-lg bg-emerald-50 px-3 py-3 text-sm text-emerald-900">
+            <div className="flex items-start gap-2 rounded-lg bg-emerald-50 px-3 py-2.5 text-sm text-emerald-900">
               <CheckCircle2 size={18} className="mt-0.5 shrink-0" aria-hidden />
               <div>
                 <p className="font-semibold">Nothing urgent right now</p>
@@ -369,9 +414,9 @@ export default function AdminAccountingDashboardPage() {
                 <li key={item.id}>
                   <Link
                     href={item.href}
-                    className="flex items-start gap-3 py-3 transition-colors hover:bg-[#faf5ec]/80"
+                    className="group flex items-start gap-3 rounded-lg px-1 py-2.5 transition-colors hover:bg-[#faf5ec]/80"
                   >
-                    <span className="mt-0.5 shrink-0 text-[#8a7060]" aria-hidden>
+                    <span className="mt-0.5 shrink-0" aria-hidden>
                       {item.tone === "error" ? (
                         <AlertTriangle size={16} className="text-red-600" />
                       ) : item.tone === "warning" ? (
@@ -381,12 +426,18 @@ export default function AdminAccountingDashboardPage() {
                       )}
                     </span>
                     <span className="min-w-0 flex-1">
+                      <span className="mb-0.5 inline-block text-[10px] font-semibold uppercase tracking-wide text-[#8a7060]">
+                        {item.severityLabel}
+                      </span>
                       <span className="block text-sm font-semibold text-[#2c2420]">{item.title}</span>
                       {item.detail ? (
                         <span className="mt-0.5 block text-xs text-[#8a7060]">{item.detail}</span>
                       ) : null}
                     </span>
-                    <ArrowRight size={14} className="mt-1 shrink-0 text-[#b98a3e]" aria-hidden />
+                    <span className="mt-1 inline-flex shrink-0 items-center gap-0.5 text-[11px] font-semibold text-[#b98a3e] opacity-80 group-hover:opacity-100">
+                      View
+                      <ArrowRight size={12} aria-hidden />
+                    </span>
                   </Link>
                 </li>
               ))}
@@ -401,43 +452,64 @@ export default function AdminAccountingDashboardPage() {
               <AccountingQuickAction
                 href="/admin/purchases/purchase-orders/new"
                 label="New Purchase Order"
-                hint="Create a PO"
+                hint="Create a purchase order"
+                icon={<ClipboardList {...qaIcon} />}
               />
             ) : null}
             {purchasesEnabled ? (
-              <AccountingQuickAction href="/admin/purchases/expenses" label="Record Expense" hint="Ops expense" />
+              <AccountingQuickAction
+                href="/admin/purchases/expenses"
+                label="Record Expense"
+                hint="Add an operating expense"
+                icon={<Wallet {...qaIcon} />}
+              />
             ) : (
               <AccountingQuickAction
                 href="/admin/accounting/expenses"
-                label="Expense Recognition"
-                hint="Post expense journals"
+                label="Record Expense"
+                hint="Add an operating expense"
+                icon={<Wallet {...qaIcon} />}
               />
             )}
             {purchasesEnabled ? (
-              <AccountingQuickAction href="/admin/purchases/bills" label="Vendor Bills" hint="Ops bills list" />
+              <AccountingQuickAction
+                href="/admin/purchases/bills"
+                label="Vendor Bills"
+                hint="Review supplier bills"
+                icon={<FileText {...qaIcon} />}
+              />
             ) : (
               <AccountingQuickAction
                 href="/admin/accounting/vendor-bills"
-                label="Bill Recognition"
-                hint="AP postings"
+                label="Vendor Bills"
+                hint="Review supplier bills"
+                icon={<FileText {...qaIcon} />}
               />
             )}
             <AccountingQuickAction
               href="/admin/accounting/vendor-payments"
               label="Vendor Payments"
-              hint="Settle AP"
+              hint="Record supplier payment"
+              icon={<Wallet {...qaIcon} />}
             />
             <AccountingQuickAction
               href="/admin/accounting/banking"
               label="Import Bank Statement"
-              hint="Banking workspace"
+              hint="Upload transactions"
+              icon={<Upload {...qaIcon} />}
             />
             <AccountingQuickAction
               href="/admin/accounting/reports"
               label="View Profit & Loss"
-              hint="Financial reports"
+              hint="Review profitability"
+              icon={<PieChart {...qaIcon} />}
             />
-            <AccountingQuickAction href="/admin/accounting/journals" label="View Journals" hint="Recent entries" />
+            <AccountingQuickAction
+              href="/admin/accounting/journals"
+              label="View Journals"
+              hint="Open ledger entries"
+              icon={<ScrollText {...qaIcon} />}
+            />
           </div>
         </AccountingSectionCard>
       </div>
@@ -447,7 +519,10 @@ export default function AdminAccountingDashboardPage() {
           title="Recent Journals"
           description="Latest ledger activity"
           action={
-            <Link href="/admin/accounting/journals" className="text-xs font-semibold text-[#1c352a] underline">
+            <Link
+              href="/admin/accounting/journals"
+              className="text-xs font-semibold text-[#1c352a] underline-offset-2 hover:underline"
+            >
               View all
             </Link>
           }
@@ -462,7 +537,7 @@ export default function AdminAccountingDashboardPage() {
             <table className="w-full min-w-[640px] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-[#e8e2d9] text-left">
-                  {["Date", "Transaction", "Reference", "Amount", "Status"].map((h) => (
+                  {["Date", "Journal #", "Description", "Amount", "Status"].map((h) => (
                     <th
                       key={h}
                       className={`px-2 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-[#8a7060] ${
@@ -476,19 +551,24 @@ export default function AdminAccountingDashboardPage() {
               </thead>
               <tbody>
                 {journals.map((j) => (
-                  <tr key={j.id} className="border-b border-[#f0ece6] last:border-0 hover:bg-[#faf5ec]/70">
-                    <td className="px-2 py-[11px] text-[13px] text-[#4a3f38]">{formatShortDate(j.entryDate)}</td>
-                    <td className="max-w-[220px] truncate px-2 py-[11px] text-[13px] text-[#2c2420]">
+                  <tr
+                    key={j.id}
+                    className="h-11 border-b border-[#f0ece6] last:border-0 hover:bg-[#faf5ec]/70"
+                  >
+                    <td className="px-2 py-2 text-[13px] text-[#4a3f38]">
+                      {formatShortDate(j.entryDate)}
+                    </td>
+                    <td className="px-2 py-2 font-mono text-[12px] text-[#6b5c52]">{j.entryNumber}</td>
+                    <td className="max-w-[260px] truncate px-2 py-2 text-[13px] text-[#2c2420]">
                       {j.memo?.trim() || "Journal entry"}
                     </td>
-                    <td className="px-2 py-[11px] font-mono text-[12px] text-[#6b5c52]">{j.entryNumber}</td>
                     <td
-                      className="px-2 py-[11px] text-right text-[13px] font-semibold tabular-nums text-[#1c352a]"
+                      className="px-2 py-2 text-right text-[13px] font-semibold tabular-nums text-[#1c352a]"
                       style={{ fontVariantNumeric: "tabular-nums" }}
                     >
                       {formatInrPaise(j.totalDebitInPaise)}
                     </td>
-                    <td className="px-2 py-[11px]">
+                    <td className="px-2 py-2">
                       <AccountingStatusBadge
                         tone={
                           j.status === "POSTED" ? "success" : j.status === "VOID" ? "error" : "neutral"
@@ -505,54 +585,38 @@ export default function AdminAccountingDashboardPage() {
         )}
       </AccountingSectionCard>
 
-      {/* System / Accounting Health — secondary */}
       {dashboard ? (
         <AccountingSectionCard>
           <AccountingSectionHeader
-            title="System / Accounting Health"
+            title="Accounting Health"
             description="Ledger system counts for finance ops"
           />
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-lg border border-[#e8e2d9] bg-[#faf5ec]/50 px-3 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a7060]">Chart of Accounts</p>
-              <p className="mt-1 text-xl font-bold tabular-nums text-[#1c352a]">{dashboard.accountCount}</p>
-            </div>
-            <div className="rounded-lg border border-[#e8e2d9] bg-[#faf5ec]/50 px-3 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a7060]">Journal entries</p>
-              <p className="mt-1 text-xl font-bold tabular-nums text-[#1c352a]">{dashboard.journalCount}</p>
-            </div>
-            <div className="rounded-lg border border-[#e8e2d9] bg-[#faf5ec]/50 px-3 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a7060]">Posted journals</p>
-              <p className="mt-1 text-xl font-bold tabular-nums text-[#1c352a]">{dashboard.postedJournalCount}</p>
-            </div>
-            <div className="rounded-lg border border-[#e8e2d9] bg-[#faf5ec]/50 px-3 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a7060]">Failed posting events</p>
-              <p className="mt-1 text-xl font-bold tabular-nums text-[#1c352a]">{dashboard.failedPostingEvents}</p>
-            </div>
+            {(
+              [
+                ["Chart of Accounts", dashboard.accountCount],
+                ["Journals", dashboard.journalCount],
+                ["Posted Entries", dashboard.postedJournalCount],
+                ["Failed Posting Events", dashboard.failedPostingEvents]
+              ] as const
+            ).map(([label, value]) => (
+              <div key={label} className="rounded-[10px] border border-[#e8e2d9] bg-[#faf5ec]/50 px-3 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a7060]">{label}</p>
+                <p className="mt-1 text-xl font-bold tabular-nums text-[#1c352a]">{value}</p>
+              </div>
+            ))}
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-[#8a7060]">
-            <Landmark size={14} aria-hidden />
-            <span>
-              Find unposted transactions: use Sales Entries or Gateway Settlements discovery actions.
-            </span>
+            <span>Find unposted transactions from Sales Entries or Gateway Settlements.</span>
             {integrity ? (
               <AccountingStatusBadge
-                tone={integrity.overallStatus === "FINANCIAL_REPORTING_ENGINE_HEALTHY" ? "success" : "warning"}
+                tone={
+                  integrity.overallStatus === "FINANCIAL_REPORTING_ENGINE_HEALTHY" ? "success" : "warning"
+                }
               >
                 Financial health: {humanizeAccountingStatusCode(integrity.overallStatus)}
               </AccountingStatusBadge>
             ) : null}
-          </div>
-          <div className="mt-3 flex flex-wrap gap-3 text-xs text-[#8a7060]">
-            <span className="inline-flex items-center gap-1">
-              <ShoppingCart size={12} aria-hidden /> Sales entries
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <Wallet size={12} aria-hidden /> Banking
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <Receipt size={12} aria-hidden /> GST &amp; ITC
-            </span>
           </div>
         </AccountingSectionCard>
       ) : null}
