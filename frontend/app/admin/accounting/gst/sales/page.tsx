@@ -28,7 +28,8 @@ import {
   gstTh,
   humanizeClassification,
   humanizeSupplyType,
-  moneyClass
+  moneyClass,
+  salesDocumentRefs
 } from "@/components/admin/accounting/gst/gst-ui";
 
 type View = "outward" | "b2b" | "b2c" | "credit" | "rates";
@@ -58,6 +59,7 @@ export default function GstSalesPage() {
   const [partialPolicy, setPartialPolicy] = useState<string | null>(null);
   const [rates, setRates] = useState<Row[]>([]);
   const [shippingNote, setShippingNote] = useState<string | null>(null);
+  const [detail, setDetail] = useState<Row | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -79,23 +81,17 @@ export default function GstSalesPage() {
       const shipping = o.shipping as Record<string, unknown> | undefined;
       setShippingNote(
         shipping
-          ? "Shipping GST is not calculated in accounting. Shipping amounts are recorded without inventing GST."
+          ? "Shipping GST is not calculated; shipping is recorded without inventing tax."
           : null
       );
       setB2b((b.rows as Row[]) ?? []);
       setB2bNote(
-        typeof b.note === "string"
-          ? b.note
-          : typeof b.policy === "string"
-            ? String(b.policy)
-            : "Buyer GSTIN is not captured on orders, so B2B sales reporting is incomplete."
+        "Buyer GSTIN is not captured on orders, so B2B reporting remains incomplete."
       );
       setB2c((c.aggregates as Row[]) ?? []);
       setCredit((cr.fullRefunds as Row[]) ?? []);
       setPartialPolicy(
-        typeof cr.partialRefundPolicy === "string"
-          ? "Partial-refund GST is not allocated in accounting. Only full refunds reverse output GST."
-          : "Partial-refund GST is not allocated in accounting. Only full refunds reverse output GST."
+        "Only full refunds reverse output GST. Partial-refund GST is not allocated."
       );
       setRates((r.rows as Row[]) ?? []);
     } catch (e) {
@@ -120,7 +116,7 @@ export default function GstSalesPage() {
   return (
     <GstPageShell
       title="Sales GST"
-      subtitle="Outward GST on recorded sales and full-refund credit notes for the selected month."
+      subtitle="Outward GST on recorded sales and full-refund credit notes."
       actions={
         <div className="flex flex-wrap items-end gap-3">
           <MonthFilter month={month} onChange={setMonth} disabled={loading} />
@@ -149,11 +145,21 @@ export default function GstSalesPage() {
 
       {!loading && gstEnabled && reportingEnabled ? (
         <>
-          <AccountingAlert tone="info">
-            Management view of outward GST. This is not a GST return.
-          </AccountingAlert>
+          {view === "b2b" ? (
+            <AccountingAlert tone="warning" title="Buyer GSTIN unavailable">
+              {b2bNote}
+            </AccountingAlert>
+          ) : null}
 
-          {shippingNote ? <AccountingAlert tone="warning">{shippingNote}</AccountingAlert> : null}
+          {view === "credit" && partialPolicy ? (
+            <AccountingAlert tone="warning" title="Partial-refund GST unavailable">
+              {partialPolicy}
+            </AccountingAlert>
+          ) : null}
+
+          {view === "outward" && shippingNote ? (
+            <p className="text-xs text-[#8a7060]">{shippingNote}</p>
+          ) : null}
 
           <div className="flex flex-wrap gap-1.5">
             {VIEWS.map((v) => {
@@ -162,7 +168,10 @@ export default function GstSalesPage() {
                 <button
                   key={v.id}
                   type="button"
-                  onClick={() => setView(v.id)}
+                  onClick={() => {
+                    setView(v.id);
+                    setDetail(null);
+                  }}
                   className={`rounded-md px-2.5 py-1.5 text-[11px] font-medium tracking-wide transition-colors ${
                     active
                       ? "bg-[#1c352a] text-white"
@@ -174,19 +183,6 @@ export default function GstSalesPage() {
               );
             })}
           </div>
-
-          {view === "b2b" ? (
-            <AccountingAlert tone="warning" title="Buyer GSTIN unavailable">
-              {b2bNote ??
-                "Buyer GSTIN is not captured on orders. B2B rows appear only when a valid buyer GSTIN exists on the tax snapshot — do not treat an empty list as complete B2B reporting."}
-            </AccountingAlert>
-          ) : null}
-
-          {view === "credit" && partialPolicy ? (
-            <AccountingAlert tone="warning" title="Partial-refund GST unavailable">
-              {partialPolicy}
-            </AccountingAlert>
-          ) : null}
 
           <AccountingSectionCard>
             <AccountingSectionHeader
@@ -214,7 +210,7 @@ export default function GstSalesPage() {
                     <tr>
                       {view === "outward" ? (
                         <>
-                          <th className={gstTh()}>Order</th>
+                          <th className={gstTh()}>Document</th>
                           <th className={gstTh()}>Date</th>
                           <th className={gstTh()}>Classification</th>
                           <th className={gstTh()}>Supply</th>
@@ -223,18 +219,20 @@ export default function GstSalesPage() {
                           <th className={gstTh(true)}>CGST</th>
                           <th className={gstTh(true)}>SGST</th>
                           <th className={gstTh(true)}>IGST</th>
+                          <th className={gstTh()}> </th>
                         </>
                       ) : null}
                       {view === "b2b" ? (
                         <>
                           <th className={gstTh()}>GSTIN</th>
-                          <th className={gstTh()}>Invoice</th>
+                          <th className={gstTh()}>Document</th>
                           <th className={gstTh()}>Date</th>
                           <th className={gstTh()}>Place of supply</th>
                           <th className={gstTh(true)}>Taxable</th>
                           <th className={gstTh(true)}>CGST</th>
                           <th className={gstTh(true)}>SGST</th>
                           <th className={gstTh(true)}>IGST</th>
+                          <th className={gstTh()}> </th>
                         </>
                       ) : null}
                       {view === "b2c" ? (
@@ -251,11 +249,12 @@ export default function GstSalesPage() {
                       ) : null}
                       {view === "credit" ? (
                         <>
-                          <th className={gstTh()}>Order</th>
+                          <th className={gstTh()}>Document</th>
                           <th className={gstTh()}>Date</th>
                           <th className={gstTh(true)}>CGST</th>
                           <th className={gstTh(true)}>SGST</th>
                           <th className={gstTh(true)}>IGST</th>
+                          <th className={gstTh()}> </th>
                         </>
                       ) : null}
                       {view === "rates" ? (
@@ -279,7 +278,9 @@ export default function GstSalesPage() {
                       >
                         {view === "outward" ? (
                           <>
-                            <td className={gstTd()}>{String(r.orderNumber ?? "—")}</td>
+                            <td className={gstTd()}>
+                              <DocumentCell row={r} />
+                            </td>
                             <td className={gstTd()}>
                               {r.entryDate ? String(r.entryDate).slice(0, 10) : "—"}
                             </td>
@@ -308,12 +309,23 @@ export default function GstSalesPage() {
                             <td className={`${gstTd(true)} ${moneyClass()}`}>
                               {formatInrPaise(Number(r.igstInPaise ?? 0))}
                             </td>
+                            <td className={gstTd()}>
+                              <button
+                                type="button"
+                                className="text-xs font-semibold text-[#1c352a] underline-offset-2 hover:underline"
+                                onClick={() => setDetail(r)}
+                              >
+                                Details
+                              </button>
+                            </td>
                           </>
                         ) : null}
                         {view === "b2b" ? (
                           <>
                             <td className={gstTd()}>{String(r.gstin ?? "—")}</td>
-                            <td className={gstTd()}>{String(r.invoiceReference ?? "—")}</td>
+                            <td className={gstTd()}>
+                              <DocumentCell row={r} />
+                            </td>
                             <td className={gstTd()}>
                               {r.invoiceDate ? String(r.invoiceDate).slice(0, 10) : "—"}
                             </td>
@@ -331,6 +343,15 @@ export default function GstSalesPage() {
                             </td>
                             <td className={`${gstTd(true)} ${moneyClass()}`}>
                               {formatInrPaise(Number(r.igstInPaise ?? 0))}
+                            </td>
+                            <td className={gstTd()}>
+                              <button
+                                type="button"
+                                className="text-xs font-semibold text-[#1c352a] underline-offset-2 hover:underline"
+                                onClick={() => setDetail(r)}
+                              >
+                                Details
+                              </button>
                             </td>
                           </>
                         ) : null}
@@ -362,7 +383,9 @@ export default function GstSalesPage() {
                         ) : null}
                         {view === "credit" ? (
                           <>
-                            <td className={gstTd()}>{String(r.orderNumber ?? "—")}</td>
+                            <td className={gstTd()}>
+                              <DocumentCell row={r} />
+                            </td>
                             <td className={gstTd()}>
                               {r.entryDate ? String(r.entryDate).slice(0, 10) : "—"}
                             </td>
@@ -374,6 +397,15 @@ export default function GstSalesPage() {
                             </td>
                             <td className={`${gstTd(true)} ${moneyClass()}`}>
                               {formatInrPaise(Number(r.igstInPaise ?? 0))}
+                            </td>
+                            <td className={gstTd()}>
+                              <button
+                                type="button"
+                                className="text-xs font-semibold text-[#1c352a] underline-offset-2 hover:underline"
+                                onClick={() => setDetail(r)}
+                              >
+                                Details
+                              </button>
                             </td>
                           </>
                         ) : null}
@@ -407,8 +439,96 @@ export default function GstSalesPage() {
               </GstTableWrap>
             )}
           </AccountingSectionCard>
+
+          {detail ? (
+            <AccountingSectionCard>
+              <AccountingSectionHeader
+                title="Document details"
+                action={
+                  <button
+                    type="button"
+                    className="text-xs text-[#8a7060] underline-offset-2 hover:underline"
+                    onClick={() => setDetail(null)}
+                  >
+                    Close
+                  </button>
+                }
+              />
+              <dl className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                <DetailFact label="Primary reference">
+                  {salesDocumentRefs(detail).primary}
+                </DetailFact>
+                {salesDocumentRefs(detail).secondary ? (
+                  <DetailFact label="Order / source reference">
+                    {salesDocumentRefs(detail).secondary}
+                  </DetailFact>
+                ) : null}
+                {detail.orderNumber ? (
+                  <DetailFact label="Order number">{String(detail.orderNumber)}</DetailFact>
+                ) : null}
+                {detail.journalEntryNumber ? (
+                  <DetailFact label="Journal entry">
+                    {String(detail.journalEntryNumber)}
+                  </DetailFact>
+                ) : null}
+                {detail.invoiceReference ? (
+                  <DetailFact label="Invoice reference">
+                    {String(detail.invoiceReference)}
+                  </DetailFact>
+                ) : null}
+                <DetailFact label="Date">
+                  {String(detail.entryDate ?? detail.invoiceDate ?? "—").slice(0, 10)}
+                </DetailFact>
+                <DetailFact label="Taxable" money>
+                  {formatInrPaise(Number(detail.taxableValueInPaise ?? 0))}
+                </DetailFact>
+                <DetailFact label="CGST" money>
+                  {formatInrPaise(Number(detail.cgstInPaise ?? 0))}
+                </DetailFact>
+                <DetailFact label="SGST" money>
+                  {formatInrPaise(Number(detail.sgstInPaise ?? 0))}
+                </DetailFact>
+                <DetailFact label="IGST" money>
+                  {formatInrPaise(Number(detail.igstInPaise ?? 0))}
+                </DetailFact>
+              </dl>
+            </AccountingSectionCard>
+          ) : null}
         </>
       ) : null}
     </GstPageShell>
+  );
+}
+
+function DocumentCell({ row }: { row: Row }) {
+  const refs = salesDocumentRefs(row);
+  return (
+    <div className="min-w-0">
+      <div className="font-medium text-[#2c2420]">{refs.primary}</div>
+      {refs.secondary ? (
+        <div className="mt-0.5 truncate text-[11px] text-[#8a7060]" title={refs.secondary}>
+          {refs.secondary}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function DetailFact({
+  label,
+  children,
+  money
+}: {
+  label: string;
+  children: React.ReactNode;
+  money?: boolean;
+}) {
+  return (
+    <div className="rounded-lg border border-[#ebe4db] bg-[#faf5ec] px-3 py-2.5">
+      <dt className="text-[11px] font-medium uppercase tracking-wide text-[#8a7060]">{label}</dt>
+      <dd className={`mt-1 text-sm ${money ? moneyClass() : "font-semibold text-[#2c2420]"}`}>
+        {children}
+      </dd>
+    </div>
   );
 }

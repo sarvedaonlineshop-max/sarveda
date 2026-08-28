@@ -18,15 +18,24 @@ import {
   AccountingQuickAction,
   AccountingSectionCard,
   AccountingSectionHeader,
+  AccountingStatusBadge,
   GstPageShell,
   GstSkeleton,
   GstUnavailableState,
   MonthFilter,
   currentGstMonth,
-  humanizeGstStatus
+  gstAttentionKindFromCode,
+  humanizeGstStatus,
+  type GstAttentionKind
 } from "@/components/admin/accounting/gst/gst-ui";
 
-type Attention = { label: string; href: string; hint?: string };
+type Attention = {
+  label: string;
+  href: string;
+  hint?: string;
+  kind: GstAttentionKind;
+  code?: string;
+};
 
 export default function GstOverviewPage() {
   const [month, setMonth] = useState(currentGstMonth);
@@ -39,9 +48,7 @@ export default function GstOverviewPage() {
   const [inputRecognized, setInputRecognized] = useState<number | null>(null);
   const [itcEligible, setItcEligible] = useState<number | null>(null);
   const [estimatedNet, setEstimatedNet] = useState<number | null>(null);
-  const [attentionCount, setAttentionCount] = useState<number | null>(null);
   const [attention, setAttention] = useState<Attention[]>([]);
-  const [netNote, setNetNote] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -53,12 +60,10 @@ export default function GstOverviewPage() {
       setItcEnabled(Boolean(st.itcVerificationEnabled ?? st.itcEligibleWorkflow));
       if (!st.gstEnabled) {
         setAttention([]);
-        setAttentionCount(0);
         return;
       }
 
       const items: Attention[] = [];
-      let gapTotal = 0;
 
       const led = await fetchGstLedger({ month }).catch(() => null);
       if (led?.aggregates) {
@@ -91,26 +96,25 @@ export default function GstOverviewPage() {
         if (typeof net?.estimatedNetGstPositionInPaise === "number") {
           setEstimatedNet(net.estimatedNetGstPositionInPaise);
         }
-        setNetNote(typeof net?.note === "string" ? net.note : null);
 
         const gaps = await fetchGstReportDataGaps({ month }).catch(() => null);
-        const gapRows = gaps?.gaps ?? [];
-        for (const g of gapRows) {
-          gapTotal += g.count;
-          if (g.count > 0) {
-            items.push({
-              label: humanizeGstStatus(g.code),
-              href: "/admin/accounting/gst/reconciliation",
-              hint: String(g.count)
-            });
-          }
+        for (const g of gaps?.gaps ?? []) {
+          if (g.count <= 0) continue;
+          const label = humanizeGstStatus(g.code);
+          items.push({
+            label,
+            href: "/admin/accounting/gst/reconciliation",
+            hint: String(g.count),
+            kind: gstAttentionKindFromCode(g.code),
+            code: g.code
+          });
         }
 
         if ((inputTax?.unverifiedItcInPaise ?? 0) > 0 || (inputTax?.dataGapItcInPaise ?? 0) > 0) {
           items.push({
             label: "Input tax credit needs review",
             href: "/admin/accounting/gst/itc",
-            hint: undefined
+            kind: "action"
           });
         }
       }
@@ -121,16 +125,27 @@ export default function GstOverviewPage() {
           setItcEligible(itc.eligibleInputGst.totalGstInPaise);
           if (itc.unverifiedInputGst.count > 0) {
             items.push({
-              label: "ITC items awaiting verification",
+              label: "ITC awaiting verification",
               href: "/admin/accounting/gst/itc",
-              hint: String(itc.unverifiedInputGst.count)
+              hint: String(itc.unverifiedInputGst.count),
+              kind: "action"
             });
           }
           if (itc.dataGapInputGst.count > 0) {
             items.push({
               label: "ITC information incomplete",
               href: "/admin/accounting/gst/itc",
-              hint: String(itc.dataGapInputGst.count)
+              hint: String(itc.dataGapInputGst.count),
+              kind: "action"
+            });
+          }
+          if (itc.gatewayProvisionalGst.count > 0) {
+            items.push({
+              label: "Payment fee tax",
+              href: "/admin/accounting/gst/itc",
+              hint: String(itc.gatewayProvisionalGst.count),
+              kind: "info",
+              code: "GATEWAY_GST_PROVISIONAL"
             });
           }
         }
@@ -140,24 +155,27 @@ export default function GstOverviewPage() {
         const sourceGaps = await fetchGstDataGaps(40).catch(() => null);
         const n = sourceGaps?.rows?.length ?? 0;
         if (n > 0) {
-          gapTotal += n;
           items.push({
             label: "GST differences needing review",
             href: "/admin/accounting/gst/reconciliation",
-            hint: String(n)
+            hint: String(n),
+            kind: "action"
           });
         }
       }
 
-      // Deduplicate by label
       const seen = new Set<string>();
       const unique = items.filter((i) => {
-        if (seen.has(i.label)) return false;
-        seen.add(i.label);
+        const key = `${i.label}|${i.href}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
         return true;
       });
+      unique.sort((a, b) => {
+        if (a.kind !== b.kind) return a.kind === "action" ? -1 : 1;
+        return a.label.localeCompare(b.label);
+      });
       setAttention(unique);
-      setAttentionCount(Math.max(gapTotal, unique.length));
     } catch (e) {
       setError(e instanceof Error ? e.message : "GST overview could not be loaded.");
     } finally {
@@ -169,10 +187,13 @@ export default function GstOverviewPage() {
     void load();
   }, [load]);
 
+  const actionItems = attention.filter((a) => a.kind === "action");
+  const infoItems = attention.filter((a) => a.kind === "info");
+
   return (
     <GstPageShell
       title="GST Accounting"
-      subtitle="Review output tax, input tax credit position, and management GST summaries for the selected month."
+      subtitle="Review output tax, input tax credit, and GST summaries for the selected month."
       actions={
         <div className="flex flex-wrap items-end gap-3">
           <MonthFilter month={month} onChange={setMonth} disabled={loading} />
@@ -194,78 +215,69 @@ export default function GstOverviewPage() {
 
       {!loading && gstEnabled ? (
         <>
-          <AccountingAlert tone="info">
-            Figures are for accounting management. This workspace does not prepare or file GST returns.
-          </AccountingAlert>
+          <p className="text-xs leading-relaxed text-[#8a7060]">
+            Figures are for accounting management. This workspace does not prepare or file GST
+            returns.
+          </p>
 
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <AccountingMetricCard
               label="Output GST"
               value={outputTotal != null ? formatInrPaise(outputTotal) : "—"}
-              hint={reportingEnabled ? "Period output tax (management)" : "From GST ledger closing"}
+              hint={reportingEnabled ? "Period output tax" : "From GST ledger"}
               href="/admin/accounting/gst/sales"
             />
             <AccountingMetricCard
               label="Input GST Recognised"
               value={inputRecognized != null ? formatInrPaise(inputRecognized) : "—"}
-              hint="Posted to Input GST accounts"
+              hint="Posted Input GST balances"
               href="/admin/accounting/gst/ledger"
             />
             <AccountingMetricCard
               label="ITC Position"
               value={
-                itcEnabled && itcEligible != null
+                (itcEnabled || reportingEnabled) && itcEligible != null
                   ? formatInrPaise(itcEligible)
-                  : reportingEnabled && itcEligible != null
-                    ? formatInrPaise(itcEligible)
-                    : "—"
+                  : "—"
               }
-              hint="Eligible for claimability review (not ledger change)"
+              hint="Claimability review status"
               href="/admin/accounting/gst/itc"
             />
             <AccountingMetricCard
               label="Estimated Net GST"
               value={estimatedNet != null ? formatInrPaise(estimatedNet) : "—"}
-              hint="Management estimate — not a filing amount"
+              hint="Accounting estimate"
               href="/admin/accounting/gst/reports"
             />
           </div>
-
-          {netNote ? (
-            <p className="text-xs text-[#8a7060]">
-              {netNote.includes("statutory") || netNote.includes("Not statutory")
-                ? "Estimated net GST is a management accounting view. Filing adjustments are not modeled."
-                : netNote}
-            </p>
-          ) : null}
 
           <AccountingSectionCard>
             <AccountingSectionHeader title="Needs Attention" />
             {attention.length === 0 ? (
               <AccountingEmptyState title="No GST items need attention for this month." />
             ) : (
-              <ul className="space-y-2">
-                {attention.map((item) => (
-                  <li key={`${item.label}-${item.href}`}>
-                    <Link
-                      href={item.href}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#ebe4db] bg-[#faf5ec]/50 px-3 py-2.5 text-sm transition-colors hover:bg-white"
-                    >
-                      <span className="font-medium text-[#2c2420]">
-                        {item.hint ? `${item.hint} ` : ""}
-                        {item.label}
-                      </span>
-                      <span className="text-xs font-semibold text-[#1c352a]">Review →</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              <div className="space-y-4">
+                {actionItems.length > 0 ? (
+                  <ul className="space-y-2">
+                    {actionItems.map((item) => (
+                      <AttentionRow key={`a-${item.label}-${item.href}`} item={item} />
+                    ))}
+                  </ul>
+                ) : null}
+                {infoItems.length > 0 ? (
+                  <div>
+                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#8a7060]">
+                      Known limitations
+                    </p>
+                    <ul className="space-y-2">
+                      {infoItems.map((item) => (
+                        <AttentionRow key={`i-${item.label}-${item.href}`} item={item} />
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
             )}
-            {attentionCount != null && attentionCount > 0 ? (
-              <p className="mt-2 text-xs text-[#8a7060]">
-                {attentionCount} attention signal{attentionCount === 1 ? "" : "s"} this month
-              </p>
-            ) : null}
           </AccountingSectionCard>
 
           <AccountingSectionCard>
@@ -283,17 +295,17 @@ export default function GstOverviewPage() {
               />
               <AccountingQuickAction
                 label="Open GST Ledger"
-                hint="Posted Output and Input GST balances"
+                hint="Output and Input GST balances"
                 href="/admin/accounting/gst/ledger"
               />
               <AccountingQuickAction
                 label="GST Reconciliation"
-                hint="Diagnostic comparison only"
+                hint="Diagnostic comparison"
                 href="/admin/accounting/gst/reconciliation"
               />
               <AccountingQuickAction
                 label="Reports & Export"
-                hint="Management workbook download"
+                hint="Summaries and workbook"
                 href="/admin/accounting/gst/reports"
               />
             </div>
@@ -301,5 +313,29 @@ export default function GstOverviewPage() {
         </>
       ) : null}
     </GstPageShell>
+  );
+}
+
+function AttentionRow({ item }: { item: Attention }) {
+  return (
+    <li>
+      <Link
+        href={item.href}
+        className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#ebe4db] bg-[#faf5ec]/50 px-3 py-2.5 text-sm transition-colors hover:bg-white"
+      >
+        <span className="flex min-w-0 flex-wrap items-center gap-2">
+          <AccountingStatusBadge tone={item.kind === "action" ? "warning" : "neutral"}>
+            {item.kind === "action" ? "Review" : "Limitation"}
+          </AccountingStatusBadge>
+          <span className="font-medium text-[#2c2420]">
+            {item.hint ? (
+              <span className="tabular-nums text-[#1c352a]">{item.hint} </span>
+            ) : null}
+            {item.label}
+          </span>
+        </span>
+        <span className="shrink-0 text-xs font-semibold text-[#1c352a]">Open →</span>
+      </Link>
+    </li>
   );
 }

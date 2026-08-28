@@ -43,7 +43,7 @@ const TABS: Array<{ id: ReportTab; label: string }> = [
   { id: "hsn", label: "HSN" },
   { id: "rates", label: "Rate summary" },
   { id: "pos", label: "Place of supply" },
-  { id: "summary3b", label: "3B-style summary" },
+  { id: "summary3b", label: "GST Summary" },
   { id: "integrity", label: "Integrity" },
   { id: "gaps", label: "Data gaps" }
 ];
@@ -117,7 +117,7 @@ export default function GstReportsPage() {
   return (
     <GstPageShell
       title="GST Reports & Export"
-      subtitle="Management GST summaries and workbook download. Not GSTN filing."
+      subtitle="GST summaries and management workbook download."
       actions={
         <div className="flex flex-wrap items-end gap-3">
           <MonthFilter month={month} onChange={setMonth} disabled={loading} />
@@ -134,7 +134,7 @@ export default function GstReportsPage() {
               className={accountingButtonClass("secondary", true)}
               href={`${getApiBase()}${gstExportUrl({ month })}`}
             >
-              Download GST management workbook
+              Download GST workbook
             </a>
           ) : null}
         </div>
@@ -154,10 +154,9 @@ export default function GstReportsPage() {
 
       {!loading && gstEnabled && reportingEnabled ? (
         <>
-          <AccountingAlert tone="info">
-            These are accounting management reports. They are not filed GST returns and are not GSTN
-            submissions.
-          </AccountingAlert>
+          <p className="text-xs leading-relaxed text-[#8a7060]">
+            Accounting management reports — not filed GST returns.
+          </p>
 
           <div className="flex flex-wrap gap-1.5">
             {TABS.map((t) => {
@@ -197,9 +196,92 @@ export default function GstReportsPage() {
                 <AccountingMetricCard
                   label="Estimated net GST"
                   value={formatInrPaise(Number(net?.estimatedNetGstPositionInPaise ?? 0))}
-                  hint="Management estimate — not a filing amount"
+                  hint="Accounting estimate"
                 />
               </div>
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                <AccountingSectionCard>
+                  <AccountingSectionHeader title="Output tax components" />
+                  <dl className="space-y-2 text-sm">
+                    <CompRow
+                      label="Output CGST"
+                      value={formatInrPaise(Number(outward?.outputCgstInPaise ?? 0))}
+                    />
+                    <CompRow
+                      label="Output SGST"
+                      value={formatInrPaise(Number(outward?.outputSgstInPaise ?? 0))}
+                    />
+                    <CompRow
+                      label="Output IGST"
+                      value={formatInrPaise(Number(outward?.outputIgstInPaise ?? 0))}
+                    />
+                  </dl>
+                </AccountingSectionCard>
+
+                <AccountingSectionCard>
+                  <AccountingSectionHeader title="Input tax / ITC" />
+                  <dl className="space-y-2 text-sm">
+                    <CompRow
+                      label="Recognised"
+                      value={formatInrPaise(Number(inputTax?.recognizedTotalInPaise ?? 0))}
+                    />
+                    <CompRow
+                      label="Eligible"
+                      value={formatInrPaise(Number(inputTax?.eligibleItcInPaise ?? 0))}
+                    />
+                    <CompRow
+                      label="Awaiting verification"
+                      value={formatInrPaise(Number(inputTax?.unverifiedItcInPaise ?? 0))}
+                    />
+                    <CompRow
+                      label="Blocked"
+                      value={formatInrPaise(Number(inputTax?.blockedItcInPaise ?? 0))}
+                    />
+                  </dl>
+                </AccountingSectionCard>
+              </div>
+
+              {rates.length > 0 || gaps.length > 0 ? (
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {rates.length > 0 ? (
+                    <AccountingSectionCard>
+                      <AccountingSectionHeader title="Rate summary (top)" />
+                      <ul className="space-y-2 text-sm">
+                        {rates.slice(0, 5).map((r, i) => (
+                          <li
+                            key={i}
+                            className="flex items-center justify-between gap-2 border-b border-[#eee8e0] pb-2 last:border-0"
+                          >
+                            <span className="text-[#6b5c52]">{String(r.rateLabel ?? "—")}</span>
+                            <span className={moneyClass()}>
+                              {formatInrPaise(Number(r.netTaxInPaise ?? r.taxableValueInPaise ?? 0))}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </AccountingSectionCard>
+                  ) : null}
+                  {gaps.length > 0 ? (
+                    <AccountingSectionCard>
+                      <AccountingSectionHeader title="Key data gaps" />
+                      <ul className="space-y-2 text-sm">
+                        {gaps.slice(0, 6).map((g) => (
+                          <li
+                            key={g.code}
+                            className="flex items-center justify-between gap-2 border-b border-[#eee8e0] pb-2 last:border-0"
+                          >
+                            <span className="text-[#6b5c52]">{humanizeGstStatus(g.code)}</span>
+                            <span className="tabular-nums font-semibold text-[#2c2420]">
+                              {g.count}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </AccountingSectionCard>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           ) : null}
 
@@ -362,9 +444,8 @@ export default function GstReportsPage() {
 
           {tab === "summary3b" && summary3b ? (
             <div className="space-y-4">
-              <AccountingAlert tone="warning" title="GST management summary — not a filed GSTR-3B return.">
-                This view mirrors 3B-style totals for internal reconciliation. It is not a statutory
-                return and must not be submitted to the GST portal.
+              <AccountingAlert tone="info" title="GST Summary">
+                Internal accounting summary — not a filed GSTR-3B return.
               </AccountingAlert>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <AccountingMetricCard
@@ -382,7 +463,7 @@ export default function GstReportsPage() {
                 <AccountingMetricCard
                   label="Estimated net"
                   value={formatInrPaise(Number(s3Net?.estimatedNetGstPositionInPaise ?? 0))}
-                  hint="Management estimate"
+                  hint="Accounting estimate"
                 />
               </div>
             </div>
@@ -392,7 +473,7 @@ export default function GstReportsPage() {
             <AccountingSectionCard>
               <AccountingSectionHeader
                 title="Report integrity"
-                description="Compares management report totals with ledger authority."
+                description="Compares report totals with ledger balances."
                 action={
                   <AccountingStatusBadge tone={gstStatusTone(integrity.status)}>
                     {humanizeGstStatus(integrity.status)}
@@ -478,5 +559,14 @@ export default function GstReportsPage() {
         </>
       ) : null}
     </GstPageShell>
+  );
+}
+
+function CompRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-[#eee8e0] pb-2 last:border-0 last:pb-0">
+      <dt className="text-[#6b5c52]">{label}</dt>
+      <dd className={moneyClass()}>{value}</dd>
+    </div>
   );
 }

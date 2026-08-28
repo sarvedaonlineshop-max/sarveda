@@ -125,6 +125,26 @@ export type AccountingJournalEntry = {
   lines: AccountingJournalLine[];
 };
 
+export type AccountingJournalDetail = AccountingJournalEntry & {
+  currency?: string;
+  createdAt?: string;
+  postingEvent?: {
+    id: string;
+    eventType: string;
+    sourceType: string;
+    sourceId: string;
+    uniqueKey: string;
+    status: string;
+  } | null;
+  documentLinks?: Array<{
+    id: string;
+    documentType: string;
+    documentId: string;
+    zohoDocumentId?: string | null;
+    zohoDocumentType?: string | null;
+  }>;
+};
+
 export async function fetchAccountingStatus() {
   return accountingFetch<AccountingStatus>("/api/admin/accounting/status");
 }
@@ -138,9 +158,13 @@ export async function fetchAccountingAccounts() {
 }
 
 export async function fetchAccountingJournals(limit = 50, offset = 0) {
-  return accountingFetch<{ items: AccountingJournalEntry[]; total: number }>(
+  return accountingFetch<{ items: AccountingJournalEntry[]; total: number; limit?: number; offset?: number }>(
     `/api/admin/accounting/journals?limit=${limit}&offset=${offset}`
   );
+}
+
+export async function fetchAccountingJournalDetail(id: string) {
+  return accountingFetch<AccountingJournalDetail>(`/api/admin/accounting/journals/${id}`);
 }
 
 export function formatInrPaise(paise: number): string {

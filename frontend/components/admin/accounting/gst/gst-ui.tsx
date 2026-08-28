@@ -265,3 +265,52 @@ export function GstUnavailableState({
 }) {
   return <AccountingEmptyState title={title} description={description} />;
 }
+
+/** Presentation-only: actionable review vs known limitation. */
+export type GstAttentionKind = "action" | "info";
+
+export function gstAttentionKindFromCode(codeOrLabel: string): GstAttentionKind {
+  const s = codeOrLabel.toUpperCase();
+  if (
+    s.includes("BUYER_GSTIN") ||
+    s.includes("SHIPPING_GST") ||
+    s.includes("PARTIAL_REFUND") ||
+    s.includes("RCM_") ||
+    s.includes("HSN_DEFAULTED") ||
+    s.includes("TAX_CLASS_DEFAULTED") ||
+    s.includes("GATEWAY") ||
+    /buyer gstin|shipping gst|partial-refund|reverse charge|hsn defaulted|tax class defaulted|payment fee/i.test(
+      codeOrLabel
+    )
+  ) {
+    return "info";
+  }
+  return "action";
+}
+
+/**
+ * Prefer a calmer primary reference when a technical/test order id is present
+ * and a journal entry number already exists on the row.
+ */
+export function salesDocumentRefs(row: Record<string, unknown>): {
+  primary: string;
+  secondary: string | null;
+} {
+  const order = String(row.orderNumber ?? row.invoiceReference ?? "").trim();
+  const journal = String(row.journalEntryNumber ?? "").trim();
+  const technical =
+    /^TEST[-_]/i.test(order) ||
+    /^ACC[-_]/i.test(order) ||
+    (order.length > 28 && !/^SRV-/i.test(order));
+
+  if (technical && journal) {
+    return { primary: journal, secondary: order };
+  }
+  if (order) {
+    return {
+      primary: order,
+      secondary: journal && journal !== order ? journal : null
+    };
+  }
+  return { primary: journal || "—", secondary: null };
+}

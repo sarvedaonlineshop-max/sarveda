@@ -143,7 +143,7 @@ export default function GstReconciliationPage() {
   return (
     <GstPageShell
       title="GST Reconciliation"
-      subtitle="Diagnostic comparison of tax documents and posted GST. This screen does not change accounting."
+      subtitle="Diagnostic comparison of tax documents and posted GST."
       actions={
         <div className="flex flex-wrap items-end gap-3">
           <MonthFilter month={month} onChange={setMonth} disabled={loading} />
@@ -165,9 +165,9 @@ export default function GstReconciliationPage() {
 
       {!loading && gstEnabled ? (
         <>
-          <AccountingAlert tone="info">
-            Diagnostic only — there is no Resolve, Fix, or Adjust action here.
-          </AccountingAlert>
+          <p className="text-xs leading-relaxed text-[#8a7060]">
+            Diagnostic only — this screen does not post adjustments.
+          </p>
 
           {reportingEnabled && reportGaps.length > 0 ? (
             <AccountingSectionCard>

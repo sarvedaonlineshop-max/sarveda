@@ -56,7 +56,7 @@ export default function GstLedgerPage() {
   return (
     <GstPageShell
       title="GST Ledger"
-      subtitle="Balances from posted GST journal entries for Output and Input GST accounts."
+      subtitle="Balances from posted Output and Input GST journal entries."
       actions={
         <div className="flex flex-wrap items-end gap-3">
           <MonthFilter month={month} onChange={setMonth} disabled={loading} />
@@ -78,10 +78,10 @@ export default function GstLedgerPage() {
 
       {!loading && gstEnabled && ledger ? (
         <>
-          <AccountingAlert tone="info">
-            These balances come from posted accounting journals. There is no separate “GST payable”
-            control account — estimated net position is a management calculation on Reports.
-          </AccountingAlert>
+          <p className="text-xs leading-relaxed text-[#8a7060]">
+            There is no separate GST payable control account. Estimated net position is shown on
+            Reports.
+          </p>
 
           <AccountingSectionCard>
             <AccountingSectionHeader

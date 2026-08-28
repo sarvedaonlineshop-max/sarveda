@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { AdminAccountingHeader } from "@/components/admin/accounting/AdminAccountingNav";
 import {
   AccountingEmptyState,
@@ -104,7 +105,14 @@ function StatementRows({
 }
 
 export default function AdminAccountingReportsPage() {
-  const [tab, setTab] = useState<TabId>("overview");
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const accountParam = searchParams.get("account");
+
+  const [tab, setTab] = useState<TabId>(() => {
+    const t = tabParam as TabId | null;
+    return t && TABS.some((x) => x.id === t) ? t : "overview";
+  });
   const [fy, setFy] = useState<FinancialYearSummary | null>(null);
   const [accounts, setAccounts] = useState<ReportAccountRow[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -118,7 +126,7 @@ export default function AdminAccountingReportsPage() {
   const [tb, setTb] = useState<TrialBalanceReport | null>(null);
   const [tbLoading, setTbLoading] = useState(false);
 
-  const [glAccount, setGlAccount] = useState("1010");
+  const [glAccount, setGlAccount] = useState(accountParam?.trim() || "1010");
   const [glFrom, setGlFrom] = useState("");
   const [glTo, setGlTo] = useState(todayYmd());
   const [gl, setGl] = useState<GeneralLedgerReport | null>(null);
@@ -227,6 +235,20 @@ export default function AdminAccountingReportsPage() {
     },
     [from, to, asOf, fy, loadGl]
   );
+
+  // Deep-link: /admin/accounting/reports?tab=gl&account=1200
+  useEffect(() => {
+    const t = searchParams.get("tab") as TabId | null;
+    const acct = searchParams.get("account")?.trim();
+    if (t && TABS.some((x) => x.id === t)) setTab(t);
+    if (acct) setGlAccount(acct);
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (tab !== "gl" || !glAccount || !glFrom || !glTo || gl) return;
+    void loadGl({ accountCode: glAccount, from: glFrom, to: glTo, offset: 0 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, glAccount, glFrom, glTo]);
 
   const loadPl = useCallback(async (opts?: { from?: string; to?: string }) => {
     const f = (opts?.from ?? from).trim();

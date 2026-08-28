@@ -65,6 +65,7 @@ export default function GstItcPage() {
   const [selected, setSelected] = useState<ItcEvidenceRow | null>(null);
   const [pending, setPending] = useState<PendingAction | null>(null);
   const [reasonDraft, setReasonDraft] = useState("");
+  const [menuFor, setMenuFor] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -124,7 +125,7 @@ export default function GstItcPage() {
         }
         const updated = await verifyItc(pending.row.id, reason);
         setSelected(updated);
-        setMessage("Marked eligible for claimability. The accounting ledger was not changed.");
+        setMessage("Marked eligible for claimability.");
       } else {
         const reason = pending.reason.trim();
         if (!reason) {
@@ -133,7 +134,7 @@ export default function GstItcPage() {
         }
         const updated = await blockItc(pending.row.id, reason);
         setSelected(updated);
-        setMessage("Blocked for claimability. The accounting ledger was not changed.");
+        setMessage("Blocked for claimability.");
       }
       setPending(null);
       setReasonDraft("");
@@ -166,7 +167,7 @@ export default function GstItcPage() {
   return (
     <GstPageShell
       title="Purchase GST / ITC"
-      subtitle="Review input tax credit evidence and claimability status. Verification does not change the accounting ledger."
+      subtitle="Review input tax credit evidence and claimability status."
       actions={
         <div className="flex flex-wrap items-end gap-3">
           <MonthFilter month={month} onChange={setMonth} disabled={loading || busy} />
@@ -206,10 +207,10 @@ export default function GstItcPage() {
 
       {!loading && gstEnabled && itcEnabled ? (
         <>
-          <AccountingAlert tone="info">
-            Verify and Block update claimability evidence only. Posted Input GST in the ledger is
-            unchanged. Filing / claimed workflow is not available.
-          </AccountingAlert>
+          <p className="text-xs leading-relaxed text-[#8a7060]">
+            Verify and Block update claimability evidence only — posted Input GST balances are
+            unchanged.
+          </p>
 
           {summary ? (
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -307,39 +308,28 @@ export default function GstItcPage() {
                           </AccountingStatusBadge>
                         </td>
                         <td className={gstTd()}>
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              className="text-xs font-semibold text-[#1c352a] underline-offset-2 hover:underline"
-                              onClick={() => void openDetail(r.id)}
-                            >
-                              View
-                            </button>
-                            {r.status !== "ELIGIBLE" && r.status !== "BLOCKED" ? (
-                              <button
-                                type="button"
-                                className="text-xs font-semibold text-[#1c352a] underline-offset-2 hover:underline"
-                                onClick={() => {
-                                  setReasonDraft("");
-                                  setPending({ kind: "verify", row: r, reason: "" });
-                                }}
-                              >
-                                Verify
-                              </button>
-                            ) : null}
-                            {r.status !== "BLOCKED" ? (
-                              <button
-                                type="button"
-                                className="text-xs font-semibold text-[#8a4030] underline-offset-2 hover:underline"
-                                onClick={() => {
-                                  setReasonDraft("");
-                                  setPending({ kind: "block", row: r, reason: "" });
-                                }}
-                              >
-                                Block
-                              </button>
-                            ) : null}
-                          </div>
+                          <ItcRowActions
+                            row={r}
+                            menuOpen={menuFor === r.id}
+                            onToggleMenu={() =>
+                              setMenuFor((cur) => (cur === r.id ? null : r.id))
+                            }
+                            onCloseMenu={() => setMenuFor(null)}
+                            onView={() => {
+                              setMenuFor(null);
+                              void openDetail(r.id);
+                            }}
+                            onVerify={() => {
+                              setMenuFor(null);
+                              setReasonDraft("");
+                              setPending({ kind: "verify", row: r, reason: "" });
+                            }}
+                            onBlock={() => {
+                              setMenuFor(null);
+                              setReasonDraft("");
+                              setPending({ kind: "block", row: r, reason: "" });
+                            }}
+                          />
                         </td>
                       </tr>
                     ))}
@@ -465,15 +455,11 @@ export default function GstItcPage() {
                       if (next.kind === "verify") {
                         const updated = await verifyItc(next.row.id, reasonDraft.trim());
                         setSelected(updated);
-                        setMessage(
-                          "Marked eligible for claimability. The accounting ledger was not changed."
-                        );
+                        setMessage("Marked eligible for claimability.");
                       } else if (next.kind === "block") {
                         const updated = await blockItc(next.row.id, reasonDraft.trim());
                         setSelected(updated);
-                        setMessage(
-                          "Blocked for claimability. The accounting ledger was not changed."
-                        );
+                        setMessage("Blocked for claimability.");
                       }
                       setPending(null);
                       setReasonDraft("");
@@ -522,6 +508,88 @@ function Detail({
       <dd className={`mt-1 text-sm ${money ? moneyClass() : "font-semibold text-[#2c2420]"}`}>
         {children}
       </dd>
+    </div>
+  );
+}
+
+function ItcRowActions({
+  row,
+  menuOpen,
+  onToggleMenu,
+  onCloseMenu,
+  onView,
+  onVerify,
+  onBlock
+}: {
+  row: ItcEvidenceRow;
+  menuOpen: boolean;
+  onToggleMenu: () => void;
+  onCloseMenu: () => void;
+  onView: () => void;
+  onVerify: () => void;
+  onBlock: () => void;
+}) {
+  const canVerify = row.status !== "ELIGIBLE" && row.status !== "BLOCKED";
+  const canBlock = row.status !== "BLOCKED";
+  const showMore = canVerify || canBlock;
+
+  return (
+    <div className="relative flex items-center gap-2">
+      <button
+        type="button"
+        className="text-xs font-semibold text-[#1c352a] underline-offset-2 hover:underline"
+        onClick={onView}
+      >
+        View
+      </button>
+      {showMore ? (
+        <div className="relative">
+          <button
+            type="button"
+            className="rounded border border-[#ebe4db] px-2 py-0.5 text-[11px] font-medium text-[#6b5c52] hover:bg-[#faf5ec]"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            onClick={onToggleMenu}
+          >
+            More
+          </button>
+          {menuOpen ? (
+            <div
+              role="menu"
+              className="absolute right-0 z-20 mt-1 min-w-[140px] rounded-lg border border-[#ebe4db] bg-white py-1 shadow-md"
+            >
+              {canVerify ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="block w-full px-3 py-1.5 text-left text-xs font-medium text-[#1c352a] hover:bg-[#faf5ec]"
+                  onClick={onVerify}
+                >
+                  Verify
+                </button>
+              ) : null}
+              {canBlock ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="block w-full px-3 py-1.5 text-left text-xs font-medium text-[#8a4030] hover:bg-[#faf5ec]"
+                  onClick={onBlock}
+                >
+                  Block
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className="sr-only"
+                onClick={onCloseMenu}
+                tabIndex={-1}
+              >
+                Close
+              </button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

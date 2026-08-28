@@ -179,8 +179,14 @@ export function buildAccountingNavGroups(includePurchasesOps: boolean): NavGroup
       id: "accountant",
       title: "Accountant",
       items: [
+        {
+          href: "/admin/accounting/accountant",
+          label: "Overview",
+          icon: <LayoutDashboard {...iconProps} />,
+          exact: true
+        },
         { href: "/admin/accounting/accounts", label: "Chart of Accounts", icon: <BookOpen {...iconProps} /> },
-        { href: "/admin/accounting/journals", label: "Journals", icon: <ScrollText {...iconProps} /> }
+        { href: "/admin/accounting/journals", label: "Journal Entries", icon: <ScrollText {...iconProps} /> }
       ]
     },
     {
