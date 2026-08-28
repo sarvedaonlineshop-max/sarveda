@@ -19,7 +19,12 @@ export const createOrderSchema = z
     paymentMethod: z
       .enum(["razorpay", "cod", "stripe", "paypal"])
       .optional()
-      .default("razorpay")
+      .default("razorpay"),
+    /**
+     * Optional marketing attribution snapshot (informational only).
+     * Accepted as unknown — sanitized in checkout service; never fails order creation.
+     */
+    attribution: z.unknown().optional().nullable()
   })
   .superRefine((data, ctx) => {
     const cc = data.country.toUpperCase();

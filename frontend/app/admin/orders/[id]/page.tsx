@@ -7,6 +7,10 @@ import { ChevronLeft } from "lucide-react";
 
 import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
 import {
+  AdminOrderAttributionCard,
+  type AdminOrderAttribution
+} from "@/components/admin/AdminOrderAttributionCard";
+import {
   AdminOrderServiceRequests,
   type AdminServiceRequestRow
 } from "@/components/admin/AdminOrderServiceRequests";
@@ -202,6 +206,7 @@ type OrderLoaded = {
   wooCommerceId?: number | null;
   wooImportNote?: string | null;
   serviceRequests?: AdminServiceRequestRow[];
+  attribution?: AdminOrderAttribution | null;
 };
 
 function RefundCancelPanel({
@@ -473,7 +478,8 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
     shippingZone: raw.shippingZone != null ? String(raw.shippingZone) : null,
     wooCommerceId: raw.wooCommerceId != null ? Number(raw.wooCommerceId) : null,
     wooImportNote: legacy?.lineItemsNote ?? null,
-    serviceRequests
+    serviceRequests,
+    attribution: (raw.attribution as AdminOrderAttribution | null | undefined) ?? null
   };
 }
 
@@ -2120,7 +2126,10 @@ export default function AdminOrderDetailPage() {
           </div>
         </div>
       </div>
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="mt-6">
+        <AdminOrderAttributionCard attribution={order.attribution} />
+      </div>
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700 dark:bg-stone-900">
           <h2 className="text-base font-bold tracking-tight text-stone-800 dark:text-stone-100">Totals</h2>
           <dl className="mt-3 space-y-1 text-sm">

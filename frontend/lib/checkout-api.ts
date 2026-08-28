@@ -1,4 +1,5 @@
 import { getApiBase } from "./api";
+import { getAttributionCheckoutPayload } from "./attribution";
 import { buildHeaders } from "./cart-api";
 
 export type CreateOrderBody = {
@@ -47,6 +48,13 @@ export async function createOrder(
   body: CreateOrderBody,
   idempotencyKey: string
 ): Promise<CreateOrderResponse> {
+  let attribution: ReturnType<typeof getAttributionCheckoutPayload> = null;
+  try {
+    attribution = getAttributionCheckoutPayload();
+  } catch {
+    attribution = null;
+  }
+
   const res = await fetch(`${getApiBase()}/api/checkout/create-order`, {
     method: "POST",
     credentials: "include",
@@ -58,7 +66,8 @@ export async function createOrder(
       ...body,
       country: body.country ?? "IN",
       codDelivery: body.codDelivery ?? false,
-      paymentMethod: body.paymentMethod ?? "razorpay"
+      paymentMethod: body.paymentMethod ?? "razorpay",
+      ...(attribution ? { attribution } : {})
     })
   });
   const json = (await res.json()) as {

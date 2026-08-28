@@ -179,6 +179,7 @@ export async function createPendingRazorpayOrder(bundle: TestProductBundle, opts
 
 export async function cleanupTestOrder(orderId: string) {
   await prisma.orderInventoryRestockEvent.deleteMany({ where: { orderId } });
+  await prisma.orderAttribution.deleteMany({ where: { orderId } });
   await prisma.refund.deleteMany({ where: { payment: { orderId } } });
   await prisma.payment.deleteMany({ where: { orderId } });
   await prisma.orderStatusHistory.deleteMany({ where: { orderId } });

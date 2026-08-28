@@ -764,6 +764,44 @@ model Order {
   bookings          Booking[]
   serviceRequests   OrderServiceRequest[]
   inventoryRestocks OrderInventoryRestockEvent[]
+  attribution       OrderAttribution?
+}
+
+/// Informational marketing attribution snapshot — never drives money, stock, or payments.
+model OrderAttribution {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId          String   @unique @db.Uuid
+  sourceType       String?
+  firstSource      String?
+  firstMedium      String?
+  firstCampaign    String?
+  firstReferrer    String?  @db.VarChar(2048)
+  firstLandingPage String?  @db.VarChar(2048)
+  lastSource       String?
+  lastMedium       String?
+  lastCampaign     String?
+  lastReferrer     String?  @db.VarChar(2048)
+  lastLandingPage  String?  @db.VarChar(2048)
+  utmSource        String?
+  utmMedium        String?
+  utmCampaign      String?
+  utmContent       String?
+  utmTerm          String?
+  gclid            String?
+  fbclid           String?
+  referringDomain  String?
+  landingPath      String?
+  deviceType       String?
+  sessionPageViews Int?
+  sessionStartedAt DateTime?
+  capturedAt       DateTime @default(now())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  order            Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([sourceType])
+  @@index([utmCampaign])
+  @@index([capturedAt])
 }
 
 enum OrderStatus {

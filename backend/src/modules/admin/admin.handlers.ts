@@ -971,7 +971,8 @@ export async function orderDetail(req: Request, res: Response, next: NextFunctio
             items: { include: { photos: true } }
           }
         },
-        inventoryRestocks: { orderBy: { createdAt: "asc" } }
+        inventoryRestocks: { orderBy: { createdAt: "asc" } },
+        attribution: true
       }
     });
     if (!order) {

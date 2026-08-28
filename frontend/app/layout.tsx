@@ -3,6 +3,7 @@ import { Cormorant_Garamond, Manrope } from "next/font/google";
 import Script from "next/script";
 
 import { CartProvider } from "@/components/cart/CartProvider";
+import { AttributionProvider } from "@/components/attribution/AttributionProvider";
 import { LogoutTransitionOverlay } from "@/components/auth/LogoutTransitionOverlay";
 import { Layout } from "@/components/layout/Layout";
 import { getSiteUrl, isProductionSite } from "@/lib/site";
@@ -121,8 +122,10 @@ export default function RootLayout({
           </Script>
         ) : null}
         <CartProvider>
-          <LogoutTransitionOverlay />
-          <Layout>{children}</Layout>
+          <AttributionProvider>
+            <LogoutTransitionOverlay />
+            <Layout>{children}</Layout>
+          </AttributionProvider>
         </CartProvider>
       </body>
     </html>

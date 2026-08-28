@@ -34,6 +34,7 @@ import * as shiprocket from "../shipping/shiprocket";
 import { shippingEnv } from "../../config/env";
 import { unitMinorForZone } from "../../utils/variantPricing";
 import { isDigitalOnlyCart } from "../../utils/digitalCart";
+import { createOrderAttributionInTx } from "../attribution/persist";
 import type { CreateOrderBody } from "./schemas";
 
 function triStateEnv(envVal: string | undefined, defaultWhenUnset: boolean): boolean {
@@ -534,6 +535,10 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
         })()
       }
     });
+
+    const uaHeader = req.headers["user-agent"];
+    const userAgent = typeof uaHeader === "string" ? uaHeader : Array.isArray(uaHeader) ? uaHeader[0] : null;
+    await createOrderAttributionInTx(tx, order.id, body.attribution, userAgent);
 
     for (const row of lines) {
       const v = row.variant;
