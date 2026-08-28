@@ -253,13 +253,12 @@ export default function PurchaseOrderDetailPage() {
       ) : null}
 
       <AccountingSectionCard>
-        <AccountingSectionHeader title="Related" />
+        <AccountingSectionHeader title="Related Bill" />
         <p className="text-sm text-[#8a7060]">
-          Creating a bill from this PO is not wired in the current API UI. Use{" "}
+          Create a vendor bill for this purchase order. The PO number can be used as the reference.{" "}
           <Link href="/admin/purchases/bills/new" className="font-semibold text-[#1c352a] underline">
             New Bill
-          </Link>{" "}
-          and reference the PO number if needed. Book recognition lives under Accounting → Advanced.
+          </Link>
         </p>
       </AccountingSectionCard>
     </PurchasesPageShell>

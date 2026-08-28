@@ -307,8 +307,7 @@ export default function PurchasesVendorsPage() {
 
       <AccountingSectionCard className="!py-3">
         <p className="text-xs text-[#8a7060]">
-          Vendor outstanding balances appear on Vendor Bills and Vendor Payments. Per-vendor AP columns
-          are not available from the current API.
+          Outstanding balances for each vendor are shown on Vendor Bills and Vendor Payments.
         </p>
       </AccountingSectionCard>
     </PurchasesPageShell>

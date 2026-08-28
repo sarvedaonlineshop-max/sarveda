@@ -13,10 +13,7 @@ import {
   type VendorPaymentMethod
 } from "@/lib/accounting-api";
 import { AdminAccountingHeader } from "@/components/admin/accounting/AdminAccountingNav";
-import {
-  AccountingAlert,
-  accountingButtonClass
-} from "@/components/admin/accounting/accounting-ui";
+import { accountingButtonClass } from "@/components/admin/accounting/accounting-ui";
 import { fetchPurchasesVendors } from "@/lib/purchases-api";
 
 function formatPaise(p: number | undefined | null) {
@@ -196,26 +193,32 @@ export default function VendorPaymentsAccountingPage() {
     <div className="space-y-6">
       <AdminAccountingHeader
         title="Vendor Payments"
-        subtitle="Record payments made against supplier bills. Who was paid, how much, when, from which account, and against which bill(s)."
+        subtitle="Record payments made against supplier bills."
       />
 
-      <AccountingAlert tone={flagOn ? "success" : "warning"} title="Books posting">
-        {flagOn
-          ? "Vendor payment posting to the ledger is enabled."
-          : "Ledger posting is currently off. You can still save payment drafts; posting requires the server posting flag."}{" "}
-        Operational “Mark paid” on Vendor Bills is not the books settlement.
-      </AccountingAlert>
+      {flagOn ? null : (
+        <p className="text-xs text-[#8a7060]">
+          You can save payment drafts now. Recording to the ledger will be available when posting is
+          enabled.
+        </p>
+      )}
 
       {err ? <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">{err}</p> : null}
       {msg ? <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{msg}</p> : null}
 
-      <section className="space-y-3 rounded-[12px] border border-[#e8e2d9] bg-white p-4">
-        <h2 className="text-lg font-medium text-[#1c352a]">Record Payment</h2>
+      <section className="space-y-4 rounded-[12px] border border-[#e8e2d9] bg-white p-4 sm:p-5">
+        <div>
+          <h2 className="text-lg font-semibold text-[#1c352a]">Record Vendor Payment</h2>
+          <p className="mt-0.5 text-xs text-[#8a7060]">
+            Recording a vendor payment updates the supplier balance and accounting records.
+          </p>
+        </div>
+
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-          <label className="text-sm">
+          <label className="text-xs font-semibold text-[#6b5c52]">
             Vendor
             <select
-              className="mt-1 w-full border border-neutral-300 px-2 py-1.5"
+              className="mt-1 w-full rounded-lg border border-[#e0d8ce] px-3 py-2 text-sm"
               value={vendorId}
               onChange={(e) => {
                 const id = e.target.value;
@@ -232,167 +235,178 @@ export default function VendorPaymentsAccountingPage() {
               ))}
             </select>
           </label>
-          <label className="text-sm">
-            Payment date
+          <label className="text-xs font-semibold text-[#6b5c52]">
+            Payment Date
             <input
               type="date"
-              className="mt-1 w-full border border-neutral-300 px-2 py-1.5"
+              className="mt-1 w-full rounded-lg border border-[#e0d8ce] px-3 py-2 text-sm"
               value={paymentDate}
               onChange={(e) => setPaymentDate(e.target.value)}
             />
           </label>
-          <label className="text-sm">
-            Method
+          <label className="text-xs font-semibold text-[#6b5c52]">
+            Payment Method
             <select
-              className="mt-1 w-full border border-neutral-300 px-2 py-1.5"
+              className="mt-1 w-full rounded-lg border border-[#e0d8ce] px-3 py-2 text-sm"
               value={method}
               onChange={(e) => setMethod(e.target.value as VendorPaymentMethod)}
             >
-              <option value="BANK_TRANSFER">Bank transfer → 1010</option>
-              <option value="UPI">UPI → 1010</option>
-              <option value="CHEQUE">Cheque → 1010</option>
-              <option value="CASH">Cash → 1000</option>
+              <option value="BANK_TRANSFER">Bank transfer</option>
+              <option value="UPI">UPI</option>
+              <option value="CHEQUE">Cheque</option>
+              <option value="CASH">Cash</option>
             </select>
           </label>
-          <label className="text-sm">
-            Bank / cash account (optional — legacy 1010/1000 if empty)
+          <label className="text-xs font-semibold text-[#6b5c52]">
+            Paid From
             <select
-              className="mt-1 w-full border border-neutral-300 px-2 py-1.5"
+              className="mt-1 w-full rounded-lg border border-[#e0d8ce] px-3 py-2 text-sm"
               value={bankAccountId}
               onChange={(e) => setBankAccountId(e.target.value)}
             >
-              <option value="">Legacy default</option>
+              <option value="">Default payment account</option>
               {bankAccounts
                 .filter((b) =>
                   method === "CASH" ? b.accountType !== "BANK" : b.accountType === "BANK"
                 )
                 .map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.name} ({b.glAccountCode})
+                    {b.name}
                   </option>
                 ))}
             </select>
           </label>
-          <label className="text-sm">
-            UTR / reference {method === "CASH" ? "(optional)" : "(required)"}
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="text-xs font-semibold text-[#6b5c52]">
+            Reference / UTR {method === "CASH" ? "(optional)" : ""}
             <input
-              className="mt-1 w-full border border-neutral-300 px-2 py-1.5"
+              className="mt-1 w-full rounded-lg border border-[#e0d8ce] px-3 py-2 text-sm"
               value={utr}
               onChange={(e) => setUtr(e.target.value)}
-              placeholder="UTR / cheque no"
+              placeholder="UTR / cheque number"
+            />
+          </label>
+          <label className="text-xs font-semibold text-[#6b5c52]">
+            Notes
+            <input
+              className="mt-1 w-full rounded-lg border border-[#e0d8ce] px-3 py-2 text-sm"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
             />
           </label>
         </div>
-        <label className="block text-sm">
-          Notes
-          <input
-            className="mt-1 w-full border border-neutral-300 px-2 py-1.5"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-          />
-        </label>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-neutral-200 text-neutral-600">
-                <th className="py-2 pr-3">Bill</th>
-                <th className="py-2 pr-3">Ops status</th>
-                <th className="py-2 pr-3">Bill total</th>
-                <th className="py-2 pr-3">Amount due</th>
-                <th className="py-2 pr-3">Allocate (₹)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {openBills.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="py-3 text-neutral-500">
-                    Select a vendor with open bills that still have an amount due in the books.
-                  </td>
+        <div>
+          <h3 className="mb-2 text-sm font-semibold text-[#1c352a]">Bills to Pay</h3>
+          <div className="overflow-x-auto rounded-[10px] border border-[#e8e2d9]">
+            <table className="min-w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-[#e8e2d9] bg-[#faf5ec]/60 text-[11px] uppercase tracking-wide text-[#8a7060]">
+                  <th className="px-3 py-2.5">Bill #</th>
+                  <th className="px-3 py-2.5">Status</th>
+                  <th className="px-3 py-2.5 text-right">Bill Amount</th>
+                  <th className="px-3 py-2.5 text-right">Amount Due</th>
+                  <th className="px-3 py-2.5 text-right">Payment Amount</th>
                 </tr>
-              ) : (
-                openBills.map((b) => (
-                  <tr key={b.id} className="border-b border-neutral-100">
-                    <td className="py-2 pr-3 font-medium">{b.billNumber}</td>
-                    <td className="py-2 pr-3">
-                      {b.status} · ops paid {formatPaise(b.paidInPaise)}
-                    </td>
-                    <td className="py-2 pr-3">{formatPaise(b.totalInPaise)}</td>
-                    <td className="py-2 pr-3">{formatPaise(b.nativeOutstandingInPaise)}</td>
-                    <td className="py-2 pr-3">
-                      <input
-                        type="number"
-                        min={0}
-                        step={0.01}
-                        max={b.nativeOutstandingInPaise / 100}
-                        className="w-36 rounded-lg border border-[#e0d8ce] px-2 py-1.5"
-                        value={((alloc[b.id] ?? 0) / 100).toFixed(2)}
-                        onChange={(e) =>
-                          setAlloc((prev) => ({
-                            ...prev,
-                            [b.id]: Math.max(
-                              0,
-                              Math.min(
-                                b.nativeOutstandingInPaise,
-                                Math.round(parseFloat(e.target.value || "0") * 100)
-                              )
-                            )
-                          }))
-                        }
-                      />
-                      <button
-                        type="button"
-                        className="ml-2 text-xs font-semibold text-[#1c352a] underline"
-                        onClick={() =>
-                          setAlloc((prev) => ({
-                            ...prev,
-                            [b.id]: b.nativeOutstandingInPaise
-                          }))
-                        }
-                      >
-                        Full
-                      </button>
+              </thead>
+              <tbody>
+                {openBills.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-3 py-4 text-[#8a7060]">
+                      Select a vendor to see bills with an outstanding balance.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  openBills.map((b) => (
+                    <tr key={b.id} className="border-b border-[#f0ece6] last:border-0">
+                      <td className="px-3 py-2.5 font-semibold text-[#1c352a]">{b.billNumber}</td>
+                      <td className="px-3 py-2.5 text-[#4a3f38]">{b.status}</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums">
+                        {formatPaise(b.totalInPaise)}
+                      </td>
+                      <td className="px-3 py-2.5 text-right tabular-nums font-semibold">
+                        {formatPaise(b.nativeOutstandingInPaise)}
+                      </td>
+                      <td className="px-3 py-2.5 text-right">
+                        <input
+                          type="number"
+                          min={0}
+                          step={0.01}
+                          max={b.nativeOutstandingInPaise / 100}
+                          className="ml-auto w-32 rounded-lg border border-[#e0d8ce] px-2 py-1.5 text-right"
+                          value={((alloc[b.id] ?? 0) / 100).toFixed(2)}
+                          onChange={(e) =>
+                            setAlloc((prev) => ({
+                              ...prev,
+                              [b.id]: Math.max(
+                                0,
+                                Math.min(
+                                  b.nativeOutstandingInPaise,
+                                  Math.round(parseFloat(e.target.value || "0") * 100)
+                                )
+                              )
+                            }))
+                          }
+                        />
+                        <button
+                          type="button"
+                          className="ml-2 text-xs font-semibold text-[#1c352a] underline"
+                          onClick={() =>
+                            setAlloc((prev) => ({
+                              ...prev,
+                              [b.id]: b.nativeOutstandingInPaise
+                            }))
+                          }
+                        >
+                          Full
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 text-sm">
-          <span>
-            Payment total: <strong>{formatPaise(allocatedTotal)}</strong>
-          </span>
-          <button
-            type="button"
-            disabled={busy || !vendorId || allocatedTotal <= 0}
-            className={accountingButtonClass("primary", true)}
-            onClick={() => void saveDraft()}
-          >
-            Save Draft
-          </button>
-          <button
-            type="button"
-            disabled={busy || !selectedPaymentId}
-            className={accountingButtonClass("secondary", true)}
-            onClick={() => selectedPaymentId && void runPreview(selectedPaymentId)}
-          >
-            Preview journal
-          </button>
-          <button
-            type="button"
-            disabled={busy || !selectedPaymentId || !flagOn}
-            className={accountingButtonClass("success", true)}
-            onClick={() => void runPost()}
-          >
-            Post to books
-          </button>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#e8e2d9] pt-3">
+          <p className="text-sm text-[#2c2420]">
+            Total Payment{" "}
+            <strong className="text-lg tabular-nums text-[#1c352a]">{formatPaise(allocatedTotal)}</strong>
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={busy || !vendorId || allocatedTotal <= 0}
+              className={accountingButtonClass("secondary")}
+              onClick={() => void saveDraft()}
+            >
+              Save Draft
+            </button>
+            <button
+              type="button"
+              disabled={busy || !selectedPaymentId}
+              className={accountingButtonClass("secondary")}
+              onClick={() => selectedPaymentId && void runPreview(selectedPaymentId)}
+            >
+              Preview Entry
+            </button>
+            <button
+              type="button"
+              disabled={busy || !selectedPaymentId || !flagOn}
+              className={accountingButtonClass("primary")}
+              onClick={() => void runPost()}
+            >
+              Record Payment
+            </button>
+          </div>
         </div>
       </section>
 
       <section className="space-y-3 rounded-[12px] border border-[#e8e2d9] bg-white p-4">
-        <h2 className="text-lg font-medium text-[#1c352a]">Payments</h2>
+        <h2 className="text-lg font-medium text-[#1c352a]">Recent Payments</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead>
@@ -455,10 +469,11 @@ export default function VendorPaymentsAccountingPage() {
 
       {preview ? (
         <section className="space-y-2 border border-neutral-200 p-4 text-sm">
-          <h2 className="text-lg font-medium text-[#1e3a2f]">Journal preview</h2>
+          <h2 className="text-lg font-medium text-[#1e3a2f]">Entry preview</h2>
           <p>
             {String(snapshot?.paymentNumber)} · {String(snapshot?.status)} ·{" "}
-            {String(snapshot?.paymentMethod)} → {String(snapshot?.paidAccountCode)} ·{" "}
+            {String(snapshot?.paymentMethod)}
+            {snapshot?.paidAccountCode ? ` · ${String(snapshot.paidAccountCode)}` : ""} ·{" "}
             {formatPaise(Number(snapshot?.amountInPaise))}
           </p>
           {proposal?.lines ? (

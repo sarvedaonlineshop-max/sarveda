@@ -1,0 +1,601 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Sarveda Brand Tokens ────────────────────────────────────── */
+:root {
+  color-scheme: light;
+  --brand-night:      #10201a;
+  --brand-forest:     #1c352a;
+  --brand-sage:       #48705a;
+  --brand-gold:       #b98a3e;
+  --brand-gold-mid:   #cfa45c;
+  --brand-gold-pale:  #e9d6ae;
+  --brand-cream:      #faf5ec;
+  --brand-cream-dark: #efe6d6;
+  --brand-ivory:      #fffdf7;
+  --brand-terra:      #b4552d;
+  --brand-ink:        #26251f;
+  --brand-muted:      #7d7263;
+  --sarveda-bottom-nav: 4.5rem;
+  /* Mobile: announcement + taller brand row so the spiral tails are not clipped. */
+  --storefront-header-offset: 7.85rem;
+  --storefront-header-offset-scrolled: 6.75rem;
+  /* Live sticky top — Header syncs this when the marquee hides on scroll. */
+  --storefront-header-live-offset: var(--storefront-header-offset);
+  --storefront-slim-footer-offset: 2.5rem;
+}
+
+@media (min-width: 768px) {
+  :root {
+    /* Desktop default: single brand row (search layer collapsed). */
+    --storefront-header-offset: 9.15rem;
+    --storefront-header-offset-scrolled: 7.15rem;
+  }
+}
+
+html[data-header-search-open="true"] {
+  --storefront-header-offset: 11.05rem;
+  --storefront-header-offset-scrolled: 9.95rem;
+}
+
+@media (min-width: 768px) {
+  html[data-header-search-open="true"] {
+    --storefront-header-offset: 12.35rem;
+    --storefront-header-offset-scrolled: 10.35rem;
+  }
+}
+
+/* Shared storefront width — same left/right gap on home, shop, PDP, and inner pages. */
+@layer components {
+  .page-shell {
+    width: 92%;
+    max-width: 1680px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Old WordPress Bootstrap container (~1140px) for courses, events, insights, corporate. */
+  .page-shell-classic {
+    width: 100%;
+    max-width: 1140px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+}
+
+html[data-header-scrolled="true"] {
+  --storefront-header-live-offset: var(--storefront-header-offset-scrolled);
+}
+
+/* Profile: no announcement marquee — always use the compact header height. */
+html[data-header-no-marquee="true"] {
+  --storefront-header-live-offset: var(--storefront-header-offset-scrolled);
+}
+
+/* ─── Base ─────────────────────────────────────────────────────── */
+html {
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+/* Micro-interactions: gentle color transitions on every interactive element.
+   Tailwind utility classes (transition-*, duration-*) still override these. */
+@layer base {
+  a,
+  button,
+  summary,
+  [role="button"] {
+    transition-property: color, background-color, border-color, opacity, box-shadow;
+    transition-duration: 180ms;
+    transition-timing-function: ease-out;
+  }
+  details > summary svg {
+    transition: transform 180ms ease-out;
+  }
+}
+
+/* Keyboard accessibility: forest focus ring on all interactive elements. */
+:where(a, button, [role="button"], input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--brand-forest);
+  outline-offset: 2px;
+}
+
+/* Newsletter pill: focus lives on the rounded shell, not a square input outline. */
+.newsletter-email-input:focus,
+.newsletter-email-input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+.newsletter-email-input:-webkit-autofill,
+.newsletter-email-input:-webkit-autofill:hover,
+.newsletter-email-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  transition: background-color 99999s ease-out 0s;
+}
+
+body {
+  margin: 0;
+  /* No overflow-x here: html's overflow-x:hidden already clips horizontal
+     scroll for the whole page. Setting it here too would make body its own
+     scroll container (distinct from html, the element that actually scrolls),
+     which breaks position:sticky for every descendant (header, sidebars, etc). */
+  -webkit-tap-highlight-color: transparent;
+  background-color: var(--brand-cream);
+  color: var(--brand-ink);
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, sans-serif;
+}
+
+.font-mono-admin { font-family: 'JetBrains Mono', monospace; }
+
+/* ─── Premium Scrollbar ────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 5px; }
+::-webkit-scrollbar-track  { background: var(--brand-cream); }
+::-webkit-scrollbar-thumb  { background: #d3c19a; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--brand-gold); }
+
+/* ─── Safe Area ────────────────────────────────────────────────── */
+@supports (padding: max(0px)) {
+  .safe-area-pb {
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px);
+  }
+}
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ─── Utilities ────────────────────────────────────────────────── */
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+  /* Shimmering gold text */
+  .text-gold-shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--brand-gold) 0%,
+      var(--brand-gold-pale) 45%,
+      var(--brand-gold) 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: goldShimmer 3s linear infinite;
+  }
+
+  /* Grain texture overlay (premium feel) */
+  .grain-overlay::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  /* Frosted glass card */
+  .glass-card {
+    background: rgba(250,245,236,0.72);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(185,138,62,0.15);
+  }
+
+  /* Gold divider */
+  .divider-gold {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--brand-gold-pale), transparent);
+  }
+
+  /* Fade-up stagger helpers */
+  .anim-delay-100 { animation-delay: 100ms; }
+  .anim-delay-200 { animation-delay: 200ms; }
+  .anim-delay-300 { animation-delay: 300ms; }
+  .anim-delay-400 { animation-delay: 400ms; }
+}
+
+/* ─── Rich text (PDP, legal, about, blog) ─────────────────────── */
+.rich-features h2,
+.rich-features h3,
+.rich-features h4,
+.rich-features h5 {
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  color: var(--brand-forest);
+  font-weight: 700;
+  line-height: 1.3;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+}
+.rich-features h2 { font-size: clamp(1.35rem, 2.4vw, 1.65rem); }
+.rich-features h3 { font-size: clamp(1.15rem, 2vw, 1.3rem); }
+.rich-features h4 {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.125rem;
+  margin-top: 1.25rem;
+  margin-bottom: 0.4rem;
+}
+.rich-features h5 {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1rem;
+  margin-top: 1.25rem;
+  margin-bottom: 0.4rem;
+}
+.rich-features p { margin: 0 0 1rem; line-height: 1.75; }
+.rich-features p:last-child { margin-bottom: 0; }
+
+.insight-rich.rich-features {
+  max-width: 42rem;
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--brand-ink);
+}
+.insight-rich.rich-features p { margin: 0 0 1.15rem; }
+.insight-rich.rich-features ul,
+.insight-rich.rich-features ol { margin: 0 0 1.25rem; }
+.insight-rich.rich-features li { margin-bottom: 0.55rem; line-height: 1.65; }
+
+.pdp-description.rich-features p {
+  margin: 0 0 0.45rem;
+  line-height: 1.55;
+}
+.pdp-description.rich-features p strong {
+  color: var(--brand-ink);
+  font-weight: 700;
+}
+
+.accordion-rich.rich-features h4,
+.accordion-rich.rich-features h5,
+.accordion-rich.rich-features h3 {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-top: 0.85rem;
+  margin-bottom: 0.3rem;
+}
+.accordion-rich.rich-features p {
+  margin: 0.25rem 0 0.55rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+.rich-features a {
+  color: var(--brand-gold);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.rich-features a:hover { color: var(--brand-forest); }
+.rich-features strong { color: var(--brand-ink); font-weight: 600; }
+.rich-features hr {
+  border: 0;
+  border-top: 1px solid var(--brand-cream-dark);
+  margin: 1.5rem 0;
+}
+
+/* brass check bullets */
+.rich-features ul {
+  list-style: none;
+  padding-left: 0;
+}
+.rich-features ul li,
+.rich-features .sarveda-acc-ul .sarveda-acc-li {
+  position: relative;
+  padding-left: 1.75rem;
+  list-style: none;
+}
+.rich-features ul li::before,
+.rich-features .sarveda-acc-ul .sarveda-acc-li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.3em;
+  width: 1rem;
+  height: 1rem;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23B98A3E' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='m9 12 2 2 4-4'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+.rich-features ul li::marker {
+  content: "";
+}
+
+.product-image-protect {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* ─── Autofill: warm white instead of browser blue ─────────────── */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px #fffdf7 inset;
+  box-shadow: 0 0 0 1000px #fffdf7 inset;
+  -webkit-text-fill-color: var(--brand-ink);
+  caret-color: var(--brand-ink);
+}
+
+/* ─── Keyframes ────────────────────────────────────────────────── */
+@keyframes goldShimmer {
+  0%   { background-position: 0% center;   }
+  100% { background-position: 200% center; }
+}
+
+@keyframes fadeUp {
+  0%   { opacity:0; transform:translateY(20px); }
+  100% { opacity:1; transform:translateY(0);    }
+}
+
+@keyframes fadeIn {
+  from { opacity:0; }
+  to   { opacity:1; }
+}
+
+@keyframes fadeSlide {
+  from { opacity:0; transform:translateY(6px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+.sv-listing-hero-fade {
+  animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sv-listing-hero-fade-late {
+  animation: fadeUp 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+}
+
+@keyframes marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
+}
+
+@keyframes admin-tick-pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  70% { transform: scale(1.18); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes admin-x-pop {
+  0% { transform: scale(0.4) rotate(-20deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.admin-tick-pop {
+  animation: admin-tick-pop 0.35s ease-out;
+}
+.admin-x-pop {
+  animation: admin-x-pop 0.3s ease-out;
+}
+
+@keyframes admin-nav-spin {
+  to { transform: rotate(360deg); }
+}
+.admin-nav-spinner {
+  animation: admin-nav-spin 0.7s linear infinite;
+}
+
+/* Order success / payment confirm */
+@keyframes sv-success-pop {
+  0% { transform: scale(0.45); opacity: 0; }
+  60% { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes sv-success-draw-circle {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes sv-success-draw-check {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes sv-success-ring {
+  0% { transform: scale(0.7); opacity: 0.55; }
+  100% { transform: scale(1.85); opacity: 0; }
+}
+@keyframes sv-success-confetti {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0.35); opacity: 0; }
+}
+@keyframes sv-pay-spin {
+  to { transform: rotate(360deg); }
+}
+.sv-success-mark {
+  animation: sv-success-pop 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.sv-success-circle {
+  stroke-dasharray: 63;
+  stroke-dashoffset: 63;
+  animation: sv-success-draw-circle 0.55s ease-out 0.08s forwards;
+}
+.sv-success-check {
+  stroke-dasharray: 18;
+  stroke-dashoffset: 18;
+  animation: sv-success-draw-check 0.35s ease-out 0.42s forwards;
+}
+.sv-success-ring {
+  animation: sv-success-ring 0.9s ease-out 0.15s both;
+}
+.sv-success-confetti {
+  animation: sv-success-confetti 0.95s ease-out 0.2s both;
+}
+.sv-pay-spinner {
+  animation: sv-pay-spin 0.85s linear infinite;
+}
+
+@keyframes sv-fail-draw-x {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes sv-fail-shake {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(-8deg); }
+  40% { transform: rotate(7deg); }
+  60% { transform: rotate(-5deg); }
+  80% { transform: rotate(3deg); }
+}
+@keyframes sv-fail-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+@keyframes sv-fail-ring {
+  0% { transform: scale(0.7); opacity: 0.5; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+@keyframes sv-fail-spark {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0.3); opacity: 0; }
+}
+.sv-fail-mark {
+  animation: sv-success-pop 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.sv-fail-shake {
+  animation:
+    sv-success-pop 0.55s cubic-bezier(0.22, 1, 0.36, 1) both,
+    sv-fail-shake 0.45s ease-in-out 0.7s 2;
+}
+.sv-fail-pulse {
+  animation:
+    sv-success-pop 0.65s cubic-bezier(0.22, 1, 0.36, 1) both,
+    sv-fail-pulse 1.6s ease-in-out 0.8s infinite;
+}
+.sv-fail-circle {
+  stroke-dasharray: 63;
+  stroke-dashoffset: 63;
+  animation: sv-success-draw-circle 0.5s ease-out 0.06s forwards;
+}
+.sv-fail-x-a,
+.sv-fail-x-b {
+  stroke-dasharray: 14;
+  stroke-dashoffset: 14;
+}
+.sv-fail-x-a {
+  animation: sv-fail-draw-x 0.28s ease-out 0.38s forwards;
+}
+.sv-fail-x-b {
+  animation: sv-fail-draw-x 0.28s ease-out 0.52s forwards;
+}
+.sv-fail-ring {
+  animation: sv-fail-ring 0.95s ease-out 0.12s both;
+}
+.sv-fail-spark {
+  animation: sv-fail-spark 0.9s ease-out 0.18s both;
+}
+
+@keyframes sv-contact-kenburns {
+  0% { transform: scale(1) translate(0, 0); }
+  50% { transform: scale(1.08) translate(-1.5%, 1%); }
+  100% { transform: scale(1.04) translate(1%, -1%); }
+}
+@keyframes sv-contact-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes sv-contact-blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(18px, -12px) scale(1.08); }
+  66% { transform: translate(-14px, 10px) scale(0.96); }
+}
+@keyframes sv-contact-shimmer {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+.sv-contact-kenburns {
+  animation: sv-contact-kenburns 18s ease-in-out infinite alternate;
+}
+.sv-contact-float {
+  animation: sv-contact-float 5s ease-in-out infinite;
+}
+.sv-contact-blob {
+  animation: sv-contact-blob 14s ease-in-out infinite;
+}
+.sv-contact-blob-delay {
+  animation: sv-contact-blob 18s ease-in-out infinite reverse;
+}
+.sv-contact-cta {
+  background-size: 200% 100%;
+  background-image: linear-gradient(90deg, #1c352a 0%, #48705a 40%, #b98a3e 70%, #1c352a 100%);
+  animation: sv-contact-shimmer 4.5s linear infinite;
+}
+
+/* Shop product cards — AOS zoom-in-right / fade as they enter the viewport */
+.shop-card-reveal {
+  opacity: 0;
+  transform: translate3d(28px, 0, 0) scale(0.96);
+  transition: opacity 0.65s ease, transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.shop-card-reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Dual price slider (live Woo Filter panel) */
+.shop-price-thumb {
+  pointer-events: none;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.shop-price-thumb::-webkit-slider-runnable-track {
+  height: 8px;
+  background: transparent;
+}
+.shop-price-thumb::-webkit-slider-thumb {
+  pointer-events: auto;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #111;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
+  margin-top: -5px;
+  cursor: pointer;
+}
+.shop-price-thumb::-moz-range-track {
+  height: 8px;
+  background: transparent;
+}
+.shop-price-thumb::-moz-range-thumb {
+  pointer-events: auto;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #111;
+  cursor: pointer;
+}
+.shop-price-thumb-min {
+  z-index: 2;
+}
+.shop-price-thumb-max {
+  z-index: 3;
+}
+
+/* ─── Reduced Motion ────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  html:focus-within { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  .shop-card-reveal,
+  .shop-card-reveal.is-visible {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .sv-listing-hero-fade,
+  .sv-listing-hero-fade-late {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

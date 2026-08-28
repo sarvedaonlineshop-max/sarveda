@@ -36,15 +36,17 @@ export function PurchasesPageShell({
   title,
   subtitle,
   actions,
-  children
+  children,
+  compact
 }: {
   title: string;
   subtitle?: string;
   actions?: ReactNode;
   children: ReactNode;
+  compact?: boolean;
 }) {
   return (
-    <div className="space-y-5">
+    <div className={compact ? "space-y-4" : "space-y-5"}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <AccountingPageHeader title={title} subtitle={subtitle} />
         {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
@@ -174,16 +176,18 @@ export function fieldLabelClass(): string {
 export function FormSection({
   title,
   description,
-  children
+  children,
+  compact
 }: {
   title: string;
   description?: string;
   children: ReactNode;
+  compact?: boolean;
 }) {
   return (
-    <AccountingSectionCard>
+    <AccountingSectionCard className={compact ? "!p-3 sm:!p-4" : undefined}>
       <AccountingSectionHeader title={title} description={description} />
-      <div className="grid gap-3 sm:grid-cols-2">{children}</div>
+      <div className={`grid sm:grid-cols-2 ${compact ? "gap-2.5" : "gap-3"}`}>{children}</div>
     </AccountingSectionCard>
   );
 }

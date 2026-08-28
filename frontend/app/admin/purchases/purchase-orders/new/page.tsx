@@ -131,6 +131,7 @@ export default function NewPurchaseOrderPage() {
     <PurchasesPageShell
       title="New Purchase Order"
       subtitle="Create a purchase commitment to a supplier."
+      compact
       actions={
         <Link href="/admin/purchases/purchase-orders" className={accountingButtonClass("secondary")}>
           Cancel
@@ -139,7 +140,11 @@ export default function NewPurchaseOrderPage() {
     >
       {err ? <AccountingAlert tone="error">{err}</AccountingAlert> : null}
 
-      <FormSection title="Vendor & PO Details" description="Who you are ordering from and basic PO references.">
+      <FormSection
+        compact
+        title="Vendor & PO Details"
+        description="Who you are ordering from and basic PO references."
+      >
         <label className={fieldLabelClass()}>
           Vendor *
           <select
@@ -182,7 +187,7 @@ export default function NewPurchaseOrderPage() {
         </label>
       </FormSection>
 
-      <FormSection title="Delivery Details" description="Where goods will be received.">
+      <FormSection compact title="Delivery Details" description="Where goods will be received.">
         <label className={`${fieldLabelClass()} sm:col-span-2`}>
           Receiving warehouse
           <select
@@ -201,10 +206,10 @@ export default function NewPurchaseOrderPage() {
       </FormSection>
 
       <AccountingSectionCard className="!p-0 overflow-hidden">
-        <div className="border-b border-[#e8e2d9] px-4 py-3 sm:px-5">
+        <div className="border-b border-[#e8e2d9] px-3 py-2.5 sm:px-4">
           <AccountingSectionHeader
             title="Items"
-            description="Search the catalog or enter item details. Tax is calculated by the server from item tax class when available."
+            description="Select items and enter quantities and rates."
           />
         </div>
         <PurchasesTableWrap>
@@ -309,12 +314,12 @@ export default function NewPurchaseOrderPage() {
         </div>
       </AccountingSectionCard>
 
-      <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <FormSection title="Notes / Terms">
+      <div className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
+        <FormSection compact title="Notes / Terms">
           <label className={`${fieldLabelClass()} sm:col-span-2`}>
             Notes
             <textarea
-              className={`${accountingInputClass()} h-auto min-h-[4.5rem] py-2`}
+              className={`${accountingInputClass()} h-auto min-h-[4rem] py-2`}
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -323,7 +328,7 @@ export default function NewPurchaseOrderPage() {
           <label className={`${fieldLabelClass()} sm:col-span-2`}>
             Terms &amp; conditions
             <textarea
-              className={`${accountingInputClass()} h-auto min-h-[4.5rem] py-2`}
+              className={`${accountingInputClass()} h-auto min-h-[4rem] py-2`}
               rows={2}
               value={terms}
               onChange={(e) => setTerms(e.target.value)}
@@ -331,7 +336,7 @@ export default function NewPurchaseOrderPage() {
           </label>
         </FormSection>
 
-        <AccountingSectionCard>
+        <AccountingSectionCard className="!p-3 sm:!p-4">
           <AccountingSectionHeader title="Order Summary" />
           <dl className="space-y-2 text-sm">
             <div className="flex justify-between gap-3">
@@ -340,7 +345,7 @@ export default function NewPurchaseOrderPage() {
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-[#8a7060]">Tax</dt>
-              <dd className="text-xs text-[#8a7060]">Applied on save</dd>
+              <dd className="text-xs text-[#8a7060]">Included on save</dd>
             </div>
             <div className="flex justify-between gap-3 border-t border-[#e8e2d9] pt-2">
               <dt className="font-semibold text-[#2c2420]">Estimated total</dt>
@@ -348,7 +353,7 @@ export default function NewPurchaseOrderPage() {
             </div>
           </dl>
           <p className="mt-2 text-[11px] text-[#8a7060]">
-            Final tax and grand total are calculated by the server when the PO is saved.
+            Tax and grand total are finalized when the purchase order is saved.
           </p>
         </AccountingSectionCard>
       </div>

@@ -67,7 +67,7 @@ export default function BillsPage() {
       await patchBill(id, { status: "PAID" });
       await load();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Mark paid failed");
+      setErr(e instanceof Error ? e.message : "Could not update status");
     } finally {
       setBusyId(null);
     }
@@ -125,10 +125,10 @@ export default function BillsPage() {
 
       {err ? <AccountingAlert tone="error">{err}</AccountingAlert> : null}
 
-      <AccountingAlert tone="info" title="Ops vs books">
-        “Mark paid” updates the operational bill status only. Record Vendor Payments in Accounting to
-        settle accounts payable in the books.
-      </AccountingAlert>
+      <p className="text-xs text-[#8a7060]">
+        Update Status changes the bill’s payment status for operations. To record a payment in the
+        accounts, use Vendor Payments.
+      </p>
 
       {visible.length === 0 ? (
         <AccountingEmptyState
@@ -184,7 +184,7 @@ export default function BillsPage() {
                           className="text-xs font-semibold text-[#1c352a] underline-offset-2 hover:underline disabled:opacity-50"
                           onClick={() => void markPaid(b.id)}
                         >
-                          {busyId === b.id ? "Updating…" : "Mark paid (ops)"}
+                          {busyId === b.id ? "Updating…" : "Update Status"}
                         </button>
                       ) : (
                         <span className="text-xs text-[#8a7060]">—</span>

@@ -90,7 +90,7 @@ export default function PurchasesOverviewPage() {
         <AccountingMetricCard
           label="Purchases this FY"
           unavailable
-          hint="Not available from current APIs"
+          hint="Coming soon"
         />
       </div>
 
@@ -136,7 +136,7 @@ export default function PurchasesOverviewPage() {
             [
               "4. Vendor Payments",
               accountingOn ? "/admin/accounting/vendor-payments" : "/admin/purchases/bills",
-              accountingOn ? "Settle AP in books" : "Mark paid in ops (books via Accounting)"
+              accountingOn ? "Record payment against bills" : "Update bill status; payments in Accounting"
             ]
           ].map(([label, href, hint]) => (
             <li key={label}>

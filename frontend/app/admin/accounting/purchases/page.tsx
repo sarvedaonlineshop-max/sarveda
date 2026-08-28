@@ -136,10 +136,9 @@ export default function PurchaseAccountingPage() {
         </>
       ) : null}
 
-      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-        Operational “Mark paid” status is evidence only — not the books. Accounts payable is settled through
-        vendor payment allocations with bank/cash journals. Pre-cutover bills and expenses belong in opening
-        balances.
+      <div className="rounded-lg border border-[#e8e2d9] bg-[#faf5ec]/80 px-4 py-3 text-sm text-[#4a3f38]">
+        Bill status updates here are for operations. Record Vendor Payments to update supplier balances
+        and accounting records. Pre-cutover bills and expenses belong in opening balances.
       </div>
     </div>
   );

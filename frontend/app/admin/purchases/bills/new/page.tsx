@@ -114,6 +114,7 @@ export default function NewBillPage() {
     <PurchasesPageShell
       title="New Vendor Bill"
       subtitle="Record a supplier invoice. Link a PO reference when the bill follows a purchase order."
+      compact
       actions={
         <Link href="/admin/purchases/bills" className={accountingButtonClass("secondary")}>
           Cancel
@@ -122,7 +123,7 @@ export default function NewBillPage() {
     >
       {err ? <AccountingAlert tone="error">{err}</AccountingAlert> : null}
 
-      <FormSection title="Vendor & Bill Details">
+      <FormSection compact title="Vendor & Bill Details">
         <label className={fieldLabelClass()}>
           Vendor *
           <select
@@ -167,8 +168,9 @@ export default function NewBillPage() {
       </FormSection>
 
       <FormSection
+        compact
         title="Purchase Order / Reference"
-        description="PO → Bill relationship. Native PO linking is not available in this form yet — use the reference field."
+        description="Enter the related purchase order number, if applicable."
       >
         <label className={fieldLabelClass()}>
           Reference / PO number
@@ -189,9 +191,12 @@ export default function NewBillPage() {
         </label>
       </FormSection>
 
-      <AccountingSectionCard>
-        <AccountingSectionHeader title="Items" description="GST/tax class follows catalog items when selected." />
-        <div className="space-y-3">
+      <AccountingSectionCard className="!p-3 sm:!p-4">
+        <AccountingSectionHeader
+          title="Items"
+          description="Select items and enter quantities and rates."
+        />
+        <div className="space-y-2.5">
           {lines.map((line, idx) => (
             <div
               key={idx}
@@ -275,19 +280,19 @@ export default function NewBillPage() {
         </div>
       </AccountingSectionCard>
 
-      <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <FormSection title="Notes">
+      <div className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
+        <FormSection compact title="Notes">
           <label className={`${fieldLabelClass()} sm:col-span-2`}>
             Notes
             <textarea
-              className={`${accountingInputClass()} h-auto min-h-[4.5rem] py-2`}
+              className={`${accountingInputClass()} h-auto min-h-[4rem] py-2`}
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />
           </label>
         </FormSection>
-        <AccountingSectionCard>
+        <AccountingSectionCard className="!p-3 sm:!p-4">
           <AccountingSectionHeader title="Totals" />
           <div className="flex justify-between text-sm">
             <span className="text-[#8a7060]">Estimated subtotal</span>

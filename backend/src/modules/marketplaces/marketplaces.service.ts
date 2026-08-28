@@ -3,6 +3,7 @@ import type { z } from "zod";
 
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
+import { launchOrderCutoverDate } from "../admin/launch-order-rules";
 import { parseMarketplaceOrdersCsv } from "./marketplace-importers/orders-csv";
 import type {
   MarketplaceChannelCodeInput,
@@ -499,18 +500,22 @@ export async function getMarketplaceOverview() {
       }),
       prisma.marketplaceOrder.groupBy({
         by: ["channelId", "status"],
+        where: liveMarketplaceOrderWhere(),
         _count: { _all: true }
       }),
       prisma.marketplaceReturn.groupBy({
         by: ["marketplaceOrderId", "status"],
+        where: { marketplaceOrder: liveMarketplaceOrderWhere() },
         _count: { _all: true }
       }),
       prisma.marketplaceOrder.findMany({
+        where: liveMarketplaceOrderWhere(),
         orderBy: { orderDate: "desc" },
         take: 8,
         include: marketplaceOrderInclude
       }),
       prisma.marketplaceReturn.findMany({
+        where: { marketplaceOrder: liveMarketplaceOrderWhere() },
         orderBy: [{ receivedAt: "desc" }, { createdAt: "desc" }],
         take: 8,
         include: marketplaceReturnInclude
@@ -665,7 +670,7 @@ export async function listMarketplaceOrders(params?: {
   to?: string;
 }) {
   const rows = await prisma.marketplaceOrder.findMany({
-    where: {
+    where: liveMarketplaceOrderWhere({
       ...(params?.channelCode ? { channel: { code: params.channelCode } } : {}),
       ...(params?.status ? { status: params.status as MarketplaceOrderStatus } : {}),
       ...(params?.search
@@ -686,7 +691,7 @@ export async function listMarketplaceOrders(params?: {
             }
           }
         : {})
-    },
+    }),
     orderBy: [{ orderDate: "desc" }, { createdAt: "desc" }],
     include: marketplaceOrderInclude
   });
@@ -916,7 +921,7 @@ export async function getMarketplaceAnalytics(params?: {
   to?: string;
   channelCode?: MarketplaceChannelCodeInput;
 }) {
-  const where = {
+  const where = liveMarketplaceOrderWhere({
     ...(params?.channelCode ? { channel: { code: params.channelCode } } : {}),
     ...(params?.from || params?.to
       ? {
@@ -926,7 +931,7 @@ export async function getMarketplaceAnalytics(params?: {
           }
         }
       : {})
-  } satisfies Prisma.MarketplaceOrderWhereInput;
+  });
 
   const [orders, returns, channels] = await Promise.all([
     prisma.marketplaceOrder.findMany({ where, include: marketplaceOrderInclude }),
