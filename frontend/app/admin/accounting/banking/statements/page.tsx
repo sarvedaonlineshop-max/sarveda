@@ -102,11 +102,16 @@ export default function StatementsPage() {
     finally { setBusy(false); }
   }
 
-  const actionMessage = action?.kind === "confirm" ? "This links the bank transaction to the suggested journal. It does not create accounting entries."
-    : action?.kind === "unmatch" ? "This removes the link. Any journal already recorded remains unchanged."
-    : action?.kind === "charge" ? "This records the amount as Bank Charges. The journal will debit Bank Charges (5390) and credit this bank account."
-    : action?.kind === "interest" ? "This records the amount as Interest Income. The journal will debit this bank account and credit Interest Income (4500)."
-    : "The transaction will be excluded from unresolved items. A reason is required for the audit trail.";
+  const actionMessage =
+    action?.kind === "confirm"
+      ? "This links the bank transaction to the suggested accounting entry. It does not create a new accounting entry."
+      : action?.kind === "unmatch"
+        ? "This removes the link. The accounting entry itself remains unchanged."
+        : action?.kind === "charge"
+          ? "This records a bank charge expense against this bank account."
+          : action?.kind === "interest"
+            ? "This records bank interest income for this bank account."
+            : "Ignored transactions stay in the audit trail but no longer count as unresolved for reconciliation.";
 
   return (
     <BankingPageShell title="Statements & Matching" subtitle="Import bank statements and link transactions to existing accounting entries.">
@@ -171,11 +176,15 @@ export default function StatementsPage() {
         <div className="mb-3 grid gap-2 md:grid-cols-2"><select className={accountingInputClass()} value={bankAccountId} onChange={(e) => setBankAccountId(e.target.value)}><option value="">All bank accounts</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select><select className={accountingInputClass()} value={importId} onChange={(e) => setImportId(e.target.value)}><option value="">All statement imports</option>{imports.map((i) => <option key={i.id} value={i.id}>{i.fileName} ({i.rowCount} rows)</option>)}</select></div>
         {lines.length === 0 ? <AccountingEmptyState title="No transactions in this queue" description="Import a statement or choose a different filter." /> : <BankingTableWrap><table className="min-w-full"><thead><tr><th className={bankingTh()}>Date</th><th className={bankingTh()}>Description</th><th className={bankingTh()}>Reference</th><th className={bankingTh(true)}>Money Out</th><th className={bankingTh(true)}>Money In</th><th className={bankingTh()}>Match</th><th className={bankingTh()}>Status</th><th className={bankingTh()}>Action</th></tr></thead><tbody>{lines.map((line) => {
           const candidate = line.matches.find((m) => m.status === "CANDIDATE"); const isConfirmed = line.matches.some((m) => m.status === "CONFIRMED");
-          return <tr key={line.id} className="border-t border-[#eee8e0]"><td className={bankingTd()}>{formatBankDate(line.transactionDate)}</td><td className={`${bankingTd()} max-w-[18rem] truncate`}>{line.description}</td><td className={`${bankingTd()} font-mono text-xs`}>{line.reference ?? "—"}</td><td className={`${bankingTd(true)} ${moneyClass()}`}>{line.debitInPaise ? formatInrPaise(line.debitInPaise) : "—"}</td><td className={`${bankingTd(true)} ${moneyClass()}`}>{line.creditInPaise ? formatInrPaise(line.creditInPaise) : "—"}</td><td className={bankingTd()}>{candidate ? `${confidenceLabel(candidate.confidence)} · ${candidate.journalEntry?.entryNumber ?? "Journal"}` : isConfirmed ? "Linked" : "—"}</td><td className={bankingTd()}><AccountingStatusBadge tone={matchStatusTone(line.matchStatus)}>{matchStatusLabel(line.matchStatus)}</AccountingStatusBadge></td><td className={bankingTd()}><button className="font-semibold underline" onClick={() => setSelected(line)}>Review</button></td></tr>;
+          return <tr key={line.id} className="border-t border-[#eee8e0]"><td className={bankingTd()}>{formatBankDate(line.transactionDate)}</td><td className={`${bankingTd()} max-w-[18rem] truncate`}>{line.description}</td><td className={`${bankingTd()} font-mono text-xs`}>{line.reference ?? "—"}</td><td className={`${bankingTd(true)} ${moneyClass()}`}>{line.debitInPaise ? formatInrPaise(line.debitInPaise) : "—"}</td><td className={`${bankingTd(true)} ${moneyClass()}`}>{line.creditInPaise ? formatInrPaise(line.creditInPaise) : "—"}</td><td className={bankingTd()}>{candidate
+                        ? `${confidenceLabel(candidate.confidence)} · ${candidate.journalEntry?.entryNumber ?? "Entry"}`
+                        : isConfirmed
+                          ? "Linked"
+                          : "—"}</td><td className={bankingTd()}><AccountingStatusBadge tone={matchStatusTone(line.matchStatus)}>{matchStatusLabel(line.matchStatus)}</AccountingStatusBadge></td><td className={bankingTd()}><button className="font-semibold underline" onClick={() => setSelected(line)}>Review</button></td></tr>;
         })}</tbody></table></BankingTableWrap>}
       </AccountingSectionCard>
 
-      {selected ? <AccountingSectionCard><AccountingSectionHeader title="Transaction review" action={<button className="text-xs underline" onClick={() => setSelected(null)}>Close</button>} /><div className="grid gap-4 lg:grid-cols-2"><div className="rounded-lg bg-[#faf5ec] p-4 text-sm"><strong>Bank transaction</strong><dl className="mt-2 grid grid-cols-2 gap-2"><dt>Date</dt><dd>{formatBankDate(selected.transactionDate)}</dd><dt>Description</dt><dd>{selected.description}</dd><dt>Reference</dt><dd>{selected.reference ?? "—"}</dd><dt>Amount</dt><dd className={moneyClass()}>{formatInrPaise(selected.debitInPaise || selected.creditInPaise)}</dd></dl></div><div className="rounded-lg bg-stone-50 p-4 text-sm"><strong>{suggested ? "Suggested match" : confirmed ? "Current match" : "No suggested match"}</strong>{suggested || confirmed ? <dl className="mt-2 grid grid-cols-2 gap-2"><dt>Journal</dt><dd>{(suggested ?? confirmed)?.journalEntry?.entryNumber ?? "—"}</dd><dt>Date</dt><dd>{formatBankDate((suggested ?? confirmed)?.journalEntry?.entryDate)}</dd><dt>Confidence</dt><dd>{confidenceLabel((suggested ?? confirmed)?.confidence ?? "")}</dd></dl> : <p className="mt-2 text-[#75675e]">Record a bank charge, interest income, or ignore this transaction where appropriate.</p>}</div></div>
+      {selected ? <AccountingSectionCard><AccountingSectionHeader title="Transaction review" action={<button className="text-xs underline" onClick={() => setSelected(null)}>Close</button>} /><div className="grid gap-4 lg:grid-cols-2"><div className="rounded-lg bg-[#faf5ec] p-4 text-sm"><strong>Bank transaction</strong><dl className="mt-2 grid grid-cols-2 gap-2"><dt>Date</dt><dd>{formatBankDate(selected.transactionDate)}</dd><dt>Description</dt><dd>{selected.description}</dd><dt>Reference</dt><dd>{selected.reference ?? "—"}</dd><dt>Amount</dt><dd className={moneyClass()}>{formatInrPaise(selected.debitInPaise || selected.creditInPaise)}</dd></dl></div><div className="rounded-lg bg-stone-50 p-4 text-sm"><strong>{suggested ? "Suggested match" : confirmed ? "Current match" : "No suggested match"}</strong>{suggested || confirmed ? <dl className="mt-2 grid grid-cols-2 gap-2"><dt>Entry</dt><dd>{(suggested ?? confirmed)?.journalEntry?.entryNumber ?? "—"}</dd><dt>Date</dt><dd>{formatBankDate((suggested ?? confirmed)?.journalEntry?.entryDate)}</dd><dt>Confidence</dt><dd>{confidenceLabel((suggested ?? confirmed)?.confidence ?? "")}</dd></dl> : <p className="mt-2 text-[#75675e]">Record a bank charge, interest income, or ignore this transaction where appropriate.</p>}</div></div>
         <div className="mt-4 flex flex-wrap gap-2">
           {suggested ? (
             <button className={accountingButtonClass()} onClick={() => setAction({ kind: "confirm", line: selected })}>

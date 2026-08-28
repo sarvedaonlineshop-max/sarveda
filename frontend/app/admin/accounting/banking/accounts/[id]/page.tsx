@@ -39,7 +39,11 @@ export default function BankAccountDetailPage() {
     <BankingPageShell title={account.name} subtitle="Account book balance, statements, transfers, and reconciliation history." actions={<Link className="text-sm font-semibold text-[#1c352a] underline" href="/admin/accounting/banking/accounts">Back to accounts</Link>}>
       {error ? <AccountingAlert tone="error">{error}</AccountingAlert> : null}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <AccountingMetricCard label="Book balance" value={formatInrPaise(account.bookBalanceInPaise)} hint="Posted ledger entries" />
+        <AccountingMetricCard
+          label="Book balance"
+          value={formatInrPaise(account.bookBalanceInPaise)}
+          hint="From accounting records"
+        />
         <AccountingMetricCard label="Statement balance" value={account.latestStatementBalanceInPaise == null ? "—" : formatInrPaise(account.latestStatementBalanceInPaise)} hint="Latest imported statement" />
         <AccountingMetricCard label="Difference" value={account.reconciliationDifferenceInPaise == null ? "—" : formatInrPaise(account.reconciliationDifferenceInPaise)} />
         <AccountingMetricCard label="Last reconciliation" value={reconStatusLabel(account.reconciliationStatus)} hint={formatBankDate(account.lastReconciliationAt)} />

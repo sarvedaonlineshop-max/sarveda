@@ -164,6 +164,51 @@ export function humanizeBankingError(message: string): string {
   return message;
 }
 
+export function humanizeGatewayWarning(message: string): string {
+  const m = message.trim();
+  if (/non-zero POSTED GL|non-zero.*clearing/i.test(m)) {
+    return "Clearing balance is outstanding and needs settlement review.";
+  }
+  if (/no posted Razorpay settlements/i.test(m)) {
+    return "Clearing activity exists, but no Razorpay settlements have been recorded yet.";
+  }
+  if (/Stripe settlement accounting is not configured/i.test(m)) {
+    return "Stripe settlement tracking is not configured yet.";
+  }
+  if (/PayPal settlement accounting is not configured/i.test(m)) {
+    return "PayPal settlement tracking is not configured yet.";
+  }
+  if (/Captured Stripe payments/i.test(m)) {
+    return "Stripe payments exist without matching settlement records.";
+  }
+  if (/Captured PayPal payments/i.test(m)) {
+    return "PayPal payments exist without matching settlement records.";
+  }
+  if (/COD remittance|COD_REMITTANCE/i.test(m)) {
+    return "COD remittance tracking is not available yet.";
+  }
+  if (/fulfillment is NOT financial|do not treat as remitted/i.test(m)) {
+    return "Order fulfilment is not the same as cash remittance.";
+  }
+  if (/fulfilled COD order/i.test(m)) {
+    return m.replace(/fulfilled COD order\(s\) exist — do not treat as remitted cash/i, "fulfilled COD orders — remittance still needs confirmation");
+  }
+  return m
+    .replace(/\bPOSTED GL\b/gi, "ledger")
+    .replace(/\bGL\b/g, "ledger")
+    .replace(/\bnative accounting V1\b/gi, "accounting")
+    .replace(/\bV1\b/g, "")
+    .replace(/\bstub\b/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+export function humanizeGatewayNotes(warnings: string[]): string {
+  if (!warnings.length) return "—";
+  const unique = Array.from(new Set(warnings.map(humanizeGatewayWarning).filter(Boolean)));
+  return unique.join(" · ");
+}
+
 export function FeatureUnavailable({ children }: { children: ReactNode }) {
   return <AccountingAlert tone="warning" title="Feature currently unavailable">{children}</AccountingAlert>;
 }

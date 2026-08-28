@@ -65,8 +65,8 @@ export default function BankingAccountingPage() {
     >
       {!enabled ? (
         <AccountingAlert tone="warning">
-          Banking posting is currently unavailable. Contact an administrator to enable this feature.
-          You can still review existing banking information.
+          Banking recording is currently unavailable. Contact an administrator to enable this
+          feature. You can still review existing banking information.
         </AccountingAlert>
       ) : null}
       {error ? <AccountingAlert tone="error">{error}</AccountingAlert> : null}

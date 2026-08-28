@@ -16,6 +16,95 @@ import {
 
 type Confirm = { kind: "deactivate" | "settlement"; account: BankAccountRow } | null;
 
+function AccountRowActions({
+  account,
+  onEdit,
+  onSettlement,
+  onDeactivate
+}: {
+  account: BankAccountRow;
+  onEdit: () => void;
+  onSettlement: () => void;
+  onDeactivate: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  if (!account.isActive) {
+    return (
+      <Link className="font-semibold underline" href={`/admin/accounting/banking/accounts/${account.id}`}>
+        View
+      </Link>
+    );
+  }
+  return (
+    <div className="relative flex items-center justify-end gap-2">
+      <Link className="font-semibold underline" href={`/admin/accounting/banking/accounts/${account.id}`}>
+        View
+      </Link>
+      <div className="relative">
+        <button
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          className="rounded-md border border-[#e0d8ce] px-2 py-1 text-xs font-semibold text-[#4a3f38] hover:bg-[#faf5ec]"
+          onClick={() => setOpen((v) => !v)}
+        >
+          More
+        </button>
+        {open ? (
+          <>
+            <button
+              type="button"
+              aria-label="Close menu"
+              className="fixed inset-0 z-10 cursor-default"
+              onClick={() => setOpen(false)}
+            />
+            <div
+              role="menu"
+              className="absolute right-0 z-20 mt-1 min-w-[14rem] rounded-lg border border-[#e0d8ce] bg-white py-1 shadow-md"
+            >
+              <button
+                type="button"
+                role="menuitem"
+                className="block w-full px-3 py-2 text-left text-xs hover:bg-[#faf5ec]"
+                onClick={() => {
+                  setOpen(false);
+                  onEdit();
+                }}
+              >
+                Edit details
+              </button>
+              {!account.razorpaySettlementTarget ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="block w-full px-3 py-2 text-left text-xs hover:bg-[#faf5ec]"
+                  onClick={() => {
+                    setOpen(false);
+                    onSettlement();
+                  }}
+                >
+                  Set as Razorpay settlement destination
+                </button>
+              ) : null}
+              <button
+                type="button"
+                role="menuitem"
+                className="block w-full px-3 py-2 text-left text-xs text-red-700 hover:bg-red-50"
+                onClick={() => {
+                  setOpen(false);
+                  onDeactivate();
+                }}
+              >
+                Deactivate
+              </button>
+            </div>
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 export default function BankAccountsPage() {
   const [accounts, setAccounts] = useState<BankAccountRow[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -63,7 +152,12 @@ export default function BankAccountsPage() {
   return (
     <BankingPageShell title="Bank & Cash Accounts" subtitle="Manage operational bank, cash, and petty cash accounts." actions={<button className={accountingButtonClass()} onClick={() => setShowForm((v) => !v)}>Add Account</button>}>
       {notice ? <AccountingAlert tone={notice.tone}>{notice.text}</AccountingAlert> : null}
-      {showForm ? <AccountingSectionCard><AccountingSectionHeader title="Add Bank / Cash Account" description="Creating an account registers it against a ledger account; it does not post a balance." />
+      {showForm ? (
+        <AccountingSectionCard>
+          <AccountingSectionHeader
+            title="Add Bank / Cash Account"
+            description="Creates the account for banking activity. It does not record an opening balance."
+          />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <label className={fieldLabelClass()}>Account name<input className={accountingInputClass()} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
           <label className={fieldLabelClass()}>Bank name (optional)<input className={accountingInputClass()} value={form.bankName} onChange={(e) => setForm({ ...form, bankName: e.target.value })} /></label>
@@ -71,9 +165,14 @@ export default function BankAccountsPage() {
           <label className={fieldLabelClass()}>Type<select className={accountingInputClass()} value={form.accountType} onChange={(e) => setForm({ ...form, accountType: e.target.value as typeof form.accountType })}><option value="BANK">Bank</option><option value="CASH">Cash</option><option value="PETTY_CASH">Petty Cash</option></select></label>
           <label className={fieldLabelClass()}>Account number (masked)<input className={accountingInputClass()} placeholder="Last four digits" value={form.maskedAccountNumber} onChange={(e) => setForm({ ...form, maskedAccountNumber: e.target.value })} /></label>
         </div><div className="mt-4 flex gap-2"><button className={accountingButtonClass()} disabled={busy || !form.name.trim() || !form.glAccountCode.trim()} onClick={() => void saveNew()}>Create Account</button><button className={accountingButtonClass("secondary")} onClick={() => setShowForm(false)}>Cancel</button></div>
-      </AccountingSectionCard> : null}
+      </AccountingSectionCard>
+      ) : null}
 
-      <AccountingSectionCard><AccountingSectionHeader title="Accounts" description="Book balances come from posted ledger entries, not a live bank feed." />
+      <AccountingSectionCard>
+        <AccountingSectionHeader
+          title="Accounts"
+          description="Book balances reflect your accounting records, not a live bank feed."
+        />
         {accounts.length === 0 ? (
           <AccountingEmptyState
             title="No bank or cash accounts yet"
@@ -91,7 +190,7 @@ export default function BankAccountsPage() {
                   <th className={bankingTh(true)}>Statement Balance</th>
                   <th className={bankingTh()}>Reconciliation</th>
                   <th className={bankingTh()}>Status</th>
-                  <th className={bankingTh()}>Actions</th>
+                  <th className={`${bankingTh(true)}`}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -133,31 +232,13 @@ export default function BankAccountsPage() {
                         </span>
                       ) : null}
                     </td>
-                    <td className={`${bankingTd()} space-x-2`}>
-                      <Link className="font-semibold underline" href={`/admin/accounting/banking/accounts/${a.id}`}>
-                        View
-                      </Link>
-                      {a.isActive ? (
-                        <>
-                          <button className="underline" onClick={() => setEditing({ ...a })}>
-                            Edit details
-                          </button>
-                          {!a.razorpaySettlementTarget ? (
-                            <button
-                              className="underline"
-                              onClick={() => setConfirm({ kind: "settlement", account: a })}
-                            >
-                              Set as Razorpay settlement destination
-                            </button>
-                          ) : null}
-                          <button
-                            className="text-red-700 underline"
-                            onClick={() => setConfirm({ kind: "deactivate", account: a })}
-                          >
-                            Deactivate
-                          </button>
-                        </>
-                      ) : null}
+                    <td className={bankingTd(true)}>
+                      <AccountRowActions
+                        account={a}
+                        onEdit={() => setEditing({ ...a })}
+                        onSettlement={() => setConfirm({ kind: "settlement", account: a })}
+                        onDeactivate={() => setConfirm({ kind: "deactivate", account: a })}
+                      />
                     </td>
                   </tr>
                 ))}

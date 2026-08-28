@@ -12,19 +12,27 @@ const items = [
   ["Gateway Clearing", "/admin/accounting/banking/gateway", false]
 ] as const;
 
+/** Secondary in-page Banking tabs — quieter than the Accounting sidebar. */
 export function AdminBankingNav() {
   const pathname = usePathname();
   return (
-    <nav aria-label="Banking workspace" className="overflow-x-auto border-b border-[#e0d8ce]">
-      <div className="flex min-w-max gap-1">
+    <nav
+      aria-label="Banking sections"
+      className="rounded-lg border border-[#ebe4db] bg-[#faf5ec]/60 px-1.5 py-1"
+    >
+      <div className="flex min-w-0 flex-wrap gap-0.5">
         {items.map(([label, href, exact]) => {
-          const active = exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+          const active = exact
+            ? pathname === href
+            : pathname === href || pathname.startsWith(`${href}/`);
           return (
             <Link
               key={href}
               href={href}
-              className={`border-b-2 px-3 py-2.5 text-xs font-semibold transition-colors ${
-                active ? "border-[#1c352a] text-[#1c352a]" : "border-transparent text-[#75675e] hover:text-[#1c352a]"
+              className={`rounded-md px-2.5 py-1.5 text-[11px] font-medium tracking-wide transition-colors ${
+                active
+                  ? "bg-white text-[#1c352a] shadow-sm ring-1 ring-[#e0d8ce]"
+                  : "text-[#8a7060] hover:bg-white/70 hover:text-[#4a3f38]"
               }`}
             >
               {label}

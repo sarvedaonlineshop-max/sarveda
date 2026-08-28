@@ -75,9 +75,148 @@ export default function ReconciliationPage() {
     <BankingPageShell title="Reconciliation" subtitle="Compare book and statement balances, resolve differences, and lock completed periods.">
       {!enabled ? <FeatureUnavailable>Bank reconciliation is currently unavailable. Existing reconciliation history remains unchanged.</FeatureUnavailable> : null}
       {notice ? <AccountingAlert tone={notice.tone}>{notice.text}</AccountingAlert> : null}
-      {enabled ? <AccountingSectionCard><AccountingSectionHeader title="Start reconciliation" description="Create a period for one bank account. Reconciliation itself does not create accounting entries." /><div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4"><label className={fieldLabelClass()}>Bank account<select className={accountingInputClass()} value={bankAccountId} onChange={(e) => setBankAccountId(e.target.value)}><option value="">Select account</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label><label className={fieldLabelClass()}>Period start<input type="date" className={accountingInputClass()} value={form.periodStart} onChange={(e) => setForm({ ...form, periodStart: e.target.value })} /></label><label className={fieldLabelClass()}>Period end<input type="date" className={accountingInputClass()} value={form.periodEnd} onChange={(e) => setForm({ ...form, periodEnd: e.target.value })} /></label><label className={fieldLabelClass()}>Statement closing balance (₹)<input inputMode="decimal" className={accountingInputClass()} value={form.statementClosing} onChange={(e) => setForm({ ...form, statementClosing: e.target.value })} /></label></div><button className={`mt-4 ${accountingButtonClass()}`} disabled={busy || !bankAccountId} onClick={() => void create()}>Start Reconciliation</button></AccountingSectionCard> : null}
+      {enabled ? (
+        <AccountingSectionCard>
+          <AccountingSectionHeader
+            title="Start reconciliation"
+            description="Create a period for one bank account. Completing reconciliation locks matching for the period; it does not create accounting entries."
+          />
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+            <label className={fieldLabelClass()}>
+              Bank account
+              <select
+                className={accountingInputClass()}
+                value={bankAccountId}
+                onChange={(e) => setBankAccountId(e.target.value)}
+              >
+                <option value="">Select account</option>
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className={fieldLabelClass()}>
+              Period start
+              <input
+                type="date"
+                className={accountingInputClass()}
+                value={form.periodStart}
+                onChange={(e) => setForm({ ...form, periodStart: e.target.value })}
+              />
+            </label>
+            <label className={fieldLabelClass()}>
+              Period end
+              <input
+                type="date"
+                className={accountingInputClass()}
+                value={form.periodEnd}
+                onChange={(e) => setForm({ ...form, periodEnd: e.target.value })}
+              />
+            </label>
+            <label className={fieldLabelClass()}>
+              Statement closing balance (₹)
+              <input
+                inputMode="decimal"
+                className={accountingInputClass()}
+                value={form.statementClosing}
+                onChange={(e) => setForm({ ...form, statementClosing: e.target.value })}
+              />
+            </label>
+          </div>
+          <button
+            className={`mt-4 ${accountingButtonClass()}`}
+            disabled={busy || !bankAccountId}
+            onClick={() => void create()}
+          >
+            Start Reconciliation
+          </button>
+        </AccountingSectionCard>
+      ) : null}
 
-      <AccountingSectionCard><AccountingSectionHeader title="Reconciliation history" />{rows.length === 0 ? <AccountingEmptyState title="No reconciliation periods" description="Start a reconciliation after importing a bank statement." /> : <BankingTableWrap><table className="min-w-full"><thead><tr><th className={bankingTh()}>Account</th><th className={bankingTh()}>Period</th><th className={bankingTh()}>Status</th><th className={bankingTh(true)}>Difference</th><th className={bankingTh()}>Action</th></tr></thead><tbody>{rows.map((r) => <tr key={String(r.id)} className="border-t border-[#eee8e0]"><td className={bankingTd()}>{String((r.bankAccount as Record<string, unknown> | undefined)?.name ?? accounts.find((a) => a.id === r.bankAccountId)?.name ?? "Bank account")}</td><td className={bankingTd()}>{formatBankDate(String(r.periodStart))} – {formatBankDate(String(r.periodEnd))}</td><td className={bankingTd()}><AccountingStatusBadge tone={r.status === "RECONCILED" ? "success" : "warning"}>{reconStatusLabel(String(r.status))}</AccountingStatusBadge></td><td className={bankingTd(true)}>{formatInrPaise(Number(r.differenceInPaise ?? 0))}</td><td className={bankingTd()}><button className="font-semibold underline" onClick={() => setSelectedId(String(r.id))}>Review</button></td></tr>)}</tbody></table></BankingTableWrap>}</AccountingSectionCard>
+      <AccountingSectionCard>
+        <AccountingSectionHeader title="Reconciliation history" />
+        {rows.length === 0 ? (
+          <AccountingEmptyState
+            title="No reconciliation periods"
+            description="Start a reconciliation after importing a bank statement."
+          />
+        ) : (
+          <BankingTableWrap>
+            <table className="min-w-full">
+              <thead>
+                <tr>
+                  <th className={bankingTh()}>Account</th>
+                  <th className={bankingTh()}>Period</th>
+                  <th className={bankingTh()}>Status</th>
+                  <th className={bankingTh(true)}>Difference</th>
+                  <th className={bankingTh()}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => {
+                  const diff = Number(r.differenceInPaise ?? 0);
+                  const needsAttention = diff !== 0;
+                  return (
+                    <tr
+                      key={String(r.id)}
+                      className={`border-t border-[#eee8e0] ${
+                        needsAttention ? "bg-amber-50/50" : ""
+                      }`}
+                    >
+                      <td className={bankingTd()}>
+                        {String(
+                          (r.bankAccount as Record<string, unknown> | undefined)?.name ??
+                            accounts.find((a) => a.id === r.bankAccountId)?.name ??
+                            "Bank account"
+                        )}
+                      </td>
+                      <td className={bankingTd()}>
+                        {formatBankDate(String(r.periodStart))} –{" "}
+                        {formatBankDate(String(r.periodEnd))}
+                      </td>
+                      <td className={bankingTd()}>
+                        <AccountingStatusBadge
+                          tone={r.status === "RECONCILED" ? "success" : "warning"}
+                        >
+                          {reconStatusLabel(String(r.status))}
+                        </AccountingStatusBadge>
+                      </td>
+                      <td className={bankingTd(true)}>
+                        <span
+                          className={
+                            needsAttention
+                              ? "font-semibold tabular-nums text-amber-950"
+                              : "tabular-nums text-[#6b5c52]"
+                          }
+                        >
+                          {formatInrPaise(diff)}
+                        </span>
+                        {needsAttention ? (
+                          <span className="mt-0.5 block text-[11px] font-semibold uppercase tracking-wide text-amber-800">
+                            Needs attention
+                          </span>
+                        ) : (
+                          <span className="mt-0.5 block text-[11px] text-[#8a7060]">Balanced</span>
+                        )}
+                      </td>
+                      <td className={bankingTd()}>
+                        <button
+                          className="font-semibold underline"
+                          onClick={() => setSelectedId(String(r.id))}
+                        >
+                          Review
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </BankingTableWrap>
+        )}
+      </AccountingSectionCard>
 
       {detail ? (
         <AccountingSectionCard>
