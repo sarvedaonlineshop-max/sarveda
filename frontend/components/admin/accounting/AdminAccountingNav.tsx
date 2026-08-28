@@ -98,7 +98,14 @@ export function buildAccountingNavGroups(includePurchasesOps: boolean): NavGroup
     {
       id: "banking",
       title: "Banking",
-      items: [{ href: "/admin/accounting/banking", label: "Banking", icon: <Wallet {...iconProps} /> }]
+      items: [
+        { href: "/admin/accounting/banking", label: "Overview", icon: <LayoutDashboard {...iconProps} />, exact: true },
+        { href: "/admin/accounting/banking/accounts", label: "Bank & Cash", icon: <Landmark {...iconProps} /> },
+        { href: "/admin/accounting/banking/statements", label: "Statements", icon: <FileText {...iconProps} /> },
+        { href: "/admin/accounting/banking/transfers", label: "Transfers", icon: <Wallet {...iconProps} /> },
+        { href: "/admin/accounting/banking/reconciliation", label: "Reconciliation", icon: <RotateCcw {...iconProps} /> },
+        { href: "/admin/accounting/banking/gateway", label: "Gateway Clearing", icon: <Building2 {...iconProps} /> }
+      ]
     },
     {
       id: "inventory",
