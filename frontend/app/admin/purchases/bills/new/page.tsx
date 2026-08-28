@@ -2,15 +2,27 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   fetchPurchasesVendors,
+  formatInrPaise,
   postBill,
   searchPurchasesCatalog,
   type CatalogSearchItem,
   type LineDraft,
   type VendorRow
 } from "@/lib/purchases-api";
+import {
+  AccountingAlert,
+  AccountingSectionCard,
+  AccountingSectionHeader,
+  FormSection,
+  PurchasesPageShell,
+  accountingButtonClass,
+  accountingInputClass,
+  fieldLabelClass,
+  moneyClass
+} from "@/components/admin/purchases/purchases-ui";
 
 function emptyLine(): LineDraft {
   return { itemName: "", quantity: 1, rateInPaise: 0 };
@@ -22,6 +34,10 @@ export default function NewBillPage() {
   const [vendorId, setVendorId] = useState("");
   const [referenceNumber, setReferenceNumber] = useState("");
   const [subject, setSubject] = useState("");
+  const [billDate, setBillDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [dueDate, setDueDate] = useState("");
+  const [paymentTerms, setPaymentTerms] = useState("Due on Receipt");
+  const [notes, setNotes] = useState("");
   const [lines, setLines] = useState<LineDraft[]>([emptyLine()]);
   const [searchQ, setSearchQ] = useState<Record<number, string>>({});
   const [searchHits, setSearchHits] = useState<Record<number, CatalogSearchItem[]>>({});
@@ -31,6 +47,11 @@ export default function NewBillPage() {
   useEffect(() => {
     void fetchPurchasesVendors({ activeOnly: true }).then((d) => setVendors(d.items));
   }, []);
+
+  const subtotalPaise = useMemo(
+    () => lines.reduce((s, l) => s + Math.max(0, l.quantity) * Math.max(0, l.rateInPaise), 0),
+    [lines]
+  );
 
   async function searchRow(idx: number, q: string) {
     setSearchQ((s) => ({ ...s, [idx]: q }));
@@ -53,19 +74,24 @@ export default function NewBillPage() {
       return next;
     });
     setSearchHits((s) => ({ ...s, [idx]: [] }));
+    setSearchQ((s) => ({ ...s, [idx]: item.itemName }));
   }
 
   async function save(open: boolean) {
-    if (!vendorId) return setErr("Select vendor");
+    if (!vendorId) return setErr("Select a vendor");
     const validLines = lines.filter((l) => l.itemName.trim());
     if (!validLines.length) return setErr("Add line items");
     setBusy(true);
     setErr(null);
     try {
-      const { item } = await postBill({
+      await postBill({
         vendorId,
         referenceNumber: referenceNumber || null,
         subject: subject || null,
+        billDate: billDate || undefined,
+        dueDate: dueDate || null,
+        paymentTerms: paymentTerms || null,
+        notes: notes || null,
         status: open ? "OPEN" : "DRAFT",
         lines: validLines.map((l) => ({
           variantId: l.variantId,
@@ -77,7 +103,6 @@ export default function NewBillPage() {
         }))
       });
       router.push("/admin/purchases/bills");
-      void item;
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Save failed");
     } finally {
@@ -86,45 +111,210 @@ export default function NewBillPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <Link href="/admin/purchases/bills" className="text-sm text-[#1e3a2f] hover:underline">← Bills</Link>
-      {err ? <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{err}</p> : null}
-      <div className="grid gap-3 rounded-lg border bg-white p-4 md:grid-cols-2 dark:border-stone-700 dark:bg-stone-900">
-        <label className="text-xs font-medium">Vendor *
-          <select className="mt-1 w-full rounded border px-2 py-1.5 text-sm" value={vendorId} onChange={(e) => setVendorId(e.target.value)}>
-            <option value="">Select</option>
-            {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+    <PurchasesPageShell
+      title="New Vendor Bill"
+      subtitle="Record a supplier invoice. Link a PO reference when the bill follows a purchase order."
+      actions={
+        <Link href="/admin/purchases/bills" className={accountingButtonClass("secondary")}>
+          Cancel
+        </Link>
+      }
+    >
+      {err ? <AccountingAlert tone="error">{err}</AccountingAlert> : null}
+
+      <FormSection title="Vendor & Bill Details">
+        <label className={fieldLabelClass()}>
+          Vendor *
+          <select
+            className={accountingInputClass()}
+            value={vendorId}
+            onChange={(e) => setVendorId(e.target.value)}
+          >
+            <option value="">Select vendor</option>
+            {vendors.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.name}
+              </option>
+            ))}
           </select>
         </label>
-        <label className="text-xs font-medium">Reference#
-          <input className="mt-1 w-full rounded border px-2 py-1.5 text-sm" value={referenceNumber} onChange={(e) => setReferenceNumber(e.target.value)} />
+        <label className={fieldLabelClass()}>
+          Bill date
+          <input
+            type="date"
+            className={accountingInputClass()}
+            value={billDate}
+            onChange={(e) => setBillDate(e.target.value)}
+          />
         </label>
-        <label className="text-xs font-medium md:col-span-2">Subject
-          <input className="mt-1 w-full rounded border px-2 py-1.5 text-sm" value={subject} onChange={(e) => setSubject(e.target.value)} />
+        <label className={fieldLabelClass()}>
+          Due date
+          <input
+            type="date"
+            className={accountingInputClass()}
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+          />
         </label>
-      </div>
-      <div className="rounded-lg border bg-white p-3 dark:border-stone-700 dark:bg-stone-900">
-        {lines.map((line, idx) => (
-          <div key={idx} className="mb-2 grid gap-2 border-b pb-2 sm:grid-cols-4">
-            <input className="rounded border px-2 py-1 text-sm sm:col-span-2" placeholder="Item" value={searchQ[idx] ?? line.itemName}
-              onChange={(e) => { void searchRow(idx, e.target.value); setLines((p) => { const n=[...p]; n[idx]={...n[idx], itemName:e.target.value}; return n; }); }} />
-            <input type="number" min={1} className="rounded border px-2 py-1 text-sm" value={line.quantity}
-              onChange={(e) => setLines((p) => { const n=[...p]; n[idx]={...n[idx], quantity: parseInt(e.target.value,10)||1}; return n; })} />
-            <input type="number" min={0} step={0.01} className="rounded border px-2 py-1 text-sm" value={(line.rateInPaise/100).toFixed(2)}
-              onChange={(e) => setLines((p) => { const n=[...p]; n[idx]={...n[idx], rateInPaise: Math.round(parseFloat(e.target.value||"0")*100)}; return n; })} />
-            {(searchHits[idx]?.length ?? 0) > 0 ? (
-              <div className="sm:col-span-4">{searchHits[idx]?.map((h) => (
-                <button key={h.variantId} type="button" className="mr-2 text-xs text-[#1e3a2f] underline" onClick={() => pickItem(idx, h)}>{h.itemName}</button>
-              ))}</div>
-            ) : null}
+        <label className={fieldLabelClass()}>
+          Payment terms
+          <input
+            className={accountingInputClass()}
+            value={paymentTerms}
+            onChange={(e) => setPaymentTerms(e.target.value)}
+          />
+        </label>
+      </FormSection>
+
+      <FormSection
+        title="Purchase Order / Reference"
+        description="PO → Bill relationship. Native PO linking is not available in this form yet — use the reference field."
+      >
+        <label className={fieldLabelClass()}>
+          Reference / PO number
+          <input
+            className={accountingInputClass()}
+            value={referenceNumber}
+            onChange={(e) => setReferenceNumber(e.target.value)}
+            placeholder="e.g. PO-2026-0001"
+          />
+        </label>
+        <label className={fieldLabelClass()}>
+          Subject
+          <input
+            className={accountingInputClass()}
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+          />
+        </label>
+      </FormSection>
+
+      <AccountingSectionCard>
+        <AccountingSectionHeader title="Items" description="GST/tax class follows catalog items when selected." />
+        <div className="space-y-3">
+          {lines.map((line, idx) => (
+            <div
+              key={idx}
+              className="grid gap-2 rounded-[10px] border border-[#e8e2d9] p-3 sm:grid-cols-4"
+            >
+              <label className={`${fieldLabelClass()} sm:col-span-2`}>
+                Item
+                <input
+                  className={accountingInputClass()}
+                  placeholder="Search or type item"
+                  value={searchQ[idx] ?? line.itemName}
+                  onChange={(e) => {
+                    void searchRow(idx, e.target.value);
+                    setLines((p) => {
+                      const n = [...p];
+                      n[idx] = { ...n[idx], itemName: e.target.value };
+                      return n;
+                    });
+                  }}
+                />
+              </label>
+              <label className={fieldLabelClass()}>
+                Qty
+                <input
+                  type="number"
+                  min={1}
+                  className={accountingInputClass()}
+                  value={line.quantity}
+                  onChange={(e) =>
+                    setLines((p) => {
+                      const n = [...p];
+                      n[idx] = { ...n[idx], quantity: parseInt(e.target.value, 10) || 1 };
+                      return n;
+                    })
+                  }
+                />
+              </label>
+              <label className={fieldLabelClass()}>
+                Rate (₹)
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  className={accountingInputClass()}
+                  value={(line.rateInPaise / 100).toFixed(2)}
+                  onChange={(e) =>
+                    setLines((p) => {
+                      const n = [...p];
+                      n[idx] = {
+                        ...n[idx],
+                        rateInPaise: Math.round(parseFloat(e.target.value || "0") * 100)
+                      };
+                      return n;
+                    })
+                  }
+                />
+              </label>
+              {(searchHits[idx]?.length ?? 0) > 0 ? (
+                <div className="sm:col-span-4 flex flex-wrap gap-2">
+                  {searchHits[idx]?.map((h) => (
+                    <button
+                      key={h.variantId}
+                      type="button"
+                      className="rounded-md border border-[#e8e2d9] px-2 py-1 text-xs text-[#1c352a] hover:bg-[#faf5ec]"
+                      onClick={() => pickItem(idx, h)}
+                    >
+                      {h.itemName}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ))}
+          <button
+            type="button"
+            className="text-sm font-semibold text-[#1c352a] underline-offset-2 hover:underline"
+            onClick={() => setLines((l) => [...l, emptyLine()])}
+          >
+            + Add Item
+          </button>
+        </div>
+      </AccountingSectionCard>
+
+      <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+        <FormSection title="Notes">
+          <label className={`${fieldLabelClass()} sm:col-span-2`}>
+            Notes
+            <textarea
+              className={`${accountingInputClass()} h-auto min-h-[4.5rem] py-2`}
+              rows={2}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </label>
+        </FormSection>
+        <AccountingSectionCard>
+          <AccountingSectionHeader title="Totals" />
+          <div className="flex justify-between text-sm">
+            <span className="text-[#8a7060]">Estimated subtotal</span>
+            <span className={moneyClass()}>{formatInrPaise(subtotalPaise)}</span>
           </div>
-        ))}
-        <button type="button" className="text-sm text-[#1e3a2f]" onClick={() => setLines((l) => [...l, emptyLine()])}>+ Add row</button>
+          <p className="mt-2 text-[11px] text-[#8a7060]">Tax and grand total are finalized on save.</p>
+        </AccountingSectionCard>
       </div>
-      <div className="flex gap-2">
-        <button type="button" disabled={busy} onClick={() => void save(false)} className="rounded-md border px-4 py-2 text-sm">Save draft</button>
-        <button type="button" disabled={busy} onClick={() => void save(true)} className="rounded-md bg-[#1e3a2f] px-4 py-2 text-sm font-semibold text-white">Save as open</button>
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void save(true)}
+          className={accountingButtonClass("primary")}
+        >
+          {busy ? "Saving…" : "Save as Open Bill"}
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void save(false)}
+          className={accountingButtonClass("secondary")}
+        >
+          Save Draft
+        </button>
       </div>
-    </div>
+    </PurchasesPageShell>
   );
 }

@@ -1,13 +1,30 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  fetchBills,
   fetchPurchasesVendors,
   formatInrPaise,
   patchPurchasesVendor,
   postPurchasesVendor,
   type VendorRow
 } from "@/lib/purchases-api";
+import {
+  AccountingAlert,
+  AccountingEmptyState,
+  AccountingMetricCard,
+  AccountingSectionCard,
+  AccountingStatusBadge,
+  FormSection,
+  PurchasesFilterBar,
+  PurchasesPageShell,
+  PurchasesTableWrap,
+  accountingButtonClass,
+  accountingInputClass,
+  fieldLabelClass,
+  purchasesTd,
+  purchasesTh
+} from "@/components/admin/purchases/purchases-ui";
 
 function VendorForm({
   initial,
@@ -28,45 +45,67 @@ function VendorForm({
   const [billingCity, setBillingCity] = useState(initial?.billingCity ?? "");
   const [billingState, setBillingState] = useState(initial?.billingState ?? "");
   const [notes, setNotes] = useState(initial?.notes ?? "");
+  const [isActive, setIsActive] = useState(initial?.isActive ?? true);
 
   return (
-    <div className="rounded-lg border border-stone-200 bg-white p-4 dark:border-stone-700 dark:bg-stone-900">
-      <h3 className="mb-3 text-sm font-semibold">{initial ? "Edit vendor" : "New vendor"}</h3>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="text-xs font-medium text-stone-600">
-          Name *
-          <input className="mt-1 w-full rounded border px-2 py-1.5 text-sm" value={name} onChange={(e) => setName(e.target.value)} />
-        </label>
-        <label className="text-xs font-medium text-stone-600">
-          GSTIN
-          <input className="mt-1 w-full rounded border px-2 py-1.5 text-sm" value={gstin} onChange={(e) => setGstin(e.target.value)} />
-        </label>
-        <label className="text-xs font-medium text-stone-600">
-          Email
-          <input className="mt-1 w-full rounded border px-2 py-1.5 text-sm" value={email} onChange={(e) => setEmail(e.target.value)} />
-        </label>
-        <label className="text-xs font-medium text-stone-600">
-          Phone
-          <input className="mt-1 w-full rounded border px-2 py-1.5 text-sm" value={phone} onChange={(e) => setPhone(e.target.value)} />
-        </label>
-        <label className="text-xs font-medium text-stone-600">
-          Payment terms
-          <input className="mt-1 w-full rounded border px-2 py-1.5 text-sm" value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} />
-        </label>
-        <label className="text-xs font-medium text-stone-600">
-          City
-          <input className="mt-1 w-full rounded border px-2 py-1.5 text-sm" value={billingCity} onChange={(e) => setBillingCity(e.target.value)} />
-        </label>
-        <label className="text-xs font-medium text-stone-600 sm:col-span-2">
-          State
-          <input className="mt-1 w-full rounded border px-2 py-1.5 text-sm" value={billingState} onChange={(e) => setBillingState(e.target.value)} />
-        </label>
-        <label className="text-xs font-medium text-stone-600 sm:col-span-2">
-          Notes
-          <textarea className="mt-1 w-full rounded border px-2 py-1.5 text-sm" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
-        </label>
-      </div>
-      <div className="mt-4 flex gap-2">
+    <FormSection
+      title={initial ? "Edit Vendor" : "New Vendor"}
+      description="Supplier details used across purchase orders, bills and payments."
+    >
+      <label className={fieldLabelClass()}>
+        Vendor name *
+        <input className={accountingInputClass()} value={name} onChange={(e) => setName(e.target.value)} />
+      </label>
+      <label className={fieldLabelClass()}>
+        GSTIN
+        <input className={accountingInputClass()} value={gstin} onChange={(e) => setGstin(e.target.value)} />
+      </label>
+      <label className={fieldLabelClass()}>
+        Email
+        <input className={accountingInputClass()} value={email} onChange={(e) => setEmail(e.target.value)} />
+      </label>
+      <label className={fieldLabelClass()}>
+        Phone
+        <input className={accountingInputClass()} value={phone} onChange={(e) => setPhone(e.target.value)} />
+      </label>
+      <label className={fieldLabelClass()}>
+        Payment terms
+        <input
+          className={accountingInputClass()}
+          value={paymentTerms}
+          onChange={(e) => setPaymentTerms(e.target.value)}
+        />
+      </label>
+      <label className={fieldLabelClass()}>
+        City
+        <input
+          className={accountingInputClass()}
+          value={billingCity}
+          onChange={(e) => setBillingCity(e.target.value)}
+        />
+      </label>
+      <label className={fieldLabelClass()}>
+        State
+        <input
+          className={accountingInputClass()}
+          value={billingState}
+          onChange={(e) => setBillingState(e.target.value)}
+        />
+      </label>
+      <label className={`flex items-center gap-2 pt-6 text-sm text-[#2c2420]`}>
+        <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+        Active vendor
+      </label>
+      <label className={`${fieldLabelClass()} sm:col-span-2`}>
+        Notes
+        <textarea
+          className={`${accountingInputClass()} h-auto min-h-[4.5rem] py-2`}
+          rows={2}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+        />
+      </label>
+      <div className="flex flex-wrap gap-2 sm:col-span-2">
         <button
           type="button"
           disabled={busy || !name.trim()}
@@ -79,18 +118,19 @@ function VendorForm({
               paymentTerms: paymentTerms.trim() || null,
               billingCity: billingCity.trim() || null,
               billingState: billingState.trim() || null,
-              notes: notes.trim() || null
+              notes: notes.trim() || null,
+              isActive
             })
           }
-          className="rounded-md bg-[#1e3a2f] px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
+          className={accountingButtonClass("primary")}
         >
-          {busy ? "Saving…" : "Save"}
+          {busy ? "Saving…" : "Save Vendor"}
         </button>
-        <button type="button" onClick={onCancel} className="rounded-md border px-3 py-1.5 text-sm">
+        <button type="button" onClick={onCancel} className={accountingButtonClass("secondary")}>
           Cancel
         </button>
       </div>
-    </div>
+    </FormSection>
   );
 }
 
@@ -101,6 +141,8 @@ export default function PurchasesVendorsPage() {
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<VendorRow | null>(null);
   const [creating, setCreating] = useState(false);
+  const [outstanding, setOutstanding] = useState<number | null>(null);
+  const [overdue, setOverdue] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setErr(null);
@@ -116,6 +158,20 @@ export default function PurchasesVendorsPage() {
     const t = setTimeout(() => void load(), q ? 300 : 0);
     return () => clearTimeout(t);
   }, [load, q]);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const bills = await fetchBills();
+        setOutstanding(bills.summary.outstandingInPaise);
+        setOverdue(bills.summary.overdueInPaise);
+      } catch {
+        /* optional AP summary */
+      }
+    })();
+  }, []);
+
+  const activeCount = useMemo(() => items.filter((v) => v.isActive).length, [items]);
 
   async function handleSave(draft: Partial<VendorRow> & { name: string }) {
     setBusy(true);
@@ -134,68 +190,127 @@ export default function PurchasesVendorsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <input
-          className="w-full max-w-sm rounded-md border px-3 py-2 text-sm"
-          placeholder="Search vendors…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
+    <PurchasesPageShell
+      title="Vendors"
+      subtitle="Manage suppliers, payment terms and outstanding balances."
+      actions={
         <button
           type="button"
           onClick={() => {
             setCreating(true);
             setEditing(null);
           }}
-          className="rounded-md bg-[#b98a3e] px-3 py-2 text-sm font-semibold text-white"
+          className={accountingButtonClass("primary")}
         >
-          + New vendor
+          + New Vendor
         </button>
+      }
+    >
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <AccountingMetricCard label="Total Vendors" value={String(items.length)} hint="In current list" />
+        <AccountingMetricCard label="Active Vendors" value={String(activeCount)} hint="Marked active" />
+        {outstanding != null ? (
+          <AccountingMetricCard
+            label="Outstanding Payables"
+            value={formatInrPaise(outstanding)}
+            hint="Open vendor bills"
+          />
+        ) : null}
+        {overdue != null ? (
+          <AccountingMetricCard
+            label="Overdue Payables"
+            value={formatInrPaise(overdue)}
+            hint="Past due date"
+          />
+        ) : null}
       </div>
 
-      {err ? <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{err}</p> : null}
+      <PurchasesFilterBar>
+        <label className={fieldLabelClass()}>
+          Search
+          <input
+            className={accountingInputClass()}
+            placeholder="Vendor, GSTIN, email…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+        </label>
+      </PurchasesFilterBar>
+
+      {err ? <AccountingAlert tone="error">{err}</AccountingAlert> : null}
 
       {creating || editing ? (
-        <VendorForm initial={editing} onSave={handleSave} onCancel={() => { setCreating(false); setEditing(null); }} busy={busy} />
+        <VendorForm
+          initial={editing}
+          onSave={handleSave}
+          onCancel={() => {
+            setCreating(false);
+            setEditing(null);
+          }}
+          busy={busy}
+        />
       ) : null}
 
-      <div className="overflow-hidden rounded-lg border border-stone-200 bg-white dark:border-stone-700 dark:bg-stone-900">
-        <table className="min-w-full text-sm">
-          <thead className="border-b bg-stone-50 dark:bg-stone-800">
-            <tr>
-              <th className="px-4 py-2 text-left font-medium">Name</th>
-              <th className="px-4 py-2 text-left font-medium">GSTIN</th>
-              <th className="px-4 py-2 text-left font-medium">Contact</th>
-              <th className="px-4 py-2 text-left font-medium">Terms</th>
-              <th className="px-4 py-2 text-right font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((v) => (
-              <tr key={v.id} className="border-b border-stone-100 dark:border-stone-800">
-                <td className="px-4 py-2 font-medium">{v.name}</td>
-                <td className="px-4 py-2 font-mono text-xs">{v.gstin ?? "—"}</td>
-                <td className="px-4 py-2 text-stone-600">{v.email ?? v.phone ?? "—"}</td>
-                <td className="px-4 py-2">{v.paymentTerms ?? "—"}</td>
-                <td className="px-4 py-2 text-right">
-                  <button type="button" className="text-xs font-semibold text-[#1e3a2f]" onClick={() => { setEditing(v); setCreating(false); }}>
-                    Edit
-                  </button>
-                </td>
+      {items.length === 0 ? (
+        <AccountingEmptyState
+          title="No vendors yet"
+          description="Add your first supplier to start purchase orders and bills."
+        />
+      ) : (
+        <PurchasesTableWrap>
+          <table className="w-full min-w-[720px] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-[#e8e2d9]">
+                <th className={purchasesTh()}>Vendor</th>
+                <th className={purchasesTh()}>GSTIN</th>
+                <th className={purchasesTh()}>Contact</th>
+                <th className={purchasesTh()}>Payment Terms</th>
+                <th className={purchasesTh()}>Status</th>
+                <th className={purchasesTh(true)}>Actions</th>
               </tr>
-            ))}
-            {items.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-stone-500">
-                  No vendors yet — add your first supplier.
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
-      <p className="text-xs text-stone-500">{items.length} vendor{items.length === 1 ? "" : "s"} · amounts use {formatInrPaise(0).slice(0, 1)} INR</p>
-    </div>
+            </thead>
+            <tbody>
+              {items.map((v) => (
+                <tr key={v.id} className="h-11 border-b border-[#f0ece6] last:border-0 hover:bg-[#faf5ec]/70">
+                  <td className={purchasesTd()}>
+                    <span className="font-semibold text-[#1c352a]">{v.name}</span>
+                    {v.billingCity ? (
+                      <span className="mt-0.5 block text-[11px] text-[#8a7060]">{v.billingCity}</span>
+                    ) : null}
+                  </td>
+                  <td className={`${purchasesTd()} font-mono text-[12px]`}>{v.gstin ?? "—"}</td>
+                  <td className={purchasesTd()}>{v.email ?? v.phone ?? "—"}</td>
+                  <td className={purchasesTd()}>{v.paymentTerms ?? "—"}</td>
+                  <td className={purchasesTd()}>
+                    <AccountingStatusBadge tone={v.isActive ? "success" : "neutral"}>
+                      {v.isActive ? "Active" : "Inactive"}
+                    </AccountingStatusBadge>
+                  </td>
+                  <td className={purchasesTd(true)}>
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-[#1c352a] underline-offset-2 hover:underline"
+                      onClick={() => {
+                        setEditing(v);
+                        setCreating(false);
+                      }}
+                    >
+                      Edit
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </PurchasesTableWrap>
+      )}
+
+      <AccountingSectionCard className="!py-3">
+        <p className="text-xs text-[#8a7060]">
+          Vendor outstanding balances appear on Vendor Bills and Vendor Payments. Per-vendor AP columns
+          are not available from the current API.
+        </p>
+      </AccountingSectionCard>
+    </PurchasesPageShell>
   );
 }

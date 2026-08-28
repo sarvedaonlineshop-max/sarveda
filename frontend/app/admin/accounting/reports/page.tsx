@@ -127,8 +127,12 @@ export default function AdminAccountingReportsPage() {
 
   const [pl, setPl] = useState<ProfitLossReport | null>(null);
   const [plLoading, setPlLoading] = useState(false);
+  const [plFetchedFor, setPlFetchedFor] = useState<{ from: string; to: string } | null>(null);
+  const [plAutoLoaded, setPlAutoLoaded] = useState(false);
   const [bs, setBs] = useState<BalanceSheetReport | null>(null);
   const [bsLoading, setBsLoading] = useState(false);
+  const [bsFetchedFor, setBsFetchedFor] = useState<string | null>(null);
+  const [bsAutoLoaded, setBsAutoLoaded] = useState(false);
   const [dash, setDash] = useState<FinancialDashboardReport | null>(null);
   const [dashLoading, setDashLoading] = useState(false);
   const [integrity, setIntegrity] = useState<FinancialIntegrityReport | null>(null);
@@ -224,31 +228,88 @@ export default function AdminAccountingReportsPage() {
     [from, to, asOf, fy, loadGl]
   );
 
-  const loadPl = useCallback(async () => {
+  const loadPl = useCallback(async (opts?: { from?: string; to?: string }) => {
+    const f = (opts?.from ?? from).trim();
+    const t = (opts?.to ?? to).trim();
+    if (!f || !t) return;
     setPlLoading(true);
     setError(null);
     try {
-      setPl(await fetchProfitLoss({ from, to, comparison: true }));
+      const data = await fetchProfitLoss({ from: f, to: t, comparison: true });
+      setPl(data);
+      setPlFetchedFor({ from: f, to: t });
     } catch (err) {
       setPl(null);
+      setPlFetchedFor(null);
       setError(err instanceof AdminApiError ? err.message : "P&L failed");
     } finally {
       setPlLoading(false);
     }
   }, [from, to]);
 
-  const loadBs = useCallback(async () => {
+  const loadBs = useCallback(async (opts?: { asOf?: string }) => {
+    const d = (opts?.asOf ?? asOf).trim();
+    if (!d) return;
     setBsLoading(true);
     setError(null);
     try {
-      setBs(await fetchBalanceSheet({ asOf, comparison: true }));
+      const data = await fetchBalanceSheet({ asOf: d, comparison: true });
+      setBs(data);
+      setBsFetchedFor(d);
     } catch (err) {
       setBs(null);
+      setBsFetchedFor(null);
       setError(err instanceof AdminApiError ? err.message : "Balance Sheet failed");
     } finally {
       setBsLoading(false);
     }
   }, [asOf]);
+
+  /** First open of P&L / BS auto-loads once dates are ready. Filter edits do not refetch. */
+  useEffect(() => {
+    if (tab !== "pl" || plAutoLoaded || !from || !to || plLoading) return;
+    setPlAutoLoaded(true);
+    void loadPl();
+  }, [tab, plAutoLoaded, from, to, plLoading, loadPl]);
+
+  useEffect(() => {
+    if (tab !== "bs" || bsAutoLoaded || !asOf || bsLoading) return;
+    setBsAutoLoaded(true);
+    void loadBs();
+  }, [tab, bsAutoLoaded, asOf, bsLoading, loadBs]);
+
+  const openProfitLoss = useCallback(
+    (opts?: { from?: string; to?: string }) => {
+      if (opts?.from) setFrom(opts.from);
+      if (opts?.to) setTo(opts.to);
+      setTab("pl");
+      setPlAutoLoaded(true);
+      void loadPl({ from: opts?.from ?? from, to: opts?.to ?? to });
+    },
+    [from, to, loadPl]
+  );
+
+  const openBalanceSheet = useCallback(
+    (opts?: { asOf?: string }) => {
+      if (opts?.asOf) setAsOf(opts.asOf);
+      setTab("bs");
+      setBsAutoLoaded(true);
+      void loadBs({ asOf: opts?.asOf ?? asOf });
+    },
+    [asOf, loadBs]
+  );
+
+  const plFiltersStale =
+    Boolean(pl && plFetchedFor && (plFetchedFor.from !== from || plFetchedFor.to !== to));
+  const bsFiltersStale = Boolean(bs && bsFetchedFor && bsFetchedFor !== asOf);
+
+  function statementHasLines(lines: StatementLine[]): boolean {
+    for (const line of lines) {
+      if (line.kind === "line") return true;
+      if (line.children?.length && statementHasLines(line.children)) return true;
+    }
+    return false;
+  }
 
   const loadDash = useCallback(async () => {
     setDashLoading(true);
@@ -406,23 +467,51 @@ export default function AdminAccountingReportsPage() {
                   {integrityLoading ? "Running…" : "Refresh Report"}
                 </button>
               ) : tab === "pl" ? (
-                <button
-                  type="button"
-                  onClick={() => void loadPl()}
-                  disabled={plLoading || !from || !to}
-                  className={accountingButtonClass("primary")}
-                >
-                  {plLoading ? "Loading…" : "Refresh Report"}
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => void loadPl()}
+                    disabled={plLoading || !from || !to}
+                    className={accountingButtonClass("primary")}
+                  >
+                    {plLoading ? "Loading…" : "Refresh Report"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={exportBusy || plLoading || !from || !to || !pl}
+                    className={accountingButtonClass("secondary")}
+                    onClick={() =>
+                      void runExport(() =>
+                        downloadFinancialStatementPdf({ kind: "profit-loss", from, to })
+                      )
+                    }
+                  >
+                    PDF
+                  </button>
+                </>
               ) : tab === "bs" ? (
-                <button
-                  type="button"
-                  onClick={() => void loadBs()}
-                  disabled={bsLoading || !asOf}
-                  className={accountingButtonClass("primary")}
-                >
-                  {bsLoading ? "Loading…" : "Refresh Report"}
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => void loadBs()}
+                    disabled={bsLoading || !asOf}
+                    className={accountingButtonClass("primary")}
+                  >
+                    {bsLoading ? "Loading…" : "Refresh Report"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={exportBusy || bsLoading || !asOf || !bs}
+                    className={accountingButtonClass("secondary")}
+                    onClick={() =>
+                      void runExport(() =>
+                        downloadFinancialStatementPdf({ kind: "balance-sheet", asOf })
+                      )
+                    }
+                  >
+                    PDF
+                  </button>
+                </>
               ) : null}
               <button
                 type="button"
@@ -589,25 +678,25 @@ export default function AdminAccountingReportsPage() {
               </p>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {[
-                  ["Revenue", dash.profitAndLoss.revenueInPaise, () => setTab("pl")],
-                  ["Net Revenue", dash.profitAndLoss.netRevenueInPaise, () => setTab("pl")],
-                  ["COGS", dash.profitAndLoss.cogsInPaise, () => setTab("pl")],
-                  ["Gross Profit", dash.profitAndLoss.grossProfitInPaise, () => setTab("pl")],
+                  ["Revenue", dash.profitAndLoss.revenueInPaise, () => openProfitLoss()],
+                  ["Net Revenue", dash.profitAndLoss.netRevenueInPaise, () => openProfitLoss()],
+                  ["COGS", dash.profitAndLoss.cogsInPaise, () => openProfitLoss()],
+                  ["Gross Profit", dash.profitAndLoss.grossProfitInPaise, () => openProfitLoss()],
                   [
                     "Gross Margin %",
                     dash.profitAndLoss.grossMarginPercent,
-                    () => setTab("pl"),
+                    () => openProfitLoss(),
                     true
                   ],
-                  ["OpEx", dash.profitAndLoss.operatingExpensesInPaise, () => setTab("pl")],
-                  ["Net Profit", dash.profitAndLoss.netProfitInPaise, () => setTab("pl")],
-                  ["Cash + Bank", dash.balanceSheet.cashAndBankInPaise, () => setTab("bs")],
-                  ["AR", dash.balanceSheet.accountsReceivableInPaise, () => setTab("bs")],
-                  ["AP", dash.balanceSheet.accountsPayableInPaise, () => setTab("bs")],
-                  ["Inventory", dash.balanceSheet.inventoryInPaise, () => setTab("bs")],
-                  ["Gateway Clearing", dash.balanceSheet.gatewayClearingInPaise, () => setTab("bs")],
-                  ["Input GST", dash.balanceSheet.inputGstAssetInPaise, () => setTab("bs")],
-                  ["Output GST", dash.balanceSheet.outputGstLiabilityInPaise, () => setTab("bs")]
+                  ["OpEx", dash.profitAndLoss.operatingExpensesInPaise, () => openProfitLoss()],
+                  ["Net Profit", dash.profitAndLoss.netProfitInPaise, () => openProfitLoss()],
+                  ["Cash + Bank", dash.balanceSheet.cashAndBankInPaise, () => openBalanceSheet()],
+                  ["AR", dash.balanceSheet.accountsReceivableInPaise, () => openBalanceSheet()],
+                  ["AP", dash.balanceSheet.accountsPayableInPaise, () => openBalanceSheet()],
+                  ["Inventory", dash.balanceSheet.inventoryInPaise, () => openBalanceSheet()],
+                  ["Gateway Clearing", dash.balanceSheet.gatewayClearingInPaise, () => openBalanceSheet()],
+                  ["Input GST", dash.balanceSheet.inputGstAssetInPaise, () => openBalanceSheet()],
+                  ["Output GST", dash.balanceSheet.outputGstLiabilityInPaise, () => openBalanceSheet()]
                 ].map(([label, val, go, pct]) => (
                   <button
                     key={String(label)}
@@ -652,143 +741,196 @@ export default function AdminAccountingReportsPage() {
 
       {tab === "pl" ? (
         <div className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={exportBusy || !from || !to}
-              className={accountingButtonClass("secondary")}
-              onClick={() =>
-                void runExport(() =>
-                  downloadFinancialStatementPdf({ kind: "profit-loss", from, to })
-                )
-              }
-            >
-              PDF
-            </button>
-          </div>
+          {plFiltersStale ? (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+              Filters changed since this statement was loaded. Click <strong>Refresh Report</strong> to
+              update.
+            </p>
+          ) : null}
+          {plLoading && !pl ? (
+            <p className="rounded-[12px] border border-[#e8e2d9] bg-white px-4 py-8 text-center text-sm text-[#8a7060]">
+              Loading Profit &amp; Loss…
+            </p>
+          ) : null}
           {pl ? (
             <>
-              <div
-                className={`rounded-lg border px-4 py-3 text-sm ${
-                  pl.integrity.status === "PASS"
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-                    : "border-red-200 bg-red-50 text-red-900"
-                }`}
-              >
-                Net Profit {formatInrPaise(pl.totals.netProfitInPaise)}
-                {pl.totals.grossMarginPercent != null
-                  ? ` · Gross margin ${pl.totals.grossMarginPercent}%`
-                  : " · Gross margin n/a"}
-                {" · "}
-                {pl.integrity.status === "PASS" ? "Checks passed" : `Checks failed · variance ${pl.integrity.varianceInPaise}`}
-              </div>
-              {pl.comparison ? (
-                <p className="text-xs text-neutral-600">
-                  Prior period net:{" "}
-                  {pl.comparison.previousPeriod
-                    ? formatInrPaise(pl.comparison.previousPeriod.netProfitInPaise)
-                    : "—"}
-                  {pl.comparison.ytd
-                    ? ` · YTD (${pl.comparison.ytd.from}→${pl.comparison.ytd.to}): ${formatInrPaise(pl.comparison.ytd.netProfitInPaise)}`
-                    : null}
-                </p>
+              {plLoading ? (
+                <p className="text-xs text-[#8a7060]">Refreshing Profit &amp; Loss…</p>
               ) : null}
-              <div className="rounded-lg border border-neutral-200 bg-white">
-                <StatementRows
-                  lines={[
-                    ...pl.sections.revenue,
-                    ...pl.sections.cogs,
-                    ...pl.sections.operatingExpenses,
-                    ...pl.sections.otherIncome,
-                    ...pl.sections.otherExpenses
-                  ]}
-                  onDrill={openGl}
-                />
-              </div>
+              {(() => {
+                const lines = [
+                  ...pl.sections.revenue,
+                  ...pl.sections.cogs,
+                  ...pl.sections.operatingExpenses,
+                  ...pl.sections.otherIncome,
+                  ...pl.sections.otherExpenses
+                ];
+                if (!statementHasLines(lines)) {
+                  return (
+                    <AccountingEmptyState
+                      title="No transactions found for this period."
+                      description="Try changing the reporting dates."
+                    />
+                  );
+                }
+                return (
+                  <>
+                    <div
+                      className={`rounded-lg border px-4 py-3 text-sm ${
+                        pl.integrity.status === "PASS"
+                          ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                          : "border-red-200 bg-red-50 text-red-900"
+                      }`}
+                    >
+                      Net Profit {formatInrPaise(pl.totals.netProfitInPaise)}
+                      {pl.totals.grossMarginPercent != null
+                        ? ` · Gross margin ${pl.totals.grossMarginPercent}%`
+                        : " · Gross margin n/a"}
+                      {" · "}
+                      {pl.integrity.status === "PASS"
+                        ? "Checks passed"
+                        : `Checks failed · variance ${pl.integrity.varianceInPaise}`}
+                    </div>
+                    {pl.comparison ? (
+                      <p className="text-xs text-neutral-600">
+                        Prior period net:{" "}
+                        {pl.comparison.previousPeriod
+                          ? formatInrPaise(pl.comparison.previousPeriod.netProfitInPaise)
+                          : "—"}
+                        {pl.comparison.ytd
+                          ? ` · YTD (${pl.comparison.ytd.from}→${pl.comparison.ytd.to}): ${formatInrPaise(pl.comparison.ytd.netProfitInPaise)}`
+                          : null}
+                      </p>
+                    ) : null}
+                    <div className="rounded-lg border border-neutral-200 bg-white">
+                      <StatementRows lines={lines} onDrill={openGl} />
+                    </div>
+                  </>
+                );
+              })()}
             </>
+          ) : !plLoading && plAutoLoaded ? (
+            <AccountingEmptyState
+              title="No transactions found for this period."
+              description="Try changing the reporting dates."
+            />
+          ) : !plLoading ? (
+            <p className="rounded-[12px] border border-[#e8e2d9] bg-white px-4 py-8 text-center text-sm text-[#8a7060]">
+              Preparing reporting period…
+            </p>
           ) : null}
         </div>
       ) : null}
 
       {tab === "bs" ? (
         <div className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={exportBusy || !asOf}
-              className={accountingButtonClass("secondary")}
-              onClick={() =>
-                void runExport(() =>
-                  downloadFinancialStatementPdf({ kind: "balance-sheet", asOf })
-                )
-              }
-            >
-              PDF
-            </button>
-          </div>
+          {bsFiltersStale ? (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+              Balance Sheet Date changed since this statement was loaded. Click{" "}
+              <strong>Refresh Report</strong> to update.
+            </p>
+          ) : null}
+          {bsLoading && !bs ? (
+            <p className="rounded-[12px] border border-[#e8e2d9] bg-white px-4 py-8 text-center text-sm text-[#8a7060]">
+              Loading Balance Sheet…
+            </p>
+          ) : null}
           {bs ? (
             <>
-              <div
-                className={`rounded-lg border px-4 py-3 text-sm ${
-                  bs.totals.balanced
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-                    : "border-red-200 bg-red-50 text-red-900"
-                }`}
-              >
-                {bs.totals.balanced ? (
-                  <strong>BALANCED</strong>
-                ) : (
+              {bsLoading ? (
+                <p className="text-xs text-[#8a7060]">Refreshing Balance Sheet…</p>
+              ) : null}
+              {(() => {
+                const allLines = [
+                  ...bs.sections.assets,
+                  ...bs.sections.liabilities,
+                  ...bs.sections.equity
+                ];
+                if (!statementHasLines(allLines)) {
+                  return (
+                    <AccountingEmptyState
+                      title="No transactions found for this period."
+                      description="Try changing the reporting dates."
+                    />
+                  );
+                }
+                return (
                   <>
-                    <strong>OUT OF BALANCE</strong> — difference{" "}
-                    {formatInrPaise(Math.abs(bs.totals.differenceInPaise))}
-                  </>
-                )}
-                <span className="ml-2 text-neutral-600">
-                  · {bs.fy.label} · Current earnings {formatInrPaise(bs.earnings.currentFyEarningsInPaise)} (
-                  {bs.earnings.currentFyFrom} → {bs.earnings.currentFyTo})
-                </span>
-              </div>
-              <p className="text-xs text-neutral-500">{bs.earnings.formula}</p>
-              {bs.disclosures.warnings.length ? (
-                <div className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
-                  {bs.disclosures.warnings.map((w) => (
-                    <div key={w}>{w}</div>
-                  ))}
-                  <div>{bs.disclosures.arSubledger}</div>
-                </div>
-              ) : (
-                <p className="text-xs text-neutral-500">{bs.disclosures.arSubledger}</p>
-              )}
-              <div className="grid gap-4 lg:grid-cols-3">
-                {(
-                  [
-                    ["Assets", bs.sections.assets, bs.totals.totalAssetsInPaise],
-                    ["Liabilities", bs.sections.liabilities, bs.totals.totalLiabilitiesInPaise],
-                    ["Equity", bs.sections.equity, bs.totals.totalEquityInPaise]
-                  ] as const
-                ).map(([title, lines, total]) => (
-                  <div key={title} className="rounded-lg border border-neutral-200 bg-white">
-                    <div className="border-b border-neutral-100 px-3 py-2 font-medium">{title}</div>
-                    <StatementRows lines={lines} onDrill={openGl} />
-                    <div className="border-t border-neutral-200 px-3 py-2 text-sm font-semibold flex justify-between">
-                      <span>Total</span>
-                      <span className="tabular-nums">{formatInrPaise(total)}</span>
+                    <div
+                      className={`rounded-lg border px-4 py-3 text-sm ${
+                        bs.totals.balanced
+                          ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                          : "border-red-200 bg-red-50 text-red-900"
+                      }`}
+                    >
+                      {bs.totals.balanced ? (
+                        <strong>BALANCED</strong>
+                      ) : (
+                        <>
+                          <strong>OUT OF BALANCE</strong> — difference{" "}
+                          {formatInrPaise(Math.abs(bs.totals.differenceInPaise))}
+                        </>
+                      )}
+                      <span className="ml-2 text-neutral-600">
+                        · {bs.fy.label} · Current earnings{" "}
+                        {formatInrPaise(bs.earnings.currentFyEarningsInPaise)} (
+                        {bs.earnings.currentFyFrom} → {bs.earnings.currentFyTo})
+                      </span>
                     </div>
-                  </div>
-                ))}
-              </div>
-              <button
-                type="button"
-                className="text-sm text-[#1e3a2f] underline"
-                onClick={() => {
-                  setTab("pl");
-                  setFrom(bs.earnings.currentFyFrom);
-                  setTo(bs.earnings.currentFyTo);
-                }}
-              >
-                Open P&L for current earnings period
-              </button>
+                    <p className="text-xs text-neutral-500">{bs.earnings.formula}</p>
+                    {bs.disclosures.warnings.length ? (
+                      <div className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+                        {bs.disclosures.warnings.map((w) => (
+                          <div key={w}>{w}</div>
+                        ))}
+                        <div>{bs.disclosures.arSubledger}</div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-neutral-500">{bs.disclosures.arSubledger}</p>
+                    )}
+                    <div className="grid gap-4 lg:grid-cols-3">
+                      {(
+                        [
+                          ["Assets", bs.sections.assets, bs.totals.totalAssetsInPaise],
+                          ["Liabilities", bs.sections.liabilities, bs.totals.totalLiabilitiesInPaise],
+                          ["Equity", bs.sections.equity, bs.totals.totalEquityInPaise]
+                        ] as const
+                      ).map(([title, lines, total]) => (
+                        <div key={title} className="rounded-lg border border-neutral-200 bg-white">
+                          <div className="border-b border-neutral-100 px-3 py-2 font-medium">{title}</div>
+                          <StatementRows lines={lines} onDrill={openGl} />
+                          <div className="flex justify-between border-t border-neutral-200 px-3 py-2 text-sm font-semibold">
+                            <span>Total</span>
+                            <span className="tabular-nums">{formatInrPaise(total)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      className="text-sm text-[#1e3a2f] underline"
+                      onClick={() =>
+                        openProfitLoss({
+                          from: bs.earnings.currentFyFrom,
+                          to: bs.earnings.currentFyTo
+                        })
+                      }
+                    >
+                      Open P&amp;L for current earnings period
+                    </button>
+                  </>
+                );
+              })()}
             </>
+          ) : !bsLoading && bsAutoLoaded ? (
+            <AccountingEmptyState
+              title="No transactions found for this period."
+              description="Try changing the reporting dates."
+            />
+          ) : !bsLoading ? (
+            <p className="rounded-[12px] border border-[#e8e2d9] bg-white px-4 py-8 text-center text-sm text-[#8a7060]">
+              Preparing reporting period…
+            </p>
           ) : null}
         </div>
       ) : null}

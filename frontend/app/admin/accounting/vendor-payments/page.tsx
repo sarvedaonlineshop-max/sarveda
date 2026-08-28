@@ -13,6 +13,10 @@ import {
   type VendorPaymentMethod
 } from "@/lib/accounting-api";
 import { AdminAccountingHeader } from "@/components/admin/accounting/AdminAccountingNav";
+import {
+  AccountingAlert,
+  accountingButtonClass
+} from "@/components/admin/accounting/accounting-ui";
 import { fetchPurchasesVendors } from "@/lib/purchases-api";
 
 function formatPaise(p: number | undefined | null) {
@@ -191,23 +195,22 @@ export default function VendorPaymentsAccountingPage() {
   return (
     <div className="space-y-6">
       <AdminAccountingHeader
-        title="Vendor Payments / AP Settlement"
-        subtitle="VENDOR_PAYMENT_MADE_V1 — Dr 2000 AP, Cr 1010 Bank / 1000 Cash. Mark paid alone never creates this journal. Zoho remains authoritative."
+        title="Vendor Payments"
+        subtitle="Record payments made against supplier bills. Who was paid, how much, when, from which account, and against which bill(s)."
       />
 
-      <p className="text-sm text-neutral-600">
-        Posting flag:{" "}
-        <span className={flagOn ? "text-emerald-700" : "text-amber-700"}>
-          {flagOn ? "ACCOUNTING_VENDOR_PAYMENT_POSTING_ENABLED on" : "OFF (default)"}
-        </span>
-        . Ops Mark paid on purchases bills remains available and is not an accounting authority.
-      </p>
+      <AccountingAlert tone={flagOn ? "success" : "warning"} title="Books posting">
+        {flagOn
+          ? "Vendor payment posting to the ledger is enabled."
+          : "Ledger posting is currently off. You can still save payment drafts; posting requires the server posting flag."}{" "}
+        Operational “Mark paid” on Vendor Bills is not the books settlement.
+      </AccountingAlert>
 
       {err ? <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">{err}</p> : null}
       {msg ? <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{msg}</p> : null}
 
-      <section className="space-y-3 border border-neutral-200 p-4">
-        <h2 className="text-lg font-medium text-[#1e3a2f]">New Vendor Payment</h2>
+      <section className="space-y-3 rounded-[12px] border border-[#e8e2d9] bg-white p-4">
+        <h2 className="text-lg font-medium text-[#1c352a]">Record Payment</h2>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
           <label className="text-sm">
             Vendor
@@ -296,15 +299,15 @@ export default function VendorPaymentsAccountingPage() {
                 <th className="py-2 pr-3">Bill</th>
                 <th className="py-2 pr-3">Ops status</th>
                 <th className="py-2 pr-3">Bill total</th>
-                <th className="py-2 pr-3">Native outstanding</th>
-                <th className="py-2 pr-3">Allocate (paise)</th>
+                <th className="py-2 pr-3">Amount due</th>
+                <th className="py-2 pr-3">Allocate (₹)</th>
               </tr>
             </thead>
             <tbody>
               {openBills.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-3 text-neutral-500">
-                    Select a vendor with POSTED AP bills that still have native outstanding.
+                    Select a vendor with open bills that still have an amount due in the books.
                   </td>
                 </tr>
               ) : (
@@ -312,7 +315,7 @@ export default function VendorPaymentsAccountingPage() {
                   <tr key={b.id} className="border-b border-neutral-100">
                     <td className="py-2 pr-3 font-medium">{b.billNumber}</td>
                     <td className="py-2 pr-3">
-                      {b.status} / ops paid {formatPaise(b.paidInPaise)}
+                      {b.status} · ops paid {formatPaise(b.paidInPaise)}
                     </td>
                     <td className="py-2 pr-3">{formatPaise(b.totalInPaise)}</td>
                     <td className="py-2 pr-3">{formatPaise(b.nativeOutstandingInPaise)}</td>
@@ -320,19 +323,26 @@ export default function VendorPaymentsAccountingPage() {
                       <input
                         type="number"
                         min={0}
-                        max={b.nativeOutstandingInPaise}
-                        className="w-36 border border-neutral-300 px-2 py-1"
-                        value={alloc[b.id] ?? 0}
+                        step={0.01}
+                        max={b.nativeOutstandingInPaise / 100}
+                        className="w-36 rounded-lg border border-[#e0d8ce] px-2 py-1.5"
+                        value={((alloc[b.id] ?? 0) / 100).toFixed(2)}
                         onChange={(e) =>
                           setAlloc((prev) => ({
                             ...prev,
-                            [b.id]: Math.max(0, Math.floor(Number(e.target.value) || 0))
+                            [b.id]: Math.max(
+                              0,
+                              Math.min(
+                                b.nativeOutstandingInPaise,
+                                Math.round(parseFloat(e.target.value || "0") * 100)
+                              )
+                            )
                           }))
                         }
                       />
                       <button
                         type="button"
-                        className="ml-2 text-xs text-[#1e3a2f] underline"
+                        className="ml-2 text-xs font-semibold text-[#1c352a] underline"
                         onClick={() =>
                           setAlloc((prev) => ({
                             ...prev,
@@ -350,22 +360,22 @@ export default function VendorPaymentsAccountingPage() {
           </table>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 text-sm">
+        <div className="flex flex-wrap items-center gap-3 text-sm">
           <span>
-            Amount / allocated: <strong>{formatPaise(allocatedTotal)}</strong>
+            Payment total: <strong>{formatPaise(allocatedTotal)}</strong>
           </span>
           <button
             type="button"
             disabled={busy || !vendorId || allocatedTotal <= 0}
-            className="rounded-md bg-[#1e3a2f] px-3 py-1.5 text-white disabled:opacity-50"
+            className={accountingButtonClass("primary", true)}
             onClick={() => void saveDraft()}
           >
-            Save DRAFT
+            Save Draft
           </button>
           <button
             type="button"
             disabled={busy || !selectedPaymentId}
-            className="rounded-md border border-[#1e3a2f] px-3 py-1.5 text-[#1e3a2f] disabled:opacity-50"
+            className={accountingButtonClass("secondary", true)}
             onClick={() => selectedPaymentId && void runPreview(selectedPaymentId)}
           >
             Preview journal
@@ -373,16 +383,16 @@ export default function VendorPaymentsAccountingPage() {
           <button
             type="button"
             disabled={busy || !selectedPaymentId || !flagOn}
-            className="rounded-md bg-amber-700 px-3 py-1.5 text-white disabled:opacity-50"
+            className={accountingButtonClass("success", true)}
             onClick={() => void runPost()}
           >
-            POST
+            Post to books
           </button>
         </div>
       </section>
 
-      <section className="space-y-3 border border-neutral-200 p-4">
-        <h2 className="text-lg font-medium text-[#1e3a2f]">Payments</h2>
+      <section className="space-y-3 rounded-[12px] border border-[#e8e2d9] bg-white p-4">
+        <h2 className="text-lg font-medium text-[#1c352a]">Payments</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead>

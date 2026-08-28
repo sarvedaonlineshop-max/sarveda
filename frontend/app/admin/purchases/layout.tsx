@@ -25,16 +25,38 @@ export default function AdminPurchasesLayout({ children }: { children: React.Rea
   if (!purchasesOn && !accountingOn) {
     return (
       <div className="mx-auto max-w-3xl space-y-4 p-6">
-        <AdminPurchasesHeader title="Purchases (preview)" subtitle="Module gated until enabled on staging." />
-        <button type="button" onClick={() => router.push("/admin")} className="text-sm text-[#1e3a2f] underline">
+        <AdminPurchasesHeader
+          title="Purchases (preview)"
+          subtitle="Module gated until enabled on staging."
+        />
+        <button
+          type="button"
+          onClick={() => router.push("/admin")}
+          className="text-sm text-[#1c352a] underline"
+        >
           Back to dashboard
         </button>
       </div>
     );
   }
 
-  // Accounting users: nav lives in main OPS sidebar — content only here.
-  if (accountingOn && purchasesOn) {
+  if (!purchasesOn) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-4 p-6">
+        <AdminPurchasesHeader title="Purchases unavailable" />
+        <button
+          type="button"
+          onClick={() => router.push("/admin")}
+          className="text-sm text-[#1c352a] underline"
+        >
+          Back to dashboard
+        </button>
+      </div>
+    );
+  }
+
+  // Accounting users: Purchases links live in the main Accounting sidebar.
+  if (accountingOn) {
     return (
       <div className="mx-auto max-w-[1600px] space-y-4 p-1 font-sans">
         <AccountingUatBanner />
@@ -43,23 +65,8 @@ export default function AdminPurchasesLayout({ children }: { children: React.Rea
     );
   }
 
-  if (!purchasesOn) {
-    return (
-      <div className="mx-auto max-w-3xl space-y-4 p-6">
-        <AdminPurchasesHeader title="Purchases ops unavailable" />
-        <button type="button" onClick={() => router.push("/admin")} className="text-sm text-[#1e3a2f] underline">
-          Back to dashboard
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div className="mx-auto max-w-[1600px] space-y-4 p-1 font-sans">
-      <AdminPurchasesHeader
-        title="Purchases"
-        subtitle="Operational purchasing — vendors, POs, bills & expenses."
-      />
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
         <AdminPurchasesNav />
         <div className="min-w-0 flex-1 space-y-5">{children}</div>

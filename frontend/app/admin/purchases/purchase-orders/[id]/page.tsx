@@ -11,15 +11,22 @@ import {
   type PoLine,
   type PurchaseOrderRow
 } from "@/lib/purchases-api";
-
-function fmtDate(iso: string | null) {
-  if (!iso) return "—";
-  try {
-    return new Date(iso).toLocaleDateString("en-IN");
-  } catch {
-    return iso;
-  }
-}
+import {
+  AccountingAlert,
+  AccountingSectionCard,
+  AccountingSectionHeader,
+  AccountingStatusBadge,
+  PurchasesPageShell,
+  PurchasesTableWrap,
+  accountingButtonClass,
+  accountingInputClass,
+  fmtPurchasesDate,
+  moneyClass,
+  poStatusLabel,
+  poStatusTone,
+  purchasesTd,
+  purchasesTh
+} from "@/components/admin/purchases/purchases-ui";
 
 export default function PurchaseOrderDetailPage() {
   const params = useParams();
@@ -81,88 +88,180 @@ export default function PurchaseOrderDetailPage() {
     }
   }
 
-  if (!po && !err) return <p className="text-sm text-stone-500">Loading…</p>;
-  if (!po) return <p className="text-sm text-red-700">{err}</p>;
+  if (!po && !err) {
+    return <p className="text-sm text-[#8a7060]">Loading purchase order…</p>;
+  }
+  if (!po) {
+    return <AccountingAlert tone="error">{err}</AccountingAlert>;
+  }
 
   const canReceive = po.status === "SENT" || po.status === "PARTIALLY_RECEIVED";
 
   return (
-    <div className="space-y-4">
-      <Link href="/admin/purchases/purchase-orders" className="text-sm text-[#1e3a2f] hover:underline">
-        ← Purchase orders
-      </Link>
+    <PurchasesPageShell
+      title={po.poNumber}
+      subtitle={`${po.vendor?.name ?? "Vendor"} · ${fmtPurchasesDate(po.orderDate)}`}
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          <AccountingStatusBadge tone={poStatusTone(po.status)}>
+            {poStatusLabel(po.status)}
+          </AccountingStatusBadge>
+          <Link href="/admin/purchases/purchase-orders" className={accountingButtonClass("secondary", true)}>
+            Back to list
+          </Link>
+          {po.status === "DRAFT" ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void markSent()}
+              className={accountingButtonClass("primary", true)}
+            >
+              {busy ? "Updating…" : "Mark as Issued"}
+            </button>
+          ) : null}
+          <Link href="/admin/purchases/bills/new" className={accountingButtonClass("secondary", true)}>
+            New Bill
+          </Link>
+        </div>
+      }
+    >
+      {err ? <AccountingAlert tone="error">{err}</AccountingAlert> : null}
 
-      {err ? <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{err}</p> : null}
-
-      <div className="rounded-lg border bg-white p-4 dark:border-stone-700 dark:bg-stone-900">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+      <AccountingSectionCard>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <h2 className="font-mono text-xl font-bold">{po.poNumber}</h2>
-            <p className="text-sm text-stone-600">{po.vendor?.name} · {po.status.replace(/_/g, " ")}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a7060]">Vendor</p>
+            <p className="mt-1 font-semibold text-[#1c352a]">{po.vendor?.name ?? "—"}</p>
           </div>
-          <div className="text-right text-sm">
-            <p>Order date: {fmtDate(po.orderDate)}</p>
-            <p className="font-mono text-lg font-semibold">{formatInrPaise(po.totalInPaise)}</p>
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a7060]">Order date</p>
+            <p className="mt-1 text-sm">{fmtPurchasesDate(po.orderDate)}</p>
+          </div>
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a7060]">
+              Expected delivery
+            </p>
+            <p className="mt-1 text-sm">{fmtPurchasesDate(po.expectedDeliveryDate)}</p>
+          </div>
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#8a7060]">Total</p>
+            <p className={`mt-1 text-xl ${moneyClass()}`}>{formatInrPaise(po.totalInPaise)}</p>
           </div>
         </div>
-        <div className="mt-3 grid gap-2 text-sm sm:grid-cols-3">
-          <p><span className="text-stone-500">Warehouse:</span> {po.pickupLocation?.label ?? "—"}</p>
-          <p><span className="text-stone-500">Reference:</span> {po.referenceNumber ?? "—"}</p>
-          <p><span className="text-stone-500">Terms:</span> {po.paymentTerms ?? "—"}</p>
+        <div className="mt-4 grid gap-2 border-t border-[#f0ece6] pt-4 text-sm sm:grid-cols-3">
+          <p>
+            <span className="text-[#8a7060]">Warehouse: </span>
+            {po.pickupLocation?.label ?? "—"}
+          </p>
+          <p>
+            <span className="text-[#8a7060]">Reference: </span>
+            {po.referenceNumber ?? "—"}
+          </p>
+          <p>
+            <span className="text-[#8a7060]">Payment terms: </span>
+            {po.paymentTerms ?? "—"}
+          </p>
         </div>
-        {po.notes ? <p className="mt-2 text-sm text-stone-600">{po.notes}</p> : null}
-        {po.status === "DRAFT" ? (
-          <button type="button" disabled={busy} onClick={() => void markSent()} className="mt-3 rounded-md bg-[#1e3a2f] px-3 py-1.5 text-sm font-semibold text-white">
-            Mark as issued
-          </button>
-        ) : null}
-      </div>
+        {po.notes ? <p className="mt-3 text-sm text-[#4a3f38]">{po.notes}</p> : null}
+      </AccountingSectionCard>
 
-      <div className="overflow-hidden rounded-lg border bg-white dark:border-stone-700 dark:bg-stone-900">
-        <table className="min-w-full text-sm">
-          <thead className="border-b bg-stone-50 dark:bg-stone-800">
-            <tr>
-              <th className="px-3 py-2 text-left">Item</th>
-              <th className="px-3 py-2 text-left">SKU</th>
-              <th className="px-3 py-2 text-right">Ordered</th>
-              <th className="px-3 py-2 text-right">Received</th>
-              <th className="px-3 py-2 text-right">Rate</th>
-              <th className="px-3 py-2 text-right">Line total</th>
-              {canReceive ? <th className="px-3 py-2 text-right">Receive now</th> : null}
-            </tr>
-          </thead>
-          <tbody>
-            {(po.lines ?? []).map((l: PoLine) => (
-              <tr key={l.id} className="border-b">
-                <td className="px-3 py-2">{l.itemName}</td>
-                <td className="px-3 py-2 font-mono text-xs">{l.sku ?? "—"}</td>
-                <td className="px-3 py-2 text-right">{l.quantity}</td>
-                <td className="px-3 py-2 text-right">{l.receivedQty}</td>
-                <td className="px-3 py-2 text-right font-mono">{formatInrPaise(l.rateInPaise)}</td>
-                <td className="px-3 py-2 text-right font-mono">{formatInrPaise(l.lineTotalInPaise)}</td>
-                {canReceive ? (
-                  <td className="px-3 py-2 text-right">
-                    <input
-                      type="number"
-                      min={0}
-                      max={l.quantity - l.receivedQty}
-                      className="w-20 rounded border px-2 py-1 text-right text-sm"
-                      value={receiveQty[l.id] ?? 0}
-                      onChange={(e) => setReceiveQty((s) => ({ ...s, [l.id]: parseInt(e.target.value, 10) || 0 }))}
-                    />
-                  </td>
-                ) : null}
+      <AccountingSectionCard className="!p-0 overflow-hidden">
+        <div className="border-b border-[#e8e2d9] px-4 py-3 sm:px-5">
+          <AccountingSectionHeader title="Line items" />
+        </div>
+        <PurchasesTableWrap>
+          <table className="w-full min-w-[720px] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-[#e8e2d9]">
+                <th className={purchasesTh()}>Item</th>
+                <th className={purchasesTh()}>SKU</th>
+                <th className={purchasesTh(true)}>Ordered</th>
+                <th className={purchasesTh(true)}>Received</th>
+                <th className={purchasesTh(true)}>Rate</th>
+                <th className={purchasesTh(true)}>Amount</th>
+                {canReceive ? <th className={purchasesTh(true)}>Receive now</th> : null}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {(po.lines ?? []).map((l: PoLine) => (
+                <tr key={l.id} className="h-11 border-b border-[#f0ece6] last:border-0">
+                  <td className={purchasesTd()}>{l.itemName}</td>
+                  <td className={`${purchasesTd()} font-mono text-[12px]`}>{l.sku ?? "—"}</td>
+                  <td className={purchasesTd(true)}>{l.quantity}</td>
+                  <td className={purchasesTd(true)}>{l.receivedQty}</td>
+                  <td className={`${purchasesTd(true)} ${moneyClass()}`}>
+                    {formatInrPaise(l.rateInPaise)}
+                  </td>
+                  <td className={`${purchasesTd(true)} ${moneyClass()}`}>
+                    {formatInrPaise(l.lineTotalInPaise)}
+                  </td>
+                  {canReceive ? (
+                    <td className={purchasesTd(true)}>
+                      <input
+                        type="number"
+                        min={0}
+                        max={l.quantity - l.receivedQty}
+                        className={`${accountingInputClass()} ml-auto w-20`}
+                        value={receiveQty[l.id] ?? 0}
+                        onChange={(e) =>
+                          setReceiveQty((s) => ({
+                            ...s,
+                            [l.id]: parseInt(e.target.value, 10) || 0
+                          }))
+                        }
+                      />
+                    </td>
+                  ) : null}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </PurchasesTableWrap>
+        <div className="flex flex-wrap justify-end gap-6 border-t border-[#e8e2d9] px-4 py-3 text-sm">
+          <div className="text-right">
+            <p className="text-[#8a7060]">Subtotal</p>
+            <p className={moneyClass()}>{formatInrPaise(po.subtotalInPaise)}</p>
+          </div>
+          {po.discountInPaise ? (
+            <div className="text-right">
+              <p className="text-[#8a7060]">Discount</p>
+              <p className={moneyClass()}>{formatInrPaise(po.discountInPaise)}</p>
+            </div>
+          ) : null}
+          <div className="text-right">
+            <p className="text-[#8a7060]">Grand total</p>
+            <p className={`text-lg ${moneyClass()}`}>{formatInrPaise(po.totalInPaise)}</p>
+          </div>
+        </div>
+      </AccountingSectionCard>
 
       {canReceive ? (
-        <button type="button" disabled={busy} onClick={() => void receiveGoods()} className="rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
-          Receive goods → update inventory
-        </button>
+        <AccountingSectionCard>
+          <AccountingSectionHeader
+            title="Receive goods"
+            description="Update received quantities. Inventory is updated by the existing receive action."
+          />
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void receiveGoods()}
+            className={accountingButtonClass("success")}
+          >
+            {busy ? "Receiving…" : "Mark Received Quantities"}
+          </button>
+        </AccountingSectionCard>
       ) : null}
-    </div>
+
+      <AccountingSectionCard>
+        <AccountingSectionHeader title="Related" />
+        <p className="text-sm text-[#8a7060]">
+          Creating a bill from this PO is not wired in the current API UI. Use{" "}
+          <Link href="/admin/purchases/bills/new" className="font-semibold text-[#1c352a] underline">
+            New Bill
+          </Link>{" "}
+          and reference the PO number if needed. Book recognition lives under Accounting → Advanced.
+        </p>
+      </AccountingSectionCard>
+    </PurchasesPageShell>
   );
 }

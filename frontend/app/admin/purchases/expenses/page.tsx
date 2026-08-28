@@ -1,17 +1,32 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { fetchExpenses, formatInrPaise, postExpense, type ExpenseRow } from "@/lib/purchases-api";
-import { fetchPurchasesVendors, type VendorRow } from "@/lib/purchases-api";
-
-function fmtDate(iso: string) {
-  try {
-    return new Date(iso).toLocaleDateString("en-IN");
-  } catch {
-    return iso;
-  }
-}
+import {
+  fetchExpenses,
+  fetchPurchasesVendors,
+  formatInrPaise,
+  postExpense,
+  type ExpenseRow,
+  type VendorRow
+} from "@/lib/purchases-api";
+import {
+  AccountingAlert,
+  AccountingEmptyState,
+  AccountingStatusBadge,
+  FormSection,
+  PurchasesFilterBar,
+  PurchasesPageShell,
+  PurchasesTableWrap,
+  accountingButtonClass,
+  accountingInputClass,
+  expenseStatusLabel,
+  expenseStatusTone,
+  fieldLabelClass,
+  fmtPurchasesDate,
+  moneyClass,
+  purchasesTd,
+  purchasesTh
+} from "@/components/admin/purchases/purchases-ui";
 
 export default function ExpensesPage() {
   const [items, setItems] = useState<ExpenseRow[]>([]);
@@ -25,6 +40,9 @@ export default function ExpensesPage() {
   const [amount, setAmount] = useState("");
   const [paidThrough, setPaidThrough] = useState("");
   const [invoiceNumber, setInvoiceNumber] = useState("");
+  const [referenceNumber, setReferenceNumber] = useState("");
+  const [notes, setNotes] = useState("");
+  const [expenseDate, setExpenseDate] = useState(() => new Date().toISOString().slice(0, 10));
 
   const load = useCallback(async () => {
     setErr(null);
@@ -45,7 +63,7 @@ export default function ExpensesPage() {
   async function saveExpense() {
     const amountInPaise = Math.round(parseFloat(amount || "0") * 100);
     if (!account.trim() || amountInPaise <= 0) {
-      setErr("Account and amount required");
+      setErr("Category and amount are required");
       return;
     }
     setBusy(true);
@@ -57,11 +75,18 @@ export default function ExpensesPage() {
         amountInPaise,
         paidThrough: paidThrough.trim() || null,
         invoiceNumber: invoiceNumber.trim() || null,
+        referenceNumber: referenceNumber.trim() || null,
+        notes: notes.trim() || null,
+        expenseDate: expenseDate || undefined,
         expenseType: "SERVICES"
       });
       setShowForm(false);
       setAccount("");
       setAmount("");
+      setPaidThrough("");
+      setInvoiceNumber("");
+      setReferenceNumber("");
+      setNotes("");
       await load();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Save failed");
@@ -71,76 +96,186 @@ export default function ExpensesPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
-        <input className="rounded-md border px-3 py-2 text-sm" placeholder="Search expenses…" value={q} onChange={(e) => setQ(e.target.value)} />
-        <button type="button" onClick={() => setShowForm(true)} className="ml-auto rounded-md bg-[#1e3a2f] px-3 py-2 text-sm font-semibold text-white">
-          + Record expense
+    <PurchasesPageShell
+      title="Expenses"
+      subtitle="Record and categorize day-to-day business expenses. A purchase order is not required."
+      actions={
+        <button
+          type="button"
+          onClick={() => setShowForm(true)}
+          className={accountingButtonClass("primary")}
+        >
+          + Record Expense
         </button>
-      </div>
+      }
+    >
+      <PurchasesFilterBar>
+        <label className={fieldLabelClass()}>
+          Search
+          <input
+            className={accountingInputClass()}
+            placeholder="Category, vendor, reference…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+        </label>
+      </PurchasesFilterBar>
 
-      {err ? <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{err}</p> : null}
+      {err ? <AccountingAlert tone="error">{err}</AccountingAlert> : null}
 
       {showForm ? (
-        <div className="rounded-lg border bg-white p-4 dark:border-stone-700 dark:bg-stone-900">
-          <h3 className="mb-3 text-sm font-semibold">Record expense</h3>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="text-xs font-medium">Expense account *
-              <input className="mt-1 w-full rounded border px-2 py-1.5 text-sm" value={account} onChange={(e) => setAccount(e.target.value)} placeholder="e.g. Bank Fees" />
+        <div className="space-y-4">
+          <FormSection title="Expense Details">
+            <label className={fieldLabelClass()}>
+              Date
+              <input
+                type="date"
+                className={accountingInputClass()}
+                value={expenseDate}
+                onChange={(e) => setExpenseDate(e.target.value)}
+              />
             </label>
-            <label className="text-xs font-medium">Amount (₹) *
-              <input type="number" min={0} step={0.01} className="mt-1 w-full rounded border px-2 py-1.5 text-sm" value={amount} onChange={(e) => setAmount(e.target.value)} />
+            <label className={fieldLabelClass()}>
+              Amount (₹) *
+              <input
+                type="number"
+                min={0}
+                step={0.01}
+                className={accountingInputClass()}
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
             </label>
-            <label className="text-xs font-medium">Paid through
-              <input className="mt-1 w-full rounded border px-2 py-1.5 text-sm" value={paidThrough} onChange={(e) => setPaidThrough(e.target.value)} placeholder="ICICI Bank" />
-            </label>
-            <label className="text-xs font-medium">Vendor
-              <select className="mt-1 w-full rounded border px-2 py-1.5 text-sm" value={vendorId} onChange={(e) => setVendorId(e.target.value)}>
-                <option value="">Optional</option>
-                {vendors.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+          </FormSection>
+          <FormSection title="Vendor / Payee">
+            <label className={`${fieldLabelClass()} sm:col-span-2`}>
+              Vendor (optional)
+              <select
+                className={accountingInputClass()}
+                value={vendorId}
+                onChange={(e) => setVendorId(e.target.value)}
+              >
+                <option value="">None</option>
+                {vendors.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.name}
+                  </option>
+                ))}
               </select>
             </label>
-            <label className="text-xs font-medium sm:col-span-2">Invoice#
-              <input className="mt-1 w-full rounded border px-2 py-1.5 text-sm" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} />
+          </FormSection>
+          <FormSection title="Accounting Category">
+            <label className={`${fieldLabelClass()} sm:col-span-2`}>
+              Category / expense account *
+              <input
+                className={accountingInputClass()}
+                value={account}
+                onChange={(e) => setAccount(e.target.value)}
+                placeholder="e.g. Bank Fees, Office Supplies"
+              />
             </label>
-          </div>
-          <div className="mt-3 flex gap-2">
-            <button type="button" disabled={busy} onClick={() => void saveExpense()} className="rounded-md bg-[#1e3a2f] px-3 py-1.5 text-sm font-semibold text-white">Save</button>
-            <button type="button" onClick={() => setShowForm(false)} className="rounded-md border px-3 py-1.5 text-sm">Cancel</button>
+          </FormSection>
+          <FormSection title="Payment">
+            <label className={fieldLabelClass()}>
+              Payment account
+              <input
+                className={accountingInputClass()}
+                value={paidThrough}
+                onChange={(e) => setPaidThrough(e.target.value)}
+                placeholder="e.g. ICICI Bank"
+              />
+            </label>
+            <label className={fieldLabelClass()}>
+              Invoice / bill #
+              <input
+                className={accountingInputClass()}
+                value={invoiceNumber}
+                onChange={(e) => setInvoiceNumber(e.target.value)}
+              />
+            </label>
+          </FormSection>
+          <FormSection title="Reference / Notes">
+            <label className={fieldLabelClass()}>
+              Reference
+              <input
+                className={accountingInputClass()}
+                value={referenceNumber}
+                onChange={(e) => setReferenceNumber(e.target.value)}
+              />
+            </label>
+            <label className={`${fieldLabelClass()} sm:col-span-2`}>
+              Notes
+              <textarea
+                className={`${accountingInputClass()} h-auto min-h-[4rem] py-2`}
+                rows={2}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            </label>
+          </FormSection>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void saveExpense()}
+              className={accountingButtonClass("primary")}
+            >
+              {busy ? "Saving…" : "Save Expense"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              className={accountingButtonClass("secondary")}
+            >
+              Cancel
+            </button>
           </div>
         </div>
       ) : null}
 
-      <div className="overflow-hidden rounded-lg border bg-white dark:border-stone-700 dark:bg-stone-900">
-        <table className="min-w-full text-sm">
-          <thead className="border-b bg-stone-50 dark:bg-stone-800">
-            <tr>
-              <th className="px-4 py-2 text-left">Date</th>
-              <th className="px-4 py-2 text-left">Account</th>
-              <th className="px-4 py-2 text-left">Vendor</th>
-              <th className="px-4 py-2 text-left">Paid through</th>
-              <th className="px-4 py-2 text-right">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((e) => (
-              <tr key={e.id} className="border-b">
-                <td className="px-4 py-2">{fmtDate(e.expenseDate)}</td>
-                <td className="px-4 py-2 font-medium">{e.expenseAccount}</td>
-                <td className="px-4 py-2">{e.vendor?.name ?? "—"}</td>
-                <td className="px-4 py-2">{e.paidThrough ?? "—"}</td>
-                <td className="px-4 py-2 text-right font-mono">{formatInrPaise(e.amountInPaise)}</td>
+      {items.length === 0 ? (
+        <AccountingEmptyState
+          title="No expenses recorded"
+          description="Record an operating expense that does not need a purchase order."
+        />
+      ) : (
+        <PurchasesTableWrap>
+          <table className="w-full min-w-[760px] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-[#e8e2d9]">
+                <th className={purchasesTh()}>Date</th>
+                <th className={purchasesTh()}>Payee / Vendor</th>
+                <th className={purchasesTh()}>Category</th>
+                <th className={purchasesTh()}>Reference</th>
+                <th className={purchasesTh()}>Payment Account</th>
+                <th className={purchasesTh(true)}>Amount</th>
+                <th className={purchasesTh()}>Status</th>
               </tr>
-            ))}
-            {items.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-10 text-center text-stone-500">No expenses recorded.</td></tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
-      <p className="text-xs text-stone-500">
-        Recurring expenses, vendor credits & payments made — phase 2. Bills sync to Zoho — phase 2.
-      </p>
-    </div>
+            </thead>
+            <tbody>
+              {items.map((e) => (
+                <tr key={e.id} className="h-11 border-b border-[#f0ece6] last:border-0 hover:bg-[#faf5ec]/70">
+                  <td className={purchasesTd()}>{fmtPurchasesDate(e.expenseDate)}</td>
+                  <td className={purchasesTd()}>{e.vendor?.name ?? "—"}</td>
+                  <td className={`${purchasesTd()} font-medium`}>{e.expenseAccount}</td>
+                  <td className={purchasesTd()}>
+                    {e.invoiceNumber || e.referenceNumber || "—"}
+                  </td>
+                  <td className={purchasesTd()}>{e.paidThrough ?? "—"}</td>
+                  <td className={`${purchasesTd(true)} ${moneyClass()}`}>
+                    {formatInrPaise(e.amountInPaise)}
+                  </td>
+                  <td className={purchasesTd()}>
+                    <AccountingStatusBadge tone={expenseStatusTone(e.status)}>
+                      {expenseStatusLabel(e.status)}
+                    </AccountingStatusBadge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </PurchasesTableWrap>
+      )}
+    </PurchasesPageShell>
   );
 }

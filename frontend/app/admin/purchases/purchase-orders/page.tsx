@@ -3,36 +3,42 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { fetchPurchaseOrders, formatInrPaise, type PurchaseOrderRow } from "@/lib/purchases-api";
-
-const statusTone: Record<string, string> = {
-  DRAFT: "bg-stone-100 text-stone-700",
-  SENT: "bg-blue-100 text-blue-800",
-  PARTIALLY_RECEIVED: "bg-amber-100 text-amber-800",
-  RECEIVED: "bg-emerald-100 text-emerald-800",
-  CANCELLED: "bg-red-100 text-red-700"
-};
-
-function fmtDate(iso: string) {
-  try {
-    return new Date(iso).toLocaleDateString("en-IN");
-  } catch {
-    return iso;
-  }
-}
+import {
+  AccountingAlert,
+  AccountingEmptyState,
+  AccountingStatusBadge,
+  PurchasesDocLink,
+  PurchasesFilterBar,
+  PurchasesPageShell,
+  PurchasesTableWrap,
+  accountingButtonClass,
+  accountingInputClass,
+  fieldLabelClass,
+  fmtPurchasesDate,
+  moneyClass,
+  poStatusLabel,
+  poStatusTone,
+  purchasesTd,
+  purchasesTh
+} from "@/components/admin/purchases/purchases-ui";
 
 export default function PurchaseOrdersPage() {
   const [items, setItems] = useState<PurchaseOrderRow[]>([]);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("");
   const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setErr(null);
+    setLoading(true);
     try {
       const data = await fetchPurchaseOrders({ q: q.trim() || undefined, status: status || undefined });
       setItems(data.items);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Failed to load");
+    } finally {
+      setLoading(false);
     }
   }, [q, status]);
 
@@ -42,64 +48,96 @@ export default function PurchaseOrdersPage() {
   }, [load, q]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <input
-          className="rounded-md border px-3 py-2 text-sm"
-          placeholder="Search PO#, vendor…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
-        <select className="rounded-md border px-3 py-2 text-sm" value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value="">All statuses</option>
-          <option value="DRAFT">Draft</option>
-          <option value="SENT">Issued</option>
-          <option value="PARTIALLY_RECEIVED">Partially received</option>
-          <option value="RECEIVED">Received</option>
-          <option value="CANCELLED">Cancelled</option>
-        </select>
-        <Link href="/admin/purchases/purchase-orders/new" className="ml-auto rounded-md bg-[#1e3a2f] px-3 py-2 text-sm font-semibold text-white">
-          + New PO
+    <PurchasesPageShell
+      title="Purchase Orders"
+      subtitle="Create and track purchase commitments to suppliers."
+      actions={
+        <Link href="/admin/purchases/purchase-orders/new" className={accountingButtonClass("primary")}>
+          + New Purchase Order
         </Link>
-      </div>
+      }
+    >
+      <PurchasesFilterBar>
+        <label className={fieldLabelClass()}>
+          Search
+          <input
+            className={accountingInputClass()}
+            placeholder="PO number, vendor…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+        </label>
+        <label className={fieldLabelClass()}>
+          Status
+          <select
+            className={accountingInputClass()}
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+          >
+            <option value="">All</option>
+            <option value="DRAFT">Draft</option>
+            <option value="SENT">Issued</option>
+            <option value="PARTIALLY_RECEIVED">Partially Received</option>
+            <option value="RECEIVED">Received</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
+        </label>
+      </PurchasesFilterBar>
 
-      {err ? <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{err}</p> : null}
+      {err ? <AccountingAlert tone="error">{err}</AccountingAlert> : null}
+      {loading ? <p className="text-sm text-[#8a7060]">Loading purchase orders…</p> : null}
 
-      <div className="overflow-hidden rounded-lg border border-stone-200 bg-white dark:border-stone-700 dark:bg-stone-900">
-        <table className="min-w-full text-sm">
-          <thead className="border-b bg-stone-50 dark:bg-stone-800">
-            <tr>
-              <th className="px-4 py-2 text-left">PO#</th>
-              <th className="px-4 py-2 text-left">Date</th>
-              <th className="px-4 py-2 text-left">Vendor</th>
-              <th className="px-4 py-2 text-left">Status</th>
-              <th className="px-4 py-2 text-right">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((po) => (
-              <tr key={po.id} className="border-b border-stone-100 hover:bg-stone-50 dark:border-stone-800">
-                <td className="px-4 py-2">
-                  <Link href={`/admin/purchases/purchase-orders/${po.id}`} className="font-mono font-semibold text-[#1e3a2f] hover:underline">
-                    {po.poNumber}
-                  </Link>
-                </td>
-                <td className="px-4 py-2">{fmtDate(po.orderDate)}</td>
-                <td className="px-4 py-2">{po.vendor?.name ?? "—"}</td>
-                <td className="px-4 py-2">
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusTone[po.status] ?? ""}`}>{po.status.replace(/_/g, " ")}</span>
-                </td>
-                <td className="px-4 py-2 text-right font-mono">{formatInrPaise(po.totalInPaise)}</td>
+      {!loading && items.length === 0 ? (
+        <AccountingEmptyState
+          title="No purchase orders yet"
+          description="Create a purchase order to commit purchases from a supplier."
+        />
+      ) : null}
+
+      {items.length > 0 ? (
+        <PurchasesTableWrap>
+          <table className="w-full min-w-[780px] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-[#e8e2d9]">
+                <th className={purchasesTh()}>PO Number</th>
+                <th className={purchasesTh()}>Date</th>
+                <th className={purchasesTh()}>Vendor</th>
+                <th className={purchasesTh()}>Expected Date</th>
+                <th className={purchasesTh(true)}>Amount</th>
+                <th className={purchasesTh()}>Status</th>
+                <th className={purchasesTh(true)}>Actions</th>
               </tr>
-            ))}
-            {items.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-4 py-10 text-center text-stone-500">No purchase orders yet.</td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
-    </div>
+            </thead>
+            <tbody>
+              {items.map((po) => (
+                <tr key={po.id} className="h-11 border-b border-[#f0ece6] last:border-0 hover:bg-[#faf5ec]/70">
+                  <td className={purchasesTd()}>
+                    <PurchasesDocLink href={`/admin/purchases/purchase-orders/${po.id}`}>
+                      {po.poNumber}
+                    </PurchasesDocLink>
+                  </td>
+                  <td className={purchasesTd()}>{fmtPurchasesDate(po.orderDate)}</td>
+                  <td className={purchasesTd()}>{po.vendor?.name ?? "—"}</td>
+                  <td className={purchasesTd()}>{fmtPurchasesDate(po.expectedDeliveryDate)}</td>
+                  <td className={`${purchasesTd(true)} ${moneyClass()}`}>
+                    {formatInrPaise(po.totalInPaise)}
+                  </td>
+                  <td className={purchasesTd()}>
+                    <AccountingStatusBadge tone={poStatusTone(po.status)}>
+                      {poStatusLabel(po.status)}
+                    </AccountingStatusBadge>
+                  </td>
+                  <td className={purchasesTd(true)}>
+                    <PurchasesDocLink href={`/admin/purchases/purchase-orders/${po.id}`}>
+                      View
+                    </PurchasesDocLink>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </PurchasesTableWrap>
+      ) : null}
+    </PurchasesPageShell>
   );
 }
