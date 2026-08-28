@@ -8,7 +8,7 @@ import { PairWithRow } from "@/components/product/PairWithRow";
 import { PriceDisplay } from "@/components/product/PriceDisplay";
 import { ProductTrustBadges } from "@/components/product/ProductTrustBadges";
 import type { Zone } from "@/lib/currency";
-import { sortAttributeOptionValues, stockDisplay, UNTRACKED_STOCK_ON_HAND } from "@/lib/variant-utils";
+import { preferredOptionValuesForSlug, sortAttributeOptionValues, stockDisplay, UNTRACKED_STOCK_ON_HAND } from "@/lib/variant-utils";
 import type { ProductListItem, ProductVariantDetail } from "@/lib/types";
 
 type Props = {
@@ -94,7 +94,11 @@ export function ProductBuyBox({
     const groups = Array.from(map.values()).map(({ name, slug, values }) => ({
       name,
       slug,
-      values: sortAttributeOptionValues(slug || name, Array.from(values), optionValueOrder?.[slug])
+      values: sortAttributeOptionValues(
+        slug || name,
+        Array.from(values),
+        preferredOptionValuesForSlug(slug, optionValueOrder)
+      )
     }));
     if (groups.length > 0) {
       if (axisOrder?.length) {

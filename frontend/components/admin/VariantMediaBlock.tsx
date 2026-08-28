@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 
+import { ProductGalleryOrderStrip } from "@/components/admin/ProductGalleryOrderStrip";
 import { ProductImageUpload } from "@/components/admin/ProductImageUpload";
 import { uploadAdminMedia } from "@/lib/admin-api";
 
@@ -59,6 +60,20 @@ export function VariantMediaBlock({
     onImagesChange(next.length ? next : [{ url: "", altText: "", isPrimary: true }]);
   }
 
+  function reorderImages(from: number, to: number) {
+    if (from === to) return;
+    const next = [...images];
+    const [item] = next.splice(from, 1);
+    next.splice(to, 0, item!);
+    const firstFilled = next.findIndex((im) => im.url.trim());
+    onImagesChange(
+      next.map((im, i) => ({
+        ...im,
+        isPrimary: firstFilled >= 0 ? i === firstFilled : i === 0
+      }))
+    );
+  }
+
   async function onVideoFile(file: File) {
     if (file.size > MAX_VIDEO_BYTES) {
       setVideoUploadErr(
@@ -98,12 +113,18 @@ export function VariantMediaBlock({
           <p className="text-sm font-semibold text-[var(--admin-text,#2c2420)]">
             This variant&apos;s images
           </p>
+          <p className="text-[11px] text-[var(--admin-text-muted,#8a7060)]">
+            Drag thumbnails or cards to reorder · position 1 is primary for this variant
+          </p>
+          <ProductGalleryOrderStrip images={images} onReorder={reorderImages} />
           {images.map((im, ii) => (
             <ProductImageUpload
               key={ii}
               url={im.url}
               altText={im.altText}
               isPrimary={im.isPrimary}
+              index={ii}
+              onReorder={reorderImages}
               onUrlChange={(url) => updateImage(ii, { url })}
               onAltChange={(altText) => updateImage(ii, { altText })}
               onPrimaryChange={() =>

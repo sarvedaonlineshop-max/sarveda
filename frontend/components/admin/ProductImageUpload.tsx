@@ -13,6 +13,9 @@ type Props = {
   onPrimaryChange: () => void;
   onRemove: () => void;
   role: "primary" | "secondary";
+  /** When set with onReorder, the card can be dragged among siblings. */
+  index?: number;
+  onReorder?: (from: number, to: number) => void;
 };
 
 export function ProductImageUpload({
@@ -23,11 +26,15 @@ export function ProductImageUpload({
   onAltChange,
   onPrimaryChange,
   onRemove,
-  role
+  role,
+  index,
+  onReorder
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadErr, setUploadErr] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const canDrag = typeof index === "number" && typeof onReorder === "function";
 
   async function onFile(file: File) {
     setUploading(true);
@@ -62,17 +69,70 @@ export function ProductImageUpload({
   }
 
   return (
-    <div className="rounded-lg border border-[var(--admin-card-border,#e8e2d9)] bg-[var(--admin-input-bg,#faf9f7)] p-4">
+    <div
+      className={`rounded-lg border bg-[var(--admin-input-bg,#faf9f7)] p-4 ${
+        dragOver
+          ? "border-amber-500 ring-2 ring-amber-300"
+          : "border-[var(--admin-card-border,#e8e2d9)]"
+      }`}
+      draggable={canDrag}
+      onDragStart={
+        canDrag
+          ? (e) => {
+              e.dataTransfer.effectAllowed = "move";
+              e.dataTransfer.setData("text/plain", String(index));
+            }
+          : undefined
+      }
+      onDragOver={
+        canDrag
+          ? (e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "move";
+              setDragOver(true);
+            }
+          : undefined
+      }
+      onDragLeave={canDrag ? () => setDragOver(false) : undefined}
+      onDrop={
+        canDrag
+          ? (e) => {
+              e.preventDefault();
+              setDragOver(false);
+              const from = Number(e.dataTransfer.getData("text/plain"));
+              if (Number.isFinite(from) && from !== index) onReorder!(from, index!);
+            }
+          : undefined
+      }
+    >
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <span
-          className={`rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${
-            isPrimary
-              ? "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200"
-              : "bg-[var(--admin-input-bg,#e8e2d9)] text-[var(--admin-text,#2c2420)]"
-          }`}
-        >
-          {role === "primary" ? "Primary image" : "Gallery image"}
-        </span>
+        <div className="flex items-center gap-2">
+          {canDrag ? (
+            <span
+              className="cursor-grab text-stone-400 active:cursor-grabbing"
+              title="Drag to reorder"
+              aria-hidden
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="9" cy="6" r="1.5" />
+                <circle cx="15" cy="6" r="1.5" />
+                <circle cx="9" cy="12" r="1.5" />
+                <circle cx="15" cy="12" r="1.5" />
+                <circle cx="9" cy="18" r="1.5" />
+                <circle cx="15" cy="18" r="1.5" />
+              </svg>
+            </span>
+          ) : null}
+          <span
+            className={`rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${
+              isPrimary
+                ? "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200"
+                : "bg-[var(--admin-input-bg,#e8e2d9)] text-[var(--admin-text,#2c2420)]"
+            }`}
+          >
+            {role === "primary" ? "Primary image" : "Gallery image"}
+          </span>
+        </div>
         <button
           type="button"
           onClick={onRemove}

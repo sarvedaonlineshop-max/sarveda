@@ -18,13 +18,16 @@ import {
   SKU_FAMILY_OPTIONS,
   type SkuFamilyCode
 } from "@/lib/sku-generate";
-import { formatAccordionSection, plainTextFromAccordionContent } from "@/lib/accordion-format";
+import { formatAccordionSection, htmlForAccordionEditor } from "@/lib/accordion-format";
 import { applyApiError, tabForFieldPath } from "@/lib/admin-errors";
+import { sanitizeProductHtml } from "@/lib/sanitize-html";
+import { AccordionRichEditor } from "@/components/admin/AccordionRichEditor";
 import { AdminToast } from "@/components/admin/AdminToast";
 import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
 import { AdminLoadingOverlay } from "@/components/admin/AdminLoadingOverlay";
 import { ProductAudioUpload } from "@/components/admin/ProductAudioUpload";
 import { ProductBarcodeTab } from "@/components/admin/ProductBarcodeTab";
+import { ProductGalleryOrderStrip } from "@/components/admin/ProductGalleryOrderStrip";
 import { VariantPricingShippingTables } from "@/components/admin/VariantPricingShippingTables";
 import { VariantMediaBlock, type VariantImageForm } from "@/components/admin/VariantMediaBlock";
 import { VariantOptionAxesEditor } from "@/components/admin/VariantOptionAxesEditor";
@@ -426,7 +429,7 @@ export function ProductForm({ productId }: { productId?: string }) {
         acc.length
           ? acc.map((a) => ({
               title: String(a.title),
-              content: plainTextFromAccordionContent(String(a.content))
+              content: htmlForAccordionEditor(String(a.content))
             }))
           : [{ title: "Description", content: "" }]
       );
@@ -660,6 +663,22 @@ export function ProductForm({ productId }: { productId?: string }) {
     });
   }
 
+  /** Drag reorder — first slot becomes primary (storefront hero). */
+  function reorderImages(from: number, to: number) {
+    if (from === to) return;
+    setImages((prev) => {
+      if (from < 0 || to < 0 || from >= prev.length || to >= prev.length) return prev;
+      const next = [...prev];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item!);
+      const firstFilled = next.findIndex((im) => im.url.trim());
+      return next.map((im, i) => ({
+        ...im,
+        isPrimary: firstFilled >= 0 ? i === firstFilled : i === 0
+      }));
+    });
+  }
+
   function addImageRow() {
     setImages((prev) => [
       ...prev,
@@ -823,11 +842,19 @@ export function ProductForm({ productId }: { productId?: string }) {
       seoKeyword: seoKeyword.trim() || null,
       categoryIds: Array.from(selectedCats),
       variantAxisOrder: optionAxes.map((a) => a.slug).filter(Boolean),
-      variantOptionValueOrder: Object.fromEntries(
-        optionAxes
-          .filter((a) => a.slug)
-          .map((a) => [a.slug, a.values.map((v) => v.trim()).filter(Boolean)])
-      ),
+      variantOptionValueOrder: (() => {
+        const out: Record<string, string[]> = {};
+        for (const axis of optionAxes) {
+          const vals = axis.values.map((v) => v.trim()).filter(Boolean);
+          if (!axis.slug || !vals.length) continue;
+          out[axis.slug] = vals;
+          // Mirror under pa_ / non-pa_ so storefront lookup matches Woo-style slugs.
+          const stripped = axis.slug.replace(/^pa_/i, "");
+          if (stripped && stripped !== axis.slug) out[stripped] = vals;
+          if (!axis.slug.startsWith("pa_")) out[`pa_${axis.slug}`] = vals;
+        }
+        return out;
+      })(),
       variants: variants.map((v) => ({
         id: v.id,
         sku: v.sku.trim(),
@@ -896,7 +923,7 @@ export function ProductForm({ productId }: { productId?: string }) {
         .filter((a) => a.title.trim())
         .map((a, i) => ({
           title: a.title.trim(),
-          content: formatAccordionSection(a.title, a.content),
+          content: sanitizeProductHtml(formatAccordionSection(a.title, a.content)),
           position: i
         }))
     };
@@ -1755,13 +1782,19 @@ export function ProductForm({ productId }: { productId?: string }) {
             <div className="space-y-3">
               <div>
                 <p className={labelCls}>Shared product images</p>
+                <p className="mt-0.5 text-[11px] text-[var(--admin-text-muted,#8a7060)]">
+                  Drag the thumbnail strip (or cards) to set gallery order. Position 1 is primary.
+                </p>
               </div>
+              <ProductGalleryOrderStrip images={images} onReorder={reorderImages} />
               {images.map((im, ii) => (
                 <ProductImageUpload
                   key={ii}
                   url={im.url}
                   altText={im.altText}
                   isPrimary={im.isPrimary}
+                  index={ii}
+                  onReorder={reorderImages}
                   onUrlChange={(url) =>
                     setImages((prev) => prev.map((x, i) => (i === ii ? { ...x, url } : x)))
                   }
@@ -1829,16 +1862,14 @@ export function ProductForm({ productId }: { productId?: string }) {
                     }
                     className={inputCls}
                   />
-                  <textarea
-                    placeholder="Write content here. Use blank lines between paragraphs. Use - for bullet points."
+                  <AccordionRichEditor
                     value={a.content}
-                    onChange={(e) =>
+                    onChange={(content) =>
                       setAccordion((prev) =>
-                        prev.map((x, i) => (i === ai ? { ...x, content: e.target.value } : x))
+                        prev.map((x, i) => (i === ai ? { ...x, content } : x))
                       )
                     }
-                    rows={5}
-                    className={inputCls}
+                    placeholder="Write content — use Bold / lists from the toolbar"
                   />
                 </div>
               ))}

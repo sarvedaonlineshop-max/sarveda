@@ -43,8 +43,10 @@ export function sortAttributeOptionValues(
   values: string[],
   preferredOrder?: string[] | null
 ): string[] {
+  const unique = Array.from(new Set(values.map((v) => v.trim()).filter(Boolean)));
+  if (!unique.length) return [];
+
   if (preferredOrder?.length) {
-    const unique = Array.from(new Set(values.map((v) => v.trim()).filter(Boolean)));
     const byLower = new Map(unique.map((v) => [v.toLowerCase(), v]));
     const ordered: string[] = [];
     const used = new Set<string>();
@@ -61,26 +63,45 @@ export function sortAttributeOptionValues(
   }
 
   const key = labelOrSlug.toLowerCase();
-  if (key.includes("note")) {
-    return [...values].sort((a, b) => {
+  if (key.includes("note") && unique.some((v) => NOTE_ORDER.includes(v))) {
+    return [...unique].sort((a, b) => {
       const ai = NOTE_ORDER.indexOf(a);
       const bi = NOTE_ORDER.indexOf(b);
       if (ai >= 0 || bi >= 0) return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-      return a.localeCompare(b);
+      return 0;
     });
   }
-  if (key.includes("type")) {
-    return [...values].sort((a, b) => {
+  if (key.includes("type") && unique.some((v) => GONG_TYPE_ORDER.includes(v))) {
+    return [...unique].sort((a, b) => {
       const ai = GONG_TYPE_ORDER.indexOf(a);
       const bi = GONG_TYPE_ORDER.indexOf(b);
       if (ai >= 0 || bi >= 0) return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-      return a.localeCompare(b);
+      return 0;
     });
   }
-  if (key.includes("size")) {
-    return [...values].sort((a, b) => sizeSortKey(a) - sizeSortKey(b));
+  if (key.includes("size") && unique.some((v) => /\d/.test(v))) {
+    return [...unique].sort((a, b) => sizeSortKey(a) - sizeSortKey(b));
   }
-  return [...values].sort((a, b) => a.localeCompare(b));
+  // Preserve first-seen / admin list order — do not alphabetize.
+  return unique;
+}
+
+/** Resolve preferred value order for an attribute slug (handles pa_size ↔ size). */
+export function preferredOptionValuesForSlug(
+  slug: string,
+  optionValueOrder?: Record<string, string[]> | null
+): string[] | undefined {
+  if (!optionValueOrder) return undefined;
+  const direct = optionValueOrder[slug];
+  if (direct?.length) return direct;
+  const lower = slug.toLowerCase();
+  const stripped = lower.replace(/^pa_/, "");
+  for (const [key, vals] of Object.entries(optionValueOrder)) {
+    if (!vals?.length) continue;
+    const k = key.toLowerCase();
+    if (k === lower || k === stripped || k.replace(/^pa_/, "") === stripped) return vals;
+  }
+  return undefined;
 }
 
 export function buildAttributeAxes(
@@ -103,7 +124,7 @@ export function buildAttributeAxes(
 
   const axes = Array.from(map.entries()).map(([slug, { name, values }]) => {
     const raw = Array.from(values.entries()).map(([valueSlug, value]) => ({ slug: valueSlug, value }));
-    const preferred = optionValueOrder?.[slug];
+    const preferred = preferredOptionValuesForSlug(slug, optionValueOrder);
     const sorted = sortAttributeOptionValues(
       slug,
       raw.map((r) => r.value),

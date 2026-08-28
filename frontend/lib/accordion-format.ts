@@ -10,6 +10,7 @@ function escapeHtml(text: string): string {
 /**
  * Turn admin plain text into styled HTML for the storefront accordion.
  * Admins type normal paragraphs; we apply consistent Sarveda prose classes.
+ * If content is already HTML (rich editor), pass it through (caller should sanitize).
  */
 export function formatAccordionSection(_title: string, plain: string): string {
   const trimmed = plain.trim();
@@ -42,7 +43,15 @@ export function formatAccordionSection(_title: string, plain: string): string {
   return `<div class="sarveda-accordion-body">${inner}</div>`;
 }
 
-/** Strip wrapper for editing — show plain text in admin textarea. */
+/** HTML suitable for the admin rich editor (keep markup; convert plain text to paragraphs). */
+export function htmlForAccordionEditor(raw: string): string {
+  const t = raw.trim();
+  if (!t) return "";
+  if (/<[a-z][\s\S]*>/i.test(t)) return t;
+  return formatAccordionSection("", t);
+}
+
+/** Strip wrapper for plain-text fallbacks. */
 export function plainTextFromAccordionContent(html: string): string {
   const t = html.trim();
   if (!/<[a-z]/i.test(t)) return t;
