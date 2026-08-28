@@ -122,13 +122,17 @@ export default function AdminReportsPage() {
           marginBottom: "4px"
         }}
       >
-        <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec", margin: 0 }}>📊 Reports</h1>
+        <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#faf5ec", margin: 0 }}>
+          📊 Store Reports
+        </h1>
         <p style={{ fontSize: "13px", color: "#a8c4b0", marginTop: "4px" }}>
-          Excel exports only. Sales analytics live on the{" "}
+          Operational Excel exports for sales, products, customers, and payments. Financial
+          statements and ledgers live under Accounting → Financial Reports. Customer downloads are
+          super-admin only. Sales analytics also appear on the{" "}
           <a href="/admin" style={{ color: "#f6c95a", fontWeight: 700 }}>
             Dashboard
           </a>
-          . Customer downloads are super-admin only.
+          .
         </p>
       </div>
 

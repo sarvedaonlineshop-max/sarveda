@@ -121,9 +121,14 @@ export default function InventoryOpeningAdvancedPage() {
     <div className="mx-auto max-w-[1600px] space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <AccountingPageHeader
-          title="Inventory Opening"
-          subtitle="Import opening inventory quantities and costs for accounting cutover. This is an advanced action."
-        />
+        title="Inventory Opening"
+        subtitle="Import opening inventory quantities and costs for accounting cutover. Advanced cutover tool only."
+      />
+      <div className="rounded-[10px] border border-[#ebe4db] bg-[#faf5ec]/70 px-3 py-2 text-[12px] text-[#6b5c52]">
+        <span className="font-semibold text-[#8a7060]">Advanced</span>
+        <span className="mx-2 text-[#d4c4b0]">·</span>
+        Low-frequency cutover tool — not part of daily inventory accounting.
+      </div>
         <Link
           href="/admin/accounting/opening"
           className="text-xs font-semibold text-[#1c352a] underline-offset-2 hover:underline"
@@ -283,7 +288,7 @@ export default function InventoryOpeningAdvancedPage() {
       <AdminConfirmModal
         open={confirmOpen}
         title="Post opening inventory?"
-        message="This records opening inventory values in the accounting books. Use only for authorized cutover."
+        message="This creates cutover accounting entries for opening inventory quantities and costs. Use only for authorized go-live cutover."
         details={[
           batchId ? `Batch ready` : "No batch",
           totals ? `SKUs: ${totals.physicalSkuCount}` : "",

@@ -960,8 +960,8 @@ export function AdminInventoryWorkspace() {
         <h1 className="text-3xl font-bold text-[#faf5ec]">📦 Inventory</h1>
         <p className="mt-1 text-xs text-[#a8c4b0]">
           {showZohoSync
-            ? `Last Zoho audit: ${formatRelativeTime(lastZohoSync)} · Sarveda admin is source of truth for website products`
-            : "Sarveda is the stock master — counts here drive the shop. Zoho is used for invoices and accounting only."}
+            ? `Last Zoho audit: ${formatRelativeTime(lastZohoSync)} · Quantities here drive storefront availability. Inventory cost and ledgers live under Accounting → Inventory Accounting.`
+            : "Sarveda is the stock master — quantities here drive storefront availability and fulfillment. Inventory cost and ledgers live under Accounting → Inventory Accounting."}
         </p>
       </div>
       <div className="flex flex-wrap gap-2">

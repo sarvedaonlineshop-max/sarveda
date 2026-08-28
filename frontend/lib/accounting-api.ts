@@ -1822,6 +1822,13 @@ export type BalanceSheetReport = {
   };
   integrity: { code: string; status: "PASS" | "FAIL"; varianceInPaise: number };
   disclosures: { arSubledger: string; warnings: string[] };
+  /** Present when API is called with comparison=1 (already returned by backend). */
+  comparison?: {
+    priorAsOf: string;
+    totalAssetsInPaise: number;
+    totalLiabilitiesInPaise: number;
+    totalEquityInPaise: number;
+  } | null;
 };
 
 export type FinancialDashboardReport = {

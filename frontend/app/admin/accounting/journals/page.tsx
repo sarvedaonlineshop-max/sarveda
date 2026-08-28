@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminPagination } from "@/components/admin/AdminPagination";
 import {
@@ -23,6 +24,7 @@ import {
   accTh,
   documentHref,
   humanizeDocumentType,
+  humanizeJournalDescription,
   humanizeJournalStatus,
   humanizePostingEvent,
   journalStatusTone,
@@ -34,6 +36,7 @@ import {
 const PAGE_SIZE = 50;
 
 export default function JournalEntriesPage() {
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,9 +66,28 @@ export default function JournalEntriesPage() {
     }
   }, []);
 
+  const openDetail = useCallback(async (id: string) => {
+    setDetailLoading(true);
+    setTechOpen(false);
+    setError(null);
+    try {
+      setDetail(await fetchAccountingJournalDetail(id));
+    } catch (e) {
+      setDetail(null);
+      setError(e instanceof Error ? e.message : "Journal detail could not be loaded.");
+    } finally {
+      setDetailLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     void load(1);
   }, [load]);
+
+  useEffect(() => {
+    const id = searchParams.get("id")?.trim();
+    if (id) void openDetail(id);
+  }, [searchParams, openDetail]);
 
   const statuses = useMemo(() => {
     const set = new Set(items.map((j) => j.status.toUpperCase()));
@@ -89,20 +111,6 @@ export default function JournalEntriesPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const filterActive = Boolean(q.trim() || statusFilter !== "all" || dateFrom || dateTo);
-
-  async function openDetail(id: string) {
-    setDetailLoading(true);
-    setTechOpen(false);
-    setError(null);
-    try {
-      setDetail(await fetchAccountingJournalDetail(id));
-    } catch (e) {
-      setDetail(null);
-      setError(e instanceof Error ? e.message : "Journal detail could not be loaded.");
-    } finally {
-      setDetailLoading(false);
-    }
-  }
 
   const sourceLabel = detail?.postingEvent
     ? humanizePostingEvent(detail.postingEvent.eventType)
@@ -238,7 +246,9 @@ export default function JournalEntriesPage() {
                       <td className={accTd()}>{j.entryDate.slice(0, 10)}</td>
                       <td className={`${accTd()} font-mono text-[12px]`}>{j.entryNumber}</td>
                       <td className={accTd()}>
-                        <span className="line-clamp-2">{j.memo ?? "—"}</span>
+                        <span className="line-clamp-2">
+                          {humanizeJournalDescription(j.memo)}
+                        </span>
                       </td>
                       <td className={`${accTd(true)} ${moneyClass()}`}>
                         {formatInrPaise(j.totalDebitInPaise)}
@@ -337,7 +347,12 @@ export default function JournalEntriesPage() {
                     ) : null}
                   </Fact>
                   <Fact label="Source">{sourceLabel}</Fact>
-                  <Fact label="Description">{detail.memo ?? "—"}</Fact>
+                  <Fact label="Description">
+                    {humanizeJournalDescription(
+                      detail.memo,
+                      detail.postingEvent?.eventType
+                    )}
+                  </Fact>
                 </dl>
 
                 {detail.documentLinks && detail.documentLinks.length > 0 ? (
@@ -457,6 +472,12 @@ export default function JournalEntriesPage() {
                     <div>
                       Journal ID: <span className="font-mono">{detail.id}</span>
                     </div>
+                    {detail.memo ? (
+                      <div>
+                        Stored description:{" "}
+                        <span className="font-mono break-all">{detail.memo}</span>
+                      </div>
+                    ) : null}
                     {detail.postingEvent ? (
                       <>
                         <div>

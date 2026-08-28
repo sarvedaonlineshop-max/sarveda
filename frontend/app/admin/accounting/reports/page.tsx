@@ -6,10 +6,20 @@ import { useSearchParams } from "next/navigation";
 import { AdminAccountingHeader } from "@/components/admin/accounting/AdminAccountingNav";
 import {
   AccountingEmptyState,
+  AccountingStatusBadge,
   accountingButtonClass,
   accountingInputClass,
   accountingTabClass
 } from "@/components/admin/accounting/accounting-ui";
+import { humanizeJournalDescription } from "@/components/admin/accounting/accountant/accountant-ui";
+import {
+  humanizeGlSource,
+  humanizeIntegrityCheck,
+  humanizeIntegritySeverity,
+  humanizeIntegrityStatus,
+  integrityStatusTone,
+  journalsDetailHref
+} from "@/components/admin/accounting/presentation";
 import {
   downloadFinancialStatementPdf,
   downloadFinancialStatementsXlsx,
@@ -379,18 +389,11 @@ export default function AdminAccountingReportsPage() {
     [accounts]
   );
 
-  const integrityStatusColor = (s: string) => {
-    if (s === "PASS") return "bg-emerald-100 text-emerald-900";
-    if (s === "WARNING") return "bg-amber-100 text-amber-950";
-    if (s === "FAIL") return "bg-red-100 text-red-900";
-    return "bg-sky-100 text-sky-950";
-  };
-
   return (
     <div className="space-y-5">
       <AdminAccountingHeader
         title="Financial Reports"
-        subtitle="Review financial statements, ledgers and reconciliation reports."
+        subtitle="Trial Balance, General Ledger, Profit & Loss, Balance Sheet, and ledger health checks."
       />
 
       {error ? (
@@ -573,7 +576,7 @@ export default function AdminAccountingReportsPage() {
               </div>
               <div className="grid gap-3 sm:grid-cols-4">
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
-                  <p className="text-xs uppercase tracking-wide text-neutral-600">Pass</p>
+                  <p className="text-xs uppercase tracking-wide text-neutral-600">Healthy</p>
                   <p className="mt-1 text-2xl font-semibold tabular-nums">{integrity.summary.pass}</p>
                 </div>
                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
@@ -583,14 +586,14 @@ export default function AdminAccountingReportsPage() {
                   </p>
                 </div>
                 <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-                  <p className="text-xs uppercase tracking-wide text-neutral-600">Fail</p>
-                  <p className="mt-1 text-2xl font-semibold tabular-nums">{integrity.summary.fail}</p>
-                </div>
-                <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3">
                   <p className="text-xs uppercase tracking-wide text-neutral-600">Needs attention</p>
                   <p className="mt-1 text-2xl font-semibold tabular-nums">
-                    {integrity.summary.dataGap}
+                    {integrity.summary.fail + integrity.summary.dataGap}
                   </p>
+                </div>
+                <div className="rounded-lg border border-neutral-200 bg-white px-4 py-3">
+                  <p className="text-xs uppercase tracking-wide text-neutral-600">Checks run</p>
+                  <p className="mt-1 text-2xl font-semibold tabular-nums">{integrity.checks.length}</p>
                 </div>
               </div>
               <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
@@ -599,24 +602,32 @@ export default function AdminAccountingReportsPage() {
                     <tr>
                       <th className="px-3 py-2">Check</th>
                       <th className="px-3 py-2">Status</th>
-                      <th className="px-3 py-2">Severity</th>
+                      <th className="px-3 py-2">Priority</th>
                       <th className="px-3 py-2 text-right">Variance</th>
-                      <th className="px-3 py-2">Message</th>
-                      <th className="px-3 py-2">Drill</th>
+                      <th className="px-3 py-2">Details</th>
+                      <th className="px-3 py-2">Open</th>
                     </tr>
                   </thead>
                   <tbody>
                     {integrity.checks.map((c) => (
                       <tr key={c.code} className="border-t border-neutral-100 align-top">
-                        <td className="px-3 py-2 font-mono text-xs">{c.code}</td>
                         <td className="px-3 py-2">
-                          <span
-                            className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${integrityStatusColor(c.status)}`}
-                          >
-                            {c.status}
-                          </span>
+                          <div className="font-medium text-[#2c2420]">{humanizeIntegrityCheck(c.code)}</div>
+                          <details className="mt-1">
+                            <summary className="cursor-pointer text-[10px] text-[#8a7060]">
+                              Technical code
+                            </summary>
+                            <span className="font-mono text-[10px] text-[#8a7060]">{c.code}</span>
+                          </details>
                         </td>
-                        <td className="px-3 py-2 text-xs">{c.severity}</td>
+                        <td className="px-3 py-2">
+                          <AccountingStatusBadge tone={integrityStatusTone(c.status)}>
+                            {humanizeIntegrityStatus(c.status)}
+                          </AccountingStatusBadge>
+                        </td>
+                        <td className="px-3 py-2 text-xs text-[#6b5c52]">
+                          {humanizeIntegritySeverity(c.severity)}
+                        </td>
                         <td className="px-3 py-2 text-right tabular-nums">
                           {c.varianceInPaise == null ? "—" : formatInrPaise(c.varianceInPaise)}
                         </td>
@@ -625,41 +636,44 @@ export default function AdminAccountingReportsPage() {
                           {c.code === "INVENTORY_GL_VS_FIFO" ? (
                             <button
                               type="button"
-                              className="text-[#1e3a2f] underline"
+                              className="font-semibold text-[#1e3a2f] underline-offset-2 hover:underline"
                               onClick={() => openGl(["1200"])}
                             >
-                              GL 1200
+                              Inventory ledger →
                             </button>
                           ) : null}
                           {c.code === "AP_GL_VS_SUBLEDGER" ? (
                             <button
                               type="button"
-                              className="text-[#1e3a2f] underline"
+                              className="font-semibold text-[#1e3a2f] underline-offset-2 hover:underline"
                               onClick={() => openGl(["2000"])}
                             >
-                              GL 2000
+                              Payable ledger →
                             </button>
                           ) : null}
                           {c.code === "ORPHAN_JOURNALS" ? (
                             <Link
                               href="/admin/accounting/journals"
-                              className="text-[#1e3a2f] underline"
+                              className="font-semibold text-[#1e3a2f] underline-offset-2 hover:underline"
                             >
-                              Journals
+                              Journal entries →
                             </Link>
                           ) : null}
                           {c.code === "GST_GL_VS_GST_REPORT" ? (
-                            <Link href="/admin/accounting/gst" className="text-[#1e3a2f] underline">
-                              GST
+                            <Link
+                              href="/admin/accounting/gst"
+                              className="font-semibold text-[#1e3a2f] underline-offset-2 hover:underline"
+                            >
+                              GST &amp; Tax →
                             </Link>
                           ) : null}
                           {c.code === "PURCHASE_CLEARING_1210_CONTROL" ? (
                             <button
                               type="button"
-                              className="text-[#1e3a2f] underline"
+                              className="font-semibold text-[#1e3a2f] underline-offset-2 hover:underline"
                               onClick={() => openGl(["1210"])}
                             >
-                              GL 1210
+                              Purchase clearing →
                             </button>
                           ) : null}
                         </td>
@@ -710,11 +724,11 @@ export default function AdminAccountingReportsPage() {
                     () => openProfitLoss(),
                     true
                   ],
-                  ["OpEx", dash.profitAndLoss.operatingExpensesInPaise, () => openProfitLoss()],
+                  ["Operating Expenses", dash.profitAndLoss.operatingExpensesInPaise, () => openProfitLoss()],
                   ["Net Profit", dash.profitAndLoss.netProfitInPaise, () => openProfitLoss()],
                   ["Cash + Bank", dash.balanceSheet.cashAndBankInPaise, () => openBalanceSheet()],
-                  ["AR", dash.balanceSheet.accountsReceivableInPaise, () => openBalanceSheet()],
-                  ["AP", dash.balanceSheet.accountsPayableInPaise, () => openBalanceSheet()],
+                  ["Accounts Receivable", dash.balanceSheet.accountsReceivableInPaise, () => openBalanceSheet()],
+                  ["Accounts Payable", dash.balanceSheet.accountsPayableInPaise, () => openBalanceSheet()],
                   ["Inventory", dash.balanceSheet.inventoryInPaise, () => openBalanceSheet()],
                   ["Gateway Clearing", dash.balanceSheet.gatewayClearingInPaise, () => openBalanceSheet()],
                   ["Input GST", dash.balanceSheet.inputGstAssetInPaise, () => openBalanceSheet()],
@@ -811,7 +825,7 @@ export default function AdminAccountingReportsPage() {
                       {" · "}
                       {pl.integrity.status === "PASS"
                         ? "Checks passed"
-                        : `Checks failed · variance ${pl.integrity.varianceInPaise}`}
+                        : `Checks need review · variance ${formatInrPaise(pl.integrity.varianceInPaise)}`}
                     </div>
                     {pl.comparison ? (
                       <p className="text-xs text-neutral-600">
@@ -886,10 +900,10 @@ export default function AdminAccountingReportsPage() {
                       }`}
                     >
                       {bs.totals.balanced ? (
-                        <strong>BALANCED</strong>
+                        <strong>Balanced</strong>
                       ) : (
                         <>
-                          <strong>OUT OF BALANCE</strong> — difference{" "}
+                          <strong>Out of balance</strong> — difference{" "}
                           {formatInrPaise(Math.abs(bs.totals.differenceInPaise))}
                         </>
                       )}
@@ -899,16 +913,71 @@ export default function AdminAccountingReportsPage() {
                         {bs.earnings.currentFyFrom} → {bs.earnings.currentFyTo})
                       </span>
                     </div>
-                    <p className="text-xs text-neutral-500">{bs.earnings.formula}</p>
+                    {bs.comparison ? (
+                      <div className="overflow-x-auto rounded-lg border border-[#ebe4db] bg-white">
+                        <table className="min-w-full text-sm">
+                          <thead className="bg-[#faf5ec] text-left text-[11px] uppercase tracking-wide text-[#8a7060]">
+                            <tr>
+                              <th className="px-3 py-2"> </th>
+                              <th className="px-3 py-2 text-right">As of {bs.asOf}</th>
+                              <th className="px-3 py-2 text-right">Prior ({bs.comparison.priorAsOf})</th>
+                              <th className="px-3 py-2 text-right">Change</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(
+                              [
+                                [
+                                  "Total assets",
+                                  bs.totals.totalAssetsInPaise,
+                                  bs.comparison.totalAssetsInPaise
+                                ],
+                                [
+                                  "Total liabilities",
+                                  bs.totals.totalLiabilitiesInPaise,
+                                  bs.comparison.totalLiabilitiesInPaise
+                                ],
+                                [
+                                  "Total equity",
+                                  bs.totals.totalEquityInPaise,
+                                  bs.comparison.totalEquityInPaise
+                                ]
+                              ] as const
+                            ).map(([label, current, prior]) => (
+                              <tr key={label} className="border-t border-[#eee8e0]">
+                                <td className="px-3 py-2 font-medium text-[#2c2420]">{label}</td>
+                                <td className="px-3 py-2 text-right tabular-nums">
+                                  {formatInrPaise(current)}
+                                </td>
+                                <td className="px-3 py-2 text-right tabular-nums text-[#6b5c52]">
+                                  {formatInrPaise(prior)}
+                                </td>
+                                <td className="px-3 py-2 text-right tabular-nums font-semibold text-[#1c352a]">
+                                  {formatInrPaise(current - prior)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : null}
+                    <details className="text-xs text-neutral-500">
+                      <summary className="cursor-pointer text-[#8a7060]">Earnings notes</summary>
+                      <p className="mt-1">{bs.earnings.formula}</p>
+                    </details>
                     {bs.disclosures.warnings.length ? (
                       <div className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
                         {bs.disclosures.warnings.map((w) => (
                           <div key={w}>{w}</div>
                         ))}
-                        <div>{bs.disclosures.arSubledger}</div>
+                        <div className="mt-1 text-amber-900/80">
+                          Accounts receivable subledger comparison is not available yet.
+                        </div>
                       </div>
                     ) : (
-                      <p className="text-xs text-neutral-500">{bs.disclosures.arSubledger}</p>
+                      <p className="text-xs text-neutral-500">
+                        Accounts receivable subledger comparison is not available yet.
+                      </p>
                     )}
                     <div className="grid gap-4 lg:grid-cols-3">
                       {(
@@ -1176,7 +1245,7 @@ export default function AdminAccountingReportsPage() {
                       <th className="px-3 py-2">Date</th>
                       <th className="px-3 py-2">Journal</th>
                       <th className="px-3 py-2">Description</th>
-                      <th className="px-3 py-2">Event</th>
+                      <th className="px-3 py-2">Source</th>
                       <th className="px-3 py-2 text-right">Debit</th>
                       <th className="px-3 py-2 text-right">Credit</th>
                       <th className="px-3 py-2 text-right">Running</th>
@@ -1188,21 +1257,31 @@ export default function AdminAccountingReportsPage() {
                         <td className="px-3 py-2 whitespace-nowrap">{line.entryDate}</td>
                         <td className="px-3 py-2">
                           <Link
-                            href="/admin/accounting/journals"
-                            className="font-mono text-[#1e3a2f] underline"
+                            href={journalsDetailHref(line.journalEntryId)}
+                            className="font-mono text-[#1e3a2f] underline-offset-2 hover:underline"
                           >
                             {line.journalNumber}
                           </Link>
                           {line.orphanJournal ? (
-                            <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium uppercase text-amber-900">
-                              Orphan
+                            <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-900">
+                              Unlinked
                             </span>
                           ) : null}
                         </td>
                         <td className="px-3 py-2 max-w-xs truncate">
-                          {line.description ?? line.lineMemo ?? "—"}
+                          {humanizeJournalDescription(line.description ?? line.lineMemo, line.eventType)}
                         </td>
-                        <td className="px-3 py-2 text-xs">{line.eventType ?? "—"}</td>
+                        <td className="px-3 py-2 text-xs">
+                          <div>{humanizeGlSource(line.eventType)}</div>
+                          {line.eventType ? (
+                            <details className="mt-0.5">
+                              <summary className="cursor-pointer text-[10px] text-[#8a7060]">
+                                Technical
+                              </summary>
+                              <span className="font-mono text-[10px] text-[#8a7060]">{line.eventType}</span>
+                            </details>
+                          ) : null}
+                        </td>
                         <td className="px-3 py-2 text-right">
                           <PaiseCell value={line.debitInPaise} />
                         </td>

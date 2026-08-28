@@ -116,7 +116,7 @@ export function buildAccountingNavGroups(includePurchasesOps: boolean): NavGroup
     },
     {
       id: "inventory",
-      title: "Inventory",
+      title: "Inventory Accounting",
       items: [
         {
           href: "/admin/accounting/inventory",
@@ -191,11 +191,11 @@ export function buildAccountingNavGroups(includePurchasesOps: boolean): NavGroup
     },
     {
       id: "reports",
-      title: "Reports",
+      title: "Financial Reports",
       items: [
         {
           href: "/admin/accounting/reports",
-          label: "Financial Reports",
+          label: "Statements & Ledgers",
           icon: <PieChart {...iconProps} />
         }
       ]
@@ -430,12 +430,29 @@ export function AdminAccountingSidebarTree({
                     textAlign: "left"
                   }}
                 >
-                  <span>{group.title}</span>
+                  <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", minWidth: 0 }}>
+                    <span>{group.title}</span>
+                    {muted ? (
+                      <span
+                        style={{
+                          marginTop: 2,
+                          fontSize: 10,
+                          fontWeight: 500,
+                          letterSpacing: "0.02em",
+                          textTransform: "none",
+                          color: "rgba(220,210,190,0.38)"
+                        }}
+                      >
+                        Setup & cutover
+                      </span>
+                    ) : null}
+                  </span>
                   <ChevronDown
                     size={12}
                     strokeWidth={2}
                     style={{
                       opacity: 0.65,
+                      flexShrink: 0,
                       transform: open ? "rotate(180deg)" : "none",
                       transition: "transform 0.15s ease"
                     }}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
 import {
   createOpeningBatch,
   downloadOpeningReview,
@@ -19,7 +20,13 @@ import {
   type OpeningStatus,
   type OpeningValidationResult
 } from "@/lib/accounting-api";
-import { AdminAccountingHeader } from "@/components/admin/accounting/AdminAccountingNav";
+import {
+  AdvancedPageShell,
+  AdvancedSection,
+  AdvancedWarning
+} from "@/components/admin/accounting/advanced/advanced-ui";
+import { accountingButtonClass } from "@/components/admin/accounting/accounting-ui";
+import { humanizeIntegrityCheck, humanizeIntegrityStatus } from "@/components/admin/accounting/presentation";
 import { AdminApiError } from "@/lib/admin-errors";
 
 function formatPaise(p: number | undefined | null) {
@@ -43,7 +50,9 @@ function SectionCard({
 }
 
 function ValidationChecks({ validation }: { validation: OpeningValidationResult | null }) {
-  if (!validation) return <p className="text-sm text-neutral-500">Run Validate or Preview to see checks.</p>;
+  if (!validation) {
+    return <p className="text-sm text-[#8a7060]">Run Validate or Preview to see checks.</p>;
+  }
   const statusColor =
     validation.status === "PASS"
       ? "text-green-700 bg-green-50 border-green-200"
@@ -53,9 +62,10 @@ function ValidationChecks({ validation }: { validation: OpeningValidationResult 
   return (
     <div className="space-y-3">
       <div className={`inline-flex rounded-md border px-3 py-1 text-sm font-medium ${statusColor}`}>
-        {validation.status} — Dr {formatPaise(validation.proposedDebitInPaise)} / Cr{" "}
+        {humanizeIntegrityStatus(validation.status)} — Debit{" "}
+        {formatPaise(validation.proposedDebitInPaise)} / Credit{" "}
         {formatPaise(validation.proposedCreditInPaise)}
-        {validation.balanced ? " (balanced)" : " (OUT OF BALANCE)"}
+        {validation.balanced ? " (balanced)" : " (out of balance)"}
       </div>
       <ul className="max-h-64 space-y-1 overflow-y-auto text-sm">
         {validation.checks.map((c) => (
@@ -69,7 +79,8 @@ function ValidationChecks({ validation }: { validation: OpeningValidationResult 
                   : "text-neutral-700"
             }
           >
-            <span className="font-mono text-xs">{c.status}</span> {c.code}: {c.message}
+            <span className="font-medium">{humanizeIntegrityStatus(c.status)}</span>{" "}
+            {humanizeIntegrityCheck(c.code)}: {c.message}
           </li>
         ))}
       </ul>
@@ -100,6 +111,7 @@ export default function AccountingOpeningPage() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const [effectiveDate, setEffectiveDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [description, setDescription] = useState("");
@@ -252,11 +264,14 @@ export default function AccountingOpeningPage() {
 
   async function runPost() {
     if (!batchId) return;
-    if (!window.confirm("Post production opening balance? This is idempotent but irreversible for cutover.")) {
-      return;
-    }
+    setConfirmOpen(true);
+  }
+
+  async function confirmPost() {
+    if (!batchId) return;
     setBusy(true);
     setErr(null);
+    setConfirmOpen(false);
     try {
       const result = await postOpeningBatch(batchId);
       setValidation(result.validation);
@@ -264,7 +279,7 @@ export default function AccountingOpeningPage() {
       await loadAll();
       setMsg(
         result.duplicate
-          ? `Duplicate-safe replay — journal ${result.journal?.entryNumber ?? "linked"}`
+          ? `Already posted — journal ${result.journal?.entryNumber ?? "linked"}`
           : `Posted — journal ${result.journal?.entryNumber ?? "created"}`
       );
     } catch (e) {
@@ -298,51 +313,50 @@ export default function AccountingOpeningPage() {
   const skuMappings = (batch?.skuMappings as Array<Record<string, unknown>>) ?? [];
 
   return (
-    <div className="space-y-6 p-6">
-      <AdminAccountingHeader
-        title="Opening Balances"
-        subtitle="Stage opening balances, validate, preview the journal, and post a single cutover batch."
-      />
+    <AdvancedPageShell
+      title="Opening Balance Setup"
+      subtitle="Stage opening balances, validate, preview the journal, and post a single cutover batch."
+    >
+      <AdvancedWarning>
+        High-risk cutover tool. Posting creates cutover accounting entries. Authorized operators only.
+        For inventory quantity and cost opening via spreadsheet, use Inventory Opening.
+      </AdvancedWarning>
 
-      <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-        {status?.resetNotice ?? "Accounting reset must be performed by authorized operations."}
-        {" "}
-        For inventory quantity/cost opening via spreadsheet, use{" "}
-        <a href="/admin/accounting/inventory/opening" className="font-semibold underline">
-          Inventory Opening
-        </a>
-        .
-      </div>
+      <p className="text-xs text-[#8a7060]">
+        {status?.resetNotice
+          ? "Training or reset of accounting books is handled by authorized operations outside this screen."
+          : "Training or reset of accounting books is handled by authorized operations outside this screen."}
+      </p>
 
       {err ? (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{err}</div>
+        <div className="rounded-[12px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{err}</div>
       ) : null}
       {msg ? (
-        <div className="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{msg}</div>
+        <div className="rounded-[12px] border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{msg}</div>
       ) : null}
 
-      <SectionCard title="Cutover Status">
+      <AdvancedSection title="Status">
         {status ? (
           <dl className="grid gap-2 text-sm sm:grid-cols-2">
             <div>
-              <dt className="text-neutral-500">Native accounting</dt>
-              <dd>{status.nativeAccountingEnabled ? "ON" : "OFF"}</dd>
+              <dt className="text-[#8a7060]">Native accounting</dt>
+              <dd className="font-medium">{status.nativeAccountingEnabled ? "On" : "Off"}</dd>
             </div>
             <div>
-              <dt className="text-neutral-500">Opening balance module</dt>
-              <dd>{status.openingBalanceEnabled ? "ON" : "OFF"}</dd>
+              <dt className="text-[#8a7060]">Opening balances module</dt>
+              <dd className="font-medium">{status.openingBalanceEnabled ? "On" : "Off"}</dd>
             </div>
             <div>
-              <dt className="text-neutral-500">Production-like env</dt>
-              <dd>{status.productionLike ? "Yes" : "No"}</dd>
+              <dt className="text-[#8a7060]">Production-like environment</dt>
+              <dd className="font-medium">{status.productionLike ? "Yes" : "No"}</dd>
             </div>
             <div>
-              <dt className="text-neutral-500">Cutover ready (7C)</dt>
-              <dd>{status.cutoverReady ? "Yes" : "No"}</dd>
+              <dt className="text-[#8a7060]">Cutover readiness</dt>
+              <dd className="font-medium">{status.cutoverReady ? "Yes" : "No"}</dd>
             </div>
             <div className="sm:col-span-2">
-              <dt className="text-neutral-500">Posted opening batch</dt>
-              <dd>
+              <dt className="text-[#8a7060]">Posted opening batch</dt>
+              <dd className="font-medium">
                 {status.postedOpeningBatch
                   ? `${status.postedOpeningBatch.batchNumber} (${status.postedOpeningBatch.postedAt ?? "—"})`
                   : "None"}
@@ -350,15 +364,15 @@ export default function AccountingOpeningPage() {
             </div>
           </dl>
         ) : (
-          <p className="text-sm text-neutral-500">Loading status…</p>
+          <p className="text-sm text-[#8a7060]">Loading status…</p>
         )}
-      </SectionCard>
+      </AdvancedSection>
 
-      <SectionCard title="Opening Batch">
+      <AdvancedSection title="Opening batch">
         {!status?.openingBalanceEnabled ? (
-          <p className="text-sm text-neutral-600">
-            Set <code className="rounded bg-neutral-100 px-1">ACCOUNTING_OPENING_BALANCE_ENABLED=1</code> on the
-            backend to create and stage batches.
+          <p className="text-sm text-[#6b5c52]">
+            Opening balances are currently disabled. Ask an authorized operator to enable the opening
+            balances module for cutover.
           </p>
         ) : (
           <div className="space-y-4">
@@ -425,7 +439,7 @@ export default function AccountingOpeningPage() {
             </div>
           </div>
         )}
-      </SectionCard>
+      </AdvancedSection>
 
       {batch ? (
         <>
@@ -635,37 +649,43 @@ export default function AccountingOpeningPage() {
             )}
           </SectionCard>
 
-          <SectionCard title="Staging (JSON)">
-            <p className="mb-2 text-xs text-neutral-500">
-              Edit full staging payload and save before Validate / Preview / Post. Import templates via API or ops
-              scripts.
-            </p>
-            <textarea
-              className="h-48 w-full rounded border border-neutral-300 p-2 font-mono text-xs"
-              value={stagingJson}
-              onChange={(e) => setStagingJson(e.target.value)}
-            />
-            <button
-              type="button"
-              disabled={busy || !batchId}
-              onClick={() => void runSaveStaging()}
-              className="mt-2 rounded-md bg-neutral-800 px-4 py-2 text-sm text-white disabled:opacity-50"
-            >
-              Save staging
-            </button>
+          <SectionCard title="Technical staging">
+            <details>
+              <summary className="cursor-pointer text-xs font-medium text-[#8a7060]">
+                Advanced staging payload (authorized operators)
+              </summary>
+              <p className="mb-2 mt-2 text-xs text-neutral-500">
+                Edit the full staging payload and save before Validate / Preview / Post.
+              </p>
+              <textarea
+                className="h-48 w-full rounded border border-neutral-300 p-2 font-mono text-xs"
+                value={stagingJson}
+                onChange={(e) => setStagingJson(e.target.value)}
+              />
+              <button
+                type="button"
+                disabled={busy || !batchId}
+                onClick={() => void runSaveStaging()}
+                className="mt-2 rounded-md bg-neutral-800 px-4 py-2 text-sm text-white disabled:opacity-50"
+              >
+                Save staging
+              </button>
+            </details>
           </SectionCard>
 
-          <SectionCard title="Validation">
+          <SectionCard title="Validation & posting summary">
             <ValidationChecks validation={validation} />
             {proposalLines.length > 0 ? (
               <div className="mt-4">
-                <h3 className="mb-2 text-xs font-semibold uppercase text-neutral-500">Preview journal lines</h3>
+                <h3 className="mb-2 text-xs font-semibold uppercase text-neutral-500">
+                  Preview journal lines
+                </h3>
                 <table className="w-full text-left text-sm">
                   <thead>
                     <tr className="border-b text-xs uppercase text-neutral-500">
-                      <th className="py-1">GL</th>
-                      <th>Dr</th>
-                      <th>Cr</th>
+                      <th className="py-1">Account</th>
+                      <th>Debit</th>
+                      <th>Credit</th>
                       <th>Memo</th>
                     </tr>
                   </thead>
@@ -687,7 +707,7 @@ export default function AccountingOpeningPage() {
                 type="button"
                 disabled={busy || !batchId}
                 onClick={() => void runPreview()}
-                className="rounded-md bg-neutral-100 px-4 py-2 text-sm hover:bg-neutral-200 disabled:opacity-50"
+                className={accountingButtonClass("secondary")}
               >
                 Preview
               </button>
@@ -695,7 +715,7 @@ export default function AccountingOpeningPage() {
                 type="button"
                 disabled={busy || !batchId}
                 onClick={() => void runValidate()}
-                className="rounded-md bg-neutral-100 px-4 py-2 text-sm hover:bg-neutral-200 disabled:opacity-50"
+                className={accountingButtonClass("secondary")}
               >
                 Validate
               </button>
@@ -703,22 +723,38 @@ export default function AccountingOpeningPage() {
                 type="button"
                 disabled={busy || !batchId}
                 onClick={() => void runExportReview()}
-                className="rounded-md bg-neutral-100 px-4 py-2 text-sm hover:bg-neutral-200 disabled:opacity-50"
+                className={accountingButtonClass("secondary")}
               >
-                Export Review
+                Export review
               </button>
               <button
                 type="button"
                 disabled={busy || !batchId || batch.status === "POSTED"}
                 onClick={() => void runPost()}
-                className="rounded-md bg-[#1e3a2f] px-4 py-2 text-sm text-white disabled:opacity-50"
+                className={accountingButtonClass("danger")}
               >
-                Post Opening
+                Post opening
               </button>
             </div>
           </SectionCard>
         </>
       ) : null}
-    </div>
+
+      <AdminConfirmModal
+        open={confirmOpen}
+        title="Post opening balances?"
+        message="This creates cutover accounting entries for the selected opening batch. Use only for authorized go-live cutover. The action is idempotent for the same batch but is not reversible as a normal edit."
+        details={[
+          batchId ? `Batch: ${batch?.batchNumber ?? batchId}` : "No batch selected",
+          batch?.effectiveDate ? `Effective date: ${String(batch.effectiveDate).slice(0, 10)}` : ""
+        ].filter(Boolean)}
+        confirmLabel="Post Opening Balances"
+        cancelLabel="Cancel"
+        danger
+        busy={busy}
+        onConfirm={() => void confirmPost()}
+        onClose={() => setConfirmOpen(false)}
+      />
+    </AdvancedPageShell>
   );
 }

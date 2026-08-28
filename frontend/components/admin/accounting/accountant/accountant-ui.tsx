@@ -132,44 +132,88 @@ export function journalStatusTone(status: string | null | undefined): Accounting
 }
 
 export function humanizePostingEvent(eventType: string | null | undefined): string {
-  const e = (eventType ?? "").toUpperCase();
+  const raw = (eventType ?? "").trim();
+  if (!raw) return "—";
+  const e = raw.toUpperCase().replace(/_V\d+$/i, "");
   const map: Record<string, string> = {
-    ORDER_PAID: "Sales Entry",
-    ORDER_REFUNDED_FULL: "Sales Refund",
-    VENDOR_BILL_POSTED: "Vendor Bill",
-    VENDOR_BILL: "Vendor Bill",
-    VENDOR_PAYMENT_POSTED: "Vendor Payment",
-    VENDOR_PAYMENT: "Vendor Payment",
-    EXPENSE_RECORDED: "Expense",
-    EXPENSE: "Expense",
-    RAZORPAY_SETTLEMENT: "Payment Settlement",
-    SETTLEMENT: "Payment Settlement",
-    BANK_TRANSFER: "Bank Transfer",
-    BANK_OPENING: "Bank Opening",
-    BANK_CHARGE: "Bank Charge",
-    BANK_INTEREST: "Bank Interest",
-    PURCHASE_CAPITALIZATION: "Inventory Purchase",
-    INVENTORY_COGS: "Cost of Goods Sold",
-    INVENTORY_COGS_REVERSED: "Inventory Cost Reversal",
-    PRODUCTION_OPENING_BALANCE: "Opening Balances",
-    OPENING_INVENTORY: "Inventory Opening",
-    INVENTORY_OPENING: "Inventory Opening"
+    ORDER_PAID: "Customer payment received",
+    ORDER_REFUNDED_FULL: "Sales refund",
+    VENDOR_BILL_POSTED: "Vendor bill recorded",
+    VENDOR_BILL: "Vendor bill recorded",
+    VENDOR_PAYMENT_POSTED: "Vendor payment",
+    VENDOR_PAYMENT_MADE: "Vendor payment",
+    VENDOR_PAYMENT: "Vendor payment",
+    EXPENSE_RECORDED: "Expense recorded",
+    EXPENSE: "Expense recorded",
+    PAYMENT_GATEWAY_SETTLED: "Gateway settlement",
+    RAZORPAY_SETTLEMENT: "Gateway settlement",
+    GATEWAY_SETTLEMENT: "Gateway settlement",
+    SETTLEMENT: "Gateway settlement",
+    BANK_TRANSFER: "Bank transfer",
+    BANK_OPENING: "Bank opening",
+    BANK_CHARGE: "Bank charge",
+    BANK_INTEREST: "Bank interest",
+    PURCHASE_CAPITALIZATION: "Inventory purchase recorded",
+    INVENTORY_COGS: "Cost of goods sold",
+    INVENTORY_COGS_REVERSED: "Inventory cost reversal",
+    PRODUCTION_OPENING_BALANCE: "Opening balances",
+    OPENING_INVENTORY: "Inventory opening",
+    INVENTORY_OPENING: "Inventory opening"
   };
   if (map[e]) return map[e];
-  if (e.includes("ORDER_PAID")) return "Sales Entry";
-  if (e.includes("REFUND")) return "Sales Refund";
-  if (e.includes("VENDOR_BILL")) return "Vendor Bill";
-  if (e.includes("VENDOR_PAYMENT")) return "Vendor Payment";
-  if (e.includes("EXPENSE")) return "Expense";
-  if (e.includes("SETTLEMENT")) return "Payment Settlement";
-  if (e.includes("BANK_TRANSFER")) return "Bank Transfer";
-  if (e.includes("COGS_REVERS")) return "Inventory Cost Reversal";
-  if (e.includes("COGS")) return "Cost of Goods Sold";
-  if (e.includes("CAPITAL")) return "Inventory Purchase";
-  if (e.includes("OPENING")) return "Opening Balances";
+  if (e.includes("ORDER_PAID")) return "Customer payment received";
+  if (e.includes("REFUND")) return "Sales refund";
+  if (e.includes("VENDOR_BILL")) return "Vendor bill recorded";
+  if (e.includes("VENDOR_PAYMENT")) return "Vendor payment";
+  if (e.includes("EXPENSE")) return "Expense recorded";
+  if (e.includes("GATEWAY") || e.includes("SETTLEMENT")) return "Gateway settlement";
+  if (e.includes("BANK_TRANSFER")) return "Bank transfer";
+  if (e.includes("COGS_REVERS")) return "Inventory cost reversal";
+  if (e.includes("COGS")) return "Cost of goods sold";
+  if (e.includes("CAPITAL")) return "Inventory purchase recorded";
+  if (e.includes("OPENING")) return "Opening balances";
   return e
-    ? e.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())
-    : "—";
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/**
+ * Presentation-only: turn memo/event strings like EXPENSE_RECORDED_V1 into
+ * accountant-facing descriptions. Does not change stored values.
+ */
+export function humanizeJournalDescription(
+  memoOrEvent: string | null | undefined,
+  eventType?: string | null
+): string {
+  if (eventType?.trim()) {
+    return humanizePostingEvent(eventType);
+  }
+  const raw = (memoOrEvent ?? "").trim();
+  if (!raw) return "—";
+
+  // Prefer leading EVENT_STYLE token (optionally with _Vn and trailing context)
+  const tokenMatch = raw.match(/^([A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*)(?:_V\d+)?(?:\b|[|:\s-]|$)/);
+  if (tokenMatch?.[1] && /_/.test(tokenMatch[1])) {
+    return humanizePostingEvent(tokenMatch[1]);
+  }
+
+  // Whole memo is SCREAMING_SNAKE / VERSIONED
+  if (/^[A-Z][A-Z0-9_]*(?:_V\d+)?$/.test(raw)) {
+    return humanizePostingEvent(raw);
+  }
+
+  // Already business prose
+  return raw;
+}
+
+export function isTechnicalJournalMemo(memo: string | null | undefined): boolean {
+  const raw = (memo ?? "").trim();
+  if (!raw) return false;
+  return (
+    /^[A-Z][A-Z0-9_]*(?:_V\d+)?(?:\b|[|:\s-]|$)/.test(raw) ||
+    /^[A-Z][A-Z0-9_]*(?:_V\d+)?$/.test(raw)
+  );
 }
 
 export function humanizeDocumentType(docType: string | null | undefined): string {

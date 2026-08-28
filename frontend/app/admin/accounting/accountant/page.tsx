@@ -20,6 +20,7 @@ import {
   AccTableWrap,
   accTd,
   accTh,
+  humanizeJournalDescription,
   humanizeJournalStatus,
   journalStatusTone,
   moneyClass,
@@ -31,7 +32,7 @@ export default function AccountantOverviewPage() {
   const [error, setError] = useState<string | null>(null);
   const [accountCount, setAccountCount] = useState<number | null>(null);
   const [journalTotal, setJournalTotal] = useState<number | null>(null);
-  const [postedCount, setPostedCount] = useState<number | null>(null);
+  const [accountTypeCount, setAccountTypeCount] = useState<number | null>(null);
   const [recent, setRecent] = useState<AccountingJournalEntry[]>([]);
 
   const load = useCallback(async () => {
@@ -45,7 +46,7 @@ export default function AccountantOverviewPage() {
       setAccountCount(accounts.accounts.length);
       setJournalTotal(journals.total);
       setRecent(journals.items);
-      setPostedCount(journals.items.filter((j) => j.status === "POSTED").length);
+      setAccountTypeCount(new Set(accounts.accounts.map((a) => a.type.toUpperCase())).size);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Accountant overview could not be loaded.");
     } finally {
@@ -86,7 +87,7 @@ export default function AccountantOverviewPage() {
             posted.
           </p>
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             <AccountingMetricCard
               label="Chart of Accounts"
               value={accountCount != null ? String(accountCount) : "—"}
@@ -100,16 +101,10 @@ export default function AccountantOverviewPage() {
               href="/admin/accounting/journals"
             />
             <AccountingMetricCard
-              label="Posted (recent page)"
-              value={postedCount != null ? String(postedCount) : "—"}
-              hint="Among the latest entries shown"
-              href="/admin/accounting/journals"
-            />
-            <AccountingMetricCard
-              label="Recent Activity"
-              value={recent.length > 0 ? String(recent.length) : "—"}
-              hint="Latest journal rows loaded"
-              href="/admin/accounting/journals"
+              label="Account Types"
+              value={accountTypeCount != null ? String(accountTypeCount) : "—"}
+              hint="Distinct account categories"
+              href="/admin/accounting/accounts"
             />
           </div>
 
@@ -184,7 +179,7 @@ export default function AccountantOverviewPage() {
                       >
                         <td className={accTd()}>{j.entryDate.slice(0, 10)}</td>
                         <td className={`${accTd()} font-mono text-[12px]`}>{j.entryNumber}</td>
-                        <td className={accTd()}>{j.memo ?? "—"}</td>
+                        <td className={accTd()}>{humanizeJournalDescription(j.memo)}</td>
                         <td className={`${accTd(true)} ${moneyClass()}`}>
                           {formatInrPaise(j.totalDebitInPaise)}
                         </td>

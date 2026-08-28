@@ -5,14 +5,28 @@ import {
   discoverAccountingExpenses,
   fetchAccountingReconciliationV5Expenses,
   fetchAccountingStatus,
+  formatInrPaise,
   postAccountingExpense,
   previewAccountingExpense
 } from "@/lib/accounting-api";
-import { AdminAccountingHeader } from "@/components/admin/accounting/AdminAccountingNav";
+import {
+  AdvancedPageShell,
+  AdvancedSection,
+  AdvancedWarning
+} from "@/components/admin/accounting/advanced/advanced-ui";
+import {
+  AccountingStatusBadge,
+  accountingButtonClass,
+  accountingInputClass
+} from "@/components/admin/accounting/accounting-ui";
+import {
+  expenseCoaLabel,
+  humanizeEligibilityCode
+} from "@/components/admin/accounting/presentation";
 
 function formatPaise(p: number | undefined | null) {
   if (p == null) return "—";
-  return `₹${(p / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+  return formatInrPaise(p);
 }
 
 export default function AccountingExpensesPage() {
@@ -57,8 +71,8 @@ export default function AccountingExpensesPage() {
       });
       setMsg(
         result.duplicate
-          ? `Already posted — ${result.journal.entryNumber}`
-          : `Posted ${result.journal.entryNumber}`
+          ? `Already recorded — ${result.journal.entryNumber}`
+          : `Recorded ${result.journal.entryNumber}`
       );
       await runPreview();
     } catch (e) {
@@ -77,7 +91,7 @@ export default function AccountingExpensesPage() {
         limit: 10
       });
       setDiscoverRows(data.rows);
-      setMsg(`Dry-run scanned ${data.scanned}`);
+      setMsg(`Found ${data.scanned} candidate(s) (preview only)`);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Discover failed");
     } finally {
@@ -86,10 +100,17 @@ export default function AccountingExpensesPage() {
   }
 
   const snapshot = preview?.snapshot as Record<string, unknown> | undefined;
-  const eligibility = preview?.eligibility as { eligible?: boolean; code?: string; reason?: string } | undefined;
+  const eligibility = preview?.eligibility as
+    | { eligible?: boolean; code?: string; reason?: string }
+    | undefined;
   const proposal = preview?.proposal as
     | {
-        lines?: Array<{ accountCode: string; debitInPaise: number; creditInPaise: number; lineMemo: string }>;
+        lines?: Array<{
+          accountCode: string;
+          debitInPaise: number;
+          creditInPaise: number;
+          lineMemo: string;
+        }>;
         diagnostics?: Record<string, unknown>;
       }
     | null
@@ -97,104 +118,205 @@ export default function AccountingExpensesPage() {
   const duplicate = preview?.duplicate as { classification?: string } | undefined;
 
   return (
-    <div className="space-y-6">
-      <AdminAccountingHeader
-        title="Expense Recognition"
-        subtitle="Post standalone operating expenses to the ledger with mapped accounts and GST where available."
-      />
+    <AdvancedPageShell
+      title="Expense Recognition"
+      subtitle="Record standalone operating expenses to the ledger with mapped accounts."
+    >
+      <AdvancedWarning>
+        Expense posting must be enabled by operations before entries can be recorded. Preview before
+        posting.
+      </AdvancedWarning>
 
-      <p className="text-sm text-neutral-600">
-        Posting flag:{" "}
-        <span className={flagOn ? "text-emerald-700" : "text-amber-700"}>
-          {flagOn ? "ACCOUNTING_EXPENSE_POSTING_ENABLED on" : "OFF (default)"}
+      <p className="text-sm text-[#6b5c52]">
+        Expense posting:{" "}
+        <span className={flagOn ? "font-semibold text-emerald-800" : "font-semibold text-amber-800"}>
+          {flagOn ? "Enabled" : "Disabled"}
         </span>
       </p>
 
-      {err ? <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">{err}</p> : null}
-      {msg ? <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{msg}</p> : null}
+      {err ? (
+        <p className="rounded-[12px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+          {err}
+        </p>
+      ) : null}
+      {msg ? (
+        <p className="rounded-[12px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          {msg}
+        </p>
+      ) : null}
 
-      <section className="flex flex-wrap items-end gap-3 border border-neutral-200 p-4">
-        <label className="text-sm">
-          Expense ID
-          <input
-            className="mt-1 block w-80 border border-neutral-300 px-2 py-1.5 font-mono text-xs"
-            value={expenseId}
-            onChange={(e) => setExpenseId(e.target.value)}
-          />
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={ackDup} onChange={(e) => setAckDup(e.target.checked)} />
-          Acknowledge possible bill duplicate
-        </label>
-        <button
-          type="button"
-          disabled={busy || !expenseId.trim()}
-          className="rounded-md bg-[#1e3a2f] px-3 py-1.5 text-white disabled:opacity-50"
-          onClick={() => void runPreview()}
-        >
-          Preview
-        </button>
-        <button
-          type="button"
-          disabled={busy || !expenseId.trim() || !flagOn}
-          className="rounded-md bg-amber-700 px-3 py-1.5 text-white disabled:opacity-50"
-          onClick={() => void runPost()}
-        >
-          POST
-        </button>
-        <button
-          type="button"
-          disabled={busy}
-          className="rounded-md border border-[#1e3a2f] px-3 py-1.5 text-[#1e3a2f] disabled:opacity-50"
-          onClick={() => void runDiscover()}
-        >
-          Discover dry-run
-        </button>
-      </section>
+      <AdvancedSection title="Find expense">
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="min-w-[220px] flex-1 text-xs font-semibold text-[#6b5c52]">
+            Expense reference
+            <input
+              className={`${accountingInputClass()} mt-1 font-mono text-xs`}
+              placeholder="Expense id"
+              value={expenseId}
+              onChange={(e) => setExpenseId(e.target.value)}
+            />
+          </label>
+          <label className="flex items-center gap-2 pb-2 text-sm text-[#2c2420]">
+            <input type="checkbox" checked={ackDup} onChange={(e) => setAckDup(e.target.checked)} />
+            Acknowledge possible bill duplicate
+          </label>
+          <button
+            type="button"
+            disabled={busy || !expenseId.trim()}
+            className={accountingButtonClass("primary")}
+            onClick={() => void runPreview()}
+          >
+            Preview
+          </button>
+          <button
+            type="button"
+            disabled={busy || !expenseId.trim() || !flagOn}
+            className={accountingButtonClass("danger")}
+            onClick={() => void runPost()}
+          >
+            Post to books
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            className={accountingButtonClass("secondary")}
+            onClick={() => void runDiscover()}
+          >
+            Find candidates
+          </button>
+        </div>
+      </AdvancedSection>
 
       {preview ? (
-        <section className="space-y-2 border border-neutral-200 p-4 text-sm">
-          <h2 className="text-lg font-medium text-[#1e3a2f]">Preview</h2>
-          <p>
-            {String(snapshot?.expenseAccount)} · paidThrough {String(snapshot?.paidThrough ?? "—")} · mapped{" "}
-            {String(snapshot?.mappedExpenseAccountCode ?? "UNMAPPED")} /{" "}
-            {String(snapshot?.mappedPaymentAccountCode ?? "UNMAPPED")} · amount{" "}
-            {formatPaise(Number(snapshot?.amountInPaise))} tax {formatPaise(Number(snapshot?.taxInPaise))}
-          </p>
-          <p>
-            Eligibility: {eligibility?.eligible ? "yes" : "no"} ({eligibility?.code}){" "}
-            {eligibility?.reason ? `— ${eligibility.reason}` : ""}
-          </p>
-          <p>Duplicate: {String(duplicate?.classification ?? "—")}</p>
+        <AdvancedSection title="Expense summary">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 text-sm">
+            <div>
+              <p className="text-xs text-[#8a7060]">Category</p>
+              <p className="font-semibold">{String(snapshot?.expenseAccount ?? "—")}</p>
+            </div>
+            <div>
+              <p className="text-xs text-[#8a7060]">Paid through</p>
+              <p className="font-semibold">{String(snapshot?.paidThrough ?? "—")}</p>
+            </div>
+            <div>
+              <p className="text-xs text-[#8a7060]">Amount</p>
+              <p className="font-semibold tabular-nums text-[#1c352a]">
+                {formatPaise(Number(snapshot?.amountInPaise))}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-[#8a7060]">Tax</p>
+              <p className="font-semibold tabular-nums">
+                {formatPaise(Number(snapshot?.taxInPaise))}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-[#8a7060]">Mapped expense account</p>
+              <p className="font-semibold">
+                {expenseCoaLabel(String(snapshot?.mappedExpenseAccountCode ?? ""))}
+              </p>
+              <p className="font-mono text-[11px] text-[#8a7060]">
+                {String(snapshot?.mappedExpenseAccountCode ?? "Not mapped")}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-[#8a7060]">Recognition</p>
+              <p className="font-semibold">
+                {eligibility?.eligible
+                  ? "Ready to record"
+                  : humanizeEligibilityCode(eligibility?.code)}
+              </p>
+              {eligibility?.reason ? (
+                <p className="text-xs text-[#8a7060]">{eligibility.reason}</p>
+              ) : null}
+            </div>
+          </div>
+          {duplicate?.classification ? (
+            <p className="mt-2 text-xs text-amber-800">
+              Duplicate note: {humanizeEligibilityCode(duplicate.classification)}
+            </p>
+          ) : null}
+
           {proposal?.lines ? (
-            <ul className="space-y-1 font-mono text-xs">
-              {proposal.lines.map((l, i) => (
-                <li key={i}>
-                  {l.accountCode} Dr {l.debitInPaise} Cr {l.creditInPaise} — {l.lineMemo}
-                </li>
-              ))}
-            </ul>
+            <div className="mt-4 overflow-x-auto rounded-[12px] border border-[#ebe4db]">
+              <table className="min-w-full text-sm">
+                <thead className="bg-[#faf5ec] text-left text-[11px] uppercase tracking-wide text-[#8a7060]">
+                  <tr>
+                    <th className="px-3 py-2">Account</th>
+                    <th className="px-3 py-2 text-right">Debit</th>
+                    <th className="px-3 py-2 text-right">Credit</th>
+                    <th className="px-3 py-2">Memo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {proposal.lines.map((l, i) => (
+                    <tr key={i} className="border-t border-[#eee8e0]">
+                      <td className="px-3 py-2">
+                        <div className="font-medium">{expenseCoaLabel(l.accountCode)}</div>
+                        <div className="font-mono text-[11px] text-[#8a7060]">{l.accountCode}</div>
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        {formatPaise(l.debitInPaise)}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        {formatPaise(l.creditInPaise)}
+                      </td>
+                      <td className="px-3 py-2 text-[#6b5c52]">{l.lineMemo}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
-            <p className="text-amber-800">
-              {String((preview.buildError as { message?: string } | undefined)?.message ?? "No proposal")}
+            <p className="mt-3 text-sm text-amber-800">
+              {String(
+                (preview.buildError as { message?: string } | undefined)?.message ??
+                  "No accounting entry available for this expense."
+              )}
             </p>
           )}
-        </section>
+        </AdvancedSection>
       ) : null}
 
       {recon ? (
-        <section className="border border-neutral-200 p-4 text-sm">
-          <h2 className="mb-2 text-lg font-medium text-[#1e3a2f]">Recon V5 expense</h2>
-          <pre className="overflow-x-auto text-xs">{JSON.stringify(recon, null, 2)}</pre>
-        </section>
+        <AdvancedSection title="Reconciliation note">
+          <p className="text-sm">
+            {humanizeEligibilityCode(String(recon.status ?? recon.primaryStatus ?? ""))}
+          </p>
+          <details className="mt-2 text-xs text-[#8a7060]">
+            <summary className="cursor-pointer">Technical details</summary>
+            <div className="mt-1 space-y-1 font-mono">
+              {Object.entries(recon)
+                .slice(0, 12)
+                .map(([k, v]) => (
+                  <div key={k}>
+                    {k}: {typeof v === "object" ? JSON.stringify(v) : String(v)}
+                  </div>
+                ))}
+            </div>
+          </details>
+        </AdvancedSection>
       ) : null}
 
       {discoverRows.length > 0 ? (
-        <section className="border border-neutral-200 p-4 text-sm">
-          <h2 className="mb-2 text-lg font-medium text-[#1e3a2f]">Discovery</h2>
-          <pre className="overflow-x-auto text-xs">{JSON.stringify(discoverRows, null, 2)}</pre>
-        </section>
+        <AdvancedSection title="Candidates (preview only)">
+          <ul className="divide-y divide-[#eee8e0] text-sm">
+            {discoverRows.map((r, i) => (
+              <li key={String(r.expenseId ?? i)} className="flex flex-wrap justify-between gap-2 py-2">
+                <div>
+                  <div className="font-medium">{String(r.expenseAccount ?? r.expenseId ?? "—")}</div>
+                  <div className="text-xs text-[#8a7060]">
+                    {humanizeEligibilityCode(String(r.code ?? r.status ?? ""))}
+                  </div>
+                </div>
+                <AccountingStatusBadge tone={r.eligible ? "success" : "warning"}>
+                  {r.eligible ? "Ready" : "Review"}
+                </AccountingStatusBadge>
+              </li>
+            ))}
+          </ul>
+        </AdvancedSection>
       ) : null}
-    </div>
+    </AdvancedPageShell>
   );
 }

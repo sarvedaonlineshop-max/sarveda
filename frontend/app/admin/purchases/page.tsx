@@ -58,7 +58,7 @@ export default function PurchasesOverviewPage() {
   return (
     <PurchasesPageShell
       title="Purchases"
-      subtitle="Vendor → Purchase Order → Bill → Payment. Expenses can skip the PO when not needed."
+      subtitle="Vendor operations — purchase orders, bills, and expenses. Accounting recognition and payables tools live under Accounting."
     >
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {outstanding != null ? (

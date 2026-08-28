@@ -231,8 +231,8 @@ export default function AdminAccountingDashboardPage() {
   return (
     <div className="space-y-5">
       <AdminAccountingHeader
-        title="Accounting Overview"
-        subtitle="Monitor your financial position and items that need attention."
+        title="Accounting Dashboard"
+        subtitle="Sales, profit, bank and cash, payables, GST position, journals, and financial health."
         meta={
           <div className="space-y-0.5">
             {fy?.currentFy?.label ? (

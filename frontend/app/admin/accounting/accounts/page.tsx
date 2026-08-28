@@ -192,7 +192,7 @@ export default function ChartOfAccountsPage() {
                           </AccountingStatusBadge>
                         </td>
                         <td className={accTd()}>
-                          <div className="flex flex-wrap gap-2">
+                          <div className="flex flex-wrap items-center gap-3">
                             <button
                               type="button"
                               className="text-xs font-semibold text-[#1c352a] underline-offset-2 hover:underline"
@@ -202,9 +202,9 @@ export default function ChartOfAccountsPage() {
                             </button>
                             <Link
                               href={reportsGlHref(a.code)}
-                              className="text-xs font-semibold text-[#1c352a] underline-offset-2 hover:underline"
+                              className="text-xs font-medium text-[#8a7060] underline-offset-2 hover:text-[#1c352a] hover:underline"
                             >
-                              View General Ledger
+                              General Ledger →
                             </Link>
                           </div>
                         </td>

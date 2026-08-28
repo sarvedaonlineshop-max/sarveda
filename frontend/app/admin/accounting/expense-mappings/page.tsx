@@ -8,7 +8,20 @@ import {
   upsertExpenseAccountMappingApi,
   upsertExpensePaymentMappingApi
 } from "@/lib/accounting-api";
-import { AdminAccountingHeader } from "@/components/admin/accounting/AdminAccountingNav";
+import {
+  AdvancedPageShell,
+  AdvancedSection,
+  AdvancedWarning
+} from "@/components/admin/accounting/advanced/advanced-ui";
+import {
+  accountingButtonClass,
+  accountingInputClass
+} from "@/components/admin/accounting/accounting-ui";
+import {
+  EXPENSE_COA_OPTIONS,
+  PAYMENT_COA_OPTIONS,
+  expenseCoaLabel
+} from "@/components/admin/accounting/presentation";
 
 export default function ExpenseMappingsPage() {
   const [data, setData] = useState<{
@@ -30,7 +43,7 @@ export default function ExpenseMappingsPage() {
     try {
       setData(await fetchExpenseMappings());
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Load failed");
+      setErr(e instanceof Error ? e.message : "Could not load expense rules.");
     } finally {
       setBusy(false);
     }
@@ -41,33 +54,53 @@ export default function ExpenseMappingsPage() {
   }, [load]);
 
   return (
-    <div className="space-y-6">
-      <AdminAccountingHeader
-        title="Expense Account / Payment Mappings"
-        subtitle="Free-text Expense.expenseAccount and paidThrough are not GL authority. Map to EXPENSE CoA and 1000/1010 before posting."
-      />
-      {err ? <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">{err}</p> : null}
+    <AdvancedPageShell
+      title="Expense Account Rules"
+      subtitle="When an expense category is recorded, choose which ledger account it should use."
+    >
+      <AdvancedWarning>
+        These rules affect future accounting entries. Review carefully before enabling or changing
+        mappings.
+      </AdvancedWarning>
 
-      <section className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2 border border-neutral-200 p-4">
-          <h2 className="font-medium text-[#1e3a2f]">Map expense account</h2>
-          <input
-            className="w-full border px-2 py-1.5 text-sm"
-            placeholder="Source free-text"
-            value={sourceName}
-            onChange={(e) => setSourceName(e.target.value)}
-          />
-          <select className="w-full border px-2 py-1.5 text-sm" value={coa} onChange={(e) => setCoa(e.target.value)}>
-            {["5300", "5310", "5320", "5330", "5340", "5350", "5360", "5370", "5380"].map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
+      {err ? (
+        <p className="rounded-[12px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+          {err}
+        </p>
+      ) : null}
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <AdvancedSection title="Map expense category">
+          <p className="mb-3 text-xs text-[#8a7060]">
+            When this expense description is recorded, use this accounting account.
+          </p>
+          <label className="block text-xs font-semibold text-[#6b5c52]">
+            Expense description
+            <input
+              className={`${accountingInputClass()} mt-1`}
+              placeholder="e.g. Office supplies"
+              value={sourceName}
+              onChange={(e) => setSourceName(e.target.value)}
+            />
+          </label>
+          <label className="mt-3 block text-xs font-semibold text-[#6b5c52]">
+            Accounting account
+            <select
+              className={`${accountingInputClass()} mt-1`}
+              value={coa}
+              onChange={(e) => setCoa(e.target.value)}
+            >
+              {EXPENSE_COA_OPTIONS.map((o) => (
+                <option key={o.code} value={o.code}>
+                  {o.name} ({o.code})
+                </option>
+              ))}
+            </select>
+          </label>
           <button
             type="button"
             disabled={busy || !sourceName.trim()}
-            className="rounded-md bg-[#1e3a2f] px-3 py-1.5 text-sm text-white disabled:opacity-50"
+            className={`${accountingButtonClass("primary")} mt-3`}
             onClick={() =>
               void (async () => {
                 await upsertExpenseAccountMappingApi({
@@ -79,29 +112,41 @@ export default function ExpenseMappingsPage() {
               })()
             }
           >
-            Save account mapping
+            Save rule
           </button>
-        </div>
-        <div className="space-y-2 border border-neutral-200 p-4">
-          <h2 className="font-medium text-[#1e3a2f]">Map paidThrough</h2>
-          <input
-            className="w-full border px-2 py-1.5 text-sm"
-            placeholder="Source free-text"
-            value={paidSource}
-            onChange={(e) => setPaidSource(e.target.value)}
-          />
-          <select
-            className="w-full border px-2 py-1.5 text-sm"
-            value={paidCode}
-            onChange={(e) => setPaidCode(e.target.value as "1000" | "1010")}
-          >
-            <option value="1000">1000 Cash</option>
-            <option value="1010">1010 Bank</option>
-          </select>
+        </AdvancedSection>
+
+        <AdvancedSection title="Map payment method">
+          <p className="mb-3 text-xs text-[#8a7060]">
+            When this payment method is used, credit this cash or bank account.
+          </p>
+          <label className="block text-xs font-semibold text-[#6b5c52]">
+            Payment description
+            <input
+              className={`${accountingInputClass()} mt-1`}
+              placeholder="e.g. Company card"
+              value={paidSource}
+              onChange={(e) => setPaidSource(e.target.value)}
+            />
+          </label>
+          <label className="mt-3 block text-xs font-semibold text-[#6b5c52]">
+            Cash or bank account
+            <select
+              className={`${accountingInputClass()} mt-1`}
+              value={paidCode}
+              onChange={(e) => setPaidCode(e.target.value as "1000" | "1010")}
+            >
+              {PAYMENT_COA_OPTIONS.map((o) => (
+                <option key={o.code} value={o.code}>
+                  {o.name} ({o.code})
+                </option>
+              ))}
+            </select>
+          </label>
           <button
             type="button"
             disabled={busy || !paidSource.trim()}
-            className="rounded-md bg-[#1e3a2f] px-3 py-1.5 text-sm text-white disabled:opacity-50"
+            className={`${accountingButtonClass("primary")} mt-3`}
             onClick={() =>
               void (async () => {
                 await upsertExpensePaymentMappingApi({
@@ -113,24 +158,32 @@ export default function ExpenseMappingsPage() {
               })()
             }
           >
-            Save payment mapping
+            Save rule
           </button>
-        </div>
-      </section>
+        </AdvancedSection>
+      </div>
 
       {data ? (
-        <>
-          <section className="border border-neutral-200 p-4 text-sm">
-            <h2 className="mb-2 font-medium text-[#1e3a2f]">Account mappings</h2>
-            <ul className="space-y-1">
+        <div className="grid gap-4 lg:grid-cols-2">
+          <AdvancedSection title="Expense category rules">
+            <ul className="space-y-2 text-sm">
               {data.accounts.map((a) => (
-                <li key={String(a.id)} className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-xs">{String(a.normalizedSourceName)}</span>→
-                  <span>{String(a.accountingAccountCode)}</span>
-                  <span className="text-neutral-500">({String(a.expenseRowCount)} rows)</span>
+                <li
+                  key={String(a.id)}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#ebe4db] px-3 py-2"
+                >
+                  <div>
+                    <div className="font-medium text-[#2c2420]">{String(a.normalizedSourceName)}</div>
+                    <div className="text-[13px] text-[#2c2420]">
+                      {expenseCoaLabel(String(a.accountingAccountCode))}
+                    </div>
+                    <div className="font-mono text-[11px] text-[#8a7060]">
+                      {String(a.accountingAccountCode)} · {String(a.expenseRowCount)} expenses
+                    </div>
+                  </div>
                   <button
                     type="button"
-                    className="text-xs underline"
+                    className="text-xs font-semibold text-[#1c352a] underline-offset-2 hover:underline"
                     onClick={() =>
                       void patchExpenseAccountMappingApi(String(a.id), !a.isActive).then(load)
                     }
@@ -139,27 +192,43 @@ export default function ExpenseMappingsPage() {
                   </button>
                 </li>
               ))}
+              {data.accounts.length === 0 ? (
+                <li className="text-sm text-[#8a7060]">No expense category rules yet.</li>
+              ) : null}
             </ul>
-            <h3 className="mb-1 mt-4 font-medium">Unmapped accounts</h3>
-            <ul className="text-xs text-amber-800">
-              {data.unmappedAccounts.map((u) => (
-                <li key={String(u.expenseAccount)}>
-                  {String(u.expenseAccount)} ({String(u.count)})
-                </li>
-              ))}
-            </ul>
-          </section>
-          <section className="border border-neutral-200 p-4 text-sm">
-            <h2 className="mb-2 font-medium text-[#1e3a2f]">Payment mappings</h2>
-            <ul className="space-y-1">
+            {data.unmappedAccounts.length > 0 ? (
+              <div className="mt-4">
+                <p className="text-xs font-semibold text-amber-900">Unmapped categories</p>
+                <ul className="mt-1 space-y-1 text-xs text-amber-800">
+                  {data.unmappedAccounts.map((u) => (
+                    <li key={String(u.expenseAccount)}>
+                      {String(u.expenseAccount)} ({String(u.count)})
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </AdvancedSection>
+
+          <AdvancedSection title="Payment method rules">
+            <ul className="space-y-2 text-sm">
               {data.payments.map((a) => (
-                <li key={String(a.id)} className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-xs">{String(a.normalizedSourceName)}</span>→
-                  <span>{String(a.paidAccountCode)}</span>
-                  <span className="text-neutral-500">({String(a.expenseRowCount)} rows)</span>
+                <li
+                  key={String(a.id)}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#ebe4db] px-3 py-2"
+                >
+                  <div>
+                    <div className="font-medium text-[#2c2420]">{String(a.normalizedSourceName)}</div>
+                    <div className="text-[13px] text-[#2c2420]">
+                      {expenseCoaLabel(String(a.paidAccountCode))}
+                    </div>
+                    <div className="font-mono text-[11px] text-[#8a7060]">
+                      {String(a.paidAccountCode)} · {String(a.expenseRowCount)} expenses
+                    </div>
+                  </div>
                   <button
                     type="button"
-                    className="text-xs underline"
+                    className="text-xs font-semibold text-[#1c352a] underline-offset-2 hover:underline"
                     onClick={() =>
                       void patchExpensePaymentMappingApi(String(a.id), !a.isActive).then(load)
                     }
@@ -168,18 +237,25 @@ export default function ExpenseMappingsPage() {
                   </button>
                 </li>
               ))}
+              {data.payments.length === 0 ? (
+                <li className="text-sm text-[#8a7060]">No payment method rules yet.</li>
+              ) : null}
             </ul>
-            <h3 className="mb-1 mt-4 font-medium">Unmapped paidThrough</h3>
-            <ul className="text-xs text-amber-800">
-              {data.unmappedPayments.map((u) => (
-                <li key={String(u.paidThrough)}>
-                  {String(u.paidThrough)} ({String(u.count)})
-                </li>
-              ))}
-            </ul>
-          </section>
-        </>
+            {data.unmappedPayments.length > 0 ? (
+              <div className="mt-4">
+                <p className="text-xs font-semibold text-amber-900">Unmapped payment methods</p>
+                <ul className="mt-1 space-y-1 text-xs text-amber-800">
+                  {data.unmappedPayments.map((u) => (
+                    <li key={String(u.paidThrough)}>
+                      {String(u.paidThrough)} ({String(u.count)})
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </AdvancedSection>
+        </div>
       ) : null}
-    </div>
+    </AdvancedPageShell>
   );
 }

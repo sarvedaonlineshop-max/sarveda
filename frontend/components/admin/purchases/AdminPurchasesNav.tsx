@@ -39,8 +39,10 @@ export function AdminPurchasesNav() {
       aria-label="Purchases modules"
     >
       <div className="border-b border-[#e8e2d9] px-3 py-3">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8a7060]">Purchases</p>
-        <p className="mt-0.5 text-sm font-semibold text-[#1c352a]">Workflow</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8a7060]">
+          Purchases
+        </p>
+        <p className="mt-0.5 text-sm font-semibold text-[#1c352a]">Vendor operations</p>
       </div>
       <nav className="space-y-0.5 px-2 py-3">
         {visible.map((tab) => {

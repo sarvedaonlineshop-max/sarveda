@@ -245,7 +245,8 @@ export default function AdminDashboardPage() {
               🌿 Dashboard
             </h2>
             <p style={{ fontSize: "13px", color: "#a8c4b0", marginTop: "6px", maxWidth: "680px" }}>
-              Store ops snapshot with cleaner visual priority for orders, stock risk, and recent activity.
+              Store operations overview — orders, products, inventory risk, customers, and recent
+              activity. Financial statements live under Accounting → Financial Reports.
             </p>
           </div>
           <Link
