@@ -22,6 +22,7 @@ import {
   Wallet
 } from "lucide-react";
 
+import { AccountingPageHeader } from "@/components/admin/accounting/accounting-ui";
 import { isPurchasesEnabled } from "@/lib/purchases-api";
 import {
   applySidebarHover,
@@ -45,13 +46,16 @@ type NavGroup = {
   items: NavItem[];
 };
 
+/**
+ * Business-friendly accounting IA. Routes unchanged — labels only.
+ */
 export function buildAccountingNavGroups(includePurchasesOps: boolean): NavGroup[] {
   const purchasesOps: NavItem[] = includePurchasesOps
     ? [
         { href: "/admin/purchases/vendors", label: "Vendors", icon: <Building2 {...iconProps} /> },
         {
           href: "/admin/purchases/purchase-orders",
-          label: "Purchase orders",
+          label: "Purchase Orders",
           icon: <ClipboardList {...iconProps} />
         },
         { href: "/admin/purchases/bills", label: "Bills", icon: <FileText {...iconProps} /> },
@@ -61,12 +65,12 @@ export function buildAccountingNavGroups(includePurchasesOps: boolean): NavGroup
 
   return [
     {
-      id: "dashboard",
-      title: "Dashboard",
+      id: "overview",
+      title: "Overview",
       items: [
         {
           href: "/admin/accounting",
-          label: "Overview",
+          label: "Dashboard",
           icon: <LayoutDashboard {...iconProps} />,
           exact: true
         }
@@ -76,7 +80,7 @@ export function buildAccountingNavGroups(includePurchasesOps: boolean): NavGroup
       id: "sales",
       title: "Sales",
       items: [
-        { href: "/admin/accounting/order-paid", label: "Sales receipts", icon: <ShoppingBag {...iconProps} /> },
+        { href: "/admin/accounting/order-paid", label: "Sales Entries", icon: <ShoppingBag {...iconProps} /> },
         {
           href: "/admin/accounting/order-refunded-full",
           label: "Refunds",
@@ -84,7 +88,7 @@ export function buildAccountingNavGroups(includePurchasesOps: boolean): NavGroup
         },
         {
           href: "/admin/accounting/settlements",
-          label: "Gateway settlements",
+          label: "Gateway Settlements",
           icon: <Landmark {...iconProps} />
         }
       ]
@@ -94,44 +98,82 @@ export function buildAccountingNavGroups(includePurchasesOps: boolean): NavGroup
       title: "Purchases",
       items: [
         ...purchasesOps,
-        { href: "/admin/accounting/vendor-bills", label: "Bill postings", icon: <FileText {...iconProps} /> },
-        { href: "/admin/accounting/vendor-payments", label: "Payments made", icon: <Wallet {...iconProps} /> },
-        { href: "/admin/accounting/expenses", label: "Expense postings", icon: <Receipt {...iconProps} /> },
         {
-          href: "/admin/accounting/expense-mappings",
-          label: "Expense accounts",
-          icon: <Settings2 {...iconProps} />
-        },
-        { href: "/admin/accounting/purchases", label: "Purchase recon", icon: <Package {...iconProps} /> }
+          href: "/admin/accounting/vendor-payments",
+          label: "Vendor Payments",
+          icon: <Wallet {...iconProps} />
+        }
       ]
     },
     {
       id: "banking",
       title: "Banking",
+      items: [{ href: "/admin/accounting/banking", label: "Banking", icon: <Wallet {...iconProps} /> }]
+    },
+    {
+      id: "inventory",
+      title: "Inventory",
       items: [
-        { href: "/admin/accounting/banking", label: "Accounts & transfers", icon: <Wallet {...iconProps} /> }
+        {
+          href: "/admin/accounting/inventory",
+          label: "Inventory Valuation",
+          icon: <Package {...iconProps} />
+        }
       ]
+    },
+    {
+      id: "gst",
+      title: "GST & Tax",
+      items: [{ href: "/admin/accounting/gst", label: "GST & ITC", icon: <Receipt {...iconProps} /> }]
     },
     {
       id: "accountant",
       title: "Accountant",
       items: [
-        { href: "/admin/accounting/accounts", label: "Chart of accounts", icon: <BookOpen {...iconProps} /> },
-        { href: "/admin/accounting/journals", label: "Manual journals", icon: <ScrollText {...iconProps} /> },
-        { href: "/admin/accounting/inventory", label: "Inventory", icon: <Package {...iconProps} /> },
-        { href: "/admin/accounting/opening", label: "Opening balances", icon: <DoorOpen {...iconProps} /> }
+        { href: "/admin/accounting/accounts", label: "Chart of Accounts", icon: <BookOpen {...iconProps} /> },
+        { href: "/admin/accounting/journals", label: "Journals", icon: <ScrollText {...iconProps} /> }
       ]
-    },
-    {
-      id: "gst",
-      title: "GST",
-      items: [{ href: "/admin/accounting/gst", label: "GST & ITC", icon: <Receipt {...iconProps} /> }]
     },
     {
       id: "reports",
       title: "Reports",
       items: [
-        { href: "/admin/accounting/reports", label: "Financial reports", icon: <PieChart {...iconProps} /> }
+        {
+          href: "/admin/accounting/reports",
+          label: "Financial Reports",
+          icon: <PieChart {...iconProps} />
+        }
+      ]
+    },
+    {
+      id: "advanced",
+      title: "Advanced",
+      items: [
+        {
+          href: "/admin/accounting/expense-mappings",
+          label: "Expense Account Rules",
+          icon: <Settings2 {...iconProps} />
+        },
+        {
+          href: "/admin/accounting/vendor-bills",
+          label: "Bill Recognition",
+          icon: <FileText {...iconProps} />
+        },
+        {
+          href: "/admin/accounting/expenses",
+          label: "Expense Recognition",
+          icon: <Receipt {...iconProps} />
+        },
+        {
+          href: "/admin/accounting/purchases",
+          label: "Purchase Reconciliation",
+          icon: <Package {...iconProps} />
+        },
+        {
+          href: "/admin/accounting/opening",
+          label: "Opening Balances",
+          icon: <DoorOpen {...iconProps} />
+        }
       ]
     }
   ];
@@ -152,17 +194,14 @@ export function isAccountingWorkspacePath(pathname: string): boolean {
 
 export function AdminAccountingHeader({
   title,
-  subtitle
+  subtitle,
+  meta
 }: {
   title: string;
   subtitle?: string;
+  meta?: ReactNode;
 }) {
-  return (
-    <div className="space-y-1">
-      <h1 className="text-2xl font-semibold text-[#1e3a2f]">{title}</h1>
-      {subtitle ? <p className="text-sm text-neutral-600">{subtitle}</p> : null}
-    </div>
-  );
+  return <AccountingPageHeader title={title} subtitle={subtitle} meta={meta} />;
 }
 
 /**
