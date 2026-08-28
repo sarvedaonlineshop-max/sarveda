@@ -152,7 +152,7 @@ export default function InventoryAccountingOverviewPage() {
             <AccountingMetricCard
               label="Inventory Value"
               value={layerValue != null ? formatInrPaise(layerValue) : "—"}
-              hint="From accounting cost layers"
+              hint="From accounting inventory valuation"
               href="/admin/accounting/inventory/valuation"
             />
             <AccountingMetricCard
@@ -164,7 +164,7 @@ export default function InventoryAccountingOverviewPage() {
             <AccountingMetricCard
               label="Difference"
               value={difference != null ? formatInrPaise(difference) : "—"}
-              hint="Book inventory minus cost layers"
+              hint="Book inventory minus accounting valuation"
               href="/admin/accounting/inventory/reconciliation"
             />
             <AccountingMetricCard

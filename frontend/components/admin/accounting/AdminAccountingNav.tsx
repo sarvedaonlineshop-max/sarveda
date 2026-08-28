@@ -16,6 +16,7 @@ import {
   PieChart,
   Receipt,
   RotateCcw,
+  Scale,
   ScrollText,
   Settings2,
   ShoppingBag,
@@ -153,7 +154,26 @@ export function buildAccountingNavGroups(includePurchasesOps: boolean): NavGroup
     {
       id: "gst",
       title: "GST & Tax",
-      items: [{ href: "/admin/accounting/gst", label: "GST & ITC", icon: <Receipt {...iconProps} /> }]
+      items: [
+        { href: "/admin/accounting/gst", label: "Overview", icon: <Receipt {...iconProps} />, exact: true },
+        { href: "/admin/accounting/gst/sales", label: "Sales GST", icon: <ShoppingBag {...iconProps} /> },
+        {
+          href: "/admin/accounting/gst/itc",
+          label: "Purchase GST / ITC",
+          icon: <Package {...iconProps} />
+        },
+        { href: "/admin/accounting/gst/ledger", label: "GST Ledger", icon: <BookOpen {...iconProps} /> },
+        {
+          href: "/admin/accounting/gst/reconciliation",
+          label: "Reconciliation",
+          icon: <Scale {...iconProps} />
+        },
+        {
+          href: "/admin/accounting/gst/reports",
+          label: "Reports & Export",
+          icon: <PieChart {...iconProps} />
+        }
+      ]
     },
     {
       id: "accountant",

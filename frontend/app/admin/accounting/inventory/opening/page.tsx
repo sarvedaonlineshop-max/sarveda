@@ -133,7 +133,7 @@ export default function InventoryOpeningAdvancedPage() {
       </div>
 
       <AccountingAlert tone="warning">
-        Posting opening inventory creates accounting cost layers and journal entries. Use only for
+        Posting opening inventory records accounting inventory values and journal entries. Use only for
         cutover or authorized setup.
       </AccountingAlert>
 
@@ -283,7 +283,7 @@ export default function InventoryOpeningAdvancedPage() {
       <AdminConfirmModal
         open={confirmOpen}
         title="Post opening inventory?"
-        message="This records opening inventory values in the accounting books and creates cost layers. Use only for authorized cutover."
+        message="This records opening inventory values in the accounting books. Use only for authorized cutover."
         details={[
           batchId ? `Batch ready` : "No batch",
           totals ? `SKUs: ${totals.physicalSkuCount}` : "",

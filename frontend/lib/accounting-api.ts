@@ -1452,6 +1452,12 @@ export async function fetchGstReportDataGaps(params?: { from?: string; to?: stri
   );
 }
 
+export async function fetchGstReportPos(params?: { from?: string; to?: string; month?: string }) {
+  return accountingFetch<Record<string, unknown>>(
+    `/api/admin/accounting/gst/reports/place-of-supply${gstPeriodQuery(params)}`
+  );
+}
+
 export function gstExportUrl(params?: { from?: string; to?: string; month?: string }) {
   return `/api/admin/accounting/gst/export${gstPeriodQuery(params)}`;
 }

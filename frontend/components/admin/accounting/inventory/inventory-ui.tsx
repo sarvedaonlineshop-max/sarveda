@@ -220,11 +220,11 @@ export function humanizeInventoryError(message: string): string {
 export function ZeroLayerEmptyState({ showOpeningLink }: { showOpeningLink?: boolean }) {
   return (
     <AccountingEmptyState
-      title="Accounting inventory values have not been established yet"
+      title="Opening inventory valuation required"
       description={
         showOpeningLink
-          ? "Inventory quantities exist, but accounting cost layers have not been created. Opening inventory or recorded inventory purchases are required before Sarveda can calculate inventory cost and cost of goods sold."
-          : "Inventory quantities exist, but accounting cost layers have not been created yet."
+          ? "Inventory quantities exist, but accounting inventory values have not been established yet. Opening inventory or recorded inventory purchases are required before Sarveda can calculate inventory cost and cost of goods sold."
+          : "Inventory quantities exist, but accounting inventory values have not been established yet."
       }
     />
   );

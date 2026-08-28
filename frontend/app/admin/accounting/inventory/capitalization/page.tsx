@@ -76,7 +76,7 @@ export default function InventoryCapitalizationPage() {
       setFindRows(rows);
       setMessage(
         rows.length > 0
-          ? `Found ${rows.length} purchase receipt line${rows.length === 1 ? "" : "s"} to review.`
+          ? `Found ${rows.length} purchase${rows.length === 1 ? "" : "s"} to review.`
           : "No purchases waiting to be recorded."
       );
       await loadClearing();
@@ -175,50 +175,54 @@ export default function InventoryCapitalizationPage() {
         <>
           <AccountingSectionCard>
             <AccountingSectionHeader
-              title="Look up receipt line"
-              description="Enter a purchase receipt line reference to preview the inventory purchase entry."
+              title="Purchases to record"
+              description="Find received purchases that are ready to record into inventory accounting."
             />
-            <div className="flex flex-wrap items-end gap-3">
-              <label className="min-w-[280px] flex-1">
-                <span className={fieldLabelClass()}>Receipt line reference</span>
-                <input
-                  className={accountingInputClass()}
-                  value={receiptLineId}
-                  onChange={(e) => setReceiptLineId(e.target.value)}
-                  placeholder="Receipt line ID"
-                  disabled={busy}
-                />
-              </label>
-              <button
-                type="button"
-                disabled={busy || !receiptLineId.trim()}
-                onClick={() => void handlePreview()}
-                className={accountingButtonClass("primary")}
-              >
-                {busy ? "Working…" : "Preview Entry"}
-              </button>
-              <button
-                type="button"
-                disabled={busy || !canRecord}
-                onClick={() => setConfirmOpen(true)}
-                className={accountingButtonClass("secondary")}
-              >
-                Record Inventory Purchase
-              </button>
-            </div>
-            <div className="mt-4 border-t border-[#ebe4db] pt-3">
-              <p className="mb-2 text-xs text-[#8a7060]">
-                Or scan for received purchases that are ready to record.
-              </p>
+            <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => void handleFind()}
-                className={accountingButtonClass("secondary", true)}
+                className={accountingButtonClass("primary")}
               >
-                Find Purchases to Record
+                {busy ? "Working…" : "Find Purchases to Record"}
               </button>
+              {canRecord ? (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setConfirmOpen(true)}
+                  className={accountingButtonClass("secondary")}
+                >
+                  Record Inventory Purchase
+                </button>
+              ) : null}
             </div>
+            <details className="mt-4 border-t border-[#ebe4db] pt-3">
+              <summary className="cursor-pointer text-xs font-medium text-[#8a7060] hover:text-[#1c352a]">
+                Look up by purchase receipt reference
+              </summary>
+              <div className="mt-3 flex flex-wrap items-end gap-3">
+                <label className="min-w-[280px] flex-1">
+                  <span className={fieldLabelClass()}>Purchase receipt reference</span>
+                  <input
+                    className={accountingInputClass()}
+                    value={receiptLineId}
+                    onChange={(e) => setReceiptLineId(e.target.value)}
+                    placeholder="Purchase receipt reference"
+                    disabled={busy}
+                  />
+                </label>
+                <button
+                  type="button"
+                  disabled={busy || !receiptLineId.trim()}
+                  onClick={() => void handlePreview()}
+                  className={accountingButtonClass("secondary", true)}
+                >
+                  Preview Entry
+                </button>
+              </div>
+            </details>
           </AccountingSectionCard>
 
           {findRows && findRows.length > 0 ? (
@@ -321,20 +325,14 @@ export default function InventoryCapitalizationPage() {
                       </thead>
                       <tbody>
                         <tr className="border-t border-[#eee8e0]">
-                          <td className={invTd()}>
-                            Inventory Asset
-                            <span className="mt-0.5 block text-[11px] text-[#8a7060]">1200</span>
-                          </td>
+                          <td className={invTd()}>Inventory Asset</td>
                           <td className={`${invTd(true)} ${moneyClass()}`}>
                             {formatInrPaise(impactInventory)}
                           </td>
                           <td className={invTd(true)}>—</td>
                         </tr>
                         <tr className="border-t border-[#eee8e0]">
-                          <td className={invTd()}>
-                            Inventory Purchases Clearing
-                            <span className="mt-0.5 block text-[11px] text-[#8a7060]">1210</span>
-                          </td>
+                          <td className={invTd()}>Inventory Purchases Clearing</td>
                           <td className={invTd(true)}>—</td>
                           <td className={`${invTd(true)} ${moneyClass()}`}>
                             {formatInrPaise(impactClearing)}
@@ -401,9 +399,9 @@ export default function InventoryCapitalizationPage() {
       <AdminConfirmModal
         open={confirmOpen}
         title="Record inventory purchase?"
-        message="This will record the received inventory value in accounting and create the related inventory cost layer."
+        message="This will record the received inventory value in accounting."
         details={[
-          `Purchase: ${String(snapshot?.billNumber ?? receiptLineId)}`,
+          `Purchase: ${String(snapshot?.billNumber ?? "Selected purchase")}`,
           `Quantity: ${String(proposal?.quantityReceived ?? "—")}`,
           `Inventory value: ${formatInrPaise(Number(proposal?.capitalizationValueInPaise ?? 0))}`
         ]}

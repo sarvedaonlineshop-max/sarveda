@@ -216,7 +216,7 @@ export default function InventoryCogsPage() {
             onClick={() => void handlePreview()}
             className={accountingButtonClass("primary")}
           >
-            {busy ? "Working…" : "Preview Cost"}
+            {busy ? "Working…" : "Preview Cost Entry"}
           </button>
           <button
             type="button"
@@ -394,20 +394,14 @@ export default function InventoryCogsPage() {
                   </thead>
                   <tbody>
                     <tr className="border-t border-[#eee8e0]">
-                      <td className={invTd()}>
-                        Cost of Goods Sold
-                        <span className="mt-0.5 block text-[11px] text-[#8a7060]">5000</span>
-                      </td>
+                      <td className={invTd()}>Cost of Goods Sold</td>
                       <td className={`${invTd(true)} ${moneyClass()}`}>
                         {formatInrPaise(totalCost)}
                       </td>
                       <td className={invTd(true)}>—</td>
                     </tr>
                     <tr className="border-t border-[#eee8e0]">
-                      <td className={invTd()}>
-                        Inventory Asset
-                        <span className="mt-0.5 block text-[11px] text-[#8a7060]">1200</span>
-                      </td>
+                      <td className={invTd()}>Inventory Asset</td>
                       <td className={invTd(true)}>—</td>
                       <td className={`${invTd(true)} ${moneyClass()}`}>
                         {formatInrPaise(totalCost)}
@@ -424,7 +418,7 @@ export default function InventoryCogsPage() {
       <AdminConfirmModal
         open={confirmOpen}
         title="Record cost of goods sold?"
-        message="This creates an accounting entry and consumes the related inventory cost layers."
+        message="This creates an accounting entry that records inventory cost for this sale."
         details={[
           `Order: ${String(snapshot?.orderNumber ?? orderNumber)}`,
           `Inventory cost: ${formatInrPaise(totalCost)}`,

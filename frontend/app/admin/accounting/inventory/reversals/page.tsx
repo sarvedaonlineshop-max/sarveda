@@ -158,50 +158,54 @@ export default function InventoryReversalsPage() {
 
       <AccountingSectionCard>
         <AccountingSectionHeader
-          title="Look up return"
-          description="Select an eligible return from the worklist, or enter a restock reference to preview."
+          title="Returns to review"
+          description="Find eligible sellable returns that need inventory cost restored in accounting."
         />
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="min-w-[280px] flex-1">
-            <span className={fieldLabelClass()}>Restock reference</span>
-            <input
-              className={accountingInputClass()}
-              value={restockEventId}
-              onChange={(e) => setRestockEventId(e.target.value)}
-              placeholder="Restock event reference"
-              disabled={busy}
-            />
-          </label>
-          <button
-            type="button"
-            disabled={busy || !restockEventId.trim()}
-            onClick={() => void handlePreview()}
-            className={accountingButtonClass("primary")}
-          >
-            {busy ? "Working…" : "Preview Reversal"}
-          </button>
-          <button
-            type="button"
-            disabled={busy || !canRecord}
-            onClick={() => setConfirmOpen(true)}
-            className={accountingButtonClass("secondary")}
-          >
-            Record Inventory Cost Reversal
-          </button>
-        </div>
-        <div className="mt-4 border-t border-[#ebe4db] pt-3">
-          <p className="mb-2 text-xs text-[#8a7060]">
-            Or scan for eligible sellable returns that need cost restored.
-          </p>
+        <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
             disabled={busy}
             onClick={() => void handleFind()}
-            className={accountingButtonClass("secondary", true)}
+            className={accountingButtonClass("primary")}
           >
-            Find Returns to Review
+            {busy ? "Working…" : "Find Returns to Review"}
           </button>
+          {canRecord ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setConfirmOpen(true)}
+              className={accountingButtonClass("secondary")}
+            >
+              Record Inventory Cost Reversal
+            </button>
+          ) : null}
         </div>
+        <details className="mt-4 border-t border-[#ebe4db] pt-3">
+          <summary className="cursor-pointer text-xs font-medium text-[#8a7060] hover:text-[#1c352a]">
+            Look up by return reference
+          </summary>
+          <div className="mt-3 flex flex-wrap items-end gap-3">
+            <label className="min-w-[280px] flex-1">
+              <span className={fieldLabelClass()}>Return reference</span>
+              <input
+                className={accountingInputClass()}
+                value={restockEventId}
+                onChange={(e) => setRestockEventId(e.target.value)}
+                placeholder="Return reference"
+                disabled={busy}
+              />
+            </label>
+            <button
+              type="button"
+              disabled={busy || !restockEventId.trim()}
+              onClick={() => void handlePreview()}
+              className={accountingButtonClass("secondary", true)}
+            >
+              Preview Reversal
+            </button>
+          </div>
+        </details>
       </AccountingSectionCard>
 
       {findRows && findRows.length > 0 ? (
@@ -220,9 +224,9 @@ export default function InventoryReversalsPage() {
               <tbody>
                 {findRows.map((r, i) => (
                   <tr key={`${String(r.restockEventId)}-${i}`} className="border-t border-[#eee8e0]">
-                    <td className={invTd()}>{String(r.orderId ?? "—").slice(0, 8)}…</td>
+                    <td className={invTd()}>{String(r.orderNumber ?? "—")}</td>
                     <td className={invTd()}>
-                      {String(r.code ?? r.status ?? "—")
+                      {String(r.disposition ?? "Return")
                         .replace(/_/g, " ")
                         .toLowerCase()
                         .replace(/\b\w/g, (c) => c.toUpperCase())}
@@ -250,7 +254,7 @@ export default function InventoryReversalsPage() {
       {!preview && !findRows ? (
         <AccountingEmptyState
           title="No eligible inventory cost reversals selected"
-          description="Find returns to review, or enter a restock reference to preview."
+          description="Find returns to review, or enter a return reference to preview."
         />
       ) : null}
 
@@ -260,7 +264,7 @@ export default function InventoryReversalsPage() {
             <AccountingSectionHeader title="Reversal preview" />
             <dl className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
               <PreviewFact label="Original Order">
-                {String(snapshot?.orderNumber ?? snapshot?.orderId ?? "—")}
+                {String(snapshot?.orderNumber ?? "—")}
               </PreviewFact>
               <PreviewFact label="Returned Product">
                 {String(snapshot?.productName ?? "—")}
@@ -279,8 +283,8 @@ export default function InventoryReversalsPage() {
               {snapshot?.inventoryIncremented != null ? (
                 <PreviewFact label="Operational stock note">
                   {snapshot.inventoryIncremented
-                    ? "Ops already increased on-hand for this sellable restock"
-                    : "Ops did not increase on-hand for this restock"}
+                    ? "Operations already increased on-hand for this sellable return"
+                    : "Operations did not increase on-hand for this return"}
                 </PreviewFact>
               ) : null}
             </dl>
@@ -304,18 +308,12 @@ export default function InventoryReversalsPage() {
                   </thead>
                   <tbody>
                     <tr className="border-t border-[#eee8e0]">
-                      <td className={invTd()}>
-                        Inventory Asset
-                        <span className="mt-0.5 block text-[11px] text-[#8a7060]">1200</span>
-                      </td>
+                      <td className={invTd()}>Inventory Asset</td>
                       <td className={`${invTd(true)} ${moneyClass()}`}>{formatInrPaise(total)}</td>
                       <td className={invTd(true)}>—</td>
                     </tr>
                     <tr className="border-t border-[#eee8e0]">
-                      <td className={invTd()}>
-                        Cost of Goods Sold
-                        <span className="mt-0.5 block text-[11px] text-[#8a7060]">5000</span>
-                      </td>
+                      <td className={invTd()}>Cost of Goods Sold</td>
                       <td className={invTd(true)}>—</td>
                       <td className={`${invTd(true)} ${moneyClass()}`}>{formatInrPaise(total)}</td>
                     </tr>
@@ -334,7 +332,7 @@ export default function InventoryReversalsPage() {
         title="Record inventory cost reversal?"
         message="This restores the eligible returned inventory value in accounting and reverses the related cost of goods sold."
         details={[
-          `Order: ${String(snapshot?.orderNumber ?? snapshot?.orderId ?? "—")}`,
+          `Order: ${String(snapshot?.orderNumber ?? "—")}`,
           `Quantity: ${qty}`,
           `Value restored: ${formatInrPaise(total)}`
         ]}

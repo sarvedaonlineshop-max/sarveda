@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   fetchInventoryReconciliationV4,
@@ -26,6 +26,16 @@ import {
 
 type Row = Record<string, unknown>;
 
+type StatusFilter = "all" | "balanced" | "opening" | "qty" | "review";
+
+const FILTERS: Array<{ id: StatusFilter; label: string }> = [
+  { id: "all", label: "All" },
+  { id: "balanced", label: "Balanced" },
+  { id: "opening", label: "Opening valuation needed" },
+  { id: "qty", label: "Quantity mismatch" },
+  { id: "review", label: "Needs review" }
+];
+
 const ATTENTION = new Set([
   "QUANTITY_MISMATCH",
   "VALUE_DATA_GAP",
@@ -34,27 +44,40 @@ const ATTENTION = new Set([
   "INSUFFICIENT_COST_LAYERS",
   "RETURN_COGS_UNPOSTED",
   "NEGATIVE_STOCK",
-  "ERROR"
+  "ERROR",
+  "SOURCE_CHANGED_AFTER_POST",
+  "RESTOCK_WITHOUT_SOURCE_COGS",
+  "RETURN_QTY_EXCEEDS_REVERSIBLE_COGS",
+  "DATA_GAP"
 ]);
+
+function matchesFilter(status: string, filter: StatusFilter): boolean {
+  const s = status.toUpperCase();
+  if (filter === "all") return true;
+  if (filter === "balanced") return s === "MATCHED" || s === "OPENING_POSTED";
+  if (filter === "opening") return s === "OPENING_REQUIRED";
+  if (filter === "qty") return s === "QUANTITY_MISMATCH";
+  if (filter === "review") {
+    return ATTENTION.has(s) && s !== "QUANTITY_MISMATCH" && s !== "OPENING_REQUIRED";
+  }
+  return true;
+}
 
 export default function InventoryReconciliationPage() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [rows, setRows] = useState<Row[]>([]);
+  const [allRows, setAllRows] = useState<Row[]>([]);
   const [selected, setSelected] = useState<Row | null>(null);
   const attentionOnly = searchParams.get("attention") === "1";
+  const [filter, setFilter] = useState<StatusFilter>("all");
 
   async function load() {
     setLoading(true);
     setError(null);
     try {
       const recon = await fetchInventoryReconciliationV4({ physicalOnly: true, limit: 500 });
-      let list = (recon.rows as Row[]) ?? [];
-      if (attentionOnly) {
-        list = list.filter((r) => ATTENTION.has(String(r.openingStatus ?? "")));
-      }
-      setRows(list);
+      setAllRows((recon.rows as Row[]) ?? []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Reconciliation could not be loaded.");
     } finally {
@@ -64,8 +87,15 @@ export default function InventoryReconciliationPage() {
 
   useEffect(() => {
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [attentionOnly]);
+  }, []);
+
+  const rows = useMemo(() => {
+    let list = allRows;
+    if (attentionOnly) {
+      list = list.filter((r) => ATTENTION.has(String(r.openingStatus ?? "")));
+    }
+    return list.filter((r) => matchesFilter(String(r.openingStatus ?? ""), filter));
+  }, [allRows, filter, attentionOnly]);
 
   return (
     <InventoryPageShell
@@ -89,17 +119,37 @@ export default function InventoryReconciliationPage() {
       {error ? <AccountingAlert tone="error">{error}</AccountingAlert> : null}
       {loading ? <InventorySkeleton rows={8} /> : null}
 
+      {!loading ? (
+        <div className="flex flex-wrap gap-1.5">
+          {FILTERS.map((f) => {
+            const active = filter === f.id;
+            return (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setFilter(f.id)}
+                className={`rounded-md px-2.5 py-1.5 text-[11px] font-medium tracking-wide transition-colors ${
+                  active
+                    ? "bg-[#1c352a] text-white"
+                    : "border border-[#ebe4db] bg-white text-[#8a7060] hover:bg-[#faf5ec]"
+                }`}
+              >
+                {f.label}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+
       {!loading && rows.length === 0 ? (
         <AccountingEmptyState
-          title={
-            attentionOnly
-              ? "No inventory differences found"
-              : "No inventory differences found"
-          }
+          title="No inventory differences found"
           description={
-            attentionOnly
-              ? "Nothing currently needs attention in this comparison."
-              : undefined
+            filter !== "all"
+              ? "No rows match this status filter."
+              : attentionOnly
+                ? "Nothing currently needs attention in this comparison."
+                : undefined
           }
         />
       ) : null}
@@ -124,7 +174,10 @@ export default function InventoryReconciliationPage() {
                 {rows.slice(0, 200).map((r) => {
                   const status = String(r.openingStatus ?? "");
                   return (
-                    <tr key={String(r.variantId)} className="border-t border-[#eee8e0] hover:bg-[#faf5ec]/40">
+                    <tr
+                      key={String(r.variantId)}
+                      className="border-t border-[#eee8e0] hover:bg-[#faf5ec]/40"
+                    >
                       <td className={invTd()}>{String(r.sku)}</td>
                       <td className={invTd()}>{String(r.productName ?? "—")}</td>
                       <td className={`${invTd(true)} tabular-nums`}>
@@ -193,9 +246,9 @@ export default function InventoryReconciliationPage() {
                 <PreviewFact label="SKU">{String(selected.sku)}</PreviewFact>
               </dl>
               <p className="mt-3 text-sm leading-relaxed text-[#6b5c52]">
-                The physical quantity differs from the quantity represented by accounting cost
-                layers. Review the related inventory transactions before making accounting changes.
-                This screen does not post adjustments.
+                The physical quantity differs from the quantity represented in accounting. Review
+                the related inventory transactions before making accounting changes. This screen
+                does not post adjustments.
               </p>
             </AccountingSectionCard>
           ) : null}

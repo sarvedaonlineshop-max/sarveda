@@ -188,8 +188,8 @@ export default function InventoryValuationPage() {
                 ) : null}
               </dl>
               <p className="mt-3 text-xs text-[#8a7060]">
-                Cost composition by individual cost layer is not available in this view. Values reflect
-                remaining accounting cost layers for this SKU.
+                Detailed cost composition is not available in this view. Values reflect remaining
+                accounting inventory value for this SKU.
               </p>
             </AccountingSectionCard>
           ) : null}
