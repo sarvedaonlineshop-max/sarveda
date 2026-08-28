@@ -119,8 +119,34 @@ export function buildAccountingNavGroups(includePurchasesOps: boolean): NavGroup
       items: [
         {
           href: "/admin/accounting/inventory",
-          label: "Inventory Valuation",
+          label: "Overview",
+          icon: <LayoutDashboard {...iconProps} />,
+          exact: true
+        },
+        {
+          href: "/admin/accounting/inventory/valuation",
+          label: "Valuation",
           icon: <Package {...iconProps} />
+        },
+        {
+          href: "/admin/accounting/inventory/reconciliation",
+          label: "Reconciliation",
+          icon: <RotateCcw {...iconProps} />
+        },
+        {
+          href: "/admin/accounting/inventory/capitalization",
+          label: "Purchase Capitalization",
+          icon: <ClipboardList {...iconProps} />
+        },
+        {
+          href: "/admin/accounting/inventory/cogs",
+          label: "Cost of Goods Sold",
+          icon: <ShoppingBag {...iconProps} />
+        },
+        {
+          href: "/admin/accounting/inventory/reversals",
+          label: "Reversals",
+          icon: <RotateCcw {...iconProps} />
         }
       ]
     },
@@ -177,6 +203,11 @@ export function buildAccountingNavGroups(includePurchasesOps: boolean): NavGroup
           href: "/admin/accounting/opening",
           label: "Opening Balances",
           icon: <DoorOpen {...iconProps} />
+        },
+        {
+          href: "/admin/accounting/inventory/opening",
+          label: "Inventory Opening",
+          icon: <Package {...iconProps} />
         }
       ]
     }

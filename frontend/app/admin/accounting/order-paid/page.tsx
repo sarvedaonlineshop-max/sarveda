@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
 import {
   discoverOrderPaidAccounting,
@@ -17,6 +18,7 @@ import {
   AccountingSectionCard,
   AccountingSectionHeader,
   AccountingStatusBadge,
+  PreviewFact,
   SalesPageShell,
   SalesTableWrap,
   accountLabel,
@@ -34,6 +36,8 @@ import {
 } from "@/components/admin/accounting/sales/sales-ui";
 
 export default function AdminSalesEntriesPage() {
+  const searchParams = useSearchParams();
+  const autoFindDone = useRef(false);
   const [orderNumber, setOrderNumber] = useState("");
   const [preview, setPreview] = useState<OrderPaidPreview | null>(null);
   const [salesPostingEnabled, setSalesPostingEnabled] = useState(false);
@@ -53,14 +57,17 @@ export default function AdminSalesEntriesPage() {
     setSalesPostingEnabled(s.salesPostingEnabled);
   }
 
-  async function handlePreview() {
+  async function handlePreview(forOrder?: string) {
+    const order = (forOrder ?? orderNumber).trim();
+    if (!order) return;
     setLoading(true);
     setError(null);
     setMessage(null);
     setShowDetails(false);
     try {
       await loadStatus();
-      const data = await previewOrderPaidAccounting({ orderNumber: orderNumber.trim() });
+      const data = await previewOrderPaidAccounting({ orderNumber: order });
+      setOrderNumber(order);
       setPreview(data);
     } catch (err) {
       setPreview(null);
@@ -122,6 +129,15 @@ export default function AdminSalesEntriesPage() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (autoFindDone.current) return;
+    if (searchParams.get("find") === "1") {
+      autoFindDone.current = true;
+      void handleFindUnrecorded();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once from overview deep-link
+  }, [searchParams]);
 
   const eligibility = preview
     ? salesEligibilityLabel({
@@ -185,14 +201,17 @@ export default function AdminSalesEntriesPage() {
             Record Sales Entry
           </button>
         </div>
-        <div className="mt-3">
+        <div className="mt-4 border-t border-[#ebe4db] pt-3">
+          <p className="mb-2 text-xs text-[#8a7060]">
+            Or scan for paid orders that are not yet in the books.
+          </p>
           <button
             type="button"
             disabled={loading}
             onClick={() => void handleFindUnrecorded()}
-            className="text-xs font-medium text-[#8a7060] underline-offset-2 hover:text-[#1c352a] hover:underline"
+            className={accountingButtonClass("secondary", true)}
           >
-            Find unrecorded orders
+            Find Unrecorded Orders
           </button>
         </div>
       </AccountingSectionCard>
@@ -229,29 +248,7 @@ export default function AdminSalesEntriesPage() {
                       <button
                         type="button"
                         className="text-xs font-semibold text-[#1c352a] underline-offset-2 hover:underline"
-                        onClick={() => {
-                          setOrderNumber(row.orderNumber);
-                          void (async () => {
-                            setOrderNumber(row.orderNumber);
-                            setLoading(true);
-                            setError(null);
-                            try {
-                              await loadStatus();
-                              const data = await previewOrderPaidAccounting({
-                                orderNumber: row.orderNumber
-                              });
-                              setPreview(data);
-                            } catch (err) {
-                              setError(
-                                humanizePostingError(
-                                  err instanceof AdminApiError ? err.message : "Preview failed"
-                                )
-                              );
-                            } finally {
-                              setLoading(false);
-                            }
-                          })();
-                        }}
+                        onClick={() => void handlePreview(row.orderNumber)}
                       >
                         Preview Entry
                       </button>
@@ -272,35 +269,23 @@ export default function AdminSalesEntriesPage() {
       ) : (
         <div className="space-y-4">
           <AccountingSectionCard>
-            <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
               <AccountingSectionHeader title="Order" />
               {eligibility ? (
                 <AccountingStatusBadge tone={eligibility.tone}>{eligibility.label}</AccountingStatusBadge>
               ) : null}
             </div>
-            <dl className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-sm">
-              <div>
-                <dt className="text-xs text-[#8a7060]">Order</dt>
-                <dd className="font-semibold text-[#2c2420]">{preview.snapshot.orderNumber}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-[#8a7060]">Payment provider</dt>
-                <dd className="font-semibold text-[#2c2420]">
-                  {providerLabel(preview.snapshot.payment.provider)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs text-[#8a7060]">Order total</dt>
-                <dd className={moneyClass()}>
-                  {formatInrPaise(preview.snapshot.grandTotalInPaise)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs text-[#8a7060]">Payment status</dt>
-                <dd className="font-semibold text-[#2c2420]">
-                  {preview.snapshot.payment.status.replace(/_/g, " ")}
-                </dd>
-              </div>
+            <dl className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+              <PreviewFact label="Order">{preview.snapshot.orderNumber}</PreviewFact>
+              <PreviewFact label="Payment provider">
+                {providerLabel(preview.snapshot.payment.provider)}
+              </PreviewFact>
+              <PreviewFact label="Order total" emphasize>
+                {formatInrPaise(preview.snapshot.grandTotalInPaise)}
+              </PreviewFact>
+              <PreviewFact label="Payment status">
+                {preview.snapshot.payment.status.replace(/_/g, " ")}
+              </PreviewFact>
             </dl>
             {eligibility?.detail ? (
               <div className="mt-3">
@@ -317,9 +302,11 @@ export default function AdminSalesEntriesPage() {
               </div>
             ) : null}
             {preview.buildError ? (
-              <AccountingAlert tone="error" title="Could not build entry">
-                {preview.buildError.message}
-              </AccountingAlert>
+              <div className="mt-3">
+                <AccountingAlert tone="error" title="Could not build entry">
+                  {preview.buildError.message}
+                </AccountingAlert>
+              </div>
             ) : null}
           </AccountingSectionCard>
 
@@ -346,9 +333,8 @@ export default function AdminSalesEntriesPage() {
                         <tr key={i} className="border-t border-[#eee8e0]">
                           <td className={salesTd()}>
                             <span className="font-medium text-[#2c2420]">{role || acc.primary}</span>
-                            <span className="mt-0.5 block text-[11px] text-[#8a7060]">
+                            <span className="mt-0.5 block text-[11px] tabular-nums text-[#8a7060]">
                               {acc.code}
-                              {acc.primary !== role ? ` · ${acc.primary}` : ""}
                             </span>
                           </td>
                           <td className={`${salesTd(true)} ${moneyClass()}`}>
@@ -382,7 +368,11 @@ export default function AdminSalesEntriesPage() {
             </AccountingSectionCard>
           ) : preview.eligibility.eligible === false ? (
             <AccountingEmptyState
-              title="Already recorded"
+              title={
+                eligibility?.label === "Already recorded"
+                  ? "Already recorded"
+                  : "Not eligible"
+              }
               description={
                 eligibility?.label === "Already recorded"
                   ? "This order has already been recorded in accounting."

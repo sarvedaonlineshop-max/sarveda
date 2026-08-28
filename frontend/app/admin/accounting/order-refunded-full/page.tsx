@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
 import {
   discoverOrderRefundedFullAccounting,
@@ -16,6 +17,7 @@ import {
   AccountingSectionCard,
   AccountingSectionHeader,
   AccountingStatusBadge,
+  PreviewFact,
   SalesPageShell,
   SalesTableWrap,
   accountLabel,
@@ -41,6 +43,8 @@ type ProposalLine = {
 };
 
 export default function AdminRefundsPage() {
+  const searchParams = useSearchParams();
+  const autoFindDone = useRef(false);
   const [orderNumber, setOrderNumber] = useState("");
   const [preview, setPreview] = useState<Record<string, unknown> | null>(null);
   const [refundPostingEnabled, setRefundPostingEnabled] = useState(false);
@@ -56,16 +60,17 @@ export default function AdminRefundsPage() {
     setRefundPostingEnabled(Boolean(s.refundPostingEnabled));
   }
 
-  async function handlePreview() {
+  async function handlePreview(forOrder?: string) {
+    const order = (forOrder ?? orderNumber).trim();
+    if (!order) return;
     setLoading(true);
     setError(null);
     setMessage(null);
     setShowDetails(false);
     try {
       await loadStatus();
-      const data = await previewOrderRefundedFullAccounting({
-        orderNumber: orderNumber.trim()
-      });
+      const data = await previewOrderRefundedFullAccounting({ orderNumber: order });
+      setOrderNumber(order);
       setPreview(data);
     } catch (err) {
       setPreview(null);
@@ -128,6 +133,15 @@ export default function AdminRefundsPage() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (autoFindDone.current) return;
+    if (searchParams.get("find") === "1") {
+      autoFindDone.current = true;
+      void handleFind();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once from overview deep-link
+  }, [searchParams]);
 
   const eligibilityRaw = preview?.eligibility as
     | {
@@ -244,14 +258,17 @@ export default function AdminRefundsPage() {
             Record Refund
           </button>
         </div>
-        <div className="mt-3">
+        <div className="mt-4 border-t border-[#ebe4db] pt-3">
+          <p className="mb-2 text-xs text-[#8a7060]">
+            Or scan for eligible full refunds that are not yet in the books.
+          </p>
           <button
             type="button"
             disabled={loading}
             onClick={() => void handleFind()}
-            className="text-xs font-medium text-[#8a7060] underline-offset-2 hover:text-[#1c352a] hover:underline"
+            className={accountingButtonClass("secondary", true)}
           >
-            Find unrecorded refunds
+            Find Unrecorded Refunds
           </button>
         </div>
       </AccountingSectionCard>
@@ -278,7 +295,9 @@ export default function AdminRefundsPage() {
                     <tr key={`${on}-${idx}`} className="border-t border-[#eee8e0]">
                       <td className={salesTd()}>{on || "—"}</td>
                       <td className={salesTd()}>
-                        {row.autoPostable === true || row.action === "would_post" || row.action === "eligible"
+                        {row.autoPostable === true ||
+                        row.action === "would_post" ||
+                        row.action === "eligible"
                           ? "Eligible"
                           : row.eligible === false || row.action === "skip"
                             ? "Not eligible"
@@ -289,27 +308,7 @@ export default function AdminRefundsPage() {
                           <button
                             type="button"
                             className="text-xs font-semibold text-[#1c352a] underline-offset-2 hover:underline"
-                            onClick={() => {
-                              setOrderNumber(on);
-                              void (async () => {
-                                setLoading(true);
-                                setError(null);
-                                try {
-                                  await loadStatus();
-                                  setPreview(
-                                    await previewOrderRefundedFullAccounting({ orderNumber: on })
-                                  );
-                                } catch (err) {
-                                  setError(
-                                    humanizePostingError(
-                                      err instanceof AdminApiError ? err.message : "Preview failed"
-                                    )
-                                  );
-                                } finally {
-                                  setLoading(false);
-                                }
-                              })();
-                            }}
+                            onClick={() => void handlePreview(on)}
                           >
                             Preview Refund
                           </button>
@@ -334,43 +333,32 @@ export default function AdminRefundsPage() {
       ) : (
         <div className="space-y-4">
           <AccountingSectionCard>
-            <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
               <AccountingSectionHeader title="Refund" />
               {eligibility ? (
                 <AccountingStatusBadge tone={eligibility.tone}>{eligibility.label}</AccountingStatusBadge>
               ) : null}
             </div>
-            <dl className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-sm">
-              <div>
-                <dt className="text-xs text-[#8a7060]">Order</dt>
-                <dd className="font-semibold text-[#2c2420]">{orderLabel}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-[#8a7060]">Original sale amount</dt>
-                <dd className={moneyClass()}>{formatInrPaise(saleAmount)}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-[#8a7060]">Refund amount</dt>
-                <dd className={moneyClass()}>{formatInrPaise(refundAmount)}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-[#8a7060]">Provider / reference</dt>
-                <dd className="font-semibold text-[#2c2420]">
-                  {providerLabel(provider)}
-                  {refundRow?.providerRefundId ? (
-                    <span className="mt-0.5 block text-[11px] font-normal text-[#8a7060]">
-                      {refundRow.providerRefundId}
-                    </span>
-                  ) : null}
-                </dd>
-              </div>
+            <dl className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+              <PreviewFact label="Order">{orderLabel}</PreviewFact>
+              <PreviewFact label="Original sale amount" emphasize>
+                {formatInrPaise(saleAmount)}
+              </PreviewFact>
+              <PreviewFact label="Refund amount" emphasize>
+                {formatInrPaise(refundAmount)}
+              </PreviewFact>
+              <PreviewFact label="Provider / reference">
+                {providerLabel(provider)}
+                {refundRow?.providerRefundId ? (
+                  <span className="mt-0.5 block text-[11px] font-normal text-[#8a7060]">
+                    {refundRow.providerRefundId}
+                  </span>
+                ) : null}
+              </PreviewFact>
               {refundRow?.status ? (
-                <div>
-                  <dt className="text-xs text-[#8a7060]">Refund status</dt>
-                  <dd className="font-semibold text-[#2c2420]">
-                    {String(refundRow.status).replace(/_/g, " ")}
-                  </dd>
-                </div>
+                <PreviewFact label="Refund status">
+                  {String(refundRow.status).replace(/_/g, " ")}
+                </PreviewFact>
               ) : null}
             </dl>
             {eligibility?.partialNote ? (
@@ -421,7 +409,7 @@ export default function AdminRefundsPage() {
                         <tr key={i} className="border-t border-[#eee8e0]">
                           <td className={salesTd()}>
                             <span className="font-medium text-[#2c2420]">{role || acc.primary}</span>
-                            <span className="mt-0.5 block text-[11px] text-[#8a7060]">
+                            <span className="mt-0.5 block text-[11px] tabular-nums text-[#8a7060]">
                               {acc.code}
                             </span>
                           </td>

@@ -306,6 +306,12 @@ export default function AccountingOpeningPage() {
 
       <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
         {status?.resetNotice ?? "Accounting reset must be performed by authorized operations."}
+        {" "}
+        For inventory quantity/cost opening via spreadsheet, use{" "}
+        <a href="/admin/accounting/inventory/opening" className="font-semibold underline">
+          Inventory Opening
+        </a>
+        .
       </div>
 
       {err ? (

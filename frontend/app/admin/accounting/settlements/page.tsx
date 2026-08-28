@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
 import {
   discoverAccountingSettlements,
@@ -21,6 +22,7 @@ import {
   AccountingSectionCard,
   AccountingSectionHeader,
   AccountingStatusBadge,
+  PreviewFact,
   SalesPageShell,
   SalesTableWrap,
   accountLabel,
@@ -51,6 +53,8 @@ type ProposalLine = {
 };
 
 export default function AdminGatewaySettlementsPage() {
+  const searchParams = useSearchParams();
+  const autoLoadDone = useRef(false);
   const [settlementId, setSettlementId] = useState("");
   const [rows, setRows] = useState<Array<Record<string, unknown>>>([]);
   const [preview, setPreview] = useState<Record<string, unknown> | null>(null);
@@ -63,6 +67,7 @@ export default function AdminGatewaySettlementsPage() {
   const [bankAccounts, setBankAccounts] = useState<BankOpt[]>([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
+  const [listReady, setListReady] = useState(false);
 
   async function refreshList() {
     const data = await listAccountingSettlements(25);
@@ -83,6 +88,8 @@ export default function AdminGatewaySettlementsPage() {
         await refreshList();
       } catch (e) {
         setListError(e instanceof Error ? e.message : "Could not load settlements.");
+      } finally {
+        setListReady(true);
       }
     })();
   }, []);
@@ -97,11 +104,6 @@ export default function AdminGatewaySettlementsPage() {
     totalDebitPaise?: number;
     totalCreditPaise?: number;
     lines?: ProposalLine[];
-    diagnostics?: {
-      feeInPaise?: number;
-      taxInPaise?: number;
-      netBankPaise?: number;
-    };
   } | null;
 
   const bundle = (preview?.bundle ?? null) as {
@@ -123,8 +125,7 @@ export default function AdminGatewaySettlementsPage() {
     (detail?.providerSettlementId as string | undefined) ??
     settlementId.trim();
 
-  const gross =
-    Number(bundle?.grossInPaise ?? detail?.grossInPaise ?? 0) || 0;
+  const gross = Number(bundle?.grossInPaise ?? detail?.grossInPaise ?? 0) || 0;
   const fees = Number(bundle?.feeInPaise ?? detail?.feeInPaise ?? 0) || 0;
   const net = Number(bundle?.netInPaise ?? detail?.netInPaise ?? 0) || 0;
   const settledAt = String(bundle?.settledAt ?? detail?.settledAt ?? "");
@@ -142,17 +143,17 @@ export default function AdminGatewaySettlementsPage() {
     !alreadyRecorded &&
     proposal?.balanced !== false;
 
-  async function handleReview() {
+  async function handleReview(id?: string) {
+    const sid = (id ?? settlementId).trim();
+    if (!sid) return;
     setLoading(true);
     setError(null);
     setMessage(null);
     try {
-      const data = await previewAccountingSettlement(
-        settlementId.trim(),
-        targetBankAccountId || null
-      );
+      setSettlementId(sid);
+      const data = await previewAccountingSettlement(sid, targetBankAccountId || null);
       setPreview(data);
-      setDetail(await fetchAccountingSettlement(settlementId.trim()));
+      setDetail(await fetchAccountingSettlement(sid));
       setMessage("Settlement ready for review.");
       await refreshList();
     } catch (e) {
@@ -164,17 +165,17 @@ export default function AdminGatewaySettlementsPage() {
     }
   }
 
-  async function handleImport() {
+  async function handleLoadEvidence() {
     setLoading(true);
     setError(null);
     try {
       await importAccountingSettlement(settlementId.trim());
       setDetail(await fetchAccountingSettlement(settlementId.trim()));
-      setMessage("Settlement imported for review.");
+      setMessage("Settlement details loaded.");
       await refreshList();
     } catch (e) {
       setError(
-        humanizePostingError(e instanceof AdminApiError ? e.message : "Import failed")
+        humanizePostingError(e instanceof AdminApiError ? e.message : "Could not load settlement")
       );
     } finally {
       setLoading(false);
@@ -216,8 +217,8 @@ export default function AdminGatewaySettlementsPage() {
     try {
       const data = await discoverAccountingSettlements({ dryRun: true, limit: 5 });
       setMessage(
-        data.imported > 0 || data.scanned > 0
-          ? `Reviewed ${data.scanned} settlement${data.scanned === 1 ? "" : "s"} from the gateway.`
+        data.scanned > 0
+          ? `Reviewed ${data.scanned} settlement${data.scanned === 1 ? "" : "s"} from Razorpay.`
           : "No new settlements found."
       );
       await refreshList();
@@ -232,39 +233,30 @@ export default function AdminGatewaySettlementsPage() {
     }
   }
 
-  function selectRow(id: string) {
-    setSettlementId(id);
-    void (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await previewAccountingSettlement(id, targetBankAccountId || null);
-        setPreview(data);
-        setDetail(await fetchAccountingSettlement(id));
-      } catch (e) {
-        setError(
-          humanizePostingError(e instanceof AdminApiError ? e.message : "Review failed")
-        );
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }
+  useEffect(() => {
+    if (!listReady || autoLoadDone.current) return;
+    const sid = searchParams.get("settlement")?.trim();
+    if (sid) {
+      autoLoadDone.current = true;
+      void handleReview(sid);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- overview deep-link once
+  }, [listReady, searchParams]);
 
   return (
     <SalesPageShell
       title="Gateway Settlements"
       subtitle="Record gateway payouts received into bank accounts."
     >
-      {!settlementPostingEnabled ? (
+      {!settlementPostingEnabled && (preview || detail) ? (
         <AccountingAlert tone="warning">{softUnavailableMessage("settlements")}</AccountingAlert>
       ) : null}
       {listError ? <AccountingAlert tone="error">{listError}</AccountingAlert> : null}
 
       <AccountingSectionCard>
         <AccountingSectionHeader
-          title="Import / select settlement"
-          description="Primary provider: Razorpay. Stripe and PayPal settlement tracking is not configured yet."
+          title="Look up settlement"
+          description="Enter a Razorpay settlement ID to review the payout and record it to a bank account."
         />
         <div className="grid gap-3 lg:grid-cols-2">
           <label>
@@ -306,10 +298,10 @@ export default function AdminGatewaySettlementsPage() {
           <button
             type="button"
             disabled={loading || !settlementId.trim()}
-            onClick={() => void handleImport()}
+            onClick={() => void handleLoadEvidence()}
             className={accountingButtonClass("secondary")}
           >
-            Import Settlement
+            Load Settlement
           </button>
           <button
             type="button"
@@ -320,14 +312,14 @@ export default function AdminGatewaySettlementsPage() {
             Record Settlement
           </button>
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
+        <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-[#ebe4db] pt-3 text-xs">
           <button
             type="button"
             disabled={loading}
             onClick={() => void handleFindSettlements()}
-            className="font-medium text-[#8a7060] underline-offset-2 hover:text-[#1c352a] hover:underline"
+            className={accountingButtonClass("secondary", true)}
           >
-            Find gateway settlements
+            Find Razorpay Settlements
           </button>
           <Link
             href="/admin/accounting/banking/gateway"
@@ -352,7 +344,7 @@ export default function AdminGatewaySettlementsPage() {
       {preview || detail ? (
         <div className="space-y-4">
           <AccountingSectionCard>
-            <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
               <AccountingSectionHeader title="Settlement" />
               {status ? (
                 <AccountingStatusBadge tone={settlementStatusTone(status)}>
@@ -362,44 +354,26 @@ export default function AdminGatewaySettlementsPage() {
                 <AccountingStatusBadge tone="success">Recorded</AccountingStatusBadge>
               ) : null}
             </div>
-            <dl className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-sm">
-              <div>
-                <dt className="text-xs text-[#8a7060]">Provider</dt>
-                <dd className="font-semibold text-[#2c2420]">{providerLabel("RAZORPAY")}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-[#8a7060]">Settlement ID</dt>
-                <dd className="font-semibold text-[#2c2420] break-all">{displayId || "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-[#8a7060]">Settlement Date</dt>
-                <dd className="font-semibold text-[#2c2420]">{formatSalesDate(settledAt)}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-[#8a7060]">Destination Bank</dt>
-                <dd className="font-semibold text-[#2c2420]">
-                  {destinationBank?.name ?? "Configured Razorpay destination"}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs text-[#8a7060]">Gross Amount</dt>
-                <dd className={moneyClass()}>{formatInrPaise(gross)}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-[#8a7060]">Fees</dt>
-                <dd className={moneyClass()}>{formatInrPaise(fees)}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-[#8a7060]">Net Amount</dt>
-                <dd className={moneyClass()}>{formatInrPaise(net)}</dd>
-              </div>
+            <dl className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+              <PreviewFact label="Provider">{providerLabel("RAZORPAY")}</PreviewFact>
+              <PreviewFact label="Settlement ID">
+                <span className="break-all">{displayId || "—"}</span>
+              </PreviewFact>
+              <PreviewFact label="Settlement Date">{formatSalesDate(settledAt)}</PreviewFact>
+              <PreviewFact label="Destination Bank">
+                {destinationBank?.name ?? "Configured Razorpay destination"}
+              </PreviewFact>
+              <PreviewFact label="Gross Amount" emphasize>
+                {formatInrPaise(gross)}
+              </PreviewFact>
+              <PreviewFact label="Fees" emphasize>
+                {formatInrPaise(fees)}
+              </PreviewFact>
+              <PreviewFact label="Net Amount" emphasize>
+                {formatInrPaise(net)}
+              </PreviewFact>
               {detail?.utr || bundle?.utr ? (
-                <div>
-                  <dt className="text-xs text-[#8a7060]">UTR</dt>
-                  <dd className="font-semibold text-[#2c2420]">
-                    {String(detail?.utr ?? bundle?.utr)}
-                  </dd>
-                </div>
+                <PreviewFact label="UTR">{String(detail?.utr ?? bundle?.utr)}</PreviewFact>
               ) : null}
             </dl>
           </AccountingSectionCard>
@@ -427,12 +401,15 @@ export default function AdminGatewaySettlementsPage() {
                         line.amountSource,
                         line.accountName
                       );
-                      const isBank = line.amountSource === "settlement.net" || role === "Bank Account";
+                      const isBank =
+                        line.amountSource === "settlement.net" || role === "Bank Account";
                       const isFee =
-                        line.amountSource === "settlement.gateway_charges" || role === "Gateway Fees";
+                        line.amountSource === "settlement.gateway_charges" ||
+                        role === "Gateway Fees";
                       const isClearing =
                         line.amountSource?.includes("payment") ||
                         line.amountSource?.includes("refund") ||
+                        line.amountSource?.includes("adjustment") ||
                         role === "Gateway Clearing";
                       const label = isBank
                         ? "Bank Account"
@@ -445,7 +422,7 @@ export default function AdminGatewaySettlementsPage() {
                         <tr key={i} className="border-t border-[#eee8e0]">
                           <td className={salesTd()}>
                             <span className="font-medium text-[#2c2420]">{label}</span>
-                            <span className="mt-0.5 block text-[11px] text-[#8a7060]">
+                            <span className="mt-0.5 block text-[11px] tabular-nums text-[#8a7060]">
                               {acc.code}
                               {destinationBank && isBank ? ` · ${destinationBank.name}` : ""}
                             </span>
@@ -489,11 +466,11 @@ export default function AdminGatewaySettlementsPage() {
       ) : null}
 
       <AccountingSectionCard>
-        <AccountingSectionHeader title="Imported settlements" />
+        <AccountingSectionHeader title="Settlements" />
         {rows.length === 0 ? (
           <AccountingEmptyState
-            title="No settlements have been imported yet"
-            description="Enter a Razorpay settlement ID to import and review, or find settlements from the gateway."
+            title="No settlements have been loaded yet"
+            description="Enter a Razorpay settlement ID to review, or find recent settlements from Razorpay."
           />
         ) : (
           <SalesTableWrap>
@@ -540,7 +517,7 @@ export default function AdminGatewaySettlementsPage() {
                         <button
                           type="button"
                           className="text-xs font-semibold text-[#1c352a] underline-offset-2 hover:underline"
-                          onClick={() => selectRow(id)}
+                          onClick={() => void handleReview(id)}
                           disabled={loading || !id}
                         >
                           Review Settlement
@@ -553,9 +530,6 @@ export default function AdminGatewaySettlementsPage() {
             </table>
           </SalesTableWrap>
         )}
-        <p className="mt-3 text-xs text-[#8a7060]">
-          Stripe / PayPal: Settlement tracking not configured yet.
-        </p>
       </AccountingSectionCard>
 
       <AdminConfirmModal

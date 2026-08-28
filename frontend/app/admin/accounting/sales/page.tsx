@@ -68,12 +68,17 @@ export default function SalesAccountingOverviewPage() {
 
         if (settlements?.rows?.length) {
           const awaiting = settlements.rows.filter(
-            (r) => !r.journalEntryNumber && ["IMPORTED", "PREVIEWED", "FAILED", "MISMATCH"].includes(String(r.status))
+            (r) =>
+              !r.journalEntryNumber &&
+              ["IMPORTED", "PREVIEWED", "FAILED", "MISMATCH"].includes(String(r.status))
           );
           if (awaiting.length > 0) {
+            const firstId = String(awaiting[0]?.providerSettlementId ?? "");
             items.push({
               label: "Settlements awaiting review",
-              href: "/admin/accounting/settlements",
+              href: firstId
+                ? `/admin/accounting/settlements?settlement=${encodeURIComponent(firstId)}`
+                : "/admin/accounting/settlements",
               hint: `${awaiting.length} · ${settlementStatusLabel(String(awaiting[0]?.status ?? ""))}`
             });
           }
@@ -84,7 +89,7 @@ export default function SalesAccountingOverviewPage() {
           if (salesDiscover.eligible > 0) {
             items.push({
               label: "Eligible sales entries not yet recorded",
-              href: "/admin/accounting/order-paid",
+              href: "/admin/accounting/order-paid?find=1",
               hint: `${salesDiscover.eligible} of ${salesDiscover.scanned} reviewed`
             });
           }
@@ -100,7 +105,7 @@ export default function SalesAccountingOverviewPage() {
           if (refundDiscover.autoPostable > 0) {
             items.push({
               label: "Refund entries needing attention",
-              href: "/admin/accounting/order-refunded-full",
+              href: "/admin/accounting/order-refunded-full?find=1",
               hint: `${refundDiscover.autoPostable} eligible`
             });
           }
@@ -145,7 +150,7 @@ export default function SalesAccountingOverviewPage() {
           <AccountingMetricCard
             label="Settlements Recorded"
             value={String(settlementCount)}
-            hint="Imported gateway settlements"
+            hint="Gateway settlements on file"
             href="/admin/accounting/settlements"
           />
         ) : null}
@@ -183,9 +188,10 @@ export default function SalesAccountingOverviewPage() {
                   className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#ebe4db] bg-[#faf5ec]/50 px-3 py-2.5 text-sm transition-colors hover:bg-white"
                 >
                   <span className="font-medium text-[#2c2420]">{item.label}</span>
-                  {item.hint ? (
-                    <span className="text-xs tabular-nums text-[#8a7060]">{item.hint}</span>
-                  ) : null}
+                  <span className="flex items-center gap-2 text-xs text-[#8a7060]">
+                    {item.hint ? <span className="tabular-nums">{item.hint}</span> : null}
+                    <span className="font-semibold text-[#1c352a]">Open →</span>
+                  </span>
                 </Link>
               </li>
             ))}

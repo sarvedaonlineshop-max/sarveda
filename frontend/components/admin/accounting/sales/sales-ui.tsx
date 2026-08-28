@@ -87,6 +87,29 @@ export function fieldLabelClass(): string {
   return "block text-xs font-semibold text-[#6b5c52]";
 }
 
+/** Compact fact cells for populated Sales / Refund / Settlement previews. */
+export function PreviewFact({
+  label,
+  children,
+  emphasize
+}: {
+  label: string;
+  children: ReactNode;
+  emphasize?: boolean;
+}) {
+  return (
+    <div
+      className="rounded-lg border px-3 py-2.5"
+      style={{ borderColor: accountingUi.border, background: accountingUi.cream }}
+    >
+      <dt className="text-[11px] font-medium uppercase tracking-wide text-[#8a7060]">{label}</dt>
+      <dd className={`mt-1 text-sm ${emphasize ? moneyClass() : "font-semibold text-[#2c2420]"}`}>
+        {children}
+      </dd>
+    </div>
+  );
+}
+
 /** Prefer account name; ledger code is secondary. */
 export function accountLabel(code: string, name?: string | null): { primary: string; code: string } {
   const friendly = ACCOUNT_FRIENDLY[code];
