@@ -45,6 +45,25 @@ export function liveAdminOrderWhere(now = new Date()): Prisma.OrderWhereInput {
   };
 }
 
+/**
+ * Prisma filter for live marketplace orders (overview / list / analytics).
+ * Pre-cutover: optional extra filters only.
+ * Post-cutover: only rows with orderDate on/after LAUNCH_ORDER_CUTOVER_ISO.
+ */
+export function liveMarketplaceOrderWhere(
+  extra: Prisma.MarketplaceOrderWhereInput = {},
+  now = new Date()
+): Prisma.MarketplaceOrderWhereInput {
+  if (isBeforeLaunchOrderCutover(now)) {
+    return extra;
+  }
+
+  const cutover = launchOrderCutoverDate();
+  return {
+    AND: [{ orderDate: { gte: cutover } }, extra]
+  };
+}
+
 export function classifyOrderForCutover(order: {
   orderNumber: string;
   placedAt: Date | null;
