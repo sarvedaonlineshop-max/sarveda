@@ -70,6 +70,12 @@ export function buildAccountingNavGroups(includePurchasesOps: boolean): NavGroup
       id: "sales",
       title: "Sales",
       items: [
+        {
+          href: "/admin/accounting/sales",
+          label: "Overview",
+          icon: <LayoutDashboard {...iconProps} />,
+          exact: true
+        },
         { href: "/admin/accounting/order-paid", label: "Sales Entries", icon: <ShoppingBag {...iconProps} /> },
         {
           href: "/admin/accounting/order-refunded-full",

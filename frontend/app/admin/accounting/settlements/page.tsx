@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { AdminAccountingHeader } from "@/components/admin/accounting/AdminAccountingNav";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
 import {
   discoverAccountingSettlements,
   fetchAccountingSettlement,
@@ -14,8 +15,42 @@ import {
   previewAccountingSettlement
 } from "@/lib/accounting-api";
 import { AdminApiError } from "@/lib/admin-errors";
+import {
+  AccountingAlert,
+  AccountingEmptyState,
+  AccountingSectionCard,
+  AccountingSectionHeader,
+  AccountingStatusBadge,
+  SalesPageShell,
+  SalesTableWrap,
+  accountLabel,
+  accountingButtonClass,
+  accountingInputClass,
+  fieldLabelClass,
+  formatSalesDate,
+  humanizePostingError,
+  lineRoleLabel,
+  moneyClass,
+  providerLabel,
+  salesTd,
+  salesTh,
+  settlementStatusLabel,
+  settlementStatusTone,
+  softUnavailableMessage
+} from "@/components/admin/accounting/sales/sales-ui";
 
-export default function AdminSettlementsShadowPage() {
+type BankOpt = { id: string; name: string; glAccountCode: string };
+
+type ProposalLine = {
+  accountCode: string;
+  accountName?: string;
+  debitInPaise: number;
+  creditInPaise: number;
+  amountSource?: string;
+  lineMemo?: string;
+};
+
+export default function AdminGatewaySettlementsPage() {
   const [settlementId, setSettlementId] = useState("");
   const [rows, setRows] = useState<Array<Record<string, unknown>>>([]);
   const [preview, setPreview] = useState<Record<string, unknown> | null>(null);
@@ -25,7 +60,9 @@ export default function AdminSettlementsShadowPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [targetBankAccountId, setTargetBankAccountId] = useState("");
-  const [bankAccounts, setBankAccounts] = useState<Array<{ id: string; name: string; glAccountCode: string }>>([]);
+  const [bankAccounts, setBankAccounts] = useState<BankOpt[]>([]);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [listError, setListError] = useState<string | null>(null);
 
   async function refreshList() {
     const data = await listAccountingSettlements(25);
@@ -38,15 +75,74 @@ export default function AdminSettlementsShadowPage() {
         const s = await fetchAccountingStatus();
         setSettlementPostingEnabled(Boolean(s.settlementPostingEnabled));
         const banks = await listBankAccounts();
-        setBankAccounts(banks.accounts.filter((b) => b.accountType === "BANK"));
+        setBankAccounts(
+          banks.accounts
+            .filter((b) => b.accountType === "BANK")
+            .map((b) => ({ id: b.id, name: b.name, glAccountCode: b.glAccountCode }))
+        );
         await refreshList();
-      } catch {
-        /* module may be disabled */
+      } catch (e) {
+        setListError(e instanceof Error ? e.message : "Could not load settlements.");
       }
     })();
   }, []);
 
-  async function handlePreview() {
+  const destinationBank = useMemo(() => {
+    if (!targetBankAccountId) return null;
+    return bankAccounts.find((b) => b.id === targetBankAccountId) ?? null;
+  }, [bankAccounts, targetBankAccountId]);
+
+  const proposal = (preview?.proposal ?? null) as {
+    balanced?: boolean;
+    totalDebitPaise?: number;
+    totalCreditPaise?: number;
+    lines?: ProposalLine[];
+    diagnostics?: {
+      feeInPaise?: number;
+      taxInPaise?: number;
+      netBankPaise?: number;
+    };
+  } | null;
+
+  const bundle = (preview?.bundle ?? null) as {
+    providerSettlementId?: string;
+    settledAt?: string;
+    grossInPaise?: number;
+    feeInPaise?: number;
+    netInPaise?: number;
+    utr?: string | null;
+  } | null;
+
+  const postingEvent = preview?.postingEvent as
+    | { status?: string; journalEntry?: { entryNumber?: string } | null }
+    | null
+    | undefined;
+
+  const displayId =
+    bundle?.providerSettlementId ??
+    (detail?.providerSettlementId as string | undefined) ??
+    settlementId.trim();
+
+  const gross =
+    Number(bundle?.grossInPaise ?? detail?.grossInPaise ?? 0) || 0;
+  const fees = Number(bundle?.feeInPaise ?? detail?.feeInPaise ?? 0) || 0;
+  const net = Number(bundle?.netInPaise ?? detail?.netInPaise ?? 0) || 0;
+  const settledAt = String(bundle?.settledAt ?? detail?.settledAt ?? "");
+  const status = String(detail?.status ?? preview?.status ?? "");
+
+  const alreadyRecorded =
+    postingEvent?.status === "POSTED" ||
+    Boolean(postingEvent?.journalEntry?.entryNumber) ||
+    Boolean(detail?.journalEntryNumber);
+
+  const canRecord =
+    Boolean(proposal) &&
+    Boolean(settlementId.trim()) &&
+    settlementPostingEnabled &&
+    !alreadyRecorded &&
+    proposal?.balanced !== false;
+
+  async function handleReview() {
     setLoading(true);
     setError(null);
     setMessage(null);
@@ -57,10 +153,12 @@ export default function AdminSettlementsShadowPage() {
       );
       setPreview(data);
       setDetail(await fetchAccountingSettlement(settlementId.trim()));
-      setMessage("Settlement preview loaded (evidence imported if new).");
+      setMessage("Settlement ready for review.");
       await refreshList();
     } catch (e) {
-      setError(e instanceof AdminApiError ? e.message : String(e));
+      setError(
+        humanizePostingError(e instanceof AdminApiError ? e.message : "Review failed")
+      );
     } finally {
       setLoading(false);
     }
@@ -71,17 +169,19 @@ export default function AdminSettlementsShadowPage() {
     setError(null);
     try {
       await importAccountingSettlement(settlementId.trim());
-      setMessage("Settlement evidence imported (Accounting* only).");
       setDetail(await fetchAccountingSettlement(settlementId.trim()));
+      setMessage("Settlement imported for review.");
       await refreshList();
     } catch (e) {
-      setError(e instanceof AdminApiError ? e.message : String(e));
+      setError(
+        humanizePostingError(e instanceof AdminApiError ? e.message : "Import failed")
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  async function handlePost() {
+  async function handleRecord() {
     setLoading(true);
     setError(null);
     try {
@@ -89,170 +189,391 @@ export default function AdminSettlementsShadowPage() {
         settlementId.trim(),
         targetBankAccountId || null
       );
+      setConfirmOpen(false);
       setMessage(
         result.duplicate
-          ? `Idempotent duplicate — ${result.journal.entryNumber}`
-          : `Posted ${result.journal.entryNumber}`
+          ? `Already recorded — journal ${result.journal.entryNumber}`
+          : `Settlement recorded — journal ${result.journal.entryNumber}`
       );
       setDetail(await fetchAccountingSettlement(settlementId.trim()));
+      setPreview(
+        await previewAccountingSettlement(settlementId.trim(), targetBankAccountId || null)
+      );
       await refreshList();
     } catch (e) {
-      setError(e instanceof AdminApiError ? e.message : String(e));
+      setConfirmOpen(false);
+      setError(
+        humanizePostingError(e instanceof AdminApiError ? e.message : "Recording failed")
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleDiscoverDry() {
+  async function handleFindSettlements() {
     setLoading(true);
     setError(null);
     try {
       const data = await discoverAccountingSettlements({ dryRun: true, limit: 5 });
-      setMessage(`Dry-run discovery scanned ${data.scanned}, imported ${data.imported}`);
+      setMessage(
+        data.imported > 0 || data.scanned > 0
+          ? `Reviewed ${data.scanned} settlement${data.scanned === 1 ? "" : "s"} from the gateway.`
+          : "No new settlements found."
+      );
       await refreshList();
     } catch (e) {
-      setError(e instanceof AdminApiError ? e.message : String(e));
+      setError(
+        humanizePostingError(
+          e instanceof AdminApiError ? e.message : "Could not find settlements"
+        )
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  const proposal = (preview?.proposal ?? null) as Record<string, unknown> | null;
-  const diagnostics = (proposal?.diagnostics ?? null) as Record<string, unknown> | null;
+  function selectRow(id: string) {
+    setSettlementId(id);
+    void (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await previewAccountingSettlement(id, targetBankAccountId || null);
+        setPreview(data);
+        setDetail(await fetchAccountingSettlement(id));
+      } catch (e) {
+        setError(
+          humanizePostingError(e instanceof AdminApiError ? e.message : "Review failed")
+        );
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }
 
   return (
-    <div className="space-y-6">
-      <AdminAccountingHeader
-        title="Gateway Settlements"
-        subtitle="Import and review payment gateway settlements for clearing and fee posting."
-      />
+    <SalesPageShell
+      title="Gateway Settlements"
+      subtitle="Record gateway payouts received into bank accounts."
+    >
+      {!settlementPostingEnabled ? (
+        <AccountingAlert tone="warning">{softUnavailableMessage("settlements")}</AccountingAlert>
+      ) : null}
+      {listError ? <AccountingAlert tone="error">{listError}</AccountingAlert> : null}
 
-      <div className="rounded-lg border border-neutral-200 bg-white p-4 space-y-3">
-        <p className="text-sm text-neutral-600">
-          Settlement posting enabled:{" "}
-          <span className="font-medium">{settlementPostingEnabled ? "yes" : "no (flag off)"}</span>
-        </p>
-        <label className="block text-sm font-medium text-neutral-700">
-          Razorpay settlement id (setl_…)
-          <input
-            className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm"
-            value={settlementId}
-            onChange={(e) => setSettlementId(e.target.value)}
-            placeholder="setl_…"
-          />
-        </label>
-        <label className="block text-sm font-medium text-neutral-700">
-          Target bank account (optional — uses Razorpay target or legacy 1010)
-          <select
-            className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm"
-            value={targetBankAccountId}
-            onChange={(e) => setTargetBankAccountId(e.target.value)}
-          >
-            <option value="">Default / configured target</option>
-            {bankAccounts.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name} ({b.glAccountCode})
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="flex flex-wrap gap-2">
+      <AccountingSectionCard>
+        <AccountingSectionHeader
+          title="Import / select settlement"
+          description="Primary provider: Razorpay. Stripe and PayPal settlement tracking is not configured yet."
+        />
+        <div className="grid gap-3 lg:grid-cols-2">
+          <label>
+            <span className={fieldLabelClass()}>Settlement ID</span>
+            <input
+              className={accountingInputClass()}
+              value={settlementId}
+              onChange={(e) => setSettlementId(e.target.value)}
+              placeholder="setl_…"
+              disabled={loading}
+            />
+          </label>
+          <label>
+            <span className={fieldLabelClass()}>Destination Bank Account</span>
+            <select
+              className={accountingInputClass()}
+              value={targetBankAccountId}
+              onChange={(e) => setTargetBankAccountId(e.target.value)}
+              disabled={loading}
+            >
+              <option value="">Use configured Razorpay destination</option>
+              {bankAccounts.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
           <button
             type="button"
             disabled={loading || !settlementId.trim()}
-            onClick={() => void handlePreview()}
-            className="rounded bg-[#1e3a2f] px-3 py-2 text-sm text-white disabled:opacity-50"
+            onClick={() => void handleReview()}
+            className={accountingButtonClass("primary")}
           >
-            Preview / import evidence
+            {loading ? "Working…" : "Review Settlement"}
           </button>
           <button
             type="button"
             disabled={loading || !settlementId.trim()}
             onClick={() => void handleImport()}
-            className="rounded bg-neutral-800 px-3 py-2 text-sm text-white disabled:opacity-50"
+            className={accountingButtonClass("secondary")}
           >
-            Import only
+            Import Settlement
           </button>
           <button
             type="button"
-            disabled={loading || !settlementId.trim() || !settlementPostingEnabled}
-            onClick={() => void handlePost()}
-            className="rounded bg-amber-700 px-3 py-2 text-sm text-white disabled:opacity-50"
+            disabled={loading || !canRecord}
+            onClick={() => setConfirmOpen(true)}
+            className={accountingButtonClass("secondary")}
           >
-            Post journal
+            Record Settlement
           </button>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
           <button
             type="button"
             disabled={loading}
-            onClick={() => void handleDiscoverDry()}
-            className="rounded border border-neutral-300 px-3 py-2 text-sm disabled:opacity-50"
+            onClick={() => void handleFindSettlements()}
+            className="font-medium text-[#8a7060] underline-offset-2 hover:text-[#1c352a] hover:underline"
           >
-            Discover dry-run (≤5)
+            Find gateway settlements
           </button>
-        </div>
-        {message ? <p className="text-sm text-emerald-700">{message}</p> : null}
-        {error ? <p className="text-sm text-red-700">{error}</p> : null}
-      </div>
-
-      {proposal ? (
-        <div className="rounded-lg border border-neutral-200 bg-white p-4 space-y-2 text-sm">
-          <h2 className="font-semibold text-[#1e3a2f]">Journal preview</h2>
-          <p>
-            Balanced: {String(proposal.balanced)} · Debit {formatInrPaise(Number(proposal.totalDebitPaise ?? 0))} ·
-            Credit {formatInrPaise(Number(proposal.totalCreditPaise ?? 0))}
-          </p>
-          {diagnostics ? (
-            <p className="text-neutral-600">
-              Fee {formatInrPaise(Number(diagnostics.feeInPaise ?? 0))} · Tax{" "}
-              {formatInrPaise(Number(diagnostics.taxInPaise ?? 0))} · Net bank{" "}
-              {formatInrPaise(Number(diagnostics.netBankPaise ?? 0))} · ITC{" "}
-              {String(diagnostics.gstItcStatus ?? "")}
-            </p>
+          <Link
+            href="/admin/accounting/banking/gateway"
+            className="font-medium text-[#1c352a] underline-offset-2 hover:underline"
+          >
+            View Gateway Clearing
+          </Link>
+          {destinationBank ? (
+            <Link
+              href={`/admin/accounting/banking/accounts/${destinationBank.id}`}
+              className="font-medium text-[#1c352a] underline-offset-2 hover:underline"
+            >
+              View Bank Account
+            </Link>
           ) : null}
-          <pre className="overflow-auto rounded bg-neutral-50 p-2 text-xs">
-            {JSON.stringify(proposal.lines ?? [], null, 2)}
-          </pre>
+        </div>
+      </AccountingSectionCard>
+
+      {error ? <AccountingAlert tone="error">{error}</AccountingAlert> : null}
+      {message ? <AccountingAlert tone="success">{message}</AccountingAlert> : null}
+
+      {preview || detail ? (
+        <div className="space-y-4">
+          <AccountingSectionCard>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <AccountingSectionHeader title="Settlement" />
+              {status ? (
+                <AccountingStatusBadge tone={settlementStatusTone(status)}>
+                  {settlementStatusLabel(status)}
+                </AccountingStatusBadge>
+              ) : alreadyRecorded ? (
+                <AccountingStatusBadge tone="success">Recorded</AccountingStatusBadge>
+              ) : null}
+            </div>
+            <dl className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-sm">
+              <div>
+                <dt className="text-xs text-[#8a7060]">Provider</dt>
+                <dd className="font-semibold text-[#2c2420]">{providerLabel("RAZORPAY")}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-[#8a7060]">Settlement ID</dt>
+                <dd className="font-semibold text-[#2c2420] break-all">{displayId || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-[#8a7060]">Settlement Date</dt>
+                <dd className="font-semibold text-[#2c2420]">{formatSalesDate(settledAt)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-[#8a7060]">Destination Bank</dt>
+                <dd className="font-semibold text-[#2c2420]">
+                  {destinationBank?.name ?? "Configured Razorpay destination"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-[#8a7060]">Gross Amount</dt>
+                <dd className={moneyClass()}>{formatInrPaise(gross)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-[#8a7060]">Fees</dt>
+                <dd className={moneyClass()}>{formatInrPaise(fees)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-[#8a7060]">Net Amount</dt>
+                <dd className={moneyClass()}>{formatInrPaise(net)}</dd>
+              </div>
+              {detail?.utr || bundle?.utr ? (
+                <div>
+                  <dt className="text-xs text-[#8a7060]">UTR</dt>
+                  <dd className="font-semibold text-[#2c2420]">
+                    {String(detail?.utr ?? bundle?.utr)}
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+          </AccountingSectionCard>
+
+          {proposal?.lines?.length ? (
+            <AccountingSectionCard>
+              <AccountingSectionHeader
+                title="Accounting Effect"
+                description="Clears gateway balance into the selected bank and records fees where present."
+              />
+              <SalesTableWrap>
+                <table className="min-w-full">
+                  <thead>
+                    <tr>
+                      <th className={salesTh()}>Account</th>
+                      <th className={salesTh(true)}>Debit</th>
+                      <th className={salesTh(true)}>Credit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {proposal.lines.map((line, i) => {
+                      const acc = accountLabel(line.accountCode, line.accountName);
+                      const role = lineRoleLabel(
+                        line.accountCode,
+                        line.amountSource,
+                        line.accountName
+                      );
+                      const isBank = line.amountSource === "settlement.net" || role === "Bank Account";
+                      const isFee =
+                        line.amountSource === "settlement.gateway_charges" || role === "Gateway Fees";
+                      const isClearing =
+                        line.amountSource?.includes("payment") ||
+                        line.amountSource?.includes("refund") ||
+                        role === "Gateway Clearing";
+                      const label = isBank
+                        ? "Bank Account"
+                        : isFee
+                          ? "Gateway Fees"
+                          : isClearing
+                            ? "Gateway Clearing"
+                            : role || acc.primary;
+                      return (
+                        <tr key={i} className="border-t border-[#eee8e0]">
+                          <td className={salesTd()}>
+                            <span className="font-medium text-[#2c2420]">{label}</span>
+                            <span className="mt-0.5 block text-[11px] text-[#8a7060]">
+                              {acc.code}
+                              {destinationBank && isBank ? ` · ${destinationBank.name}` : ""}
+                            </span>
+                          </td>
+                          <td className={`${salesTd(true)} ${moneyClass()}`}>
+                            {line.debitInPaise ? formatInrPaise(line.debitInPaise) : "—"}
+                          </td>
+                          <td className={`${salesTd(true)} ${moneyClass()}`}>
+                            {line.creditInPaise ? formatInrPaise(line.creditInPaise) : "—"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t border-[#e0d8ce] bg-[#faf5ec]/60">
+                      <td className={`${salesTd()} font-semibold`}>Totals</td>
+                      <td className={`${salesTd(true)} ${moneyClass()}`}>
+                        {formatInrPaise(proposal.totalDebitPaise ?? 0)}
+                      </td>
+                      <td className={`${salesTd(true)} ${moneyClass()}`}>
+                        {formatInrPaise(proposal.totalCreditPaise ?? 0)}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </SalesTableWrap>
+              {proposal.balanced === false ? (
+                <p className="mt-2 text-xs text-amber-800">
+                  This settlement entry does not balance. Recording is blocked until review is
+                  complete.
+                </p>
+              ) : null}
+            </AccountingSectionCard>
+          ) : preview?.buildError ? (
+            <AccountingAlert tone="error" title="Could not build settlement entry">
+              {String((preview.buildError as { message?: string }).message ?? "Unknown error")}
+            </AccountingAlert>
+          ) : null}
         </div>
       ) : null}
 
-      {detail ? (
-        <div className="rounded-lg border border-neutral-200 bg-white p-4 space-y-2 text-sm">
-          <h2 className="font-semibold text-[#1e3a2f]">Settlement detail</h2>
-          <pre className="overflow-auto rounded bg-neutral-50 p-2 text-xs max-h-96">
-            {JSON.stringify(detail, null, 2)}
-          </pre>
-        </div>
-      ) : null}
-
-      <div className="rounded-lg border border-neutral-200 bg-white p-4">
-        <h2 className="mb-2 font-semibold text-[#1e3a2f]">Imported settlements</h2>
-        <div className="overflow-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead>
-              <tr className="border-b text-neutral-500">
-                <th className="py-2 pr-3">Settlement</th>
-                <th className="py-2 pr-3">Date</th>
-                <th className="py-2 pr-3">UTR</th>
-                <th className="py-2 pr-3">Net</th>
-                <th className="py-2 pr-3">Status</th>
-                <th className="py-2 pr-3">Journal</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={String(r.id)} className="border-b border-neutral-100">
-                  <td className="py-2 pr-3 font-mono text-xs">{String(r.providerSettlementId)}</td>
-                  <td className="py-2 pr-3">{String(r.settledAt ?? "").slice(0, 10)}</td>
-                  <td className="py-2 pr-3 font-mono text-xs">{String(r.utr ?? "—")}</td>
-                  <td className="py-2 pr-3">{formatInrPaise(Number(r.netInPaise ?? 0))}</td>
-                  <td className="py-2 pr-3">{String(r.status)}</td>
-                  <td className="py-2 pr-3">{String(r.journalEntryNumber ?? "—")}</td>
+      <AccountingSectionCard>
+        <AccountingSectionHeader title="Imported settlements" />
+        {rows.length === 0 ? (
+          <AccountingEmptyState
+            title="No settlements have been imported yet"
+            description="Enter a Razorpay settlement ID to import and review, or find settlements from the gateway."
+          />
+        ) : (
+          <SalesTableWrap>
+            <table className="min-w-full">
+              <thead>
+                <tr>
+                  <th className={salesTh()}>Settlement ID</th>
+                  <th className={salesTh()}>Provider</th>
+                  <th className={salesTh()}>Settlement Date</th>
+                  <th className={salesTh(true)}>Gross</th>
+                  <th className={salesTh(true)}>Fees</th>
+                  <th className={salesTh(true)}>Net Amount</th>
+                  <th className={salesTh()}>Status</th>
+                  <th className={salesTh()}>Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+              </thead>
+              <tbody>
+                {rows.map((r) => {
+                  const id = String(r.providerSettlementId ?? "");
+                  return (
+                    <tr key={String(r.id ?? id)} className="border-t border-[#eee8e0]">
+                      <td className={salesTd()}>
+                        <span className="break-all text-[12px]">{id}</span>
+                      </td>
+                      <td className={salesTd()}>{providerLabel("RAZORPAY")}</td>
+                      <td className={salesTd()}>
+                        {formatSalesDate(String(r.settledAt ?? ""))}
+                      </td>
+                      <td className={`${salesTd(true)} ${moneyClass()}`}>
+                        {formatInrPaise(Number(r.grossInPaise ?? 0))}
+                      </td>
+                      <td className={`${salesTd(true)} ${moneyClass()}`}>
+                        {formatInrPaise(Number(r.feeInPaise ?? 0))}
+                      </td>
+                      <td className={`${salesTd(true)} ${moneyClass()}`}>
+                        {formatInrPaise(Number(r.netInPaise ?? 0))}
+                      </td>
+                      <td className={salesTd()}>
+                        <AccountingStatusBadge tone={settlementStatusTone(String(r.status))}>
+                          {settlementStatusLabel(String(r.status))}
+                        </AccountingStatusBadge>
+                      </td>
+                      <td className={salesTd()}>
+                        <button
+                          type="button"
+                          className="text-xs font-semibold text-[#1c352a] underline-offset-2 hover:underline"
+                          onClick={() => selectRow(id)}
+                          disabled={loading || !id}
+                        >
+                          Review Settlement
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </SalesTableWrap>
+        )}
+        <p className="mt-3 text-xs text-[#8a7060]">
+          Stripe / PayPal: Settlement tracking not configured yet.
+        </p>
+      </AccountingSectionCard>
+
+      <AdminConfirmModal
+        open={confirmOpen}
+        title="Record settlement?"
+        message="This clears the payment gateway balance and records the amount received into the selected bank account. Gateway fees are recorded where present."
+        details={[
+          `Provider: Razorpay`,
+          `Settlement: ${displayId || settlementId}`,
+          `Destination: ${destinationBank?.name ?? "Configured Razorpay destination"}`,
+          `Net amount: ${formatInrPaise(net)}`
+        ]}
+        confirmLabel="Record Settlement"
+        cancelLabel="Cancel"
+        busy={loading}
+        onConfirm={() => void handleRecord()}
+        onClose={() => setConfirmOpen(false)}
+      />
+    </SalesPageShell>
   );
 }
