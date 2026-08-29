@@ -243,20 +243,22 @@ export async function catalogGaps(_req: Request, res: Response, next: NextFuncti
   }
 }
 
-/** GET /api/admin/products/xl-sheet — Website catalog XL sheet (?status=ACTIVE|DRAFT|ALL, default ACTIVE) */
+/** GET /api/admin/products/xl-sheet — (?status=ACTIVE|DRAFT|ALL, ?scope=ALL|PRICE_PENDING) */
 export async function xlSheetList(req: Request, res: Response, next: NextFunction) {
   try {
     const raw = String(req.query.status || "ACTIVE").toUpperCase();
     const statusFilter =
       raw === "DRAFT" || raw === "ALL" || raw === "ACTIVE" ? raw : "ACTIVE";
-    const data = await listXlSheetRows(statusFilter);
+    const scopeRaw = String(req.query.scope || "ALL").toUpperCase();
+    const scope = scopeRaw === "PRICE_PENDING" ? "PRICE_PENDING" : "ALL";
+    const data = await listXlSheetRows(statusFilter, scope);
     res.json({ success: true, data });
   } catch (err) {
     next(err);
   }
 }
 
-/** PUT /api/admin/products/xl-sheet — save edits back to Product + ProductVariant */
+/** PUT /api/admin/products/xl-sheet — save edits to live Product + ProductVariant (+ Inventory) */
 export async function xlSheetSave(req: Request, res: Response, next: NextFunction) {
   try {
     const body = xlSheetSaveSchema.parse(req.body);

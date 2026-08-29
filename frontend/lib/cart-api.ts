@@ -1,5 +1,6 @@
 import { getApiBase } from "./api";
 import { trackAddToCart } from "./analytics";
+import { readZoneFromCookie, zoneToPricingCountry } from "./currency";
 
 const SESSION_STORAGE_KEY = "sarveda_cart_session_id";
 
@@ -14,6 +15,19 @@ export function notifyCartChanged(data?: CartApiResponse): void {
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("sarveda-cart-changed", { detail: data }));
   }
+}
+
+/** Country for cart price zone — explicit override, else `sarveda_zone` cookie. */
+export function resolveCartPricingCountry(override?: string): string {
+  const trimmed = override?.trim();
+  if (trimmed) return trimmed.toUpperCase();
+  return zoneToPricingCountry(readZoneFromCookie());
+}
+
+function withCountryQuery(path: string, shippingCountry?: string): string {
+  const country = resolveCartPricingCountry(shippingCountry);
+  const joiner = path.includes("?") ? "&" : "?";
+  return `${path}${joiner}country=${encodeURIComponent(country)}`;
 }
 
 export type CartApiItem = {
@@ -128,7 +142,7 @@ export async function mergeGuestCartSession(): Promise<CartApiResponse | null> {
     return null;
   }
   // Always attach guest session for merge — even if account-cart mode is already on.
-  const res = await fetch(`${getApiBase()}/api/cart/merge-session`, {
+  const res = await fetch(`${getApiBase()}${withCountryQuery("/api/cart/merge-session")}`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -156,11 +170,10 @@ export async function cartGet(
   checkoutEmail?: string
 ): Promise<CartApiResponse> {
   const params = new URLSearchParams();
-  const country = shippingCountry?.trim();
-  if (country) params.set("country", country);
+  params.set("country", resolveCartPricingCountry(shippingCountry));
   const email = checkoutEmail?.trim();
   if (email) params.set("email", email);
-  const qs = params.toString() ? `?${params.toString()}` : "";
+  const qs = `?${params.toString()}`;
   const res = await fetch(`${getApiBase()}/api/cart${qs}`, {
     method: "GET",
     credentials: "include",
@@ -178,7 +191,7 @@ export async function cartGet(
 }
 
 export async function cartAdd(variantId: string, quantity: number): Promise<CartApiResponse> {
-  const res = await fetch(`${getApiBase()}/api/cart/add`, {
+  const res = await fetch(`${getApiBase()}${withCountryQuery("/api/cart/add")}`, {
     method: "POST",
     credentials: "include",
     headers: buildHeaders(true),
@@ -218,7 +231,7 @@ export async function cartAdd(variantId: string, quantity: number): Promise<Cart
 }
 
 export async function cartUpdate(variantId: string, quantity: number): Promise<CartApiResponse> {
-  const res = await fetch(`${getApiBase()}/api/cart/update`, {
+  const res = await fetch(`${getApiBase()}${withCountryQuery("/api/cart/update")}`, {
     method: "PUT",
     credentials: "include",
     headers: buildHeaders(true),
@@ -232,6 +245,7 @@ export async function cartUpdate(variantId: string, quantity: number): Promise<C
   if (!res.ok || !json.success || !json.data) {
     throw new Error(json.error || "Could not update cart");
   }
+  notifyCartChanged(json.data);
   return json.data;
 }
 
@@ -251,11 +265,14 @@ export async function cartClearAll(): Promise<void> {
 }
 
 export async function cartRemove(variantId: string): Promise<CartApiResponse> {
-  const res = await fetch(`${getApiBase()}/api/cart/remove/${encodeURIComponent(variantId)}`, {
-    method: "DELETE",
-    credentials: "include",
-    headers: buildHeaders(false)
-  });
+  const res = await fetch(
+    `${getApiBase()}${withCountryQuery(`/api/cart/remove/${encodeURIComponent(variantId)}`)}`,
+    {
+      method: "DELETE",
+      credentials: "include",
+      headers: buildHeaders(false)
+    }
+  );
   const json = (await res.json()) as {
     success?: boolean;
     data?: CartApiResponse;
@@ -264,6 +281,7 @@ export async function cartRemove(variantId: string): Promise<CartApiResponse> {
   if (!res.ok || !json.success || !json.data) {
     throw new Error(json.error || "Could not remove item");
   }
+  notifyCartChanged(json.data);
   return json.data;
 }
 
@@ -272,9 +290,9 @@ export async function fetchCheckoutCouponOffers(opts?: {
   email?: string;
 }): Promise<{ offers: CheckoutCouponOffer[]; appliedCode: string | null }> {
   const params = new URLSearchParams();
-  if (opts?.country?.trim()) params.set("country", opts.country.trim());
+  params.set("country", resolveCartPricingCountry(opts?.country));
   if (opts?.email?.trim()) params.set("email", opts.email.trim());
-  const qs = params.toString() ? `?${params.toString()}` : "";
+  const qs = `?${params.toString()}`;
   const res = await fetch(`${getApiBase()}/api/cart/coupon/offers${qs}`, {
     method: "GET",
     credentials: "include",
@@ -295,9 +313,7 @@ export async function applyCartCoupon(
   code: string,
   opts?: { country?: string; email?: string }
 ): Promise<CartApiResponse> {
-  const params = new URLSearchParams();
-  if (opts?.country?.trim()) params.set("country", opts.country.trim());
-  const qs = params.toString() ? `?${params.toString()}` : "";
+  const qs = `?country=${encodeURIComponent(resolveCartPricingCountry(opts?.country))}`;
   const res = await fetch(`${getApiBase()}/api/cart/coupon${qs}`, {
     method: "POST",
     credentials: "include",
@@ -323,8 +339,7 @@ export async function applyCartCoupon(
 }
 
 export async function removeCartCoupon(shippingCountry?: string): Promise<CartApiResponse> {
-  const country = shippingCountry?.trim();
-  const qs = country ? `?country=${encodeURIComponent(country)}` : "";
+  const qs = `?country=${encodeURIComponent(resolveCartPricingCountry(shippingCountry))}`;
   const res = await fetch(`${getApiBase()}/api/cart/coupon${qs}`, {
     method: "DELETE",
     credentials: "include",

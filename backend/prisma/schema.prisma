@@ -220,26 +220,6 @@ model ProductVariant {
   updatedAt       DateTime                @updatedAt
 }
 
-/// Draft prices entered via Admin Products XL View only — not used by storefront until merged.
-model ProductXlStagingPrice {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sku           String   @unique
-  variantId     String?  @db.Uuid
-  mrpInPaise    Int
-  saleInPaise   Int
-  mrpUsdCents   Int?
-  saleUsdCents  Int?
-  mrpAedFils    Int?
-  saleAedFils   Int?
-  mrpGbpPence   Int?
-  saleGbpPence  Int?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  @@index([variantId])
-  @@map("product_xl_staging_prices")
-}
-
 enum VariantStatus {
   ACTIVE
   INACTIVE

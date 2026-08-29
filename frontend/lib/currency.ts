@@ -18,6 +18,14 @@ export function zoneToCurrency(zone: Zone): "INR" | "USD" | "GBP" {
   return "USD";
 }
 
+/** ISO / rate country code sent to cart + shipping APIs for the pricing zone. */
+export function zoneToPricingCountry(zone: Zone): string {
+  if (zone === "IN") return "IN";
+  if (zone === "US") return "US";
+  if (zone === "GB") return "GB";
+  return "OTHER";
+}
+
 export function readZoneFromCookie(): Zone {
   if (typeof document === "undefined") return "IN";
   const match = document.cookie.match(new RegExp(`(?:^|; )${ZONE_COOKIE}=([^;]*)`));

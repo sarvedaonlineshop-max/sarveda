@@ -5,7 +5,7 @@ import Link from "next/link";
 
 import { CartLineQuantity } from "@/components/cart/CartLineQuantity";
 import type { CartApiItem } from "@/lib/cart-api";
-import { formatINRFromPaise } from "@/lib/money";
+import { formatMinorFromPaise } from "@/lib/money";
 
 import { useCartData } from "./CartProvider";
 
@@ -14,11 +14,11 @@ type Props = {
   className?: string;
 };
 
-function CompactLine({ line }: { line: CartApiItem }) {
+function CompactLine({ line, currency }: { line: CartApiItem; currency: string }) {
   return (
     <li className="border-b border-stone-100 py-2.5 last:border-0">
       <p className="font-sans text-sm font-semibold tabular-nums leading-tight text-brand-forest">
-        {formatINRFromPaise(line.unitPriceInPaise)}
+        {formatMinorFromPaise(line.unitPriceInPaise, currency)}
       </p>
       <div className="mt-1.5 flex gap-2">
         <Link
@@ -41,7 +41,7 @@ function CompactLine({ line }: { line: CartApiItem }) {
 }
 
 export function CartCheckoutSidebar({ mode, className = "" }: Props) {
-  const { items, subtotalInPaise, itemCount } = useCartData();
+  const { items, subtotalInPaise, itemCount, currency } = useCartData();
 
   const count = itemCount > 0 ? itemCount : items.reduce((n, i) => n + i.quantity, 0);
   if (count === 0 && items.length === 0) return null;
@@ -55,7 +55,7 @@ export function CartCheckoutSidebar({ mode, className = "" }: Props) {
           Subtotal ({count} {count === 1 ? "item" : "items"})
         </p>
         <p className="mt-1 font-sans text-2xl font-semibold tabular-nums tracking-tight text-brand-ink">
-          {formatINRFromPaise(subtotalInPaise)}
+          {formatMinorFromPaise(subtotalInPaise, currency)}
         </p>
 
         <Link
@@ -74,14 +74,16 @@ export function CartCheckoutSidebar({ mode, className = "" }: Props) {
           </Link>
         ) : null}
 
-        <p className="mt-2 text-[10px] leading-snug text-brand-muted">GST included · Shipping at checkout</p>
+        <p className="mt-2 text-[10px] leading-snug text-brand-muted">
+          {currency === "INR" ? "GST included · Shipping at checkout" : "Taxes included · Shipping at checkout"}
+        </p>
       </div>
 
       {isRail ? (
         <div className="flex-1 overflow-y-auto px-2 py-2">
           <ul>
             {items.map((line) => (
-              <CompactLine key={line.variantId} line={line} />
+              <CompactLine key={line.variantId} line={line} currency={currency} />
             ))}
           </ul>
         </div>

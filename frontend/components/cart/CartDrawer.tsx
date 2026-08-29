@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 
 import { SlideDrawer } from "@/components/ui/SlideDrawer";
 import { cartRemove, cartUpdate } from "@/lib/cart-api";
-import { formatINRFromPaise } from "@/lib/money";
+import { formatMinorFromPaise } from "@/lib/money";
 
 import { useCartData } from "./CartProvider";
 
@@ -16,7 +16,7 @@ type Props = {
 };
 
 export function CartDrawer({ open, onClose }: Props) {
-  const { items, subtotalInPaise, itemCount, refreshCart } = useCartData();
+  const { items, subtotalInPaise, itemCount, refreshCart, currency } = useCartData();
   const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
@@ -69,10 +69,12 @@ export function CartDrawer({ open, onClose }: Props) {
             <div className="flex items-center justify-between text-sm text-stone-600">
               <span>Subtotal</span>
               <span className="font-serif text-xl font-semibold text-amber-800">
-                {formatINRFromPaise(subtotalInPaise)}
+                {formatMinorFromPaise(subtotalInPaise, currency)}
               </span>
             </div>
-            <p className="mt-1 text-xs text-stone-500">GST included · Shipping calculated at checkout</p>
+            <p className="mt-1 text-xs text-stone-500">
+              {currency === "INR" ? "GST included · Shipping calculated at checkout" : "Taxes included · Shipping calculated at checkout"}
+            </p>
             <Link
               href="/checkout"
               onClick={onClose}
@@ -138,7 +140,7 @@ export function CartDrawer({ open, onClose }: Props) {
                   </Link>
                   {line.variantLabel ? <p className="mt-0.5 text-xs text-stone-500">{line.variantLabel}</p> : null}
                   <p className="mt-1 text-sm font-semibold text-amber-800">
-                    {formatINRFromPaise(line.unitPriceInPaise)}
+                    {formatMinorFromPaise(line.unitPriceInPaise, currency)}
                     <span className="font-normal text-stone-400"> / unit</span>
                   </p>
                   <div className="mt-3 flex flex-wrap items-center gap-2">

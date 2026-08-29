@@ -20,8 +20,10 @@ import {
   cartUpdate,
   mergeGuestCartSession,
   preserveCartItemOrder,
+  resolveCartPricingCountry,
   setAccountCartOnly
 } from "@/lib/cart-api";
+import { PRICING_ZONE_CHANGED } from "@/lib/pricing-zone";
 
 type CartUiState = {
   drawerOpen: boolean;
@@ -236,6 +238,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       cancelled = true;
     };
   }, [applyCartResponse, refreshCart]);
+
+  useEffect(() => {
+    const onZoneChange = () => {
+      void refreshCart(resolveCartPricingCountry());
+    };
+    window.addEventListener(PRICING_ZONE_CHANGED, onZoneChange);
+    return () => window.removeEventListener(PRICING_ZONE_CHANGED, onZoneChange);
+  }, [refreshCart]);
 
   useEffect(() => {
     const onChange = (event: Event) => {

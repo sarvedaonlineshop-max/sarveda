@@ -1420,18 +1420,26 @@ export type XlSheetRow = {
   hsnCode: string;
   productStatus: string;
   variantStatus: string;
-  pricesFromStaging?: boolean;
+  productSlug?: string;
+  priceReviewReason?: "SHEET_BLANK" | "SKU_MISMATCH";
 };
 
 export function fetchProductsXlSheet(
-  opts?: { status?: "ACTIVE" | "DRAFT" | "ALL"; signal?: AbortSignal }
+  opts?: {
+    status?: "ACTIVE" | "DRAFT" | "ALL";
+    scope?: "ALL" | "PRICE_PENDING";
+    signal?: AbortSignal;
+  }
 ) {
   const status = opts?.status ?? "ACTIVE";
-  const qs = new URLSearchParams({ status });
-  return adminFetch<{ rows: XlSheetRow[]; total: number }>(
-    `/api/admin/products/xl-sheet?${qs.toString()}`,
-    { signal: opts?.signal }
-  );
+  const scope = opts?.scope ?? "ALL";
+  const qs = new URLSearchParams({ status, scope });
+  return adminFetch<{
+    rows: XlSheetRow[];
+    total: number;
+    scope: "ALL" | "PRICE_PENDING";
+    productCount: number;
+  }>(`/api/admin/products/xl-sheet?${qs.toString()}`, { signal: opts?.signal });
 }
 
 export function saveProductsXlSheet(
@@ -1457,7 +1465,6 @@ export function saveProductsXlSheet(
   return adminFetch<{
     updatedProducts: number;
     updatedVariants: number;
-    updatedStagingPrices: number;
     errors: Array<{ variantId: string; sku: string; error: string }>;
   }>(`/api/admin/products/xl-sheet`, {
     method: "PUT",

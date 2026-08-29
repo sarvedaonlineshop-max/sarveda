@@ -31,8 +31,7 @@ WHERE i."onHand" > 0
   AND pv.sku NOT LIKE 'EVENT-%';
 
 \echo '=== other_tables ==='
-SELECT 'product_xl_staging_prices' AS tbl, COUNT(*)::text AS cnt FROM product_xl_staging_prices
-UNION ALL SELECT 'MarketplaceListing', COUNT(*)::text FROM "MarketplaceListing"
+SELECT 'MarketplaceListing' AS tbl, COUNT(*)::text AS cnt FROM "MarketplaceListing"
 UNION ALL SELECT 'PurchaseOrder', COUNT(*)::text FROM "PurchaseOrder"
 UNION ALL SELECT 'PurchaseReceipt', COUNT(*)::text FROM "PurchaseReceipt";
 
@@ -67,11 +66,6 @@ SELECT sku, "costInPaise", "saleInPaise", "mrpInPaise"
 FROM "ProductVariant"
 WHERE "costInPaise" IS NOT NULL AND "costInPaise" > 0
 LIMIT 20;
-
-\echo '=== staging_sample ==='
-SELECT sku, "mrpInPaise", "saleInPaise", "mrpUsdCents", "saleUsdCents", "mrpAedFils", "saleAedFils"
-FROM product_xl_staging_prices
-LIMIT 5;
 
 \echo '=== inventory_table_columns ==='
 SELECT column_name FROM information_schema.columns

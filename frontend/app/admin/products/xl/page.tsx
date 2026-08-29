@@ -29,6 +29,8 @@ type EditRow = {
   saleGbp: string;
   hsnCode: string;
   productStatus: string;
+  variantStatus: string;
+  priceReviewReason?: "SHEET_BLANK" | "SKU_MISMATCH";
 };
 
 function minorToMajorStr(minor: number | null | undefined): string {
@@ -51,6 +53,12 @@ function majorStrToMinorRequired(raw: string, label: string): number {
   return v;
 }
 
+function priceReviewLabel(reason?: "SHEET_BLANK" | "SKU_MISMATCH"): string {
+  if (reason === "SHEET_BLANK") return "Sheet blank";
+  if (reason === "SKU_MISMATCH") return "No SKU match";
+  return "";
+}
+
 function apiToEdit(r: XlSheetRow): EditRow {
   return {
     productId: r.productId,
@@ -68,7 +76,9 @@ function apiToEdit(r: XlSheetRow): EditRow {
     mrpGbp: minorToMajorStr(r.mrpGbpPence),
     saleGbp: minorToMajorStr(r.saleGbpPence),
     hsnCode: r.hsnCode || "",
-    productStatus: r.productStatus
+    productStatus: r.productStatus,
+    variantStatus: r.variantStatus,
+    priceReviewReason: r.priceReviewReason
   };
 }
 
@@ -139,12 +149,15 @@ function blurMoney(e: React.FocusEvent<HTMLInputElement>) {
   e.currentTarget.style.background = "transparent";
 }
 
-const COL_COUNT = 13;
+const COL_COUNT = 15;
 
 type StatusFilter = "ACTIVE" | "DRAFT" | "ALL";
+type ScopeFilter = "ALL" | "PRICE_PENDING";
 
 function rowMatchesQuery(r: EditRow, q: string) {
-  const blob = [r.productName, r.variantName, r.sku, r.hsnCode].join(" ").toLowerCase();
+  const blob = [r.productName, r.variantName, r.sku, r.hsnCode, priceReviewLabel(r.priceReviewReason)]
+    .join(" ")
+    .toLowerCase();
   return blob.includes(q);
 }
 
@@ -159,23 +172,27 @@ export default function ProductsXlSheetPage() {
   const [filterApplied, setFilterApplied] = useState("");
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ACTIVE");
+  const [scopeFilter, setScopeFilter] = useState<ScopeFilter>("PRICE_PENDING");
+  const [productCount, setProductCount] = useState(0);
   const searchRef = useRef<HTMLDivElement | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setErr(null);
     try {
-      const data = await fetchProductsXlSheet({ status: statusFilter });
+      const data = await fetchProductsXlSheet({ status: statusFilter, scope: scopeFilter });
       const mapped = data.rows.map(apiToEdit);
       setRows(mapped);
       setBaseline(JSON.stringify(mapped));
+      setProductCount(data.productCount ?? 0);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Failed to load sheet");
       setRows([]);
+      setProductCount(0);
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, scopeFilter]);
 
   useEffect(() => {
     void load();
@@ -190,6 +207,15 @@ export default function ProductsXlSheetPage() {
       if (!ok) return;
     }
     setStatusFilter(next);
+  }
+
+  function changeScopeFilter(next: ScopeFilter) {
+    if (next === scopeFilter) return;
+    if (dirty) {
+      const ok = window.confirm("You have unsaved edits. Switch scope and discard them?");
+      if (!ok) return;
+    }
+    setScopeFilter(next);
   }
 
   const suggestions = useMemo(() => {
@@ -310,7 +336,7 @@ export default function ProductsXlSheetPage() {
         setErr(result.errors.map((e) => `${e.sku}: ${e.error}`).slice(0, 8).join(" · "));
       } else {
         setToast({
-          message: `Saved. Catalog: ${result.updatedProducts} product(s), ${result.updatedVariants} variant(s). Staging prices: ${result.updatedStagingPrices} SKU(s) — not live on storefront yet.`
+          message: `Saved. ${result.updatedProducts} product(s), ${result.updatedVariants} variant(s) updated (live catalog + prices).`
         });
       }
       await load();
@@ -366,10 +392,35 @@ export default function ProductsXlSheetPage() {
             Products XL View
           </h1>
           <p style={{ color: "#a8c4b0", fontSize: "12px", marginTop: "2px", marginBottom: 0 }}>
-            Name · Variant · SKU · Qty · HSN → live catalog · Prices → staging only · Ctrl+S
+            {scopeFilter === "PRICE_PENDING"
+              ? "18 products without Aug 09 sheet prices · all variants · live edit · Ctrl+S"
+              : "Name · Variant · SKU · Qty · HSN · Prices → live storefront · Ctrl+S"}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <label
+            htmlFor="xl-scope"
+            style={{ fontSize: "11px", fontWeight: 700, color: "#a8c4b0", letterSpacing: "0.04em" }}
+          >
+            SCOPE
+          </label>
+          <select
+            id="xl-scope"
+            value={scopeFilter}
+            onChange={(e) => changeScopeFilter(e.target.value as ScopeFilter)}
+            style={{
+              border: "1px solid rgba(255,255,255,0.2)",
+              borderRadius: "8px",
+              padding: "8px 12px",
+              fontSize: "13px",
+              background: "rgba(0,0,0,0.2)",
+              color: "#faf5ec",
+              minWidth: "12rem"
+            }}
+          >
+            <option value="PRICE_PENDING">Price pending (18)</option>
+            <option value="ALL">Full catalog</option>
+          </select>
           <label
             htmlFor="xl-status"
             style={{ fontSize: "11px", fontWeight: 700, color: "#a8c4b0", letterSpacing: "0.04em" }}
@@ -494,8 +545,10 @@ export default function ProductsXlSheetPage() {
               </ul>
             ) : null}
           </div>
-          <span style={{ fontSize: "12px", color: "#a8c4b0", minWidth: "7rem" }}>
-            {loading ? "Loading…" : `${filtered.length}/${rows.length}`}
+          <span style={{ fontSize: "12px", color: "#a8c4b0", minWidth: "9rem" }}>
+            {loading
+              ? "Loading…"
+              : `${productCount} product${productCount === 1 ? "" : "s"} · ${filtered.length}/${rows.length} rows`}
             {dirty ? " · unsaved" : ""}
           </span>
           <Link
@@ -608,10 +661,12 @@ export default function ProductsXlSheetPage() {
           }}
         >
           <colgroup>
-            <col style={{ width: "160px" }} />
-            <col style={{ width: "140px" }} />
-            <col style={{ width: "120px" }} />
+            <col style={{ width: "150px" }} />
+            <col style={{ width: "110px" }} />
+            <col style={{ width: "130px" }} />
+            <col style={{ width: "110px" }} />
             <col style={{ width: "64px" }} />
+            <col style={{ width: "72px" }} />
             <col style={{ width: "80px" }} />
             <col style={{ width: "80px" }} />
             <col style={{ width: "72px" }} />
@@ -628,6 +683,9 @@ export default function ProductsXlSheetPage() {
                 Name
               </th>
               <th style={stickyHead} rowSpan={2}>
+                Why
+              </th>
+              <th style={stickyHead} rowSpan={2}>
                 Variant Name
               </th>
               <th style={stickyHead} rowSpan={2}>
@@ -635,6 +693,9 @@ export default function ProductsXlSheetPage() {
               </th>
               <th style={stickyHead} rowSpan={2}>
                 Qty
+              </th>
+              <th style={stickyHead} rowSpan={2}>
+                Var
               </th>
               <th style={{ ...stickyHead, textAlign: "center" }} colSpan={2}>
                 India Rupees (INR)
@@ -702,6 +763,33 @@ export default function ProductsXlSheetPage() {
                       )}
                     </td>
                     <td style={tdSt}>
+                      {r.priceReviewReason ? (
+                        <span
+                          style={{
+                            display: "inline-block",
+                            margin: "4px 6px",
+                            padding: "2px 7px",
+                            borderRadius: "6px",
+                            fontSize: "10px",
+                            fontWeight: 700,
+                            letterSpacing: "0.02em",
+                            background:
+                              r.priceReviewReason === "SHEET_BLANK" ? "#fef3c7" : "#fee2e2",
+                            color: r.priceReviewReason === "SHEET_BLANK" ? "#92400e" : "#991b1b"
+                          }}
+                          title={
+                            r.priceReviewReason === "SHEET_BLANK"
+                              ? "Exact SKU matched; Aug 09 sheet INR blank — LS prices kept"
+                              : "No exact SKU overlap with Aug 09 sheet"
+                          }
+                        >
+                          {priceReviewLabel(r.priceReviewReason)}
+                        </span>
+                      ) : (
+                        <div style={{ padding: "6px", minHeight: "30px" }} />
+                      )}
+                    </td>
+                    <td style={tdSt}>
                       <input
                         style={inputSt}
                         value={r.variantName}
@@ -731,6 +819,22 @@ export default function ProductsXlSheetPage() {
                         onBlur={blurMoney}
                         aria-label="Qty"
                       />
+                    </td>
+                    <td style={tdSt}>
+                      <span
+                        style={{
+                          display: "inline-block",
+                          margin: "4px 6px",
+                          padding: "2px 7px",
+                          borderRadius: "6px",
+                          fontSize: "10px",
+                          fontWeight: 700,
+                          background: r.variantStatus === "ACTIVE" ? "#dcfce7" : "#f3f4f6",
+                          color: r.variantStatus === "ACTIVE" ? "#166534" : "#4b5563"
+                        }}
+                      >
+                        {r.variantStatus === "ACTIVE" ? "Active" : r.variantStatus}
+                      </span>
                     </td>
                     <td style={tdSt}>
                       <input

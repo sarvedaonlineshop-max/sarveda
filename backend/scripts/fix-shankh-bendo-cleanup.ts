@@ -95,7 +95,6 @@ async function purgeProduct(productId: string, slug: string, log: string[]) {
     await prisma.productImage.deleteMany({ where: { variantId: { in: variantIds } } });
     await prisma.cartItem.deleteMany({ where: { variantId: { in: variantIds } } });
     await prisma.marketplaceListing.deleteMany({ where: { variantId: { in: variantIds } } });
-    await prisma.productXlStagingPrice.deleteMany({ where: { variantId: { in: variantIds } } });
     await prisma.productVariant.deleteMany({ where: { id: { in: variantIds } } });
   }
 

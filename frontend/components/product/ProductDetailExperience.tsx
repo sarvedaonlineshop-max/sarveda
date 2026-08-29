@@ -19,7 +19,7 @@ import { cartAdd } from "@/lib/cart-api";
 import { usePricingZone } from "@/hooks/usePricingZone";
 import { unitSaleMinor, zoneToCurrency } from "@/lib/currency";
 import { resolveMediaUrl } from "@/lib/media-cdn";
-import { formatINRFromPaise, formatMinorFromPaise } from "@/lib/money";
+import { formatMinorFromPaise } from "@/lib/money";
 import {
   galleryImagesForVariant,
   imageIndexForVariant,
@@ -55,7 +55,7 @@ const STICKY_TOP = "top-[var(--storefront-header-offset)]";
  */
 export function ProductDetailExperience({ product, pairWithItems }: Props) {
   const router = useRouter();
-  const { items, itemCount, subtotalInPaise } = useCartData();
+  const { items, itemCount, subtotalInPaise, currency: cartCurrency } = useCartData();
   const hasCartRail = itemCount > 0 || items.length > 0;
   const cartCount = itemCount > 0 ? itemCount : items.reduce((n, i) => n + i.quantity, 0);
 
@@ -358,7 +358,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
               🛒
             </span>
             <span>
-              Proceed to Buy · {formatINRFromPaise(subtotalInPaise)}
+              Proceed to Buy · {formatMinorFromPaise(subtotalInPaise, cartCurrency)}
               {cartCount > 0 ? ` (${cartCount})` : ""}
             </span>
             <span aria-hidden className="text-base leading-none">

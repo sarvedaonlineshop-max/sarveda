@@ -5,12 +5,12 @@ import Link from "next/link";
 
 import { CartCheckoutSidebar } from "@/components/cart/CartCheckoutSidebar";
 import { CartLineQuantity } from "@/components/cart/CartLineQuantity";
-import { formatINRFromPaise } from "@/lib/money";
+import { formatMinorFromPaise } from "@/lib/money";
 
 import { useCartData } from "./CartProvider";
 
 export function CartPageClient() {
-  const { items, subtotalInPaise, itemCount, loading, removeLine, isCartMutating } = useCartData();
+  const { items, subtotalInPaise, itemCount, loading, removeLine, isCartMutating, currency } = useCartData();
 
   if (loading && items.length === 0) {
     return (
@@ -95,12 +95,12 @@ export function CartPageClient() {
                   </div>
                   {line.variantLabel ? <p className="mt-0.5 text-xs text-brand-muted sm:text-sm">{line.variantLabel}</p> : null}
                   <p className="mt-1.5 font-sans text-sm font-semibold tabular-nums text-brand-forest sm:text-base">
-                    {formatINRFromPaise(line.unitPriceInPaise)}
+                    {formatMinorFromPaise(line.unitPriceInPaise, currency)}
                   </p>
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                     <CartLineQuantity line={line} size="md" />
                     <p className="text-sm font-semibold text-brand-ink sm:text-base">
-                      {formatINRFromPaise(line.unitPriceInPaise * line.quantity)}
+                      {formatMinorFromPaise(line.unitPriceInPaise * line.quantity, currency)}
                     </p>
                   </div>
                 </div>
@@ -117,7 +117,7 @@ export function CartPageClient() {
       <div className="mt-6 border-t border-brand-cream-dark bg-brand-cream p-4 lg:hidden">
         <p className="text-sm text-brand-muted">{itemCount} items</p>
         <p className="font-sans text-2xl font-semibold tabular-nums text-brand-ink">
-          {formatINRFromPaise(subtotalInPaise)}
+          {formatMinorFromPaise(subtotalInPaise, currency)}
         </p>
         <Link
           href="/checkout"
