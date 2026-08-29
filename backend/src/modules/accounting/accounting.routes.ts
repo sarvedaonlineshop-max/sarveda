@@ -14,6 +14,7 @@ import * as itcHandlers from "./itc.handlers";
 import * as gstReportHandlers from "./gst-reporting.handlers";
 import * as financialReportHandlers from "./financial-reports.handlers";
 import * as openingHandlers from "./opening.handlers";
+import * as quoteHandlers from "../quotations/quotation.handlers";
 
 const router = Router();
 
@@ -250,5 +251,19 @@ router.post(
   openingHandlers.openingBatchImport
 );
 router.get("/opening/batches/:id/export/review", openingHandlers.openingBatchExportReview);
+
+/** Phase 1 commercial docs — Quotation + Proforma (no accounting journals). */
+router.get("/quotes", quoteHandlers.quotationsList);
+router.get("/quotes/catalog", quoteHandlers.quotationsCatalogSearch);
+router.get("/quotes/customers", quoteHandlers.quotationsCustomerSearch);
+router.post("/quotes/preview-totals", quoteHandlers.quotationsPreviewTotals);
+router.post("/quotes", quoteHandlers.quotationsCreate);
+router.get("/quotes/:id", quoteHandlers.quotationsGet);
+router.put("/quotes/:id", quoteHandlers.quotationsUpdate);
+router.post("/quotes/:id/mark-sent", quoteHandlers.quotationsMarkSent);
+router.post("/quotes/:id/mark-accepted", quoteHandlers.quotationsMarkAccepted);
+router.post("/quotes/:id/cancel", quoteHandlers.quotationsCancel);
+router.get("/quotes/:id/pdf", quoteHandlers.quotationsDownloadQuotePdf);
+router.get("/quotes/:id/proforma-pdf", quoteHandlers.quotationsDownloadProformaPdf);
 
 export { router as accountingAdminRoutes };

@@ -78,6 +78,7 @@ export function buildAccountingNavGroups(includePurchasesOps: boolean): NavGroup
           exact: true
         },
         { href: "/admin/accounting/order-paid", label: "Sales Entries", icon: <ShoppingBag {...iconProps} /> },
+        { href: "/admin/accounting/quotes", label: "Quotes", icon: <ScrollText {...iconProps} /> },
         {
           href: "/admin/accounting/order-refunded-full",
           label: "Refunds",

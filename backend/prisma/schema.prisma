@@ -23,6 +23,7 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   orders       Order[]
+  quotations   Quotation[]
   cart         Cart?
   addresses    Address[]
   wishlist     Wishlist[]
@@ -765,6 +766,89 @@ model Order {
   serviceRequests   OrderServiceRequest[]
   inventoryRestocks OrderInventoryRestockEvent[]
   attribution       OrderAttribution?
+  convertedFromQuotations Quotation[] @relation("QuotationConvertedOrder")
+}
+
+/// Pre-sale commercial quotation — NEVER creates accounting, GST ledgers, stock, or payments.
+enum QuotationStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  EXPIRED
+  CANCELLED
+  CONVERTED
+}
+
+model Quotation {
+  id                   String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quoteNumber          String          @unique
+  status               QuotationStatus @default(DRAFT)
+  customerId           String?         @db.Uuid
+  customerName         String
+  email                String?
+  phone                String?
+  buyerGstin           String?
+  billingAddress       Json
+  shippingAddress      Json
+  currency             String          @default("INR")
+  subtotalInPaise      Int
+  discountInPaise      Int             @default(0)
+  shippingInPaise      Int             @default(0)
+  taxInPaise           Int             @default(0)
+  grandTotalInPaise    Int
+  /// INTRA_STATE | INTER_STATE | UNAVAILABLE | NOT_APPLICABLE
+  taxPreviewMode       String?
+  cgstInPaise          Int             @default(0)
+  sgstInPaise          Int             @default(0)
+  igstInPaise          Int             @default(0)
+  validUntil           DateTime?
+  terms                String?         @db.Text
+  notes                String?         @db.Text
+  convertedOrderId     String?         @db.Uuid
+  quotePdfUrl          String?
+  proformaPdfUrl       String?
+  sentAt               DateTime?
+  acceptedAt           DateTime?
+  expiredAt            DateTime?
+  cancelledAt          DateTime?
+  convertedAt          DateTime?
+  proformaIssuedAt     DateTime?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  customer             User?           @relation(fields: [customerId], references: [id])
+  convertedOrder       Order?          @relation("QuotationConvertedOrder", fields: [convertedOrderId], references: [id])
+  items                QuotationItem[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([customerName])
+  @@index([email])
+  @@index([validUntil])
+}
+
+model QuotationItem {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quotationId      String    @db.Uuid
+  productId        String?   @db.Uuid
+  variantId        String?   @db.Uuid
+  productName      String
+  sku              String?
+  hsnCode          String?
+  quantity         Int
+  unitPriceInPaise Int
+  discountInPaise  Int       @default(0)
+  taxClass         String?
+  taxRatePercent   Int       @default(0)
+  taxableInPaise   Int       @default(0)
+  taxInPaise       Int       @default(0)
+  lineTotalInPaise Int
+  sortOrder        Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  quotation        Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  @@index([quotationId])
+  @@index([variantId])
 }
 
 /// Informational marketing attribution snapshot — never drives money, stock, or payments.

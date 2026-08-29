@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 const items = [
   ["Overview", "/admin/accounting/sales", true],
+  ["Quotes", "/admin/accounting/quotes", false],
   ["Sales Entries", "/admin/accounting/order-paid", false],
   ["Refunds", "/admin/accounting/order-refunded-full", false],
   ["Gateway Settlements", "/admin/accounting/settlements", false]
