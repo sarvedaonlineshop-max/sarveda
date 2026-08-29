@@ -22,10 +22,10 @@ import { adminTheme as t } from "@/lib/admin-theme";
 
 const cardStyle: React.CSSProperties = {
   background: "var(--admin-card-bg, #fff)",
-  borderRadius: "18px",
+  borderRadius: "12px",
   border: "1px solid var(--admin-card-border, #e8e2d9)",
   padding: "20px 22px",
-  boxShadow: "0 1px 2px rgba(15,23,42,0.04)",
+  boxShadow: "0 1px 2px rgba(15,23,42,0.045), 0 8px 22px rgba(15,23,42,0.035)",
   transition: "box-shadow var(--admin-motion-fast, 140ms) var(--admin-motion-ease, cubic-bezier(0.22, 1, 0.36, 1)), border-color var(--admin-motion-fast, 140ms) var(--admin-motion-ease, cubic-bezier(0.22, 1, 0.36, 1))"
 };
 
@@ -134,7 +134,7 @@ export default function AdminDashboardPage() {
         <AdminSkeleton height={120} style={{ borderRadius: 16 }} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16 }}>
           {Array.from({ length: 7 }).map((_, i) => (
-            <AdminSkeleton key={i} height={110} style={{ borderRadius: 18 }} />
+            <AdminSkeleton key={i} height={110} style={{ borderRadius: 12 }} />
           ))}
         </div>
         <AdminTableSkeleton rows={5} cols={4} />

@@ -871,3 +871,175 @@ select:-webkit-autofill {
     animation: none !important;
   }
 }
+
+
+/* ─── Admin product-feel pass (admin only) ─────────────────────────
+   Crisp surfaces + typography + micro feedback. Inspired by modern utility
+   dashboards, while retaining Sarveda forest/gold identity. */
+.admin-product-ui {
+  --admin-font-sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --admin-shadow-xs: 0 1px 2px rgba(18, 22, 19, 0.045);
+  --admin-shadow-sm: 0 1px 2px rgba(18, 22, 19, 0.05), 0 6px 18px rgba(18, 22, 19, 0.035);
+  --admin-shadow-md: 0 1px 2px rgba(18, 22, 19, 0.06), 0 12px 32px rgba(18, 22, 19, 0.06);
+  font-family: var(--admin-font-sans);
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1, "tnum" 1;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+.admin-product-ui h1,
+.admin-product-ui h2,
+.admin-product-ui h3 {
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+.admin-product-ui p,
+.admin-product-ui label,
+.admin-product-ui td,
+.admin-product-ui th,
+.admin-product-ui input,
+.admin-product-ui select,
+.admin-product-ui textarea,
+.admin-product-ui button {
+  letter-spacing: -0.006em;
+}
+
+.admin-product-ui :is(td, [data-money], .tabular-nums) {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Vercel-like interaction contrast: the resting state is quiet; hover/focus
+   becomes crisper instead of relying on large animation. */
+.admin-product-ui button:not(:disabled):not([aria-disabled="true"]):not([data-no-press]) {
+  transform: translateY(0);
+  transition:
+    transform var(--admin-motion-instant) var(--admin-motion-ease),
+    background-color var(--admin-motion-fast) var(--admin-motion-ease),
+    border-color var(--admin-motion-fast) var(--admin-motion-ease),
+    color var(--admin-motion-fast) var(--admin-motion-ease),
+    box-shadow var(--admin-motion-fast) var(--admin-motion-ease),
+    opacity var(--admin-motion-fast) var(--admin-motion-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .admin-product-ui button:not(:disabled):not([aria-disabled="true"]):not([data-no-press]):hover {
+    transform: translateY(-1px);
+    box-shadow: var(--admin-shadow-xs);
+  }
+}
+
+.admin-product-ui button:not(:disabled):not([aria-disabled="true"]):not([data-no-press]):active {
+  transform: translateY(0) scale(0.985);
+  transition-duration: var(--admin-motion-instant);
+}
+
+.admin-product-ui :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--admin-input-border, #dedbd3) 72%, #676962) !important;
+}
+
+.admin-product-ui :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):focus-visible {
+  outline: none;
+  border-color: #9a7b45 !important;
+  box-shadow: 0 0 0 3px rgba(185,138,62,0.11) !important;
+}
+
+/* Shared surface hook used by accounting. Layered shadow + crisp edge is more
+   perceptible than heavy elevation and keeps dense financial pages calm. */
+.admin-product-ui .admin-surface {
+  box-shadow: var(--admin-shadow-xs);
+  transition:
+    border-color var(--admin-motion-fast) var(--admin-motion-ease),
+    box-shadow var(--admin-motion-fast) var(--admin-motion-ease),
+    background-color var(--admin-motion-fast) var(--admin-motion-ease);
+}
+
+/* Tables stay stable; only interaction contrast changes. */
+.admin-product-ui table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.admin-product-ui thead th {
+  letter-spacing: 0.045em !important;
+  font-weight: 650;
+}
+
+.admin-product-ui tbody tr {
+  transition: background-color var(--admin-motion-fast) var(--admin-motion-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .admin-product-ui tbody tr:hover > td {
+    background-color: var(--admin-row-hover, #f4f3ef);
+  }
+}
+
+/* A tiny content settle after navigation. It never blocks routing, never waits
+   for exit motion, and does not animate the whole shell. */
+.admin-product-ui .admin-content-enter {
+  animation: admin-content-settle 160ms var(--admin-motion-ease) both;
+}
+
+@keyframes admin-content-settle {
+  from { opacity: 0.72; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Skeletons are intentionally visible, geometric, and stable — closer to the
+   loading language seen in high-polish dashboards than faint pulsing blocks. */
+.admin-product-ui .admin-skeleton {
+  position: relative;
+  overflow: hidden;
+  opacity: 1;
+  background: #e7e6e1;
+  animation: none;
+}
+
+.admin-product-ui.dark .admin-skeleton {
+  background: rgba(255,255,255,0.085);
+}
+
+.admin-product-ui .admin-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 20%, rgba(255,255,255,0.72) 48%, transparent 76%);
+  transform: translateX(-115%);
+  animation: admin-skeleton-shimmer 1.25s ease-in-out infinite;
+}
+
+.admin-product-ui.dark .admin-skeleton::after {
+  background: linear-gradient(100deg, transparent 20%, rgba(255,255,255,0.075) 48%, transparent 76%);
+}
+
+@keyframes admin-skeleton-shimmer {
+  55%, 100% { transform: translateX(115%); }
+}
+
+.admin-product-ui .admin-route-skeleton {
+  background: var(--admin-workspace-bg, #f7f6f2);
+}
+
+.admin-product-ui .admin-route-skeleton-card,
+.admin-product-ui .admin-route-skeleton-panel {
+  box-shadow: var(--admin-shadow-sm);
+  border-color: var(--admin-card-border, #dedbd3);
+}
+
+/* More tactile custom menus without spring/bounce. */
+.admin-product-ui .admin-menu-panel {
+  box-shadow: var(--admin-shadow-md) !important;
+  border-color: var(--admin-card-border, #dedbd3) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-product-ui .admin-content-enter,
+  .admin-product-ui .admin-skeleton::after {
+    animation: none !important;
+  }
+  .admin-product-ui button:not(:disabled):not([aria-disabled="true"]):not([data-no-press]):hover,
+  .admin-product-ui button:not(:disabled):not([aria-disabled="true"]):not([data-no-press]):active {
+    transform: none !important;
+  }
+}

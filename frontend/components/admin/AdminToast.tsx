@@ -54,15 +54,15 @@ export function AdminToast({
           style={{
             position: "fixed",
             bottom: "24px",
-            left: "50%",
+            right: "24px",
             zIndex: 110,
-            maxWidth: "440px",
-            width: "calc(100vw - 48px)",
+            maxWidth: "420px",
+            width: "min(420px, calc(100vw - 32px))",
             padding: "12px 18px",
             borderRadius: "10px",
             fontSize: "13px",
             fontWeight: 500,
-            boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.08), 0 12px 34px rgba(0,0,0,0.14)",
             background,
             border: `1px solid ${border}`,
             color,
@@ -74,13 +74,13 @@ export function AdminToast({
             show: {
               opacity: 1,
               y: 0,
-              x: "-50%",
+              x: 0,
               transition: reduceMotion ? zero : adminToastTransition
             },
             hide: {
               opacity: 0,
               y: reduceMotion ? 0 : 6,
-              x: "-50%",
+              x: 0,
               transition: reduceMotion ? zero : adminToastExitTransition
             }
           }}

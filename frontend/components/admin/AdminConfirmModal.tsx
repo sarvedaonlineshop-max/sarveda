@@ -81,19 +81,22 @@ export function AdminConfirmModal({
               width: "100%",
               maxWidth: details?.length ? "520px" : "440px",
               background: "#ffffff",
-              borderRadius: "16px",
-              boxShadow: "0 24px 64px rgba(0,0,0,0.2)",
+              borderRadius: "12px",
+              border: "1px solid rgba(31,33,30,0.12)",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.08), 0 18px 50px rgba(0,0,0,0.18)",
               overflow: "hidden"
             }}
             variants={{
               open: {
                 opacity: 1,
                 scale: 1,
+                y: 0,
                 transition: reduceMotion ? zero : adminModalTransition
               },
               closed: {
                 opacity: 0,
-                scale: reduceMotion ? 1 : 0.98,
+                scale: reduceMotion ? 1 : 0.985,
+                y: reduceMotion ? 0 : 6,
                 transition: reduceMotion ? zero : adminModalExitTransition
               }
             }}

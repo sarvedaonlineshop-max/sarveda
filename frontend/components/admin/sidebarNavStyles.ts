@@ -4,13 +4,13 @@ import { adminTheme as t } from "@/lib/admin-theme";
 export const sidebarNavStyles = {
   idleColor: t.sidebarText,
   idleIcon: t.sidebarMuted,
-  hoverBg: "rgba(185,138,62,0.14)",
-  hoverColor: "#f0e2b8",
+  hoverBg: "rgba(255,255,255,0.065)",
+  hoverColor: "#f7f4ed",
   hoverIcon: "#d4a84b",
-  activeBg: "rgba(185,138,62,0.16)",
+  activeBg: "rgba(255,255,255,0.095)",
   activeColor: "#fffbf5",
   activeIcon: "#b98a3e",
-  activeBorder: "#b98a3e"
+  activeBorder: "#c99a4c"
 } as const;
 
 export function sidebarLinkStyle(isActive: boolean): React.CSSProperties {
@@ -20,12 +20,12 @@ export function sidebarLinkStyle(isActive: boolean): React.CSSProperties {
     gap: "12px",
     width: "100%",
     boxSizing: "border-box",
-    padding: "10px 12px",
-    borderRadius: "10px",
+    padding: "9px 11px",
+    borderRadius: "8px",
     marginBottom: "2px",
     color: isActive ? sidebarNavStyles.activeColor : sidebarNavStyles.idleColor,
     background: isActive ? sidebarNavStyles.activeBg : "transparent",
-    fontSize: "13.5px",
+    fontSize: "13px",
     fontWeight: isActive ? 600 : 400,
     textDecoration: "none",
     transform: "translateX(0)",

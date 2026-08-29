@@ -91,7 +91,7 @@ const card: React.CSSProperties = {
   background: "var(--admin-card-bg, #fff)",
   borderRadius: "12px",
   border: "1px solid var(--admin-card-border, #e8e2d9)",
-  boxShadow: "0 4px 20px rgba(28,53,42,0.08)"
+  boxShadow: "0 1px 2px rgba(15,23,42,0.045), 0 8px 24px rgba(15,23,42,0.04)"
 };
 const thSt: React.CSSProperties = {
   padding: "11px 16px",

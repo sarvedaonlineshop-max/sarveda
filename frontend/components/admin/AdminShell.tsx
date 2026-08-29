@@ -91,7 +91,7 @@ function AdminShellInner({
 
   return (
     <div
-      className={`admin-motion-root ${preferDarkMain ? "dark" : ""}`}
+      className={`admin-motion-root admin-product-ui ${preferDarkMain ? "dark" : ""}`}
       onClickCapture={(event) => {
         // Observe all normal internal admin links, not only sidebar links, so
         // route feedback is consistent across tables, cards and breadcrumbs.
@@ -124,7 +124,8 @@ function AdminShellInner({
           minHeight: "100vh",
           background: bg,
           color: titleColor,
-          fontFamily: "var(--font-admin-sans), ui-sans-serif, system-ui, sans-serif"
+          fontFamily: "var(--admin-font-sans), ui-sans-serif, system-ui, sans-serif",
+          letterSpacing: "-0.01em"
         }}
       >
         <AnimatePresence>
@@ -181,10 +182,10 @@ function AdminShellInner({
               zIndex: 30,
               background: headerBg,
               borderBottom: `1px solid ${headerBorder}`,
-              height: "60px",
+              height: "58px",
               display: "flex",
               alignItems: "center",
-              padding: "0 24px",
+              padding: "0 22px",
               gap: "16px",
               boxShadow: isDark
                 ? "0 1px 0 rgba(185,138,62,0.10), 0 2px 16px rgba(0,0,0,0.35)"
@@ -268,7 +269,7 @@ function AdminShellInner({
                   paddingLeft: "36px",
                   paddingRight: "12px",
                   height: "38px",
-                  borderRadius: "10px",
+                  borderRadius: "8px",
                   background: inputBg,
                   border: `1px solid ${inputBorder}`,
                   fontSize: "13px",
@@ -346,9 +347,11 @@ function AdminShellInner({
             />
           </header>
 
-          <main style={{ flex: 1, padding: "24px 32px 48px", position: "relative" }}>
+          <main className="admin-workspace" style={{ flex: 1, padding: "24px 32px 48px", position: "relative" }}>
             <AdminLoadingOverlay show={isNavigating} label="Loading page…" />
             <div
+              key={pathname}
+              className="admin-content-enter"
               style={{
                 width: "100%",
                 maxWidth: "none"

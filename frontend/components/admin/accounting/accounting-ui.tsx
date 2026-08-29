@@ -16,8 +16,8 @@ export const accountingUi = {
   border: adminTheme.cardBorder,
   text: adminTheme.text,
   muted: adminTheme.textMuted,
-  radius: "12px",
-  transition: "150ms ease"
+  radius: "10px",
+  transition: "140ms cubic-bezier(0.22, 1, 0.36, 1)"
 } as const;
 
 export function AccountingPageHeader({
@@ -88,7 +88,7 @@ export function AccountingSectionCard({
 }) {
   return (
     <section
-      className={`rounded-[12px] border bg-white p-4 sm:p-5 ${className}`}
+      className={`admin-surface rounded-[10px] border bg-white p-4 sm:p-5 ${className}`}
       style={{ borderColor: accountingUi.border }}
     >
       {children}
@@ -161,7 +161,7 @@ export function AccountingMetricCard({
   );
 
   const base =
-    "block rounded-[12px] border bg-white p-4 transition-[box-shadow,transform,border-color] duration-150";
+    "admin-surface block rounded-[10px] border bg-white p-4 transition-[box-shadow,transform,border-color] duration-150";
   const style: CSSProperties = {
     borderColor: emphasis ? "rgba(28,53,42,0.28)" : accountingUi.border,
     background: emphasis ? "linear-gradient(180deg, #ffffff 0%, #f7faf7 100%)" : undefined,
@@ -250,7 +250,7 @@ export function AccountingEmptyState({
 }) {
   return (
     <div
-      className="rounded-[12px] border border-dashed px-4 py-8 text-center"
+      className="rounded-[10px] border border-dashed px-4 py-8 text-center"
       style={{ borderColor: accountingUi.border, background: accountingUi.cream }}
     >
       <p className="text-sm font-semibold" style={{ color: accountingUi.text }}>
@@ -279,7 +279,7 @@ export function AccountingQuickAction({
   return (
     <Link
       href={href}
-      className="group flex items-start gap-2.5 rounded-[10px] border bg-[#faf5ec]/40 px-3 py-2.5 transition-[transform,box-shadow,border-color,background-color] duration-150 hover:-translate-y-px hover:border-[#cfc5b8] hover:bg-white hover:shadow-sm active:scale-[0.98]"
+      className="group flex items-start gap-2.5 rounded-[8px] border bg-[#faf5ec]/40 px-3 py-2.5 transition-[transform,box-shadow,border-color,background-color] duration-150 hover:-translate-y-px hover:border-[#cfc5b8] hover:bg-white hover:shadow-sm active:scale-[0.98]"
       style={{ borderColor: accountingUi.border }}
     >
       {icon ? (
