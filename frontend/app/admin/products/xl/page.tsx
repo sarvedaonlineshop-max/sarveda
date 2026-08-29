@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Maximize2, Minimize2, Save } from "lucide-react";
 
 import { AdminToast } from "@/components/admin/AdminToast";
 import {
@@ -174,13 +174,17 @@ export default function ProductsXlSheetPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ACTIVE");
   const [scopeFilter, setScopeFilter] = useState<ScopeFilter>("PRICE_PENDING");
   const [productCount, setProductCount] = useState(0);
+  const [immersive, setImmersive] = useState(false);
   const searchRef = useRef<HTMLDivElement | null>(null);
+
+  const effectiveScope: ScopeFilter =
+    statusFilter === "DRAFT" ? "ALL" : scopeFilter;
 
   const load = useCallback(async () => {
     setLoading(true);
     setErr(null);
     try {
-      const data = await fetchProductsXlSheet({ status: statusFilter, scope: scopeFilter });
+      const data = await fetchProductsXlSheet({ status: statusFilter, scope: effectiveScope });
       const mapped = data.rows.map(apiToEdit);
       setRows(mapped);
       setBaseline(JSON.stringify(mapped));
@@ -192,7 +196,7 @@ export default function ProductsXlSheetPage() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, scopeFilter]);
+  }, [statusFilter, effectiveScope]);
 
   useEffect(() => {
     void load();
@@ -207,6 +211,10 @@ export default function ProductsXlSheetPage() {
       if (!ok) return;
     }
     setStatusFilter(next);
+    // Price-pending (18) are all ACTIVE — drafts live in full catalog.
+    if (next === "DRAFT" && scopeFilter === "PRICE_PENDING") {
+      setScopeFilter("ALL");
+    }
   }
 
   function changeScopeFilter(next: ScopeFilter) {
@@ -216,6 +224,9 @@ export default function ProductsXlSheetPage() {
       if (!ok) return;
     }
     setScopeFilter(next);
+    if (next === "PRICE_PENDING" && statusFilter === "DRAFT") {
+      setStatusFilter("ACTIVE");
+    }
   }
 
   const suggestions = useMemo(() => {
@@ -354,18 +365,55 @@ export default function ProductsXlSheetPage() {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
         e.preventDefault();
         void onSave();
+        return;
+      }
+      // F11 / F12 → immersive XL (avoid fighting browser DevTools when possible)
+      if (e.key === "F11" || e.key === "F12") {
+        e.preventDefault();
+        setImmersive((v) => !v);
+        return;
+      }
+      if (e.key === "Escape" && immersive) {
+        e.preventDefault();
+        setImmersive(false);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onSave]);
+  }, [onSave, immersive]);
+
+  const shellBtn: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "6px",
+    padding: "8px 14px",
+    borderRadius: "8px",
+    background: "rgba(255,255,255,0.12)",
+    color: "#faf5ec",
+    border: "1px solid rgba(255,255,255,0.2)",
+    fontSize: "13px",
+    fontWeight: 600,
+    textDecoration: "none",
+    cursor: "pointer"
+  };
 
   return (
     <div
       className="font-sans"
       style={{
-        margin: "-24px -32px -48px",
-        height: "calc(100vh - 72px)",
+        ...(immersive
+          ? {
+              position: "fixed",
+              inset: 0,
+              zIndex: 2000,
+              margin: 0,
+              height: "100vh",
+              width: "100vw"
+            }
+          : {
+              margin: "-24px -32px -48px",
+              height: "calc(100vh - 72px)"
+            }),
         display: "flex",
         flexDirection: "column",
         minHeight: 0,
@@ -387,15 +435,19 @@ export default function ProductsXlSheetPage() {
           borderBottom: "1px solid rgba(255,255,255,0.08)"
         }}
       >
-        <div>
+        <div className="flex flex-wrap items-center gap-3">
+          <Link href="/admin/products" style={shellBtn}>
+            <ArrowLeft size={14} aria-hidden />
+            Back To List View
+          </Link>
           <h1 style={{ color: "#faf5ec", fontSize: "20px", fontWeight: 800, margin: 0 }}>
             Products XL View
           </h1>
-          <p style={{ color: "#a8c4b0", fontSize: "12px", marginTop: "2px", marginBottom: 0 }}>
-            {scopeFilter === "PRICE_PENDING"
-              ? "18 products without Aug 09 sheet prices · all variants · live edit · Ctrl+S"
-              : "Name · Variant · SKU · Qty · HSN · Prices → live storefront · Ctrl+S"}
-          </p>
+          {immersive ? (
+            <span style={{ fontSize: "11px", color: "#a8c4b0" }}>Fullscreen · Esc to exit</span>
+          ) : (
+            <span style={{ fontSize: "11px", color: "#a8c4b0" }}>F12 fullscreen</span>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <label
@@ -406,7 +458,7 @@ export default function ProductsXlSheetPage() {
           </label>
           <select
             id="xl-scope"
-            value={scopeFilter}
+            value={effectiveScope}
             onChange={(e) => changeScopeFilter(e.target.value as ScopeFilter)}
             style={{
               border: "1px solid rgba(255,255,255,0.2)",
@@ -551,25 +603,15 @@ export default function ProductsXlSheetPage() {
               : `${productCount} product${productCount === 1 ? "" : "s"} · ${filtered.length}/${rows.length} rows`}
             {dirty ? " · unsaved" : ""}
           </span>
-          <Link
-            href="/admin/products"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "8px 14px",
-              borderRadius: "8px",
-              background: "rgba(255,255,255,0.12)",
-              color: "#faf5ec",
-              border: "1px solid rgba(255,255,255,0.2)",
-              fontSize: "13px",
-              fontWeight: 600,
-              textDecoration: "none"
-            }}
+          <button
+            type="button"
+            onClick={() => setImmersive((v) => !v)}
+            style={shellBtn}
+            title={immersive ? "Exit fullscreen (Esc)" : "Fullscreen (F12)"}
           >
-            <ArrowLeft size={14} aria-hidden />
-            Products
-          </Link>
+            {immersive ? <Minimize2 size={14} aria-hidden /> : <Maximize2 size={14} aria-hidden />}
+            {immersive ? "Exit full" : "Fullscreen"}
+          </button>
           <button
             type="button"
             onClick={() => void onSave()}
@@ -734,7 +776,9 @@ export default function ProductsXlSheetPage() {
             ) : filtered.length === 0 ? (
               <tr>
                 <td colSpan={COL_COUNT} style={{ padding: "24px", color: "#8a7060" }}>
-                  No rows.
+                  {statusFilter === "DRAFT"
+                    ? "No draft products in the shop catalog (Caxixi / Wooden Xylophone appear when they are DRAFT)."
+                    : "No rows."}
                 </td>
               </tr>
             ) : (

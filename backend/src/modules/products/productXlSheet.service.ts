@@ -133,6 +133,8 @@ export async function listXlSheetRows(
   productCount: number;
 }> {
   const pricePending = scope === "PRICE_PENDING";
+  // Price-pending set is ACTIVE-only; Draft filter must not stay locked to those 18 slugs.
+  const applyPricePending = pricePending && statusFilter !== "DRAFT";
   const statusWhere: ProductStatus | { in: ProductStatus[] } =
     statusFilter === "ALL" ? { in: ["ACTIVE", "DRAFT"] } : statusFilter;
 
@@ -141,7 +143,7 @@ export async function listXlSheetRows(
       deletedAt: null,
       catalogHidden: false,
       status: statusWhere,
-      ...(pricePending ? { slug: { in: [...XL_PRICE_REVIEW_SLUGS] } } : {}),
+      ...(applyPricePending ? { slug: { in: [...XL_PRICE_REVIEW_SLUGS] } } : {}),
     },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     select: {
@@ -151,8 +153,7 @@ export async function listXlSheetRows(
       status: true,
       hsnCode: true,
       variants: {
-        // Price-pending review: every variant (incl. INACTIVE). Catalog: ACTIVE only.
-        ...(pricePending ? {} : { where: { status: "ACTIVE" as const } }),
+        // Admin XL: every variant (ACTIVE + INACTIVE) so drafts / inactive SKUs aren't hidden.
         orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
         select: {
           id: true,
@@ -210,7 +211,7 @@ export async function listXlSheetRows(
   return {
     rows,
     total: rows.length,
-    scope,
+    scope: applyPricePending ? "PRICE_PENDING" : "ALL",
     productCount: products.length,
   };
 }
