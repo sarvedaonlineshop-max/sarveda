@@ -691,21 +691,38 @@ select:-webkit-autofill {
   }
 }
 
+/* Inventory expand / variant enter (admin only) */
+.admin-motion-root .admin-inv-product-row {
+  transition:
+    background-color var(--admin-motion-fast, 140ms) var(--admin-motion-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    box-shadow var(--admin-motion-fast, 140ms) var(--admin-motion-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+.admin-motion-root .admin-inv-product-row.is-expanded {
+  background: color-mix(in srgb, #faf5ec 88%, #fff);
+  box-shadow: inset 3px 0 0 #b98a3e, 0 4px 14px rgba(28, 53, 42, 0.08);
+}
+
+.admin-motion-root .admin-inv-variant-row {
+  animation: admin-inv-variant-in var(--admin-motion-normal, 180ms) var(--admin-motion-ease, cubic-bezier(0.22, 1, 0.36, 1)) both;
+}
+
+@keyframes admin-inv-variant-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .admin-motion-root button:not(:disabled):not([aria-disabled="true"]):not([data-no-press]):active {
-    transform: none;
-  }
-  .admin-motion-root .admin-menu-panel {
-    animation: none;
-  }
-  .admin-motion-root .admin-skeleton {
-    animation: none;
-    opacity: 0.7;
-  }
-  .admin-motion-root .admin-spinner {
-    animation: none;
-  }
-  .admin-motion-root .admin-chevron {
+  .admin-motion-root .admin-inv-product-row {
     transition: none;
+  }
+  .admin-motion-root .admin-inv-variant-row {
+    animation: none;
   }
 }

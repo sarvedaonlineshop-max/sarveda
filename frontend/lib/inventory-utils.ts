@@ -171,6 +171,135 @@ export function downloadCsv(filename: string, content: string): void {
   URL.revokeObjectURL(url);
 }
 
+/** Excel-compatible SpreadsheetML (.xls) — no extra frontend dependency. */
+export function inventoryToExcelXml(rows: InventoryRow[]): string {
+  const headers = [
+    "SKU",
+    "Product",
+    "Variant",
+    "Available",
+    "Reserved",
+    "On Hand",
+    "Zoho stock",
+    "Sync scenario",
+    "Threshold"
+  ];
+  const escapeXml = (v: string | number) =>
+    String(v)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  const cell = (v: string | number) => `<Cell><Data ss:Type="${typeof v === "number" ? "Number" : "String"}">${escapeXml(v)}</Data></Cell>`;
+  const headerRow = `<Row>${headers.map((h) => cell(h)).join("")}</Row>`;
+  const dataRows = rows
+    .map(
+      (r) =>
+        `<Row>${[
+          r.sku,
+          r.productName,
+          r.variantLabel ?? "Default",
+          r.available,
+          r.reserved,
+          r.onHand,
+          r.zohoStockOnHand ?? "",
+          r.zohoSyncScenario ?? "",
+          r.lowStockThreshold
+        ]
+          .map((v) => cell(v as string | number))
+          .join("")}</Row>`
+    )
+    .join("");
+  return `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+ <Worksheet ss:Name="Inventory">
+  <Table>${headerRow}${dataRows}</Table>
+ </Worksheet>
+</Workbook>`;
+}
+
+export function downloadExcelXml(filename: string, xml: string): void {
+  const blob = new Blob([xml], { type: "application/vnd.ms-excel;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename.endsWith(".xls") ? filename : `${filename}.xls`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/** Top-level shop categories for inventory hover filter (Lightsail catalog). */
+export type InventoryCategoryNode = {
+  name: string;
+  slug: string;
+  children: Array<{ name: string; slug: string }>;
+};
+
+export const INVENTORY_CATEGORY_TREE: InventoryCategoryNode[] = [
+  {
+    name: "Sound & Musical Instruments",
+    slug: "sound-musical-instruments",
+    children: [
+      { name: "All", slug: "all-musical-instruments" },
+      { name: "Kids", slug: "kids" },
+      { name: "Rattles & Shakers", slug: "rattles-shakers" },
+      { name: "Indian Classical", slug: "indian-classical" },
+      { name: "Singing Bowls & Bells", slug: "singing-bowls-bells" },
+      { name: "Percussion", slug: "percussion" },
+      { name: "Tuning Forks", slug: "tuning-forks" },
+      { name: "Accessories", slug: "accessories" },
+      { name: "Gongs", slug: "gongs-musical-instruments" },
+      { name: "Wind", slug: "wind" },
+      { name: "Handpans & Tongue Drum", slug: "handpans-tongue-drum" },
+      { name: "Xylophones", slug: "xylophones" },
+      { name: "Chimes", slug: "chimes" },
+      { name: "Crystal Bowls", slug: "crystal-bowls" }
+    ]
+  },
+  {
+    name: "Yoga & Meditation",
+    slug: "yoga-and-meditation",
+    children: [
+      { name: "All", slug: "all-yoga-and-meditation" },
+      { name: "Yoga Mats & Props", slug: "yoga-mats-props" },
+      { name: "Meditation Cushions & Benches", slug: "meditation-cushions-benches" },
+      { name: "Bottles & Accessories", slug: "bottles-accessories" }
+    ]
+  },
+  {
+    name: "Eco-Living & Sustainable",
+    slug: "eco-living-sustainable",
+    children: [
+      { name: "All", slug: "all-handpans-tonguedrum" },
+      { name: "Personal Care", slug: "personal-care" },
+      { name: "Bottles", slug: "bottles" },
+      { name: "Gift Sets", slug: "gift-sets" },
+      { name: "Home & Workspace", slug: "home-workspace" }
+    ]
+  }
+];
+
+export function categoryFilterSlugs(selectedSlug: string): string[] | null {
+  if (!selectedSlug) return null;
+  for (const root of INVENTORY_CATEGORY_TREE) {
+    if (root.slug === selectedSlug) {
+      return [root.slug, ...root.children.map((c) => c.slug)];
+    }
+    if (root.children.some((c) => c.slug === selectedSlug)) {
+      return [selectedSlug];
+    }
+  }
+  return [selectedSlug];
+}
+
+export function rowMatchesCategoryFilter(row: InventoryRow, selectedSlug: string): boolean {
+  const slugs = categoryFilterSlugs(selectedSlug);
+  if (!slugs) return true;
+  return row.categories.some((c) => slugs.includes(c.slug));
+}
+
 export type ParsedImportRow = { sku: string; onHand: number };
 
 export function parseInventoryImportCsv(text: string): ParsedImportRow[] {

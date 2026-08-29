@@ -15,8 +15,6 @@ import {
   fetchAdminInventory,
   fetchZohoStockSyncHistory,
   ignoreZohoItemsAdmin,
-  importAdminInventoryCsv,
-  patchAdminInventoryVariant,
   pullStockFromZohoAdmin,
   pushItemsToZohoAdmin,
   pushStockToZohoAdmin,
@@ -24,18 +22,20 @@ import {
   syncStockFromZohoAdmin
 } from "@/lib/admin-api";
 import {
-  buildCategoryFilterOptions,
   computeInventoryStats,
   downloadCsv,
+  downloadExcelXml,
   effectiveZohoScenario,
   filterZohoOnlyItems,
   formatRelativeTime,
   groupRowsByProductInOrder,
   inventoryToCsv,
+  inventoryToExcelXml,
+  INVENTORY_CATEGORY_TREE,
   matchesStockFilter,
-  parseInventoryImportCsv,
   resolveZohoSyncSummary,
   backendNeedsZohoScenarioUpdate,
+  rowMatchesCategoryFilter,
   sortInventoryRows,
   type ProductInventoryGroup,
   type SortDir,
@@ -78,18 +78,6 @@ function IconRefresh({ className }: { className?: string }) {
   );
 }
 
-function IconUpload({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-      />
-    </svg>
-  );
-}
-
 function IconDownload({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -98,6 +86,38 @@ function IconDownload({ className }: { className?: string }) {
         strokeLinejoin="round"
         d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
       />
+    </svg>
+  );
+}
+
+function IconEdit({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+      />
+    </svg>
+  );
+}
+
+function IconSave({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+      />
+    </svg>
+  );
+}
+
+function IconChevronDown({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
     </svg>
   );
 }
@@ -197,31 +217,6 @@ function ZohoBadge({
   return <span className="text-xs text-stone-400">Unknown</span>;
 }
 
-function MarketplaceBadge({
-  label,
-  status,
-  risk
-}: {
-  label: string;
-  status: "ACTIVE" | "PAUSED" | "DELISTED";
-  risk?: InventoryRow["marketplaceStockRisk"];
-}) {
-  const base =
-    status === "ACTIVE"
-      ? "bg-emerald-50 text-emerald-800 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-900"
-      : status === "PAUSED"
-        ? "bg-amber-50 text-amber-900 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-900"
-        : "bg-stone-100 text-stone-700 ring-stone-200 dark:bg-stone-800 dark:text-stone-200 dark:ring-stone-700";
-  const riskText =
-    risk === "high" ? "risk high" : risk === "watch" ? "risk watch" : risk === "out" ? "out" : null;
-  return (
-    <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${base}`}>
-      {label}
-      {riskText ? ` · ${riskText}` : ""}
-    </span>
-  );
-}
-
 function scopeLabel(entry: ZohoStockSyncHistoryEntry): string {
   if (entry.scope === "audit") return "Refresh audit";
   if (entry.scope === "pull") return "Pull stock (Zoho → Sarveda)";
@@ -262,18 +257,34 @@ export function AdminInventoryWorkspace() {
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
 
   const [busy, setBusy] = useState<string | null>(null);
-  const [bulkSaving, setBulkSaving] = useState(false);
-  const [importing, setImporting] = useState(false);
+  const [productSaving, setProductSaving] = useState<string | null>(null);
   const [zohoSyncing, setZohoSyncing] = useState<"audit" | "bulk" | string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; error?: boolean } | null>(null);
-  const importInputRef = useRef<HTMLInputElement>(null);
+  const [availableDrafts, setAvailableDrafts] = useState<Record<string, string>>({});
+  const [savedAvailable, setSavedAvailable] = useState<Record<string, number>>({});
+  const [exportOpen, setExportOpen] = useState(false);
+  const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
+  const [categoryHoverRoot, setCategoryHoverRoot] = useState<string | null>(null);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+  const categoryMenuRef = useRef<HTMLDivElement>(null);
 
   const pushToast = useCallback((message: string, error = false) => {
     setToast({ message, error });
   }, []);
 
-  const categoryOptions = useMemo(() => buildCategoryFilterOptions(allRows), [allRows]);
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      const t = e.target as Node;
+      if (exportMenuRef.current && !exportMenuRef.current.contains(t)) setExportOpen(false);
+      if (categoryMenuRef.current && !categoryMenuRef.current.contains(t)) {
+        setCategoryMenuOpen(false);
+        setCategoryHoverRoot(null);
+      }
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
 
   const loadHistory = useCallback(async () => {
     try {
@@ -293,12 +304,18 @@ export function AdminInventoryWorkspace() {
       setProductCount(data.meta.productCount);
       const th: Record<string, number> = {};
       const thDraft: Record<string, string> = {};
+      const avail: Record<string, number> = {};
+      const availDraft: Record<string, string> = {};
       for (const r of data.items) {
         th[r.variantId] = r.lowStockThreshold;
         thDraft[r.variantId] = String(r.lowStockThreshold);
+        avail[r.variantId] = r.available;
+        availDraft[r.variantId] = String(r.available);
       }
       setSavedThresholds(th);
       setThresholdDrafts(thDraft);
+      setSavedAvailable(avail);
+      setAvailableDrafts(availDraft);
       setLastZohoSync(data.meta.lastZohoStockSyncAt);
       setZohoInventorySyncEnabled(data.meta.zohoInventorySyncEnabled === true);
       setZohoAuditAvailable(data.meta.zohoSkuAuditAvailable);
@@ -350,10 +367,23 @@ export function AdminInventoryWorkspace() {
     return changes;
   }, [savedThresholds, thresholdDrafts]);
 
+  const availableChanges = useMemo(() => {
+    const changes: Array<{ variantId: string; available: number }> = [];
+    for (const id of Object.keys(savedAvailable)) {
+      const orig = savedAvailable[id];
+      const raw = availableDrafts[id];
+      const n = raw !== undefined ? parseInt(raw, 10) : orig;
+      if (Number.isFinite(n) && n >= 0 && n !== orig) {
+        changes.push({ variantId: id, available: n });
+      }
+    }
+    return changes;
+  }, [savedAvailable, availableDrafts]);
+
   const searchFiltered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return allRows.filter((r) => {
-      if (categorySlug && !r.categories.some((c) => c.slug === categorySlug)) return false;
+      if (!rowMatchesCategoryFilter(r, categorySlug)) return false;
       if (!q) return true;
       return (
         r.productName.toLowerCase().includes(q) ||
@@ -446,33 +476,72 @@ export function AdminInventoryWorkspace() {
     setExpandedProducts(new Set());
   }
 
-  async function saveThreshold(variantId: string) {
-    const change = thresholdChanges.find((c) => c.variantId === variantId);
-    if (!change) return;
-    setBusy(variantId);
-    try {
-      await patchAdminInventoryVariant(variantId, { lowStockThreshold: change.lowStockThreshold });
-      pushToast("Threshold saved");
-      await load();
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "Save failed");
-    } finally {
-      setBusy(null);
+  async function saveProduct(productId: string, rows: InventoryRow[]) {
+    const updates: Array<{ variantId: string; onHand?: number; lowStockThreshold?: number }> = [];
+    for (const r of rows) {
+      const patch: { variantId: string; onHand?: number; lowStockThreshold?: number } = {
+        variantId: r.variantId
+      };
+      const availRaw = availableDrafts[r.variantId];
+      const availN = availRaw !== undefined ? parseInt(availRaw, 10) : r.available;
+      if (!Number.isFinite(availN) || availN < 0) {
+        pushToast(`Invalid available qty for ${r.sku}`, true);
+        return;
+      }
+      if (availN !== (savedAvailable[r.variantId] ?? r.available)) {
+        patch.onHand = availN + Math.max(0, r.reserved);
+      }
+      const thRaw = thresholdDrafts[r.variantId];
+      const thN = thRaw !== undefined ? parseInt(thRaw, 10) : r.lowStockThreshold;
+      if (!Number.isFinite(thN) || thN < 0) {
+        pushToast(`Invalid low-stock threshold for ${r.sku}`, true);
+        return;
+      }
+      if (thN !== (savedThresholds[r.variantId] ?? r.lowStockThreshold)) {
+        patch.lowStockThreshold = thN;
+      }
+      if (patch.onHand !== undefined || patch.lowStockThreshold !== undefined) {
+        updates.push(patch);
+      }
     }
-  }
-
-  async function saveAllThresholds() {
-    if (thresholdChanges.length === 0) return;
-    setBulkSaving(true);
+    if (updates.length === 0) {
+      pushToast("No changes to save");
+      return;
+    }
+    setProductSaving(productId);
     try {
-      const { updated } = await bulkPatchAdminInventory(thresholdChanges);
-      pushToast(`Saved ${updated} threshold${updated === 1 ? "" : "s"}`);
+      const { updated } = await bulkPatchAdminInventory(updates);
+      pushToast(`Saved ${updated} variant${updated === 1 ? "" : "s"}`);
       await load();
     } catch (e) {
       pushToast(e instanceof Error ? e.message : "Save failed", true);
     } finally {
-      setBulkSaving(false);
+      setProductSaving(null);
     }
+  }
+
+  function productHasChanges(rows: InventoryRow[]): boolean {
+    return rows.some((r) => {
+      const availRaw = availableDrafts[r.variantId];
+      const availN = availRaw !== undefined ? parseInt(availRaw, 10) : NaN;
+      const thRaw = thresholdDrafts[r.variantId];
+      const thN = thRaw !== undefined ? parseInt(thRaw, 10) : NaN;
+      const availDirty =
+        Number.isFinite(availN) && availN !== (savedAvailable[r.variantId] ?? r.available);
+      const thDirty =
+        Number.isFinite(thN) && thN !== (savedThresholds[r.variantId] ?? r.lowStockThreshold);
+      return availDirty || thDirty;
+    });
+  }
+
+  function categoryLabel(): string {
+    if (!categorySlug) return "All";
+    for (const root of INVENTORY_CATEGORY_TREE) {
+      if (root.slug === categorySlug) return root.name;
+      const child = root.children.find((c) => c.slug === categorySlug);
+      if (child) return `${root.name} · ${child.name}`;
+    }
+    return "Category";
   }
 
   async function runZohoAudit() {
@@ -599,28 +668,6 @@ export function AdminInventoryWorkspace() {
     }
   }
 
-  async function onImportFile(file: File) {
-    setImporting(true);
-    try {
-      const text = await file.text();
-      const rows = parseInventoryImportCsv(text);
-      if (rows.length === 0) {
-        pushToast("CSV needs SKU and On Hand columns", true);
-        return;
-      }
-      const result = await importAdminInventoryCsv(rows);
-      pushToast(
-        `Imported ${result.updated} rows (${result.notFound} SKU${result.notFound === 1 ? "" : "s"} not found).`
-      );
-      await load();
-    } catch (e) {
-      pushToast(e instanceof Error ? e.message : "Import failed", true);
-    } finally {
-      setImporting(false);
-      if (importInputRef.current) importInputRef.current.value = "";
-    }
-  }
-
   const stockTabs: { id: StockFilter; label: string }[] = [
     { id: "all", label: "All" },
     { id: "in_stock", label: "In stock" },
@@ -697,39 +744,20 @@ export function AdminInventoryWorkspace() {
     return null;
   }
 
-  function renderMarketplaceSummary(r: InventoryRow) {
-    if (r.marketplaceListings.length === 0) {
-      return <span className="text-xs text-stone-400">Not listed</span>;
-    }
-    return (
-      <div className="flex flex-wrap gap-1">
-        {r.marketplaceListings.map((listing) => (
-          <MarketplaceBadge
-            key={listing.id}
-            label={listing.displayName}
-            status={listing.status}
-            risk={r.marketplaceStockRisk}
-          />
-        ))}
-        {r.recentMarketplaceSoldQty > 0 || r.recentMarketplaceReturnQty > 0 ? (
-          <span className="block w-full pt-1 text-[10px] text-stone-500">
-            30d sold {r.recentMarketplaceSoldQty} · returns {r.recentMarketplaceReturnQty}
-          </span>
-        ) : null}
-      </div>
-    );
-  }
-
   function renderProductSummaryRow(g: ProductInventoryGroup) {
     const expanded = expandedProducts.has(g.productId);
     const productSyncing = zohoSyncing === g.productId;
+    const dirty = productHasChanges(g.rows);
+    const saving = productSaving === g.productId;
 
     return (
       <tr
         key={`product-${g.productId}`}
-        className={`cursor-pointer border-t border-stone-200 bg-stone-50/95 hover:bg-stone-100/80 dark:border-stone-700 dark:bg-stone-800/50 dark:hover:bg-stone-800 ${
+        className={`admin-inv-product-row cursor-pointer border-t border-stone-200 dark:border-stone-700 ${
+          expanded ? "is-expanded" : "bg-stone-50/95 hover:bg-stone-100/80 dark:bg-stone-800/50 dark:hover:bg-stone-800"
+        } ${
           g.zohoOutOfSync > 0
-            ? "border-l-2 border-l-amber-400 bg-amber-50/30 dark:bg-amber-950/10"
+            ? "border-l-2 border-l-amber-400"
             : "border-l-2 border-l-transparent"
         }`}
         onClick={() => toggleProduct(g.productId)}
@@ -766,20 +794,30 @@ export function AdminInventoryWorkspace() {
             )}
           </td>
         ) : null}
-        <td className="px-4 py-3 text-right font-mono font-semibold tabular-nums">{g.totalAvailable}</td>
-        <td className="px-4 py-3 text-xs text-stone-500">
-          {g.rows.reduce((sum, row) => sum + row.marketplaceListings.length, 0)} listing
-          {g.rows.reduce((sum, row) => sum + row.marketplaceListings.length, 0) === 1 ? "" : "s"}
+        <td className="px-4 py-3 text-right font-mono font-semibold tabular-nums text-stone-800 dark:text-stone-100">
+          {g.totalAvailable}
         </td>
         <td className="px-4 py-3 text-right text-stone-400">—</td>
         <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
           <div className="flex flex-wrap justify-end gap-1.5">
             <Link
               href={`/admin/products/${g.productId}`}
-              className="rounded-md border border-stone-200 bg-white px-2.5 py-1 text-xs font-medium text-stone-700 shadow-sm hover:border-amber-400 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-200"
+              title="Edit product"
+              aria-label="Edit product"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-stone-200 bg-white text-stone-700 shadow-sm hover:border-amber-400 hover:text-[#1e3a2f] dark:border-stone-600 dark:bg-stone-900 dark:text-stone-200"
             >
-              Edit
+              <IconEdit className="h-4 w-4" />
             </Link>
+            <button
+              type="button"
+              title="Save variants"
+              aria-label="Save variants"
+              disabled={!dirty || saving}
+              onClick={() => void saveProduct(g.productId, g.rows)}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-stone-200 bg-white text-[#1e3a2f] shadow-sm hover:border-amber-400 disabled:cursor-not-allowed disabled:opacity-35 dark:border-stone-600 dark:bg-stone-900 dark:text-[#8fd3b6]"
+            >
+              <IconSave className={`h-4 w-4 ${saving ? "animate-pulse" : ""}`} />
+            </button>
             {showZohoSync ? (
               <button
                 type="button"
@@ -799,15 +837,16 @@ export function AdminInventoryWorkspace() {
 
   function renderVariantRow(r: InventoryRow) {
     const thresholdDirty = thresholdChanges.some((c) => c.variantId === r.variantId);
+    const availableDirty = availableChanges.some((c) => c.variantId === r.variantId);
     return (
       <Fragment key={r.variantId}>
         <tr
-          className={`border-t border-stone-100 bg-white dark:border-stone-800 dark:bg-stone-900/40 ${
+          className={`admin-inv-variant-row border-t border-stone-100 bg-white dark:border-stone-800 dark:bg-stone-900/40 ${
             r.low ? "bg-red-50/40 dark:bg-red-950/10" : ""
-          } ${thresholdDirty ? "bg-amber-50/30 dark:bg-amber-950/10" : ""}`}
+          } ${thresholdDirty || availableDirty ? "bg-amber-50/30 dark:bg-amber-950/10" : ""}`}
         >
           <td className="px-3 py-2.5" />
-          <td className="px-4 py-2.5 pl-8 text-sm text-stone-600 dark:text-stone-400">
+          <td className="px-4 py-2.5 pl-8 text-sm font-medium text-stone-800 dark:text-stone-200">
             {r.variantLabel ?? "Default"}
             {r.low ? (
               <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-red-800 dark:bg-red-900/60 dark:text-red-100">
@@ -815,22 +854,34 @@ export function AdminInventoryWorkspace() {
               </span>
             ) : null}
           </td>
-          <td className="px-4 py-2.5 font-mono text-xs text-stone-500">{r.sku}</td>
+          <td className="px-4 py-2.5 font-mono text-xs font-semibold text-stone-800 dark:text-stone-200">
+            {r.sku}
+          </td>
           {showZohoSync ? (
             <td className="px-4 py-2.5">
               <ZohoBadge row={r} auditAvailable={zohoAuditAvailable} />
             </td>
           ) : null}
-          <td className="px-4 py-2.5 text-right font-mono font-medium tabular-nums">
-            {r.available}
+          <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
+            <input
+              type="number"
+              min={0}
+              aria-label={`Available ${r.sku}`}
+              value={availableDrafts[r.variantId] ?? ""}
+              onChange={(e) =>
+                setAvailableDrafts((d) => ({ ...d, [r.variantId]: e.target.value }))
+              }
+              className="w-20 rounded border border-stone-200 px-2 py-1 text-right font-mono text-sm text-stone-900 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+            />
             {showZohoSync && r.zohoStockOnHand !== null && effectiveZohoScenario(r) === 2 ? (
-              <span className="block text-[10px] font-normal text-stone-400">Zoho: {r.zohoStockOnHand}</span>
+              <span className="mt-0.5 block text-[10px] font-normal text-stone-400">
+                Zoho: {r.zohoStockOnHand}
+              </span>
             ) : null}
             {r.reserved > 0 ? (
-              <span className="block text-[10px] font-normal text-stone-400">{r.reserved} held</span>
+              <span className="mt-0.5 block text-[10px] font-normal text-stone-400">{r.reserved} held</span>
             ) : null}
           </td>
-          <td className="px-4 py-2.5">{renderMarketplaceSummary(r)}</td>
           <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
             <input
               type="number"
@@ -840,29 +891,13 @@ export function AdminInventoryWorkspace() {
               onChange={(e) =>
                 setThresholdDrafts((d) => ({ ...d, [r.variantId]: e.target.value }))
               }
-              className="w-14 rounded border border-stone-200 px-2 py-1 text-right font-mono text-sm dark:border-stone-600 dark:bg-stone-950"
+              className="w-16 rounded border border-stone-200 px-2 py-1 text-right font-mono text-sm text-stone-900 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
             />
           </td>
           <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
-            <div className="flex flex-col items-end gap-1">
-              <Link
-                href={`/admin/marketplaces?channel=${encodeURIComponent(
-                  r.marketplaceListings[0]?.code ?? "AMAZON"
-                )}&sku=${encodeURIComponent(r.sku)}`}
-                className={actionOutline}
-              >
-                Open marketplaces
-              </Link>
-              {showZohoSync ? renderZohoRowActions(r) : null}
-              <button
-                type="button"
-                disabled={busy === r.variantId || !thresholdDirty}
-                onClick={() => void saveThreshold(r.variantId)}
-                className="text-xs font-medium text-amber-800 disabled:opacity-30 dark:text-amber-400"
-              >
-                {busy === r.variantId ? "…" : "Save threshold"}
-              </button>
-            </div>
+            {showZohoSync ? renderZohoRowActions(r) : (
+              <span className="text-xs text-stone-400">—</span>
+            )}
           </td>
         </tr>
       </Fragment>
@@ -948,52 +983,48 @@ export function AdminInventoryWorkspace() {
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() =>
-              downloadCsv(
-                `sarveda-inventory-${new Date().toISOString().slice(0, 10)}.csv`,
-                inventoryToCsv(displayedRows)
-              )
-            }
-            disabled={loading || displayedRows.length === 0}
-            className="inline-flex items-center gap-2 rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-[#faf5ec]/50 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-          >
-            <IconDownload className="h-4 w-4" />
-            Export
-          </button>
-          <button
-            type="button"
-            disabled={importing}
-            onClick={() => importInputRef.current?.click()}
-            className="inline-flex items-center gap-2 rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-[#faf5ec]/50 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-            title="CSV columns: SKU, On Hand"
-          >
-            <IconUpload className="h-4 w-4" />
-            {importing ? "Importing…" : "Import CSV"}
-          </button>
-          <input
-            ref={importInputRef}
-            type="file"
-            accept=".csv,text/csv"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void onImportFile(f);
-            }}
-          />
-          <button
-            type="button"
-            disabled={bulkSaving || thresholdChanges.length === 0}
-            onClick={() => void saveAllThresholds()}
-            className={
-              thresholdChanges.length > 0
-                ? "rounded-md bg-gradient-to-r from-[#b98a3e] to-[#c8960a] px-3 py-2 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
-                : "rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-medium shadow-sm disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-            }
-          >
-            {bulkSaving ? "Saving…" : thresholdChanges.length > 0 ? `Save ${thresholdChanges.length} thresholds` : "Save thresholds"}
-          </button>
+          <div className="relative" ref={exportMenuRef}>
+            <button
+              type="button"
+              onClick={() => setExportOpen((o) => !o)}
+              disabled={loading || displayedRows.length === 0}
+              className="inline-flex items-center gap-2 rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-[#faf5ec]/50 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+            >
+              <IconDownload className="h-4 w-4" />
+              Export
+              <IconChevronDown className="h-3.5 w-3.5 opacity-70" />
+            </button>
+            {exportOpen ? (
+              <div className="admin-menu-panel absolute left-0 z-30 mt-1 min-w-[140px] overflow-hidden rounded-lg border border-stone-200 bg-white py-1 shadow-lg dark:border-stone-600 dark:bg-stone-900">
+                <button
+                  type="button"
+                  className="block w-full px-3 py-2 text-left text-sm text-stone-800 hover:bg-[#faf5ec] dark:text-stone-100 dark:hover:bg-stone-800"
+                  onClick={() => {
+                    downloadCsv(
+                      `sarveda-inventory-${new Date().toISOString().slice(0, 10)}.csv`,
+                      inventoryToCsv(displayedRows)
+                    );
+                    setExportOpen(false);
+                  }}
+                >
+                  CSV
+                </button>
+                <button
+                  type="button"
+                  className="block w-full px-3 py-2 text-left text-sm text-stone-800 hover:bg-[#faf5ec] dark:text-stone-100 dark:hover:bg-stone-800"
+                  onClick={() => {
+                    downloadExcelXml(
+                      `sarveda-inventory-${new Date().toISOString().slice(0, 10)}.xls`,
+                      inventoryToExcelXml(displayedRows)
+                    );
+                    setExportOpen(false);
+                  }}
+                >
+                  Excel
+                </button>
+              </div>
+            ) : null}
+          </div>
           {showZohoSync ? (
             <>
               <button
@@ -1107,36 +1138,109 @@ export function AdminInventoryWorkspace() {
         className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900"
         style={{ borderLeft: "3px solid rgba(185,138,62,0.2)" }}
       >
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-          <div className="relative min-w-0 flex-1">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
+          <div className="relative w-full max-w-[220px] shrink-0">
             <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
             <input
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search product or SKU…"
+              placeholder="Search…"
               className="w-full rounded-md border border-stone-200 py-2.5 pl-10 pr-3 text-sm focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
             />
           </div>
-          <select
-            value={categorySlug}
-            onChange={(e) => setCategorySlug(e.target.value)}
-            aria-label="Category"
-            className="rounded-md border border-stone-200 px-3 py-2.5 text-sm lg:w-48 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
-          >
-            <option value="">All categories</option>
-            {categoryOptions.map((c) => (
-              <option key={c.slug} value={c.slug}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-          <button type="button" onClick={expandAll} className="text-sm font-medium text-stone-600 hover:text-amber-700 dark:text-stone-400">
-            Expand all
-          </button>
-          <button type="button" onClick={collapseAll} className="text-sm font-medium text-stone-600 hover:text-amber-700 dark:text-stone-400">
-            Collapse all
-          </button>
+          <div className="relative min-w-0 flex-1" ref={categoryMenuRef}>
+            <button
+              type="button"
+              aria-expanded={categoryMenuOpen}
+              aria-haspopup="menu"
+              onClick={() => setCategoryMenuOpen((o) => !o)}
+              className="inline-flex min-w-[220px] items-center justify-between gap-2 rounded-md border border-stone-200 bg-white px-3 py-2.5 text-sm font-medium text-stone-800 shadow-sm hover:border-amber-400 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+            >
+              <span className="truncate">{categoryLabel()}</span>
+              <IconChevronDown className="h-4 w-4 shrink-0 opacity-60" />
+            </button>
+            {categoryMenuOpen ? (
+              <div className="absolute left-0 z-40 mt-1 flex overflow-hidden rounded-lg border border-stone-200 bg-white shadow-xl dark:border-stone-600 dark:bg-stone-900">
+                <div className="w-56 border-r border-stone-100 py-1 dark:border-stone-700">
+                  <button
+                    type="button"
+                    className={`block w-full px-3 py-2 text-left text-sm ${
+                      !categorySlug
+                        ? "bg-[#faf5ec] font-semibold text-[#1e3a2f]"
+                        : "text-stone-700 hover:bg-stone-50 dark:text-stone-200 dark:hover:bg-stone-800"
+                    }`}
+                    onClick={() => {
+                      setCategorySlug("");
+                      setCategoryMenuOpen(false);
+                      setCategoryHoverRoot(null);
+                    }}
+                  >
+                    All
+                  </button>
+                  {INVENTORY_CATEGORY_TREE.map((root) => (
+                    <button
+                      key={root.slug}
+                      type="button"
+                      className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm ${
+                        categorySlug === root.slug ||
+                        root.children.some((c) => c.slug === categorySlug) ||
+                        categoryHoverRoot === root.slug
+                          ? "bg-[#faf5ec] font-semibold text-[#1e3a2f]"
+                          : "text-stone-700 hover:bg-stone-50 dark:text-stone-200 dark:hover:bg-stone-800"
+                      }`}
+                      onMouseEnter={() => setCategoryHoverRoot(root.slug)}
+                      onFocus={() => setCategoryHoverRoot(root.slug)}
+                      onClick={() => {
+                        setCategorySlug(root.slug);
+                        setCategoryMenuOpen(false);
+                        setCategoryHoverRoot(null);
+                      }}
+                    >
+                      <span className="truncate">{root.name}</span>
+                      <span className="text-stone-400">›</span>
+                    </button>
+                  ))}
+                </div>
+                {categoryHoverRoot ? (
+                  <div className="w-56 py-1">
+                    {(INVENTORY_CATEGORY_TREE.find((r) => r.slug === categoryHoverRoot)?.children ?? []).map(
+                      (child) => (
+                        <button
+                          key={child.slug}
+                          type="button"
+                          className={`block w-full px-3 py-2 text-left text-sm ${
+                            categorySlug === child.slug
+                              ? "bg-[#faf5ec] font-semibold text-[#1e3a2f]"
+                              : "text-stone-700 hover:bg-stone-50 dark:text-stone-200 dark:hover:bg-stone-800"
+                          }`}
+                          onClick={() => {
+                            setCategorySlug(child.slug);
+                            setCategoryMenuOpen(false);
+                            setCategoryHoverRoot(null);
+                          }}
+                        >
+                          {child.name}
+                        </button>
+                      )
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex w-56 items-center px-3 py-6 text-xs text-stone-400">
+                    Hover a category for sub-filters
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </div>
+          <div className="flex shrink-0 items-center gap-3 pt-1">
+            <button type="button" onClick={expandAll} className="text-sm font-medium text-stone-600 hover:text-amber-700 dark:text-stone-400">
+              Expand all
+            </button>
+            <button type="button" onClick={collapseAll} className="text-sm font-medium text-stone-600 hover:text-amber-700 dark:text-stone-400">
+              Collapse all
+            </button>
+          </div>
         </div>
         <div className="mt-3 flex flex-wrap gap-1 border-t border-stone-100 pt-3 dark:border-stone-800">
           {stockTabs.map((tab) => (
@@ -1286,7 +1390,6 @@ export function AdminInventoryWorkspace() {
                   <th className={thClass}>SKU</th>
                   {showZohoSync ? <th className={thClass}>Zoho</th> : null}
                   <th className={`${thClass} text-right`}>Available</th>
-                  <th className={thClass}>Marketplaces</th>
                   <th className={`${thClass} text-right`}>Low-stock at</th>
                   <th className={`${thClass} text-right`}>Actions</th>
                 </tr>
