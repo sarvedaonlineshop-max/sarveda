@@ -45,7 +45,7 @@ export function AdminLoadingOverlay({
       setShowSkeleton(false);
       return;
     }
-    const timer = window.setTimeout(() => setShowSkeleton(true), 110);
+    const timer = window.setTimeout(() => setShowSkeleton(true), 70);
     return () => window.clearTimeout(timer);
   }, [show]);
 

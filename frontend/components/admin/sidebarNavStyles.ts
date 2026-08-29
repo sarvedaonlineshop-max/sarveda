@@ -7,10 +7,10 @@ export const sidebarNavStyles = {
   hoverBg: "rgba(255,255,255,0.065)",
   hoverColor: "#f7f4ed",
   hoverIcon: "#d4a84b",
-  activeBg: "rgba(255,255,255,0.095)",
+  activeBg: "rgba(255,255,255,0.115)",
   activeColor: "#fffbf5",
   activeIcon: "#b98a3e",
-  activeBorder: "#c99a4c"
+  activeBorder: "#d1a24f"
 } as const;
 
 export function sidebarLinkStyle(isActive: boolean): React.CSSProperties {
@@ -32,7 +32,8 @@ export function sidebarLinkStyle(isActive: boolean): React.CSSProperties {
     transition: "background var(--admin-motion-fast, 140ms) var(--admin-motion-ease, ease-out), color var(--admin-motion-fast, 140ms) var(--admin-motion-ease, ease-out), border-color var(--admin-motion-fast, 140ms) var(--admin-motion-ease, ease-out), transform var(--admin-motion-fast, 140ms) var(--admin-motion-ease, ease-out)",
     borderLeft: isActive
       ? `3px solid ${sidebarNavStyles.activeBorder}`
-      : "3px solid transparent"
+      : "3px solid transparent",
+    boxShadow: isActive ? "inset 0 0 0 1px rgba(255,255,255,0.045), 0 1px 2px rgba(0,0,0,0.14)" : "none"
   };
 }
 

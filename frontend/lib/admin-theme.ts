@@ -17,18 +17,18 @@ export const adminTheme = {
   sidebarMuted:        "rgba(220,210,190,0.38)",
 
   /* Light workspace */
-  workspaceBg:    "#f7f6f2",
+  workspaceBg:    "#f4f5f3",
   headerBg:       "#ffffff",
   cardBg:         "#ffffff",
-  cardBorder:     "#dedbd3",
-  text:           "#1f211e",
-  textMuted:      "#6f6d66",
+  cardBorder:     "#d7dad6",
+  text:           "#171a17",
+  textMuted:      "#62665f",
   /** Field labels — stronger contrast than muted body text */
-  label:          "#3f403c",
+  label:          "#343833",
   /** Table column headers */
-  thText:         "#555650",
-  rowHover:       "#f4f3ef",
-  tableHeadBg:    "#fafaf8",
+  thText:         "#4d514b",
+  rowHover:       "#f0f2ef",
+  tableHeadBg:    "#f8f9f7",
 
   /* Dark workspace — pleasant forest green, easy on eyes */
   workspaceBgDark:  "#0c1a10",

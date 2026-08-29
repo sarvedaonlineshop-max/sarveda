@@ -180,16 +180,18 @@ function AdminShellInner({
               position: "sticky",
               top: 0,
               zIndex: 30,
-              background: headerBg,
+              background: isDark ? headerBg : "rgba(255,255,255,0.88)",
+              backdropFilter: "saturate(180%) blur(14px)",
+              WebkitBackdropFilter: "saturate(180%) blur(14px)",
               borderBottom: `1px solid ${headerBorder}`,
-              height: "58px",
+              height: "56px",
               display: "flex",
               alignItems: "center",
-              padding: "0 22px",
+              padding: "0 24px",
               gap: "16px",
               boxShadow: isDark
-                ? "0 1px 0 rgba(185,138,62,0.10), 0 2px 16px rgba(0,0,0,0.35)"
-                : "0 1px 0 rgba(28,53,42,0.08), 0 2px 8px rgba(28,53,42,0.04)"
+                ? "0 1px 0 rgba(185,138,62,0.10), 0 10px 24px rgba(0,0,0,0.20)"
+                : "0 1px 0 rgba(23,26,23,0.06), 0 8px 24px rgba(23,26,23,0.04)"
             }}
           >
             <button
@@ -234,7 +236,7 @@ function AdminShellInner({
                 }}
                 aria-hidden
               />
-              <h1 style={{ fontSize: "18px", fontWeight: 800, color: titleColor, margin: 0 }}>
+              <h1 style={{ fontSize: "17px", fontWeight: 700, color: titleColor, margin: 0 }}>
                 {pageTitle}
               </h1>
             </div>
@@ -242,7 +244,7 @@ function AdminShellInner({
             <div
               style={{
                 flex: 1,
-                maxWidth: "380px",
+                maxWidth: "420px",
                 marginLeft: "16px",
                 position: "relative",
                 display: "flex",
@@ -268,10 +270,11 @@ function AdminShellInner({
                   width: "100%",
                   paddingLeft: "36px",
                   paddingRight: "12px",
-                  height: "38px",
-                  borderRadius: "8px",
-                  background: inputBg,
+                  height: "36px",
+                  borderRadius: "7px",
+                  background: isDark ? inputBg : "#fbfcfb",
                   border: `1px solid ${inputBorder}`,
+                  boxShadow: isDark ? "inset 0 1px 0 rgba(255,255,255,0.02)" : "inset 0 1px 0 rgba(23,26,23,0.02), 0 1px 1px rgba(23,26,23,0.02)",
                   fontSize: "13px",
                   color: titleColor,
                   outline: "none",
@@ -347,7 +350,7 @@ function AdminShellInner({
             />
           </header>
 
-          <main className="admin-workspace" style={{ flex: 1, padding: "24px 32px 48px", position: "relative" }}>
+          <main className="admin-workspace" style={{ flex: 1, padding: "24px 30px 48px", position: "relative" }}>
             <AdminLoadingOverlay show={isNavigating} label="Loading page…" />
             <div
               key={pathname}

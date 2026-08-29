@@ -1043,3 +1043,201 @@ select:-webkit-autofill {
     transform: none !important;
   }
 }
+
+/* ─── Admin product system V3 (admin-only) ──────────────────────────
+   Stronger hierarchy and tactile depth. This deliberately goes beyond motion:
+   typography, edges, controls, table feedback, overlays, and loading geometry. */
+.admin-product-ui {
+  --admin-border-subtle: color-mix(in srgb, var(--admin-card-border, #d7dad6) 78%, transparent);
+  --admin-border-strong: color-mix(in srgb, var(--admin-card-border, #d7dad6) 72%, #6b716a);
+  --admin-shadow-control: 0 1px 1px rgba(19, 24, 20, 0.035), 0 1px 2px rgba(19, 24, 20, 0.045);
+  --admin-shadow-card: 0 1px 1px rgba(19, 24, 20, 0.035), 0 1px 2px rgba(19, 24, 20, 0.035), 0 8px 22px rgba(19, 24, 20, 0.035);
+  --admin-shadow-card-hover: 0 1px 2px rgba(19, 24, 20, 0.055), 0 10px 26px rgba(19, 24, 20, 0.055);
+  --admin-shadow-float: 0 2px 4px rgba(19, 24, 20, 0.07), 0 18px 50px rgba(19, 24, 20, 0.13);
+}
+
+.admin-product-ui .admin-workspace {
+  background:
+    radial-gradient(circle at 28% -20%, rgba(28,53,42,0.035), transparent 31rem),
+    var(--admin-workspace-bg, #f4f5f3);
+}
+
+/* Forms should feel like controls, not flat rectangles. */
+.admin-product-ui :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  min-height: 36px;
+  box-shadow: var(--admin-shadow-control);
+  transition:
+    border-color var(--admin-motion-fast) var(--admin-motion-ease),
+    box-shadow var(--admin-motion-fast) var(--admin-motion-ease),
+    background-color var(--admin-motion-fast) var(--admin-motion-ease);
+}
+
+.admin-product-ui :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):focus-visible {
+  box-shadow: 0 0 0 3px rgba(28,53,42,0.08), 0 1px 2px rgba(19,24,20,0.06) !important;
+  border-color: color-mix(in srgb, #1c352a 62%, white) !important;
+}
+
+.admin-product-ui input[type="checkbox"],
+.admin-product-ui input[type="radio"] {
+  accent-color: #1c352a;
+}
+
+/* Buttons gain a distinct resting edge and stronger cause/effect on hover. */
+.admin-product-ui button:not(:disabled):not([aria-disabled="true"]):not([data-no-press]) {
+  box-shadow: var(--admin-shadow-control);
+  will-change: transform;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .admin-product-ui button:not(:disabled):not([aria-disabled="true"]):not([data-no-press]):hover {
+    transform: translateY(-1.5px);
+    box-shadow: 0 2px 4px rgba(19,24,20,0.07), 0 7px 18px rgba(19,24,20,0.06);
+    filter: saturate(1.02);
+  }
+}
+
+.admin-product-ui button:not(:disabled):not([aria-disabled="true"]):not([data-no-press]):active {
+  transform: translateY(0) scale(0.97);
+  box-shadow: 0 1px 1px rgba(19,24,20,0.05);
+  filter: brightness(0.985);
+}
+
+/* Text links become more responsive without turning into decorative animation. */
+.admin-product-ui a[href] {
+  transition:
+    color var(--admin-motion-fast) var(--admin-motion-ease),
+    opacity var(--admin-motion-fast) var(--admin-motion-ease),
+    text-decoration-color var(--admin-motion-fast) var(--admin-motion-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .admin-product-ui a[href]:hover {
+    text-decoration-color: currentColor;
+  }
+}
+
+/* Strengthen the many existing inline admin cards without touching storefront.
+   These selectors intentionally target the shared admin token already present in
+   existing inline styles, giving legacy screens the same surface treatment. */
+.admin-product-ui div[style*="background: var(--admin-card-bg"],
+.admin-product-ui section[style*="background: var(--admin-card-bg"],
+.admin-product-ui article[style*="background: var(--admin-card-bg"] {
+  border-color: var(--admin-border-subtle) !important;
+  box-shadow: var(--admin-shadow-card) !important;
+}
+
+/* Common white cards that use literal colors in older admin modules. */
+.admin-product-ui div[style*="background: rgb(255, 255, 255)"],
+.admin-product-ui div[style*="background: #fff"],
+.admin-product-ui div[style*="background: #ffffff"] {
+  border-color: var(--admin-border-subtle);
+}
+
+/* Dense tables: clear header band + interactive row contrast + crisp grid. */
+.admin-product-ui table {
+  background: var(--admin-card-bg, #fff);
+}
+
+.admin-product-ui thead th {
+  color: var(--admin-th-text, #4d514b) !important;
+  background: var(--admin-table-head, #f8f9f7) !important;
+  border-bottom: 1px solid var(--admin-border-strong) !important;
+}
+
+.admin-product-ui tbody td {
+  border-bottom-color: var(--admin-border-subtle) !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .admin-product-ui tbody tr:hover > td {
+    background: color-mix(in srgb, var(--admin-row-hover, #f0f2ef) 88%, white) !important;
+    box-shadow: inset 0 1px 0 rgba(28,53,42,0.018), inset 0 -1px 0 rgba(28,53,42,0.018);
+  }
+}
+
+/* Sticky shell should feel like a separate layer. */
+.admin-product-ui header {
+  isolation: isolate;
+}
+
+/* Menus/popovers: floating surface, not another flat card. */
+.admin-product-ui .admin-menu-panel,
+.admin-product-ui [role="menu"] {
+  box-shadow: var(--admin-shadow-float) !important;
+  border-color: var(--admin-border-strong) !important;
+}
+
+/* Route feedback: more visible but still fast and non-blocking. */
+.admin-product-ui .admin-route-progress {
+  height: 2px;
+  overflow: hidden;
+  background: transparent;
+}
+
+.admin-product-ui .admin-route-progress > span {
+  box-shadow: 0 0 12px rgba(185,138,62,0.38);
+}
+
+.admin-product-ui .admin-content-enter {
+  animation: admin-content-settle-v3 180ms var(--admin-motion-ease) both;
+}
+
+@keyframes admin-content-settle-v3 {
+  from { opacity: 0.58; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Skeleton bars intentionally use Vercel-like contrast: obvious geometry,
+   stable dimensions, and a soft moving highlight rather than faint pulse. */
+.admin-product-ui .admin-skeleton {
+  background: #dddfdc;
+  border: 1px solid rgba(23,26,23,0.025);
+}
+
+.admin-product-ui .admin-skeleton::after {
+  background: linear-gradient(100deg, transparent 15%, rgba(255,255,255,0.82) 48%, transparent 82%);
+  animation-duration: 1.05s;
+}
+
+.admin-product-ui .admin-route-skeleton-card,
+.admin-product-ui .admin-route-skeleton-panel,
+.admin-product-ui .admin-native-route-skeleton .admin-surface {
+  background: #fff;
+  box-shadow: var(--admin-shadow-card);
+  border-color: var(--admin-border-subtle) !important;
+}
+
+/* Tiny hover lift only for explicitly interactive card-like links. */
+@media (hover: hover) and (pointer: fine) {
+  .admin-product-ui a[style*="display: block"][style*="border"],
+  .admin-product-ui a[style*="display: flex"][style*="border"] {
+    transition:
+      transform var(--admin-motion-fast) var(--admin-motion-ease),
+      border-color var(--admin-motion-fast) var(--admin-motion-ease),
+      box-shadow var(--admin-motion-fast) var(--admin-motion-ease),
+      background-color var(--admin-motion-fast) var(--admin-motion-ease);
+  }
+  .admin-product-ui a[style*="display: block"][style*="border"]:hover,
+  .admin-product-ui a[style*="display: flex"][style*="border"]:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--admin-shadow-card-hover);
+  }
+}
+
+/* Better text rhythm for utility UIs. */
+.admin-product-ui h1 { font-weight: 700 !important; }
+.admin-product-ui h2 { font-weight: 700 !important; }
+.admin-product-ui h3 { font-weight: 650 !important; }
+.admin-product-ui :is(h1,h2,h3) + p { margin-top: 5px; }
+
+.admin-product-ui :is(td, th, input, select, textarea, button) {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-product-ui .admin-content-enter { animation: none !important; }
+  .admin-product-ui button:not(:disabled):not([aria-disabled="true"]):not([data-no-press]) {
+    transform: none !important;
+    will-change: auto;
+  }
+}
