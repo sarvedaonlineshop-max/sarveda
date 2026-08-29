@@ -726,3 +726,148 @@ select:-webkit-autofill {
     animation: none;
   }
 }
+
+/* ─── Admin navigation loading surface ─────────────────────────────
+   Fast navigations only show the thin progress line. Slower navigations add
+   a structural skeleton after 110ms, replacing the old centered spinner card.
+   This is deliberately admin-scoped and does not participate in route timing. */
+.admin-motion-root .admin-route-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 24;
+  pointer-events: none;
+}
+
+.admin-motion-root .admin-route-progress {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  height: 2px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--admin-card-border, #e8e2d9) 45%, transparent);
+}
+
+.admin-motion-root .admin-route-progress > span {
+  display: block;
+  height: 100%;
+  width: 34%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, #b98a3e 28%, #d9b36f 72%, transparent);
+  animation: admin-route-progress 900ms var(--admin-motion-ease) infinite;
+  will-change: transform;
+}
+
+@keyframes admin-route-progress {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(315%); }
+}
+
+.admin-motion-root .admin-route-skeleton {
+  position: absolute;
+  inset: 2px 0 0;
+  padding: 24px 32px 48px;
+  background: var(--admin-workspace-bg, #f1ede4);
+  animation: admin-route-skeleton-in var(--admin-motion-fast) var(--admin-motion-ease) both;
+}
+
+@keyframes admin-route-skeleton-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.admin-motion-root .admin-route-skeleton-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.admin-motion-root .admin-route-skeleton-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.admin-motion-root .admin-route-skeleton-card,
+.admin-motion-root .admin-route-skeleton-panel {
+  border: 1px solid var(--admin-card-border, #e8e2d9);
+  background: var(--admin-card-bg, #fff);
+  box-shadow: 0 1px 2px rgba(28, 53, 42, 0.035), 0 8px 28px rgba(28, 53, 42, 0.045);
+}
+
+.admin-motion-root .admin-route-skeleton-card {
+  min-height: 112px;
+  padding: 17px;
+  border-radius: 12px;
+}
+
+.admin-motion-root .admin-route-skeleton-panel {
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.admin-motion-root .admin-route-skeleton-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 58px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--admin-card-border, #e8e2d9);
+}
+
+.admin-motion-root .admin-route-skeleton-toolbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-motion-root .admin-route-skeleton-table {
+  padding: 0 16px;
+}
+
+.admin-motion-root .admin-route-skeleton-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 180px 140px 100px;
+  align-items: center;
+  gap: 24px;
+  min-height: 52px;
+  border-bottom: 1px solid color-mix(in srgb, var(--admin-card-border, #e8e2d9) 72%, transparent);
+}
+
+.admin-motion-root .admin-route-skeleton-row:last-child {
+  border-bottom: 0;
+}
+
+/* Connected, utility-style focus/hover feedback for admin controls. */
+.admin-motion-root a[href]:not([data-no-admin-link-motion]) {
+  text-underline-offset: 3px;
+}
+
+.admin-motion-root button:not(:disabled):not([aria-disabled="true"]),
+.admin-motion-root [role="button"]:not([aria-disabled="true"]) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 900px) {
+  .admin-motion-root .admin-route-skeleton {
+    padding: 20px 16px 40px;
+  }
+  .admin-motion-root .admin-route-skeleton-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .admin-motion-root .admin-route-skeleton-row {
+    grid-template-columns: minmax(140px, 1fr) 110px;
+  }
+  .admin-motion-root .admin-route-skeleton-row > :nth-child(n + 3) {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-motion-root .admin-route-progress > span,
+  .admin-motion-root .admin-route-skeleton {
+    animation: none !important;
+  }
+}

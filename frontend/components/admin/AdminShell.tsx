@@ -70,7 +70,7 @@ function AdminShellInner({
 }) {
   const pathname = usePathname();
   const pageTitle = getPageTitle(pathname);
-  const { isNavigating } = useAdminNav();
+  const { isNavigating, beginNavigation } = useAdminNav();
   const reduceMotion = useReducedMotion();
 
   const bg = preferDarkMain ? t.workspaceBgDark : t.workspaceBg;
@@ -92,6 +92,19 @@ function AdminShellInner({
   return (
     <div
       className={`admin-motion-root ${preferDarkMain ? "dark" : ""}`}
+      onClickCapture={(event) => {
+        // Observe all normal internal admin links, not only sidebar links, so
+        // route feedback is consistent across tables, cards and breadcrumbs.
+        if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+          return;
+        }
+        const target = event.target as HTMLElement | null;
+        const anchor = target?.closest?.("a[href]") as HTMLAnchorElement | null;
+        if (!anchor || anchor.target === "_blank" || anchor.hasAttribute("download")) return;
+        const url = new URL(anchor.href, window.location.href);
+        if (url.origin !== window.location.origin || !url.pathname.startsWith("/admin")) return;
+        beginNavigation(`${url.pathname}${url.search}`);
+      }}
       style={{
         "--admin-card-bg": cardBg,
         "--admin-card-border": cardBorder,
@@ -338,9 +351,7 @@ function AdminShellInner({
             <div
               style={{
                 width: "100%",
-                maxWidth: "none",
-                opacity: isNavigating ? 0.45 : 1,
-                transition: "opacity 0.15s ease"
+                maxWidth: "none"
               }}
             >
               {children}

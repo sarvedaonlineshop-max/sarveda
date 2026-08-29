@@ -6,10 +6,9 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState
 } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 type AdminNavContextValue = {
   /** Pathname used for active styling (optimistic while navigating). */
@@ -27,15 +26,13 @@ function hrefPath(href: string): string {
 
 export function AdminNavProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
-  const startedAt = useRef(0);
-
   const beginNavigation = useCallback(
     (href: string) => {
       const nextPath = hrefPath(href);
       if (nextPath === pathname && !href.includes("?")) return;
-      startedAt.current = Date.now();
       setPendingHref(href);
       setIsNavigating(true);
     },
@@ -45,18 +42,23 @@ export function AdminNavProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!pendingHref) return;
     const pendingPath = hrefPath(pendingHref);
-    const arrived =
+    const pendingQuery = pendingHref.includes("?") ? pendingHref.split("?")[1] ?? "" : null;
+    const pathArrived =
       pathname === pendingPath ||
       (pendingPath !== "/admin" && pathname.startsWith(`${pendingPath}/`));
-    if (!arrived) return;
+    const queryArrived =
+      pendingQuery === null || searchParams.toString() === pendingQuery;
+    if (!pathArrived || !queryArrived) return;
 
-    const remaining = Math.max(0, 280 - (Date.now() - startedAt.current));
-    const t = window.setTimeout(() => {
+    // Navigation feedback should follow the actual route, not impose an
+    // artificial minimum delay. Clear on the next paint after the new route
+    // commits so fast admin navigation stays fast.
+    const frame = window.requestAnimationFrame(() => {
       setIsNavigating(false);
       setPendingHref(null);
-    }, remaining);
-    return () => window.clearTimeout(t);
-  }, [pathname, pendingHref]);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [pathname, pendingHref, searchParams]);
 
   useEffect(() => {
     if (!isNavigating) return;
