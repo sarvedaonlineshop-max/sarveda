@@ -133,6 +133,7 @@ export function AdminProfileMenu({
         <div
           role="dialog"
           aria-label="Login history"
+          className="admin-menu-panel"
           style={{
             position: "absolute",
             right: 0,

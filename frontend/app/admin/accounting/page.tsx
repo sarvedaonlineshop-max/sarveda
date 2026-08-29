@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 
 import { AdminAccountingHeader } from "@/components/admin/accounting/AdminAccountingNav";
+import { AdminSkeleton } from "@/components/admin/AdminSkeleton";
 import {
   AccountingAlert,
   AccountingEmptyState,
@@ -251,7 +252,13 @@ export default function AdminAccountingDashboardPage() {
         </AccountingAlert>
       ) : null}
 
-      {loading ? <p className="text-sm text-[#8a7060]">Loading overview…</p> : null}
+      {loading ? (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" role="status" aria-label="Loading overview">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <AdminSkeleton key={i} height={96} style={{ borderRadius: 12 }} />
+          ))}
+        </div>
+      ) : null}
 
       {financial || purchases ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

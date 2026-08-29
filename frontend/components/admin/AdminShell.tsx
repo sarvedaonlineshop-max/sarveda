@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminNotificationsBell } from "@/components/admin/AdminNotificationsBell";
 import { AdminProfileMenu } from "@/components/admin/AdminProfileMenu";
 import { AdminNavProvider, useAdminNav } from "@/components/admin/AdminNavContext";
 import { AdminLoadingOverlay } from "@/components/admin/AdminLoadingOverlay";
+import { adminOverlayTransition } from "@/lib/admin-motion";
 import { adminTheme as t } from "@/lib/admin-theme";
 
 const THEME_KEY = "sarveda-admin-theme";
@@ -69,6 +71,7 @@ function AdminShellInner({
   const pathname = usePathname();
   const pageTitle = getPageTitle(pathname);
   const { isNavigating } = useAdminNav();
+  const reduceMotion = useReducedMotion();
 
   const bg = preferDarkMain ? t.workspaceBgDark : t.workspaceBg;
   const isDark = preferDarkMain;
@@ -88,7 +91,7 @@ function AdminShellInner({
 
   return (
     <div
-      className={preferDarkMain ? "dark" : ""}
+      className={`admin-motion-root ${preferDarkMain ? "dark" : ""}`}
       style={{
         "--admin-card-bg": cardBg,
         "--admin-card-border": cardBorder,
@@ -111,21 +114,29 @@ function AdminShellInner({
           fontFamily: "var(--font-admin-sans), ui-sans-serif, system-ui, sans-serif"
         }}
       >
-        {sidebarOpen && (
-          <button
-            type="button"
-            style={{
-              position: "fixed",
-              inset: 0,
-              zIndex: 40,
-              background: "rgba(0,0,0,0.5)",
-              border: "none",
-              cursor: "pointer"
-            }}
-            aria-label="Close menu"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
+        <AnimatePresence>
+          {sidebarOpen ? (
+            <motion.button
+              key="admin-sidebar-backdrop"
+              type="button"
+              data-no-press
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 40,
+                background: "rgba(0,0,0,0.5)",
+                border: "none",
+                cursor: "pointer"
+              }}
+              aria-label="Close menu"
+              onClick={() => setSidebarOpen(false)}
+              initial={reduceMotion ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={reduceMotion ? undefined : { opacity: 0 }}
+              transition={reduceMotion ? { duration: 0 } : adminOverlayTransition}
+            />
+          ) : null}
+        </AnimatePresence>
 
         <aside
           style={{
@@ -136,7 +147,9 @@ function AdminShellInner({
             zIndex: 50,
             width: "240px",
             transform: sidebarOpen ? "translateX(0)" : undefined,
-            transition: "transform 0.2s ease"
+            transition: reduceMotion
+              ? "none"
+              : "transform var(--admin-motion-normal, 180ms) var(--admin-motion-ease, cubic-bezier(0.22, 1, 0.36, 1))"
           }}
           className={`${sidebarOpen ? "" : "-translate-x-full md:translate-x-0"}`}
         >

@@ -966,6 +966,220 @@ export function adminOrderInvoiceDownloadUrl(orderId: string): string {
   return `/api/admin/orders/${encodeURIComponent(orderId)}/invoice/download`;
 }
 
+export type AdminDeliveryChallan = {
+  id: string;
+  challanNumber: string;
+  orderId: string;
+  challanDate: string;
+  reason: string;
+  reasonLabel: string;
+  status: string;
+  awb: string | null;
+  carrier: string | null;
+  buyerGstin: string | null;
+  downloadUrl: string;
+  created?: boolean;
+};
+
+export function fetchAdminOrderDeliveryChallan(id: string, signal?: AbortSignal) {
+  return adminFetch<AdminDeliveryChallan | null>(`/api/admin/orders/${id}/delivery-challan`, {
+    signal
+  });
+}
+
+export function generateAdminOrderDeliveryChallan(
+  orderId: string,
+  body?: {
+    reason?: string;
+    reasonOther?: string | null;
+    notes?: string | null;
+    buyerGstin?: string | null;
+    refreshShipment?: boolean;
+  }
+) {
+  return adminFetch<AdminDeliveryChallan>(`/api/admin/orders/${orderId}/delivery-challan`, {
+    method: "POST",
+    body: JSON.stringify(body ?? {})
+  });
+}
+
+export function adminOrderDeliveryChallanDownloadUrl(orderId: string): string {
+  return `/api/admin/orders/${encodeURIComponent(orderId)}/delivery-challan/download`;
+}
+
+export type AdminEwayBillItem = {
+  id: string;
+  productName: string;
+  sku: string | null;
+  hsnCode: string | null;
+  quantity: number;
+  unitOfMeasure: string;
+  taxableValueInPaise: number;
+  gstRatePercent: number;
+  cgstInPaise: number;
+  sgstInPaise: number;
+  igstInPaise: number;
+  cessInPaise: number;
+  lineTotalInPaise: number;
+  sortOrder: number;
+};
+
+export type AdminEwayBill = {
+  id: string;
+  orderId: string;
+  sourceDocumentType: "TAX_INVOICE" | "DELIVERY_CHALLAN";
+  sourceDocumentNumber: string;
+  sourceDocumentDate: string;
+  ebn: string | null;
+  ewbDate: string | null;
+  validUntil: string | null;
+  status: "NOT_REQUIRED" | "PENDING" | "GENERATED" | "CANCELLED" | "EXPIRED";
+  displayExpiry: "EXPIRED" | null;
+  buyerGstin: string | null;
+  transporterName: string | null;
+  transporterId: string | null;
+  transportDocNo: string | null;
+  transportMode: string | null;
+  vehicleNumber: string | null;
+  approxDistanceKm: number | null;
+  notes: string | null;
+  generationMethod: string;
+  provider: string | null;
+  documentValueInPaise: number;
+  taxableValueInPaise: number;
+  cancelledAt: string | null;
+  items: AdminEwayBillItem[];
+};
+
+export type AdminEwayListData = {
+  eligibilityCopy: string;
+  likelyNotRequired: boolean;
+  sources: {
+    taxInvoice: { id: string; documentNumber: string; documentDate: string } | null;
+    deliveryChallan: { id: string; documentNumber: string; documentDate: string } | null;
+  };
+  primary: AdminEwayBill | null;
+  history: AdminEwayBill[];
+};
+
+export type AdminEwayReviewPack = {
+  sourceDocumentType: "TAX_INVOICE" | "DELIVERY_CHALLAN";
+  sourceDocumentNumber: string;
+  sourceDocumentDate: string;
+  documentValueInPaise: number;
+  taxableValueInPaise: number;
+  currency: string;
+  interState: boolean;
+  supplier: {
+    legalName: string;
+    gstin: string;
+    addressLines: string[];
+    state: string;
+    postalCode: string | null;
+  };
+  recipient: {
+    name: string;
+    gstin: string | null;
+    gstinStatus: string;
+    line1: string;
+    line2: string | null;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
+  items: Array<{
+    productName: string;
+    sku: string | null;
+    hsnCode: string | null;
+    quantity: number;
+    unitOfMeasure: string;
+    taxableValueInPaise: number;
+    gstRatePercent: number;
+    cgstInPaise: number;
+    sgstInPaise: number;
+    igstInPaise: number;
+    lineTotalInPaise: number;
+    sortOrder: number;
+    fields: { unitOfMeasure: string; hsnCode: string };
+  }>;
+  transport: {
+    shipmentId: string | null;
+    transporterName: string | null;
+    transportDocNo: string | null;
+    transportDocDate: string | null;
+    transportMode: string | null;
+    fieldStatus: Record<string, string>;
+  };
+  hints: { eligibilityCopy: string; likelyNotRequired: boolean; missingCritical: string[] };
+};
+
+export function fetchAdminOrderEwayBills(orderId: string, signal?: AbortSignal) {
+  return adminFetch<AdminEwayListData>(`/api/admin/orders/${orderId}/eway-bills`, { signal });
+}
+
+export function fetchAdminOrderEwayReview(
+  orderId: string,
+  sourceDocumentType: "TAX_INVOICE" | "DELIVERY_CHALLAN"
+) {
+  return adminFetch<AdminEwayReviewPack>(
+    `/api/admin/orders/${orderId}/eway-bills/review?sourceDocumentType=${sourceDocumentType}`
+  );
+}
+
+export function prepareAdminOrderEwayBill(
+  orderId: string,
+  body: Record<string, unknown>
+) {
+  return adminFetch<AdminEwayBill>(`/api/admin/orders/${orderId}/eway-bills/prepare`, {
+    method: "POST",
+    body: JSON.stringify(body)
+  });
+}
+
+export function recordAdminOrderEwayBill(
+  orderId: string,
+  body: Record<string, unknown>,
+  ewayBillId?: string | null
+) {
+  const path = ewayBillId
+    ? `/api/admin/orders/${orderId}/eway-bills/${ewayBillId}/record`
+    : `/api/admin/orders/${orderId}/eway-bills/record`;
+  return adminFetch<AdminEwayBill>(path, {
+    method: "POST",
+    body: JSON.stringify(body)
+  });
+}
+
+export function updateAdminOrderEwayTransport(
+  orderId: string,
+  ewayBillId: string,
+  body: Record<string, unknown>
+) {
+  return adminFetch<AdminEwayBill>(
+    `/api/admin/orders/${orderId}/eway-bills/${ewayBillId}/transport`,
+    { method: "PATCH", body: JSON.stringify(body) }
+  );
+}
+
+export function cancelAdminOrderEwayBill(
+  orderId: string,
+  ewayBillId: string,
+  notes?: string | null
+) {
+  return adminFetch<AdminEwayBill>(`/api/admin/orders/${orderId}/eway-bills/${ewayBillId}/cancel`, {
+    method: "POST",
+    body: JSON.stringify({ confirmedPortalCancelled: true, notes: notes ?? null })
+  });
+}
+
+export function markAdminOrderEwayNotRequired(orderId: string, notes?: string | null) {
+  return adminFetch<AdminEwayBill>(`/api/admin/orders/${orderId}/eway-bills/not-required`, {
+    method: "POST",
+    body: JSON.stringify({ notes: notes ?? null })
+  });
+}
+
 export type AdminProductRow = {
   id: string;
   slug: string;

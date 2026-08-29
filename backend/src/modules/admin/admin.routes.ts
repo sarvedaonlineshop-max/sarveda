@@ -32,6 +32,14 @@ import { marketplaceAdminRoutes } from "../marketplaces/marketplaces.routes";
 import { purchasesAdminRoutes } from "../purchases/purchases.routes";
 import { accountingAdminRoutes } from "../accounting/accounting.routes";
 import { isAccountingEmailAllowed } from "../accounting/accounting-access";
+import { generateDeliveryChallanBodySchema } from "../delivery-challans/challan.schemas";
+import {
+  ewayCancelBodySchema,
+  ewayMarkNotRequiredBodySchema,
+  ewayPrepareBodySchema,
+  ewayRecordEbnBodySchema,
+  ewayUpdateTransportBodySchema
+} from "../eway-bills/eway-bill.schemas";
 import * as serviceRequest from "../orders/order-service-request.controller";
 import type { NextFunction, Request, Response } from "express";
 
@@ -99,6 +107,46 @@ router.get("/orders", admin.ordersList);
 router.get("/orders/:id/invoice/download", admin.downloadOrderInvoice);
 router.get("/orders/:id/invoice", admin.orderInvoice);
 router.post("/orders/:id/invoice/regenerate", admin.regenerateOrderInvoice);
+router.get("/orders/:id/delivery-challan/download", admin.downloadOrderDeliveryChallan);
+router.get("/orders/:id/delivery-challan", admin.orderDeliveryChallan);
+router.post(
+  "/orders/:id/delivery-challan",
+  validateBody(generateDeliveryChallanBodySchema),
+  admin.generateOrderDeliveryChallan
+);
+router.get("/orders/:id/eway-bills", admin.listOrderEwayBillsHandler);
+router.get("/orders/:id/eway-bills/review", admin.reviewOrderEwayBill);
+router.post(
+  "/orders/:id/eway-bills/prepare",
+  validateBody(ewayPrepareBodySchema),
+  admin.prepareOrderEwayBill
+);
+router.post(
+  "/orders/:id/eway-bills/record",
+  validateBody(ewayRecordEbnBodySchema),
+  admin.recordOrderEwayBillEbn
+);
+router.post(
+  "/orders/:id/eway-bills/not-required",
+  validateBody(ewayMarkNotRequiredBodySchema),
+  admin.markOrderEwayNotRequired
+);
+router.get("/orders/:id/eway-bills/:ewayBillId", admin.getOrderEwayBill);
+router.post(
+  "/orders/:id/eway-bills/:ewayBillId/record",
+  validateBody(ewayRecordEbnBodySchema),
+  admin.recordOrderEwayBillEbn
+);
+router.patch(
+  "/orders/:id/eway-bills/:ewayBillId/transport",
+  validateBody(ewayUpdateTransportBodySchema),
+  admin.updateOrderEwayTransport
+);
+router.post(
+  "/orders/:id/eway-bills/:ewayBillId/cancel",
+  validateBody(ewayCancelBodySchema),
+  admin.cancelOrderEwayBill
+);
 router.get("/orders/:id", admin.orderDetail);
 router.get("/orders/:id/shipping-breakdown", admin.orderShippingBreakdown);
 router.patch(

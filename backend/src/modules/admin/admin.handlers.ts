@@ -1074,6 +1074,217 @@ export async function regenerateOrderInvoice(req: Request, res: Response, next: 
   }
 }
 
+export async function orderDeliveryChallan(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const {
+      getDeliveryChallanForOrder,
+      serializeChallan
+    } = await import("../delivery-challans/delivery-challan.service");
+    const row = await getDeliveryChallanForOrder(id);
+    res.json({
+      success: true,
+      data: row ? serializeChallan(row) : null
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function generateOrderDeliveryChallan(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const {
+      generateDeliveryChallan,
+      serializeChallan
+    } = await import("../delivery-challans/delivery-challan.service");
+    const result = await generateDeliveryChallan(id, req.body);
+    res.status(result.created ? 201 : 200).json({
+      success: true,
+      data: {
+        ...serializeChallan(result.challan),
+        created: result.created
+      },
+      message: result.created ? "Delivery challan generated" : "Delivery challan already exists"
+    });
+  } catch (err) {
+    const e = err as Error & { statusCode?: number; code?: string };
+    if (e.statusCode) {
+      res.status(e.statusCode).json({
+        success: false,
+        error: e.message,
+        code: e.code ?? "CHALLAN_ERROR"
+      });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function downloadOrderDeliveryChallan(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const order = await prisma.order.findFirst({
+      where: { id, deletedAt: null },
+      select: { id: true }
+    });
+    if (!order) {
+      res.status(404).json({ success: false, error: "Order not found", code: "NOT_FOUND" });
+      return;
+    }
+
+    const { downloadDeliveryChallanPdf } = await import("../delivery-challans/delivery-challan.service");
+    const result = await downloadDeliveryChallanPdf(order.id);
+    if (!result) {
+      res.status(404).json({
+        success: false,
+        error: "Delivery challan not found — generate it first",
+        code: "CHALLAN_NOT_FOUND"
+      });
+      return;
+    }
+
+    const filename = `${result.challanNumber.replace(/\//g, "-")}.pdf`;
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.send(result.pdf);
+  } catch (err) {
+    next(err);
+  }
+}
+
+function sendEwayServiceError(res: Response, err: unknown, next: NextFunction) {
+  const e = err as Error & { statusCode?: number; code?: string };
+  if (e.statusCode) {
+    res.status(e.statusCode).json({
+      success: false,
+      error: e.message,
+      code: e.code ?? "EWAY_ERROR"
+    });
+    return;
+  }
+  next(err);
+}
+
+export async function listOrderEwayBillsHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { listOrderEwayBills } = await import("../eway-bills/eway-bill.service");
+    const data = await listOrderEwayBills(req.params.id);
+    res.json({ success: true, data });
+  } catch (err) {
+    sendEwayServiceError(res, err, next);
+  }
+}
+
+export async function reviewOrderEwayBill(req: Request, res: Response, next: NextFunction) {
+  try {
+    const source = String(req.query.sourceDocumentType || "");
+    if (source !== "TAX_INVOICE" && source !== "DELIVERY_CHALLAN") {
+      res.status(400).json({
+        success: false,
+        error: "sourceDocumentType must be TAX_INVOICE or DELIVERY_CHALLAN",
+        code: "INVALID_SOURCE"
+      });
+      return;
+    }
+    const { buildEwayReviewPack } = await import("../eway-bills/eway-bill.service");
+    const data = await buildEwayReviewPack(req.params.id, source);
+    res.json({ success: true, data });
+  } catch (err) {
+    sendEwayServiceError(res, err, next);
+  }
+}
+
+export async function prepareOrderEwayBill(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { prepareEwayBill, serializeEwayBill } = await import("../eway-bills/eway-bill.service");
+    const row = await prepareEwayBill(req.params.id, req.body, req.authUser?.id ?? null);
+    res.status(201).json({
+      success: true,
+      data: serializeEwayBill(row),
+      message:
+        "Preparation saved. Generate the E-Way Bill on the government portal, then enter the issued EBN."
+    });
+  } catch (err) {
+    sendEwayServiceError(res, err, next);
+  }
+}
+
+export async function recordOrderEwayBillEbn(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { recordEwayBillEbn, serializeEwayBill } = await import("../eway-bills/eway-bill.service");
+    const ewayBillId =
+      typeof req.params.ewayBillId === "string" && req.params.ewayBillId !== "new"
+        ? req.params.ewayBillId
+        : null;
+    const row = await recordEwayBillEbn(
+      req.params.id,
+      ewayBillId,
+      req.body,
+      req.authUser?.id ?? null
+    );
+    res.status(ewayBillId ? 200 : 201).json({
+      success: true,
+      data: serializeEwayBill(row),
+      message: "Government EBN recorded (manual). Sarveda did not generate this E-Way Bill."
+    });
+  } catch (err) {
+    sendEwayServiceError(res, err, next);
+  }
+}
+
+export async function updateOrderEwayTransport(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { updateEwayTransport, serializeEwayBill } = await import("../eway-bills/eway-bill.service");
+    const row = await updateEwayTransport(req.params.id, req.params.ewayBillId, req.body);
+    res.json({ success: true, data: serializeEwayBill(row), message: "Transport details updated" });
+  } catch (err) {
+    sendEwayServiceError(res, err, next);
+  }
+}
+
+export async function cancelOrderEwayBill(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { markEwayCancelled, serializeEwayBill } = await import("../eway-bills/eway-bill.service");
+    const row = await markEwayCancelled(req.params.id, req.params.ewayBillId, req.body?.notes);
+    res.json({
+      success: true,
+      data: serializeEwayBill(row),
+      message: "Local E-Way Bill record marked cancelled. Government portal cancel remains external."
+    });
+  } catch (err) {
+    sendEwayServiceError(res, err, next);
+  }
+}
+
+export async function markOrderEwayNotRequired(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { markEwayNotRequired, serializeEwayBill } = await import("../eway-bills/eway-bill.service");
+    const row = await markEwayNotRequired(
+      req.params.id,
+      req.body?.notes,
+      req.authUser?.id ?? null
+    );
+    res.status(201).json({
+      success: true,
+      data: serializeEwayBill(row),
+      message: "Marked E-Way Bill not required"
+    });
+  } catch (err) {
+    sendEwayServiceError(res, err, next);
+  }
+}
+
+export async function getOrderEwayBill(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { getEwayBill, serializeEwayBill } = await import("../eway-bills/eway-bill.service");
+    const row = await getEwayBill(req.params.id, req.params.ewayBillId);
+    res.json({ success: true, data: serializeEwayBill(row) });
+  } catch (err) {
+    sendEwayServiceError(res, err, next);
+  }
+}
+
 export async function patchOrderStatus(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;

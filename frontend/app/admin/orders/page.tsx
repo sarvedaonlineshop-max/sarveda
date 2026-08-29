@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AdminPagination } from "@/components/admin/AdminPagination";
+import { AdminTableSkeleton } from "@/components/admin/AdminSkeleton";
 import type { AdminOrdersQuery, OrdersListData } from "@/lib/admin-api";
 import { downloadAdminOrdersExport, fetchAdminOrders } from "@/lib/admin-api";
 import { formatMinorFromPaise } from "@/lib/money";
@@ -532,19 +533,7 @@ export default function AdminOrdersPage() {
       )}
 
       {!data ? (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            color: "var(--admin-text-muted, #8a7060)",
-            padding: "40px 16px",
-            justifyContent: "center"
-          }}
-        >
-          <span style={{ fontSize: "22px" }}>🛒</span>
-          <span style={{ fontSize: "14px" }}>Loading orders…</span>
-        </div>
+        <AdminTableSkeleton rows={8} cols={7} />
       ) : (
         <>
           <div style={{ ...card, overflowX: "auto" }}>

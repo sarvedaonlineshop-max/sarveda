@@ -186,6 +186,13 @@ export async function cleanupTestOrder(orderId: string) {
   await prisma.orderItem.deleteMany({ where: { orderId } });
   await prisma.orderAddress.deleteMany({ where: { orderId } });
   await prisma.invoice.deleteMany({ where: { orderId } });
+  await prisma.deliveryChallanItem.deleteMany({
+    where: { deliveryChallan: { orderId } }
+  });
+  await prisma.eWayBillItem.deleteMany({ where: { ewayBill: { orderId } } });
+  await prisma.eWayBill.deleteMany({ where: { orderId } });
+  await prisma.deliveryChallan.deleteMany({ where: { orderId } });
+  await prisma.shipment.deleteMany({ where: { orderId } });
   await prisma.order.deleteMany({ where: { id: orderId } });
 }
 

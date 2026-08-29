@@ -8,14 +8,15 @@ import {
   ArrowRight,
   BadgeIndianRupee,
   Box,
-  Clock3,
   Layers3,
   PackageCheck,
   ShoppingCart
 } from "lucide-react";
 import { AdminDashboardAnalytics } from "@/components/admin/AdminDashboardAnalytics";
+import { AdminSkeleton, AdminTableSkeleton } from "@/components/admin/AdminSkeleton";
 import type { DashboardData } from "@/lib/admin-api";
 import { fetchAdminDashboard } from "@/lib/admin-api";
+import { adminMotionSec, adminMotionEase } from "@/lib/admin-motion";
 import { formatINRFromPaise } from "@/lib/money";
 import { adminTheme as t } from "@/lib/admin-theme";
 
@@ -25,7 +26,7 @@ const cardStyle: React.CSSProperties = {
   border: "1px solid var(--admin-card-border, #e8e2d9)",
   padding: "20px 22px",
   boxShadow: "0 1px 2px rgba(15,23,42,0.04)",
-  transition: "box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease"
+  transition: "box-shadow var(--admin-motion-fast, 140ms) var(--admin-motion-ease, cubic-bezier(0.22, 1, 0.36, 1)), border-color var(--admin-motion-fast, 140ms) var(--admin-motion-ease, cubic-bezier(0.22, 1, 0.36, 1))"
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -129,18 +130,14 @@ export default function AdminDashboardPage() {
 
   if (!data) {
     return (
-      <div
-        role="status"
-        style={{
-          ...cardStyle,
-          color: "var(--admin-text-muted, #8a7060)",
-          display: "flex",
-          alignItems: "center",
-          gap: "10px"
-        }}
-      >
-        <Clock3 size={18} color="#b98a3e" />
-        🌿 Loading dashboard...
+      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }} role="status" aria-label="Loading dashboard">
+        <AdminSkeleton height={120} style={{ borderRadius: 16 }} />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16 }}>
+          {Array.from({ length: 7 }).map((_, i) => (
+            <AdminSkeleton key={i} height={110} style={{ borderRadius: 18 }} />
+          ))}
+        </div>
+        <AdminTableSkeleton rows={5} cols={4} />
       </div>
     );
   }
@@ -221,9 +218,9 @@ export default function AdminDashboardPage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       <motion.div
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, ease: "easeOut" }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: adminMotionSec.normal, ease: adminMotionEase }}
         style={{
           ...cardStyle,
           padding: "24px",
@@ -278,28 +275,18 @@ export default function AdminDashboardPage() {
           gap: "16px"
         }}
       >
-        {statCards.map((item, index) => (
+        {statCards.map((item) => (
           <motion.div
             key={item.label}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.04 * index, duration: 0.24 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: adminMotionSec.fast, ease: adminMotionEase }}
             style={{
               ...cardStyle,
               padding: "18px",
               borderBottom: `3px solid ${item.tone}20`,
               borderBottomLeftRadius: "0px",
               borderBottomRightRadius: "0px"
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = "0 10px 28px rgba(28,53,42,0.12)";
-              e.currentTarget.style.transform = "translateY(-3px)";
-              e.currentTarget.style.borderColor = "#e0d4b0";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = "0 1px 2px rgba(15,23,42,0.04)";
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.borderColor = "var(--admin-card-border, #e8e2d9)";
             }}
           >
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "10px" }}>
@@ -355,9 +342,9 @@ export default function AdminDashboardPage() {
 
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: "24px" }}>
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, delay: 0.08 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: adminMotionSec.fast, ease: adminMotionEase }}
           style={cardStyle}
         >
           <div
@@ -478,9 +465,9 @@ export default function AdminDashboardPage() {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, delay: 0.12 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: adminMotionSec.fast, ease: adminMotionEase }}
           style={cardStyle}
         >
           <div

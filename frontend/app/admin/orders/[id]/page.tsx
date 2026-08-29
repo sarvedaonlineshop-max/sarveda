@@ -6,10 +6,13 @@ import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft } from "lucide-react";
 
 import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
+import { AdminSkeleton, AdminSkeletonLines } from "@/components/admin/AdminSkeleton";
+import { AdminToast } from "@/components/admin/AdminToast";
 import {
   AdminOrderAttributionCard,
   type AdminOrderAttribution
 } from "@/components/admin/AdminOrderAttributionCard";
+import { AdminOrderEwayBillCard } from "@/components/admin/AdminOrderEwayBillCard";
 import {
   AdminOrderServiceRequests,
   type AdminServiceRequestRow
@@ -26,6 +29,9 @@ import {
   fetchAdminOrderDetail,
   fetchAdminOrderInvoice,
   adminOrderInvoiceDownloadUrl,
+  fetchAdminOrderDeliveryChallan,
+  generateAdminOrderDeliveryChallan,
+  adminOrderDeliveryChallanDownloadUrl,
   fetchAdminPickupLocations,
   patchAdminOrderAddress,
   patchAdminOrderItemWarehouses,
@@ -494,6 +500,14 @@ export default function AdminOrderDetailPage() {
     invoiceNo: string | null;
     downloadUrl: string | null;
   } | null>(null);
+  const [deliveryChallan, setDeliveryChallan] = useState<{
+    challanNumber: string;
+    downloadUrl: string;
+    awb: string | null;
+    carrier: string | null;
+    reasonLabel: string;
+  } | null>(null);
+  const [challanBusy, setChallanBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [shipBusy, setShipBusy] = useState<string | null>(null);
   const [pickupOptions, setPickupOptions] = useState<AdminPickupLocationRow[]>([]);
@@ -547,12 +561,6 @@ export default function AdminOrderDetailPage() {
     setToast({ message, error });
   }, []);
 
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 5200);
-    return () => clearTimeout(t);
-  }, [toast]);
-
   const load = useCallback(async () => {
     if (!id) return;
     setErr(null);
@@ -575,6 +583,22 @@ export default function AdminOrderDetailPage() {
       setBulkCourier(o.preferredCourier ?? "AUTO");
       const inv = await fetchAdminOrderInvoice(id);
       setInvoice(inv);
+      try {
+        const dc = await fetchAdminOrderDeliveryChallan(id);
+        setDeliveryChallan(
+          dc
+            ? {
+                challanNumber: dc.challanNumber,
+                downloadUrl: dc.downloadUrl,
+                awb: dc.awb,
+                carrier: dc.carrier,
+                reasonLabel: dc.reasonLabel
+              }
+            : null
+        );
+      } catch {
+        setDeliveryChallan(null);
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Failed to load order";
       setErr(msg);
@@ -1030,8 +1054,13 @@ export default function AdminOrderDetailPage() {
 
   if (!order) {
     return (
-      <div className="text-stone-500 dark:text-stone-400" role="status">
-        Loading…
+      <div className="space-y-6" role="status" aria-label="Loading order">
+        <AdminSkeleton height={72} style={{ borderRadius: 16 }} />
+        <div className="grid gap-4 md:grid-cols-2">
+          <AdminSkeleton height={180} style={{ borderRadius: 16 }} />
+          <AdminSkeleton height={180} style={{ borderRadius: 16 }} />
+        </div>
+        <AdminSkeletonLines lines={5} />
       </div>
     );
   }
@@ -1080,6 +1109,35 @@ export default function AdminOrderDetailPage() {
           0
         )
       : null);
+  async function handleGenerateDeliveryChallan(refreshShipment = false) {
+    if (!id || challanBusy) return;
+    setChallanBusy(true);
+    try {
+      const dc = await generateAdminOrderDeliveryChallan(id, {
+        reason: "SUPPLY_DELIVERY",
+        refreshShipment
+      });
+      setDeliveryChallan({
+        challanNumber: dc.challanNumber,
+        downloadUrl: dc.downloadUrl,
+        awb: dc.awb,
+        carrier: dc.carrier,
+        reasonLabel: dc.reasonLabel
+      });
+      pushToast(
+        refreshShipment
+          ? "Delivery challan updated with current AWB"
+          : dc.created
+            ? "Delivery challan generated"
+            : "Delivery challan already exists"
+      );
+    } catch (e) {
+      pushToast(e instanceof Error ? e.message : "Could not generate delivery challan", true);
+    } finally {
+      setChallanBusy(false);
+    }
+  }
+
   const showRefundActions =
     !["CANCELLED", "REFUNDED", "DELIVERED"].includes(order.status) &&
     ((order.paymentStatus === "CAPTURED" &&
@@ -1088,21 +1146,16 @@ export default function AdminOrderDetailPage() {
       order.paymentStatus === "PENDING" ||
       order.paymentStatus === "FAILED");
 
+  const canGenerateChallan =
+    order.status !== "CANCELLED" &&
+    order.status !== "REFUNDED" &&
+    !(order.status === "PENDING_PAYMENT" && order.paymentStatus === "PENDING" &&
+      !(order.payments ?? []).some((p) => p.provider === "COD"));
+  const hasAwb = order.shipments.some((s) => s.awb?.trim());
+
   return (
     <div className="space-y-8">
-      {toast ? (
-        <div
-          className={`fixed bottom-6 left-1/2 z-[110] max-w-md -translate-x-1/2 rounded-2xl border px-4 py-3 text-sm font-medium tracking-tight shadow-lg ${
-            toast.error
-              ? "border-red-300 bg-red-950 text-red-50 dark:border-red-800"
-              : "border-stone-300 bg-gradient-to-r from-stone-900 to-stone-800 text-amber-50 dark:border-stone-600"
-          }`}
-          style={toast.error ? undefined : { borderLeft: "3px solid #b98a3e" }}
-          role="status"
-        >
-          {toast.message}
-        </div>
-      ) : null}
+      <AdminToast toast={toast} onDismiss={() => setToast(null)} />
 
       <AdminConfirmModal
         open={statusConfirm !== null}
@@ -1436,39 +1489,115 @@ export default function AdminOrderDetailPage() {
         />
       ) : null}
 
-      {(invoice || showRefundActions) ? (
       <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          {invoice ? (
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Invoice</p>
-              {invoice.invoiceNo ? (
-                <p className="mt-0.5 font-mono text-xs text-stone-500 dark:text-stone-400">{invoice.invoiceNo}</p>
-              ) : null}
-              {invoice.invoiceNo || invoice.pdfUrl ? (
-                <a
-                  href={invoice.downloadUrl ?? adminOrderInvoiceDownloadUrl(id)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-3 inline-flex min-h-[34px] items-center rounded-full bg-amber-500 px-4 text-sm font-semibold text-stone-900 no-underline hover:bg-amber-400"
-                >
-                  Download PDF
-                </a>
+        <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Documents</p>
+        <div className="mt-3 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div className="grid min-w-0 flex-1 gap-5 sm:grid-cols-2">
+            {invoice ? (
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Tax Invoice</p>
+                {invoice.invoiceNo ? (
+                  <p className="mt-0.5 font-mono text-xs text-stone-500 dark:text-stone-400">{invoice.invoiceNo}</p>
+                ) : null}
+                {invoice.invoiceNo || invoice.pdfUrl ? (
+                  <a
+                    href={invoice.downloadUrl ?? adminOrderInvoiceDownloadUrl(id)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex min-h-[34px] items-center rounded-full bg-amber-500 px-4 text-sm font-semibold text-stone-900 no-underline hover:bg-amber-400"
+                  >
+                    Download PDF
+                  </a>
+                ) : (
+                  <p className="mt-2 text-sm text-stone-400 dark:text-stone-500">Invoice PDF not generated yet</p>
+                )}
+              </div>
+            ) : null}
+
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Delivery Challan</p>
+              {deliveryChallan ? (
+                <>
+                  <p className="mt-0.5 font-mono text-xs text-stone-500 dark:text-stone-400">
+                    {deliveryChallan.challanNumber}
+                  </p>
+                  {deliveryChallan.reasonLabel ? (
+                    <p className="mt-1 text-xs text-stone-500">{deliveryChallan.reasonLabel}</p>
+                  ) : null}
+                  {deliveryChallan.awb ? (
+                    <p className="mt-1 text-xs text-stone-500">
+                      AWB {deliveryChallan.awb}
+                      {deliveryChallan.carrier ? ` · ${deliveryChallan.carrier}` : ""}
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-xs text-stone-400">No AWB on challan snapshot yet</p>
+                  )}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <a
+                      href={deliveryChallan.downloadUrl || adminOrderDeliveryChallanDownloadUrl(id)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex min-h-[34px] items-center rounded-full bg-amber-500 px-4 text-sm font-semibold text-stone-900 no-underline hover:bg-amber-400"
+                    >
+                      Download PDF
+                    </a>
+                    {hasAwb ? (
+                      <button
+                        type="button"
+                        disabled={challanBusy}
+                        onClick={() => void handleGenerateDeliveryChallan(true)}
+                        className="inline-flex min-h-[34px] items-center rounded-full border border-stone-300 px-3 text-xs font-semibold text-stone-700 hover:bg-stone-50 disabled:opacity-50 dark:border-stone-600 dark:text-stone-200 dark:hover:bg-stone-800"
+                      >
+                        {challanBusy ? "Updating…" : "Refresh AWB on PDF"}
+                      </button>
+                    ) : null}
+                  </div>
+                </>
+              ) : canGenerateChallan ? (
+                <>
+                  <p className="mt-1 text-xs text-stone-500">
+                    Logistics document for goods movement — not a tax invoice.
+                  </p>
+                  <button
+                    type="button"
+                    disabled={challanBusy}
+                    onClick={() => void handleGenerateDeliveryChallan(false)}
+                    className="mt-3 inline-flex min-h-[34px] items-center rounded-full border border-stone-700 bg-stone-800 px-4 text-sm font-semibold text-amber-50 hover:bg-stone-700 disabled:opacity-50 dark:border-stone-500 dark:bg-stone-200 dark:text-stone-900"
+                  >
+                    {challanBusy ? "Generating…" : "Generate Delivery Challan"}
+                  </button>
+                </>
               ) : (
-                <p className="mt-2 text-sm text-stone-400 dark:text-stone-500">Invoice PDF not generated yet</p>
+                <p className="mt-2 text-sm text-stone-400 dark:text-stone-500">
+                  Available after payment (or COD confirmation).
+                </p>
               )}
             </div>
+
+            <div className="min-w-0">
+              <AdminOrderEwayBillCard orderId={id} onToast={pushToast} />
+            </div>
+
+            {hasAwb ? (
+              <div className="min-w-0 sm:col-span-2">
+                <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">Shipping labels / AWB</p>
+                <p className="mt-1 text-xs text-stone-500">
+                  Carrier packing slips and AWB actions are in the Shipping section below.
+                </p>
+              </div>
+            ) : null}
+          </div>
+          {showRefundActions ? (
+            <RefundCancelPanel
+              compact
+              orderId={order.id}
+              status={order.status}
+              paymentStatus={order.paymentStatus}
+              onDone={() => void load()}
+            />
           ) : null}
-          <RefundCancelPanel
-            compact
-            orderId={order.id}
-            status={order.status}
-            paymentStatus={order.paymentStatus}
-            onDone={() => void load()}
-          />
         </div>
       </div>
-      ) : null}
 
       {!order.shipments.some((s) => s.awb?.trim()) && shipUi ? (
         <div className="rounded-xl border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-stone-900">

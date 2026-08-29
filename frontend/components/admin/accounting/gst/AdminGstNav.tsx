@@ -28,7 +28,7 @@ export function AdminGstNav() {
             <Link
               key={href}
               href={href}
-              className={`rounded-md px-2.5 py-1.5 text-[11px] font-medium tracking-wide transition-colors ${
+              className={`rounded-md px-2.5 py-1.5 text-[11px] font-medium tracking-wide transition-[color,background-color,box-shadow] duration-100 ${
                 active
                   ? "bg-white text-[#1c352a] shadow-sm ring-1 ring-[#e0d8ce]"
                   : "text-[#8a7060] hover:bg-white/70 hover:text-[#4a3f38]"

@@ -599,3 +599,113 @@ select:-webkit-autofill {
     transform: none !important;
   }
 }
+
+/* ─── Admin motion system (scoped — does not affect storefront) ──── */
+.admin-motion-root {
+  --admin-motion-instant: 90ms;
+  --admin-motion-fast: 140ms;
+  --admin-motion-normal: 180ms;
+  --admin-motion-moderate: 220ms;
+  --admin-motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Subtle press feedback — admin buttons only */
+.admin-motion-root button:not(:disabled):not([aria-disabled="true"]):not([data-no-press]):active {
+  transform: scale(0.98);
+  transition:
+    transform var(--admin-motion-instant) var(--admin-motion-ease),
+    color var(--admin-motion-normal) ease-out,
+    background-color var(--admin-motion-normal) ease-out,
+    border-color var(--admin-motion-normal) ease-out,
+    opacity var(--admin-motion-normal) ease-out,
+    box-shadow var(--admin-motion-normal) ease-out;
+}
+
+.admin-motion-root button:disabled,
+.admin-motion-root button[aria-disabled="true"] {
+  transform: none;
+}
+
+/* Forms: quiet border/background transitions */
+.admin-motion-root input:not([type="checkbox"]):not([type="radio"]),
+.admin-motion-root select,
+.admin-motion-root textarea {
+  transition:
+    border-color var(--admin-motion-fast) var(--admin-motion-ease),
+    background-color var(--admin-motion-fast) var(--admin-motion-ease),
+    box-shadow var(--admin-motion-fast) var(--admin-motion-ease),
+    opacity var(--admin-motion-fast) var(--admin-motion-ease);
+}
+
+/* Profile / action menu panel entrance (CSS class toggled when open) */
+.admin-motion-root .admin-menu-panel {
+  animation: admin-menu-in var(--admin-motion-fast) var(--admin-motion-ease) both;
+  transform-origin: top right;
+}
+
+@keyframes admin-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Expandable chevrons */
+.admin-motion-root .admin-chevron {
+  transition: transform var(--admin-motion-fast) var(--admin-motion-ease);
+  transform-origin: center;
+}
+
+.admin-motion-root .admin-chevron.is-open {
+  transform: rotate(180deg);
+}
+
+/* Calm skeleton pulse */
+.admin-motion-root .admin-skeleton {
+  background: color-mix(in srgb, var(--admin-card-border, #e8e2d9) 65%, transparent);
+  border-radius: 8px;
+  animation: admin-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes admin-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+.admin-motion-root .admin-spinner {
+  animation: admin-spin var(--admin-motion-moderate) linear infinite;
+}
+
+@keyframes admin-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-motion-root button:not(:disabled):not([aria-disabled="true"]):not([data-no-press]):active {
+    transform: none;
+  }
+  .admin-motion-root .admin-menu-panel {
+    animation: none;
+  }
+  .admin-motion-root .admin-skeleton {
+    animation: none;
+    opacity: 0.7;
+  }
+  .admin-motion-root .admin-spinner {
+    animation: none;
+  }
+  .admin-motion-root .admin-chevron {
+    transition: none;
+  }
+}

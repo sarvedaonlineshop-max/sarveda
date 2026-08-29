@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { AdminToast } from "@/components/admin/AdminToast";
 import type {
   InventoryRow,
   ZohoOnlyItem,
@@ -271,12 +272,6 @@ export function AdminInventoryWorkspace() {
   const pushToast = useCallback((message: string, error = false) => {
     setToast({ message, error });
   }, []);
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 5200);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   const categoryOptions = useMemo(() => buildCategoryFilterOptions(allRows), [allRows]);
 
@@ -935,19 +930,7 @@ export function AdminInventoryWorkspace() {
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-5 font-sans">
-      {toast ? (
-        <div
-          className={`fixed bottom-6 left-1/2 z-[110] max-w-md -translate-x-1/2 rounded-lg border px-4 py-3 text-sm shadow-xl ${
-            toast.error
-              ? "border-red-200 bg-red-50 text-red-900"
-              : "border-stone-200 bg-white text-stone-900 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-100"
-          }`}
-          style={toast.error ? undefined : { borderLeft: "4px solid #b98a3e" }}
-          role="status"
-        >
-          {toast.error ? toast.message : `✓ ${toast.message}`}
-        </div>
-      ) : null}
+      <AdminToast toast={toast} onDismiss={() => setToast(null)} />
 
       <div
         style={{

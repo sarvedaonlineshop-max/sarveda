@@ -335,11 +335,10 @@ export function AdminAccountingSidebarTree({
         <ChevronDown
           size={14}
           strokeWidth={2}
+          className={`admin-chevron${rootOpen ? " is-open" : ""}`}
           style={{
             flexShrink: 0,
-            opacity: 0.7,
-            transform: rootOpen ? "rotate(180deg)" : "none",
-            transition: "transform 0.15s ease"
+            opacity: 0.7
           }}
           aria-hidden
         />
@@ -451,11 +450,10 @@ export function AdminAccountingSidebarTree({
                   <ChevronDown
                     size={12}
                     strokeWidth={2}
+                    className={`admin-chevron${open ? " is-open" : ""}`}
                     style={{
                       opacity: 0.65,
-                      flexShrink: 0,
-                      transform: open ? "rotate(180deg)" : "none",
-                      transition: "transform 0.15s ease"
+                      flexShrink: 0
                     }}
                     aria-hidden
                   />

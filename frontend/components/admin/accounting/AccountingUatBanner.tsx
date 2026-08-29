@@ -84,7 +84,7 @@ export function AccountingUatBanner() {
           Details
           <ChevronDown
             size={12}
-            className={open ? "rotate-180 transition-transform" : "transition-transform"}
+            className={`admin-chevron${open ? " is-open" : ""}`}
             aria-hidden
           />
         </button>
