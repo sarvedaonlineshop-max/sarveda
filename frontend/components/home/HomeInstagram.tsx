@@ -81,7 +81,7 @@ function CarouselIcon() {
 
 export function HomeInstagram() {
   return (
-    <section className="bg-white py-14 md:py-16 lg:py-20" aria-labelledby="home-instagram-heading">
+    <section className="bg-white pb-5 pt-14 md:pb-8 md:pt-16 lg:pb-10 lg:pt-20" aria-labelledby="home-instagram-heading">
       <div className="page-shell">
         <div className="text-center">
           <h2
@@ -122,7 +122,7 @@ export function HomeInstagram() {
           ))}
         </ul>
 
-        <div className="mt-8 text-center md:mt-10">
+        <div className="mt-6 text-center md:mt-8">
           <a
             href={PROFILE_URL}
             target="_blank"
@@ -133,7 +133,7 @@ export function HomeInstagram() {
             Follow us on Instagram
             <span aria-hidden>→</span>
           </a>
-          <p className="mt-3">
+          <p className="mt-2 mb-0">
             <a
               href={PROFILE_URL}
               target="_blank"

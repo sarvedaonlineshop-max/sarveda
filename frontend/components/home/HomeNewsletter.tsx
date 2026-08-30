@@ -151,7 +151,7 @@ export function HomeNewsletter() {
       aria-labelledby="home-newsletter-heading"
     >
       <div className="grid w-full items-stretch lg:grid-cols-2">
-        <div className="min-w-0 px-[5%] py-14 md:px-[10%] md:py-16 lg:mx-auto lg:w-full lg:max-w-[720px] lg:py-20 lg:pl-[10%] lg:pr-8 xl:pr-12">
+        <div className="min-w-0 px-[5%] pb-14 pt-6 md:px-[10%] md:pb-16 md:pt-10 lg:mx-auto lg:w-full lg:max-w-[720px] lg:pb-20 lg:pt-14 lg:pl-[10%] lg:pr-8 xl:pr-12">
           <Image
             src="/images/brand/lotus-bloom.png"
             alt=""

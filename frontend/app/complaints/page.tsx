@@ -372,10 +372,10 @@ function PullRefreshIndicator({
   pullDistance, refreshing,
 }: { pullDistance: number; refreshing: boolean }) {
   const show = pullDistance > 0 || refreshing;
-  const armed = pullDistance >= 70;
+  const armed = pullDistance >= 80;
   const spinDeg = refreshing
     ? undefined
-    : Math.min(pullDistance / 70, 1) * 360;
+    : Math.min(pullDistance / 80, 1) * 360;
 
   return (
     <div style={{
@@ -1176,7 +1176,8 @@ export default function TasksApp() {
     return {
       onTouchStart: (e: React.TouchEvent<HTMLDivElement>) => {
         const el = e.currentTarget;
-        if (el.scrollTop <= 0) {
+        // Only arm at absolute top; ignore tiny overscroll noise.
+        if (el.scrollTop <= 1) {
           pullStartY.current = e.touches[0].clientY;
           pullArmed.current = true;
         } else {
@@ -1189,13 +1190,19 @@ export default function TasksApp() {
           return;
         }
         const delta = Math.max(0, e.touches[0].clientY - pullStartY.current);
+        // Ignore small moves so normal scroll doesn't feel like a refresh.
+        if (delta < 24) {
+          pullDistanceRef.current = 0;
+          if (pullDistance !== 0) setPullDistance(0);
+          return;
+        }
         const d = Math.min(delta, 90);
         pullDistanceRef.current = d;
         setPullDistance(d);
       },
       onTouchEnd: () => {
         const shouldRefresh =
-          pullArmed.current && pullDistanceRef.current >= 70 && !refreshing;
+          pullArmed.current && pullDistanceRef.current >= 80 && !refreshing;
         pullStartY.current = null;
         pullArmed.current = false;
         if (shouldRefresh) {
@@ -1411,8 +1418,18 @@ export default function TasksApp() {
       {headers:{Authorization:`Bearer ${tk}`}});
     if (r.ok) {
       const d = await r.json() as any;
-      setNotifications(d.notifications??[]);
-      setUnreadCount(d.unreadCount??0);
+      const next = d.notifications??[];
+      const nextUnread = d.unreadCount??0;
+      setUnreadCount((prev) => (prev === nextUnread ? prev : nextUnread));
+      setNotifications((prev) => {
+        if (
+          prev.length === next.length &&
+          prev.every((n, i) => n.id === next[i]?.id && n.isRead === next[i]?.isRead)
+        ) {
+          return prev;
+        }
+        return next;
+      });
     }
   },[token]);
 
@@ -1654,25 +1671,18 @@ export default function TasksApp() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
-  // iOS PWA: silent background refetch (no pull-refresh spinner / full-screen flash)
+  // Badge-only when app returns — do NOT reload lists/chat (that caused jump/flash).
   useEffect(() => {
-    const silentRefresh = () => {
+    const softBadgeRefresh = () => {
       const t = localStorage.getItem("sv_token");
       if (!t || isJwtExpired(t)) return;
       void loadNotifications(t);
-      if (view === "home") void loadMyTasks(t);
-      else if (view === "assigned") void loadMyAssignments(t);
-      else if (view === "alltasks") void loadDashboard(t);
-      else if (view === "detail") {
-        const id = selected?.id;
-        if (id) void loadDetail(id, t);
-      }
     };
     const onPageShow = (ev: PageTransitionEvent) => {
-      if (ev.persisted) silentRefresh();
+      if (ev.persisted) softBadgeRefresh();
     };
     const onVisible = () => {
-      if (document.visibilityState === "visible") silentRefresh();
+      if (document.visibilityState === "visible") softBadgeRefresh();
     };
     window.addEventListener("pageshow", onPageShow);
     document.addEventListener("visibilitychange", onVisible);
@@ -1680,15 +1690,7 @@ export default function TasksApp() {
       window.removeEventListener("pageshow", onPageShow);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [
-    view,
-    selected?.id,
-    loadNotifications,
-    loadMyTasks,
-    loadMyAssignments,
-    loadDashboard,
-    loadDetail
-  ]);
+  }, [loadNotifications]);
 
   useEffect(() => {
     if (!showTaskMenu) return;
@@ -1756,15 +1758,19 @@ export default function TasksApp() {
 
   useEffect(() => {
     if (!msgMenuId) return;
-    const close = () => setMsgMenuId(null);
+    const close = (e: Event) => {
+      const target = e.target as Element | null;
+      // Do not close on taps inside the menu / trigger — otherwise mobile
+      // touchstart unmounts Edit/Delete before click fires.
+      if (target?.closest?.("[data-msg-menu], [data-msg-menu-trigger]")) return;
+      setMsgMenuId(null);
+    };
     const timer = window.setTimeout(() => {
-      document.addEventListener("mousedown", close);
-      document.addEventListener("touchstart", close);
+      document.addEventListener("pointerdown", close, true);
     }, 0);
     return () => {
       window.clearTimeout(timer);
-      document.removeEventListener("mousedown", close);
-      document.removeEventListener("touchstart", close);
+      document.removeEventListener("pointerdown", close, true);
     };
   }, [msgMenuId]);
 
@@ -4952,7 +4958,8 @@ export default function TasksApp() {
                   style={{position:"relative",maxWidth:"75%"}}>
                   {(canDel || canEdit) && (
                     <button type="button"
-                      onMouseDown={(e)=>e.stopPropagation()}
+                      data-msg-menu-trigger
+                      onPointerDown={(e)=>e.stopPropagation()}
                       onClick={(e)=>{
                         e.stopPropagation();
                         setMsgMenuId(
@@ -4969,7 +4976,10 @@ export default function TasksApp() {
                       aria-label="Message options">⋮</button>
                   )}
                   {msgMenuId === ev.id && (canDel || canEdit) && (
-                    <div style={{
+                    <div
+                      data-msg-menu
+                      onPointerDown={(e)=>e.stopPropagation()}
+                      style={{
                       position:"absolute",top:30,right:4,zIndex:20,
                       background:"#233138",borderRadius:10,
                       boxShadow:"0 8px 24px rgba(0,0,0,.28)",
@@ -4977,7 +4987,16 @@ export default function TasksApp() {
                     }}>
                       {canEdit ? (
                         <button type="button"
-                          onClick={()=>{
+                          onPointerDown={(e)=>{
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setMsgMenuId(null);
+                            setEditingMessageId(ev.id);
+                            setEditDraft(ev.message ?? "");
+                          }}
+                          onClick={(e)=>{
+                            e.preventDefault();
+                            e.stopPropagation();
                             setMsgMenuId(null);
                             setEditingMessageId(ev.id);
                             setEditDraft(ev.message ?? "");
@@ -4994,7 +5013,18 @@ export default function TasksApp() {
                       ) : null}
                       {canDel ? (
                         <button type="button"
-                          onClick={()=>{
+                          onPointerDown={(e)=>{
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setMsgMenuId(null);
+                            setSelectedDelete({
+                              kind: "message",
+                              id: ev.id,
+                            });
+                          }}
+                          onClick={(e)=>{
+                            e.preventDefault();
+                            e.stopPropagation();
                             setMsgMenuId(null);
                             setSelectedDelete({
                               kind: "message",
