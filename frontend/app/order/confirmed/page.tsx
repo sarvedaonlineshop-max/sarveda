@@ -351,7 +351,7 @@ function ConfirmedInner() {
           </button>
         ) : null}
         <Link
-          href="/profile"
+          href="/profile?tab=orders"
           className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-brand-forest/25 px-6 text-sm font-medium text-brand-forest hover:bg-brand-forest/5"
         >
           Your orders

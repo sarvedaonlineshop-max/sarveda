@@ -31,7 +31,6 @@ function formatDeliveryRange(start: Date, end: Date): string {
 /**
  * Live Woo logic: Order placed = today.
  * Estimated delivery = today + (prep min + ship min) … today + (prep max + ship max).
- * Example: 15 Aug + (5+4)…(6+7) → 24–28 Aug.
  */
 export function DeliveryTimeline({
   preparationDays = "5 - 6 Days",
@@ -48,7 +47,7 @@ export function DeliveryTimeline({
       label: "Order Placed",
       detail: formatDay(today),
       icon: (
-        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+        <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25h9.75m-9.75 0A2.25 2.25 0 015.25 12V6.75h12.53l1.5 5.25H18A2.25 2.25 0 0120.25 14.25m-12.75 0v2.25a2.25 2.25 0 002.25 2.25h7.5a2.25 2.25 0 002.25-2.25V14.25" />
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 9.75l1.5 1.5 3-3" />
         </svg>
@@ -58,7 +57,7 @@ export function DeliveryTimeline({
       label: "Preparation Time",
       detail: preparationDays,
       icon: (
-        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+        <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       )
@@ -67,7 +66,7 @@ export function DeliveryTimeline({
       label: "Standard Shipping",
       detail: shippingDays,
       icon: (
-        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+        <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9H5.25" />
         </svg>
       )
@@ -76,7 +75,7 @@ export function DeliveryTimeline({
       label: "Estimated Delivery",
       detail: formatDeliveryRange(deliveryStart, deliveryEnd),
       icon: (
-        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+        <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
         </svg>
       )
@@ -84,19 +83,19 @@ export function DeliveryTimeline({
   ];
 
   return (
-    <div className="overflow-x-auto overflow-y-hidden pb-1">
-      <div className="relative flex min-w-[640px] items-start justify-between sm:min-w-0">
+    <div className="w-full overflow-hidden pb-1">
+      <div className="relative flex w-full items-start justify-between gap-0.5">
         <span
-          className="absolute left-[12%] right-[12%] top-5 h-px bg-[#e0c57a]"
+          className="absolute left-[12%] right-[12%] top-4 h-px bg-[#e0c57a] sm:top-5"
           aria-hidden
         />
         {steps.map((step) => (
-          <div key={step.label} className="relative z-10 w-[23%] min-w-[8.5rem] text-center">
-            <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-md bg-[#f4e6c0] text-[#b98a3e]">
+          <div key={step.label} className="relative z-10 min-w-0 flex-1 px-0.5 text-center">
+            <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-md bg-[#f4e6c0] text-[#b98a3e] sm:h-10 sm:w-10">
               {step.icon}
             </div>
-            <p className="mt-2 text-[11px] leading-tight text-stone-500 sm:text-xs">{step.label}</p>
-            <p className="mt-0.5 text-xs font-bold text-[#9a7030] sm:text-sm">{step.detail}</p>
+            <p className="mt-1.5 text-[9px] leading-tight text-stone-500 sm:mt-2 sm:text-xs">{step.label}</p>
+            <p className="mt-0.5 text-[10px] font-bold leading-snug text-[#9a7030] sm:text-sm">{step.detail}</p>
           </div>
         ))}
       </div>

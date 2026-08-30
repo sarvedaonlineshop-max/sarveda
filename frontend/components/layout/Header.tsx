@@ -15,7 +15,7 @@ import { CLOSE_MOBILE_MENU_EVENT, OPEN_MOBILE_MENU_EVENT } from "./mobile-menu-e
 import { dispatchNavStart } from "./RouteLoadingSpinner";
 import { useStorefrontSession } from "./useStorefrontSession";
 
-const immersiveMobileRoutes = new Set(["/cart", "/profile", "/chat"]);
+const immersiveMobileRoutes = new Set(["/chat"]);
 
 import { AnnouncementBar } from "./AnnouncementBar";
 
@@ -101,11 +101,10 @@ function TrackOrderButton({ onClick, compact }: { onClick: () => void; compact?:
   );
 }
 
-function WelcomeUserChip({ name, href }: { name: string; href: string }) {
+function WelcomeUserChip({ name }: { name: string }) {
   const first = name.trim().split(/\s+/)[0] || name;
   return (
-    <Link
-      href={href}
+    <span
       className="inline-flex max-w-[12rem] items-center gap-1.5 text-[#166D46]"
       aria-label={`Welcome ${first}`}
     >
@@ -113,7 +112,7 @@ function WelcomeUserChip({ name, href }: { name: string; href: string }) {
       <span className="min-w-0 truncate text-[12px] font-semibold leading-tight">
         Welcome, {first}
       </span>
-    </Link>
+    </span>
   );
 }
 
@@ -425,21 +424,19 @@ export function Header() {
                 </button>
               </div>
 
-              {/* Mobile: hamburger (opens sheet) + welcome / sign-in */}
+              {/* Mobile: welcome label + green menu */}
               <div className="ml-auto flex shrink-0 items-center gap-1.5 md:hidden">
-                {isHomePage ? (
-                  displayName ? (
-                    <WelcomeUserChip name={displayName} href={accountHome} />
-                  ) : (
-                    <Link
-                      href="/login"
-                      className="inline-flex h-9 w-9 items-center justify-center text-[#166D46]"
-                      aria-label="Sign in"
-                    >
-                      <ProfileIcon />
-                    </Link>
-                  )
-                ) : null}
+                {displayName ? (
+                  <WelcomeUserChip name={displayName} />
+                ) : (
+                  <Link
+                    href="/login"
+                    className="inline-flex h-9 w-9 items-center justify-center text-[#166D46]"
+                    aria-label="Sign in"
+                  >
+                    <ProfileIcon />
+                  </Link>
+                )}
                 <button
                   type="button"
                   onClick={() => {
@@ -451,7 +448,7 @@ export function Header() {
                       return next;
                     });
                   }}
-                  className={headerIconBtnPlain}
+                  className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#166D46] text-white shadow-[0_4px_12px_rgba(22,109,70,0.28)] transition-colors hover:brightness-95 active:brightness-90"
                   aria-label={menuOpen ? "Close navigation" : "Open navigation"}
                   aria-expanded={menuOpen}
                 >

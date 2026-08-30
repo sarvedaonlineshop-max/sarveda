@@ -163,31 +163,31 @@ export function ProductCard({
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col gap-0.5 p-2 md:p-2.5">
+        <div className="flex flex-1 flex-col gap-1.5 bg-[#166D46] p-2.5 md:gap-2 md:p-3">
           {primaryCat ? (
-            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-brand-gold md:text-[10px]">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/75 md:text-[10px]">
               {primaryCat.name}
             </p>
           ) : null}
 
-          <h2 className="line-clamp-2 font-sans text-[0.9375rem] font-semibold leading-snug text-brand-forest transition-colors group-hover:text-brand-forest/85 md:text-[1rem]">
+          <h2 className="line-clamp-2 font-sans text-[0.9375rem] font-semibold leading-snug text-white transition-colors group-hover:text-white/90 md:text-[1rem]">
             {product.name}
           </h2>
 
           <div className="mt-auto flex flex-wrap items-baseline gap-1.5 pt-1">
             {priceLabel ? (
-              <p className="font-sans text-sm font-semibold tabular-nums tracking-tight text-brand-forest md:text-base">
+              <p className="font-sans text-sm font-semibold tabular-nums tracking-tight text-white md:text-base">
                 {priceLabel}
               </p>
             ) : null}
             {mrpMinor != null && saleMinor != null && mrpMinor > saleMinor ? (
-              <p className="font-sans text-xs tabular-nums text-brand-muted line-through">
+              <p className="font-sans text-xs tabular-nums text-white/55 line-through">
                 {formatMinorFromPaise(mrpMinor, currency)}
               </p>
             ) : null}
           </div>
 
-          <span className="mt-1 inline-flex w-fit items-center rounded-full bg-brand-forest px-3 py-1 text-[11px] font-semibold text-brand-cream transition-colors group-hover:bg-brand-forest/90">
+          <span className="mt-1.5 inline-flex w-fit items-center rounded-full bg-brand-cream px-3 py-1 text-[11px] font-semibold text-[#166D46] transition-colors group-hover:bg-white">
             View product
           </span>
         </div>

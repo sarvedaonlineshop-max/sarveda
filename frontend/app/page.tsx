@@ -50,13 +50,27 @@ export default async function HomePage() {
     <div className="overflow-x-hidden bg-brand-cream md:bg-brand-cream">
       <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
 
-      <HomeHero />
-      <HomeTrustPillars />
-      <HomeInstrumentCategories />
-      <HomeExperienceSections courses={courses} events={events} />
-      <HomeJournal posts={posts} />
-      <HomeInstagram />
-      <HomeNewsletter />
+      <div className="sv-listing-hero-fade md:opacity-100 md:[animation:none]">
+        <HomeHero />
+      </div>
+      <div className="sv-listing-hero-fade-late md:opacity-100 md:[animation:none]">
+        <HomeTrustPillars />
+      </div>
+      <div className="sv-listing-hero-fade md:opacity-100 md:[animation:none]">
+        <HomeInstrumentCategories />
+      </div>
+      <div className="sv-listing-hero-fade-late md:opacity-100 md:[animation:none]">
+        <HomeExperienceSections courses={courses} events={events} />
+      </div>
+      <div className="sv-listing-hero-fade md:opacity-100 md:[animation:none]">
+        <HomeJournal posts={posts} />
+      </div>
+      <div className="sv-listing-hero-fade-late md:opacity-100 md:[animation:none]">
+        <HomeInstagram />
+      </div>
+      <div className="sv-listing-hero-fade md:opacity-100 md:[animation:none]">
+        <HomeNewsletter />
+      </div>
     </div>
   );
 }

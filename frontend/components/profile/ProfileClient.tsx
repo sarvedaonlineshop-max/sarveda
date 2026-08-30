@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
-import { MobileSubpageHeader } from "@/components/layout/MobileSubpageHeader";
 import { YourLearning } from "@/components/profile/YourLearning";
 import { YourOrders } from "@/components/profile/YourOrders";
 import { signOutToLogin } from "@/components/auth/LogoutTransitionOverlay";
@@ -101,13 +100,21 @@ function AccountClosureSection({ userEmail }: { userEmail: string }) {
             {error}
           </p>
         ) : null}
-        {message ? <p className="text-sm text-brand-forest">{message}</p> : null}
+        {message ? (
+          <div
+            className="rounded-xl border border-[#166D46]/25 bg-[#166D46]/8 px-4 py-3 text-sm text-[#166D46]"
+            role="status"
+          >
+            <p className="font-semibold">Request submitted</p>
+            <p className="mt-1 leading-relaxed">{message}</p>
+          </div>
+        ) : null}
         <button
           type="submit"
-          disabled={busy || !confirm || reason.trim().length < 10}
+          disabled={busy || Boolean(message) || !confirm || reason.trim().length < 10}
           className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-red-200 bg-white px-6 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {busy ? "Submitting…" : "Request account closure"}
+          {busy ? "Submitting…" : message ? "Request received" : "Request account closure"}
         </button>
       </form>
     </div>
@@ -184,7 +191,7 @@ function TabButton({
       aria-selected={active}
       aria-controls={`profile-panel-${tab}`}
       onClick={() => onSelect(tab)}
-      className={`inline-flex min-h-[40px] w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2 text-[13px] font-semibold transition-colors sm:gap-2 sm:px-3 sm:text-sm ${
+      className={`inline-flex min-h-[40px] w-auto shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 text-[13px] font-semibold transition-colors sm:gap-2 sm:px-3 sm:text-sm md:w-full ${
         active
           ? "bg-[#108967] text-white shadow-sm"
           : "border border-brand-cream-dark bg-white text-brand-ink hover:bg-[#108967]/10"
@@ -428,7 +435,19 @@ export function ProfileClient() {
 
   return (
     <div className="flex flex-col gap-2 md:gap-4 md:px-0">
-      <MobileSubpageHeader title={MOBILE_TITLES[activeTab]} backHref="/" />
+      <div className="px-3 pt-1 md:hidden">
+        <h1 className="font-serif text-xl font-semibold text-brand-ink">{MOBILE_TITLES[activeTab]}</h1>
+        <nav
+          role="tablist"
+          aria-label="Account sections"
+          className="mt-2 flex gap-1.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          <TabButton tab="details" label="My Details" active={activeTab === "details"} onSelect={selectTab} />
+          <TabButton tab="orders" label="My Orders" count={orderCount} active={activeTab === "orders"} onSelect={selectTab} />
+          <TabButton tab="courses" label="My Courses" count={courseCount} active={activeTab === "courses"} onSelect={selectTab} />
+          <TabButton tab="events" label="My Events" count={eventCount} active={activeTab === "events"} onSelect={selectTab} />
+        </nav>
+      </div>
 
       <div className="hidden sticky top-[var(--storefront-header-live-offset)] z-20 space-y-4 border-b border-brand-cream-dark/70 bg-white/95 pb-4 backdrop-blur-md md:block">
         <div className="flex items-center justify-between gap-4">

@@ -608,7 +608,7 @@ export async function requestAccountClosure(
     throw httpError(404, "User not found", "USER_NOT_FOUND");
   }
 
-  const recent = await prisma.accountClosureRequest.findFirst({
+  const recent = await prisma.accountClosureApproval.findFirst({
     where: {
       userId,
       createdAt: { gte: new Date(Date.now() - CLOSURE_COOLDOWN_MS) }
@@ -624,6 +624,16 @@ export async function requestAccountClosure(
   }
 
   const reason = body.reason.trim();
+  const approval = await prisma.accountClosureApproval.create({
+    data: {
+      userId,
+      email: user.email,
+      reason,
+      status: "PENDING"
+    }
+  });
+
+  // Keep legacy request log in sync for older tooling.
   await prisma.accountClosureRequest.create({
     data: {
       userId,
@@ -635,21 +645,25 @@ export async function requestAccountClosure(
   const { sendMail } = await import("../notifications/email");
   const careEmail = process.env.SUPPORT_EMAIL?.trim() || "care@sarveda.com";
   const html = `
-    <p><strong>Account closure request</strong></p>
+    <p><strong>Account closure approval request</strong></p>
     <p>User: ${user.name ?? "—"} &lt;${user.email}&gt;</p>
     <p>User ID: ${user.id}</p>
+    <p>Approval ID: ${approval.id}</p>
+    <p>Status: PENDING</p>
     <p>Reason:</p>
     <blockquote style="margin:0;padding:12px;border-left:4px solid #c8960a;background:#f9f7f4">${reason.replace(/</g, "&lt;")}</blockquote>
   `;
   void sendMail(
     careEmail,
-    `Account closure request — ${user.email}`,
+    `Account closure approval — ${user.email}`,
     html,
-    `Account closure request from ${user.email}\n\n${reason}`
+    `Account closure approval from ${user.email}\n\n${reason}`
   );
 
   return {
     message:
-      "Your account closure request has been received. Our team will email you within 2–3 business days."
+      "Your account closure request has been saved. Our team will review it and email you within 2–3 business days.",
+    approvalId: approval.id,
+    status: approval.status
   };
 }

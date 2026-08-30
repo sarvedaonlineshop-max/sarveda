@@ -1,6 +1,7 @@
 export const ENQUIRY_SUBJECT_OPTIONS = [
   { value: "ORDER", label: "Order related issues" },
   { value: "PAYMENT", label: "Payment related issues" },
+  { value: "PRODUCT", label: "Product enquiry" },
   { value: "COURSE", label: "Course enquiry" },
   { value: "CORPORATE", label: "Corporate wellness enquiry" },
   { value: "OTHER", label: "Other" }

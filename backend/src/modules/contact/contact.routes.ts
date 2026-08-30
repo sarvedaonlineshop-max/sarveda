@@ -28,7 +28,7 @@ const supportSchema = z.object({
   email: z.string().email().max(200),
   phone: z.string().max(30).optional(),
   subject: z.string().max(200).optional(),
-  subjectCategory: z.enum(["ORDER", "PAYMENT", "COURSE", "CORPORATE", "OTHER"]).optional(),
+  subjectCategory: z.enum(["ORDER", "PAYMENT", "PRODUCT", "COURSE", "CORPORATE", "OTHER"]).optional(),
   message: z.string().min(1).max(5000),
   orderNumber: z.string().max(40).optional()
 });

@@ -21,7 +21,7 @@ const upload = multer({
 
 const enquiryBodySchema = z.object({
   source: z.enum(["CONTACT", "CORPORATE", "COURSE", "EVENT", "INSIGHTS"]),
-  subjectCategory: z.enum(["ORDER", "PAYMENT", "COURSE", "CORPORATE", "OTHER"]).optional(),
+  subjectCategory: z.enum(["ORDER", "PAYMENT", "PRODUCT", "COURSE", "CORPORATE", "OTHER"]).optional(),
   customSubject: z.string().max(200).optional(),
   name: z.string().min(1).max(120),
   email: z.string().email().max(200),

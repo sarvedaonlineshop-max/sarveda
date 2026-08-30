@@ -14,7 +14,7 @@ export function CartPageClient() {
 
   if (loading && items.length === 0) {
     return (
-      <div className="mt-10 flex flex-col items-center justify-center gap-3 text-center" role="status">
+      <div className="mt-4 flex flex-col items-center justify-center gap-3 text-center md:mt-10" role="status">
         <span
           className="h-8 w-8 animate-spin rounded-full border-2 border-brand-cream-dark border-t-[#108967]"
           aria-hidden
@@ -26,7 +26,7 @@ export function CartPageClient() {
 
   if (items.length === 0) {
     return (
-      <div className="mt-6 rounded-none border-y border-brand-cream-dark bg-white p-8 text-center md:mt-10 md:rounded-2xl md:border md:shadow-card">
+      <div className="mt-2 rounded-none border-y border-brand-cream-dark bg-white p-8 text-center md:mt-10 md:rounded-2xl md:border md:shadow-card">
         <p className="text-brand-muted">Your cart is empty.</p>
         <Link
           href="/store"
@@ -39,7 +39,7 @@ export function CartPageClient() {
   }
 
   return (
-    <div className="mt-4 md:mt-8">
+    <div className="mt-2 md:mt-8">
       <div className="lg:grid lg:grid-cols-12 lg:items-start lg:gap-6 xl:gap-8">
         <div className="min-w-0 lg:col-span-8 xl:col-span-9">
           <p className="mb-3 hidden text-sm text-brand-muted lg:block">

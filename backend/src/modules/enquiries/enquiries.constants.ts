@@ -18,6 +18,7 @@ export const SOURCE_LABELS: Record<EnquirySource, string> = {
 export const SUBJECT_LABELS: Record<EnquirySubjectCategory, string> = {
   ORDER: "Order related",
   PAYMENT: "Payment related",
+  PRODUCT: "Product enquiry",
   COURSE: "Course enquiry",
   CORPORATE: "Corporate wellness",
   OTHER: "Other"

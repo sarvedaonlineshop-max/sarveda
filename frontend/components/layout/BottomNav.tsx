@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
 import { useCartData } from "@/components/cart/CartProvider";
@@ -80,10 +81,28 @@ function MenuRowIcon({ kind }: { kind: string }) {
           <path strokeWidth={1.8} strokeLinecap="round" d="M14 2v6h6M8 13h8M8 17h5" />
         </svg>
       );
-    case "auth":
+    case "store":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" aria-hidden>
+          <path strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" d="M3 9.5L5 4h14l2 5.5M3 9.5h18M3 9.5l2 11h14l2-11M9 13.5v5M15 13.5v5" />
+        </svg>
+      );
+    case "contact":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" aria-hidden>
+          <path strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+        </svg>
+      );
+    case "login":
       return (
         <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" aria-hidden>
           <path strokeWidth={1.8} strokeLinecap="round" d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" />
+        </svg>
+      );
+    case "auth":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" aria-hidden>
+          <path strokeWidth={1.8} strokeLinecap="round" d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
         </svg>
       );
     default:
@@ -93,15 +112,17 @@ function MenuRowIcon({ kind }: { kind: string }) {
 
 const accountLinks = [
   { href: "/profile?tab=orders", label: "My orders", tab: "orders" },
-  { href: "/profile?tab=details", label: "My profile", tab: "details" },
-  { href: "/profile?tab=courses", label: "My Courses", tab: "courses" },
-  { href: "/profile?tab=events", label: "My events", tab: "events" }
+  { href: "/profile?tab=courses", label: "My courses", tab: "courses" },
+  { href: "/profile?tab=events", label: "My events", tab: "events" },
+  { href: "/profile?tab=details", label: "My profile", tab: "details" }
 ] as const;
 
 const exploreLinks = [
-  { href: "/corporate-wellness", label: "Corporate Wellness" },
-  { href: "/insights", label: "Insights" },
-  { href: "/events", label: "Events" }
+  { href: "/store", label: "Store", icon: "store" },
+  { href: "/courses", label: "Courses", icon: "courses" },
+  { href: "/insights", label: "Insights", icon: "insights" },
+  { href: "/corporate-wellness", label: "Corporate Wellness", icon: "corporate" },
+  { href: "/contact", label: "Contact Us", icon: "contact" }
 ] as const;
 
 type NavItem = {
@@ -134,6 +155,7 @@ export function BottomNav() {
   const [showMoreHint, setShowMoreHint] = useState(false);
   const [profileTab, setProfileTab] = useState("details");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     setMenuOpen(false);
@@ -314,158 +336,176 @@ export function BottomNav() {
 
   return (
     <>
-      {menuOpen ? (
-        <button
-          type="button"
-          aria-label="Close navigation"
-          className="fixed inset-0 z-[70] bg-black/40 md:hidden"
-          onClick={() => {
-            setMenuOpen(false);
-            window.dispatchEvent(new Event(CLOSE_MOBILE_MENU_EVENT));
-          }}
-        />
-      ) : null}
+      <AnimatePresence>
+        {menuOpen ? (
+          <motion.button
+            key="menu-backdrop"
+            type="button"
+            aria-label="Close navigation"
+            className="fixed inset-0 z-[70] bg-black/40 md:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduceMotion ? 0.08 : 0.22 }}
+            onClick={() => {
+              setMenuOpen(false);
+              window.dispatchEvent(new Event(CLOSE_MOBILE_MENU_EVENT));
+            }}
+          />
+        ) : null}
+      </AnimatePresence>
 
-      {menuOpen ? (
-        <div
-          className="fixed inset-x-0 z-[80] md:hidden"
-          style={{ bottom: "calc(4.5rem + env(safe-area-inset-bottom, 0px) + 8px)" }}
-        >
-          <div className="relative mx-auto max-w-lg px-3">
-          <div
-            className="relative overflow-hidden rounded-xl border border-white/10 shadow-xl"
-            style={{ background: NAV_GREEN }}
-            role="dialog"
-            aria-label="Menu"
-            aria-modal="true"
+      <AnimatePresence>
+        {menuOpen ? (
+          <motion.div
+            key="menu-sheet"
+            className="fixed inset-x-0 z-[80] md:hidden"
+            style={{
+              top: "var(--storefront-header-live-offset, 4.5rem)",
+              transformOrigin: "top center"
+            }}
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -28, scaleY: 0.86 }}
+            animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scaleY: 1 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -20, scaleY: 0.92 }}
+            transition={{ duration: reduceMotion ? 0.1 : 0.34, ease: [0.22, 1, 0.36, 1] }}
           >
-            <div className="flex items-center justify-between gap-2 border-b border-white/20 px-3 py-2.5">
-              <p className="pl-1 text-sm font-semibold text-white">Explore</p>
-              <button
-                type="button"
-              onClick={() => {
-                setMenuOpen(false);
-                window.dispatchEvent(new Event(CLOSE_MOBILE_MENU_EVENT));
-              }}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25 active:bg-white/30"
-              aria-label="Close navigation"
+            <div className="relative mx-auto max-w-sm px-3 pt-2">
+              <div
+                className="relative overflow-hidden rounded-b-2xl rounded-t-xl border border-white/10 shadow-[0_18px_40px_rgba(16,32,26,0.28),0_4px_12px_rgba(16,32,26,0.12)]"
+                style={{ background: NAV_GREEN }}
+                role="dialog"
+                aria-label="Menu"
+                aria-modal="true"
               >
-                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" aria-hidden>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M6 6l12 12M18 6L6 18" />
-                </svg>
-              </button>
-            </div>
-            <div
-              ref={scrollRef}
-              className="max-h-[min(70dvh,32rem)] overflow-y-auto"
-            >
-              <ul className="pt-1">
-                <li>
+                <div className="flex items-center justify-between gap-2 border-b border-white/20 px-3 py-2.5">
+                  <p className="pl-1 text-sm font-semibold text-white">Menu</p>
                   <button
                     type="button"
                     onClick={() => {
                       setMenuOpen(false);
-                      window.dispatchEvent(new Event(OPEN_TRACK_ORDER_EVENT));
+                      window.dispatchEvent(new Event(CLOSE_MOBILE_MENU_EVENT));
                     }}
-                    className={menuItemClass(false)}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25 active:bg-white/30"
+                    aria-label="Close navigation"
                   >
-                    <MenuRowIcon kind="track" />
-                    Track my order
+                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" aria-hidden>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M6 6l12 12M18 6L6 18" />
+                    </svg>
                   </button>
-                </li>
-                {menuAccountLinks.map((link) => {
-                  const active = isAdminSession
-                    ? pathname?.startsWith("/admin")
-                    : pathname?.startsWith("/profile") && profileTab === link.tab;
-                  return (
-                    <li key={link.href}>
-                      <Link href={link.href} className={menuItemClass(!!active)} onClick={() => setMenuOpen(false)}>
-                        <MenuRowIcon kind={link.tab} />
-                        {link.label}
-                      </Link>
+                </div>
+                <div ref={scrollRef} className="max-h-[min(72dvh,34rem)] overflow-y-auto">
+                  <ul className="pt-1">
+                    {!sessionUser ? (
+                      <li>
+                        <Link
+                          href="/login?next=/profile"
+                          className={menuItemClass(false)}
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          <MenuRowIcon kind="login" />
+                          Login / Register
+                        </Link>
+                      </li>
+                    ) : null}
+                    {exploreLinks.map((link) => {
+                      const active = isMainNavActive(pathname, link.href);
+                      return (
+                        <li key={link.href}>
+                          <Link
+                            href={link.href}
+                            className={menuItemClass(active)}
+                            onClick={() => {
+                              setMenuOpen(false);
+                              dispatchNavStart();
+                            }}
+                          >
+                            <MenuRowIcon kind={link.icon} />
+                            {link.label}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+
+                  <div className="mx-4 border-t border-white/25" />
+
+                  <ul>
+                    {sessionUser
+                      ? menuAccountLinks.map((link) => {
+                          const active = isAdminSession
+                            ? pathname?.startsWith("/admin")
+                            : pathname?.startsWith("/profile") && profileTab === link.tab;
+                          return (
+                            <li key={link.href}>
+                              <Link
+                                href={link.href}
+                                className={menuItemClass(!!active)}
+                                onClick={() => setMenuOpen(false)}
+                              >
+                                <MenuRowIcon kind={link.tab} />
+                                {link.label}
+                              </Link>
+                            </li>
+                          );
+                        })
+                      : null}
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          window.dispatchEvent(new Event(OPEN_TRACK_ORDER_EVENT));
+                        }}
+                        className={menuItemClass(false)}
+                      >
+                        <MenuRowIcon kind="track" />
+                        Track My order
+                      </button>
                     </li>
-                  );
-                })}
-              </ul>
+                  </ul>
 
-              <div className="mx-4 border-t border-white/25" />
+                  <div className="mx-4 border-t border-white/25" />
 
-              <ul>
-                {exploreLinks.map((link) => {
-                  const active = isMainNavActive(pathname, link.href);
-                  const iconKind =
-                    link.href === "/corporate-wellness"
-                      ? "corporate"
-                      : link.href === "/insights"
-                        ? "insights"
-                        : "explore-events";
-                  return (
-                    <li key={link.href}>
-                      <Link href={link.href} className={menuItemClass(active)} onClick={() => setMenuOpen(false)}>
-                        <MenuRowIcon kind={iconKind} />
-                        {link.label}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
+                  <div className="px-4 py-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-white/80">Policies</p>
+                  </div>
+                  <ul>
+                    {MOBILE_MENU_POLICY_LINKS.map((link) => {
+                      const active = pathname === link.href;
+                      return (
+                        <li key={link.href}>
+                          <Link href={link.href} className={menuItemClass(active)} onClick={() => setMenuOpen(false)}>
+                            <MenuRowIcon kind="policy" />
+                            {link.label}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
 
-              <div className="mx-4 border-t border-white/25" />
+                  {sessionUser ? (
+                    <div className="border-t border-white/25 px-3 py-2 pb-3">
+                      <button type="button" onClick={() => void handleSignOut()} className={menuItemClass(false)}>
+                        <MenuRowIcon kind="auth" />
+                        Sign out
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
 
-              <div className="px-4 py-2">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-white/80">Policies</p>
-              </div>
-              <ul>
-                {MOBILE_MENU_POLICY_LINKS.map((link) => {
-                  const active = pathname === link.href;
-                  return (
-                    <li key={link.href}>
-                      <Link href={link.href} className={menuItemClass(active)} onClick={() => setMenuOpen(false)}>
-                        <MenuRowIcon kind="policy" />
-                        {link.label}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-
-              <div className="border-t border-white/25 px-3 py-2 pb-3">
-                {sessionUser ? (
-                  <button type="button" onClick={() => void handleSignOut()} className={menuItemClass(false)}>
-                    <MenuRowIcon kind="auth" />
-                    Sign out
-                  </button>
-                ) : (
-                  <Link href="/login?next=/profile" className={menuItemClass(false)} onClick={() => setMenuOpen(false)}>
-                    <MenuRowIcon kind="auth" />
-                    Sign in
-                  </Link>
-                )}
+                {showMoreHint ? (
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center bg-gradient-to-t from-[#166D46] via-[#166D46]/95 to-transparent pb-1 pt-8">
+                    <svg viewBox="0 0 24 24" className="h-6 w-6 animate-bounce text-white" fill="none" stroke="currentColor" aria-hidden>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M6 9l6 6 6-6" />
+                    </svg>
+                    <span className="sr-only">More items below</span>
+                  </div>
+                ) : null}
               </div>
             </div>
-
-            {showMoreHint ? (
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center bg-gradient-to-t from-[#166D46] via-[#166D46]/95 to-transparent pb-1 pt-8">
-                <svg viewBox="0 0 24 24" className="h-6 w-6 animate-bounce text-white" fill="none" stroke="currentColor" aria-hidden>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M6 9l6 6 6-6" />
-                </svg>
-                <span className="sr-only">More items below</span>
-              </div>
-            ) : null}
-          </div>
-
-          <div
-            className="pointer-events-none absolute -bottom-2 right-[10%] h-0 w-0 -translate-x-1/2"
-            style={{
-              borderLeft: "10px solid transparent",
-              borderRight: "10px solid transparent",
-              borderTop: `10px solid ${NAV_GREEN}`
-            }}
-            aria-hidden
-          />
-          </div>
-        </div>
-      ) : null}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <nav
         className="fixed inset-x-0 bottom-0 z-[65] border-t border-white/10 safe-area-pb md:hidden"

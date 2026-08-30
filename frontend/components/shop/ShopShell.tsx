@@ -143,7 +143,7 @@ export function ShopShell({ categories, children }: Props) {
         <div className="page-shell pb-16 pt-0 md:pb-8">
           <h1 className="sr-only">{activeCategoryName ?? "Shop"}</h1>
 
-          <div className="flex flex-col lg:flex-row lg:items-start lg:gap-10 lg:py-6">
+          <div className="sv-listing-hero-fade flex flex-col md:opacity-100 md:[animation:none] lg:flex-row lg:items-start lg:gap-10 lg:py-6">
             <div className="hidden lg:sticky lg:top-[calc(var(--storefront-header-live-offset)+0.75rem)] lg:block lg:w-72 lg:flex-shrink-0 lg:self-start">
               <ShopCategoryFilterSidebar
                 categories={categories}

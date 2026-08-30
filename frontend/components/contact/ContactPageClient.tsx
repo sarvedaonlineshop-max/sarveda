@@ -423,6 +423,11 @@ function ContactFormInner() {
               <IconChevron />
             </span>
           </div>
+          {subjectCategory === "PRODUCT" ? (
+            <p className="mt-2 text-xs leading-relaxed text-brand-muted">
+              Product enquiry — ask about instruments, variants, stock, custom orders, or wholesale product questions.
+            </p>
+          ) : null}
         </div>
 
         <div>

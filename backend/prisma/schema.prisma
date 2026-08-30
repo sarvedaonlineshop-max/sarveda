@@ -42,6 +42,7 @@ model User {
   pushNotificationsEnabled    Boolean  @default(true)
   blogComments                BlogComment[]
   accountClosureRequests      AccountClosureRequest[]
+  accountClosureApprovals     AccountClosureApproval[]
 }
 
 model AccountClosureRequest {
@@ -53,6 +54,29 @@ model AccountClosureRequest {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+}
+
+enum AccountClosureApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// Admin approval queue for account closure requests.
+model AccountClosureApproval {
+  id         String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String                        @db.Uuid
+  email      String
+  reason     String
+  status     AccountClosureApprovalStatus  @default(PENDING)
+  createdAt  DateTime                      @default(now())
+  reviewedAt DateTime?
+  reviewedBy String?
+  reviewNote String?
+  user       User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
 }
 
 /// Admin login/logout audit for the admin header history panel.
@@ -1717,6 +1741,7 @@ enum EnquirySource {
 enum EnquirySubjectCategory {
   ORDER
   PAYMENT
+  PRODUCT
   COURSE
   CORPORATE
   OTHER
