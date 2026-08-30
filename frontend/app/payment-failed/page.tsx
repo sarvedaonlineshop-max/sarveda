@@ -102,7 +102,7 @@ function PaymentFailedContent() {
             My orders
           </Link>
           <Link
-            href="/shop"
+            href="/store"
             className="inline-flex min-h-[48px] items-center justify-center rounded-xl border border-brand-cream-dark bg-white px-4 text-sm font-semibold text-brand-ink hover:border-brand-gold"
           >
             Back to shop

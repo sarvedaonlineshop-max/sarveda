@@ -44,7 +44,7 @@ function CancelledInner() {
     return (
       <div className="mx-auto max-w-lg rounded-2xl border border-stone-200 bg-white p-8 text-center shadow-sm">
         <p className="text-stone-600">Missing order details.</p>
-        <Link href="/shop" className="mt-6 inline-block font-medium text-sky-700 hover:underline">
+        <Link href="/store" className="mt-6 inline-block font-medium text-sky-700 hover:underline">
           Continue shopping
         </Link>
       </div>
@@ -55,7 +55,7 @@ function CancelledInner() {
     return (
       <div className="mx-auto max-w-lg rounded-2xl border border-stone-200 bg-white p-8 text-center shadow-sm">
         <p className="text-stone-600">{err}</p>
-        <Link href="/shop" className="mt-6 inline-block font-medium text-sky-700 hover:underline">
+        <Link href="/store" className="mt-6 inline-block font-medium text-sky-700 hover:underline">
           Continue shopping
         </Link>
       </div>
@@ -140,7 +140,7 @@ function CancelledInner() {
             </button>
           ) : null}
           <Link
-            href="/shop"
+            href="/store"
             className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-xl border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-800 hover:bg-stone-50"
           >
             Continue shopping

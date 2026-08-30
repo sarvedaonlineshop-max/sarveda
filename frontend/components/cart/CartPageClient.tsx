@@ -29,7 +29,7 @@ export function CartPageClient() {
       <div className="mt-6 rounded-none border-y border-brand-cream-dark bg-white p-8 text-center md:mt-10 md:rounded-2xl md:border md:shadow-card">
         <p className="text-brand-muted">Your cart is empty.</p>
         <Link
-          href="/shop"
+          href="/store"
           className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#166D46] px-8 font-semibold text-white transition-colors hover:bg-[#145a3a]"
         >
           Browse the shop

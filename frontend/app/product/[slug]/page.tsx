@@ -103,7 +103,7 @@ export default async function ProductDetailPage({ params }: Props) {
           <Breadcrumbs
             items={[
               { label: "Home", href: "/" },
-              { label: "Shop", href: "/shop" },
+              { label: "Shop", href: "/store" },
               ...(primaryCategory
                 ? [
                     {

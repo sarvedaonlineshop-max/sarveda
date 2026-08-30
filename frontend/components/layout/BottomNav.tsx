@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { useCartData } from "@/components/cart/CartProvider";
 import { signOutToLogin } from "@/components/auth/LogoutTransitionOverlay";
+import { isAdminRole } from "@/lib/auth-client";
 import { isMainNavActive } from "@/lib/main-nav";
 import { MOBILE_MENU_POLICY_LINKS } from "@/lib/policy-links";
 import { isShopBrowsePath } from "@/lib/shop-navigation";
@@ -123,6 +124,10 @@ export function BottomNav() {
   const router = useRouter();
   const { itemCount } = useCartData();
   const sessionUser = useStorefrontSession();
+  const isAdminSession = isAdminRole(sessionUser?.role);
+  const menuAccountLinks = isAdminSession
+    ? ([{ href: "/admin", label: "Admin panel", tab: "details" }] as const)
+    : accountLinks;
   const [menuOpen, setMenuOpen] = useState(false);
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [showMoreHint, setShowMoreHint] = useState(false);
@@ -256,7 +261,7 @@ export function BottomNav() {
     {
       key: "store",
       label: "Store",
-      href: "/shop",
+      href: "/store",
       isActive: isShopBrowsePath(activePath),
       icon: (active) => (
         <svg viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" className="h-6 w-6" aria-hidden="true">
@@ -353,8 +358,10 @@ export function BottomNav() {
                     Track my order
                   </button>
                 </li>
-                {accountLinks.map((link) => {
-                  const active = pathname?.startsWith("/profile") && profileTab === link.tab;
+                {menuAccountLinks.map((link) => {
+                  const active = isAdminSession
+                    ? pathname?.startsWith("/admin")
+                    : pathname?.startsWith("/profile") && profileTab === link.tab;
                   return (
                     <li key={link.href}>
                       <Link href={link.href} className={menuItemClass(!!active)} onClick={() => setMenuOpen(false)}>

@@ -43,7 +43,7 @@ export default async function OfferPage({ params }: Props) {
           <Breadcrumbs
             items={[
               { label: "Home", href: "/" },
-              { label: "Offers", href: "/shop" },
+              { label: "Offers", href: "/store" },
               { label: offer.title }
             ]}
           />

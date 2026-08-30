@@ -46,7 +46,7 @@ export default async function CoursesPage() {
             <p className="font-serif" style={{ color: "var(--brand-ink)", fontSize: "1.2rem" }}>Courses are being updated</p>
             <p style={{ color: "var(--brand-muted)", fontSize: "14px", marginTop: "8px" }}>
               Please check back soon or{" "}
-              <Link href="/shop" style={{ color: "var(--brand-gold)", textDecoration: "underline" }}>browse the shop</Link>.
+              <Link href="/store" style={{ color: "var(--brand-gold)", textDecoration: "underline" }}>browse the shop</Link>.
             </p>
           </div>
         ) : (

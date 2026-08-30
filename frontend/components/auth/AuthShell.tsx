@@ -69,7 +69,7 @@ export function AuthShell({
           </p>
           <div className="mt-8">
             <Link
-              href="/shop"
+              href="/store"
               className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-brand-gold px-8 text-sm font-bold tracking-wide text-brand-night transition-colors hover:bg-[#a37934]"
             >
               Shop now

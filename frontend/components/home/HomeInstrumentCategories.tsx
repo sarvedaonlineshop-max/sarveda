@@ -309,7 +309,7 @@ export function HomeInstrumentCategories() {
 
         <div className="mt-10 text-center md:mt-12">
           <Link
-            href="/shop"
+            href="/store"
             className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full px-8 text-sm font-semibold tracking-wide text-white transition-colors hover:brightness-95"
             style={{ backgroundColor: "#166D46" }}
           >

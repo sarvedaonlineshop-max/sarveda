@@ -43,7 +43,7 @@ export default async function InsightsPage() {
         {posts.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-brand-cream-dark bg-white p-12 text-center text-brand-muted">
             Insights are being updated.{" "}
-            <Link href="/shop" className="font-medium text-brand-gold underline hover:text-brand-forest">
+            <Link href="/store" className="font-medium text-brand-gold underline hover:text-brand-forest">
               Browse the shop
             </Link>
           </p>

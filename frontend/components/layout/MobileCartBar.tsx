@@ -17,7 +17,7 @@ export function MobileCartBar() {
     <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-stone-800 bg-stone-900/95 px-4 py-2 shadow-[0_-4px_20px_rgba(0,0,0,0.12)] backdrop-blur-sm md:hidden safe-area-pb">
       <div className="mx-auto flex max-w-lg items-center justify-between gap-3">
         <Link
-          href="/shop"
+          href="/store"
           className="flex min-h-[48px] min-w-[48px] flex-1 items-center justify-center rounded-lg text-sm font-medium tracking-wide text-stone-300 transition-colors hover:text-amber-400"
         >
           Shop

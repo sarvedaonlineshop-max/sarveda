@@ -317,7 +317,7 @@ export function CheckoutClient() {
       <div className="rounded-2xl border border-stone-100 bg-white p-8 text-center shadow-sm">
         <p className="text-stone-700">{reorderError}</p>
         <Link
-          href="/shop"
+          href="/store"
           className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-full bg-brand-forest px-8 font-semibold text-brand-cream transition-colors hover:bg-brand-night"
         >
           Continue shopping
@@ -339,7 +339,7 @@ export function CheckoutClient() {
       <div className="rounded-2xl border border-stone-100 bg-white p-8 text-center shadow-sm">
         <p className="text-stone-600">Your cart is empty.</p>
         <Link
-          href="/shop"
+          href="/store"
           className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-full bg-brand-forest px-8 font-semibold text-brand-cream transition-colors hover:bg-brand-night"
         >
           Continue shopping

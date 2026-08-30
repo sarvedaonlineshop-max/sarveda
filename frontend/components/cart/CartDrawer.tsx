@@ -98,7 +98,7 @@ export function CartDrawer({ open, onClose }: Props) {
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <p className="text-stone-500">Your cart is empty.</p>
             <Link
-              href="/shop"
+              href="/store"
               onClick={onClose}
               className="mt-6 inline-flex min-h-[48px] items-center justify-center rounded-xl bg-[#108967] px-8 font-semibold text-white transition-colors hover:bg-[#0d6f54]"
             >

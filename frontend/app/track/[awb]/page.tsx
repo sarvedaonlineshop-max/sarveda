@@ -162,7 +162,7 @@ export default async function TrackPage({
       )}
 
       <p className="mt-8 text-center">
-        <Link href="/shop" className="text-sm font-medium text-stone-700 underline underline-offset-2">
+        <Link href="/store" className="text-sm font-medium text-stone-700 underline underline-offset-2">
           Continue shopping
         </Link>
       </p>

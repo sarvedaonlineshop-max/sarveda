@@ -134,7 +134,7 @@ export function HomeProductShowcase({ products }: Props) {
               </Link>
 
               <Link
-                href="/shop"
+                href="/store"
                 className="text-sm font-medium text-stone-400 underline-offset-4 hover:text-stone-200 hover:underline transition-colors"
               >
                 View all products →

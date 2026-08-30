@@ -1,5 +1,5 @@
 export function shopPathForCategory(slug: string | undefined): string {
-  return slug ? `/product-category/${encodeURIComponent(slug)}` : "/shop";
+  return slug ? `/product-category/${encodeURIComponent(slug)}` : "/store";
 }
 
 export type ShopBrowseQuery = {
@@ -31,5 +31,11 @@ export function categorySlugFromPathname(pathname: string | null): string | unde
 
 export function isShopBrowsePath(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
-  return pathname === "/shop" || pathname.startsWith("/product-category/");
+  return (
+    pathname === "/store" ||
+    pathname.startsWith("/store/") ||
+    pathname === "/shop" ||
+    pathname.startsWith("/shop/") ||
+    pathname.startsWith("/product-category/")
+  );
 }

@@ -29,7 +29,7 @@ export default async function OffersPage() {
         {offers.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-stone-200 bg-white p-12 text-center text-stone-500">
             No active offers right now.{" "}
-            <Link href="/shop" className="font-medium text-amber-800 underline">
+            <Link href="/store" className="font-medium text-amber-800 underline">
               Browse the shop
             </Link>
           </p>

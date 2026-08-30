@@ -206,7 +206,7 @@ export function ShopInfiniteProductGrid({
     return (
       <p className="mx-4 rounded-2xl border border-dashed border-brand-cream-dark bg-white p-10 text-center text-brand-muted md:mx-0">
         No products match this filter yet.{" "}
-        <Link href="/shop" className="font-medium text-brand-gold underline hover:text-brand-forest">
+        <Link href="/store" className="font-medium text-brand-gold underline hover:text-brand-forest">
           Clear filters
         </Link>
       </p>

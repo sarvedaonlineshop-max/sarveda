@@ -1427,7 +1427,14 @@ export default function TasksApp() {
       const task = d.complaint
         ? normalizeTask(d.complaint as Task)
         : null;
-      setSelected(task);
+      // In-place merge — avoid full chat remount flash after send/edit/delete.
+      setSelected((prev) => {
+        if (!task) return null;
+        if (prev?.id === task.id) {
+          return { ...prev, ...task, events: task.events ?? prev.events };
+        }
+        return task;
+      });
       return task;
     }
     return null;
@@ -1466,9 +1473,16 @@ export default function TasksApp() {
         {headers:{Authorization:`Bearer ${tk}`}});
       if (r.ok) {
         const d = await r.json() as any;
-        setSubtaskPanel(
-          d.complaint ? normalizeTask(d.complaint as Task) : null
-        );
+        const task = d.complaint
+          ? normalizeTask(d.complaint as Task)
+          : null;
+        setSubtaskPanel((prev) => {
+          if (!task) return null;
+          if (prev?.id === task.id) {
+            return { ...prev, ...task, events: task.events ?? prev.events };
+          }
+          return task;
+        });
       }
     } finally {
       setSubtaskLoading(false);
@@ -1640,17 +1654,25 @@ export default function TasksApp() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
-  // iOS PWA: refetch when app returns from background or bfcache
+  // iOS PWA: silent background refetch (no pull-refresh spinner / full-screen flash)
   useEffect(() => {
-    const onPageShow = (ev: PageTransitionEvent) => {
+    const silentRefresh = () => {
       const t = localStorage.getItem("sv_token");
       if (!t || isJwtExpired(t)) return;
-      if (ev.persisted) void loadAll(t);
+      void loadNotifications(t);
+      if (view === "home") void loadMyTasks(t);
+      else if (view === "assigned") void loadMyAssignments(t);
+      else if (view === "alltasks") void loadDashboard(t);
+      else if (view === "detail") {
+        const id = selected?.id;
+        if (id) void loadDetail(id, t);
+      }
+    };
+    const onPageShow = (ev: PageTransitionEvent) => {
+      if (ev.persisted) silentRefresh();
     };
     const onVisible = () => {
-      const t = localStorage.getItem("sv_token");
-      if (!t || isJwtExpired(t)) return;
-      if (document.visibilityState === "visible") void loadAll(t);
+      if (document.visibilityState === "visible") silentRefresh();
     };
     window.addEventListener("pageshow", onPageShow);
     document.addEventListener("visibilitychange", onVisible);
@@ -1658,7 +1680,15 @@ export default function TasksApp() {
       window.removeEventListener("pageshow", onPageShow);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [loadAll]);
+  }, [
+    view,
+    selected?.id,
+    loadNotifications,
+    loadMyTasks,
+    loadMyAssignments,
+    loadDashboard,
+    loadDetail
+  ]);
 
   useEffect(() => {
     if (!showTaskMenu) return;
@@ -2285,7 +2315,7 @@ export default function TasksApp() {
         xhr.send(fd);
       });
 
-      console.log("[chat] send success, reloading");
+      console.log("[chat] send success");
       setMsgInput("");
       setMsgFiles([]);
       setUploadProgress(null);
@@ -2550,10 +2580,17 @@ export default function TasksApp() {
         alert(d.error??"Cannot delete message");
         return;
       }
+      const applyDelete = (task: Task | null): Task | null => {
+        if (!task || task.id !== active.id) return task;
+        return {
+          ...task,
+          events: (task.events ?? []).filter((ev) => ev.id !== eventId)
+        };
+      };
+      if (subtaskPanel) setSubtaskPanel(applyDelete);
+      else setSelected(applyDelete);
       setSelectedDelete(null);
-      if (subtaskPanel) await loadSubtaskPanel(active.id);
-      else await loadDetail(active.id);
-      scrollChatToBottom();
+      setMsgMenuId(null);
     } catch {
       alert("Failed to delete message.");
     }
@@ -2606,7 +2643,7 @@ export default function TasksApp() {
   }
 
   function messageCanDelete(ev:TaskEvent): boolean {
-    if (ev.authorEmail!==myEmail) return false;
+    if (!emailsMatch(ev.authorEmail ?? "", myEmail)) return false;
     if (ev.type!=="COMMENT") return false;
     if (ev.message?.startsWith("@@SYSTEM@@")) return false;
     const age = Date.now()-new Date(ev.createdAt).getTime();
@@ -2642,11 +2679,20 @@ export default function TasksApp() {
         alert(d.error ?? "Cannot edit message");
         return;
       }
+      const applyEdit = (task: Task | null): Task | null => {
+        if (!task || task.id !== active.id) return task;
+        return {
+          ...task,
+          events: (task.events ?? []).map((ev) =>
+            ev.id === eventId ? { ...ev, message: trimmed } : ev
+          )
+        };
+      };
+      if (subtaskPanel) setSubtaskPanel(applyEdit);
+      else setSelected(applyEdit);
       setEditingMessageId(null);
       setEditDraft("");
       setMsgMenuId(null);
-      if (subtaskPanel) await loadSubtaskPanel(active.id);
-      else await loadDetail(active.id);
     } catch {
       alert("Failed to edit message.");
     } finally {
@@ -4884,7 +4930,7 @@ export default function TasksApp() {
                 </div>
               );
             }
-            const isMine = ev.authorEmail===myEmail;
+            const isMine = emailsMatch(ev.authorEmail ?? "", myEmail);
             const canDel = canAct && messageCanDelete(ev);
             const canEdit = canAct && messageCanEdit(ev);
             return (

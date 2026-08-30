@@ -366,7 +366,7 @@ function ContactFormInner() {
         <p className="mt-2 text-xs text-brand-muted">We will reply to {email}.</p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Link
-            href="/shop"
+            href="/store"
             className="inline-flex min-h-[44px] items-center justify-center rounded-full bg-brand-forest px-6 text-sm font-semibold text-brand-cream transition-colors hover:bg-brand-night"
           >
             Continue shopping

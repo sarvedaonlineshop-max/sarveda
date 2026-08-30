@@ -19,6 +19,15 @@ const nextConfig = {
     return [
       // Geo zone runs on Vercel edge (uses request.geo); must not proxy to the API host.
       // Next.js route handlers win over rewrites, but this documents intent.
+      // Storefront alias: /store URL → shop page (SEO keeps /shop as internal route).
+      {
+        source: "/store",
+        destination: "/shop",
+      },
+      {
+        source: "/store/:path*",
+        destination: "/shop/:path*",
+      },
       // Zoho Books — explicit proxy to API host (auth handled per-route on Express).
       {
         source: "/api/zoho/:path*",
@@ -45,13 +54,18 @@ const nextConfig = {
       },
       {
         source: "/shop/",
-        destination: "/shop",
+        destination: "/store",
         permanent: true
       },
-      // Woo top-level All is the same catalog as /shop — do not add a fourth nav root.
+      {
+        source: "/shop",
+        destination: "/store",
+        permanent: true
+      },
+      // Woo top-level All is the same catalog as /store.
       {
         source: "/product-category/all",
-        destination: "/shop",
+        destination: "/store",
         permanent: true
       },
       {

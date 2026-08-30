@@ -9,7 +9,7 @@ const slides = [
     eyebrow: "New here?",
     title: "WELCOME5 — 5% off your first ritual order",
     body: "Apply at checkout. Valid on curated yoga, Ayurveda, and sound pieces.",
-    cta: { label: "Start shopping", href: "/shop" },
+    cta: { label: "Start shopping", href: "/store" },
     tone: "from-amber-600 via-amber-500 to-orange-500"
   },
   {
@@ -17,7 +17,7 @@ const slides = [
     eyebrow: "Trusted at scale",
     title: "₹3,07,975 in a single day of sales",
     body: "Sound & instruments, Ayurveda herbs, yoga essentials, and eco-living — each category loved by practitioners.",
-    cta: { label: "Shop bestsellers", href: "/shop" },
+    cta: { label: "Shop bestsellers", href: "/store" },
     tone: "from-stone-900 via-stone-800 to-amber-900"
   },
   {
@@ -25,7 +25,7 @@ const slides = [
     eyebrow: "From India to the world",
     title: "Shipped to India, US, UK & worldwide",
     body: "GST-inclusive pricing, careful packing, and tracking shared after dispatch.",
-    cta: { label: "Explore global catalog", href: "/shop" },
+    cta: { label: "Explore global catalog", href: "/store" },
     tone: "from-emerald-900 via-teal-900 to-stone-900"
   },
   {

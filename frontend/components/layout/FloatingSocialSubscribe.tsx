@@ -10,8 +10,6 @@ import { whatsAppSiteUrl } from "@/lib/enquiry";
 const HOME_GREEN = "#166D46";
 /** Cleared on full reload so dismiss does not survive refresh. */
 const STORAGE_HIDDEN_LEGACY = "sarveda-float-widget-hidden";
-/** How much of the panel peeks when docked into the right wall (arrow tab). */
-const DOCK_PEEK_PX = 28;
 
 const SOCIAL = [
   {
@@ -294,7 +292,6 @@ export function FloatingSocialSubscribe() {
 
   useEffect(() => {
     setMounted(true);
-    // Strategy: X hides for this browse session (SPA). Full page refresh shows it again.
     try {
       sessionStorage.removeItem(STORAGE_HIDDEN_LEGACY);
     } catch {
@@ -324,13 +321,18 @@ export function FloatingSocialSubscribe() {
     setHidden(true);
   }, []);
 
-  const closedTranslate = Math.max(0, panelWidth - DOCK_PEEK_PX);
+  // Mobile: fully tuck into the right wall — only the arrow tab remains visible.
+  const closedTranslate = Math.max(0, panelWidth);
   const liveTranslate = slideX ?? (drawerOpen ? 0 : closedTranslate);
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       if ((e.target as HTMLElement).closest("button[aria-label='Hide social widget']")) return;
-      if ((e.target as HTMLElement).closest("button[aria-label='Show subscribe panel'], button[aria-label='Hide subscribe panel']")) {
+      if (
+        (e.target as HTMLElement).closest(
+          "button[aria-label='Show subscribe panel'], button[aria-label='Hide subscribe panel']"
+        )
+      ) {
         return;
       }
       suppressClickRef.current = false;
@@ -439,13 +441,16 @@ export function FloatingSocialSubscribe() {
             className="pointer-events-auto relative touch-none will-change-transform"
             style={{
               transform: `translate3d(${liveTranslate}px, 0, 0)`,
-              transition: dragging ? "none" : "transform 320ms cubic-bezier(0.22, 1, 0.36, 1)"
+              transition: dragging
+                ? "none"
+                : "transform 420ms cubic-bezier(0.22, 1, 0.36, 1)"
             }}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={endPointer}
             onPointerCancel={endPointer}
           >
+            {/* Arrow tab stays on the wall when the panel is fully tucked away */}
             <button
               type="button"
               onClick={toggleDrawer}
@@ -455,7 +460,8 @@ export function FloatingSocialSubscribe() {
             >
               <svg
                 viewBox="0 0 24 24"
-                className={`h-5 w-5 transition-transform duration-300 ${drawerOpen ? "rotate-180" : ""}`}
+                className={`h-5 w-5 transition-transform duration-420 ease-out ${drawerOpen ? "rotate-180" : ""}`}
+                style={{ transitionDuration: "420ms" }}
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2.2"
@@ -466,7 +472,7 @@ export function FloatingSocialSubscribe() {
             </button>
 
             <div className="relative">
-              <WidgetCloseButton onClick={dismissWidget} />
+              {/* No X/close on mobile — only the wall arrow toggles the panel */}
               <div className="flex flex-col items-center overflow-hidden rounded-l-2xl border border-black/10 border-r-0 bg-white/95 shadow-[-8px_0_28px_rgba(16,32,26,0.16)] backdrop-blur-sm">
                 {socialLinks}
                 {subscribeBtn}

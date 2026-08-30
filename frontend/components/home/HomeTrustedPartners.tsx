@@ -29,7 +29,7 @@ const PARTNERS = [
   },
   { src: "/images/home/partners/taj.png", alt: "Taj", wide: true },
   { src: "/images/home/partners/accor.svg", alt: "Accor", wide: true },
-  { src: "/images/home/partners/hero-fincorp.webp", alt: "Hero FinCorp", wide: true },
+  { src: "/images/home/partners/hero-fincorp.png", alt: "Hero FinCorp", wide: true },
   { src: "/images/home/partners/jwm.webp", alt: "JWM", wide: true }
 ] as const;
 
@@ -153,7 +153,7 @@ export function HomeTrustedPartners() {
   const display = [...PARTNERS, ...PARTNERS];
 
   return (
-    <section className="bg-white py-14 md:py-16" aria-labelledby="home-partners-heading">
+    <section className="bg-white pb-14 pt-4 md:pb-16 md:pt-6" aria-labelledby="home-partners-heading">
       <div className="page-shell">
         <div className="text-center">
           <h2

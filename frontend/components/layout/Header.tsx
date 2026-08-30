@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
 
 import { useCartData, useCartUi } from "@/components/cart/CartProvider";
+import { isAdminRole } from "@/lib/auth-client";
 import { isMainNavActive, MAIN_NAV_LINKS } from "@/lib/main-nav";
 
 import { SarvedaLogo } from "@/components/brand/SarvedaLogo";
@@ -99,11 +100,11 @@ function TrackOrderButton({ onClick, compact }: { onClick: () => void; compact?:
   );
 }
 
-function WelcomeUserChip({ name }: { name: string }) {
+function WelcomeUserChip({ name, href }: { name: string; href: string }) {
   const first = name.trim().split(/\s+/)[0] || name;
   return (
     <Link
-      href="/profile"
+      href={href}
       className="inline-flex max-w-[12rem] items-center gap-1.5 text-[#166D46]"
       aria-label={`Welcome ${first}`}
     >
@@ -224,12 +225,16 @@ export function Header() {
     };
   }, []);
 
+  const isAdminSession = isAdminRole(sessionUser?.role);
+  const accountHome = isAdminSession ? "/admin" : "/profile";
+  const accountOrdersHref = isAdminSession ? "/admin/orders" : "/profile?tab=orders";
+
   useEffect(() => {
     const onOpenTrack = () => {
       if (sessionUser) {
-        setPendingHref("/profile");
+        setPendingHref(accountOrdersHref);
         startTransition(() => {
-          router.push("/profile?tab=orders");
+          router.push(accountOrdersHref);
         });
         return;
       }
@@ -237,7 +242,7 @@ export function Header() {
     };
     window.addEventListener(OPEN_TRACK_ORDER_EVENT, onOpenTrack);
     return () => window.removeEventListener(OPEN_TRACK_ORDER_EVENT, onOpenTrack);
-  }, [sessionUser, router]);
+  }, [sessionUser, router, accountOrdersHref]);
 
   if (
     pathname?.startsWith("/admin") ||
@@ -267,9 +272,9 @@ export function Header() {
 
   function onTrackClick() {
     if (sessionUser) {
-      setPendingHref("/profile");
+      setPendingHref(accountOrdersHref);
       startTransition(() => {
-        router.push("/profile?tab=orders");
+        router.push(accountOrdersHref);
       });
       return;
     }
@@ -346,14 +351,30 @@ export function Header() {
                 <div className="flex items-center gap-2.5 lg:gap-3">
                   {sessionUser ? (
                     <Link
-                      href="/profile"
+                      href={accountHome}
                       onClick={(e) => {
                         e.preventDefault();
-                        goNav("/profile");
+                        goNav(accountHome);
                       }}
                       className={headerIconBtnPlain}
-                      aria-label={displayName ? `Account, ${displayName}` : "Profile"}
-                      title={displayName ? `Hello, ${displayName}` : "Profile"}
+                      aria-label={
+                        displayName
+                          ? isAdminSession
+                            ? `Admin, ${displayName}`
+                            : `Account, ${displayName}`
+                          : isAdminSession
+                            ? "Admin"
+                            : "Profile"
+                      }
+                      title={
+                        displayName
+                          ? isAdminSession
+                            ? `Admin — ${displayName}`
+                            : `Hello, ${displayName}`
+                          : isAdminSession
+                            ? "Admin"
+                            : "Profile"
+                      }
                     >
                       <ProfileIcon />
                     </Link>
@@ -391,7 +412,7 @@ export function Header() {
               <div className="ml-auto flex shrink-0 items-center gap-2 md:hidden">
                 {isHomePage ? (
                   displayName ? (
-                    <WelcomeUserChip name={displayName} />
+                    <WelcomeUserChip name={displayName} href={accountHome} />
                   ) : (
                     <Link
                       href="/login"

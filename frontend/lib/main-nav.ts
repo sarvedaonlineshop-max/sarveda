@@ -2,7 +2,7 @@
 export const MAIN_NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/courses", label: "Courses" },
-  { href: "/shop", label: "Store" },
+  { href: "/store", label: "Store" },
   { href: "/events", label: "Events" },
   { href: "/corporate-wellness", label: "Corporate Wellness" },
   { href: "/insights", label: "Insights" },
@@ -12,8 +12,10 @@ export const MAIN_NAV_LINKS = [
 export function isMainNavActive(pathname: string | null, href: string): boolean {
   if (!pathname) return false;
   if (href === "/") return pathname === "/";
-  if (href === "/shop") {
+  if (href === "/store" || href === "/shop") {
     return (
+      pathname === "/store" ||
+      pathname.startsWith("/store/") ||
       pathname === "/shop" ||
       pathname.startsWith("/shop/") ||
       pathname.startsWith("/product/") ||

@@ -33,7 +33,7 @@ export function HomeExperienceSections({ courses, events }: Props) {
       <HomeCoursesEventsCarousel courses={courses} events={events} />
 
       <section
-        className="bg-white pb-14 pt-6 md:pb-16 md:pt-8 lg:pb-20 lg:pt-10"
+        className="bg-white pb-6 pt-6 md:pb-8 md:pt-8 lg:pb-10 lg:pt-10"
         aria-labelledby="home-corporate-heading"
       >
         <div className="page-shell grid items-center gap-10 lg:grid-cols-2 lg:gap-14">

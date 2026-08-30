@@ -367,7 +367,7 @@ export function AdminSidebar({
           {preferDarkMain ? "☀ Light workspace" : "☾ Dark workspace"}
         </button>
         <Link
-          href="/shop"
+          href="/store"
           onClick={onNavigate}
           style={{
             display: "block",

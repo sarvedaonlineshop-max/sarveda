@@ -5,7 +5,7 @@ import { COMPANY_WAREHOUSE_ADDRESS } from "@/lib/company";
 import { customerPhoneDisplay, customerPhoneTelHref } from "@/lib/enquiry";
 
 const quickLinks = [
-  { label: "Store", href: "/shop" },
+  { label: "Store", href: "/store" },
   { label: "Courses", href: "/courses" },
   { label: "Workshops & Events", href: "/events" },
   { label: "Corporate Wellness", href: "/corporate-wellness" },

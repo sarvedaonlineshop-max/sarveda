@@ -120,7 +120,7 @@ function ConfirmedInner() {
     return (
       <div className="mx-auto max-w-3xl rounded-2xl border border-brand-cream-dark bg-white p-8 text-center shadow-card">
         <p className="text-stone-600">Missing order details.</p>
-        <Link href="/shop" className="mt-6 inline-block font-medium text-brand-forest hover:underline">
+        <Link href="/store" className="mt-6 inline-block font-medium text-brand-forest hover:underline">
           Continue shopping
         </Link>
       </div>
@@ -131,7 +131,7 @@ function ConfirmedInner() {
     return (
       <div className="mx-auto max-w-3xl rounded-2xl border border-brand-cream-dark bg-white p-8 text-center shadow-card">
         <p className="text-stone-600">{err}</p>
-        <Link href="/shop" className="mt-6 inline-block font-medium text-brand-forest hover:underline">
+        <Link href="/store" className="mt-6 inline-block font-medium text-brand-forest hover:underline">
           Continue shopping
         </Link>
       </div>
@@ -327,7 +327,7 @@ function ConfirmedInner() {
           </Link>
         ) : null}
         <Link
-          href="/shop"
+          href="/store"
           className="inline-flex min-h-[40px] items-center justify-center rounded-full bg-brand-forest px-6 text-sm font-semibold text-brand-cream transition-colors hover:bg-brand-night"
         >
           Continue shopping
