@@ -23,10 +23,10 @@ import type { ShippingBreakdown } from "@/lib/shipping-rates-api";
 import { loadRazorpayScript } from "@/lib/load-razorpay";
 import { fetchShippingRatesEstimate } from "@/lib/shipping-rates-api";
 import {
-  buildCartFingerprint,
+  buildCommercialFingerprint,
   clearPendingCheckout,
   loadPendingCheckout,
-  pendingMatchesCart,
+  pendingMatchesCommercial,
   savePendingCheckout
 } from "@/lib/pending-checkout";
 import { saveCheckoutShipping } from "@/lib/checkout-prefill";
@@ -133,10 +133,27 @@ export function PaymentSelector({
   const payFailedAtGateway = useRef(false);
   const checkoutTracked = useRef(false);
   const isIndia = (form.country ?? "IN").toUpperCase() === "IN";
-  const cartFingerprint = useMemo(
-    () => buildCartFingerprint(cartItems.map((i) => ({ variantId: i.variantId, quantity: i.quantity }))),
-    [cartItems]
-  );
+  const displayCurrency = isIndia ? "INR" : cartCurrency || shippingCurrency;
+  const estimatedShipping = isDigitalOnly
+    ? 0
+    : paymentMode === "cod" && shippingCodInPaise != null
+      ? shippingCodInPaise
+      : shippingInPaise ?? 0;
+  const merchandiseAfterDiscount = Math.max(0, subtotalInPaise - discountInPaise);
+  const shippingReady = isDigitalOnly || shippingInPaise != null;
+  /** Payable estimate used for commercial fingerprint — merchandise + shipping when known. */
+  const estimatedTotal =
+    merchandiseAfterDiscount + (isDigitalOnly ? 0 : shippingReady ? estimatedShipping : 0);
+
+  const cartFingerprint = useMemo(() => {
+    if (!shippingReady && !isDigitalOnly) return "";
+    return buildCommercialFingerprint({
+      lines: cartItems.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
+      currency: displayCurrency,
+      payableMinor: estimatedTotal
+    });
+  }, [cartItems, displayCurrency, estimatedTotal, shippingReady, isDigitalOnly]);
+
   const checkoutIdempotencyKey = useMemo(
     () => `${idempotencyKey}:${paymentMode}:${form.country ?? "IN"}:${cartFingerprint || "empty"}`,
     [idempotencyKey, paymentMode, form.country, cartFingerprint]
@@ -156,19 +173,10 @@ export function PaymentSelector({
     setErr(null);
   }, [paymentMode]);
 
-  const displayCurrency = isIndia ? "INR" : cartCurrency || shippingCurrency;
   const formatMoney = (minor: number) =>
     isIndia ? formatINRFromPaise(minor) : formatMinorFromPaise(minor, displayCurrency);
 
-  const estimatedShipping = isDigitalOnly
-    ? 0
-    : paymentMode === "cod" && shippingCodInPaise != null
-      ? shippingCodInPaise
-      : shippingInPaise ?? 0;
-  const merchandiseAfterDiscount = Math.max(0, subtotalInPaise - discountInPaise);
   const { gstInPaise } = extractGst(merchandiseAfterDiscount, DEFAULT_DISPLAY_GST_RATE);
-  const estimatedTotal =
-    merchandiseAfterDiscount + (isDigitalOnly ? 0 : shippingInPaise != null ? estimatedShipping : 0);
 
   useEffect(() => {
     if (isDigitalOnly) {
@@ -249,9 +257,15 @@ export function PaymentSelector({
 
   const persistPending = useCallback(
     (order: CreateOrderResponse) => {
-      savePendingCheckout(order, form.email, cartFingerprint);
+      // Persist fingerprint from the Order snapshot (authoritative), not a second pricing path.
+      const fp = buildCommercialFingerprint({
+        lines: cartItems.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
+        currency: order.currency,
+        payableMinor: order.amountInPaise
+      });
+      savePendingCheckout(order, form.email, fp);
     },
-    [form.email, cartFingerprint]
+    [form.email, cartItems]
   );
 
   const openRazorpay = useCallback(
@@ -344,31 +358,41 @@ export function PaymentSelector({
     const email = form.email.trim().toLowerCase();
     const pending = loadPendingCheckout();
 
-    // Resume unpaid order ONLY when cart lines still match what that order was built from.
-    // Otherwise create-order (backend cancels stale pending and prices from the live cart).
-    const canResumePending = pendingMatchesCart(pending, cartFingerprint, email);
+    // Resume only when commercial fingerprint (lines + currency + payable) still matches.
+    const canResumePending =
+      Boolean(cartFingerprint) && pendingMatchesCommercial(pending, cartFingerprint, email);
 
     if (canResumePending && pending) {
       if (!resumeMatchesMode(pending, paymentMode)) {
         clearPendingCheckout();
       } else {
         try {
-          const order = await resumePendingOrder(pending.orderNumber, email);
-          if (resumeMatchesMode(order, paymentMode)) {
+          const order = await resumePendingOrder(pending.orderNumber, email, {
+            currency: displayCurrency,
+            amountInPaise: estimatedTotal
+          });
+          // Defense: frozen order must still match live payable commercial snapshot.
+          const orderCurrency = (order.currency || "").toUpperCase();
+          if (
+            resumeMatchesMode(order, paymentMode) &&
+            orderCurrency === displayCurrency.toUpperCase() &&
+            order.amountInPaise === estimatedTotal
+          ) {
             return order;
           }
           clearPendingCheckout();
         } catch (e) {
-          if (e instanceof CheckoutApiError && e.code === "ORDER_NOT_PAYABLE") {
+          if (
+            e instanceof CheckoutApiError &&
+            (e.code === "ORDER_NOT_PAYABLE" || e.code === "ORDER_SNAPSHOT_MISMATCH")
+          ) {
             clearPendingCheckout();
           }
           // Fall through to create-order
         }
       }
-    } else if (pending && pending.cartFingerprint !== cartFingerprint) {
-      clearPendingCheckout();
-    } else if (pending && !pending.cartFingerprint) {
-      // Legacy pending without fingerprint — never silent-resume (avoids stale Stripe/Razorpay/PayPal totals).
+    } else if (pending) {
+      // Legacy / mismatched / incomplete commercial fingerprint — never silent-resume.
       clearPendingCheckout();
     }
 
@@ -388,7 +412,14 @@ export function PaymentSelector({
       },
       checkoutIdempotencyKey
     );
-  }, [form, checkoutIdempotencyKey, paymentMode, cartFingerprint]);
+  }, [
+    form,
+    checkoutIdempotencyKey,
+    paymentMode,
+    cartFingerprint,
+    displayCurrency,
+    estimatedTotal
+  ]);
 
   const onSubmit = useCallback(async () => {
     if (busy || payStarted.current || processing) return;

@@ -166,7 +166,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
   }, [variantId, maxQty]);
 
   const add = async () => {
-    if (!variant || qty < 1) return;
+    if (!variant || qty < 1 || addDisabled) return;
     try {
       await cartAdd(variant.id, qty);
       setAddedFlash(true);
@@ -373,22 +373,32 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
                 {variant ? formatMinorFromPaise(saleMinor, currency) : "—"}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => void add()}
-              disabled={addDisabled}
-              className="min-h-[44px] rounded-full border border-[#108967] px-4 text-xs font-semibold text-[#108967]"
-            >
-              Add
-            </button>
-            <button
-              type="button"
-              onClick={() => void buyNow()}
-              disabled={addDisabled}
-              className="min-h-[44px] flex-1 rounded-full bg-[#108967] px-4 text-xs font-semibold text-white"
-            >
-              Buy now
-            </button>
+            {addDisabled ? (
+              <span
+                className="min-h-[44px] flex-1 rounded-full bg-stone-200 px-4 text-center text-xs font-semibold leading-[44px] text-stone-500"
+                role="status"
+                aria-live="polite"
+              >
+                Out of stock
+              </span>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => void add()}
+                  className="min-h-[44px] rounded-full border border-[#108967] px-4 text-xs font-semibold text-[#108967]"
+                >
+                  Add
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void buyNow()}
+                  className="min-h-[44px] flex-1 rounded-full bg-[#108967] px-4 text-xs font-semibold text-white"
+                >
+                  Buy now
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>

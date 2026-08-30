@@ -88,7 +88,7 @@ function PaymentFailedContent() {
             href={checkoutResume}
             className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-brand-forest px-4 text-sm font-semibold text-brand-cream hover:bg-brand-night"
           >
-            Try payment again (same order)
+            Try payment again
           </Link>
         ) : null}
         <Link

@@ -63,7 +63,17 @@ export async function resumeOrder(req: Request, res: Response, next: NextFunctio
       });
       return;
     }
-    const data = await resumePendingCheckout(orderNumber, email);
+    const currency =
+      typeof req.query.currency === "string" ? req.query.currency.trim().toUpperCase() : undefined;
+    const amountRaw =
+      typeof req.query.amountInPaise === "string" ? req.query.amountInPaise.trim() : "";
+    const amountInPaise =
+      amountRaw && Number.isFinite(Number(amountRaw)) ? Math.round(Number(amountRaw)) : undefined;
+
+    const data = await resumePendingCheckout(orderNumber, email, {
+      ...(currency ? { currency } : {}),
+      ...(amountInPaise != null ? { amountInPaise } : {})
+    });
     res.json({ success: true, data });
   } catch (err) {
     next(err);

@@ -860,7 +860,11 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
 }
 
 /** Resume unpaid checkout for the same order (Razorpay / Stripe / PayPal). */
-export async function resumePendingCheckout(orderNumber: string, email: string): Promise<CreateCheckoutResult> {
+export async function resumePendingCheckout(
+  orderNumber: string,
+  email: string,
+  snapshot?: { currency?: string; amountInPaise?: number }
+): Promise<CreateCheckoutResult> {
   const normalizedEmail = email.trim().toLowerCase();
   const order = await prisma.order.findFirst({
     where: { orderNumber, deletedAt: null },
@@ -889,6 +893,32 @@ export async function resumePendingCheckout(orderNumber: string, email: string):
     e.statusCode = 400;
     e.code = "ORDER_NOT_PAYABLE";
     throw e;
+  }
+
+  // Optional commercial snapshot guard (frontend fingerprint hardening).
+  if (snapshot?.currency) {
+    const want = snapshot.currency.trim().toUpperCase();
+    const have = (order.currency || "INR").toUpperCase();
+    if (want && have !== want) {
+      const e = new Error("Checkout currency changed — start a new payment") as Error & {
+        statusCode: number;
+        code: string;
+      };
+      e.statusCode = 409;
+      e.code = "ORDER_SNAPSHOT_MISMATCH";
+      throw e;
+    }
+  }
+  if (snapshot?.amountInPaise != null && Number.isFinite(snapshot.amountInPaise)) {
+    if (Math.round(snapshot.amountInPaise) !== order.grandTotalInPaise) {
+      const e = new Error("Checkout total changed — start a new payment") as Error & {
+        statusCode: number;
+        code: string;
+      };
+      e.statusCode = 409;
+      e.code = "ORDER_SNAPSHOT_MISMATCH";
+      throw e;
+    }
   }
 
   const payment = order.payments[0];

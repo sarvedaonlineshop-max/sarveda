@@ -82,11 +82,21 @@ export async function createOrder(
   return json.data;
 }
 
-export async function resumePendingOrder(orderNumber: string, email: string): Promise<CreateOrderResponse> {
+export async function resumePendingOrder(
+  orderNumber: string,
+  email: string,
+  snapshot?: { currency?: string; amountInPaise?: number }
+): Promise<CreateOrderResponse> {
   const q = new URLSearchParams({
     orderNumber,
     email: email.trim().toLowerCase()
   });
+  if (snapshot?.currency?.trim()) {
+    q.set("currency", snapshot.currency.trim().toUpperCase());
+  }
+  if (snapshot?.amountInPaise != null && Number.isFinite(snapshot.amountInPaise)) {
+    q.set("amountInPaise", String(Math.round(snapshot.amountInPaise)));
+  }
   const res = await fetch(`${getApiBase()}/api/checkout/resume?${q.toString()}`, {
     credentials: "include",
     headers: buildHeaders(false)

@@ -11,6 +11,14 @@ const commerceMocks = vi.hoisted(() => ({
   }),
   notifyOrderEmail: vi.fn().mockResolvedValue(undefined),
   createRazorpayOrder: vi.fn().mockResolvedValue({ id: "order_mock_rzp_001" }),
+  createStripeCheckoutSession: vi.fn().mockImplementation(async () => ({
+    url: `https://checkout.stripe.test/session_${Date.now()}`,
+    sessionId: `cs_test_${Date.now()}`
+  })),
+  createPayPalOrder: vi.fn().mockImplementation(async () => ({
+    approvalUrl: `https://paypal.test/approve/${Date.now()}`,
+    paypalOrderId: `PAYPAL-${Date.now()}`
+  })),
   schedulePaymentTimeout: vi.fn().mockResolvedValue(undefined),
   mirrorStockToZohoForSkus: vi.fn().mockResolvedValue(undefined),
   sendPushToAdmins: vi.fn().mockResolvedValue(undefined),
@@ -51,6 +59,22 @@ vi.mock("../../src/modules/payments/razorpay", async (importOriginal) => {
   return {
     ...actual,
     createOrder: commerceMocks.createRazorpayOrder
+  };
+});
+
+vi.mock("../../src/modules/payments/stripe.checkout", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../src/modules/payments/stripe.checkout")>();
+  return {
+    ...actual,
+    createStripeCheckoutSession: commerceMocks.createStripeCheckoutSession
+  };
+});
+
+vi.mock("../../src/modules/payments/paypal", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../src/modules/payments/paypal")>();
+  return {
+    ...actual,
+    createPayPalOrder: commerceMocks.createPayPalOrder
   };
 });
 
