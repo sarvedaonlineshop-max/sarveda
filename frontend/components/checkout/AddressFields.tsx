@@ -256,10 +256,14 @@ export function AddressFields({
       </label>
 
       <div>
-        <ValidatedLabel label="City" state={fieldState("city")} htmlFor="checkout-city">
+        <ValidatedLabel
+          label={isIndia ? "City" : "City (optional)"}
+          state={fieldState("city")}
+          htmlFor="checkout-city"
+        >
           <input
             id="checkout-city"
-            required
+            required={isIndia}
             autoComplete="address-level2"
             className={inputClass(fieldState("city"))}
             value={form.city}
@@ -271,7 +275,9 @@ export function AddressFields({
       </div>
 
       <div>
-        <span className="mb-1 block text-sm font-medium text-brand-ink">State</span>
+        <span className="mb-1 block text-sm font-medium text-brand-ink">
+          {isIndia ? "State" : "State / Province (optional)"}
+        </span>
         {isIndia ? (
           <select
             required
@@ -289,7 +295,6 @@ export function AddressFields({
           </select>
         ) : (
           <input
-            required
             autoComplete="address-level1"
             className={inputClass(fieldState("state"))}
             value={form.state}
@@ -302,13 +307,13 @@ export function AddressFields({
 
       <div>
         <ValidatedLabel
-          label={isIndia ? "PIN code" : "Postal code"}
+          label={isIndia ? "PIN code" : "Postal code (optional)"}
           state={fieldState("postalCode")}
           htmlFor="checkout-postal"
         >
           <input
             id="checkout-postal"
-            required
+            required={isIndia}
             inputMode={isIndia ? "numeric" : "text"}
             autoComplete="postal-code"
             maxLength={isIndia ? 6 : 20}

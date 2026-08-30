@@ -137,8 +137,8 @@ export function buildOrderInvoicePdf(input: GstInvoiceInput): Promise<Buffer> {
 type PdfDoc = InstanceType<typeof PDFDocument>;
 
 // ── Palette ──────────────────────────────────────────────────────────────────
-const BRAND_DARK  = "#1C1C1C";
-const BRAND_OLIVE = "#4A5E3A";
+const BRAND_DARK  = "#166D46";
+const BRAND_OLIVE = "#145a3a";
 const ROW_ALT     = "#F7F6F3";
 const RULE_LIGHT  = "#D8D6D0";
 const TEXT_MUTED  = "#7A7870";

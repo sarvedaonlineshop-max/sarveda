@@ -352,7 +352,7 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
         {hasCartRail ? (
           <Link
             href="/checkout"
-            className="pointer-events-auto mx-auto flex min-h-[52px] w-full max-w-md items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#d4a84a] to-brand-gold px-5 text-sm font-semibold text-brand-night shadow-[0_0_0_1px_rgba(255,255,255,0.35)_inset,0_0_28px_rgba(185,138,62,0.55),0_10px_28px_rgba(28,53,42,0.28)] ring-2 ring-[#f0d48a]/70 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.45)_inset,0_0_36px_rgba(185,138,62,0.7),0_14px_32px_rgba(28,53,42,0.32)] active:translate-y-0"
+            className="pointer-events-auto mx-auto flex min-h-[52px] w-full max-w-md items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#d4a84a] to-brand-gold px-5 text-sm font-semibold text-white shadow-[0_0_0_1px_rgba(255,255,255,0.35)_inset,0_0_28px_rgba(185,138,62,0.55),0_10px_28px_rgba(28,53,42,0.28)] ring-2 ring-[#f0d48a]/70 transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.45)_inset,0_0_36px_rgba(185,138,62,0.7),0_14px_32px_rgba(28,53,42,0.32)] active:translate-y-0"
           >
             <span aria-hidden className="text-base leading-none">
               🛒

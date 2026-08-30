@@ -19,18 +19,17 @@ type Props = {
 /** Sits above bottom nav on mobile store (WhatsApp hidden there). */
 const FAB_BOTTOM = "bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))]";
 
-function ProductsFabCurvedLabel() {
+function ProductsFabIcon() {
   return (
-    <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 64 64" aria-hidden>
-      <defs>
-        <path id="shop-products-curve" d="M 11 40 A 21 21 0 0 1 53 40" fill="none" />
-      </defs>
-      <text fill="white" fontSize="7.5" fontWeight="700" letterSpacing="0.12em">
-        <textPath href="#shop-products-curve" startOffset="50%" textAnchor="middle">
-          PRODUCTS
-        </textPath>
-      </text>
-    </svg>
+    <span className="flex flex-col items-center justify-center gap-0.5">
+      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+        <rect x="3" y="3" width="8" height="8" rx="1.5" />
+        <rect x="13" y="3" width="8" height="8" rx="1.5" />
+        <rect x="3" y="13" width="8" height="8" rx="1.5" />
+        <rect x="13" y="13" width="8" height="8" rx="1.5" />
+      </svg>
+      <span className="text-[9px] font-bold uppercase tracking-[0.06em] leading-none">Products</span>
+    </span>
   );
 }
 
@@ -147,21 +146,7 @@ export function ShopMobileCategoryDrawer({ categories, selectedSlug, onSelect }:
           aria-label="Open products menu"
           aria-expanded={open}
         >
-          <ProductsFabCurvedLabel />
-          <svg
-            className="relative h-5 w-5 -mt-1"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            aria-hidden
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.8}
-              d="M4 6h16M4 12h16M4 18h10"
-            />
-          </svg>
+          <ProductsFabIcon />
         </button>,
         document.body
       )

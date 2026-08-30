@@ -132,7 +132,7 @@ export function ProductGallery({
   return (
     <div className="flex flex-col gap-3">
       <div
-        className="relative aspect-square w-full overflow-hidden rounded-2xl border border-brand-cream-dark bg-brand-cream-dark/40 shadow-sm"
+        className="relative aspect-square w-full overflow-hidden rounded-2xl bg-brand-cream-dark/40"
         onMouseEnter={() => zoomEnabled && setZoomActive(true)}
         onMouseLeave={() => setZoomActive(false)}
         onMouseMove={onMainPointerMove}

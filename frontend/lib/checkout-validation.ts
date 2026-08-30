@@ -48,10 +48,6 @@ export function validateCheckoutFormDetailed(form: CheckoutFormInput): {
   }
 
   const city = form.city.trim();
-  if (city.length < 2) {
-    fieldErrors.city = "Enter your city.";
-  }
-
   const country = form.country.trim().toUpperCase();
   if (country.length !== 2) {
     fieldErrors.country = "Choose a valid country.";
@@ -59,6 +55,9 @@ export function validateCheckoutFormDetailed(form: CheckoutFormInput): {
 
   const state = form.state.trim();
   if (country === "IN") {
+    if (city.length < 2) {
+      fieldErrors.city = "Enter your city.";
+    }
     if (!state) {
       fieldErrors.state = "Choose your state.";
     } else if (!INDIAN_STATES.includes(state as (typeof INDIAN_STATES)[number])) {
@@ -68,9 +67,8 @@ export function validateCheckoutFormDetailed(form: CheckoutFormInput): {
     if (pin.length !== 6) {
       fieldErrors.postalCode = "Enter a valid 6-digit PIN code.";
     }
-  } else if (!state) {
-    fieldErrors.state = "Enter your state or province.";
   }
+  // International: city, state, and postal code are optional.
 
   const phone = form.phone.trim();
   if (!phone) {

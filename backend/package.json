@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "prisma generate && tsc -p tsconfig.json",
+    "build": "prisma generate && tsc -p tsconfig.json && mkdir -p dist/data && cp -f src/data/related-articles-map.json dist/data/related-articles-map.json",
     "build:prod": "NODE_OPTIONS=--max-old-space-size=2048 npm run build",
     "postinstall": "prisma generate",
     "start": "node dist/server.js",

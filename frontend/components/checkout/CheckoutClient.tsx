@@ -88,7 +88,6 @@ export function CheckoutClient() {
   const [fieldErrors, setFieldErrors] = useState<CheckoutFieldErrors>({});
   const [showAllFieldErrors, setShowAllFieldErrors] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [giftWrap, setGiftWrap] = useState(false);
   const [customerNotes, setCustomerNotes] = useState("");
   const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([]);
   const idempotencyKey = useMemo(
@@ -124,7 +123,6 @@ export function CheckoutClient() {
     state: form.state.trim(),
     postalCode: form.country === "IN" ? form.postalCode.replace(/\D/g, "") : form.postalCode.trim(),
     country: form.country || "IN",
-    giftWrap,
     customerNotes: customerNotes.trim() || undefined
   };
 
@@ -383,21 +381,6 @@ export function CheckoutClient() {
               setForm(next);
             }}
           />
-          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-brand-cream-dark bg-brand-cream px-4 py-4 transition-colors hover:border-brand-gold/50">
-            <input
-              type="checkbox"
-              checked={giftWrap}
-              onChange={(e) => setGiftWrap(e.target.checked)}
-              className="mt-1 h-4 w-4 rounded border-brand-cream-dark accent-[#1c352a] focus:ring-brand-forest"
-            />
-            <svg viewBox="0 0 24 24" className="mt-0.5 h-5 w-5 shrink-0 text-brand-gold" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <rect x="3" y="8" width="18" height="4" rx="1" />
-              <path d="M12 8v13" />
-              <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" />
-              <path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5" />
-            </svg>
-            <span className="text-sm font-semibold text-brand-ink">I want this gift wrapped</span>
-          </label>
           <div>
             <label htmlFor="checkout-customer-notes" className="mb-1.5 block text-sm font-medium text-brand-ink">
               Notes for our team <span className="font-normal text-brand-muted">(optional)</span>

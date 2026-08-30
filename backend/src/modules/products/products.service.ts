@@ -1,6 +1,7 @@
 import type { Prisma, ProductStatus, ProductType } from "@prisma/client";
 
 import { prisma } from "../../config/db";
+import { resolveRelatedArticleSlugs } from "../../data/related-articles";
 import { getCategorySlugScope } from "../categories/categories.service";
 
 import {
@@ -675,7 +676,13 @@ export async function getProductBySlug(slug: string) {
     throw httpError(404, "Product not found", "NOT_FOUND");
   }
 
-  return product;
+  const relatedArticleSlugs = resolveRelatedArticleSlugs({
+    slug: product.slug,
+    wooCommerceId: product.wooCommerceId,
+    relatedArticleSlugs: product.relatedArticleSlugs
+  });
+
+  return { ...product, relatedArticleSlugs };
 }
 
 export async function createProduct(input: {

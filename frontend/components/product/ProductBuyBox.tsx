@@ -306,7 +306,7 @@ export function ProductBuyBox({
                 type="button"
                 onClick={onBuyNow}
                 disabled={addDisabled}
-                className="min-h-[44px] flex-1 rounded-full bg-brand-gold px-3 text-xs font-semibold tracking-wide text-brand-night transition-colors hover:bg-[#a37934] disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
+                className="min-h-[44px] flex-1 rounded-full bg-brand-gold px-3 text-xs font-semibold tracking-wide text-white transition-colors hover:bg-[#a37934] disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
               >
                 Buy it now
               </button>

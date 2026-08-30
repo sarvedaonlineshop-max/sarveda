@@ -7,9 +7,9 @@ export const createOrderSchema = z
     shippingFullName: z.string().min(1).max(200),
     line1: z.string().min(1).max(300),
     line2: z.string().max(300).optional().nullable(),
-    city: z.string().min(1).max(120),
-    state: z.string().min(1).max(120),
-    postalCode: z.string().min(3).max(20),
+    city: z.string().max(120).optional().default(""),
+    state: z.string().max(120).optional().default(""),
+    postalCode: z.string().max(20).optional().default(""),
     country: z.string().min(2).max(2).default("IN"),
     /** India COD shipping surcharge (VariantShippingRate). */
     codDelivery: z.boolean().optional().default(false),
@@ -51,7 +51,22 @@ export const createOrderSchema = z
     }
   })
   .superRefine((data, ctx) => {
-    if (data.country.toUpperCase() === "IN") {
+    const cc = data.country.toUpperCase();
+    if (cc === "IN") {
+      if (!data.city.trim() || data.city.trim().length < 2) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "City is required for India orders.",
+          path: ["city"]
+        });
+      }
+      if (!data.state.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "State is required for India orders.",
+          path: ["state"]
+        });
+      }
       const pin = data.postalCode.replace(/\D/g, "");
       if (pin.length !== 6) {
         ctx.addIssue({

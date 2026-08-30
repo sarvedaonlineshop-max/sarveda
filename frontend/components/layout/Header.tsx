@@ -11,6 +11,7 @@ import { isMainNavActive, MAIN_NAV_LINKS } from "@/lib/main-nav";
 import { SarvedaLogo } from "@/components/brand/SarvedaLogo";
 
 import { TrackOrderModal, OPEN_TRACK_ORDER_EVENT } from "./TrackOrderModal";
+import { CLOSE_MOBILE_MENU_EVENT, OPEN_MOBILE_MENU_EVENT } from "./mobile-menu-events";
 import { dispatchNavStart } from "./RouteLoadingSpinner";
 import { useStorefrontSession } from "./useStorefrontSession";
 
@@ -240,8 +241,13 @@ export function Header() {
       }
       setTrackOpen(true);
     };
+    const onCloseMobileMenu = () => setMenuOpen(false);
     window.addEventListener(OPEN_TRACK_ORDER_EVENT, onOpenTrack);
-    return () => window.removeEventListener(OPEN_TRACK_ORDER_EVENT, onOpenTrack);
+    window.addEventListener(CLOSE_MOBILE_MENU_EVENT, onCloseMobileMenu);
+    return () => {
+      window.removeEventListener(OPEN_TRACK_ORDER_EVENT, onOpenTrack);
+      window.removeEventListener(CLOSE_MOBILE_MENU_EVENT, onCloseMobileMenu);
+    };
   }, [sessionUser, router, accountOrdersHref]);
 
   if (
@@ -399,17 +405,28 @@ export function Header() {
 
                 <button
                   type="button"
-                  onClick={() => setMenuOpen((v) => !v)}
+                  onClick={() => {
+                    setMenuOpen((v) => {
+                      const next = !v;
+                      // On mobile widths the green sheet is driven by BottomNav events.
+                      if (typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches) {
+                        window.dispatchEvent(
+                          new Event(next ? OPEN_MOBILE_MENU_EVENT : CLOSE_MOBILE_MENU_EVENT)
+                        );
+                      }
+                      return next;
+                    });
+                  }}
                   className={`${headerIconBtnPlain} xl:hidden`}
-                  aria-label={menuOpen ? "Close menu" : "Open menu"}
+                  aria-label={menuOpen ? "Close navigation" : "Open navigation"}
                   aria-expanded={menuOpen}
                 >
                   <MenuIcon open={menuOpen} />
                 </button>
               </div>
 
-              {/* Mobile: welcome on home */}
-              <div className="ml-auto flex shrink-0 items-center gap-2 md:hidden">
+              {/* Mobile: hamburger (opens sheet) + welcome / sign-in */}
+              <div className="ml-auto flex shrink-0 items-center gap-1.5 md:hidden">
                 {isHomePage ? (
                   displayName ? (
                     <WelcomeUserChip name={displayName} href={accountHome} />
@@ -423,6 +440,23 @@ export function Header() {
                     </Link>
                   )
                 ) : null}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen((v) => {
+                      const next = !v;
+                      window.dispatchEvent(
+                        new Event(next ? OPEN_MOBILE_MENU_EVENT : CLOSE_MOBILE_MENU_EVENT)
+                      );
+                      return next;
+                    });
+                  }}
+                  className={headerIconBtnPlain}
+                  aria-label={menuOpen ? "Close navigation" : "Open navigation"}
+                  aria-expanded={menuOpen}
+                >
+                  <MenuIcon open={menuOpen} />
+                </button>
               </div>
             </div>
 
