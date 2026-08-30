@@ -1,17 +1,23 @@
 "use client";
 
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useState } from "react";
 
+import { SarvedaSignatureLoader } from "@/components/brand/SarvedaSignatureLoader";
 import { logoutSession } from "@/lib/auth-client";
 
 export const LOGOUT_START_EVENT = "sarveda-logout-start";
 
+const EASE = [0.22, 1, 0.36, 1] as const;
+
 /**
- * Full-screen "Logging out…" overlay. Mount once near the app root.
- * Trigger via {@link signOutToLogin}.
+ * Full-screen Sarveda signature overlay while signing out.
+ * Mount once near the app root. Trigger via {@link signOutToLogin}.
  */
 export function LogoutTransitionOverlay() {
   const [visible, setVisible] = useState(false);
+  const reduceMotion = useReducedMotion();
+  const fade = reduceMotion ? 0.08 : 0.18;
 
   useEffect(() => {
     const onStart = () => setVisible(true);
@@ -19,23 +25,32 @@ export function LogoutTransitionOverlay() {
     return () => window.removeEventListener(LOGOUT_START_EVENT, onStart);
   }, []);
 
-  if (!visible) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-[300] flex items-center justify-center bg-brand-cream/90 backdrop-blur-[2px]"
-      role="status"
-      aria-live="polite"
-      aria-label="Logging out"
-    >
-      <div className="flex flex-col items-center gap-3 rounded-2xl border border-brand-forest/10 bg-white px-8 py-7 shadow-xl">
-        <span
-          className="inline-block h-10 w-10 animate-spin rounded-full border-[3px] border-[#166D46]/25 border-t-[#166D46]"
-          aria-hidden
-        />
-        <span className="font-sans text-sm font-semibold text-[#166D46]">Logging out…</span>
-      </div>
-    </div>
+    <AnimatePresence>
+      {visible ? (
+        <motion.div
+          key="sarveda-logout"
+          className="fixed inset-0 z-[300] flex items-center justify-center bg-brand-cream/60 backdrop-blur-[1.5px]"
+          role="status"
+          aria-live="polite"
+          aria-label="Logging out"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1, transition: { duration: fade, ease: EASE } }}
+          exit={{ opacity: 0, transition: { duration: fade, ease: EASE } }}
+        >
+          <motion.div
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
+            animate={
+              reduceMotion
+                ? { opacity: 1, transition: { duration: fade, ease: EASE } }
+                : { opacity: 1, scale: 1, transition: { duration: fade, ease: EASE } }
+            }
+          >
+            <SarvedaSignatureLoader label="Logging out…" />
+          </motion.div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
   );
 }
 

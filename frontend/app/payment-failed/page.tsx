@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { PaymentFailMark } from "@/components/orders/PaymentFailMark";
 import { fetchPublicOrder, type PublicOrderSummary } from "@/lib/checkout-api";
 import { formatMinorFromPaise } from "@/lib/money";
+import { clearPendingCheckout } from "@/lib/pending-checkout";
 import {
   parsePaymentOutcome,
   paymentComplaintHref,
@@ -41,6 +42,8 @@ function PaymentFailedContent() {
     if (!orderNumber || !email) return "/checkout";
     return `/checkout?${new URLSearchParams({ orderNumber, email }).toString()}`;
   }, [orderNumber, email]);
+
+  const checkoutFresh = "/checkout";
 
   const complaintHref = paymentComplaintHref({ orderNumber, email, outcome });
   const banner =
@@ -85,9 +88,18 @@ function PaymentFailedContent() {
             href={checkoutResume}
             className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-brand-forest px-4 text-sm font-semibold text-brand-cream hover:bg-brand-night"
           >
-            Try payment again
+            Try payment again (same order)
           </Link>
         ) : null}
+        <Link
+          href={checkoutFresh}
+          onClick={() => {
+            clearPendingCheckout();
+          }}
+          className="inline-flex min-h-[48px] items-center justify-center rounded-xl border border-brand-forest/30 bg-white px-4 text-sm font-semibold text-brand-forest hover:bg-brand-cream"
+        >
+          Checkout with current cart
+        </Link>
         <Link
           href={complaintHref}
           className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-[#c0453f] px-4 text-sm font-semibold text-white hover:bg-[#9a3530]"

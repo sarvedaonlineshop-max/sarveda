@@ -112,7 +112,7 @@ export function ShopProductToolbar({
   return (
     <>
       <div className="lg:contents">
-        <div className="fixed inset-x-0 top-[var(--storefront-header-live-offset)] z-40 overflow-visible border-b border-brand-cream-dark/60 bg-brand-cream/95 lg:static lg:z-auto lg:border-b-0 lg:bg-transparent">
+        <div className="sticky top-[var(--storefront-header-live-offset)] z-40 overflow-visible border-b border-brand-cream-dark/60 bg-brand-cream/95 lg:static lg:z-auto lg:border-b-0 lg:bg-transparent">
           <div className="lg:hidden">
             <ShopMobileCategoryDrawer
               categories={categories}
@@ -168,7 +168,7 @@ export function ShopProductToolbar({
               />
             </div>
 
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+            <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 lg:mt-2">
               <div className="flex flex-wrap items-center gap-2">
                 {categorySlug ? (
                   <button
@@ -237,8 +237,6 @@ export function ShopProductToolbar({
             </div>
           </div>
         </div>
-
-        <div className="h-[4.75rem] shrink-0 lg:hidden" aria-hidden />
       </div>
     </>
   );

@@ -51,7 +51,7 @@ export function ShopProductGrid({
   }, [initialProducts.items.length, initialProducts.total, setProductsMeta]);
 
   return (
-    <div className="pt-3 lg:pb-8 lg:pt-4">
+    <div className="pt-1 lg:pb-8 lg:pt-4">
       <ShopInfiniteProductGrid
         key={`${categorySlug ?? "all"}-${searchQ}-${tag}-${minPrice}-${maxPrice}-${initialProducts.page}-${initialProducts.total}`}
         initialItems={initialProducts.items}

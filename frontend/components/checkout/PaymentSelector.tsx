@@ -23,8 +23,10 @@ import type { ShippingBreakdown } from "@/lib/shipping-rates-api";
 import { loadRazorpayScript } from "@/lib/load-razorpay";
 import { fetchShippingRatesEstimate } from "@/lib/shipping-rates-api";
 import {
+  buildCartFingerprint,
   clearPendingCheckout,
   loadPendingCheckout,
+  pendingMatchesCart,
   savePendingCheckout
 } from "@/lib/pending-checkout";
 import { saveCheckoutShipping } from "@/lib/checkout-prefill";
@@ -131,9 +133,13 @@ export function PaymentSelector({
   const payFailedAtGateway = useRef(false);
   const checkoutTracked = useRef(false);
   const isIndia = (form.country ?? "IN").toUpperCase() === "IN";
+  const cartFingerprint = useMemo(
+    () => buildCartFingerprint(cartItems.map((i) => ({ variantId: i.variantId, quantity: i.quantity }))),
+    [cartItems]
+  );
   const checkoutIdempotencyKey = useMemo(
-    () => `${idempotencyKey}:${paymentMode}:${form.country ?? "IN"}`,
-    [idempotencyKey, paymentMode, form.country]
+    () => `${idempotencyKey}:${paymentMode}:${form.country ?? "IN"}:${cartFingerprint || "empty"}`,
+    [idempotencyKey, paymentMode, form.country, cartFingerprint]
   );
 
   useEffect(() => {
@@ -241,9 +247,16 @@ export function PaymentSelector({
     [form.email, router]
   );
 
+  const persistPending = useCallback(
+    (order: CreateOrderResponse) => {
+      savePendingCheckout(order, form.email, cartFingerprint);
+    },
+    [form.email, cartFingerprint]
+  );
+
   const openRazorpay = useCallback(
     (order: CreateOrderResponse & { razorpayKeyId: string; rzpOrderId: string }) => {
-      savePendingCheckout(order, form.email);
+      persistPending(order);
 
       if (!window.Razorpay) {
         setErr("Payment script not loaded. Please refresh the page.");
@@ -324,41 +337,38 @@ export function PaymentSelector({
       rzp.open();
       setBusy(false);
     },
-    [form.email, form.phone, goFailure, goSuccess]
+    [form.email, form.phone, goFailure, goSuccess, persistPending]
   );
 
   const resolvePayableOrder = useCallback(async (): Promise<CreateOrderResponse> => {
     const email = form.email.trim().toLowerCase();
     const pending = loadPendingCheckout();
-    const resumeTarget = resumeOrderNumber?.trim() || pending?.orderNumber;
 
-    const tryResume = async (orderNumber: string): Promise<CreateOrderResponse | null> => {
-      try {
-        const order = await resumePendingOrder(orderNumber, email);
-        if (resumeMatchesMode(order, paymentMode)) {
-          return order;
-        }
+    // Resume unpaid order ONLY when cart lines still match what that order was built from.
+    // Otherwise create-order (backend cancels stale pending and prices from the live cart).
+    const canResumePending = pendingMatchesCart(pending, cartFingerprint, email);
+
+    if (canResumePending && pending) {
+      if (!resumeMatchesMode(pending, paymentMode)) {
         clearPendingCheckout();
-        return null;
-      } catch (e) {
-        if (e instanceof CheckoutApiError && e.code === "ORDER_NOT_PAYABLE") {
+      } else {
+        try {
+          const order = await resumePendingOrder(pending.orderNumber, email);
+          if (resumeMatchesMode(order, paymentMode)) {
+            return order;
+          }
           clearPendingCheckout();
+        } catch (e) {
+          if (e instanceof CheckoutApiError && e.code === "ORDER_NOT_PAYABLE") {
+            clearPendingCheckout();
+          }
+          // Fall through to create-order
         }
-        return null;
       }
-    };
-
-    if (resumeTarget && (!pending || pending.email === email)) {
-      const resumed = await tryResume(resumeTarget);
-      if (resumed) return resumed;
-    }
-
-    if (pending && pending.email === email && pending.orderNumber !== resumeTarget) {
-      const resumed = await tryResume(pending.orderNumber);
-      if (resumed) return resumed;
-    }
-
-    if (pending && pending.email === email && !resumeMatchesMode(pending, paymentMode)) {
+    } else if (pending && pending.cartFingerprint !== cartFingerprint) {
+      clearPendingCheckout();
+    } else if (pending && !pending.cartFingerprint) {
+      // Legacy pending without fingerprint — never silent-resume (avoids stale Stripe/Razorpay/PayPal totals).
       clearPendingCheckout();
     }
 
@@ -378,7 +388,7 @@ export function PaymentSelector({
       },
       checkoutIdempotencyKey
     );
-  }, [form, checkoutIdempotencyKey, paymentMode, resumeOrderNumber]);
+  }, [form, checkoutIdempotencyKey, paymentMode, cartFingerprint]);
 
   const onSubmit = useCallback(async () => {
     if (busy || payStarted.current || processing) return;
@@ -417,7 +427,7 @@ export function PaymentSelector({
         setProcessing(true);
         const order = await resolvePayableOrder();
         if (order.stripeCheckoutUrl) {
-          savePendingCheckout(order, form.email);
+          persistPending(order);
           window.location.href = order.stripeCheckoutUrl;
           return;
         }
@@ -432,7 +442,7 @@ export function PaymentSelector({
         setProcessing(true);
         const order = await resolvePayableOrder();
         if (order.paypalApprovalUrl) {
-          savePendingCheckout(order, form.email);
+          persistPending(order);
           window.location.href = order.paypalApprovalUrl;
           return;
         }
@@ -478,6 +488,7 @@ export function PaymentSelector({
     paymentMode,
     processing,
     resolvePayableOrder,
+    persistPending,
     rzpReady,
     estimatedTotal,
     merchandiseAfterDiscount,

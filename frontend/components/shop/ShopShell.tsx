@@ -173,7 +173,7 @@ export function ShopShell({ categories, children }: Props) {
 
               <div
                 ref={productsAnchorRef}
-                className={`relative z-0 pt-3 lg:pt-4 ${
+                className={`relative z-0 pt-1 lg:pt-4 ${
                   isPending ? "pointer-events-none opacity-50 transition-opacity duration-150" : ""
                 }`}
                 aria-busy={isPending}

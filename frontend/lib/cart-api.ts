@@ -1,6 +1,7 @@
 import { getApiBase } from "./api";
 import { trackAddToCart } from "./analytics";
 import { readZoneFromCookie, zoneToPricingCountry } from "./currency";
+import { clearPendingCheckout } from "./pending-checkout";
 
 const SESSION_STORAGE_KEY = "sarveda_cart_session_id";
 
@@ -15,6 +16,11 @@ export function notifyCartChanged(data?: CartApiResponse): void {
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("sarveda-cart-changed", { detail: data }));
   }
+}
+
+/** Cart mutations invalidate any abandoned unpaid checkout resume. */
+function invalidatePendingCheckoutOnCartChange(): void {
+  clearPendingCheckout();
 }
 
 /** Country for cart price zone — explicit override, else `sarveda_zone` cookie. */
@@ -226,6 +232,7 @@ export async function cartAdd(variantId: string, quantity: number): Promise<Cart
       currency: json.data!.currency
     });
   }
+  invalidatePendingCheckoutOnCartChange();
   notifyCartChanged(json.data);
   return json.data!;
 }
@@ -245,6 +252,7 @@ export async function cartUpdate(variantId: string, quantity: number): Promise<C
   if (!res.ok || !json.success || !json.data) {
     throw new Error(json.error || "Could not update cart");
   }
+  invalidatePendingCheckoutOnCartChange();
   notifyCartChanged(json.data);
   return json.data;
 }
@@ -261,6 +269,7 @@ export async function cartClearAll(): Promise<void> {
     throw new Error(j.error || `Cart clear failed (${res.status})`);
   }
   clearSession();
+  invalidatePendingCheckoutOnCartChange();
   notifyCartChanged();
 }
 
@@ -281,6 +290,7 @@ export async function cartRemove(variantId: string): Promise<CartApiResponse> {
   if (!res.ok || !json.success || !json.data) {
     throw new Error(json.error || "Could not remove item");
   }
+  invalidatePendingCheckoutOnCartChange();
   notifyCartChanged(json.data);
   return json.data;
 }
@@ -334,6 +344,7 @@ export async function applyCartCoupon(
   if (json.data?.sessionId) {
     writeSession(json.data.sessionId);
   }
+  invalidatePendingCheckoutOnCartChange();
   notifyCartChanged(json.data);
   return json.data!;
 }
@@ -353,6 +364,7 @@ export async function removeCartCoupon(shippingCountry?: string): Promise<CartAp
   if (!res.ok || !json.success) {
     throw new Error(json.error || "Could not remove coupon");
   }
+  invalidatePendingCheckoutOnCartChange();
   notifyCartChanged(json.data);
   return json.data!;
 }
