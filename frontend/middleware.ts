@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 
 import { ZONE_COOKIE, countryToZone, isValidZone } from "@/lib/currency";
 import { detectCountryFromHeaders } from "@/lib/geo-zone";
+import { resolveStorePathToProductRedirect } from "@/lib/legacy-woo-product-url";
 
 const ZONE_COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 const AUTH_COOKIE = "sarveda_auth";
@@ -57,6 +58,25 @@ export function middleware(request: NextRequest) {
       ensurePricingZoneCookie(request, redirect);
       return redirect;
     }
+  }
+
+  // Legacy Woo / Google Merchant PDPs: /store/.../{leaf}/ → 301 /product/{slug}
+  // /store and /store/ stay as listing aliases (next.config rewrite → /shop).
+  if (pathname === "/store" || pathname === "/store/") {
+    const response = NextResponse.next();
+    ensurePricingZoneCookie(request, response);
+    return response;
+  }
+  if (pathname.startsWith("/store/")) {
+    const redirectPath = resolveStorePathToProductRedirect(pathname, searchParams);
+    if (redirectPath) {
+      // Always internal /product/... — never absolute external hosts.
+      const target = new URL(redirectPath, request.nextUrl.origin);
+      const redirect = NextResponse.redirect(target, 301);
+      ensurePricingZoneCookie(request, redirect);
+      return redirect;
+    }
+    // Unresolved deep /store paths: pass through (rewrite may 404). Do not send to /.
   }
 
   const response = NextResponse.next();
