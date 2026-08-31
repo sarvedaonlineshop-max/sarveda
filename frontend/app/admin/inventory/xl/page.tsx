@@ -132,6 +132,10 @@ export default function InventoryXlSheetPage() {
   const [stockFilter, setStockFilter] = useState<InventoryXlStockFilter>("ALL");
   const [counts, setCounts] = useState({ all: 0, in_stock: 0, low_stock: 0, out_of_stock: 0 });
   const [productCount, setProductCount] = useState(0);
+  const [reservedOverflow, setReservedOverflow] = useState<{
+    count: number;
+    samples: Array<{ sku: string; productName: string; onHand: number; reserved: number }>;
+  } | null>(null);
   const [immersive, setImmersive] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement | null>(null);
@@ -147,10 +151,12 @@ export default function InventoryXlSheetPage() {
       setBaseline(JSON.stringify(mapped));
       setProductCount(data.productCount ?? 0);
       setCounts(data.counts ?? { all: 0, in_stock: 0, low_stock: 0, out_of_stock: 0 });
+      setReservedOverflow(data.reservedExceedsOnHand ?? null);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Failed to load sheet");
       setRows([]);
       setProductCount(0);
+      setReservedOverflow(null);
     } finally {
       setLoading(false);
     }
@@ -159,6 +165,20 @@ export default function InventoryXlSheetPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const reservedOverflowLocal = useMemo(() => {
+    if (stockFilter !== "ALL") return reservedOverflow;
+    const samples = rows
+      .filter((r) => r.reserved > (parseInt(r.onHand.trim() || "0", 10) || 0))
+      .map((r) => ({
+        sku: r.sku,
+        productName: r.productName,
+        onHand: parseInt(r.onHand.trim() || "0", 10) || 0,
+        reserved: r.reserved
+      }));
+    if (samples.length === 0) return reservedOverflow;
+    return { count: samples.length, samples: samples.slice(0, 25) };
+  }, [rows, stockFilter, reservedOverflow]);
 
   const dirty = useMemo(() => JSON.stringify(rows) !== baseline, [rows, baseline]);
 
@@ -242,19 +262,46 @@ export default function InventoryXlSheetPage() {
     setSaving(true);
     setErr(null);
     try {
-      const payload = rows.map((r, idx) => {
-        const label = r.sku || `row ${idx + 1}`;
+      let baselineRows: EditRow[] = [];
+      try {
+        baselineRows = JSON.parse(baseline) as EditRow[];
+      } catch {
+        baselineRows = [];
+      }
+      const baselineByVariant = new Map(baselineRows.map((r) => [r.variantId, r]));
+
+      const payload: Array<{ variantId: string; onHand: number; lowStockThreshold: number }> = [];
+      for (let idx = 0; idx < rows.length; idx++) {
+        const r = rows[idx]!;
+        const prev = baselineByVariant.get(r.variantId);
         const onHand = parseInt(r.onHand.trim() || "0", 10);
         const lowStockThreshold = parseInt(r.lowStockThreshold.trim() || "0", 10);
-        if (!Number.isFinite(onHand) || onHand < 0) throw new Error(`Invalid on hand for ${label}`);
+        const label = r.sku || `row ${idx + 1}`;
+
+        if (!prev) continue;
+        const unchanged =
+          prev.onHand === r.onHand && prev.lowStockThreshold === r.lowStockThreshold;
+        if (unchanged) continue;
+
+        if (!Number.isFinite(onHand) || onHand < 0) {
+          throw new Error(`Invalid on hand for ${label}`);
+        }
         if (!Number.isFinite(lowStockThreshold) || lowStockThreshold < 0) {
           throw new Error(`Invalid threshold for ${label}`);
         }
         if (onHand < r.reserved) {
-          throw new Error(`On hand cannot be below reserved (${r.reserved}) for ${label}`);
+          throw new Error(
+            `${label}: on hand (${onHand}) cannot be below reserved (${r.reserved}). Raise on hand or wait until reserved stock is released.`
+          );
         }
-        return { variantId: r.variantId, onHand, lowStockThreshold };
-      });
+        payload.push({ variantId: r.variantId, onHand, lowStockThreshold });
+      }
+
+      if (payload.length === 0) {
+        setToast({ message: "No changed rows to save." });
+        setBaseline(JSON.stringify(rows));
+        return;
+      }
 
       const result = await saveInventoryXlSheet(payload);
       const errCount = result.errors?.length ?? 0;
@@ -275,7 +322,7 @@ export default function InventoryXlSheetPage() {
     } finally {
       setSaving(false);
     }
-  }, [dirty, saving, rows, load]);
+  }, [dirty, saving, rows, baseline, load]);
 
   function exportRows(format: "csv" | "xls") {
     const stamp = new Date().toISOString().slice(0, 10);
@@ -553,6 +600,35 @@ export default function InventoryXlSheetPage() {
           {dirty ? " · unsaved" : ""}
         </span>
       </div>
+
+      {reservedOverflowLocal && reservedOverflowLocal.count > 0 ? (
+        <div
+          style={{
+            flexShrink: 0,
+            padding: "10px 20px",
+            background: "#fff7ed",
+            borderBottom: "1px solid #fed7aa",
+            color: "#9a3412",
+            fontSize: "13px",
+            lineHeight: 1.45
+          }}
+        >
+          <strong>{reservedOverflowLocal.count}</strong> row
+          {reservedOverflowLocal.count === 1 ? "" : "s"} have <strong>reserved &gt; on hand</strong> (stock
+          held for pending checkout). Those SKUs cannot be saved below reserved.
+          {reservedOverflowLocal.samples.length > 0 ? (
+            <span>
+              {" "}
+              Examples:{" "}
+              {reservedOverflowLocal.samples
+                .slice(0, 8)
+                .map((s) => `${s.sku} (on ${s.onHand}/res ${s.reserved})`)
+                .join(" · ")}
+              {reservedOverflowLocal.count > 8 ? "…" : ""}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
 
       {err ? (
         <div style={{ padding: "8px 20px", color: "#b91c1c", fontSize: "13px", flexShrink: 0 }}>{err}</div>

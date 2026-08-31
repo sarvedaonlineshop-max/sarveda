@@ -261,6 +261,7 @@ export async function saveXlSheetRows(
   const errors: Array<{ variantId: string; sku: string; error: string }> = [];
   let updatedProducts = 0;
   let updatedVariants = 0;
+  const touchedInventoryVariantIds: string[] = [];
 
   const skuCounts = new Map<string, number>();
   for (const r of body.rows) {
@@ -446,6 +447,7 @@ export async function saveXlSheetRows(
                 data: { onHand: r.qty },
               });
               variantUpdated = true;
+              touchedInventoryVariantIds.push(variant.id);
             }
           } else {
             await prisma.inventory.create({
@@ -469,6 +471,16 @@ export async function saveXlSheetRows(
         });
       }
     }
+  }
+
+  if (touchedInventoryVariantIds.length > 0) {
+    const { reconcileInventoryReserved } = await import(
+      "../orders/inventory-reserved-reconcile.service"
+    );
+    await reconcileInventoryReserved({
+      dryRun: false,
+      variantIds: Array.from(new Set(touchedInventoryVariantIds)),
+    });
   }
 
   if (errors.length && updatedVariants === 0 && updatedProducts === 0) {

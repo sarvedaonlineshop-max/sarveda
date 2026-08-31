@@ -10,7 +10,8 @@ import {
   Box,
   Layers3,
   PackageCheck,
-  ShoppingCart
+  ShoppingCart,
+  Timer
 } from "lucide-react";
 import { AdminDashboardAnalytics } from "@/components/admin/AdminDashboardAnalytics";
 import { AdminSkeleton, AdminTableSkeleton } from "@/components/admin/AdminSkeleton";
@@ -162,6 +163,9 @@ export default function AdminDashboardPage() {
   };
 
   const lowStockCount = data.lowStockAlerts.length;
+  const reserved = data.reservedStock;
+  const reservedUnits = reserved?.totalStoredReservedUnits ?? 0;
+  const orphanUnits = reserved?.orphanUnits ?? 0;
 
   const statCards: StatCard[] = [
     {
@@ -212,6 +216,16 @@ export default function AdminDashboardPage() {
       tone: t.danger,
       icon: <AlertTriangle size={18} />,
       note: lowStockCount > 0 ? "Needs action" : "All healthy"
+    },
+    {
+      label: "Reserved units",
+      value: String(reservedUnits),
+      tone: orphanUnits > 0 ? "#c2410c" : "#0f766e",
+      icon: <Timer size={18} />,
+      note:
+        orphanUnits > 0
+          ? `${orphanUnits} orphan unit(s) — reconcile`
+          : `${reserved?.pendingPaymentOrders ?? 0} unpaid checkout(s)`
     }
   ];
 
@@ -461,6 +475,90 @@ export default function AdminDashboardPage() {
                 </div>
               ))}
             </div>
+          )}
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: adminMotionSec.fast, ease: adminMotionEase }}
+          style={cardStyle}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: "14px",
+              gap: "12px",
+              flexWrap: "wrap"
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: "12px",
+                  background: orphanUnits > 0 ? "rgba(194,65,12,0.12)" : "rgba(15,118,110,0.12)",
+                  color: orphanUnits > 0 ? "#c2410c" : "#0f766e",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}
+              >
+                <Timer size={18} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: "15px", fontWeight: 800, color: "var(--admin-text, #2c2420)", borderLeft: "3px solid #b98a3e", paddingLeft: "10px" }}>
+                  Reserved stock
+                </h3>
+                <p style={{ fontSize: "12px", color: "var(--admin-text-muted, #8a7060)", marginTop: "2px" }}>
+                  Held for unpaid checkout (15‑min release). Orphans should be 0 in production.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/admin/inventory"
+              style={{ fontSize: "12px", color: "#b98a3e", textDecoration: "none", fontWeight: 700 }}
+            >
+              Inventory
+            </Link>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: "10px", marginBottom: "12px" }}>
+            {[
+              { label: "Reserved units", value: reservedUnits },
+              { label: "Unpaid checkouts", value: reserved?.pendingPaymentOrders ?? 0 },
+              { label: "Expected holds", value: reserved?.totalExpectedReservedUnits ?? 0 },
+              { label: "Orphan units", value: orphanUnits }
+            ].map((m) => (
+              <div
+                key={m.label}
+                style={{
+                  borderRadius: "10px",
+                  border: "1px solid var(--admin-card-border, #e8e2d9)",
+                  padding: "10px 12px",
+                  background: "var(--admin-page-bg, #f7f4ef)"
+                }}
+              >
+                <p style={{ fontSize: "11px", color: "var(--admin-text-muted, #8a7060)", fontWeight: 700 }}>{m.label}</p>
+                <p style={{ fontSize: "20px", fontWeight: 800, color: "var(--admin-text, #2c2420)", marginTop: "4px" }}>{m.value}</p>
+              </div>
+            ))}
+          </div>
+          {orphanUnits > 0 && reserved?.samples?.length ? (
+            <div style={{ fontSize: "12px", color: "#9a3412", lineHeight: 1.5 }}>
+              Orphan examples:{" "}
+              {reserved.samples
+                .filter((s) => s.orphanUnits > 0)
+                .slice(0, 6)
+                .map((s) => `${s.sku} (stored ${s.reservedStored} / expected ${s.reservedExpected})`)
+                .join(" · ")}
+            </div>
+          ) : (
+            <p style={{ fontSize: "13px", color: "var(--admin-text-muted, #8a7060)" }}>
+              Reserved matches unpaid checkouts.
+            </p>
           )}
         </motion.div>
 

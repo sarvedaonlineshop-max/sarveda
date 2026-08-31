@@ -6,6 +6,7 @@ import { mirrorStockToZohoForSkus } from "../zoho/zoho-items";
 import { voidZohoInvoiceForCancelledOrder } from "../zoho/zoho-financials";
 
 import { restockPaidOrderLinesTx } from "./order-inventory-restock.service";
+import { recomputeReservedForOrder } from "./inventory-reserved-reconcile.service";
 
 /** Reserve stock when checkout creates an order (increment `reserved` per line qty). */
 export async function reserveStockTx(tx: Prisma.TransactionClient, orderId: string): Promise<void> {
@@ -119,7 +120,7 @@ export async function cancelUnpaidOrderWithRelease(
   reason: string,
   rawPayloadExtras?: Record<string, unknown>
 ): Promise<boolean> {
-  return prisma.$transaction(async (tx) => {
+  const changed = await prisma.$transaction(async (tx) => {
     const order = await tx.order.findFirst({
       where: { id: orderId, deletedAt: null },
       include: { payments: { orderBy: { createdAt: "desc" } } }
@@ -162,6 +163,20 @@ export async function cancelUnpaidOrderWithRelease(
     });
     return true;
   });
+
+  // Safety net: reserved must equal remaining PENDING_PAYMENT holds for these variants.
+  if (changed) {
+    try {
+      await recomputeReservedForOrder(orderId);
+    } catch (err) {
+      logger.error("reserved_recompute_after_cancel_failed", {
+        orderId,
+        err: err instanceof Error ? err.message : String(err)
+      });
+    }
+  }
+
+  return changed;
 }
 
 /**

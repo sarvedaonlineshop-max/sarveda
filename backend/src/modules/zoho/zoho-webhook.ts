@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
+import { reconcileInventoryReserved } from "../orders/inventory-reserved-reconcile.service";
 
 export async function handleZohoWebhook(req: Request, res: Response): Promise<void> {
   try {
@@ -44,19 +45,22 @@ async function syncSingleItemStock(sku: string, stockOnHand: number): Promise<vo
 
   const zohoOnHand = Math.max(0, Math.floor(stockOnHand));
   const onHand = zohoOnHand;
-  const reserved = variant.inventory?.reserved ?? 0;
-  const available = Math.max(0, onHand - reserved);
   await prisma.inventory.upsert({
     where: { variantId: variant.id },
     create: { variantId: variant.id, onHand, reserved: 0 },
     update: { onHand }
   });
 
+  // Zoho updates onHand only — realign reserved to PENDING_PAYMENT holds so stock
+  // cannot stay "out of stock" due to orphaned reservations.
+  await reconcileInventoryReserved({ dryRun: false, variantIds: [variant.id] });
+
+  const inv = await prisma.inventory.findUnique({ where: { variantId: variant.id } });
   logger.info("Zoho webhook: stock updated", {
     sku,
-    onHand,
-    reserved,
-    available,
+    onHand: inv?.onHand ?? onHand,
+    reserved: inv?.reserved ?? 0,
+    available: Math.max(0, (inv?.onHand ?? onHand) - (inv?.reserved ?? 0)),
     zohoReported: zohoOnHand,
     variantId: variant.id
   });

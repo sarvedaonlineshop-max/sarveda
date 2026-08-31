@@ -19,6 +19,7 @@ import {
   pullStockFromZohoAdmin,
   pushItemsToZohoAdmin,
   pushStockToZohoAdmin,
+  reconcileAdminInventoryReserved,
   refreshZohoAuditAdmin,
   syncStockFromZohoAdmin
 } from "@/lib/admin-api";
@@ -248,6 +249,16 @@ export function AdminInventoryWorkspace() {
     outOfSync: 0
   });
   const [zohoOnlyItems, setZohoOnlyItems] = useState<ZohoOnlyItem[]>([]);
+  const [reservedStock, setReservedStock] = useState<{
+    pendingPaymentOrders: number;
+    variantsWithStoredReserved: number;
+    totalStoredReservedUnits: number;
+    totalExpectedReservedUnits: number;
+    orphanVariantCount: number;
+    orphanUnits: number;
+    reservedExceedsOnHandCount: number;
+  } | null>(null);
+  const [reconciling, setReconciling] = useState(false);
 
   const [search, setSearch] = useState("");
   const [stockFilter, setStockFilter] = useState<StockFilter>("all");
@@ -303,6 +314,7 @@ export function AdminInventoryWorkspace() {
       const data = await fetchAdminInventory({ all: true });
       setAllRows(data.items);
       setProductCount(data.meta.productCount);
+      setReservedStock(data.meta.reservedStock ?? null);
       const th: Record<string, number> = {};
       const thDraft: Record<string, string> = {};
       const avail: Record<string, number> = {};
@@ -1033,6 +1045,30 @@ export function AdminInventoryWorkspace() {
               </div>
             ) : null}
           </div>
+          <button
+            type="button"
+            disabled={reconciling || loading}
+            onClick={() => {
+              void (async () => {
+                setReconciling(true);
+                try {
+                  const result = await reconcileAdminInventoryReserved();
+                  pushToast(
+                    `Reserved reconciled: ${result.repaired.length} SKU(s) fixed, ${result.summaryAfter.orphanUnits} orphan unit(s) left`
+                  );
+                  await load();
+                } catch (e) {
+                  pushToast(e instanceof Error ? e.message : "Reconcile failed", true);
+                } finally {
+                  setReconciling(false);
+                }
+              })();
+            }}
+            className="inline-flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900 shadow-sm hover:bg-amber-100 disabled:opacity-50"
+            title="Set reserved = unpaid checkout holds only (does not delete orders or change on-hand)"
+          >
+            {reconciling ? "Reconciling…" : "Reconcile reserved"}
+          </button>
           {showZohoSync ? (
             <>
               <button
@@ -1056,7 +1092,7 @@ export function AdminInventoryWorkspace() {
           ) : null}
       </div>
 
-      <div className={`grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-stone-200 bg-stone-200 sm:grid-cols-3 ${showZohoSync ? "lg:grid-cols-6" : "lg:grid-cols-5"} dark:border-stone-700 dark:bg-stone-700`}>
+      <div className={`grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-stone-200 bg-stone-200 sm:grid-cols-3 ${showZohoSync ? "lg:grid-cols-7" : "lg:grid-cols-6"} dark:border-stone-700 dark:bg-stone-700`}>
         <div className="bg-white dark:bg-stone-900">
           <MetricCard label="Products" value={productCount} />
         </div>
@@ -1071,6 +1107,13 @@ export function AdminInventoryWorkspace() {
         </div>
         <div className="bg-white dark:bg-stone-900">
           <MetricCard label="Out of stock" value={stats.outOfStock} tone="red" />
+        </div>
+        <div className="bg-white dark:bg-stone-900">
+          <MetricCard
+            label="Reserved units"
+            value={reservedStock?.totalStoredReservedUnits ?? allRows.reduce((s, r) => s + r.reserved, 0)}
+            tone={(reservedStock?.orphanUnits ?? 0) > 0 ? "amber" : "emerald"}
+          />
         </div>
         {showZohoSync ? (
           <div className="bg-white dark:bg-stone-900">
@@ -1090,6 +1133,13 @@ export function AdminInventoryWorkspace() {
           </div>
         ) : null}
       </div>
+      {reservedStock && reservedStock.orphanUnits > 0 ? (
+        <p className="text-sm text-amber-800">
+          {reservedStock.orphanUnits} orphan reserved unit(s) across {reservedStock.orphanVariantCount}{" "}
+          SKU(s) are not tied to unpaid checkouts. Use <strong>Reconcile reserved</strong> (safe — does not
+          delete orders or change on-hand).
+        </p>
+      ) : null}
 
       {showZohoSync ? (
       <div className="rounded-lg border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-stone-900">

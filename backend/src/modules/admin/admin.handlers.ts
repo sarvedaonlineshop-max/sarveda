@@ -35,6 +35,11 @@ import type { ZohoItemAuditRow } from "../zoho/zoho-sync-types";
 import { shopCatalogProductWhere, shopInventoryWhere } from "../../utils/shop-catalog";
 import { liveAdminOrderWhere } from "./live-order-filter";
 import {
+  getReservedStockSummary,
+  listReservedMismatches,
+  reconcileInventoryReserved
+} from "../orders/inventory-reserved-reconcile.service";
+import {
   inventoryXlSheetSaveSchema,
   listInventoryXlSheetRows,
   saveInventoryXlSheetRows,
@@ -270,6 +275,8 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
       }
     });
     const lowStock = inventoryCandidates.filter((inv) => inv.onHand <= inv.lowStockThreshold).slice(0, 25);
+    const reservedSummary = await getReservedStockSummary();
+    const reservedMismatchSamples = await listReservedMismatches(8);
 
     const revenueByDayLast7 = buildDailySeriesKolkata(chart7Start, 7, ordersForChart7);
     const revenueByDayLast30 = buildDailySeriesKolkata(chart30Start, 30, ordersForChart30);
@@ -279,6 +286,11 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
     if (lowStock.length) {
       wooInsights.tips.unshift(
         `${lowStock.length} active SKU${lowStock.length === 1 ? "" : "s"} ${lowStock.length === 1 ? "is" : "are"} at or below the low-stock threshold — prioritize replenishment.`
+      );
+    }
+    if (reservedSummary.orphanUnits > 0) {
+      wooInsights.tips.unshift(
+        `${reservedSummary.orphanUnits} reserved unit(s) across ${reservedSummary.orphanVariantCount} SKU(s) are not tied to a PENDING_PAYMENT order — run Inventory → Reconcile reserved.`
       );
     }
 
@@ -318,6 +330,18 @@ export async function dashboard(_req: Request, res: Response, next: NextFunction
           productName: inv.variant.productRel.name,
           productSlug: inv.variant.productRel.slug
         })),
+        reservedStock: {
+          ...reservedSummary,
+          samples: reservedMismatchSamples.map((r) => ({
+            sku: r.sku,
+            productName: r.productName,
+            onHand: r.onHand,
+            reservedStored: r.reservedStored,
+            reservedExpected: r.reservedExpected,
+            orphanUnits: r.orphanUnits,
+            pendingOrderNumbers: r.pendingOrderNumbers
+          }))
+        },
         revenueByDayLast7,
         revenueByDayLast30,
         revenueByMonthLast12,
@@ -1602,6 +1626,28 @@ export async function inventoryXlSheetSave(req: Request, res: Response, next: Ne
   }
 }
 
+export async function inventoryReservedSummary(_req: Request, res: Response, next: NextFunction) {
+  try {
+    const [summary, mismatches] = await Promise.all([
+      getReservedStockSummary(),
+      listReservedMismatches(50)
+    ]);
+    res.json({ success: true, data: { summary, mismatches } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function inventoryReconcileReserved(req: Request, res: Response, next: NextFunction) {
+  try {
+    const dryRun = req.query.dryRun === "1" || req.query.dryRun === "true" || req.body?.dryRun === true;
+    const data = await reconcileInventoryReserved({ dryRun });
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function inventoryList(req: Request, res: Response, next: NextFunction) {
   try {
     const loadAll = req.query.all === "1" || req.query.all === "true";
@@ -1698,6 +1744,7 @@ export async function inventoryList(req: Request, res: Response, next: NextFunct
     }
 
     const items = rows.map((inv) => mapInventoryRow(inv, auditMap, marketplaceStats));
+    const reservedStock = await getReservedStockSummary();
 
     const totalPages = loadAll ? 1 : Math.max(1, Math.ceil(total / limit));
     res.json({
@@ -1711,7 +1758,8 @@ export async function inventoryList(req: Request, res: Response, next: NextFunct
           zohoSkuAuditAvailable: zohoInventorySyncEnabled && (auditMap !== null || zohoSkuSet !== null),
           productCount,
           zohoSyncSummary: syncSummary,
-          zohoOnlyItems
+          zohoOnlyItems,
+          reservedStock
         }
       }
     });

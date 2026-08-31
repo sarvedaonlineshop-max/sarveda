@@ -70,6 +70,24 @@ export type DashboardData = {
     productName: string;
     productSlug: string;
   }>;
+  reservedStock?: {
+    pendingPaymentOrders: number;
+    variantsWithStoredReserved: number;
+    totalStoredReservedUnits: number;
+    totalExpectedReservedUnits: number;
+    orphanVariantCount: number;
+    orphanUnits: number;
+    reservedExceedsOnHandCount: number;
+    samples?: Array<{
+      sku: string;
+      productName: string;
+      onHand: number;
+      reservedStored: number;
+      reservedExpected: number;
+      orphanUnits: number;
+      pendingOrderNumbers: string[];
+    }>;
+  };
   revenueByDayLast7: Array<{ date: string; revenueInPaise: number }>;
   revenueByDayLast30: Array<{ date: string; revenueInPaise: number }>;
   revenueByMonthLast12: Array<{ month: string; revenueInPaise: number }>;
@@ -1499,6 +1517,10 @@ export function fetchInventoryXlSheet(
     total: number;
     productCount: number;
     counts: { all: number; in_stock: number; low_stock: number; out_of_stock: number };
+    reservedExceedsOnHand?: {
+      count: number;
+      samples: Array<{ sku: string; productName: string; onHand: number; reserved: number }>;
+    };
   }>(`/api/admin/inventory/xl-sheet?${qs.toString()}`, { signal: opts?.signal });
 }
 
@@ -1587,8 +1609,34 @@ export type InventoryListData = {
     productCount: number;
     zohoSyncSummary: ZohoSyncSummary;
     zohoOnlyItems: ZohoOnlyItem[];
+    reservedStock?: {
+      pendingPaymentOrders: number;
+      variantsWithStoredReserved: number;
+      totalStoredReservedUnits: number;
+      totalExpectedReservedUnits: number;
+      orphanVariantCount: number;
+      orphanUnits: number;
+      reservedExceedsOnHandCount: number;
+    };
   };
 };
+
+export function reconcileAdminInventoryReserved(opts?: { dryRun?: boolean }) {
+  const q = opts?.dryRun ? "?dryRun=1" : "";
+  return adminFetch<{
+    dryRun: boolean;
+    summaryBefore: NonNullable<InventoryListData["meta"]["reservedStock"]>;
+    summaryAfter: NonNullable<InventoryListData["meta"]["reservedStock"]>;
+    repaired: Array<{
+      variantId: string;
+      sku: string;
+      before: number;
+      after: number;
+      orphanUnitsReleased: number;
+    }>;
+    unchanged: number;
+  }>(`/api/admin/inventory/reconcile-reserved${q}`, { method: "POST", body: "{}" });
+}
 
 export type ZohoStockSyncHistoryEntry = {
   id: string;

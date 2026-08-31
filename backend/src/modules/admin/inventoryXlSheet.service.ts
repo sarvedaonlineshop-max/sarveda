@@ -48,6 +48,10 @@ export async function listInventoryXlSheetRows(
   total: number;
   productCount: number;
   counts: { all: number; in_stock: number; low_stock: number; out_of_stock: number };
+  reservedExceedsOnHand: {
+    count: number;
+    samples: Array<{ sku: string; productName: string; onHand: number; reserved: number }>;
+  };
 }> {
   const rowsDb = await prisma.inventory.findMany({
     where: shopInventoryWhere,
@@ -95,10 +99,28 @@ export async function listInventoryXlSheetRows(
     out_of_stock: mapped.filter((r) => r.stockStatus === "out_of_stock").length
   };
 
+  const reservedExceedsOnHand = mapped
+    .filter((r) => r.reserved > r.onHand)
+    .map((r) => ({
+      sku: r.sku,
+      productName: r.productName,
+      onHand: r.onHand,
+      reserved: r.reserved
+    }));
+
   const rows = mapped.filter((r) => matchesFilter(r.stockStatus, stockFilter));
   const productCount = new Set(rows.map((r) => r.productId)).size;
 
-  return { rows, total: rows.length, productCount, counts };
+  return {
+    rows,
+    total: rows.length,
+    productCount,
+    counts,
+    reservedExceedsOnHand: {
+      count: reservedExceedsOnHand.length,
+      samples: reservedExceedsOnHand.slice(0, 25)
+    }
+  };
 }
 
 export const inventoryXlSheetSaveSchema = z.object({
@@ -123,6 +145,7 @@ export async function saveInventoryXlSheetRows(body: InventoryXlSheetSaveBody): 
   const errors: Array<{ variantId: string; sku: string; error: string }> = [];
   let updated = 0;
   const touchedSkus: string[] = [];
+  const touchedVariantIds: string[] = [];
 
   for (const row of body.rows) {
     try {
@@ -155,6 +178,7 @@ export async function saveInventoryXlSheetRows(body: InventoryXlSheetSaveBody): 
       });
       updated++;
       if (inv.onHand !== row.onHand) touchedSkus.push(inv.variant.sku);
+      touchedVariantIds.push(row.variantId);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Update failed";
       logger.error("inventory_xl_sheet_row_failed", { variantId: row.variantId, error: msg });
@@ -164,6 +188,15 @@ export async function saveInventoryXlSheetRows(body: InventoryXlSheetSaveBody): 
 
   if (touchedSkus.length > 0) {
     await mirrorStockToZohoForSkus(touchedSkus, "admin_inventory_xl_sheet", { updated });
+  }
+  if (touchedVariantIds.length > 0) {
+    const { reconcileInventoryReserved } = await import(
+      "../orders/inventory-reserved-reconcile.service"
+    );
+    await reconcileInventoryReserved({
+      dryRun: false,
+      variantIds: Array.from(new Set(touchedVariantIds))
+    });
   }
 
   return { updated, errors };

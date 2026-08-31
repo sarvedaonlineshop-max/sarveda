@@ -196,6 +196,8 @@ router.put(
   validateBody(admin.inventoryXlSheetSaveSchema),
   admin.inventoryXlSheetSave
 );
+router.get("/inventory/reserved-summary", admin.inventoryReservedSummary);
+router.post("/inventory/reconcile-reserved", admin.inventoryReconcileReserved);
 router.use("/purchases", purchasesAdminRoutes);
 router.use("/accounting", requireAccountingAccess, accountingAdminRoutes);
 router.use("/marketplaces", marketplaceAdminRoutes);

@@ -13,6 +13,7 @@ import { FloatingSocialSubscribe } from "./FloatingSocialSubscribe";
 import { Header } from "./Header";
 import { PageTransition } from "./PageTransition";
 import { RouteLoadingSpinner } from "./RouteLoadingSpinner";
+import { ScrollToTop } from "./ScrollToTop";
 import { SiteFooter } from "./SiteFooter";
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -39,6 +40,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <MotionConfig reducedMotion="user">
+      <ScrollToTop />
       {onProductPage ? <PdpCartRail /> : null}
       <div className={pdpCartRail ? cartSidebarContentPadClass : ""}>
       <Header />
