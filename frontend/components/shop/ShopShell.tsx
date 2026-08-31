@@ -143,7 +143,8 @@ export function ShopShell({ categories, children }: Props) {
         <div className="page-shell pb-16 pt-0 md:pb-8">
           <h1 className="sr-only">{activeCategoryName ?? "Shop"}</h1>
 
-          <div className="sv-listing-hero-fade flex flex-col md:opacity-100 md:[animation:none] lg:flex-row lg:items-start lg:gap-10 lg:py-6">
+          {/* No transform animations / overflow-x on this row — both break position:sticky. */}
+          <div className="flex flex-col lg:flex-row lg:items-start lg:gap-10 lg:py-6">
             <div className="hidden lg:sticky lg:top-[calc(var(--storefront-header-live-offset)+0.75rem)] lg:block lg:w-72 lg:flex-shrink-0 lg:self-start">
               <ShopCategoryFilterSidebar
                 categories={categories}
@@ -152,7 +153,7 @@ export function ShopShell({ categories, children }: Props) {
               />
             </div>
 
-            <div className="min-w-0 flex-1 overflow-x-hidden">
+            <div className="min-w-0 flex-1">
               <ShopProductToolbar
                 categories={categories}
                 categorySlug={categorySlug}
@@ -173,7 +174,7 @@ export function ShopShell({ categories, children }: Props) {
 
               <div
                 ref={productsAnchorRef}
-                className={`relative z-0 pt-1 lg:pt-4 ${
+                className={`relative z-0 overflow-x-hidden pt-2 lg:pt-4 ${
                   isPending ? "pointer-events-none opacity-50 transition-opacity duration-150" : ""
                 }`}
                 aria-busy={isPending}

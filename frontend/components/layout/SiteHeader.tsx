@@ -23,7 +23,7 @@ function CartIcon({ count }: { count: number }) {
       </svg>
       {count > 0 && (
         <span
-          className="pointer-events-none absolute left-1/2 top-0 z-10 flex h-5 min-w-[1.25rem] -translate-x-1/2 -translate-y-[30%] items-center justify-center rounded-full bg-gradient-to-b from-[#e8c56a] to-[#b98a3e] px-1 text-[10px] font-bold leading-none text-[#0f1a14] shadow-[0_1px_3px_rgba(0,0,0,0.4),0_0_0_1.5px_rgba(255,255,255,0.95)]"
+          className="pointer-events-none absolute -right-0.5 -top-0.5 z-10 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-[#c9a227] px-1 text-[10px] font-bold leading-none text-[#0f1a14] ring-[1.5px] ring-white"
           aria-hidden
         >
           {count > 99 ? "99+" : count}

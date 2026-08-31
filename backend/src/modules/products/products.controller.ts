@@ -209,9 +209,7 @@ export async function notifyStock(req: Request, res: Response, next: NextFunctio
         subscribed: true,
         alreadySubscribed: !result.created,
         message: result.created
-          ? phone
-            ? "We will email and WhatsApp you when this item is back in stock."
-            : "We will email you when this item is back in stock. Add a phone next time for WhatsApp too."
+          ? "We will email you when this item is back in stock."
           : "You are already on the notify list for this item."
       }
     });

@@ -26,8 +26,8 @@ const PARTNERS = [
     alt: "World Peace Festival Society",
     wide: true
   },
-  { src: "/images/home/partners/taj.png", alt: "Taj", wide: true },
-  { src: "/images/home/partners/accor.svg", alt: "Accor", wide: true },
+  { src: "/images/home/partners/taj.png", alt: "Taj" },
+  { src: "/images/home/partners/accor.svg", alt: "Accor" },
   { src: "/images/home/partners/hero-fincorp.png", alt: "Hero FinCorp", wide: true },
   { src: "/images/home/partners/jwm.webp", alt: "JWM", wide: true }
 ] as const;
@@ -38,7 +38,7 @@ function PartnerLogo({ partner }: { partner: (typeof PARTNERS)[number] }) {
   return (
     <div
       className={`relative flex h-16 shrink-0 items-center justify-center sm:h-20 ${
-        wide ? "w-40 sm:w-52" : "w-28 sm:w-36"
+        wide ? "w-32 sm:w-40" : "w-24 sm:w-32"
       }`}
     >
       <Image
@@ -57,7 +57,7 @@ function PartnerLogo({ partner }: { partner: (typeof PARTNERS)[number] }) {
 function PartnerSequence({ suffix }: { suffix: string }) {
   return (
     <div
-      className="flex shrink-0 items-center gap-6 pr-6 sm:gap-10 sm:pr-10"
+      className={`flex shrink-0 items-center gap-2 pr-2 sm:gap-3 sm:pr-3`}
       aria-hidden={suffix !== "a"}
     >
       {PARTNERS.map((p) => (

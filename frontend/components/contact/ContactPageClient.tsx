@@ -184,6 +184,7 @@ function resolveSubject(
   if (
     presetSubjectRaw === "PAYMENT" ||
     presetSubjectRaw === "ORDER" ||
+    presetSubjectRaw === "PRODUCT" ||
     presetSubjectRaw === "COURSE" ||
     presetSubjectRaw === "CORPORATE" ||
     presetSubjectRaw === "OTHER"
@@ -425,7 +426,7 @@ function ContactFormInner() {
           </div>
           {subjectCategory === "PRODUCT" ? (
             <p className="mt-2 text-xs leading-relaxed text-brand-muted">
-              Product enquiry — ask about instruments, variants, stock, custom orders, or wholesale product questions.
+              Product / bulk enquiry — instruments, variants, stock, custom orders, or wholesale.
             </p>
           ) : null}
         </div>

@@ -1,6 +1,6 @@
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
-import { sendMail } from "../notifications/email";
+import { sendMailWithRetry } from "../notifications/email";
 import { sendWhatsAppNamedTemplate, toWhatsAppE164 } from "../notifications/whatsapp";
 
 function siteBaseUrl(): string {
@@ -58,19 +58,18 @@ export async function subscribeStockNotification(input: {
     return { created: true };
   } catch (err) {
     if (err && typeof err === "object" && "code" in err && (err as { code: string }).code === "P2002") {
-      // Already on the list — refresh phone if they provided one, and clear notifiedAt
-      // only when still OOS so they get the next restock (do not re-open after notify).
-      if (phone) {
-        await prisma.stockNotification.updateMany({
-          where: {
-            productId: input.productId,
-            email,
-            variantId: input.variantId ?? null,
-            notifiedAt: null
-          },
-          data: { phone }
-        });
-      }
+      // Already subscribed — re-arm for the next restock (and refresh phone if provided).
+      await prisma.stockNotification.updateMany({
+        where: {
+          productId: input.productId,
+          email,
+          variantId: input.variantId ?? null
+        },
+        data: {
+          notifiedAt: null,
+          ...(phone ? { phone } : {})
+        }
+      });
       return { created: false };
     }
     throw err;
@@ -123,7 +122,6 @@ export async function notifyStockSubscribersForVariant(variantId: string): Promi
 
   for (const row of pending) {
     let emailOk = false;
-    let whatsappOk = !row.phone; // no phone → treat WA as N/A success for marking notified
 
     try {
       const { buildShopEmail } = await import("../notifications/email");
@@ -140,17 +138,24 @@ export async function notifyStockSubscribersForVariant(variantId: string): Promi
           ctas: [{ href: productUrl, label: "View product" }]
         }
       );
-      await sendMail(
+      await sendMailWithRetry(
         row.email,
         `${productName} is back in stock — Sarveda`,
         html,
         `Good news — ${productName} is available again. View: ${productUrl}`
       );
       emailOk = true;
+      logger.info("stock_notification_email_sent", {
+        id: row.id,
+        email: row.email,
+        variantId,
+        productId: variant.productId
+      });
     } catch (err) {
-      logger.error("stock_notification_email_failed", { id: row.id, err });
+      logger.error("stock_notification_email_failed", { id: row.id, email: row.email, err });
     }
 
+    // Optional WhatsApp — never blocks email success / retry.
     if (row.phone) {
       try {
         await sendBackInStockWhatsApp({
@@ -158,16 +163,13 @@ export async function notifyStockSubscribersForVariant(variantId: string): Promi
           productName,
           productUrl
         });
-        whatsappOk = true;
       } catch (err) {
         logger.error("stock_notification_whatsapp_failed", { id: row.id, err });
-        whatsappOk = false;
       }
     }
 
-    // Mark notified when email succeeded (primary channel). If email failed but WA
-    // succeeded, still mark so we don't spam WA forever; leave open if both failed.
-    if (emailOk || whatsappOk) {
+    // Only mark notified after a successful email so failed SendGrid rows can retry.
+    if (emailOk) {
       await prisma.stockNotification.update({
         where: { id: row.id },
         data: { notifiedAt: new Date() }

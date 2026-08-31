@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CourseCard } from "@/components/content/CourseCard";
 import { fetchCourses } from "@/lib/api";
-import { companySalesWhatsAppUrl } from "@/lib/company";
 import { splitCourses } from "@/lib/content-meta";
 import { canonical, isProductionSite } from "@/lib/site";
 
@@ -38,12 +37,8 @@ export default async function CoursesPage() {
             Deepen your practice through guided immersions in sound therapy, yoga, and mindful living — online and in person.
           </p>
           <div className="sv-listing-hero-fade-late" style={{ marginTop: "18px", display: "flex", flexWrap: "wrap", gap: "10px" }}>
-            <a
-              href={companySalesWhatsAppUrl(
-                "Hi Sarveda — I'd like a bulk product enquiry for instruments / wellness products."
-              )}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              href="/contact?subject=COURSE"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -58,26 +53,8 @@ export default async function CoursesPage() {
                 textDecoration: "none"
               }}
             >
-              Bulk product enquiry
-              <span aria-hidden>→</span>
-            </a>
-            <Link
-              href="/contact"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                minHeight: "44px",
-                padding: "0 18px",
-                borderRadius: "999px",
-                border: "1px solid rgba(253,246,237,0.45)",
-                color: "#fffbf5",
-                fontSize: "13px",
-                fontWeight: 600,
-                textDecoration: "none"
-              }}
-            >
               Contact us
+              <span aria-hidden>→</span>
             </Link>
           </div>
           <div className="sv-listing-hero-fade-late" style={{ marginTop: "14px", height: "2px", width: "48px", background: "var(--brand-gold)" }} />
