@@ -190,6 +190,12 @@ router.post("/courses/seo-suggest", seoSuggest.suggestCourseSeo);
 router.post("/mentors/seo-suggest", seoSuggest.suggestMentorSeo);
 
 router.get("/inventory", admin.inventoryList);
+router.get("/inventory/xl-sheet", admin.inventoryXlSheetList);
+router.put(
+  "/inventory/xl-sheet",
+  validateBody(admin.inventoryXlSheetSaveSchema),
+  admin.inventoryXlSheetSave
+);
 router.use("/purchases", purchasesAdminRoutes);
 router.use("/accounting", requireAccountingAccess, accountingAdminRoutes);
 router.use("/marketplaces", marketplaceAdminRoutes);

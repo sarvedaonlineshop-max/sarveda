@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Maximize2, Minimize2, Save } from "lucide-react";
+import { ArrowLeft, Download, Maximize2, Minimize2, Save } from "lucide-react";
 
 import { AdminToast } from "@/components/admin/AdminToast";
 import {
@@ -10,6 +10,12 @@ import {
   saveProductsXlSheet,
   type XlSheetRow
 } from "@/lib/admin-api";
+import {
+  downloadCsvFile,
+  downloadExcelXmlFile,
+  productsSheetToCsv,
+  productsSheetToExcelXml
+} from "@/lib/admin-sheet-export";
 
 /** Editable row: money as major-unit strings for spreadsheet UX. */
 type EditRow = {
@@ -175,7 +181,9 @@ export default function ProductsXlSheetPage() {
   const [scopeFilter, setScopeFilter] = useState<ScopeFilter>("PRICE_PENDING");
   const [productCount, setProductCount] = useState(0);
   const [immersive, setImmersive] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement | null>(null);
+  const exportRef = useRef<HTMLDivElement | null>(null);
 
   const effectiveScope: ScopeFilter =
     statusFilter === "DRAFT" ? "ALL" : scopeFilter;
@@ -251,6 +259,9 @@ export default function ProductsXlSheetPage() {
     const onDocClick = (event: MouseEvent) => {
       if (!searchRef.current?.contains(event.target as Node)) {
         setSuggestionsOpen(false);
+      }
+      if (!exportRef.current?.contains(event.target as Node)) {
+        setExportOpen(false);
       }
     };
     document.addEventListener("mousedown", onDocClick);
@@ -603,6 +614,71 @@ export default function ProductsXlSheetPage() {
               : `${productCount} product${productCount === 1 ? "" : "s"} · ${filtered.length}/${rows.length} rows`}
             {dirty ? " · unsaved" : ""}
           </span>
+          <div className="relative" ref={exportRef}>
+            <button type="button" style={shellBtn} onClick={() => setExportOpen((o) => !o)}>
+              <Download size={14} aria-hidden />
+              Export
+            </button>
+            {exportOpen ? (
+              <div className="absolute right-0 z-30 mt-1 min-w-[140px] overflow-hidden rounded-lg border border-stone-200 bg-white py-1 shadow-lg">
+                <button
+                  type="button"
+                  className="block w-full px-3 py-2 text-left text-sm text-stone-800 hover:bg-[#faf5ec]"
+                  onClick={() => {
+                    const stamp = new Date().toISOString().slice(0, 10);
+                    const payload = filtered.map(({ r }) => ({
+                      productName: r.productName,
+                      variantName: r.variantName,
+                      sku: r.sku,
+                      qty: parseInt(r.qty.trim() || "0", 10) || 0,
+                      mrpInPaise: majorStrToMinor(r.mrp) ?? 0,
+                      saleInPaise: majorStrToMinor(r.sale) ?? 0,
+                      mrpUsdCents: majorStrToMinor(r.mrpUsd),
+                      saleUsdCents: majorStrToMinor(r.saleUsd),
+                      mrpGbpPence: majorStrToMinor(r.mrpGbp),
+                      saleGbpPence: majorStrToMinor(r.saleGbp),
+                      hsnCode: r.hsnCode,
+                      productStatus: r.productStatus,
+                      variantStatus: r.variantStatus
+                    }));
+                    downloadCsvFile(`sarveda-products-${stamp}.csv`, productsSheetToCsv(payload));
+                    setExportOpen(false);
+                  }}
+                >
+                  CSV
+                </button>
+                <button
+                  type="button"
+                  className="block w-full px-3 py-2 text-left text-sm text-stone-800 hover:bg-[#faf5ec]"
+                  onClick={() => {
+                    const stamp = new Date().toISOString().slice(0, 10);
+                    const payload = filtered.map(({ r }) => ({
+                      productName: r.productName,
+                      variantName: r.variantName,
+                      sku: r.sku,
+                      qty: parseInt(r.qty.trim() || "0", 10) || 0,
+                      mrpInPaise: majorStrToMinor(r.mrp) ?? 0,
+                      saleInPaise: majorStrToMinor(r.sale) ?? 0,
+                      mrpUsdCents: majorStrToMinor(r.mrpUsd),
+                      saleUsdCents: majorStrToMinor(r.saleUsd),
+                      mrpGbpPence: majorStrToMinor(r.mrpGbp),
+                      saleGbpPence: majorStrToMinor(r.saleGbp),
+                      hsnCode: r.hsnCode,
+                      productStatus: r.productStatus,
+                      variantStatus: r.variantStatus
+                    }));
+                    downloadExcelXmlFile(
+                      `sarveda-products-${stamp}.xls`,
+                      productsSheetToExcelXml(payload)
+                    );
+                    setExportOpen(false);
+                  }}
+                >
+                  Excel (XL)
+                </button>
+              </div>
+            ) : null}
+          </div>
           <button
             type="button"
             onClick={() => setImmersive((v) => !v)}

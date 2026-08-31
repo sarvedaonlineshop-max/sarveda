@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { FileSpreadsheet } from "lucide-react";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { AdminToast } from "@/components/admin/AdminToast";
@@ -983,6 +984,13 @@ export function AdminInventoryWorkspace() {
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
+          <Link
+            href="/admin/inventory/xl"
+            className="inline-flex items-center gap-2 rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-[#faf5ec]/50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            View in XL format
+          </Link>
           <div className="relative" ref={exportMenuRef}>
             <button
               type="button"

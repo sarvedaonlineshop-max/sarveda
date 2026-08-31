@@ -1472,6 +1472,48 @@ export function saveProductsXlSheet(
   });
 }
 
+export type InventoryXlStockFilter = "ALL" | "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK";
+
+export type InventoryXlSheetRow = {
+  inventoryId: string;
+  variantId: string;
+  productId: string;
+  productName: string;
+  variantLabel: string;
+  sku: string;
+  onHand: number;
+  reserved: number;
+  available: number;
+  lowStockThreshold: number;
+  stockStatus: "in_stock" | "low_stock" | "out_of_stock";
+  productStatus: string;
+};
+
+export function fetchInventoryXlSheet(
+  opts?: { stock?: InventoryXlStockFilter; signal?: AbortSignal }
+) {
+  const stock = opts?.stock ?? "ALL";
+  const qs = new URLSearchParams({ stock });
+  return adminFetch<{
+    rows: InventoryXlSheetRow[];
+    total: number;
+    productCount: number;
+    counts: { all: number; in_stock: number; low_stock: number; out_of_stock: number };
+  }>(`/api/admin/inventory/xl-sheet?${qs.toString()}`, { signal: opts?.signal });
+}
+
+export function saveInventoryXlSheet(
+  rows: Array<{ variantId: string; onHand: number; lowStockThreshold: number }>
+) {
+  return adminFetch<{
+    updated: number;
+    errors: Array<{ variantId: string; sku: string; error: string }>;
+  }>(`/api/admin/inventory/xl-sheet`, {
+    method: "PUT",
+    body: JSON.stringify({ rows })
+  });
+}
+
 export type InventoryCategoryRef = {
   slug: string;
   name: string;

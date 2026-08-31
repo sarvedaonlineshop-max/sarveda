@@ -35,6 +35,14 @@ import type { ZohoItemAuditRow } from "../zoho/zoho-sync-types";
 import { shopCatalogProductWhere, shopInventoryWhere } from "../../utils/shop-catalog";
 import { liveAdminOrderWhere } from "./live-order-filter";
 import {
+  inventoryXlSheetSaveSchema,
+  listInventoryXlSheetRows,
+  saveInventoryXlSheetRows,
+  type InventoryXlStockFilter
+} from "./inventoryXlSheet.service";
+
+export { inventoryXlSheetSaveSchema };
+import {
   genuineCancelledWhere,
   unpaidAttemptCancelledWhere,
   unpaidCheckoutAttemptWhere
@@ -1568,6 +1576,30 @@ function mapInventoryRow(
       lastSyncedAt: listing.lastSyncedAt?.toISOString() ?? null
     }))
   };
+}
+
+export async function inventoryXlSheetList(req: Request, res: Response, next: NextFunction) {
+  try {
+    const raw = String(req.query.stock ?? "ALL").trim().toUpperCase();
+    const stock =
+      raw === "IN_STOCK" || raw === "LOW_STOCK" || raw === "OUT_OF_STOCK" || raw === "ALL"
+        ? (raw as InventoryXlStockFilter)
+        : "ALL";
+    const data = await listInventoryXlSheetRows(stock);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function inventoryXlSheetSave(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = inventoryXlSheetSaveSchema.parse(req.body);
+    const data = await saveInventoryXlSheetRows(body);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
 }
 
 export async function inventoryList(req: Request, res: Response, next: NextFunction) {

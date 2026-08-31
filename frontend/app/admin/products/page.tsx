@@ -2,13 +2,19 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FileSpreadsheet, GripVertical, ScanSearch } from "lucide-react";
+import { ChevronDown, Download, FileSpreadsheet, GripVertical, ScanSearch } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AdminPagination } from "@/components/admin/AdminPagination";
 import { AdminToast } from "@/components/admin/AdminToast";
 import type { AdminProductRow } from "@/lib/admin-api";
-import { fetchAdminProducts, putAdminProduct, reorderAdminProducts } from "@/lib/admin-api";
+import { fetchAdminProducts, fetchProductsXlSheet, putAdminProduct, reorderAdminProducts } from "@/lib/admin-api";
+import {
+  downloadCsvFile,
+  downloadExcelXmlFile,
+  productsSheetToCsv,
+  productsSheetToExcelXml
+} from "@/lib/admin-sheet-export";
 import { fetchCategoryTree } from "@/lib/api";
 import type { CategoryNode } from "@/lib/types";
 import { formatINRFromPaise } from "@/lib/money";
@@ -51,6 +57,9 @@ export default function AdminProductsPage() {
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
   const [savingOrder, setSavingOrder] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const autoScrollRaf = useRef<number | null>(null);
@@ -70,6 +79,36 @@ export default function AdminProductsPage() {
       .then((tree) => setCategories(flattenCategoryOptions(tree)))
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setExportOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  async function exportProducts(format: "csv" | "xls") {
+    if (exporting) return;
+    setExporting(true);
+    setExportOpen(false);
+    try {
+      const data = await fetchProductsXlSheet({ status: "ALL", scope: "ALL" });
+      const stamp = new Date().toISOString().slice(0, 10);
+      if (format === "csv") {
+        downloadCsvFile(`sarveda-products-${stamp}.csv`, productsSheetToCsv(data.rows));
+      } else {
+        downloadExcelXmlFile(`sarveda-products-${stamp}.xls`, productsSheetToExcelXml(data.rows));
+      }
+      setToast({ message: `Exported ${data.rows.length} variant row(s)` });
+    } catch (ex) {
+      setToast({ message: ex instanceof Error ? ex.message : "Export failed", error: true });
+    } finally {
+      setExporting(false);
+    }
+  }
 
   const load = useCallback(async () => {
     setErr(null);
@@ -251,6 +290,49 @@ export default function AdminProductsPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <div className="relative" ref={exportMenuRef}>
+            <button
+              type="button"
+              disabled={exporting}
+              onClick={() => setExportOpen((o) => !o)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "9px 16px",
+                borderRadius: "8px",
+                background: "rgba(255,255,255,0.12)",
+                color: "#faf5ec",
+                border: "1px solid rgba(255,255,255,0.2)",
+                fontSize: "13px",
+                fontWeight: 600,
+                cursor: exporting ? "wait" : "pointer",
+                opacity: exporting ? 0.7 : 1
+              }}
+            >
+              <Download size={14} aria-hidden />
+              {exporting ? "Exporting…" : "Export"}
+              <ChevronDown size={14} aria-hidden />
+            </button>
+            {exportOpen ? (
+              <div className="absolute right-0 z-30 mt-1 min-w-[150px] overflow-hidden rounded-lg border border-stone-200 bg-white py-1 shadow-lg">
+                <button
+                  type="button"
+                  className="block w-full px-3 py-2 text-left text-sm text-stone-800 hover:bg-[#faf5ec]"
+                  onClick={() => void exportProducts("csv")}
+                >
+                  CSV
+                </button>
+                <button
+                  type="button"
+                  className="block w-full px-3 py-2 text-left text-sm text-stone-800 hover:bg-[#faf5ec]"
+                  onClick={() => void exportProducts("xls")}
+                >
+                  Excel (XL)
+                </button>
+              </div>
+            ) : null}
+          </div>
           <Link
             href="/admin/products/xl"
             style={{
