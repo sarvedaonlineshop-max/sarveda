@@ -112,7 +112,7 @@ export async function receivePurchaseOrder(
   lineReceipts: Array<{ poLineId: string; quantityReceived: number }>,
   notes?: string | null
 ): Promise<{ receiptId: string; poStatus: PurchaseOrderStatus }> {
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const po = await tx.purchaseOrder.findUnique({
       where: { id: purchaseOrderId },
       include: { lines: true }
@@ -177,8 +177,23 @@ export async function receivePurchaseOrder(
     const poStatus = derivePoStatus(updatedLines, po.status);
     await tx.purchaseOrder.update({ where: { id: purchaseOrderId }, data: { status: poStatus } });
 
-    return { receiptId: receipt.id, poStatus };
+    return {
+      receiptId: receipt.id,
+      poStatus,
+      restockedVariantIds: lineReceipts
+        .map((r) => lineMap.get(r.poLineId)?.variantId)
+        .filter((id): id is string => Boolean(id))
+    };
   });
+
+  if (result.restockedVariantIds.length > 0) {
+    const { queueNotifyStockSubscribers } = await import(
+      "../stock-notifications/stockNotification.service"
+    );
+    queueNotifyStockSubscribers(result.restockedVariantIds);
+  }
+
+  return { receiptId: result.receiptId, poStatus: result.poStatus };
 }
 
 export async function markBillPaid(billId: string, paidInPaise?: number): Promise<VendorBillStatus> {

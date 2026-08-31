@@ -1418,7 +1418,7 @@ export function fetchCatalogGaps(signal?: AbortSignal) {
   return adminFetch<CatalogGapsReport>(`/api/admin/catalog/gaps`, { signal });
 }
 
-/** Website-catalog style editable sheet (Name / Variant / SKU / Qty / Cost / prices / HSN). */
+/** Website-catalog style editable sheet (Name / Variant / SKU / Qty / Cost / prices / HSN / GST). */
 export type XlSheetRow = {
   productId: string;
   variantId: string;
@@ -1436,6 +1436,8 @@ export type XlSheetRow = {
   mrpGbpPence: number | null;
   saleGbpPence: number | null;
   hsnCode: string;
+  taxClass: string;
+  gstPercent: number;
   productStatus: string;
   variantStatus: string;
   productSlug?: string;
@@ -1478,6 +1480,8 @@ export function saveProductsXlSheet(
     mrpGbpPence?: number | null;
     saleGbpPence?: number | null;
     hsnCode?: string | null;
+    taxClass?: string | null;
+    gstPercent?: 0 | 5 | 12 | 18;
   }>
 ) {
   return adminFetch<{

@@ -16,6 +16,7 @@ import {
   productsSheetToCsv,
   productsSheetToExcelXml
 } from "@/lib/admin-sheet-export";
+import { TAX_CLASS_OPTIONS, taxClassForForm } from "@/lib/tax-classes";
 
 /** Editable row: money as major-unit strings for spreadsheet UX. */
 type EditRow = {
@@ -34,6 +35,7 @@ type EditRow = {
   mrpGbp: string;
   saleGbp: string;
   hsnCode: string;
+  taxClass: string;
   productStatus: string;
   variantStatus: string;
   priceReviewReason?: "SHEET_BLANK" | "SKU_MISMATCH";
@@ -82,6 +84,7 @@ function apiToEdit(r: XlSheetRow): EditRow {
     mrpGbp: minorToMajorStr(r.mrpGbpPence),
     saleGbp: minorToMajorStr(r.saleGbpPence),
     hsnCode: r.hsnCode || "",
+    taxClass: taxClassForForm(r.taxClass || "standard"),
     productStatus: r.productStatus,
     variantStatus: r.variantStatus,
     priceReviewReason: r.priceReviewReason
@@ -155,13 +158,22 @@ function blurMoney(e: React.FocusEvent<HTMLInputElement>) {
   e.currentTarget.style.background = "transparent";
 }
 
-const COL_COUNT = 15;
+const COL_COUNT = 16;
 
 type StatusFilter = "ACTIVE" | "DRAFT" | "ALL";
 type ScopeFilter = "ALL" | "PRICE_PENDING";
 
 function rowMatchesQuery(r: EditRow, q: string) {
-  const blob = [r.productName, r.variantName, r.sku, r.hsnCode, priceReviewLabel(r.priceReviewReason)]
+  const gstLabel =
+    TAX_CLASS_OPTIONS.find((o) => o.value === r.taxClass)?.label ?? r.taxClass;
+  const blob = [
+    r.productName,
+    r.variantName,
+    r.sku,
+    r.hsnCode,
+    gstLabel,
+    priceReviewLabel(r.priceReviewReason)
+  ]
     .join(" ")
     .toLowerCase();
   return blob.includes(q);
@@ -301,13 +313,14 @@ export default function ProductsXlSheetPage() {
       const cur = next[index];
       if (!cur) return prev;
 
-      if (patch.productName !== undefined || patch.hsnCode !== undefined) {
+      if (patch.productName !== undefined || patch.hsnCode !== undefined || patch.taxClass !== undefined) {
         return next.map((row) => {
           if (row.productId !== cur.productId) return row;
           return {
             ...row,
             ...(patch.productName !== undefined ? { productName: patch.productName } : {}),
-            ...(patch.hsnCode !== undefined ? { hsnCode: patch.hsnCode ?? "" } : {})
+            ...(patch.hsnCode !== undefined ? { hsnCode: patch.hsnCode ?? "" } : {}),
+            ...(patch.taxClass !== undefined ? { taxClass: patch.taxClass } : {})
           };
         });
       }
@@ -344,7 +357,8 @@ export default function ProductsXlSheetPage() {
           saleAedFils: majorStrToMinor(r.saleAed),
           mrpGbpPence: majorStrToMinor(r.mrpGbp),
           saleGbpPence: majorStrToMinor(r.saleGbp),
-          hsnCode: r.hsnCode.trim() || null
+          hsnCode: r.hsnCode.trim() || null,
+          taxClass: taxClassForForm(r.taxClass)
         };
       });
 
@@ -638,6 +652,14 @@ export default function ProductsXlSheetPage() {
                       mrpGbpPence: majorStrToMinor(r.mrpGbp),
                       saleGbpPence: majorStrToMinor(r.saleGbp),
                       hsnCode: r.hsnCode,
+                      gstPercent:
+                        r.taxClass === "gst-zero-rate"
+                          ? 0
+                          : r.taxClass === "gst-5"
+                            ? 5
+                            : r.taxClass === "gst12"
+                              ? 12
+                              : 18,
                       productStatus: r.productStatus,
                       variantStatus: r.variantStatus
                     }));
@@ -664,6 +686,14 @@ export default function ProductsXlSheetPage() {
                       mrpGbpPence: majorStrToMinor(r.mrpGbp),
                       saleGbpPence: majorStrToMinor(r.saleGbp),
                       hsnCode: r.hsnCode,
+                      gstPercent:
+                        r.taxClass === "gst-zero-rate"
+                          ? 0
+                          : r.taxClass === "gst-5"
+                            ? 5
+                            : r.taxClass === "gst12"
+                              ? 12
+                              : 18,
                       productStatus: r.productStatus,
                       variantStatus: r.variantStatus
                     }));
@@ -794,6 +824,7 @@ export default function ProductsXlSheetPage() {
             <col style={{ width: "72px" }} />
             <col style={{ width: "72px" }} />
             <col style={{ width: "80px" }} />
+            <col style={{ width: "88px" }} />
           </colgroup>
           <thead>
             <tr>
@@ -827,8 +858,11 @@ export default function ProductsXlSheetPage() {
               <th style={{ ...stickyHead, textAlign: "center" }} colSpan={2}>
                 GBP
               </th>
-              <th style={{ ...stickyHead, borderRight: "none" }} rowSpan={2}>
+              <th style={stickyHead} rowSpan={2}>
                 HSN
+              </th>
+              <th style={{ ...stickyHead, borderRight: "none" }} rowSpan={2}>
+                GST %
               </th>
             </tr>
             <tr>
@@ -839,7 +873,7 @@ export default function ProductsXlSheetPage() {
               <th style={stickySub}>MRP</th>
               <th style={stickySub}>Sale</th>
               <th style={stickySub}>MRP</th>
-              <th style={{ ...stickySub, borderRight: "none" }}>Sale</th>
+              <th style={stickySub}>Sale</th>
             </tr>
           </thead>
           <tbody>
@@ -1044,7 +1078,7 @@ export default function ProductsXlSheetPage() {
                         aria-label="GBP Sale"
                       />
                     </td>
-                    <td style={{ ...tdSt, borderRight: "none" }}>
+                    <td style={tdSt}>
                       {showNameEditor ? (
                         <input
                           style={{ ...numInput, textAlign: "left" }}
@@ -1055,6 +1089,35 @@ export default function ProductsXlSheetPage() {
                           aria-label="HSN"
                           placeholder="HSN"
                         />
+                      ) : (
+                        <div style={{ padding: "6px", minHeight: "30px" }} />
+                      )}
+                    </td>
+                    <td style={{ ...tdSt, borderRight: "none" }}>
+                      {showNameEditor ? (
+                        <select
+                          style={{
+                            ...numInput,
+                            textAlign: "left",
+                            paddingRight: "4px",
+                            cursor: "pointer"
+                          }}
+                          value={r.taxClass}
+                          onChange={(e) => patchRow(i, { taxClass: e.target.value })}
+                          aria-label="GST percent"
+                        >
+                          {TAX_CLASS_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.value === "standard"
+                                ? "18%"
+                                : opt.value === "gst12"
+                                  ? "12%"
+                                  : opt.value === "gst-5"
+                                    ? "5%"
+                                    : "0%"}
+                            </option>
+                          ))}
+                        </select>
                       ) : (
                         <div style={{ padding: "6px", minHeight: "30px" }} />
                       )}

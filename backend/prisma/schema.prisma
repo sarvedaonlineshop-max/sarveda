@@ -1434,6 +1434,8 @@ model StockNotification {
   productId  String          @db.Uuid
   variantId  String?         @db.Uuid
   email      String
+  /// E.164 or local digits — used for WhatsApp when item is back in stock.
+  phone      String?
   userId     String?         @db.Uuid
   notifiedAt DateTime?
   createdAt  DateTime        @default(now())
@@ -1442,6 +1444,7 @@ model StockNotification {
   user       User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@unique([productId, variantId, email])
+  @@index([notifiedAt, variantId])
 }
 
 /// Homepage / storefront newsletter opt-ins (“Join the Community”).

@@ -56,11 +56,19 @@ async function syncSingleItemStock(sku: string, stockOnHand: number): Promise<vo
   await reconcileInventoryReserved({ dryRun: false, variantIds: [variant.id] });
 
   const inv = await prisma.inventory.findUnique({ where: { variantId: variant.id } });
+  const available = Math.max(0, (inv?.onHand ?? onHand) - (inv?.reserved ?? 0));
+  if (available > 0) {
+    const { queueNotifyStockSubscribers } = await import(
+      "../stock-notifications/stockNotification.service"
+    );
+    queueNotifyStockSubscribers([variant.id]);
+  }
+
   logger.info("Zoho webhook: stock updated", {
     sku,
     onHand: inv?.onHand ?? onHand,
     reserved: inv?.reserved ?? 0,
-    available: Math.max(0, (inv?.onHand ?? onHand) - (inv?.reserved ?? 0)),
+    available,
     zohoReported: zohoOnHand,
     variantId: variant.id
   });

@@ -158,6 +158,7 @@ export async function related(req: Request, res: Response, next: NextFunction) {
 
 const NotifyStockSchema = z.object({
   email: z.string().email().max(320).optional(),
+  phone: z.string().min(8).max(20).optional().nullable(),
   variantId: z.string().uuid().optional().nullable()
 });
 
@@ -184,10 +185,21 @@ export async function notifyStock(req: Request, res: Response, next: NextFunctio
       return;
     }
 
+    let accountPhone: string | null = null;
+    if (req.authUser?.id) {
+      const account = await prisma.user.findUnique({
+        where: { id: req.authUser.id },
+        select: { phone: true }
+      });
+      accountPhone = account?.phone ?? null;
+    }
+    const phone = body.phone?.trim() || accountPhone || null;
+
     const result = await subscribeStockNotification({
       productId: product.id,
       variantId: body.variantId ?? null,
       email,
+      phone,
       userId: req.authUser?.id ?? null
     });
 
@@ -197,7 +209,9 @@ export async function notifyStock(req: Request, res: Response, next: NextFunctio
         subscribed: true,
         alreadySubscribed: !result.created,
         message: result.created
-          ? "We will email you when this item is back in stock."
+          ? phone
+            ? "We will email and WhatsApp you when this item is back in stock."
+            : "We will email you when this item is back in stock. Add a phone next time for WhatsApp too."
           : "You are already on the notify list for this item."
       }
     });

@@ -190,13 +190,18 @@ export async function saveInventoryXlSheetRows(body: InventoryXlSheetSaveBody): 
     await mirrorStockToZohoForSkus(touchedSkus, "admin_inventory_xl_sheet", { updated });
   }
   if (touchedVariantIds.length > 0) {
+    const uniqueVariantIds = Array.from(new Set(touchedVariantIds));
     const { reconcileInventoryReserved } = await import(
       "../orders/inventory-reserved-reconcile.service"
     );
     await reconcileInventoryReserved({
       dryRun: false,
-      variantIds: Array.from(new Set(touchedVariantIds))
+      variantIds: uniqueVariantIds
     });
+    const { queueNotifyStockSubscribers } = await import(
+      "../stock-notifications/stockNotification.service"
+    );
+    queueNotifyStockSubscribers(uniqueVariantIds);
   }
 
   return { updated, errors };

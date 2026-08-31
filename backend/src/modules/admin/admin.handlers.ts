@@ -1837,10 +1837,10 @@ export async function patchInventory(req: Request, res: Response, next: NextFunc
     }
 
     if (body.onHand !== undefined && body.onHand > 0) {
-      const { notifyStockSubscribersForVariant } = await import(
+      const { queueNotifyStockSubscribers } = await import(
         "../stock-notifications/stockNotification.service"
       );
-      void notifyStockSubscribersForVariant(variantId);
+      queueNotifyStockSubscribers([variantId]);
     }
 
     const { auditMap } = await getZohoStockSyncMeta();
@@ -1874,13 +1874,17 @@ export async function bulkPatchInventory(req: Request, res: Response, next: Next
     if (touchedVariantIds.size > 0) {
       const variants = await prisma.productVariant.findMany({
         where: { id: { in: Array.from(touchedVariantIds) } },
-        select: { sku: true }
+        select: { id: true, sku: true }
       });
       await mirrorStockToZohoForSkus(
         variants.map((v) => v.sku),
         "admin_bulk_patch_inventory",
         { updated }
       );
+      const { queueNotifyStockSubscribers } = await import(
+        "../stock-notifications/stockNotification.service"
+      );
+      queueNotifyStockSubscribers(variants.map((v) => v.id));
     }
 
     res.json({ success: true, data: { updated, requested: updates.length } });
@@ -1922,6 +1926,14 @@ export async function importInventoryRows(req: Request, res: Response, next: Nex
       await mirrorStockToZohoForSkus(Array.from(touchedSkus), "admin_import_inventory_rows", {
         updated
       });
+      const variants = await prisma.productVariant.findMany({
+        where: { sku: { in: Array.from(touchedSkus) } },
+        select: { id: true }
+      });
+      const { queueNotifyStockSubscribers } = await import(
+        "../stock-notifications/stockNotification.service"
+      );
+      queueNotifyStockSubscribers(variants.map((v) => v.id));
     }
 
     res.json({

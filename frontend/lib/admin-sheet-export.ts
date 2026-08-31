@@ -57,6 +57,7 @@ export type ProductsExportRow = {
   mrpGbpPence: number | null;
   saleGbpPence: number | null;
   hsnCode: string;
+  gstPercent: number;
   productStatus: string;
   variantStatus: string;
 };
@@ -74,6 +75,7 @@ export function productsSheetToCsv(rows: ProductsExportRow[]): string {
     "MRP GBP",
     "Sale GBP",
     "HSN",
+    "GST %",
     "Product status",
     "Variant status"
   ];
@@ -93,6 +95,7 @@ export function productsSheetToCsv(rows: ProductsExportRow[]): string {
         minor(r.mrpGbpPence),
         minor(r.saleGbpPence),
         escapeCsvCell(r.hsnCode),
+        r.gstPercent,
         escapeCsvCell(r.productStatus),
         escapeCsvCell(r.variantStatus)
       ].join(",")
@@ -114,6 +117,7 @@ export function productsSheetToExcelXml(rows: ProductsExportRow[]): string {
     "MRP GBP",
     "Sale GBP",
     "HSN",
+    "GST %",
     "Product status",
     "Variant status"
   ];
@@ -132,6 +136,7 @@ export function productsSheetToExcelXml(rows: ProductsExportRow[]): string {
       minor(r.mrpGbpPence),
       minor(r.saleGbpPence),
       r.hsnCode,
+      r.gstPercent,
       r.productStatus,
       r.variantStatus
     ])

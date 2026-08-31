@@ -6,6 +6,7 @@ import { z } from "zod";
 import type { ProductStatus } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
+import { gstRatePercent } from "../../utils/gst";
 import { syncVariantAttributes } from "./variant-attributes";
 import {
   XL_PRICE_REVIEW_BY_SLUG,
@@ -15,6 +16,26 @@ import {
 
 function httpError(status: number, message: string, code: string): Error {
   return Object.assign(new Error(message), { statusCode: status, code });
+}
+
+const TAX_CLASS_BY_PERCENT: Record<number, string> = {
+  0: "gst-zero-rate",
+  5: "gst-5",
+  12: "gst12",
+  18: "standard",
+};
+
+const ALLOWED_TAX_CLASSES = new Set(["standard", "gst18", "gst12", "gst-5", "gst-zero-rate"]);
+
+function normalizeTaxClass(raw: string | null | undefined): string {
+  const t = (raw ?? "standard").trim().toLowerCase();
+  if (t === "gst18") return "standard";
+  if (ALLOWED_TAX_CLASSES.has(t)) return t;
+  return "standard";
+}
+
+function taxClassFromGstPercent(percent: number): string {
+  return TAX_CLASS_BY_PERCENT[percent] ?? "standard";
 }
 
 export type XlSheetRow = {
@@ -34,6 +55,10 @@ export type XlSheetRow = {
   mrpGbpPence: number | null;
   saleGbpPence: number | null;
   hsnCode: string;
+  /** Canonical product tax class (Woo-style slug). */
+  taxClass: string;
+  /** Inclusive GST % derived from taxClass (0 / 5 / 12 / 18). */
+  gstPercent: number;
   productStatus: string;
   variantStatus: string;
   productSlug?: string;
@@ -152,6 +177,7 @@ export async function listXlSheetRows(
       slug: true,
       status: true,
       hsnCode: true,
+      taxClass: true,
       variants: {
         // Admin XL: every variant (ACTIVE + INACTIVE) so drafts / inactive SKUs aren't hidden.
         orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
@@ -182,6 +208,8 @@ export async function listXlSheetRows(
   const rows: XlSheetRow[] = [];
   for (const p of products) {
     const review = XL_PRICE_REVIEW_BY_SLUG.get(p.slug);
+    const taxClass = normalizeTaxClass(p.taxClass);
+    const gstPercent = gstRatePercent(taxClass);
     for (const v of p.variants) {
       rows.push({
         productId: p.id,
@@ -200,6 +228,8 @@ export async function listXlSheetRows(
         mrpGbpPence: v.mrpGbpPence ?? null,
         saleGbpPence: v.saleGbpPence ?? null,
         hsnCode: p.hsnCode?.trim() || "",
+        taxClass,
+        gstPercent,
         productStatus: p.status,
         variantStatus: v.status,
         productSlug: p.slug,
@@ -236,6 +266,8 @@ export const xlSheetSaveSchema = z.object({
         mrpGbpPence: optionalNonNegInt,
         saleGbpPence: optionalNonNegInt,
         hsnCode: z.string().max(16).optional().nullable(),
+        taxClass: z.string().max(40).optional().nullable(),
+        gstPercent: z.union([z.literal(0), z.literal(5), z.literal(12), z.literal(18)]).optional(),
       })
     )
     .min(1)
@@ -283,14 +315,21 @@ export async function saveXlSheetRows(
 
   const byProduct = new Map<
     string,
-    { name: string; hsnCode: string | null; rows: typeof body.rows }
+    { name: string; hsnCode: string | null; taxClass: string | null; rows: typeof body.rows }
   >();
   for (const r of body.rows) {
+    const resolvedTax =
+      r.taxClass != null && String(r.taxClass).trim()
+        ? normalizeTaxClass(r.taxClass)
+        : r.gstPercent != null
+          ? taxClassFromGstPercent(r.gstPercent)
+          : null;
     const cur = byProduct.get(r.productId);
     if (!cur) {
       byProduct.set(r.productId, {
         name: r.productName.trim(),
         hsnCode: r.hsnCode?.trim() || null,
+        taxClass: resolvedTax,
         rows: [r],
       });
     } else {
@@ -298,13 +337,14 @@ export async function saveXlSheetRows(
       if (r.productName.trim()) cur.name = r.productName.trim();
       const h = r.hsnCode?.trim() || null;
       if (h) cur.hsnCode = h;
+      if (resolvedTax) cur.taxClass = resolvedTax;
     }
   }
 
   for (const [productId, group] of byProduct) {
     const existing = await prisma.product.findFirst({
       where: { id: productId, deletedAt: null },
-      select: { id: true, name: true, hsnCode: true },
+      select: { id: true, name: true, hsnCode: true, taxClass: true },
     });
     if (!existing) {
       for (const r of group.rows) {
@@ -318,14 +358,27 @@ export async function saveXlSheetRows(
       if (values.every((v) => !v)) return null;
       return values.find((v) => v) || null;
     })();
+    const nextTax =
+      group.taxClass != null
+        ? group.taxClass
+        : (() => {
+            for (const r of group.rows) {
+              if (r.taxClass?.trim()) return normalizeTaxClass(r.taxClass);
+              if (r.gstPercent != null) return taxClassFromGstPercent(r.gstPercent);
+            }
+            return null;
+          })();
     const nameChanged = group.name !== existing.name;
     const hsnChanged = (existing.hsnCode?.trim() || null) !== nextHsn;
-    if (nameChanged || hsnChanged) {
+    const taxChanged =
+      nextTax != null && normalizeTaxClass(existing.taxClass) !== nextTax;
+    if (nameChanged || hsnChanged || taxChanged) {
       await prisma.product.update({
         where: { id: productId },
         data: {
           ...(nameChanged ? { name: group.name } : {}),
           ...(hsnChanged ? { hsnCode: nextHsn } : {}),
+          ...(taxChanged && nextTax ? { taxClass: nextTax } : {}),
         },
       });
       updatedProducts++;
@@ -474,13 +527,18 @@ export async function saveXlSheetRows(
   }
 
   if (touchedInventoryVariantIds.length > 0) {
+    const uniqueVariantIds = Array.from(new Set(touchedInventoryVariantIds));
     const { reconcileInventoryReserved } = await import(
       "../orders/inventory-reserved-reconcile.service"
     );
     await reconcileInventoryReserved({
       dryRun: false,
-      variantIds: Array.from(new Set(touchedInventoryVariantIds)),
+      variantIds: uniqueVariantIds,
     });
+    const { queueNotifyStockSubscribers } = await import(
+      "../stock-notifications/stockNotification.service"
+    );
+    queueNotifyStockSubscribers(uniqueVariantIds);
   }
 
   if (errors.length && updatedVariants === 0 && updatedProducts === 0) {
