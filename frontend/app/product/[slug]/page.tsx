@@ -98,7 +98,7 @@ export default async function ProductDetailPage({ params }: Props) {
   return (
     <>
       <JsonLd data={[productJsonLd(product), breadcrumbJsonLd(breadcrumbItems)]} />
-      <div className="border-b border-stone-100 bg-brand-cream/90">
+      <div className="sticky top-[var(--storefront-header-live-offset)] z-30 border-b border-stone-100 bg-brand-cream/95 backdrop-blur-sm supports-[backdrop-filter]:bg-brand-cream/90">
         <div className="page-shell py-3">
           <Breadcrumbs
             items={[

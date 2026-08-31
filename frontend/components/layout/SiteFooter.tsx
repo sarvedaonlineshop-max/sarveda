@@ -1,7 +1,10 @@
 import Link from "next/link";
 
 import { SarvedaLogo } from "@/components/brand/SarvedaLogo";
-import { COMPANY_WAREHOUSE_ADDRESS } from "@/lib/company";
+import {
+  COMPANY_WAREHOUSE_ADDRESS,
+  COMPANY_WAREHOUSE_MAPS_URL
+} from "@/lib/company";
 import { customerPhoneDisplay, customerPhoneTelHref } from "@/lib/enquiry";
 
 const quickLinks = [
@@ -83,7 +86,7 @@ export function SiteFooter() {
   return (
     <footer className="bg-brand-forest pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
       <div className="page-shell py-10 md:py-14">
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.3fr] lg:gap-12">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.3fr] lg:gap-10">
           {/* Brand */}
           <div>
             <SarvedaLogo iconHeight={56} tone="onDark" />
@@ -115,7 +118,7 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-gold">
+            <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-gold">
               Quicklinks
             </p>
             <ul className="space-y-2.5">
@@ -133,7 +136,7 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-gold">
+            <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-gold">
               Customer Service
             </p>
             <ul className="space-y-2.5">
@@ -151,10 +154,10 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-gold">
+            <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-gold">
               Get in Touch
             </p>
-            <ul className="space-y-3.5 text-sm text-brand-cream/75">
+            <ul className="space-y-3 text-sm text-brand-cream/75">
               <li className="flex gap-2.5">
                 <svg viewBox="0 0 24 24" className="mt-0.5 h-5 w-5 shrink-0 text-brand-gold" fill="none" aria-hidden>
                   <path
@@ -165,7 +168,14 @@ export function SiteFooter() {
                   />
                   <circle cx="12" cy="10.5" r="2.2" stroke="currentColor" strokeWidth="1.6" />
                 </svg>
-                <span>{COMPANY_WAREHOUSE_ADDRESS}</span>
+                <a
+                  href={COMPANY_WAREHOUSE_MAPS_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-brand-gold"
+                >
+                  {COMPANY_WAREHOUSE_ADDRESS}
+                </a>
               </li>
               <li className="flex gap-2.5">
                 <svg viewBox="0 0 24 24" className="mt-0.5 h-5 w-5 shrink-0 text-brand-gold" fill="none" aria-hidden>

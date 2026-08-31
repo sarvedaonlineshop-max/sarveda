@@ -524,7 +524,7 @@ export function BottomNav() {
                   {item.icon(active)}
                 </span>
                 {item.badge && item.badge > 0 ? (
-                  <span className="absolute right-2 top-2 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-brand-gold px-1 text-[9px] font-bold text-brand-night">
+                  <span className="absolute left-1/2 top-1.5 z-10 flex h-[1.05rem] min-w-[1.05rem] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-gradient-to-b from-[#e8c56a] to-[#b98a3e] px-1 text-[9px] font-bold leading-none text-[#1c352a] shadow-[0_1px_3px_rgba(0,0,0,0.35),0_0_0_1.5px_rgba(255,255,255,0.9)]">
                     {item.badge > 99 ? "99+" : item.badge}
                   </span>
                 ) : null}

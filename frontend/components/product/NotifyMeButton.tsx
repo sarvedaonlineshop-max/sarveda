@@ -40,7 +40,12 @@ export function NotifyMeButton({ productSlug, variantId }: Props) {
         variantId: variantId ?? null
       };
       const resolvedEmail = me?.email ?? opts?.guestEmail?.trim() ?? email.trim();
-      const resolvedPhone = me?.phone?.trim() || opts?.guestPhone?.trim() || phone.trim() || "";
+      const resolvedPhone = (
+        me?.phone?.trim() ||
+        opts?.guestPhone?.trim() ||
+        phone.trim() ||
+        ""
+      ).trim();
 
       if (!me?.email) {
         if (!resolvedEmail || !isValidEmail(resolvedEmail)) {
@@ -49,10 +54,13 @@ export function NotifyMeButton({ productSlug, variantId }: Props) {
         body.email = resolvedEmail;
       }
 
-      if (!resolvedPhone || !isValidPhone(resolvedPhone)) {
-        throw new Error("Please enter a valid mobile number for WhatsApp.");
+      // Phone is optional — email is enough to join the waitlist.
+      if (resolvedPhone) {
+        if (!isValidPhone(resolvedPhone)) {
+          throw new Error("Please enter a valid mobile number, or leave WhatsApp blank.");
+        }
+        body.phone = resolvedPhone;
       }
-      body.phone = resolvedPhone;
 
       const res = await fetch(`${getApiBase()}/api/products/${encodeURIComponent(productSlug)}/notify-stock`, {
         method: "POST",
@@ -66,7 +74,9 @@ export function NotifyMeButton({ productSlug, variantId }: Props) {
       setShowForm(false);
       setMessage(
         json.data?.message ??
-          "You're on the list — we'll email and WhatsApp you when this item is back in stock."
+          (resolvedPhone
+            ? "You're on the list — we'll email and WhatsApp you when this item is back in stock."
+            : "You're on the list — we'll email you when this item is back in stock.")
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -80,11 +90,13 @@ export function NotifyMeButton({ productSlug, variantId }: Props) {
       <div className="rounded-xl border border-brand-forest/20 bg-brand-cream/60 p-4">
         <p className="text-sm font-semibold text-brand-forest">Request saved</p>
         <p className="mt-1 text-sm text-brand-ink/80">
-          {message ?? "We'll email and WhatsApp you when this item is back in stock."}
+          {message ?? "We'll notify you when this item is back in stock."}
         </p>
       </div>
     );
   }
+
+  const canSubmitGuest = isValidEmail(email);
 
   return (
     <div className="rounded-xl border border-brand-cream-dark bg-brand-ivory p-4">
@@ -94,12 +106,18 @@ export function NotifyMeButton({ productSlug, variantId }: Props) {
           onClick={() =>
             void (async () => {
               const me = await fetchMe();
+              // Logged-in with email: one tap if we already have a phone, else open form for optional WhatsApp.
               if (me?.email && me.phone && isValidPhone(me.phone)) {
                 void submit();
                 return;
               }
-              if (me?.email) setEmail(me.email);
-              if (me?.phone) setPhone(me.phone);
+              if (me?.email) {
+                setEmail(me.email);
+                if (me.phone) setPhone(me.phone);
+                // Still allow one-tap email-only for logged-in users.
+                void submit();
+                return;
+              }
               setShowForm(true);
             })()
           }
@@ -111,8 +129,8 @@ export function NotifyMeButton({ productSlug, variantId }: Props) {
       ) : (
         <div className="space-y-3">
           <p className="text-sm text-brand-ink/80">
-            Enter your email and WhatsApp number — we will notify you on both when this item is back
-            in stock.
+            Enter your email and we will notify you when this item is back in stock. WhatsApp number
+            is optional.
           </p>
           <input
             type="email"
@@ -126,14 +144,14 @@ export function NotifyMeButton({ productSlug, variantId }: Props) {
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="WhatsApp mobile (10 digits)"
+            placeholder="WhatsApp (optional)"
             autoComplete="tel"
             className="w-full rounded-lg border border-brand-cream-dark bg-white px-3 py-2 text-sm text-brand-ink"
           />
           <div className="flex gap-2">
             <button
               type="button"
-              disabled={busy || !isValidEmail(email) || !isValidPhone(phone)}
+              disabled={busy || !canSubmitGuest || (phone.trim() !== "" && !isValidPhone(phone))}
               onClick={() => void submit({ guestEmail: email, guestPhone: phone })}
               className="flex-1 rounded-lg bg-brand-forest px-3 py-2 text-sm font-semibold text-brand-cream disabled:opacity-50"
             >

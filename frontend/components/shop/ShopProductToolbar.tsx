@@ -112,7 +112,7 @@ export function ShopProductToolbar({
   return (
     <>
       <div className="lg:contents">
-        <div className="sticky top-[var(--storefront-header-live-offset)] z-40 overflow-visible border-b border-brand-cream-dark/60 bg-brand-cream/95 lg:static lg:z-auto lg:border-b-0 lg:bg-transparent">
+        <div className="sticky top-[var(--storefront-header-live-offset)] z-40 overflow-visible border-b border-brand-cream-dark/60 bg-brand-cream/95 backdrop-blur-sm supports-[backdrop-filter]:bg-brand-cream/90 lg:border-b-0 lg:bg-brand-cream/95">
           <div className="lg:hidden">
             <ShopMobileCategoryDrawer
               categories={categories}

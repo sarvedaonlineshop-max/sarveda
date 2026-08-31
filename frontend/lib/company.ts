@@ -9,6 +9,11 @@ export const COMPANY_WAREHOUSE_ADDRESS =
   process.env.NEXT_PUBLIC_SELLER_WAREHOUSE_ADDRESS?.trim() ||
   "Sarveda Life Private Limited, Plot No. B, Part 2, RASUDHI WAREHOUSE, KIADB Industrial Housing Layout, Hebbal 2nd stage, Mysore, Karnataka 570016, India";
 
+/** Google Maps short link for warehouse / Get in Touch. */
+export const COMPANY_WAREHOUSE_MAPS_URL =
+  process.env.NEXT_PUBLIC_SELLER_WAREHOUSE_MAPS_URL?.trim() ||
+  "https://maps.app.goo.gl/5bUnDzxDRBycUpGQA";
+
 export const COMPANY_REGISTERED_ADDRESS =
   process.env.NEXT_PUBLIC_SELLER_REGISTERED_ADDRESS?.trim() ||
   "A2/403, Purva Atria RMV 2nd Stage, 1st Block Bangalore, Karnataka Pin Code: 560094 India";
