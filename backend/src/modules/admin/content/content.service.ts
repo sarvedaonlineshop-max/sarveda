@@ -134,6 +134,7 @@ async function courseCheckoutVariantId(
     courseSlug: string;
     title: string;
     imageUrl: string | null;
+    courseId?: string;
   }
 ): Promise<string | null> {
   const { isFree, enrollmentMode, priceInPaise, priceUsdCents } = pricing;
@@ -155,7 +156,8 @@ async function courseCheckoutVariantId(
         title: opts.title,
         priceInPaise,
         priceUsdCents,
-        imageUrl: opts.imageUrl
+        imageUrl: opts.imageUrl,
+        courseId: opts.courseId ?? opts.excludeCourseId
       });
       return variantId;
     }
@@ -168,7 +170,8 @@ async function courseCheckoutVariantId(
     title: opts.title,
     priceInPaise,
     priceUsdCents,
-    imageUrl: opts.imageUrl
+    imageUrl: opts.imageUrl,
+    courseId: opts.courseId ?? opts.excludeCourseId
   });
   return variantId;
 }
@@ -922,7 +925,8 @@ export async function updateContent(type: ContentType, id: string, body: Content
             imageUrl:
               body.imageUrl !== undefined
                 ? body.imageUrl
-                : ((raw.imageUrl as string | null) ?? null)
+                : ((raw.imageUrl as string | null) ?? null),
+            courseId: id
           })
         : body.checkoutVariantSku !== undefined
           ? await resolveCheckoutVariantSku(body.checkoutVariantSku, id)

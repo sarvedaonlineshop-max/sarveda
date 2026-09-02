@@ -8,7 +8,7 @@ import { MobileSubpageHeader } from "@/components/layout/MobileSubpageHeader";
 import { OrderServiceRequestForm } from "@/components/orders/OrderServiceRequestForm";
 import { fetchMe } from "@/lib/auth-client";
 import {
-  CANCEL_BEFORE_DELIVERY_REASONS,
+  CANCEL_ONLY_REASONS,
   submitOrderCancelRequest
 } from "@/lib/order-service-request";
 import { fetchMyOrders } from "@/lib/orders-api";
@@ -41,9 +41,10 @@ export default function CancelOrderRequestPage() {
       if (!order.canCancelRequest) {
         if (!cancelled) {
           setBlocked(
-            order.serviceRequest?.status === "PENDING_APPROVAL"
-              ? "A cancellation request is already waiting for approval."
-              : "This order cannot be cancelled online."
+            order.cancelBlockReason ??
+              (order.serviceRequest?.status === "PENDING_APPROVAL"
+                ? "A cancellation request is already waiting for approval."
+                : "This order cannot be cancelled online.")
           );
         }
         return;
@@ -81,7 +82,7 @@ export default function CancelOrderRequestPage() {
             kind="cancel"
             title="Cancel this order"
             subtitle="Tell us why you want to cancel before the order is delivered. Our team will review your request."
-            reasons={CANCEL_BEFORE_DELIVERY_REASONS}
+            reasons={CANCEL_ONLY_REASONS}
             lineItems={lineItems}
             backHref="/profile"
             onSubmit={(payload) => submitOrderCancelRequest(orderNumber, payload)}

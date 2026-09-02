@@ -21,11 +21,26 @@ import {
   canRequestCancel,
   canRequestRefund,
   customerReasonsFromApprovedCancel,
+  getCancelBlockReason,
   resolveDeliveredAt,
   returnWindowEnd
 } from "./order-service-request.service";
 import { unpaidCheckoutAttemptWhere } from "./abandoned-checkout";
 import { buildCancellationInfo } from "./order-cancellation-info";
+import { deriveCustomerRtoStatus } from "./rto-workflow.service";
+
+const SHIPMENT_CUSTOMER_SELECT = {
+  courier: true,
+  awb: true,
+  trackingUrl: true,
+  status: true,
+  deliveredAt: true,
+  rtoAt: true,
+  rtoReceivedAt: true,
+  rtoDisposition: true,
+  rtoRefundWorkflowStatus: true,
+  carrierMeta: true
+} as const;
 
 function serializePublicOrderView(order: {
   orderNumber: string;
@@ -146,12 +161,16 @@ function serializeOrderSummary(order: {
     trackingUrl: string | null;
     status: string;
     deliveredAt?: Date | null;
+    rtoAt?: Date | null;
+    rtoReceivedAt?: Date | null;
+    rtoDisposition?: string | null;
+    rtoRefundWorkflowStatus?: string | null;
     carrierMeta?: unknown;
   }>;
   serviceRequests?: Array<{
     id: string;
-    type: "CANCEL_BEFORE_DELIVERY" | "REFUND_AFTER_DELIVERY";
-    status: "PENDING_APPROVAL" | "APPROVED" | "REJECTED";
+    type: import("@prisma/client").OrderServiceRequestType;
+    status: import("@prisma/client").OrderServiceRequestStatus;
     reasonLabel: string | null;
     message: string | null;
     createdAt: Date;
@@ -181,18 +200,22 @@ function serializeOrderSummary(order: {
   shippingAddress?: OrderShippingAddressDto;
   serviceRequest?: {
     id: string;
-    type: "CANCEL_BEFORE_DELIVERY" | "REFUND_AFTER_DELIVERY";
-    status: "PENDING_APPROVAL" | "APPROVED" | "REJECTED";
+    type: "CANCEL_BEFORE_DELIVERY" | "REFUND_AFTER_DELIVERY" | "ADJUST_BEFORE_DELIVERY";
+    status: "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | "NEEDS_DISCUSSION" | "CONVERTED_TO_CANCELLATION";
     reasonLabel: string;
     message: string | null;
     createdAt: Date;
   } | null;
   canCancelRequest?: boolean;
+  cancelBlockReason?: string | null;
+  canAdjustRequest?: boolean;
+  adjustBlockReason?: string | null;
   canRefundRequest?: boolean;
   returnWindowEndsAt?: Date | null;
   returnWindowExpired?: boolean;
   paymentReference?: string | null;
   cancellationInfo?: ReturnType<typeof buildCancellationInfo>;
+  rtoCustomerStatus?: { inRto: boolean; label: string; detail?: string } | null;
 } {
   const headline = order.items[0]?.nameSnapshot ?? "Order";
   const itemCount = order.items.reduce((sum, row) => sum + row.qtyOrdered, 0);
@@ -223,13 +246,14 @@ function serializeOrderSummary(order: {
   const windowEnd = deliveredAt ? returnWindowEnd(deliveredAt) : null;
   const returnExpired =
     order.status === "DELIVERED" && windowEnd != null && Date.now() > windowEnd.getTime();
-  const eligibility = {
+  const eligibilityRow = {
     orderNumber: order.orderNumber,
     email: order.email,
     status: order.status,
     paymentStatus: order.paymentStatus,
     customerId: null as string | null,
     payments: order.payments,
+    shipments: order.shipments,
     deliveredAt
   };
 
@@ -262,12 +286,28 @@ function serializeOrderSummary(order: {
         }
       : null,
     canCancelRequest: canRequestCancel({
-      ...eligibility,
-      status: eligibility.status as import("@prisma/client").OrderStatus
+      ...eligibilityRow,
+      status: eligibilityRow.status as import("@prisma/client").OrderStatus
     }) && !hasPending,
+    cancelBlockReason: hasPending
+      ? "A cancellation request is already waiting for approval."
+      : getCancelBlockReason({
+          ...eligibilityRow,
+          status: eligibilityRow.status as import("@prisma/client").OrderStatus
+        }),
+    canAdjustRequest: canRequestCancel({
+      ...eligibilityRow,
+      status: eligibilityRow.status as import("@prisma/client").OrderStatus
+    }) && !hasPending,
+    adjustBlockReason: hasPending
+      ? "A request is already waiting for approval on this order."
+      : getCancelBlockReason({
+          ...eligibilityRow,
+          status: eligibilityRow.status as import("@prisma/client").OrderStatus
+        }),
     canRefundRequest: canRequestRefund({
-      ...eligibility,
-      status: eligibility.status as import("@prisma/client").OrderStatus
+      ...eligibilityRow,
+      status: eligibilityRow.status as import("@prisma/client").OrderStatus
     }) && !hasPending,
     returnWindowEndsAt: windowEnd,
     returnWindowExpired: returnExpired,
@@ -279,6 +319,20 @@ function serializeOrderSummary(order: {
       customerReasons,
       approvedCancel?.message
     ),
+    rtoCustomerStatus: deriveCustomerRtoStatus({
+      shipments: (order.shipments ?? []).map((s) => ({
+        status: s.status,
+        rtoAt: s.rtoAt ?? null,
+        rtoReceivedAt: s.rtoReceivedAt,
+        rtoDisposition: s.rtoDisposition as import("@prisma/client").RtoDisposition | null | undefined,
+        rtoRefundWorkflowStatus: s.rtoRefundWorkflowStatus as
+          | import("@prisma/client").RtoRefundWorkflowStatus
+          | null
+          | undefined
+      })),
+      paymentStatus: order.paymentStatus,
+      payments: order.payments
+    }),
     ...details
   };
 }
@@ -306,14 +360,7 @@ export async function listMine(req: Request, res: Response, next: NextFunction) 
         shipments: {
           orderBy: { createdAt: "desc" },
           take: 3,
-          select: {
-            courier: true,
-            awb: true,
-            trackingUrl: true,
-            status: true,
-            deliveredAt: true,
-            carrierMeta: true
-          }
+          select: SHIPMENT_CUSTOMER_SELECT
         },
         serviceRequests: {
           orderBy: { createdAt: "desc" },

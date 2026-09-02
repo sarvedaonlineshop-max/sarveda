@@ -223,7 +223,17 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
   const serviceRequest = order.serviceRequest ?? null;
   const requestPending = serviceRequest?.status === "PENDING_APPROVAL";
   const showCancel = order.canCancelRequest === true;
+  const showAdjust = order.canAdjustRequest === true;
   const showRefund = order.canRefundRequest === true;
+  const cancelBlockedMessage =
+    !showCancel &&
+    !requestPending &&
+    order.cancelBlockReason &&
+    order.status !== "CANCELLED" &&
+    order.status !== "REFUNDED" &&
+    order.status !== "DELIVERED"
+      ? order.cancelBlockReason
+      : null;
   const showRefundClosed =
     !showRefund &&
     order.status === "DELIVERED" &&
@@ -258,20 +268,55 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
         </span>
       </header>
 
+      {order.rtoCustomerStatus?.inRto ? (
+        <div className="border-b border-violet-200 bg-violet-50 px-5 py-3 dark:border-violet-900 dark:bg-violet-950/30">
+          <p className="text-sm font-semibold text-violet-900 dark:text-violet-200">
+            {order.rtoCustomerStatus.label}
+          </p>
+          {order.rtoCustomerStatus.detail ? (
+            <p className="mt-0.5 text-xs text-violet-800 dark:text-violet-300">
+              {order.rtoCustomerStatus.detail}
+            </p>
+          ) : null}
+        </div>
+      ) : cancelBlockedMessage ? (
+        <div className="border-b border-stone-200 bg-stone-50 px-5 py-3 text-sm text-stone-600">
+          {cancelBlockedMessage}
+        </div>
+      ) : null}
+
       {requestPending ? (
         <div className="border-b border-[#FAEEDA] bg-[#FAEEDA]/60 px-5 py-3 text-sm text-[#633806]">
           <span aria-hidden="true">⏳ </span>
-          Your refund or cancellation is waiting for approval.
+          Your{" "}
+          {serviceRequest?.type === "ADJUST_BEFORE_DELIVERY"
+            ? "order change"
+            : serviceRequest?.type === "CANCEL_BEFORE_DELIVERY"
+              ? "cancellation"
+              : "return/refund"}{" "}
+          request is waiting for approval.
         </div>
       ) : serviceRequest?.status === "APPROVED" ? (
         <div className="border-b border-[#E1F5EE] bg-[#E1F5EE]/50 px-5 py-3 text-sm text-[#085041]">
-          Your {serviceRequest.type === "CANCEL_BEFORE_DELIVERY" ? "cancellation" : "return/refund"} request was approved.
+          Your{" "}
+          {serviceRequest.type === "ADJUST_BEFORE_DELIVERY"
+            ? "order change"
+            : serviceRequest.type === "CANCEL_BEFORE_DELIVERY"
+              ? "cancellation"
+              : "return/refund"}{" "}
+          request was approved.
+        </div>
+      ) : serviceRequest?.status === "NEEDS_DISCUSSION" ? (
+        <div className="border-b border-violet-200 bg-violet-50 px-5 py-3 text-sm text-violet-900">
+          We need to discuss your order change — our team will contact you.
         </div>
       ) : serviceRequest?.status === "REJECTED" ? (
         <div className="border-b border-[#FCEBEB] bg-[#FCEBEB]/50 px-5 py-3 text-sm text-[#791F1F]">
           {serviceRequest.type === "CANCEL_BEFORE_DELIVERY"
             ? "Your order cannot be cancelled, please contact us for further help."
-            : "Your return/refund request could not be approved. Please contact us for further help."}
+            : serviceRequest.type === "ADJUST_BEFORE_DELIVERY"
+              ? "Your order change request could not be approved. Please contact us for further help."
+              : "Your return/refund request could not be approved. Please contact us for further help."}
         </div>
       ) : null}
 
@@ -520,6 +565,16 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
           </a>
         ) : null}
 
+        {showAdjust ? (
+          <Link
+            href={`/profile/orders/${encodeURIComponent(order.orderNumber)}/adjust`}
+            className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-violet-300 bg-violet-50 px-4 text-sm font-semibold text-violet-900 transition-colors hover:bg-violet-100"
+          >
+            <span aria-hidden="true">✎</span>
+            Request order change
+          </Link>
+        ) : null}
+
         {showCancel ? (
           <Link
             href={`/profile/orders/${encodeURIComponent(order.orderNumber)}/cancel`}
@@ -528,6 +583,14 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
             <span aria-hidden="true">✕</span>
             Cancel order
           </Link>
+        ) : cancelBlockedMessage ? (
+          <span
+            className="inline-flex min-h-[36px] max-w-xs items-center justify-center gap-1.5 rounded-full border border-stone-200 bg-stone-50 px-4 text-sm font-medium text-stone-600"
+            title={cancelBlockedMessage}
+          >
+            <span aria-hidden="true">✕</span>
+            Cancel unavailable
+          </span>
         ) : null}
 
         {showRefund ? (

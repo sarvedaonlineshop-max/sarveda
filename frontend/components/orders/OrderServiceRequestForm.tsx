@@ -7,12 +7,15 @@ import { FormEvent, useMemo, useState } from "react";
 
 import { formatMinorFromPaise } from "@/lib/money";
 import type { OrderLineItem } from "@/lib/orders-api";
+import { RETURN_EVIDENCE_REQUIRED, RETURN_RESOLUTION_OPTIONS } from "@/lib/order-service-request";
 
 type ReasonOption = { code: string; label: string };
 
 type ItemDraft = {
   selected: boolean;
   reasonCode: string;
+  requestedResolution: string;
+  qty: number;
   otherMessage: string;
   message: string;
   photos: File[];
@@ -32,6 +35,8 @@ type Props = {
     items: Array<{
       orderItemId: string;
       reasonCode: string;
+      qty?: number;
+      requestedResolution?: string;
       otherMessage?: string;
       message?: string;
     }>;
@@ -57,7 +62,7 @@ export function OrderServiceRequestForm({
     Object.fromEntries(
       lineItems.map((item) => [
         item.id,
-        { selected: lineItems.length === 1, reasonCode: "", otherMessage: "", message: "", photos: [], previews: [] }
+        { selected: lineItems.length === 1, reasonCode: "", requestedResolution: "", qty: item.quantity, otherMessage: "", message: "", photos: [], previews: [] }
       ])
     )
   );
@@ -109,6 +114,8 @@ export function OrderServiceRequestForm({
     const payloadItems: Array<{
       orderItemId: string;
       reasonCode: string;
+      qty?: number;
+      requestedResolution?: string;
       otherMessage?: string;
       message?: string;
     }> = [];
@@ -121,9 +128,28 @@ export function OrderServiceRequestForm({
         setError(`Choose a reason for ${item.title}.`);
         return;
       }
-      if (!isCancel && !draft.photos.length) {
-        setError(`Add at least one photo for ${item.title}.`);
-        return;
+      if (!isCancel) {
+        const resolutions = RETURN_RESOLUTION_OPTIONS[draft.reasonCode] ?? [];
+        const resolution = draft.requestedResolution || resolutions[0]?.code;
+        if (!resolution) {
+          setError(`Choose how you'd like us to help for ${item.title}.`);
+          return;
+        }
+        if (RETURN_EVIDENCE_REQUIRED.has(draft.reasonCode) && !draft.photos.length) {
+          setError(`Add at least one photo for ${item.title}.`);
+          return;
+        }
+        const qty = Math.min(Math.max(1, draft.qty), item.quantity);
+        payloadItems.push({
+          orderItemId: item.id,
+          reasonCode: draft.reasonCode,
+          qty,
+          requestedResolution: resolution,
+          otherMessage: draft.reasonCode === "other" ? draft.otherMessage : undefined,
+          message: draft.message || undefined
+        });
+        photosByIndex.set(index, draft.photos);
+        continue;
       }
       payloadItems.push({
         orderItemId: item.id,
@@ -188,7 +214,7 @@ export function OrderServiceRequestForm({
           <p className="mt-2 text-sm text-brand-muted">{subtitle}</p>
           <p className="mt-3 text-xs text-brand-muted">
             Select the item(s) you want to {isCancel ? "cancel" : "return"}. Each item needs its own reason
-            {isCancel ? "." : " and photos."}
+            {isCancel ? "." : "; add photos when the reason requires evidence."}
           </p>
         </div>
       </div>
@@ -264,6 +290,58 @@ export function OrderServiceRequestForm({
                       ) : null}
                     </fieldset>
 
+                    {!isCancel && draft.reasonCode ? (
+                      <>
+                        {item.quantity > 1 ? (
+                          <div>
+                            <label className="text-sm font-semibold text-brand-ink">Quantity to return</label>
+                            <input
+                              type="number"
+                              min={1}
+                              max={item.quantity}
+                              value={draft.qty}
+                              onChange={(e) =>
+                                patchItem(item.id, {
+                                  qty: Math.min(item.quantity, Math.max(1, Number(e.target.value) || 1))
+                                })
+                              }
+                              className="mt-1 w-24 rounded-xl border border-brand-cream-dark px-3 py-2 text-sm"
+                            />
+                          </div>
+                        ) : null}
+                        {(RETURN_RESOLUTION_OPTIONS[draft.reasonCode] ?? []).length > 0 ? (
+                          <fieldset>
+                            <legend className="text-sm font-semibold text-brand-ink">Preferred resolution</legend>
+                            <div className="mt-2 space-y-2">
+                              {(RETURN_RESOLUTION_OPTIONS[draft.reasonCode] ?? []).map((opt) => (
+                                <label
+                                  key={opt.code}
+                                  className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 ${
+                                    (draft.requestedResolution || RETURN_RESOLUTION_OPTIONS[draft.reasonCode]?.[0]?.code) ===
+                                    opt.code
+                                      ? "border-brand-forest bg-brand-forest/5"
+                                      : "border-brand-cream-dark"
+                                  }`}
+                                >
+                                  <input
+                                    type="radio"
+                                    name={`resolution-${item.id}`}
+                                    checked={
+                                      (draft.requestedResolution ||
+                                        RETURN_RESOLUTION_OPTIONS[draft.reasonCode]?.[0]?.code) === opt.code
+                                    }
+                                    onChange={() => patchItem(item.id, { requestedResolution: opt.code })}
+                                    className="accent-brand-forest"
+                                  />
+                                  <span className="text-sm">{opt.label}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </fieldset>
+                        ) : null}
+                      </>
+                    ) : null}
+
                     {!isCancel ? (
                       <>
                         <div>
@@ -279,7 +357,12 @@ export function OrderServiceRequestForm({
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-brand-ink">
-                            Photos for this item <span className="text-[#993C1D]">*</span>
+                            Photos for this item{" "}
+                            {draft.reasonCode && RETURN_EVIDENCE_REQUIRED.has(draft.reasonCode) ? (
+                              <span className="text-[#993C1D]">*</span>
+                            ) : (
+                              <span className="text-brand-muted font-normal">(optional)</span>
+                            )}
                           </p>
                           <label className="mt-2 flex min-h-[96px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-brand-cream-dark bg-brand-cream/30 px-3 py-4">
                             <span className="text-sm font-medium text-brand-forest">Add photos</span>

@@ -18,7 +18,15 @@ import {
   notifyServiceRequestReviewed,
   notifyServiceRequestSubmitted
 } from "./order-service-request.emails";
-import { initiatePartialGatewayRefund } from "../payments/refund.service";
+import { pickCapturedPaymentForRefund } from "../payments/payment-selection";
+import { initiateGatewayRefund, initiatePartialGatewayRefund } from "../payments/refund.service";
+import { capRefundAmountToPolicy } from "./order-refund-calculator.service";
+import { loadOrderRefundPreview } from "./order-refund-preview.service";
+import {
+  getCancellationEligibility,
+  isAdjustmentCandidateReason,
+  orderIsPaidForCancellation
+} from "./cancellation-eligibility";
 import { handlePaidOrderStatusChange } from "./orders.service";
 
 export function customerReasonsFromApprovedCancel(
@@ -47,27 +55,27 @@ type OrderRow = {
   status: OrderStatus;
   paymentStatus: string;
   customerId: string | null;
-  payments?: Array<{ provider: string }>;
+  payments?: Array<{ provider: string; status?: string; id?: string; createdAt?: Date }>;
+  shipments?: Array<{ status: import("@prisma/client").ShipmentStatus | string }>;
   deliveredAt?: Date | null;
 };
 
 export type ServiceRequestPublic = {
   id: string;
-  type: "CANCEL_BEFORE_DELIVERY" | "REFUND_AFTER_DELIVERY";
-  status: "PENDING_APPROVAL" | "APPROVED" | "REJECTED";
+  type: "CANCEL_BEFORE_DELIVERY" | "REFUND_AFTER_DELIVERY" | "ADJUST_BEFORE_DELIVERY";
+  status:
+    | "PENDING_APPROVAL"
+    | "APPROVED"
+    | "REJECTED"
+    | "NEEDS_DISCUSSION"
+    | "CONVERTED_TO_CANCELLATION";
   reasonLabel: string;
   message: string | null;
   createdAt: Date;
 };
 
 export function orderIsPaidForService(order: OrderRow): boolean {
-  const provider = order.payments?.[0]?.provider;
-  const isCod = provider === "COD";
-  if (order.paymentStatus === "CAPTURED" || order.status === "PAID") return true;
-  if (isCod) {
-    return !["PENDING_PAYMENT", "CANCELLED", "REFUNDED"].includes(order.status);
-  }
-  return false;
+  return orderIsPaidForCancellation(order);
 }
 
 export function resolveDeliveredAt(order: {
@@ -92,8 +100,12 @@ export function returnWindowEnd(deliveredAt: Date): Date {
 }
 
 export function canRequestCancel(order: OrderRow): boolean {
-  if (["DELIVERED", "CANCELLED", "REFUNDED"].includes(order.status)) return false;
-  return orderIsPaidForService(order);
+  return getCancellationEligibility(order).customerCanRequest;
+}
+
+export function getCancelBlockReason(order: OrderRow): string | null {
+  const eligibility = getCancellationEligibility(order);
+  return eligibility.customerCanRequest ? null : (eligibility.customerMessage ?? null);
 }
 
 export function canRequestRefund(order: OrderRow): boolean {
@@ -136,6 +148,9 @@ export type SubmitServiceRequestItem = {
   reasonCode: string;
   otherMessage?: string;
   message?: string;
+  qty?: number;
+  requestedResolution?: string;
+  requestedVariantId?: string;
 };
 
 export function reasonLabelFor(
@@ -154,7 +169,7 @@ export function reasonLabelFor(
   return base;
 }
 
-async function uploadRequestPhotos(
+export async function uploadRequestPhotos(
   requestId: string,
   files: Array<{ buffer: Buffer; originalname: string; mimetype: string; size: number }>
 ) {
@@ -203,7 +218,7 @@ export async function submitServiceRequest(opts: {
     include: {
       payments: { orderBy: { createdAt: "desc" }, take: 1 },
       items: true,
-      shipments: { select: { deliveredAt: true } },
+      shipments: { select: { status: true, deliveredAt: true } },
       statusHistory: { select: { toStatus: true, createdAt: true } }
     }
   });
@@ -222,11 +237,22 @@ export async function submitServiceRequest(opts: {
     });
   }
 
-  if (opts.type === "CANCEL_BEFORE_DELIVERY" && !canRequestCancel(order)) {
-    throw Object.assign(new Error("This order cannot be cancelled"), {
-      statusCode: 400,
-      code: "NOT_ELIGIBLE"
+  if (opts.type === "CANCEL_BEFORE_DELIVERY") {
+    const eligibility = getCancellationEligibility({
+      status: order.status,
+      paymentStatus: order.paymentStatus,
+      payments: order.payments,
+      shipments: order.shipments
     });
+    if (!eligibility.customerCanRequest) {
+      throw Object.assign(
+        new Error(eligibility.customerMessage ?? "This order cannot be cancelled"),
+        {
+          statusCode: 400,
+          code: eligibility.blockCode ?? "NOT_ELIGIBLE"
+        }
+      );
+    }
   }
   if (opts.type === "REFUND_AFTER_DELIVERY" && !canRequestRefund({
     ...order,
@@ -286,6 +312,23 @@ export async function submitServiceRequest(opts: {
       photos
     });
   });
+
+  if (opts.type === "CANCEL_BEFORE_DELIVERY") {
+    if (parsedItems.every((i) => isAdjustmentCandidateReason(i.reasonCode))) {
+      throw Object.assign(
+        new Error(
+          "Address, item, and quantity changes use the order change request flow — not cancellation."
+        ),
+        { statusCode: 400, code: "USE_ADJUSTMENT_REQUEST" }
+      );
+    }
+    if (parsedItems.some((i) => isAdjustmentCandidateReason(i.reasonCode))) {
+      throw Object.assign(
+        new Error("Mixing cancellation with order change reasons is not allowed. Submit separate requests."),
+        { statusCode: 400, code: "MIXED_REQUEST_TYPES" }
+      );
+    }
+  }
 
   const requestId = randomUUID();
   const summaryLabel =
@@ -348,6 +391,73 @@ export async function submitServiceRequest(opts: {
   return created;
 }
 
+/**
+ * Phase 1A: approve cancellation → controlled refund/cancel before dispatch only.
+ * Online paid: full gateway refund (REFUNDED + restock via finalizeGatewayRefund).
+ * COD: cancel + restock, no gateway refund.
+ */
+export async function executeApprovedCancellationRequest(opts: {
+  orderId: string;
+  reason: string;
+  adjustmentCandidate?: boolean;
+}): Promise<void> {
+  const order = await prisma.order.findUnique({
+    where: { id: opts.orderId },
+    include: {
+      payments: { orderBy: { createdAt: "desc" } },
+      shipments: { select: { status: true } }
+    }
+  });
+  if (!order) {
+    throw Object.assign(new Error("Order not found"), { statusCode: 404, code: "NOT_FOUND" });
+  }
+
+  const eligibility = getCancellationEligibility({
+    status: order.status,
+    paymentStatus: order.paymentStatus,
+    payments: order.payments,
+    shipments: order.shipments
+  });
+
+  if (!eligibility.adminCanApproveCancel) {
+    throw Object.assign(
+      new Error(
+        eligibility.customerMessage ??
+          "Cancellation cannot be approved after dispatch. Use the RTO / in-transit workflow."
+      ),
+      {
+        statusCode: 400,
+        code: eligibility.blockCode ?? "CANCELLATION_NOT_ALLOWED_AFTER_DISPATCH"
+      }
+    );
+  }
+
+  if (opts.adjustmentCandidate) {
+    // Phase 1D will add RESOLVED_BY_ADJUSTMENT — for now approval proceeds as cancellation.
+  }
+
+  const isCod = order.payments.some((p) => p.provider === "COD");
+  if (isCod) {
+    await handlePaidOrderStatusChange(order.id, "CANCELLED", opts.reason);
+    return;
+  }
+
+  const capturedPick = pickCapturedPaymentForRefund(order.payments);
+  if (capturedPick.ok) {
+    await initiateGatewayRefund(order.id, opts.reason);
+    return;
+  }
+
+  if (capturedPick.code === "MULTIPLE_CAPTURED_PAYMENTS_REVIEW_REQUIRED") {
+    throw Object.assign(new Error(capturedPick.message), {
+      statusCode: 409,
+      code: "MULTIPLE_CAPTURED_PAYMENTS_REVIEW_REQUIRED"
+    });
+  }
+
+  await handlePaidOrderStatusChange(order.id, "CANCELLED", opts.reason);
+}
+
 export async function getServiceRequestPhotoForAdmin(
   orderId: string,
   photoId: string
@@ -400,6 +510,48 @@ export async function reviewServiceRequest(opts: {
       )
     : request.reasonLabel ?? "Customer request";
 
+  if (opts.approve && request.type === "CANCEL_BEFORE_DELIVERY") {
+    if (request.items.some((i) => isAdjustmentCandidateReason(i.reasonCode))) {
+      throw Object.assign(
+        new Error(
+          "This request requires the adjustment workflow. Use Execute adjustment or Convert to cancellation."
+        ),
+        { statusCode: 409, code: "ADJUSTMENT_WORKFLOW_REQUIRED" }
+      );
+    }
+    await executeApprovedCancellationRequest({
+      orderId: request.orderId,
+      reason: customerReasonText
+    });
+  }
+
+  if (opts.approve && request.type === "ADJUST_BEFORE_DELIVERY") {
+    throw Object.assign(
+      new Error("Adjustment requests must be executed via the adjustment workflow — not standard approve."),
+      { statusCode: 409, code: "USE_EXECUTE_ADJUSTMENT" }
+    );
+  }
+
+  if (opts.approve && request.type === "REFUND_AFTER_DELIVERY") {
+    const { approveReturnReplacementRequest } = await import("./return-replacement.service");
+    const approved = await approveReturnReplacementRequest({
+      orderId: request.orderId,
+      requestId: request.id,
+      adminEmail: opts.adminEmail,
+      adminNote: opts.adminNote
+    });
+    void notifyServiceRequestReviewed({
+      orderNumber: request.orderNumber,
+      customerEmail: request.customerEmail,
+      type: request.type,
+      approved: true,
+      adminNote: opts.adminNote
+    });
+    return { ...approved!, photos: approved!.photos ?? [] } as OrderServiceRequest & {
+      photos: OrderServiceRequestPhoto[];
+    };
+  }
+
   const updated = await prisma.orderServiceRequest.update({
     where: { id: request.id },
     data: {
@@ -410,10 +562,6 @@ export async function reviewServiceRequest(opts: {
     },
     include: { photos: true, items: { include: { photos: true } } }
   });
-
-  if (opts.approve && request.type === "CANCEL_BEFORE_DELIVERY") {
-    await handlePaidOrderStatusChange(request.orderId, "CANCELLED", customerReasonText);
-  }
 
   void notifyServiceRequestReviewed({
     orderNumber: request.orderNumber,
@@ -506,8 +654,8 @@ export async function processServiceRequestRefund(opts: {
     itemUpdates.push({ id: reqItem.id, amountInPaise: amount });
   }
 
-  const capturedPayment = order.payments.find((p) => p.status === "CAPTURED" || p.status === "PARTIALLY_REFUNDED");
-  const isCod = capturedPayment?.provider === "COD" || order.payments.some((p) => p.provider === "COD");
+  const isCod = order.payments.some((p) => p.provider === "COD");
+  const capturedPick = pickCapturedPaymentForRefund(order.payments);
 
   if (isCod) {
     const note = opts.codRefundNote?.trim();
@@ -550,12 +698,20 @@ export async function processServiceRequestRefund(opts: {
     };
   }
 
-  if (!capturedPayment) {
+  if (!capturedPick.ok) {
+    if (capturedPick.code === "MULTIPLE_CAPTURED_PAYMENTS_REVIEW_REQUIRED") {
+      throw Object.assign(new Error(capturedPick.message), {
+        statusCode: 409,
+        code: "MULTIPLE_CAPTURED_PAYMENTS_REVIEW_REQUIRED"
+      });
+    }
     throw Object.assign(new Error("No captured payment to refund"), {
       statusCode: 400,
       code: "NO_PAYMENT"
     });
   }
+
+  const capturedPayment = capturedPick.payment;
 
   const alreadyRefundedOnPayment = capturedPayment.refundedInPaise ?? 0;
   const orderRemaining = order.grandTotalInPaise - alreadyRefundedOnPayment;
@@ -564,6 +720,34 @@ export async function processServiceRequestRefund(opts: {
       new Error(`Total refund cannot exceed ${orderRemaining / 100} remaining on this order`),
       { statusCode: 400, code: "AMOUNT_TOO_HIGH" }
     );
+  }
+
+  const preview = await loadOrderRefundPreview(opts.orderId, { policy: "auto" });
+  if (!preview.ok) {
+    if (preview.code === "MULTIPLE_CAPTURED_PAYMENTS_REVIEW_REQUIRED") {
+      throw Object.assign(new Error(preview.message), {
+        statusCode: 409,
+        code: preview.code
+      });
+    }
+  } else {
+    if (totalInPaise > preview.breakdown.policyMaximumRefundableAmountPaise) {
+      throw Object.assign(
+        new Error(
+          `Refund cannot exceed policy maximum of ${preview.breakdown.policyMaximumRefundableAmountPaise / 100} for ${preview.breakdown.policy}`
+        ),
+        { statusCode: 400, code: "AMOUNT_TOO_HIGH" }
+      );
+    }
+    const capped = capRefundAmountToPolicy(preview.breakdown, totalInPaise);
+    if (capped.allowedAmountPaise < totalInPaise) {
+      throw Object.assign(
+        new Error(
+          `Refund amount exceeds allowed maximum of ${capped.allowedAmountPaise / 100} (remaining refundable / policy cap)`
+        ),
+        { statusCode: 400, code: "AMOUNT_TOO_HIGH" }
+      );
+    }
   }
 
   const reason = `Service request refund by ${opts.adminEmail}`;

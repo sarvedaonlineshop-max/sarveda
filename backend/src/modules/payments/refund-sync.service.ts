@@ -199,16 +199,13 @@ export async function finalizeGatewayRefund(opts: {
   });
 
   if (existingByProvider) {
+    // Another Refund row already owns this providerRefundId. Never restock/status-change
+    // opts.orderId from a different payment's refund state (cross-order pollution).
     await failReservedRefund(opts.refundId, "Duplicate provider refund id");
-    const paymentId = existingByProvider.paymentId;
-    const result = await prisma.$transaction(async (tx) => {
-      await lockPaymentRow(tx, paymentId);
-      return recomputePaymentRefundState(tx, paymentId);
+    throw Object.assign(new Error("Duplicate provider refund id"), {
+      statusCode: 409,
+      code: "DUPLICATE_REFUND"
     });
-    if (result.fullyRefunded) {
-      await handlePaidOrderStatusChange(opts.orderId, "REFUNDED", opts.reason ?? "Gateway refund completed");
-    }
-    return { fullyRefunded: result.fullyRefunded, duplicate: true };
   }
 
   const result = await prisma.$transaction(async (tx) => {

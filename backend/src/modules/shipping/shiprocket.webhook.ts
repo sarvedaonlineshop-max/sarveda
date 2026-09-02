@@ -198,10 +198,14 @@ export async function shiprocketWebhookHandler(req: Request, res: Response): Pro
       });
       if (shipment) {
         await handleRtoShipment(shipment.orderId, waybill, statusLabel);
+        const refreshed = await prisma.order.findUnique({
+          where: { id: shipment.orderId },
+          select: { status: true }
+        });
         applied = {
           success: true,
           data: {
-            orderStatus: "CANCELLED",
+            orderStatus: refreshed?.status ?? shipment.order.status,
             shipmentStatus: "RTO"
           }
         };

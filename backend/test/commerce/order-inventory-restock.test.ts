@@ -27,6 +27,9 @@ describe("order inventory restock events (Phase 3D4 ops)", () => {
     const commerceMocks = getCommerceMocks();
     commerceMocks.createZohoRefundDocumentsForOrder.mockClear();
     commerceMocks.razorpayRefund.mockClear();
+    commerceMocks.razorpayRefund.mockImplementation(async () => ({
+      id: `rfnd_test_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
+    }));
   });
 
   it("full refund creates SELLABLE restock events and restores onHand once", async () => {
@@ -82,9 +85,49 @@ describe("order inventory restock events (Phase 3D4 ops)", () => {
 
     expect((await getInventory(bundle.variantId))?.onHand).toBe(8 - qty);
     expect(await listOrderInventoryRestocks(order.id)).toHaveLength(0);
+    const after = await prisma.order.findUniqueOrThrow({ where: { id: order.id } });
+    expect(after.status).not.toBe("REFUNDED");
+    expect(after.paymentStatus).toBe("PARTIALLY_REFUNDED");
 
     await cleanupTestOrder(order.id);
     await cleanupTestProduct(bundle);
+  });
+
+  it("reused providerRefundId across orders does not restock the second order", async () => {
+    const mocks = getCommerceMocks();
+    const fixedRefundId = `rfnd_shared_${Date.now()}`;
+    mocks.razorpayRefund.mockResolvedValue({ id: fixedRefundId });
+
+    const bundleA = await createTestProductWithInventory({ onHand: 10 });
+    const { order: orderA, rzpOrderId: rzpA } = await createPendingRazorpayOrder(bundleA, { qty: 2 });
+    await completePaidOrder(rzpA, `pay_a_${Date.now()}`);
+    await initiateGatewayRefund(orderA.id, "full A");
+    expect((await getInventory(bundleA.variantId))?.onHand).toBe(10);
+
+    const bundleB = await createTestProductWithInventory({ onHand: 9 });
+    const { order: orderB, rzpOrderId: rzpB, qty: qtyB } = await createPendingRazorpayOrder(bundleB, {
+      qty: 3
+    });
+    await completePaidOrder(rzpB, `pay_b_${Date.now()}`);
+    expect((await getInventory(bundleB.variantId))?.onHand).toBe(9 - qtyB);
+
+    await expect(initiatePartialGatewayRefund(orderB.id, 100, "should fail dup id")).rejects.toMatchObject({
+      code: "DUPLICATE_REFUND"
+    });
+
+    expect((await getInventory(bundleB.variantId))?.onHand).toBe(9 - qtyB);
+    expect(await listOrderInventoryRestocks(orderB.id)).toHaveLength(0);
+    const b = await prisma.order.findUniqueOrThrow({ where: { id: orderB.id } });
+    expect(b.status).toBe("PAID");
+
+    mocks.razorpayRefund.mockImplementation(async () => ({
+      id: `rfnd_test_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
+    }));
+
+    await cleanupTestOrder(orderA.id);
+    await cleanupTestOrder(orderB.id);
+    await cleanupTestProduct(bundleA);
+    await cleanupTestProduct(bundleB);
   });
 
   it("admin explicit SELLABLE restock increments onHand and records event", async () => {

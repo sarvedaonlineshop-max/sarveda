@@ -24,7 +24,10 @@ const commerceMocks = vi.hoisted(() => ({
   sendPushToAdmins: vi.fn().mockResolvedValue(undefined),
   uploadPdf: vi.fn().mockResolvedValue("https://example.com/invoice.pdf"),
   buildOrderInvoicePdf: vi.fn().mockResolvedValue(Buffer.from("pdf")),
-  razorpayRefund: vi.fn().mockResolvedValue({ id: "rfnd_test_001" })
+  // Unique ids per call — a fixed id polluted finalizeGatewayRefund across tests.
+  razorpayRefund: vi.fn().mockImplementation(async () => ({
+    id: `rfnd_test_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
+  }))
 }));
 
 vi.mock("../../src/modules/zoho", () => ({
@@ -34,6 +37,7 @@ vi.mock("../../src/modules/zoho", () => ({
 vi.mock("../../src/modules/zoho/zoho-financials", () => ({
   recordZohoPaymentForOrder: commerceMocks.recordZohoPaymentForOrder,
   createZohoRefundDocumentsForOrder: commerceMocks.createZohoRefundDocumentsForOrder,
+  createZohoPartialCreditNoteForRefund: vi.fn().mockResolvedValue(undefined),
   voidZohoInvoiceForCancelledOrder: commerceMocks.voidZohoInvoiceForCancelledOrder
 }));
 
@@ -49,10 +53,14 @@ vi.mock("../../src/modules/invoices/invoice.service", async (importOriginal) => 
   };
 });
 
-vi.mock("../../src/modules/notifications/email", () => ({
-  notifyOrderEmail: commerceMocks.notifyOrderEmail,
-  sendOrderEmail: vi.fn().mockResolvedValue(undefined)
-}));
+vi.mock("../../src/modules/notifications/email", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../src/modules/notifications/email")>();
+  return {
+    ...actual,
+    notifyOrderEmail: commerceMocks.notifyOrderEmail,
+    sendOrderEmail: vi.fn().mockResolvedValue(undefined)
+  };
+});
 
 vi.mock("../../src/modules/payments/razorpay", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../src/modules/payments/razorpay")>();

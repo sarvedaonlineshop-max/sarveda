@@ -346,3 +346,123 @@ export async function createZohoRefundDocumentsForOrder(orderId: string, reason:
     zohoCreditNoteRefundId: refundResponse.creditnote_refund?.creditnote_refund_id ?? null
   });
 }
+
+/**
+ * Proportional / partial credit note for a single Refund row (Phase 1E).
+ * Idempotent on Refund.zohoCreditNoteId.
+ */
+export async function createZohoPartialCreditNoteForRefund(refundId: string): Promise<void> {
+  const refund = await prisma.refund.findUnique({
+    where: { id: refundId },
+    include: {
+      payment: {
+        include: {
+          order: { include: { payments: { orderBy: { createdAt: "desc" } } } }
+        }
+      }
+    }
+  });
+  if (!refund || refund.status !== "processed") return;
+
+  if (refund.zohoCreditNoteId?.trim()) return;
+
+  const order = refund.payment.order;
+  if (!order.zohoInvoiceId) {
+    logger.warn("zoho_partial_cn_skipped_no_invoice", { orderId: order.id, refundId });
+    return;
+  }
+
+  const invoice = await getZohoInvoice(order.zohoInvoiceId);
+  if (!invoice?.customer_id) {
+    await prisma.refund.update({
+      where: { id: refundId },
+      data: { zohoSyncError: "ZOHO_PARTIAL_CREDIT_NOTE_REVIEW_REQUIRED: invoice customer missing" }
+    });
+    return;
+  }
+
+  const invoiceLines = (invoice.line_items ?? []).filter((l) => l.quantity && l.rate != null);
+  if (invoiceLines.length === 0) {
+    await prisma.refund.update({
+      where: { id: refundId },
+      data: { zohoSyncError: "ZOHO_PARTIAL_CREDIT_NOTE_REVIEW_REQUIRED: no invoice lines" }
+    });
+    return;
+  }
+
+  const refundAmount = refund.amountInPaise / 100;
+  const grandTotal = order.grandTotalInPaise / 100;
+  const includeShipping = refundAmount >= grandTotal - 0.01;
+
+  const merchandiseLines = invoiceLines.filter(
+    (l) => !String(l.name ?? "").toLowerCase().includes("shipping")
+  );
+  const baseLines = includeShipping ? invoiceLines : merchandiseLines.length ? merchandiseLines : invoiceLines;
+
+  const lineTotal = baseLines.reduce(
+    (s, l) => s + Number(l.quantity) * Number(l.rate),
+    0
+  );
+  if (lineTotal <= 0) {
+    await prisma.refund.update({
+      where: { id: refundId },
+      data: { zohoSyncError: "ZOHO_PARTIAL_CREDIT_NOTE_REVIEW_REQUIRED: line total zero" }
+    });
+    return;
+  }
+
+  const scale = Math.min(1, refundAmount / lineTotal);
+  const lineItems = baseLines.map((line) => ({
+    item_id: line.item_id ? String(line.item_id) : undefined,
+    name: line.name || "Partial refund",
+    quantity: line.quantity,
+    rate: Math.round(Number(line.rate) * scale * 100) / 100
+  }));
+
+  const creditNoteDate = new Date().toISOString().slice(0, 10);
+  const creditNote = await zohoPost<{
+    creditnote?: { creditnote_id?: string; creditnote_number?: string };
+  }>("/creditnotes", {
+    customer_id: invoice.customer_id,
+    date: creditNoteDate,
+    reference_number: `${order.orderNumber}-R${refundId.slice(0, 8)}`,
+    notes: refund.reason ?? "Partial refund",
+    line_items: lineItems,
+    is_inclusive_tax: true
+  });
+
+  const creditNoteId = creditNote.creditnote?.creditnote_id;
+  if (!creditNoteId) {
+    throw new Error("Zoho partial credit note id missing");
+  }
+
+  await zohoPost(`/creditnotes/${creditNoteId}/invoices`, {
+    invoices: [{ invoice_id: order.zohoInvoiceId, amount_applied: refundAmount }]
+  });
+
+  const fromAccountId = process.env.ZOHO_REFUND_FROM_ACCOUNT_ID?.trim() || undefined;
+  await zohoPost(`/creditnotes/${creditNoteId}/refunds`, {
+    date: creditNoteDate,
+    refund_mode: refundModeForProvider(refund.payment.provider),
+    reference_number: refund.providerRefundId ?? order.orderNumber,
+    amount: refundAmount,
+    ...(fromAccountId ? { from_account_id: fromAccountId } : {}),
+    description: `Partial refund ${order.orderNumber}`
+  });
+
+  await prisma.refund.update({
+    where: { id: refundId },
+    data: {
+      zohoCreditNoteId: creditNoteId,
+      zohoCreditNoteNumber: creditNote.creditnote?.creditnote_number ?? null,
+      zohoSyncError: null
+    }
+  });
+
+  logger.info("zoho_partial_credit_note_recorded", {
+    orderId: order.id,
+    refundId,
+    zohoCreditNoteId: creditNoteId,
+    amount: refundAmount
+  });
+}

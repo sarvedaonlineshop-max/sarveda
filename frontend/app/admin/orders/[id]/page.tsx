@@ -13,6 +13,8 @@ import {
   type AdminOrderAttribution
 } from "@/components/admin/AdminOrderAttributionCard";
 import { AdminOrderEwayBillCard } from "@/components/admin/AdminOrderEwayBillCard";
+import { AdminOrderRefundPreview } from "@/components/admin/AdminOrderRefundPreview";
+import { AdminOrderRtoWorkflow } from "@/components/admin/AdminOrderRtoWorkflow";
 import {
   AdminOrderServiceRequests,
   type AdminServiceRequestRow
@@ -1145,6 +1147,7 @@ export default function AdminOrderDetailPage() {
   }
 
   const showRefundActions =
+    !order.shipments.some((s) => s.status === "RTO" || s.rtoAt) &&
     !["CANCELLED", "REFUNDED", "DELIVERED"].includes(order.status) &&
     ((order.paymentStatus === "CAPTURED" &&
       ["PAID", "PROCESSING", "PACKED", "SHIPPED"].includes(order.status)) ||
@@ -1475,6 +1478,10 @@ export default function AdminOrderDetailPage() {
           </div>
         </div>
       </div>
+
+      <AdminOrderRefundPreview orderId={order.id} currency={order.currency} />
+
+      <AdminOrderRtoWorkflow orderId={order.id} currency={order.currency} onUpdated={() => void load()} />
 
       {order.serviceRequests?.length ? (
         <AdminOrderServiceRequests
@@ -2027,7 +2034,7 @@ export default function AdminOrderDetailPage() {
                 <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a7060] dark:text-stone-300">Product</th>
                 <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a7060] dark:text-stone-300">SKU</th>
                 <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a7060] dark:text-stone-300">Qty</th>
-                <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a7060] dark:text-stone-300">Fulfillment</th>
+                <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a7060] dark:text-stone-300">Fulfilment</th>
                 <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a7060] dark:text-stone-300">Unit</th>
                 <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a7060] dark:text-stone-300">Line total</th>
               </tr>

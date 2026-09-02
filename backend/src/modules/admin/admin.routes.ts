@@ -167,7 +167,65 @@ router.patch(
 router.post("/orders/:id/reconcile-razorpay", admin.reconcileRazorpayOrder);
 router.post("/orders/:orderId/service-requests/:requestId/approve", serviceRequest.adminApproveServiceRequest);
 router.post("/orders/:orderId/service-requests/:requestId/reject", serviceRequest.adminRejectServiceRequest);
+router.get(
+  "/orders/:orderId/service-requests/:requestId/adjustment-preview",
+  serviceRequest.adminAdjustmentPreview
+);
+router.post(
+  "/orders/:orderId/service-requests/:requestId/execute-adjustment",
+  serviceRequest.adminExecuteAdjustment
+);
+router.post(
+  "/orders/:orderId/service-requests/:requestId/needs-discussion",
+  serviceRequest.adminAdjustmentNeedsDiscussion
+);
+router.post(
+  "/orders/:orderId/service-requests/:requestId/convert-to-cancellation",
+  serviceRequest.adminConvertAdjustmentToCancellation
+);
 router.post("/orders/:orderId/service-requests/:requestId/refund", serviceRequest.adminProcessServiceRequestRefund);
+router.get(
+  "/orders/:orderId/service-requests/:requestId/return-workflow",
+  serviceRequest.adminGetReturnWorkflow
+);
+router.post(
+  "/orders/:orderId/service-requests/:requestId/return-shipment",
+  serviceRequest.adminUpdateReturnShipment
+);
+router.post(
+  "/orders/:orderId/service-requests/:requestId/return-received",
+  serviceRequest.adminMarkReturnReceived
+);
+router.post(
+  "/orders/:orderId/service-requests/:requestId/return-disposition",
+  validateBody(
+    z.object({
+      disposition: z.enum(["RESTOCKABLE", "DAMAGED_NON_RESTOCKABLE", "NEEDS_REVIEW"])
+    })
+  ),
+  serviceRequest.adminSetReturnDisposition
+);
+router.post(
+  "/replacement-fulfillments/:fulfillmentId/ship",
+  serviceRequest.adminMarkReplacementShipped
+);
+router.get("/orders/:id/refund-preview", admin.orderRefundPreview);
+router.get("/orders/:id/rto-workflow", admin.getOrderRtoWorkflow);
+router.post("/shipments/:shipmentId/rto/received", admin.markShipmentRtoReceived);
+router.post(
+  "/shipments/:shipmentId/rto/disposition",
+  validateBody(
+    z.object({
+      disposition: z.enum(["RESTOCKABLE", "DAMAGED_NON_RESTOCKABLE", "NEEDS_REVIEW"])
+    })
+  ),
+  admin.setShipmentRtoDisposition
+);
+router.post("/shipments/:shipmentId/rto/execute-refund", admin.executeShipmentRtoRefund);
+router.post(
+  "/orders/:orderId/service-requests/:requestId/supplementary-payment",
+  admin.adminCreateSupplementaryPayment
+);
 router.post("/orders/:id/refund", admin.refundOrder);
 router.post(
   "/orders/:id/inventory-restock",

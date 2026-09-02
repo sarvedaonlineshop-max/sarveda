@@ -11,6 +11,8 @@ import {
   processServiceRequestRefund,
   rejectServiceRequest
 } from "@/lib/order-service-request";
+import { AdminOrderAdjustmentPanel } from "@/components/admin/AdminOrderAdjustmentPanel";
+import { AdminOrderReturnReplacementPanel } from "@/components/admin/AdminOrderReturnReplacementPanel";
 
 export type AdminServiceRequestItemRow = {
   id: string;
@@ -19,6 +21,7 @@ export type AdminServiceRequestItemRow = {
   skuSnapshot: string;
   qtySelected: number;
   reasonLabel: string;
+  requestedResolution?: string | null;
   message?: string | null;
   otherMessage?: string | null;
   refundAmountInPaise?: number | null;
@@ -41,6 +44,23 @@ export type AdminServiceRequestRow = {
   codRefundNote?: string | null;
   refundTotalInPaise?: number | null;
   refundProcessedAt?: string | null;
+  returnPhysicalStatus?: string | null;
+  resolutionStatus?: string | null;
+  shippingRefundPolicy?: string | null;
+  returnShipment?: {
+    id: string;
+    awb?: string | null;
+    courier?: string | null;
+    physicalStatus?: string;
+    receivedAt?: string | null;
+    disposition?: string | null;
+  } | null;
+  replacementFulfillments?: Array<{
+    id: string;
+    qty: number;
+    status: string;
+    replacementVariantId: string;
+  }>;
   photos?: Array<{ id: string; s3Url: string; fileName?: string | null }>;
   items?: AdminServiceRequestItemRow[];
 };
@@ -417,8 +437,13 @@ export function AdminOrderServiceRequests({
       {error ? <p className="mt-2 text-sm text-red-700 dark:text-red-300">{error}</p> : null}
       <ul className="mt-3 space-y-4">
         {requests.map((req) => {
-          const pending = req.status === "PENDING_APPROVAL";
-          const kind = req.type === "CANCEL_BEFORE_DELIVERY" ? "Cancellation" : "Return / refund";
+          const pending = req.status === "PENDING_APPROVAL" || req.status === "NEEDS_DISCUSSION";
+          const isAdjust = req.type === "ADJUST_BEFORE_DELIVERY";
+          const kind = isAdjust
+            ? "Order change"
+            : req.type === "CANCEL_BEFORE_DELIVERY"
+              ? "Cancellation"
+              : "Return / refund";
           return (
             <li
               key={req.id}
@@ -500,7 +525,18 @@ export function AdminOrderServiceRequests({
                   {req.adminNote ? ` — ${req.adminNote}` : ""}
                 </p>
               ) : null}
-              {pending ? (
+              {isAdjust ? (
+                <AdminOrderAdjustmentPanel
+                  orderId={orderId}
+                  requestId={req.id}
+                  currency={orderCtx.currency}
+                  status={req.status}
+                  reasonLabel={req.reasonLabel}
+                  onUpdated={onUpdated}
+                />
+              ) : null}
+
+              {!isAdjust && pending ? (
                 <div className="mt-4 border-t border-stone-100 pt-3 dark:border-stone-800">
                   <label className="block text-xs font-medium text-stone-600 dark:text-stone-400">
                     Note to customer (optional)
@@ -532,12 +568,37 @@ export function AdminOrderServiceRequests({
                 </div>
               ) : null}
 
-              <ServiceRequestRefundPanel
-                orderId={orderId}
-                request={req}
-                orderCtx={orderCtx}
-                onDone={onUpdated}
-              />
+              {req.type === "REFUND_AFTER_DELIVERY" &&
+              req.items?.some((i) => i.requestedResolution) ? (
+                <AdminOrderReturnReplacementPanel
+                  ctx={{
+                    orderId,
+                    currency: orderCtx.currency,
+                    paymentProvider: orderCtx.paymentProvider,
+                    request: {
+                      id: req.id,
+                      status: req.status,
+                      returnPhysicalStatus: req.returnPhysicalStatus ?? undefined,
+                      resolutionStatus: req.resolutionStatus ?? undefined,
+                      shippingRefundPolicy: req.shippingRefundPolicy,
+                      items: req.items,
+                      returnShipment: req.returnShipment,
+                      replacementFulfillments: req.replacementFulfillments
+                    }
+                  }}
+                  onDone={onUpdated}
+                />
+              ) : null}
+
+              {!isAdjust &&
+              !(req.type === "REFUND_AFTER_DELIVERY" && req.items?.some((i) => i.requestedResolution)) ? (
+                <ServiceRequestRefundPanel
+                  orderId={orderId}
+                  request={req}
+                  orderCtx={orderCtx}
+                  onDone={onUpdated}
+                />
+              ) : null}
             </li>
           );
         })}

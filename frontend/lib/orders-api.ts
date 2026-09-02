@@ -104,13 +104,17 @@ export type OrderSummary = {
   shippingAddress?: OrderShippingAddress | null;
   serviceRequest?: {
     id: string;
-    type: "CANCEL_BEFORE_DELIVERY" | "REFUND_AFTER_DELIVERY";
-    status: "PENDING_APPROVAL" | "APPROVED" | "REJECTED";
+    type: "CANCEL_BEFORE_DELIVERY" | "REFUND_AFTER_DELIVERY" | "ADJUST_BEFORE_DELIVERY";
+    status: "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | "NEEDS_DISCUSSION" | "CONVERTED_TO_CANCELLATION";
     reasonLabel: string;
     message: string | null;
     createdAt: string;
   } | null;
   canCancelRequest?: boolean;
+  cancelBlockReason?: string | null;
+  canAdjustRequest?: boolean;
+  adjustBlockReason?: string | null;
+  rtoCustomerStatus?: { inRto: boolean; label: string; detail?: string } | null;
   canRefundRequest?: boolean;
   returnWindowEndsAt?: string | null;
   returnWindowExpired?: boolean;

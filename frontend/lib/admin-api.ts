@@ -667,6 +667,89 @@ export function fetchAdminOrderDetail(id: string, signal?: AbortSignal) {
   return adminFetch<{ order: OrderDetail }>(`/api/admin/orders/${id}`, { signal }).then((d) => d.order);
 }
 
+export type OrderRefundPreviewBreakdown = {
+  capturedAmountPaise: number;
+  customerPaidAmountPaise: number;
+  alreadyRefundedAmountPaise: number;
+  remainingRefundableAmountPaise: number;
+  merchandiseGrossPaise: number;
+  merchandiseDiscountPaise: number;
+  merchandiseNetPaise: number;
+  shippingGrossPaise: number;
+  shippingDiscountPaise: number;
+  shippingNetPaise: number;
+  taxMerchandisePaise: number;
+  taxShippingPaise: number;
+  refundableMerchandisePaise: number;
+  refundableShippingPaise: number;
+  retainedShippingPaise: number;
+  proposedRefundAmountPaise: number;
+  policyMaximumRefundableAmountPaise: number;
+  policy: string;
+  explanation: string;
+  warnings: string[];
+  unavailableCode?: string;
+  unavailableReason?: string;
+};
+
+export function fetchOrderRefundPreview(orderId: string, policy: string = "auto") {
+  const qs = policy !== "auto" ? `?policy=${encodeURIComponent(policy)}` : "";
+  return adminFetch<{
+    orderNumber: string;
+    currency: string;
+    breakdown: OrderRefundPreviewBreakdown;
+  }>(`/api/admin/orders/${encodeURIComponent(orderId)}/refund-preview${qs}`);
+}
+
+export type RtoWorkflowShipment = {
+  id: string;
+  awb: string | null;
+  courier: string;
+  status: string;
+  rtoAt: string | null;
+  rtoReceivedAt: string | null;
+  rtoDisposition: string | null;
+  rtoRefundWorkflowStatus: string | null;
+};
+
+export type RtoWorkflowState = {
+  shipments: RtoWorkflowShipment[];
+  hasCarrierRto: boolean;
+  anyReceived: boolean;
+  restockEvents: Array<{ inventoryIncremented: boolean; disposition: string; quantity: number }>;
+  canMarkReceived: boolean;
+  canSetDisposition: boolean;
+  refundExecutionEnabled: boolean;
+};
+
+export function fetchOrderRtoWorkflow(orderId: string) {
+  return adminFetch<RtoWorkflowState>(`/api/admin/orders/${encodeURIComponent(orderId)}/rto-workflow`);
+}
+
+export function markShipmentRtoReceived(shipmentId: string) {
+  return adminFetch<{ shipment: RtoWorkflowShipment; alreadyReceived: boolean }>(
+    `/api/admin/shipments/${encodeURIComponent(shipmentId)}/rto/received`,
+    { method: "POST", body: JSON.stringify({}) }
+  );
+}
+
+export function setShipmentRtoDisposition(
+  shipmentId: string,
+  disposition: "RESTOCKABLE" | "DAMAGED_NON_RESTOCKABLE" | "NEEDS_REVIEW"
+) {
+  return adminFetch<{ alreadySet: boolean }>(
+    `/api/admin/shipments/${encodeURIComponent(shipmentId)}/rto/disposition`,
+    { method: "POST", body: JSON.stringify({ disposition }) }
+  );
+}
+
+export function executeShipmentRtoRefund(shipmentId: string) {
+  return adminFetch<{ refundId: string; amountInPaise: number }>(
+    `/api/admin/shipments/${encodeURIComponent(shipmentId)}/rto/execute-refund`,
+    { method: "POST", body: JSON.stringify({}) }
+  );
+}
+
 export function patchAdminOrderStatus(id: string, status: string) {
   return adminFetch<{ order: OrderDetail }>(`/api/admin/orders/${id}/status`, {
     method: "PATCH",
@@ -1441,23 +1524,19 @@ export type XlSheetRow = {
   productStatus: string;
   variantStatus: string;
   productSlug?: string;
-  priceReviewReason?: "SHEET_BLANK" | "SKU_MISMATCH";
 };
 
 export function fetchProductsXlSheet(
   opts?: {
     status?: "ACTIVE" | "DRAFT" | "ALL";
-    scope?: "ALL" | "PRICE_PENDING";
     signal?: AbortSignal;
   }
 ) {
   const status = opts?.status ?? "ACTIVE";
-  const scope = opts?.scope ?? "ALL";
-  const qs = new URLSearchParams({ status, scope });
+  const qs = new URLSearchParams({ status });
   return adminFetch<{
     rows: XlSheetRow[];
     total: number;
-    scope: "ALL" | "PRICE_PENDING";
     productCount: number;
   }>(`/api/admin/products/xl-sheet?${qs.toString()}`, { signal: opts?.signal });
 }

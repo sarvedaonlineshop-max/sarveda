@@ -4,6 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { shippingEnv } from "../../config/env";
 import { logger } from "../../config/logger";
 
+import { orderItemWarehouseUnits } from "../inventory/order-item-fulfillment";
 import type { ApiErr, ApiOk, OrderWithShippingContext } from "./types";
 
 const SHIPROCKET_API = "https://apiv2.shiprocket.in/v1/external";
@@ -315,7 +316,9 @@ export async function createInternationalShipment(
   const weightKg =
     order.items.reduce((sum, li) => {
       const w = li.variant?.weightGrams ?? 500;
-      return sum + (w * li.qtyOrdered) / 1000;
+      const units = orderItemWarehouseUnits(li);
+      if (units <= 0) return sum;
+      return sum + (w * units) / 1000;
     }, 0) || 0.5;
 
   try {
@@ -347,12 +350,27 @@ export async function createInternationalShipment(
     }
     const paymentMethod = order.payments?.[0]?.provider === "COD" ? "COD" : "Pre-paid";
 
-    const orderItemsPayload = order.items.map((li) => {
-      const name = (li.nameSnapshot ?? "Item").trim().slice(0, 200) || "Item";
-      const sku = (li.skuSnapshot ?? "SKU").trim().slice(0, 100) || "SKU";
-      const selling_price = Math.max(1, Math.round(li.unitPriceInPaise / 100));
-      return { name, sku, units: li.qtyOrdered, selling_price };
-    });
+    const orderItemsPayload = order.items
+      .map((li) => {
+        const units = orderItemWarehouseUnits(li);
+        if (units <= 0) return null;
+        const name = (li.nameSnapshot ?? "Item").trim().slice(0, 200) || "Item";
+        const sku = (li.skuSnapshot ?? "SKU").trim().slice(0, 100) || "SKU";
+        const selling_price = Math.max(1, Math.round(li.unitPriceInPaise / 100));
+        return { name, sku, units, selling_price };
+      })
+      .filter((row): row is { name: string; sku: string; units: number; selling_price: number } =>
+        Boolean(row)
+      );
+
+    if (orderItemsPayload.length === 0) {
+      return {
+        success: false,
+        error:
+          "No Sarveda-warehouse units to ship — drop-ship-only lines must be fulfilled by vendor.",
+        code: "DROP_SHIP_ONLY"
+      };
+    }
     const subTotalFromLines = Math.max(
       1,
       orderItemsPayload.reduce((s, it) => s + it.selling_price * it.units, 0)

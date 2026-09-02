@@ -35,6 +35,34 @@ export async function verifyRazorpay(req: Request, res: Response, next: NextFunc
   }
 }
 
+export async function verifySupplementaryRazorpay(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = req.body as RazorpayVerifyBody;
+    try {
+      verifyPayment(body.razorpay_order_id, body.razorpay_payment_id, body.razorpay_signature);
+    } catch (e) {
+      const err = e as PayErr;
+      res.status(err.statusCode ?? 400).json({
+        success: false,
+        error: err.userMessage ?? err.message,
+        code: err.code ?? "VERIFY_FAILED"
+      });
+      return;
+    }
+
+    const { verifyRazorpaySupplementaryPayment } = await import("./supplementary-payment.service");
+    const result = await verifyRazorpaySupplementaryPayment({
+      razorpayOrderId: body.razorpay_order_id,
+      razorpayPaymentId: body.razorpay_payment_id,
+      signature: body.razorpay_signature
+    });
+
+    res.json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function capturePayPal(req: Request, res: Response, next: NextFunction) {
   try {
     const paypalOrderId =

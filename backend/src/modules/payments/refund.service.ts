@@ -2,9 +2,12 @@ import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { notifyOrderEmail } from "../notifications/email";
 import { handlePaidOrderStatusChange } from "../orders/orders.service";
+import { orderHasActiveRtoShipment } from "../orders/rto-workflow.service";
 import { createZohoRefundDocumentsForOrder } from "../zoho/zoho-financials";
 
 import { getPayPalAccessToken, getPayPalApiBase } from "./paypal";
+import { executeAuthoritativePartialRefund } from "./partial-refund-settlement.service";
+import { pickCapturedPaymentForRefund } from "./payment-selection";
 import {
   failReservedRefund,
   finalizeGatewayRefund,
@@ -52,100 +55,55 @@ export async function initiatePartialGatewayRefund(
     throw Object.assign(new Error("Order not found"), { statusCode: 404, code: "NOT_FOUND" });
   }
 
-  const capturedPayment = order.payments.find(
-    (p) => p.status === "CAPTURED" || p.status === "PARTIALLY_REFUNDED"
-  );
-
-  if (!capturedPayment) {
-    throw Object.assign(new Error("No captured payment to refund"), {
+  const pick = pickCapturedPaymentForRefund(order.payments);
+  if (!pick.ok) {
+    if (pick.code === "MULTIPLE_CAPTURED_PAYMENTS_REVIEW_REQUIRED") {
+      throw Object.assign(new Error(pick.message), {
+        statusCode: 409,
+        code: "MULTIPLE_CAPTURED_PAYMENTS_REVIEW_REQUIRED"
+      });
+    }
+    throw Object.assign(new Error(pick.message), {
       statusCode: 400,
       code: "NO_PAYMENT"
     });
   }
 
-  const refundReason = reason?.trim() || "Admin initiated refund";
-  const provider = capturedPayment.provider;
+  const { remaining } = await getRefundableRemainingInPaise(pick.payment.id);
+  if (amountInPaise > remaining) {
+    throw Object.assign(new Error(`Refund amount exceeds remaining refundable ${remaining}`), {
+      statusCode: 409,
+      code: "AMOUNT_TOO_HIGH"
+    });
+  }
 
-  let reservedRefundId: string | undefined;
+  const refundReason = reason?.trim() || "Admin initiated refund";
+  const sourceId = `admin-manual:${orderId}:${Date.now()}`;
 
   try {
-    const { refundRow, remainingAfter } = await reserveGatewayRefund({
-      paymentId: capturedPayment.id,
-      amountInPaise,
-      reason: refundReason
-    });
-    reservedRefundId = refundRow.id;
-
-    let providerRefundId: string;
-
-    if (provider === "RAZORPAY") {
-      if (!capturedPayment.providerPaymentId) {
-        throw new Error("Razorpay payment id missing on order");
-      }
-      providerRefundId = await refundRazorpay(
-        capturedPayment.providerPaymentId,
-        amountInPaise,
-        refundReason
-      );
-    } else if (provider === "STRIPE") {
-      if (!capturedPayment.providerPaymentId) {
-        throw new Error("Stripe payment intent id missing on order");
-      }
-      providerRefundId = await refundStripe(
-        capturedPayment.providerPaymentId,
-        amountInPaise,
-        refundReason
-      );
-    } else if (provider === "PAYPAL") {
-      if (!capturedPayment.providerPaymentId) {
-        throw new Error("PayPal capture id missing on order");
-      }
-      providerRefundId = await refundPayPal(
-        capturedPayment.providerPaymentId,
-        amountInPaise,
-        order.currency,
-        refundReason
-      );
-    } else {
-      throw new Error(`Refund not supported for provider ${provider}`);
-    }
-
-    const { fullyRefunded } = await finalizeGatewayRefund({
-      refundId: refundRow.id,
-      providerRefundId,
+    const result = await executeAuthoritativePartialRefund({
       orderId,
-      reason: refundReason
-    });
-
-    if (fullyRefunded) {
-      void createZohoRefundDocumentsForOrder(orderId, refundReason).catch((err) => {
-        logger.error("zoho_credit_note_refund_failed", { orderId, err });
-      });
-    }
-
-    notifyOrderEmail(orderId, "refund_initiated");
-    logger.info("admin_partial_refund_initiated", {
-      orderId,
-      provider,
-      refundId: providerRefundId,
-      amountInPaise,
-      remainingAfter
+      sourceType: "ADMIN_MANUAL",
+      sourceId,
+      reason: refundReason,
+      manualRefundPaise: amountInPaise
     });
 
     return {
       success: true,
-      refundId: providerRefundId,
-      message: `${providerLabel(provider)} refund of ${formatAmountLabel(order.currency, amountInPaise)} initiated to the customer's original payment method. Typically reflects in 5–7 business days.`
+      refundId: result.providerRefundId,
+      message: `${providerLabel(pick.payment.provider)} refund of ${formatAmountLabel(order.currency, amountInPaise)} initiated to the customer's original payment method. Typically reflects in 5–7 business days.`
     };
   } catch (err) {
-    if (reservedRefundId) {
-      const msg = err instanceof Error ? err.message : String(err);
-      await failReservedRefund(reservedRefundId, msg);
-    }
     const msg = err instanceof Error ? err.message : String(err);
     const code = (err as { code?: string }).code;
     const statusCode = (err as { statusCode?: number }).statusCode;
-    logger.error("admin_partial_refund_failed", { orderId, provider, amountInPaise, err });
+    logger.error("admin_partial_refund_failed", {
+      orderId,
+      provider: pick.payment.provider,
+      amountInPaise,
+      err
+    });
     if (code === "AMOUNT_TOO_HIGH" || code === "ALREADY_REFUNDED" || code === "DUPLICATE_REFUND") {
       throw Object.assign(new Error(msg), { statusCode: statusCode ?? 409, code });
     }
@@ -166,12 +124,26 @@ export async function initiateGatewayRefund(
     throw Object.assign(new Error("Order not found"), { statusCode: 404, code: "NOT_FOUND" });
   }
 
-  const capturedPayment = order.payments.find(
-    (p) => p.status === "CAPTURED" || p.status === "PARTIALLY_REFUNDED"
-  );
+  if (await orderHasActiveRtoShipment(orderId)) {
+    throw Object.assign(
+      new Error(
+        "This order has an active RTO shipment. Use the RTO workflow — full refund is blocked to preserve shipping-retained policy."
+      ),
+      { statusCode: 409, code: "RTO_WORKFLOW_REQUIRED" }
+    );
+  }
+
+  const pick = pickCapturedPaymentForRefund(order.payments);
   const codPayment = order.payments.find((p) => p.provider === "COD");
 
-  if (!capturedPayment) {
+  if (!pick.ok) {
+    if (pick.code === "MULTIPLE_CAPTURED_PAYMENTS_REVIEW_REQUIRED") {
+      throw Object.assign(new Error(pick.message), {
+        statusCode: 409,
+        code: "MULTIPLE_CAPTURED_PAYMENTS_REVIEW_REQUIRED"
+      });
+    }
+
     if (codPayment && order.status !== "PENDING_PAYMENT") {
       await handlePaidOrderStatusChange(
         orderId,
@@ -193,6 +165,7 @@ export async function initiateGatewayRefund(
     };
   }
 
+  const capturedPayment = pick.payment;
   const provider = capturedPayment.provider;
   const refundReason = reason?.trim() || "Admin initiated refund";
 

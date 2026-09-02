@@ -115,6 +115,22 @@ export class OrderRefundedFullJournalImbalanceError extends AccountingError {
   }
 }
 
+export class OrderRefundedPartialJournalImbalanceError extends AccountingError {
+  constructor(debit: number, credit: number, imbalance: number) {
+    super(
+      `ORDER_REFUNDED_PARTIAL journal imbalance: debits=${debit}, credits=${credit}, diff=${imbalance} paise (max 2 allowed)`,
+      "ORDER_REFUNDED_PARTIAL_JOURNAL_IMBALANCE",
+      422
+    );
+  }
+}
+
+export class PartialRefundTaxBreakdownUnavailableError extends AccountingError {
+  constructor(reason: string) {
+    super(reason, "PARTIAL_REFUND_TAX_BREAKDOWN_UNAVAILABLE", 422);
+  }
+}
+
 export class RefundNotEligibleForPostingError extends AccountingError {
   constructor(reason: string, code = "REFUND_NOT_ELIGIBLE") {
     super(reason, code, 422);

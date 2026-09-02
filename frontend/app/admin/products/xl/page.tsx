@@ -38,7 +38,6 @@ type EditRow = {
   taxClass: string;
   productStatus: string;
   variantStatus: string;
-  priceReviewReason?: "SHEET_BLANK" | "SKU_MISMATCH";
 };
 
 function minorToMajorStr(minor: number | null | undefined): string {
@@ -61,12 +60,6 @@ function majorStrToMinorRequired(raw: string, label: string): number {
   return v;
 }
 
-function priceReviewLabel(reason?: "SHEET_BLANK" | "SKU_MISMATCH"): string {
-  if (reason === "SHEET_BLANK") return "Sheet blank";
-  if (reason === "SKU_MISMATCH") return "No SKU match";
-  return "";
-}
-
 function apiToEdit(r: XlSheetRow): EditRow {
   return {
     productId: r.productId,
@@ -86,8 +79,7 @@ function apiToEdit(r: XlSheetRow): EditRow {
     hsnCode: r.hsnCode || "",
     taxClass: taxClassForForm(r.taxClass || "standard"),
     productStatus: r.productStatus,
-    variantStatus: r.variantStatus,
-    priceReviewReason: r.priceReviewReason
+    variantStatus: r.variantStatus
   };
 }
 
@@ -158,22 +150,14 @@ function blurMoney(e: React.FocusEvent<HTMLInputElement>) {
   e.currentTarget.style.background = "transparent";
 }
 
-const COL_COUNT = 16;
+const COL_COUNT = 15;
 
 type StatusFilter = "ACTIVE" | "DRAFT" | "ALL";
-type ScopeFilter = "ALL" | "PRICE_PENDING";
 
 function rowMatchesQuery(r: EditRow, q: string) {
   const gstLabel =
     TAX_CLASS_OPTIONS.find((o) => o.value === r.taxClass)?.label ?? r.taxClass;
-  const blob = [
-    r.productName,
-    r.variantName,
-    r.sku,
-    r.hsnCode,
-    gstLabel,
-    priceReviewLabel(r.priceReviewReason)
-  ]
+  const blob = [r.productName, r.variantName, r.sku, r.hsnCode, gstLabel]
     .join(" ")
     .toLowerCase();
   return blob.includes(q);
@@ -190,21 +174,17 @@ export default function ProductsXlSheetPage() {
   const [filterApplied, setFilterApplied] = useState("");
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ACTIVE");
-  const [scopeFilter, setScopeFilter] = useState<ScopeFilter>("PRICE_PENDING");
   const [productCount, setProductCount] = useState(0);
   const [immersive, setImmersive] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement | null>(null);
   const exportRef = useRef<HTMLDivElement | null>(null);
 
-  const effectiveScope: ScopeFilter =
-    statusFilter === "DRAFT" ? "ALL" : scopeFilter;
-
   const load = useCallback(async () => {
     setLoading(true);
     setErr(null);
     try {
-      const data = await fetchProductsXlSheet({ status: statusFilter, scope: effectiveScope });
+      const data = await fetchProductsXlSheet({ status: statusFilter });
       const mapped = data.rows.map(apiToEdit);
       setRows(mapped);
       setBaseline(JSON.stringify(mapped));
@@ -216,7 +196,7 @@ export default function ProductsXlSheetPage() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, effectiveScope]);
+  }, [statusFilter]);
 
   useEffect(() => {
     void load();
@@ -231,22 +211,6 @@ export default function ProductsXlSheetPage() {
       if (!ok) return;
     }
     setStatusFilter(next);
-    // Price-pending (18) are all ACTIVE — drafts live in full catalog.
-    if (next === "DRAFT" && scopeFilter === "PRICE_PENDING") {
-      setScopeFilter("ALL");
-    }
-  }
-
-  function changeScopeFilter(next: ScopeFilter) {
-    if (next === scopeFilter) return;
-    if (dirty) {
-      const ok = window.confirm("You have unsaved edits. Switch scope and discard them?");
-      if (!ok) return;
-    }
-    setScopeFilter(next);
-    if (next === "PRICE_PENDING" && statusFilter === "DRAFT") {
-      setStatusFilter("ACTIVE");
-    }
   }
 
   const suggestions = useMemo(() => {
@@ -475,29 +439,6 @@ export default function ProductsXlSheetPage() {
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <label
-            htmlFor="xl-scope"
-            style={{ fontSize: "11px", fontWeight: 700, color: "#a8c4b0", letterSpacing: "0.04em" }}
-          >
-            SCOPE
-          </label>
-          <select
-            id="xl-scope"
-            value={effectiveScope}
-            onChange={(e) => changeScopeFilter(e.target.value as ScopeFilter)}
-            style={{
-              border: "1px solid rgba(255,255,255,0.2)",
-              borderRadius: "8px",
-              padding: "8px 12px",
-              fontSize: "13px",
-              background: "rgba(0,0,0,0.2)",
-              color: "#faf5ec",
-              minWidth: "12rem"
-            }}
-          >
-            <option value="PRICE_PENDING">Price pending (18)</option>
-            <option value="ALL">Full catalog</option>
-          </select>
           <label
             htmlFor="xl-status"
             style={{ fontSize: "11px", fontWeight: 700, color: "#a8c4b0", letterSpacing: "0.04em" }}
@@ -810,7 +751,6 @@ export default function ProductsXlSheetPage() {
         >
           <colgroup>
             <col style={{ width: "150px" }} />
-            <col style={{ width: "110px" }} />
             <col style={{ width: "130px" }} />
             <col style={{ width: "110px" }} />
             <col style={{ width: "64px" }} />
@@ -830,9 +770,6 @@ export default function ProductsXlSheetPage() {
             <tr>
               <th style={stickyHead} rowSpan={2}>
                 Name
-              </th>
-              <th style={stickyHead} rowSpan={2}>
-                Why
               </th>
               <th style={stickyHead} rowSpan={2}>
                 Variant Name
@@ -912,33 +849,6 @@ export default function ProductsXlSheetPage() {
                           onBlur={blurMoney}
                           aria-label="Product name"
                         />
-                      ) : (
-                        <div style={{ padding: "6px", minHeight: "30px" }} />
-                      )}
-                    </td>
-                    <td style={tdSt}>
-                      {r.priceReviewReason ? (
-                        <span
-                          style={{
-                            display: "inline-block",
-                            margin: "4px 6px",
-                            padding: "2px 7px",
-                            borderRadius: "6px",
-                            fontSize: "10px",
-                            fontWeight: 700,
-                            letterSpacing: "0.02em",
-                            background:
-                              r.priceReviewReason === "SHEET_BLANK" ? "#fef3c7" : "#fee2e2",
-                            color: r.priceReviewReason === "SHEET_BLANK" ? "#92400e" : "#991b1b"
-                          }}
-                          title={
-                            r.priceReviewReason === "SHEET_BLANK"
-                              ? "Exact SKU matched; Aug 09 sheet INR blank — LS prices kept"
-                              : "No exact SKU overlap with Aug 09 sheet"
-                          }
-                        >
-                          {priceReviewLabel(r.priceReviewReason)}
-                        </span>
                       ) : (
                         <div style={{ padding: "6px", minHeight: "30px" }} />
                       )}

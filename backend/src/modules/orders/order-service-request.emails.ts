@@ -18,16 +18,24 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
+function serviceRequestKindLabel(
+  type: "CANCEL_BEFORE_DELIVERY" | "REFUND_AFTER_DELIVERY" | "ADJUST_BEFORE_DELIVERY"
+): string {
+  if (type === "CANCEL_BEFORE_DELIVERY") return "Cancellation";
+  if (type === "ADJUST_BEFORE_DELIVERY") return "Order change";
+  return "Return / refund";
+}
+
 /** Best-effort — never blocks the main request if SMTP is down. */
 export async function notifyServiceRequestSubmitted(opts: {
   orderNumber: string;
   customerEmail: string;
   customerName?: string | null;
-  type: "CANCEL_BEFORE_DELIVERY" | "REFUND_AFTER_DELIVERY";
+  type: "CANCEL_BEFORE_DELIVERY" | "REFUND_AFTER_DELIVERY" | "ADJUST_BEFORE_DELIVERY";
   reasonLabel: string;
   message?: string | null;
 }): Promise<void> {
-  const kind = opts.type === "CANCEL_BEFORE_DELIVERY" ? "Cancellation" : "Return / refund";
+  const kind = serviceRequestKindLabel(opts.type);
   const subject = `${kind} request received — ${opts.orderNumber}`;
   const profileUrl = `${siteBaseUrl()}/profile`;
   const adminUrl = `${siteBaseUrl()}/admin/orders`;
@@ -91,11 +99,11 @@ export async function notifyServiceRequestReviewed(opts: {
   orderNumber: string;
   customerEmail: string;
   customerName?: string | null;
-  type: "CANCEL_BEFORE_DELIVERY" | "REFUND_AFTER_DELIVERY";
+  type: "CANCEL_BEFORE_DELIVERY" | "REFUND_AFTER_DELIVERY" | "ADJUST_BEFORE_DELIVERY";
   approved: boolean;
   adminNote?: string | null;
 }): Promise<void> {
-  const kind = opts.type === "CANCEL_BEFORE_DELIVERY" ? "Cancellation" : "Return / refund";
+  const kind = serviceRequestKindLabel(opts.type);
   const decision = opts.approved ? "approved" : "declined";
   const subject = opts.approved
     ? `${kind} approved — ${opts.orderNumber}`

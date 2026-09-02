@@ -8,11 +8,6 @@ import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { gstRatePercent } from "../../utils/gst";
 import { syncVariantAttributes } from "./variant-attributes";
-import {
-  XL_PRICE_REVIEW_BY_SLUG,
-  XL_PRICE_REVIEW_SLUGS,
-  type XlPriceReviewReason,
-} from "./productXlPriceReview";
 
 function httpError(status: number, message: string, code: string): Error {
   return Object.assign(new Error(message), { statusCode: status, code });
@@ -62,8 +57,6 @@ export type XlSheetRow = {
   productStatus: string;
   variantStatus: string;
   productSlug?: string;
-  /** Present when product is in the Aug 09 sheet price-pending set (18). */
-  priceReviewReason?: XlPriceReviewReason;
 };
 
 function variantLabel(v: {
@@ -146,20 +139,14 @@ const optionalNonNegInt = z
   .optional();
 
 export type XlSheetStatusFilter = "ACTIVE" | "DRAFT" | "ALL";
-export type XlSheetScope = "ALL" | "PRICE_PENDING";
 
 export async function listXlSheetRows(
-  statusFilter: XlSheetStatusFilter = "ACTIVE",
-  scope: XlSheetScope = "ALL"
+  statusFilter: XlSheetStatusFilter = "ACTIVE"
 ): Promise<{
   rows: XlSheetRow[];
   total: number;
-  scope: XlSheetScope;
   productCount: number;
 }> {
-  const pricePending = scope === "PRICE_PENDING";
-  // Price-pending set is ACTIVE-only; Draft filter must not stay locked to those 18 slugs.
-  const applyPricePending = pricePending && statusFilter !== "DRAFT";
   const statusWhere: ProductStatus | { in: ProductStatus[] } =
     statusFilter === "ALL" ? { in: ["ACTIVE", "DRAFT"] } : statusFilter;
 
@@ -168,7 +155,6 @@ export async function listXlSheetRows(
       deletedAt: null,
       catalogHidden: false,
       status: statusWhere,
-      ...(applyPricePending ? { slug: { in: [...XL_PRICE_REVIEW_SLUGS] } } : {}),
     },
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     select: {
@@ -207,7 +193,6 @@ export async function listXlSheetRows(
 
   const rows: XlSheetRow[] = [];
   for (const p of products) {
-    const review = XL_PRICE_REVIEW_BY_SLUG.get(p.slug);
     const taxClass = normalizeTaxClass(p.taxClass);
     const gstPercent = gstRatePercent(taxClass);
     for (const v of p.variants) {
@@ -233,7 +218,6 @@ export async function listXlSheetRows(
         productStatus: p.status,
         variantStatus: v.status,
         productSlug: p.slug,
-        ...(review ? { priceReviewReason: review.reason } : {}),
       });
     }
   }
@@ -241,11 +225,9 @@ export async function listXlSheetRows(
   return {
     rows,
     total: rows.length,
-    scope: applyPricePending ? "PRICE_PENDING" : "ALL",
     productCount: products.length,
   };
 }
-
 export const xlSheetSaveSchema = z.object({
   rows: z
     .array(
