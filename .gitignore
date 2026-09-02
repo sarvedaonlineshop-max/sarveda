@@ -97,6 +97,22 @@ backend/scripts/sync-do-copy-accordion.ts
 **/tsbuildinfo
 *.tsbuildinfo
 
+# Vercel CLI local link metadata (never commit)
+.vercel/
+
+# Generated PWA service worker (next-pwa); do not commit churn
+frontend/public/sw.js
+frontend/public/sw.js.map
+frontend/public/workbox-*.js
+frontend/public/workbox-*.js.map
+
+# Merchant/SEO audit dumps — keep small summaries; ignore bulky feed snapshots
+docs/audit/**/*.xml
+docs/audit/**/*.xlsx
+docs/audit/**/*.xls
+docs/audit/**/*.log
+docs/audit/**/*.pyc
+docs/audit/**/__pycache__/
 
 backend/start.sh
 backend/scripts/*.json
