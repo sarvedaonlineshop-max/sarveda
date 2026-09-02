@@ -1109,6 +1109,9 @@ export function AdminInventoryWorkspace() {
           <MetricCard label="Out of stock" value={stats.outOfStock} tone="red" />
         </div>
         <div className="bg-white dark:bg-stone-900">
+          <MetricCard label="Drop ship available" value={stats.dropShipAvailable} tone="emerald" />
+        </div>
+        <div className="bg-white dark:bg-stone-900">
           <MetricCard
             label="Reserved units"
             value={reservedStock?.totalStoredReservedUnits ?? allRows.reduce((s, r) => s + r.reserved, 0)}

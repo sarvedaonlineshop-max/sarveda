@@ -1579,6 +1579,8 @@ export type InventoryRow = {
   onHand: number;
   reserved: number;
   available: number;
+  dropShipEnabled?: boolean;
+  shopAvailability?: "WAREHOUSE_IN_STOCK" | "DROP_SHIP_AVAILABLE" | "OUT_OF_STOCK";
   lowStockThreshold: number;
   low: boolean;
   inZohoBooks: boolean | null;

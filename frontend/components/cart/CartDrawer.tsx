@@ -159,7 +159,12 @@ export function CartDrawer({ open, onClose }: Props) {
                       </span>
                       <button
                         type="button"
-                        disabled={!!busy || (line.maxQuantity != null && line.quantity >= line.maxQuantity)}
+                        disabled={
+                          !!busy ||
+                          (!line.dropShipEnabled &&
+                            line.maxQuantity != null &&
+                            line.quantity >= line.maxQuantity)
+                        }
                         className="flex h-11 min-w-[44px] items-center justify-center text-lg text-stone-700 hover:bg-stone-100 disabled:opacity-50"
                         aria-label="Increase quantity"
                         onClick={() => void setQty(line.variantId, line.quantity + 1)}

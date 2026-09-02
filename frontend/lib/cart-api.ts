@@ -46,6 +46,8 @@ export type CartApiItem = {
   variantLabel: string | null;
   primaryImageUrl: string | null;
   maxQuantity: number | null;
+  dropShipEnabled?: boolean;
+  warehouseAvailable?: number | null;
 };
 
 export type CartCouponInfo = {

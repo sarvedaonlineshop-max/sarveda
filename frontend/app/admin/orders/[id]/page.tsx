@@ -120,6 +120,8 @@ type OrderItemRow = {
   nameSnapshot: string;
   skuSnapshot: string;
   qtyOrdered: number;
+  warehouseFulfillmentQty?: number;
+  dropShipFulfillmentQty?: number;
   unitPriceInPaise: number;
   lineTotalInPaise: number;
   pickupLocationId?: string | null;
@@ -386,6 +388,10 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
     nameSnapshot: String(row.nameSnapshot),
     skuSnapshot: String(row.skuSnapshot),
     qtyOrdered: Number(row.qtyOrdered),
+    warehouseFulfillmentQty:
+      row.warehouseFulfillmentQty != null ? Number(row.warehouseFulfillmentQty) : undefined,
+    dropShipFulfillmentQty:
+      row.dropShipFulfillmentQty != null ? Number(row.dropShipFulfillmentQty) : undefined,
     unitPriceInPaise: Number(row.unitPriceInPaise),
     lineTotalInPaise: Number(row.lineTotalInPaise),
     pickupLocationId: row.pickupLocationId != null ? String(row.pickupLocationId) : null,
@@ -2021,6 +2027,7 @@ export default function AdminOrderDetailPage() {
                 <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a7060] dark:text-stone-300">Product</th>
                 <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a7060] dark:text-stone-300">SKU</th>
                 <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a7060] dark:text-stone-300">Qty</th>
+                <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a7060] dark:text-stone-300">Fulfillment</th>
                 <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a7060] dark:text-stone-300">Unit</th>
                 <th className="px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8a7060] dark:text-stone-300">Line total</th>
               </tr>
@@ -2042,6 +2049,15 @@ export default function AdminOrderDetailPage() {
                   </td>
                   <td className="px-3 py-3 align-top" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: "12px", color: "#8a7060" }}>{item.skuSnapshot}</td>
                   <td className="px-3 py-3 align-top">{item.qtyOrdered}</td>
+                  <td className="px-3 py-3 align-top text-xs text-stone-600 dark:text-stone-300">
+                    {(() => {
+                      const wh = item.warehouseFulfillmentQty ?? item.qtyOrdered;
+                      const ds = item.dropShipFulfillmentQty ?? 0;
+                      if (ds <= 0) return wh === item.qtyOrdered ? "Warehouse" : `Warehouse: ${wh}`;
+                      if (wh <= 0) return `Drop ship: ${ds}`;
+                      return `Warehouse: ${wh} · Drop ship: ${ds}`;
+                    })()}
+                  </td>
                   <td className="px-3 py-3 align-top">{formatMinorFromPaise(item.unitPriceInPaise, order.currency)}</td>
                   <td className="px-3 py-3 align-top">{formatMinorFromPaise(item.lineTotalInPaise, order.currency)}</td>
                 </tr>

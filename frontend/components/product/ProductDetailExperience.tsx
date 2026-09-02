@@ -157,9 +157,11 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
   const addDisabled = !variant || !stockInfo?.inStock;
   const saleMinor = variant ? unitSaleMinor(variant, zone) : 0;
   const maxQty =
-    available != null && available > 0 && available < UNTRACKED_STOCK_ON_HAND
-      ? available
-      : UNTRACKED_STOCK_ON_HAND;
+    variant?.dropShipEnabled || available == null
+      ? UNTRACKED_STOCK_ON_HAND
+      : available > 0 && available < UNTRACKED_STOCK_ON_HAND
+        ? available
+        : UNTRACKED_STOCK_ON_HAND;
 
   useEffect(() => {
     setQty((current) => Math.min(Math.max(1, current), maxQty));

@@ -66,7 +66,11 @@ export function ProductBuyBox({
   const isInline = layout === "inline";
   const [qtyMessage, setQtyMessage] = useState<string | null>(null);
   const stockCap =
-    available != null && available > 0 && available < UNTRACKED_STOCK_ON_HAND ? available : null;
+    variantForStock?.dropShipEnabled
+      ? null
+      : available != null && available > 0 && available < UNTRACKED_STOCK_ON_HAND
+        ? available
+        : null;
   const qtyLimit = stockCap ?? maxQty;
 
   function changeQty(next: number) {

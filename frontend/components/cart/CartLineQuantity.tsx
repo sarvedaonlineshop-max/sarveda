@@ -15,7 +15,7 @@ export function CartLineQuantity({ line, size = "md", showDeleteAtOne = false }:
   const { decrease, increase, removeLine, isAnyBusy } = useCartQuantityActions();
   const busy = isAnyBusy;
   const atMin = line.quantity <= 1;
-  const atMax = line.maxQuantity != null && line.quantity >= line.maxQuantity;
+  const atMax = !line.dropShipEnabled && line.maxQuantity != null && line.quantity >= line.maxQuantity;
 
   const btnClass =
     size === "sm"

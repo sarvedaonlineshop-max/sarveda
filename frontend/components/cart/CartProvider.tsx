@@ -178,7 +178,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     async (variantId: string) => {
       const line = itemsRef.current.find((i) => i.variantId === variantId);
       if (!line) return;
-      if (line.maxQuantity != null && line.quantity >= line.maxQuantity) return;
+      if (
+        !line.dropShipEnabled &&
+        line.maxQuantity != null &&
+        line.quantity >= line.maxQuantity
+      ) {
+        return;
+      }
       try {
         await setLineQuantity(variantId, line.quantity + 1);
       } catch (err) {

@@ -12,8 +12,13 @@ export type ZohoSyncSubFilter = "count_mismatch" | "zoho_only" | "sarveda_only";
 export type SortKey = "product" | "onHand" | "sku";
 export type SortDir = "asc" | "desc";
 
-export function stockStatus(row: Pick<InventoryRow, "onHand" | "lowStockThreshold">): StockFilter {
-  if (row.onHand === 0) return "out_of_stock";
+export function stockStatus(
+  row: Pick<InventoryRow, "onHand" | "lowStockThreshold" | "available" | "dropShipEnabled">
+): StockFilter {
+  const available = row.available ?? Math.max(0, row.onHand);
+  const customerOut = available === 0 && !row.dropShipEnabled;
+  if (customerOut) return "out_of_stock";
+  if (row.onHand === 0) return "in_stock";
   if (row.onHand > row.lowStockThreshold) return "in_stock";
   return "low_stock";
 }
@@ -85,7 +90,13 @@ export function backendNeedsZohoScenarioUpdate(rows: InventoryRow[], auditAvaila
 export function matchesStockFilter(
   row: Pick<
     InventoryRow,
-    "onHand" | "lowStockThreshold" | "zohoSyncScenario" | "inZohoBooks" | "zohoStockOnHand"
+    | "onHand"
+    | "lowStockThreshold"
+    | "available"
+    | "dropShipEnabled"
+    | "zohoSyncScenario"
+    | "inZohoBooks"
+    | "zohoStockOnHand"
   >,
   filter: StockFilter,
   zohoSubFilter?: ZohoSyncSubFilter
@@ -349,19 +360,26 @@ export type InventoryStats = {
   inStock: number;
   lowStock: number;
   outOfStock: number;
+  dropShipAvailable: number;
+  physicalZeroStock: number;
 };
 
 export function computeInventoryStats(rows: InventoryRow[]): InventoryStats {
   let inStock = 0;
   let lowStock = 0;
   let outOfStock = 0;
+  let dropShipAvailable = 0;
+  let physicalZeroStock = 0;
   for (const r of rows) {
+    const available = r.available ?? Math.max(0, r.onHand - (r.reserved ?? 0));
+    if (available === 0) physicalZeroStock++;
+    if (available === 0 && r.dropShipEnabled) dropShipAvailable++;
     const s = stockStatus(r);
     if (s === "in_stock") inStock++;
     else if (s === "low_stock") lowStock++;
     else outOfStock++;
   }
-  return { total: rows.length, inStock, lowStock, outOfStock };
+  return { total: rows.length, inStock, lowStock, outOfStock, dropShipAvailable, physicalZeroStock };
 }
 
 export type CategoryGroup = {

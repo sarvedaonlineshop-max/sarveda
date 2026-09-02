@@ -208,6 +208,13 @@ export function availableStock(variant: ProductVariantDetail): number | null {
   return Math.max(0, variant.inventory.onHand - variant.inventory.reserved);
 }
 
+export function isVariantCustomerSellable(variant: ProductVariantDetail): boolean {
+  const avail = availableStock(variant);
+  if (avail === null) return true;
+  if (avail > 0) return true;
+  return Boolean(variant.dropShipEnabled);
+}
+
 export function stockDisplay(variant: ProductVariantDetail): {
   label: string;
   inStock: boolean;
@@ -221,6 +228,9 @@ export function stockDisplay(variant: ProductVariantDetail): {
     return { label: "In stock", inStock: true, showCount: false, count: 0 };
   }
   if (avail === 0) {
+    if (variant.dropShipEnabled) {
+      return { label: "Available", inStock: true, showCount: false, count: 0 };
+    }
     return { label: "Out of stock", inStock: false, showCount: false, count: 0 };
   }
   if (avail >= UNTRACKED_STOCK_ON_HAND) {
