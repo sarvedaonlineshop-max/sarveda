@@ -1,0 +1,35 @@
+{
+  "commerce": {
+    "files": 24,
+    "tests": 216,
+    "passed": 216,
+    "failed": 0
+  },
+  "accounting_initial": {
+    "files": 29,
+    "passed_files": 26,
+    "failed_files": 3,
+    "passed_tests": 390,
+    "failed_tests": 7
+  },
+  "accounting_fixes_retest": {
+    "api-security": "PASS",
+    "gst-reporting": "PASS after placedAt=now",
+    "cogs-reversal-16-20": "PASS after closed period window"
+  },
+  "frontend_tsc": "PASS",
+  "backend_tsc": "PASS",
+  "frontend_build": "PASS",
+  "frontend_seo_unit": {
+    "tests": 54,
+    "passed": 54
+  },
+  "merchant_live": {
+    "items": 773,
+    "dupes": 0,
+    "in_stock": 653,
+    "out_of_stock": 120,
+    "demo_links": 0,
+    "vercel_links": 0
+  }
+}

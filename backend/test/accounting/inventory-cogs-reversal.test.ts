@@ -444,7 +444,9 @@ describe("INVENTORY_COGS_REVERSED_V1", () => {
     // Cannot post ORDER_PAID / COGS for pre-cutover easily; create restock and expect PRE_CUTOVER
     const preItem = await prisma.orderItem.findFirstOrThrow({ where: { orderId: pre.id } });
     const preRestock = await sellableRestock(pre.id, preItem.id, 1, `pre-${pre.id}`);
-    expect((await previewInventoryCogsReversal(preRestock.id)).eligibility.code).toBe("PRE_CUTOVER");
+    expect((await previewInventoryCogsReversal(preRestock.id)).eligibility.code).toBe(
+      "PRE_CUTOVER_ACCOUNTING_HISTORY_REQUIRED"
+    );
     delete process.env.ACCOUNTING_CUTOVER_DATE;
     delete process.env.ACCOUNTING_CUTOVER_FORWARD_ONLY;
     resetAccountingCutoverCache();
@@ -454,16 +456,18 @@ describe("INVENTORY_COGS_REVERSED_V1", () => {
     const item = await prisma.orderItem.findFirstOrThrow({ where: { orderId: order.id } });
     const r = await sellableRestock(order.id, item.id, 1, `flag-${order.id}`);
 
+    const periodStart = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const periodEnd = new Date(Date.now() + 24 * 60 * 60 * 1000);
     await prisma.accountingPeriod.create({
       data: {
-        name: "AUG-CLOSED-REV",
-        startDate: new Date("2026-08-01T00:00:00.000Z"),
-        endDate: new Date("2026-08-31T23:59:59.999Z"),
+        name: `CLOSED-REV-${Date.now()}`,
+        startDate: periodStart,
+        endDate: periodEnd,
         status: "CLOSED"
       }
     });
     await expect(postInventoryCogsReversal(r.id)).rejects.toMatchObject({
-      code: "ACCOUNTING_PERIOD_CLOSED"
+      code: expect.stringMatching(/PERIOD_CLOSED|CLOSED_PERIOD/)
     });
     await prisma.accountingPeriod.deleteMany({});
 

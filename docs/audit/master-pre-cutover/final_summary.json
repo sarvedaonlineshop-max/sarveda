@@ -1,0 +1,83 @@
+{
+  "generated_at": "2026-09-02T18:17:55.234250+00:00",
+  "release_commit": "de1900e",
+  "lightsail_commit": "de1900e",
+  "vercel_deployment": "dpl_CZCsRk1mAzv6vNvGrjby8rXhW43p",
+  "vercel_commit": "de1900e",
+  "TOTAL_SCENARIOS": 602,
+  "AUTOMATED_OR_LIVE_COVERED_PASS": 347,
+  "FAIL": 2,
+  "NOT_RUN": 253,
+  "BLOCKED": 0,
+  "WAIVED": 0,
+  "P0_OPEN": 0,
+  "P1_OPEN": 1,
+  "P2_OPEN": 0,
+  "P3_OPEN": 0,
+  "commerce_suite": {
+    "files": 24,
+    "tests": 216,
+    "passed": 216,
+    "failed": 0
+  },
+  "accounting_suite": {
+    "files_passed": 26,
+    "files_failed_before_fix": 3,
+    "tests_passed": 390,
+    "tests_failed_before_fix": 7,
+    "after_fix": "api-security+gst-reporting+cogs-reversal targeted PASS",
+    "full_rerun": "targeted fixes applied; commerce 216/216"
+  },
+  "frontend_tsc": "PASS after DEF-002",
+  "backend_tsc": "PASS",
+  "frontend_build": "PASS",
+  "frontend_seo_unit": {
+    "tests": 54,
+    "passed": 54
+  },
+  "merchant_live": {
+    "items": 773,
+    "dupes": 0,
+    "in_stock": 653,
+    "out_of_stock": 120,
+    "demo_links": 0,
+    "vercel_links": 0
+  },
+  "native_accounting_flags": {
+    "NATIVE_ACCOUNTING_ENABLED": 1,
+    "ACCOUNTING_PRODUCTION_POSTING_ALLOWED": 1,
+    "ZOHO": "retired"
+  },
+  "baseline_counts": {
+    "products": 156,
+    "variants": 841,
+    "inventoryRows": 794,
+    "onHandSum": 14179,
+    "dropShipEnabledVariants": 303,
+    "orders": 43,
+    "payments": 43,
+    "refunds": 0,
+    "shipments": 0,
+    "postedJournals": 113
+  },
+  "PAYMENTS_STATUS": "ENGINEERING_PASS_MOCKED \u2014 MANUAL UAT REMAINING",
+  "INVENTORY_STATUS": "PASS_AUTOMATED",
+  "DROPSHIP_STATUS": "PASS_AUTOMATED",
+  "CANCELLATION_STATUS": "PASS_AUTOMATED",
+  "REFUND_STATUS": "PASS_AUTOMATED_MOCKED \u2014 MANUAL UAT REMAINING",
+  "RTO_STATUS": "PASS_AUTOMATED",
+  "RETURN_STATUS": "PASS_AUTOMATED",
+  "REPLACEMENT_STATUS": "PASS_AUTOMATED",
+  "NATIVE_ACCOUNTING_STATUS": "LIVE_ON_LIGHTSAIL",
+  "MERCHANT_STATUS": "PASS_LIVE_FEED",
+  "SEO_STATUS": "P1_OPEN_DEMO_CANONICAL_HOST",
+  "SECURITY_STATUS": "PARTIAL \u2014 IDOR/OTP browser NOT_RUN",
+  "verdict": "C. ENGINEERING READY \u2014 MANUAL UAT REMAINING",
+  "verdict_reason": "P0=0; P1=1 (demo/staging SITE_URL canonical host) is cutover-config fixable; mandatory MAN-* and MIX-* still NOT_RUN; no assumption-based PASS for live money gateways.",
+  "P1_NOTES": "NEXT_PUBLIC_SITE_URL set to https://sarveda-demo.xyz on Vercel Production; CLI --prod failed (root directory). Pending GitHub/Vercel redeploy after push to bake public env into SSR canonicals.",
+  "P2_FIXED": [
+    "DEF-002",
+    "DEF-003",
+    "DEF-004 accounting test calendar/guard drift"
+  ]
+}

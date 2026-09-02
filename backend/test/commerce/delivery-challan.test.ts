@@ -118,7 +118,9 @@ describe("delivery challan service", () => {
     const { order } = await createPendingRazorpayOrder(bundle, { qty: 2 });
     await markOrderPaid(order.id);
 
-    const journalsBefore = await prisma.accountingJournalEntry.count();
+    const journalsBefore = await prisma.accountingJournalEntry.count({
+      where: { memo: { contains: order.orderNumber } }
+    });
     const result = await generateDeliveryChallan(order.id, {
       reason: "SUPPLY_DELIVERY",
       reasonOther: null,
@@ -136,8 +138,13 @@ describe("delivery challan service", () => {
     expect(result.pdf.subarray(0, 4).toString()).toBe("%PDF");
     expect(result.challan.awbSnapshot).toBeNull();
 
-    const journalsAfter = await prisma.accountingJournalEntry.count();
+    const journalsAfter = await prisma.accountingJournalEntry.count({
+      where: { memo: { contains: order.orderNumber } }
+    });
     expect(journalsAfter).toBe(journalsBefore);
+    expect(
+      await prisma.accountingPostingEvent.count({ where: { sourceId: order.id } })
+    ).toBe(0);
 
     const again = await generateDeliveryChallan(order.id, {
       reason: "SUPPLY_DELIVERY",
@@ -224,7 +231,9 @@ describe("delivery challan service", () => {
       }
     });
 
-    const journalsBefore = await prisma.accountingJournalEntry.count();
+    const journalsBefore = await prisma.accountingJournalEntry.count({
+      where: { memo: { contains: orderNumber } }
+    });
     const result = await generateDeliveryChallan(order.id, {
       reason: "SUPPLY_DELIVERY",
       reasonOther: null,
@@ -238,7 +247,12 @@ describe("delivery challan service", () => {
     expect(result.challan.awbSnapshot).toBe("AWB99887766");
     expect(result.challan.carrierSnapshot).toBe("DELHIVERY");
     expect(result.challan.destinationState).toBe("Delhi");
-    expect(await prisma.accountingJournalEntry.count()).toBe(journalsBefore);
+    expect(
+      await prisma.accountingJournalEntry.count({ where: { memo: { contains: orderNumber } } })
+    ).toBe(journalsBefore);
+    expect(
+      await prisma.accountingPostingEvent.count({ where: { sourceId: order.id } })
+    ).toBe(0);
 
     await cleanupTestOrder(order.id);
     await cleanupTestProduct(b1);

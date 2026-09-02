@@ -42,7 +42,8 @@ describe("Phase 5D GST reporting", () => {
     process.env.ACCOUNTING_GST_ENABLED = "1";
     process.env.ACCOUNTING_GST_REPORTING_ENABLED = "1";
     process.env.SELLER_STATE = "Karnataka";
-    delete process.env.ACCOUNTING_PRODUCTION_POSTING_ALLOWED;
+    // Production-like DATABASE_URL requires explicit override for journal persistence in tests.
+    process.env.ACCOUNTING_PRODUCTION_POSTING_ALLOWED = "1";
     await seedAccountingChartOfAccounts();
   });
 
@@ -54,6 +55,7 @@ describe("Phase 5D GST reporting", () => {
     process.env.ACCOUNTING_GST_ENABLED = "1";
     process.env.ACCOUNTING_GST_REPORTING_ENABLED = "1";
     process.env.SELLER_STATE = "Karnataka";
+    process.env.ACCOUNTING_PRODUCTION_POSTING_ALLOWED = "1";
   });
 
   afterEach(async () => {
@@ -83,6 +85,7 @@ describe("Phase 5D GST reporting", () => {
       currency: "INR",
       shippingInPaise: opts.shippingInPaise ?? 0,
       discountInPaise: opts.discountInPaise ?? 0,
+      placedAt: new Date(),
       lines: opts.lines ?? [
         { unitPriceInPaise: 118_000, qtyOrdered: 1, taxClass: opts.taxClass ?? "standard" }
       ]

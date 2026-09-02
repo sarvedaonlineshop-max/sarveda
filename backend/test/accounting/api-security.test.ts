@@ -8,10 +8,12 @@ describe("accounting API security", () => {
     const source = readFileSync(adminRoutesPath, "utf8");
 
     expect(source).toContain('router.use(requireAdmin)');
-    expect(source).toContain('router.use("/accounting", accountingAdminRoutes)');
+    expect(source).toContain('router.use("/accounting", requireAccountingAccess, accountingAdminRoutes)');
     expect(source.indexOf('router.use(requireAdmin)')).toBeLessThan(
       source.indexOf('router.use("/accounting"')
     );
+    expect(source).toContain("isAccountingEmailAllowed");
+    expect(source).toContain("requireAccountingAccess");
   });
 
   it("enforces NATIVE_ACCOUNTING_ENABLED on mutating accounting data routes", () => {

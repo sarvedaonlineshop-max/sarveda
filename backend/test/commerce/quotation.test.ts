@@ -138,14 +138,19 @@ describe("quotation totals / GST preview", () => {
 
 describe("quotation CRUD + documents", () => {
   it("creates draft, multi-item, no accounting journal", async () => {
-    const journalsBefore = await prisma.accountingJournalEntry.count();
     const q = await createQuotation(baseBody({ buyerGstin: "29AAAAA0000A1Z5" }));
     expect(q.status).toBe("DRAFT");
     expect(q.quoteNumber).toMatch(/^QT\/\d{2}-\d{2}\/\d{6}$/);
     expect(q.items).toHaveLength(2);
     expect(q.notes).not.toContain("<script>");
-    const journalsAfter = await prisma.accountingJournalEntry.count();
-    expect(journalsAfter).toBe(journalsBefore);
+    expect(
+      await prisma.accountingPostingEvent.count({ where: { sourceId: q.id } })
+    ).toBe(0);
+    expect(
+      await prisma.accountingJournalEntry.count({
+        where: { memo: { contains: q.quoteNumber } }
+      })
+    ).toBe(0);
     await cleanupQuote(q.id);
   });
 
@@ -160,7 +165,6 @@ describe("quotation CRUD + documents", () => {
   });
 
   it("issue quote + download PDF + proforma without journals", async () => {
-    const journalsBefore = await prisma.accountingJournalEntry.count();
     const created = await createQuotation(baseBody());
     const sent = await markQuotationSent(created.id);
     expect(sent.status).toBe("SENT");
@@ -170,16 +174,20 @@ describe("quotation CRUD + documents", () => {
     expect(quotePdf.pdf.length).toBeGreaterThan(500);
     expect(quotePdf.pdf.subarray(0, 4).toString()).toBe("%PDF");
 
-    const journalsMid = await prisma.accountingJournalEntry.count();
-    expect(journalsMid).toBe(journalsBefore);
+    expect(
+      await prisma.accountingPostingEvent.count({ where: { sourceId: created.id } })
+    ).toBe(0);
 
     const proforma = await generateProformaPdfBuffer(created.id);
     expect(proforma.pdf.subarray(0, 4).toString()).toBe("%PDF");
     const refreshed = await getQuotation(created.id);
     expect(refreshed?.proformaIssuedAt).toBeTruthy();
 
-    const journalsAfter = await prisma.accountingJournalEntry.count();
-    expect(journalsAfter).toBe(journalsBefore);
+    expect(
+      await prisma.accountingJournalEntry.count({
+        where: { memo: { contains: created.quoteNumber } }
+      })
+    ).toBe(0);
 
     await cleanupQuote(created.id);
   });

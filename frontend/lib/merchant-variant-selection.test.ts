@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   resolveVariantIdFromLegacyAttributes,
   resolveVariantIdFromMerchantParams
-} from "../../lib/merchant-variant-selection";
+} from "./merchant-variant-selection";
 
 const variants = [
   {
