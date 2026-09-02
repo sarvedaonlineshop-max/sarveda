@@ -36,6 +36,7 @@ import { whatsappWebhookHandler } from "./modules/whatsapp/whatsapp.webhook";
 import { whatsappFlowEndpointHandler } from "./modules/whatsapp/whatsapp-flow.endpoint";
 import { adminRoutes } from "./modules/admin";
 import { productsRoutes } from "./modules/products/products.routes";
+import { merchantRoutes } from "./modules/merchant/merchant.routes";
 import { shippingRoutes } from "./modules/shipping";
 import { chatRoutes } from "./modules/chat/chat.routes";
 import { contactRoutes } from "./modules/contact/contact.routes";
@@ -241,6 +242,7 @@ app.use(
 
 app.use("/api/auth", authRouter);
 app.use("/api/products", productsRoutes);
+app.use("/api/merchant", merchantRoutes);
 app.use("/api/categories", categoriesRoutes);
 app.use("/api/courses", coursesRoutes);
 app.use("/api/events", eventsRoutes);

@@ -30,6 +30,7 @@ export async function generateStaticParams() {
 
 type Props = {
   params: { slug: string };
+  searchParams?: Record<string, string | string[] | undefined>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -68,7 +69,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function ProductDetailPage({ params }: Props) {
+export default async function ProductDetailPage({ params, searchParams }: Props) {
   const product = await fetchProductBySlug(params.slug, { next: { revalidate: 300 } });
   if (!product) {
     notFound();
@@ -120,7 +121,11 @@ export default async function ProductDetailPage({ params }: Props) {
       </div>
 
       <main className="bg-stone-50">
-        <ProductDetailExperience product={product} pairWithItems={pairWithItems} />
+        <ProductDetailExperience
+          product={product}
+          pairWithItems={pairWithItems}
+          initialSearchParams={searchParams}
+        />
         <div className="page-shell pb-12">
           <ProductRelatedArticles slugs={product.relatedArticleSlugs ?? []} />
         </div>

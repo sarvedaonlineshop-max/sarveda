@@ -79,6 +79,7 @@ export type ProductVariantDetail = {
   isDefault: boolean;
   dropShipEnabled?: boolean;
   inventory: { onHand: number; reserved: number; lowStockThreshold?: number } | null;
+  wooCommerceVariationId?: number | null;
   attributeValues: VariantAttributeRow[];
   shippingRates?: VariantShippingRate[];
   videoUrl?: string | null;

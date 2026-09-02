@@ -95,7 +95,7 @@ export default function AdminProductsPage() {
     setExporting(true);
     setExportOpen(false);
     try {
-      const data = await fetchProductsXlSheet({ status: "ALL", scope: "ALL" });
+      const data = await fetchProductsXlSheet({ status: "ALL" });
       const stamp = new Date().toISOString().slice(0, 10);
       if (format === "csv") {
         downloadCsvFile(`sarveda-products-${stamp}.csv`, productsSheetToCsv(data.rows));

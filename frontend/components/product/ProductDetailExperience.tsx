@@ -33,16 +33,26 @@ import {
   UNTRACKED_STOCK_ON_HAND,
   variantDisplayLabel
 } from "@/lib/variant-utils";
+import { resolveVariantIdFromMerchantParams } from "@/lib/merchant-variant-selection";
 import type { ProductDetail, ProductListItem } from "@/lib/types";
 
-function pickInitialVariant(variants: ProductDetail["variants"]) {
+function pickInitialVariant(
+  variants: ProductDetail["variants"],
+  searchParams?: Record<string, string | string[] | undefined>
+) {
   if (!variants.length) return null;
+  const fromUrl = resolveVariantIdFromMerchantParams(variants, searchParams ?? null);
+  if (fromUrl) {
+    const hit = variants.find((v) => v.id === fromUrl);
+    if (hit) return hit;
+  }
   return variants.find((v) => v.isDefault) ?? variants[0];
 }
 
 type Props = {
   product: ProductDetail;
   pairWithItems: ProductListItem[];
+  initialSearchParams?: Record<string, string | string[] | undefined>;
 };
 
 const STICKY_TOP = "top-[var(--storefront-header-offset)]";
@@ -53,7 +63,7 @@ const STICKY_TOP = "top-[var(--storefront-header-offset)]";
  * - Col 2: title → price → buy box → full description → accordion
  * - Below: pair-with, reviews
  */
-export function ProductDetailExperience({ product, pairWithItems }: Props) {
+export function ProductDetailExperience({ product, pairWithItems, initialSearchParams }: Props) {
   const router = useRouter();
   const { items, itemCount, subtotalInPaise, currency: cartCurrency } = useCartData();
   const hasCartRail = itemCount > 0 || items.length > 0;
@@ -61,7 +71,10 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
 
   const [catalog, setCatalog] = useState(product);
   const [variants, setVariants] = useState(product.variants);
-  const initial = useMemo(() => pickInitialVariant(variants), [variants]);
+  const initial = useMemo(
+    () => pickInitialVariant(variants, initialSearchParams),
+    [variants, initialSearchParams]
+  );
   const [variantId, setVariantId] = useState<string | null>(initial?.id ?? null);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [qty, setQty] = useState(1);
@@ -108,11 +121,15 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
   useEffect(() => {
     if (!variants.length) return;
     const stillValid = variants.some((v) => v.id === variantId);
-    if (!stillValid) {
-      const next = pickInitialVariant(variants);
-      setVariantId(next?.id ?? null);
+    const next = pickInitialVariant(variants, initialSearchParams);
+    if (!stillValid && next) {
+      setVariantId(next.id);
+      return;
     }
-  }, [variants, variantId]);
+    if (next && next.id !== variantId && initialSearchParams) {
+      setVariantId(next.id);
+    }
+  }, [initialSearchParams, variants, variantId]);
 
   const variant = variants.find((v) => v.id === variantId) ?? initial;
   const isDigital = product.productType === "DIGITAL";

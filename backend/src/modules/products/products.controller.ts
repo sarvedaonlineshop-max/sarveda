@@ -255,15 +255,13 @@ export async function catalogGaps(_req: Request, res: Response, next: NextFuncti
   }
 }
 
-/** GET /api/admin/products/xl-sheet — (?status=ACTIVE|DRAFT|ALL, ?scope=ALL|PRICE_PENDING) */
+/** GET /api/admin/products/xl-sheet — (?status=ACTIVE|DRAFT|ALL). Full catalog (prices resolved). */
 export async function xlSheetList(req: Request, res: Response, next: NextFunction) {
   try {
     const raw = String(req.query.status || "ACTIVE").toUpperCase();
     const statusFilter =
       raw === "DRAFT" || raw === "ALL" || raw === "ACTIVE" ? raw : "ACTIVE";
-    const scopeRaw = String(req.query.scope || "ALL").toUpperCase();
-    const scope = scopeRaw === "PRICE_PENDING" ? "PRICE_PENDING" : "ALL";
-    const data = await listXlSheetRows(statusFilter, scope);
+    const data = await listXlSheetRows(statusFilter);
     res.json({ success: true, data });
   } catch (err) {
     next(err);

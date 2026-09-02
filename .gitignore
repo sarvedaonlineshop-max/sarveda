@@ -106,13 +106,11 @@ frontend/public/sw.js.map
 frontend/public/workbox-*.js
 frontend/public/workbox-*.js.map
 
-# Merchant/SEO audit dumps — keep small summaries; ignore bulky feed snapshots
-docs/audit/**/*.xml
-docs/audit/**/*.xlsx
-docs/audit/**/*.xls
-docs/audit/**/*.log
-docs/audit/**/*.pyc
-docs/audit/**/__pycache__/
+# Operator audit dumps (regenerable). Drop-shipping cert summaries already committed.
+docs/audit/**
+!docs/audit/drop-shipping-v1/
+!docs/audit/drop-shipping-v1/**
+
 
 backend/start.sh
 backend/scripts/*.json
