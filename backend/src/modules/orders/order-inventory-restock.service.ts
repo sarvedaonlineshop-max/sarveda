@@ -6,6 +6,7 @@ import {
 } from "@prisma/client";
 import { z } from "zod";
 
+import { orderItemWarehouseUnits } from "../inventory/order-item-fulfillment";
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 
@@ -94,7 +95,14 @@ export async function applyOrderInventoryRestockTx(
 
   const orderItems = await tx.orderItem.findMany({
     where: { orderId: input.orderId, id: { in: input.lines.map((l) => l.orderItemId) } },
-    select: { id: true, orderId: true, variantId: true, qtyOrdered: true }
+    select: {
+      id: true,
+      orderId: true,
+      variantId: true,
+      qtyOrdered: true,
+      warehouseFulfillmentQty: true,
+      dropShipFulfillmentQty: true
+    }
   });
   const byId = new Map(orderItems.map((i) => [i.id, i]));
 
@@ -124,7 +132,8 @@ export async function applyOrderInventoryRestockTx(
     }
 
     const alreadyReturned = await getReturnedQuantityForOrderItem(tx, line.orderItemId);
-    const remaining = item.qtyOrdered - alreadyReturned;
+    const warehouseOrdered = orderItemWarehouseUnits(item);
+    const remaining = warehouseOrdered - alreadyReturned;
     if (line.quantity > remaining) {
       throw Object.assign(
         new Error(
@@ -181,8 +190,28 @@ export async function restockPaidOrderLinesTx(
 ): Promise<OrderInventoryRestockEvent[]> {
   const items = await tx.orderItem.findMany({
     where: { orderId },
-    select: { id: true, qtyOrdered: true }
+    select: {
+      id: true,
+      qtyOrdered: true,
+      warehouseFulfillmentQty: true,
+      dropShipFulfillmentQty: true
+    }
   });
+
+  const lines: RestockLineInput[] = [];
+  for (const item of items) {
+    const warehouseOrdered = orderItemWarehouseUnits(item);
+    const alreadyReturned = await getReturnedQuantityForOrderItem(tx, item.id);
+    const remaining = warehouseOrdered - alreadyReturned;
+    if (remaining <= 0) continue;
+    lines.push({
+      orderItemId: item.id,
+      quantity: remaining,
+      disposition: OrderInventoryRestockDisposition.SELLABLE
+    });
+  }
+
+  if (!lines.length) return [];
 
   return applyOrderInventoryRestockTx(tx, {
     orderId,
@@ -190,11 +219,7 @@ export async function restockPaidOrderLinesTx(
     sourceId: opts.sourceId,
     reason: opts.reason,
     createdByUserId: opts.createdByUserId,
-    lines: items.map((item) => ({
-      orderItemId: item.id,
-      quantity: item.qtyOrdered,
-      disposition: OrderInventoryRestockDisposition.SELLABLE
-    }))
+    lines
   });
 }
 

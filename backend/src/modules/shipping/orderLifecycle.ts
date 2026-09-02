@@ -7,7 +7,6 @@ import * as delhivery from "./delhivery";
 import { assertOrderEligibleForTrackingSync, autoSelectAndCreate } from "./router";
 import * as shiprocket from "./shiprocket";
 import { notifyOrderEmail } from "../notifications/email";
-import { handlePaidOrderStatusChange } from "../orders/orders.service";
 
 import {
   mapCourierStatusToShipment,
@@ -47,6 +46,10 @@ export function isShiprocketRtoStatus(status: string | undefined): boolean {
   return RTO_STATUS_LABELS.some((s) => lower.includes(s.toLowerCase()));
 }
 
+/**
+ * Phase 1A: record carrier RTO on shipment only — no auto-cancel, no auto-restock.
+ * Physical receipt and refund are handled in Phase 1C RTO V2.
+ */
 export async function handleRtoShipment(
   orderId: string,
   awb: string,
@@ -69,21 +72,18 @@ export async function handleRtoShipment(
     data: { status: "RTO", rtoAt: new Date() }
   });
 
-  if (!["CANCELLED", "REFUNDED"].includes(order.status)) {
-    await handlePaidOrderStatusChange(
-      orderId,
-      "CANCELLED",
-      `RTO: ${status} — AWB ${awb}`
-    );
+  await prisma.order.update({
+    where: { id: orderId },
+    data: { fulfillmentStatus: "RETURNED" }
+  });
 
-    const rtoNote = `RTO: ${status} — AWB ${awb}`;
-    await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        notes: order.notes ? `${order.notes}\n${rtoNote}` : rtoNote
-      }
-    });
-  }
+  const rtoNote = `RTO reported by carrier: ${status} — AWB ${awb} (awaiting physical receipt at Sarveda)`;
+  await prisma.order.update({
+    where: { id: orderId },
+    data: {
+      notes: order.notes ? `${order.notes}\n${rtoNote}` : rtoNote
+    }
+  });
 
   notifyOrderEmail(orderId, "order_returned");
 
@@ -92,10 +92,11 @@ export async function handleRtoShipment(
     orderNumber: order.orderNumber,
     awb,
     status,
-    customerEmail: order.email
+    customerEmail: order.email,
+    phase: "1A_no_auto_cancel_restock"
   });
 
-  logger.info("rto_handled", { orderId, awb, status });
+  logger.info("rto_recorded_no_auto_restock", { orderId, awb, status });
 }
 
 export async function onOrderEnteredProcessing(orderId: string): Promise<void> {
@@ -158,6 +159,20 @@ export async function applyCarrierWebhookTracking(
   }
 
   const shipmentStatus = mapCourierStatusToShipment(statusLabel);
+  if (shipmentStatus === "RTO") {
+    await handleRtoShipment(shipment.orderId, wb, statusLabel);
+    return {
+      success: true,
+      data: {
+        waybill: wb,
+        courier: shipment.courier,
+        shipmentStatus: "RTO" as ShipmentStatus,
+        orderStatus: shipment.order.status,
+        fulfillmentStatus: "RETURNED"
+      }
+    };
+  }
+
   const prevOrderStatus = shipment.order.status;
   const out = await persistShipmentTrackingFromCarrier(shipment, shipmentStatus);
   notifyShipmentMilestones(shipment.orderId, prevOrderStatus, out.orderStatus);
@@ -232,6 +247,20 @@ export async function syncTrackingByWaybill(waybill: string): Promise<
   }
 
   const shipmentStatus = mapCourierStatusToShipment(tracked.data.status);
+  if (shipmentStatus === "RTO") {
+    await handleRtoShipment(shipment.orderId, wb, tracked.data.status);
+    return {
+      success: true,
+      data: {
+        waybill: wb,
+        courier: shipment.courier,
+        shipmentStatus: "RTO",
+        orderStatus: shipment.order.status,
+        fulfillmentStatus: "RETURNED"
+      }
+    };
+  }
+
   const prevOrderStatus = shipment.order.status;
   const out = await persistShipmentTrackingFromCarrier(shipment, shipmentStatus);
   notifyShipmentMilestones(shipment.orderId, prevOrderStatus, out.orderStatus);

@@ -39,6 +39,7 @@ export async function createTestProductWithInventory(opts?: {
   saleInPaise?: number;
   mrpInPaise?: number;
   weightGrams?: number;
+  dropShipEnabled?: boolean;
 }): Promise<TestProductBundle> {
   skuCounter += 1;
   const suffix = `${Date.now()}-${skuCounter}-${randomUUID().slice(0, 8)}`;
@@ -63,7 +64,8 @@ export async function createTestProductWithInventory(opts?: {
       saleInPaise: opts?.saleInPaise ?? 118_000,
       weightGrams: opts?.weightGrams ?? 500,
       isDefault: true,
-      status: "ACTIVE"
+      status: "ACTIVE",
+      dropShipEnabled: opts?.dropShipEnabled ?? false
     }
   });
 
@@ -107,6 +109,17 @@ export async function createPendingRazorpayOrder(bundle: TestProductBundle, opts
   const orderNumber = `SRV-TEST-${randomUUID().slice(0, 8)}`;
   const rzpOrderId = `order_test_${randomUUID().slice(0, 12)}`;
 
+  const variant = await prisma.productVariant.findUnique({
+    where: { id: bundle.variantId },
+    include: { inventory: true }
+  });
+  const { getVariantFulfillmentAvailability, variantFulfillmentInputFromVariant, assertFulfillmentAllowed } =
+    await import("../../src/modules/inventory/variant-fulfillment-availability");
+  const allocation = assertFulfillmentAllowed(
+    variantFulfillmentInputFromVariant(variant ?? { inventory: null }),
+    qty
+  );
+
   const order = await prisma.order.create({
     data: {
       orderNumber,
@@ -123,6 +136,8 @@ export async function createPendingRazorpayOrder(bundle: TestProductBundle, opts
           skuSnapshot: bundle.sku,
           nameSnapshot: "Test Product",
           qtyOrdered: qty,
+          warehouseFulfillmentQty: allocation.warehouseFulfillmentQty,
+          dropShipFulfillmentQty: allocation.dropShipFulfillmentQty,
           unitPriceInPaise: unitPrice,
           lineTotalInPaise: lineTotal
         }

@@ -2,6 +2,7 @@ import type { Prisma } from "@prisma/client";
 
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
+import { orderItemWarehouseUnits } from "../inventory/order-item-fulfillment";
 import { mirrorStockToZohoForSkus } from "../zoho/zoho-items";
 import { voidZohoInvoiceForCancelledOrder } from "../zoho/zoho-financials";
 
@@ -19,11 +20,14 @@ export async function reserveStockTx(tx: Prisma.TransactionClient, orderId: stri
     const inv = item.variant.inventory;
     if (!inv) continue;
 
+    const warehouseQty = orderItemWarehouseUnits(item);
+    if (warehouseQty <= 0) continue;
+
     const rows = await tx.$executeRaw`
       UPDATE "Inventory"
-      SET reserved = reserved + ${item.qtyOrdered}
+      SET reserved = reserved + ${warehouseQty}
       WHERE id = ${inv.id}::uuid
-      AND ("onHand" - reserved) >= ${item.qtyOrdered}
+      AND ("onHand" - reserved) >= ${warehouseQty}
     `;
 
     if (rows === 0) {
@@ -39,13 +43,19 @@ export async function reserveStockTx(tx: Prisma.TransactionClient, orderId: stri
 export async function releaseStockTx(tx: Prisma.TransactionClient, orderId: string): Promise<void> {
   const items = await tx.orderItem.findMany({
     where: { orderId },
-    select: { qtyOrdered: true, variantId: true }
+    select: {
+      qtyOrdered: true,
+      variantId: true,
+      warehouseFulfillmentQty: true,
+      dropShipFulfillmentQty: true
+    }
   });
 
   for (const item of items) {
     const inv = await tx.inventory.findUnique({ where: { variantId: item.variantId } });
     if (!inv) continue;
-    const dec = Math.min(item.qtyOrdered, inv.reserved);
+    const warehouseQty = orderItemWarehouseUnits(item);
+    const dec = Math.min(warehouseQty, inv.reserved);
     if (dec <= 0) continue;
     await tx.inventory.update({
       where: { id: inv.id },
@@ -61,17 +71,24 @@ export async function releaseStockTx(tx: Prisma.TransactionClient, orderId: stri
 export async function confirmStockTx(tx: Prisma.TransactionClient, orderId: string): Promise<void> {
   const items = await tx.orderItem.findMany({
     where: { orderId },
-    select: { qtyOrdered: true, variantId: true }
+    select: {
+      qtyOrdered: true,
+      variantId: true,
+      warehouseFulfillmentQty: true,
+      dropShipFulfillmentQty: true
+    }
   });
 
   for (const item of items) {
     const inv = await tx.inventory.findUnique({ where: { variantId: item.variantId } });
     if (!inv) continue;
-    const decReserved = Math.min(item.qtyOrdered, inv.reserved);
+    const warehouseQty = orderItemWarehouseUnits(item);
+    if (warehouseQty <= 0) continue;
+    const decReserved = Math.min(warehouseQty, inv.reserved);
     await tx.inventory.update({
       where: { id: inv.id },
       data: {
-        onHand: { decrement: item.qtyOrdered },
+        onHand: { decrement: warehouseQty },
         ...(decReserved > 0 ? { reserved: { decrement: decReserved } } : {})
       }
     });

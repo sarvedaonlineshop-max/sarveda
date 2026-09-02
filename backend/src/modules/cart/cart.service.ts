@@ -4,6 +4,13 @@ import type { Request } from "express";
 
 import { prisma } from "../../config/db";
 import { clearAbandonedCartEmailDedup } from "../../jobs/abandonedNotificationJob";
+import {
+  assertFulfillmentAllowed,
+  customerMaxLineQty,
+  getVariantFulfillmentAvailability,
+  isCustomerSellable,
+  variantFulfillmentInputFromVariant
+} from "../inventory/variant-fulfillment-availability";
 import { unitMinorForZone } from "../../utils/variantPricing";
 import { isDigitalLine } from "../../utils/digitalCart";
 import { couponUserMessage, resolveCartCouponDiscount } from "../coupons/coupon.service";
@@ -56,9 +63,8 @@ export async function mergeGuestCartIntoUser(
       include: { inventory: true }
     });
 
-    const available = variant?.inventory
-      ? Math.max(0, variant.inventory.onHand - variant.inventory.reserved)
-      : 1_000_000;
+    const input = variant ? variantFulfillmentInputFromVariant(variant) : null;
+    if (!input || !isCustomerSellable(input)) continue;
 
     const existing = await prisma.cartItem.findUnique({
       where: {
@@ -68,7 +74,8 @@ export async function mergeGuestCartIntoUser(
     });
 
     const rawMerged = (existing?.quantity ?? 0) + item.quantity;
-    const mergedQty = Math.min(rawMerged, available);
+    const allocation = getVariantFulfillmentAvailability(input, rawMerged);
+    const mergedQty = allocation.sellable ? allocation.requestedQty : 0;
 
     if (mergedQty < 1) continue;
 
@@ -251,6 +258,8 @@ export async function getCartPayload(
     variantLabel: string | null;
     primaryImageUrl: string | null;
     maxQuantity: number | null;
+    dropShipEnabled: boolean;
+    warehouseAvailable: number | null;
   };
 
   const items: ItemOut[] = [];
@@ -275,7 +284,11 @@ export async function getCartPayload(
     itemCount += row.quantity;
 
     const inv = v.inventory;
-    const maxQty = inv ? Math.max(0, inv.onHand - inv.reserved) : null;
+    const fulfillmentInput = variantFulfillmentInputFromVariant(v);
+    const maxQty = customerMaxLineQty(fulfillmentInput);
+    const warehouseAvailable = inv
+      ? Math.max(0, inv.onHand - inv.reserved)
+      : null;
 
     items.push({
       id: row.id,
@@ -286,7 +299,9 @@ export async function getCartPayload(
       unitPriceInPaise: price,
       variantLabel: variantLabel(v.attributeValues) ?? "Standard",
       primaryImageUrl: img,
-      maxQuantity: maxQty
+      maxQuantity: v.dropShipEnabled ? null : maxQty,
+      dropShipEnabled: v.dropShipEnabled,
+      warehouseAvailable
     });
   }
 
@@ -369,8 +384,8 @@ export async function addCartItem(
   }
 
   const inv = variant.inventory;
-  const available = inv ? inv.onHand - inv.reserved : 1_000_000;
-  if (available < 1) {
+  const input = variantFulfillmentInputFromVariant(variant);
+  if (!isCustomerSellable(input)) {
     const e = new Error("Out of stock") as Error & { statusCode: number; code: string };
     e.statusCode = 400;
     e.code = "OUT_OF_STOCK";
@@ -384,12 +399,7 @@ export async function addCartItem(
   });
 
   const nextQty = (existing?.quantity ?? 0) + quantity;
-  if (nextQty > available) {
-    const e = new Error(`Only ${available} available`) as Error & { statusCode: number; code: string };
-    e.statusCode = 400;
-    e.code = "INSUFFICIENT_STOCK";
-    throw e;
-  }
+  assertFulfillmentAllowed(input, nextQty);
 
   await prisma.cartItem.upsert({
     where: {
@@ -432,14 +442,8 @@ export async function setCartItemQuantity(
     throw e;
   }
 
-  const inv = variant.inventory;
-  const available = inv ? inv.onHand - inv.reserved : 1_000_000;
-  if (available < quantity) {
-    const e = new Error(`Only ${available} available`) as Error & { statusCode: number; code: string };
-    e.statusCode = 400;
-    e.code = "INSUFFICIENT_STOCK";
-    throw e;
-  }
+  const input = variantFulfillmentInputFromVariant(variant);
+  assertFulfillmentAllowed(input, quantity);
 
   await prisma.cartItem.upsert({
     where: { cartId_variantId: { cartId, variantId } },
@@ -478,14 +482,8 @@ export async function updateCartItemQuantity(
     throw e;
   }
 
-  const inv = row.variant.inventory;
-  const available = inv ? inv.onHand - inv.reserved : 1_000_000;
-  if (quantity > available) {
-    const e = new Error(`Only ${available} available`) as Error & { statusCode: number; code: string };
-    e.statusCode = 400;
-    e.code = "INSUFFICIENT_STOCK";
-    throw e;
-  }
+  const input = variantFulfillmentInputFromVariant(row.variant);
+  assertFulfillmentAllowed(input, quantity);
 
   await prisma.cartItem.update({
     where: {

@@ -8,6 +8,7 @@ import { scheduleShippingRetry } from "../../jobs/shippingRetryJob";
 import * as delhivery from "./delhivery";
 import { resolvePickupForShipment } from "./pickupLocation.resolve";
 import * as shiprocket from "./shiprocket";
+import { orderItemWarehouseUnits } from "../inventory/order-item-fulfillment";
 import type { CourierChoice, OrderWithShippingContext } from "./types";
 
 const METRO_NORMALIZED = new Set([
@@ -38,7 +39,9 @@ export function totalWeightGrams(order: OrderWithShippingContext): number {
   let g = 0;
   for (const li of order.items) {
     const w = li.variant?.weightGrams ?? 500;
-    g += w * li.qtyOrdered;
+    const units = orderItemWarehouseUnits(li);
+    if (units <= 0) continue;
+    g += w * units;
   }
   return Math.max(g, 1);
 }

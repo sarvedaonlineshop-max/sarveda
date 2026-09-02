@@ -15,6 +15,10 @@ import {
 } from "../payments/stripe.checkout";
 import { confirmStockTx, reserveStockTx, cancelUnpaidOrderWithRelease } from "../orders/orders.service";
 import { afterOrderPaid } from "../orders/afterPaid";
+import {
+  assertFulfillmentAllowed,
+  variantFulfillmentInputFromVariant
+} from "../inventory/variant-fulfillment-availability";
 import { invoiceNumberForOrder } from "../../utils/invoice";
 import { getCartPayload, resolveCartContext } from "../cart/cart.service";
 import {
@@ -373,16 +377,7 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
   });
 
   for (const row of lines) {
-    const inv = row.variant.inventory;
-    const available = inv ? inv.onHand - inv.reserved : 1_000_000;
-    if (row.quantity > available) {
-      const e = new Error(
-        `Insufficient stock for ${row.variant.productRel.name}`
-      ) as Error & { statusCode: number; code: string };
-      e.statusCode = 400;
-      e.code = "INSUFFICIENT_STOCK";
-      throw e;
-    }
+    assertFulfillmentAllowed(variantFulfillmentInputFromVariant(row.variant), row.quantity);
   }
 
   let subtotalMinor = 0;
@@ -549,6 +544,11 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
         ? `${p.name} (${labelFromVariant(v.attributeValues)})`
         : p.name;
 
+      const allocation = assertFulfillmentAllowed(
+        variantFulfillmentInputFromVariant(v),
+        row.quantity
+      );
+
       await tx.orderItem.create({
         data: {
           orderId: order.id,
@@ -556,6 +556,8 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
           skuSnapshot: v.sku,
           nameSnapshot: nameSnap,
           qtyOrdered: row.quantity,
+          warehouseFulfillmentQty: allocation.warehouseFulfillmentQty,
+          dropShipFulfillmentQty: allocation.dropShipFulfillmentQty,
           unitPriceInPaise: unit,
           discountInPaise: 0,
           taxInPaise: 0,

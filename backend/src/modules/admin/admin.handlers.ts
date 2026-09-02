@@ -1000,7 +1000,9 @@ export async function orderDetail(req: Request, res: Response, next: NextFunctio
           orderBy: { createdAt: "desc" },
           include: {
             photos: true,
-            items: { include: { photos: true } }
+            items: { include: { photos: true } },
+            returnShipment: true,
+            replacementFulfillments: true
           }
         },
         inventoryRestocks: { orderBy: { createdAt: "asc" } },
@@ -1334,18 +1336,21 @@ export async function patchOrderStatus(req: Request, res: Response, next: NextFu
     const prevStatus = exists.status;
     const paidPipeline = ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"] as OrderStatus[];
 
-    if (
-      (status === "CANCELLED" || status === "REFUNDED") &&
-      paidPipeline.includes(prevStatus)
-    ) {
+    if (status === "REFUNDED" && paidPipeline.includes(prevStatus)) {
+      res.status(400).json({
+        success: false,
+        error:
+          "Order cannot be set to REFUNDED via status patch. Use the refund workflow so payment and inventory stay in sync.",
+        code: "REFUNDED_STATUS_PATCH_FORBIDDEN"
+      });
+      return;
+    }
+
+    if (status === "CANCELLED" && paidPipeline.includes(prevStatus)) {
       const { handlePaidOrderStatusChange } = await import("../orders/orders.service");
       const { notifyOrderEmail } = await import("../notifications/email");
-      await handlePaidOrderStatusChange(
-        id,
-        status === "REFUNDED" ? "REFUNDED" : "CANCELLED",
-        "Admin status update"
-      );
-      notifyOrderEmail(id, status === "REFUNDED" ? "refund_initiated" : "order_cancelled");
+      await handlePaidOrderStatusChange(id, "CANCELLED", "Admin status update");
+      notifyOrderEmail(id, "order_cancelled");
       const order = await prisma.order.findFirst({
         where: { id },
         include: { items: true, addresses: true, invoice: true }
@@ -1381,6 +1386,142 @@ export async function patchOrderStatus(req: Request, res: Response, next: NextFu
   }
 }
 
+export async function orderRefundPreview(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const policyParam = typeof req.query.policy === "string" ? req.query.policy : "auto";
+    const { loadOrderRefundPreview } = await import("../orders/order-refund-preview.service");
+    const result = await loadOrderRefundPreview(id, {
+      policy: policyParam as import("../orders/order-refund-calculator.types").RefundCalculatorPolicy | "auto"
+    });
+    if (!result.ok) {
+      res.status(result.code === "NOT_FOUND" ? 404 : 409).json({
+        success: false,
+        error: result.message,
+        code: result.code
+      });
+      return;
+    }
+    res.json({
+      success: true,
+      data: {
+        orderNumber: result.orderNumber,
+        currency: result.currency,
+        breakdown: result.breakdown
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getOrderRtoWorkflow(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { id } = req.params;
+    const { loadRtoWorkflowState } = await import("../orders/rto-workflow.service");
+    const state = await loadRtoWorkflowState(id);
+    if (!state) {
+      res.status(404).json({ success: false, error: "Order not found", code: "NOT_FOUND" });
+      return;
+    }
+    res.json({ success: true, data: state });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function markShipmentRtoReceived(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { shipmentId } = req.params;
+    const adminUserId = (req as Request & { user?: { id: string } }).user?.id;
+    const { markRtoReceived } = await import("../orders/rto-workflow.service");
+    const result = await markRtoReceived({ shipmentId, adminUserId });
+    res.json({ success: true, data: result });
+  } catch (err) {
+    const code = (err as { code?: string }).code;
+    const statusCode = (err as { statusCode?: number }).statusCode;
+    if (code && statusCode) {
+      res.status(statusCode).json({
+        success: false,
+        error: err instanceof Error ? err.message : "Failed",
+        code
+      });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function setShipmentRtoDisposition(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { shipmentId } = req.params;
+    const { disposition } = req.body as { disposition: string };
+    const adminUserId = (req as Request & { user?: { id: string } }).user?.id;
+    const { setRtoDisposition } = await import("../orders/rto-workflow.service");
+    const result = await setRtoDisposition({
+      shipmentId,
+      disposition: disposition as import("@prisma/client").RtoDisposition,
+      adminUserId
+    });
+    res.json({ success: true, data: result });
+  } catch (err) {
+    const code = (err as { code?: string }).code;
+    const statusCode = (err as { statusCode?: number }).statusCode;
+    if (code && statusCode) {
+      res.status(statusCode).json({
+        success: false,
+        error: err instanceof Error ? err.message : "Failed",
+        code
+      });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function executeShipmentRtoRefund(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { shipmentId } = req.params;
+    const adminUserId = (req as Request & { user?: { id: string } }).user?.id;
+    const { executeRtoRefund } = await import("../orders/rto-workflow.service");
+    const result = await executeRtoRefund({ shipmentId, adminUserId });
+    res.json({ success: true, data: result });
+  } catch (err) {
+    const code = (err as { code?: string }).code;
+    const statusCode = (err as { statusCode?: number }).statusCode;
+    if (code && statusCode) {
+      res.status(statusCode).json({
+        success: false,
+        error: err instanceof Error ? err.message : "Failed",
+        code
+      });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function adminCreateSupplementaryPayment(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { orderId, requestId } = req.params;
+    const { adminInitiateSupplementaryPayment } = await import("../payments/supplementary-payment.service");
+    const session = await adminInitiateSupplementaryPayment({ orderId, requestId });
+    res.json({ success: true, data: session });
+  } catch (err) {
+    const code = (err as { code?: string }).code;
+    const statusCode = (err as { statusCode?: number }).statusCode;
+    if (code && statusCode) {
+      res.status(statusCode).json({
+        success: false,
+        error: err instanceof Error ? err.message : "Failed",
+        code
+      });
+      return;
+    }
+    next(err);
+  }
+}
+
 export async function refundOrder(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
@@ -1393,7 +1534,8 @@ export async function refundOrder(req: Request, res: Response, next: NextFunctio
     if (
       code === "DUPLICATE_REFUND" ||
       code === "AMOUNT_TOO_HIGH" ||
-      code === "ALREADY_REFUNDED"
+      code === "ALREADY_REFUNDED" ||
+      code === "RTO_WORKFLOW_REQUIRED"
     ) {
       res.status(statusCode ?? 409).json({
         success: false,
@@ -1538,6 +1680,9 @@ function mapInventoryRow(
     .map((av) => `${av.attributeValue.attribute.name}: ${av.attributeValue.value}`)
     .join(" · ");
   const available = Math.max(0, inv.onHand - inv.reserved);
+  const dropShipEnabled = inv.variant.dropShipEnabled;
+  const shopAvailability =
+    available > 0 ? "WAREHOUSE_IN_STOCK" : dropShipEnabled ? "DROP_SHIP_AVAILABLE" : "OUT_OF_STOCK";
   const low = inv.onHand > 0 && inv.onHand <= inv.lowStockThreshold;
   const categories = inv.variant.productRel.categories
     .map((pc) => ({
@@ -1577,6 +1722,8 @@ function mapInventoryRow(
     onHand: inv.onHand,
     reserved: inv.reserved,
     available,
+    dropShipEnabled,
+    shopAvailability,
     lowStockThreshold: inv.lowStockThreshold,
     low,
     inZohoBooks: audit.inZohoBooks,

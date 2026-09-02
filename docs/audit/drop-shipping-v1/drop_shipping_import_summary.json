@@ -1,0 +1,16 @@
+{
+  "FILE_ROWS": 790,
+  "Y_ROWS": 303,
+  "N_ROWS": 487,
+  "MATCHED": 790,
+  "UNMATCHED": 0,
+  "DUPLICATES": 0,
+  "DUPLICATE_DB_SKUS": 0,
+  "CHANGED": 0,
+  "ALREADY_CORRECT": 790,
+  "MANUAL_REVIEW": 0,
+  "apply": true,
+  "dryRun": false,
+  "filePath": "/tmp/sarveda-inventory-drop-shipping-v1.xlsx",
+  "database": "postgresql://sarveda_master_db:***@ls-38d7ccbcac4ed3da1856692cc50fc732f88d42e1.c9oiska8wm8k.ap-south-1.rds.amazonaws.com:5432/sarveda_db?sslmode=require"
+}
