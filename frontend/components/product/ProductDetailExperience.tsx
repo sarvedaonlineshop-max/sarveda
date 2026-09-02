@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { useCartData } from "@/components/cart/CartProvider";
@@ -38,7 +38,7 @@ import type { ProductDetail, ProductListItem } from "@/lib/types";
 
 function pickInitialVariant(
   variants: ProductDetail["variants"],
-  searchParams?: Record<string, string | string[] | undefined>
+  searchParams?: URLSearchParams | null
 ) {
   if (!variants.length) return null;
   const fromUrl = resolveVariantIdFromMerchantParams(variants, searchParams ?? null);
@@ -52,7 +52,6 @@ function pickInitialVariant(
 type Props = {
   product: ProductDetail;
   pairWithItems: ProductListItem[];
-  initialSearchParams?: Record<string, string | string[] | undefined>;
 };
 
 const STICKY_TOP = "top-[var(--storefront-header-offset)]";
@@ -63,8 +62,9 @@ const STICKY_TOP = "top-[var(--storefront-header-offset)]";
  * - Col 2: title → price → buy box → full description → accordion
  * - Below: pair-with, reviews
  */
-export function ProductDetailExperience({ product, pairWithItems, initialSearchParams }: Props) {
+export function ProductDetailExperience({ product, pairWithItems }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { items, itemCount, subtotalInPaise, currency: cartCurrency } = useCartData();
   const hasCartRail = itemCount > 0 || items.length > 0;
   const cartCount = itemCount > 0 ? itemCount : items.reduce((n, i) => n + i.quantity, 0);
@@ -72,8 +72,8 @@ export function ProductDetailExperience({ product, pairWithItems, initialSearchP
   const [catalog, setCatalog] = useState(product);
   const [variants, setVariants] = useState(product.variants);
   const initial = useMemo(
-    () => pickInitialVariant(variants, initialSearchParams),
-    [variants, initialSearchParams]
+    () => pickInitialVariant(variants, searchParams),
+    [variants, searchParams]
   );
   const [variantId, setVariantId] = useState<string | null>(initial?.id ?? null);
   const [galleryIndex, setGalleryIndex] = useState(0);
@@ -121,15 +121,15 @@ export function ProductDetailExperience({ product, pairWithItems, initialSearchP
   useEffect(() => {
     if (!variants.length) return;
     const stillValid = variants.some((v) => v.id === variantId);
-    const next = pickInitialVariant(variants, initialSearchParams);
+    const next = pickInitialVariant(variants, searchParams);
     if (!stillValid && next) {
       setVariantId(next.id);
       return;
     }
-    if (next && next.id !== variantId && initialSearchParams) {
+    if (next && next.id !== variantId && searchParams?.toString()) {
       setVariantId(next.id);
     }
-  }, [initialSearchParams, variants, variantId]);
+  }, [searchParams, variants, variantId]);
 
   const variant = variants.find((v) => v.id === variantId) ?? initial;
   const isDigital = product.productType === "DIGITAL";
