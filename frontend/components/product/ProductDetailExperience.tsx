@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { useCartData } from "@/components/cart/CartProvider";
@@ -36,16 +36,8 @@ import {
 import { resolveVariantIdFromMerchantParams } from "@/lib/merchant-variant-selection";
 import type { ProductDetail, ProductListItem } from "@/lib/types";
 
-function pickInitialVariant(
-  variants: ProductDetail["variants"],
-  searchParams?: URLSearchParams | null
-) {
+function pickInitialVariant(variants: ProductDetail["variants"]) {
   if (!variants.length) return null;
-  const fromUrl = resolveVariantIdFromMerchantParams(variants, searchParams ?? null);
-  if (fromUrl) {
-    const hit = variants.find((v) => v.id === fromUrl);
-    if (hit) return hit;
-  }
   return variants.find((v) => v.isDefault) ?? variants[0];
 }
 
@@ -64,17 +56,13 @@ const STICKY_TOP = "top-[var(--storefront-header-offset)]";
  */
 export function ProductDetailExperience({ product, pairWithItems }: Props) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { items, itemCount, subtotalInPaise, currency: cartCurrency } = useCartData();
   const hasCartRail = itemCount > 0 || items.length > 0;
   const cartCount = itemCount > 0 ? itemCount : items.reduce((n, i) => n + i.quantity, 0);
 
   const [catalog, setCatalog] = useState(product);
   const [variants, setVariants] = useState(product.variants);
-  const initial = useMemo(
-    () => pickInitialVariant(variants, searchParams),
-    [variants, searchParams]
-  );
+  const initial = useMemo(() => pickInitialVariant(variants), [variants]);
   const [variantId, setVariantId] = useState<string | null>(initial?.id ?? null);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [qty, setQty] = useState(1);
@@ -121,15 +109,25 @@ export function ProductDetailExperience({ product, pairWithItems }: Props) {
   useEffect(() => {
     if (!variants.length) return;
     const stillValid = variants.some((v) => v.id === variantId);
-    const next = pickInitialVariant(variants, searchParams);
-    if (!stillValid && next) {
-      setVariantId(next.id);
-      return;
+    if (!stillValid) {
+      const next = pickInitialVariant(variants);
+      setVariantId(next?.id ?? null);
     }
-    if (next && next.id !== variantId && searchParams?.toString()) {
-      setVariantId(next.id);
+  }, [variants, variantId]);
+
+  // Merchant / legacy Woo deep-links (?offer= / attribute_*) — client-only so SSG PDP stays static.
+  useEffect(() => {
+    if (typeof window === "undefined" || !variants.length) return;
+    const fromUrl = resolveVariantIdFromMerchantParams(
+      variants,
+      new URLSearchParams(window.location.search)
+    );
+    if (fromUrl && fromUrl !== variantId) {
+      setVariantId(fromUrl);
     }
-  }, [searchParams, variants, variantId]);
+    // Intentionally once per variants identity / landing URL — avoid fighting manual variant picks.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.slug, variants]);
 
   const variant = variants.find((v) => v.id === variantId) ?? initial;
   const isDigital = product.productType === "DIGITAL";
