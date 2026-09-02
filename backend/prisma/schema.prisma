@@ -8,41 +8,41 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email        String   @unique
-  phone        String?  @unique
-  name         String?
-  passwordHash String?
-  avatarUrl    String?
-  avatarS3Key  String?
-  googleId     String?  @unique
-  wooCommerceId Int?    @unique
-  role         Role     @default(CUSTOMER)
-  isVerified   Boolean  @default(false)
-  deletedAt    DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  orders       Order[]
-  quotations   Quotation[]
-  cart         Cart?
-  addresses    Address[]
-  wishlist     Wishlist[]
-  reviews      Review[]
-  enrollments  Enrollment[]
-  bookings     Booking[]
-  stockNotifications StockNotification[]
-  passwordResetTokens PasswordResetToken[]
-  enquiryThreads      EnquiryThread[]
-  enquiryAdminMessages EnquiryMessage[] @relation("EnquiryAdminMessages")
-  whatsappAgentSessions WhatsAppAgentSession[] @relation("WhatsAppAgentSessionAdmin")
-  adminSessions       AdminSession[]
-  adminActivities     AdminActivityLog[] @relation("AdminActivityActor")
-  fcmToken                    String?
-  emailNotificationsEnabled   Boolean  @default(true)
-  pushNotificationsEnabled    Boolean  @default(true)
-  blogComments                BlogComment[]
-  accountClosureRequests      AccountClosureRequest[]
-  accountClosureApprovals     AccountClosureApproval[]
+  id                        String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                     String                   @unique
+  phone                     String?                  @unique
+  name                      String?
+  passwordHash              String?
+  avatarUrl                 String?
+  avatarS3Key               String?
+  googleId                  String?                  @unique
+  wooCommerceId             Int?                     @unique
+  role                      Role                     @default(CUSTOMER)
+  isVerified                Boolean                  @default(false)
+  deletedAt                 DateTime?
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
+  orders                    Order[]
+  quotations                Quotation[]
+  cart                      Cart?
+  addresses                 Address[]
+  wishlist                  Wishlist[]
+  reviews                   Review[]
+  enrollments               Enrollment[]
+  bookings                  Booking[]
+  stockNotifications        StockNotification[]
+  passwordResetTokens       PasswordResetToken[]
+  enquiryThreads            EnquiryThread[]
+  enquiryAdminMessages      EnquiryMessage[]         @relation("EnquiryAdminMessages")
+  whatsappAgentSessions     WhatsAppAgentSession[]   @relation("WhatsAppAgentSessionAdmin")
+  adminSessions             AdminSession[]
+  adminActivities           AdminActivityLog[]       @relation("AdminActivityActor")
+  fcmToken                  String?
+  emailNotificationsEnabled Boolean                  @default(true)
+  pushNotificationsEnabled  Boolean                  @default(true)
+  blogComments              BlogComment[]
+  accountClosureRequests    AccountClosureRequest[]
+  accountClosureApprovals   AccountClosureApproval[]
 }
 
 model AccountClosureRequest {
@@ -64,16 +64,16 @@ enum AccountClosureApprovalStatus {
 
 /// Admin approval queue for account closure requests.
 model AccountClosureApproval {
-  id         String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId     String                        @db.Uuid
+  id         String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String                       @db.Uuid
   email      String
   reason     String
-  status     AccountClosureApprovalStatus  @default(PENDING)
-  createdAt  DateTime                      @default(now())
+  status     AccountClosureApprovalStatus @default(PENDING)
+  createdAt  DateTime                     @default(now())
   reviewedAt DateTime?
   reviewedBy String?
   reviewNote String?
-  user       User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@index([status, createdAt])
@@ -132,8 +132,8 @@ model PasswordResetToken {
 }
 
 model Address {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId     String   @db.Uuid
+  id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String  @db.Uuid
   label      String?
   fullName   String
   phone      String
@@ -142,50 +142,50 @@ model Address {
   city       String
   state      String
   postalCode String
-  country    String   @default("IN")
-  isDefault  Boolean  @default(false)
-  user       User     @relation(fields: [userId], references: [id])
+  country    String  @default("IN")
+  isDefault  Boolean @default(false)
+  user       User    @relation(fields: [userId], references: [id])
 }
 
 model Product {
-  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  slug             String           @unique
-  name             String
-  description      String?
-  shortDescription String?
-  productType      ProductType      @default(SIMPLE)
-  status           ProductStatus    @default(DRAFT)
-  catalogHidden    Boolean          @default(false)
-  taxClass         String?          @default("standard")
-  hsnCode          String?
-  hasAudio         Boolean          @default(false)
-  audioUrl         String?
-  videoUrl         String?
-  expressShippingEnabled Boolean    @default(true)
-  productCouponEnabled Boolean      @default(false)
-  relatedArticleSlugs String[]      @default([])
+  id                      String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug                    String              @unique
+  name                    String
+  description             String?
+  shortDescription        String?
+  productType             ProductType         @default(SIMPLE)
+  status                  ProductStatus       @default(DRAFT)
+  catalogHidden           Boolean             @default(false)
+  taxClass                String?             @default("standard")
+  hsnCode                 String?
+  hasAudio                Boolean             @default(false)
+  audioUrl                String?
+  videoUrl                String?
+  expressShippingEnabled  Boolean             @default(true)
+  productCouponEnabled    Boolean             @default(false)
+  relatedArticleSlugs     String[]            @default([])
   // Ordered attribute slugs for storefront variant pills (e.g. size before type).
-  variantAxisOrder   String[]        @default([])
+  variantAxisOrder        String[]            @default([])
   /// Per-attribute option value order for storefront pills, e.g. { "color": ["Blue","Red"], "size": ["S","M","L"] }.
-  variantOptionValueOrder Json       @default("{}")
-  seoTitle         String?
-  seoDescription   String?
-  seoKeyword       String?
-  wooCommerceId    Int?             @unique
+  variantOptionValueOrder Json                @default("{}")
+  seoTitle                String?
+  seoDescription          String?
+  seoKeyword              String?
+  wooCommerceId           Int?                @unique
   // Global catalog order for /shop and unfiltered lists (admin drag-reorder).
-  sortOrder        Int              @default(0)
-  deletedAt        DateTime?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  variants         ProductVariant[]
-  images           ProductImage[]
-  categories       ProductCategory[]
-  accordionItems   AccordionItem[]
-  reviews          Review[]
-  wishlist         Wishlist[]
-  stockNotifications StockNotification[]
-  relationsFrom    ProductRelation[] @relation("ProductRelationFrom")
-  relationsTo      ProductRelation[] @relation("ProductRelationTo")
+  sortOrder               Int                 @default(0)
+  deletedAt               DateTime?
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+  variants                ProductVariant[]
+  images                  ProductImage[]
+  categories              ProductCategory[]
+  accordionItems          AccordionItem[]
+  reviews                 Review[]
+  wishlist                Wishlist[]
+  stockNotifications      StockNotification[]
+  relationsFrom           ProductRelation[]   @relation("ProductRelationFrom")
+  relationsTo             ProductRelation[]   @relation("ProductRelationTo")
 
   @@index([sortOrder])
 }
@@ -203,45 +203,79 @@ enum ProductStatus {
 }
 
 model ProductVariant {
-  id              String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  productId       String                  @db.Uuid
-  sku             String                  @unique
-  mrpInPaise      Int
-  saleInPaise     Int
+  id                         String                                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId                  String                                @db.Uuid
+  sku                        String                                @unique
+  mrpInPaise                 Int
+  saleInPaise                Int
   /// Purchase / landed cost in INR paise (admin XL sheet)
-  costInPaise     Int?
-  mrpUsdCents     Int?
-  saleUsdCents    Int?
+  costInPaise                Int?
+  mrpUsdCents                Int?
+  saleUsdCents               Int?
   /// UAE Dirham (Dinar on catalog sheet) in fils (1/100 AED)
-  mrpAedFils      Int?
-  saleAedFils     Int?
-  mrpGbpPence     Int?
-  saleGbpPence    Int?
-  weightGrams     Int?
-  isDefault       Boolean                 @default(false)
-  status          VariantStatus           @default(ACTIVE)
-  zohoItemId      String?                 @db.VarChar(64)
-  videoUrl        String?
-  audioUrl        String?
-  productRel      Product                 @relation(fields: [productId], references: [id])
-  inventory       Inventory?
-  attributeValues VariantAttributeValue[]
-  shippingRates   VariantShippingRate[]
-  images          ProductImage[]
-  inventoryCostLayers AccountingInventoryCostLayer[]
-  inventoryCostConsumptions AccountingInventoryCostConsumption[]
+  mrpAedFils                 Int?
+  saleAedFils                Int?
+  mrpGbpPence                Int?
+  saleGbpPence               Int?
+  weightGrams                Int?
+  isDefault                  Boolean                               @default(false)
+  status                     VariantStatus                         @default(ACTIVE)
+  zohoItemId                 String?                               @db.VarChar(64)
+  videoUrl                   String?
+  audioUrl                   String?
+  /// Historical Woo sellable offer ID for Merchant continuity (`gla_<id>`).
+  /// Variable products: Woo variation ID. Simple products: Woo product/offer ID
+  /// (same integer Woo used as the Merchant item id). NULL for Sarveda-only / unresolved.
+  wooCommerceVariationId     Int?                                  @unique
+  /// Vendor can fulfil when Sarveda warehouse stock is insufficient (fulfilment policy, not onHand).
+  dropShipEnabled            Boolean                               @default(false)
+  productRel                 Product                               @relation(fields: [productId], references: [id])
+  inventory                  Inventory?
+  attributeValues            VariantAttributeValue[]
+  shippingRates              VariantShippingRate[]
+  images                     ProductImage[]
+  inventoryCostLayers        AccountingInventoryCostLayer[]
+  inventoryCostConsumptions  AccountingInventoryCostConsumption[]
   inventoryOpeningBatchItems AccountingInventoryOpeningBatchItem[]
-  cartItems       CartItem[]
-  orderItems      OrderItem[]
-  marketplaceListings   MarketplaceListing[]
-  marketplaceOrderItems MarketplaceOrderItem[]
-  courseCheckout  Course?
-  eventCheckout   Event?
-  stockNotifications StockNotification[]
-  purchaseOrderLines PurchaseOrderLine[]
-  vendorBillLines    VendorBillLine[]
-  createdAt       DateTime                @default(now())
-  updatedAt       DateTime                @updatedAt
+  cartItems                  CartItem[]
+  orderItems                 OrderItem[]
+  marketplaceListings        MarketplaceListing[]
+  marketplaceOrderItems      MarketplaceOrderItem[]
+  courseCheckout             Course?
+  eventCheckout              Event?
+  digitalCheckoutOffer       DigitalCheckoutOffer?
+  stockNotifications         StockNotification[]
+  purchaseOrderLines         PurchaseOrderLine[]
+  vendorBillLines            VendorBillLine[]
+  merchantCtxOffer           MerchantCtxOffer?
+  createdAt                  DateTime                              @default(now())
+  updatedAt                  DateTime                              @updatedAt
+}
+
+/// Historical CTX / PRODUCTS SOURCE 2 offer registry (883-row accounting).
+model MerchantCtxOffer {
+  wooOfferId       Int                       @id
+  wooParentId      Int?
+  ctxProductType   String
+  ctxItemGroupId   String?
+  ctxTitle         String?
+  ctxLegacyLink    String?
+  classification   MerchantCtxClassification @default(MANUAL_REVIEW)
+  excludeReason    String?
+  manualAction     String?
+  sarvedaVariantId String?                   @unique @db.Uuid
+  notes            String?
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  sarvedaVariant   ProductVariant?           @relation(fields: [sarvedaVariantId], references: [id], onDelete: SetNull)
+
+  @@index([classification])
+}
+
+enum MerchantCtxClassification {
+  PUBLISH
+  INTENTIONALLY_EXCLUDE
+  MANUAL_REVIEW
 }
 
 enum VariantStatus {
@@ -300,32 +334,32 @@ enum MarketplaceReturnStatus {
 }
 
 model MarketplaceChannel {
-  id          String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  code        MarketplaceChannelCode   @unique
+  id          String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        MarketplaceChannelCode @unique
   displayName String
-  isActive    Boolean                  @default(true)
-  createdAt   DateTime                 @default(now())
-  updatedAt   DateTime                 @updatedAt
+  isActive    Boolean                @default(true)
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
   listings    MarketplaceListing[]
   orders      MarketplaceOrder[]
   eventLogs   MarketplaceEventLog[]
 }
 
 model MarketplaceListing {
-  id              String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  channelId       String                   @db.Uuid
-  variantId       String                   @db.Uuid
-  listingId       String?
-  externalSku     String?
-  sellerSku       String?
-  status          MarketplaceListingStatus @default(ACTIVE)
-  isTracked       Boolean                  @default(true)
-  notes           String?
-  lastSyncedAt    DateTime?
-  createdAt       DateTime                 @default(now())
-  updatedAt       DateTime                 @updatedAt
-  channel         MarketplaceChannel       @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  variant         ProductVariant           @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  id           String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  channelId    String                   @db.Uuid
+  variantId    String                   @db.Uuid
+  listingId    String?
+  externalSku  String?
+  sellerSku    String?
+  status       MarketplaceListingStatus @default(ACTIVE)
+  isTracked    Boolean                  @default(true)
+  notes        String?
+  lastSyncedAt DateTime?
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
+  channel      MarketplaceChannel       @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  variant      ProductVariant           @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
   @@unique([channelId, variantId])
   @@index([channelId, status])
@@ -333,8 +367,8 @@ model MarketplaceListing {
 }
 
 model MarketplaceOrder {
-  id               String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  channelId        String                @db.Uuid
+  id               String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  channelId        String                 @db.Uuid
   externalOrderId  String
   orderDate        DateTime
   customerName     String?
@@ -363,19 +397,19 @@ model MarketplaceOrder {
 }
 
 model MarketplaceOrderItem {
-  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  marketplaceOrderId String            @db.Uuid
-  variantId          String?           @db.Uuid
-  skuSnapshot        String
+  id                  String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  marketplaceOrderId  String              @db.Uuid
+  variantId           String?             @db.Uuid
+  skuSnapshot         String
   productNameSnapshot String?
-  quantity           Int               @default(1)
-  unitPriceInPaise   Int?
-  lineTotalInPaise   Int?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-  marketplaceOrder   MarketplaceOrder  @relation(fields: [marketplaceOrderId], references: [id], onDelete: Cascade)
-  variant            ProductVariant?   @relation(fields: [variantId], references: [id], onDelete: SetNull)
-  returns            MarketplaceReturn[]
+  quantity            Int                 @default(1)
+  unitPriceInPaise    Int?
+  lineTotalInPaise    Int?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  marketplaceOrder    MarketplaceOrder    @relation(fields: [marketplaceOrderId], references: [id], onDelete: Cascade)
+  variant             ProductVariant?     @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  returns             MarketplaceReturn[]
 
   @@index([marketplaceOrderId])
   @@index([variantId])
@@ -428,14 +462,14 @@ enum LegacyOrderSource {
 
 /// Unified pre-launch order history (D2C + marketplace, deduped for analytics).
 model LegacyOrderArchive {
-  id                         String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  dedupeKey                  String             @unique
+  id                         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dedupeKey                  String            @unique
   source                     LegacyOrderSource
   channelCode                String?
   externalOrderId            String?
   orderNumber                String?
-  originalOrderId            String?            @db.Uuid
-  originalMarketplaceOrderId String?            @db.Uuid
+  originalOrderId            String?           @db.Uuid
+  originalMarketplaceOrderId String?           @db.Uuid
   customerName               String?
   customerEmail              String?
   customerPhone              String?
@@ -444,16 +478,16 @@ model LegacyOrderArchive {
   status                     String
   paymentProvider            String?
   paymentStatus              String?
-  currency                   String             @default("INR")
-  subtotalInPaise            Int                @default(0)
-  discountInPaise            Int                @default(0)
-  shippingInPaise            Int                @default(0)
-  taxInPaise                 Int                @default(0)
+  currency                   String            @default("INR")
+  subtotalInPaise            Int               @default(0)
+  discountInPaise            Int               @default(0)
+  shippingInPaise            Int               @default(0)
+  taxInPaise                 Int               @default(0)
   grandTotalInPaise          Int
   orderDate                  DateTime
   placedAt                   DateTime?
-  itemCount                  Int                @default(0)
-  linePreview                String[]           @default([])
+  itemCount                  Int               @default(0)
+  linePreview                String[]          @default([])
   items                      Json
   payments                   Json?
   shipments                  Json?
@@ -462,8 +496,8 @@ model LegacyOrderArchive {
   zohoInvoiceNo              String?
   notes                      String?
   rawSnapshot                Json?
-  migratedAt                 DateTime           @default(now())
-  createdAt                  DateTime           @default(now())
+  migratedAt                 DateTime          @default(now())
+  createdAt                  DateTime          @default(now())
 
   @@index([orderDate(sort: Desc)])
   @@index([source, orderDate(sort: Desc)])
@@ -476,9 +510,9 @@ model LegacyOrderArchive {
 
 /// Snapshot of pre-launch marketplace orders (live ops table cleared at cutover).
 model LegacyMarketplaceOrderArchive {
-  id                         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  originalMarketplaceOrderId String   @unique @db.Uuid
-  channelId                  String   @db.Uuid
+  id                         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  originalMarketplaceOrderId String    @unique @db.Uuid
+  channelId                  String    @db.Uuid
   channelCode                String
   externalOrderId            String
   orderDate                  DateTime
@@ -491,8 +525,8 @@ model LegacyMarketplaceOrderArchive {
   shipToPostalCode           String?
   status                     String
   source                     String
-  grandTotalInPaise          Int      @default(0)
-  currency                   String   @default("INR")
+  grandTotalInPaise          Int       @default(0)
+  currency                   String    @default("INR")
   items                      Json
   returns                    Json?
   rawPayload                 Json?
@@ -500,8 +534,8 @@ model LegacyMarketplaceOrderArchive {
   dispatchedAt               DateTime?
   deliveredAt                DateTime?
   cancelledAt                DateTime?
-  migratedAt                 DateTime @default(now())
-  createdAt                  DateTime @default(now())
+  migratedAt                 DateTime  @default(now())
+  createdAt                  DateTime  @default(now())
 
   @@index([channelCode, orderDate(sort: Desc)])
   @@index([orderDate(sort: Desc)])
@@ -511,28 +545,28 @@ model LegacyMarketplaceOrderArchive {
 /// Historical Zoho Books invoices (all channels). Separate from Order / MarketplaceOrder.
 /// Append-only upsert by zohoInvoiceId — used for pre-cutover analytics reference.
 model ZohoHistoricalInvoice {
-  id                       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  zohoInvoiceId            String   @unique
+  id                       String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  zohoInvoiceId            String                      @unique
   invoiceNumber            String
-  invoiceDate              DateTime @db.Date
-  issuedDate               DateTime? @db.Date
-  dueDate                  DateTime? @db.Date
+  invoiceDate              DateTime                    @db.Date
+  issuedDate               DateTime?                   @db.Date
+  dueDate                  DateTime?                   @db.Date
   status                   String
   customerName             String?
   customerIdZoho           String?
   email                    String?
   phone                    String?
-  currency                 String   @default("INR")
+  currency                 String                      @default("INR")
   exchangeRate             Float?
   /// Invoice totals in minor units of `currency` (paise/cents/fils/pence).
-  subtotalInMinor          Int      @default(0)
-  discountInMinor          Int      @default(0)
-  shippingInMinor          Int      @default(0)
-  taxInMinor               Int      @default(0)
-  totalInMinor             Int      @default(0)
-  balanceInMinor           Int      @default(0)
+  subtotalInMinor          Int                         @default(0)
+  discountInMinor          Int                         @default(0)
+  shippingInMinor          Int                         @default(0)
+  taxInMinor               Int                         @default(0)
+  totalInMinor             Int                         @default(0)
+  balanceInMinor           Int                         @default(0)
   /// FX-normalized INR paise for dashboard totals (reporting helper rates).
-  reportingTotalInInrPaise Int      @default(0)
+  reportingTotalInInrPaise Int                         @default(0)
   salesChannelRaw          String?
   marketplaceRaw           String?
   /// Normalized bucket: Amazon, Flipkart, Web Sales, Offline Sales, etc.
@@ -547,10 +581,10 @@ model ZohoHistoricalInvoice {
   shippingCity             String?
   shippingState            String?
   shippingCountry          String?
-  notes                    String?  @db.Text
+  notes                    String?                     @db.Text
   sourceFile               String?
-  importedAt               DateTime @default(now())
-  updatedAt                DateTime @updatedAt
+  importedAt               DateTime                    @default(now())
+  updatedAt                DateTime                    @updatedAt
   lines                    ZohoHistoricalInvoiceLine[]
 
   @@index([invoiceDate])
@@ -561,22 +595,22 @@ model ZohoHistoricalInvoice {
 }
 
 model ZohoHistoricalInvoiceLine {
-  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  invoiceId       String   @db.Uuid
-  lineIndex       Int      @default(0)
-  itemName        String?
-  itemDesc        String?  @db.Text
-  sku             String?
-  quantity        Float    @default(0)
+  id               String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invoiceId        String                @db.Uuid
+  lineIndex        Int                   @default(0)
+  itemName         String?
+  itemDesc         String?               @db.Text
+  sku              String?
+  quantity         Float                 @default(0)
   /// Unit / line amounts in minor units of parent invoice currency.
-  unitPriceInMinor Int     @default(0)
-  lineTotalInMinor Int     @default(0)
-  discountInMinor Int      @default(0)
-  taxName         String?
-  taxPercent      Float?
-  taxAmountInMinor Int     @default(0)
-  hsnSac          String?
-  invoice         ZohoHistoricalInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  unitPriceInMinor Int                   @default(0)
+  lineTotalInMinor Int                   @default(0)
+  discountInMinor  Int                   @default(0)
+  taxName          String?
+  taxPercent       Float?
+  taxAmountInMinor Int                   @default(0)
+  hsnSac           String?
+  invoice          ZohoHistoricalInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@unique([invoiceId, lineIndex])
   @@index([sku])
@@ -660,11 +694,11 @@ model ProductAttribute {
 }
 
 model AttributeValue {
-  id          String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  attributeId String                 @db.Uuid
+  id          String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  attributeId String                  @db.Uuid
   value       String
   slug        String
-  attribute   ProductAttribute       @relation(fields: [attributeId], references: [id])
+  attribute   ProductAttribute        @relation(fields: [attributeId], references: [id])
   variants    VariantAttributeValue[]
 }
 
@@ -694,16 +728,16 @@ model VariantShippingRate {
 }
 
 model Cart {
-  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId     String?    @unique @db.Uuid
-  sessionId  String?    @unique
-  couponCode String?
+  id                   String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId               String?    @unique @db.Uuid
+  sessionId            String?    @unique
+  couponCode           String?
   /// Set when abandoned-cart reminder email was sent (reset on cart mutation).
   abandonedEmailSentAt DateTime?
-  user       User?      @relation(fields: [userId], references: [id])
-  items      CartItem[]
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  user                 User?      @relation(fields: [userId], references: [id])
+  items                CartItem[]
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
 }
 
 model CartItem {
@@ -718,61 +752,64 @@ model CartItem {
 }
 
 model Order {
-  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  orderNumber       String            @unique
-  wooCommerceId     Int?              @unique
-  wooLegacyMeta     Json?
-  customerId        String?           @db.Uuid
-  email             String
-  phone             String
-  status            OrderStatus       @default(PENDING_PAYMENT)
-  paymentStatus     PaymentStatus     @default(PENDING)
-  fulfillmentStatus FulfillmentStatus @default(UNFULFILLED)
-  currency          String            @default("INR")
-  subtotalInPaise   Int
-  discountInPaise   Int               @default(0)
-  shippingInPaise   Int               @default(0)
-  taxInPaise        Int               @default(0)
-  grandTotalInPaise Int
-  couponCode        String?
-  notes             String?
-  ipCountry         String?
-  placedAt          DateTime?
+  id                       String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderNumber              String                       @unique
+  wooCommerceId            Int?                         @unique
+  wooLegacyMeta            Json?
+  customerId               String?                      @db.Uuid
+  email                    String
+  phone                    String
+  status                   OrderStatus                  @default(PENDING_PAYMENT)
+  paymentStatus            PaymentStatus                @default(PENDING)
+  fulfillmentStatus        FulfillmentStatus            @default(UNFULFILLED)
+  currency                 String                       @default("INR")
+  subtotalInPaise          Int
+  discountInPaise          Int                          @default(0)
+  shippingInPaise          Int                          @default(0)
+  taxInPaise               Int                          @default(0)
+  grandTotalInPaise        Int
+  couponCode               String?
+  notes                    String?
+  ipCountry                String?
+  placedAt                 DateTime?
   /// Set once when post-payment side effects (email, coupon usage, cart clear) run.
-  afterPaidRanAt    DateTime?
-  zohoInvoiceId     String?
-  zohoInvoiceNo     String?
-  zohoSyncedAt      DateTime?
-  zohoSyncError     String?
+  afterPaidRanAt           DateTime?
+  zohoInvoiceId            String?
+  zohoInvoiceNo            String?
+  zohoSyncedAt             DateTime?
+  zohoSyncError            String?
   /// INR paise for admin revenue (FX-normalized; matches Woo Analytics base currency)
   reportingTotalInInrPaise Int?
-  deletedAt         DateTime?
+  deletedAt                DateTime?
   /// Last courier/shipment integration failure (e.g. Delhivery create); cleared on success.
-  shippingLastError   String?   @db.Text
-  shippingLastErrorAt DateTime?
+  shippingLastError        String?                      @db.Text
+  shippingLastErrorAt      DateTime?
   /// Incremented each time a new carrier label is created (Shiprocket order_id suffix on retry).
-  shippingLabelSeq    Int       @default(0)
+  shippingLabelSeq         Int                          @default(0)
   /// Admin override: AUTO | DELHIVERY | SHIPROCKET | SHIPROCKET_INTERNATIONAL
-  preferredCourier  String?
+  preferredCourier         String?
   /// IN | US | GB | OTHER — set at checkout for rate zone display
-  shippingZone      String?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  customer          User?             @relation(fields: [customerId], references: [id])
-  items             OrderItem[]
-  addresses         OrderAddress[]
-  payments          Payment[]
-  statusHistory     OrderStatusHistory[]
-  shipments         Shipment[]
-  invoice           Invoice?
-  deliveryChallan   DeliveryChallan?
-  ewayBills         EWayBill[]
-  enrollments       Enrollment[]
-  bookings          Booking[]
-  serviceRequests   OrderServiceRequest[]
-  inventoryRestocks OrderInventoryRestockEvent[]
-  attribution       OrderAttribution?
-  convertedFromQuotations Quotation[] @relation("QuotationConvertedOrder")
+  shippingZone             String?
+  createdAt                DateTime                     @default(now())
+  updatedAt                DateTime                     @updatedAt
+  customer                 User?                        @relation(fields: [customerId], references: [id])
+  items                    OrderItem[]
+  addresses                OrderAddress[]
+  payments                 Payment[]
+  statusHistory            OrderStatusHistory[]
+  shipments                Shipment[]
+  invoice                  Invoice?
+  deliveryChallan          DeliveryChallan?
+  ewayBills                EWayBill[]
+  enrollments              Enrollment[]
+  bookings                 Booking[]
+  serviceRequests          OrderServiceRequest[]
+  inventoryRestocks        OrderInventoryRestockEvent[]
+  supplementaryPayments    OrderSupplementaryPayment[]
+  returnShipments          OrderReturnShipment[]
+  replacementFulfillments  OrderReplacementFulfillment[]
+  attribution              OrderAttribution?
+  convertedFromQuotations  Quotation[]                  @relation("QuotationConvertedOrder")
 }
 
 /// Pre-sale commercial quotation — NEVER creates accounting, GST ledgers, stock, or payments.
@@ -786,44 +823,44 @@ enum QuotationStatus {
 }
 
 model Quotation {
-  id                   String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  quoteNumber          String          @unique
-  status               QuotationStatus @default(DRAFT)
-  customerId           String?         @db.Uuid
-  customerName         String
-  email                String?
-  phone                String?
-  buyerGstin           String?
-  billingAddress       Json
-  shippingAddress      Json
-  currency             String          @default("INR")
-  subtotalInPaise      Int
-  discountInPaise      Int             @default(0)
-  shippingInPaise      Int             @default(0)
-  taxInPaise           Int             @default(0)
-  grandTotalInPaise    Int
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  quoteNumber       String          @unique
+  status            QuotationStatus @default(DRAFT)
+  customerId        String?         @db.Uuid
+  customerName      String
+  email             String?
+  phone             String?
+  buyerGstin        String?
+  billingAddress    Json
+  shippingAddress   Json
+  currency          String          @default("INR")
+  subtotalInPaise   Int
+  discountInPaise   Int             @default(0)
+  shippingInPaise   Int             @default(0)
+  taxInPaise        Int             @default(0)
+  grandTotalInPaise Int
   /// INTRA_STATE | INTER_STATE | UNAVAILABLE | NOT_APPLICABLE
-  taxPreviewMode       String?
-  cgstInPaise          Int             @default(0)
-  sgstInPaise          Int             @default(0)
-  igstInPaise          Int             @default(0)
-  validUntil           DateTime?
-  terms                String?         @db.Text
-  notes                String?         @db.Text
-  convertedOrderId     String?         @db.Uuid
-  quotePdfUrl          String?
-  proformaPdfUrl       String?
-  sentAt               DateTime?
-  acceptedAt           DateTime?
-  expiredAt            DateTime?
-  cancelledAt          DateTime?
-  convertedAt          DateTime?
-  proformaIssuedAt     DateTime?
-  createdAt            DateTime        @default(now())
-  updatedAt            DateTime        @updatedAt
-  customer             User?           @relation(fields: [customerId], references: [id])
-  convertedOrder       Order?          @relation("QuotationConvertedOrder", fields: [convertedOrderId], references: [id])
-  items                QuotationItem[]
+  taxPreviewMode    String?
+  cgstInPaise       Int             @default(0)
+  sgstInPaise       Int             @default(0)
+  igstInPaise       Int             @default(0)
+  validUntil        DateTime?
+  terms             String?         @db.Text
+  notes             String?         @db.Text
+  convertedOrderId  String?         @db.Uuid
+  quotePdfUrl       String?
+  proformaPdfUrl    String?
+  sentAt            DateTime?
+  acceptedAt        DateTime?
+  expiredAt         DateTime?
+  cancelledAt       DateTime?
+  convertedAt       DateTime?
+  proformaIssuedAt  DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  customer          User?           @relation(fields: [customerId], references: [id])
+  convertedOrder    Order?          @relation("QuotationConvertedOrder", fields: [convertedOrderId], references: [id])
+  items             QuotationItem[]
 
   @@index([status])
   @@index([createdAt])
@@ -859,19 +896,19 @@ model QuotationItem {
 
 /// Informational marketing attribution snapshot — never drives money, stock, or payments.
 model OrderAttribution {
-  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  orderId          String   @unique @db.Uuid
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId          String    @unique @db.Uuid
   sourceType       String?
   firstSource      String?
   firstMedium      String?
   firstCampaign    String?
-  firstReferrer    String?  @db.VarChar(2048)
-  firstLandingPage String?  @db.VarChar(2048)
+  firstReferrer    String?   @db.VarChar(2048)
+  firstLandingPage String?   @db.VarChar(2048)
   lastSource       String?
   lastMedium       String?
   lastCampaign     String?
-  lastReferrer     String?  @db.VarChar(2048)
-  lastLandingPage  String?  @db.VarChar(2048)
+  lastReferrer     String?   @db.VarChar(2048)
+  lastLandingPage  String?   @db.VarChar(2048)
   utmSource        String?
   utmMedium        String?
   utmCampaign      String?
@@ -884,10 +921,10 @@ model OrderAttribution {
   deviceType       String?
   sessionPageViews Int?
   sessionStartedAt DateTime?
-  capturedAt       DateTime @default(now())
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  order            Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  capturedAt       DateTime  @default(now())
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  order            Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([sourceType])
   @@index([utmCampaign])
@@ -924,37 +961,116 @@ enum FulfillmentStatus {
 enum OrderServiceRequestType {
   CANCEL_BEFORE_DELIVERY
   REFUND_AFTER_DELIVERY
+  ADJUST_BEFORE_DELIVERY
+}
+
+enum OrderServiceRequestIntent {
+  CANCEL
+  REFUND
+  CHANGE_ADDRESS
+  CHANGE_ITEM_VARIANT
+  CHANGE_QUANTITY
+}
+
+enum ReturnReplacementResolution {
+  RETURN_FOR_REFUND
+  REPLACEMENT
+  PARTIAL_REFUND
+  KEEP_ITEM_PARTIAL_REFUND
+}
+
+enum ReturnPhysicalStatus {
+  NOT_REQUIRED
+  AWAITING_RETURN
+  IN_TRANSIT
+  RECEIVED
+  INSPECTED
+}
+
+enum ReturnResolutionStatus {
+  NONE
+  REFUND_PENDING
+  REFUND_PROCESSING
+  REFUNDED
+  REPLACEMENT_PENDING
+  REPLACEMENT_SHIPPED
+  REPLACEMENT_DELIVERED
+  CLOSED
+  FAILED
+}
+
+enum ReturnShippingRefundPolicy {
+  SHIPPING_RETAINED
+  SHIPPING_REFUNDABLE
+  MANUAL_REVIEW
+}
+
+enum ReturnShipmentMode {
+  MANUAL_RETURN_SHIPMENT
+  REVERSE_PICKUP
 }
 
 enum OrderServiceRequestStatus {
   PENDING_APPROVAL
+  NEEDS_DISCUSSION
   APPROVED
   REJECTED
+  CONVERTED_TO_CANCELLATION
+}
+
+enum OrderServiceRequestExecutionStatus {
+  NOT_APPLICABLE
+  PENDING
+  BLOCKED_AFTER_DISPATCH
+  COMMERCIAL_REVIEW_REQUIRED
+  ADDITIONAL_PAYMENT_REQUIRED
+  REFUND_REQUIRED
+  REFUND_PROCESSING
+  PAYMENT_PENDING
+  PAYMENT_CAPTURED
+  ACCOUNTING_REVIEW_REQUIRED
+  EXECUTED
+  FAILED
 }
 
 model OrderServiceRequest {
-  id             String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  orderId        String                    @db.Uuid
-  orderNumber    String
-  customerId     String?                   @db.Uuid
-  customerEmail  String
-  type           OrderServiceRequestType
-  reasonCode     String?
-  reasonLabel    String?
-  otherMessage   String?
-  message        String?
-  status         OrderServiceRequestStatus @default(PENDING_APPROVAL)
-  reviewedAt     DateTime?
-  reviewedByEmail String?
-  adminNote      String?
-  codRefundNote  String?
-  refundProcessedAt DateTime?
+  id                 String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId            String                     @db.Uuid
+  orderNumber        String
+  customerId         String?                    @db.Uuid
+  customerEmail      String
+  type               OrderServiceRequestType
+  reasonCode         String?
+  reasonLabel        String?
+  otherMessage       String?
+  message            String?
+  status             OrderServiceRequestStatus  @default(PENDING_APPROVAL)
+  requestIntent      OrderServiceRequestIntent  @default(CANCEL)
+  adjustmentPayload  Json?
+  executionStatus    OrderServiceRequestExecutionStatus @default(NOT_APPLICABLE)
+  commercialDeltaPaise Int?
+  commercialClassification String?
+  executionSourceId  String?                    @unique
+  executedAt         DateTime?
+  executionError     String?
+  reviewedByUserId   String?                    @db.Uuid
+  reviewedAt         DateTime?
+  reviewedByEmail    String?
+  adminNote          String?
+  codRefundNote      String?
+  refundProcessedAt  DateTime?
   refundTotalInPaise Int?
-  createdAt      DateTime                  @default(now())
-  updatedAt      DateTime                  @updatedAt
-  order          Order                     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  photos         OrderServiceRequestPhoto[]
-  items          OrderServiceRequestItem[]
+  returnPhysicalStatus ReturnPhysicalStatus @default(NOT_REQUIRED)
+  resolutionStatus ReturnResolutionStatus @default(NONE)
+  shippingRefundPolicy ReturnShippingRefundPolicy?
+  returnPayload      Json?
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  order              Order                      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  photos             OrderServiceRequestPhoto[]
+  items              OrderServiceRequestItem[]
+  returnShipment     OrderReturnShipment?
+  replacementFulfillments OrderReplacementFulfillment[]
 
   @@index([orderId])
   @@index([status])
@@ -963,25 +1079,71 @@ model OrderServiceRequest {
 }
 
 model OrderServiceRequestItem {
-  id            String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  requestId     String              @db.Uuid
-  orderItemId   String              @db.Uuid
-  nameSnapshot  String
-  skuSnapshot   String
-  qtySelected   Int
-  reasonCode    String
-  reasonLabel   String
-  otherMessage  String?
-  message       String?
+  id                  String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId           String                     @db.Uuid
+  orderItemId         String                     @db.Uuid
+  nameSnapshot        String
+  skuSnapshot         String
+  qtySelected         Int
+  reasonCode          String
+  reasonLabel         String
+  otherMessage        String?
+  message             String?
   refundAmountInPaise Int?
-  refundedAt    DateTime?
-  refundProviderId String?
-  createdAt     DateTime            @default(now())
-  request       OrderServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  photos        OrderServiceRequestPhoto[]
+  refundedAt          DateTime?
+  refundProviderId    String?
+  requestedResolution ReturnReplacementResolution?
+  requestedVariantId  String?                    @db.Uuid
+  createdAt           DateTime                   @default(now())
+  request             OrderServiceRequest        @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  photos              OrderServiceRequestPhoto[]
 
   @@index([requestId])
   @@index([orderItemId])
+}
+
+model OrderReturnShipment {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId          String               @unique @db.Uuid
+  orderId            String               @db.Uuid
+  mode               ReturnShipmentMode   @default(MANUAL_RETURN_SHIPMENT)
+  courier            String?
+  awb                String?
+  trackingUrl        String?
+  physicalStatus     ReturnPhysicalStatus @default(AWAITING_RETURN)
+  receivedAt         DateTime?
+  receivedByUserId   String?              @db.Uuid
+  disposition        RtoDisposition?
+  dispositionAt      DateTime?
+  dispositionByUserId String?             @db.Uuid
+  adminNote          String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  request            OrderServiceRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  order              Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+model OrderReplacementFulfillment {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId            String                 @db.Uuid
+  requestItemId        String                 @unique @db.Uuid
+  orderId              String                 @db.Uuid
+  replacementVariantId String                 @db.Uuid
+  qty                  Int
+  status               ReturnResolutionStatus @default(REPLACEMENT_PENDING)
+  outboundShipmentId   String?                @db.Uuid
+  reservedAt           DateTime?
+  shippedAt            DateTime?
+  deliveredAt          DateTime?
+  commercialDeltaPaise Int?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  request              OrderServiceRequest    @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  order                Order                  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
 }
 
 model OrderServiceRequestPhoto {
@@ -1001,20 +1163,24 @@ model OrderServiceRequestPhoto {
 }
 
 model OrderItem {
-  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  orderId          String          @db.Uuid
-  variantId        String          @db.Uuid
-  skuSnapshot      String
-  nameSnapshot     String
-  qtyOrdered       Int
-  unitPriceInPaise Int
-  discountInPaise  Int             @default(0)
-  taxInPaise       Int             @default(0)
-  lineTotalInPaise Int
-  pickupLocationId String?         @db.Uuid
-  order            Order           @relation(fields: [orderId], references: [id])
-  variant          ProductVariant  @relation(fields: [variantId], references: [id])
-  pickupLocation   PickupLocation? @relation(fields: [pickupLocationId], references: [id])
+  id                String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId           String                       @db.Uuid
+  variantId         String                       @db.Uuid
+  skuSnapshot       String
+  nameSnapshot      String
+  qtyOrdered        Int
+  /// Snapshot at order time — Sarveda warehouse units (reserve/deduct/restock only this qty).
+  warehouseFulfillmentQty Int                    @default(0)
+  /// Snapshot at order time — vendor-direct units (never affects Sarveda onHand).
+  dropShipFulfillmentQty  Int                    @default(0)
+  unitPriceInPaise  Int
+  discountInPaise   Int                          @default(0)
+  taxInPaise        Int                          @default(0)
+  lineTotalInPaise  Int
+  pickupLocationId  String?                      @db.Uuid
+  order             Order                        @relation(fields: [orderId], references: [id])
+  variant           ProductVariant               @relation(fields: [variantId], references: [id])
+  pickupLocation    PickupLocation?              @relation(fields: [pickupLocationId], references: [id])
   inventoryRestocks OrderInventoryRestockEvent[]
 }
 
@@ -1032,6 +1198,12 @@ enum OrderInventoryRestockSourceType {
   FULL_ORDER_STATUS_CHANGE
   /// Admin explicit line-level restock (partial returns, damaged receipt, etc.)
   ADMIN_EXPLICIT
+  /// RTO physical receipt disposition (Phase 1C)
+  RTO_PHYSICAL_RECEIPT
+  /// Pre-dispatch order adjustment (Phase 1D)
+  ORDER_ADJUSTMENT
+  /// Customer return physical receipt (Phase 2)
+  CUSTOMER_RETURN_RECEIPT
 }
 
 model OrderInventoryRestockEvent {
@@ -1117,27 +1289,84 @@ enum PaymentProvider {
   COD
 }
 
+enum RefundSourceType {
+  ORDER_ADJUSTMENT
+  RTO
+  ADMIN_MANUAL
+  SERVICE_REQUEST
+  FULL_CANCELLATION
+}
+
+enum RefundSettlementStage {
+  RESERVED
+  GATEWAY_SUCCEEDED
+  ACCOUNTING_POSTED
+  ZOHO_SYNCED
+  COMPLETE
+  FAILED
+}
+
+enum SupplementaryPaymentPurpose {
+  ORDER_ADJUSTMENT
+}
+
+enum SupplementaryPaymentStatus {
+  PENDING
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  CANCELLED
+}
+
 /// Gateway refunds: providerRefundId is unique when set (partial index via migration SQL).
 model Refund {
-  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  paymentId        String   @db.Uuid
+  id               String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paymentId        String                 @db.Uuid
   amountInPaise    Int
   reason           String?
   providerRefundId String?
-  status           String   @default("pending")
-  createdAt        DateTime @default(now())
-  payment          Payment  @relation(fields: [paymentId], references: [id])
+  status           String                 @default("pending")
+  sourceType       RefundSourceType?
+  sourceId         String?
+  settlementStage  RefundSettlementStage  @default(RESERVED)
+  settlementError  String?
+  accountingPostedAt DateTime?
+  zohoCreditNoteId String?
+  zohoCreditNoteNumber String?
+  zohoSyncError    String?
+  createdAt        DateTime               @default(now())
+  payment          Payment                @relation(fields: [paymentId], references: [id])
 
   @@index([paymentId, status])
+  @@index([sourceType, sourceId])
+}
+
+model OrderSupplementaryPayment {
+  id                String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId           String                      @db.Uuid
+  purpose           SupplementaryPaymentPurpose @default(ORDER_ADJUSTMENT)
+  sourceId          String                      @unique
+  amountInPaise     Int
+  provider          PaymentProvider
+  providerOrderId   String?
+  providerPaymentId String?
+  status            SupplementaryPaymentStatus  @default(PENDING)
+  capturedAt        DateTime?
+  rawPayload        Json?
+  createdAt         DateTime                    @default(now())
+  updatedAt         DateTime                    @updatedAt
+  order             Order                       @relation(fields: [orderId], references: [id])
+
+  @@index([orderId, status])
 }
 
 model Invoice {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  orderId   String   @unique @db.Uuid
-  invoiceNo String   @unique
+  id        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId   String     @unique @db.Uuid
+  invoiceNo String     @unique
   pdfUrl    String?
-  issuedAt  DateTime @default(now())
-  order     Order    @relation(fields: [orderId], references: [id])
+  issuedAt  DateTime   @default(now())
+  order     Order      @relation(fields: [orderId], references: [id])
   ewayBills EWayBill[]
 }
 
@@ -1157,45 +1386,45 @@ enum DeliveryChallanStatus {
 }
 
 model DeliveryChallan {
-  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  challanNumber        String                 @unique
-  orderId              String                 @unique @db.Uuid
-  challanDate          DateTime               @default(now())
-  reason               DeliveryChallanReason  @default(SUPPLY_DELIVERY)
-  reasonOther          String?
-  status               DeliveryChallanStatus  @default(ISSUED)
-  notes                String?                @db.Text
-  orderNumberSnapshot  String
-  currency             String                 @default("INR")
-  buyerName            String
-  buyerEmail           String?
-  buyerPhone           String?
-  buyerGstin           String?
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  challanNumber       String                @unique
+  orderId             String                @unique @db.Uuid
+  challanDate         DateTime              @default(now())
+  reason              DeliveryChallanReason @default(SUPPLY_DELIVERY)
+  reasonOther         String?
+  status              DeliveryChallanStatus @default(ISSUED)
+  notes               String?               @db.Text
+  orderNumberSnapshot String
+  currency            String                @default("INR")
+  buyerName           String
+  buyerEmail          String?
+  buyerPhone          String?
+  buyerGstin          String?
   /// Ship-to / consignee snapshot (JSON address)
-  consigneeAddress     Json
+  consigneeAddress    Json
   /// Optional bill-to snapshot
-  billToAddress        Json?
-  originState          String?
-  originCountry        String?                @default("IN")
-  destinationState     String?
-  destinationCountry   String?
-  destinationPincode   String?
-  shipmentId           String?                @db.Uuid
+  billToAddress       Json?
+  originState         String?
+  originCountry       String?               @default("IN")
+  destinationState    String?
+  destinationCountry  String?
+  destinationPincode  String?
+  shipmentId          String?               @db.Uuid
   /// Carrier / AWB frozen at generate (or refresh) — not live-linked on every PDF download
-  carrierSnapshot      String?
-  awbSnapshot          String?
-  trackingUrlSnapshot  String?
+  carrierSnapshot     String?
+  awbSnapshot         String?
+  trackingUrlSnapshot String?
   /// Display-only value totals (not accounting postings)
-  taxableValueInPaise  Int                    @default(0)
-  grandTotalInPaise    Int                    @default(0)
-  pdfUrl               String?
-  issuedAt             DateTime               @default(now())
-  createdAt            DateTime               @default(now())
-  updatedAt            DateTime               @updatedAt
-  order                Order                  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  shipment             Shipment?              @relation(fields: [shipmentId], references: [id], onDelete: SetNull)
-  items                DeliveryChallanItem[]
-  ewayBills            EWayBill[]
+  taxableValueInPaise Int                   @default(0)
+  grandTotalInPaise   Int                   @default(0)
+  pdfUrl              String?
+  issuedAt            DateTime              @default(now())
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  order               Order                 @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  shipment            Shipment?             @relation(fields: [shipmentId], references: [id], onDelete: SetNull)
+  items               DeliveryChallanItem[]
+  ewayBills           EWayBill[]
 
   @@index([challanDate])
   @@index([status])
@@ -1203,20 +1432,20 @@ model DeliveryChallan {
 }
 
 model DeliveryChallanItem {
-  id                 String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  deliveryChallanId  String          @db.Uuid
-  orderItemId        String?         @db.Uuid
-  productName        String
-  sku                String?
-  hsnCode            String?
-  quantity           Int
-  unitPriceInPaise   Int             @default(0)
-  lineTotalInPaise   Int             @default(0)
-  taxableInPaise     Int             @default(0)
-  sortOrder          Int             @default(0)
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
-  deliveryChallan    DeliveryChallan @relation(fields: [deliveryChallanId], references: [id], onDelete: Cascade)
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  deliveryChallanId String          @db.Uuid
+  orderItemId       String?         @db.Uuid
+  productName       String
+  sku               String?
+  hsnCode           String?
+  quantity          Int
+  unitPriceInPaise  Int             @default(0)
+  lineTotalInPaise  Int             @default(0)
+  taxableInPaise    Int             @default(0)
+  sortOrder         Int             @default(0)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  deliveryChallan   DeliveryChallan @relation(fields: [deliveryChallanId], references: [id], onDelete: Cascade)
 
   @@index([deliveryChallanId])
   @@index([orderItemId])
@@ -1250,48 +1479,48 @@ enum EWayBillTransportMode {
 }
 
 model EWayBill {
-  id                       String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  orderId                  String                      @db.Uuid
-  shipmentId               String?                     @db.Uuid
-  sourceDocumentType       EWayBillSourceDocumentType
-  sourceInvoiceId          String?                     @db.Uuid
-  sourceDeliveryChallanId  String?                     @db.Uuid
-  sourceDocumentNumber     String
-  sourceDocumentDate       DateTime
+  id                      String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId                 String                     @db.Uuid
+  shipmentId              String?                    @db.Uuid
+  sourceDocumentType      EWayBillSourceDocumentType
+  sourceInvoiceId         String?                    @db.Uuid
+  sourceDeliveryChallanId String?                    @db.Uuid
+  sourceDocumentNumber    String
+  sourceDocumentDate      DateTime
   /// Government-issued E-Way Bill Number — never auto-generated by Sarveda
-  ebn                      String?
-  ewbDate                  DateTime?
-  validUntil               DateTime?
-  status                   EWayBillStatus              @default(PENDING)
-  transactionType          String?
-  subSupplyType            String?
-  subSupplyDesc            String?
-  buyerGstin               String?
-  transporterName          String?
-  transporterId            String?
-  transportDocNo           String?
-  transportDocDate         DateTime?
-  transportMode            EWayBillTransportMode?
-  vehicleNumber            String?
-  vehicleType              String?
-  approxDistanceKm         Int?
-  notes                    String?                     @db.Text
-  generationMethod         EWayBillGenerationMethod    @default(MANUAL)
+  ebn                     String?
+  ewbDate                 DateTime?
+  validUntil              DateTime?
+  status                  EWayBillStatus             @default(PENDING)
+  transactionType         String?
+  subSupplyType           String?
+  subSupplyDesc           String?
+  buyerGstin              String?
+  transporterName         String?
+  transporterId           String?
+  transportDocNo          String?
+  transportDocDate        DateTime?
+  transportMode           EWayBillTransportMode?
+  vehicleNumber           String?
+  vehicleType             String?
+  approxDistanceKm        Int?
+  notes                   String?                    @db.Text
+  generationMethod        EWayBillGenerationMethod   @default(MANUAL)
   /// PORTAL for V1 manual; future GSP name — never store secrets here
-  provider                 String?
-  providerRequestId        String?
-  providerResponseJson     Json?
-  recordedByUserId         String?                     @db.Uuid
-  documentValueInPaise     Int                         @default(0)
-  taxableValueInPaise      Int                         @default(0)
-  cancelledAt              DateTime?
-  createdAt                DateTime                    @default(now())
-  updatedAt                DateTime                    @updatedAt
-  order                    Order                       @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  shipment                 Shipment?                   @relation(fields: [shipmentId], references: [id], onDelete: SetNull)
-  sourceInvoice            Invoice?                    @relation(fields: [sourceInvoiceId], references: [id], onDelete: SetNull)
-  sourceDeliveryChallan    DeliveryChallan?            @relation(fields: [sourceDeliveryChallanId], references: [id], onDelete: SetNull)
-  items                    EWayBillItem[]
+  provider                String?
+  providerRequestId       String?
+  providerResponseJson    Json?
+  recordedByUserId        String?                    @db.Uuid
+  documentValueInPaise    Int                        @default(0)
+  taxableValueInPaise     Int                        @default(0)
+  cancelledAt             DateTime?
+  createdAt               DateTime                   @default(now())
+  updatedAt               DateTime                   @updatedAt
+  order                   Order                      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  shipment                Shipment?                  @relation(fields: [shipmentId], references: [id], onDelete: SetNull)
+  sourceInvoice           Invoice?                   @relation(fields: [sourceInvoiceId], references: [id], onDelete: SetNull)
+  sourceDeliveryChallan   DeliveryChallan?           @relation(fields: [sourceDeliveryChallanId], references: [id], onDelete: SetNull)
+  items                   EWayBillItem[]
 
   @@unique([ebn])
   @@index([orderId, createdAt])
@@ -1302,25 +1531,25 @@ model EWayBill {
 }
 
 model EWayBillItem {
-  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  ewayBillId         String   @db.Uuid
-  orderItemId        String?  @db.Uuid
-  productName        String
-  sku                String?
-  hsnCode            String?
-  quantity           Int
-  unitOfMeasure      String   @default("NOS")
-  taxableValueInPaise Int     @default(0)
-  gstRatePercent     Int      @default(0)
-  cgstInPaise        Int      @default(0)
-  sgstInPaise        Int      @default(0)
-  igstInPaise        Int      @default(0)
-  cessInPaise        Int      @default(0)
-  lineTotalInPaise   Int      @default(0)
-  sortOrder          Int      @default(0)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  ewayBill           EWayBill @relation(fields: [ewayBillId], references: [id], onDelete: Cascade)
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ewayBillId          String   @db.Uuid
+  orderItemId         String?  @db.Uuid
+  productName         String
+  sku                 String?
+  hsnCode             String?
+  quantity            Int
+  unitOfMeasure       String   @default("NOS")
+  taxableValueInPaise Int      @default(0)
+  gstRatePercent      Int      @default(0)
+  cgstInPaise         Int      @default(0)
+  sgstInPaise         Int      @default(0)
+  igstInPaise         Int      @default(0)
+  cessInPaise         Int      @default(0)
+  lineTotalInPaise    Int      @default(0)
+  sortOrder           Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  ewayBill            EWayBill @relation(fields: [ewayBillId], references: [id], onDelete: Cascade)
 
   @@index([ewayBillId])
   @@index([orderItemId])
@@ -1328,7 +1557,7 @@ model EWayBillItem {
 
 /// Admin-managed warehouse / pickup facility (Shiprocket + Delhivery names).
 model PickupLocation {
-  id                   String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                   String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   label                String
   /// Must match Shiprocket pickup_location name exactly.
   shiprocketPickupName String
@@ -1342,11 +1571,11 @@ model PickupLocation {
   city                 String?
   state                String?
   postalCode           String?
-  country              String     @default("IN")
+  country              String          @default("IN")
   defaultPickupSlot    String?
   /// e.g. ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
   workingDays          Json?
-  returnSameAsPickup   Boolean    @default(true)
+  returnSameAsPickup   Boolean         @default(true)
   returnLine1          String?
   returnLine2          String?
   returnCity           String?
@@ -1354,34 +1583,58 @@ model PickupLocation {
   returnPostalCode     String?
   returnCountry        String?
   notes                String?
-  isPrimary            Boolean    @default(false)
-  sortOrder            Int        @default(0)
-  isActive             Boolean    @default(true)
-  createdAt            DateTime   @default(now())
-  updatedAt            DateTime   @updatedAt
+  isPrimary            Boolean         @default(false)
+  sortOrder            Int             @default(0)
+  isActive             Boolean         @default(true)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
   shipments            Shipment[]
   orderItems           OrderItem[]
   purchaseOrders       PurchaseOrder[]
 }
 
 model Shipment {
-  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  orderId          String          @db.Uuid
-  pickupLocationId String?         @db.Uuid
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId          String            @db.Uuid
+  pickupLocationId String?           @db.Uuid
   courier          String
   awb              String?
   trackingUrl      String?
-  status           ShipmentStatus  @default(CREATED)
+  status           ShipmentStatus    @default(CREATED)
   deliveredAt      DateTime?
   rtoAt            DateTime?
+  /// Sarveda warehouse physically received the RTO parcel (Phase 1C).
+  rtoReceivedAt         DateTime?
+  rtoReceivedByUserId   String?                @db.Uuid
+  rtoDisposition        RtoDisposition?
+  rtoDispositionAt      DateTime?
+  rtoDispositionByUserId String?               @db.Uuid
+  rtoRefundWorkflowStatus RtoRefundWorkflowStatus?
+  rtoRefundLastError    String?
   // Shiprocket / carrier ids from last successful create (for cancel).
   carrierMeta      Json?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  order            Order           @relation(fields: [orderId], references: [id])
-  pickupLocation   PickupLocation? @relation(fields: [pickupLocationId], references: [id])
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  order            Order             @relation(fields: [orderId], references: [id])
+  pickupLocation   PickupLocation?   @relation(fields: [pickupLocationId], references: [id])
   deliveryChallans DeliveryChallan[]
   ewayBills        EWayBill[]
+}
+
+enum RtoDisposition {
+  RESTOCKABLE
+  DAMAGED_NON_RESTOCKABLE
+  NEEDS_REVIEW
+}
+
+enum RtoRefundWorkflowStatus {
+  NOT_APPLICABLE
+  PENDING
+  ACCOUNTING_REVIEW_REQUIRED
+  READY_FOR_REFUND
+  PROCESSING
+  REFUNDED
+  FAILED
 }
 
 enum ShipmentStatus {
@@ -1415,18 +1668,18 @@ enum CouponType {
 }
 
 model Review {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  productId  String   @db.Uuid
-  userId     String   @db.Uuid
-  rating     Int
-  title      String?
-  body       String?
-  reviewerCountry String? @db.VarChar(2)
-  isVerified Boolean  @default(false)
-  isApproved Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  product    Product  @relation(fields: [productId], references: [id])
-  user       User     @relation(fields: [userId], references: [id])
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId       String   @db.Uuid
+  userId          String   @db.Uuid
+  rating          Int
+  title           String?
+  body            String?
+  reviewerCountry String?  @db.VarChar(2)
+  isVerified      Boolean  @default(false)
+  isApproved      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  product         Product  @relation(fields: [productId], references: [id])
+  user            User     @relation(fields: [userId], references: [id])
 }
 
 model StockNotification {
@@ -1491,6 +1744,7 @@ model Course {
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
   checkoutVariant   ProductVariant?      @relation(fields: [checkoutVariantId], references: [id])
+  checkoutOffer     DigitalCheckoutOffer?
   lessons           Lesson[]
   enrollments       Enrollment[]
 }
@@ -1499,6 +1753,33 @@ enum CourseEnrollmentMode {
   CHECKOUT
   ENQUIRY
   BOTH
+}
+
+enum DigitalCheckoutKind {
+  COURSE
+  EVENT
+}
+
+/// Paid course/event checkout line — not a storefront catalog product.
+model DigitalCheckoutOffer {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  kind              DigitalCheckoutKind
+  courseId          String?             @unique @db.Uuid
+  eventId           String?             @unique @db.Uuid
+  sku               String              @unique
+  title             String
+  mrpInPaise        Int
+  saleInPaise       Int
+  mrpUsdCents       Int?
+  saleUsdCents      Int?
+  taxClass          String              @default("gst-5")
+  imageUrl          String?
+  checkoutVariantId String              @unique @db.Uuid
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  course            Course?             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  event             Event?              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  checkoutVariant   ProductVariant      @relation(fields: [checkoutVariantId], references: [id])
 }
 
 enum CourseStatus {
@@ -1562,6 +1843,7 @@ model Event {
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
   checkoutVariant   ProductVariant?      @relation(fields: [checkoutVariantId], references: [id])
+  checkoutOffer     DigitalCheckoutOffer?
   bookings          Booking[]
 }
 
@@ -1676,21 +1958,21 @@ model Offer {
 }
 
 model BlogPost {
-  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  slug           String     @unique
-  title          String
-  content        String
-  excerpt        String?
-  imageUrl       String?
-  wpPostId       Int?       @unique
-  status         PostStatus @default(DRAFT)
-  publishedAt    DateTime?
-  seoTitle       String?
-  seoDescription String?
-  seoKeyword     String?
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-  comments       BlogComment[]
+  id                   String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug                 String                    @unique
+  title                String
+  content              String
+  excerpt              String?
+  imageUrl             String?
+  wpPostId             Int?                      @unique
+  status               PostStatus                @default(DRAFT)
+  publishedAt          DateTime?
+  seoTitle             String?
+  seoDescription       String?
+  seoKeyword           String?
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
+  comments             BlogComment[]
   commentSubscriptions BlogCommentSubscription[]
 }
 
@@ -1724,12 +2006,12 @@ enum PostStatus {
 }
 
 model OtpCode {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   target    String
   code      String
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 }
 
 enum EnquirySource {
@@ -1761,28 +2043,28 @@ enum EnquiryThreadStatus {
 }
 
 model EnquiryThread {
-  id              String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  source          EnquirySource
-  subjectCategory EnquirySubjectCategory?
-  customSubject   String?
-  customerName    String
-  customerEmail   String
-  customerPhone   String?
-  orderNumber     String?
-  contextTitle    String?
-  contextUrl      String?
-  userId          String?                 @db.Uuid
-  status          EnquiryThreadStatus     @default(OPEN)
-  unreadByAdmin   Boolean                 @default(true)
-  lastMessageAt   DateTime                @default(now())
+  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  source                EnquirySource
+  subjectCategory       EnquirySubjectCategory?
+  customSubject         String?
+  customerName          String
+  customerEmail         String
+  customerPhone         String?
+  orderNumber           String?
+  contextTitle          String?
+  contextUrl            String?
+  userId                String?                 @db.Uuid
+  status                EnquiryThreadStatus     @default(OPEN)
+  unreadByAdmin         Boolean                 @default(true)
+  lastMessageAt         DateTime                @default(now())
   /// WhatsApp inbox: customer number in E.164; set only for source WHATSAPP.
-  waPhone         String?
+  waPhone               String?
   /// Last inbound customer message time — enforces the WhatsApp 24h reply window.
   lastCustomerMessageAt DateTime?
-  createdAt       DateTime                @default(now())
-  updatedAt       DateTime                @updatedAt
-  user            User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
-  messages        EnquiryMessage[]
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  user                  User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  messages              EnquiryMessage[]
   whatsappAgentSessions WhatsAppAgentSession[]
 
   @@index([unreadByAdmin, lastMessageAt(sort: Desc)])
@@ -1794,20 +2076,20 @@ model EnquiryThread {
 /// One human-support handoff inside a WhatsApp enquiry thread.
 /// A thread can have many sessions over time; only sessions with endedAt=null are active.
 model WhatsAppAgentSession {
-  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  threadId         String    @db.Uuid
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  threadId         String        @db.Uuid
   reason           String?
-  startedAt        DateTime  @default(now())
-  attendingAdminId String?   @db.Uuid
+  startedAt        DateTime      @default(now())
+  attendingAdminId String?       @db.Uuid
   claimedAt        DateTime?
   endedAt          DateTime?
   endReason        String?
   customerRating   Int?
   ratedAt          DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
   thread           EnquiryThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  attendingAdmin   User?     @relation("WhatsAppAgentSessionAdmin", fields: [attendingAdminId], references: [id], onDelete: SetNull)
+  attendingAdmin   User?         @relation("WhatsAppAgentSessionAdmin", fields: [attendingAdminId], references: [id], onDelete: SetNull)
 
   @@index([threadId, startedAt(sort: Desc)])
   @@index([attendingAdminId, startedAt(sort: Desc)])
@@ -1815,21 +2097,21 @@ model WhatsAppAgentSession {
 }
 
 model EnquiryMessage {
-  id          String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  threadId    String               @db.Uuid
-  authorType  EnquiryMessageAuthor
-  adminUserId String?              @db.Uuid
-  authorName  String
-  authorEmail String
-  body        String
+  id           String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  threadId     String               @db.Uuid
+  authorType   EnquiryMessageAuthor
+  adminUserId  String?              @db.Uuid
+  authorName   String
+  authorEmail  String
+  body         String
   /// Provider (Exotel) message sid — idempotency for inbound, delivery tracking for outbound.
-  waMessageSid String?             @unique
+  waMessageSid String?              @unique
   /// WhatsApp delivery status for outbound: sent | delivered | read | failed.
-  waStatus    String?
-  createdAt   DateTime             @default(now())
-  thread      EnquiryThread        @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  adminUser   User?                @relation("EnquiryAdminMessages", fields: [adminUserId], references: [id], onDelete: SetNull)
-  attachments EnquiryAttachment[]
+  waStatus     String?
+  createdAt    DateTime             @default(now())
+  thread       EnquiryThread        @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  adminUser    User?                @relation("EnquiryAdminMessages", fields: [adminUserId], references: [id], onDelete: SetNull)
+  attachments  EnquiryAttachment[]
 
   @@index([threadId, createdAt])
 }
@@ -1886,28 +2168,28 @@ enum ComplaintAppRole {
 }
 
 model Complaint {
-  id              String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  parentId        String?               @db.Uuid
-  raisedByEmail   String
-  raisedByName    String?
-  assignedByEmail String?
-  assignedByName  String?
-  dueDate         DateTime?
-  pendingDeadlineDate         DateTime?
-  pendingDeadlineRequestedBy  String?
-  title           String
-  description     String?
-  priority        ComplaintPriority     @default(MEDIUM)
-  status          ComplaintStatus       @default(OPEN)
-  isPrivate       Boolean               @default(false)
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
-  resolvedAt      DateTime?
-  parent          Complaint?            @relation("ComplaintHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
-  children        Complaint[]           @relation("ComplaintHierarchy")
-  events          ComplaintEvent[]
-  attachments     ComplaintAttachment[]
-  assignees       TaskAssignee[]
+  id                         String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  parentId                   String?               @db.Uuid
+  raisedByEmail              String
+  raisedByName               String?
+  assignedByEmail            String?
+  assignedByName             String?
+  dueDate                    DateTime?
+  pendingDeadlineDate        DateTime?
+  pendingDeadlineRequestedBy String?
+  title                      String
+  description                String?
+  priority                   ComplaintPriority     @default(MEDIUM)
+  status                     ComplaintStatus       @default(OPEN)
+  isPrivate                  Boolean               @default(false)
+  createdAt                  DateTime              @default(now())
+  updatedAt                  DateTime              @updatedAt
+  resolvedAt                 DateTime?
+  parent                     Complaint?            @relation("ComplaintHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children                   Complaint[]           @relation("ComplaintHierarchy")
+  events                     ComplaintEvent[]
+  attachments                ComplaintAttachment[]
+  assignees                  TaskAssignee[]
 
   @@index([status])
   @@index([raisedByEmail])
@@ -1918,14 +2200,14 @@ model Complaint {
 }
 
 model TaskAssignee {
-  id             String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  taskId         String                  @db.Uuid
+  id             String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId         String                 @db.Uuid
   assigneeEmail  String
   assigneeName   String?
-  responseStatus AssigneeResponseStatus  @default(PENDING)
+  responseStatus AssigneeResponseStatus @default(PENDING)
   markedClosedAt DateTime?
-  assignedAt     DateTime                @default(now())
-  task           Complaint               @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  assignedAt     DateTime               @default(now())
+  task           Complaint              @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
   @@unique([taskId, assigneeEmail])
   @@index([assigneeEmail])
@@ -2007,35 +2289,35 @@ model AppVersion {
 // --- Purchases module (Phase 1 — Sarveda operational master) ---
 
 model Vendor {
-  id                 String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name               String
-  displayName        String?
-  email              String?
-  phone              String?
-  gstin              String?
-  pan                String?
-  paymentTerms       String?         @default("Due on Receipt")
-  currency           String          @default("INR")
-  billingLine1       String?
-  billingLine2       String?
-  billingCity        String?
-  billingState       String?
-  billingPostalCode  String?
-  billingCountry     String          @default("IN")
-  shippingLine1      String?
-  shippingLine2      String?
-  shippingCity       String?
-  shippingState      String?
-  shippingPostalCode String?
-  shippingCountry    String          @default("IN")
-  notes              String?
-  zohoContactId      String?
-  isActive           Boolean         @default(true)
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
-  purchaseOrders     PurchaseOrder[]
-  bills              VendorBill[]
-  expenses           Expense[]
+  id                       String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                     String
+  displayName              String?
+  email                    String?
+  phone                    String?
+  gstin                    String?
+  pan                      String?
+  paymentTerms             String?                   @default("Due on Receipt")
+  currency                 String                    @default("INR")
+  billingLine1             String?
+  billingLine2             String?
+  billingCity              String?
+  billingState             String?
+  billingPostalCode        String?
+  billingCountry           String                    @default("IN")
+  shippingLine1            String?
+  shippingLine2            String?
+  shippingCity             String?
+  shippingState            String?
+  shippingPostalCode       String?
+  shippingCountry          String                    @default("IN")
+  notes                    String?
+  zohoContactId            String?
+  isActive                 Boolean                   @default(true)
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+  purchaseOrders           PurchaseOrder[]
+  bills                    VendorBill[]
+  expenses                 Expense[]
   accountingVendorPayments AccountingVendorPayment[]
 
   @@index([name])
@@ -2276,20 +2558,20 @@ enum AccountingGatewaySettlementLineMappingStatus {
 }
 
 model AccountingAccount {
-  id            String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  code          String                @unique
+  id            String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code          String                  @unique
   name          String
   type          AccountingAccountType
-  parentId      String?               @db.Uuid
-  parent        AccountingAccount?    @relation("AccountingAccountTree", fields: [parentId], references: [id])
-  children      AccountingAccount[]   @relation("AccountingAccountTree")
-  currency      String                @default("INR")
-  isActive      Boolean               @default(true)
-  isSystem      Boolean               @default(false)
+  parentId      String?                 @db.Uuid
+  parent        AccountingAccount?      @relation("AccountingAccountTree", fields: [parentId], references: [id])
+  children      AccountingAccount[]     @relation("AccountingAccountTree")
+  currency      String                  @default("INR")
+  isActive      Boolean                 @default(true)
+  isSystem      Boolean                 @default(false)
   zohoAccountId String?
   description   String?
-  createdAt     DateTime              @default(now())
-  updatedAt     DateTime              @updatedAt
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
   journalLines  AccountingJournalLine[]
 
   @@index([type])
@@ -2298,27 +2580,27 @@ model AccountingAccount {
 }
 
 model AccountingJournalEntry {
-  id                 String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  entryNumber        String                    @unique
-  entryDate          DateTime                  @db.Date
-  memo               String?
-  status             AccountingJournalStatus   @default(DRAFT)
-  postedAt           DateTime?
-  postedByUserId     String?                   @db.Uuid
-  totalDebitInPaise  Int                       @default(0)
-  totalCreditInPaise Int                       @default(0)
-  currency           String                    @default("INR")
-  createdAt          DateTime                  @default(now())
-  updatedAt          DateTime                  @updatedAt
-  lines              AccountingJournalLine[]
-  documentLinks      AccountingDocumentLink[]
-  postingEvent       AccountingPostingEvent?
-  gatewaySettlement  AccountingGatewaySettlement?
-  vendorPayment      AccountingVendorPayment?
-  inventoryOpeningBatch AccountingInventoryOpeningBatch?
+  id                     String                           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entryNumber            String                           @unique
+  entryDate              DateTime                         @db.Date
+  memo                   String?
+  status                 AccountingJournalStatus          @default(DRAFT)
+  postedAt               DateTime?
+  postedByUserId         String?                          @db.Uuid
+  totalDebitInPaise      Int                              @default(0)
+  totalCreditInPaise     Int                              @default(0)
+  currency               String                           @default("INR")
+  createdAt              DateTime                         @default(now())
+  updatedAt              DateTime                         @updatedAt
+  lines                  AccountingJournalLine[]
+  documentLinks          AccountingDocumentLink[]
+  postingEvent           AccountingPostingEvent?
+  gatewaySettlement      AccountingGatewaySettlement?
+  vendorPayment          AccountingVendorPayment?
+  inventoryOpeningBatch  AccountingInventoryOpeningBatch?
   productionOpeningBatch AccountingOpeningBatch?
-  bankTransfer       AccountingBankTransfer?
-  bankStatementMatches AccountingBankStatementMatch[]
+  bankTransfer           AccountingBankTransfer?
+  bankStatementMatches   AccountingBankStatementMatch[]
 
   @@index([entryDate])
   @@index([status])
@@ -2344,20 +2626,20 @@ model AccountingJournalLine {
 }
 
 model AccountingPostingEvent {
-  id             String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  eventType      String
-  sourceType     String
-  sourceId       String
-  uniqueKey      String
-  payloadJson    Json?
-  status         AccountingPostingEventStatus @default(PENDING)
-  attemptCount   Int                          @default(0)
-  lastError      String?
-  processedAt    DateTime?
-  journalEntryId String?                      @unique @db.Uuid
-  journalEntry   AccountingJournalEntry?      @relation(fields: [journalEntryId], references: [id])
-  createdAt      DateTime                     @default(now())
-  updatedAt      DateTime                     @updatedAt
+  id                String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventType         String
+  sourceType        String
+  sourceId          String
+  uniqueKey         String
+  payloadJson       Json?
+  status            AccountingPostingEventStatus @default(PENDING)
+  attemptCount      Int                          @default(0)
+  lastError         String?
+  processedAt       DateTime?
+  journalEntryId    String?                      @unique @db.Uuid
+  journalEntry      AccountingJournalEntry?      @relation(fields: [journalEntryId], references: [id])
+  createdAt         DateTime                     @default(now())
+  updatedAt         DateTime                     @updatedAt
   gatewaySettlement AccountingGatewaySettlement?
   vendorPayment     AccountingVendorPayment?
   bankTransfer      AccountingBankTransfer?
@@ -2369,11 +2651,11 @@ model AccountingPostingEvent {
 }
 
 model AccountingDocumentLink {
-  id               String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id               String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   documentType     String
   documentId       String
-  journalEntryId   String                 @db.Uuid
-  journalEntry     AccountingJournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  journalEntryId   String                  @db.Uuid
+  journalEntry     AccountingJournalEntry  @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
   zohoDocumentId   String?
   zohoDocumentType String?
   journalLines     AccountingJournalLine[]
@@ -2424,29 +2706,29 @@ model AccountingAuditLog {
 
 /// Razorpay (etc.) settlement batch — accounting-owned; not commerce Payment.settlement* authority.
 model AccountingGatewaySettlement {
-  id                   String                             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                   String                            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   provider             PaymentProvider
   providerSettlementId String
-  currency             String                             @default("INR")
+  currency             String                            @default("INR")
   settledAt            DateTime
   utr                  String?
-  targetBankAccountId  String?                            @db.Uuid
-  targetBankAccount    AccountingBankAccount?             @relation("SettlementTargetBank", fields: [targetBankAccountId], references: [id])
-  grossInPaise         Int                                @default(0)
-  feeInPaise           Int                                @default(0)
-  taxInPaise           Int                                @default(0)
-  netInPaise           Int                                @default(0)
-  status               AccountingGatewaySettlementStatus  @default(IMPORTED)
-  gstItcStatus         String                             @default("UNVERIFIED_PENDING_TAX_INVOICE")
+  targetBankAccountId  String?                           @db.Uuid
+  targetBankAccount    AccountingBankAccount?            @relation("SettlementTargetBank", fields: [targetBankAccountId], references: [id])
+  grossInPaise         Int                               @default(0)
+  feeInPaise           Int                               @default(0)
+  taxInPaise           Int                               @default(0)
+  netInPaise           Int                               @default(0)
+  status               AccountingGatewaySettlementStatus @default(IMPORTED)
+  gstItcStatus         String                            @default("UNVERIFIED_PENDING_TAX_INVOICE")
   sourcePayloadHash    String
   rawPayload           Json?
-  postingEventId       String?                            @unique @db.Uuid
-  postingEvent         AccountingPostingEvent?            @relation(fields: [postingEventId], references: [id])
-  journalEntryId       String?                            @unique @db.Uuid
-  journalEntry         AccountingJournalEntry?            @relation(fields: [journalEntryId], references: [id])
+  postingEventId       String?                           @unique @db.Uuid
+  postingEvent         AccountingPostingEvent?           @relation(fields: [postingEventId], references: [id])
+  journalEntryId       String?                           @unique @db.Uuid
+  journalEntry         AccountingJournalEntry?           @relation(fields: [journalEntryId], references: [id])
   lastError            String?
-  createdAt            DateTime                           @default(now())
-  updatedAt            DateTime                           @updatedAt
+  createdAt            DateTime                          @default(now())
+  updatedAt            DateTime                          @updatedAt
   lines                AccountingGatewaySettlementLine[]
 
   @@unique([provider, providerSettlementId])
@@ -2456,24 +2738,24 @@ model AccountingGatewaySettlement {
 }
 
 model AccountingGatewaySettlementLine {
-  id               String                                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  settlementId     String                                      @db.Uuid
-  settlement       AccountingGatewaySettlement                 @relation(fields: [settlementId], references: [id], onDelete: Cascade)
-  lineType         AccountingGatewaySettlementLineType
-  providerEntityId String
-  amountInPaise    Int                                         @default(0)
-  feeInPaise       Int                                         @default(0)
-  taxInPaise       Int                                         @default(0)
-  debitInPaise     Int                                         @default(0)
-  creditInPaise    Int                                         @default(0)
+  id                String                                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  settlementId      String                                       @db.Uuid
+  settlement        AccountingGatewaySettlement                  @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+  lineType          AccountingGatewaySettlementLineType
+  providerEntityId  String
+  amountInPaise     Int                                          @default(0)
+  feeInPaise        Int                                          @default(0)
+  taxInPaise        Int                                          @default(0)
+  debitInPaise      Int                                          @default(0)
+  creditInPaise     Int                                          @default(0)
   providerPaymentId String?
   providerRefundId  String?
-  paymentId        String?                                     @db.Uuid
-  orderId          String?                                     @db.Uuid
-  mappingStatus    AccountingGatewaySettlementLineMappingStatus @default(UNMAPPED)
-  rawPayload       Json?
-  sortOrder        Int                                         @default(0)
-  createdAt        DateTime                                    @default(now())
+  paymentId         String?                                      @db.Uuid
+  orderId           String?                                      @db.Uuid
+  mappingStatus     AccountingGatewaySettlementLineMappingStatus @default(UNMAPPED)
+  rawPayload        Json?
+  sortOrder         Int                                          @default(0)
+  createdAt         DateTime                                     @default(now())
 
   @@unique([settlementId, providerEntityId])
   @@index([settlementId])
@@ -2499,30 +2781,30 @@ enum AccountingVendorPaymentStatus {
 
 /// Accounting-owned supplier payment — not derived from VendorBill.paidInPaise.
 model AccountingVendorPayment {
-  id              String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  paymentNumber   String                          @unique
-  vendorId        String                          @db.Uuid
-  vendor          Vendor                          @relation(fields: [vendorId], references: [id])
-  paymentDate     DateTime                        @db.Date
-  amountInPaise   Int
-  currency        String                          @default("INR")
-  paymentMethod   AccountingVendorPaymentMethod
-  paidAccountCode String
-  bankAccountId   String?                         @db.Uuid
-  bankAccount     AccountingBankAccount?          @relation(fields: [bankAccountId], references: [id])
-  utr             String?
-  notes           String?
-  status          AccountingVendorPaymentStatus   @default(DRAFT)
+  id                String                              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paymentNumber     String                              @unique
+  vendorId          String                              @db.Uuid
+  vendor            Vendor                              @relation(fields: [vendorId], references: [id])
+  paymentDate       DateTime                            @db.Date
+  amountInPaise     Int
+  currency          String                              @default("INR")
+  paymentMethod     AccountingVendorPaymentMethod
+  paidAccountCode   String
+  bankAccountId     String?                             @db.Uuid
+  bankAccount       AccountingBankAccount?              @relation(fields: [bankAccountId], references: [id])
+  utr               String?
+  notes             String?
+  status            AccountingVendorPaymentStatus       @default(DRAFT)
   sourcePayloadHash String
-  postingEventId  String?                         @unique @db.Uuid
-  postingEvent    AccountingPostingEvent?         @relation(fields: [postingEventId], references: [id])
-  journalEntryId  String?                         @unique @db.Uuid
-  journalEntry    AccountingJournalEntry?         @relation(fields: [journalEntryId], references: [id])
-  createdByUserId String?                         @db.Uuid
-  lastError       String?
-  createdAt       DateTime                        @default(now())
-  updatedAt       DateTime                        @updatedAt
-  allocations     AccountingVendorPaymentAllocation[]
+  postingEventId    String?                             @unique @db.Uuid
+  postingEvent      AccountingPostingEvent?             @relation(fields: [postingEventId], references: [id])
+  journalEntryId    String?                             @unique @db.Uuid
+  journalEntry      AccountingJournalEntry?             @relation(fields: [journalEntryId], references: [id])
+  createdByUserId   String?                             @db.Uuid
+  lastError         String?
+  createdAt         DateTime                            @default(now())
+  updatedAt         DateTime                            @updatedAt
+  allocations       AccountingVendorPaymentAllocation[]
 
   @@index([vendorId])
   @@index([paymentDate])
@@ -2531,12 +2813,12 @@ model AccountingVendorPayment {
 }
 
 model AccountingVendorPaymentAllocation {
-  id           String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  paymentId    String                   @db.Uuid
-  payment      AccountingVendorPayment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
-  vendorBillId String                   @db.Uuid
+  id            String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paymentId     String                  @db.Uuid
+  payment       AccountingVendorPayment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  vendorBillId  String                  @db.Uuid
   amountInPaise Int
-  createdAt    DateTime                 @default(now())
+  createdAt     DateTime                @default(now())
 
   @@unique([paymentId, vendorBillId])
   @@index([paymentId])
@@ -2545,13 +2827,13 @@ model AccountingVendorPaymentAllocation {
 
 /// Maps free-text Expense.expenseAccount → EXPENSE-type CoA (Phase 3C2).
 model AccountingExpenseAccountMapping {
-  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  normalizedSourceName String
-  displayName          String
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  normalizedSourceName  String
+  displayName           String
   accountingAccountCode String
-  isActive             Boolean  @default(true)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   @@unique([normalizedSourceName])
   @@index([accountingAccountCode])
@@ -2560,15 +2842,15 @@ model AccountingExpenseAccountMapping {
 
 /// Maps free-text Expense.paidThrough → bank/cash account (Phase 3C2 / 4B).
 model AccountingExpensePaymentMapping {
-  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   normalizedSourceName String
   displayName          String
   paidAccountCode      String
-  bankAccountId        String?  @db.Uuid
+  bankAccountId        String?                @db.Uuid
   bankAccount          AccountingBankAccount? @relation(fields: [bankAccountId], references: [id])
-  isActive             Boolean  @default(true)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  isActive             Boolean                @default(true)
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
 
   @@unique([normalizedSourceName])
   @@index([paidAccountCode])
@@ -2598,29 +2880,29 @@ enum AccountingBankTransferStatus {
 
 /// Registry linking operational bank/cash identity to a GL ASSET account.
 model AccountingBankAccount {
-  id                     String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name                   String
-  bankName               String?
-  maskedAccountNumber    String?
-  ifsc                   String?
-  currency               String                    @default("INR")
-  glAccountCode          String                    @unique
-  accountType            AccountingBankAccountType
-  isActive               Boolean                   @default(true)
-  isDefault              Boolean                   @default(false)
-  statementImportEnabled Boolean                   @default(false)
-  razorpaySettlementTarget Boolean                 @default(false)
-  createdByUserId        String?                   @db.Uuid
-  createdAt              DateTime                  @default(now())
-  updatedAt              DateTime                  @updatedAt
-  vendorPayments         AccountingVendorPayment[]
-  expensePaymentMappings AccountingExpensePaymentMapping[]
-  settlementTargets      AccountingGatewaySettlement[] @relation("SettlementTargetBank")
-  sourceTransfers        AccountingBankTransfer[]  @relation("TransferSource")
-  destTransfers          AccountingBankTransfer[]  @relation("TransferDest")
-  statementImports       AccountingBankStatementImport[]
-  statementLines         AccountingBankStatementLine[]
-  reconciliations        AccountingBankReconciliation[]
+  id                       String                            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                     String
+  bankName                 String?
+  maskedAccountNumber      String?
+  ifsc                     String?
+  currency                 String                            @default("INR")
+  glAccountCode            String                            @unique
+  accountType              AccountingBankAccountType
+  isActive                 Boolean                           @default(true)
+  isDefault                Boolean                           @default(false)
+  statementImportEnabled   Boolean                           @default(false)
+  razorpaySettlementTarget Boolean                           @default(false)
+  createdByUserId          String?                           @db.Uuid
+  createdAt                DateTime                          @default(now())
+  updatedAt                DateTime                          @updatedAt
+  vendorPayments           AccountingVendorPayment[]
+  expensePaymentMappings   AccountingExpensePaymentMapping[]
+  settlementTargets        AccountingGatewaySettlement[]     @relation("SettlementTargetBank")
+  sourceTransfers          AccountingBankTransfer[]          @relation("TransferSource")
+  destTransfers            AccountingBankTransfer[]          @relation("TransferDest")
+  statementImports         AccountingBankStatementImport[]
+  statementLines           AccountingBankStatementLine[]
+  reconciliations          AccountingBankReconciliation[]
 
   @@index([accountType])
   @@index([isActive])
@@ -2628,28 +2910,28 @@ model AccountingBankAccount {
 }
 
 model AccountingBankTransfer {
-  id                    String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  transferNumber        String                       @unique
-  transferDate          DateTime                     @db.Date
-  amountInPaise         Int
-  currency              String                       @default("INR")
-  transferKind          AccountingBankTransferKind
-  sourceBankAccountId   String                       @db.Uuid
-  sourceBankAccount     AccountingBankAccount        @relation("TransferSource", fields: [sourceBankAccountId], references: [id])
-  destinationBankAccountId String                    @db.Uuid
-  destinationBankAccount AccountingBankAccount       @relation("TransferDest", fields: [destinationBankAccountId], references: [id])
-  reference             String?
-  memo                  String?
-  status                AccountingBankTransferStatus @default(DRAFT)
-  sourcePayloadHash     String
-  postingEventId        String?                      @unique @db.Uuid
-  postingEvent          AccountingPostingEvent?      @relation(fields: [postingEventId], references: [id])
-  journalEntryId        String?                      @unique @db.Uuid
-  journalEntry          AccountingJournalEntry?      @relation(fields: [journalEntryId], references: [id])
-  createdByUserId       String?                      @db.Uuid
-  lastError             String?
-  createdAt             DateTime                     @default(now())
-  updatedAt             DateTime                     @updatedAt
+  id                       String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  transferNumber           String                       @unique
+  transferDate             DateTime                     @db.Date
+  amountInPaise            Int
+  currency                 String                       @default("INR")
+  transferKind             AccountingBankTransferKind
+  sourceBankAccountId      String                       @db.Uuid
+  sourceBankAccount        AccountingBankAccount        @relation("TransferSource", fields: [sourceBankAccountId], references: [id])
+  destinationBankAccountId String                       @db.Uuid
+  destinationBankAccount   AccountingBankAccount        @relation("TransferDest", fields: [destinationBankAccountId], references: [id])
+  reference                String?
+  memo                     String?
+  status                   AccountingBankTransferStatus @default(DRAFT)
+  sourcePayloadHash        String
+  postingEventId           String?                      @unique @db.Uuid
+  postingEvent             AccountingPostingEvent?      @relation(fields: [postingEventId], references: [id])
+  journalEntryId           String?                      @unique @db.Uuid
+  journalEntry             AccountingJournalEntry?      @relation(fields: [journalEntryId], references: [id])
+  createdByUserId          String?                      @db.Uuid
+  lastError                String?
+  createdAt                DateTime                     @default(now())
+  updatedAt                DateTime                     @updatedAt
 
   @@index([transferDate])
   @@index([status])
@@ -2698,26 +2980,26 @@ enum AccountingBankStatementMatchType {
 
 /// Committed bank statement evidence (Phase 4C). No GL posting from import.
 model AccountingBankStatementImport {
-  id                     String                              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  bankAccountId          String                              @db.Uuid
-  bankAccount            AccountingBankAccount               @relation(fields: [bankAccountId], references: [id])
-  fileName               String
-  fileHash               String
-  statementFrom          DateTime?                           @db.Date
-  statementTo            DateTime?                           @db.Date
-  openingBalanceInPaise  Int?
-  closingBalanceInPaise  Int?
-  currency               String                              @default("INR")
-  importStatus           AccountingBankStatementImportStatus @default(IMPORTED)
-  rowCount               Int                                 @default(0)
-  debitTotalInPaise      Int                                 @default(0)
-  creditTotalInPaise     Int                                 @default(0)
-  failureReason          String?
-  importedByUserId       String?                             @db.Uuid
-  createdAt              DateTime                            @default(now())
-  committedAt            DateTime?
-  lines                  AccountingBankStatementLine[]
-  reconciliations        AccountingBankReconciliation[]
+  id                    String                              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bankAccountId         String                              @db.Uuid
+  bankAccount           AccountingBankAccount               @relation(fields: [bankAccountId], references: [id])
+  fileName              String
+  fileHash              String
+  statementFrom         DateTime?                           @db.Date
+  statementTo           DateTime?                           @db.Date
+  openingBalanceInPaise Int?
+  closingBalanceInPaise Int?
+  currency              String                              @default("INR")
+  importStatus          AccountingBankStatementImportStatus @default(IMPORTED)
+  rowCount              Int                                 @default(0)
+  debitTotalInPaise     Int                                 @default(0)
+  creditTotalInPaise    Int                                 @default(0)
+  failureReason         String?
+  importedByUserId      String?                             @db.Uuid
+  createdAt             DateTime                            @default(now())
+  committedAt           DateTime?
+  lines                 AccountingBankStatementLine[]
+  reconciliations       AccountingBankReconciliation[]
 
   @@unique([bankAccountId, fileHash])
   @@index([bankAccountId])
@@ -2726,28 +3008,28 @@ model AccountingBankStatementImport {
 }
 
 model AccountingBankStatementLine {
-  id                     String                               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  statementImportId      String                               @db.Uuid
-  statementImport        AccountingBankStatementImport        @relation(fields: [statementImportId], references: [id], onDelete: Cascade)
-  bankAccountId          String                               @db.Uuid
-  bankAccount            AccountingBankAccount                @relation(fields: [bankAccountId], references: [id])
+  id                     String                                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  statementImportId      String                                 @db.Uuid
+  statementImport        AccountingBankStatementImport          @relation(fields: [statementImportId], references: [id], onDelete: Cascade)
+  bankAccountId          String                                 @db.Uuid
+  bankAccount            AccountingBankAccount                  @relation(fields: [bankAccountId], references: [id])
   rowNumber              Int
-  transactionDate        DateTime                             @db.Date
-  valueDate              DateTime?                            @db.Date
+  transactionDate        DateTime                               @db.Date
+  valueDate              DateTime?                              @db.Date
   description            String
   reference              String?
-  debitInPaise           Int                                  @default(0)
-  creditInPaise          Int                                  @default(0)
+  debitInPaise           Int                                    @default(0)
+  creditInPaise          Int                                    @default(0)
   runningBalanceInPaise  Int?
   transactionFingerprint String
   matchStatus            AccountingBankStatementLineMatchStatus @default(UNMATCHED)
   category               AccountingBankStatementLineCategory?
   categoryNote           String?
   categorizedAt          DateTime?
-  categorizedByUserId    String?                              @db.Uuid
-  reconciliationId       String?                              @db.Uuid
-  reconciliation         AccountingBankReconciliation?        @relation(fields: [reconciliationId], references: [id])
-  createdAt              DateTime                             @default(now())
+  categorizedByUserId    String?                                @db.Uuid
+  reconciliationId       String?                                @db.Uuid
+  reconciliation         AccountingBankReconciliation?          @relation(fields: [reconciliationId], references: [id])
+  createdAt              DateTime                               @default(now())
   matches                AccountingBankStatementMatch[]
 
   @@unique([bankAccountId, transactionFingerprint])
@@ -2761,22 +3043,22 @@ model AccountingBankStatementLine {
 }
 
 model AccountingBankStatementMatch {
-  id                   String                               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  statementLineId      String                               @db.Uuid
-  statementLine        AccountingBankStatementLine          @relation(fields: [statementLineId], references: [id], onDelete: Cascade)
-  journalEntryId       String                               @db.Uuid
-  journalEntry         AccountingJournalEntry               @relation(fields: [journalEntryId], references: [id])
+  id                   String                                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  statementLineId      String                                 @db.Uuid
+  statementLine        AccountingBankStatementLine            @relation(fields: [statementLineId], references: [id], onDelete: Cascade)
+  journalEntryId       String                                 @db.Uuid
+  journalEntry         AccountingJournalEntry                 @relation(fields: [journalEntryId], references: [id])
   matchType            AccountingBankStatementMatchType
   confidence           AccountingBankStatementMatchConfidence
-  status               AccountingBankStatementMatchStatus   @default(CANDIDATE)
+  status               AccountingBankStatementMatchStatus     @default(CANDIDATE)
   matchedAmountInPaise Int
   bankGlAccountCode    String
   sourceEntityType     String?
   sourceEntityId       String?
   evidenceJson         Json?
-  matchedByUserId      String?                              @db.Uuid
+  matchedByUserId      String?                                @db.Uuid
   matchedAt            DateTime?
-  createdAt            DateTime                             @default(now())
+  createdAt            DateTime                               @default(now())
 
   @@index([statementLineId])
   @@index([journalEntryId])
@@ -2801,30 +3083,30 @@ enum AccountingBankReconciliationStatus {
 
 /// Formal per-bank reconciliation period (Phase 4D). Does not post GL by itself.
 model AccountingBankReconciliation {
-  id                             String                            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  bankAccountId                  String                            @db.Uuid
-  bankAccount                    AccountingBankAccount             @relation(fields: [bankAccountId], references: [id])
-  periodStart                    DateTime                          @db.Date
-  periodEnd                      DateTime                          @db.Date
-  statementImportId              String?                           @db.Uuid
-  statementImport                AccountingBankStatementImport?    @relation(fields: [statementImportId], references: [id])
+  id                             String                             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bankAccountId                  String                             @db.Uuid
+  bankAccount                    AccountingBankAccount              @relation(fields: [bankAccountId], references: [id])
+  periodStart                    DateTime                           @db.Date
+  periodEnd                      DateTime                           @db.Date
+  statementImportId              String?                            @db.Uuid
+  statementImport                AccountingBankStatementImport?     @relation(fields: [statementImportId], references: [id])
   statementOpeningBalanceInPaise Int?
   statementClosingBalanceInPaise Int?
-  bookOpeningBalanceInPaise      Int                               @default(0)
-  bookClosingBalanceInPaise      Int                               @default(0)
-  bookDebitTotalInPaise          Int                               @default(0)
-  bookCreditTotalInPaise         Int                               @default(0)
-  differenceInPaise              Int                               @default(0)
+  bookOpeningBalanceInPaise      Int                                @default(0)
+  bookClosingBalanceInPaise      Int                                @default(0)
+  bookDebitTotalInPaise          Int                                @default(0)
+  bookCreditTotalInPaise         Int                                @default(0)
+  differenceInPaise              Int                                @default(0)
   status                         AccountingBankReconciliationStatus @default(OPEN)
   snapshotJson                   Json?
   reconciledAt                   DateTime?
-  reconciledByUserId             String?                           @db.Uuid
+  reconciledByUserId             String?                            @db.Uuid
   reopenedAt                     DateTime?
-  reopenedByUserId               String?                           @db.Uuid
+  reopenedByUserId               String?                            @db.Uuid
   reopenReason                   String?
   notes                          String?
-  createdAt                      DateTime                          @default(now())
-  updatedAt                      DateTime                          @updatedAt
+  createdAt                      DateTime                           @default(now())
+  updatedAt                      DateTime                           @updatedAt
   statementLines                 AccountingBankStatementLine[]
 
   @@unique([bankAccountId, periodStart, periodEnd])
@@ -2855,25 +3137,25 @@ enum AccountingInventoryOpeningBatchStatus {
 }
 
 model AccountingInventoryCostLayer {
-  id                   String                               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  variantId            String                               @db.Uuid
-  variant              ProductVariant                       @relation(fields: [variantId], references: [id])
-  sourceType           AccountingInventoryCostLayerSourceType
-  sourceId             String
-  sourceLineId         String?                              @db.Uuid
-  quantityOriginal     Int
-  quantityRemaining    Int
-  unitCostInPaise      Int
-  totalCostInPaise     Int
-  currency             String                               @default("INR")
-  effectiveAt          DateTime
-  sourceFingerprint    String
-  status               AccountingInventoryCostLayerStatus   @default(ACTIVE)
-  openingBatchItemId   String?                              @unique @db.Uuid
-  openingBatchItem     AccountingInventoryOpeningBatchItem? @relation(fields: [openingBatchItemId], references: [id])
-  createdAt            DateTime                             @default(now())
-  updatedAt            DateTime                             @updatedAt
-  consumptions         AccountingInventoryCostConsumption[]
+  id                 String                                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  variantId          String                                 @db.Uuid
+  variant            ProductVariant                         @relation(fields: [variantId], references: [id])
+  sourceType         AccountingInventoryCostLayerSourceType
+  sourceId           String
+  sourceLineId       String?                                @db.Uuid
+  quantityOriginal   Int
+  quantityRemaining  Int
+  unitCostInPaise    Int
+  totalCostInPaise   Int
+  currency           String                                 @default("INR")
+  effectiveAt        DateTime
+  sourceFingerprint  String
+  status             AccountingInventoryCostLayerStatus     @default(ACTIVE)
+  openingBatchItemId String?                                @unique @db.Uuid
+  openingBatchItem   AccountingInventoryOpeningBatchItem?   @relation(fields: [openingBatchItemId], references: [id])
+  createdAt          DateTime                               @default(now())
+  updatedAt          DateTime                               @updatedAt
+  consumptions       AccountingInventoryCostConsumption[]
 
   @@unique([sourceType, sourceId, sourceLineId, sourceFingerprint])
   @@index([variantId, status, effectiveAt, createdAt, id])
@@ -2932,24 +3214,24 @@ model AccountingInventoryOpeningBatch {
 }
 
 model AccountingInventoryOpeningBatchItem {
-  id                 String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  batchId            String                          @db.Uuid
-  batch              AccountingInventoryOpeningBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  variantId          String                          @db.Uuid
-  variant            ProductVariant                  @relation(fields: [variantId], references: [id])
-  sku                String
-  openingQuantity    Int
-  unitCostInPaise    Int
-  totalCostInPaise   Int
-  operationalOnHand  Int
-  quantityMismatch   Boolean                         @default(false)
-  classification     String
-  notes              String?
-  validationErrors   Json?
-  costLayerId        String?                         @db.Uuid
-  sortOrder          Int                             @default(0)
-  createdAt          DateTime                        @default(now())
-  costLayer          AccountingInventoryCostLayer?
+  id                String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batchId           String                          @db.Uuid
+  batch             AccountingInventoryOpeningBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  variantId         String                          @db.Uuid
+  variant           ProductVariant                  @relation(fields: [variantId], references: [id])
+  sku               String
+  openingQuantity   Int
+  unitCostInPaise   Int
+  totalCostInPaise  Int
+  operationalOnHand Int
+  quantityMismatch  Boolean                         @default(false)
+  classification    String
+  notes             String?
+  validationErrors  Json?
+  costLayerId       String?                         @db.Uuid
+  sortOrder         Int                             @default(0)
+  createdAt         DateTime                        @default(now())
+  costLayer         AccountingInventoryCostLayer?
 
   @@unique([batchId, variantId])
   @@unique([batchId, sku])
@@ -2976,34 +3258,34 @@ enum AccountingItcSourceType {
 
 /// Accounting-owned ITC evidence / claimability. Does not own commerce records or rewrite GL.
 model AccountingItcEvidence {
-  id                      String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sourceType              AccountingItcSourceType
-  sourceId                String                   @db.Uuid
-  uniqueKey               String                   @unique
-  documentReference       String?
-  supplierGstin           String?
-  supplierName            String?
-  documentDate            DateTime?
-  taxableValueInPaise     Int                      @default(0)
-  cgstInPaise             Int                      @default(0)
-  sgstInPaise             Int                      @default(0)
-  igstInPaise             Int                      @default(0)
-  totalGstInPaise         Int                      @default(0)
+  id                  String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sourceType          AccountingItcSourceType
+  sourceId            String                       @db.Uuid
+  uniqueKey           String                       @unique
+  documentReference   String?
+  supplierGstin       String?
+  supplierName        String?
+  documentDate        DateTime?
+  taxableValueInPaise Int                          @default(0)
+  cgstInPaise         Int                          @default(0)
+  sgstInPaise         Int                          @default(0)
+  igstInPaise         Int                          @default(0)
+  totalGstInPaise     Int                          @default(0)
   /// True when Input GST was posted to 2200–2202. False for gateway fee-tax (5100).
-  recognizedInInputGl     Boolean                  @default(false)
-  postingEventId          String?                  @db.Uuid
-  journalEntryId          String?                  @db.Uuid
-  status                  AccountingItcStatus      @default(UNVERIFIED_PENDING_TAX_INVOICE)
-  assessmentCode          String?
-  assessmentJson          Json?
-  evidenceWarnings        Json?
-  verificationNotes       String?
-  verifiedAt              DateTime?
-  verifiedByUserId        String?                  @db.Uuid
-  claimedAt               DateTime?
-  createdAt               DateTime                 @default(now())
-  updatedAt               DateTime                 @updatedAt
-  statusHistory           AccountingItcStatusHistory[]
+  recognizedInInputGl Boolean                      @default(false)
+  postingEventId      String?                      @db.Uuid
+  journalEntryId      String?                      @db.Uuid
+  status              AccountingItcStatus          @default(UNVERIFIED_PENDING_TAX_INVOICE)
+  assessmentCode      String?
+  assessmentJson      Json?
+  evidenceWarnings    Json?
+  verificationNotes   String?
+  verifiedAt          DateTime?
+  verifiedByUserId    String?                      @db.Uuid
+  claimedAt           DateTime?
+  createdAt           DateTime                     @default(now())
+  updatedAt           DateTime                     @updatedAt
+  statusHistory       AccountingItcStatusHistory[]
 
   @@unique([sourceType, sourceId])
   @@index([status])
@@ -3013,14 +3295,14 @@ model AccountingItcEvidence {
 }
 
 model AccountingItcStatusHistory {
-  id           String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  evidenceId   String              @db.Uuid
-  evidence     AccountingItcEvidence @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
-  oldStatus    AccountingItcStatus?
-  newStatus    AccountingItcStatus
-  actorUserId  String?             @db.Uuid
-  reason       String?
-  createdAt    DateTime            @default(now())
+  id          String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  evidenceId  String                @db.Uuid
+  evidence    AccountingItcEvidence @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+  oldStatus   AccountingItcStatus?
+  newStatus   AccountingItcStatus
+  actorUserId String?               @db.Uuid
+  reason      String?
+  createdAt   DateTime              @default(now())
 
   @@index([evidenceId, createdAt])
   @@index([createdAt])
@@ -3051,37 +3333,37 @@ enum AccountingOpeningReviewStatus {
 
 /// Single production cutover opening batch. At most one POSTED.
 model AccountingOpeningBatch {
-  id                    String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  batchNumber           String                       @unique
-  effectiveDate         DateTime                     @db.Date
-  status                AccountingOpeningBatchStatus @default(DRAFT)
-  source                String                       @default("MANUAL")
-  description           String?
-  createdByUserId       String?                      @db.Uuid
-  validatedAt           DateTime?
-  postedAt              DateTime?
-  cancelledAt           DateTime?
-  totalDebitInPaise     Int                          @default(0)
-  totalCreditInPaise    Int                          @default(0)
-  validationSummary     Json?
-  sourceFingerprint     String?
-  arApprovedZero        Boolean                      @default(false)
-  equity3900Reason      String?
-  equity3900Reviewer    String?
-  equity3900Approved    Boolean                      @default(false)
-  journalEntryId        String?                      @unique @db.Uuid
-  journalEntry          AccountingJournalEntry?      @relation(fields: [journalEntryId], references: [id])
-  postingEventId        String?                      @unique @db.Uuid
-  createdAt             DateTime                     @default(now())
-  updatedAt             DateTime                     @updatedAt
-  skuMappings           AccountingOpeningSkuMapping[]
-  inventoryLines        AccountingOpeningInventoryLine[]
-  bankLines             AccountingOpeningBankLine[]
-  gatewayLines          AccountingOpeningGatewayLine[]
-  apLines               AccountingOpeningApLine[]
-  arLines               AccountingOpeningArLine[]
-  gstLines              AccountingOpeningGstLine[]
-  equityLines           AccountingOpeningEquityLine[]
+  id                 String                           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batchNumber        String                           @unique
+  effectiveDate      DateTime                         @db.Date
+  status             AccountingOpeningBatchStatus     @default(DRAFT)
+  source             String                           @default("MANUAL")
+  description        String?
+  createdByUserId    String?                          @db.Uuid
+  validatedAt        DateTime?
+  postedAt           DateTime?
+  cancelledAt        DateTime?
+  totalDebitInPaise  Int                              @default(0)
+  totalCreditInPaise Int                              @default(0)
+  validationSummary  Json?
+  sourceFingerprint  String?
+  arApprovedZero     Boolean                          @default(false)
+  equity3900Reason   String?
+  equity3900Reviewer String?
+  equity3900Approved Boolean                          @default(false)
+  journalEntryId     String?                          @unique @db.Uuid
+  journalEntry       AccountingJournalEntry?          @relation(fields: [journalEntryId], references: [id])
+  postingEventId     String?                          @unique @db.Uuid
+  createdAt          DateTime                         @default(now())
+  updatedAt          DateTime                         @updatedAt
+  skuMappings        AccountingOpeningSkuMapping[]
+  inventoryLines     AccountingOpeningInventoryLine[]
+  bankLines          AccountingOpeningBankLine[]
+  gatewayLines       AccountingOpeningGatewayLine[]
+  apLines            AccountingOpeningApLine[]
+  arLines            AccountingOpeningArLine[]
+  gstLines           AccountingOpeningGstLine[]
+  equityLines        AccountingOpeningEquityLine[]
 
   @@index([status])
   @@index([effectiveDate])
@@ -3110,84 +3392,84 @@ model AccountingOpeningSkuMapping {
 }
 
 model AccountingOpeningInventoryLine {
-  id              String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  batchId         String                        @db.Uuid
-  batch           AccountingOpeningBatch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  sku             String
-  variantId       String?                       @db.Uuid
-  quantity        Int
-  unitCostInPaise Int
-  totalCostInPaise Int
-  operationalOnHand Int                         @default(0)
-  quantityMismatch Boolean                      @default(false)
-  source          String?
-  reviewStatus    AccountingOpeningReviewStatus @default(PENDING)
-  costLayerId     String?                       @db.Uuid
-  sortOrder       Int                           @default(0)
-  createdAt       DateTime                      @default(now())
+  id                String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batchId           String                        @db.Uuid
+  batch             AccountingOpeningBatch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  sku               String
+  variantId         String?                       @db.Uuid
+  quantity          Int
+  unitCostInPaise   Int
+  totalCostInPaise  Int
+  operationalOnHand Int                           @default(0)
+  quantityMismatch  Boolean                       @default(false)
+  source            String?
+  reviewStatus      AccountingOpeningReviewStatus @default(PENDING)
+  costLayerId       String?                       @db.Uuid
+  sortOrder         Int                           @default(0)
+  createdAt         DateTime                      @default(now())
 
   @@unique([batchId, sku])
   @@index([batchId])
 }
 
 model AccountingOpeningBankLine {
-  id                    String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  batchId               String                        @db.Uuid
-  batch                 AccountingOpeningBatch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  name                  String
-  bankName              String?
-  maskedAccountNumber   String?
-  ifsc                  String?
-  accountType           String                        @default("BANK")
-  glAccountCode         String
+  id                        String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batchId                   String                        @db.Uuid
+  batch                     AccountingOpeningBatch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  name                      String
+  bankName                  String?
+  maskedAccountNumber       String?
+  ifsc                      String?
+  accountType               String                        @default("BANK")
+  glAccountCode             String
   openingBookBalanceInPaise Int
-  statementBalanceInPaise Int?
-  source                String?
-  reviewStatus          AccountingOpeningReviewStatus @default(PENDING)
-  sortOrder             Int                           @default(0)
-  createdAt             DateTime                      @default(now())
+  statementBalanceInPaise   Int?
+  source                    String?
+  reviewStatus              AccountingOpeningReviewStatus @default(PENDING)
+  sortOrder                 Int                           @default(0)
+  createdAt                 DateTime                      @default(now())
 
   @@unique([batchId, glAccountCode])
   @@index([batchId])
 }
 
 model AccountingOpeningGatewayLine {
-  id                   String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  batchId              String                        @db.Uuid
-  batch                AccountingOpeningBatch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  provider             String
-  glAccountCode        String
+  id                     String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batchId                String                        @db.Uuid
+  batch                  AccountingOpeningBatch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  provider               String
+  glAccountCode          String
   unsettledAmountInPaise Int
   /// ASSET = debit clearing; LIABILITY = credit clearing
-  direction            String                        @default("ASSET")
-  sourceReference      String?
-  reviewStatus         AccountingOpeningReviewStatus @default(PENDING)
-  sortOrder            Int                           @default(0)
-  createdAt            DateTime                      @default(now())
+  direction              String                        @default("ASSET")
+  sourceReference        String?
+  reviewStatus           AccountingOpeningReviewStatus @default(PENDING)
+  sortOrder              Int                           @default(0)
+  createdAt              DateTime                      @default(now())
 
   @@unique([batchId, provider])
   @@index([batchId])
 }
 
 model AccountingOpeningApLine {
-  id                    String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  batchId               String                        @db.Uuid
-  batch                 AccountingOpeningBatch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  vendorName            String
-  vendorId              String?                       @db.Uuid
-  billNumber            String
-  billDate              DateTime?                     @db.Date
-  dueDate               DateTime?                     @db.Date
-  outstandingInPaise    Int
-  gstComponentInPaise   Int                           @default(0)
-  tdsInPaise            Int                           @default(0)
-  currency              String                        @default("INR")
-  reference             String?
-  source                String?
-  reviewStatus          AccountingOpeningReviewStatus @default(PENDING)
+  id                          String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batchId                     String                        @db.Uuid
+  batch                       AccountingOpeningBatch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  vendorName                  String
+  vendorId                    String?                       @db.Uuid
+  billNumber                  String
+  billDate                    DateTime?                     @db.Date
+  dueDate                     DateTime?                     @db.Date
+  outstandingInPaise          Int
+  gstComponentInPaise         Int                           @default(0)
+  tdsInPaise                  Int                           @default(0)
+  currency                    String                        @default("INR")
+  reference                   String?
+  source                      String?
+  reviewStatus                AccountingOpeningReviewStatus @default(PENDING)
   remainingOutstandingInPaise Int?
-  sortOrder             Int                           @default(0)
-  createdAt             DateTime                      @default(now())
+  sortOrder                   Int                           @default(0)
+  createdAt                   DateTime                      @default(now())
 
   @@unique([batchId, vendorName, billNumber])
   @@index([batchId])
@@ -3214,32 +3496,32 @@ model AccountingOpeningArLine {
 }
 
 model AccountingOpeningGstLine {
-  id              String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  batchId         String                        @db.Uuid
-  batch           AccountingOpeningBatch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  accountCode     String
+  id             String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batchId        String                        @db.Uuid
+  batch          AccountingOpeningBatch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  accountCode    String
   /// Signed net: positive = debit (asset/input), negative = credit (liability/output)
-  balanceInPaise  Int
-  source          String?
-  reviewStatus    AccountingOpeningReviewStatus @default(PENDING)
-  sortOrder       Int                           @default(0)
-  createdAt       DateTime                      @default(now())
+  balanceInPaise Int
+  source         String?
+  reviewStatus   AccountingOpeningReviewStatus @default(PENDING)
+  sortOrder      Int                           @default(0)
+  createdAt      DateTime                      @default(now())
 
   @@unique([batchId, accountCode])
   @@index([batchId])
 }
 
 model AccountingOpeningEquityLine {
-  id             String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  batchId        String                        @db.Uuid
-  batch          AccountingOpeningBatch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  accountCode    String
+  id            String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batchId       String                        @db.Uuid
+  batch         AccountingOpeningBatch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  accountCode   String
   /// Credit positive for capital/RE/OBE credit balances
-  amountInPaise  Int
-  reason         String?
-  reviewStatus   AccountingOpeningReviewStatus @default(PENDING)
-  sortOrder      Int                           @default(0)
-  createdAt      DateTime                      @default(now())
+  amountInPaise Int
+  reason        String?
+  reviewStatus  AccountingOpeningReviewStatus @default(PENDING)
+  sortOrder     Int                           @default(0)
+  createdAt     DateTime                      @default(now())
 
   @@unique([batchId, accountCode])
   @@index([batchId])
