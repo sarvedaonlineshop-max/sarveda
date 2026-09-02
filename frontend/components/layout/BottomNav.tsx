@@ -520,14 +520,18 @@ export function BottomNav() {
                 {active && !item.onClick ? (
                   <span className="absolute top-0 h-0.5 w-8 rounded-full bg-amber-300" />
                 ) : null}
-                <span className={`transition-colors ${active ? "text-amber-300" : "text-white"}`}>
+                <span
+                  className={`relative inline-flex items-center justify-center transition-colors ${
+                    active ? "text-amber-300" : "text-white"
+                  }`}
+                >
                   {item.icon(active)}
+                  {item.badge && item.badge > 0 ? (
+                    <span className="pointer-events-none absolute -right-1.5 -top-1.5 z-10 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-[#c9a227] px-1 text-[9px] font-bold leading-none text-[#1c352a] ring-[1.5px] ring-[#166D46]">
+                      {item.badge > 99 ? "99+" : item.badge}
+                    </span>
+                  ) : null}
                 </span>
-                {item.badge && item.badge > 0 ? (
-                  <span className="absolute right-1.5 top-1.5 z-10 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-[#c9a227] px-1 text-[9px] font-bold leading-none text-[#1c352a] ring-[1.5px] ring-[#166D46]">
-                    {item.badge > 99 ? "99+" : item.badge}
-                  </span>
-                ) : null}
                 <span
                   className={`text-[10px] font-semibold tracking-wide transition-colors ${
                     active ? "text-amber-200" : "text-white"

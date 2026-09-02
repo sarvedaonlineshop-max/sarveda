@@ -8,6 +8,7 @@ import { describe, it } from "node:test";
 import {
   LEGACY_WOO_KNOWN_PRODUCT_SLUGS,
   LEGACY_WOO_LEAF_ALIASES,
+  LEGACY_WOO_MANUAL_REVIEW_LEAVES,
   LEGACY_WOO_UNRESOLVED_LEAVES,
   buildLegacyProductRedirectTarget,
   extractLegacyStoreProductLeaf,
@@ -70,6 +71,23 @@ describe("resolveLegacyWooProductSlug", () => {
     );
   });
 
+  it("maps non-printed-copper-water-bottles to grooved parent (Woo 6071 HIGH), not curved-vintage 5495", () => {
+    // Evidence: docs/audit/merchant_woo_sarveda_mapping.tsv — only HIGH leaf match is
+    // gla_43480 → grooved-hammered-plain-copper-bottle; curved-vintage rows are medium
+    // sku_exact_parent_mismatch (Sarveda parent 5495 vs Woo parent 6071).
+    assert.equal(
+      LEGACY_WOO_LEAF_ALIASES["non-printed-copper-water-bottles"],
+      "grooved-hammered-plain-copper-bottle"
+    );
+    const r = resolveLegacyWooProductSlug("non-printed-copper-water-bottles");
+    assert.equal(r.ok, true);
+    if (r.ok) {
+      assert.equal(r.slug, "grooved-hammered-plain-copper-bottle");
+      assert.equal(r.via, "alias");
+      assert.notEqual(r.slug, "copper-bottle-curved-vintage-hammered");
+    }
+  });
+
   it("B — case-normalized Product.slug", () => {
     assert.ok(LEGACY_WOO_KNOWN_PRODUCT_SLUGS.has("Copper-Tongue-Cleaner"));
     const r = resolveLegacyWooProductSlug("copper-tongue-cleaner");
@@ -90,6 +108,39 @@ describe("resolveLegacyWooProductSlug", () => {
     assert.deepEqual(resolveLegacyWooProductSlug("box-tanpura"), {
       ok: false,
       reason: "unresolved_audit"
+    });
+  });
+
+  it("maps proven Yoast product-sitemap aliases", () => {
+    const expected: Record<string, string> = {
+      "crescent-zafu-cushion-compact": "crescent-zafu-cushion-wide-cotton",
+      "cotton-yoga-mat7-chakras": "7-chakras-yoga-mats",
+      "artistic-egg-shakers": "painted-egg-shakers",
+      "copper-bottle-black-with-7-chakras-vintage": "7-chakras-vintage-copper-bottles",
+      "shruthi-thali-gong-plates": "gong-plates-shruti-plates-plain",
+      "tuned-pipe": "tuned-pipes",
+      "printed-copper-water-bottles": "copper-bottle-blue-tranquillity-meditation",
+      "copper-bottle-with-7-chakras-plain": "7-chakras-plain-copper-bottles"
+    };
+    for (const [leaf, slug] of Object.entries(expected)) {
+      assert.equal(LEGACY_WOO_LEAF_ALIASES[leaf], slug);
+      const r = resolveLegacyWooProductSlug(leaf);
+      assert.equal(r.ok, true, leaf);
+      if (r.ok) assert.equal(r.slug, slug);
+      assert.ok(LEGACY_WOO_KNOWN_PRODUCT_SLUGS.has(slug), slug);
+    }
+  });
+
+  it("keeps unproven Yoast leaves as MANUAL_REVIEW (no redirect)", () => {
+    Array.from(LEGACY_WOO_MANUAL_REVIEW_LEAVES).forEach((leaf) => {
+      assert.deepEqual(resolveLegacyWooProductSlug(leaf), {
+        ok: false,
+        reason: "unresolved_audit"
+      });
+      assert.equal(
+        resolveStorePathToProductRedirect(`/store/yoga-and-meditation/${leaf}/`),
+        null
+      );
     });
   });
 

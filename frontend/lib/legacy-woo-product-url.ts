@@ -10,6 +10,11 @@
  * Do NOT change Product.slug values; this map preserves old landing leaves only.
  *
  * Unresolved audited leaves (no redirect): elemental-chimes, box-tanpura.
+ *
+ * Yoast product-sitemap leaves still MANUAL_REVIEW (no single proven native target):
+ * engraved-copper-water-bottles (split plain/vintage; Woo parent 6080 absent),
+ * natural-bamboo-xylophone-with-5-keys, copper-bottle-curved-copper-diamond-groove,
+ * crystal-bowl-o-rings-support-rings, overtone-flute, overtone-flute-2.
  */
 
 /** Explicit audited Woo leaf → current Product.slug (renames only; leaf ≠ slug ignoring case). */
@@ -18,13 +23,19 @@ export const LEGACY_WOO_LEAF_ALIASES: Readonly<Record<string, string>> = {
   "7-chakras-copper-water-bottles-with-handle": "7-chakras-copper-bottles-with-handle",
   "9-10-notes-handpan": "handpan",
   "ankh-sound-healing-instrument": "ankh",
+  "artistic-egg-shakers": "painted-egg-shakers", // Woo parent 7404
   "aslatau-or-asalato": "asalato-kashaka-shaker",
   "bamboo-rainstick-2": "bamboo-rainstick-wide-80cm",
   "ceg-crystal-singing-bowl-set": "triad-crystal-bowl-set",
   "cg-tuning-forks": "c-g-tuning-forks",
   "chau-gong-tam-tam-for-sound-therapy-meditation": "chau-gongs",
   "classic-morchang-set": "classic-morchang",
+  // Woo leaf slug/title swap: compact leaf → Wide Cotton (wooCommerceId 47494).
+  "copper-bottle-black-with-7-chakras-vintage": "7-chakras-vintage-copper-bottles", // Woo 5682
+  "copper-bottle-with-7-chakras-plain": "7-chakras-plain-copper-bottles", // Woo 5675
   "copper-water-bottle-with-2-glasses-set-with-7-chakra-design": "copper-bottle-gift-set-7-chakra",
+  "cotton-yoga-mat7-chakras": "7-chakras-yoga-mats", // CTX offers 8474–8476 → product woo 46141
+  "crescent-zafu-cushion-compact": "crescent-zafu-cushion-wide-cotton", // Woo 47494
   "crescent-zafu-cushion-wide": "crescent-zafu-cushion-compact-buck-wheat",
   "den-den-daiko-or-spin-twist-drum": "spin-twist-drum-or-den-den-daiko",
   "dumroo-medium-size": "dumru-dumroo",
@@ -46,9 +57,14 @@ export const LEGACY_WOO_LEAF_ALIASES: Readonly<Record<string, string>> = {
   "mini-coconut-shaker-3-types": "mini-coconut-shakers-3-types",
   "mini-teak-wood-and-stainless-steel-xylophone": "teak-wood-stainless-steel-xylophone",
   "musical-wooden-frog": "wooden-frog",
+  // Woo parent 6071 "Grooved, Hammered & Plain Copper Bottle" (not curved-vintage 5495).
+  // Audit: only HIGH leaf match is grooved-hammered-plain-copper-bottle (gla_43480 sku_exact).
+  // Medium rows pointing at copper-bottle-curved-vintage-hammered are sku_exact_parent_mismatch.
   "non-printed-copper-water-bottles": "grooved-hammered-plain-copper-bottle",
   "pangi-seed-shell-shaker-rattle": "pangi-seed-shell-rattle",
   "plain-flat-wind-tibetan-gong-for-meditation-sound-therapy": "wind-gong-plain",
+  // Woo parent 6007 retained on native blue-tranquillity product (Product.wooCommerceId).
+  "printed-copper-water-bottles": "copper-bottle-blue-tranquillity-meditation",
   "rectangular-yoga-bolster-made-from-organic-cotton": "rectangular-yoga-bolster",
   "sacred-heart-chakra-singing-bowl": "heart-chakra-singing-bowl",
   "sacred-root-chakra-singing-bowl": "root-chakra-singing-bowl",
@@ -65,6 +81,7 @@ export const LEGACY_WOO_LEAF_ALIASES: Readonly<Record<string, string>> = {
   "sarveda-zafu-zabuton-meditation-cushion-combo": "zafu-zabuton-combo-plain",
   "shamanic-drum-bags-ocean-drum-bags": "shamanic-drum-ocean-drum-bags",
   "shamanic-drums": "shamanic-drum",
+  "shruthi-thali-gong-plates": "gong-plates-shruti-plates-plain", // Woo 45485
   "singing-bowl-silk-ring-cushions-accessories": "singing-bowls-silk-ring-cushion-accessories",
   "singing-bowl-with-7-chakra-healing-from-sound-therapy": "handcrafted-set-of-7-bowls-for-sound-therapy",
   "singing-bowl-with-mantra-rustic-blue-color": "singing-bowl-with-mantra-rustic-blue-colour",
@@ -72,6 +89,7 @@ export const LEGACY_WOO_LEAF_ALIASES: Readonly<Record<string, string>> = {
   "the-beginner-set": "the-three-bowl-set-root-heart-and-third-eye",
   "the-essential-set": "the-four-bowl-set-root-heart-third-eye-and-universal",
   "thunder-tube": "thunder-tube-basic-edition",
+  "tuned-pipe": "tuned-pipes", // variations 50551/50552
   "tuning-forks-activators": "tuning-fork-activators",
   "tuning-forks-extensions": "tuning-fork-extensions",
   "tuning-forks-gem-foot": "tuning-forks-gem-feet",
@@ -94,6 +112,9 @@ export const LEGACY_WOO_KNOWN_PRODUCT_SLUGS: ReadonlySet<string> = new Set([
   "7-chakra-morchang",
   "7-chakras-copper-bottles-with-handle",
   "7-chakras-mystical-incense-sticks-set",
+  "7-chakras-plain-copper-bottles",
+  "7-chakras-vintage-copper-bottles",
+  "7-chakras-yoga-mats",
   "8-key-kalimba",
   "8-keys-metallophone",
   "8-keys-wooden-xylophone",
@@ -117,6 +138,7 @@ export const LEGACY_WOO_KNOWN_PRODUCT_SLUGS: ReadonlySet<string> = new Set([
   "coconut-maracas-shakers",
   "coconut-rattle",
   "conscious-cards",
+  "copper-bottle-blue-tranquillity-meditation",
   "copper-bottle-curved-vintage-hammered",
   "copper-bottle-gift-set-7-chakra",
   "copper-bottle-hammered-copper-set",
@@ -126,6 +148,7 @@ export const LEGACY_WOO_KNOWN_PRODUCT_SLUGS: ReadonlySet<string> = new Set([
   "copper-bottle-with-brush-tattvamasi",
   "copper-bottle-with-brush-true-happiness-lies-within",
   "crescent-zafu-cushion-compact-buck-wheat",
+  "crescent-zafu-cushion-wide-cotton",
   "crystal-bowl-bag",
   "crystal-bowls-frosted-white",
   "crystal-bowls-set-of-7",
@@ -141,6 +164,7 @@ export const LEGACY_WOO_KNOWN_PRODUCT_SLUGS: ReadonlySet<string> = new Set([
   "full-moon-singing-bowls-all-sizes",
   "gomukhi-shankh",
   "gong-bags",
+  "gong-plates-shruti-plates-plain",
   "gong-stand",
   "grooved-hammered-plain-copper-bottle",
   "handcrafted-set-of-7-bowls-for-sound-therapy",
@@ -165,6 +189,7 @@ export const LEGACY_WOO_KNOWN_PRODUCT_SLUGS: ReadonlySet<string> = new Set([
   "mini-flat-maracas",
   "native-american-style-flute-handcrafted-wooden-melody-maker",
   "ocean-drums",
+  "painted-egg-shakers",
   "pangi-seed-shell-rattle",
   "pulse-tubes",
   "rectangle-wooden-maracas-shaker",
@@ -195,6 +220,7 @@ export const LEGACY_WOO_KNOWN_PRODUCT_SLUGS: ReadonlySet<string> = new Set([
   "teak-wood-stainless-steel-xylophone",
   "the-four-bowl-set-root-heart-third-eye-and-universal",
   "the-head-bowl",
+  "tuned-pipes",
   "the-three-bowl-set-root-heart-and-third-eye",
   "third-eye-chakra-singing-bowl",
   "thunder-tube-basic-edition",
@@ -234,7 +260,20 @@ export const LEGACY_WOO_KNOWN_PRODUCT_SLUGS: ReadonlySet<string> = new Set([
 /** Explicit no-target leaves from the Merchant audit — never invent a destination. */
 export const LEGACY_WOO_UNRESOLVED_LEAVES: ReadonlySet<string> = new Set([
   "elemental-chimes",
-  "box-tanpura",
+  "box-tanpura"
+]);
+
+/**
+ * Yoast product-sitemap leaves with no single proven native Product
+ * (split parents, missing wooCommerceId, or catalog gap). Do not 301-guess.
+ */
+export const LEGACY_WOO_MANUAL_REVIEW_LEAVES: ReadonlySet<string> = new Set([
+  "engraved-copper-water-bottles", // Woo 6080 split → plain 5675 + vintage 5682
+  "natural-bamboo-xylophone-with-5-keys", // SKU MI-XP-B-5 unmatched on Sarveda
+  "copper-bottle-curved-copper-diamond-groove", // Woo 5934 absent
+  "crystal-bowl-o-rings-support-rings", // Woo 49760 absent
+  "overtone-flute", // Woo 51353 absent
+  "overtone-flute-2" // Woo 51382 absent
 ]);
 
 const SLUG_SAFE = /^[a-zA-Z0-9][a-zA-Z0-9_-]*$/;
@@ -284,6 +323,9 @@ export function resolveLegacyWooProductSlug(leaf: string | null | undefined): Le
     return { ok: false, reason: "unsafe" };
   }
   if (LEGACY_WOO_UNRESOLVED_LEAVES.has(leaf)) {
+    return { ok: false, reason: "unresolved_audit" };
+  }
+  if (LEGACY_WOO_MANUAL_REVIEW_LEAVES.has(leaf)) {
     return { ok: false, reason: "unresolved_audit" };
   }
 
