@@ -20,7 +20,7 @@ describe("commerce refunds", () => {
     commerceMocks.razorpayRefund.mockClear();
   });
 
-  it("full refund restores stock and invokes Zoho credit-note integration", async () => {
+  it("full refund restores stock without Zoho credit-note integration", async () => {
     const bundle = await createTestProductWithInventory({ onHand: 18 });
     const { order, rzpOrderId, qty } = await createPendingRazorpayOrder(bundle, { qty: 2 });
     const rzpPaymentId = `pay_ref_${Date.now()}`;
@@ -37,10 +37,7 @@ describe("commerce refunds", () => {
     expect(inv?.onHand).toBe(18);
 
     const commerceMocks = getCommerceMocks();
-    expect(commerceMocks.createZohoRefundDocumentsForOrder).toHaveBeenCalledWith(
-      order.id,
-      expect.any(String)
-    );
+    expect(commerceMocks.createZohoRefundDocumentsForOrder).not.toHaveBeenCalled();
 
     await cleanupTestOrder(order.id);
     await cleanupTestProduct(bundle);

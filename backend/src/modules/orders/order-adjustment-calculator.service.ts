@@ -94,12 +94,6 @@ export function calculateAdjustmentCommercialDelta(input: {
 
   let canExecuteAutomatically = classification === "NO_PAYMENT_CHANGE";
 
-  if (input.order.zohoInvoiceId && input.payload.intent !== "CHANGE_ADDRESS") {
-    warnings.push("Zoho invoice exists — item/quantity changes require accounting review");
-    classification = "ACCOUNTING_REVIEW_REQUIRED";
-    canExecuteAutomatically = false;
-  }
-
   if (classification === "REFUND_REQUIRED") {
     warnings.push("Partial refund requires Phase 1E accounting — no automatic gateway refund");
     canExecuteAutomatically = false;

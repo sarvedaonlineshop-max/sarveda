@@ -6,10 +6,6 @@ const REQUIRED = [
   "JWT_SECRET",
   "RAZORPAY_KEY_ID",
   "RAZORPAY_KEY_SECRET",
-  "ZOHO_CLIENT_ID",
-  "ZOHO_CLIENT_SECRET",
-  "ZOHO_REFRESH_TOKEN",
-  "ZOHO_ORG_ID",
   "SHIPROCKET_EMAIL",
   "SHIPROCKET_PASSWORD",
   "FRONTEND_URL"
@@ -27,9 +23,6 @@ const OPTIONAL_WARN = [
 ];
 
 function envValue(key: string): string | undefined {
-  if (key === "ZOHO_ORG_ID") {
-    return process.env.ZOHO_ORG_ID?.trim() || process.env.ZOHO_ORGANIZATION_ID?.trim();
-  }
   return process.env[key]?.trim();
 }
 

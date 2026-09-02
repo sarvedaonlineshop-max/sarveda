@@ -24,7 +24,7 @@ import {
   refundStripe
 } from "./refund.service";
 import { pickCapturedPaymentForRefund } from "./payment-selection";
-import { createZohoPartialCreditNoteForRefund } from "../zoho/zoho-financials";
+// Zoho Books retired — keep ZOHO_SYNCED enum readable for historical rows only.
 
 export type ExecutePartialRefundInput = {
   orderId: string;
@@ -253,8 +253,12 @@ export async function executeAuthoritativePartialRefund(
       amountInPaise: existing.amountInPaise,
       fullyRefunded: false,
       settlementStage: existing.settlementStage,
-      accountingPosted: existing.settlementStage === "ACCOUNTING_POSTED" || existing.settlementStage === "COMPLETE" || existing.settlementStage === "ZOHO_SYNCED",
-      zohoSynced: existing.settlementStage === "ZOHO_SYNCED" || existing.settlementStage === "COMPLETE"
+      accountingPosted:
+        existing.settlementStage === "ACCOUNTING_POSTED" ||
+        existing.settlementStage === "COMPLETE" ||
+        existing.settlementStage === "ZOHO_SYNCED",
+      // Legacy field: Zoho sync retired. Historical ZOHO_SYNCED/COMPLETE still report true.
+      zohoSynced: false
     };
   }
 
@@ -333,13 +337,13 @@ export async function executeAuthoritativePartialRefund(
   await updateSettlementStage(refundRow.id, "GATEWAY_SUCCEEDED");
 
   let accountingPosted = false;
-  let zohoSynced = false;
 
   try {
     const spec = await resolvePartialRefundSpec(input, refundRow.id, providerRefundId);
     await postOrderRefundedPartial(spec);
     accountingPosted = true;
     await updateSettlementStage(refundRow.id, "ACCOUNTING_POSTED");
+    await updateSettlementStage(refundRow.id, "COMPLETE");
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     logger.error("partial_refund_accounting_failed", {
@@ -348,29 +352,6 @@ export async function executeAuthoritativePartialRefund(
       error: msg
     });
     await updateSettlementStage(refundRow.id, "GATEWAY_SUCCEEDED", `Accounting pending: ${msg}`);
-  }
-
-  if (accountingPosted) {
-    try {
-      await createZohoPartialCreditNoteForRefund(refundRow.id);
-      zohoSynced = true;
-      await updateSettlementStage(refundRow.id, "ZOHO_SYNCED");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      logger.error("partial_refund_zoho_failed", {
-        orderId: input.orderId,
-        refundId: refundRow.id,
-        error: msg
-      });
-      await prisma.refund.update({
-        where: { id: refundRow.id },
-        data: { zohoSyncError: msg }
-      });
-    }
-  }
-
-  if (accountingPosted && zohoSynced) {
-    await updateSettlementStage(refundRow.id, "COMPLETE");
   }
 
   notifyOrderEmail(input.orderId, "refund_initiated");
@@ -383,7 +364,7 @@ export async function executeAuthoritativePartialRefund(
     sourceId: input.sourceId,
     fullyRefunded,
     accountingPosted,
-    zohoSynced
+    zohoSynced: false
   });
 
   const finalRow = await prisma.refund.findUnique({ where: { id: refundRow.id } });
@@ -395,11 +376,11 @@ export async function executeAuthoritativePartialRefund(
     fullyRefunded,
     settlementStage: finalRow!.settlementStage,
     accountingPosted,
-    zohoSynced
+    zohoSynced: false
   };
 }
 
-/** Retry accounting/Zoho stages only — never re-hits gateway. */
+/** Retry accounting stage only — never re-hits gateway. Zoho sync retired. */
 export async function retryPartialRefundSettlementStages(refundId: string): Promise<void> {
   const refund = await prisma.refund.findUnique({
     where: { id: refundId },
@@ -407,6 +388,24 @@ export async function retryPartialRefundSettlementStages(refundId: string): Prom
   });
   if (!refund || refund.status !== "processed") {
     throw Object.assign(new Error("Refund not in processed state"), { statusCode: 409, code: "INVALID_STATE" });
+  }
+
+  if (
+    refund.settlementStage === "COMPLETE" ||
+    refund.settlementStage === "ACCOUNTING_POSTED" ||
+    refund.settlementStage === "ZOHO_SYNCED"
+  ) {
+    if (refund.settlementStage !== "COMPLETE") {
+      await updateSettlementStage(refund.id, "COMPLETE");
+    }
+    return;
+  }
+
+  if (refund.settlementStage !== "GATEWAY_SUCCEEDED") {
+    throw Object.assign(new Error("Refund not retryable in current stage"), {
+      statusCode: 409,
+      code: "INVALID_STATE"
+    });
   }
 
   const input: ExecutePartialRefundInput = {
@@ -417,20 +416,8 @@ export async function retryPartialRefundSettlementStages(refundId: string): Prom
     policy: refund.sourceType === "RTO" ? "RTO_SHIPPING_RETAINED" : undefined
   };
 
-  if (refund.settlementStage === "GATEWAY_SUCCEEDED" || refund.settlementStage === "ACCOUNTING_POSTED") {
-    const spec = await resolvePartialRefundSpec(input, refund.id, refund.providerRefundId);
-    if (refund.settlementStage === "GATEWAY_SUCCEEDED") {
-      await postOrderRefundedPartial(spec);
-      await updateSettlementStage(refund.id, "ACCOUNTING_POSTED");
-    }
-  }
-
-  if (
-    refund.settlementStage === "GATEWAY_SUCCEEDED" ||
-    refund.settlementStage === "ACCOUNTING_POSTED" ||
-    refund.zohoSyncError
-  ) {
-    await createZohoPartialCreditNoteForRefund(refund.id);
-    await updateSettlementStage(refund.id, "COMPLETE");
-  }
+  const spec = await resolvePartialRefundSpec(input, refund.id, refund.providerRefundId);
+  await postOrderRefundedPartial(spec);
+  await updateSettlementStage(refund.id, "ACCOUNTING_POSTED");
+  await updateSettlementStage(refund.id, "COMPLETE");
 }

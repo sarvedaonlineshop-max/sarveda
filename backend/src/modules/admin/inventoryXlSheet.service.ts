@@ -6,7 +6,6 @@ import { z } from "zod";
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { shopInventoryWhere } from "../../utils/shop-catalog";
-import { mirrorStockToZohoForSkus } from "../zoho/zoho-items";
 
 export type InventoryXlStockFilter = "ALL" | "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK";
 
@@ -184,10 +183,6 @@ export async function saveInventoryXlSheetRows(body: InventoryXlSheetSaveBody): 
       logger.error("inventory_xl_sheet_row_failed", { variantId: row.variantId, error: msg });
       errors.push({ variantId: row.variantId, sku: "", error: msg });
     }
-  }
-
-  if (touchedSkus.length > 0) {
-    await mirrorStockToZohoForSkus(touchedSkus, "admin_inventory_xl_sheet", { updated });
   }
   if (touchedVariantIds.length > 0) {
     const uniqueVariantIds = Array.from(new Set(touchedVariantIds));

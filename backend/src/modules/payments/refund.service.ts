@@ -3,7 +3,8 @@ import { logger } from "../../config/logger";
 import { notifyOrderEmail } from "../notifications/email";
 import { handlePaidOrderStatusChange } from "../orders/orders.service";
 import { orderHasActiveRtoShipment } from "../orders/rto-workflow.service";
-import { createZohoRefundDocumentsForOrder } from "../zoho/zoho-financials";
+import { isAccountingRefundPostingEnabled } from "../accounting/accounting-flag";
+import { postOrderRefundedFullByIdentifier } from "../accounting/order-refunded-full-posting.service";
 
 import { getPayPalAccessToken, getPayPalApiBase } from "./paypal";
 import { executeAuthoritativePartialRefund } from "./partial-refund-settlement.service";
@@ -238,9 +239,13 @@ export async function initiateGatewayRefund(
     });
 
     if (fullyRefunded) {
-      void createZohoRefundDocumentsForOrder(orderId, refundReason).catch((err) => {
-        logger.error("zoho_credit_note_refund_failed", { orderId, err });
-      });
+      if (isAccountingRefundPostingEnabled()) {
+        try {
+          await postOrderRefundedFullByIdentifier({ orderId, refundId: refundRow.id });
+        } catch (err) {
+          logger.error("native_order_refunded_full_posting_failed", { orderId, err });
+        }
+      }
     }
 
     notifyOrderEmail(orderId, "refund_initiated");

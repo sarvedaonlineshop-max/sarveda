@@ -1,13 +1,25 @@
 import type { ProductStatus, ProductType } from "@prisma/client";
 
 import { prisma } from "../../config/db";
-import {
-  mirrorStockToZohoForSkus,
-  syncProductVariantsToZoho,
-  type ZohoProductSyncResult
-} from "../zoho/zoho-items";
 import { normalizeTaxClass } from "../../utils/tax-class";
 import { syncVariantAttributes, type VariantAttributeInput } from "./variant-attributes";
+
+/** Zoho retired — retained shape for admin API compatibility only. */
+export type ZohoProductSyncResult = {
+  ok: boolean;
+  created: number;
+  updated: number;
+  skipped: number;
+  errors: string[];
+};
+
+const ZOHO_RETIRED_SYNC: ZohoProductSyncResult = {
+  ok: true,
+  created: 0,
+  updated: 0,
+  skipped: 0,
+  errors: []
+};
 
 function httpError(status: number, message: string, code: string): Error {
   const err = new Error(message) as Error & {
@@ -374,12 +386,7 @@ export async function saveProductAdmin(
     }
     if (input.accordionItems) await syncAccordion(productId, input.accordionItems);
 
-    const zohoSync = await syncProductVariantsToZoho(productId);
-    const stockSkus = (input.variants ?? [])
-      .filter((v) => v.onHand != null)
-      .map((v) => v.sku);
-    await mirrorStockToZohoForSkus(stockSkus, "product_admin_save", { productId });
-    return { id: productId, zohoSync };
+    return { id: productId, zohoSync: ZOHO_RETIRED_SYNC };
   }
 
   const clash = await prisma.product.findUnique({ where: { slug: input.slug } });
@@ -440,12 +447,7 @@ export async function saveProductAdmin(
   }
   if (input.accordionItems) await syncAccordion(product.id, input.accordionItems);
 
-  const zohoSync = await syncProductVariantsToZoho(product.id);
-  const stockSkus = variants
-    .filter((v) => v.onHand != null)
-    .map((v) => v.sku);
-  await mirrorStockToZohoForSkus(stockSkus, "product_admin_create", { productId: product.id });
-  return { id: product.id, zohoSync };
+  return { id: product.id, zohoSync: ZOHO_RETIRED_SYNC };
 }
 
 export async function deleteProductAdmin(id: string): Promise<void> {

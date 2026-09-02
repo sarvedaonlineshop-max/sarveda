@@ -1,11 +1,10 @@
 /**
- * Sarveda is the inventory master. Zoho Books is accounting-only (invoices, bills, payments).
- * When false (default), no stock pull/push/audit/mirror runs — routes remain for rollback.
+ * Zoho Books inventory sync is permanently retired.
+ * Sarveda is the sole inventory master — no Zoho push/pull/mirror.
  */
 export function isZohoInventorySyncEnabled(): boolean {
-  const v = (process.env.ZOHO_INVENTORY_SYNC ?? "").trim().toLowerCase();
-  return ["1", "true", "yes"].includes(v);
+  return false;
 }
 
 export const ZOHO_INVENTORY_SYNC_DISABLED_MESSAGE =
-  "Zoho inventory sync is disabled — Sarveda is the stock master. Zoho is used for invoices/bills only.";
+  "Zoho inventory sync is retired — Sarveda is the sole stock master.";

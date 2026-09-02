@@ -1055,22 +1055,8 @@ export function ProductForm({ productId }: { productId?: string }) {
         });
       }
 
-      const formatZoho = (z?: {
-        ok?: boolean;
-        created?: number;
-        updated?: number;
-        errors?: string[];
-      }) => {
-        if (!z) return "";
-        if (z.ok && !z.errors?.length) {
-          return ` Zoho: ${z.created ?? 0} item(s) created, ${z.updated ?? 0} updated.`;
-        }
-        if (z.errors?.length) return ` Zoho: ${z.errors[0]}`;
-        return "";
-      };
-
       if (isNew) {
-        const { product, zohoSync } = await postAdminProduct(payload);
+        const { product } = await postAdminProduct(payload);
         sessionStorage.removeItem(DRAFT_KEY);
         const id = String(product.id);
         setStatus(nextStatus);
@@ -1078,24 +1064,21 @@ export function ProductForm({ productId }: { productId?: string }) {
         setToast({
           message:
             opts.intent === "publish"
-              ? `Product published.${formatZoho(zohoSync)}`
-              : `Draft saved — you can keep editing.${formatZoho(zohoSync)}`,
-          error: zohoSync?.ok === false
+              ? "Product published."
+              : "Draft saved — you can keep editing.",
+          error: false
         });
         setSavedAt(Date.now());
         router.replace(`/admin/products/${id}`);
         router.refresh();
       } else {
-        const { zohoSync } = await putAdminProduct(productId!, payload);
+        await putAdminProduct(productId!, payload);
         setStatus(nextStatus);
         await loadProduct();
         setPublishIssues(null);
         setToast({
-          message:
-            opts.intent === "publish"
-              ? `Product published.${formatZoho(zohoSync)}`
-              : `Changes saved.${formatZoho(zohoSync)}`,
-          error: zohoSync?.ok === false
+          message: opts.intent === "publish" ? "Product published." : "Changes saved.",
+          error: false
         });
         setSavedAt(Date.now());
         setErr(null);

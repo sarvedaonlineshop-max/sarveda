@@ -30,7 +30,6 @@ import { onOrderEnteredProcessing } from "../shipping/orderLifecycle";
 import { getZohoStockSyncMeta } from "../zoho/zoho-stock-sync-cache";
 import { isZohoInventorySyncEnabled } from "../zoho/zoho-inventory-sync-flag";
 import { auditSarvedaVariant, computeZohoSyncSummary, listZohoOnlyItems } from "../zoho/zoho-sync-audit";
-import { mirrorStockToZohoForSkus } from "../zoho/zoho-items";
 import type { ZohoItemAuditRow } from "../zoho/zoho-sync-types";
 import { shopCatalogProductWhere, shopInventoryWhere } from "../../utils/shop-catalog";
 import { liveAdminOrderWhere } from "./live-order-filter";
@@ -1979,10 +1978,6 @@ export async function patchInventory(req: Request, res: Response, next: NextFunc
       include: inventoryInclude
     });
 
-    if (body.onHand !== undefined && row?.variant?.sku) {
-      await mirrorStockToZohoForSkus([row.variant.sku], "admin_patch_inventory", { variantId });
-    }
-
     if (body.onHand !== undefined && body.onHand > 0) {
       const { queueNotifyStockSubscribers } = await import(
         "../stock-notifications/stockNotification.service"
@@ -2023,11 +2018,6 @@ export async function bulkPatchInventory(req: Request, res: Response, next: Next
         where: { id: { in: Array.from(touchedVariantIds) } },
         select: { id: true, sku: true }
       });
-      await mirrorStockToZohoForSkus(
-        variants.map((v) => v.sku),
-        "admin_bulk_patch_inventory",
-        { updated }
-      );
       const { queueNotifyStockSubscribers } = await import(
         "../stock-notifications/stockNotification.service"
       );
@@ -2068,11 +2058,7 @@ export async function importInventoryRows(req: Request, res: Response, next: Nex
       updated++;
       touchedSkus.add(sku);
     }
-
     if (touchedSkus.size > 0) {
-      await mirrorStockToZohoForSkus(Array.from(touchedSkus), "admin_import_inventory_rows", {
-        updated
-      });
       const variants = await prisma.productVariant.findMany({
         where: { sku: { in: Array.from(touchedSkus) } },
         select: { id: true }

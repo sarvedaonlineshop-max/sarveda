@@ -92,14 +92,14 @@ describe("commerce after-paid side effects (mocked externals)", () => {
     await cleanupTestProduct(bundle);
   });
 
-  it("existing Zoho invoice and customer payment calls still occur", async () => {
+  it("does not call Zoho after paid (native accounting only)", async () => {
     const commerceMocks = getCommerceMocks();
     const bundle = await createTestProductWithInventory({ onHand: 10 });
     const { order, rzpOrderId } = await createPendingRazorpayOrder(bundle);
     await completePaidOrder(rzpOrderId, `pay_zoho_${Date.now()}`);
 
-    expect(commerceMocks.createZohoInvoiceForOrder).toHaveBeenCalledWith(order.id);
-    expect(commerceMocks.recordZohoPaymentForOrder).toHaveBeenCalledWith(order.id);
+    expect(commerceMocks.createZohoInvoiceForOrder).not.toHaveBeenCalled();
+    expect(commerceMocks.recordZohoPaymentForOrder).not.toHaveBeenCalled();
 
     await cleanupTestOrder(order.id);
     await cleanupTestProduct(bundle);

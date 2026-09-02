@@ -3,8 +3,6 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { orderItemWarehouseUnits } from "../inventory/order-item-fulfillment";
-import { mirrorStockToZohoForSkus } from "../zoho/zoho-items";
-import { voidZohoInvoiceForCancelledOrder } from "../zoho/zoho-financials";
 
 import { restockPaidOrderLinesTx } from "./order-inventory-restock.service";
 import { recomputeReservedForOrder } from "./inventory-reserved-reconcile.service";
@@ -107,25 +105,9 @@ export async function confirmStock(orderId: string): Promise<void> {
   await prisma.$transaction((tx) => confirmStockTx(tx, orderId));
 }
 
-/**
- * Reconcile Zoho stock for an order's SKUs after a paid / cancelled / refunded
- * transaction has committed. Uses a LIVE Zoho read (not the audit cache) so the
- * delta is correct even right after the sales invoice was posted — this avoids
- * double-decrementing when the Zoho invoice already reduced stock, and still
- * corrects Zoho when invoices are not inventory-tracked. Zoho stays the master;
- * this only nudges it to match Sarveda's current onHand. Fire-and-forget safe.
- */
-export async function mirrorOrderStockToZoho(orderId: string, context: string): Promise<void> {
-  const items = await prisma.orderItem.findMany({
-    where: { orderId },
-    include: { variant: { select: { sku: true } } }
-  });
-  await mirrorStockToZohoForSkus(
-    items.map((item) => item.variant.sku),
-    context,
-    { orderId },
-    { live: true }
-  );
+/** @deprecated Zoho retired — no-op retained for import compatibility. */
+export async function mirrorOrderStockToZoho(_orderId: string, _context: string): Promise<void> {
+  return;
 }
 
 /**
@@ -302,8 +284,4 @@ export async function handlePaidOrderStatusChange(
       }
     });
   });
-  await mirrorOrderStockToZoho(orderId, `order_status_${toStatus.toLowerCase()}`);
-  if (toStatus === "CANCELLED") {
-    await voidZohoInvoiceForCancelledOrder(orderId, reason);
-  }
 }

@@ -12,8 +12,6 @@ import { startWhatsAppBotIdleWorker } from "./jobs/whatsappBotIdleJob";
 import { startDueDateReminderWorker } from "./jobs/taskDueDateJob";
 import { startShippingRetryWorker } from "./jobs/shippingRetryJob";
 import { startTrackingSyncWorker } from "./jobs/trackingSyncJob";
-import { startZohoStockSyncWorker } from "./jobs/zohoStockSyncJob";
-import { warnZohoStockPushConfig } from "./modules/zoho/zoho-items";
 
 void initSentry();
 
@@ -32,7 +30,5 @@ app.listen(port, () => {
   startEtsyMarketplaceSyncJob();
   startFlipkartMarketplaceSyncJob();
   void startTrackingSyncWorker();
-  void startZohoStockSyncWorker();
   void startCartCleanupWorker();
-  warnZohoStockPushConfig();
 });
