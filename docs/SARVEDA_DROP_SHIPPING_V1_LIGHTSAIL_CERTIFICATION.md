@@ -100,7 +100,7 @@ Artifacts:
 | Demo feed | **653** in_stock / **120** out_of_stock |
 | Zero-local-stock dropship → `in_stock` | PASS — e.g. crystal-bowl-with-handle offer `in_stock` |
 | Zero-local-stock non-dropship → `out_of_stock` | PASS — feed oos sample maps to storefront OOS |
-| Price mismatch (`MI-CB-H`) | **None** — feed price matches API `saleInPaise` |
+| Price mismatch (`MI-CB-H`) | **None** — `g:price` = MRP ₹21,500 / `g:sale_price` = sale ₹19,500 (matches API paise) |
 | Landing regression | **None** — feed link still `/product/crystal-bowl-with-handle?...` |
 | **MERCHANT_AVAILABILITY_MISMATCHES** | **0** (prior Lightsail certify; counts unchanged) |
 
