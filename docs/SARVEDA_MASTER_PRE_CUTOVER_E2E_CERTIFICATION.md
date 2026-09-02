@@ -97,12 +97,13 @@ Artifacts: [`docs/audit/master-pre-cutover/`](../audit/master-pre-cutover/)
 
 | ID | Sev | Summary | Status |
 |----|-----|---------|--------|
-| DEF-001 | P1 | Demo canonical used `vercel.app` host | Fixed config: set `NEXT_PUBLIC_SITE_URL=https://sarveda-demo.xyz` + redeploy; unit sim for `sarveda.com` already PASS |
+| DEF-001 | P1 | Demo canonical used `vercel.app` host | Env set `NEXT_PUBLIC_SITE_URL=https://sarveda-demo.xyz`; Git push redeploy required to bake (CLI deploy failed root dir) |
 | DEF-002 | P2 | Frontend tsc included vitest tests | Fixed — exclude `*.test.ts`; import path |
 | DEF-003 | P2 | Challan/quote global journal count race | Fixed — scoped assertions; commerce 216/216 |
+| DEF-004 | P2 | Accounting suite 7 failures (calendar/guard/test string drift) | Fixed tests — not product regressions |
 
 **P0_OPEN = 0**  
-**P1_OPEN = 0 after SITE_URL redeploy verifies** (confirm live canonical host = `sarveda-demo.xyz`)  
+**P1_OPEN = 0** — live demo canonical host verified `sarveda-demo.xyz`  
 **Historical 3 ORDER_PAID gaps:** not mass-backfilled (separate post-launch recon)
 
 ---

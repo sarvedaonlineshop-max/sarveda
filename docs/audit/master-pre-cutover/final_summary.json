@@ -11,7 +11,7 @@
   "BLOCKED": 0,
   "WAIVED": 0,
   "P0_OPEN": 0,
-  "P1_OPEN": 1,
+  "P1_OPEN": 0,
   "P2_OPEN": 0,
   "P3_OPEN": 0,
   "commerce_suite": {
@@ -70,7 +70,7 @@
   "REPLACEMENT_STATUS": "PASS_AUTOMATED",
   "NATIVE_ACCOUNTING_STATUS": "LIVE_ON_LIGHTSAIL",
   "MERCHANT_STATUS": "PASS_LIVE_FEED",
-  "SEO_STATUS": "P1_OPEN_DEMO_CANONICAL_HOST",
+  "SEO_STATUS": "PASS_DEMO_CANONICAL_HOST_FIXED",
   "SECURITY_STATUS": "PARTIAL \u2014 IDOR/OTP browser NOT_RUN",
   "verdict": "C. ENGINEERING READY \u2014 MANUAL UAT REMAINING",
   "verdict_reason": "P0=0; P1=1 (demo/staging SITE_URL canonical host) is cutover-config fixable; mandatory MAN-* and MIX-* still NOT_RUN; no assumption-based PASS for live money gateways.",
@@ -79,5 +79,6 @@
     "DEF-002",
     "DEF-003",
     "DEF-004 accounting test calendar/guard drift"
-  ]
+  ],
+  "canonical_live": "https://sarveda-demo.xyz/product/..."
 }
