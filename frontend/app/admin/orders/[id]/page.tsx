@@ -762,18 +762,22 @@ function AdminOrderProductionView({
                 {shipBusy === "sync-all" ? "Refreshing…" : "Track Shipment"}
               </button>
             ) : null}
-            {invoice?.invoiceNo || invoice?.pdfUrl ? (
-              <a href={invoice.downloadUrl ?? adminOrderInvoiceDownloadUrl(order.id)} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-[#b98a3e] bg-[#fff8e8] px-4 py-2 text-sm font-semibold text-[#1c352a]">
-                Download Invoice
-              </a>
-            ) : null}
-            {(nextStatuses[order.status] ?? []).map((status) => (
-              <button key={status} type="button" disabled={statusSaving} onClick={() => onStatusChange(status)} className="rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 disabled:opacity-50">
-                Mark {humanState(status)}
-              </button>
-            ))}
           </div>
-          {dangerActions ? <div className="border-t border-red-100 pt-3 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">{dangerActions}</div> : null}
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-end">
+            <div className="flex flex-wrap gap-2 lg:justify-end">
+              {(nextStatuses[order.status] ?? []).map((status) => (
+                <button key={status} type="button" disabled={statusSaving} onClick={() => onStatusChange(status)} className="rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 disabled:opacity-50">
+                  Mark {humanState(status)}
+                </button>
+              ))}
+              {invoice?.invoiceNo || invoice?.pdfUrl ? (
+                <a href={invoice.downloadUrl ?? adminOrderInvoiceDownloadUrl(order.id)} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-[#b98a3e] bg-[#fff8e8] px-4 py-2 text-sm font-semibold text-[#1c352a]">
+                  Download Invoice
+                </a>
+              ) : null}
+            </div>
+            {dangerActions ? <div className="border-t border-red-100 pt-3 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">{dangerActions}</div> : null}
+          </div>
         </div>
       </section>
 
@@ -1626,6 +1630,13 @@ export default function AdminOrderDetailPage() {
     }
   }
 
+  /** When the line-item refund panel can run, it is the only refund control on the page. */
+  const lineRefundAvailable =
+    order.payments?.[0]?.provider !== "COD" &&
+    !order.shipments.some((s) => s.status === "RTO" || s.rtoAt) &&
+    !["CANCELLED", "REFUNDED"].includes(order.status) &&
+    ["CAPTURED", "PARTIALLY_REFUNDED"].includes(order.paymentStatus);
+
   const showRefundActions =
     !order.shipments.some((s) => s.status === "RTO" || s.rtoAt) &&
     !["CANCELLED", "REFUNDED", "DELIVERED"].includes(order.status) &&
@@ -1870,7 +1881,7 @@ export default function AdminOrderDetailPage() {
         onStatusChange={(status) => setStatusConfirm(status)}
         statusSaving={statusSaving}
         dangerActions={
-          showRefundActions ? (
+          showRefundActions && !lineRefundAvailable ? (
             <RefundCancelPanel
               compact
               orderId={order.id}
@@ -1884,19 +1895,20 @@ export default function AdminOrderDetailPage() {
           order.payments?.[0]?.provider !== "COD" &&
           ["CAPTURED", "PARTIALLY_REFUNDED", "REFUNDED"].includes(order.paymentStatus) ? (
             <>
-              {order.status !== "CANCELLED" && order.paymentStatus !== "REFUNDED" ? (
+              {lineRefundAvailable ? (
                 <AdminOrderLineRefund
                   orderId={order.id}
                   currency={order.currency}
                   refreshKey={`${order.status}:${order.paymentStatus}:${order.payments?.[0]?.refundedInPaise ?? 0}`}
                   onRefunded={() => void load()}
                 />
-              ) : null}
-              <AdminOrderRefundPreview
-                orderId={order.id}
-                currency={order.currency}
-                refreshKey={`${order.status}:${order.paymentStatus}:${order.payments?.[0]?.refundedInPaise ?? 0}`}
-              />
+              ) : (
+                <AdminOrderRefundPreview
+                  orderId={order.id}
+                  currency={order.currency}
+                  refreshKey={`${order.status}:${order.paymentStatus}:${order.payments?.[0]?.refundedInPaise ?? 0}`}
+                />
+              )}
               <AdminOrderRtoWorkflow orderId={order.id} currency={order.currency} onUpdated={() => void load()} />
             </>
           ) : null

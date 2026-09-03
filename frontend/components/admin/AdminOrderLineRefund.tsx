@@ -3,11 +3,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
+  executeFullOrderRefund,
   executeLineRefund,
   fetchLineRefundOptions,
-  type LineRefundOptions
+  type LineRefundOptions,
+  type RestockDisposition
 } from "@/lib/admin-api";
 import { formatMinorFromPaise } from "@/lib/money";
+
+const DISPOSITION_LABEL: Record<RestockDisposition, string> = {
+  SELLABLE: "Return to sellable stock",
+  DAMAGED: "Damaged — not sellable",
+  NON_RESTOCKABLE: "Not returnable to stock"
+};
 
 type Props = {
   orderId: string;
@@ -29,6 +37,7 @@ export function AdminOrderLineRefund({ orderId, currency, refreshKey = 0, onRefu
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [refundShipping, setRefundShipping] = useState(false);
   const [restock, setRestock] = useState(true);
+  const [disposition, setDisposition] = useState<RestockDisposition>("SELLABLE");
   const [reason, setReason] = useState("");
   const [confirming, setConfirming] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -87,6 +96,16 @@ export function AdminOrderLineRefund({ orderId, currency, refreshKey = 0, onRefu
     setSubmitting(true);
     setError(null);
     try {
+      if (isWholeRemaining) {
+        const full = await executeFullOrderRefund(orderId, reason.trim() || undefined);
+        setDone(
+          `Full refund of ${fmt(full.amountInPaise ?? options.remainingRefundableInPaise)} sent. Order marked refunded and stock restored.`
+        );
+        setConfirming(false);
+        onRefunded?.();
+        await load();
+        return;
+      }
       const result = await executeLineRefund(orderId, {
         lines: selected.map((l) => ({
           orderItemId: l.orderItemId,
@@ -94,12 +113,15 @@ export function AdminOrderLineRefund({ orderId, currency, refreshKey = 0, onRefu
         })),
         refundShipping,
         restock: restock && options.restockAvailable,
+        disposition,
         reason: reason.trim() || undefined,
         idempotencyKey: newIdempotencyKey()
       });
       setDone(
         `Refunded ${fmt(result.refundedInPaise)}${
-          result.restockedUnits ? ` · ${result.restockedUnits} unit(s) returned to stock` : ""
+          result.returnedUnits
+            ? ` · ${result.returnedUnits} unit(s) recorded as ${DISPOSITION_LABEL[disposition].toLowerCase()}`
+            : ""
         }`
       );
       setConfirming(false);
@@ -213,15 +235,37 @@ export function AdminOrderLineRefund({ orderId, currency, refreshKey = 0, onRefu
           <div className="rounded-lg border border-stone-200 p-3 dark:border-stone-700">
             <p className="text-xs font-semibold uppercase tracking-wide text-[#8a7060]">Inventory</p>
             {options.restockAvailable ? (
-              <label className="mt-2 flex items-center gap-2 text-sm text-stone-700 dark:text-stone-200">
-                <input
-                  type="checkbox"
-                  checked={restock}
-                  onChange={(e) => setRestock(e.target.checked)}
-                  className="h-4 w-4 rounded border-stone-300"
-                />
-                Return refunded quantity to sellable stock
-              </label>
+              <>
+                <label className="mt-2 flex items-center gap-2 text-sm text-stone-700 dark:text-stone-200">
+                  <input
+                    type="checkbox"
+                    checked={restock}
+                    onChange={(e) => setRestock(e.target.checked)}
+                    className="h-4 w-4 rounded border-stone-300"
+                  />
+                  Record the refunded units as returned
+                </label>
+                <label className="mt-2 block text-xs text-stone-600 dark:text-stone-300">
+                  Return condition
+                  <select
+                    value={disposition}
+                    disabled={!restock}
+                    onChange={(e) => setDisposition(e.target.value as RestockDisposition)}
+                    className="mt-1 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800"
+                  >
+                    {options.restockDispositions.map((d) => (
+                      <option key={d} value={d}>
+                        {DISPOSITION_LABEL[d]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p className="mt-1 text-[11px] text-stone-500">
+                  {disposition === "SELLABLE"
+                    ? "Adds the units back to sellable stock."
+                    : "Recorded as returned; sellable stock is not increased."}
+                </p>
+              </>
             ) : (
               <p className="mt-2 text-sm text-stone-500">
                 {options.restockUnavailableReason ?? "Stock cannot be returned for this order."}
@@ -262,7 +306,8 @@ export function AdminOrderLineRefund({ orderId, currency, refreshKey = 0, onRefu
 
         {isWholeRemaining ? (
           <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
-            This covers the entire remaining payment. Use Refund to customer for a full refund.
+            This covers the entire remaining payment, so it will be processed as a full refund: the
+            order is marked refunded and all stock is restored.
           </p>
         ) : null}
         {error ? <p className="text-xs font-medium text-red-700">{error}</p> : null}
@@ -271,11 +316,15 @@ export function AdminOrderLineRefund({ orderId, currency, refreshKey = 0, onRefu
         <div className="flex justify-end">
           <button
             type="button"
-            disabled={thisRefundInPaise <= 0 || isWholeRemaining || submitting}
+            disabled={thisRefundInPaise <= 0 || submitting}
             onClick={() => setConfirming(true)}
-            className="rounded-lg bg-[#1c352a] px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+            className={`rounded-lg px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50 ${
+              isWholeRemaining ? "bg-red-700" : "bg-[#1c352a]"
+            }`}
           >
-            Refund {fmt(thisRefundInPaise)} to customer
+            {isWholeRemaining
+              ? `Refund ${fmt(thisRefundInPaise)} — full refund`
+              : `Refund ${fmt(thisRefundInPaise)} to customer`}
           </button>
         </div>
       </div>
@@ -283,7 +332,9 @@ export function AdminOrderLineRefund({ orderId, currency, refreshKey = 0, onRefu
       {confirming ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-xl dark:bg-stone-900">
-            <p className="text-base font-bold text-[#1c352a] dark:text-stone-100">Confirm refund</p>
+            <p className="text-base font-bold text-[#1c352a] dark:text-stone-100">
+              {isWholeRemaining ? "Confirm full refund" : "Confirm refund"}
+            </p>
             <ul className="mt-3 space-y-1.5 text-sm text-stone-700 dark:text-stone-200">
               <li>
                 Refund amount: <span className="font-semibold">{fmt(thisRefundInPaise)}</span>
@@ -295,20 +346,28 @@ export function AdminOrderLineRefund({ orderId, currency, refreshKey = 0, onRefu
               ))}
               <li>
                 Shipping:{" "}
-                {refundShipping ? `refunding ${fmt(shippingRefundInPaise)}` : "not refunded"}
+                {isWholeRemaining
+                  ? "included in the full refund"
+                  : refundShipping
+                    ? `refunding ${fmt(shippingRefundInPaise)}`
+                    : "not refunded"}
               </li>
               <li>
                 Inventory:{" "}
-                {restock && options.restockAvailable
-                  ? `${totalUnits} unit(s) returned to sellable stock`
-                  : "stock unchanged"}
+                {isWholeRemaining
+                  ? "all units returned to sellable stock"
+                  : restock && options.restockAvailable
+                    ? `${totalUnits} unit(s) — ${DISPOSITION_LABEL[disposition].toLowerCase()}`
+                    : "stock unchanged"}
               </li>
               <li>
                 Net collected after: <span className="font-semibold">{fmt(netAfterInPaise)}</span>
               </li>
             </ul>
             <p className="mt-3 text-xs text-stone-500">
-              The remaining units stay sold. This does not cancel the order.
+              {isWholeRemaining
+                ? "The order will be marked Refunded."
+                : "The remaining units stay sold. This does not cancel the order."}
             </p>
             <div className="mt-5 flex justify-end gap-2">
               <button

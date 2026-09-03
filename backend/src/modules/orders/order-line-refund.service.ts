@@ -27,6 +27,11 @@ export const adminLineRefundBodySchema = z.object({
     .max(50),
   refundShipping: z.boolean().optional().default(false),
   restock: z.boolean().optional().default(false),
+  /** Where the returned units go. Only SELLABLE adds stock back. */
+  disposition: z
+    .nativeEnum(OrderInventoryRestockDisposition)
+    .optional()
+    .default(OrderInventoryRestockDisposition.SELLABLE),
   reason: z.string().trim().max(500).optional(),
   idempotencyKey: z.string().trim().min(8).max(128).optional()
 });
@@ -57,6 +62,8 @@ export type LineRefundOptions = {
   shippingInPaise: number;
   restockAvailable: boolean;
   restockUnavailableReason: string | null;
+  /** Return conditions the inventory ledger can record today. */
+  restockDispositions: OrderInventoryRestockDisposition[];
   lines: LineRefundOptionRow[];
 };
 
@@ -151,6 +158,11 @@ export async function loadLineRefundOptions(orderId: string): Promise<LineRefund
     restockUnavailableReason: hasShipment
       ? "Stock returns after dispatch are handled by the return or RTO workflow."
       : null,
+    restockDispositions: [
+      OrderInventoryRestockDisposition.SELLABLE,
+      OrderInventoryRestockDisposition.DAMAGED,
+      OrderInventoryRestockDisposition.NON_RESTOCKABLE
+    ],
     lines
   };
 }
@@ -159,7 +171,10 @@ export type LineRefundResult = {
   refundedInPaise: number;
   merchandiseRefundInPaise: number;
   shippingRefundInPaise: number;
+  /** Units added back to sellable stock (SELLABLE only). */
   restockedUnits: number;
+  /** Units recorded as returned, whatever their condition. */
+  returnedUnits: number;
   netCollectedInPaise: number;
   refunds: Array<{ orderItemId: string; quantity: number; amountInPaise: number; providerRefundId: string }>;
 };
@@ -271,6 +286,7 @@ export async function executeAdminLineRefund(opts: {
     }
   }
 
+  const disposition = opts.body.disposition ?? OrderInventoryRestockDisposition.SELLABLE;
   const idempotencyKey = opts.body.idempotencyKey?.trim() || randomUUID();
   const reason =
     opts.body.reason?.trim() ||
@@ -295,6 +311,7 @@ export async function executeAdminLineRefund(opts: {
   }
 
   let restockedUnits = 0;
+  let returnedUnits = 0;
   if (opts.body.restock) {
     const { events } = await adminApplyInventoryRestock({
       orderId: order.id,
@@ -302,9 +319,9 @@ export async function executeAdminLineRefund(opts: {
         lines: priced.map((l) => ({
           orderItemId: l.orderItemId,
           quantity: l.quantity,
-          disposition: OrderInventoryRestockDisposition.SELLABLE
+          disposition: disposition
         })),
-        reason: `Returned to stock with partial refund — ${reason}`,
+        reason: `Returned units recorded with partial refund — ${reason}`,
         idempotencyKey: `LINE_REFUND:${idempotencyKey}:restock`
       },
       createdByUserId: opts.adminUserId
@@ -312,6 +329,7 @@ export async function executeAdminLineRefund(opts: {
     restockedUnits = events
       .filter((e) => e.inventoryIncremented)
       .reduce((sum, e) => sum + e.quantity, 0);
+    returnedUnits = events.reduce((sum, e) => sum + e.quantity, 0);
   }
 
   const settledPayment = await prisma.payment.findUnique({ where: { id: payment.id } });
@@ -327,7 +345,9 @@ export async function executeAdminLineRefund(opts: {
     idempotencyKey,
     lineCount: refunds.length,
     totalInPaise,
+    disposition,
     restockedUnits,
+    returnedUnits,
     adminEmail: opts.adminEmail
   });
 
@@ -336,6 +356,7 @@ export async function executeAdminLineRefund(opts: {
     merchandiseRefundInPaise: priced.reduce((sum, l) => sum + l.merchandiseInPaise, 0),
     shippingRefundInPaise: priced.reduce((sum, l) => sum + l.shippingInPaise, 0),
     restockedUnits,
+    returnedUnits,
     netCollectedInPaise,
     refunds
   };

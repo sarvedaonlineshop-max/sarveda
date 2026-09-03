@@ -111,6 +111,41 @@ describe("admin line-item partial refund", () => {
     }
   });
 
+  it("records a damaged return without adding the unit back to sellable stock", async () => {
+    const { bundle, order } = await paidOrderWithShipping();
+    try {
+      const items = await prisma.orderItem.findMany({ where: { orderId: order.id } });
+      const before = await getInventory(bundle.variantId);
+
+      const result = await executeAdminLineRefund({
+        orderId: order.id,
+        body: {
+          lines: [{ orderItemId: items[0]!.id, quantity: 1 }],
+          refundShipping: false,
+          restock: true,
+          disposition: "DAMAGED",
+          idempotencyKey: `man006-damaged-${order.id}`
+        }
+      });
+
+      expect(result.refundedInPaise).toBe(500);
+      expect(result.returnedUnits).toBe(1);
+      expect(result.restockedUnits).toBe(0);
+
+      const after = await getInventory(bundle.variantId);
+      expect(after?.onHand).toBe(before?.onHand);
+
+      const events = await prisma.orderInventoryRestockEvent.findMany({
+        where: { orderId: order.id }
+      });
+      expect(events).toHaveLength(1);
+      expect(events[0]).toMatchObject({ disposition: "DAMAGED", inventoryIncremented: false });
+    } finally {
+      await cleanupTestOrder(order.id);
+      await cleanupTestProduct(bundle);
+    }
+  });
+
   it("is idempotent for a repeated idempotency key", async () => {
     const { bundle, order } = await paidOrderWithShipping();
     try {

@@ -726,14 +726,18 @@ export type LineRefundOptions = {
   shippingInPaise: number;
   restockAvailable: boolean;
   restockUnavailableReason: string | null;
+  restockDispositions: RestockDisposition[];
   lines: LineRefundOptionRow[];
 };
+
+export type RestockDisposition = "SELLABLE" | "DAMAGED" | "NON_RESTOCKABLE";
 
 export type LineRefundResult = {
   refundedInPaise: number;
   merchandiseRefundInPaise: number;
   shippingRefundInPaise: number;
   restockedUnits: number;
+  returnedUnits: number;
   netCollectedInPaise: number;
   refunds: Array<{ orderItemId: string; quantity: number; amountInPaise: number; providerRefundId: string }>;
 };
@@ -750,6 +754,7 @@ export function executeLineRefund(
     lines: Array<{ orderItemId: string; quantity: number }>;
     refundShipping: boolean;
     restock: boolean;
+    disposition: RestockDisposition;
     reason?: string;
     idempotencyKey: string;
   }
@@ -758,6 +763,37 @@ export function executeLineRefund(
     method: "POST",
     body: JSON.stringify(body)
   });
+}
+
+/**
+ * Full remaining refund — marks the order refunded and restores all stock.
+ * This endpoint answers with the refund result directly, not the admin envelope.
+ */
+export async function executeFullOrderRefund(
+  orderId: string,
+  reason?: string
+): Promise<{ refundId?: string; amountInPaise?: number; message?: string }> {
+  const res = await fetch(`${getApiBase()}/api/admin/orders/${encodeURIComponent(orderId)}/refund`, {
+    method: "POST",
+    credentials: "include",
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    body: JSON.stringify({ reason })
+  });
+  const json = (await res.json().catch(() => ({}))) as {
+    refundId?: string;
+    amountInPaise?: number;
+    message?: string;
+    error?: string;
+    code?: string;
+    success?: boolean;
+  };
+  if (!res.ok || json.success === false) {
+    throw new AdminApiError(json.error?.trim() || `Refund failed (${res.status})`, {
+      status: res.status,
+      code: json.code
+    });
+  }
+  return json;
 }
 
 export type RtoWorkflowShipment = {
