@@ -3,5 +3,6 @@ export {
   ensureCourseCheckoutVariant,
   ensureDigitalCheckoutOffer,
   ensureDigitalCheckoutShell,
+  materializeDigitalCheckoutVariant,
   DIGITAL_CHECKOUT_SHELL_SLUG
 } from "./digital-checkout-offer";

@@ -92,3 +92,41 @@ export async function listEventSlugs(): Promise<string[]> {
   });
   return rows.map((r) => r.slug);
 }
+
+/** JIT materialize Cart/Order stub for paid event checkout (not shop catalog). */
+export async function prepareEventCheckoutVariant(
+  slug: string
+): Promise<{ variantId: string; sku: string } | null> {
+  const event = await prisma.event.findFirst({
+    where: { slug, status: "PUBLISHED" },
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      imageUrl: true,
+      priceInPaise: true,
+      enrollmentMode: true
+    }
+  });
+  if (!event) return null;
+  if (event.enrollmentMode === "ENQUIRY" || event.priceInPaise <= 0) {
+    return null;
+  }
+
+  const { materializeDigitalCheckoutVariant } = await import("../../utils/digital-checkout-offer");
+  const { variantId, sku } = await materializeDigitalCheckoutVariant(prisma, {
+    kind: "EVENT",
+    entitySlug: event.slug,
+    eventId: event.id,
+    title: event.title,
+    priceInPaise: event.priceInPaise,
+    priceUsdCents: null,
+    imageUrl: event.imageUrl,
+    skuPrefix: "EVENT"
+  });
+  await prisma.event.update({
+    where: { id: event.id },
+    data: { checkoutVariantId: variantId }
+  });
+  return { variantId, sku };
+}

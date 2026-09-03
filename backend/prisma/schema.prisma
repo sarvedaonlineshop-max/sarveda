@@ -1774,12 +1774,13 @@ model DigitalCheckoutOffer {
   saleUsdCents      Int?
   taxClass          String              @default("gst-5")
   imageUrl          String?
-  checkoutVariantId String              @unique @db.Uuid
+  /// Optional Cart/Order bridge — materialized JIT for checkout; not a shop catalog row.
+  checkoutVariantId String?             @unique @db.Uuid
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   course            Course?             @relation(fields: [courseId], references: [id], onDelete: Cascade)
   event             Event?              @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  checkoutVariant   ProductVariant      @relation(fields: [checkoutVariantId], references: [id])
+  checkoutVariant   ProductVariant?     @relation(fields: [checkoutVariantId], references: [id])
 }
 
 enum CourseStatus {

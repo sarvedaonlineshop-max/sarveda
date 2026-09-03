@@ -145,35 +145,19 @@ async function courseCheckoutVariantId(
     return resolveCheckoutVariantSku(trimmedSku, opts.excludeCourseId);
   }
 
-  if (opts.excludeCourseId) {
-    const existing = await prisma.course.findUnique({
-      where: { id: opts.excludeCourseId },
-      select: { checkoutVariantId: true }
-    });
-    if (existing?.checkoutVariantId) {
-      const { variantId } = await ensureCourseCheckoutVariant(prisma, {
-        courseSlug: opts.courseSlug,
-        title: opts.title,
-        priceInPaise,
-        priceUsdCents,
-        imageUrl: opts.imageUrl,
-        courseId: opts.courseId ?? opts.excludeCourseId
-      });
-      return variantId;
-    }
-  }
-
+  // Always sync DigitalCheckoutOffer metadata; never attach ProductVariant stubs to Course.
   if (priceInPaise <= 0) return null;
 
-  const { variantId } = await ensureCourseCheckoutVariant(prisma, {
+  await ensureCourseCheckoutVariant(prisma, {
     courseSlug: opts.courseSlug,
     title: opts.title,
     priceInPaise,
     priceUsdCents,
     imageUrl: opts.imageUrl,
-    courseId: opts.courseId ?? opts.excludeCourseId
+    courseId: opts.courseId ?? opts.excludeCourseId,
+    materializeVariant: false
   });
-  return variantId;
+  return null;
 }
 
 function normalizeEventStatus(raw?: string): EventStatus {

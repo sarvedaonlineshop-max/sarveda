@@ -15,7 +15,7 @@ export type SiteSearchSuggestion = {
 };
 
 async function checkoutOnlyProductIds(): Promise<Set<string>> {
-  const [courseVariants, eventVariants] = await Promise.all([
+  const [courseVariants, eventVariants, digitalProducts] = await Promise.all([
     prisma.course.findMany({
       where: { checkoutVariantId: { not: null } },
       select: { checkoutVariantId: true }
@@ -23,6 +23,12 @@ async function checkoutOnlyProductIds(): Promise<Set<string>> {
     prisma.event.findMany({
       where: { checkoutVariantId: { not: null } },
       select: { checkoutVariantId: true }
+    }),
+    prisma.product.findMany({
+      where: {
+        OR: [{ slug: "__digital-checkout__" }, { productType: "DIGITAL" }, { catalogHidden: true }]
+      },
+      select: { id: true }
     })
   ]);
   const variantIds = [
@@ -30,13 +36,15 @@ async function checkoutOnlyProductIds(): Promise<Set<string>> {
     ...eventVariants.map((e) => e.checkoutVariantId)
   ].filter((id): id is string => Boolean(id));
 
-  if (!variantIds.length) return new Set();
+  const ids = new Set(digitalProducts.map((p) => p.id));
+  if (!variantIds.length) return ids;
 
   const rows = await prisma.productVariant.findMany({
     where: { id: { in: variantIds } },
     select: { productId: true }
   });
-  return new Set(rows.map((r) => r.productId));
+  for (const r of rows) ids.add(r.productId);
+  return ids;
 }
 
 export async function suggestSiteSearch(q: string, limit = 10): Promise<SiteSearchSuggestion[]> {

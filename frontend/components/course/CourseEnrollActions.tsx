@@ -45,18 +45,30 @@ export function CourseEnrollActions({
   const showPay =
     !registrationClosed &&
     (course.enrollmentMode === "CHECKOUT" || course.enrollmentMode === "BOTH") &&
-    course.checkoutVariantId &&
     course.priceInPaise > 0;
   const showEnquire =
     !registrationClosed &&
     (course.enrollmentMode === "ENQUIRY" || course.enrollmentMode === "BOTH" || !showPay);
 
   const pay = async () => {
-    if (!course.checkoutVariantId) return;
     setLoading(true);
     setError(null);
     try {
-      await cartAdd(course.checkoutVariantId, 1);
+      const prepRes = await fetch(`/api/${pathPrefix}s/${encodeURIComponent(course.slug)}/prepare-checkout`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" }
+      });
+      const prepJson = (await prepRes.json()) as {
+        success?: boolean;
+        data?: { variantId?: string };
+        error?: string;
+      };
+      const variantId = prepJson.data?.variantId;
+      if (!prepRes.ok || !variantId) {
+        throw new Error(prepJson.error || "prepare-checkout failed");
+      }
+      await cartAdd(variantId, 1);
       router.push("/checkout");
     } catch {
       setError("Could not start checkout. Please try again or contact us.");

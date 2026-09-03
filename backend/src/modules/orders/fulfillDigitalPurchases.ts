@@ -27,29 +27,49 @@ export async function fulfillDigitalPurchases(orderId: string): Promise<void> {
   for (const item of order.items) {
     const sku = item.skuSnapshot;
     if (sku.startsWith("COURSE-")) {
-      const course = await prisma.course.findFirst({
-        where: { checkoutVariantId: item.variantId },
-        select: { id: true }
+      const offer = await prisma.digitalCheckoutOffer.findFirst({
+        where: {
+          OR: [{ checkoutVariantId: item.variantId }, { sku }]
+        },
+        select: { courseId: true }
       });
-      if (course) {
+      const courseId =
+        offer?.courseId ??
+        (
+          await prisma.course.findFirst({
+            where: { checkoutVariantId: item.variantId },
+            select: { id: true }
+          })
+        )?.id;
+      if (courseId) {
         await prisma.enrollment.upsert({
-          where: { userId_courseId: { userId, courseId: course.id } },
-          create: { userId, courseId: course.id, orderId, status: "ACTIVE" },
+          where: { userId_courseId: { userId, courseId } },
+          create: { userId, courseId, orderId, status: "ACTIVE" },
           update: { orderId, status: "ACTIVE" }
         });
       }
     } else if (sku.startsWith("EVENT-")) {
-      const event = await prisma.event.findFirst({
-        where: { checkoutVariantId: item.variantId },
-        select: { id: true }
+      const offer = await prisma.digitalCheckoutOffer.findFirst({
+        where: {
+          OR: [{ checkoutVariantId: item.variantId }, { sku }]
+        },
+        select: { eventId: true }
       });
-      if (event) {
+      const eventId =
+        offer?.eventId ??
+        (
+          await prisma.event.findFirst({
+            where: { checkoutVariantId: item.variantId },
+            select: { id: true }
+          })
+        )?.id;
+      if (eventId) {
         const existing = await prisma.booking.findFirst({
-          where: { userId, eventId: event.id }
+          where: { userId, eventId }
         });
         if (!existing) {
           await prisma.booking.create({
-            data: { userId, eventId: event.id, orderId, status: "ACTIVE" }
+            data: { userId, eventId, orderId, status: "ACTIVE" }
           });
         } else if (existing.status !== "ACTIVE" || existing.orderId !== orderId) {
           await prisma.booking.update({

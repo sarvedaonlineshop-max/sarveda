@@ -1,9 +1,11 @@
 import type { Prisma } from "@prisma/client";
 
-/** Shop-facing catalog products (WooCommerce) — excludes hidden checkout products. */
+/** Shop-facing catalog products — excludes hidden / digital checkout shell. */
 export const shopCatalogProductWhere: Prisma.ProductWhereInput = {
   deletedAt: null,
-  catalogHidden: false
+  catalogHidden: false,
+  productType: { not: "DIGITAL" },
+  slug: { not: "__digital-checkout__" }
 };
 
 export const shopCatalogVariantSkuWhere: Prisma.ProductVariantWhereInput = {

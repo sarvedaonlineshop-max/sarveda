@@ -1,6 +1,6 @@
 /**
- * Digital checkout offers — course/event payment stubs (not storefront catalog).
- * Variants live under a single hidden shell product for Order/Cart FK compatibility.
+ * Digital checkout offers — course/event payment metadata (not shop catalog).
+ * ProductVariant stubs are materialized only when adding to cart (JIT).
  */
 import {
   ProductStatus,
@@ -23,6 +23,8 @@ export type EnsureDigitalCheckoutOfferInput = {
   priceUsdCents: number | null;
   imageUrl: string | null;
   skuPrefix: "COURSE" | "EVENT";
+  /** When true, create/update Cart/Order ProductVariant stub under the hidden shell. */
+  materializeVariant?: boolean;
 };
 
 function buildSku(prefix: "COURSE" | "EVENT", entitySlug: string): string {
@@ -43,21 +45,88 @@ export async function ensureDigitalCheckoutShell(prisma: PrismaClient) {
     update: {
       catalogHidden: true,
       status: ProductStatus.ACTIVE,
-      name: DIGITAL_CHECKOUT_SHELL_NAME
+      name: DIGITAL_CHECKOUT_SHELL_NAME,
+      productType: ProductType.DIGITAL
     }
   });
+}
+
+async function materializeVariantForOffer(
+  prisma: PrismaClient,
+  opts: {
+    offerId: string;
+    sku: string;
+    priceInPaise: number;
+    priceUsdCents: number | null;
+    existingVariantId: string | null;
+  }
+): Promise<string> {
+  const shell = await ensureDigitalCheckoutShell(prisma);
+
+  if (opts.existingVariantId) {
+    const existing = await prisma.productVariant.findUnique({
+      where: { id: opts.existingVariantId },
+      select: { id: true }
+    });
+    if (existing) {
+      await prisma.productVariant.update({
+        where: { id: existing.id },
+        data: {
+          productId: shell.id,
+          mrpInPaise: opts.priceInPaise,
+          saleInPaise: opts.priceInPaise,
+          saleUsdCents: opts.priceUsdCents ?? undefined,
+          mrpUsdCents: opts.priceUsdCents ?? undefined,
+          status: VariantStatus.ACTIVE,
+          weightGrams: 0
+        }
+      });
+      await prisma.inventory.deleteMany({ where: { variantId: existing.id } });
+      return existing.id;
+    }
+  }
+
+  const variant = await prisma.productVariant.upsert({
+    where: { sku: opts.sku },
+    create: {
+      productId: shell.id,
+      sku: opts.sku,
+      mrpInPaise: opts.priceInPaise,
+      saleInPaise: opts.priceInPaise,
+      mrpUsdCents: opts.priceUsdCents ?? undefined,
+      saleUsdCents: opts.priceUsdCents ?? undefined,
+      isDefault: false,
+      status: VariantStatus.ACTIVE,
+      weightGrams: 0
+    },
+    update: {
+      productId: shell.id,
+      mrpInPaise: opts.priceInPaise,
+      saleInPaise: opts.priceInPaise,
+      saleUsdCents: opts.priceUsdCents ?? undefined,
+      mrpUsdCents: opts.priceUsdCents ?? undefined,
+      status: VariantStatus.ACTIVE,
+      weightGrams: 0
+    }
+  });
+  await prisma.inventory.deleteMany({ where: { variantId: variant.id } });
+  await prisma.digitalCheckoutOffer.update({
+    where: { id: opts.offerId },
+    data: { checkoutVariantId: variant.id }
+  });
+  return variant.id;
 }
 
 export async function ensureDigitalCheckoutOffer(
   prisma: PrismaClient,
   input: EnsureDigitalCheckoutOfferInput
-): Promise<{ offerId: string; variantId: string; sku: string }> {
+): Promise<{ offerId: string; variantId: string | null; sku: string }> {
   if (input.priceInPaise <= 0) {
     throw new Error("Digital checkout price must be greater than zero");
   }
 
-  const shell = await ensureDigitalCheckoutShell(prisma);
   const sku = buildSku(input.skuPrefix, input.entitySlug);
+  const materialize = input.materializeVariant === true;
 
   const existingOffer = input.courseId
     ? await prisma.digitalCheckoutOffer.findUnique({ where: { courseId: input.courseId } })
@@ -66,18 +135,6 @@ export async function ensureDigitalCheckoutOffer(
       : null;
 
   if (existingOffer) {
-    await prisma.productVariant.update({
-      where: { id: existingOffer.checkoutVariantId },
-      data: {
-        productId: shell.id,
-        mrpInPaise: input.priceInPaise,
-        saleInPaise: input.priceInPaise,
-        saleUsdCents: input.priceUsdCents ?? undefined,
-        mrpUsdCents: input.priceUsdCents ?? undefined,
-        status: VariantStatus.ACTIVE,
-        weightGrams: 0
-      }
-    });
     await prisma.digitalCheckoutOffer.update({
       where: { id: existingOffer.id },
       data: {
@@ -86,41 +143,24 @@ export async function ensureDigitalCheckoutOffer(
         saleInPaise: input.priceInPaise,
         mrpUsdCents: input.priceUsdCents ?? undefined,
         saleUsdCents: input.priceUsdCents ?? undefined,
-        imageUrl: input.imageUrl
+        imageUrl: input.imageUrl,
+        sku
       }
     });
-    await prisma.inventory.deleteMany({ where: { variantId: existingOffer.checkoutVariantId } });
-    return {
-      offerId: existingOffer.id,
-      variantId: existingOffer.checkoutVariantId,
-      sku: existingOffer.sku
-    };
-  }
 
-  const variant = await prisma.productVariant.upsert({
-    where: { sku },
-    create: {
-      productId: shell.id,
-      sku,
-      mrpInPaise: input.priceInPaise,
-      saleInPaise: input.priceInPaise,
-      mrpUsdCents: input.priceUsdCents ?? undefined,
-      saleUsdCents: input.priceUsdCents ?? undefined,
-      isDefault: false,
-      status: VariantStatus.ACTIVE,
-      weightGrams: 0
-    },
-    update: {
-      productId: shell.id,
-      mrpInPaise: input.priceInPaise,
-      saleInPaise: input.priceInPaise,
-      saleUsdCents: input.priceUsdCents ?? undefined,
-      mrpUsdCents: input.priceUsdCents ?? undefined,
-      status: VariantStatus.ACTIVE
+    let variantId = existingOffer.checkoutVariantId;
+    if (materialize) {
+      variantId = await materializeVariantForOffer(prisma, {
+        offerId: existingOffer.id,
+        sku,
+        priceInPaise: input.priceInPaise,
+        priceUsdCents: input.priceUsdCents,
+        existingVariantId: existingOffer.checkoutVariantId
+      });
     }
-  });
 
-  await prisma.inventory.deleteMany({ where: { variantId: variant.id } });
+    return { offerId: existingOffer.id, variantId, sku };
+  }
 
   const offer = await prisma.digitalCheckoutOffer.create({
     data: {
@@ -134,15 +174,40 @@ export async function ensureDigitalCheckoutOffer(
       mrpUsdCents: input.priceUsdCents ?? undefined,
       saleUsdCents: input.priceUsdCents ?? undefined,
       taxClass: "gst-5",
-      imageUrl: input.imageUrl,
-      checkoutVariantId: variant.id
+      imageUrl: input.imageUrl
     }
   });
 
-  return { offerId: offer.id, variantId: variant.id, sku };
+  let variantId: string | null = null;
+  if (materialize) {
+    variantId = await materializeVariantForOffer(prisma, {
+      offerId: offer.id,
+      sku,
+      priceInPaise: input.priceInPaise,
+      priceUsdCents: input.priceUsdCents,
+      existingVariantId: null
+    });
+  }
+
+  return { offerId: offer.id, variantId, sku };
 }
 
-/** @deprecated Use ensureDigitalCheckoutOffer */
+/** Materialize Cart/Order stub for a paid course/event (does not belong in shop catalog). */
+export async function materializeDigitalCheckoutVariant(
+  prisma: PrismaClient,
+  input: EnsureDigitalCheckoutOfferInput
+): Promise<{ offerId: string; variantId: string; sku: string }> {
+  const result = await ensureDigitalCheckoutOffer(prisma, {
+    ...input,
+    materializeVariant: true
+  });
+  if (!result.variantId) {
+    throw new Error("Failed to materialize digital checkout variant");
+  }
+  return { offerId: result.offerId, variantId: result.variantId, sku: result.sku };
+}
+
+/** @deprecated Use ensureDigitalCheckoutOffer / materializeDigitalCheckoutVariant */
 export async function ensureCourseCheckoutVariant(
   prisma: PrismaClient,
   opts: {
@@ -152,13 +217,14 @@ export async function ensureCourseCheckoutVariant(
     priceUsdCents: number | null;
     imageUrl: string | null;
     courseId?: string;
+    materializeVariant?: boolean;
   }
-): Promise<{ variantId: string; sku: string }> {
+): Promise<{ variantId: string | null; sku: string; offerId: string }> {
   const course = opts.courseId
     ? await prisma.course.findUnique({ where: { id: opts.courseId }, select: { id: true } })
     : await prisma.course.findUnique({ where: { slug: opts.courseSlug }, select: { id: true } });
 
-  const { variantId, sku } = await ensureDigitalCheckoutOffer(prisma, {
+  const { variantId, sku, offerId } = await ensureDigitalCheckoutOffer(prisma, {
     kind: "COURSE",
     entitySlug: opts.courseSlug,
     courseId: course?.id,
@@ -166,7 +232,8 @@ export async function ensureCourseCheckoutVariant(
     priceInPaise: opts.priceInPaise,
     priceUsdCents: opts.priceUsdCents,
     imageUrl: opts.imageUrl,
-    skuPrefix: "COURSE"
+    skuPrefix: "COURSE",
+    materializeVariant: opts.materializeVariant === true
   });
 
   if (course?.id) {
@@ -176,5 +243,5 @@ export async function ensureCourseCheckoutVariant(
     });
   }
 
-  return { variantId, sku };
+  return { variantId, sku, offerId };
 }
