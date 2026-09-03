@@ -82,6 +82,8 @@ export const createProductSchema = z.object({
   variantAxisOrder: z.array(z.string().min(1).max(120)).optional(),
   variantOptionValueOrder: z.record(z.string(), z.array(z.string().min(1).max(200))).optional(),
   variants: z.array(variantInputSchema).optional(),
+  /** Explicit soft-deletes. Omission from `variants` never deactivates. */
+  deactivateVariantIds: z.array(z.string().uuid()).optional(),
   images: z.array(imageAdminSchema).optional(),
   accordionItems: z.array(accordionAdminSchema).optional()
 });

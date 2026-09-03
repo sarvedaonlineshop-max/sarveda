@@ -77,6 +77,8 @@ type VariantForm = {
   onHand: string;
   isDefault: boolean;
   status: "ACTIVE" | "INACTIVE";
+  /** Persisted row no longer matches current option axes — review required. */
+  optionMismatch?: boolean;
   shippingRates: ShippingRateForm[];
   videoUrl: string;
   audioUrl: string;
@@ -262,6 +264,9 @@ export function ProductForm({ productId }: { productId?: string }) {
   ]);
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const [variantLevelsOpen, setVariantLevelsOpen] = useState(false);
+  /** Explicit soft-deletes queued for the next Save (never inferred from omission). */
+  const [deactivateVariantIds, setDeactivateVariantIds] = useState<string[]>([]);
+  const [deactivateConfirmId, setDeactivateConfirmId] = useState<string | null>(null);
   const [images, setImages] = useState<ImageForm[]>([
     { url: "", altText: "", isPrimary: true }
   ]);
@@ -354,6 +359,7 @@ export function ProductForm({ productId }: { productId?: string }) {
             onHand: String((v.inventory as { onHand?: number })?.onHand ?? 0),
             isDefault: Boolean(v.isDefault),
             status: (v.status as "ACTIVE" | "INACTIVE") ?? "ACTIVE",
+            optionMismatch: false,
             videoUrl: String((v as { videoUrl?: string | null }).videoUrl ?? ""),
             audioUrl: String((v as { audioUrl?: string | null }).audioUrl ?? ""),
             attributes,
@@ -384,10 +390,12 @@ export function ProductForm({ productId }: { productId?: string }) {
             })
           };
         });
-        setVariants(loadedVariants);
-        const prefixes = loadedVariants
-          .map((v) => v.sku.split("-")[0]?.toUpperCase() ?? "")
-          .filter(Boolean);
+      setVariants(loadedVariants);
+      setDeactivateVariantIds([]);
+      setDeactivateConfirmId(null);
+      const prefixes = loadedVariants
+        .map((v) => v.sku.split("-")[0]?.toUpperCase() ?? "")
+        .filter(Boolean);
         if (
           prefixes.length > 0 &&
           prefixes.every((p) => p === prefixes[0]) &&
@@ -906,6 +914,7 @@ export function ProductForm({ productId }: { productId?: string }) {
           };
         })
       })),
+      deactivateVariantIds: deactivateVariantIds.length ? [...new Set(deactivateVariantIds)] : undefined,
       images: (() => {
         const filled = images.filter((im) => im.url.trim());
         let primaryIdx = filled.findIndex((im) => im.isPrimary);
@@ -1138,11 +1147,19 @@ export function ProductForm({ productId }: { productId?: string }) {
     // validateTab closes over form fields in the dependency list
   }, [skuFamily, variants, name, optionAxes, productType]);
 
+  const optionMismatchCount = useMemo(
+    () => variants.filter((v) => v.id && v.optionMismatch).length,
+    [variants]
+  );
+
   useEffect(() => {
     setVariantsBannerDismissed(false);
-  }, [variantIssueMessages.join("|")]);
+  }, [variantIssueMessages.join("|"), optionMismatchCount]);
 
-  const showVariantsBanner = tab === "variants" && !variantsBannerDismissed && variantIssueMessages.length > 0;
+  const showVariantsBanner =
+    tab === "variants" &&
+    !variantsBannerDismissed &&
+    (variantIssueMessages.length > 0 || optionMismatchCount > 0 || deactivateVariantIds.length > 0);
 
   if (loading) {
     return <p className="text-sm text-[var(--admin-text-muted,#8a7060)]">Loading product…</p>;
@@ -1168,6 +1185,29 @@ export function ProductForm({ productId }: { productId?: string }) {
         }}
         onConfirm={() => {
           void persistProduct({ intent: "publish", skipValidation: true });
+        }}
+      />
+      <AdminConfirmModal
+        open={Boolean(deactivateConfirmId)}
+        title="Deactivate this variant?"
+        message="This queues an explicit deactivation. The variant stays active until you Save. Omitted variants are never deactivated automatically."
+        details={
+          deactivateConfirmId
+            ? [
+                variants.find((v) => v.id === deactivateConfirmId)?.sku || deactivateConfirmId,
+                `After Save: ${deactivateVariantIds.includes(deactivateConfirmId) ? deactivateVariantIds.length : deactivateVariantIds.length + 1} variant(s) will be INACTIVE.`
+              ]
+            : []
+        }
+        cancelLabel="Cancel"
+        confirmLabel="Queue deactivation"
+        danger
+        onClose={() => setDeactivateConfirmId(null)}
+        onConfirm={() => {
+          if (!deactivateConfirmId) return;
+          const id = deactivateConfirmId;
+          setDeactivateVariantIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+          setDeactivateConfirmId(null);
         }}
       />
       <div className="sticky top-0 z-20 -mx-1 mb-1 flex flex-wrap items-start justify-between gap-4 border-b border-[var(--admin-card-border,#e8e2d9)] bg-[var(--admin-page-bg,#f7f4ef)] px-1 py-3">
@@ -1509,6 +1549,20 @@ export function ProductForm({ productId }: { productId?: string }) {
                 role="alert"
               >
                 <div className="min-w-0 flex-1 space-y-1 text-amber-950 dark:text-[#f0e2b8]">
+                  {optionMismatchCount > 0 ? (
+                    <p>
+                      Changing these options affects {optionMismatchCount} existing variant
+                      {optionMismatchCount === 1 ? "" : "s"}. They will NOT be deleted
+                      automatically. Review mismatched rows before deactivating them.
+                    </p>
+                  ) : null}
+                  {deactivateVariantIds.length > 0 ? (
+                    <p>
+                      {deactivateVariantIds.length} variant
+                      {deactivateVariantIds.length === 1 ? "" : "s"} queued for explicit
+                      deactivation on Save.
+                    </p>
+                  ) : null}
                   {variantIssueMessages.slice(0, 4).map((msg) => (
                     <p key={msg}>{msg}</p>
                   ))}
@@ -1587,6 +1641,16 @@ export function ProductForm({ productId }: { productId?: string }) {
                     {v.isDefault ? (
                       <span className="ml-2 text-xs text-amber-700 dark:text-amber-400">(default)</span>
                     ) : null}
+                    {v.optionMismatch ? (
+                      <span className="ml-2 text-xs font-semibold text-amber-800 dark:text-amber-300">
+                        (options mismatch — review)
+                      </span>
+                    ) : null}
+                    {v.id && deactivateVariantIds.includes(v.id) ? (
+                      <span className="ml-2 text-xs font-semibold text-red-700 dark:text-red-400">
+                        (deactivate on save)
+                      </span>
+                    ) : null}
                   </p>
                   <div className="flex gap-2">
                     <button
@@ -1601,13 +1665,23 @@ export function ProductForm({ productId }: { productId?: string }) {
                       Set default
                     </button>
                     {variants.length > 1 ? (
-                      <button
-                        type="button"
-                        className="text-xs text-red-600"
-                        onClick={() => setVariants((prev) => prev.filter((_, i) => i !== vi))}
-                      >
-                        Remove
-                      </button>
+                      v.id ? (
+                        <button
+                          type="button"
+                          className="text-xs text-red-600"
+                          onClick={() => setDeactivateConfirmId(v.id!)}
+                        >
+                          Deactivate…
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="text-xs text-red-600"
+                          onClick={() => setVariants((prev) => prev.filter((_, i) => i !== vi))}
+                        >
+                          Remove
+                        </button>
+                      )
                     ) : null}
                   </div>
                 </div>

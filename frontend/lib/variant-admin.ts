@@ -105,55 +105,112 @@ export function syncVariantAttributesToAxes(
   });
 }
 
-/** Drop SKU rows that no longer match the current dropdown options. */
-export function pruneVariantRows<T extends { attributes: VariantAttributeForm[]; isDefault: boolean }>(
-  rows: T[],
-  axes: OptionAxisForm[],
-  emptyRow: () => T
-): T[] {
-  const synced = rows.map((row) => ({
-    ...row,
-    attributes: syncVariantAttributesToAxes(row.attributes, axes)
-  }));
+/** Drop unsaved draft SKU rows that no longer match dropdown options.
+ * Persisted DB variants (rows with `id`) are ALWAYS kept and flagged `optionMismatch`
+ * when they no longer match — never silently removed from the form.
+ */
+export function pruneVariantRows<
+  T extends {
+    id?: string;
+    attributes: VariantAttributeForm[];
+    isDefault: boolean;
+    optionMismatch?: boolean;
+  }
+>(rows: T[], axes: OptionAxisForm[], emptyRow: () => T): T[] {
   const anyValues = axes.some((axis) => axis.values.some((v) => v.trim()));
+  const complete = axes.length > 0 && axes.every((axis) => axis.values.some((v) => v.trim()));
+  const combos = complete ? cartesianCombos(axes) : [];
+  const allowed = new Set(combos.map((combo) => comboKey(combo)));
+
+  const originalMatches = (attributes: VariantAttributeForm[]): boolean => {
+    if (!anyValues) return false;
+    if (!complete) return true;
+    const values = axes.map((axis) => {
+      const hit = attributes.find((a) => (a.slug || slugifyAttribute(a.name)) === axis.slug);
+      return hit?.value?.trim() ?? "";
+    });
+    if (values.every((v) => !v)) return true;
+    if (values.some((v) => !v)) return false;
+    return allowed.has(comboKey(values));
+  };
 
   if (!anyValues) {
-    const keep = synced[0] ?? emptyRow();
+    const persisted = rows.filter((row) => Boolean(row.id));
+    if (persisted.length) {
+      const withFlags = persisted.map((row) => ({
+        ...row,
+        optionMismatch: true as boolean,
+        attributes: syncVariantAttributesToAxes(row.attributes, axes)
+      }));
+      if (!withFlags.some((row) => row.isDefault)) {
+        withFlags[0] = { ...withFlags[0], isDefault: true };
+      }
+      return withFlags;
+    }
+    const keep = rows[0] ?? emptyRow();
     return [
       {
         ...keep,
         isDefault: true,
+        optionMismatch: false,
         attributes: syncVariantAttributesToAxes(keep.attributes, axes)
       }
     ];
   }
 
-  const complete = axes.length > 0 && axes.every((axis) => axis.values.some((v) => v.trim()));
   if (!complete) {
-    if (!synced.length) return [{ ...emptyRow(), isDefault: true, attributes: syncVariantAttributesToAxes([], axes) }];
-    if (!synced.some((row) => row.isDefault)) {
-      synced[0] = { ...synced[0], isDefault: true };
+    if (!rows.length) {
+      return [
+        {
+          ...emptyRow(),
+          isDefault: true,
+          optionMismatch: false,
+          attributes: syncVariantAttributesToAxes([], axes)
+        }
+      ];
     }
-    return synced;
+    const out = rows.map((row) => ({
+      ...row,
+      optionMismatch: false,
+      attributes: syncVariantAttributesToAxes(row.attributes, axes)
+    }));
+    if (!out.some((row) => row.isDefault)) {
+      out[0] = { ...out[0], isDefault: true };
+    }
+    return out;
   }
 
-  const combos = cartesianCombos(axes);
-  const allowed = new Set(combos.map((combo) => comboKey(combo)));
-  const kept = synced.filter((row) => {
-    const values = row.attributes.map((a) => a.value);
-    const allEmpty = values.every((v) => !v.trim());
-    if (allEmpty) return true;
-    if (values.some((v) => !v.trim())) return false;
-    return allowed.has(comboKey(values));
-  });
+  const kept: T[] = [];
+  for (const row of rows) {
+    const ok = originalMatches(row.attributes);
+    if (row.id) {
+      kept.push({
+        ...row,
+        optionMismatch: !ok,
+        // Keep original attrs when mismatched so the operator can still see them.
+        attributes: ok ? syncVariantAttributesToAxes(row.attributes, axes) : row.attributes
+      });
+      continue;
+    }
+    if (ok) {
+      kept.push({
+        ...row,
+        optionMismatch: false,
+        attributes: syncVariantAttributesToAxes(row.attributes, axes)
+      });
+    }
+  }
 
   if (kept.length === 0) {
-    const keep = synced[0] ?? emptyRow();
+    const keep = rows.find((r) => r.id) ?? rows[0] ?? emptyRow();
     return [
       {
         ...keep,
         isDefault: true,
-        attributes: axes.map((axis) => ({ name: axis.name, slug: axis.slug, value: "" }))
+        optionMismatch: Boolean(keep.id),
+        attributes: keep.id
+          ? keep.attributes
+          : axes.map((axis) => ({ name: axis.name, slug: axis.slug, value: "" }))
       }
     ];
   }
@@ -162,6 +219,18 @@ export function pruneVariantRows<T extends { attributes: VariantAttributeForm[];
     kept[0] = { ...kept[0], isDefault: true };
   }
   return kept;
+}
+
+/** Count persisted rows flagged as option mismatches under current axes. */
+export function countPersistedOptionMismatches<
+  T extends {
+    id?: string;
+    attributes: VariantAttributeForm[];
+    isDefault: boolean;
+    optionMismatch?: boolean;
+  }
+>(rows: T[], axes: OptionAxisForm[], emptyRow: () => T): number {
+  return pruneVariantRows(rows, axes, emptyRow).filter((r) => r.id && r.optionMismatch).length;
 }
 
 export function optionsForAxis(axis: OptionAxisForm, selectedValue = ""): string[] {

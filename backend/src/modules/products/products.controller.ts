@@ -241,6 +241,7 @@ function normalizeAdminBody(body: CreateProductBody | UpdateProductBody): Produc
     variantAxisOrder: body.variantAxisOrder,
     variantOptionValueOrder: body.variantOptionValueOrder,
     variants: body.variants,
+    deactivateVariantIds: body.deactivateVariantIds,
     images: body.images,
     accordionItems: body.accordionItems
   };
@@ -321,7 +322,8 @@ export async function checkSkus(req: Request, res: Response, next: NextFunction)
 export async function create(req: Request, res: Response, next: NextFunction) {
   try {
     const body = req.body as CreateProductBody;
-    const { id, zohoSync } = await saveProductAdmin(null, normalizeAdminBody(body));
+    const actorId = (req as { authUser?: { id?: string } }).authUser?.id ?? null;
+    const { id, zohoSync } = await saveProductAdmin(null, normalizeAdminBody(body), { actorId });
     const product = await getProductAdminById(id);
     res.status(201).json({ success: true, data: { product, zohoSync } });
   } catch (err) {
@@ -378,10 +380,12 @@ export async function update(req: Request, res: Response, next: NextFunction) {
         ((existing as { variantOptionValueOrder?: Record<string, string[]> }).variantOptionValueOrder ??
           {}),
       variants: body.variants,
+      deactivateVariantIds: body.deactivateVariantIds,
       images: body.images,
       accordionItems: body.accordionItems
     };
-    const { zohoSync } = await saveProductAdmin(id, merged);
+    const actorId = (req as { authUser?: { id?: string } }).authUser?.id ?? null;
+    const { zohoSync } = await saveProductAdmin(id, merged, { actorId });
     const product = await getProductAdminById(id);
     res.json({ success: true, data: { product, zohoSync } });
   } catch (err) {

@@ -1,6 +1,7 @@
 import type { ProductStatus, ProductType } from "@prisma/client";
 
 import { prisma } from "../../config/db";
+import { logger } from "../../config/logger";
 import { normalizeTaxClass } from "../../utils/tax-class";
 import { syncVariantAttributes, type VariantAttributeInput } from "./variant-attributes";
 
@@ -103,9 +104,36 @@ export type ProductAdminSaveInput = {
   variantAxisOrder?: string[];
   variantOptionValueOrder?: Record<string, string[]>;
   variants?: VariantAdminInput[];
+  /** Explicit soft-deletes only — omission from `variants` never deactivates. */
+  deactivateVariantIds?: string[];
   images?: ImageAdminInput[];
   accordionItems?: AccordionAdminInput[];
 };
+
+export type ProductAdminSaveOptions = {
+  actorId?: string | null;
+};
+
+function logVariantStatusTransition(opts: {
+  variantId: string;
+  productId: string;
+  oldStatus: string;
+  newStatus: string;
+  actorId?: string | null;
+  reason: string;
+  action: string;
+}): void {
+  logger.info("variant_status_transition", {
+    variantId: opts.variantId,
+    productId: opts.productId,
+    oldStatus: opts.oldStatus,
+    newStatus: opts.newStatus,
+    actorId: opts.actorId ?? null,
+    reason: opts.reason,
+    action: opts.action,
+    timestamp: new Date().toISOString()
+  });
+}
 
 async function upsertShippingRates(variantId: string, rates: ShippingRateInput[]): Promise<void> {
   for (const zone of SHIPPING_ZONES) {
@@ -138,22 +166,27 @@ async function upsertShippingRates(variantId: string, rates: ShippingRateInput[]
   }
 }
 
+/**
+ * Upsert variants present in the payload.
+ * Existing variants omitted from the payload are LEFT UNCHANGED (including status).
+ * Soft-deactivation is only via `applyExplicitVariantDeactivations`.
+ */
 async function syncVariants(
   productId: string,
-  variants: VariantAdminInput[]
+  variants: VariantAdminInput[],
+  opts?: ProductAdminSaveOptions
 ): Promise<Map<string, string>> {
   const idBySku = new Map<string, string>();
   if (variants.length === 0) return idBySku;
 
-  const existing = await prisma.productVariant.findMany({ where: { productId } });
+  const existingById = new Map(
+    (await prisma.productVariant.findMany({ where: { productId } })).map((v) => [v.id, v])
+  );
   const incomingIds = new Set(variants.filter((v) => v.id).map((v) => v.id!));
 
-  for (const ex of existing) {
-    if (!incomingIds.has(ex.id)) {
-      await prisma.productVariant.update({
-        where: { id: ex.id },
-        data: { status: "INACTIVE" }
-      });
+  for (const id of incomingIds) {
+    if (!existingById.has(id)) {
+      throw httpError(400, `Variant ${id} does not belong to this product`, "VARIANT_NOT_ON_PRODUCT");
     }
   }
 
@@ -172,6 +205,9 @@ async function syncVariants(
       });
       if (clash) throw httpError(409, `SKU ${v.sku} already in use`, "SKU_EXISTS");
 
+      const prior = existingById.get(v.id)!;
+      const nextStatus = v.status !== undefined ? v.status : undefined;
+
       await prisma.productVariant.update({
         where: { id: v.id },
         data: {
@@ -186,9 +222,21 @@ async function syncVariants(
           videoUrl,
           ...(audioUrl !== undefined ? { audioUrl } : {}),
           isDefault,
-          status: v.status ?? "ACTIVE"
+          ...(nextStatus !== undefined ? { status: nextStatus } : {})
         }
       });
+
+      if (nextStatus !== undefined && nextStatus !== prior.status) {
+        logVariantStatusTransition({
+          variantId: v.id,
+          productId,
+          oldStatus: prior.status,
+          newStatus: nextStatus,
+          actorId: opts?.actorId,
+          reason: "explicit_status_field",
+          action: "variant.status"
+        });
+      }
 
       if (v.onHand != null) {
         await prisma.inventory.upsert({
@@ -242,7 +290,59 @@ async function syncVariants(
     }
   }
 
+  // Keep a single default: clear isDefault on rows not in this payload when payload sets one.
+  if (incomingIds.size > 0 && variants.some((v) => v.isDefault)) {
+    await prisma.productVariant.updateMany({
+      where: { productId, isDefault: true, id: { notIn: [...incomingIds] } },
+      data: { isDefault: false }
+    });
+  }
+
   return idBySku;
+}
+
+/** Explicit soft-delete only. Omitted / empty list → no status changes. */
+export async function applyExplicitVariantDeactivations(
+  productId: string,
+  deactivateVariantIds: string[] | undefined,
+  opts?: ProductAdminSaveOptions
+): Promise<void> {
+  if (!deactivateVariantIds?.length) return;
+
+  const unique = [...new Set(deactivateVariantIds.filter(Boolean))];
+  if (!unique.length) return;
+
+  const belonging = await prisma.productVariant.findMany({
+    where: { productId, id: { in: unique } },
+    select: { id: true, status: true }
+  });
+  const found = new Set(belonging.map((b) => b.id));
+  for (const id of unique) {
+    if (!found.has(id)) {
+      throw httpError(
+        400,
+        `Variant ${id} does not belong to this product`,
+        "VARIANT_NOT_ON_PRODUCT"
+      );
+    }
+  }
+
+  for (const row of belonging) {
+    if (row.status === "INACTIVE") continue;
+    await prisma.productVariant.update({
+      where: { id: row.id },
+      data: { status: "INACTIVE", isDefault: false }
+    });
+    logVariantStatusTransition({
+      variantId: row.id,
+      productId,
+      oldStatus: row.status,
+      newStatus: "INACTIVE",
+      actorId: opts?.actorId,
+      reason: "explicit_deactivate",
+      action: "deactivateVariantIds"
+    });
+  }
 }
 
 async function resolveVariantId(
@@ -332,7 +432,8 @@ async function syncAccordion(productId: string, items: AccordionAdminInput[]): P
 
 export async function saveProductAdmin(
   productId: string | null,
-  input: ProductAdminSaveInput
+  input: ProductAdminSaveInput,
+  opts?: ProductAdminSaveOptions
 ): Promise<{ id: string; zohoSync?: ZohoProductSyncResult }> {
   if (productId) {
     const existing = await prisma.product.findFirst({ where: { id: productId, deletedAt: null } });
@@ -375,8 +476,9 @@ export async function saveProductAdmin(
     });
 
     const idBySku = input.variants
-      ? await syncVariants(productId, input.variants)
+      ? await syncVariants(productId, input.variants, opts)
       : new Map<string, string>();
+    await applyExplicitVariantDeactivations(productId, input.deactivateVariantIds, opts);
     if (input.images || input.variants?.some((v) => v.images?.length)) {
       const merged = [
         ...(input.images ?? []),
@@ -437,7 +539,8 @@ export async function saveProductAdmin(
         }
       ];
 
-  const idBySku = await syncVariants(product.id, variants);
+  const idBySku = await syncVariants(product.id, variants, opts);
+  await applyExplicitVariantDeactivations(product.id, input.deactivateVariantIds, opts);
   if (input.images || input.variants?.some((v) => v.images?.length)) {
     const merged = [
       ...(input.images ?? []),
