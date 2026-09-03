@@ -983,6 +983,7 @@ enum ReturnReplacementResolution {
   REPLACEMENT
   PARTIAL_REFUND
   KEEP_ITEM_PARTIAL_REFUND
+  MISSING_PART
 }
 
 enum ReturnPhysicalStatus {
@@ -1001,8 +1002,65 @@ enum ReturnResolutionStatus {
   REPLACEMENT_PENDING
   REPLACEMENT_SHIPPED
   REPLACEMENT_DELIVERED
+  MISSING_PART_PENDING
+  MISSING_PART_SHIPPED
   CLOSED
   FAILED
+}
+
+enum ReturnRootCause {
+  CUSTOMER
+  SARVEDA_DISPATCH
+  SARVEDA_LISTING_CONTENT
+  PRODUCT_VENDOR_QC
+  LOGISTICS_COURIER
+  UNDETERMINED
+}
+
+enum ReturnResponsibleTeam {
+  DISPATCH
+  PRODUCT_QC
+  CONTENT
+  LOGISTICS
+  CUSTOMER_CARE
+  MANAGER
+  VENDOR
+  UNASSIGNED
+}
+
+enum ReturnCaseChannel {
+  WEBSITE
+  AMAZON
+  OTHER_MARKETPLACE
+  MANUAL
+}
+
+enum OrderServiceRequestEventType {
+  CASE_CREATED
+  EVIDENCE_ADDED
+  MORE_INFO_REQUESTED
+  MORE_INFO_PROVIDED
+  REVIEWED
+  APPROVED
+  REJECTED
+  ROOT_CAUSE_SET
+  PICKUP_REQUESTED
+  CUSTOMER_SELF_SHIP_SUBMITTED
+  ITEM_RECEIVED
+  QC_PERFORMED
+  DISPOSITION_SELECTED
+  REFUND_APPROVED
+  REFUND_INITIATED
+  REFUND_COMPLETED
+  REPLACEMENT_INITIATED
+  REPLACEMENT_SHIPPED
+  REPLACEMENT_DELIVERED
+  MISSING_PART_SHIPPED
+  CLAIM_OPENED
+  CLAIM_CLOSED
+  CASE_CLOSED
+  NOTE_ADDED
+  STATUS_CHANGED
 }
 
 enum ReturnShippingRefundPolicy {
@@ -1019,6 +1077,7 @@ enum ReturnShipmentMode {
 enum OrderServiceRequestStatus {
   PENDING_APPROVAL
   NEEDS_DISCUSSION
+  MORE_INFO_REQUIRED
   APPROVED
   REJECTED
   CONVERTED_TO_CANCELLATION
@@ -1041,15 +1100,33 @@ enum OrderServiceRequestExecutionStatus {
 
 model OrderServiceRequest {
   id                 String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Human-readable immutable case ID (e.g. RC-202609-00001). UUID remains internal PK.
+  caseNumber         String                     @unique
   orderId            String                     @db.Uuid
   orderNumber        String
   customerId         String?                    @db.Uuid
   customerEmail      String
   type               OrderServiceRequestType
+  channel            ReturnCaseChannel          @default(WEBSITE)
   reasonCode         String?
   reasonLabel        String?
   otherMessage       String?
   message            String?
+  secondaryReasonCode String?
+  secondaryReasonLabel String?
+  /// Internal root-cause classification — never overwrite customer reasonCode.
+  rootCause          ReturnRootCause?
+  rootCauseNote      String?
+  responsibleTeam    ReturnResponsibleTeam?
+  responsibleUserId  String?                    @db.Uuid
+  responsibleUserEmail String?
+  declarationsJson   Json?
+  declarationsAcceptedAt DateTime?
+  moreInfoPrompt     String?
+  moreInfoRequestedAt DateTime?
+  moreInfoResponse   String?
+  moreInfoRespondedAt DateTime?
+  slaPausedAt        DateTime?
   status             OrderServiceRequestStatus  @default(PENDING_APPROVAL)
   requestIntent      OrderServiceRequestIntent  @default(CANCEL)
   adjustmentPayload  Json?
@@ -1066,6 +1143,13 @@ model OrderServiceRequest {
   codRefundNote      String?
   refundProcessedAt  DateTime?
   refundTotalInPaise Int?
+  refundApprovedAt   DateTime?
+  refundInitiatedAt  DateTime?
+  refundCompletedAt  DateTime?
+  refundProviderReference String?
+  closedAt           DateTime?
+  offeredResolution  ReturnReplacementResolution?
+  finalResolution    ReturnReplacementResolution?
   returnPhysicalStatus ReturnPhysicalStatus @default(NOT_REQUIRED)
   resolutionStatus ReturnResolutionStatus @default(NONE)
   shippingRefundPolicy ReturnShippingRefundPolicy?
@@ -1077,11 +1161,15 @@ model OrderServiceRequest {
   items              OrderServiceRequestItem[]
   returnShipment     OrderReturnShipment?
   replacementFulfillments OrderReplacementFulfillment[]
+  events             OrderServiceRequestEvent[]
 
   @@index([orderId])
   @@index([status])
   @@index([orderNumber])
   @@index([customerEmail])
+  @@index([channel])
+  @@index([rootCause])
+  @@index([type, status])
 }
 
 model OrderServiceRequestItem {
@@ -1160,12 +1248,30 @@ model OrderServiceRequestPhoto {
   s3Url         String
   fileName      String?
   fileSizeBytes Int?
+  mimeType      String?
+  /// IMAGE | VIDEO — private object storage; never publicly enumerable.
+  mediaKind     String                   @default("IMAGE")
   createdAt     DateTime                 @default(now())
   request       OrderServiceRequest      @relation(fields: [requestId], references: [id], onDelete: Cascade)
   requestItem   OrderServiceRequestItem? @relation(fields: [requestItemId], references: [id], onDelete: Cascade)
 
   @@index([requestId])
   @@index([requestItemId])
+}
+
+model OrderServiceRequestEvent {
+  id           String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId    String                       @db.Uuid
+  eventType    OrderServiceRequestEventType
+  message      String?
+  payloadJson  Json?
+  actorUserId  String?                      @db.Uuid
+  actorEmail   String?
+  actorRole    String?
+  createdAt    DateTime                     @default(now())
+  request      OrderServiceRequest          @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId, createdAt])
 }
 
 model OrderItem {

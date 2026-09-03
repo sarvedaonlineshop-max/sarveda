@@ -210,6 +210,63 @@ router.post(
   "/replacement-fulfillments/:fulfillmentId/ship",
   serviceRequest.adminMarkReplacementShipped
 );
+router.post(
+  "/replacement-fulfillments/:fulfillmentId/delivered",
+  serviceRequest.adminMarkReplacementDelivered
+);
+router.get("/return-cases", serviceRequest.adminListReturnCases);
+router.get(
+  "/orders/:orderId/service-requests/:requestId/events",
+  serviceRequest.adminListCaseEvents
+);
+router.post(
+  "/orders/:orderId/service-requests/:requestId/root-cause",
+  validateBody(
+    z.object({
+      rootCause: z.enum([
+        "CUSTOMER",
+        "SARVEDA_DISPATCH",
+        "SARVEDA_LISTING_CONTENT",
+        "PRODUCT_VENDOR_QC",
+        "LOGISTICS_COURIER",
+        "UNDETERMINED"
+      ]),
+      rootCauseNote: z.string().optional(),
+      responsibleTeam: z
+        .enum([
+          "DISPATCH",
+          "PRODUCT_QC",
+          "CONTENT",
+          "LOGISTICS",
+          "CUSTOMER_CARE",
+          "MANAGER",
+          "VENDOR",
+          "UNASSIGNED"
+        ])
+        .optional(),
+      responsibleUserEmail: z.string().optional(),
+      secondaryReasonCode: z.string().optional(),
+      secondaryReasonLabel: z.string().optional()
+    })
+  ),
+  serviceRequest.adminSetReturnCaseRootCause
+);
+router.post(
+  "/orders/:orderId/service-requests/:requestId/more-info",
+  validateBody(z.object({ prompt: z.string().min(1) })),
+  serviceRequest.adminRequestMoreInfo
+);
+router.post(
+  "/orders/:orderId/service-requests/:requestId/missing-part-shipped",
+  validateBody(
+    z.object({
+      accessoryDescription: z.string().min(1),
+      courier: z.string().optional(),
+      awb: z.string().optional()
+    })
+  ),
+  serviceRequest.adminMarkMissingPartShipped
+);
 router.get("/orders/:id/refund-preview", admin.orderRefundPreview);
 router.get("/orders/:id/rto-workflow", admin.getOrderRtoWorkflow);
 router.post("/shipments/:shipmentId/rto/received", admin.markShipmentRtoReceived);

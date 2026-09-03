@@ -498,6 +498,7 @@ describe("Phase 1A — RefundAllocation + financial correctness", () => {
 
       await prisma.orderServiceRequest.create({
         data: {
+        caseNumber: `RC-TEST-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           orderId: order.id,
           orderNumber: order.orderNumber,
           customerEmail: order.email,

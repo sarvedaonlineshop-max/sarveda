@@ -927,15 +927,20 @@ export async function submitAdjustmentRequest(opts: SubmitAdjustmentInput) {
 
   const reasonLabel = cancelReasonLabel(opts.reasonCode) ?? opts.reasonCode;
   const requestId = randomUUID();
+  const { nextReturnCaseNumber } = await import("./return-case-number");
+  const { appendCaseEvent } = await import("./return-case-events.service");
+  const caseNumber = await nextReturnCaseNumber();
 
   const created = await prisma.orderServiceRequest.create({
     data: {
       id: requestId,
+      caseNumber,
       orderId: order.id,
       orderNumber: order.orderNumber,
       customerId: opts.userId,
       customerEmail: email,
       type: "ADJUST_BEFORE_DELIVERY",
+      channel: "WEBSITE",
       requestIntent: intent,
       reasonCode: opts.reasonCode,
       reasonLabel: `${orderItem.nameSnapshot} — ${reasonLabel}`,
@@ -955,6 +960,14 @@ export async function submitAdjustmentRequest(opts: SubmitAdjustmentInput) {
       }
     },
     include: { items: true }
+  });
+
+  await appendCaseEvent({
+    requestId: created.id,
+    eventType: "CASE_CREATED",
+    message: `Case ${caseNumber} created (adjustment)`,
+    payloadJson: { type: "ADJUST_BEFORE_DELIVERY", caseNumber, intent },
+    actor: { userId: opts.userId, email, role: "CUSTOMER" }
   });
 
   const { notifyServiceRequestSubmitted } = await import("./order-service-request.emails");

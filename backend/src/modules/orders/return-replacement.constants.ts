@@ -57,7 +57,7 @@ export const RETURN_REASON_SPEC: Record<
   },
   missing_parts: {
     label: "Missing parts or accessories",
-    allowedResolutions: ["REPLACEMENT", "PARTIAL_REFUND", "KEEP_ITEM_PARTIAL_REFUND"],
+    allowedResolutions: ["MISSING_PART", "REPLACEMENT", "PARTIAL_REFUND", "KEEP_ITEM_PARTIAL_REFUND"],
     evidenceRequired: true,
     // Sarveda packing/fulfilment responsibility — customer-paid forward shipping is refundable.
     shippingRefundPolicy: "SHIPPING_REFUNDABLE",

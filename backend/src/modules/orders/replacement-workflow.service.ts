@@ -152,6 +152,15 @@ export async function markReplacementShipped(opts: {
     })
   ]);
 
+  const { appendCaseEvent } = await import("./return-case-events.service");
+  await appendCaseEvent({
+    requestId: fulfillment.requestId,
+    eventType: "REPLACEMENT_SHIPPED",
+    message: opts.awb ? `Replacement shipped — AWB ${opts.awb}` : "Replacement shipped",
+    payloadJson: { fulfillmentId: fulfillment.id, awb: opts.awb ?? null },
+    actor: { role: "ADMIN" }
+  });
+
   logger.info("replacement_shipped", { fulfillmentId: fulfillment.id, awb: opts.awb });
 }
 
@@ -175,9 +184,24 @@ export async function markReplacementDelivered(opts: {
     }),
     prisma.orderServiceRequest.update({
       where: { id: fulfillment.requestId },
-      data: { resolutionStatus: "CLOSED" }
+      data: { resolutionStatus: "CLOSED", closedAt: now }
     })
   ]);
+
+  const { appendCaseEvent } = await import("./return-case-events.service");
+  await appendCaseEvent({
+    requestId: fulfillment.requestId,
+    eventType: "REPLACEMENT_DELIVERED",
+    message: "Replacement delivered — case closed",
+    payloadJson: { fulfillmentId: fulfillment.id },
+    actor: { userId: opts.adminUserId, role: "ADMIN" }
+  });
+  await appendCaseEvent({
+    requestId: fulfillment.requestId,
+    eventType: "CASE_CLOSED",
+    message: "Case closed after replacement delivery",
+    actor: { userId: opts.adminUserId, role: "ADMIN" }
+  });
 }
 
 export async function computeReplacementCommercialDelta(opts: {

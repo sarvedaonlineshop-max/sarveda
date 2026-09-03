@@ -59,6 +59,30 @@ router.post(
   validateBody(z.object({ requestId: z.string().uuid() })),
   serviceRequest.createSupplementaryPayment
 );
+router.get(
+  "/:orderNumber/return-cases/:requestId",
+  requireAuth,
+  serviceRequest.customerGetReturnCase
+);
+router.post(
+  "/:orderNumber/return-cases/:requestId/more-info",
+  requireAuth,
+  serviceRequest.serviceRequestUpload,
+  serviceRequest.customerProvideMoreInfo
+);
+router.post(
+  "/:orderNumber/return-cases/:requestId/self-ship",
+  requireAuth,
+  validateBody(
+    z.object({
+      courier: z.string().min(1).max(120),
+      awb: z.string().min(1).max(120),
+      trackingUrl: z.string().url().optional(),
+      shippedAt: z.string().datetime().optional()
+    })
+  ),
+  serviceRequest.customerSubmitSelfShip
+);
 router.get("/public/:orderNumber/invoice", controller.downloadInvoice);
 router.post(
   "/public/:orderNumber/refresh-shipping",

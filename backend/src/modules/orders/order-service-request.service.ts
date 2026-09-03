@@ -68,6 +68,7 @@ export type ServiceRequestPublic = {
     | "APPROVED"
     | "REJECTED"
     | "NEEDS_DISCUSSION"
+    | "MORE_INFO_REQUIRED"
     | "CONVERTED_TO_CANCELLATION";
   reasonLabel: string;
   message: string | null;
@@ -139,7 +140,7 @@ export async function latestServiceRequestForOrder(
 
 export async function pendingServiceRequestCount(): Promise<number> {
   return prisma.orderServiceRequest.count({
-    where: { status: "PENDING_APPROVAL" }
+    where: { status: { in: ["PENDING_APPROVAL", "MORE_INFO_REQUIRED"] } }
   });
 }
 
@@ -173,18 +174,23 @@ export async function uploadRequestPhotos(
   requestId: string,
   files: Array<{ buffer: Buffer; originalname: string; mimetype: string; size: number }>
 ) {
+  const { assertEvidenceFileAllowed, mediaKindForMime } = await import("./return-case-evidence");
   const rows: Array<{
     s3Key: string;
     s3Url: string;
     fileName: string;
     fileSizeBytes: number;
+    mimeType: string;
+    mediaKind: "IMAGE" | "VIDEO";
   }> = [];
   for (const file of files) {
-    const ext = file.originalname.split(".").pop()?.toLowerCase() || "jpg";
+    assertEvidenceFileAllowed(file);
+    const mediaKind = mediaKindForMime(file.mimetype);
+    const ext = file.originalname.split(".").pop()?.toLowerCase() || (mediaKind === "VIDEO" ? "mp4" : "jpg");
     const key = `order-requests/${requestId}/${randomUUID()}.${ext}`;
     const url = await uploadAsset(key, file.buffer, file.mimetype);
     if (!url) {
-      throw Object.assign(new Error("Could not upload photos. Please try again."), {
+      throw Object.assign(new Error("Could not upload evidence. Please try again."), {
         statusCode: 500,
         code: "UPLOAD_FAILED"
       });
@@ -193,7 +199,9 @@ export async function uploadRequestPhotos(
       s3Key: key,
       s3Url: url,
       fileName: file.originalname,
-      fileSizeBytes: file.size
+      fileSizeBytes: file.size,
+      mimeType: file.mimetype,
+      mediaKind
     });
   }
   return rows;
@@ -228,7 +236,7 @@ export async function submitServiceRequest(opts: {
   }
 
   const existingPending = await prisma.orderServiceRequest.findFirst({
-    where: { orderId: order.id, status: "PENDING_APPROVAL" }
+    where: { orderId: order.id, status: { in: ["PENDING_APPROVAL", "MORE_INFO_REQUIRED"] } }
   });
   if (existingPending) {
     throw Object.assign(new Error("A request is already waiting for approval on this order"), {
@@ -337,14 +345,20 @@ export async function submitServiceRequest(opts: {
       : `${parsedItems.length} items — mixed reasons`;
   const summaryCode = parsedItems.length === 1 ? parsedItems[0].reasonCode : "multi";
 
+  const { nextReturnCaseNumber } = await import("./return-case-number");
+  const { appendCaseEvent } = await import("./return-case-events.service");
+  const caseNumber = await nextReturnCaseNumber();
+
   const created = await prisma.orderServiceRequest.create({
     data: {
       id: requestId,
+      caseNumber,
       orderId: order.id,
       orderNumber: order.orderNumber,
       customerId: opts.userId,
       customerEmail: email,
       type: opts.type,
+      channel: "WEBSITE",
       reasonCode: summaryCode,
       reasonLabel: summaryLabel,
       message: opts.message?.trim() || null,
@@ -369,7 +383,9 @@ export async function submitServiceRequest(opts: {
                   s3Key: p.s3Key,
                   s3Url: p.s3Url,
                   fileName: p.fileName,
-                  fileSizeBytes: p.fileSizeBytes
+                  fileSizeBytes: p.fileSizeBytes,
+                  mimeType: p.mimeType,
+                  mediaKind: p.mediaKind
                 }))
               }
             };
@@ -378,6 +394,14 @@ export async function submitServiceRequest(opts: {
       }
     },
     include: { items: { include: { photos: true } }, photos: true }
+  });
+
+  await appendCaseEvent({
+    requestId: created.id,
+    eventType: "CASE_CREATED",
+    message: `Case ${caseNumber} created`,
+    payloadJson: { type: opts.type, caseNumber },
+    actor: { userId: opts.userId, email, role: "CUSTOMER" }
   });
 
   void notifyServiceRequestSubmitted({
@@ -494,7 +518,7 @@ export async function reviewServiceRequest(opts: {
   if (!request) {
     throw Object.assign(new Error("Request not found"), { statusCode: 404, code: "NOT_FOUND" });
   }
-  if (request.status !== "PENDING_APPROVAL") {
+  if (!["PENDING_APPROVAL", "MORE_INFO_REQUIRED", "NEEDS_DISCUSSION"].includes(request.status)) {
     throw Object.assign(new Error("Request already reviewed"), { statusCode: 409, code: "ALREADY_REVIEWED" });
   }
 
@@ -558,9 +582,19 @@ export async function reviewServiceRequest(opts: {
       status: nextStatus,
       reviewedAt: new Date(),
       reviewedByEmail: opts.adminEmail,
-      adminNote: opts.adminNote?.trim() || null
+      adminNote: opts.adminNote?.trim() || null,
+      slaPausedAt: null,
+      ...(opts.approve ? { refundApprovedAt: request.type === "REFUND_AFTER_DELIVERY" ? new Date() : undefined } : {})
     },
     include: { photos: true, items: { include: { photos: true } } }
+  });
+
+  const { appendCaseEvent } = await import("./return-case-events.service");
+  await appendCaseEvent({
+    requestId: request.id,
+    eventType: opts.approve ? "APPROVED" : "REJECTED",
+    message: opts.adminNote?.trim() || (opts.approve ? "Approved" : "Rejected"),
+    actor: { email: opts.adminEmail, role: "ADMIN" }
   });
 
   void notifyServiceRequestReviewed({
@@ -686,9 +720,22 @@ export async function processServiceRequestRefund(opts: {
         data: {
           codRefundNote: mergedNote,
           refundProcessedAt: now,
-          refundTotalInPaise: (request.refundTotalInPaise ?? 0) + totalInPaise
+          refundInitiatedAt: request.refundInitiatedAt ?? now,
+          refundCompletedAt: now,
+          refundProviderReference: "COD_MANUAL",
+          refundTotalInPaise: (request.refundTotalInPaise ?? 0) + totalInPaise,
+          resolutionStatus: "REFUNDED"
         }
       });
+    });
+
+    const { appendCaseEvent } = await import("./return-case-events.service");
+    await appendCaseEvent({
+      requestId: request.id,
+      eventType: "REFUND_COMPLETED",
+      message: `COD manual refund recorded: ${totalInPaise} paise`,
+      payloadJson: { totalInPaise, provider: "COD_MANUAL" },
+      actor: { email: opts.adminEmail, role: "ADMIN" }
     });
 
     return {
@@ -770,9 +817,22 @@ export async function processServiceRequestRefund(opts: {
       where: { id: request.id },
       data: {
         refundProcessedAt: now,
-        refundTotalInPaise: (request.refundTotalInPaise ?? 0) + totalInPaise
+        refundInitiatedAt: request.refundInitiatedAt ?? now,
+        refundCompletedAt: now,
+        refundProviderReference: gateway.refundId ?? null,
+        refundTotalInPaise: (request.refundTotalInPaise ?? 0) + totalInPaise,
+        resolutionStatus: "REFUNDED"
       }
     });
+  });
+
+  const { appendCaseEvent: appendRefundEvent } = await import("./return-case-events.service");
+  await appendRefundEvent({
+    requestId: request.id,
+    eventType: "REFUND_COMPLETED",
+    message: `Refund completed: ${totalInPaise} paise`,
+    payloadJson: { totalInPaise, providerRefundId: gateway.refundId ?? null },
+    actor: { email: opts.adminEmail, role: "ADMIN" }
   });
 
   return {

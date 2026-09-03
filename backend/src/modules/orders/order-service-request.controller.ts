@@ -14,13 +14,14 @@ import {
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 12 * 1024 * 1024, files: 48 },
+  limits: { fileSize: 80 * 1024 * 1024, files: 48 },
   fileFilter: (_req, file, cb) => {
-    if (!file.mimetype.startsWith("image/")) {
-      cb(new Error("Only image files are allowed"));
+    const mime = (file.mimetype || "").toLowerCase();
+    if (mime.startsWith("image/") || mime.startsWith("video/mp4") || mime === "video/quicktime" || mime === "video/webm") {
+      cb(null, true);
       return;
     }
-    cb(null, true);
+    cb(new Error("Only image or allowed video files are permitted"));
   }
 });
 
@@ -633,6 +634,218 @@ export async function adminMarkReplacementShipped(req: Request, res: Response, n
     const body = req.body as { awb?: string; courier?: string; trackingUrl?: string };
     const { markReplacementShipped } = await import("./replacement-workflow.service");
     await markReplacementShipped({ fulfillmentId, adminUserId: admin.id, ...body });
+    res.json({ success: true });
+  } catch (err) {
+    const e = err as Error & { statusCode?: number; code?: string };
+    if (e.statusCode) {
+      res.status(e.statusCode).json({ success: false, error: e.message, code: e.code ?? "ERROR" });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function adminMarkReplacementDelivered(req: Request, res: Response, next: NextFunction) {
+  try {
+    const admin = req.authUser!;
+    const { fulfillmentId } = req.params;
+    const { markReplacementDelivered } = await import("./replacement-workflow.service");
+    await markReplacementDelivered({ fulfillmentId, adminUserId: admin.id });
+    res.json({ success: true });
+  } catch (err) {
+    const e = err as Error & { statusCode?: number; code?: string };
+    if (e.statusCode) {
+      res.status(e.statusCode).json({ success: false, error: e.message, code: e.code ?? "ERROR" });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function adminListReturnCases(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { listReturnCases } = await import("./return-case.service");
+    const data = await listReturnCases({
+      status: req.query.status ? String(req.query.status) as never : undefined,
+      type: req.query.type ? String(req.query.type) : undefined,
+      channel: req.query.channel ? String(req.query.channel) as never : undefined,
+      rootCause: req.query.rootCause ? String(req.query.rootCause) as never : undefined,
+      q: req.query.q ? String(req.query.q) : undefined,
+      page: req.query.page ? Number(req.query.page) : 1,
+      pageSize: req.query.pageSize ? Number(req.query.pageSize) : 25
+    });
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function adminSetReturnCaseRootCause(req: Request, res: Response, next: NextFunction) {
+  try {
+    const admin = req.authUser!;
+    const { orderId, requestId } = req.params;
+    const body = req.body as {
+      rootCause: import("@prisma/client").ReturnRootCause;
+      rootCauseNote?: string;
+      responsibleTeam?: import("@prisma/client").ReturnResponsibleTeam;
+      responsibleUserEmail?: string;
+      secondaryReasonCode?: string;
+      secondaryReasonLabel?: string;
+    };
+    const { setReturnCaseRootCause } = await import("./return-case.service");
+    await setReturnCaseRootCause({
+      orderId,
+      requestId,
+      rootCause: body.rootCause,
+      rootCauseNote: body.rootCauseNote,
+      responsibleTeam: body.responsibleTeam,
+      responsibleUserEmail: body.responsibleUserEmail,
+      secondaryReasonCode: body.secondaryReasonCode,
+      secondaryReasonLabel: body.secondaryReasonLabel,
+      adminEmail: admin.email,
+      adminUserId: admin.id
+    });
+    res.json({ success: true });
+  } catch (err) {
+    const e = err as Error & { statusCode?: number; code?: string };
+    if (e.statusCode) {
+      res.status(e.statusCode).json({ success: false, error: e.message, code: e.code ?? "ERROR" });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function adminRequestMoreInfo(req: Request, res: Response, next: NextFunction) {
+  try {
+    const admin = req.authUser!;
+    const { orderId, requestId } = req.params;
+    const { prompt } = req.body as { prompt?: string };
+    const { requestMoreInfo } = await import("./return-case.service");
+    await requestMoreInfo({
+      orderId,
+      requestId,
+      prompt: prompt ?? "",
+      adminEmail: admin.email,
+      adminUserId: admin.id
+    });
+    res.json({ success: true });
+  } catch (err) {
+    const e = err as Error & { statusCode?: number; code?: string };
+    if (e.statusCode) {
+      res.status(e.statusCode).json({ success: false, error: e.message, code: e.code ?? "ERROR" });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function adminMarkMissingPartShipped(req: Request, res: Response, next: NextFunction) {
+  try {
+    const admin = req.authUser!;
+    const { orderId, requestId } = req.params;
+    const body = req.body as { accessoryDescription?: string; courier?: string; awb?: string };
+    const { markMissingPartShipped } = await import("./return-case.service");
+    await markMissingPartShipped({
+      orderId,
+      requestId,
+      accessoryDescription: body.accessoryDescription ?? "",
+      courier: body.courier,
+      awb: body.awb,
+      adminEmail: admin.email,
+      adminUserId: admin.id
+    });
+    res.json({ success: true });
+  } catch (err) {
+    const e = err as Error & { statusCode?: number; code?: string };
+    if (e.statusCode) {
+      res.status(e.statusCode).json({ success: false, error: e.message, code: e.code ?? "ERROR" });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function adminListCaseEvents(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { requestId } = req.params;
+    const { listCaseEvents } = await import("./return-case-events.service");
+    const events = await listCaseEvents(requestId);
+    res.json({ success: true, data: { events } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function customerGetReturnCase(req: Request, res: Response, next: NextFunction) {
+  try {
+    const user = req.authUser!;
+    const { orderNumber, requestId } = req.params;
+    const { getCustomerReturnCase } = await import("./return-case.service");
+    const data = await getCustomerReturnCase({
+      orderNumber,
+      requestId,
+      userId: user.id,
+      userEmail: user.email
+    });
+    if (!data) {
+      res.status(404).json({ success: false, error: "Case not found", code: "NOT_FOUND" });
+      return;
+    }
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function customerProvideMoreInfo(req: Request, res: Response, next: NextFunction) {
+  try {
+    const user = req.authUser!;
+    const { orderNumber, requestId } = req.params;
+    const body = req.body as { response?: string };
+    const photosByIndex = mapUploadedFiles(req);
+    const photos = [...photosByIndex.values()].flat().map((f) => ({
+      buffer: f.buffer,
+      originalname: f.originalname,
+      mimetype: f.mimetype,
+      size: f.size
+    }));
+    const { provideMoreInfo } = await import("./return-case.service");
+    await provideMoreInfo({
+      orderNumber,
+      requestId,
+      userId: user.id,
+      userEmail: user.email,
+      response: body.response ?? "",
+      photos
+    });
+    res.json({ success: true });
+  } catch (err) {
+    const e = err as Error & { statusCode?: number; code?: string };
+    if (e.statusCode) {
+      res.status(e.statusCode).json({ success: false, error: e.message, code: e.code ?? "ERROR" });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function customerSubmitSelfShip(req: Request, res: Response, next: NextFunction) {
+  try {
+    const user = req.authUser!;
+    const { orderNumber, requestId } = req.params;
+    const body = req.body as { courier?: string; awb?: string; trackingUrl?: string; shippedAt?: string };
+    const { submitCustomerSelfShip } = await import("./return-case.service");
+    await submitCustomerSelfShip({
+      orderNumber,
+      requestId,
+      userId: user.id,
+      userEmail: user.email,
+      courier: body.courier ?? "",
+      awb: body.awb ?? "",
+      trackingUrl: body.trackingUrl,
+      shippedAt: body.shippedAt ? new Date(body.shippedAt) : undefined
+    });
     res.json({ success: true });
   } catch (err) {
     const e = err as Error & { statusCode?: number; code?: string };

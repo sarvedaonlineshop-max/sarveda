@@ -77,6 +77,7 @@ const accountingFlagOn =
 
 const primaryNav: NavItem[] = [
   { href: "/admin", label: "Dashboard", icon: icon.dashboard, match: "exact" },
+  { href: "/admin/returns", label: "Returns", icon: icon.reports },
   { href: "/admin/enrollments", label: "Enrollments", icon: icon.enrollments },
   { href: "/admin/inventory", label: "Inventory", icon: icon.inventory },
   { href: "/admin/products", label: "Products", icon: icon.products },

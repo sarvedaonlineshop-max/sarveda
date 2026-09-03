@@ -251,6 +251,7 @@ describe("cancellation Phase 1A safety", () => {
 
     const request = await prisma.orderServiceRequest.create({
       data: {
+        caseNumber: `RC-TEST-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         orderId: order.id,
         orderNumber: order.orderNumber,
         customerEmail: order.email,
@@ -298,6 +299,7 @@ describe("cancellation Phase 1A safety", () => {
 
     const request = await prisma.orderServiceRequest.create({
       data: {
+        caseNumber: `RC-TEST-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         orderId: order.id,
         orderNumber: order.orderNumber,
         customerEmail: order.email,
@@ -359,6 +361,7 @@ describe("cancellation Phase 1A safety", () => {
 
     const request = await prisma.orderServiceRequest.create({
       data: {
+        caseNumber: `RC-TEST-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         orderId: order.id,
         orderNumber: order.orderNumber,
         customerEmail: order.email,

@@ -81,7 +81,11 @@ export async function submitReturnReplacementRequest(opts: {
   }
 
   const existingPending = await prisma.orderServiceRequest.findFirst({
-    where: { orderId: order.id, status: "PENDING_APPROVAL", type: "REFUND_AFTER_DELIVERY" }
+    where: {
+      orderId: order.id,
+      status: { in: ["PENDING_APPROVAL", "MORE_INFO_REQUIRED"] },
+      type: "REFUND_AFTER_DELIVERY"
+    }
   });
   if (existingPending) {
     throw Object.assign(new Error("A return or replacement request is already waiting for review"), {
@@ -204,21 +208,38 @@ export async function submitReturnReplacementRequest(opts: {
       ? `${parsedItems[0].nameSnapshot} — ${parsedItems[0].reasonLabel}`
       : `${parsedItems.length} items — return/replacement`;
 
+  const { nextReturnCaseNumber } = await import("./return-case-number");
+  const { appendCaseEvent } = await import("./return-case-events.service");
+  const caseNumber = await nextReturnCaseNumber();
+
+  const declarationsAcceptedAt = new Date();
+  const declarationsJson = {
+    unusedCondition: true,
+    originalPackagingWhereApplicable: true,
+    accurateEvidence: true,
+    acceptedAt: declarationsAcceptedAt.toISOString()
+  };
+
   const created = await prisma.orderServiceRequest.create({
     data: {
       id: requestId,
+      caseNumber,
       orderId: order.id,
       orderNumber: order.orderNumber,
       customerId: opts.userId,
       customerEmail: email,
       type: "REFUND_AFTER_DELIVERY",
+      channel: "WEBSITE",
       requestIntent: "REFUND",
       reasonCode: parsedItems.length === 1 ? parsedItems[0].reasonCode : "multi",
       reasonLabel: summaryLabel,
       message: opts.message?.trim() || null,
       shippingRefundPolicy: shippingPolicy,
-      returnPhysicalStatus: needsPhysicalReturn ? "NOT_REQUIRED" : "NOT_REQUIRED",
+      returnPhysicalStatus: needsPhysicalReturn ? "AWAITING_RETURN" : "NOT_REQUIRED",
       resolutionStatus: "NONE",
+      offeredResolution: parsedItems[0]?.requestedResolution ?? null,
+      declarationsJson,
+      declarationsAcceptedAt,
       returnPayload,
       items: {
         create: await Promise.all(
@@ -243,7 +264,9 @@ export async function submitReturnReplacementRequest(opts: {
                   s3Key: p.s3Key,
                   s3Url: p.s3Url,
                   fileName: p.fileName,
-                  fileSizeBytes: p.fileSizeBytes
+                  fileSizeBytes: p.fileSizeBytes,
+                  mimeType: p.mimeType,
+                  mediaKind: p.mediaKind
                 }))
               }
             };
@@ -253,6 +276,22 @@ export async function submitReturnReplacementRequest(opts: {
     },
     include: { items: { include: { photos: true } }, photos: true }
   });
+
+  await appendCaseEvent({
+    requestId: created.id,
+    eventType: "CASE_CREATED",
+    message: `Case ${caseNumber} created`,
+    payloadJson: { type: "REFUND_AFTER_DELIVERY", caseNumber },
+    actor: { userId: opts.userId, email, role: "CUSTOMER" }
+  });
+  if (parsedItems.some((p) => p.photos.length)) {
+    await appendCaseEvent({
+      requestId: created.id,
+      eventType: "EVIDENCE_ADDED",
+      message: "Customer evidence uploaded with request",
+      actor: { userId: opts.userId, email, role: "CUSTOMER" }
+    });
+  }
 
   void notifyServiceRequestSubmitted({
     orderNumber: order.orderNumber,
@@ -280,7 +319,7 @@ export async function approveReturnReplacementRequest(opts: {
   if (!request) {
     throw Object.assign(new Error("Request not found"), { statusCode: 404, code: "NOT_FOUND" });
   }
-  if (request.status !== "PENDING_APPROVAL") {
+  if (!["PENDING_APPROVAL", "MORE_INFO_REQUIRED"].includes(request.status)) {
     throw Object.assign(new Error("Request already reviewed"), { statusCode: 409, code: "ALREADY_REVIEWED" });
   }
   if (request.type !== "REFUND_AFTER_DELIVERY") {
@@ -297,28 +336,41 @@ export async function approveReturnReplacementRequest(opts: {
   const needsPhysicalReturn = request.items.some(
     (i) =>
       i.requestedResolution !== "KEEP_ITEM_PARTIAL_REFUND" &&
+      i.requestedResolution !== "MISSING_PART" &&
       physicalReturnRequiredForReason(i.reasonCode)
   );
   const hasReplacement = request.items.some((i) => resolutionRequiresReplacement(i.requestedResolution!));
   const hasRefund = request.items.some((i) => resolutionRequiresRefund(i.requestedResolution!));
+  const hasMissingPart = request.items.some((i) => i.requestedResolution === "MISSING_PART");
 
   let resolutionStatus: ReturnResolutionStatus = "NONE";
-  if (hasReplacement && !hasRefund) resolutionStatus = "REPLACEMENT_PENDING";
+  if (hasMissingPart && !hasRefund && !hasReplacement) resolutionStatus = "MISSING_PART_PENDING";
+  else if (hasReplacement && !hasRefund) resolutionStatus = "REPLACEMENT_PENDING";
   else if (hasRefund) resolutionStatus = "REFUND_PENDING";
 
   const returnPhysicalStatus = needsPhysicalReturn ? "AWAITING_RETURN" : "NOT_REQUIRED";
+  const now = new Date();
 
   await prisma.$transaction(async (tx) => {
     await tx.orderServiceRequest.update({
       where: { id: request.id },
       data: {
         status: "APPROVED",
-        reviewedAt: new Date(),
+        reviewedAt: now,
         reviewedByEmail: opts.adminEmail,
         reviewedByUserId: opts.adminUserId ?? null,
         adminNote: opts.adminNote?.trim() || null,
         returnPhysicalStatus,
-        resolutionStatus
+        resolutionStatus,
+        refundApprovedAt: hasRefund ? now : null,
+        slaPausedAt: null,
+        finalResolution: hasMissingPart
+          ? "MISSING_PART"
+          : hasReplacement
+            ? "REPLACEMENT"
+            : hasRefund
+              ? "RETURN_FOR_REFUND"
+              : null
       }
     });
 
@@ -351,6 +403,31 @@ export async function approveReturnReplacementRequest(opts: {
       });
     }
   });
+
+  const { appendCaseEvent } = await import("./return-case-events.service");
+  await appendCaseEvent({
+    requestId: request.id,
+    eventType: "APPROVED",
+    message: opts.adminNote?.trim() || "Return case approved",
+    payloadJson: { resolutionStatus, returnPhysicalStatus },
+    actor: { email: opts.adminEmail, userId: opts.adminUserId, role: "ADMIN" }
+  });
+  if (hasRefund) {
+    await appendCaseEvent({
+      requestId: request.id,
+      eventType: "REFUND_APPROVED",
+      message: "Refund approved (initiation may wait for warehouse/QC where required)",
+      actor: { email: opts.adminEmail, userId: opts.adminUserId, role: "ADMIN" }
+    });
+  }
+  if (hasReplacement) {
+    await appendCaseEvent({
+      requestId: request.id,
+      eventType: "REPLACEMENT_INITIATED",
+      message: "Replacement fulfillment pending",
+      actor: { email: opts.adminEmail, userId: opts.adminUserId, role: "ADMIN" }
+    });
+  }
 
   return prisma.orderServiceRequest.findUnique({
     where: { id: request.id },
