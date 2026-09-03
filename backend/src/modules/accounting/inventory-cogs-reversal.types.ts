@@ -44,7 +44,7 @@ export type InventoryCogsReversalSnapshot = {
   orderItemId: string;
   variantId: string;
   skuSnapshot: string;
-  disposition: "SELLABLE" | "DAMAGED" | "NON_RESTOCKABLE";
+  disposition: import("@prisma/client").OrderInventoryRestockDisposition;
   restockQuantity: number;
   inventoryIncremented: boolean;
   restockCreatedAt: Date;

@@ -258,6 +258,85 @@ router.post(
   "/orders/:orderId/service-requests/:requestId/qc-lines/:qcLineId/release-repack",
   serviceRequest.adminReleaseRepack
 );
+router.get(
+  "/orders/:orderId/service-requests/:requestId/economics",
+  serviceRequest.adminGetReturnEconomics
+);
+router.put(
+  "/orders/:orderId/service-requests/:requestId/economics",
+  serviceRequest.adminUpsertReturnEconomics
+);
+router.post(
+  "/orders/:orderId/service-requests/:requestId/courier-claims",
+  validateBody(
+    z.object({
+      reason: z.string().min(1).max(500),
+      claimedAmountPaise: z.number().int().min(0),
+      courierName: z.string().max(120).optional(),
+      reference: z.string().max(120).optional(),
+      notes: z.string().max(2000).optional()
+    })
+  ),
+  serviceRequest.adminOpenCourierClaim
+);
+router.patch(
+  "/courier-claims/:claimId",
+  validateBody(
+    z.object({
+      status: z
+        .enum([
+          "OPEN",
+          "SUBMITTED",
+          "PARTIAL_RECOVERED",
+          "RECOVERED",
+          "REJECTED",
+          "CLOSED",
+          "WRITTEN_OFF"
+        ])
+        .optional(),
+      recoveredAmountPaise: z.number().int().min(0).optional(),
+      reference: z.string().max(120).optional(),
+      notes: z.string().max(2000).optional()
+    })
+  ),
+  serviceRequest.adminUpdateCourierClaim
+);
+router.post(
+  "/orders/:orderId/service-requests/:requestId/vendor-claims",
+  validateBody(
+    z.object({
+      reason: z.string().min(1).max(500),
+      claimedAmountPaise: z.number().int().min(0),
+      vendorId: z.string().uuid().optional(),
+      vendorNameSnapshot: z.string().max(200).optional(),
+      reference: z.string().max(120).optional(),
+      notes: z.string().max(2000).optional()
+    })
+  ),
+  serviceRequest.adminOpenVendorClaim
+);
+router.patch(
+  "/vendor-claims/:claimId",
+  validateBody(
+    z.object({
+      status: z
+        .enum([
+          "OPEN",
+          "SUBMITTED",
+          "PARTIAL_RECOVERED",
+          "RECOVERED",
+          "REJECTED",
+          "CLOSED",
+          "WRITTEN_OFF"
+        ])
+        .optional(),
+      recoveredAmountPaise: z.number().int().min(0).optional(),
+      reference: z.string().max(120).optional(),
+      notes: z.string().max(2000).optional()
+    })
+  ),
+  serviceRequest.adminUpdateVendorClaim
+);
 router.post(
   "/replacement-fulfillments/:fulfillmentId/ship",
   serviceRequest.adminMarkReplacementShipped

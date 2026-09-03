@@ -1166,6 +1166,9 @@ model OrderServiceRequest {
   events             OrderServiceRequestEvent[]
   receiptLines       OrderReturnReceiptLine[]
   qcLines            OrderReturnQcLine[]
+  economics          ReturnCaseEconomics?
+  courierClaims      ReturnCourierClaim[]
+  vendorClaims       ReturnVendorClaim[]
 
   @@index([orderId])
   @@index([status])
@@ -1319,6 +1322,87 @@ model OrderReturnQcLine {
 
   @@index([requestId])
   @@index([orderItemId])
+}
+
+enum ReturnClaimStatus {
+  OPEN
+  SUBMITTED
+  PARTIAL_RECOVERED
+  RECOVERED
+  REJECTED
+  CLOSED
+  WRITTEN_OFF
+}
+
+/// Operational economics capture for a Return Case (not statutory journals).
+/// reverseShippingDeductionPolicy defaults to CONFIGURATION_PENDING — do not auto-deduct.
+model ReturnCaseEconomics {
+  id                               String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId                        String              @unique @db.Uuid
+  customerPaidForwardShippingPaise Int?
+  actualForwardCourierCostPaise    Int?
+  reversePickupCostPaise           Int?
+  replacementShippingCostPaise     Int?
+  merchandiseRefundPaise           Int?
+  gstReversalPaise                 Int?
+  discountReversalPaise            Int?
+  customerDeductionPaise           Int?
+  customerDeductionLabel           String?
+  /// POLICY_DECISION_REQUIRED — never invent a formula; leave null until configured.
+  reverseShippingDeductionPaise    Int?
+  reverseShippingDeductionPolicy   String              @default("CONFIGURATION_PENDING")
+  inventoryWriteOffCostPaise       Int?
+  otherCostPaise                   Int?
+  otherCostLabel                   String?
+  courierRecoveryPaise             Int?
+  vendorRecoveryPaise              Int?
+  otherRecoveryPaise               Int?
+  otherRecoveryLabel               String?
+  notes                            String?
+  createdAt                        DateTime            @default(now())
+  updatedAt                        DateTime            @updatedAt
+  request                          OrderServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+}
+
+model ReturnCourierClaim {
+  id                   String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId            String              @db.Uuid
+  courierName          String?
+  reason               String
+  claimedAmountPaise   Int                 @default(0)
+  recoveredAmountPaise Int                 @default(0)
+  status               ReturnClaimStatus   @default(OPEN)
+  reference            String?
+  openedAt             DateTime            @default(now())
+  closedAt             DateTime?
+  notes                String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  request              OrderServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@index([status])
+}
+
+model ReturnVendorClaim {
+  id                   String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId            String              @db.Uuid
+  vendorId             String?             @db.Uuid
+  vendorNameSnapshot   String?
+  reason               String
+  claimedAmountPaise   Int                 @default(0)
+  recoveredAmountPaise Int                 @default(0)
+  status               ReturnClaimStatus   @default(OPEN)
+  reference            String?
+  openedAt             DateTime            @default(now())
+  closedAt             DateTime?
+  notes                String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  request              OrderServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@index([status])
 }
 
 model OrderItem {

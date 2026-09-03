@@ -695,6 +695,150 @@ export async function adminReleaseRepack(req: Request, res: Response, next: Next
   }
 }
 
+export async function adminGetReturnEconomics(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { requestId } = req.params;
+    const { getReturnCaseEconomicsView } = await import("./return-economics.service");
+    const data = await getReturnCaseEconomicsView(requestId);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function adminUpsertReturnEconomics(req: Request, res: Response, next: NextFunction) {
+  try {
+    const admin = req.authUser!;
+    const { requestId } = req.params;
+    const { upsertReturnCaseEconomics } = await import("./return-economics.service");
+    const row = await upsertReturnCaseEconomics({
+      requestId,
+      data: req.body,
+      adminUserId: admin.id,
+      adminEmail: admin.email
+    });
+    res.json({ success: true, data: row });
+  } catch (err) {
+    const e = err as Error & { statusCode?: number; code?: string };
+    if (e.statusCode) {
+      res.status(e.statusCode).json({ success: false, error: e.message, code: e.code ?? "ERROR" });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function adminOpenCourierClaim(req: Request, res: Response, next: NextFunction) {
+  try {
+    const admin = req.authUser!;
+    const { requestId } = req.params;
+    const { openCourierClaim } = await import("./return-economics.service");
+    const claim = await openCourierClaim({
+      requestId,
+      ...(req.body as {
+        reason: string;
+        claimedAmountPaise: number;
+        courierName?: string;
+        reference?: string;
+        notes?: string;
+      }),
+      adminUserId: admin.id,
+      adminEmail: admin.email
+    });
+    res.status(201).json({ success: true, data: claim });
+  } catch (err) {
+    const e = err as Error & { statusCode?: number; code?: string };
+    if (e.statusCode) {
+      res.status(e.statusCode).json({ success: false, error: e.message, code: e.code ?? "ERROR" });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function adminUpdateCourierClaim(req: Request, res: Response, next: NextFunction) {
+  try {
+    const admin = req.authUser!;
+    const { claimId } = req.params;
+    const { updateCourierClaim } = await import("./return-economics.service");
+    const claim = await updateCourierClaim({
+      claimId,
+      ...(req.body as {
+        status?: import("@prisma/client").ReturnClaimStatus;
+        recoveredAmountPaise?: number;
+        reference?: string;
+        notes?: string;
+      }),
+      adminUserId: admin.id,
+      adminEmail: admin.email
+    });
+    res.json({ success: true, data: claim });
+  } catch (err) {
+    const e = err as Error & { statusCode?: number; code?: string };
+    if (e.statusCode) {
+      res.status(e.statusCode).json({ success: false, error: e.message, code: e.code ?? "ERROR" });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function adminOpenVendorClaim(req: Request, res: Response, next: NextFunction) {
+  try {
+    const admin = req.authUser!;
+    const { requestId } = req.params;
+    const { openVendorClaim } = await import("./return-economics.service");
+    const claim = await openVendorClaim({
+      requestId,
+      ...(req.body as {
+        reason: string;
+        claimedAmountPaise: number;
+        vendorId?: string;
+        vendorNameSnapshot?: string;
+        reference?: string;
+        notes?: string;
+      }),
+      adminUserId: admin.id,
+      adminEmail: admin.email
+    });
+    res.status(201).json({ success: true, data: claim });
+  } catch (err) {
+    const e = err as Error & { statusCode?: number; code?: string };
+    if (e.statusCode) {
+      res.status(e.statusCode).json({ success: false, error: e.message, code: e.code ?? "ERROR" });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function adminUpdateVendorClaim(req: Request, res: Response, next: NextFunction) {
+  try {
+    const admin = req.authUser!;
+    const { claimId } = req.params;
+    const { updateVendorClaim } = await import("./return-economics.service");
+    const claim = await updateVendorClaim({
+      claimId,
+      ...(req.body as {
+        status?: import("@prisma/client").ReturnClaimStatus;
+        recoveredAmountPaise?: number;
+        reference?: string;
+        notes?: string;
+      }),
+      adminUserId: admin.id,
+      adminEmail: admin.email
+    });
+    res.json({ success: true, data: claim });
+  } catch (err) {
+    const e = err as Error & { statusCode?: number; code?: string };
+    if (e.statusCode) {
+      res.status(e.statusCode).json({ success: false, error: e.message, code: e.code ?? "ERROR" });
+      return;
+    }
+    next(err);
+  }
+}
+
 export async function adminMarkReplacementShipped(req: Request, res: Response, next: NextFunction) {
   try {
     const admin = req.authUser!;
