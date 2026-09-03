@@ -9,6 +9,7 @@ import { logger } from "../../config/logger";
 import { orderItemWarehouseUnits } from "../inventory/order-item-fulfillment";
 import { executeAuthoritativePartialRefund } from "../payments/partial-refund-settlement.service";
 import { pickCapturedPaymentForRefund } from "../payments/payment-selection";
+import { orderIsDispatched } from "./cancellation-eligibility";
 import {
   adminApplyInventoryRestock,
   getReturnedQuantityForOrderItem
@@ -110,7 +111,7 @@ export async function loadLineRefundOptions(orderId: string): Promise<LineRefund
   const refunded = payment?.refundedInPaise ?? 0;
   const remaining = Math.max(0, collected - refunded);
 
-  const hasShipment = order.shipments.length > 0;
+  const dispatched = orderIsDispatched(order);
   const allocationItems = order.items.map((i) => ({
     id: i.id,
     lineTotalInPaise: i.lineTotalInPaise,
@@ -132,7 +133,7 @@ export async function loadLineRefundOptions(orderId: string): Promise<LineRefund
       unitPriceInPaise: item.unitPriceInPaise,
       perUnitRefundInPaise: perUnitRefundInPaise(allocationItems, order.discountInPaise, index),
       maxRefundQty: item.qtyOrdered,
-      restockableQty: Math.max(0, warehouseUnits - alreadyReturned)
+      restockableQty: dispatched ? 0 : Math.max(0, warehouseUnits - alreadyReturned)
     });
   }
 
@@ -154,8 +155,8 @@ export async function loadLineRefundOptions(orderId: string): Promise<LineRefund
     alreadyRefundedInPaise: refunded,
     remainingRefundableInPaise: remaining,
     shippingInPaise: order.shippingInPaise,
-    restockAvailable: !hasShipment && lines.some((l) => l.restockableQty > 0),
-    restockUnavailableReason: hasShipment
+    restockAvailable: !dispatched && lines.some((l) => l.restockableQty > 0),
+    restockUnavailableReason: dispatched
       ? "Stock returns after dispatch are handled by the return or RTO workflow."
       : null,
     restockDispositions: [
@@ -260,7 +261,7 @@ export async function executeAdminLineRefund(opts: {
   }
 
   if (opts.body.restock) {
-    if (order.shipments.length > 0) {
+    if (orderIsDispatched(order)) {
       throw badRequest(
         "Stock returns after dispatch are handled by the return or RTO workflow",
         "RESTOCK_NOT_ALLOWED",
@@ -299,7 +300,9 @@ export async function executeAdminLineRefund(opts: {
       sourceType: "ORDER_ADJUSTMENT",
       sourceId: `LINE_REFUND:${idempotencyKey}:${line.orderItemId}`,
       reason,
-      adjustmentMerchandiseRefundPaise: line.totalInPaise,
+      adjustmentMerchandiseRefundPaise: line.merchandiseInPaise,
+      adjustmentShippingRefundPaise: line.shippingInPaise,
+      quantity: line.quantity,
       orderItemId: line.orderItemId
     });
     refunds.push({

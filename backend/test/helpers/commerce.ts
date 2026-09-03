@@ -294,6 +294,19 @@ export async function createPendingStripeOrder(
 export async function cleanupTestOrder(orderId: string) {
   await prisma.orderInventoryRestockEvent.deleteMany({ where: { orderId } });
   await prisma.orderAttribution.deleteMany({ where: { orderId } });
+  await prisma.orderReplacementFulfillment.deleteMany({ where: { orderId } });
+  await prisma.orderReturnShipment.deleteMany({ where: { orderId } });
+  const requestIds = (
+    await prisma.orderServiceRequest.findMany({ where: { orderId }, select: { id: true } })
+  ).map((r) => r.id);
+  if (requestIds.length) {
+    await prisma.orderServiceRequestPhoto.deleteMany({ where: { requestId: { in: requestIds } } });
+    await prisma.orderServiceRequestItem.deleteMany({ where: { requestId: { in: requestIds } } });
+    await prisma.orderServiceRequest.deleteMany({ where: { id: { in: requestIds } } });
+  }
+  await prisma.refundAllocation.deleteMany({
+    where: { refund: { payment: { orderId } } }
+  });
   await prisma.refund.deleteMany({ where: { payment: { orderId } } });
   await prisma.payment.deleteMany({ where: { orderId } });
   await prisma.orderStatusHistory.deleteMany({ where: { orderId } });

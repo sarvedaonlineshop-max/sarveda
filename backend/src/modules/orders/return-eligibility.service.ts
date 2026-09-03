@@ -121,33 +121,24 @@ export async function getReturnEligibility(opts: {
   }
 
   const alreadyReturned = await getReturnedQuantityForOrderItem(prisma, opts.orderItemId);
-  const alreadyRefundedQty = await prisma.orderServiceRequestItem.aggregate({
+
+  // Quantities on non-terminal return cases are reserved and cannot be requested again.
+  // REJECTED cases free their qty; APPROVED / PENDING_APPROVAL consume it for the life of the case.
+  const inFlightCaseQty = await prisma.orderServiceRequestItem.aggregate({
     where: {
       orderItemId: opts.orderItemId,
-      request: { type: "REFUND_AFTER_DELIVERY", status: { in: ["APPROVED", "PENDING_APPROVAL"] } },
-      refundedAt: { not: null }
+      request: {
+        type: "REFUND_AFTER_DELIVERY",
+        status: { in: ["PENDING_APPROVAL", "APPROVED"] }
+      }
     },
     _sum: { qtySelected: true }
   });
-  const requestItemIds = (
-    await prisma.orderServiceRequestItem.findMany({
-      where: { orderItemId: opts.orderItemId },
-      select: { id: true }
-    })
-  ).map((r) => r.id);
-  const replacedQty = await prisma.orderReplacementFulfillment.aggregate({
-    where: {
-      requestItemId: { in: requestItemIds },
-      status: { in: ["REPLACEMENT_PENDING", "REPLACEMENT_SHIPPED", "REPLACEMENT_DELIVERED", "CLOSED"] }
-    },
-    _sum: { qty: true }
-  });
 
-  const committed =
-    alreadyReturned +
-    (alreadyRefundedQty._sum.qtySelected ?? 0) +
-    (replacedQty._sum?.qty ?? 0);
-  const maxReturnableQty = Math.max(0, item.qtyOrdered - committed);
+  const caseCommitted = inFlightCaseQty._sum.qtySelected ?? 0;
+  // Restock events outside a case (pre-dispatch MAN-006 / RTO) still consume returnable units.
+  // Case qty already covers return-for-refund and replacement resolutions on those lines.
+  const maxReturnableQty = Math.max(0, item.qtyOrdered - Math.max(alreadyReturned, caseCommitted));
 
   if (opts.qtyRequested <= 0 || opts.qtyRequested > maxReturnableQty) {
     return {

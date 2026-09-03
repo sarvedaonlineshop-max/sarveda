@@ -9,12 +9,14 @@ import { z } from "zod";
 
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
+import { tryPostCodOrderCancelledAccounting } from "../accounting/order-cancelled-posting.service";
 
 import { loadOrderRefundPreview } from "./order-refund-preview.service";
 import {
   applyOrderInventoryRestockTx,
   listOrderInventoryRestocks
 } from "./order-inventory-restock.service";
+import { handlePaidOrderStatusChange } from "./orders.service";
 import { executeAuthoritativePartialRefund } from "../payments/partial-refund-settlement.service";
 import { pickCapturedPaymentForRefund } from "../payments/payment-selection";
 
@@ -285,24 +287,28 @@ export async function setRtoDisposition(opts: {
       }
     });
 
-    if (codClosure) {
-      await tx.order.update({
-        where: { id: shipment.orderId },
-        data: { status: "CANCELLED" }
-      });
-      await tx.orderStatusHistory.create({
-        data: {
-          orderId: shipment.orderId,
-          fromStatus: shipment.order.status,
-          toStatus: "CANCELLED",
-          reason: `COD RTO — disposition ${opts.disposition}`,
-          changedBy: opts.adminUserId ?? null
-        }
-      });
-    }
+    // COD order closure + ORDER_CANCELLED accounting happen after this transaction
+    // via handlePaidOrderStatusChange — never a raw status update here.
 
-    return { updated, restockEvents };
+    return { updated, restockEvents, codClosure };
   });
+
+  if (result.codClosure) {
+    const fresh = await prisma.order.findUnique({
+      where: { id: shipment.orderId },
+      select: { status: true }
+    });
+    if (fresh && !["CANCELLED", "REFUNDED"].includes(fresh.status)) {
+      await handlePaidOrderStatusChange(
+        shipment.orderId,
+        "CANCELLED",
+        `COD RTO — disposition ${opts.disposition}`
+      );
+    } else {
+      // Already cancelled (retry) — ensure accounting posts exactly once.
+      await tryPostCodOrderCancelledAccounting(shipment.orderId);
+    }
+  }
 
   logger.info("rto_disposition_set", {
     orderId: shipment.orderId,

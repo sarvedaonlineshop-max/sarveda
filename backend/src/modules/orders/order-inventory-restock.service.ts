@@ -246,10 +246,29 @@ export async function adminApplyInventoryRestock(opts: {
 }): Promise<{ events: OrderInventoryRestockEvent[]; sourceId: string }> {
   const order = await prisma.order.findFirst({
     where: { id: opts.orderId, deletedAt: null },
-    select: { id: true, status: true }
+    select: {
+      id: true,
+      status: true,
+      shipments: { select: { status: true } }
+    }
   });
   if (!order) {
     throw Object.assign(new Error("Order not found"), { statusCode: 404, code: "NOT_FOUND" });
+  }
+
+  const { orderIsDispatched } = await import("./cancellation-eligibility");
+  if (orderIsDispatched(order)) {
+    const wantsSellable = opts.body.lines.some(
+      (l) => l.disposition === OrderInventoryRestockDisposition.SELLABLE
+    );
+    if (wantsSellable) {
+      throw Object.assign(
+        new Error(
+          "After dispatch, sellable restock is only allowed through the return or RTO receipt workflow"
+        ),
+        { statusCode: 409, code: "RESTOCK_REQUIRES_RETURN_WORKFLOW" }
+      );
+    }
   }
 
   const sourceId = opts.body.idempotencyKey?.trim() || crypto.randomUUID();

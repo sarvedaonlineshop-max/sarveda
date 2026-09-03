@@ -675,6 +675,8 @@ async function executeAdjustmentWithRefund(opts: {
       sourceId: opts.requestId,
       reason: `Order adjustment refund — request ${opts.requestId.slice(0, 8)}`,
       adjustmentMerchandiseRefundPaise: refundPaise,
+      adjustmentShippingRefundPaise: 0,
+      quantity: 1,
       orderItemId
     });
 

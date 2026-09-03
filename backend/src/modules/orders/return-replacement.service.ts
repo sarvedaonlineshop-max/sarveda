@@ -493,7 +493,9 @@ export async function executeReturnReplacementRefund(opts: {
       sourceType: "SERVICE_REQUEST",
       sourceId: item.id,
       reason: `Return refund — ${item.nameSnapshot} x${item.qtySelected} by ${opts.adminEmail}`,
-      adjustmentMerchandiseRefundPaise: preview.merchandiseRefundPaise + preview.shippingRefundPaise,
+      adjustmentMerchandiseRefundPaise: preview.merchandiseRefundPaise,
+      adjustmentShippingRefundPaise: preview.shippingRefundPaise,
+      quantity: item.qtySelected,
       orderItemId: item.orderItemId
     });
 

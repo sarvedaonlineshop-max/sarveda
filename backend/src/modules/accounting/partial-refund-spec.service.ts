@@ -82,7 +82,11 @@ export function buildPartialRefundSpecFromBreakdown(opts: {
   };
 }
 
-/** Build partial refund spec for a single order line delta (adjustment qty/variant decrease). */
+/**
+ * Build partial refund spec for a single order line delta.
+ * Merchandise and forward shipping must be passed separately so shipping reverses
+ * 4100 Shipping Income (symmetrical with ORDER_PAID) instead of Product Sales + GST.
+ */
 export function buildPartialRefundSpecForLineDelta(opts: {
   orderId: string;
   orderNumber: string;
@@ -95,7 +99,10 @@ export function buildPartialRefundSpecForLineDelta(opts: {
   interState: boolean;
   isGstApplicable: boolean;
   accountingDate: Date;
+  /** Inclusive merchandise only — never bundle shipping into this field. */
   refundMerchandisePaise: number;
+  /** Forward shipping refunded to the customer; 0 when retained. Untaxed. */
+  shippingRefundPaise?: number;
   orderItem: {
     id: string;
     lineTotalInPaise: number;
@@ -110,15 +117,20 @@ export function buildPartialRefundSpecForLineDelta(opts: {
     qtyOrdered: number;
   }>;
 }): PartialRefundSpec {
-  const totalRefundPaise = opts.refundMerchandisePaise;
+  const merchandiseInclusivePaise = opts.refundMerchandisePaise;
+  const shippingRefundPaise = Math.max(0, opts.shippingRefundPaise ?? 0);
+  if (merchandiseInclusivePaise < 0 || shippingRefundPaise < 0) {
+    throw new PartialRefundTaxBreakdownUnavailableError("Refund components must be non-negative");
+  }
+  const totalRefundPaise = merchandiseInclusivePaise + shippingRefundPaise;
   if (totalRefundPaise <= 0) {
     throw new PartialRefundTaxBreakdownUnavailableError("Adjustment refund delta must be positive");
   }
 
-  let merchandiseTaxableRefundPaise = totalRefundPaise;
+  let merchandiseTaxableRefundPaise = merchandiseInclusivePaise;
   let merchandiseGstRefundPaise = 0;
 
-  if (opts.isGstApplicable) {
+  if (opts.isGstApplicable && merchandiseInclusivePaise > 0) {
     const { lineDiscountsPaise } = allocateOrderDiscountPaise(opts.allItems, opts.orderDiscountInPaise);
     const itemIndex = opts.allItems.findIndex(
       (_, i) =>
@@ -130,13 +142,14 @@ export function buildPartialRefundSpecForLineDelta(opts: {
     if (lineNet <= 0) {
       throw new PartialRefundTaxBreakdownUnavailableError("Line net after discount is zero");
     }
-    const ratio = Math.min(1, totalRefundPaise / lineNet);
+    const ratio = Math.min(1, merchandiseInclusivePaise / lineNet);
     const refundInclusive = Math.round(lineNet * ratio);
     const rate = lookupGstRate(opts.orderItem.taxClass).ratePercent;
     const extracted = gstFromInclusiveLine(refundInclusive, rate);
     merchandiseTaxableRefundPaise = extracted.taxableMinor;
     merchandiseGstRefundPaise = extracted.taxMinor;
-    const drift = totalRefundPaise - (merchandiseTaxableRefundPaise + merchandiseGstRefundPaise);
+    const drift =
+      merchandiseInclusivePaise - (merchandiseTaxableRefundPaise + merchandiseGstRefundPaise);
     if (Math.abs(drift) > 2) {
       merchandiseTaxableRefundPaise += drift;
     }
@@ -152,7 +165,7 @@ export function buildPartialRefundSpecForLineDelta(opts: {
     totalRefundPaise,
     merchandiseTaxableRefundPaise,
     merchandiseGstRefundPaise,
-    shippingRefundPaise: 0,
+    shippingRefundPaise,
     interState: opts.interState,
     isGstApplicable: opts.isGstApplicable,
     accountingDate: opts.accountingDate,

@@ -1192,6 +1192,7 @@ model OrderItem {
   digitalOffer      DigitalCheckoutOffer?        @relation(fields: [digitalOfferId], references: [id])
   pickupLocation    PickupLocation?              @relation(fields: [pickupLocationId], references: [id])
   inventoryRestocks OrderInventoryRestockEvent[]
+  refundAllocations RefundAllocation[]
 
   @@index([digitalOfferId])
 }
@@ -1348,9 +1349,36 @@ model Refund {
   zohoSyncError    String?
   createdAt        DateTime               @default(now())
   payment          Payment                @relation(fields: [paymentId], references: [id])
+  allocations      RefundAllocation[]
 
   @@index([paymentId, status])
   @@index([sourceType, sourceId])
+}
+
+/// Immutable per-line refund breakdown. Written with the Refund row, never updated.
+/// Historical refunds without reliable line data remain unallocated (no backfill).
+model RefundAllocation {
+  id                           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  refundId                     String    @db.Uuid
+  orderItemId                  String    @db.Uuid
+  quantity                     Int
+  eligibleItemValuePaise       Int
+  merchandiseTaxablePaise      Int
+  gstPaise                     Int
+  discountReversedPaise        Int       @default(0)
+  /// Signed: positive = shipping refunded to customer (Sarveda fault); 0 = retained.
+  /// Reverse-shipping deduction is stored separately and is always 0 in Phase 1A.
+  forwardShippingPaise         Int       @default(0)
+  reverseShippingDeductedPaise Int       @default(0)
+  otherDeductionPaise          Int       @default(0)
+  otherDeductionLabel          String?
+  approvedRefundPaise          Int
+  createdAt                    DateTime  @default(now())
+  refund                       Refund    @relation(fields: [refundId], references: [id])
+  orderItem                    OrderItem @relation(fields: [orderItemId], references: [id])
+
+  @@unique([refundId, orderItemId])
+  @@index([orderItemId])
 }
 
 model OrderSupplementaryPayment {

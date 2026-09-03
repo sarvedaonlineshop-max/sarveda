@@ -6,6 +6,7 @@ import { orderItemWarehouseUnits } from "../inventory/order-item-fulfillment";
 import { tryPostCodOrderCancelledAccounting } from "../accounting/order-cancelled-posting.service";
 
 import { expireOutstandingStripeSessionsForOrder } from "../payments/stripe.session";
+import { orderIsDispatched } from "./cancellation-eligibility";
 import { restockPaidOrderLinesTx } from "./order-inventory-restock.service";
 import { recomputeReservedForOrder } from "./inventory-reserved-reconcile.service";
 
@@ -275,18 +276,26 @@ export async function handlePaidOrderStatusChange(
   await prisma.$transaction(async (tx) => {
     const order = await tx.order.findFirst({
       where: { id: orderId, deletedAt: null },
-      include: { payments: { orderBy: { createdAt: "desc" } } }
+      include: {
+        payments: { orderBy: { createdAt: "desc" } },
+        shipments: { select: { status: true } }
+      }
     });
     if (!order) return;
 
     const wasPaidPipeline = ["PAID", "PROCESSING", "PACKED", "SHIPPED", "DELIVERED"].includes(order.status);
     const stockWasConfirmed = orderStockWasConfirmed(order);
+    // SOP: goods that left the warehouse are restored only after warehouse receipt + QC.
+    // Pre-dispatch cancel/refund may restock because the goods never left.
+    const mayAutoRestock = !orderIsDispatched(order);
 
-    if (wasPaidPipeline && stockWasConfirmed) {
+    if (wasPaidPipeline && stockWasConfirmed && mayAutoRestock) {
       await restockPaidOrderTx(tx, orderId, {
         sourceId: `${orderId}:${toStatus}`,
         reason
       });
+    }
+    if (wasPaidPipeline && stockWasConfirmed) {
       if (toStatus === "REFUNDED" || toStatus === "CANCELLED") {
         await revokeDigitalPurchasesTx(tx, orderId);
       }

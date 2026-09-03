@@ -1376,6 +1376,25 @@ export async function patchOrderStatus(req: Request, res: Response, next: NextFu
     }
 
     if (status === "CANCELLED" && paidPipeline.includes(prevStatus)) {
+      const payments = await prisma.payment.findMany({
+        where: { orderId: id },
+        select: { provider: true, status: true }
+      });
+      const capturedOnline = payments.some(
+        (p) =>
+          p.provider !== "COD" &&
+          ["CAPTURED", "PARTIALLY_REFUNDED"].includes(p.status)
+      );
+      if (capturedOnline) {
+        res.status(400).json({
+          success: false,
+          error:
+            "This order was paid online. Use Refund to Customer so the gateway refund and inventory stay in sync.",
+          code: "USE_REFUND"
+        });
+        return;
+      }
+
       const { handlePaidOrderStatusChange } = await import("../orders/orders.service");
       const { notifyOrderEmail } = await import("../notifications/email");
       await handlePaidOrderStatusChange(id, "CANCELLED", "Admin status update");

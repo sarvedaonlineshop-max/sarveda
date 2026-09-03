@@ -24,6 +24,10 @@ import {
   refundStripe
 } from "./refund.service";
 import { pickCapturedPaymentForRefund } from "./payment-selection";
+import {
+  buildLineRefundAllocation,
+  persistRefundAllocations
+} from "./refund-allocation.service";
 // Zoho Books retired — keep ZOHO_SYNCED enum readable for historical rows only.
 
 export type ExecutePartialRefundInput = {
@@ -33,8 +37,15 @@ export type ExecutePartialRefundInput = {
   reason: string;
   /** When set, must match server-recalculated policy amount exactly. */
   policy?: RefundCalculatorPolicy;
-  /** For ORDER_ADJUSTMENT — merchandise delta in paise (positive). */
+  /**
+   * Merchandise-only inclusive amount (paise). Never bundle shipping here —
+   * pass shipping via adjustmentShippingRefundPaise so GL reverses 4100.
+   */
   adjustmentMerchandiseRefundPaise?: number;
+  /** Forward shipping refunded to the customer (paise). Defaults to 0. */
+  adjustmentShippingRefundPaise?: number;
+  /** Units covered by this refund when line-scoped. Required for RefundAllocation. */
+  quantity?: number;
   /** For ADMIN_MANUAL — server-validated amount in paise. */
   manualRefundPaise?: number;
   orderItemId?: string;
@@ -120,7 +131,7 @@ async function resolvePartialRefundSpec(
 
   if (
     (input.sourceType === "ORDER_ADJUSTMENT" || input.sourceType === "SERVICE_REQUEST") &&
-    input.adjustmentMerchandiseRefundPaise
+    input.adjustmentMerchandiseRefundPaise != null
   ) {
     const item = order.items.find((i) => i.id === input.orderItemId);
     if (!item) {
@@ -129,6 +140,7 @@ async function resolvePartialRefundSpec(
         code: "BAD_ITEM"
       });
     }
+    const shippingRefundPaise = Math.max(0, input.adjustmentShippingRefundPaise ?? 0);
     return buildPartialRefundSpecForLineDelta({
       orderId: order.id,
       orderNumber: order.orderNumber,
@@ -142,6 +154,7 @@ async function resolvePartialRefundSpec(
       isGstApplicable,
       accountingDate: new Date(),
       refundMerchandisePaise: input.adjustmentMerchandiseRefundPaise,
+      shippingRefundPaise,
       orderItem: {
         id: item.id,
         lineTotalInPaise: item.lineTotalInPaise,
@@ -225,6 +238,57 @@ async function resolvePartialRefundSpec(
 }
 
 /**
+ * Write RefundAllocation rows for a settled partial refund.
+ * Line-scoped refunds (orderItemId present) get one allocation.
+ * Policy / whole-order refunds without a line stay unallocated in Phase 1A —
+ * we never invent historical-style splits.
+ */
+async function writeAllocationsForPartialRefund(
+  input: ExecutePartialRefundInput,
+  refundId: string,
+  amountInPaise: number
+): Promise<void> {
+  if (!input.orderItemId) return;
+  if (input.adjustmentMerchandiseRefundPaise == null && input.quantity == null) return;
+
+  const order = await prisma.order.findUnique({
+    where: { id: input.orderId },
+    include: { items: true }
+  });
+  if (!order) return;
+
+  const item = order.items.find((i) => i.id === input.orderItemId);
+  if (!item) return;
+
+  const merchandiseInclusivePaise = Math.max(0, input.adjustmentMerchandiseRefundPaise ?? amountInPaise);
+  const forwardShippingPaise = Math.max(0, input.adjustmentShippingRefundPaise ?? 0);
+  const quantity = Math.max(1, input.quantity ?? 1);
+  const isGstApplicable = order.currency === "INR";
+
+  const line = buildLineRefundAllocation({
+    orderItem: {
+      id: item.id,
+      lineTotalInPaise: item.lineTotalInPaise,
+      unitPriceInPaise: item.unitPriceInPaise,
+      qtyOrdered: item.qtyOrdered,
+      taxClass: null
+    },
+    allItems: order.items.map((i) => ({
+      lineTotalInPaise: i.lineTotalInPaise,
+      unitPriceInPaise: i.unitPriceInPaise,
+      qtyOrdered: i.qtyOrdered
+    })),
+    orderDiscountInPaise: order.discountInPaise,
+    quantity,
+    merchandiseInclusivePaise,
+    forwardShippingPaise,
+    isGstApplicable
+  });
+
+  await persistRefundAllocations(refundId, [line]);
+}
+
+/**
  * Authoritative partial refund settlement — gateway, accounting, Zoho with stage tracking.
  * Does NOT restock inventory.
  */
@@ -272,8 +336,10 @@ export async function executeAuthoritativePartialRefund(
   const payment = pick.payment;
 
   let amountInPaise: number;
-  if (input.adjustmentMerchandiseRefundPaise) {
-    amountInPaise = input.adjustmentMerchandiseRefundPaise;
+  if (input.adjustmentMerchandiseRefundPaise != null) {
+    amountInPaise =
+      Math.max(0, input.adjustmentMerchandiseRefundPaise) +
+      Math.max(0, input.adjustmentShippingRefundPaise ?? 0);
   } else if (input.manualRefundPaise) {
     amountInPaise = input.manualRefundPaise;
   } else if (input.policy) {
@@ -335,6 +401,18 @@ export async function executeAuthoritativePartialRefund(
   });
 
   await updateSettlementStage(refundRow.id, "GATEWAY_SUCCEEDED");
+
+  // Persist immutable line allocation before accounting so both share the same breakdown.
+  try {
+    await writeAllocationsForPartialRefund(input, refundRow.id, amountInPaise);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error("partial_refund_allocation_failed", {
+      orderId: input.orderId,
+      refundId: refundRow.id,
+      error: msg
+    });
+  }
 
   let accountingPosted = false;
 
