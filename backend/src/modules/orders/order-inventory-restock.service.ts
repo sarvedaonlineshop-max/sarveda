@@ -249,6 +249,7 @@ export async function adminApplyInventoryRestock(opts: {
     select: {
       id: true,
       status: true,
+      paymentStatus: true,
       shipments: { select: { status: true } }
     }
   });

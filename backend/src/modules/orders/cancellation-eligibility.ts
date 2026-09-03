@@ -46,7 +46,10 @@ export function orderIsPaidForCancellation(order: CancellationEligibilityInput):
   return false;
 }
 
-export function orderIsDispatched(order: CancellationEligibilityInput): boolean {
+export function orderIsDispatched(order: {
+  status: OrderStatus;
+  shipments?: Array<{ status: ShipmentStatus | string }>;
+}): boolean {
   if (POST_DISPATCH_ORDER_STATUSES.includes(order.status)) return true;
   const shipments = order.shipments ?? [];
   if (
