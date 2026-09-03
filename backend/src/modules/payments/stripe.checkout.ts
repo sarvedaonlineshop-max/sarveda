@@ -1,13 +1,9 @@
-import Stripe from "stripe";
+import type Stripe from "stripe";
 
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
-
-function stripeClient(): Stripe {
-  const key = process.env.STRIPE_SECRET_KEY?.trim();
-  if (!key) throw new Error("STRIPE_SECRET_KEY is not configured");
-  return new Stripe(key, { apiVersion: "2024-06-20" });
-}
+import { requireStripeClient } from "./stripe.client";
+import { buildSarvedaCheckoutMetadata } from "./stripe.ids";
 
 function siteUrl(): string {
   const u = (process.env.FRONTEND_URL ?? "http://localhost:3000").split(",")[0]?.trim();
@@ -26,7 +22,7 @@ export type StripeCheckoutAddress = {
   country: string;
 };
 
-export async function createStripeCheckoutSession(input: {
+export type CreateStripeCheckoutSessionInput = {
   paymentId: string;
   orderId: string;
   orderNumber: string;
@@ -34,9 +30,49 @@ export async function createStripeCheckoutSession(input: {
   amountMinor: number;
   currency: string;
   shippingAddress: StripeCheckoutAddress;
-}): Promise<{ url: string; sessionId: string }> {
-  const stripe = stripeClient();
+};
+
+export function buildStripeCheckoutSessionCreateParams(
+  input: CreateStripeCheckoutSessionInput,
+  opts: { customerId: string; metadata: ReturnType<typeof buildSarvedaCheckoutMetadata> }
+): Stripe.Checkout.SessionCreateParams {
   const currency = input.currency.toLowerCase();
+  const email = input.email.trim().toLowerCase();
+  return {
+    mode: "payment",
+    customer: opts.customerId,
+    billing_address_collection: "auto",
+    success_url: `${siteUrl()}/order/confirmed?orderNumber=${encodeURIComponent(input.orderNumber)}&email=${encodeURIComponent(email)}&stripe=1`,
+    cancel_url: `${siteUrl()}/payment-failed?${new URLSearchParams({
+      orderNumber: input.orderNumber,
+      email,
+      outcome: "dismiss"
+    }).toString()}`,
+    client_reference_id: input.orderId,
+    metadata: opts.metadata,
+    payment_intent_data: {
+      description: `Sarveda order ${input.orderNumber}`,
+      metadata: opts.metadata
+    },
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency,
+          unit_amount: input.amountMinor,
+          product_data: {
+            name: `Sarveda order ${input.orderNumber}`
+          }
+        }
+      }
+    ]
+  };
+}
+
+export async function createStripeCheckoutSession(
+  input: CreateStripeCheckoutSessionInput
+): Promise<{ url: string; sessionId: string }> {
+  const stripe = requireStripeClient();
   const email = input.email.trim().toLowerCase();
   const addr = input.shippingAddress;
   const country = addr.country.toUpperCase().slice(0, 2);
@@ -55,39 +91,43 @@ export async function createStripeCheckoutSession(input: {
     phone: addr.phone ?? undefined
   });
 
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    customer: customer.id,
-    billing_address_collection: "auto",
-    success_url: `${siteUrl()}/order/confirmed?orderNumber=${encodeURIComponent(input.orderNumber)}&email=${encodeURIComponent(email)}&stripe=1`,
-    cancel_url: `${siteUrl()}/payment-failed?${new URLSearchParams({
-      orderNumber: input.orderNumber,
-      email,
-      outcome: "dismiss"
-    }).toString()}`,
-    client_reference_id: input.orderId,
-    metadata: {
-      sarveda_payment_id: input.paymentId,
-      order_id: input.orderId,
-      order_number: input.orderNumber
-    },
-    line_items: [
-      {
-        quantity: 1,
-        price_data: {
-          currency,
-          unit_amount: input.amountMinor,
-          product_data: {
-            name: `Sarveda order ${input.orderNumber}`
-          }
-        }
-      }
-    ]
+  const metadata = buildSarvedaCheckoutMetadata({
+    paymentId: input.paymentId,
+    orderId: input.orderId,
+    orderNumber: input.orderNumber
   });
+
+  const session = await stripe.checkout.sessions.create(
+    buildStripeCheckoutSessionCreateParams(input, { customerId: customer.id, metadata })
+  );
 
   if (!session.url || !session.id) {
     logger.warn("stripe_checkout_create_failed", { sessionId: session.id });
     throw new Error("Could not start Stripe checkout");
+  }
+
+  const paymentIntentId =
+    typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : session.payment_intent?.id;
+
+  if (paymentIntentId) {
+    try {
+      await stripe.paymentIntents.update(paymentIntentId, {
+        metadata: buildSarvedaCheckoutMetadata({
+          paymentId: input.paymentId,
+          orderId: input.orderId,
+          orderNumber: input.orderNumber,
+          checkoutSessionId: session.id
+        })
+      });
+    } catch (err) {
+      logger.warn("stripe_pi_metadata_update_failed", {
+        sessionId: session.id,
+        paymentIntentId,
+        err: err instanceof Error ? err.message : String(err)
+      });
+    }
   }
 
   await prisma.payment.update({
@@ -97,6 +137,7 @@ export async function createStripeCheckoutSession(input: {
       rawPayload: {
         stripeSessionId: session.id,
         stripeCustomerId: customer.id,
+        ...(paymentIntentId ? { stripePaymentIntentId: paymentIntentId } : {}),
         createdAt: new Date().toISOString()
       }
     }

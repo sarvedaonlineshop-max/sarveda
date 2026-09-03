@@ -192,6 +192,105 @@ export async function createPendingRazorpayOrder(bundle: TestProductBundle, opts
   };
 }
 
+export async function createPendingStripeOrder(
+  bundle: TestProductBundle,
+  opts?: {
+    qty?: number;
+    unitPriceInPaise?: number;
+    currency?: string;
+    sessionId?: string;
+  }
+) {
+  const qty = opts?.qty ?? 1;
+  const unitPrice = opts?.unitPriceInPaise ?? 118_000;
+  const lineTotal = unitPrice * qty;
+  const orderNumber = `SRV-TEST-${randomUUID().slice(0, 8)}`;
+  const sessionId = opts?.sessionId ?? `cs_test_${randomUUID().replace(/-/g, "").slice(0, 24)}`;
+
+  const variant = await prisma.productVariant.findUnique({
+    where: { id: bundle.variantId },
+    include: { inventory: true }
+  });
+  const { getVariantFulfillmentAvailability, variantFulfillmentInputFromVariant, assertFulfillmentAllowed } =
+    await import("../../src/modules/inventory/variant-fulfillment-availability");
+  const allocation = assertFulfillmentAllowed(
+    variantFulfillmentInputFromVariant(variant ?? { inventory: null }),
+    qty
+  );
+
+  const order = await prisma.order.create({
+    data: {
+      orderNumber,
+      email: `test-${randomUUID().slice(0, 8)}@example.com`,
+      phone: "9876543210",
+      status: "PENDING_PAYMENT",
+      paymentStatus: "PENDING",
+      subtotalInPaise: lineTotal,
+      grandTotalInPaise: lineTotal,
+      currency: opts?.currency ?? "USD",
+      items: {
+        create: {
+          variantId: bundle.variantId,
+          skuSnapshot: bundle.sku,
+          nameSnapshot: "Test Product",
+          qtyOrdered: qty,
+          warehouseFulfillmentQty: allocation.warehouseFulfillmentQty,
+          dropShipFulfillmentQty: allocation.dropShipFulfillmentQty,
+          unitPriceInPaise: unitPrice,
+          lineTotalInPaise: lineTotal
+        }
+      },
+      addresses: {
+        create: [
+          {
+            type: "SHIPPING",
+            fullName: "Test User",
+            phone: "9876543210",
+            line1: "123 Test Street",
+            city: "Springfield",
+            state: "IL",
+            postalCode: "62701",
+            country: "US"
+          },
+          {
+            type: "BILLING",
+            fullName: "Test User",
+            phone: "9876543210",
+            line1: "123 Test Street",
+            city: "Springfield",
+            state: "IL",
+            postalCode: "62701",
+            country: "US"
+          }
+        ]
+      },
+      payments: {
+        create: {
+          provider: "STRIPE",
+          providerOrderId: sessionId,
+          amountInPaise: lineTotal,
+          currency: opts?.currency ?? "USD",
+          status: "PENDING",
+          rawPayload: { stripeSessionId: sessionId }
+        }
+      }
+    },
+    include: { payments: true, items: true }
+  });
+
+  const { reserveStockTx } = await import("../../src/modules/orders/orders.service");
+  await prisma.$transaction(async (tx) => {
+    await reserveStockTx(tx, order.id);
+  });
+
+  return {
+    order,
+    payment: order.payments[0]!,
+    sessionId,
+    qty
+  };
+}
+
 export async function cleanupTestOrder(orderId: string) {
   await prisma.orderInventoryRestockEvent.deleteMany({ where: { orderId } });
   await prisma.orderAttribution.deleteMany({ where: { orderId } });

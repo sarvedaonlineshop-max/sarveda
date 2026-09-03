@@ -1,23 +1,130 @@
 import type { Request, Response } from "express";
-import Stripe from "stripe";
+import type Stripe from "stripe";
 
-import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { notifyOrderEmail } from "../notifications/email";
-import { cancelUnpaidOrderWithRelease } from "../orders/orders.service";
-
-import { completeStripePaidOrder } from "./stripe.service";
 import { applyExternalProviderRefund } from "./refund-sync.service";
+import { getStripeClient } from "./stripe.client";
+import { handleStripeCheckoutSuccess, handleStripePaymentFailed } from "./stripe.service";
 
-function stripeClient(): Stripe | null {
-  const key = process.env.STRIPE_SECRET_KEY?.trim();
-  if (!key) return null;
-  return new Stripe(key, { apiVersion: "2024-06-20" });
+function stripeWebhookSecret(): string | undefined {
+  return process.env.STRIPE_WEBHOOK_SECRET?.trim() || undefined;
+}
+
+function paymentIntentIdFrom(
+  value: string | Stripe.PaymentIntent | null | undefined
+): string | undefined {
+  if (!value) return undefined;
+  return typeof value === "string" ? value : value.id;
+}
+
+export async function processStripeEvent(event: Stripe.Event): Promise<void> {
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object as Stripe.Checkout.Session;
+    await handleStripeCheckoutSuccess({
+      paymentIntentId: paymentIntentIdFrom(session.payment_intent),
+      checkoutSessionId: session.id,
+      metadata: session.metadata,
+      paymentStatus: session.payment_status
+    });
+    return;
+  }
+
+  if (event.type === "payment_intent.succeeded") {
+    const pi = event.data.object as Stripe.PaymentIntent;
+    await handleStripeCheckoutSuccess({
+      paymentIntentId: pi.id,
+      checkoutSessionId: pi.metadata?.checkout_session_id,
+      metadata: pi.metadata,
+      paymentStatus: "paid"
+    });
+    return;
+  }
+
+  if (event.type === "payment_intent.payment_failed") {
+    const pi = event.data.object as Stripe.PaymentIntent;
+    const err = pi.last_payment_error;
+    await handleStripePaymentFailed({
+      paymentIntentId: pi.id,
+      checkoutSessionId: pi.metadata?.checkout_session_id,
+      metadata: pi.metadata,
+      lastPaymentError: err
+        ? { type: err.type, code: err.code ?? null, message: err.message }
+        : null
+    });
+    return;
+  }
+
+  if (event.type === "charge.refunded" || event.type.startsWith("refund.")) {
+    await processStripeRefundEvent(event);
+  }
+}
+
+async function processStripeRefundEvent(event: Stripe.Event): Promise<void> {
+  let stripeRefund: Stripe.Refund | null = null;
+  let paymentIntentId: string | undefined;
+
+  if (event.type === "charge.refunded") {
+    const charge = event.data.object as Stripe.Charge;
+    paymentIntentId = paymentIntentIdFrom(charge.payment_intent);
+    const refunds = charge.refunds?.data ?? [];
+    for (const r of refunds) {
+      const refundStatus =
+        r.status === "succeeded"
+          ? "processed"
+          : r.status === "failed"
+            ? "failed"
+            : r.status === "pending"
+              ? "pending"
+              : "created";
+      if (!paymentIntentId) continue;
+      const result = await applyExternalProviderRefund({
+        provider: "STRIPE",
+        providerRefundId: r.id,
+        providerPaymentId: paymentIntentId,
+        amountInPaise: r.amount,
+        reason: `Stripe webhook ${event.type}`,
+        refundStatus,
+        rawEvent: event.type
+      });
+      if (result.newlyRecorded && refundStatus === "processed" && result.orderId) {
+        notifyOrderEmail(result.orderId, "refund_initiated");
+      }
+    }
+    return;
+  }
+
+  stripeRefund = event.data.object as Stripe.Refund;
+  paymentIntentId = paymentIntentIdFrom(stripeRefund.payment_intent);
+  if (!stripeRefund || !paymentIntentId) return;
+
+  const refundStatus =
+    stripeRefund.status === "succeeded"
+      ? "processed"
+      : stripeRefund.status === "failed"
+        ? "failed"
+        : stripeRefund.status === "pending"
+          ? "pending"
+          : "created";
+
+  const result = await applyExternalProviderRefund({
+    provider: "STRIPE",
+    providerRefundId: stripeRefund.id,
+    providerPaymentId: paymentIntentId,
+    amountInPaise: stripeRefund.amount,
+    reason: `Stripe webhook ${event.type}`,
+    refundStatus,
+    rawEvent: event.type
+  });
+
+  if (result.newlyRecorded && refundStatus === "processed" && result.orderId) {
+    notifyOrderEmail(result.orderId, "refund_initiated");
+  }
 }
 
 export async function stripeWebhookHandler(req: Request, res: Response): Promise<void> {
-  const secret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
-  const client = stripeClient();
+  const secret = stripeWebhookSecret();
+  const client = getStripeClient();
   if (!client || !secret) {
     res.status(503).json({ success: false, error: "Stripe webhook not configured" });
     return;
@@ -40,105 +147,7 @@ export async function stripeWebhookHandler(req: Request, res: Response): Promise
   }
 
   try {
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object as Stripe.Checkout.Session;
-      const paymentIntentId =
-        typeof session.payment_intent === "string"
-          ? session.payment_intent
-          : session.payment_intent?.id;
-      const stripeOrderId = session.metadata?.sarveda_payment_id;
-      if (stripeOrderId && paymentIntentId) {
-        await completeStripePaidOrder(stripeOrderId, paymentIntentId);
-      }
-    } else if (event.type === "payment_intent.payment_failed") {
-      const pi = event.data.object as Stripe.PaymentIntent;
-      // BUG 1: checkout stores Stripe Session id in providerOrderId, not payment_intent id
-      const checkoutSessionId =
-        typeof pi.metadata?.checkoutSessionId === "string"
-          ? pi.metadata.checkoutSessionId.trim()
-          : undefined;
-      const payRow = await prisma.payment.findFirst({
-        where: {
-          provider: "STRIPE",
-          OR: [
-            { providerOrderId: pi.id },
-            ...(checkoutSessionId ? [{ providerOrderId: checkoutSessionId }] : []),
-            { providerPaymentId: pi.id }
-          ]
-        }
-      });
-      if (payRow) {
-        const cancelled = await cancelUnpaidOrderWithRelease(payRow.orderId, "Stripe payment failed");
-        if (cancelled) notifyOrderEmail(payRow.orderId, "payment_failed");
-      }
-    } else if (
-      event.type === "charge.refunded" ||
-      event.type.startsWith("refund.")
-    ) {
-      let stripeRefund: Stripe.Refund | null = null;
-      let paymentIntentId: string | undefined;
-
-      if (event.type === "charge.refunded") {
-        const charge = event.data.object as Stripe.Charge;
-        paymentIntentId =
-          typeof charge.payment_intent === "string" ? charge.payment_intent : charge.payment_intent?.id;
-        const refunds = charge.refunds?.data ?? [];
-        for (const r of refunds) {
-          const refundStatus =
-            r.status === "succeeded"
-              ? "processed"
-              : r.status === "failed"
-                ? "failed"
-                : r.status === "pending"
-                  ? "pending"
-                  : "created";
-          if (!paymentIntentId) continue;
-          const result = await applyExternalProviderRefund({
-            provider: "STRIPE",
-            providerRefundId: r.id,
-            providerPaymentId: paymentIntentId,
-            amountInPaise: r.amount,
-            reason: `Stripe webhook ${event.type}`,
-            refundStatus,
-            rawEvent: event.type
-          });
-          if (result.newlyRecorded && refundStatus === "processed" && result.orderId) {
-            notifyOrderEmail(result.orderId, "refund_initiated");
-          }
-        }
-      } else {
-        stripeRefund = event.data.object as Stripe.Refund;
-        paymentIntentId =
-          typeof stripeRefund.payment_intent === "string"
-            ? stripeRefund.payment_intent
-            : stripeRefund.payment_intent?.id;
-
-        if (stripeRefund && paymentIntentId) {
-          const refundStatus =
-            stripeRefund.status === "succeeded"
-              ? "processed"
-              : stripeRefund.status === "failed"
-                ? "failed"
-                : stripeRefund.status === "pending"
-                  ? "pending"
-                  : "created";
-
-          const result = await applyExternalProviderRefund({
-            provider: "STRIPE",
-            providerRefundId: stripeRefund.id,
-            providerPaymentId: paymentIntentId,
-            amountInPaise: stripeRefund.amount,
-            reason: `Stripe webhook ${event.type}`,
-            refundStatus,
-            rawEvent: event.type
-          });
-
-          if (result.newlyRecorded && refundStatus === "processed" && result.orderId) {
-            notifyOrderEmail(result.orderId, "refund_initiated");
-          }
-        }
-      }
-    }
+    await processStripeEvent(event);
   } catch (err) {
     logger.error("stripe_webhook_handler_error", { err, type: event.type });
   }
