@@ -1753,7 +1753,7 @@ export function fetchAdminInventory(params?: { page?: number; limit?: number; al
 
 export function patchAdminInventoryVariant(
   variantId: string,
-  patch: { onHand?: number; lowStockThreshold?: number }
+  patch: { onHand?: number; lowStockThreshold?: number; dropShipEnabled?: boolean }
 ) {
   return adminFetch<{ inventory: InventoryRow | null }>(
     `/api/admin/inventory/${variantId}`,

@@ -5,6 +5,7 @@ import { FileSpreadsheet } from "lucide-react";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { AdminToast } from "@/components/admin/AdminToast";
+import { useRegisterAdminHeaderSlot } from "@/components/admin/AdminHeaderSlotContext";
 import type {
   InventoryRow,
   ZohoOnlyItem,
@@ -16,6 +17,7 @@ import {
   fetchAdminInventory,
   fetchZohoStockSyncHistory,
   ignoreZohoItemsAdmin,
+  patchAdminInventoryVariant,
   pullStockFromZohoAdmin,
   pushItemsToZohoAdmin,
   pushStockToZohoAdmin,
@@ -34,25 +36,19 @@ import {
   inventoryToCsv,
   inventoryToExcelXml,
   INVENTORY_CATEGORY_TREE,
+  matchesDropShipFilter,
   matchesStockFilter,
   resolveZohoSyncSummary,
   backendNeedsZohoScenarioUpdate,
   rowMatchesCategoryFilter,
   sortInventoryRows,
+  type DropShipFilter,
   type ProductInventoryGroup,
   type SortDir,
   type SortKey,
   type StockFilter,
   type ZohoSyncSubFilter
 } from "@/lib/inventory-utils";
-
-function IconSearch({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M11 18a7 7 0 100-14 7 7 0 000 14z" />
-    </svg>
-  );
-}
 
 function IconChevron({ open }: { open: boolean }) {
   return (
@@ -128,12 +124,14 @@ function MetricCard({
   label,
   value,
   tone = "default",
-  onClick
+  onClick,
+  active = false
 }: {
   label: string;
   value: string | number;
   tone?: "default" | "amber" | "red" | "emerald";
   onClick?: () => void;
+  active?: boolean;
 }) {
   const valueClass =
     tone === "amber"
@@ -165,7 +163,12 @@ function MetricCard({
       <button
         type="button"
         onClick={onClick}
-        className="w-full rounded-lg px-3 py-2 text-left hover:bg-amber-50/60 dark:hover:bg-amber-950/20"
+        aria-pressed={active}
+        className={`w-full rounded-lg px-3 py-2 text-left transition-colors ${
+          active
+            ? "bg-[#faf5ec] ring-1 ring-inset ring-amber-300/70 dark:bg-amber-950/30 dark:ring-amber-700/50"
+            : "hover:bg-amber-50/60 dark:hover:bg-amber-950/20"
+        }`}
         style={{ borderBottom, transition: "all 0.15s" }}
       >
         {inner}
@@ -176,6 +179,81 @@ function MetricCard({
     <div className="px-3 py-2" style={{ borderBottom, transition: "all 0.15s" }}>
       {inner}
     </div>
+  );
+}
+
+function ExpandCollapseSwitcher({
+  mode,
+  onExpand,
+  onCollapse
+}: {
+  mode: "expand" | "collapse";
+  onExpand: () => void;
+  onCollapse: () => void;
+}) {
+  return (
+    <div
+      className="relative inline-grid grid-cols-2 rounded-full border border-stone-200 bg-stone-100 p-0.5 text-xs font-semibold dark:border-stone-600 dark:bg-stone-800"
+      role="group"
+      aria-label="Expand or collapse product rows"
+    >
+      <span
+        className="pointer-events-none absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-full bg-white shadow-sm transition-transform duration-300 ease-out dark:bg-stone-900"
+        style={{ transform: mode === "expand" ? "translateX(100%)" : "translateX(0)" }}
+        aria-hidden
+      />
+      <button
+        type="button"
+        onClick={onCollapse}
+        className={`relative z-10 rounded-full px-3 py-1.5 transition-colors duration-200 ${
+          mode === "collapse" ? "text-[#1e3a2f]" : "text-stone-500 hover:text-stone-700"
+        }`}
+      >
+        Collapse
+      </button>
+      <button
+        type="button"
+        onClick={onExpand}
+        className={`relative z-10 rounded-full px-3 py-1.5 transition-colors duration-200 ${
+          mode === "expand" ? "text-[#1e3a2f]" : "text-stone-500 hover:text-stone-700"
+        }`}
+      >
+        Expand
+      </button>
+    </div>
+  );
+}
+
+function DropShipToggle({
+  enabled,
+  busy,
+  onToggle
+}: {
+  enabled: boolean;
+  busy: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={enabled}
+      aria-label={enabled ? "Drop ship enabled" : "Drop ship disabled"}
+      disabled={busy}
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggle();
+      }}
+      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 disabled:opacity-50 ${
+        enabled ? "bg-emerald-600" : "bg-stone-300 dark:bg-stone-600"
+      }`}
+    >
+      <span
+        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200 ${
+          enabled ? "translate-x-[22px]" : "translate-x-0.5"
+        }`}
+      />
+    </button>
   );
 }
 
@@ -262,8 +340,10 @@ export function AdminInventoryWorkspace() {
 
   const [search, setSearch] = useState("");
   const [stockFilter, setStockFilter] = useState<StockFilter>("all");
+  const [dropShipFilter, setDropShipFilter] = useState<DropShipFilter>("all");
   const [zohoSubFilter, setZohoSubFilter] = useState<ZohoSyncSubFilter>("count_mismatch");
   const [categorySlug, setCategorySlug] = useState("");
+  const [dropShipBusyId, setDropShipBusyId] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("product");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
@@ -406,24 +486,6 @@ export function AdminInventoryWorkspace() {
     });
   }, [allRows, search, categorySlug]);
 
-  const tabCounts = useMemo(() => {
-    const counts = {
-      all: 0,
-      in_stock: 0,
-      low_stock: 0,
-      out_of_stock: 0,
-      out_of_sync: 0
-    };
-    for (const r of searchFiltered) {
-      counts.all++;
-      if (matchesStockFilter(r, "out_of_sync")) counts.out_of_sync++;
-      if (matchesStockFilter(r, "in_stock")) counts.in_stock++;
-      else if (matchesStockFilter(r, "low_stock")) counts.low_stock++;
-      else if (matchesStockFilter(r, "out_of_stock")) counts.out_of_stock++;
-    }
-    return counts;
-  }, [searchFiltered]);
-
   const zohoSubCounts = useMemo(
     () => ({
       count_mismatch: searchFiltered.filter((r) => effectiveZohoScenario(r) === 2).length,
@@ -435,11 +497,16 @@ export function AdminInventoryWorkspace() {
 
   const displayedRows = useMemo(() => {
     if (stockFilter === "out_of_sync" && zohoSubFilter === "zoho_only") return [];
-    const filtered = searchFiltered.filter((r) =>
-      matchesStockFilter(r, stockFilter, stockFilter === "out_of_sync" ? zohoSubFilter : undefined)
+    const filtered = searchFiltered.filter(
+      (r) =>
+        matchesStockFilter(
+          r,
+          stockFilter,
+          stockFilter === "out_of_sync" ? zohoSubFilter : undefined
+        ) && matchesDropShipFilter(r, dropShipFilter)
     );
     return sortInventoryRows(filtered, sortKey, sortDir);
-  }, [searchFiltered, stockFilter, zohoSubFilter, sortKey, sortDir]);
+  }, [searchFiltered, stockFilter, dropShipFilter, zohoSubFilter, sortKey, sortDir]);
 
   const displayedZohoOnly = useMemo(
     () => filterZohoOnlyItems(zohoOnlyItems, search),
@@ -464,7 +531,34 @@ export function AdminInventoryWorkspace() {
     [allRows, zohoAuditAvailable]
   );
 
-  const hasActiveFilter = Boolean(search.trim() || categorySlug || stockFilter !== "all");
+  const hasActiveFilter = Boolean(
+    search.trim() || categorySlug || stockFilter !== "all" || dropShipFilter !== "all"
+  );
+
+  const dropShipTabCounts = useMemo(() => {
+    const stockScoped = searchFiltered.filter((r) =>
+      matchesStockFilter(
+        r,
+        stockFilter,
+        stockFilter === "out_of_sync" ? zohoSubFilter : undefined
+      )
+    );
+    let dropShipped = 0;
+    for (const r of stockScoped) {
+      if (r.dropShipEnabled) dropShipped++;
+    }
+    return {
+      all: stockScoped.length,
+      drop_shipped: dropShipped,
+      non_drop_shipped: stockScoped.length - dropShipped
+    };
+  }, [searchFiltered, stockFilter, zohoSubFilter]);
+
+  const expandMode: "expand" | "collapse" = useMemo(() => {
+    if (productGroups.length === 0) return "collapse";
+    const allOpen = productGroups.every((g) => expandedProducts.has(g.productId));
+    return allOpen ? "expand" : "collapse";
+  }, [productGroups, expandedProducts]);
 
   useEffect(() => {
     if (hasActiveFilter && productGroups.length > 0) {
@@ -487,6 +581,33 @@ export function AdminInventoryWorkspace() {
 
   function collapseAll() {
     setExpandedProducts(new Set());
+  }
+
+  async function toggleDropShip(row: InventoryRow) {
+    const next = !row.dropShipEnabled;
+    setDropShipBusyId(row.variantId);
+    try {
+      const result = await patchAdminInventoryVariant(row.variantId, {
+        dropShipEnabled: next
+      });
+      const updated = result.inventory;
+      setAllRows((prev) =>
+        prev.map((r) =>
+          r.variantId === row.variantId
+            ? {
+                ...r,
+                dropShipEnabled: updated?.dropShipEnabled ?? next,
+                shopAvailability: updated?.shopAvailability ?? r.shopAvailability
+              }
+            : r
+        )
+      );
+      pushToast(next ? `Drop ship enabled for ${row.sku}` : `Drop ship disabled for ${row.sku}`);
+    } catch (e) {
+      pushToast(e instanceof Error ? e.message : "Could not update drop ship", true);
+    } finally {
+      setDropShipBusyId(null);
+    }
   }
 
   async function saveProduct(productId: string, rows: InventoryRow[]) {
@@ -548,7 +669,7 @@ export function AdminInventoryWorkspace() {
   }
 
   function categoryLabel(): string {
-    if (!categorySlug) return "All";
+    if (!categorySlug) return "All categories";
     for (const root of INVENTORY_CATEGORY_TREE) {
       if (root.slug === categorySlug) return root.name;
       const child = root.children.find((c) => c.slug === categorySlug);
@@ -556,6 +677,187 @@ export function AdminInventoryWorkspace() {
     }
     return "Category";
   }
+
+  const headerBtnClass =
+    "inline-flex h-9 items-center gap-1.5 rounded-md border border-stone-200 bg-white px-2.5 text-xs font-semibold text-stone-700 shadow-sm hover:bg-[#faf5ec]/70 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200";
+
+  useRegisterAdminHeaderSlot(
+    () => ({
+      searchPlaceholder: "Search inventory SKUs, products…",
+      searchValue: search,
+      onSearchChange: setSearch,
+      afterSearch: (
+        <div className="relative" ref={categoryMenuRef}>
+          <button
+            type="button"
+            aria-expanded={categoryMenuOpen}
+            aria-haspopup="menu"
+            onClick={() => setCategoryMenuOpen((o) => !o)}
+            className={`${headerBtnClass} max-w-[200px]`}
+          >
+            <span className="truncate">{categoryLabel()}</span>
+            <IconChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" />
+          </button>
+          {categoryMenuOpen ? (
+            <div className="absolute left-0 z-50 mt-1 flex overflow-hidden rounded-lg border border-stone-200 bg-white shadow-xl dark:border-stone-600 dark:bg-stone-900">
+              <div className="w-56 border-r border-stone-100 py-1 dark:border-stone-700">
+                <button
+                  type="button"
+                  className={`block w-full px-3 py-2 text-left text-sm ${
+                    !categorySlug
+                      ? "bg-[#faf5ec] font-semibold text-[#1e3a2f]"
+                      : "text-stone-700 hover:bg-stone-50 dark:text-stone-200 dark:hover:bg-stone-800"
+                  }`}
+                  onClick={() => {
+                    setCategorySlug("");
+                    setCategoryMenuOpen(false);
+                    setCategoryHoverRoot(null);
+                  }}
+                >
+                  All
+                </button>
+                {INVENTORY_CATEGORY_TREE.map((root) => (
+                  <button
+                    key={root.slug}
+                    type="button"
+                    className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm ${
+                      categorySlug === root.slug ||
+                      root.children.some((c) => c.slug === categorySlug) ||
+                      categoryHoverRoot === root.slug
+                        ? "bg-[#faf5ec] font-semibold text-[#1e3a2f]"
+                        : "text-stone-700 hover:bg-stone-50 dark:text-stone-200 dark:hover:bg-stone-800"
+                    }`}
+                    onMouseEnter={() => setCategoryHoverRoot(root.slug)}
+                    onFocus={() => setCategoryHoverRoot(root.slug)}
+                    onClick={() => {
+                      setCategorySlug(root.slug);
+                      setCategoryMenuOpen(false);
+                      setCategoryHoverRoot(null);
+                    }}
+                  >
+                    <span className="truncate">{root.name}</span>
+                    <span className="text-stone-400">›</span>
+                  </button>
+                ))}
+              </div>
+              {categoryHoverRoot ? (
+                <div className="w-56 py-1">
+                  {(INVENTORY_CATEGORY_TREE.find((r) => r.slug === categoryHoverRoot)?.children ?? []).map(
+                    (child) => (
+                      <button
+                        key={child.slug}
+                        type="button"
+                        className={`block w-full px-3 py-2 text-left text-sm ${
+                          categorySlug === child.slug
+                            ? "bg-[#faf5ec] font-semibold text-[#1e3a2f]"
+                            : "text-stone-700 hover:bg-stone-50 dark:text-stone-200 dark:hover:bg-stone-800"
+                        }`}
+                        onClick={() => {
+                          setCategorySlug(child.slug);
+                          setCategoryMenuOpen(false);
+                          setCategoryHoverRoot(null);
+                        }}
+                      >
+                        {child.name}
+                      </button>
+                    )
+                  )}
+                </div>
+              ) : (
+                <div className="flex w-56 items-center px-3 py-6 text-xs text-stone-400">
+                  Hover a category for sub-filters
+                </div>
+              )}
+            </div>
+          ) : null}
+        </div>
+      ),
+      actions: (
+        <>
+          <Link href="/admin/inventory/xl" className={headerBtnClass}>
+            <FileSpreadsheet className="h-3.5 w-3.5" />
+            XL
+          </Link>
+          <div className="relative" ref={exportMenuRef}>
+            <button
+              type="button"
+              onClick={() => setExportOpen((o) => !o)}
+              disabled={loading || displayedRows.length === 0}
+              className={headerBtnClass}
+            >
+              <IconDownload className="h-3.5 w-3.5" />
+              Export
+              <IconChevronDown className="h-3 w-3 opacity-70" />
+            </button>
+            {exportOpen ? (
+              <div className="admin-menu-panel absolute right-0 z-50 mt-1 min-w-[140px] overflow-hidden rounded-lg border border-stone-200 bg-white py-1 shadow-lg dark:border-stone-600 dark:bg-stone-900">
+                <button
+                  type="button"
+                  className="block w-full px-3 py-2 text-left text-sm text-stone-800 hover:bg-[#faf5ec] dark:text-stone-100 dark:hover:bg-stone-800"
+                  onClick={() => {
+                    downloadCsv(
+                      `sarveda-inventory-${new Date().toISOString().slice(0, 10)}.csv`,
+                      inventoryToCsv(displayedRows)
+                    );
+                    setExportOpen(false);
+                  }}
+                >
+                  CSV
+                </button>
+                <button
+                  type="button"
+                  className="block w-full px-3 py-2 text-left text-sm text-stone-800 hover:bg-[#faf5ec] dark:text-stone-100 dark:hover:bg-stone-800"
+                  onClick={() => {
+                    downloadExcelXml(
+                      `sarveda-inventory-${new Date().toISOString().slice(0, 10)}.xls`,
+                      inventoryToExcelXml(displayedRows)
+                    );
+                    setExportOpen(false);
+                  }}
+                >
+                  Excel
+                </button>
+              </div>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            disabled={reconciling || loading}
+            onClick={() => {
+              void (async () => {
+                setReconciling(true);
+                try {
+                  const result = await reconcileAdminInventoryReserved();
+                  pushToast(
+                    `Reserved reconciled: ${result.repaired.length} SKU(s) fixed, ${result.summaryAfter.orphanUnits} orphan unit(s) left`
+                  );
+                  await load();
+                } catch (e) {
+                  pushToast(e instanceof Error ? e.message : "Reconcile failed", true);
+                } finally {
+                  setReconciling(false);
+                }
+              })();
+            }}
+            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 text-xs font-semibold text-amber-900 shadow-sm hover:bg-amber-100 disabled:opacity-50"
+            title="Set reserved = unpaid checkout holds only"
+          >
+            {reconciling ? "…" : "Reconcile"}
+          </button>
+        </>
+      )
+    }),
+    [
+      search,
+      categorySlug,
+      categoryMenuOpen,
+      categoryHoverRoot,
+      exportOpen,
+      loading,
+      displayedRows,
+      reconciling,
+    ]
+  );
 
   async function runZohoAudit() {
     setZohoSyncing("audit");
@@ -681,22 +983,6 @@ export function AdminInventoryWorkspace() {
     }
   }
 
-  const stockTabs: { id: StockFilter; label: string }[] = [
-    { id: "all", label: "All" },
-    { id: "in_stock", label: "In stock" },
-    { id: "low_stock", label: "Low stock" },
-    { id: "out_of_stock", label: "Out of stock" },
-    ...(showZohoSync ? [{ id: "out_of_sync" as const, label: "Out of Sync with Zoho" }] : [])
-  ];
-
-  const STOCK_TAB_ICONS: Record<string, string> = {
-    all: "📦",
-    in_stock: "✅",
-    low_stock: "⚠️",
-    out_of_stock: "❌",
-    out_of_sync: "🔄"
-  };
-
   const zohoSubTabs: { id: ZohoSyncSubFilter; label: string }[] = [
     { id: "count_mismatch", label: "Count mismatch" },
     { id: "zoho_only", label: "In Zoho only" },
@@ -783,6 +1069,7 @@ export function AdminInventoryWorkspace() {
           <p className="mt-0.5 text-xs text-stone-500">
             {g.variantCount} variant{g.variantCount === 1 ? "" : "s"}
             {showZohoSync && g.zohoOutOfSync > 0 ? ` · ${g.zohoOutOfSync} out of sync` : ""}
+            {` · ${g.rows.filter((r) => r.dropShipEnabled).length}/${g.variantCount} drop ship`}
           </p>
         </td>
         {showZohoSync ? (
@@ -807,6 +1094,7 @@ export function AdminInventoryWorkspace() {
             )}
           </td>
         ) : null}
+        <td className="px-4 py-3 text-center text-stone-400">—</td>
         <td className="px-4 py-3 text-right font-mono font-semibold tabular-nums text-stone-800 dark:text-stone-100">
           {g.totalAvailable}
         </td>
@@ -875,6 +1163,18 @@ export function AdminInventoryWorkspace() {
               <ZohoBadge row={r} auditAvailable={zohoAuditAvailable} />
             </td>
           ) : null}
+          <td className="px-4 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
+            <div className="inline-flex flex-col items-center gap-0.5">
+              <DropShipToggle
+                enabled={Boolean(r.dropShipEnabled)}
+                busy={dropShipBusyId === r.variantId}
+                onToggle={() => void toggleDropShip(r)}
+              />
+              <span className="text-[10px] font-medium text-stone-500">
+                {r.dropShipEnabled ? "On" : "Off"}
+              </span>
+            </div>
+          </td>
           <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
             <input
               type="number"
@@ -976,140 +1276,55 @@ export function AdminInventoryWorkspace() {
     );
   }
 
+  const dropShipTabs: { id: DropShipFilter; label: string }[] = [
+    { id: "all", label: "All" },
+    { id: "drop_shipped", label: "Drop shipped" },
+    { id: "non_drop_shipped", label: "Non drop shipped" }
+  ];
+
   return (
-    <div className="mx-auto max-w-[1400px] space-y-5 font-sans">
+    <div className="mx-auto max-w-[1400px] space-y-4 font-sans">
       <AdminToast toast={toast} onDismiss={() => setToast(null)} />
 
       <div
-        style={{
-          background: "linear-gradient(135deg, #1c352a 0%, #2d5040 100%)",
-          borderRadius: "16px",
-          padding: "20px 24px",
-          marginBottom: "4px"
-        }}
+        className={`grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-stone-200 bg-stone-200 sm:grid-cols-3 ${
+          showZohoSync ? "lg:grid-cols-6" : "lg:grid-cols-5"
+        } dark:border-stone-700 dark:bg-stone-700`}
       >
-        <h1 className="text-3xl font-bold text-[#faf5ec]">📦 Inventory</h1>
-        <p className="mt-1 text-xs text-[#a8c4b0]">
-          {showZohoSync
-            ? `Last Zoho audit: ${formatRelativeTime(lastZohoSync)} · Quantities here drive storefront availability. Inventory cost and ledgers live under Accounting → Inventory Accounting.`
-            : "Sarveda is the stock master — quantities here drive storefront availability and fulfillment. Inventory cost and ledgers live under Accounting → Inventory Accounting."}
-        </p>
-      </div>
-      <div className="flex flex-wrap gap-2">
-          <Link
-            href="/admin/inventory/xl"
-            className="inline-flex items-center gap-2 rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-[#faf5ec]/50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-          >
-            <FileSpreadsheet className="h-4 w-4" />
-            View in XL format
-          </Link>
-          <div className="relative" ref={exportMenuRef}>
-            <button
-              type="button"
-              onClick={() => setExportOpen((o) => !o)}
-              disabled={loading || displayedRows.length === 0}
-              className="inline-flex items-center gap-2 rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-[#faf5ec]/50 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-            >
-              <IconDownload className="h-4 w-4" />
-              Export
-              <IconChevronDown className="h-3.5 w-3.5 opacity-70" />
-            </button>
-            {exportOpen ? (
-              <div className="admin-menu-panel absolute left-0 z-30 mt-1 min-w-[140px] overflow-hidden rounded-lg border border-stone-200 bg-white py-1 shadow-lg dark:border-stone-600 dark:bg-stone-900">
-                <button
-                  type="button"
-                  className="block w-full px-3 py-2 text-left text-sm text-stone-800 hover:bg-[#faf5ec] dark:text-stone-100 dark:hover:bg-stone-800"
-                  onClick={() => {
-                    downloadCsv(
-                      `sarveda-inventory-${new Date().toISOString().slice(0, 10)}.csv`,
-                      inventoryToCsv(displayedRows)
-                    );
-                    setExportOpen(false);
-                  }}
-                >
-                  CSV
-                </button>
-                <button
-                  type="button"
-                  className="block w-full px-3 py-2 text-left text-sm text-stone-800 hover:bg-[#faf5ec] dark:text-stone-100 dark:hover:bg-stone-800"
-                  onClick={() => {
-                    downloadExcelXml(
-                      `sarveda-inventory-${new Date().toISOString().slice(0, 10)}.xls`,
-                      inventoryToExcelXml(displayedRows)
-                    );
-                    setExportOpen(false);
-                  }}
-                >
-                  Excel
-                </button>
-              </div>
-            ) : null}
-          </div>
-          <button
-            type="button"
-            disabled={reconciling || loading}
-            onClick={() => {
-              void (async () => {
-                setReconciling(true);
-                try {
-                  const result = await reconcileAdminInventoryReserved();
-                  pushToast(
-                    `Reserved reconciled: ${result.repaired.length} SKU(s) fixed, ${result.summaryAfter.orphanUnits} orphan unit(s) left`
-                  );
-                  await load();
-                } catch (e) {
-                  pushToast(e instanceof Error ? e.message : "Reconcile failed", true);
-                } finally {
-                  setReconciling(false);
-                }
-              })();
-            }}
-            className="inline-flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900 shadow-sm hover:bg-amber-100 disabled:opacity-50"
-            title="Set reserved = unpaid checkout holds only (does not delete orders or change on-hand)"
-          >
-            {reconciling ? "Reconciling…" : "Reconcile reserved"}
-          </button>
-          {showZohoSync ? (
-            <>
-              <button
-                type="button"
-                disabled={zohoSyncing === "audit"}
-                onClick={() => void runZohoAudit()}
-                className="inline-flex items-center gap-2 rounded-md border border-[#1e3a2f]/30 bg-white px-4 py-2 text-sm font-semibold text-[#1e3a2f] shadow-sm hover:bg-[#faf5ec]/60 disabled:opacity-50 dark:border-[#2d5240] dark:bg-stone-800 dark:text-[#8fd3b6]"
-              >
-                <IconRefresh className={`h-4 w-4 ${zohoSyncing === "audit" ? "animate-spin" : ""}`} />
-                Refresh Zoho audit
-              </button>
-              <button
-                type="button"
-                disabled={zohoSyncing === "pull_all"}
-                onClick={() => void runPullAllFromZoho()}
-                className="inline-flex items-center gap-2 rounded-md bg-[#1e3a2f] px-4 py-2 text-sm font-semibold text-[#fffbf5] shadow-sm hover:bg-[#2d5240] disabled:opacity-50"
-              >
-                Sync all from Zoho
-              </button>
-            </>
-          ) : null}
-      </div>
-
-      <div className={`grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-stone-200 bg-stone-200 sm:grid-cols-3 ${showZohoSync ? "lg:grid-cols-7" : "lg:grid-cols-6"} dark:border-stone-700 dark:bg-stone-700`}>
         <div className="bg-white dark:bg-stone-900">
-          <MetricCard label="Products" value={productCount} />
+          <MetricCard
+            label="Variants"
+            value={stats.total}
+            active={stockFilter === "all"}
+            onClick={() => setStockFilter("all")}
+          />
         </div>
         <div className="bg-white dark:bg-stone-900">
-          <MetricCard label="Variants" value={stats.total} />
+          <MetricCard
+            label="In stock"
+            value={stats.inStock}
+            tone="emerald"
+            active={stockFilter === "in_stock"}
+            onClick={() => setStockFilter("in_stock")}
+          />
         </div>
         <div className="bg-white dark:bg-stone-900">
-          <MetricCard label="In stock" value={stats.inStock} tone="emerald" />
+          <MetricCard
+            label="Low stock"
+            value={stats.lowStock}
+            tone="amber"
+            active={stockFilter === "low_stock"}
+            onClick={() => setStockFilter("low_stock")}
+          />
         </div>
         <div className="bg-white dark:bg-stone-900">
-          <MetricCard label="Low stock" value={stats.lowStock} tone="amber" />
-        </div>
-        <div className="bg-white dark:bg-stone-900">
-          <MetricCard label="Out of stock" value={stats.outOfStock} tone="red" />
-        </div>
-        <div className="bg-white dark:bg-stone-900">
-          <MetricCard label="Drop ship available" value={stats.dropShipAvailable} tone="emerald" />
+          <MetricCard
+            label="Out of stock"
+            value={stats.outOfStock}
+            tone="red"
+            active={stockFilter === "out_of_stock"}
+            onClick={() => setStockFilter("out_of_stock")}
+          />
         </div>
         <div className="bg-white dark:bg-stone-900">
           <MetricCard
@@ -1124,6 +1339,7 @@ export function AdminInventoryWorkspace() {
               label="Out of Sync with Zoho"
               value={zohoAuditAvailable ? outOfSyncTotal : "—"}
               tone="amber"
+              active={stockFilter === "out_of_sync"}
               onClick={
                 zohoAuditAvailable && outOfSyncTotal > 0
                   ? () => {
@@ -1133,6 +1349,45 @@ export function AdminInventoryWorkspace() {
                   : undefined
               }
             />
+          </div>
+        ) : null}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        {dropShipTabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setDropShipFilter(tab.id)}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              dropShipFilter === tab.id
+                ? "bg-gradient-to-r from-[#b98a3e] to-[#c8960a] font-bold text-white shadow-sm"
+                : "border border-stone-200 bg-white text-stone-600 hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-400 dark:hover:bg-stone-800"
+            }`}
+          >
+            {tab.label}{" "}
+            <span className="tabular-nums opacity-80">{dropShipTabCounts[tab.id]}</span>
+          </button>
+        ))}
+        {showZohoSync ? (
+          <div className="ml-auto flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={zohoSyncing === "audit"}
+              onClick={() => void runZohoAudit()}
+              className="inline-flex items-center gap-2 rounded-md border border-[#1e3a2f]/30 bg-white px-3 py-1.5 text-xs font-semibold text-[#1e3a2f] shadow-sm hover:bg-[#faf5ec]/60 disabled:opacity-50 dark:border-[#2d5240] dark:bg-stone-800 dark:text-[#8fd3b6]"
+            >
+              <IconRefresh className={`h-3.5 w-3.5 ${zohoSyncing === "audit" ? "animate-spin" : ""}`} />
+              Refresh Zoho audit
+            </button>
+            <button
+              type="button"
+              disabled={zohoSyncing === "pull_all"}
+              onClick={() => void runPullAllFromZoho()}
+              className="inline-flex items-center gap-2 rounded-md bg-[#1e3a2f] px-3 py-1.5 text-xs font-semibold text-[#fffbf5] shadow-sm hover:bg-[#2d5240] disabled:opacity-50"
+            >
+              Sync all from Zoho
+            </button>
           </div>
         ) : null}
       </div>
@@ -1195,196 +1450,68 @@ export function AdminInventoryWorkspace() {
       </div>
       ) : null}
 
-      <div
-        className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900"
-        style={{ borderLeft: "3px solid rgba(185,138,62,0.2)" }}
-      >
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
-          <div className="relative w-full max-w-[220px] shrink-0">
-            <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search…"
-              className="w-full rounded-md border border-stone-200 py-2.5 pl-10 pr-3 text-sm focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
-            />
+      {showZohoSync && stockFilter === "out_of_sync" ? (
+        <div
+          className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900"
+          style={{ borderLeft: "3px solid rgba(185,138,62,0.2)" }}
+        >
+          <div className="flex flex-wrap gap-1">
+            {zohoSubTabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setZohoSubFilter(tab.id)}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+                  zohoSubFilter === tab.id
+                    ? "text-[#fffbf5]"
+                    : "border border-stone-200 text-stone-600 dark:border-stone-600 dark:text-stone-400"
+                }`}
+                style={
+                  zohoSubFilter === tab.id
+                    ? {
+                        background: "linear-gradient(135deg, #1c352a, #2d5040)",
+                        boxShadow: "0 1px 4px rgba(28,53,42,0.2)"
+                      }
+                    : undefined
+                }
+              >
+                {tab.label}{" "}
+                <span className="tabular-nums opacity-80">{zohoSubCounts[tab.id]}</span>
+              </button>
+            ))}
           </div>
-          <div className="relative min-w-0 flex-1" ref={categoryMenuRef}>
-            <button
-              type="button"
-              aria-expanded={categoryMenuOpen}
-              aria-haspopup="menu"
-              onClick={() => setCategoryMenuOpen((o) => !o)}
-              className="inline-flex min-w-[220px] items-center justify-between gap-2 rounded-md border border-stone-200 bg-white px-3 py-2.5 text-sm font-medium text-stone-800 shadow-sm hover:border-amber-400 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
-            >
-              <span className="truncate">{categoryLabel()}</span>
-              <IconChevronDown className="h-4 w-4 shrink-0 opacity-60" />
-            </button>
-            {categoryMenuOpen ? (
-              <div className="absolute left-0 z-40 mt-1 flex overflow-hidden rounded-lg border border-stone-200 bg-white shadow-xl dark:border-stone-600 dark:bg-stone-900">
-                <div className="w-56 border-r border-stone-100 py-1 dark:border-stone-700">
-                  <button
-                    type="button"
-                    className={`block w-full px-3 py-2 text-left text-sm ${
-                      !categorySlug
-                        ? "bg-[#faf5ec] font-semibold text-[#1e3a2f]"
-                        : "text-stone-700 hover:bg-stone-50 dark:text-stone-200 dark:hover:bg-stone-800"
-                    }`}
-                    onClick={() => {
-                      setCategorySlug("");
-                      setCategoryMenuOpen(false);
-                      setCategoryHoverRoot(null);
-                    }}
-                  >
-                    All
-                  </button>
-                  {INVENTORY_CATEGORY_TREE.map((root) => (
-                    <button
-                      key={root.slug}
-                      type="button"
-                      className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm ${
-                        categorySlug === root.slug ||
-                        root.children.some((c) => c.slug === categorySlug) ||
-                        categoryHoverRoot === root.slug
-                          ? "bg-[#faf5ec] font-semibold text-[#1e3a2f]"
-                          : "text-stone-700 hover:bg-stone-50 dark:text-stone-200 dark:hover:bg-stone-800"
-                      }`}
-                      onMouseEnter={() => setCategoryHoverRoot(root.slug)}
-                      onFocus={() => setCategoryHoverRoot(root.slug)}
-                      onClick={() => {
-                        setCategorySlug(root.slug);
-                        setCategoryMenuOpen(false);
-                        setCategoryHoverRoot(null);
-                      }}
-                    >
-                      <span className="truncate">{root.name}</span>
-                      <span className="text-stone-400">›</span>
-                    </button>
-                  ))}
-                </div>
-                {categoryHoverRoot ? (
-                  <div className="w-56 py-1">
-                    {(INVENTORY_CATEGORY_TREE.find((r) => r.slug === categoryHoverRoot)?.children ?? []).map(
-                      (child) => (
-                        <button
-                          key={child.slug}
-                          type="button"
-                          className={`block w-full px-3 py-2 text-left text-sm ${
-                            categorySlug === child.slug
-                              ? "bg-[#faf5ec] font-semibold text-[#1e3a2f]"
-                              : "text-stone-700 hover:bg-stone-50 dark:text-stone-200 dark:hover:bg-stone-800"
-                          }`}
-                          onClick={() => {
-                            setCategorySlug(child.slug);
-                            setCategoryMenuOpen(false);
-                            setCategoryHoverRoot(null);
-                          }}
-                        >
-                          {child.name}
-                        </button>
-                      )
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex w-56 items-center px-3 py-6 text-xs text-stone-400">
-                    Hover a category for sub-filters
-                  </div>
-                )}
-              </div>
-            ) : null}
-          </div>
-          <div className="flex shrink-0 items-center gap-3 pt-1">
-            <button type="button" onClick={expandAll} className="text-sm font-medium text-stone-600 hover:text-amber-700 dark:text-stone-400">
-              Expand all
-            </button>
-            <button type="button" onClick={collapseAll} className="text-sm font-medium text-stone-600 hover:text-amber-700 dark:text-stone-400">
-              Collapse all
-            </button>
-          </div>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-1 border-t border-stone-100 pt-3 dark:border-stone-800">
-          {stockTabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => {
-                setStockFilter(tab.id);
-                if (tab.id === "out_of_sync") setZohoSubFilter("count_mismatch");
-              }}
-              className={`rounded-md px-3 py-1.5 text-sm font-medium ${
-                stockFilter === tab.id
-                  ? "bg-gradient-to-r from-[#b98a3e] to-[#c8960a] font-bold text-white shadow-sm"
-                  : "text-stone-600 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800"
-              }`}
-            >
-              {STOCK_TAB_ICONS[tab.id]} {tab.label}{" "}
-              <span className="tabular-nums opacity-80">
-                {tab.id === "out_of_sync" ? outOfSyncTotal : tabCounts[tab.id]}
-              </span>
-            </button>
-          ))}
-        </div>
-        {showZohoSync && stockFilter === "out_of_sync" ? (
-          <div className="mt-3 space-y-3 border-t border-stone-100 pt-3 dark:border-stone-800">
-            <div className="flex flex-wrap gap-1">
-              {zohoSubTabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setZohoSubFilter(tab.id)}
-                  className={`rounded-md px-3 py-1.5 text-xs font-medium ${
-                    zohoSubFilter === tab.id
-                      ? "text-[#fffbf5]"
-                      : "border border-stone-200 text-stone-600 dark:border-stone-600 dark:text-stone-400"
-                  }`}
-                  style={
-                    zohoSubFilter === tab.id
-                      ? {
-                          background: "linear-gradient(135deg, #1c352a, #2d5040)",
-                          boxShadow: "0 1px 4px rgba(28,53,42,0.2)"
-                        }
-                      : undefined
-                  }
-                >
-                  {tab.label}{" "}
-                  <span className="tabular-nums opacity-80">{zohoSubCounts[tab.id]}</span>
-                </button>
-              ))}
-            </div>
-            {zohoSubFilter === "count_mismatch" && zohoSubCounts.count_mismatch > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  disabled={zohoSyncing !== null}
-                  onClick={() => void runBulkZohoAction("pull")}
-                  className={actionOutline}
-                >
-                  Bulk: Zoho → Sarveda
-                </button>
-                <button
-                  type="button"
-                  disabled={zohoSyncing !== null}
-                  onClick={() => void runBulkZohoAction("push")}
-                  className={actionForest}
-                >
-                  Bulk: Sarveda → Zoho
-                </button>
-              </div>
-            ) : null}
-            {zohoSubFilter === "sarveda_only" && zohoSubCounts.sarveda_only > 0 ? (
+          {zohoSubFilter === "count_mismatch" && zohoSubCounts.count_mismatch > 0 ? (
+            <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
                 disabled={zohoSyncing !== null}
-                onClick={() => void runBulkZohoAction("push_item")}
+                onClick={() => void runBulkZohoAction("pull")}
+                className={actionOutline}
+              >
+                Bulk: Zoho → Sarveda
+              </button>
+              <button
+                type="button"
+                disabled={zohoSyncing !== null}
+                onClick={() => void runBulkZohoAction("push")}
                 className={actionForest}
               >
-                Bulk: Push to Zoho
+                Bulk: Sarveda → Zoho
               </button>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
+            </div>
+          ) : null}
+          {zohoSubFilter === "sarveda_only" && zohoSubCounts.sarveda_only > 0 ? (
+            <button
+              type="button"
+              disabled={zohoSyncing !== null}
+              onClick={() => void runBulkZohoAction("push_item")}
+              className={`${actionForest} mt-3`}
+            >
+              Bulk: Push to Zoho
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       {showZohoSync && staleBackend ? (
         <div
@@ -1405,21 +1532,26 @@ export function AdminInventoryWorkspace() {
         </p>
       ) : null}
 
-      <p className="text-xs text-stone-500">
-        {stockFilter === "out_of_sync" && zohoSubFilter === "zoho_only" ? (
-          <>
-            Showing {displayedZohoOnly.length} Zoho-only SKU
-            {displayedZohoOnly.length === 1 ? "" : "s"}
-            {hasActiveFilter ? " (filtered)" : ""}.
-          </>
-        ) : (
-          <>
-            Showing {filteredProductCount} product{filteredProductCount === 1 ? "" : "s"} ·{" "}
-            {displayedRows.length} variant{displayedRows.length === 1 ? "" : "s"}
-            {hasActiveFilter ? " (filtered)" : ""}. Click a product row to expand variants.
-          </>
-        )}
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-stone-500">
+          {stockFilter === "out_of_sync" && zohoSubFilter === "zoho_only" ? (
+            <>
+              Showing {displayedZohoOnly.length} Zoho-only SKU
+              {displayedZohoOnly.length === 1 ? "" : "s"}
+              {hasActiveFilter ? " (filtered)" : ""}.
+            </>
+          ) : (
+            <>
+              Showing {filteredProductCount} product{filteredProductCount === 1 ? "" : "s"} ·{" "}
+              {displayedRows.length} variant{displayedRows.length === 1 ? "" : "s"}
+              {hasActiveFilter ? " (filtered)" : ""}. Click a product row to expand variants.
+            </>
+          )}
+        </p>
+        {!(stockFilter === "out_of_sync" && zohoSubFilter === "zoho_only") ? (
+          <ExpandCollapseSwitcher mode={expandMode} onExpand={expandAll} onCollapse={collapseAll} />
+        ) : null}
+      </div>
 
       {loading ? (
         <div className="space-y-3">
@@ -1450,6 +1582,7 @@ export function AdminInventoryWorkspace() {
                   <th className={thClass}>Product / variant</th>
                   <th className={thClass}>SKU</th>
                   {showZohoSync ? <th className={thClass}>Zoho</th> : null}
+                  <th className={`${thClass} text-center`}>Drop ship</th>
                   <th className={`${thClass} text-right`}>Available</th>
                   <th className={`${thClass} text-right`}>Low-stock at</th>
                   <th className={`${thClass} text-right`}>Actions</th>

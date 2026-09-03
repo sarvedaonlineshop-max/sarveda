@@ -355,11 +355,17 @@ export function sortInventoryRows(
   });
 }
 
+export type DropShipFilter = "all" | "drop_shipped" | "non_drop_shipped";
+
 export type InventoryStats = {
   total: number;
   inStock: number;
   lowStock: number;
   outOfStock: number;
+  /** All variants with dropShipEnabled=true (includes warehouse stock). */
+  dropShipEnabled: number;
+  nonDropShip: number;
+  /** @deprecated Prefer dropShipEnabled — kept for XL/legacy callers. */
   dropShipAvailable: number;
   physicalZeroStock: number;
 };
@@ -368,18 +374,40 @@ export function computeInventoryStats(rows: InventoryRow[]): InventoryStats {
   let inStock = 0;
   let lowStock = 0;
   let outOfStock = 0;
+  let dropShipEnabled = 0;
   let dropShipAvailable = 0;
   let physicalZeroStock = 0;
   for (const r of rows) {
     const available = r.available ?? Math.max(0, r.onHand - (r.reserved ?? 0));
     if (available === 0) physicalZeroStock++;
-    if (available === 0 && r.dropShipEnabled) dropShipAvailable++;
+    if (r.dropShipEnabled) {
+      dropShipEnabled++;
+      if (available === 0) dropShipAvailable++;
+    }
     const s = stockStatus(r);
     if (s === "in_stock") inStock++;
     else if (s === "low_stock") lowStock++;
     else outOfStock++;
   }
-  return { total: rows.length, inStock, lowStock, outOfStock, dropShipAvailable, physicalZeroStock };
+  return {
+    total: rows.length,
+    inStock,
+    lowStock,
+    outOfStock,
+    dropShipEnabled,
+    nonDropShip: rows.length - dropShipEnabled,
+    dropShipAvailable,
+    physicalZeroStock
+  };
+}
+
+export function matchesDropShipFilter(
+  row: Pick<InventoryRow, "dropShipEnabled">,
+  filter: DropShipFilter
+): boolean {
+  if (filter === "all") return true;
+  if (filter === "drop_shipped") return Boolean(row.dropShipEnabled);
+  return !row.dropShipEnabled;
 }
 
 export type CategoryGroup = {

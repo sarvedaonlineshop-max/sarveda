@@ -7,6 +7,10 @@ import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminNotificationsBell } from "@/components/admin/AdminNotificationsBell";
 import { AdminProfileMenu } from "@/components/admin/AdminProfileMenu";
 import { AdminNavProvider, useAdminNav } from "@/components/admin/AdminNavContext";
+import {
+  AdminHeaderSlotProvider,
+  useAdminHeaderSlot
+} from "@/components/admin/AdminHeaderSlotContext";
 import { AdminLoadingOverlay } from "@/components/admin/AdminLoadingOverlay";
 import { adminOverlayTransition } from "@/lib/admin-motion";
 import { adminTheme as t } from "@/lib/admin-theme";
@@ -71,6 +75,7 @@ function AdminShellInner({
   const pathname = usePathname();
   const pageTitle = getPageTitle(pathname);
   const { isNavigating, beginNavigation } = useAdminNav();
+  const headerSlot = useAdminHeaderSlot()?.slot ?? null;
   const reduceMotion = useReducedMotion();
 
   const bg = preferDarkMain ? t.workspaceBgDark : t.workspaceBg;
@@ -184,11 +189,13 @@ function AdminShellInner({
               backdropFilter: "saturate(180%) blur(14px)",
               WebkitBackdropFilter: "saturate(180%) blur(14px)",
               borderBottom: `1px solid ${headerBorder}`,
-              height: "56px",
+              minHeight: "56px",
+              height: "auto",
               display: "flex",
               alignItems: "center",
-              padding: "0 24px",
-              gap: "16px",
+              flexWrap: "wrap",
+              padding: "8px 24px",
+              gap: "12px 16px",
               boxShadow: isDark
                 ? "0 1px 0 rgba(185,138,62,0.10), 0 10px 24px rgba(0,0,0,0.20)"
                 : "0 1px 0 rgba(23,26,23,0.06), 0 8px 24px rgba(23,26,23,0.04)"
@@ -244,51 +251,80 @@ function AdminShellInner({
             <div
               style={{
                 flex: 1,
-                maxWidth: "420px",
+                maxWidth: headerSlot?.afterSearch || headerSlot?.actions ? "720px" : "420px",
                 marginLeft: "16px",
                 position: "relative",
                 display: "flex",
-                alignItems: "center"
+                alignItems: "center",
+                gap: "8px",
+                minWidth: 0
               }}
             >
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                style={{ position: "absolute", left: "12px", color: mutedColor }}
-              >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              <input
-                type="search"
-                placeholder="Search orders, products…"
-                style={{
-                  width: "100%",
-                  paddingLeft: "36px",
-                  paddingRight: "12px",
-                  height: "36px",
-                  borderRadius: "7px",
-                  background: isDark ? inputBg : "#fbfcfb",
-                  border: `1px solid ${inputBorder}`,
-                  boxShadow: isDark ? "inset 0 1px 0 rgba(255,255,255,0.02)" : "inset 0 1px 0 rgba(23,26,23,0.02), 0 1px 1px rgba(23,26,23,0.02)",
-                  fontSize: "13px",
-                  color: titleColor,
-                  outline: "none",
-                  transition: "border-color 0.15s ease, box-shadow 0.15s ease"
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = "#b98a3e";
-                  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(185,138,62,0.12)";
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = inputBorder;
-                  e.currentTarget.style.boxShadow = "none";
-                }}
-              />
+              <div style={{ position: "relative", flex: "1 1 240px", minWidth: 0, maxWidth: "360px" }}>
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: mutedColor }}
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input
+                  type="search"
+                  placeholder={headerSlot?.searchPlaceholder ?? "Search orders, products…"}
+                  value={headerSlot?.searchValue ?? undefined}
+                  onChange={
+                    headerSlot?.onSearchChange
+                      ? (e) => headerSlot.onSearchChange?.(e.target.value)
+                      : undefined
+                  }
+                  readOnly={!headerSlot?.onSearchChange}
+                  style={{
+                    width: "100%",
+                    paddingLeft: "36px",
+                    paddingRight: "12px",
+                    height: "36px",
+                    borderRadius: "7px",
+                    background: isDark ? inputBg : "#fbfcfb",
+                    border: `1px solid ${inputBorder}`,
+                    boxShadow: isDark
+                      ? "inset 0 1px 0 rgba(255,255,255,0.02)"
+                      : "inset 0 1px 0 rgba(23,26,23,0.02), 0 1px 1px rgba(23,26,23,0.02)",
+                    fontSize: "13px",
+                    color: titleColor,
+                    outline: "none",
+                    transition: "border-color 0.15s ease, box-shadow 0.15s ease"
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#b98a3e";
+                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(185,138,62,0.12)";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = inputBorder;
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                />
+              </div>
+              {headerSlot?.afterSearch ? (
+                <div style={{ flex: "0 1 auto", minWidth: 0 }}>{headerSlot.afterSearch}</div>
+              ) : null}
+              {headerSlot?.actions ? (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    flex: "0 0 auto",
+                    flexWrap: "wrap"
+                  }}
+                >
+                  {headerSlot.actions}
+                </div>
+              ) : null}
             </div>
 
             <div style={{ flex: 1 }} />
@@ -387,14 +423,16 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <AdminNavProvider>
-      <AdminShellInner
-        preferDarkMain={preferDarkMain}
-        toggleMainTheme={toggleMainTheme}
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-      >
-        {children}
-      </AdminShellInner>
+      <AdminHeaderSlotProvider>
+        <AdminShellInner
+          preferDarkMain={preferDarkMain}
+          toggleMainTheme={toggleMainTheme}
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+        >
+          {children}
+        </AdminShellInner>
+      </AdminHeaderSlotProvider>
     </AdminNavProvider>
   );
 }

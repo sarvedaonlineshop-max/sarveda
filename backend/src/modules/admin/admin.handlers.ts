@@ -1917,11 +1917,18 @@ export async function inventoryList(req: Request, res: Response, next: NextFunct
 export const patchInventorySchema = z
   .object({
     onHand: z.number().int().min(0).optional(),
-    lowStockThreshold: z.number().int().min(0).optional()
+    lowStockThreshold: z.number().int().min(0).optional(),
+    dropShipEnabled: z.boolean().optional()
   })
-  .refine((d) => d.onHand !== undefined || d.lowStockThreshold !== undefined, {
-    message: "Provide onHand and/or lowStockThreshold"
-  });
+  .refine(
+    (d) =>
+      d.onHand !== undefined ||
+      d.lowStockThreshold !== undefined ||
+      d.dropShipEnabled !== undefined,
+    {
+      message: "Provide onHand, lowStockThreshold, and/or dropShipEnabled"
+    }
+  );
 
 export const bulkInventoryPatchSchema = z.object({
   updates: z
@@ -1960,17 +1967,31 @@ export async function patchInventory(req: Request, res: Response, next: NextFunc
     if (body.onHand !== undefined) data.onHand = body.onHand;
     if (body.lowStockThreshold !== undefined) data.lowStockThreshold = body.lowStockThreshold;
 
-    const inv = await prisma.inventory.updateMany({
+    const existing = await prisma.inventory.findUnique({
       where: { variantId },
-      data
+      select: { id: true }
     });
-    if (inv.count === 0) {
+    if (!existing) {
       res.status(404).json({
         success: false,
         error: "Inventory row not found for variant",
         code: "NOT_FOUND"
       });
       return;
+    }
+
+    if (Object.keys(data).length > 0) {
+      await prisma.inventory.update({
+        where: { variantId },
+        data
+      });
+    }
+
+    if (body.dropShipEnabled !== undefined) {
+      await prisma.productVariant.update({
+        where: { id: variantId },
+        data: { dropShipEnabled: body.dropShipEnabled }
+      });
     }
 
     const row = await prisma.inventory.findUnique({
