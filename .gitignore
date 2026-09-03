@@ -110,6 +110,8 @@ frontend/public/workbox-*.js.map
 docs/audit/**
 !docs/audit/drop-shipping-v1/
 !docs/audit/drop-shipping-v1/**
+!docs/audit/variant-restoration/
+!docs/audit/variant-restoration/**
 
 
 backend/start.sh

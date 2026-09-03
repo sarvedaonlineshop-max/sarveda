@@ -1,0 +1,141 @@
+{
+  "ok": true,
+  "rows": [
+    {
+      "slug": "11-note-tongue-drum",
+      "sku": "MI-TD-11N-W-12",
+      "sale": 855000,
+      "drop": true,
+      "onHand": 0,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "11-note-tongue-drum",
+      "sku": "MI-TD-11N-W-6",
+      "sale": 585000,
+      "drop": true,
+      "onHand": 0,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "yoga-mats-lotus",
+      "sku": "YO-M-CT-L-M-G",
+      "sale": 149000,
+      "drop": false,
+      "onHand": 1,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "yoga-mats-lotus",
+      "sku": "YO-M-CT-L-M-B",
+      "sale": 149000,
+      "drop": false,
+      "onHand": 7,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "yoga-mats-lotus",
+      "sku": "YO-M-CT-L-M-P",
+      "sale": 179000,
+      "drop": false,
+      "onHand": 9,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "yoga-mats-lotus",
+      "sku": "YO-M-CT-L-S-T",
+      "sale": 199000,
+      "drop": false,
+      "onHand": 0,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "yoga-mats-lotus",
+      "sku": "YO-M-CT-L-S-O",
+      "sale": 199000,
+      "drop": false,
+      "onHand": 0,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "yoga-mats-lotus",
+      "sku": "YO-M-CT-L-S-Y",
+      "sale": 199000,
+      "drop": false,
+      "onHand": 0,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "yoga-mats-lotus",
+      "sku": "YO-M-CT-L-S-P",
+      "sale": 199000,
+      "drop": false,
+      "onHand": 0,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "angel-tuning-forks",
+      "sku": "MI-TF-AG-4160",
+      "sale": 255000,
+      "drop": true,
+      "onHand": 0,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "angel-tuning-forks",
+      "sku": "MI-TF-AG-4225",
+      "sale": 275000,
+      "drop": true,
+      "onHand": 0,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "zafu-zabuton-combo-plain",
+      "sku": "ME-Z-Zn-DG",
+      "sale": 279500,
+      "drop": false,
+      "onHand": 0,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "zafu-zabuton-combo-plain",
+      "sku": "ME-Z-Zn-LV",
+      "sale": 339000,
+      "drop": false,
+      "onHand": 0,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "zafu-zabuton-combo-plain",
+      "sku": "ME-Z-Zn-LG",
+      "sale": 339000,
+      "drop": false,
+      "onHand": 0,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "zafu-zabuton-combo-plain",
+      "sku": "ME-Z-Zn-MB",
+      "sale": 339000,
+      "drop": false,
+      "onHand": 0,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "zafu-zabuton-combo-lotus-embroidery",
+      "sku": "ME-Z-Zn-EM-L-MB",
+      "sale": 359000,
+      "drop": false,
+      "onHand": 0,
+      "status": "ACTIVE"
+    },
+    {
+      "slug": "zafu-zabuton-combo-lotus-embroidery",
+      "sku": "ME-Z-Zn-EM-L-LG",
+      "sale": 359000,
+      "drop": false,
+      "onHand": 0,
+      "status": "ACTIVE"
+    }
+  ]
+}
