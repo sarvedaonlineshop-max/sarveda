@@ -7,7 +7,7 @@ import { FormEvent, useMemo, useState } from "react";
 
 import { formatMinorFromPaise } from "@/lib/money";
 import type { OrderLineItem } from "@/lib/orders-api";
-import { RETURN_EVIDENCE_REQUIRED, RETURN_RESOLUTION_OPTIONS } from "@/lib/order-service-request";
+import { RETURN_EVIDENCE_HINT, RETURN_EVIDENCE_REQUIRED, RETURN_RESOLUTION_OPTIONS } from "@/lib/order-service-request";
 
 type ReasonOption = { code: string; label: string };
 
@@ -214,7 +214,9 @@ export function OrderServiceRequestForm({
           <p className="mt-2 text-sm text-brand-muted">{subtitle}</p>
           <p className="mt-3 text-xs text-brand-muted">
             Select the item(s) you want to {isCancel ? "cancel" : "return"}. Each item needs its own reason
-            {isCancel ? "." : "; add photos when the reason requires evidence."}
+            {isCancel
+              ? "."
+              : ". Some reasons require clear product-condition photos before we can review your request."}
           </p>
         </div>
       </div>
@@ -364,6 +366,9 @@ export function OrderServiceRequestForm({
                               <span className="text-brand-muted font-normal">(optional)</span>
                             )}
                           </p>
+                          {draft.reasonCode && RETURN_EVIDENCE_HINT[draft.reasonCode] ? (
+                            <p className="mt-1 text-xs text-brand-muted">{RETURN_EVIDENCE_HINT[draft.reasonCode]}</p>
+                          ) : null}
                           <label className="mt-2 flex min-h-[96px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-brand-cream-dark bg-brand-cream/30 px-3 py-4">
                             <span className="text-sm font-medium text-brand-forest">Add photos</span>
                             <input

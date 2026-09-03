@@ -209,13 +209,28 @@ export const RETURN_RESOLUTION_OPTIONS: Record<
   ]
 };
 
+/** Reasons that require at least one photo before submission (mirrors backend RETURN_REASON_SPEC). */
 export const RETURN_EVIDENCE_REQUIRED = new Set([
   "defective",
   "wrong_item_sent",
   "damaged_delivery",
   "different_description",
-  "missing_parts"
+  "missing_parts",
+  "replace_variant",
+  "quality_issue",
+  "changed_mind"
 ]);
+
+export const RETURN_EVIDENCE_HINT: Record<string, string> = {
+  defective: "Photos or a short video showing the issue. Unboxing video if it may relate to transit.",
+  wrong_item_sent: "Photo of the item received, SKU/label and packaging.",
+  damaged_delivery: "Photos of outer packaging, shipping label, inner packaging and the damaged product.",
+  different_description: "Photos/video showing how the item differs from the listing.",
+  missing_parts: "Photo of all contents received and the packaging.",
+  replace_variant: "Clear photos of the product condition before reverse pickup.",
+  quality_issue: "Photos showing the quality concern (encouraged) plus a short written explanation.",
+  changed_mind: "Clear photos of the product condition before reverse pickup."
+};
 
 export async function submitOrderRefundRequest(
   orderNumber: string,

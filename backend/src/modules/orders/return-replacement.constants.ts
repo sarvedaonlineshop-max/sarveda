@@ -59,20 +59,23 @@ export const RETURN_REASON_SPEC: Record<
     label: "Missing parts or accessories",
     allowedResolutions: ["REPLACEMENT", "PARTIAL_REFUND", "KEEP_ITEM_PARTIAL_REFUND"],
     evidenceRequired: true,
-    shippingRefundPolicy: "SHIPPING_RETAINED",
+    // Sarveda packing/fulfilment responsibility — customer-paid forward shipping is refundable.
+    shippingRefundPolicy: "SHIPPING_REFUNDABLE",
     requiresPhysicalReturn: false
   },
   replace_variant: {
     label: "Want to replace with a different size or colour",
     allowedResolutions: ["REPLACEMENT"],
-    evidenceRequired: false,
+    // Preference return — product-condition photos required before reverse pickup (SOP §3.2).
+    evidenceRequired: true,
     shippingRefundPolicy: "SHIPPING_RETAINED",
     requiresPhysicalReturn: true
   },
   quality_issue: {
     label: "Quality is not as expected",
     allowedResolutions: ["RETURN_FOR_REFUND", "PARTIAL_REFUND", "KEEP_ITEM_PARTIAL_REFUND"],
-    evidenceRequired: false,
+    // Until root-cause review can distinguish preference vs confirmed defect, require evidence.
+    evidenceRequired: true,
     shippingRefundPolicy: "SHIPPING_RETAINED",
     requiresPhysicalReturn: true
   },
@@ -93,7 +96,8 @@ export const RETURN_REASON_SPEC: Record<
   changed_mind: {
     label: "Changed my mind / no longer needed",
     allowedResolutions: ["RETURN_FOR_REFUND"],
-    evidenceRequired: false,
+    // Preference return — product-condition photos required before reverse pickup (SOP §3.2).
+    evidenceRequired: true,
     shippingRefundPolicy: "SHIPPING_RETAINED",
     requiresPhysicalReturn: true
   },
