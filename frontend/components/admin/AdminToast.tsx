@@ -24,24 +24,24 @@ export function AdminToast({
   const isWarning = toast?.tone === "warning";
   const isInfo = toast?.tone === "info";
 
-  let background = "#f0fdf4";
-  let border = "#bbf7d0";
-  let color = "#166534";
+  let background = "#15803d";
+  let border = "#166534";
+  let color = "#ffffff";
   let icon = "✓";
   if (isError) {
-    background = "#fef2f2";
-    border = "#fecaca";
-    color = "#991b1b";
+    background = "#dc2626";
+    border = "#b91c1c";
+    color = "#ffffff";
     icon = "✗";
   } else if (isWarning) {
-    background = "#fffbeb";
-    border = "#fde68a";
-    color = "#92400e";
+    background = "#d97706";
+    border = "#b45309";
+    color = "#ffffff";
     icon = "!";
   } else if (isInfo) {
-    background = "#eff6ff";
-    border = "#bfdbfe";
-    color = "#1e40af";
+    background = "#2563eb";
+    border = "#1d4ed8";
+    color = "#ffffff";
     icon = "i";
   }
 
@@ -53,16 +53,17 @@ export function AdminToast({
           role="status"
           style={{
             position: "fixed",
-            bottom: "24px",
-            right: "24px",
+            bottom: "28px",
+            left: "50%",
+            right: "auto",
             zIndex: 110,
-            maxWidth: "420px",
-            width: "min(420px, calc(100vw - 32px))",
-            padding: "12px 18px",
-            borderRadius: "10px",
-            fontSize: "13px",
-            fontWeight: 500,
-            boxShadow: "0 1px 2px rgba(0,0,0,0.08), 0 12px 34px rgba(0,0,0,0.14)",
+            maxWidth: "480px",
+            width: "min(480px, calc(100vw - 32px))",
+            padding: "14px 20px",
+            borderRadius: "12px",
+            fontSize: "14px",
+            fontWeight: 600,
+            boxShadow: "0 1px 2px rgba(0,0,0,0.08), 0 14px 36px rgba(0,0,0,0.22)",
             background,
             border: `1px solid ${border}`,
             color,
@@ -74,13 +75,13 @@ export function AdminToast({
             show: {
               opacity: 1,
               y: 0,
-              x: 0,
+              x: "-50%",
               transition: reduceMotion ? zero : adminToastTransition
             },
             hide: {
               opacity: 0,
-              y: reduceMotion ? 0 : 6,
-              x: 0,
+              y: reduceMotion ? 0 : 8,
+              x: "-50%",
               transition: reduceMotion ? zero : adminToastExitTransition
             }
           }}

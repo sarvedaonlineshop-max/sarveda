@@ -5,7 +5,11 @@ import { FileSpreadsheet } from "lucide-react";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { AdminToast } from "@/components/admin/AdminToast";
-import { useRegisterAdminHeaderSlot } from "@/components/admin/AdminHeaderSlotContext";
+import {
+  useRegisterAdminHeaderSlot,
+  type AdminHeaderSearchSuggestion
+} from "@/components/admin/AdminHeaderSlotContext";
+import { useAdminUser } from "@/components/admin/AdminUserContext";
 import type {
   InventoryRow,
   ZohoOnlyItem,
@@ -100,17 +104,21 @@ function IconEdit({ className }: { className?: string }) {
   );
 }
 
+/** Floppy-disk save icon (Word / Excel style). */
 function IconSave({ className }: { className?: string }) {
   return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
-      />
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M17 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V7l-4-4zm-5 16a3 3 0 110-6 3 3 0 010 6zm3-10H5V5h10v4z" />
     </svg>
   );
 }
+
+/** Digits only; empty allowed while typing; negatives stripped. Zero allowed. */
+function sanitizeNonNegIntInput(raw: string): string {
+  return raw.replace(/[^\d]/g, "");
+}
+
+const RECONCILE_VISIBLE_EMAIL = "partha@sarveda.com";
 
 function IconChevronDown({ className }: { className?: string }) {
   return (
@@ -125,13 +133,15 @@ function MetricCard({
   value,
   tone = "default",
   onClick,
-  active = false
+  active = false,
+  flashKey = 0
 }: {
   label: string;
   value: string | number;
   tone?: "default" | "amber" | "red" | "emerald";
   onClick?: () => void;
   active?: boolean;
+  flashKey?: number;
 }) {
   const valueClass =
     tone === "amber"
@@ -164,19 +174,20 @@ function MetricCard({
         type="button"
         onClick={onClick}
         aria-pressed={active}
-        className={`w-full rounded-lg px-3 py-2 text-left transition-colors ${
+        className={`admin-metric-fade w-full rounded-lg px-3 py-2 text-left ${
           active
-            ? "bg-[#faf5ec] ring-1 ring-inset ring-amber-300/70 dark:bg-amber-950/30 dark:ring-amber-700/50"
-            : "hover:bg-amber-50/60 dark:hover:bg-amber-950/20"
+            ? "bg-[#eef6f1] ring-1 ring-inset ring-[#1c352a]/35 dark:bg-emerald-950/35 dark:ring-emerald-700/50"
+            : "hover:bg-emerald-50/70 dark:hover:bg-emerald-950/20"
         }`}
-        style={{ borderBottom, transition: "all 0.15s" }}
+        style={{ borderBottom }}
+        key={`${label}-${flashKey}-${active ? "on" : "off"}`}
       >
         {inner}
       </button>
     );
   }
   return (
-    <div className="px-3 py-2" style={{ borderBottom, transition: "all 0.15s" }}>
+    <div className="px-3 py-2" style={{ borderBottom }}>
       {inner}
     </div>
   );
@@ -193,20 +204,20 @@ function ExpandCollapseSwitcher({
 }) {
   return (
     <div
-      className="relative inline-grid grid-cols-2 rounded-full border border-stone-200 bg-stone-100 p-0.5 text-xs font-semibold dark:border-stone-600 dark:bg-stone-800"
+      className="relative inline-grid grid-cols-2 rounded-full border border-[#1c352a]/25 bg-[#eef6f1] p-0.5 text-xs font-semibold dark:border-emerald-800 dark:bg-emerald-950/40"
       role="group"
       aria-label="Expand or collapse product rows"
     >
       <span
-        className="pointer-events-none absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-full bg-white shadow-sm transition-transform duration-300 ease-out dark:bg-stone-900"
+        className="pointer-events-none absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-full bg-[#1c352a] shadow-sm transition-transform duration-300 ease-out"
         style={{ transform: mode === "expand" ? "translateX(100%)" : "translateX(0)" }}
         aria-hidden
       />
       <button
         type="button"
         onClick={onCollapse}
-        className={`relative z-10 rounded-full px-3 py-1.5 transition-colors duration-200 ${
-          mode === "collapse" ? "text-[#1e3a2f]" : "text-stone-500 hover:text-stone-700"
+        className={`relative z-10 rounded-full px-3.5 py-1.5 transition-colors duration-200 ${
+          mode === "collapse" ? "text-white" : "text-[#1c352a]/70 hover:text-[#1c352a] dark:text-emerald-200/80"
         }`}
       >
         Collapse
@@ -214,8 +225,8 @@ function ExpandCollapseSwitcher({
       <button
         type="button"
         onClick={onExpand}
-        className={`relative z-10 rounded-full px-3 py-1.5 transition-colors duration-200 ${
-          mode === "expand" ? "text-[#1e3a2f]" : "text-stone-500 hover:text-stone-700"
+        className={`relative z-10 rounded-full px-3.5 py-1.5 transition-colors duration-200 ${
+          mode === "expand" ? "text-white" : "text-[#1c352a]/70 hover:text-[#1c352a] dark:text-emerald-200/80"
         }`}
       >
         Expand
@@ -309,6 +320,10 @@ function scopeLabel(entry: ZohoStockSyncHistoryEntry): string {
 }
 
 export function AdminInventoryWorkspace() {
+  const adminUser = useAdminUser();
+  const canReconcile =
+    (adminUser?.email ?? "").trim().toLowerCase() === RECONCILE_VISIBLE_EMAIL;
+
   const [allRows, setAllRows] = useState<InventoryRow[]>([]);
   const [productCount, setProductCount] = useState(0);
   const [savedThresholds, setSavedThresholds] = useState<Record<string, number>>({});
@@ -338,8 +353,13 @@ export function AdminInventoryWorkspace() {
   } | null>(null);
   const [reconciling, setReconciling] = useState(false);
 
-  const [search, setSearch] = useState("");
+  /** Draft in the header — does not filter the table until Enter / suggestion select. */
+  const [searchInput, setSearchInput] = useState("");
+  /** Applied filter for the results table. */
+  const [appliedSearch, setAppliedSearch] = useState("");
   const [stockFilter, setStockFilter] = useState<StockFilter>("all");
+  const [statsFlash, setStatsFlash] = useState(0);
+  const [listFadeKey, setListFadeKey] = useState(0);
   const [dropShipFilter, setDropShipFilter] = useState<DropShipFilter>("all");
   const [zohoSubFilter, setZohoSubFilter] = useState<ZohoSyncSubFilter>("count_mismatch");
   const [categorySlug, setCategorySlug] = useState("");
@@ -474,7 +494,7 @@ export function AdminInventoryWorkspace() {
   }, [savedAvailable, availableDrafts]);
 
   const searchFiltered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = appliedSearch.trim().toLowerCase();
     return allRows.filter((r) => {
       if (!rowMatchesCategoryFilter(r, categorySlug)) return false;
       if (!q) return true;
@@ -484,15 +504,42 @@ export function AdminInventoryWorkspace() {
         (r.variantLabel?.toLowerCase().includes(q) ?? false)
       );
     });
-  }, [allRows, search, categorySlug]);
+  }, [allRows, appliedSearch, categorySlug]);
+
+  const headerSuggestions = useMemo((): AdminHeaderSearchSuggestion[] => {
+    const q = searchInput.trim().toLowerCase();
+    if (!q) return [];
+    const seen = new Set<string>();
+    const out: AdminHeaderSearchSuggestion[] = [];
+    for (const r of allRows) {
+      if (!rowMatchesCategoryFilter(r, categorySlug)) continue;
+      const productHit = r.productName.toLowerCase().includes(q);
+      const skuHit = r.sku.toLowerCase().includes(q);
+      const variantHit = r.variantLabel?.toLowerCase().includes(q) ?? false;
+      if (!productHit && !skuHit && !variantHit) continue;
+      const id = productHit || !skuHit ? `product:${r.productId}` : `sku:${r.variantId}`;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      out.push({
+        id,
+        label: productHit || !skuHit ? r.productName : r.sku,
+        sublabel:
+          productHit || !skuHit
+            ? `Product · ${r.sku}${r.variantLabel ? ` · ${r.variantLabel}` : ""}`
+            : `${r.productName}${r.variantLabel ? ` · ${r.variantLabel}` : ""}`
+      });
+      if (out.length >= 10) break;
+    }
+    return out;
+  }, [allRows, searchInput, categorySlug]);
 
   const zohoSubCounts = useMemo(
     () => ({
       count_mismatch: searchFiltered.filter((r) => effectiveZohoScenario(r) === 2).length,
       sarveda_only: searchFiltered.filter((r) => effectiveZohoScenario(r) === 4).length,
-      zoho_only: filterZohoOnlyItems(zohoOnlyItems, search).length
+      zoho_only: filterZohoOnlyItems(zohoOnlyItems, appliedSearch).length
     }),
-    [searchFiltered, zohoOnlyItems, search]
+    [searchFiltered, zohoOnlyItems, appliedSearch]
   );
 
   const displayedRows = useMemo(() => {
@@ -509,8 +556,8 @@ export function AdminInventoryWorkspace() {
   }, [searchFiltered, stockFilter, dropShipFilter, zohoSubFilter, sortKey, sortDir]);
 
   const displayedZohoOnly = useMemo(
-    () => filterZohoOnlyItems(zohoOnlyItems, search),
-    [zohoOnlyItems, search]
+    () => filterZohoOnlyItems(zohoOnlyItems, appliedSearch),
+    [zohoOnlyItems, appliedSearch]
   );
 
   const productGroups = useMemo(
@@ -532,7 +579,7 @@ export function AdminInventoryWorkspace() {
   );
 
   const hasActiveFilter = Boolean(
-    search.trim() || categorySlug || stockFilter !== "all" || dropShipFilter !== "all"
+    appliedSearch.trim() || categorySlug || stockFilter !== "all" || dropShipFilter !== "all"
   );
 
   const dropShipTabCounts = useMemo(() => {
@@ -560,11 +607,22 @@ export function AdminInventoryWorkspace() {
     return allOpen ? "expand" : "collapse";
   }, [productGroups, expandedProducts]);
 
-  useEffect(() => {
-    if (hasActiveFilter && productGroups.length > 0) {
-      setExpandedProducts(new Set(productGroups.map((g) => g.productId)));
+  function applyInventorySearch(raw: string, opts?: { productId?: string }) {
+    const next = raw.trim();
+    setSearchInput(next);
+    setAppliedSearch(next);
+    setExpandedProducts(new Set());
+    setListFadeKey((k) => k + 1);
+    if (opts?.productId) {
+      // Keep collapsed; user can expand the product row.
     }
-  }, [hasActiveFilter, productGroups]);
+  }
+
+  function selectStockFilter(next: StockFilter) {
+    setStockFilter(next);
+    setStatsFlash((n) => n + 1);
+    setListFadeKey((k) => k + 1);
+  }
 
   function toggleProduct(productId: string) {
     setExpandedProducts((prev) => {
@@ -577,10 +635,12 @@ export function AdminInventoryWorkspace() {
 
   function expandAll() {
     setExpandedProducts(new Set(productGroups.map((g) => g.productId)));
+    setListFadeKey((k) => k + 1);
   }
 
   function collapseAll() {
     setExpandedProducts(new Set());
+    setListFadeKey((k) => k + 1);
   }
 
   async function toggleDropShip(row: InventoryRow) {
@@ -679,13 +739,23 @@ export function AdminInventoryWorkspace() {
   }
 
   const headerBtnClass =
-    "inline-flex h-9 items-center gap-1.5 rounded-md border border-stone-200 bg-white px-2.5 text-xs font-semibold text-stone-700 shadow-sm hover:bg-[#faf5ec]/70 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200";
+    "inline-flex h-11 items-center gap-1.5 rounded-md border border-stone-200 bg-white px-3 text-sm font-semibold text-stone-700 shadow-sm hover:bg-[#eef6f1] disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200";
 
   useRegisterAdminHeaderSlot(
     () => ({
+      wideSearch: true,
       searchPlaceholder: "Search inventory SKUs, products…",
-      searchValue: search,
-      onSearchChange: setSearch,
+      searchValue: searchInput,
+      onSearchChange: setSearchInput,
+      onSearchSubmit: (value) => applyInventorySearch(value),
+      searchSuggestions: headerSuggestions,
+      onSelectSuggestion: (s) => {
+        if (s.id.startsWith("product:")) {
+          applyInventorySearch(s.label, { productId: s.id.slice("product:".length) });
+        } else {
+          applyInventorySearch(s.label);
+        }
+      },
       afterSearch: (
         <div className="relative" ref={categoryMenuRef}>
           <button
@@ -693,10 +763,10 @@ export function AdminInventoryWorkspace() {
             aria-expanded={categoryMenuOpen}
             aria-haspopup="menu"
             onClick={() => setCategoryMenuOpen((o) => !o)}
-            className={`${headerBtnClass} max-w-[200px]`}
+            className={`${headerBtnClass} max-w-[220px]`}
           >
             <span className="truncate">{categoryLabel()}</span>
-            <IconChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" />
+            <IconChevronDown className="h-4 w-4 shrink-0 opacity-60" />
           </button>
           {categoryMenuOpen ? (
             <div className="absolute left-0 z-50 mt-1 flex overflow-hidden rounded-lg border border-stone-200 bg-white shadow-xl dark:border-stone-600 dark:bg-stone-900">
@@ -820,35 +890,38 @@ export function AdminInventoryWorkspace() {
               </div>
             ) : null}
           </div>
-          <button
-            type="button"
-            disabled={reconciling || loading}
-            onClick={() => {
-              void (async () => {
-                setReconciling(true);
-                try {
-                  const result = await reconcileAdminInventoryReserved();
-                  pushToast(
-                    `Reserved reconciled: ${result.repaired.length} SKU(s) fixed, ${result.summaryAfter.orphanUnits} orphan unit(s) left`
-                  );
-                  await load();
-                } catch (e) {
-                  pushToast(e instanceof Error ? e.message : "Reconcile failed", true);
-                } finally {
-                  setReconciling(false);
-                }
-              })();
-            }}
-            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 text-xs font-semibold text-amber-900 shadow-sm hover:bg-amber-100 disabled:opacity-50"
-            title="Set reserved = unpaid checkout holds only"
-          >
-            {reconciling ? "…" : "Reconcile"}
-          </button>
+          {canReconcile ? (
+            <button
+              type="button"
+              disabled={reconciling || loading}
+              onClick={() => {
+                void (async () => {
+                  setReconciling(true);
+                  try {
+                    const result = await reconcileAdminInventoryReserved();
+                    pushToast(
+                      `Reserved reconciled: ${result.repaired.length} SKU(s) fixed, ${result.summaryAfter.orphanUnits} orphan unit(s) left`
+                    );
+                    await load();
+                  } catch (e) {
+                    pushToast(e instanceof Error ? e.message : "Reconcile failed", true);
+                  } finally {
+                    setReconciling(false);
+                  }
+                })();
+              }}
+              className="inline-flex h-11 items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-3 text-sm font-semibold text-amber-900 shadow-sm hover:bg-amber-100 disabled:opacity-50"
+              title="Set reserved = unpaid checkout holds only"
+            >
+              {reconciling ? "…" : "Reconcile"}
+            </button>
+          ) : null}
         </>
       )
     }),
     [
-      search,
+      searchInput,
+      headerSuggestions,
       categorySlug,
       categoryMenuOpen,
       categoryHoverRoot,
@@ -856,6 +929,7 @@ export function AdminInventoryWorkspace() {
       loading,
       displayedRows,
       reconciling,
+      canReconcile
     ]
   );
 
@@ -1177,14 +1251,18 @@ export function AdminInventoryWorkspace() {
           </td>
           <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
             <input
-              type="number"
-              min={0}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               aria-label={`Available ${r.sku}`}
               value={availableDrafts[r.variantId] ?? ""}
               onChange={(e) =>
-                setAvailableDrafts((d) => ({ ...d, [r.variantId]: e.target.value }))
+                setAvailableDrafts((d) => ({
+                  ...d,
+                  [r.variantId]: sanitizeNonNegIntInput(e.target.value)
+                }))
               }
-              className="w-20 rounded border border-stone-200 px-2 py-1 text-right font-mono text-sm text-stone-900 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+              className="w-20 rounded border border-stone-200 px-2 py-1.5 text-right font-mono text-sm text-stone-900 outline-none focus:border-[#1c352a] focus:ring-2 focus:ring-[#1c352a]/15 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
             />
             {showZohoSync && r.zohoStockOnHand !== null && effectiveZohoScenario(r) === 2 ? (
               <span className="mt-0.5 block text-[10px] font-normal text-stone-400">
@@ -1197,14 +1275,18 @@ export function AdminInventoryWorkspace() {
           </td>
           <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
             <input
-              type="number"
-              min={0}
-              aria-label={`Threshold ${r.sku}`}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              aria-label={`Low stock threshold ${r.sku}`}
               value={thresholdDrafts[r.variantId] ?? ""}
               onChange={(e) =>
-                setThresholdDrafts((d) => ({ ...d, [r.variantId]: e.target.value }))
+                setThresholdDrafts((d) => ({
+                  ...d,
+                  [r.variantId]: sanitizeNonNegIntInput(e.target.value)
+                }))
               }
-              className="w-16 rounded border border-stone-200 px-2 py-1 text-right font-mono text-sm text-stone-900 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
+              className="w-16 rounded border border-stone-200 px-2 py-1.5 text-right font-mono text-sm text-stone-900 outline-none focus:border-[#1c352a] focus:ring-2 focus:ring-[#1c352a]/15 dark:border-stone-600 dark:bg-stone-950 dark:text-stone-100"
             />
           </td>
           <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
@@ -1278,12 +1360,20 @@ export function AdminInventoryWorkspace() {
 
   const dropShipTabs: { id: DropShipFilter; label: string }[] = [
     { id: "all", label: "All" },
-    { id: "drop_shipped", label: "Drop shipped" },
-    { id: "non_drop_shipped", label: "Non drop shipped" }
+    { id: "non_drop_shipped", label: "Through Sarveda Warehouse" },
+    { id: "drop_shipped", label: "Drop shipped" }
   ];
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-4 font-sans">
+      <style>{`
+        @keyframes admin-inv-fade {
+          from { opacity: 0.45; }
+          to { opacity: 1; }
+        }
+        .admin-metric-fade { animation: admin-inv-fade 0.35s ease; }
+        .admin-inv-list-fade { animation: admin-inv-fade 0.38s ease; }
+      `}</style>
       <AdminToast toast={toast} onDismiss={() => setToast(null)} />
 
       <div
@@ -1296,7 +1386,8 @@ export function AdminInventoryWorkspace() {
             label="Variants"
             value={stats.total}
             active={stockFilter === "all"}
-            onClick={() => setStockFilter("all")}
+            flashKey={statsFlash}
+            onClick={() => selectStockFilter("all")}
           />
         </div>
         <div className="bg-white dark:bg-stone-900">
@@ -1305,7 +1396,8 @@ export function AdminInventoryWorkspace() {
             value={stats.inStock}
             tone="emerald"
             active={stockFilter === "in_stock"}
-            onClick={() => setStockFilter("in_stock")}
+            flashKey={statsFlash}
+            onClick={() => selectStockFilter("in_stock")}
           />
         </div>
         <div className="bg-white dark:bg-stone-900">
@@ -1314,7 +1406,8 @@ export function AdminInventoryWorkspace() {
             value={stats.lowStock}
             tone="amber"
             active={stockFilter === "low_stock"}
-            onClick={() => setStockFilter("low_stock")}
+            flashKey={statsFlash}
+            onClick={() => selectStockFilter("low_stock")}
           />
         </div>
         <div className="bg-white dark:bg-stone-900">
@@ -1323,7 +1416,8 @@ export function AdminInventoryWorkspace() {
             value={stats.outOfStock}
             tone="red"
             active={stockFilter === "out_of_stock"}
-            onClick={() => setStockFilter("out_of_stock")}
+            flashKey={statsFlash}
+            onClick={() => selectStockFilter("out_of_stock")}
           />
         </div>
         <div className="bg-white dark:bg-stone-900">
@@ -1340,10 +1434,11 @@ export function AdminInventoryWorkspace() {
               value={zohoAuditAvailable ? outOfSyncTotal : "—"}
               tone="amber"
               active={stockFilter === "out_of_sync"}
+              flashKey={statsFlash}
               onClick={
                 zohoAuditAvailable && outOfSyncTotal > 0
                   ? () => {
-                      setStockFilter("out_of_sync");
+                      selectStockFilter("out_of_sync");
                       setZohoSubFilter("count_mismatch");
                     }
                   : undefined
@@ -1358,11 +1453,14 @@ export function AdminInventoryWorkspace() {
           <button
             key={tab.id}
             type="button"
-            onClick={() => setDropShipFilter(tab.id)}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+            onClick={() => {
+              setDropShipFilter(tab.id);
+              setListFadeKey((k) => k + 1);
+            }}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors duration-200 ${
               dropShipFilter === tab.id
-                ? "bg-gradient-to-r from-[#b98a3e] to-[#c8960a] font-bold text-white shadow-sm"
-                : "border border-stone-200 bg-white text-stone-600 hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-400 dark:hover:bg-stone-800"
+                ? "bg-[#1c352a] font-bold text-white shadow-sm"
+                : "border border-stone-200 bg-white text-stone-600 hover:bg-[#eef6f1] dark:border-stone-600 dark:bg-stone-900 dark:text-stone-400 dark:hover:bg-stone-800"
             }`}
           >
             {tab.label}{" "}
@@ -1391,11 +1489,11 @@ export function AdminInventoryWorkspace() {
           </div>
         ) : null}
       </div>
-      {reservedStock && reservedStock.orphanUnits > 0 ? (
+      {canReconcile && reservedStock && reservedStock.orphanUnits > 0 ? (
         <p className="text-sm text-amber-800">
           {reservedStock.orphanUnits} orphan reserved unit(s) across {reservedStock.orphanVariantCount}{" "}
-          SKU(s) are not tied to unpaid checkouts. Use <strong>Reconcile reserved</strong> (safe — does not
-          delete orders or change on-hand).
+          SKU(s) are not tied to unpaid checkouts. Use <strong>Reconcile</strong> in the top bar (safe — does
+          not delete orders or change on-hand).
         </p>
       ) : null}
 
@@ -1573,7 +1671,10 @@ export function AdminInventoryWorkspace() {
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-stone-900">
+        <div
+          key={listFadeKey}
+          className="admin-inv-list-fade overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-stone-900"
+        >
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead className="sticky top-0 z-10 border-b border-stone-200 bg-gradient-to-b from-stone-100/95 to-stone-50/95 backdrop-blur dark:border-stone-600 dark:bg-stone-800/95">

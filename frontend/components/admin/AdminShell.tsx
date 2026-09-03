@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
-import { AdminNotificationsBell } from "@/components/admin/AdminNotificationsBell";
-import { AdminProfileMenu } from "@/components/admin/AdminProfileMenu";
 import { AdminNavProvider, useAdminNav } from "@/components/admin/AdminNavContext";
 import {
   AdminHeaderSlotProvider,
@@ -77,6 +75,14 @@ function AdminShellInner({
   const { isNavigating, beginNavigation } = useAdminNav();
   const headerSlot = useAdminHeaderSlot()?.slot ?? null;
   const reduceMotion = useReducedMotion();
+  const [searchFocused, setSearchFocused] = useState(false);
+  const suggestions = headerSlot?.searchSuggestions ?? [];
+  const showSuggestions =
+    searchFocused &&
+    Boolean(headerSlot?.onSearchChange) &&
+    (headerSlot?.searchValue ?? "").trim().length > 0 &&
+    suggestions.length > 0;
+  const wideSearch = Boolean(headerSlot?.wideSearch);
 
   const bg = preferDarkMain ? t.workspaceBgDark : t.workspaceBg;
   const isDark = preferDarkMain;
@@ -185,17 +191,17 @@ function AdminShellInner({
               position: "sticky",
               top: 0,
               zIndex: 30,
-              background: isDark ? headerBg : "rgba(255,255,255,0.88)",
+              background: isDark ? headerBg : "rgba(255,255,255,0.92)",
               backdropFilter: "saturate(180%) blur(14px)",
               WebkitBackdropFilter: "saturate(180%) blur(14px)",
               borderBottom: `1px solid ${headerBorder}`,
-              minHeight: "56px",
+              minHeight: "72px",
               height: "auto",
               display: "flex",
               alignItems: "center",
               flexWrap: "wrap",
-              padding: "8px 24px",
-              gap: "12px 16px",
+              padding: "12px 24px",
+              gap: "12px 14px",
               boxShadow: isDark
                 ? "0 1px 0 rgba(185,138,62,0.10), 0 10px 24px rgba(0,0,0,0.20)"
                 : "0 1px 0 rgba(23,26,23,0.06), 0 8px 24px rgba(23,26,23,0.04)"
@@ -224,18 +230,18 @@ function AdminShellInner({
                 e.currentTarget.style.background = "transparent";
               }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="3" y1="6" x2="21" y2="6" />
                 <line x1="3" y1="12" x2="21" y2="12" />
                 <line x1="3" y1="18" x2="21" y2="18" />
               </svg>
             </button>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: "0 0 auto" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: "0 0 auto" }}>
               <div
                 style={{
                   width: "3px",
-                  height: "20px",
+                  height: "26px",
                   borderRadius: "2px",
                   background: "#b98a3e",
                   flexShrink: 0,
@@ -243,32 +249,55 @@ function AdminShellInner({
                 }}
                 aria-hidden
               />
-              <h1 style={{ fontSize: "17px", fontWeight: 700, color: titleColor, margin: 0 }}>
+              <h1
+                style={{
+                  fontSize: "20px",
+                  fontWeight: 700,
+                  color: titleColor,
+                  margin: 0,
+                  lineHeight: 1.2,
+                  letterSpacing: "-0.02em"
+                }}
+              >
                 {pageTitle}
               </h1>
             </div>
 
             <div
               style={{
-                flex: 1,
-                maxWidth: headerSlot?.afterSearch || headerSlot?.actions ? "720px" : "420px",
-                marginLeft: "16px",
+                flex: "1 1 auto",
+                marginLeft: "12px",
                 position: "relative",
                 display: "flex",
                 alignItems: "center",
-                gap: "8px",
+                gap: "10px",
                 minWidth: 0
               }}
             >
-              <div style={{ position: "relative", flex: "1 1 240px", minWidth: 0, maxWidth: "360px" }}>
+              <div
+                style={{
+                  position: "relative",
+                  flex: wideSearch ? "0 0 50%" : "1 1 240px",
+                  width: wideSearch ? "50%" : undefined,
+                  minWidth: wideSearch ? "280px" : 0,
+                  maxWidth: wideSearch ? "50%" : "360px"
+                }}
+              >
                 <svg
-                  width="15"
-                  height="15"
+                  width="17"
+                  height="17"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
-                  style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: mutedColor }}
+                  style={{
+                    position: "absolute",
+                    left: "14px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: mutedColor,
+                    pointerEvents: "none"
+                  }}
                 >
                   <circle cx="11" cy="11" r="8" />
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -282,32 +311,116 @@ function AdminShellInner({
                       ? (e) => headerSlot.onSearchChange?.(e.target.value)
                       : undefined
                   }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      headerSlot?.onSearchSubmit?.(headerSlot.searchValue ?? "");
+                      setSearchFocused(false);
+                      (e.target as HTMLInputElement).blur();
+                    } else if (e.key === "Escape") {
+                      setSearchFocused(false);
+                      (e.target as HTMLInputElement).blur();
+                    }
+                  }}
                   readOnly={!headerSlot?.onSearchChange}
+                  autoComplete="off"
                   style={{
                     width: "100%",
-                    paddingLeft: "36px",
-                    paddingRight: "12px",
-                    height: "36px",
-                    borderRadius: "7px",
+                    paddingLeft: "42px",
+                    paddingRight: "14px",
+                    height: "46px",
+                    borderRadius: "10px",
                     background: isDark ? inputBg : "#fbfcfb",
                     border: `1px solid ${inputBorder}`,
                     boxShadow: isDark
                       ? "inset 0 1px 0 rgba(255,255,255,0.02)"
                       : "inset 0 1px 0 rgba(23,26,23,0.02), 0 1px 1px rgba(23,26,23,0.02)",
-                    fontSize: "13px",
+                    fontSize: "15px",
                     color: titleColor,
                     outline: "none",
                     transition: "border-color 0.15s ease, box-shadow 0.15s ease"
                   }}
                   onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "#b98a3e";
-                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(185,138,62,0.12)";
+                    setSearchFocused(true);
+                    e.currentTarget.style.borderColor = "#1c352a";
+                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(28,53,42,0.12)";
                   }}
                   onBlur={(e) => {
                     e.currentTarget.style.borderColor = inputBorder;
                     e.currentTarget.style.boxShadow = "none";
+                    // Delay so suggestion click can register.
+                    window.setTimeout(() => setSearchFocused(false), 160);
                   }}
                 />
+                {showSuggestions ? (
+                  <div
+                    role="listbox"
+                    style={{
+                      position: "absolute",
+                      top: "calc(100% + 6px)",
+                      left: 0,
+                      right: 0,
+                      zIndex: 60,
+                      maxHeight: "320px",
+                      overflowY: "auto",
+                      borderRadius: "12px",
+                      border: `1px solid ${inputBorder}`,
+                      background: isDark ? cardBg : "#fff",
+                      boxShadow: isDark
+                        ? "0 16px 40px rgba(0,0,0,0.45)"
+                        : "0 16px 40px rgba(23,26,23,0.14)"
+                    }}
+                  >
+                    {suggestions.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        role="option"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          headerSlot?.onSelectSuggestion?.(s);
+                          setSearchFocused(false);
+                        }}
+                        style={{
+                          display: "block",
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "12px 14px",
+                          border: "none",
+                          borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(23,26,23,0.06)"}`,
+                          background: "transparent",
+                          cursor: "pointer",
+                          color: titleColor
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = isDark
+                            ? "rgba(28,53,42,0.35)"
+                            : "rgba(28,53,42,0.06)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "transparent";
+                        }}
+                      >
+                        <div style={{ fontSize: "14px", fontWeight: 600 }}>{s.label}</div>
+                        {s.sublabel ? (
+                          <div style={{ fontSize: "12px", color: mutedColor, marginTop: "2px" }}>
+                            {s.sublabel}
+                          </div>
+                        ) : null}
+                      </button>
+                    ))}
+                    <div
+                      style={{
+                        padding: "8px 14px",
+                        fontSize: "11px",
+                        color: mutedColor,
+                        background: isDark ? "rgba(255,255,255,0.03)" : "#f8faf8"
+                      }}
+                    >
+                      Press Enter to show all matches (collapsed)
+                    </div>
+                  </div>
+                ) : null}
               </div>
               {headerSlot?.afterSearch ? (
                 <div style={{ flex: "0 1 auto", minWidth: 0 }}>{headerSlot.afterSearch}</div>
@@ -317,7 +430,7 @@ function AdminShellInner({
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: "6px",
+                    gap: "8px",
                     flex: "0 0 auto",
                     flexWrap: "wrap"
                   }}
@@ -326,64 +439,6 @@ function AdminShellInner({
                 </div>
               ) : null}
             </div>
-
-            <div style={{ flex: 1 }} />
-
-            <AdminNotificationsBell inputBg={inputBg} inputBorder={inputBorder} mutedColor={mutedColor} />
-
-            <button
-              type="button"
-              onClick={toggleMainTheme}
-              style={{
-                width: "38px",
-                height: "38px",
-                borderRadius: "10px",
-                background: inputBg,
-                border: `1px solid ${inputBorder}`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                color: mutedColor,
-                transition: "background 0.15s ease, color 0.15s ease"
-              }}
-              title={preferDarkMain ? "Light mode" : "Dark mode"}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = "#b98a3e";
-                e.currentTarget.style.background = isDark
-                  ? "rgba(185,138,62,0.14)"
-                  : "rgba(185,138,62,0.12)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = mutedColor;
-                e.currentTarget.style.background = inputBg;
-              }}
-            >
-              {preferDarkMain ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="5" />
-                  <line x1="12" y1="1" x2="12" y2="3" />
-                  <line x1="12" y1="21" x2="12" y2="23" />
-                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                  <line x1="1" y1="12" x2="3" y2="12" />
-                  <line x1="21" y1="12" x2="23" y2="12" />
-                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-                </svg>
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                </svg>
-              )}
-            </button>
-
-            <AdminProfileMenu
-              inputBg={inputBg}
-              inputBorder={inputBorder}
-              mutedColor={mutedColor}
-              titleColor={titleColor}
-            />
           </header>
 
           <main className="admin-workspace" style={{ flex: 1, padding: "24px 30px 48px", position: "relative" }}>

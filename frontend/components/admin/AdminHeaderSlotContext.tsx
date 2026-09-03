@@ -10,10 +10,22 @@ import {
   type ReactNode
 } from "react";
 
+export type AdminHeaderSearchSuggestion = {
+  id: string;
+  label: string;
+  sublabel?: string;
+};
+
 export type AdminHeaderSlot = {
   searchPlaceholder?: string;
   searchValue?: string;
   onSearchChange?: (value: string) => void;
+  /** Called when admin presses Enter in the search field. */
+  onSearchSubmit?: (value: string) => void;
+  searchSuggestions?: AdminHeaderSearchSuggestion[];
+  onSelectSuggestion?: (suggestion: AdminHeaderSearchSuggestion) => void;
+  /** Stretch the search field to ~half the header width. */
+  wideSearch?: boolean;
   afterSearch?: ReactNode;
   actions?: ReactNode;
 };
