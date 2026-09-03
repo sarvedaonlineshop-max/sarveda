@@ -31,6 +31,7 @@ const commerceMocks = vi.hoisted(() => ({
   mirrorStockToZohoForSkus: vi.fn().mockResolvedValue(undefined),
   sendPushToAdmins: vi.fn().mockResolvedValue(undefined),
   uploadPdf: vi.fn().mockResolvedValue("https://example.com/invoice.pdf"),
+  uploadAsset: vi.fn().mockImplementation(async (key: string) => `https://example.com/${key}`),
   buildOrderInvoicePdf: vi.fn().mockResolvedValue(Buffer.from("pdf")),
   // Unique ids per call — a fixed id polluted finalizeGatewayRefund across tests.
   razorpayRefund: vi.fn().mockImplementation(async () => ({
@@ -115,6 +116,7 @@ vi.mock("../../src/config/firebase", () => ({
 
 vi.mock("../../src/config/s3", () => ({
   uploadPdf: commerceMocks.uploadPdf,
+  uploadAsset: commerceMocks.uploadAsset,
   downloadPdfFromS3: vi.fn(),
   s3KeyFromStoredUrl: vi.fn()
 }));

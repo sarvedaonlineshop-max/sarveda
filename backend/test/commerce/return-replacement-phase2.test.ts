@@ -53,6 +53,17 @@ async function createDeliveredPaidOrder(opts?: { qty?: number; onHand?: number }
   return { bundle, order, orderItem: orderItem!, user, deliveredAt };
 }
 
+const dummyPhoto = {
+  buffer: Buffer.from("fake-image"),
+  originalname: "evidence.jpg",
+  mimetype: "image/jpeg",
+  size: 11
+};
+
+function photosForFirstItem() {
+  return new Map([[0, [dummyPhoto]]]);
+}
+
 describe("Phase 2 return / replacement", () => {
   beforeEach(() => {
     const m = getCommerceMocks();
@@ -136,7 +147,7 @@ describe("Phase 2 return / replacement", () => {
           requestedResolution: "RETURN_FOR_REFUND"
         }
       ],
-      photosByIndex: new Map()
+      photosByIndex: photosForFirstItem()
     });
     expect(created.items[0].qtySelected).toBe(1);
     await cleanupTestOrder(order.id);
@@ -160,7 +171,7 @@ describe("Phase 2 return / replacement", () => {
           requestedResolution: "RETURN_FOR_REFUND"
         }
       ],
-      photosByIndex: new Map()
+      photosByIndex: photosForFirstItem()
     });
 
     await approveReturnReplacementRequest({
@@ -211,7 +222,7 @@ describe("Phase 2 return / replacement", () => {
           requestedResolution: "RETURN_FOR_REFUND"
         }
       ],
-      photosByIndex: new Map()
+      photosByIndex: photosForFirstItem()
     });
 
     await approveReturnReplacementRequest({
@@ -248,7 +259,7 @@ describe("Phase 2 return / replacement", () => {
           requestedResolution: "RETURN_FOR_REFUND"
         }
       ],
-      photosByIndex: new Map()
+      photosByIndex: photosForFirstItem()
     });
 
     await approveReturnReplacementRequest({
@@ -293,7 +304,7 @@ describe("Phase 2 return / replacement", () => {
           requestedResolution: "RETURN_FOR_REFUND"
         }
       ],
-      photosByIndex: new Map()
+      photosByIndex: photosForFirstItem()
     });
 
     await approveReturnReplacementRequest({
