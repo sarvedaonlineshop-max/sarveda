@@ -703,6 +703,63 @@ export function fetchOrderRefundPreview(orderId: string, policy: string = "auto"
   }>(`/api/admin/orders/${encodeURIComponent(orderId)}/refund-preview${qs}`);
 }
 
+export type LineRefundOptionRow = {
+  orderItemId: string;
+  name: string;
+  sku: string;
+  qtyOrdered: number;
+  unitPriceInPaise: number;
+  perUnitRefundInPaise: number;
+  maxRefundQty: number;
+  restockableQty: number;
+};
+
+export type LineRefundOptions = {
+  orderNumber: string;
+  currency: string;
+  eligible: boolean;
+  ineligibleReason: string | null;
+  paymentMethod: string | null;
+  originallyCollectedInPaise: number;
+  alreadyRefundedInPaise: number;
+  remainingRefundableInPaise: number;
+  shippingInPaise: number;
+  restockAvailable: boolean;
+  restockUnavailableReason: string | null;
+  lines: LineRefundOptionRow[];
+};
+
+export type LineRefundResult = {
+  refundedInPaise: number;
+  merchandiseRefundInPaise: number;
+  shippingRefundInPaise: number;
+  restockedUnits: number;
+  netCollectedInPaise: number;
+  refunds: Array<{ orderItemId: string; quantity: number; amountInPaise: number; providerRefundId: string }>;
+};
+
+export function fetchLineRefundOptions(orderId: string) {
+  return adminFetch<LineRefundOptions>(
+    `/api/admin/orders/${encodeURIComponent(orderId)}/line-refund-options`
+  );
+}
+
+export function executeLineRefund(
+  orderId: string,
+  body: {
+    lines: Array<{ orderItemId: string; quantity: number }>;
+    refundShipping: boolean;
+    restock: boolean;
+    reason?: string;
+    idempotencyKey: string;
+  }
+) {
+  return adminFetch<LineRefundResult>(`/api/admin/orders/${encodeURIComponent(orderId)}/line-refund`, {
+    method: "POST",
+    body: JSON.stringify(body)
+  });
+}
+
 export type RtoWorkflowShipment = {
   id: string;
   awb: string | null;

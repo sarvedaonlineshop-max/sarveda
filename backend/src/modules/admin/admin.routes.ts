@@ -21,6 +21,7 @@ import {
 import {
   adminInventoryRestockBodySchema
 } from "../orders/order-inventory-restock.service";
+import { adminLineRefundBodySchema } from "../orders/order-line-refund.service";
 import * as pickupLocations from "./pickupLocations.handlers";
 import { createPickupLocationSchema, updatePickupLocationSchema } from "./pickupLocations.handlers";
 import { contentRoutes } from "./content/content.routes";
@@ -227,6 +228,12 @@ router.post(
   admin.adminCreateSupplementaryPayment
 );
 router.post("/orders/:id/refund", admin.refundOrder);
+router.get("/orders/:id/line-refund-options", admin.orderLineRefundOptions);
+router.post(
+  "/orders/:id/line-refund",
+  validateBody(adminLineRefundBodySchema),
+  admin.orderLineRefund
+);
 router.post(
   "/orders/:id/inventory-restock",
   validateBody(adminInventoryRestockBodySchema),

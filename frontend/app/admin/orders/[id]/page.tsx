@@ -13,6 +13,7 @@ import {
   type AdminOrderAttribution
 } from "@/components/admin/AdminOrderAttributionCard";
 import { AdminOrderEwayBillCard } from "@/components/admin/AdminOrderEwayBillCard";
+import { AdminOrderLineRefund } from "@/components/admin/AdminOrderLineRefund";
 import { AdminOrderRefundPreview } from "@/components/admin/AdminOrderRefundPreview";
 import { AdminOrderRtoWorkflow } from "@/components/admin/AdminOrderRtoWorkflow";
 import {
@@ -893,7 +894,7 @@ function AdminOrderProductionView({
 
       {isCancelled || isRefunded || refundContent || serviceRequests ? (
         <section className={card}>
-          <div className={sectionHeader}><h2 className="text-base font-bold text-[#1c352a] dark:text-stone-100">{isCancelled && isCod && !captured ? "Cancellation" : "Refunds &amp; Returns"}</h2></div>
+          <div className={sectionHeader}><h2 className="text-base font-bold text-[#1c352a] dark:text-stone-100">{isCancelled && isCod && !captured ? "Cancellation" : "Refunds & Returns"}</h2></div>
           <div className="space-y-4 p-5">
             {isCancelled && isCod && !captured ? (
               <dl className="grid gap-3 text-sm sm:grid-cols-3">
@@ -1883,6 +1884,14 @@ export default function AdminOrderDetailPage() {
           order.payments?.[0]?.provider !== "COD" &&
           ["CAPTURED", "PARTIALLY_REFUNDED", "REFUNDED"].includes(order.paymentStatus) ? (
             <>
+              {order.status !== "CANCELLED" && order.paymentStatus !== "REFUNDED" ? (
+                <AdminOrderLineRefund
+                  orderId={order.id}
+                  currency={order.currency}
+                  refreshKey={`${order.status}:${order.paymentStatus}:${order.payments?.[0]?.refundedInPaise ?? 0}`}
+                  onRefunded={() => void load()}
+                />
+              ) : null}
               <AdminOrderRefundPreview
                 orderId={order.id}
                 currency={order.currency}

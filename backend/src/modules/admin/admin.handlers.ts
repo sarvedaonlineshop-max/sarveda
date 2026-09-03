@@ -25,6 +25,11 @@ import {
   adminInventoryRestockBodySchema,
   listOrderInventoryRestocks
 } from "../orders/order-inventory-restock.service";
+import {
+  adminLineRefundBodySchema,
+  executeAdminLineRefund,
+  loadLineRefundOptions
+} from "../orders/order-line-refund.service";
 import { notifyOrderEmail } from "../notifications/email";
 import { onOrderEnteredProcessing } from "../shipping/orderLifecycle";
 import { getZohoStockSyncMeta } from "../zoho/zoho-stock-sync-cache";
@@ -1566,6 +1571,38 @@ export async function refundOrder(req: Request, res: Response, next: NextFunctio
         error: err instanceof Error ? err.message : "Refund conflict",
         code
       });
+      return;
+    }
+    next(err);
+  }
+}
+
+/** Products, quantities and money available for a line-item partial refund. */
+export async function orderLineRefundOptions(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await loadLineRefundOptions(req.params.id);
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** Refund selected order lines without cancelling the rest of the order. */
+export async function orderLineRefund(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = adminLineRefundBodySchema.parse(req.body);
+    const admin = req.authUser;
+    const data = await executeAdminLineRefund({
+      orderId: req.params.id,
+      body,
+      adminEmail: admin?.email,
+      adminUserId: admin?.id
+    });
+    res.json({ success: true, data });
+  } catch (err) {
+    const e = err as Error & { statusCode?: number; code?: string };
+    if (e.statusCode && e.code) {
+      res.status(e.statusCode).json({ success: false, error: e.message, code: e.code });
       return;
     }
     next(err);
