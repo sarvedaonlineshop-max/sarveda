@@ -101,6 +101,35 @@ async function fifoRemainingValue(): Promise<number> {
   return Number(rows[0]?.v ?? 0);
 }
 
+/**
+ * Accounting setup items that are still genuinely open, derived from live data.
+ * Shown to admins on the reports screen — production wording only.
+ */
+async function buildOpenSetupItems(): Promise<string[]> {
+  const [openingPosted, inventoryOpeningPosted, bankAccounts, cardSettlements] =
+    await Promise.all([
+      prisma.accountingOpeningBatch.count({ where: { status: "POSTED" } }),
+      prisma.accountingInventoryOpeningBatch.count({ where: { status: "POSTED" } }),
+      prisma.accountingBankAccount.count({ where: { isActive: true } }),
+      prisma.accountingGatewaySettlement.count({ where: { status: "POSTED" } })
+    ]);
+
+  const items: string[] = [];
+  if (openingPosted === 0) {
+    items.push("Opening balances (bank, payables, receivables, capital) not posted yet");
+  }
+  if (inventoryOpeningPosted === 0) {
+    items.push("Opening inventory valuation not posted yet");
+  }
+  if (bankAccounts === 0) {
+    items.push("No bank account set up for statement import and reconciliation");
+  }
+  if (cardSettlements === 0) {
+    items.push("No payment gateway settlement recorded yet");
+  }
+  return items;
+}
+
 export async function buildFinancialIntegrityReport(input: {
   asOf?: string;
   from?: string;
@@ -115,21 +144,7 @@ export async function buildFinancialIntegrityReport(input: {
   parseUtcDateOnly(to);
 
   const checks: IntegrityCheck[] = [];
-  const phase7: string[] = [
-    "TEST-ACC / SRV-TEST-ACC fixture cleanup (immutable journal policy)",
-    "Orphan Output GST (~₹2,593.22 on Lightsail Aug 2026) — Phase 5D",
-    "AP GL vs VendorBill/native outstanding drift",
-    "Inventory GL 1200 vs FIFO remaining variance",
-    "Orphan TEST journals without posting events",
-    "Real opening inventory valuation",
-    "Real bank/cash opening balances",
-    "Opening AP / Opening AR",
-    "Gateway clearing verification (esp. Stripe/PayPal DATA_GAP)",
-    "Historical Zoho/Woo vs native GL gap",
-    "Opening equity/capital cutover",
-    "Final cutover date + production flag activation",
-    "Post-cutover TB / P&L / BS validation"
-  ];
+  const phase7 = await buildOpenSetupItems();
 
   // --- UNBALANCED / ZERO-LINE JOURNALS ---
   const unbalanced = await prisma.$queryRaw<Array<{ n: bigint }>>`

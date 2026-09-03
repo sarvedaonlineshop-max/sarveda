@@ -682,14 +682,16 @@ export default function AdminAccountingReportsPage() {
                   </tbody>
                 </table>
               </div>
-              <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-xs text-neutral-700">
-                <p className="font-medium">Items still pending for go-live readiness</p>
-                <ul className="mt-2 list-disc space-y-1 pl-5">
-                  {integrity.phase7CarryForward.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
+              {integrity.phase7CarryForward.length > 0 ? (
+                <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-xs text-neutral-700">
+                  <p className="font-medium">Accounting setup still pending</p>
+                  <ul className="mt-2 list-disc space-y-1 pl-5">
+                    {integrity.phase7CarryForward.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
             </>
           ) : (
             <AccountingEmptyState

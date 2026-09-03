@@ -56,8 +56,8 @@ export default function AdminOldOrdersPage() {
       >
         <h1 style={{ margin: 0, fontSize: "22px", fontWeight: 700 }}>Old Orders</h1>
         <p style={{ margin: "8px 0 0", fontSize: "13px", opacity: 0.85 }}>
-          Pre-launch history — WooCommerce imports, marketplace sales, and staging checkouts (deduped). Live Orders
-          shows website orders from 01-Sep-2026 onward plus accounting fixtures.
+          Pre-launch history — WooCommerce imports and marketplace sales (deduped). Orders placed on the new
+          website appear under Orders.
         </p>
         {stats ? (
           <p style={{ margin: "10px 0 0", fontSize: "12px", opacity: 0.75 }}>
