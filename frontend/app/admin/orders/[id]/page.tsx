@@ -1479,7 +1479,11 @@ export default function AdminOrderDetailPage() {
         </div>
       </div>
 
-      <AdminOrderRefundPreview orderId={order.id} currency={order.currency} />
+      <AdminOrderRefundPreview
+        orderId={order.id}
+        currency={order.currency}
+        refreshKey={`${order.status}:${order.paymentStatus}:${order.payments?.[0]?.refundedInPaise ?? 0}`}
+      />
 
       <AdminOrderRtoWorkflow orderId={order.id} currency={order.currency} onUpdated={() => void load()} />
 

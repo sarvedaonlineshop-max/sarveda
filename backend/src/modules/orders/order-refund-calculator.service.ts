@@ -54,11 +54,51 @@ function gatewayCapturedAmountPaise(
   payment: OrderRefundCalculatorInput["payment"]
 ): number {
   if (!payment || payment.provider === "COD") return 0;
-  if (!["CAPTURED", "PARTIALLY_REFUNDED"].includes(payment.status)) return 0;
+  // Include REFUNDED so history/preview still shows the original capture after full refund.
+  if (!["CAPTURED", "PARTIALLY_REFUNDED", "REFUNDED"].includes(payment.status)) return 0;
   return capturedAmountInPaise({
     amountInPaise: payment.amountInPaise,
     order: { grandTotalInPaise: order.grandTotalInPaise }
   });
+}
+
+type BreakdownDraft = Omit<OrderRefundBreakdown, "refundEligible">;
+
+function finalizeBreakdown(
+  draft: BreakdownDraft,
+  payment: OrderRefundCalculatorInput["payment"]
+): OrderRefundBreakdown {
+  const fullyRefunded =
+    draft.capturedAmountPaise > 0 &&
+    draft.alreadyRefundedAmountPaise >= draft.capturedAmountPaise &&
+    draft.remainingRefundableAmountPaise <= 0;
+
+  if (fullyRefunded) {
+    return {
+      ...draft,
+      proposedRefundAmountPaise: 0,
+      policyMaximumRefundableAmountPaise: 0,
+      refundableMerchandisePaise: 0,
+      refundableShippingPaise: 0,
+      refundEligible: false,
+      unavailableCode: "FULLY_REFUNDED",
+      unavailableReason: "FULLY REFUNDED",
+      explanation: "FULLY REFUNDED — no further gateway refund is available."
+    };
+  }
+
+  const executableStatus =
+    payment != null &&
+    payment.provider !== "COD" &&
+    ["CAPTURED", "PARTIALLY_REFUNDED"].includes(payment.status);
+
+  const refundEligible =
+    executableStatus &&
+    draft.remainingRefundableAmountPaise > 0 &&
+    draft.proposedRefundAmountPaise > 0 &&
+    !draft.unavailableCode;
+
+  return { ...draft, refundEligible };
 }
 
 /**
@@ -96,31 +136,34 @@ export function calculateOrderRefund(input: OrderRefundCalculatorInput): OrderRe
 
   const componentsSumPaise = merchandiseNetPaise + shippingNetPaise + order.taxInPaise;
   if (componentsSumPaise !== order.grandTotalInPaise) {
-    return {
-      capturedAmountPaise,
-      customerPaidAmountPaise,
-      alreadyRefundedAmountPaise,
-      remainingRefundableAmountPaise,
-      merchandiseGrossPaise,
-      merchandiseDiscountPaise,
-      merchandiseNetPaise,
-      shippingGrossPaise,
-      shippingDiscountPaise,
-      shippingNetPaise,
-      taxMerchandisePaise: 0,
-      taxShippingPaise: 0,
-      taxLines: [],
-      refundableMerchandisePaise: 0,
-      refundableShippingPaise: 0,
-      retainedShippingPaise: 0,
-      proposedRefundAmountPaise: 0,
-      policyMaximumRefundableAmountPaise: 0,
-      policy,
-      explanation: POLICY_LABELS[policy],
-      warnings,
-      unavailableCode: "REFUND_BREAKDOWN_UNAVAILABLE",
-      unavailableReason: `Order components (${componentsSumPaise} paise) do not reconcile to grand total (${order.grandTotalInPaise} paise)`
-    };
+    return finalizeBreakdown(
+      {
+        capturedAmountPaise,
+        customerPaidAmountPaise,
+        alreadyRefundedAmountPaise,
+        remainingRefundableAmountPaise,
+        merchandiseGrossPaise,
+        merchandiseDiscountPaise,
+        merchandiseNetPaise,
+        shippingGrossPaise,
+        shippingDiscountPaise,
+        shippingNetPaise,
+        taxMerchandisePaise: 0,
+        taxShippingPaise: 0,
+        taxLines: [],
+        refundableMerchandisePaise: 0,
+        refundableShippingPaise: 0,
+        retainedShippingPaise: 0,
+        proposedRefundAmountPaise: 0,
+        policyMaximumRefundableAmountPaise: 0,
+        policy,
+        explanation: POLICY_LABELS[policy],
+        warnings,
+        unavailableCode: "REFUND_BREAKDOWN_UNAVAILABLE",
+        unavailableReason: `Order components (${componentsSumPaise} paise) do not reconcile to grand total (${order.grandTotalInPaise} paise)`
+      },
+      payment
+    );
   }
 
   const { lines: taxLines, totalGstPaise: taxMerchandisePaise } = computeMerchandiseTaxLines(
@@ -131,86 +174,95 @@ export function calculateOrderRefund(input: OrderRefundCalculatorInput): OrderRe
   const taxShippingPaise = 0;
 
   if (policy === "COD_CANCELLATION") {
-    return {
-      capturedAmountPaise: 0,
-      customerPaidAmountPaise,
-      alreadyRefundedAmountPaise: 0,
-      remainingRefundableAmountPaise: 0,
-      merchandiseGrossPaise,
-      merchandiseDiscountPaise,
-      merchandiseNetPaise,
-      shippingGrossPaise,
-      shippingDiscountPaise,
-      shippingNetPaise,
-      taxMerchandisePaise,
-      taxShippingPaise,
-      taxLines,
-      refundableMerchandisePaise: merchandiseNetPaise,
-      refundableShippingPaise: shippingNetPaise,
-      retainedShippingPaise: 0,
-      proposedRefundAmountPaise: 0,
-      policyMaximumRefundableAmountPaise: 0,
-      policy,
-      explanation:
-        "COD order — no online payment was captured. Stock/fulfilment cancellation only; any cash settlement is manual.",
-      warnings
-    };
+    return finalizeBreakdown(
+      {
+        capturedAmountPaise: 0,
+        customerPaidAmountPaise,
+        alreadyRefundedAmountPaise: 0,
+        remainingRefundableAmountPaise: 0,
+        merchandiseGrossPaise,
+        merchandiseDiscountPaise,
+        merchandiseNetPaise,
+        shippingGrossPaise,
+        shippingDiscountPaise,
+        shippingNetPaise,
+        taxMerchandisePaise,
+        taxShippingPaise,
+        taxLines,
+        refundableMerchandisePaise: merchandiseNetPaise,
+        refundableShippingPaise: shippingNetPaise,
+        retainedShippingPaise: 0,
+        proposedRefundAmountPaise: 0,
+        policyMaximumRefundableAmountPaise: 0,
+        policy,
+        explanation:
+          "COD order — no online payment was captured. Stock/fulfilment cancellation only; any cash settlement is manual.",
+        warnings
+      },
+      payment
+    );
   }
 
   if (capturedAmountPaise <= 0) {
-    return {
-      capturedAmountPaise,
-      customerPaidAmountPaise,
-      alreadyRefundedAmountPaise,
-      remainingRefundableAmountPaise: 0,
-      merchandiseGrossPaise,
-      merchandiseDiscountPaise,
-      merchandiseNetPaise,
-      shippingGrossPaise,
-      shippingDiscountPaise,
-      shippingNetPaise,
-      taxMerchandisePaise,
-      taxShippingPaise,
-      taxLines,
-      refundableMerchandisePaise: 0,
-      refundableShippingPaise: 0,
-      retainedShippingPaise: 0,
-      proposedRefundAmountPaise: 0,
-      policyMaximumRefundableAmountPaise: 0,
-      policy,
-      explanation: POLICY_LABELS[policy],
-      warnings,
-      unavailableCode: "NO_CAPTURED_PAYMENT",
-      unavailableReason: "No captured gateway payment on this order"
-    };
+    return finalizeBreakdown(
+      {
+        capturedAmountPaise,
+        customerPaidAmountPaise,
+        alreadyRefundedAmountPaise,
+        remainingRefundableAmountPaise: 0,
+        merchandiseGrossPaise,
+        merchandiseDiscountPaise,
+        merchandiseNetPaise,
+        shippingGrossPaise,
+        shippingDiscountPaise,
+        shippingNetPaise,
+        taxMerchandisePaise,
+        taxShippingPaise,
+        taxLines,
+        refundableMerchandisePaise: 0,
+        refundableShippingPaise: 0,
+        retainedShippingPaise: 0,
+        proposedRefundAmountPaise: 0,
+        policyMaximumRefundableAmountPaise: 0,
+        policy,
+        explanation: POLICY_LABELS[policy],
+        warnings,
+        unavailableCode: "NO_CAPTURED_PAYMENT",
+        unavailableReason: "No captured gateway payment on this order"
+      },
+      payment
+    );
   }
 
   if (policy === "FULL_PRE_DISPATCH_CANCELLATION") {
     const proposedRefundAmountPaise = remainingRefundableAmountPaise;
-    return {
-      capturedAmountPaise,
-      customerPaidAmountPaise,
-      alreadyRefundedAmountPaise,
-      remainingRefundableAmountPaise,
-      merchandiseGrossPaise,
-      merchandiseDiscountPaise,
-      merchandiseNetPaise,
-      shippingGrossPaise,
-      shippingDiscountPaise,
-      shippingNetPaise,
-      taxMerchandisePaise,
-      taxShippingPaise,
-      taxLines,
-      refundableMerchandisePaise: merchandiseNetPaise,
-      refundableShippingPaise: shippingNetPaise,
-      retainedShippingPaise: 0,
-      proposedRefundAmountPaise,
-      policyMaximumRefundableAmountPaise: remainingRefundableAmountPaise,
-      policy,
-      explanation:
-        "Full refund of the remaining captured amount (merchandise after discount + customer shipping charge).",
-      warnings
-    };
+    return finalizeBreakdown(
+      {
+        capturedAmountPaise,
+        customerPaidAmountPaise,
+        alreadyRefundedAmountPaise,
+        remainingRefundableAmountPaise,
+        merchandiseGrossPaise,
+        merchandiseDiscountPaise,
+        merchandiseNetPaise,
+        shippingGrossPaise,
+        shippingDiscountPaise,
+        shippingNetPaise,
+        taxMerchandisePaise,
+        taxShippingPaise,
+        taxLines,
+        refundableMerchandisePaise: merchandiseNetPaise,
+        refundableShippingPaise: shippingNetPaise,
+        retainedShippingPaise: 0,
+        proposedRefundAmountPaise,
+        policyMaximumRefundableAmountPaise: remainingRefundableAmountPaise,
+        policy,
+        explanation:
+          "Full refund of the remaining captured amount (merchandise after discount + customer shipping charge).",
+        warnings
+      },
+      payment
+    );
   }
 
   if (
@@ -223,7 +275,39 @@ export function calculateOrderRefund(input: OrderRefundCalculatorInput): OrderRe
       remainingRefundableAmountPaise
     );
     const proposedRefundAmountPaise = policyMaximumRefundableAmountPaise;
-    return {
+    return finalizeBreakdown(
+      {
+        capturedAmountPaise,
+        customerPaidAmountPaise,
+        alreadyRefundedAmountPaise,
+        remainingRefundableAmountPaise,
+        merchandiseGrossPaise,
+        merchandiseDiscountPaise,
+        merchandiseNetPaise,
+        shippingGrossPaise,
+        shippingDiscountPaise,
+        shippingNetPaise,
+        taxMerchandisePaise,
+        taxShippingPaise,
+        taxLines,
+        refundableMerchandisePaise: merchandiseNetPaise,
+        refundableShippingPaise: 0,
+        retainedShippingPaise: shippingNetPaise,
+        proposedRefundAmountPaise,
+        policyMaximumRefundableAmountPaise,
+        policy,
+        explanation:
+          policy === "RTO_SHIPPING_RETAINED"
+            ? "Refund merchandise value paid by customer; retain the customer shipping charge. Preview only — RTO receipt workflow required before execution (Phase 1C)."
+            : "Refund merchandise value paid by customer; retain the customer shipping charge. Does not reopen customer self-cancel after dispatch.",
+        warnings
+      },
+      payment
+    );
+  }
+
+  return finalizeBreakdown(
+    {
       capturedAmountPaise,
       customerPaidAmountPaise,
       alreadyRefundedAmountPaise,
@@ -237,45 +321,19 @@ export function calculateOrderRefund(input: OrderRefundCalculatorInput): OrderRe
       taxMerchandisePaise,
       taxShippingPaise,
       taxLines,
-      refundableMerchandisePaise: merchandiseNetPaise,
+      refundableMerchandisePaise: 0,
       refundableShippingPaise: 0,
-      retainedShippingPaise: shippingNetPaise,
-      proposedRefundAmountPaise,
-      policyMaximumRefundableAmountPaise,
+      retainedShippingPaise: 0,
+      proposedRefundAmountPaise: 0,
+      policyMaximumRefundableAmountPaise: 0,
       policy,
-      explanation:
-        policy === "RTO_SHIPPING_RETAINED"
-          ? "Refund merchandise value paid by customer; retain the customer shipping charge. Preview only — RTO receipt workflow required before execution (Phase 1C)."
-          : "Refund merchandise value paid by customer; retain the customer shipping charge. Does not reopen customer self-cancel after dispatch.",
-      warnings
-    };
-  }
-
-  return {
-    capturedAmountPaise,
-    customerPaidAmountPaise,
-    alreadyRefundedAmountPaise,
-    remainingRefundableAmountPaise,
-    merchandiseGrossPaise,
-    merchandiseDiscountPaise,
-    merchandiseNetPaise,
-    shippingGrossPaise,
-    shippingDiscountPaise,
-    shippingNetPaise,
-    taxMerchandisePaise,
-    taxShippingPaise,
-    taxLines,
-    refundableMerchandisePaise: 0,
-    refundableShippingPaise: 0,
-    retainedShippingPaise: 0,
-    proposedRefundAmountPaise: 0,
-    policyMaximumRefundableAmountPaise: 0,
-    policy,
-    explanation: POLICY_LABELS[policy],
-    warnings,
-    unavailableCode: "REFUND_BREAKDOWN_UNAVAILABLE",
-    unavailableReason: `Unknown policy ${policy}`
-  };
+      explanation: POLICY_LABELS[policy],
+      warnings,
+      unavailableCode: "REFUND_BREAKDOWN_UNAVAILABLE",
+      unavailableReason: `Unknown policy ${policy}`
+    },
+    payment
+  );
 }
 
 /** Hard cap for manual/partial refund amounts — never exceeds gateway remainder or policy max. */

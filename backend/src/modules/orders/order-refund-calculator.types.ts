@@ -8,7 +8,8 @@ export type RefundCalculatorUnavailableCode =
   | "REFUND_BREAKDOWN_UNAVAILABLE"
   | "MULTIPLE_CAPTURED_PAYMENTS_REVIEW_REQUIRED"
   | "PARTIAL_REFUND_ACCOUNTING_REVIEW_REQUIRED"
-  | "NO_CAPTURED_PAYMENT";
+  | "NO_CAPTURED_PAYMENT"
+  | "FULLY_REFUNDED";
 
 export type OrderRefundTaxLineBreakdown = {
   orderItemId: string;
@@ -42,6 +43,9 @@ export type OrderRefundBreakdown = {
 
   proposedRefundAmountPaise: number;
   policyMaximumRefundableAmountPaise: number;
+
+  /** True only when a NEW gateway refund may still be executed. */
+  refundEligible: boolean;
 
   policy: RefundCalculatorPolicy;
   explanation: string;

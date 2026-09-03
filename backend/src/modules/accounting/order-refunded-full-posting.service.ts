@@ -257,6 +257,17 @@ export async function postOrderRefundedFull(
     });
   }
 
+  // Stamp commerce Refund marker when native journal is (or already was) POSTED.
+  // Idempotent: only fills accountingPostedAt when still null — does not create journals.
+  await prisma.refund.updateMany({
+    where: { id: refund.id, accountingPostedAt: null },
+    data: {
+      accountingPostedAt: new Date(),
+      settlementStage: "COMPLETE",
+      settlementError: null
+    }
+  });
+
   return {
     duplicate: result.duplicate,
     proposal,

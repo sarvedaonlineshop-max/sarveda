@@ -1,5 +1,5 @@
 import { prisma } from "../../config/db";
-import { pickCapturedPaymentForRefund } from "../payments/payment-selection";
+import { pickPaymentForRefundHistory } from "../payments/payment-selection";
 
 import { getCancellationEligibility, orderHasRtoShipment } from "./cancellation-eligibility";
 import { calculateOrderRefund } from "./order-refund-calculator.service";
@@ -62,7 +62,9 @@ export async function loadOrderRefundPreview(
     return { ok: false, code: "NOT_FOUND", message: "Order not found" };
   }
 
-  const paymentPick = pickCapturedPaymentForRefund(order.payments);
+  // History picker includes REFUNDED so already-refunded totals remain visible.
+  // Execution still uses pickCapturedPaymentForRefund (excludes REFUNDED).
+  const paymentPick = pickPaymentForRefundHistory(order.payments);
   if (!paymentPick.ok && paymentPick.code === "MULTIPLE_CAPTURED_PAYMENTS_REVIEW_REQUIRED") {
     return {
       ok: false,

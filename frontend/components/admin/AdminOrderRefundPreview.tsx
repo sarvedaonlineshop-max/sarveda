@@ -8,6 +8,11 @@ import { formatMinorFromPaise } from "@/lib/money";
 type Props = {
   orderId: string;
   currency: string;
+  /**
+   * Bump after refund/cancel so the preview reloads server truth.
+   * Typical: `${paymentStatus}:${refundedInPaise}:${status}`
+   */
+  refreshKey?: string | number;
 };
 
 function policyLabel(policy: string): string {
@@ -25,7 +30,7 @@ function policyLabel(policy: string): string {
   }
 }
 
-export function AdminOrderRefundPreview({ orderId, currency }: Props) {
+export function AdminOrderRefundPreview({ orderId, currency, refreshKey = 0 }: Props) {
   const [breakdown, setBreakdown] = useState<OrderRefundPreviewBreakdown | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,7 +52,7 @@ export function AdminOrderRefundPreview({ orderId, currency }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [orderId]);
+  }, [orderId, refreshKey]);
 
   if (loading) {
     return (
@@ -69,11 +74,32 @@ export function AdminOrderRefundPreview({ orderId, currency }: Props) {
   if (!breakdown) return null;
 
   const fmt = (paise: number) => formatMinorFromPaise(paise, currency);
+  const fullyRefunded =
+    breakdown.unavailableCode === "FULLY_REFUNDED" ||
+    (breakdown.capturedAmountPaise > 0 &&
+      breakdown.alreadyRefundedAmountPaise >= breakdown.capturedAmountPaise &&
+      breakdown.remainingRefundableAmountPaise <= 0);
+  const showProposed =
+    !fullyRefunded &&
+    breakdown.refundEligible !== false &&
+    breakdown.proposedRefundAmountPaise > 0;
 
   return (
     <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900">
       <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Refund preview</p>
       <p className="mt-1 text-sm text-stone-600 dark:text-stone-300">{breakdown.explanation}</p>
+
+      {fullyRefunded ? (
+        <div className="mt-3 rounded-lg border border-stone-300 bg-stone-100 px-4 py-3 dark:border-stone-600 dark:bg-stone-800">
+          <p className="text-xs font-semibold uppercase tracking-wide text-stone-600 dark:text-stone-300">
+            Status
+          </p>
+          <p className="mt-1 text-lg font-bold text-stone-900 dark:text-stone-100">FULLY REFUNDED</p>
+          <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+            No further gateway refund is available for this order.
+          </p>
+        </div>
+      ) : null}
 
       <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
         <div className="flex justify-between gap-3 sm:block">
@@ -102,7 +128,7 @@ export function AdminOrderRefundPreview({ orderId, currency }: Props) {
         ) : null}
         <div className="flex justify-between gap-3 sm:block">
           <dt className="text-stone-500">Already refunded</dt>
-          <dd>{fmt(breakdown.alreadyRefundedAmountPaise)}</dd>
+          <dd className="font-semibold">{fmt(breakdown.alreadyRefundedAmountPaise)}</dd>
         </div>
         {breakdown.retainedShippingPaise > 0 ? (
           <div className="flex justify-between gap-3 sm:block">
@@ -112,21 +138,23 @@ export function AdminOrderRefundPreview({ orderId, currency }: Props) {
         ) : null}
         <div className="flex justify-between gap-3 sm:col-span-2 sm:block">
           <dt className="text-stone-500">Remaining refundable</dt>
-          <dd>{fmt(breakdown.remainingRefundableAmountPaise)}</dd>
+          <dd className="font-semibold">{fmt(breakdown.remainingRefundableAmountPaise)}</dd>
         </div>
       </dl>
 
-      <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50/80 px-4 py-3 dark:border-emerald-900 dark:bg-emerald-950/30">
-        <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800 dark:text-emerald-300">
-          Proposed refund
-        </p>
-        <p className="mt-1 text-2xl font-bold text-emerald-900 dark:text-emerald-100">
-          {fmt(breakdown.proposedRefundAmountPaise)}
-        </p>
-        <p className="mt-2 text-xs text-emerald-800/90 dark:text-emerald-300/90">
-          Policy: {policyLabel(breakdown.policy)}
-        </p>
-      </div>
+      {showProposed ? (
+        <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50/80 px-4 py-3 dark:border-emerald-900 dark:bg-emerald-950/30">
+          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800 dark:text-emerald-300">
+            Proposed refund
+          </p>
+          <p className="mt-1 text-2xl font-bold text-emerald-900 dark:text-emerald-100">
+            {fmt(breakdown.proposedRefundAmountPaise)}
+          </p>
+          <p className="mt-2 text-xs text-emerald-800/90 dark:text-emerald-300/90">
+            Policy: {policyLabel(breakdown.policy)}
+          </p>
+        </div>
+      ) : null}
 
       {breakdown.warnings.length > 0 ? (
         <ul className="mt-3 list-inside list-disc text-xs text-amber-800 dark:text-amber-300">
@@ -136,7 +164,7 @@ export function AdminOrderRefundPreview({ orderId, currency }: Props) {
         </ul>
       ) : null}
 
-      {breakdown.unavailableCode ? (
+      {breakdown.unavailableCode && breakdown.unavailableCode !== "FULLY_REFUNDED" ? (
         <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
           Note: {breakdown.unavailableCode}
           {breakdown.unavailableReason ? ` — ${breakdown.unavailableReason}` : ""}

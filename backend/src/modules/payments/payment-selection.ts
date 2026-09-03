@@ -7,7 +7,11 @@ export type PaymentPickRow = {
   createdAt: Date;
 };
 
+/** Payments that may receive a NEW gateway refund. REFUNDED is intentionally excluded. */
 const REFUNDABLE_STATUSES: PaymentStatus[] = ["CAPTURED", "PARTIALLY_REFUNDED"];
+
+/** Payments visible for refund history / remaining-balance display (includes fully refunded). */
+const HISTORY_STATUSES: PaymentStatus[] = ["CAPTURED", "PARTIALLY_REFUNDED", "REFUNDED"];
 
 const NON_REFUNDABLE_STATUSES: PaymentStatus[] = [
   "PENDING",
@@ -17,12 +21,20 @@ const NON_REFUNDABLE_STATUSES: PaymentStatus[] = [
 ];
 
 /**
- * Gateway payments eligible for refund (excludes COD).
+ * Gateway payments eligible for a NEW refund execution (excludes COD and REFUNDED).
  */
 export function listCapturedPaymentsForRefund<T extends PaymentPickRow>(payments: T[]): T[] {
   return payments.filter(
     (p) => p.provider !== "COD" && REFUNDABLE_STATUSES.includes(p.status)
   );
+}
+
+/**
+ * Gateway payments used for refund HISTORY / preview math (includes REFUNDED).
+ * Never use this list to authorize a new gateway refund.
+ */
+export function listPaymentsForRefundHistory<T extends PaymentPickRow>(payments: T[]): T[] {
+  return payments.filter((p) => p.provider !== "COD" && HISTORY_STATUSES.includes(p.status));
 }
 
 export type PickCapturedPaymentResult<T extends PaymentPickRow> =
@@ -87,6 +99,49 @@ export function pickCapturedPaymentForRefund<T extends PaymentPickRow>(
     code: "NO_PAYMENT",
     message: "No captured payment to refund"
   };
+}
+
+/**
+ * Select the authoritative gateway payment for refund preview / history display.
+ * Includes REFUNDED so already-refunded amounts remain visible.
+ * Do NOT use the result to execute a new refund — use pickCapturedPaymentForRefund.
+ */
+export function pickPaymentForRefundHistory<T extends PaymentPickRow>(
+  payments: T[]
+): PickCapturedPaymentResult<T> {
+  const history = listPaymentsForRefundHistory(payments);
+
+  if (history.length === 0) {
+    return {
+      ok: false,
+      code: "NO_PAYMENT",
+      message: "No captured payment on this order"
+    };
+  }
+
+  const refunded = history.filter((p) => p.status === "REFUNDED");
+  if (refunded.length === 1 && history.length === 1) {
+    return { ok: true, payment: refunded[0]! };
+  }
+
+  const executable = pickCapturedPaymentForRefund(payments);
+  if (executable.ok) return executable;
+
+  if (refunded.length === 1) {
+    return { ok: true, payment: refunded[0]! };
+  }
+
+  if (refunded.length > 1) {
+    return {
+      ok: false,
+      code: "MULTIPLE_CAPTURED_PAYMENTS_REVIEW_REQUIRED",
+      message:
+        "Multiple refunded payments found — manual reconciliation required before preview",
+      payments: refunded
+    };
+  }
+
+  return executable;
 }
 
 /** @deprecated Use pickCapturedPaymentForRefund for refund paths. */

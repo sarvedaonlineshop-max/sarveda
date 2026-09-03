@@ -685,6 +685,8 @@ export type OrderRefundPreviewBreakdown = {
   retainedShippingPaise: number;
   proposedRefundAmountPaise: number;
   policyMaximumRefundableAmountPaise: number;
+  /** False when no further gateway refund may be executed. */
+  refundEligible?: boolean;
   policy: string;
   explanation: string;
   warnings: string[];

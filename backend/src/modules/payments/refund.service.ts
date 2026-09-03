@@ -125,6 +125,27 @@ export async function initiateGatewayRefund(
     throw Object.assign(new Error("Order not found"), { statusCode: 404, code: "NOT_FOUND" });
   }
 
+  // Hard stop: never re-enter refund/cancel side effects on an already-refunded order.
+  if (order.status === "REFUNDED" || order.paymentStatus === "REFUNDED") {
+    throw Object.assign(new Error("Payment is already fully refunded"), {
+      statusCode: 409,
+      code: "ALREADY_REFUNDED"
+    });
+  }
+
+  const alreadyFullyRefundedPayment = order.payments.find(
+    (p) =>
+      p.provider !== "COD" &&
+      (p.status === "REFUNDED" ||
+        (p.amountInPaise > 0 && p.refundedInPaise >= p.amountInPaise && p.refundedInPaise > 0))
+  );
+  if (alreadyFullyRefundedPayment) {
+    throw Object.assign(new Error("Payment is already fully refunded"), {
+      statusCode: 409,
+      code: "ALREADY_REFUNDED"
+    });
+  }
+
   if (await orderHasActiveRtoShipment(orderId)) {
     throw Object.assign(
       new Error(
@@ -142,6 +163,14 @@ export async function initiateGatewayRefund(
       throw Object.assign(new Error(pick.message), {
         statusCode: 409,
         code: "MULTIPLE_CAPTURED_PAYMENTS_REVIEW_REQUIRED"
+      });
+    }
+
+    // No executable CAPTURED/PARTIALLY_REFUNDED payment — never flip REFUNDED→CANCELLED.
+    if (order.payments.some((p) => p.provider !== "COD" && p.status === "REFUNDED")) {
+      throw Object.assign(new Error("Payment is already fully refunded"), {
+        statusCode: 409,
+        code: "ALREADY_REFUNDED"
       });
     }
 
