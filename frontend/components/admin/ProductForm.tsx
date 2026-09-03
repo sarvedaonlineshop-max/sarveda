@@ -914,7 +914,9 @@ export function ProductForm({ productId }: { productId?: string }) {
           };
         })
       })),
-      deactivateVariantIds: deactivateVariantIds.length ? [...new Set(deactivateVariantIds)] : undefined,
+      deactivateVariantIds: deactivateVariantIds.length
+        ? Array.from(new Set(deactivateVariantIds))
+        : undefined,
       images: (() => {
         const filled = images.filter((im) => im.url.trim());
         let primaryIdx = filled.findIndex((im) => im.isPrimary);
