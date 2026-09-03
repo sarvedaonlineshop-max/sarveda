@@ -1,6 +1,7 @@
 "use client";
 
 import type { CartApiItem } from "@/lib/cart-api";
+import { cartLineKey } from "@/lib/cart-api";
 
 import { useCartQuantityActions } from "@/hooks/useCartQuantityActions";
 
@@ -14,8 +15,17 @@ type Props = {
 export function CartLineQuantity({ line, size = "md", showDeleteAtOne = false }: Props) {
   const { decrease, increase, removeLine, isAnyBusy } = useCartQuantityActions();
   const busy = isAnyBusy;
+  const key = cartLineKey(line);
   const atMin = line.quantity <= 1;
   const atMax = !line.dropShipEnabled && line.maxQuantity != null && line.quantity >= line.maxQuantity;
+
+  if (line.isDigital || line.digitalOfferId) {
+    return (
+      <p className="text-xs font-medium text-brand-muted" role="status">
+        Qty 1
+      </p>
+    );
+  }
 
   const btnClass =
     size === "sm"
@@ -41,8 +51,8 @@ export function CartLineQuantity({ line, size = "md", showDeleteAtOne = false }:
           className={btnClass}
           aria-label={atMin && showDeleteAtOne ? "Remove from cart" : "Decrease quantity"}
           onClick={() => {
-            if (atMin && showDeleteAtOne) void removeLine(line.variantId);
-            else void decrease(line.variantId);
+            if (atMin && showDeleteAtOne) void removeLine(key);
+            else void decrease(key);
           }}
         >
           {atMin && showDeleteAtOne ? (
@@ -63,7 +73,7 @@ export function CartLineQuantity({ line, size = "md", showDeleteAtOne = false }:
           disabled={busy || atMax}
           className={btnClass}
           aria-label="Increase quantity"
-          onClick={() => void increase(line.variantId)}
+          onClick={() => void increase(key)}
         >
           +
         </button>

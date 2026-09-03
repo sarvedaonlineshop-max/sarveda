@@ -77,6 +77,7 @@ export async function computePendingReservedByVariant(
 
   const map = new Map<string, { qty: number; orderNumbers: string[] }>();
   for (const row of holds) {
+    if (!row.variantId) continue;
     const cur = map.get(row.variantId) ?? { qty: 0, orderNumbers: [] };
     cur.qty += row.qtyOrdered;
     if (!cur.orderNumbers.includes(row.order.orderNumber)) {
@@ -246,7 +247,9 @@ export async function recomputeReservedForOrder(orderId: string): Promise<void> 
     where: { orderId },
     select: { variantId: true }
   });
-  const variantIds = Array.from(new Set(items.map((i) => i.variantId)));
+  const variantIds = Array.from(
+    new Set(items.map((i) => i.variantId).filter((id): id is string => Boolean(id)))
+  );
   if (!variantIds.length) return;
   await reconcileInventoryReserved({ dryRun: false, variantIds });
 }

@@ -1,14 +1,17 @@
 /**
  * Digital checkout offers — course/event payment metadata (not shop catalog).
- * ProductVariant stubs are materialized only when adding to cart (JIT).
+ * Cart/order lines reference DigitalCheckoutOffer directly (no ProductVariant stub).
  */
 import {
   ProductStatus,
   ProductType,
   VariantStatus,
   type DigitalCheckoutKind,
+  type DigitalCheckoutOffer,
   type PrismaClient
 } from "@prisma/client";
+
+import type { ZoneKey } from "../modules/shipping/types";
 
 export const DIGITAL_CHECKOUT_SHELL_SLUG = "__digital-checkout__";
 export const DIGITAL_CHECKOUT_SHELL_NAME = "Digital checkout (internal)";
@@ -29,6 +32,38 @@ export type EnsureDigitalCheckoutOfferInput = {
 
 function buildSku(prefix: "COURSE" | "EVENT", entitySlug: string): string {
   return `${prefix}-${entitySlug.toUpperCase().replace(/[^A-Z0-9]/g, "-").slice(0, 36)}`;
+}
+
+/** Sale price in minor units for the pricing zone (paise / USD cents; GBP falls back to INR). */
+export function priceForDigitalOffer(
+  offer: Pick<DigitalCheckoutOffer, "saleInPaise" | "saleUsdCents">,
+  zone: ZoneKey
+): number {
+  switch (zone) {
+    case "IN":
+      return offer.saleInPaise;
+    case "GB":
+      return offer.saleInPaise;
+    case "US":
+    case "OTHER":
+      return offer.saleUsdCents ?? offer.saleInPaise;
+    default:
+      return offer.saleInPaise;
+  }
+}
+
+export function assertDigitalOfferPurchasable(
+  offer: Pick<DigitalCheckoutOffer, "id" | "saleInPaise" | "kind">
+): void {
+  if (offer.saleInPaise <= 0) {
+    const e = new Error("This course or event is not available for purchase") as Error & {
+      statusCode: number;
+      code: string;
+    };
+    e.statusCode = 400;
+    e.code = "DIGITAL_NOT_PURCHASABLE";
+    throw e;
+  }
 }
 
 export async function ensureDigitalCheckoutShell(prisma: PrismaClient) {

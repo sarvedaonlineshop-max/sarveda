@@ -60,13 +60,19 @@ function addressFromOrderRow(row: {
 
 function lineSnapshotFromItem(item: {
   id: string;
-  variantId: string;
+  variantId: string | null;
   skuSnapshot: string;
   nameSnapshot: string;
   qtyOrdered: number;
   unitPriceInPaise: number;
   lineTotalInPaise: number;
 }): LineItemSnapshot {
+  if (!item.variantId) {
+    throw Object.assign(new Error("Digital lines cannot be adjusted this way"), {
+      statusCode: 400,
+      code: "DIGITAL_LINE_NOT_ADJUSTABLE"
+    });
+  }
   return {
     orderItemId: item.id,
     variantId: item.variantId,
@@ -82,7 +88,7 @@ export function buildAdjustmentPayload(opts: {
   intent: OrderServiceRequestIntent;
   orderItem: {
     id: string;
-    variantId: string;
+    variantId: string | null;
     skuSnapshot: string;
     nameSnapshot: string;
     qtyOrdered: number;
@@ -855,6 +861,12 @@ export async function submitAdjustmentRequest(opts: SubmitAdjustmentInput) {
         code: "VARIANT_REQUIRED"
       });
     }
+    if (!orderItem.variantId) {
+      throw Object.assign(new Error("Digital lines cannot change variant"), {
+        statusCode: 400,
+        code: "DIGITAL_LINE_NOT_ADJUSTABLE"
+      });
+    }
     const currentVariant = await prisma.productVariant.findUnique({
       where: { id: orderItem.variantId },
       select: { productId: true }
@@ -1005,6 +1017,12 @@ export async function loadAdjustmentOptionsForOrderItem(opts: {
   const orderItem = order.items.find((i) => i.id === opts.orderItemId);
   if (!orderItem) {
     throw Object.assign(new Error("Invalid order item"), { statusCode: 400, code: "BAD_ITEM" });
+  }
+  if (!orderItem.variantId) {
+    throw Object.assign(new Error("Digital lines cannot be adjusted this way"), {
+      statusCode: 400,
+      code: "DIGITAL_LINE_NOT_ADJUSTABLE"
+    });
   }
 
   const currentVariant = await prisma.productVariant.findUnique({

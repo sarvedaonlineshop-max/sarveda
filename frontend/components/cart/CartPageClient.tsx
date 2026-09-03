@@ -5,9 +5,18 @@ import Link from "next/link";
 
 import { CartCheckoutSidebar } from "@/components/cart/CartCheckoutSidebar";
 import { CartLineQuantity } from "@/components/cart/CartLineQuantity";
+import { cartLineKey } from "@/lib/cart-api";
 import { formatMinorFromPaise } from "@/lib/money";
 
 import { useCartData } from "./CartProvider";
+
+function lineHref(line: { isDigital?: boolean; digitalOfferId?: string | null; variantLabel: string | null; productSlug: string }) {
+  if (line.isDigital || line.digitalOfferId) {
+    if (line.variantLabel === "Event") return `/event/${line.productSlug}`;
+    return `/course/${line.productSlug}`;
+  }
+  return `/product/${line.productSlug}`;
+}
 
 export function CartPageClient() {
   const { items, subtotalInPaise, itemCount, loading, removeLine, isCartMutating, currency } = useCartData();
@@ -48,11 +57,11 @@ export function CartPageClient() {
           <ul className="divide-y divide-brand-cream-dark border-y border-brand-cream-dark bg-white lg:divide-none lg:space-y-4 lg:border-0 lg:bg-transparent">
             {items.map((line) => (
               <li
-                key={line.variantId}
+                key={cartLineKey(line)}
                 className="flex flex-row items-start gap-3 p-4 sm:gap-4 lg:rounded-2xl lg:border lg:border-brand-cream-dark lg:bg-white lg:p-5 lg:shadow-card"
               >
                 <Link
-                  href={`/product/${line.productSlug}`}
+                  href={lineHref(line)}
                   className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl bg-[#EDE4D3] sm:h-28 sm:w-28 lg:h-32 lg:w-32"
                 >
                   {line.primaryImageUrl ? (
@@ -71,7 +80,7 @@ export function CartPageClient() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
                     <Link
-                      href={`/product/${line.productSlug}`}
+                      href={lineHref(line)}
                       className="font-sans text-sm font-medium leading-snug text-brand-ink hover:text-brand-forest sm:text-base lg:text-lg"
                     >
                       {line.productName}
@@ -79,7 +88,7 @@ export function CartPageClient() {
                     <button
                       type="button"
                       disabled={isCartMutating}
-                      onClick={() => void removeLine(line.variantId)}
+                      onClick={() => void removeLine(cartLineKey(line))}
                       className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-brand-muted transition-colors hover:bg-brand-cream hover:text-brand-terra disabled:opacity-50"
                       aria-label={`Remove ${line.productName} from cart`}
                     >

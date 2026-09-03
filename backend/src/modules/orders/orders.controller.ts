@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 
-import { getCartPayload, resolveCartContext, setCartItemQuantity } from "../cart/cart.service";
+import { addCartItem, getCartPayload, resolveCartContext, setCartItemQuantity } from "../cart/cart.service";
 import { prisma } from "../../config/db";
 import { downloadPdfFromS3, s3KeyFromStoredUrl } from "../../config/s3";
 import { invoiceNumberForOrder } from "../../utils/invoice";
@@ -643,6 +643,18 @@ export async function reorderCancelledPublic(req: Request, res: Response, next: 
 
     for (const line of order.items) {
       try {
+        if (line.digitalOfferId) {
+          await addCartItem(cartId, {
+            digitalOfferId: line.digitalOfferId,
+            quantity: 1
+          });
+          restored.push(line.nameSnapshot);
+          continue;
+        }
+        if (!line.variantId) {
+          skipped.push({ name: line.nameSnapshot, reason: "Unavailable" });
+          continue;
+        }
         await setCartItemQuantity(cartId, line.variantId, line.qtyOrdered);
         restored.push(line.nameSnapshot);
       } catch (err) {

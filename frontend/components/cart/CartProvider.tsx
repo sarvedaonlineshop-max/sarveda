@@ -16,6 +16,7 @@ import {
   type CartApiItem,
   type CartApiResponse,
   cartGet,
+  cartLineKey,
   cartRemove,
   cartUpdate,
   mergeGuestCartSession,
@@ -45,9 +46,9 @@ type CartDataState = {
   loading: boolean;
   error: string | null;
   refreshCart: (shippingCountry?: string, checkoutEmail?: string) => Promise<void>;
-  decreaseLine: (variantId: string) => Promise<void>;
-  increaseLine: (variantId: string) => Promise<void>;
-  removeLine: (variantId: string) => Promise<void>;
+  decreaseLine: (lineKey: string) => Promise<void>;
+  increaseLine: (lineKey: string) => Promise<void>;
+  removeLine: (lineKey: string) => Promise<void>;
   isCartMutating: boolean;
 };
 
@@ -143,13 +144,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   );
 
   const setLineQuantity = useCallback(
-    async (variantId: string, quantity: number) => {
+    async (line: CartApiItem, quantity: number) => {
       if (mutatingVariantId) return;
+      const key = cartLineKey(line);
       const version = ++cartVersionRef.current;
-      setMutatingVariantId(variantId);
+      setMutatingVariantId(key);
       try {
         const data =
-          quantity < 1 ? await cartRemove(variantId) : await cartUpdate(variantId, quantity);
+          quantity < 1 ? await cartRemove(line) : await cartUpdate(line, quantity);
         applyMutationResult(data, version);
       } catch (err) {
         await refreshCart();
@@ -162,11 +164,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   );
 
   const decreaseLine = useCallback(
-    async (variantId: string) => {
-      const line = itemsRef.current.find((i) => i.variantId === variantId);
+    async (lineKey: string) => {
+      const line = itemsRef.current.find((i) => cartLineKey(i) === lineKey);
       if (!line) return;
       try {
-        await setLineQuantity(variantId, line.quantity - 1);
+        await setLineQuantity(line, line.quantity - 1);
       } catch (err) {
         alert(err instanceof Error ? err.message : "Could not update cart");
       }
@@ -175,8 +177,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   );
 
   const increaseLine = useCallback(
-    async (variantId: string) => {
-      const line = itemsRef.current.find((i) => i.variantId === variantId);
+    async (lineKey: string) => {
+      const line = itemsRef.current.find((i) => cartLineKey(i) === lineKey);
       if (!line) return;
       if (
         !line.dropShipEnabled &&
@@ -186,7 +188,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       try {
-        await setLineQuantity(variantId, line.quantity + 1);
+        await setLineQuantity(line, line.quantity + 1);
       } catch (err) {
         alert(err instanceof Error ? err.message : "Could not update cart");
       }
@@ -195,12 +197,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   );
 
   const removeLine = useCallback(
-    async (variantId: string) => {
+    async (lineKey: string) => {
       if (mutatingVariantId) return;
+      const line = itemsRef.current.find((i) => cartLineKey(i) === lineKey);
+      if (!line) return;
       const version = ++cartVersionRef.current;
-      setMutatingVariantId(variantId);
+      setMutatingVariantId(lineKey);
       try {
-        const data = await cartRemove(variantId);
+        const data = await cartRemove(line);
         applyMutationResult(data, version);
       } catch (err) {
         await refreshCart();

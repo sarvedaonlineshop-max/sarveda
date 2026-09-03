@@ -78,10 +78,10 @@ export async function listCourseSlugs(): Promise<string[]> {
   return rows.map((r) => r.slug);
 }
 
-/** JIT materialize Cart/Order stub for paid course checkout (not shop catalog). */
+/** Ensure DigitalCheckoutOffer exists for paid course checkout (no ProductVariant). */
 export async function prepareCourseCheckoutVariant(
   slug: string
-): Promise<{ variantId: string; sku: string } | null> {
+): Promise<{ digitalOfferId: string; sku: string } | null> {
   const course = await prisma.course.findFirst({
     where: { slug, status: "PUBLISHED" },
     select: {
@@ -100,8 +100,8 @@ export async function prepareCourseCheckoutVariant(
     return null;
   }
 
-  const { materializeDigitalCheckoutVariant } = await import("../../utils/digital-checkout-offer");
-  const { variantId, sku } = await materializeDigitalCheckoutVariant(prisma, {
+  const { ensureDigitalCheckoutOffer } = await import("../../utils/digital-checkout-offer");
+  const { offerId, sku } = await ensureDigitalCheckoutOffer(prisma, {
     kind: "COURSE",
     entitySlug: course.slug,
     courseId: course.id,
@@ -109,11 +109,8 @@ export async function prepareCourseCheckoutVariant(
     priceInPaise: course.priceInPaise,
     priceUsdCents: course.priceUsdCents,
     imageUrl: course.imageUrl,
-    skuPrefix: "COURSE"
+    skuPrefix: "COURSE",
+    materializeVariant: false
   });
-  await prisma.course.update({
-    where: { id: course.id },
-    data: { checkoutVariantId: variantId }
-  });
-  return { variantId, sku };
+  return { digitalOfferId: offerId, sku };
 }

@@ -7,6 +7,7 @@ import { classifyVariantForInventory } from "./inventory-classification";
 import { ORDER_PAID_EVENT_TYPE, orderPaidUniqueKey } from "./order-paid.constants";
 import { getPostingEvent } from "./posting-event.service";
 import type { InventoryCogsOrderSnapshot } from "./inventory-cogs.types";
+import { isDigitalSku } from "../../utils/digitalCart";
 
 function fingerprintOrderCogsSource(input: {
   orderId: string;
@@ -68,7 +69,9 @@ export async function loadInventoryCogsSnapshotByOrderId(
           catalogHidden: item.variant.productRel.catalogHidden,
           onHand: 0
         })
-      : "UNKNOWN";
+      : isDigitalSku(item.skuSnapshot) || item.digitalOfferId
+        ? ("COURSE_DIGITAL_PLACEHOLDER" as const)
+        : ("UNKNOWN" as const);
     return {
       orderItemId: item.id,
       variantId: item.variantId,

@@ -144,6 +144,12 @@ export async function applyOrderInventoryRestockTx(
     }
 
     let inventoryIncremented = false;
+    if (!item.variantId) {
+      throw Object.assign(new Error(`Cannot restock digital line ${line.orderItemId}`), {
+        statusCode: 400,
+        code: "RESTOCK_DIGITAL_LINE"
+      });
+    }
     if (line.disposition === OrderInventoryRestockDisposition.SELLABLE) {
       const inv = await tx.inventory.findUnique({ where: { variantId: item.variantId } });
       if (inv) {
@@ -194,12 +200,15 @@ export async function restockPaidOrderLinesTx(
       id: true,
       qtyOrdered: true,
       warehouseFulfillmentQty: true,
-      dropShipFulfillmentQty: true
+      dropShipFulfillmentQty: true,
+      variantId: true,
+      digitalOfferId: true
     }
   });
 
   const lines: RestockLineInput[] = [];
   for (const item of items) {
+    if (!item.variantId || item.digitalOfferId) continue;
     const warehouseOrdered = orderItemWarehouseUnits(item);
     const alreadyReturned = await getReturnedQuantityForOrderItem(tx, item.id);
     const remaining = warehouseOrdered - alreadyReturned;

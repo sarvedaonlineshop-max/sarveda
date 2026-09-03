@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { cartAdd } from "@/lib/cart-api";
+import { cartAddDigital } from "@/lib/cart-api";
 import { submitCourseEnquiry } from "@/lib/course-enquiry";
 import { buildCourseEnquiryMessage, buildEnquiryWhatsAppUrl } from "@/lib/enquiry";
 import { formatINRFromPaise } from "@/lib/money";
@@ -61,14 +61,14 @@ export function CourseEnrollActions({
       });
       const prepJson = (await prepRes.json()) as {
         success?: boolean;
-        data?: { variantId?: string };
+        data?: { digitalOfferId?: string; variantId?: string };
         error?: string;
       };
-      const variantId = prepJson.data?.variantId;
-      if (!prepRes.ok || !variantId) {
+      const digitalOfferId = prepJson.data?.digitalOfferId;
+      if (!prepRes.ok || !digitalOfferId) {
         throw new Error(prepJson.error || "prepare-checkout failed");
       }
-      await cartAdd(variantId, 1);
+      await cartAddDigital(digitalOfferId, 1);
       router.push("/checkout");
     } catch {
       setError("Could not start checkout. Please try again or contact us.");

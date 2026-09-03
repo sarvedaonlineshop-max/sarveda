@@ -741,14 +741,20 @@ model Cart {
 }
 
 model CartItem {
-  id        String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  cartId    String         @db.Uuid
-  variantId String         @db.Uuid
-  quantity  Int            @default(1)
-  cart      Cart           @relation(fields: [cartId], references: [id])
-  variant   ProductVariant @relation(fields: [variantId], references: [id])
+  id             String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cartId         String               @db.Uuid
+  /// Shop product line (mutually exclusive with digitalOfferId).
+  variantId      String?              @db.Uuid
+  /// Course/event DigitalCheckoutOffer line (mutually exclusive with variantId).
+  digitalOfferId String?              @db.Uuid
+  quantity       Int                  @default(1)
+  cart           Cart                 @relation(fields: [cartId], references: [id])
+  variant        ProductVariant?      @relation(fields: [variantId], references: [id])
+  digitalOffer   DigitalCheckoutOffer? @relation(fields: [digitalOfferId], references: [id])
 
   @@unique([cartId, variantId])
+  @@unique([cartId, digitalOfferId])
+  @@index([digitalOfferId])
 }
 
 model Order {
@@ -1165,7 +1171,10 @@ model OrderServiceRequestPhoto {
 model OrderItem {
   id                String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   orderId           String                       @db.Uuid
-  variantId         String                       @db.Uuid
+  /// Shop product line (null for digital course/event lines).
+  variantId         String?                      @db.Uuid
+  /// Course/event DigitalCheckoutOffer line (null for shop product lines).
+  digitalOfferId    String?                      @db.Uuid
   skuSnapshot       String
   nameSnapshot      String
   qtyOrdered        Int
@@ -1179,9 +1188,12 @@ model OrderItem {
   lineTotalInPaise  Int
   pickupLocationId  String?                      @db.Uuid
   order             Order                        @relation(fields: [orderId], references: [id])
-  variant           ProductVariant               @relation(fields: [variantId], references: [id])
+  variant           ProductVariant?              @relation(fields: [variantId], references: [id])
+  digitalOffer      DigitalCheckoutOffer?        @relation(fields: [digitalOfferId], references: [id])
   pickupLocation    PickupLocation?              @relation(fields: [pickupLocationId], references: [id])
   inventoryRestocks OrderInventoryRestockEvent[]
+
+  @@index([digitalOfferId])
 }
 
 /// Physical return / restock disposition for a sold OrderItem.
@@ -1774,13 +1786,15 @@ model DigitalCheckoutOffer {
   saleUsdCents      Int?
   taxClass          String              @default("gst-5")
   imageUrl          String?
-  /// Optional Cart/Order bridge — materialized JIT for checkout; not a shop catalog row.
+  /// Optional legacy bridge — unused for new digital cart lines (kept for historical rows).
   checkoutVariantId String?             @unique @db.Uuid
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   course            Course?             @relation(fields: [courseId], references: [id], onDelete: Cascade)
   event             Event?              @relation(fields: [eventId], references: [id], onDelete: Cascade)
   checkoutVariant   ProductVariant?     @relation(fields: [checkoutVariantId], references: [id])
+  cartItems         CartItem[]
+  orderItems        OrderItem[]
 }
 
 enum CourseStatus {

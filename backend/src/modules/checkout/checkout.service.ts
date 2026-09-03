@@ -37,7 +37,8 @@ import * as delhivery from "../shipping/delhivery";
 import * as shiprocket from "../shipping/shiprocket";
 import { shippingEnv } from "../../config/env";
 import { unitMinorForZone } from "../../utils/variantPricing";
-import { isDigitalOnlyCart } from "../../utils/digitalCart";
+import { isDigitalCartLine, isDigitalOnlyCart } from "../../utils/digitalCart";
+import { priceForDigitalOffer } from "../../utils/digital-checkout-offer";
 import { createOrderAttributionInTx } from "../attribution/persist";
 import type { CreateOrderBody } from "./schemas";
 
@@ -372,21 +373,48 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
             include: { attributeValue: { include: { attribute: true } } }
           }
         }
-      }
+      },
+      digitalOffer: true
     }
   });
 
+  if (lines.length === 0) {
+    const e = new Error("Cart is empty") as Error & { statusCode: number; code: string };
+    e.statusCode = 400;
+    e.code = "EMPTY_CART";
+    throw e;
+  }
+
   for (const row of lines) {
+    if (isDigitalCartLine(row)) continue;
+    if (!row.variant) {
+      const e = new Error("Cart has an invalid product line") as Error & {
+        statusCode: number;
+        code: string;
+      };
+      e.statusCode = 400;
+      e.code = "INVALID_CART_LINE";
+      throw e;
+    }
     assertFulfillmentAllowed(variantFulfillmentInputFromVariant(row.variant), row.quantity);
   }
 
   let subtotalMinor = 0;
   for (const row of lines) {
+    if (row.digitalOffer) {
+      subtotalMinor += priceForDigitalOffer(row.digitalOffer, zone) * row.quantity;
+      continue;
+    }
+    if (!row.variant) continue;
     const u = unitMinorForZone(row.variant, zone);
     subtotalMinor += u * row.quantity;
   }
 
-  const shippingLines = lines.map((row) => ({
+  const productLines = lines.filter(
+    (row): row is typeof row & { variant: NonNullable<(typeof row)["variant"]>; variantId: string } =>
+      Boolean(row.variantId && row.variant)
+  );
+  const shippingLines = productLines.map((row) => ({
     variantId: row.variantId,
     quantity: row.quantity
   }));
@@ -449,11 +477,11 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
 
   let shiprocketPinCheckFallback = false;
   if (!digitalOnly) {
-    await assertDelhiveryHeavyIndiaServiceable(body.country, body.postalCode, lines);
+    await assertDelhiveryHeavyIndiaServiceable(body.country, body.postalCode, productLines);
     shiprocketPinCheckFallback = await assertIndiaCheckoutServiceable(
       body.country,
       body.postalCode,
-      lines,
+      productLines,
       body.codDelivery
     );
   }
@@ -536,7 +564,30 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
     await createOrderAttributionInTx(tx, order.id, body.attribution, userAgent);
 
     for (const row of lines) {
-      const v = row.variant;
+      if (row.digitalOfferId && row.digitalOffer) {
+        const offer = row.digitalOffer;
+        const unit = priceForDigitalOffer(offer, zone);
+        const lineTotal = unit * row.quantity;
+        await tx.orderItem.create({
+          data: {
+            orderId: order.id,
+            variantId: null,
+            digitalOfferId: offer.id,
+            skuSnapshot: offer.sku,
+            nameSnapshot: offer.title,
+            qtyOrdered: row.quantity,
+            warehouseFulfillmentQty: 0,
+            dropShipFulfillmentQty: 0,
+            unitPriceInPaise: unit,
+            discountInPaise: 0,
+            taxInPaise: 0,
+            lineTotalInPaise: lineTotal
+          }
+        });
+        continue;
+      }
+
+      const v = row.variant!;
       const p = v.productRel;
       const unit = unitMinorForZone(v, zone);
       const lineTotal = unit * row.quantity;

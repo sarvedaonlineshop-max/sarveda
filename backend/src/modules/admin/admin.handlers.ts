@@ -2401,7 +2401,9 @@ export async function orderShippingBreakdown(req: Request, res: Response, next: 
       order.payments[0]?.provider === "COD" ||
       (order.paymentStatus === "PENDING" && order.status === "PAID");
     const { computeVariantShippingBreakdown } = await import("../shipping/shippingRates.service");
-    const lines = order.items.map((i) => ({ variantId: i.variantId, quantity: i.qtyOrdered }));
+    const lines = order.items
+      .filter((i): i is typeof i & { variantId: string } => Boolean(i.variantId))
+      .map((i) => ({ variantId: i.variantId, quantity: i.qtyOrdered }));
     const breakdown = await computeVariantShippingBreakdown(prisma, lines, country, {
       cod: isCod && country.toUpperCase() === "IN"
     });

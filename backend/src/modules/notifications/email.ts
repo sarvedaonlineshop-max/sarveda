@@ -734,13 +734,18 @@ export async function sendAbandonedCartEmail(userId: string): Promise<boolean> {
         take: 3,
         include: {
           variant: { include: { productRel: { select: { name: true } } } },
+          digitalOffer: { select: { title: true } }
         },
       },
     },
   });
   if (!cart?.items.length) return false;
 
-  const names = cart.items.map((i) => i.variant.productRel.name).join(", ");
+  const names = cart.items
+    .map((i) => i.variant?.productRel.name ?? i.digitalOffer?.title)
+    .filter(Boolean)
+    .join(", ");
+  if (!names) return false;
   const greeting = user.name ? `Dear ${escapeHtml(user.name)},` : "Dear Customer,";
   const lines = [
     `You left items in your Sarveda cart: <strong>${escapeHtml(names)}</strong>${cart.items.length > 3 ? " and more" : ""}.`,

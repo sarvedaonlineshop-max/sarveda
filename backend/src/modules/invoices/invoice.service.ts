@@ -19,7 +19,8 @@ export async function loadOrderForInvoice(orderId: string) {
             include: {
               productRel: { select: { taxClass: true, hsnCode: true } }
             }
-          }
+          },
+          digitalOffer: { select: { taxClass: true } }
         }
       },
       addresses: true,
@@ -44,12 +45,13 @@ export function buildInvoiceInputFromOrder(
   const defaultHsn = process.env.DEFAULT_HSN_CODE?.trim() || "9205";
 
   const lines: GstInvoiceLine[] = order.items.map((row) => {
-    const taxClass = row.variant.productRel.taxClass;
+    const taxClass =
+      row.variant?.productRel.taxClass ?? row.digitalOffer?.taxClass ?? "standard";
     const rate = isGstApplicable ? gstRatePercent(taxClass) : 0;
     const { taxableMinor, taxMinor } = isGstApplicable
       ? gstFromInclusiveLine(row.lineTotalInPaise, rate)
       : { taxableMinor: row.lineTotalInPaise, taxMinor: 0 };
-    const hsn = row.variant.productRel.hsnCode?.trim() || defaultHsn;
+    const hsn = row.variant?.productRel.hsnCode?.trim() || defaultHsn;
     return {
       name: row.nameSnapshot,
       sku: row.skuSnapshot,

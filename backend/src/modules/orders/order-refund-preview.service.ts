@@ -17,7 +17,8 @@ const ORDER_REFUND_INCLUDE = {
         select: {
           productRel: { select: { taxClass: true } }
         }
-      }
+      },
+      digitalOffer: { select: { taxClass: true } }
     }
   },
   payments: { orderBy: { createdAt: "desc" as const } },
@@ -110,7 +111,7 @@ export async function loadOrderRefundPreview(
       lineTotalInPaise: item.lineTotalInPaise,
       unitPriceInPaise: item.unitPriceInPaise,
       qtyOrdered: item.qtyOrdered,
-      taxClass: item.variant.productRel.taxClass
+      taxClass: item.variant?.productRel.taxClass ?? item.digitalOffer?.taxClass ?? null
     })),
     payment: payment
       ? {

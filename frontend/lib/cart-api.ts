@@ -38,7 +38,8 @@ function withCountryQuery(path: string, shippingCountry?: string): string {
 
 export type CartApiItem = {
   id: string;
-  variantId: string;
+  variantId: string | null;
+  digitalOfferId?: string | null;
   productSlug: string;
   productName: string;
   quantity: number;
@@ -48,7 +49,19 @@ export type CartApiItem = {
   maxQuantity: number | null;
   dropShipEnabled?: boolean;
   warehouseAvailable?: number | null;
+  isDigital?: boolean;
 };
+
+/** Stable key for cart UI / mutations (product variant or digital offer). */
+export function cartLineKey(item: {
+  variantId?: string | null;
+  digitalOfferId?: string | null;
+  id?: string;
+}): string {
+  if (item.digitalOfferId) return `d:${item.digitalOfferId}`;
+  if (item.variantId) return item.variantId;
+  return item.id ?? "";
+}
 
 export type CartCouponInfo = {
   code: string;
@@ -75,17 +88,19 @@ export function preserveCartItemOrder(
   if (previous.length === 0) {
     return [...incoming].sort((a, b) => a.id.localeCompare(b.id));
   }
-  const incomingByVariant = new Map(incoming.map((i) => [i.variantId, i]));
+  const incomingByKey = new Map(incoming.map((i) => [cartLineKey(i), i]));
   const ordered: CartApiItem[] = [];
   for (const item of previous) {
-    const updated = incomingByVariant.get(item.variantId);
+    const key = cartLineKey(item);
+    const updated = incomingByKey.get(key);
     if (updated) {
       ordered.push(updated);
-      incomingByVariant.delete(item.variantId);
+      incomingByKey.delete(key);
     }
   }
   for (const item of incoming) {
-    if (incomingByVariant.has(item.variantId)) {
+    const key = cartLineKey(item);
+    if (incomingByKey.has(key)) {
       ordered.push(item);
     }
   }
@@ -199,11 +214,30 @@ export async function cartGet(
 }
 
 export async function cartAdd(variantId: string, quantity: number): Promise<CartApiResponse> {
+  return cartAddLine({ variantId, quantity });
+}
+
+export async function cartAddDigital(
+  digitalOfferId: string,
+  quantity = 1
+): Promise<CartApiResponse> {
+  return cartAddLine({ digitalOfferId, quantity });
+}
+
+async function cartAddLine(input: {
+  variantId?: string;
+  digitalOfferId?: string;
+  quantity: number;
+}): Promise<CartApiResponse> {
   const res = await fetch(`${getApiBase()}${withCountryQuery("/api/cart/add")}`, {
     method: "POST",
     credentials: "include",
     headers: buildHeaders(true),
-    body: JSON.stringify({ variantId, quantity: Number(quantity) || 1 })
+    body: JSON.stringify({
+      ...(input.variantId ? { variantId: input.variantId } : {}),
+      ...(input.digitalOfferId ? { digitalOfferId: input.digitalOfferId } : {}),
+      quantity: Number(input.quantity) || 1
+    })
   });
   const raw = await res.text();
   let json: {
@@ -225,12 +259,16 @@ export async function cartAdd(variantId: string, quantity: number): Promise<Cart
   if (json.data?.sessionId) {
     writeSession(json.data.sessionId);
   }
-  const addedLine = json.data!.items.find((i) => i.variantId === variantId);
+  const addedLine = json.data!.items.find((i) =>
+    input.digitalOfferId
+      ? i.digitalOfferId === input.digitalOfferId
+      : i.variantId === input.variantId
+  );
   if (addedLine) {
     trackAddToCart({
-      itemId: addedLine.variantId,
+      itemId: cartLineKey(addedLine),
       name: addedLine.productName,
-      value: addedLine.unitPriceInPaise * (Number(quantity) || 1),
+      value: addedLine.unitPriceInPaise * (Number(input.quantity) || 1),
       currency: json.data!.currency
     });
   }
@@ -239,12 +277,20 @@ export async function cartAdd(variantId: string, quantity: number): Promise<Cart
   return json.data!;
 }
 
-export async function cartUpdate(variantId: string, quantity: number): Promise<CartApiResponse> {
+export async function cartUpdate(
+  line: { variantId?: string | null; digitalOfferId?: string | null } | string,
+  quantity: number
+): Promise<CartApiResponse> {
+  const variantId = typeof line === "string" ? line : line.variantId ?? undefined;
+  const digitalOfferId = typeof line === "string" ? undefined : line.digitalOfferId ?? undefined;
   const res = await fetch(`${getApiBase()}${withCountryQuery("/api/cart/update")}`, {
     method: "PUT",
     credentials: "include",
     headers: buildHeaders(true),
-    body: JSON.stringify({ variantId, quantity })
+    body: JSON.stringify({
+      ...(digitalOfferId ? { digitalOfferId } : { variantId }),
+      quantity
+    })
   });
   const json = (await res.json()) as {
     success?: boolean;
@@ -275,15 +321,19 @@ export async function cartClearAll(): Promise<void> {
   notifyCartChanged();
 }
 
-export async function cartRemove(variantId: string): Promise<CartApiResponse> {
-  const res = await fetch(
-    `${getApiBase()}${withCountryQuery(`/api/cart/remove/${encodeURIComponent(variantId)}`)}`,
-    {
-      method: "DELETE",
-      credentials: "include",
-      headers: buildHeaders(false)
-    }
-  );
+export async function cartRemove(
+  line: { variantId?: string | null; digitalOfferId?: string | null } | string
+): Promise<CartApiResponse> {
+  const variantId = typeof line === "string" ? line : line.variantId ?? undefined;
+  const digitalOfferId = typeof line === "string" ? undefined : line.digitalOfferId ?? undefined;
+  const path = digitalOfferId
+    ? `/api/cart/remove/digital/${encodeURIComponent(digitalOfferId)}`
+    : `/api/cart/remove/${encodeURIComponent(variantId!)}`;
+  const res = await fetch(`${getApiBase()}${withCountryQuery(path)}`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: buildHeaders(false)
+  });
   const json = (await res.json()) as {
     success?: boolean;
     data?: CartApiResponse;

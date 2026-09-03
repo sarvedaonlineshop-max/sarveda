@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { SlideDrawer } from "@/components/ui/SlideDrawer";
-import { cartRemove, cartUpdate } from "@/lib/cart-api";
+import { cartLineKey, cartRemove, cartUpdate, type CartApiItem } from "@/lib/cart-api";
 import { formatMinorFromPaise } from "@/lib/money";
 
 import { useCartData } from "./CartProvider";
@@ -14,6 +14,14 @@ type Props = {
   open: boolean;
   onClose: () => void;
 };
+
+function lineHref(line: CartApiItem): string {
+  if (line.isDigital || line.digitalOfferId) {
+    if (line.variantLabel === "Event") return `/event/${line.productSlug}`;
+    return `/course/${line.productSlug}`;
+  }
+  return `/product/${line.productSlug}`;
+}
 
 export function CartDrawer({ open, onClose }: Props) {
   const { items, subtotalInPaise, itemCount, refreshCart, currency } = useCartData();
@@ -29,10 +37,11 @@ export function CartDrawer({ open, onClose }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  const setQty = async (variantId: string, quantity: number) => {
-    setBusy(variantId);
+  const setQty = async (line: CartApiItem, quantity: number) => {
+    const key = cartLineKey(line);
+    setBusy(key);
     try {
-      await cartUpdate(variantId, quantity);
+      await cartUpdate(line, quantity);
       await refreshCart();
     } catch (error) {
       console.error(error);
@@ -42,10 +51,11 @@ export function CartDrawer({ open, onClose }: Props) {
     }
   };
 
-  const remove = async (variantId: string) => {
-    setBusy(variantId);
+  const remove = async (line: CartApiItem) => {
+    const key = cartLineKey(line);
+    setBusy(key);
     try {
-      await cartRemove(variantId);
+      await cartRemove(line);
       await refreshCart();
     } catch (error) {
       console.error(error);
@@ -107,13 +117,16 @@ export function CartDrawer({ open, onClose }: Props) {
           </div>
         ) : (
           <ul className="space-y-3 md:space-y-4">
-            {items.map((line) => (
+            {items.map((line) => {
+              const key = cartLineKey(line);
+              const href = lineHref(line);
+              return (
               <li
-                key={line.variantId}
+                key={key}
                 className="flex gap-3 rounded-none border-b border-stone-200 bg-white p-3 md:rounded-2xl md:border md:border-stone-100 md:shadow-sm"
               >
                 <Link
-                  href={`/product/${line.productSlug}`}
+                  href={href}
                   onClick={onClose}
                   className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl bg-stone-100"
                 >
@@ -132,7 +145,7 @@ export function CartDrawer({ open, onClose }: Props) {
                 </Link>
                 <div className="min-w-0 flex-1">
                   <Link
-                    href={`/product/${line.productSlug}`}
+                    href={href}
                     onClick={onClose}
                     className="font-sans font-medium leading-snug text-stone-900 hover:text-amber-800"
                   >
@@ -144,13 +157,14 @@ export function CartDrawer({ open, onClose }: Props) {
                     <span className="font-normal text-stone-400"> / unit</span>
                   </p>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {line.isDigital || line.digitalOfferId ? null : (
                     <div className="flex items-center rounded-xl border border-stone-200 bg-stone-50">
                       <button
                         type="button"
                         disabled={!!busy}
                         className="flex h-11 min-w-[44px] items-center justify-center text-lg text-stone-700 hover:bg-stone-100 disabled:opacity-50"
                         aria-label="Decrease quantity"
-                        onClick={() => void setQty(line.variantId, line.quantity - 1)}
+                        onClick={() => void setQty(line, line.quantity - 1)}
                       >
                         −
                       </button>
@@ -167,15 +181,16 @@ export function CartDrawer({ open, onClose }: Props) {
                         }
                         className="flex h-11 min-w-[44px] items-center justify-center text-lg text-stone-700 hover:bg-stone-100 disabled:opacity-50"
                         aria-label="Increase quantity"
-                        onClick={() => void setQty(line.variantId, line.quantity + 1)}
+                        onClick={() => void setQty(line, line.quantity + 1)}
                       >
                         +
                       </button>
                     </div>
+                    )}
                     <button
                       type="button"
                       disabled={!!busy}
-                      onClick={() => void remove(line.variantId)}
+                      onClick={() => void remove(line)}
                       className="min-h-[44px] px-2 text-sm font-medium text-stone-500 underline-offset-2 hover:text-stone-900 hover:underline disabled:opacity-50"
                     >
                       Remove
@@ -183,7 +198,8 @@ export function CartDrawer({ open, onClose }: Props) {
                   </div>
                 </div>
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
       </div>

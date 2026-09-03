@@ -112,7 +112,8 @@ async function loadOrderForChallan(orderId: string) {
             include: {
               productRel: { select: { taxClass: true, hsnCode: true } }
             }
-          }
+          },
+          digitalOffer: { select: { taxClass: true } }
         }
       },
       addresses: true,
@@ -173,7 +174,7 @@ function buildLineSnapshots(
 
   let taxableSum = 0;
   const lines = order.items.map((row, idx) => {
-    const taxClass = row.variant.productRel.taxClass;
+    const taxClass = row.variant?.productRel.taxClass ?? row.digitalOffer?.taxClass ?? "gst-5";
     const rate = isInrDomestic ? gstRatePercent(taxClass) : 0;
     const { taxableMinor } = isInrDomestic
       ? gstFromInclusiveLine(row.lineTotalInPaise, rate)
@@ -183,7 +184,7 @@ function buildLineSnapshots(
       orderItemId: row.id,
       productName: sanitizeText(row.nameSnapshot, 500) ?? "Item",
       sku: sanitizeText(row.skuSnapshot, 120),
-      hsnCode: sanitizeText(row.variant.productRel.hsnCode, 20) ?? defaultHsn,
+      hsnCode: sanitizeText(row.variant?.productRel.hsnCode, 20) ?? defaultHsn,
       quantity: row.qtyOrdered,
       unitPriceInPaise: row.unitPriceInPaise,
       lineTotalInPaise: row.lineTotalInPaise,

@@ -148,7 +148,10 @@ export function PaymentSelector({
   const cartFingerprint = useMemo(() => {
     if (!shippingReady && !isDigitalOnly) return "";
     return buildCommercialFingerprint({
-      lines: cartItems.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
+      lines: cartItems.map((i) => ({
+        variantId: i.digitalOfferId ? `d:${i.digitalOfferId}` : i.variantId!,
+        quantity: i.quantity
+      })),
       currency: displayCurrency,
       payableMinor: estimatedTotal
     });
@@ -201,8 +204,8 @@ export function PaymentSelector({
       void fetchShippingRatesEstimate({
         country: form.country ?? "IN",
         pincode: form.postalCode,
-        variantIds: cartItems.map((i) => i.variantId),
-        quantities: cartItems.map((i) => i.quantity)
+        variantIds: cartItems.filter((i) => i.variantId).map((i) => i.variantId!),
+        quantities: cartItems.filter((i) => i.variantId).map((i) => i.quantity)
       })
         .then((r) => {
           setShippingInPaise(r.standardShippingInMinorUnits);
@@ -259,7 +262,10 @@ export function PaymentSelector({
     (order: CreateOrderResponse) => {
       // Persist fingerprint from the Order snapshot (authoritative), not a second pricing path.
       const fp = buildCommercialFingerprint({
-        lines: cartItems.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
+        lines: cartItems.map((i) => ({
+          variantId: i.digitalOfferId ? `d:${i.digitalOfferId}` : i.variantId!,
+          quantity: i.quantity
+        })),
         currency: order.currency,
         payableMinor: order.amountInPaise
       });
@@ -535,7 +541,10 @@ export function PaymentSelector({
       {cartItems.length > 0 ? (
         <ul className="mt-4 space-y-2 border-b border-brand-cream-dark pb-4 text-sm">
           {cartItems.map((item) => (
-            <li key={item.variantId} className="flex items-start justify-between gap-3">
+            <li
+              key={item.digitalOfferId ? `d:${item.digitalOfferId}` : item.variantId!}
+              className="flex items-start justify-between gap-3"
+            >
               <div className="min-w-0">
                 <p className="line-clamp-2 font-sans font-medium text-brand-ink">{item.productName}</p>
                 {item.variantLabel ? (

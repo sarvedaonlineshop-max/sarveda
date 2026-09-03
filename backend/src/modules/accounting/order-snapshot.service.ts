@@ -29,24 +29,25 @@ function toLineSnapshot(
     qtyOrdered: number;
     unitPriceInPaise: number;
     lineTotalInPaise: number;
-    variantId: string;
+    variantId: string | null;
     variant: {
       productId: string;
       productRel: { taxClass: string | null; hsnCode: string | null };
-    };
+    } | null;
+    digitalOffer: { taxClass: string } | null;
   }
 ): OrderPaidLineSnapshot {
   return {
     orderItemId: item.id,
-    productId: item.variant.productId,
+    productId: item.variant?.productId ?? null,
     variantId: item.variantId,
     skuSnapshot: item.skuSnapshot,
     nameSnapshot: item.nameSnapshot,
     qtyOrdered: item.qtyOrdered,
     unitPriceInPaise: item.unitPriceInPaise,
     lineTotalInPaise: item.lineTotalInPaise,
-    taxClass: item.variant.productRel.taxClass,
-    hsnCode: item.variant.productRel.hsnCode
+    taxClass: item.variant?.productRel.taxClass ?? item.digitalOffer?.taxClass ?? "gst-5",
+    hsnCode: item.variant?.productRel.hsnCode ?? null
   };
 }
 
@@ -55,7 +56,8 @@ const orderInclude = {
     include: {
       variant: {
         include: { productRel: { select: { taxClass: true, hsnCode: true } } }
-      }
+      },
+      digitalOffer: { select: { taxClass: true } }
     }
   },
   addresses: true,

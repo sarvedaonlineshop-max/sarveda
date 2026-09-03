@@ -173,6 +173,12 @@ export async function submitReturnReplacementRequest(opts: {
     deliveredAt: deliveredAt.toISOString(),
     items: parsedItems.map((p) => {
       const row = orderItemMap.get(p.orderItemId)!;
+      if (!row.variantId) {
+        throw Object.assign(new Error("Digital purchases cannot be returned this way"), {
+          statusCode: 400,
+          code: "DIGITAL_LINE_NOT_RETURNABLE"
+        });
+      }
       return {
         orderItemId: p.orderItemId,
         variantId: row.variantId,

@@ -61,12 +61,14 @@ export async function loadInventoryCogsReversalSnapshot(
   }
 
   const variant = event.orderItem.variant;
-  const classification = classifyVariantForInventory({
-    sku: event.orderItem.skuSnapshot,
-    productType: variant?.productRel.productType ?? null,
-    catalogHidden: variant?.productRel.catalogHidden ?? false,
-    onHand: variant?.inventory?.onHand ?? 0
-  });
+  const classification = variant
+    ? classifyVariantForInventory({
+        sku: event.orderItem.skuSnapshot,
+        productType: variant.productRel.productType,
+        catalogHidden: variant.productRel.catalogHidden,
+        onHand: variant.inventory?.onHand ?? 0
+      })
+    : ("COURSE_DIGITAL_PLACEHOLDER" as const);
 
   const cutoverClassification = classifyCutover(event.createdAt);
   const orderCutoverClassification = classifyCutover(event.order.placedAt ?? event.createdAt);

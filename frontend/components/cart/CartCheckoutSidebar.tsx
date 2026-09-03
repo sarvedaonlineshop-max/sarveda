@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { CartLineQuantity } from "@/components/cart/CartLineQuantity";
-import type { CartApiItem } from "@/lib/cart-api";
+import { cartLineKey, type CartApiItem } from "@/lib/cart-api";
 import { formatMinorFromPaise } from "@/lib/money";
 
 import { useCartData } from "./CartProvider";
@@ -15,6 +15,12 @@ type Props = {
 };
 
 function CompactLine({ line, currency }: { line: CartApiItem; currency: string }) {
+  const href =
+    line.isDigital || line.digitalOfferId
+      ? line.variantLabel === "Event"
+        ? `/event/${line.productSlug}`
+        : `/course/${line.productSlug}`
+      : `/product/${line.productSlug}`;
   return (
     <li className="border-b border-stone-100 py-2.5 last:border-0">
       <p className="font-sans text-sm font-semibold tabular-nums leading-tight text-brand-forest">
@@ -22,7 +28,7 @@ function CompactLine({ line, currency }: { line: CartApiItem; currency: string }
       </p>
       <div className="mt-1.5 flex gap-2">
         <Link
-          href={`/product/${line.productSlug}`}
+          href={href}
           className="relative h-12 w-12 shrink-0 overflow-hidden rounded border border-stone-100 bg-stone-50"
         >
           {line.primaryImageUrl ? (
@@ -83,7 +89,7 @@ export function CartCheckoutSidebar({ mode, className = "" }: Props) {
         <div className="flex-1 overflow-y-auto px-2 py-2">
           <ul>
             {items.map((line) => (
-              <CompactLine key={line.variantId} line={line} currency={currency} />
+              <CompactLine key={cartLineKey(line)} line={line} currency={currency} />
             ))}
           </ul>
         </div>

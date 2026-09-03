@@ -30,7 +30,11 @@ export async function add(req: Request, res: Response, next: NextFunction) {
       return;
     }
     const body = req.body as CartAddBody;
-    await addCartItem(cartId, body.variantId, body.quantity);
+    await addCartItem(cartId, {
+      variantId: body.variantId,
+      digitalOfferId: body.digitalOfferId,
+      quantity: body.quantity
+    });
     const payload = await getCartPayload(cartId, pricingCountry(req), {
       userId,
       email: checkoutEmail(req)
@@ -79,7 +83,11 @@ export async function update(req: Request, res: Response, next: NextFunction) {
       return;
     }
     const body = req.body as CartUpdateBody;
-    await updateCartItemQuantity(cartId, body.variantId, body.quantity);
+    await updateCartItemQuantity(cartId, {
+      variantId: body.variantId,
+      digitalOfferId: body.digitalOfferId,
+      quantity: body.quantity
+    });
     const payload = await getCartPayload(cartId, pricingCountry(req), { userId });
     res.json({ success: true, data: payload });
   } catch (err) {
@@ -149,7 +157,35 @@ export async function remove(req: Request, res: Response, next: NextFunction) {
       res.status(400).json({ success: false, error: "variantId required", code: "BAD_REQUEST" });
       return;
     }
-    await removeCartItem(cartId, variantId);
+    await removeCartItem(cartId, { variantId });
+    const payload = await getCartPayload(cartId, pricingCountry(req), { userId });
+    res.json({ success: true, data: payload });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function removeDigital(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { cartId, userId } = await resolveCartContext(req, "write");
+    if (!cartId) {
+      res.status(400).json({
+        success: false,
+        error: "Missing cart session.",
+        code: "NO_CART"
+      });
+      return;
+    }
+    const { digitalOfferId } = req.params;
+    if (!digitalOfferId) {
+      res.status(400).json({
+        success: false,
+        error: "digitalOfferId required",
+        code: "BAD_REQUEST"
+      });
+      return;
+    }
+    await removeCartItem(cartId, { digitalOfferId });
     const payload = await getCartPayload(cartId, pricingCountry(req), { userId });
     res.json({ success: true, data: payload });
   } catch (err) {

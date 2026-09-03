@@ -17,6 +17,7 @@ router.post("/merge-session", controller.mergeSession);
 router.get("/", controller.get);
 router.delete("/", controller.clear);
 router.put("/update", validateBody(cartUpdateSchema), controller.update);
+router.delete("/remove/digital/:digitalOfferId", controller.removeDigital);
 router.delete("/remove/:variantId", controller.remove);
 router.get("/coupon/offers", requireAuth, couponController.listOffers);
 router.post("/coupon", requireAuth, validateBody(cartCouponSchema), couponController.applyCoupon);

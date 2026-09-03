@@ -12,7 +12,11 @@ import {
   variantFulfillmentInputFromVariant
 } from "../inventory/variant-fulfillment-availability";
 import { unitMinorForZone } from "../../utils/variantPricing";
-import { isDigitalLine } from "../../utils/digitalCart";
+import { isDigitalLine, isDigitalOnlyCart } from "../../utils/digitalCart";
+import {
+  assertDigitalOfferPurchasable,
+  priceForDigitalOffer
+} from "../../utils/digital-checkout-offer";
 import { couponUserMessage, resolveCartCouponDiscount } from "../coupons/coupon.service";
 import { currencyForZone, zoneFromCountry } from "../shipping/shippingRates.service";
 
@@ -58,6 +62,28 @@ export async function mergeGuestCartIntoUser(
   }
 
   for (const item of guestCart.items) {
+    if (item.digitalOfferId) {
+      const offer = await prisma.digitalCheckoutOffer.findUnique({
+        where: { id: item.digitalOfferId }
+      });
+      if (!offer || offer.saleInPaise <= 0) continue;
+      await prisma.cartItem.upsert({
+        where: {
+          cartId_digitalOfferId: { cartId: userCartId, digitalOfferId: item.digitalOfferId }
+        },
+        create: {
+          cartId: userCartId,
+          digitalOfferId: item.digitalOfferId,
+          variantId: null,
+          quantity: 1
+        },
+        update: { quantity: 1 }
+      });
+      continue;
+    }
+
+    if (!item.variantId) continue;
+
     const variant = await prisma.productVariant.findUnique({
       where: { id: item.variantId },
       include: { inventory: true }
@@ -229,6 +255,12 @@ export async function getCartPayload(
               },
               inventory: true
             }
+          },
+          digitalOffer: {
+            include: {
+              course: { select: { slug: true } },
+              event: { select: { slug: true } }
+            }
           }
         }
       }
@@ -250,7 +282,8 @@ export async function getCartPayload(
 
   type ItemOut = {
     id: string;
-    variantId: string;
+    variantId: string | null;
+    digitalOfferId: string | null;
     productSlug: string;
     productName: string;
     quantity: number;
@@ -260,23 +293,43 @@ export async function getCartPayload(
     maxQuantity: number | null;
     dropShipEnabled: boolean;
     warehouseAvailable: number | null;
+    isDigital: boolean;
   };
 
   const items: ItemOut[] = [];
   let subtotalInPaise = 0;
   let itemCount = 0;
-  let isDigitalOnly = cart.items.length > 0;
 
   for (const row of cart.items) {
-    const v = row.variant;
-    const p = v?.productRel;
-    if (!v || !p) {
-      isDigitalOnly = false;
+    if (row.digitalOfferId && row.digitalOffer) {
+      const offer = row.digitalOffer;
+      const price = priceForDigitalOffer(offer, zone);
+      const line = price * row.quantity;
+      subtotalInPaise += line;
+      itemCount += row.quantity;
+      const slug = offer.course?.slug ?? offer.event?.slug ?? offer.sku;
+      items.push({
+        id: row.id,
+        variantId: null,
+        digitalOfferId: offer.id,
+        productSlug: slug,
+        productName: offer.title,
+        quantity: row.quantity,
+        unitPriceInPaise: price,
+        variantLabel: offer.kind === "COURSE" ? "Course" : "Event",
+        primaryImageUrl: offer.imageUrl,
+        maxQuantity: 1,
+        dropShipEnabled: false,
+        warehouseAvailable: null,
+        isDigital: true
+      });
       continue;
     }
-    if (!isDigitalLine(v)) {
-      isDigitalOnly = false;
-    }
+
+    const v = row.variant;
+    const p = v?.productRel;
+    if (!v || !p) continue;
+
     const img = p.images[0]?.url ?? null;
     const price = unitMinorForZone(v, zone);
     const line = price * row.quantity;
@@ -286,13 +339,12 @@ export async function getCartPayload(
     const inv = v.inventory;
     const fulfillmentInput = variantFulfillmentInputFromVariant(v);
     const maxQty = customerMaxLineQty(fulfillmentInput);
-    const warehouseAvailable = inv
-      ? Math.max(0, inv.onHand - inv.reserved)
-      : null;
+    const warehouseAvailable = inv ? Math.max(0, inv.onHand - inv.reserved) : null;
 
     items.push({
       id: row.id,
       variantId: v.id,
+      digitalOfferId: null,
       productSlug: p.slug,
       productName: p.name,
       quantity: row.quantity,
@@ -301,9 +353,19 @@ export async function getCartPayload(
       primaryImageUrl: img,
       maxQuantity: v.dropShipEnabled ? null : maxQty,
       dropShipEnabled: v.dropShipEnabled,
-      warehouseAvailable
+      warehouseAvailable,
+      isDigital: isDigitalLine(v)
     });
   }
+
+  const isDigitalOnly = isDigitalOnlyCart(
+    cart.items.map((row) => ({
+      variantId: row.variantId,
+      digitalOfferId: row.digitalOfferId,
+      variant: row.variant,
+      digitalOffer: row.digitalOffer
+    }))
+  );
 
   let discountInPaise = 0;
   let coupon: {
@@ -361,9 +423,53 @@ export async function getCartPayload(
 
 export async function addCartItem(
   cartId: string,
-  variantId: string,
-  quantity: number
+  input: { variantId?: string; digitalOfferId?: string; quantity: number }
 ): Promise<void> {
+  const quantity = input.quantity;
+
+  if (input.digitalOfferId) {
+    const offer = await prisma.digitalCheckoutOffer.findUnique({
+      where: { id: input.digitalOfferId }
+    });
+    if (!offer) {
+      const e = new Error("Digital offer not found") as Error & {
+        statusCode: number;
+        code: string;
+      };
+      e.statusCode = 404;
+      e.code = "NOT_FOUND";
+      throw e;
+    }
+    assertDigitalOfferPurchasable(offer);
+
+    const existing = await prisma.cartItem.findUnique({
+      where: {
+        cartId_digitalOfferId: { cartId, digitalOfferId: offer.id }
+      }
+    });
+    const nextQty = (existing?.quantity ?? 0) + quantity;
+    if (nextQty > 1) {
+      const e = new Error("Digital items are limited to quantity 1") as Error & {
+        statusCode: number;
+        code: string;
+      };
+      e.statusCode = 400;
+      e.code = "DIGITAL_QTY";
+      throw e;
+    }
+
+    await prisma.cartItem.upsert({
+      where: {
+        cartId_digitalOfferId: { cartId, digitalOfferId: offer.id }
+      },
+      create: { cartId, digitalOfferId: offer.id, quantity: 1, variantId: null },
+      update: { quantity: 1 }
+    });
+    await markCartMutated(cartId);
+    return;
+  }
+
+  const variantId = input.variantId!;
   const variant = await prisma.productVariant.findFirst({
     where: {
       id: variantId,
@@ -383,9 +489,8 @@ export async function addCartItem(
     throw e;
   }
 
-  const inv = variant.inventory;
-  const input = variantFulfillmentInputFromVariant(variant);
-  if (!isCustomerSellable(input)) {
+  const fulfillmentInput = variantFulfillmentInputFromVariant(variant);
+  if (!isCustomerSellable(fulfillmentInput)) {
     const e = new Error("Out of stock") as Error & { statusCode: number; code: string };
     e.statusCode = 400;
     e.code = "OUT_OF_STOCK";
@@ -399,7 +504,7 @@ export async function addCartItem(
   });
 
   const nextQty = (existing?.quantity ?? 0) + quantity;
-  assertFulfillmentAllowed(input, nextQty);
+  assertFulfillmentAllowed(fulfillmentInput, nextQty);
 
   await prisma.cartItem.upsert({
     where: {
@@ -442,8 +547,8 @@ export async function setCartItemQuantity(
     throw e;
   }
 
-  const input = variantFulfillmentInputFromVariant(variant);
-  assertFulfillmentAllowed(input, quantity);
+  const fulfillmentInput = variantFulfillmentInputFromVariant(variant);
+  assertFulfillmentAllowed(fulfillmentInput, quantity);
 
   await prisma.cartItem.upsert({
     where: { cartId_variantId: { cartId, variantId } },
@@ -455,9 +560,49 @@ export async function setCartItemQuantity(
 
 export async function updateCartItemQuantity(
   cartId: string,
-  variantId: string,
-  quantity: number
+  input: { variantId?: string; digitalOfferId?: string; quantity: number }
 ): Promise<void> {
+  const { quantity } = input;
+
+  if (input.digitalOfferId) {
+    if (quantity < 1) {
+      await prisma.cartItem.deleteMany({
+        where: { cartId, digitalOfferId: input.digitalOfferId }
+      });
+      await markCartMutated(cartId);
+      return;
+    }
+    if (quantity > 1) {
+      const e = new Error("Digital items are limited to quantity 1") as Error & {
+        statusCode: number;
+        code: string;
+      };
+      e.statusCode = 400;
+      e.code = "DIGITAL_QTY";
+      throw e;
+    }
+    const row = await prisma.cartItem.findUnique({
+      where: {
+        cartId_digitalOfferId: { cartId, digitalOfferId: input.digitalOfferId }
+      }
+    });
+    if (!row) {
+      const e = new Error("Cart line not found") as Error & { statusCode: number; code: string };
+      e.statusCode = 404;
+      e.code = "NOT_FOUND";
+      throw e;
+    }
+    await prisma.cartItem.update({
+      where: {
+        cartId_digitalOfferId: { cartId, digitalOfferId: input.digitalOfferId }
+      },
+      data: { quantity: 1 }
+    });
+    await markCartMutated(cartId);
+    return;
+  }
+
+  const variantId = input.variantId!;
   if (quantity < 1) {
     await prisma.cartItem.deleteMany({
       where: { cartId, variantId }
@@ -475,15 +620,15 @@ export async function updateCartItemQuantity(
     }
   });
 
-  if (!row) {
+  if (!row?.variant) {
     const e = new Error("Cart line not found") as Error & { statusCode: number; code: string };
     e.statusCode = 404;
     e.code = "NOT_FOUND";
     throw e;
   }
 
-  const input = variantFulfillmentInputFromVariant(row.variant);
-  assertFulfillmentAllowed(input, quantity);
+  const fulfillmentInput = variantFulfillmentInputFromVariant(row.variant);
+  assertFulfillmentAllowed(fulfillmentInput, quantity);
 
   await prisma.cartItem.update({
     where: {
@@ -494,10 +639,19 @@ export async function updateCartItemQuantity(
   await markCartMutated(cartId);
 }
 
-export async function removeCartItem(cartId: string, variantId: string): Promise<void> {
-  await prisma.cartItem.deleteMany({
-    where: { cartId, variantId }
-  });
+export async function removeCartItem(
+  cartId: string,
+  input: { variantId?: string; digitalOfferId?: string }
+): Promise<void> {
+  if (input.digitalOfferId) {
+    await prisma.cartItem.deleteMany({
+      where: { cartId, digitalOfferId: input.digitalOfferId }
+    });
+  } else if (input.variantId) {
+    await prisma.cartItem.deleteMany({
+      where: { cartId, variantId: input.variantId }
+    });
+  }
   await markCartMutated(cartId);
 }
 

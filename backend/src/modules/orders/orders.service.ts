@@ -15,6 +15,7 @@ export async function reserveStockTx(tx: Prisma.TransactionClient, orderId: stri
   });
 
   for (const item of items) {
+    if (!item.variantId || !item.variant) continue;
     const inv = item.variant.inventory;
     if (!inv) continue;
 
@@ -50,6 +51,7 @@ export async function releaseStockTx(tx: Prisma.TransactionClient, orderId: stri
   });
 
   for (const item of items) {
+    if (!item.variantId) continue;
     const inv = await tx.inventory.findUnique({ where: { variantId: item.variantId } });
     if (!inv) continue;
     const warehouseQty = orderItemWarehouseUnits(item);
@@ -78,6 +80,7 @@ export async function confirmStockTx(tx: Prisma.TransactionClient, orderId: stri
   });
 
   for (const item of items) {
+    if (!item.variantId) continue;
     const inv = await tx.inventory.findUnique({ where: { variantId: item.variantId } });
     if (!inv) continue;
     const warehouseQty = orderItemWarehouseUnits(item);

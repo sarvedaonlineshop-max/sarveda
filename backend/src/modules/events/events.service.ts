@@ -94,9 +94,10 @@ export async function listEventSlugs(): Promise<string[]> {
 }
 
 /** JIT materialize Cart/Order stub for paid event checkout (not shop catalog). */
+/** Ensure DigitalCheckoutOffer exists for paid event checkout (no ProductVariant). */
 export async function prepareEventCheckoutVariant(
   slug: string
-): Promise<{ variantId: string; sku: string } | null> {
+): Promise<{ digitalOfferId: string; sku: string } | null> {
   const event = await prisma.event.findFirst({
     where: { slug, status: "PUBLISHED" },
     select: {
@@ -113,8 +114,8 @@ export async function prepareEventCheckoutVariant(
     return null;
   }
 
-  const { materializeDigitalCheckoutVariant } = await import("../../utils/digital-checkout-offer");
-  const { variantId, sku } = await materializeDigitalCheckoutVariant(prisma, {
+  const { ensureDigitalCheckoutOffer } = await import("../../utils/digital-checkout-offer");
+  const { offerId, sku } = await ensureDigitalCheckoutOffer(prisma, {
     kind: "EVENT",
     entitySlug: event.slug,
     eventId: event.id,
@@ -122,11 +123,8 @@ export async function prepareEventCheckoutVariant(
     priceInPaise: event.priceInPaise,
     priceUsdCents: null,
     imageUrl: event.imageUrl,
-    skuPrefix: "EVENT"
+    skuPrefix: "EVENT",
+    materializeVariant: false
   });
-  await prisma.event.update({
-    where: { id: event.id },
-    data: { checkoutVariantId: variantId }
-  });
-  return { variantId, sku };
+  return { digitalOfferId: offerId, sku };
 }
