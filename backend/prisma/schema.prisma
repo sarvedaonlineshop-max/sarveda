@@ -1152,6 +1152,11 @@ model OrderServiceRequest {
   closedAt           DateTime?
   offeredResolution  ReturnReplacementResolution?
   finalResolution    ReturnReplacementResolution?
+  highValueApprovalRequired Boolean @default(false)
+  highValueApprovedAt    DateTime?
+  highValueApprovedByEmail String?
+  highValueApprovalNote  String?
+  refundSlaDueAt         DateTime?
   returnPhysicalStatus ReturnPhysicalStatus @default(NOT_REQUIRED)
   resolutionStatus ReturnResolutionStatus @default(NONE)
   shippingRefundPolicy ReturnShippingRefundPolicy?
@@ -1177,6 +1182,7 @@ model OrderServiceRequest {
   @@index([channel])
   @@index([rootCause])
   @@index([type, status])
+  @@index([refundSlaDueAt])
 }
 
 model OrderServiceRequestItem {
@@ -1403,6 +1409,29 @@ model ReturnVendorClaim {
 
   @@index([requestId])
   @@index([status])
+}
+
+model ReturnPolicyConfig {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key             String   @unique
+  valueJson       Json
+  description     String?
+  updatedByUserId String?  @db.Uuid
+  updatedByEmail  String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model ReturnPolicyConfigAudit {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  configKey   String
+  beforeJson  Json?
+  afterJson   Json
+  actorUserId String?  @db.Uuid
+  actorEmail  String?
+  createdAt   DateTime @default(now())
+
+  @@index([configKey, createdAt])
 }
 
 model OrderItem {

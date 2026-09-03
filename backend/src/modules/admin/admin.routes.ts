@@ -346,6 +346,103 @@ router.post(
   serviceRequest.adminMarkReplacementDelivered
 );
 router.get("/return-cases", serviceRequest.adminListReturnCases);
+router.get("/return-policy-config", async (req, res, next) => {
+  try {
+    void req;
+    const { listReturnPolicyConfigs } = await import("../orders/return-policy-config.service");
+    const rows = await listReturnPolicyConfigs();
+    res.json({ success: true, data: { configs: rows } });
+  } catch (err) {
+    next(err);
+  }
+});
+router.put(
+  "/return-policy-config/:key",
+  validateBody(
+    z.object({
+      valueJson: z.any(),
+      description: z.string().max(500).optional()
+    })
+  ),
+  async (req, res, next) => {
+    try {
+      const admin = req.authUser!;
+      const { setReturnPolicyConfig } = await import("../orders/return-policy-config.service");
+      const row = await setReturnPolicyConfig({
+        key: req.params.key,
+        valueJson: (req.body as { valueJson: unknown }).valueJson as never,
+        description: (req.body as { description?: string }).description,
+        actorUserId: admin.id,
+        actorEmail: admin.email
+      });
+      res.json({ success: true, data: row });
+    } catch (err) {
+      const e = err as Error & { statusCode?: number; code?: string };
+      if (e.statusCode) {
+        res.status(e.statusCode).json({ success: false, error: e.message, code: e.code ?? "ERROR" });
+        return;
+      }
+      next(err);
+    }
+  }
+);
+router.get("/return-analytics", async (req, res, next) => {
+  try {
+    const lookbackDays = req.query.lookbackDays
+      ? Number(req.query.lookbackDays)
+      : undefined;
+    const { buildReturnAnalyticsSummary } = await import("../orders/return-analytics.service");
+    const data = await buildReturnAnalyticsSummary({ lookbackDays });
+    res.json({ success: true, data });
+  } catch (err) {
+    next(err);
+  }
+});
+router.get("/return-cases/overdue", async (req, res, next) => {
+  try {
+    void req;
+    const { listOverdueReturnCases } = await import("../orders/return-sla.service");
+    const rows = await listOverdueReturnCases();
+    res.json({ success: true, data: { rows } });
+  } catch (err) {
+    next(err);
+  }
+});
+router.get(
+  "/orders/:orderId/service-requests/:requestId/sla",
+  async (req, res, next) => {
+    try {
+      const { measureCaseSla } = await import("../orders/return-sla.service");
+      const data = await measureCaseSla(req.params.requestId);
+      if (!data) {
+        res.status(404).json({ success: false, error: "Not found", code: "NOT_FOUND" });
+        return;
+      }
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+router.post(
+  "/orders/:orderId/service-requests/:requestId/high-value-approve",
+  validateBody(z.object({ note: z.string().max(1000).optional() })),
+  async (req, res, next) => {
+    try {
+      const admin = req.authUser!;
+      const { approveHighValueRefund } = await import("../orders/return-policy-config.service");
+      const row = await approveHighValueRefund({
+        requestId: req.params.requestId,
+        adminEmail: admin.email,
+        adminUserId: admin.id,
+        note: (req.body as { note?: string }).note
+      });
+      res.json({ success: true, data: row });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 router.get(
   "/orders/:orderId/service-requests/:requestId/events",
   serviceRequest.adminListCaseEvents

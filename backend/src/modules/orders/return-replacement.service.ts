@@ -419,6 +419,8 @@ export async function approveReturnReplacementRequest(opts: {
       message: "Refund approved (initiation may wait for warehouse/QC where required)",
       actor: { email: opts.adminEmail, userId: opts.adminUserId, role: "ADMIN" }
     });
+    const { setRefundSlaDueAfterApproval } = await import("./return-sla.service");
+    await setRefundSlaDueAfterApproval(request.id);
   }
   if (hasReplacement) {
     await appendCaseEvent({
@@ -493,6 +495,23 @@ export async function executeReturnReplacementRefund(opts: {
 
   const shippingPolicy = request.shippingRefundPolicy ?? "SHIPPING_RETAINED";
   const isCod = request.order.payments.some((p) => p.provider === "COD");
+
+  let plannedTotal = 0;
+  for (const item of refundItems) {
+    const preview = await calculateReturnItemRefund({
+      orderId: request.orderId,
+      orderItemId: item.orderItemId,
+      qty: item.qtySelected,
+      shippingPolicy,
+      keepItem: item.requestedResolution === "KEEP_ITEM_PARTIAL_REFUND"
+    });
+    plannedTotal += preview.totalRefundPaise;
+  }
+  const { assertHighValueApprovalIfRequired } = await import("./return-policy-config.service");
+  await assertHighValueApprovalIfRequired({
+    requestId: request.id,
+    refundAmountPaise: plannedTotal
+  });
 
   if (isCod) {
     const note = opts.codRefundNote?.trim();

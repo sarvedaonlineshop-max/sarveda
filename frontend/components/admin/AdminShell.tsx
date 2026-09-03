@@ -27,6 +27,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin": "Dashboard",
   "/admin/orders": "Orders",
   "/admin/returns": "Returns",
+  "/admin/returns/analytics": "Returns Intel",
   "/admin/chats": "Chats",
   "/admin/customers": "Customers",
   "/admin/marketplaces": "Marketplaces",
