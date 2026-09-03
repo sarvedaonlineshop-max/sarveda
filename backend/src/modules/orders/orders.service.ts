@@ -3,6 +3,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { orderItemWarehouseUnits } from "../inventory/order-item-fulfillment";
+import { tryPostCodOrderCancelledAccounting } from "../accounting/order-cancelled-posting.service";
 
 import { expireOutstandingStripeSessionsForOrder } from "../payments/stripe.session";
 import { restockPaidOrderLinesTx } from "./order-inventory-restock.service";
@@ -269,6 +270,8 @@ export async function handlePaidOrderStatusChange(
   toStatus: "CANCELLED" | "REFUNDED",
   reason: string
 ): Promise<void> {
+  let postCodCancelAccounting = false;
+
   await prisma.$transaction(async (tx) => {
     const order = await tx.order.findFirst({
       where: { id: orderId, deletedAt: null },
@@ -306,5 +309,12 @@ export async function handlePaidOrderStatusChange(
         reason
       }
     });
+
+    postCodCancelAccounting =
+      toStatus === "CANCELLED" && order.payments.some((p) => p.provider === "COD");
   });
+
+  if (postCodCancelAccounting) {
+    await tryPostCodOrderCancelledAccounting(orderId);
+  }
 }

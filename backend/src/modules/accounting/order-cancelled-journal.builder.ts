@@ -1,53 +1,48 @@
 import { CLEARING_ACCOUNT_BY_PROVIDER } from "./order-paid.constants";
-import { OrderRefundedFullJournalImbalanceError } from "./accounting-errors";
+import { OrderCancelledJournalImbalanceError } from "./accounting-errors";
 import { invertPostedSaleLines } from "./journal-invert";
 import {
-  ORDER_REFUNDED_FULL_CALC_VERSION,
-  ORDER_REFUNDED_FULL_EVENT_TYPE,
-  ORDER_REFUNDED_FULL_MAX_IMBALANCE_PAISE,
-  orderRefundedFullUniqueKey
-} from "./order-refunded-full.constants";
-import type {
-  OrderRefundedFullJournalProposal,
-  OriginalSaleJournalSnapshot,
-  RefundRowSnapshot
-} from "./order-refunded-full.types";
+  ORDER_CANCELLED_CALC_VERSION,
+  ORDER_CANCELLED_EVENT_TYPE,
+  ORDER_CANCELLED_MAX_IMBALANCE_PAISE,
+  orderCancelledUniqueKey
+} from "./order-cancelled.constants";
+import type { OrderCancelledJournalProposal } from "./order-cancelled.types";
+import type { OriginalSaleJournalSnapshot } from "./order-refunded-full.types";
 import type { PaymentProvider } from "@prisma/client";
 
-export type BuildOrderRefundedFullInput = {
+export type BuildOrderCancelledInput = {
   orderId: string;
   orderNumber: string;
   currency: string;
   provider: PaymentProvider;
   accountingDate: Date;
-  refund: RefundRowSnapshot;
   originalSale: OriginalSaleJournalSnapshot;
 };
 
 /**
- * Pure ORDER_REFUNDED_FULL journal builder — no DB writes.
- * Inverts posted ORDER_PAID_V1 lines exactly (economic reverse).
+ * Pure ORDER_CANCELLED journal builder — no DB writes.
+ * Inverts posted ORDER_PAID_V1 lines exactly (economic reverse of uncollected COD sale).
  */
-export function buildOrderRefundedFullJournal(
-  input: BuildOrderRefundedFullInput,
+export function buildOrderCancelledJournal(
+  input: BuildOrderCancelledInput,
   opts?: { failOnImbalance?: boolean }
-): OrderRefundedFullJournalProposal {
+): OrderCancelledJournalProposal {
   const failOnImbalance = opts?.failOnImbalance ?? true;
-  const { originalSale, refund, orderId, orderNumber, currency, provider, accountingDate } =
-    input;
+  const { originalSale, orderId, orderNumber, currency, provider, accountingDate } = input;
 
   if (originalSale.lines.length === 0) {
-    throw new OrderRefundedFullJournalImbalanceError(0, 0, 0);
+    throw new OrderCancelledJournalImbalanceError(0, 0, 0);
   }
 
-  const lines = invertPostedSaleLines(originalSale.lines, "Refund reverse");
+  const lines = invertPostedSaleLines(originalSale.lines, "Cancel reverse");
   const totalDebitPaise = lines.reduce((s, l) => s + l.debitInPaise, 0);
   const totalCreditPaise = lines.reduce((s, l) => s + l.creditInPaise, 0);
   const imbalancePaise = totalDebitPaise - totalCreditPaise;
-  const balanced = Math.abs(imbalancePaise) <= ORDER_REFUNDED_FULL_MAX_IMBALANCE_PAISE;
+  const balanced = Math.abs(imbalancePaise) <= ORDER_CANCELLED_MAX_IMBALANCE_PAISE;
 
   if (failOnImbalance && !balanced) {
-    throw new OrderRefundedFullJournalImbalanceError(
+    throw new OrderCancelledJournalImbalanceError(
       totalDebitPaise,
       totalCreditPaise,
       imbalancePaise
@@ -57,15 +52,15 @@ export function buildOrderRefundedFullJournal(
   const clearingCode = CLEARING_ACCOUNT_BY_PROVIDER[provider];
   const saleClearingDebit =
     originalSale.lines.find((l) => l.accountCode === clearingCode)?.debitInPaise ?? 0;
-  const refundClearingCredit =
+  const cancelClearingCredit =
     lines.find((l) => l.accountCode === clearingCode)?.creditInPaise ?? 0;
 
-  const uniqueKey = orderRefundedFullUniqueKey(orderId);
-  const memo = `${ORDER_REFUNDED_FULL_CALC_VERSION} ORDER_REFUNDED_FULL ${orderNumber} (reverse ${originalSale.calcVersion})`;
+  const uniqueKey = orderCancelledUniqueKey(orderId);
+  const memo = `${ORDER_CANCELLED_CALC_VERSION} ORDER_CANCELLED ${orderNumber} (reverse ${originalSale.calcVersion})`;
 
   return {
-    calcVersion: ORDER_REFUNDED_FULL_CALC_VERSION,
-    eventType: ORDER_REFUNDED_FULL_EVENT_TYPE,
+    calcVersion: ORDER_CANCELLED_CALC_VERSION,
+    eventType: ORDER_CANCELLED_EVENT_TYPE,
     uniqueKey,
     accountingDate,
     reference: orderNumber,
@@ -81,28 +76,22 @@ export function buildOrderRefundedFullJournal(
     originalSaleUniqueKey: originalSale.uniqueKey,
     originalJournalEntryId: originalSale.journalEntryId,
     originalCalcVersion: originalSale.calcVersion,
-    refundId: refund.id,
-    providerRefundId: refund.providerRefundId,
     diagnostics: {
       reversedFromSale: true,
       originalDiagnostics: originalSale.diagnostics,
       clearingAccountCode: clearingCode,
       saleClearingDebitPaise: saleClearingDebit,
-      refundClearingCreditPaise: refundClearingCredit,
-      clearingReconciliationLabel: "UNSETTLED_PROVISIONAL"
+      cancelClearingCreditPaise: cancelClearingCredit
     },
     reconciliationMetadata: {
-      calcVersion: ORDER_REFUNDED_FULL_CALC_VERSION,
+      calcVersion: ORDER_CANCELLED_CALC_VERSION,
       orderId,
       orderNumber,
-      refundId: refund.id,
-      providerRefundId: refund.providerRefundId,
       originalUniqueKey: originalSale.uniqueKey,
       originalJournalEntryId: originalSale.journalEntryId,
       originalCalcVersion: originalSale.calcVersion,
       paymentProvider: provider,
-      refundAmountInPaise: refund.amountInPaise,
-      accountingDateSource: "Refund.createdAt"
+      accountingDateSource: "OrderStatusHistory.CANCELLED"
     }
   };
 }

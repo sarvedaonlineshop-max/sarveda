@@ -272,6 +272,7 @@ export async function cleanupSyntheticPaidOrder(orderId: string) {
   await prisma.accountingPostingEvent.deleteMany({
     where: { sourceType: "ORDER", sourceId: orderId }
   });
+  await prisma.orderStatusHistory.deleteMany({ where: { orderId } });
   if (paymentIds.length > 0) {
     await prisma.refund.deleteMany({ where: { paymentId: { in: paymentIds } } });
   }

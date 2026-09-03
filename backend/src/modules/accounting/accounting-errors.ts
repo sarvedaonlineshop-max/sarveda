@@ -115,6 +115,16 @@ export class OrderRefundedFullJournalImbalanceError extends AccountingError {
   }
 }
 
+export class OrderCancelledJournalImbalanceError extends AccountingError {
+  constructor(debit: number, credit: number, imbalance: number) {
+    super(
+      `ORDER_CANCELLED journal imbalance: debits=${debit}, credits=${credit}, diff=${imbalance} paise (max 2 allowed)`,
+      "ORDER_CANCELLED_JOURNAL_IMBALANCE",
+      422
+    );
+  }
+}
+
 export class OrderRefundedPartialJournalImbalanceError extends AccountingError {
   constructor(debit: number, credit: number, imbalance: number) {
     super(
