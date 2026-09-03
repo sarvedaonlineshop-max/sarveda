@@ -70,9 +70,17 @@ export async function resumeOrder(req: Request, res: Response, next: NextFunctio
     const amountInPaise =
       amountRaw && Number.isFinite(Number(amountRaw)) ? Math.round(Number(amountRaw)) : undefined;
 
+    const paymentMethodRaw =
+      typeof req.query.paymentMethod === "string" ? req.query.paymentMethod.trim().toLowerCase() : "";
+    const paymentMethod =
+      paymentMethodRaw === "razorpay" || paymentMethodRaw === "stripe" || paymentMethodRaw === "paypal"
+        ? paymentMethodRaw
+        : undefined;
+
     const data = await resumePendingCheckout(orderNumber, email, {
       ...(currency ? { currency } : {}),
-      ...(amountInPaise != null ? { amountInPaise } : {})
+      ...(amountInPaise != null ? { amountInPaise } : {}),
+      ...(paymentMethod ? { paymentMethod } : {})
     });
     res.json({ success: true, data });
   } catch (err) {

@@ -85,7 +85,11 @@ export async function createOrder(
 export async function resumePendingOrder(
   orderNumber: string,
   email: string,
-  snapshot?: { currency?: string; amountInPaise?: number }
+  snapshot?: {
+    currency?: string;
+    amountInPaise?: number;
+    paymentMethod?: "razorpay" | "stripe" | "paypal";
+  }
 ): Promise<CreateOrderResponse> {
   const q = new URLSearchParams({
     orderNumber,
@@ -96,6 +100,9 @@ export async function resumePendingOrder(
   }
   if (snapshot?.amountInPaise != null && Number.isFinite(snapshot.amountInPaise)) {
     q.set("amountInPaise", String(Math.round(snapshot.amountInPaise)));
+  }
+  if (snapshot?.paymentMethod) {
+    q.set("paymentMethod", snapshot.paymentMethod);
   }
   const res = await fetch(`${getApiBase()}/api/checkout/resume?${q.toString()}`, {
     credentials: "include",
@@ -179,7 +186,7 @@ export async function pollUntilPaidOrTerminal(
     const o = await fetchPublicOrder(orderNumber, email);
     if (!o) return "STILL_PENDING";
     if (o.status === "PAID" || o.paymentStatus === "CAPTURED") return "PAID";
-    if (o.status === "CANCELLED" || o.paymentStatus === "FAILED") return "CANCELLED";
+    if (o.status === "CANCELLED") return "CANCELLED";
     await new Promise((r) => setTimeout(r, 3000));
   }
   return "STILL_PENDING";

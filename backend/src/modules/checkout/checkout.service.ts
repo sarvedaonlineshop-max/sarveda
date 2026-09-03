@@ -916,18 +916,18 @@ export async function createCheckoutOrder(req: Request, body: CreateOrderBody): 
 export async function resumePendingCheckout(
   orderNumber: string,
   email: string,
-  snapshot?: { currency?: string; amountInPaise?: number }
+  snapshot?: {
+    currency?: string;
+    amountInPaise?: number;
+    paymentMethod?: "razorpay" | "stripe" | "paypal";
+  }
 ): Promise<CreateCheckoutResult> {
   const normalizedEmail = email.trim().toLowerCase();
   const order = await prisma.order.findFirst({
     where: { orderNumber, deletedAt: null },
     include: {
       addresses: true,
-      payments: {
-        where: { status: "PENDING" },
-        orderBy: { createdAt: "desc" },
-        take: 1
-      }
+      payments: { orderBy: { createdAt: "desc" } }
     }
   });
 
@@ -939,16 +939,17 @@ export async function resumePendingCheckout(
   }
 
   if (order.status !== "PENDING_PAYMENT") {
-    const e = new Error("This order is no longer awaiting payment") as Error & {
-      statusCode: number;
-      code: string;
-    };
+    const expired = order.status === "CANCELLED";
+    const e = new Error(
+      expired
+        ? "This payment session expired. Start a new checkout to revalidate price, stock, shipping and currency."
+        : "This order is no longer awaiting payment"
+    ) as Error & { statusCode: number; code: string };
     e.statusCode = 400;
-    e.code = "ORDER_NOT_PAYABLE";
+    e.code = expired ? "ORDER_EXPIRED" : "ORDER_NOT_PAYABLE";
     throw e;
   }
 
-  // Optional commercial snapshot guard (frontend fingerprint hardening).
   if (snapshot?.currency) {
     const want = snapshot.currency.trim().toUpperCase();
     const have = (order.currency || "INR").toUpperCase();
@@ -974,17 +975,7 @@ export async function resumePendingCheckout(
     }
   }
 
-  const payment = order.payments[0];
-  if (!payment) {
-    const e = new Error("Payment session not found for this order") as Error & {
-      statusCode: number;
-      code: string;
-    };
-    e.statusCode = 400;
-    e.code = "PAYMENT_NOT_FOUND";
-    throw e;
-  }
-
+  const payment = await ensureResumeGatewayPayment(order, snapshot?.paymentMethod);
   const base = {
     orderId: order.id,
     orderNumber: order.orderNumber,
@@ -994,6 +985,9 @@ export async function resumePendingCheckout(
   };
 
   if (payment.provider === "STRIPE") {
+    if (payment.status === "FAILED") {
+      await prisma.payment.update({ where: { id: payment.id }, data: { status: "PENDING" } });
+    }
     const session = await createStripeCheckoutSession({
       paymentId: payment.id,
       orderId: order.id,
@@ -1012,6 +1006,9 @@ export async function resumePendingCheckout(
   }
 
   if (payment.provider === "PAYPAL") {
+    if (payment.status === "FAILED") {
+      await prisma.payment.update({ where: { id: payment.id }, data: { status: "PENDING" } });
+    }
     const pp = await createPayPalOrder({
       paymentId: payment.id,
       orderId: order.id,
@@ -1045,4 +1042,124 @@ export async function resumePendingCheckout(
     razorpayKeyId: getRazorpayKeyId(),
     rzpOrderId: payment.providerOrderId
   };
+}
+
+async function ensureResumeGatewayPayment(
+  order: {
+    id: string;
+    orderNumber: string;
+    grandTotalInPaise: number;
+    currency: string;
+    payments: Array<{
+      id: string;
+      provider: string;
+      status: string;
+      providerOrderId: string | null;
+    }>;
+  },
+  requestedMethod?: "razorpay" | "stripe" | "paypal"
+) {
+  const providerFor = (method: "razorpay" | "stripe" | "paypal") =>
+    method === "razorpay" ? "RAZORPAY" : method === "paypal" ? "PAYPAL" : "STRIPE";
+
+  const pickExisting = (provider: string) => {
+    const pending = order.payments.find((p) => p.provider === provider && p.status === "PENDING");
+    if (pending) return pending;
+    return order.payments.find((p) => p.provider === provider && p.status !== "CAPTURED") ?? null;
+  };
+
+  if (requestedMethod) {
+    const existing = pickExisting(providerFor(requestedMethod));
+    if (existing) return existing;
+    if (requestedMethod === "razorpay") {
+      return createRazorpayPaymentForExistingOrder(order);
+    }
+    if (requestedMethod === "stripe") {
+      return createStripePaymentForExistingOrder(order);
+    }
+    if (requestedMethod === "paypal") {
+      return createPayPalPaymentForExistingOrder(order);
+    }
+    const e = new Error("Payment session not found for this order") as Error & {
+      statusCode: number;
+      code: string;
+    };
+    e.statusCode = 400;
+    e.code = "PAYMENT_NOT_FOUND";
+    throw e;
+  }
+
+  const pending = order.payments.find((p) => p.status === "PENDING");
+  if (pending) return pending;
+  const lastOpen = order.payments.find((p) => p.status !== "CAPTURED");
+  if (lastOpen) return lastOpen;
+
+  const e = new Error("Payment session not found for this order") as Error & {
+    statusCode: number;
+    code: string;
+  };
+  e.statusCode = 400;
+  e.code = "PAYMENT_NOT_FOUND";
+  throw e;
+}
+
+async function createRazorpayPaymentForExistingOrder(order: {
+  id: string;
+  orderNumber: string;
+  grandTotalInPaise: number;
+  currency: string;
+}) {
+  const receipt = order.orderNumber.replace(/[^a-zA-Z0-9]/g, "").slice(0, 40);
+  const rzp = await createOrder({
+    amountInMinorUnits: order.grandTotalInPaise,
+    currency: order.currency,
+    receipt,
+    notes: { orderId: order.id, orderNumber: order.orderNumber },
+    idempotencyKey: `resume-rzp-${order.id}`
+  });
+  return prisma.payment.create({
+    data: {
+      orderId: order.id,
+      provider: "RAZORPAY",
+      providerOrderId: rzp.id,
+      amountInPaise: order.grandTotalInPaise,
+      currency: order.currency,
+      status: "PENDING",
+      rawPayload: { created: true, source: "resume_alternate_method" }
+    }
+  });
+}
+
+async function createStripePaymentForExistingOrder(order: {
+  id: string;
+  currency: string;
+  grandTotalInPaise: number;
+}) {
+  return prisma.payment.create({
+    data: {
+      orderId: order.id,
+      provider: "STRIPE",
+      amountInPaise: order.grandTotalInPaise,
+      currency: order.currency,
+      status: "PENDING",
+      rawPayload: { created: true, source: "resume_alternate_method" }
+    }
+  });
+}
+
+async function createPayPalPaymentForExistingOrder(order: {
+  id: string;
+  currency: string;
+  grandTotalInPaise: number;
+}) {
+  return prisma.payment.create({
+    data: {
+      orderId: order.id,
+      provider: "PAYPAL",
+      amountInPaise: order.grandTotalInPaise,
+      currency: order.currency,
+      status: "PENDING",
+      rawPayload: { created: true, source: "resume_alternate_method" }
+    }
+  });
 }

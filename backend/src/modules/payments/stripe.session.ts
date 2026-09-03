@@ -1,3 +1,4 @@
+import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { getStripeClient, stripeLiveApiCallsAllowed } from "./stripe.client";
 import { isStripeCheckoutSessionId } from "./stripe.ids";
@@ -64,4 +65,23 @@ export async function expireStripeCheckoutSessionForPayment(opts: {
 }): Promise<ExpireStripeSessionResult | null> {
   if (opts.provider !== "STRIPE") return null;
   return expireOpenStripeCheckoutSession(opts.providerOrderId);
+}
+
+export async function expireOutstandingStripeSessionsForOrder(orderId: string): Promise<void> {
+  const payments = await prisma.payment.findMany({
+    where: { orderId, provider: "STRIPE" },
+    select: { providerOrderId: true }
+  });
+  for (const row of payments) {
+    if (!isStripeCheckoutSessionId(row.providerOrderId)) continue;
+    try {
+      await expireOpenStripeCheckoutSession(row.providerOrderId);
+    } catch (err) {
+      logger.error("stripe_session_expire_for_order_failed", {
+        orderId,
+        sessionId: row.providerOrderId,
+        err: err instanceof Error ? err.message : String(err)
+      });
+    }
+  }
 }

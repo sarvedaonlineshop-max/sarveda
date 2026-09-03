@@ -4,7 +4,7 @@ import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { orderItemWarehouseUnits } from "../inventory/order-item-fulfillment";
 
-import { expireStripeCheckoutSessionForPayment } from "../payments/stripe.session";
+import { expireOutstandingStripeSessionsForOrder } from "../payments/stripe.session";
 import { restockPaidOrderLinesTx } from "./order-inventory-restock.service";
 import { recomputeReservedForOrder } from "./inventory-reserved-reconcile.service";
 
@@ -128,29 +128,34 @@ export async function cancelUnpaidOrderWithRelease(
       where: { id: orderId, deletedAt: null },
       include: { payments: { orderBy: { createdAt: "desc" } } }
     });
-    if (!order) return { changed: false as const, stripeSessionId: null as string | null };
+    if (!order) return { changed: false as const };
     // Safety A: never auto-cancel COD orders (status PAID, payment PENDING)
     if (order.payments.some((p) => p.provider === "COD")) {
       logger.warn("cancel_unpaid_skipped_cod", { orderId });
-      return { changed: false as const, stripeSessionId: null as string | null };
+      return { changed: false as const };
     }
     if (order.status !== "PENDING_PAYMENT") {
-      return { changed: false as const, stripeSessionId: null as string | null };
+      return { changed: false as const };
     }
-    const payment = order.payments[0];
-    if (payment?.status === "CAPTURED") {
-      return { changed: false as const, stripeSessionId: null as string | null };
+    if (order.payments.some((p) => p.status === "CAPTURED")) {
+      return { changed: false as const };
     }
 
     await releaseStockTx(tx, orderId);
 
-    if (payment) {
-      const prev = (payment.rawPayload as Record<string, unknown>) ?? {};
+    for (const row of order.payments) {
+      if (row.status === "CAPTURED") continue;
+      const prev = (row.rawPayload as Record<string, unknown>) ?? {};
       await tx.payment.update({
-        where: { id: payment.id },
+        where: { id: row.id },
         data: {
           status: "FAILED",
-          rawPayload: { ...prev, ...rawPayloadExtras, cancelledAt: new Date().toISOString(), cancelReason: reason }
+          rawPayload: {
+            ...prev,
+            ...rawPayloadExtras,
+            cancelledAt: new Date().toISOString(),
+            cancelReason: reason
+          }
         }
       });
     }
@@ -168,11 +173,7 @@ export async function cancelUnpaidOrderWithRelease(
         reason
       }
     });
-    return {
-      changed: true as const,
-      stripeSessionId:
-        payment?.provider === "STRIPE" && payment.providerOrderId ? payment.providerOrderId : null
-    };
+    return { changed: true as const };
   });
 
   const changed = outcome.changed;
@@ -187,19 +188,13 @@ export async function cancelUnpaidOrderWithRelease(
         err: err instanceof Error ? err.message : String(err)
       });
     }
-    if (outcome.stripeSessionId) {
-      try {
-        await expireStripeCheckoutSessionForPayment({
-          provider: "STRIPE",
-          providerOrderId: outcome.stripeSessionId
-        });
-      } catch (err) {
-        logger.error("stripe_session_expire_after_cancel_failed", {
-          orderId,
-          sessionId: outcome.stripeSessionId,
-          err: err instanceof Error ? err.message : String(err)
-        });
-      }
+    try {
+      await expireOutstandingStripeSessionsForOrder(orderId);
+    } catch (err) {
+      logger.error("stripe_session_expire_after_cancel_failed", {
+        orderId,
+        err: err instanceof Error ? err.message : String(err)
+      });
     }
   }
 

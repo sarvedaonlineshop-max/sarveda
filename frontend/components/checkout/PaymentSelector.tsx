@@ -363,38 +363,64 @@ export function PaymentSelector({
   const resolvePayableOrder = useCallback(async (): Promise<CreateOrderResponse> => {
     const email = form.email.trim().toLowerCase();
     const pending = loadPendingCheckout();
+    const gatewayMethod =
+      paymentMode === "razorpay" || paymentMode === "stripe" || paymentMode === "paypal"
+        ? paymentMode
+        : undefined;
+
+    const redirectIfExpired = (orderNumber: string, code?: string) => {
+      if (code !== "ORDER_EXPIRED" && code !== "ORDER_NOT_PAYABLE") return false;
+      clearPendingCheckout();
+      router.replace(
+        `/order/cancelled?${new URLSearchParams({ orderNumber, email }).toString()}`
+      );
+      return true;
+    };
+
+    // URL resume (Try again): reuse the still-valid order, including a different gateway.
+    if (resumeOrderNumber && paymentMode !== "cod") {
+      try {
+        const order = await resumePendingOrder(resumeOrderNumber, email, {
+          ...(gatewayMethod ? { paymentMethod: gatewayMethod } : {})
+        });
+        if (resumeMatchesMode(order, paymentMode)) return order;
+        throw new Error(
+          `This order is set up for ${order.paymentMethod}. Switch payment method or start checkout again.`
+        );
+      } catch (e) {
+        if (e instanceof CheckoutApiError && redirectIfExpired(resumeOrderNumber, e.code)) {
+          throw e;
+        }
+        throw e;
+      }
+    }
 
     // Resume only when commercial fingerprint (lines + currency + payable) still matches.
     const canResumePending =
       Boolean(cartFingerprint) && pendingMatchesCommercial(pending, cartFingerprint, email);
 
-    if (canResumePending && pending) {
-      if (!resumeMatchesMode(pending, paymentMode)) {
+    if (canResumePending && pending && paymentMode !== "cod") {
+      try {
+        const order = await resumePendingOrder(pending.orderNumber, email, {
+          currency: displayCurrency,
+          amountInPaise: estimatedTotal,
+          ...(gatewayMethod ? { paymentMethod: gatewayMethod } : {})
+        });
+        const orderCurrency = (order.currency || "").toUpperCase();
+        if (
+          resumeMatchesMode(order, paymentMode) &&
+          orderCurrency === displayCurrency.toUpperCase() &&
+          order.amountInPaise === estimatedTotal
+        ) {
+          return order;
+        }
         clearPendingCheckout();
-      } else {
-        try {
-          const order = await resumePendingOrder(pending.orderNumber, email, {
-            currency: displayCurrency,
-            amountInPaise: estimatedTotal
-          });
-          // Defense: frozen order must still match live payable commercial snapshot.
-          const orderCurrency = (order.currency || "").toUpperCase();
-          if (
-            resumeMatchesMode(order, paymentMode) &&
-            orderCurrency === displayCurrency.toUpperCase() &&
-            order.amountInPaise === estimatedTotal
-          ) {
-            return order;
-          }
+      } catch (e) {
+        if (e instanceof CheckoutApiError && redirectIfExpired(pending.orderNumber, e.code)) {
+          throw e;
+        }
+        if (e instanceof CheckoutApiError && e.code === "ORDER_SNAPSHOT_MISMATCH") {
           clearPendingCheckout();
-        } catch (e) {
-          if (
-            e instanceof CheckoutApiError &&
-            (e.code === "ORDER_NOT_PAYABLE" || e.code === "ORDER_SNAPSHOT_MISMATCH")
-          ) {
-            clearPendingCheckout();
-          }
-          // Fall through to create-order
         }
       }
     } else if (pending) {
@@ -424,7 +450,9 @@ export function PaymentSelector({
     paymentMode,
     cartFingerprint,
     displayCurrency,
-    estimatedTotal
+    estimatedTotal,
+    resumeOrderNumber,
+    router
   ]);
 
   const onSubmit = useCallback(async () => {

@@ -2,10 +2,13 @@ import type { Prisma } from "@prisma/client";
 
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
-import { confirmStockTx } from "../orders/orders.service";
 import { afterOrderPaid } from "../orders/afterPaid";
 
 import { verifyPayment } from "./razorpay";
+import {
+  applyCapturedPaymentIfOrderPending
+} from "./payment-capture.service";
+import { expireOutstandingStripeSessionsForOrder } from "./stripe.session";
 
 export { verifyPayment };
 
@@ -69,51 +72,65 @@ export async function completePaidOrder(
     return { orderNumber: payment.order.orderNumber };
   }
 
-  await prisma.$transaction(async (tx) => {
-    const fresh = await tx.payment.findFirst({
-      where: { id: payment.id },
-      include: { order: true }
-    });
-    if (!fresh) return;
-    if (fresh.status === "CAPTURED" && fresh.order.status === "PAID") return;
-
-    const fromStatusForHistory = fresh.order.status;
-
-    await tx.payment.update({
-      where: { id: payment.id },
-      data: {
-        providerPaymentId: razorpayPaymentId,
-        status: "CAPTURED",
-        rawPayload: {
-          ...(payment.rawPayload as object),
-          verifiedAt: new Date().toISOString(),
-          razorpayPaymentId
-        } as Prisma.InputJsonValue
-      }
-    });
-
-    await tx.order.update({
-      where: { id: payment.orderId },
-      data: {
-        status: "PAID",
-        paymentStatus: "CAPTURED",
-        placedAt: new Date()
-      }
-    });
-
-    await confirmStockTx(tx, payment.orderId);
-
-    await tx.orderStatusHistory.create({
-      data: {
-        orderId: payment.orderId,
-        fromStatus: fromStatusForHistory,
-        toStatus: "PAID",
-        reason: "Razorpay payment verified"
-      }
-    });
+  const claim = await applyCapturedPaymentIfOrderPending({
+    paymentId: payment.id,
+    providerPaymentId: razorpayPaymentId,
+    payloadExtra: {
+      verifiedAt: new Date().toISOString(),
+      razorpayPaymentId
+    },
+    historyReason: "Razorpay payment verified"
   });
 
-  logger.info("order_paid", { orderNumber: payment.order.orderNumber, razorpayPaymentId });
-  await afterOrderPaid(payment.orderId);
-  return { orderNumber: payment.order.orderNumber };
+  if (!claim) {
+    const e = new Error("Payment record not found") as Error & { statusCode: number; code: string };
+    e.statusCode = 404;
+    e.code = "NOT_FOUND";
+    throw e;
+  }
+
+  if (claim.outcome === "APPLIED") {
+    await expireOutstandingStripeSessionsForOrder(claim.orderId);
+    logger.info("order_paid", { orderNumber: claim.orderNumber, razorpayPaymentId });
+    await afterOrderPaid(claim.orderId);
+    return { orderNumber: claim.orderNumber };
+  }
+
+  if (claim.outcome === "ALREADY_PAID") {
+    return { orderNumber: claim.orderNumber };
+  }
+
+  logger.error("razorpay_late_success_unpayable_order", {
+    paymentId: payment.id,
+    orderId: claim.orderId,
+    orderNumber: claim.orderNumber,
+    orderStatus: claim.orderStatus,
+    razorpayPaymentId
+  });
+
+  const prev = (payment.rawPayload as Record<string, unknown> | null) ?? {};
+  await prisma.payment.update({
+    where: { id: payment.id },
+    data: {
+      providerPaymentId: razorpayPaymentId,
+      rawPayload: {
+        ...prev,
+        razorpayPaymentId,
+        lateSuccessAt: new Date().toISOString(),
+        lateSuccessReconciliation: "REQUIRED",
+        lateSuccessOrderStatus: claim.orderStatus
+      } as Prisma.InputJsonValue
+    }
+  });
+  await prisma.orderStatusHistory.create({
+    data: {
+      orderId: claim.orderId,
+      fromStatus: claim.orderStatus,
+      toStatus: claim.orderStatus,
+      reason:
+        "RAZORPAY_LATE_SUCCESS_RECONCILIATION: Razorpay reported payment after this order was no longer payable. Order was not marked PAID again."
+    }
+  });
+
+  return { orderNumber: claim.orderNumber };
 }

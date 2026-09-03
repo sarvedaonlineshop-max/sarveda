@@ -229,7 +229,7 @@ export function CheckoutClient() {
       try {
         const o = await fetchOrderPublic(resumeOrderNumber, resumeEmail);
         if (cancelled) return;
-        if (o.status === "CANCELLED" || o.paymentStatus === "FAILED") {
+        if (o.status === "CANCELLED") {
           router.replace(
             `/order/cancelled?${new URLSearchParams({ orderNumber: resumeOrderNumber, email: resumeEmail }).toString()}`
           );
@@ -253,7 +253,7 @@ export function CheckoutClient() {
           setResumeCheckDone(true);
           return;
         }
-        if (summary.status === "CANCELLED" || summary.paymentStatus === "FAILED") {
+        if (summary.status === "CANCELLED") {
           router.replace(
             `/order/cancelled?${new URLSearchParams({ orderNumber: resumeOrderNumber, email: resumeEmail }).toString()}`
           );

@@ -7,6 +7,7 @@ import { cancelUnpaidOrderWithRelease } from "../orders/orders.service";
 
 import { completePayPalPaidOrder } from "./paypal.complete";
 import { applyExternalProviderRefund } from "./refund-sync.service";
+import { recordGatewayPaymentAttemptFailed } from "./payment-capture.service";
 
 function paypalBase(): string {
   const mode = (process.env.PAYPAL_MODE ?? "sandbox").trim().toLowerCase();
@@ -199,8 +200,10 @@ export async function paypalWebhookHandler(req: Request, res: Response): Promise
           include: { order: true }
         });
         if (pay && pay.order.status === "PENDING_PAYMENT") {
-          const cancelled = await cancelUnpaidOrderWithRelease(pay.orderId, `PayPal ${type}`);
-          if (cancelled) notifyOrderEmail(pay.orderId, "payment_failed");
+          await recordGatewayPaymentAttemptFailed({
+            paymentId: pay.id,
+            extras: { source: "paypal_capture_denied", eventType: type }
+          });
         }
       }
     } else if (type === "PAYMENT.CAPTURE.REFUNDED" || type === "PAYMENT.REFUND.COMPLETED") {

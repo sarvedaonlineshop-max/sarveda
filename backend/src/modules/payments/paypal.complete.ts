@@ -2,8 +2,9 @@ import type { Prisma } from "@prisma/client";
 
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
-import { confirmStockTx } from "../orders/orders.service";
 import { afterOrderPaid } from "../orders/afterPaid";
+import { applyCapturedPaymentIfOrderPending } from "./payment-capture.service";
+import { expireOutstandingStripeSessionsForOrder } from "./stripe.session";
 
 export async function completePayPalPaidOrder(
   paymentId: string,
@@ -31,40 +32,46 @@ export async function completePayPalPaidOrder(
     return { orderNumber: payment.order.orderNumber };
   }
 
-  await prisma.$transaction(async (tx) => {
-    const fresh = await tx.payment.findFirst({ where: { id: payment.id }, include: { order: true } });
-    if (!fresh || fresh.status === "CAPTURED") return;
-
-    await tx.payment.update({
-      where: { id: payment.id },
-      data: {
-        providerPaymentId: paypalCaptureId,
-        status: "CAPTURED",
-        rawPayload: {
-          ...(payment.rawPayload as object),
-          paypalCaptureId,
-          capturedAt: new Date().toISOString()
-        } as Prisma.InputJsonValue
-      }
-    });
-
-    await tx.order.update({
-      where: { id: payment.orderId },
-      data: { status: "PAID", paymentStatus: "CAPTURED", placedAt: new Date() }
-    });
-
-    await confirmStockTx(tx, payment.orderId);
-
-    await tx.orderStatusHistory.create({
-      data: {
-        orderId: payment.orderId,
-        fromStatus: fresh.order.status,
-        toStatus: "PAID",
-        reason: "PayPal payment captured"
-      }
-    });
+  const claim = await applyCapturedPaymentIfOrderPending({
+    paymentId: payment.id,
+    providerPaymentId: paypalCaptureId,
+    payloadExtra: {
+      paypalCaptureId,
+      capturedAt: new Date().toISOString()
+    },
+    historyReason: "PayPal payment captured"
   });
+  if (!claim) return null;
 
-  await afterOrderPaid(payment.orderId);
-  return { orderNumber: payment.order.orderNumber };
+  if (claim.outcome === "APPLIED") {
+    await expireOutstandingStripeSessionsForOrder(claim.orderId);
+    await afterOrderPaid(claim.orderId);
+    return { orderNumber: claim.orderNumber };
+  }
+
+  if (claim.outcome === "ALREADY_PAID") {
+    return { orderNumber: claim.orderNumber };
+  }
+
+  logger.error("paypal_late_success_unpayable_order", {
+    paymentId: payment.id,
+    orderId: claim.orderId,
+    orderStatus: claim.orderStatus,
+    paypalCaptureId
+  });
+  const prev = (payment.rawPayload as Record<string, unknown> | null) ?? {};
+  await prisma.payment.update({
+    where: { id: payment.id },
+    data: {
+      providerPaymentId: paypalCaptureId,
+      rawPayload: {
+        ...prev,
+        paypalCaptureId,
+        lateSuccessAt: new Date().toISOString(),
+        lateSuccessReconciliation: "REQUIRED",
+        lateSuccessOrderStatus: claim.orderStatus
+      } as Prisma.InputJsonValue
+    }
+  });
+  return { orderNumber: claim.orderNumber };
 }

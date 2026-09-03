@@ -3,12 +3,15 @@ import type Stripe from "stripe";
 
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
-import { notifyOrderEmail } from "../notifications/email";
-import { cancelUnpaidOrderWithRelease, confirmStockTx } from "../orders/orders.service";
 import { afterOrderPaid } from "../orders/afterPaid";
 import { getStripeClient, stripeLiveApiCallsAllowed } from "./stripe.client";
 import { isStripeSupplementaryMetadata } from "./stripe.ids";
 import { resolveStripeCheckoutPayment } from "./stripe.resolve";
+import { expireOutstandingStripeSessionsForOrder } from "./stripe.session";
+import {
+  applyCapturedPaymentIfOrderPending,
+  recordGatewayPaymentAttemptFailed
+} from "./payment-capture.service";
 
 export type CompleteStripePaidResult = {
   orderNumber: string;
@@ -141,77 +144,35 @@ export async function completeStripePaidOrder(
     return { orderNumber: payment.order.orderNumber, applied: false, reason: "ALREADY_PAID" };
   }
 
-  const payable = payment.order.status === "PENDING_PAYMENT";
-  if (!payable) {
-    return handleStripeLateSuccessForUnpayableOrder({
-      paymentId: payment.id,
-      orderId: payment.orderId,
-      orderNumber: payment.order.orderNumber,
-      orderStatus: payment.order.status,
-      paymentIntentId: stripePaymentIntentId,
-      rawPayload: payment.rawPayload
-    });
-  }
-
-  let applied = false;
-  await prisma.$transaction(async (tx) => {
-    const fresh = await tx.payment.findFirst({ where: { id: payment.id }, include: { order: true } });
-    if (!fresh || fresh.status === "CAPTURED") return;
-    if (fresh.order.status !== "PENDING_PAYMENT") return;
-
-    await tx.payment.update({
-      where: { id: payment.id },
-      data: {
-        providerPaymentId: stripePaymentIntentId,
-        status: "CAPTURED",
-        rawPayload: jsonPayload(payment.rawPayload, {
-          stripePaymentIntentId,
-          capturedAt: new Date().toISOString()
-        })
-      }
-    });
-
-    await tx.order.update({
-      where: { id: payment.orderId },
-      data: { status: "PAID", paymentStatus: "CAPTURED", placedAt: new Date() }
-    });
-
-    await confirmStockTx(tx, payment.orderId);
-
-    await tx.orderStatusHistory.create({
-      data: {
-        orderId: payment.orderId,
-        fromStatus: fresh.order.status,
-        toStatus: "PAID",
-        reason: "Stripe payment captured"
-      }
-    });
-    applied = true;
+  const claim = await applyCapturedPaymentIfOrderPending({
+    paymentId: payment.id,
+    providerPaymentId: stripePaymentIntentId,
+    payloadExtra: {
+      stripePaymentIntentId,
+      capturedAt: new Date().toISOString()
+    },
+    historyReason: "Stripe payment captured"
   });
+  if (!claim) return null;
 
-  if (!applied) {
-    const latest = await prisma.payment.findFirst({
-      where: { id: payment.id },
-      include: { order: true }
-    });
-    if (latest?.status === "CAPTURED" && latest.order.status === "PAID") {
-      return { orderNumber: latest.order.orderNumber, applied: false, reason: "ALREADY_PAID" };
-    }
-    if (latest && latest.order.status !== "PENDING_PAYMENT") {
-      return handleStripeLateSuccessForUnpayableOrder({
-        paymentId: latest.id,
-        orderId: latest.orderId,
-        orderNumber: latest.order.orderNumber,
-        orderStatus: latest.order.status,
-        paymentIntentId: stripePaymentIntentId,
-        rawPayload: latest.rawPayload
-      });
-    }
-    return { orderNumber: payment.order.orderNumber, applied: false, reason: "NOT_APPLIED" };
+  if (claim.outcome === "APPLIED") {
+    await expireOutstandingStripeSessionsForOrder(payment.orderId);
+    await afterOrderPaid(payment.orderId);
+    return { orderNumber: claim.orderNumber, applied: true };
   }
 
-  await afterOrderPaid(payment.orderId);
-  return { orderNumber: payment.order.orderNumber, applied: true };
+  if (claim.outcome === "ALREADY_PAID") {
+    return { orderNumber: claim.orderNumber, applied: false, reason: "ALREADY_PAID" };
+  }
+
+  return handleStripeLateSuccessForUnpayableOrder({
+    paymentId: payment.id,
+    orderId: payment.orderId,
+    orderNumber: payment.order.orderNumber,
+    orderStatus: claim.orderStatus,
+    paymentIntentId: stripePaymentIntentId,
+    rawPayload: payment.rawPayload
+  });
 }
 
 export async function handleStripePaymentFailed(opts: {
@@ -219,7 +180,7 @@ export async function handleStripePaymentFailed(opts: {
   checkoutSessionId?: string | null;
   metadata?: Stripe.Metadata | null | Record<string, string>;
   lastPaymentError?: { type?: string | null; code?: string | null; message?: string | null } | null;
-}): Promise<{ cancelled: boolean; paymentId?: string; orderId?: string }> {
+}): Promise<{ cancelled: boolean; recorded: boolean; paymentId?: string; orderId?: string; orderStatus?: string }> {
   const payRow = await resolveStripeCheckoutPayment({
     paymentIntentId: opts.paymentIntentId,
     checkoutSessionId: opts.checkoutSessionId,
@@ -230,16 +191,31 @@ export async function handleStripePaymentFailed(opts: {
       paymentIntentId: opts.paymentIntentId,
       checkoutSessionId: opts.checkoutSessionId
     });
-    return { cancelled: false };
+    return { cancelled: false, recorded: false };
   }
 
-  const cancelled = await cancelUnpaidOrderWithRelease(payRow.orderId, "Stripe payment failed", {
-    source: "stripe_payment_intent_payment_failed",
-    stripePaymentIntentId: opts.paymentIntentId ?? null,
-    stripeLastPaymentError: opts.lastPaymentError ?? null
+  const recorded = await recordGatewayPaymentAttemptFailed({
+    paymentId: payRow.id,
+    extras: {
+      source: "stripe_payment_intent_payment_failed",
+      stripePaymentIntentId: opts.paymentIntentId ?? null,
+      stripeLastPaymentError: opts.lastPaymentError ?? null
+    }
   });
-  if (cancelled) notifyOrderEmail(payRow.orderId, "payment_failed");
-  return { cancelled, paymentId: payRow.id, orderId: payRow.orderId };
+
+  logger.info("stripe_payment_attempt_failed_order_still_pending", {
+    paymentId: payRow.id,
+    orderId: payRow.orderId,
+    orderStatus: recorded.orderStatus
+  });
+
+  return {
+    cancelled: false,
+    recorded: true,
+    paymentId: payRow.id,
+    orderId: payRow.orderId,
+    orderStatus: recorded.orderStatus
+  };
 }
 
 export async function handleStripeCheckoutSuccess(opts: {

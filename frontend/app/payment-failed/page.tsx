@@ -45,7 +45,18 @@ function PaymentFailedContent() {
 
   const checkoutFresh = "/checkout";
 
+  const stillPayable = summary?.status === "PENDING_PAYMENT";
+  const expired = summary?.status === "CANCELLED";
+  const tryAgainHref = expired
+    ? `/order/cancelled?${new URLSearchParams({ orderNumber, email }).toString()}`
+    : checkoutResume;
   const complaintHref = paymentComplaintHref({ orderNumber, email, outcome });
+  const title = expired ? "Payment session expired" : copy.title;
+  const body = expired
+    ? "This order is no longer payable. Try again starts a new checkout that rechecks price, stock, shipping and currency. The previous payment session cannot be reused."
+    : stillPayable
+      ? `${copy.body} Your order is still reserved — you can try the same or another available payment method before the 15-minute window ends.`
+      : copy.body;
   const banner =
     outcome === "failed"
       ? "from-[#5c1c1a] via-[#8a2e28] to-[#c0453f]"
@@ -59,8 +70,8 @@ function PaymentFailedContent() {
         <span className="pointer-events-none absolute -left-10 top-4 h-32 w-32 rounded-full bg-white/10 blur-2xl" aria-hidden />
         <span className="pointer-events-none absolute -right-8 bottom-2 h-28 w-28 rounded-full bg-black/20 blur-2xl" aria-hidden />
         <PaymentFailMark outcome={outcome} />
-        <h1 className="mt-5 font-serif text-3xl font-semibold text-white sm:text-4xl">{copy.title}</h1>
-        <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-white/90">{copy.body}</p>
+        <h1 className="mt-5 font-serif text-3xl font-semibold text-white sm:text-4xl">{title}</h1>
+        <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-white/90">{body}</p>
         {orderNumber ? (
           <span className="mt-5 inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-1.5 font-mono text-xs font-semibold tracking-wide text-white">
             {orderNumber}
@@ -83,12 +94,15 @@ function PaymentFailedContent() {
       ) : null}
 
       <div className="flex flex-col gap-3">
-        {copy.tryAgain ? (
+        {copy.tryAgain || expired ? (
           <Link
-            href={checkoutResume}
+            href={tryAgainHref}
+            onClick={() => {
+              if (expired) clearPendingCheckout();
+            }}
             className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-brand-forest px-4 text-sm font-semibold text-brand-cream hover:bg-brand-night"
           >
-            Try payment again
+            {expired ? "Start a new checkout" : "Try payment again"}
           </Link>
         ) : null}
         <Link

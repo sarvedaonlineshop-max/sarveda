@@ -10,7 +10,9 @@ const commerceMocks = vi.hoisted(() => ({
     pdfUrl: "https://example.com/test-invoice.pdf"
   }),
   notifyOrderEmail: vi.fn().mockResolvedValue(undefined),
-  createRazorpayOrder: vi.fn().mockResolvedValue({ id: "order_mock_rzp_001" }),
+  createRazorpayOrder: vi.fn().mockImplementation(async () => ({
+    id: `order_mock_rzp_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
+  })),
   createStripeCheckoutSession: vi.fn().mockImplementation(async () => ({
     url: `https://checkout.stripe.test/session_${Date.now()}`,
     sessionId: `cs_test_${Date.now()}`
@@ -20,6 +22,12 @@ const commerceMocks = vi.hoisted(() => ({
     paypalOrderId: `PAYPAL-${Date.now()}`
   })),
   schedulePaymentTimeout: vi.fn().mockResolvedValue(undefined),
+  expireOutstandingStripeSessionsForOrder: vi.fn().mockResolvedValue(undefined),
+  expireOpenStripeCheckoutSession: vi.fn().mockResolvedValue({
+    expired: false,
+    skipped: true,
+    reason: "test"
+  }),
   mirrorStockToZohoForSkus: vi.fn().mockResolvedValue(undefined),
   sendPushToAdmins: vi.fn().mockResolvedValue(undefined),
   uploadPdf: vi.fn().mockResolvedValue("https://example.com/invoice.pdf"),
@@ -83,6 +91,15 @@ vi.mock("../../src/modules/payments/paypal", async (importOriginal) => {
   return {
     ...actual,
     createPayPalOrder: commerceMocks.createPayPalOrder
+  };
+});
+
+vi.mock("../../src/modules/payments/stripe.session", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../src/modules/payments/stripe.session")>();
+  return {
+    ...actual,
+    expireOutstandingStripeSessionsForOrder: commerceMocks.expireOutstandingStripeSessionsForOrder,
+    expireOpenStripeCheckoutSession: commerceMocks.expireOpenStripeCheckoutSession
   };
 });
 

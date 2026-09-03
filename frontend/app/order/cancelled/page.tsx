@@ -78,9 +78,10 @@ function CancelledInner() {
         <p className="mt-3 text-sm text-stone-600">
           {unpaidCancelled ? (
             <>
-              Order <span className="font-mono font-medium">{order.orderNumber}</span> was cancelled
-              because payment was not completed in time. If any amount was deducted, it will be
-              refunded within 5–10 business days, depending on your bank or payment provider.
+              Order <span className="font-mono font-medium">{order.orderNumber}</span> expired
+              because payment was not completed within 15 minutes. It cannot be paid or revived.
+              Try again creates a new order and rechecks price, stock, shipping and currency. If
+              any amount was deducted, it will be refunded within 5–10 business days.
             </>
           ) : (
             <>
