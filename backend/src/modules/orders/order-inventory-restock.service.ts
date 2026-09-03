@@ -70,10 +70,12 @@ export async function getReturnedQuantityForOrderItem(
 /**
  * Apply physical return / restock lines.
  * - SELLABLE + Inventory row present → increments onHand and sets inventoryIncremented=true
- * - DAMAGED / NON_RESTOCKABLE → records event only (no onHand change)
+ * - QUARANTINE → increments Inventory.quarantineOnHand only (never onHand) — caller may also track
+ * - REPACK / DAMAGED / NON_RESTOCKABLE / WRITE_OFF / RETURN_TO_VENDOR → event only (no onHand)
  * - Idempotent on (sourceType, sourceId, orderItemId): duplicate returns existing rows, no second increment
  *
  * Accounting must never call this to invent stock; commerce owns onHand.
+ * MONEY REFUNDED != INVENTORY SELLABLE — only SELLABLE (and REPACK after release) increases sellable stock.
  */
 export async function applyOrderInventoryRestockTx(
   tx: Prisma.TransactionClient,

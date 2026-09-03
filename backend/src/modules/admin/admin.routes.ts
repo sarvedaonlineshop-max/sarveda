@@ -207,6 +207,58 @@ router.post(
   serviceRequest.adminSetReturnDisposition
 );
 router.post(
+  "/orders/:orderId/service-requests/:requestId/return-receipt",
+  validateBody(
+    z.object({
+      lines: z
+        .array(
+          z.object({
+            orderItemId: z.string().uuid(),
+            qtyReceived: z.number().int().min(0),
+            note: z.string().max(500).optional()
+          })
+        )
+        .min(1)
+    })
+  ),
+  serviceRequest.adminRecordReturnReceipt
+);
+router.post(
+  "/orders/:orderId/service-requests/:requestId/return-qc",
+  validateBody(
+    z.object({
+      lines: z
+        .array(
+          z.object({
+            orderItemId: z.string().uuid().optional().nullable(),
+            quantity: z.number().int().positive(),
+            disposition: z.enum([
+              "SELLABLE",
+              "DAMAGED",
+              "NON_RESTOCKABLE",
+              "REPACK",
+              "QUARANTINE",
+              "WRITE_OFF",
+              "RETURN_TO_VENDOR"
+            ]),
+            note: z.string().max(500).optional(),
+            receivedVariantId: z.string().uuid().optional().nullable(),
+            receivedSkuSnapshot: z.string().max(120).optional().nullable(),
+            isUnexpectedSku: z.boolean().optional(),
+            vendorId: z.string().uuid().optional().nullable(),
+            vendorNameSnapshot: z.string().max(200).optional().nullable()
+          })
+        )
+        .min(1)
+    })
+  ),
+  serviceRequest.adminPerformReturnQc
+);
+router.post(
+  "/orders/:orderId/service-requests/:requestId/qc-lines/:qcLineId/release-repack",
+  serviceRequest.adminReleaseRepack
+);
+router.post(
   "/replacement-fulfillments/:fulfillmentId/ship",
   serviceRequest.adminMarkReplacementShipped
 );

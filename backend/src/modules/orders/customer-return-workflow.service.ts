@@ -156,7 +156,7 @@ export async function markCustomerReturnReceived(opts: {
 }): Promise<{ alreadyReceived: boolean }> {
   const request = await prisma.orderServiceRequest.findUnique({
     where: { id: opts.requestId },
-    include: { returnShipment: true, order: true }
+    include: { returnShipment: true, order: true, items: true }
   });
   if (!request?.returnShipment) {
     throw Object.assign(new Error("Return shipment record required"), {
@@ -170,20 +170,55 @@ export async function markCustomerReturnReceived(opts: {
   }
 
   const now = new Date();
-  await prisma.$transaction([
-    prisma.orderReturnShipment.update({
+  await prisma.$transaction(async (tx) => {
+    await tx.orderReturnShipment.update({
       where: { id: rs.id },
       data: {
         receivedAt: now,
         receivedByUserId: opts.adminUserId ?? null,
         physicalStatus: "RECEIVED"
       }
-    }),
-    prisma.orderServiceRequest.update({
+    });
+    await tx.orderServiceRequest.update({
       where: { id: request.id },
       data: { returnPhysicalStatus: "RECEIVED" }
-    })
-  ]);
+    });
+    // Seed receipt lines at case qty — sellable stock unchanged until QC.
+    for (const item of request.items) {
+      if (
+        item.requestedResolution === "KEEP_ITEM_PARTIAL_REFUND" ||
+        item.requestedResolution === "MISSING_PART"
+      ) {
+        continue;
+      }
+      await tx.orderReturnReceiptLine.upsert({
+        where: {
+          requestId_orderItemId: { requestId: request.id, orderItemId: item.orderItemId }
+        },
+        create: {
+          requestId: request.id,
+          orderItemId: item.orderItemId,
+          qtyExpected: item.qtySelected,
+          qtyReceived: item.qtySelected,
+          receivedAt: now,
+          receivedByUserId: opts.adminUserId ?? null
+        },
+        update: {
+          qtyReceived: item.qtySelected,
+          receivedAt: now,
+          receivedByUserId: opts.adminUserId ?? null
+        }
+      });
+    }
+  });
+
+  const { appendCaseEvent } = await import("./return-case-events.service");
+  await appendCaseEvent({
+    requestId: request.id,
+    eventType: "ITEM_RECEIVED",
+    message: "Warehouse received return",
+    actor: { userId: opts.adminUserId, role: "ADMIN" }
+  });
 
   logger.info("customer_return_received", {
     orderId: request.orderId,

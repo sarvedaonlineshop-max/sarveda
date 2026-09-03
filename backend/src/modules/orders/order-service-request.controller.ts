@@ -627,6 +627,74 @@ export async function adminSetReturnDisposition(req: Request, res: Response, nex
   }
 }
 
+export async function adminRecordReturnReceipt(req: Request, res: Response, next: NextFunction) {
+  try {
+    const admin = req.authUser!;
+    const { requestId } = req.params;
+    const body = req.body as {
+      lines: Array<{ orderItemId: string; qtyReceived: number; note?: string }>;
+    };
+    const { recordReturnReceipt } = await import("./return-qc.service");
+    await recordReturnReceipt({
+      requestId,
+      adminUserId: admin.id,
+      lines: body.lines ?? []
+    });
+    res.json({ success: true });
+  } catch (err) {
+    const e = err as Error & { statusCode?: number; code?: string };
+    if (e.statusCode) {
+      res.status(e.statusCode).json({ success: false, error: e.message, code: e.code ?? "ERROR" });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function adminPerformReturnQc(req: Request, res: Response, next: NextFunction) {
+  try {
+    const admin = req.authUser!;
+    const { requestId } = req.params;
+    const body = req.body as { lines: import("./return-qc.service").ReturnQcLineInput[] };
+    const { performReturnQc } = await import("./return-qc.service");
+    const result = await performReturnQc({
+      requestId,
+      adminUserId: admin.id,
+      adminEmail: admin.email,
+      lines: body.lines ?? []
+    });
+    res.json({ success: true, data: result });
+  } catch (err) {
+    const e = err as Error & { statusCode?: number; code?: string };
+    if (e.statusCode) {
+      res.status(e.statusCode).json({ success: false, error: e.message, code: e.code ?? "ERROR" });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function adminReleaseRepack(req: Request, res: Response, next: NextFunction) {
+  try {
+    const admin = req.authUser!;
+    const { requestId, qcLineId } = req.params;
+    const { releaseRepackToSellable } = await import("./return-qc.service");
+    await releaseRepackToSellable({
+      requestId,
+      qcLineId,
+      adminUserId: admin.id
+    });
+    res.json({ success: true });
+  } catch (err) {
+    const e = err as Error & { statusCode?: number; code?: string };
+    if (e.statusCode) {
+      res.status(e.statusCode).json({ success: false, error: e.message, code: e.code ?? "ERROR" });
+      return;
+    }
+    next(err);
+  }
+}
+
 export async function adminMarkReplacementShipped(req: Request, res: Response, next: NextFunction) {
   try {
     const admin = req.authUser!;

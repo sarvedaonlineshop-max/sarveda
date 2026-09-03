@@ -288,6 +288,8 @@ model Inventory {
   variantId         String         @unique @db.Uuid
   onHand            Int            @default(0)
   reserved          Int            @default(0)
+  /// Units held in quarantine — never available for sale / reservation.
+  quarantineOnHand  Int            @default(0)
   lowStockThreshold Int            @default(5)
   variant           ProductVariant @relation(fields: [variantId], references: [id])
 }
@@ -1162,6 +1164,8 @@ model OrderServiceRequest {
   returnShipment     OrderReturnShipment?
   replacementFulfillments OrderReplacementFulfillment[]
   events             OrderServiceRequestEvent[]
+  receiptLines       OrderReturnReceiptLine[]
+  qcLines            OrderReturnQcLine[]
 
   @@index([orderId])
   @@index([status])
@@ -1274,6 +1278,49 @@ model OrderServiceRequestEvent {
   @@index([requestId, createdAt])
 }
 
+/// Warehouse receipt qty against an expected return-case line.
+model OrderReturnReceiptLine {
+  id               String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId        String              @db.Uuid
+  orderItemId      String              @db.Uuid
+  qtyExpected      Int
+  qtyReceived      Int                 @default(0)
+  receivedAt       DateTime?
+  receivedByUserId String?             @db.Uuid
+  note             String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  request          OrderServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  orderItem        OrderItem           @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+
+  @@unique([requestId, orderItemId])
+  @@index([requestId])
+}
+
+/// QC disposition line — supports mixed outcomes and wrong/extra SKU.
+model OrderReturnQcLine {
+  id                   String                           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId            String                           @db.Uuid
+  orderItemId          String?                          @db.Uuid
+  expectedSkuSnapshot  String?
+  receivedVariantId    String?                          @db.Uuid
+  receivedSkuSnapshot  String?
+  isUnexpectedSku      Boolean                          @default(false)
+  quantity             Int
+  disposition          OrderInventoryRestockDisposition
+  note                 String?
+  vendorId             String?                          @db.Uuid
+  vendorNameSnapshot   String?
+  restockEventId       String?                          @unique @db.Uuid
+  releasedToSellableAt DateTime?
+  createdByUserId      String?                          @db.Uuid
+  createdAt            DateTime                         @default(now())
+  request              OrderServiceRequest              @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@index([orderItemId])
+}
+
 model OrderItem {
   id                String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   orderId           String                       @db.Uuid
@@ -1299,6 +1346,7 @@ model OrderItem {
   pickupLocation    PickupLocation?              @relation(fields: [pickupLocationId], references: [id])
   inventoryRestocks OrderInventoryRestockEvent[]
   refundAllocations RefundAllocation[]
+  returnReceiptLines OrderReturnReceiptLine[]
 
   @@index([digitalOfferId])
 }
@@ -1310,6 +1358,14 @@ enum OrderInventoryRestockDisposition {
   SELLABLE
   DAMAGED
   NON_RESTOCKABLE
+  /// Requires repacking before sellable release — does not increment onHand until released.
+  REPACK
+  /// Held out of saleable stock (tracked on Inventory.quarantineOnHand).
+  QUARANTINE
+  /// Scrapped / written off — no onHand; may trigger cost write-off posting.
+  WRITE_OFF
+  /// Moving toward vendor return / recovery — not sellable.
+  RETURN_TO_VENDOR
 }
 
 enum OrderInventoryRestockSourceType {

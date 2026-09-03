@@ -63,7 +63,14 @@ export const SARVEDA_CHART_OF_ACCOUNTS: CoAEntry[] = [
   { code: "5360", name: "Marketing / Advertising", type: "EXPENSE", isSystem: true },
   { code: "5370", name: "Software / Subscription", type: "EXPENSE", isSystem: true },
   { code: "5380", name: "Misc Operating Expense", type: "EXPENSE", isSystem: true },
-  { code: "5390", name: "Bank Charges Expense", type: "EXPENSE", isSystem: true, description: "Bank statement charges (Phase 4D)." }
+  { code: "5390", name: "Bank Charges Expense", type: "EXPENSE", isSystem: true, description: "Bank statement charges (Phase 4D)." },
+  {
+    code: "5400",
+    name: "Inventory Write-off / Shrinkage",
+    type: "EXPENSE",
+    isSystem: true,
+    description: "Returned/damaged inventory written off at authoritative cost (Phase 3 returns QC)."
+  }
 ];
 
 export async function seedAccountingChartOfAccounts(): Promise<{ created: number; skipped: number }> {

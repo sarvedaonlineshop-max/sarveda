@@ -300,6 +300,8 @@ export async function cleanupTestOrder(orderId: string) {
     await prisma.orderServiceRequest.findMany({ where: { orderId }, select: { id: true } })
   ).map((r) => r.id);
   if (requestIds.length) {
+    await prisma.orderReturnQcLine.deleteMany({ where: { requestId: { in: requestIds } } });
+    await prisma.orderReturnReceiptLine.deleteMany({ where: { requestId: { in: requestIds } } });
     await prisma.orderServiceRequestEvent.deleteMany({ where: { requestId: { in: requestIds } } });
     await prisma.orderServiceRequestPhoto.deleteMany({ where: { requestId: { in: requestIds } } });
     await prisma.orderServiceRequestItem.deleteMany({ where: { requestId: { in: requestIds } } });

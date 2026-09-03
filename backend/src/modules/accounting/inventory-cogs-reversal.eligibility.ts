@@ -38,7 +38,14 @@ export async function assessInventoryCogsReversalEligibility(
     };
   }
 
-  if (snapshot.disposition === "DAMAGED" || snapshot.disposition === "NON_RESTOCKABLE") {
+  if (
+    snapshot.disposition === "DAMAGED" ||
+    snapshot.disposition === "NON_RESTOCKABLE" ||
+    snapshot.disposition === "REPACK" ||
+    snapshot.disposition === "QUARANTINE" ||
+    snapshot.disposition === "WRITE_OFF" ||
+    snapshot.disposition === "RETURN_TO_VENDOR"
+  ) {
     return {
       eligible: false,
       code: "NO_ACCOUNTING_RESTOCK_REQUIRED",
