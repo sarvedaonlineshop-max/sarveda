@@ -134,8 +134,7 @@ export async function buildFinancialDashboard(input: {
     disclosures: [
       "Figures from POSTED GL only via P&L/BS services",
       bs.disclosures.arSubledger,
-      ...bs.disclosures.warnings,
-      "Lightsail/test data may be TEST-ACC contaminated — not production financials"
+      ...bs.disclosures.warnings
     ]
   };
 }

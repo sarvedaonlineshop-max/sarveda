@@ -132,8 +132,12 @@ export default function AdminAccountingDashboardPage() {
         if (s.bankingEnabled) {
           try {
             const bank = await fetchBankingDashboard();
-            const cash = (bank.accounts ?? []).reduce((sum, a) => sum + (a.bookBalanceInPaise ?? 0), 0);
-            setBankingCashPaise(cash);
+            const bankAccounts = bank.accounts ?? [];
+            setBankingCashPaise(
+              bankAccounts.length
+                ? bankAccounts.reduce((sum, a) => sum + (a.bookBalanceInPaise ?? 0), 0)
+                : null
+            );
             const gatewayIssues = (bank.gatewayControls ?? []).filter(
               (g) => (g.warnings?.length ?? 0) > 0 || String(g.status).toUpperCase().includes("WARN")
             );
@@ -239,7 +243,7 @@ export default function AdminAccountingDashboardPage() {
             {fy?.currentFy?.label ? (
               <div className="font-semibold text-[#1c352a]">{fy.currentFy.label}</div>
             ) : null}
-            <div>As of {asOfLabel}</div>
+            <div>Books current as of {asOfLabel}</div>
           </div>
         }
       />

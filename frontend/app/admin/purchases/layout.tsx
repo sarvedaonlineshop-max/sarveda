@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AccountingUatBanner } from "@/components/admin/accounting/AccountingUatBanner";
 import { AdminPurchasesHeader, AdminPurchasesNav } from "@/components/admin/purchases/AdminPurchasesNav";
 import { useAdminUser } from "@/components/admin/AdminUserContext";
 import { isAccountingEnabled } from "@/lib/accounting-api";
@@ -26,8 +25,8 @@ export default function AdminPurchasesLayout({ children }: { children: React.Rea
     return (
       <div className="mx-auto max-w-3xl space-y-4 p-6">
         <AdminPurchasesHeader
-          title="Purchases (preview)"
-          subtitle="Module gated until enabled on staging."
+          title="Purchases"
+          subtitle="Purchasing is temporarily unavailable."
         />
         <button
           type="button"
@@ -59,7 +58,6 @@ export default function AdminPurchasesLayout({ children }: { children: React.Rea
   if (accountingOn) {
     return (
       <div className="mx-auto max-w-[1600px] space-y-4 p-1 font-sans">
-        <AccountingUatBanner />
         <div className="min-w-0 space-y-5">{children}</div>
       </div>
     );

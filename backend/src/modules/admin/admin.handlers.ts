@@ -1005,6 +1005,7 @@ export async function orderDetail(req: Request, res: Response, next: NextFunctio
           }
         },
         inventoryRestocks: { orderBy: { createdAt: "asc" } },
+        statusHistory: { orderBy: { createdAt: "asc" } },
         attribution: true
       }
     });
@@ -1016,7 +1017,31 @@ export async function orderDetail(req: Request, res: Response, next: NextFunctio
       });
       return;
     }
-    res.json({ success: true, data: { order } });
+    const accountingEvents = await prisma.accountingPostingEvent.findMany({
+      where: {
+        sourceType: "ORDER",
+        sourceId: order.id,
+        status: "POSTED"
+      },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        eventType: true,
+        uniqueKey: true,
+        processedAt: true,
+        createdAt: true,
+        journalEntry: {
+          select: {
+            id: true,
+            entryNumber: true,
+            entryDate: true,
+            status: true,
+            memo: true
+          }
+        }
+      }
+    });
+    res.json({ success: true, data: { order: { ...order, accountingEvents } } });
   } catch (err) {
     next(err);
   }

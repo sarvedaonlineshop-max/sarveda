@@ -190,9 +190,6 @@ export async function accountingStatus(_req: Request, res: Response) {
   );
   const productionPostingAllowed = isAccountingProductionPostingAllowed();
   const productionLike = isProductionLikeEnvironment();
-  const uatMode =
-    isNativeAccountingEnabled() && (!productionPostingAllowed || productionLike);
-
   res.json({
     success: true,
     data: {
@@ -220,9 +217,7 @@ export async function accountingStatus(_req: Request, res: Response) {
       cutover: getCutoverConfigSummary(),
       productionLikeEnvironment: productionLike,
       productionPostingAllowed,
-      uatMode,
-      uatBanner:
-        "Accounting UAT mode — Do not treat reports or journals created before cutover as official company books. Tag training docs with TEST-UAT-ACC-*.",
+      booksCurrentAsOf: new Date().toISOString().slice(0, 10),
       mode: "shadow_order_paid_refund_settlement_vendor_bill_vendor_payment_expense_inventory_opening_capitalization_cogs_reversal_v1",
       discoveryWorkerActive: isNativeAccountingEnabled(),
       calcVersions: {
@@ -274,9 +269,7 @@ export async function accountingDashboard(_req: Request, res: Response) {
       pendingPostingEvents: pendingEvents,
       failedPostingEvents: failedEvents,
       orderPaidPostedCount: orderPaidPosted,
-      orderRefundedFullPostedCount: orderRefundedFullPosted,
-      banner:
-        "Accounting UAT mode — Do not treat reports or journals created before cutover as official company books. Tag training docs with TEST-UAT-ACC-*."
+      orderRefundedFullPostedCount: orderRefundedFullPosted
     }
   });
 }

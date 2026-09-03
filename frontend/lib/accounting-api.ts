@@ -66,8 +66,7 @@ export type AccountingStatus = {
   };
   productionLikeEnvironment?: boolean;
   productionPostingAllowed?: boolean;
-  uatMode?: boolean;
-  uatBanner?: string;
+  booksCurrentAsOf?: string;
   openingBalanceEnabled?: boolean;
   itcVerificationEnabled?: boolean;
   gstReportingEnabled?: boolean;
@@ -93,7 +92,6 @@ export type AccountingDashboard = {
   failedPostingEvents: number;
   orderPaidPostedCount?: number;
   orderRefundedFullPostedCount?: number;
-  banner: string;
 };
 
 export type AccountingAccountRow = {

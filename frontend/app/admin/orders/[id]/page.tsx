@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { ChevronLeft } from "lucide-react";
 
 import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
@@ -175,6 +175,20 @@ type PaymentRow = {
   refunds?: RefundRow[];
 };
 
+type OrderInvoiceState = {
+  pdfUrl: string | null;
+  invoiceNo: string | null;
+  downloadUrl: string | null;
+};
+
+type OrderDeliveryChallanState = {
+  challanNumber: string;
+  downloadUrl: string;
+  awb: string | null;
+  carrier: string | null;
+  reasonLabel: string;
+};
+
 function parseOrderNotes(notes: string | null | undefined) {
   const raw = (notes ?? "").trim();
   if (!raw) return { giftWrap: false, customerNote: null as string | null, internalNotes: null as string | null };
@@ -189,11 +203,41 @@ function parseOrderNotes(notes: string | null | undefined) {
   return { giftWrap, customerNote, internalNotes };
 }
 
+type OrderAccountingEvent = {
+  id: string;
+  eventType: string;
+  uniqueKey: string;
+  processedAt?: string | null;
+  createdAt: string;
+  journalEntry?: {
+    id: string;
+    entryNumber: string;
+    entryDate: string;
+    status: string;
+    memo?: string | null;
+  } | null;
+};
+
+type OrderHistoryRow = {
+  id: string;
+  fromStatus?: string | null;
+  toStatus: string;
+  reason?: string | null;
+  createdAt: string;
+};
+
+type OrderRestockRow = {
+  id: string;
+  reason: string;
+  createdAt: string;
+};
+
 type OrderLoaded = {
   id: string;
   orderNumber: string;
   email: string;
   phone: string;
+  customerName?: string | null;
   notes?: string | null;
   status: string;
   paymentStatus: string;
@@ -217,6 +261,9 @@ type OrderLoaded = {
   wooImportNote?: string | null;
   serviceRequests?: AdminServiceRequestRow[];
   attribution?: AdminOrderAttribution | null;
+  statusHistory: OrderHistoryRow[];
+  inventoryRestocks: OrderRestockRow[];
+  accountingEvents: OrderAccountingEvent[];
 };
 
 function RefundCancelPanel({
@@ -472,6 +519,8 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
     orderNumber: String(raw.orderNumber),
     email: String(raw.email),
     phone: String(raw.phone),
+    customerName:
+      (raw.customer as { name?: string | null } | null | undefined)?.name ?? null,
     status: String(raw.status),
     paymentStatus: String(raw.paymentStatus),
     fulfillmentStatus: String(raw.fulfillmentStatus ?? "UNFULFILLED"),
@@ -493,8 +542,447 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
     wooCommerceId: raw.wooCommerceId != null ? Number(raw.wooCommerceId) : null,
     wooImportNote: legacy?.lineItemsNote ?? null,
     serviceRequests,
-    attribution: (raw.attribution as AdminOrderAttribution | null | undefined) ?? null
+    attribution: (raw.attribution as AdminOrderAttribution | null | undefined) ?? null,
+    statusHistory:
+      (raw.statusHistory as OrderHistoryRow[] | null | undefined) ?? [],
+    inventoryRestocks:
+      (raw.inventoryRestocks as OrderRestockRow[] | null | undefined) ?? [],
+    accountingEvents:
+      (raw.accountingEvents as OrderAccountingEvent[] | null | undefined) ?? []
   };
+}
+
+function humanState(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function sameAddress(a: AddressRow | undefined, b: AddressRow | undefined): boolean {
+  if (!a || !b) return false;
+  return ["fullName", "phone", "line1", "line2", "city", "state", "postalCode", "country"].every(
+    (key) =>
+      String(a[key as keyof AddressRow] ?? "").trim().toLowerCase() ===
+      String(b[key as keyof AddressRow] ?? "").trim().toLowerCase()
+  );
+}
+
+function AdminOrderProductionView({
+  order,
+  invoice,
+  deliveryChallan,
+  challanBusy,
+  canGenerateChallan,
+  shipBusy,
+  shipUi,
+  onCreateShipment,
+  onSyncAllTracking,
+  onTrackOne,
+  onGenerateChallan,
+  onEditAddress,
+  onStatusChange,
+  statusSaving,
+  dangerActions,
+  refundContent,
+  ewayBill,
+  serviceRequests,
+  shipmentSetup
+}: {
+  order: OrderLoaded;
+  invoice: { invoiceNo: string | null; downloadUrl: string | null; pdfUrl: string | null } | null;
+  deliveryChallan: {
+    challanNumber: string;
+    downloadUrl: string;
+    awb: string | null;
+    carrier: string | null;
+    reasonLabel: string;
+  } | null;
+  challanBusy: boolean;
+  canGenerateChallan: boolean;
+  shipBusy: string | null;
+  shipUi: boolean;
+  onCreateShipment: () => void;
+  onSyncAllTracking: () => void;
+  onTrackOne: (awb: string) => void;
+  onGenerateChallan: (refresh: boolean) => void;
+  onEditAddress: (address: AddressRow) => void;
+  onStatusChange: (status: string) => void;
+  statusSaving: boolean;
+  dangerActions: ReactNode;
+  refundContent: ReactNode;
+  ewayBill: ReactNode;
+  serviceRequests: ReactNode;
+  shipmentSetup: ReactNode;
+}) {
+  const payment = order.payments?.[0];
+  const isCod = payment?.provider === "COD";
+  const isCancelled = order.status === "CANCELLED";
+  const isRefunded =
+    order.status === "REFUNDED" ||
+    order.paymentStatus === "REFUNDED" ||
+    order.paymentStatus === "PARTIALLY_REFUNDED";
+  const captured =
+    order.paymentStatus === "CAPTURED" ||
+    order.paymentStatus === "REFUNDED" ||
+    order.paymentStatus === "PARTIALLY_REFUNDED";
+  const collectedInPaise = captured ? payment?.amountInPaise ?? order.grandTotalInPaise : 0;
+  const refundedInPaise = payment?.refundedInPaise ?? 0;
+  const netCollectedInPaise = Math.max(0, collectedInPaise - refundedInPaise);
+  const amountDueInPaise = isCod && !captured ? order.grandTotalInPaise : 0;
+  const shipping = order.addresses.find((a) => a.type === "SHIPPING") ?? order.addresses[0];
+  const billing = order.addresses.find((a) => a.type === "BILLING");
+  const customerName = order.customerName ?? shipping?.fullName ?? billing?.fullName ?? "Customer";
+  const awbRows = allOrderAwbRows(order.shipments);
+  const paymentLabel = isCod
+    ? isCancelled && !captured
+      ? "COD — Not Collected"
+      : captured
+        ? "COD — Collected"
+        : "COD — Pending Collection"
+    : order.paymentStatus === "CAPTURED"
+      ? `Paid via ${humanState(payment?.provider ?? "Online")}`
+      : order.paymentStatus === "PARTIALLY_REFUNDED"
+        ? "Partially Refunded"
+        : order.paymentStatus === "REFUNDED"
+          ? "Refunded"
+          : order.paymentStatus === "FAILED"
+            ? "Payment Failed"
+            : "Payment Pending";
+  const orderLabel = isCancelled
+    ? "Cancelled"
+    : isUnpaidCheckoutAttempt(order.status, order.paymentStatus, payment?.provider)
+      ? "Abandoned"
+      : formatAdminOrderStatusLabel(order.status, order.paymentStatus, payment?.provider);
+  const fulfilmentLabel = isCancelled
+    ? "Unfulfilled"
+    : humanState(order.fulfillmentStatus);
+  const nextStatuses: Record<string, string[]> = {
+    PAID: ["PROCESSING"],
+    PROCESSING: ["PACKED"],
+    PACKED: ["SHIPPED"],
+    SHIPPED: ["DELIVERED"]
+  };
+  const timeline = [
+    {
+      key: "placed",
+      at: order.createdAt,
+      title: `Order placed${isCod ? " — Cash on Delivery" : payment?.provider ? ` — ${humanState(payment.provider)}` : ""}`,
+      detail: null as string | null
+    },
+    ...order.statusHistory.map((h) => ({
+      key: `status-${h.id}`,
+      at: h.createdAt,
+      title: `Order ${humanState(h.toStatus).toLowerCase()}`,
+      detail: h.reason ?? null
+    })),
+    ...order.inventoryRestocks.map((r) => ({
+      key: `restock-${r.id}`,
+      at: r.createdAt,
+      title: "Inventory restored",
+      detail: r.reason ? humanState(r.reason) : null
+    })),
+    ...order.accountingEvents.map((e) => ({
+      key: `accounting-${e.id}`,
+      at: e.processedAt ?? e.createdAt,
+      title:
+        e.eventType === "ORDER_CANCELLED"
+          ? "Accounting reversal posted"
+          : e.eventType === "ORDER_REFUNDED_FULL"
+            ? "Refund accounting posted"
+            : e.eventType === "ORDER_PAID"
+              ? "Sale journal posted"
+              : `${humanState(e.eventType)} posted`,
+      detail: e.journalEntry?.entryNumber ?? null
+    }))
+  ].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+
+  const card = "rounded-xl border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-stone-900";
+  const sectionHeader = "border-b border-stone-100 px-5 py-4 dark:border-stone-700";
+
+  return (
+    <div className="space-y-6">
+      <header className={`${card} overflow-hidden`}>
+        <div className="h-1 bg-gradient-to-r from-[#1c352a] via-[#b98a3e] to-[#1c352a]" />
+        <div className="flex flex-col gap-5 p-5 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#8a7060]">Order</p>
+            <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-[#1c352a] dark:text-stone-100">
+              #{order.orderNumber}
+            </h1>
+            <div className="mt-3 space-y-0.5 text-sm text-stone-600 dark:text-stone-300">
+              <p className="font-semibold text-stone-900 dark:text-stone-100">{customerName}</p>
+              <p>{order.email}</p>
+              <p>{order.phone}</p>
+              <p className="pt-1 text-xs text-stone-500">
+                Placed {new Date(order.createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2 lg:max-w-xl lg:justify-end">
+            <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${isCancelled ? "bg-red-50 text-red-800" : "bg-emerald-50 text-emerald-800"}`}>
+              Order: {orderLabel}
+            </span>
+            <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${order.paymentStatus === "FAILED" ? "bg-red-50 text-red-800" : isCod && !captured ? "bg-amber-50 text-amber-900" : "bg-sky-50 text-sky-800"}`}>
+              Payment: {paymentLabel}
+            </span>
+            <span className="rounded-full bg-stone-100 px-3 py-1.5 text-xs font-semibold text-stone-700">
+              Fulfillment: {fulfilmentLabel}
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {[
+          ["Order total", formatMinorFromPaise(order.grandTotalInPaise, order.currency), order.currency],
+          ["Payment", isCod ? "Cash on Delivery" : humanState(payment?.provider ?? "Pending"), isCod && !captured ? (isCancelled ? "Not collected" : "Pending collection") : humanState(order.paymentStatus)],
+          ["Fulfillment", fulfilmentLabel, awbRows.length ? `${awbRows.length} tracking reference${awbRows.length === 1 ? "" : "s"}` : "No shipment"],
+          ["Delivery", shipping ? `${shipping.city}, ${shipping.state}` : "Address unavailable", shipping?.postalCode ?? "—"]
+        ].map(([label, value, hint]) => (
+          <div key={label} className={`${card} min-h-[104px] p-4`}>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#8a7060]">{label}</p>
+            <p className="mt-2 text-lg font-bold text-[#1c352a] dark:text-stone-100">{value}</p>
+            <p className="mt-0.5 text-xs text-stone-500">{hint}</p>
+          </div>
+        ))}
+      </div>
+
+      <section className={`${card} p-4`}>
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-wrap gap-2">
+            {shipUi && awbRows.length === 0 ? (
+              <button type="button" disabled={!!shipBusy} onClick={onCreateShipment} className="rounded-lg bg-[#1c352a] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                {shipBusy === "create" ? "Creating shipment…" : "Create Shipment"}
+              </button>
+            ) : null}
+            {awbRows.length ? (
+              <button type="button" disabled={!!shipBusy} onClick={onSyncAllTracking} className="rounded-lg bg-[#1c352a] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                {shipBusy === "sync-all" ? "Refreshing…" : "Track Shipment"}
+              </button>
+            ) : null}
+            {invoice?.invoiceNo || invoice?.pdfUrl ? (
+              <a href={invoice.downloadUrl ?? adminOrderInvoiceDownloadUrl(order.id)} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-[#b98a3e] bg-[#fff8e8] px-4 py-2 text-sm font-semibold text-[#1c352a]">
+                Download Invoice
+              </a>
+            ) : null}
+            {(nextStatuses[order.status] ?? []).map((status) => (
+              <button key={status} type="button" disabled={statusSaving} onClick={() => onStatusChange(status)} className="rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 disabled:opacity-50">
+                Mark {humanState(status)}
+              </button>
+            ))}
+          </div>
+          {dangerActions ? <div className="border-t border-red-100 pt-3 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">{dangerActions}</div> : null}
+        </div>
+      </section>
+
+      <section className={card}>
+        <div className={sectionHeader}>
+          <h2 className="text-base font-bold text-[#1c352a] dark:text-stone-100">Items &amp; Fulfillment</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-[#faf7f2] text-[11px] uppercase tracking-wide text-[#8a7060]">
+              <tr>{["Product", "SKU", "Qty", "Fulfilled From", "Unit Price", "Total"].map((h) => <th key={h} className="px-4 py-3 font-semibold">{h}</th>)}</tr>
+            </thead>
+            <tbody className="divide-y divide-stone-100">
+              {order.items.map((item, idx) => {
+                const warehouseQty = item.warehouseFulfillmentQty ?? item.qtyOrdered;
+                const dropQty = item.dropShipFulfillmentQty ?? 0;
+                const source = dropQty > 0 && warehouseQty > 0 ? `Warehouse (${warehouseQty}) · Drop ship (${dropQty})` : dropQty > 0 ? "Drop ship" : item.pickupLocation?.label ?? "Warehouse";
+                return (
+                  <tr key={item.id ?? idx}>
+                    <td className="px-4 py-3 font-medium text-stone-900">{item.nameSnapshot}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-stone-500">{item.skuSnapshot}</td>
+                    <td className="px-4 py-3">{item.qtyOrdered}</td>
+                    <td className="px-4 py-3 text-stone-600">{source}</td>
+                    <td className="px-4 py-3">{formatMinorFromPaise(item.unitPriceInPaise, order.currency)}</td>
+                    <td className="px-4 py-3 font-semibold">{formatMinorFromPaise(item.lineTotalInPaise, order.currency)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div className="border-t border-stone-100 p-5">
+          {isCancelled && awbRows.length === 0 ? (
+            <p className="text-sm text-stone-600">This order was cancelled before shipment.</p>
+          ) : awbRows.length === 0 ? (
+            <p className="text-sm text-stone-500">No shipment has been created yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {awbRows.map((row) => (
+                <div key={`${row.shipmentId}-${row.awb}`} className="flex flex-col gap-3 rounded-lg border border-stone-200 bg-stone-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-3">
+                    <div><dt className="text-xs text-stone-500">Status</dt><dd className="font-semibold">{humanState(row.status)}</dd></div>
+                    <div><dt className="text-xs text-stone-500">Carrier</dt><dd>{humanState(row.courier)}</dd></div>
+                    <div><dt className="text-xs text-stone-500">AWB / Tracking ID</dt><dd className="font-mono text-xs">{row.awb}</dd></div>
+                  </dl>
+                  <div className="flex gap-2">
+                    {row.trackingUrl ? <a href={row.trackingUrl} target="_blank" rel="noopener noreferrer" className={AWB_PILL.track}>Open tracking</a> : null}
+                    {row.isDelhiveryIntegrated ? <button type="button" disabled={!!shipBusy} onClick={() => onTrackOne(row.awb)} className={AWB_PILL.sync}>{shipBusy === row.awb ? "Refreshing…" : "Refresh"}</button> : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {shipmentSetup}
+        </div>
+      </section>
+
+      <section className={card}>
+        <div className={sectionHeader}><h2 className="text-base font-bold text-[#1c352a] dark:text-stone-100">Customer &amp; Delivery</h2></div>
+        <div className="grid gap-6 p-5 md:grid-cols-2">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#8a7060]">Customer</p>
+            <dl className="mt-3 space-y-2 text-sm">
+              <div><dt className="text-xs text-stone-500">Name</dt><dd className="font-semibold">{customerName}</dd></div>
+              <div><dt className="text-xs text-stone-500">Email</dt><dd>{order.email}</dd></div>
+              <div><dt className="text-xs text-stone-500">Phone</dt><dd>{order.phone}</dd></div>
+            </dl>
+          </div>
+          <div>
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#8a7060]">Shipping address</p>
+              {shipping ? <button type="button" onClick={() => onEditAddress(shipping)} className="text-xs font-semibold text-[#8a6428] hover:underline">Edit</button> : null}
+            </div>
+            {shipping ? (
+              <address className="mt-3 text-sm not-italic leading-6 text-stone-700">
+                <span className="font-semibold text-stone-900">{shipping.fullName}</span><br />
+                {shipping.line1}{shipping.line2 ? <><br />{shipping.line2}</> : null}<br />
+                {shipping.city}, {shipping.state} {shipping.postalCode}<br />{shipping.country}
+              </address>
+            ) : <p className="mt-3 text-sm text-stone-500">No shipping address.</p>}
+            <div className="mt-4 border-t border-stone-100 pt-3 text-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#8a7060]">Billing address</p>
+              <p className="mt-1 text-stone-600">{sameAddress(shipping, billing) ? "Same as shipping" : billing ? `${billing.line1}, ${billing.city}, ${billing.state} ${billing.postalCode}` : "Not provided"}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className={card}>
+        <div className={sectionHeader}><h2 className="text-base font-bold text-[#1c352a] dark:text-stone-100">Payment &amp; Order Total</h2></div>
+        <div className="grid gap-8 p-5 lg:grid-cols-2">
+          <dl className="space-y-3 text-sm">
+            <div className="flex justify-between gap-4"><dt className="text-stone-500">Payment method</dt><dd className="font-semibold">{isCod ? "Cash on Delivery" : humanState(payment?.provider ?? "Not selected")}</dd></div>
+            {isCod ? (
+              <>
+                <div className="flex justify-between"><dt className="text-stone-500">Amount due</dt><dd>{formatMinorFromPaise(amountDueInPaise, order.currency)}</dd></div>
+                <div className="flex justify-between"><dt className="text-stone-500">Collected</dt><dd>{formatMinorFromPaise(collectedInPaise, order.currency)}</dd></div>
+                <div className="flex justify-between"><dt className="text-stone-500">Status</dt><dd className="font-semibold">{isCancelled && !captured ? "Not collected" : captured ? "Collected" : "Pending collection"}</dd></div>
+              </>
+            ) : (
+              <>
+                <div className="flex justify-between"><dt className="text-stone-500">Order total</dt><dd>{formatMinorFromPaise(order.grandTotalInPaise, order.currency)}</dd></div>
+                <div className="flex justify-between"><dt className="text-stone-500">Originally collected</dt><dd>{formatMinorFromPaise(collectedInPaise, order.currency)}</dd></div>
+                <div className="flex justify-between"><dt className="text-stone-500">Refunded</dt><dd>{formatMinorFromPaise(refundedInPaise, order.currency)}</dd></div>
+                <div className="flex justify-between font-semibold"><dt>Net collected</dt><dd>{formatMinorFromPaise(netCollectedInPaise, order.currency)}</dd></div>
+              </>
+            )}
+          </dl>
+          <dl className="space-y-2 text-sm">
+            <div className="flex justify-between"><dt className="text-stone-500">Products</dt><dd>{formatMinorFromPaise(order.subtotalInPaise, order.currency)}</dd></div>
+            <div className="flex justify-between"><dt className="text-stone-500">Shipping</dt><dd>{formatMinorFromPaise(order.shippingInPaise, order.currency)}</dd></div>
+            <div className="flex justify-between"><dt className="text-stone-500">Discount</dt><dd>{order.discountInPaise ? `−${formatMinorFromPaise(order.discountInPaise, order.currency)}` : formatMinorFromPaise(0, order.currency)}</dd></div>
+            <div className="flex justify-between"><dt className="text-stone-500">GST</dt><dd>{formatMinorFromPaise(order.taxInPaise, order.currency)}</dd></div>
+            <div className="flex justify-between border-t-2 border-stone-200 pt-3 text-base font-bold text-[#1c352a]"><dt>Grand Total</dt><dd>{formatMinorFromPaise(order.grandTotalInPaise, order.currency)}</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      {isCancelled || isRefunded || refundContent || serviceRequests ? (
+        <section className={card}>
+          <div className={sectionHeader}><h2 className="text-base font-bold text-[#1c352a] dark:text-stone-100">{isCancelled && isCod && !captured ? "Cancellation" : "Refunds &amp; Returns"}</h2></div>
+          <div className="space-y-4 p-5">
+            {isCancelled && isCod && !captured ? (
+              <dl className="grid gap-3 text-sm sm:grid-cols-3">
+                <div><dt className="text-stone-500">Status</dt><dd className="font-semibold">Cancelled before shipment</dd></div>
+                <div><dt className="text-stone-500">Payment collected</dt><dd className="font-semibold">{formatMinorFromPaise(0, order.currency)}</dd></div>
+                <div><dt className="text-stone-500">Refund required</dt><dd className="font-semibold">No</dd></div>
+              </dl>
+            ) : refundContent}
+            {serviceRequests}
+          </div>
+        </section>
+      ) : null}
+
+      <section className={card}>
+        <div className={sectionHeader}><h2 className="text-base font-bold text-[#1c352a] dark:text-stone-100">Documents</h2></div>
+        <div className="grid gap-3 p-5 md:grid-cols-3">
+          <div className="rounded-lg border border-stone-200 p-4">
+            <p className="font-semibold">Tax Invoice</p>
+            <p className="mt-1 font-mono text-xs text-stone-500">{invoice?.invoiceNo ?? "Not generated"}</p>
+            {invoice?.invoiceNo || invoice?.pdfUrl ? <a href={invoice.downloadUrl ?? adminOrderInvoiceDownloadUrl(order.id)} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-semibold text-[#8a6428] hover:underline">Download</a> : null}
+          </div>
+          <div className="rounded-lg border border-stone-200 p-4">
+            <p className="font-semibold">Delivery Challan</p>
+            <p className="mt-1 font-mono text-xs text-stone-500">{deliveryChallan?.challanNumber ?? "Not generated"}</p>
+            {deliveryChallan ? <a href={deliveryChallan.downloadUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-semibold text-[#8a6428] hover:underline">Download</a> : canGenerateChallan ? <button type="button" disabled={challanBusy} onClick={() => onGenerateChallan(false)} className="mt-3 text-sm font-semibold text-[#8a6428] hover:underline disabled:opacity-50">{challanBusy ? "Generating…" : "Generate"}</button> : null}
+          </div>
+          <div className="rounded-lg border border-stone-200 p-4">{ewayBill}</div>
+        </div>
+      </section>
+
+      <section className={card}>
+        <div className={sectionHeader}><h2 className="text-base font-bold text-[#1c352a] dark:text-stone-100">Accounting</h2></div>
+        <div className="p-5">
+          {order.accountingEvents.length ? (
+            <div className="space-y-3">
+              {order.accountingEvents.map((event) => (
+                <div key={event.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 pb-3 last:border-0 last:pb-0">
+                  <div>
+                    <p className="text-sm font-semibold">{event.eventType === "ORDER_PAID" ? "Sale journal" : event.eventType === "ORDER_CANCELLED" ? "Cancellation reversal" : event.eventType === "ORDER_REFUNDED_FULL" ? "Refund reversal" : humanState(event.eventType)}</p>
+                    <p className="mt-0.5 font-mono text-xs text-stone-500">{event.journalEntry?.entryNumber ?? "Journal pending"}</p>
+                  </div>
+                  <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800">Posted</span>
+                </div>
+              ))}
+              <Link href="/admin/accounting/journals" className="inline-block text-sm font-semibold text-[#8a6428] hover:underline">View journal entries</Link>
+            </div>
+          ) : <p className="text-sm text-stone-500">No accounting entries have been posted for this order.</p>}
+        </div>
+      </section>
+
+      <section className={card}>
+        <div className={sectionHeader}><h2 className="text-base font-bold text-[#1c352a] dark:text-stone-100">Order Timeline</h2></div>
+        <ol className="divide-y divide-stone-100 px-5">
+          {timeline.map((item) => (
+            <li key={item.key} className="grid gap-1 py-4 sm:grid-cols-[190px_1fr]">
+              <time className="text-xs text-stone-500">{new Date(item.at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</time>
+              <div><p className="text-sm font-semibold">{item.title}</p>{item.detail ? <p className="mt-0.5 text-xs text-stone-500">{item.detail}</p> : null}</div>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <details className={card}>
+        <summary className="cursor-pointer list-none px-5 py-4 text-sm font-semibold text-[#1c352a]">Marketing attribution</summary>
+        <div className="border-t border-stone-100 p-5"><AdminOrderAttributionCard attribution={order.attribution} /></div>
+      </details>
+
+      <details className={card}>
+        <summary className="cursor-pointer list-none px-5 py-4 text-sm font-semibold text-[#1c352a]">Technical details</summary>
+        <div className="grid gap-4 border-t border-stone-100 p-5 text-xs md:grid-cols-2">
+          <dl className="space-y-2">
+            <div><dt className="text-stone-500">Internal order ID</dt><dd className="break-all font-mono">{order.id}</dd></div>
+            <div><dt className="text-stone-500">Stored order state</dt><dd className="font-mono">{order.status}</dd></div>
+            <div><dt className="text-stone-500">Stored payment state</dt><dd className="font-mono">{order.paymentStatus}</dd></div>
+            <div><dt className="text-stone-500">Stored fulfillment state</dt><dd className="font-mono">{order.fulfillmentStatus}</dd></div>
+          </dl>
+          <div className="space-y-3">
+            {(order.payments ?? []).map((p, idx) => (
+              <dl key={`${p.provider}-${idx}`} className="space-y-1 rounded-lg bg-stone-50 p-3">
+                <div><dt className="text-stone-500">Provider</dt><dd>{p.provider}</dd></div>
+                {p.providerOrderId ? <div><dt className="text-stone-500">Provider order ID</dt><dd className="break-all font-mono">{p.providerOrderId}</dd></div> : null}
+                {p.providerPaymentId ? <div><dt className="text-stone-500">Provider payment ID</dt><dd className="break-all font-mono">{p.providerPaymentId}</dd></div> : null}
+              </dl>
+            ))}
+          </div>
+        </div>
+      </details>
+    </div>
+  );
 }
 
 export default function AdminOrderDetailPage() {
@@ -503,21 +991,12 @@ export default function AdminOrderDetailPage() {
 
   const [order, setOrder] = useState<OrderLoaded | null>(null);
   const [statusSaving, setStatusSaving] = useState(false);
-  const [invoice, setInvoice] = useState<{
-    pdfUrl: string | null;
-    invoiceNo: string | null;
-    downloadUrl: string | null;
-  } | null>(null);
-  const [deliveryChallan, setDeliveryChallan] = useState<{
-    challanNumber: string;
-    downloadUrl: string;
-    awb: string | null;
-    carrier: string | null;
-    reasonLabel: string;
-  } | null>(null);
+  const [invoice, setInvoice] = useState<OrderInvoiceState | null>(null);
+  const [deliveryChallan, setDeliveryChallan] = useState<OrderDeliveryChallanState | null>(null);
   const [challanBusy, setChallanBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [shipBusy, setShipBusy] = useState<string | null>(null);
+  const [shipmentWorkspaceOpen, setShipmentWorkspaceOpen] = useState(false);
   const [pickupOptions, setPickupOptions] = useState<AdminPickupLocationRow[]>([]);
   const [selectedPickupId, setSelectedPickupId] = useState<string>("");
   const [selectedCourier, setSelectedCourier] = useState<string>("AUTO");
@@ -1353,11 +1832,158 @@ export default function AdminOrderDetailPage() {
         </div>
       ) : null}
 
+      <Link href="/admin/orders" className="inline-flex items-center gap-1 text-sm font-medium text-brand-gold transition-colors hover:text-brand-forest dark:text-amber-400">
+        <ChevronLeft size={14} />
+        Orders
+      </Link>
       {err ? (
         <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200" role="alert">
           {err}
         </p>
       ) : null}
+      <AdminOrderProductionView
+        order={order}
+        invoice={invoice}
+        deliveryChallan={deliveryChallan}
+        challanBusy={challanBusy}
+        canGenerateChallan={canGenerateChallan}
+        shipBusy={shipBusy}
+        shipUi={shipUi}
+        onCreateShipment={() => setShipmentWorkspaceOpen((open) => !open)}
+        onSyncAllTracking={() => void handleSyncAllTracking()}
+        onTrackOne={(awb) => void handleTrackOne(awb)}
+        onGenerateChallan={(refresh) => void handleGenerateDeliveryChallan(refresh)}
+        onEditAddress={(address) => {
+          setAddressModal(address);
+          setAddrDraft({
+            fullName: address.fullName,
+            phone: address.phone,
+            line1: address.line1,
+            line2: address.line2 ?? "",
+            city: address.city,
+            state: address.state,
+            postalCode: address.postalCode,
+            country: address.country
+          });
+        }}
+        onStatusChange={(status) => setStatusConfirm(status)}
+        statusSaving={statusSaving}
+        dangerActions={
+          showRefundActions ? (
+            <RefundCancelPanel
+              compact
+              orderId={order.id}
+              status={order.status}
+              paymentStatus={order.paymentStatus}
+              onDone={() => void load()}
+            />
+          ) : null
+        }
+        refundContent={
+          order.payments?.[0]?.provider !== "COD" &&
+          ["CAPTURED", "PARTIALLY_REFUNDED", "REFUNDED"].includes(order.paymentStatus) ? (
+            <>
+              <AdminOrderRefundPreview
+                orderId={order.id}
+                currency={order.currency}
+                refreshKey={`${order.status}:${order.paymentStatus}:${order.payments?.[0]?.refundedInPaise ?? 0}`}
+              />
+              <AdminOrderRtoWorkflow orderId={order.id} currency={order.currency} onUpdated={() => void load()} />
+            </>
+          ) : null
+        }
+        serviceRequests={
+          order.serviceRequests?.length ? (
+            <AdminOrderServiceRequests
+              orderId={order.id}
+              requests={order.serviceRequests}
+              orderCtx={{
+                currency: order.currency,
+                grandTotalInPaise: order.grandTotalInPaise,
+                paymentStatus: order.paymentStatus,
+                paymentProvider: order.payments?.[0]?.provider ?? null,
+                paymentRefundedInPaise: order.payments?.[0]?.refundedInPaise ?? 0,
+                orderItems: order.items.map((i) => ({
+                  id: i.id ?? "",
+                  lineTotalInPaise: i.lineTotalInPaise
+                }))
+              }}
+              onUpdated={() => void load()}
+            />
+          ) : null
+        }
+        ewayBill={<AdminOrderEwayBillCard orderId={id} onToast={pushToast} />}
+        shipmentSetup={
+          shipmentWorkspaceOpen && shipUi && !hasForwardAwb ? (
+            <div className="mt-5 rounded-xl border border-[#d9c8a7] bg-[#fffaf0] p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-bold text-[#1c352a]">Shipment setup</p>
+                  <p className="mt-0.5 text-xs text-stone-500">Confirm pickup, package and service before creating the AWB.</p>
+                </div>
+                <button type="button" onClick={() => setShipmentWorkspaceOpen(false)} className="text-xs font-semibold text-stone-500 hover:text-stone-900">Close</button>
+              </div>
+              <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <label className="text-xs text-stone-600">
+                  Pickup location
+                  <select value={selectedPickupId} onChange={(e) => setSelectedPickupId(e.target.value)} className="mt-1 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm">
+                    {pickupOptions.map((p) => <option key={p.id} value={p.id}>{p.delhiveryPickupName || p.label}</option>)}
+                  </select>
+                </label>
+                <label className="text-xs text-stone-600">
+                  Payment mode
+                  <select value={shipPaymentMode} onChange={(e) => setShipPaymentMode(e.target.value as "Pre-paid" | "COD")} className="mt-1 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm">
+                    <option value="Pre-paid">Pre-paid</option>
+                    <option value="COD">Cash on Delivery</option>
+                  </select>
+                </label>
+                <label className="text-xs text-stone-600">
+                  Package type
+                  <select
+                    value={activeShipBox.packageType}
+                    onChange={(e) => {
+                      const packageType = e.target.value as DelhiveryShipBox["packageType"];
+                      setShipBoxes((prev) => prev.map((box, i) => i === activeShipBoxIdx ? { ...box, packageType } : box));
+                    }}
+                    className="mt-1 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
+                  >
+                    <option value="CARDBOARD_BOX">Cardboard box</option>
+                    <option value="PLASTIC_COVER">Plastic cover / flyer</option>
+                  </select>
+                </label>
+                <label className="text-xs text-stone-600">
+                  Weight (grams)
+                  <input type="text" inputMode="numeric" value={activeShipBox.weightGrams || ""} onChange={(e) => setShipBoxes((prev) => patchActiveBoxWeight(prev, activeShipBoxIdx, e.target.value))} className="mt-1 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm" />
+                </label>
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                {(["lengthCm", "breadthCm", "heightCm"] as const).map((field) => (
+                  <label key={field} className="text-xs text-stone-600">
+                    {field === "lengthCm" ? "Length (cm)" : field === "breadthCm" ? "Breadth (cm)" : "Height (cm)"}
+                    <input type="text" inputMode="numeric" value={activeShipBox[field]} onChange={(e) => setShipBoxes((prev) => patchActiveBoxDim(prev, activeShipBoxIdx, field, e.target.value))} className="mt-1 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm" />
+                  </label>
+                ))}
+              </div>
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex gap-2">
+                  {(["S", "E"] as const).map((mode) => (
+                    <button key={mode} type="button" onClick={() => setShipMode(mode)} className={`rounded-lg border px-3 py-2 text-xs font-semibold ${shipMode === mode ? "border-[#1c352a] bg-[#1c352a] text-white" : "border-stone-300 bg-white text-stone-700"}`}>
+                      {mode === "S" ? "Surface" : "Express"} · {formatFreightAmount(freightByMode[mode])}
+                    </button>
+                  ))}
+                </div>
+                <button type="button" disabled={!!shipBusy || !pickupOptions.length || !!boxDimError || totalChargeableG <= 0} onClick={() => void handleRetryShipment()} className="rounded-lg bg-[#1c352a] px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50">
+                  {shipBusy === "create" ? "Creating AWB…" : "Create shipment & AWB"}
+                </button>
+              </div>
+              {boxDimError ? <p className="mt-2 text-xs font-medium text-red-700">{boxDimError}</p> : null}
+            </div>
+          ) : null
+        }
+      />
+
+      {process.env.NEXT_PUBLIC_LEGACY_ORDER_DETAIL === "1" ? ((order: OrderLoaded, invoice: OrderInvoiceState | null, deliveryChallan: OrderDeliveryChallanState | null) => (
+        <>
       <div>
         <Link href="/admin/orders" className="inline-flex items-center gap-1 text-sm font-medium text-brand-gold transition-colors hover:text-brand-forest dark:text-amber-400">
           <ChevronLeft size={14} />
@@ -2437,6 +3063,8 @@ export default function AdminOrderDetailPage() {
           ))}
         </div>
       </div>
+        </>
+      ))(order, invoice, deliveryChallan) : null}
     </div>
   );
 }
