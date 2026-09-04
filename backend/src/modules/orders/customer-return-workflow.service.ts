@@ -67,13 +67,16 @@ export async function loadCustomerReturnWorkflowState(
   const canMarkReceived = Boolean(
     rs && rs.physicalStatus !== "RECEIVED" && rs.physicalStatus !== "INSPECTED" && !rs.receivedAt
   );
-  const canSetDisposition = Boolean(rs?.receivedAt && !rs.disposition);
+  const canSetDisposition = Boolean(rs?.receivedAt && (!rs.disposition || rs.disposition === "NEEDS_REVIEW"));
+  const needsPhysical = request.returnPhysicalStatus !== "NOT_REQUIRED";
+  const physicalReady =
+    !needsPhysical ||
+    Boolean(rs?.receivedAt && rs.disposition && rs.disposition !== "NEEDS_REVIEW");
   const canExecuteRefund = Boolean(
     request.status === "APPROVED" &&
-      rs?.receivedAt &&
-      rs.disposition &&
-      rs.disposition !== "NEEDS_REVIEW" &&
+      physicalReady &&
       ["REFUND_PENDING", "NONE"].includes(request.resolutionStatus) &&
+      !request.refundProcessedAt &&
       request.items.some(
         (i) =>
           i.requestedResolution === "RETURN_FOR_REFUND" ||

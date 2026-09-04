@@ -661,10 +661,17 @@ export async function processServiceRequestRefund(opts: {
     });
   }
 
+  if (request.type === "REFUND_AFTER_DELIVERY") {
+    throw Object.assign(
+      new Error(
+        "Post-delivery returns must use the return-case refund path (receipt + QC when physical return is required)"
+      ),
+      { statusCode: 400, code: "USE_RETURN_CASE_REFUND" }
+    );
+  }
+
   const order = request.order;
-  const lineTotalByOrderItemId = new Map(
-    order.items.map((i) => [i.id, i.lineTotalInPaise])
-  );
+  const orderItemById = new Map(order.items.map((i) => [i.id, i]));
   const requestItemById = new Map(request.items.map((i) => [i.id, i]));
 
   let totalInPaise = 0;
@@ -682,12 +689,21 @@ export async function processServiceRequestRefund(opts: {
         code: "INVALID_AMOUNT"
       });
     }
-    const lineTotal = lineTotalByOrderItemId.get(reqItem.orderItemId) ?? 0;
-    const alreadyRefunded = reqItem.refundAmountInPaise ?? 0;
-    const remaining = lineTotal - alreadyRefunded;
+    const orderItem = orderItemById.get(reqItem.orderItemId);
+    const lineTotal = orderItem?.lineTotalInPaise ?? 0;
+    const qtyOrdered = orderItem?.qtyOrdered ?? reqItem.qtySelected;
+    const { caseMerchandiseCeilingPaise } = await import("./return-refund-calculator.service");
+    const remaining = caseMerchandiseCeilingPaise(
+      lineTotal,
+      qtyOrdered,
+      reqItem.qtySelected,
+      reqItem.refundAmountInPaise ?? 0
+    );
     if (amount > remaining) {
       throw Object.assign(
-        new Error(`Refund for ${reqItem.nameSnapshot} cannot exceed ${remaining / 100} (remaining on line)`),
+        new Error(
+          `Refund for ${reqItem.nameSnapshot} cannot exceed ${remaining / 100} (approved case qty ${reqItem.qtySelected})`
+        ),
         { statusCode: 400, code: "AMOUNT_TOO_HIGH" }
       );
     }

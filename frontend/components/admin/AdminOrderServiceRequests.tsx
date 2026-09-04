@@ -13,6 +13,7 @@ import {
 } from "@/lib/order-service-request";
 import { AdminOrderAdjustmentPanel } from "@/components/admin/AdminOrderAdjustmentPanel";
 import { AdminOrderReturnReplacementPanel } from "@/components/admin/AdminOrderReturnReplacementPanel";
+import { caseMerchandiseCeilingPaise } from "@/lib/return-refund-ui";
 
 export type AdminServiceRequestItemRow = {
   id: string;
@@ -71,7 +72,7 @@ export type AdminServiceRequestOrderContext = {
   paymentStatus: string;
   paymentProvider: string | null;
   paymentRefundedInPaise?: number;
-  orderItems: Array<{ id: string; lineTotalInPaise: number }>;
+  orderItems: Array<{ id: string; lineTotalInPaise: number; qtyOrdered: number }>;
 };
 
 function PhotoThumb({
@@ -123,7 +124,7 @@ function ServiceRequestRefundPanel({
   onDone: () => void;
 }) {
   const lineByOrderItemId = useMemo(
-    () => new Map(orderCtx.orderItems.map((i) => [i.id, i.lineTotalInPaise])),
+    () => new Map(orderCtx.orderItems.map((i) => [i.id, i])),
     [orderCtx.orderItems]
   );
 
@@ -140,8 +141,13 @@ function ServiceRequestRefundPanel({
   const [amounts, setAmounts] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {};
     for (const item of items) {
-      const line = lineByOrderItemId.get(item.orderItemId) ?? 0;
-      const remaining = line - (item.refundAmountInPaise ?? 0);
+      const orderLine = lineByOrderItemId.get(item.orderItemId);
+      const remaining = caseMerchandiseCeilingPaise(
+        orderLine?.lineTotalInPaise ?? 0,
+        orderLine?.qtyOrdered ?? item.qtySelected,
+        item.qtySelected,
+        item.refundAmountInPaise ?? 0
+      );
       init[item.id] = remaining > 0 ? String(remaining / 100) : "";
     }
     return init;
@@ -154,8 +160,13 @@ function ServiceRequestRefundPanel({
     orderCtx.grandTotalInPaise - (orderCtx.paymentRefundedInPaise ?? 0);
 
   function remainingForItem(item: AdminServiceRequestItemRow): number {
-    const line = lineByOrderItemId.get(item.orderItemId) ?? 0;
-    return Math.max(0, line - (item.refundAmountInPaise ?? 0));
+    const orderLine = lineByOrderItemId.get(item.orderItemId);
+    return caseMerchandiseCeilingPaise(
+      orderLine?.lineTotalInPaise ?? 0,
+      orderLine?.qtyOrdered ?? item.qtySelected,
+      item.qtySelected,
+      item.refundAmountInPaise ?? 0
+    );
   }
 
   function setFullItem(item: AdminServiceRequestItemRow) {
@@ -281,7 +292,7 @@ function ServiceRequestRefundPanel({
                 <tr className="border-b border-emerald-200/80 text-stone-500 dark:border-emerald-900">
                   <th className="px-2 py-1.5 font-semibold">Include</th>
                   <th className="px-2 py-1.5 font-semibold">Item</th>
-                  <th className="px-2 py-1.5 font-semibold">Line total</th>
+                  <th className="px-2 py-1.5 font-semibold">Case merchandise</th>
                   <th className="px-2 py-1.5 font-semibold">Already refunded</th>
                   <th className="px-2 py-1.5 font-semibold">Refund amount</th>
                   <th className="px-2 py-1.5" />
@@ -289,7 +300,13 @@ function ServiceRequestRefundPanel({
               </thead>
               <tbody>
                 {items.map((item) => {
-                  const line = lineByOrderItemId.get(item.orderItemId) ?? 0;
+                  const orderLine = lineByOrderItemId.get(item.orderItemId);
+                  const lineCeiling = caseMerchandiseCeilingPaise(
+                    orderLine?.lineTotalInPaise ?? 0,
+                    orderLine?.qtyOrdered ?? item.qtySelected,
+                    item.qtySelected,
+                    0
+                  );
                   const remaining = remainingForItem(item);
                   const done = remaining <= 0;
                   return (
@@ -304,9 +321,15 @@ function ServiceRequestRefundPanel({
                       </td>
                       <td className="px-2 py-2 align-top">
                         <p className="font-medium text-stone-900 dark:text-stone-100">{item.nameSnapshot}</p>
-                        <p className="text-[10px] text-stone-500">{item.reasonLabel}</p>
+                        <p className="text-[10px] text-stone-500">
+                          {item.reasonLabel} · approved qty {item.qtySelected}
+                          {orderLine?.qtyOrdered != null ? ` of ${orderLine.qtyOrdered}` : ""}
+                        </p>
                       </td>
-                      <td className="px-2 py-2 align-top">{formatMinorFromPaise(line, orderCtx.currency)}</td>
+                      <td className="px-2 py-2 align-top">
+                        {formatMinorFromPaise(lineCeiling, orderCtx.currency)}
+                        <span className="block text-[10px] font-normal text-stone-500">case merchandise</span>
+                      </td>
                       <td className="px-2 py-2 align-top">
                         {item.refundAmountInPaise
                           ? formatMinorFromPaise(item.refundAmountInPaise, orderCtx.currency)
@@ -568,13 +591,13 @@ export function AdminOrderServiceRequests({
                 </div>
               ) : null}
 
-              {req.type === "REFUND_AFTER_DELIVERY" &&
-              req.items?.some((i) => i.requestedResolution) ? (
+              {req.type === "REFUND_AFTER_DELIVERY" ? (
                 <AdminOrderReturnReplacementPanel
                   ctx={{
                     orderId,
                     currency: orderCtx.currency,
                     paymentProvider: orderCtx.paymentProvider,
+                    orderItems: orderCtx.orderItems,
                     request: {
                       id: req.id,
                       status: req.status,
@@ -590,8 +613,7 @@ export function AdminOrderServiceRequests({
                 />
               ) : null}
 
-              {!isAdjust &&
-              !(req.type === "REFUND_AFTER_DELIVERY" && req.items?.some((i) => i.requestedResolution)) ? (
+              {!isAdjust && req.type !== "REFUND_AFTER_DELIVERY" ? (
                 <ServiceRequestRefundPanel
                   orderId={orderId}
                   request={req}

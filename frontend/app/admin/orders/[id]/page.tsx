@@ -494,6 +494,31 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
     codRefundNote: r.codRefundNote != null ? String(r.codRefundNote) : null,
     refundTotalInPaise: r.refundTotalInPaise != null ? Number(r.refundTotalInPaise) : null,
     refundProcessedAt: r.refundProcessedAt != null ? String(r.refundProcessedAt) : null,
+    returnPhysicalStatus: r.returnPhysicalStatus != null ? String(r.returnPhysicalStatus) : null,
+    resolutionStatus: r.resolutionStatus != null ? String(r.resolutionStatus) : null,
+    shippingRefundPolicy: r.shippingRefundPolicy != null ? String(r.shippingRefundPolicy) : null,
+    returnShipment: r.returnShipment
+      ? (() => {
+          const rs = r.returnShipment as Record<string, unknown>;
+          return {
+            id: String(rs.id),
+            awb: rs.awb != null ? String(rs.awb) : null,
+            courier: rs.courier != null ? String(rs.courier) : null,
+            trackingUrl: rs.trackingUrl != null ? String(rs.trackingUrl) : null,
+            physicalStatus: rs.physicalStatus != null ? String(rs.physicalStatus) : undefined,
+            receivedAt: rs.receivedAt != null ? String(rs.receivedAt) : null,
+            disposition: rs.disposition != null ? String(rs.disposition) : null
+          };
+        })()
+      : null,
+    replacementFulfillments: ((r.replacementFulfillments as Array<Record<string, unknown>>) ?? []).map(
+      (f) => ({
+        id: String(f.id),
+        qty: Number(f.qty),
+        status: String(f.status),
+        replacementVariantId: String(f.replacementVariantId)
+      })
+    ),
     photos: ((r.photos as Array<Record<string, unknown>>) ?? []).map((p) => ({
       id: String(p.id),
       s3Url: String(p.s3Url),
@@ -506,6 +531,7 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
       skuSnapshot: String(item.skuSnapshot),
       qtySelected: Number(item.qtySelected),
       reasonLabel: String(item.reasonLabel),
+      requestedResolution: item.requestedResolution != null ? String(item.requestedResolution) : null,
       message: item.message != null ? String(item.message) : null,
       otherMessage: item.otherMessage != null ? String(item.otherMessage) : null,
       refundAmountInPaise: item.refundAmountInPaise != null ? Number(item.refundAmountInPaise) : null,
@@ -1985,7 +2011,8 @@ export default function AdminOrderDetailPage() {
                 paymentRefundedInPaise: order.payments?.[0]?.refundedInPaise ?? 0,
                 orderItems: order.items.map((i) => ({
                   id: i.id ?? "",
-                  lineTotalInPaise: i.lineTotalInPaise
+                  lineTotalInPaise: i.lineTotalInPaise,
+                  qtyOrdered: i.qtyOrdered
                 }))
               }}
               onUpdated={() => void load()}
@@ -2454,7 +2481,8 @@ export default function AdminOrderDetailPage() {
             paymentRefundedInPaise: order.payments?.[0]?.refundedInPaise ?? 0,
             orderItems: order.items.map((i) => ({
               id: i.id ?? "",
-              lineTotalInPaise: i.lineTotalInPaise
+              lineTotalInPaise: i.lineTotalInPaise,
+              qtyOrdered: i.qtyOrdered
             }))
           }}
           onUpdated={() => void load()}

@@ -49,6 +49,61 @@ function resolutionRequiresRefund(resolution: ReturnReplacementResolution): bool
   return ["RETURN_FOR_REFUND", "PARTIAL_REFUND", "KEEP_ITEM_PARTIAL_REFUND"].includes(resolution);
 }
 
+/**
+ * Physical-return refunds require warehouse receipt + QC disposition.
+ * No-return paths (KEEP_ITEM / reasons with requiresPhysicalReturn=false) skip this.
+ */
+export function assertReturnCaseRefundExecutable(request: {
+  status: string;
+  resolutionStatus?: string | null;
+  refundProcessedAt?: Date | null;
+  returnPhysicalStatus: string;
+  items: Array<{ reasonCode: string; requestedResolution: string | null }>;
+  returnShipment?: {
+    receivedAt: Date | null;
+    disposition: string | null;
+  } | null;
+}): void {
+  if (request.status !== "APPROVED") {
+    throw Object.assign(new Error("Request must be approved"), {
+      statusCode: 400,
+      code: "NOT_APPROVED"
+    });
+  }
+  if (request.resolutionStatus === "REFUNDED" || request.refundProcessedAt) {
+    throw Object.assign(new Error("Refund already completed for this return case"), {
+      statusCode: 409,
+      code: "ALREADY_REFUNDED"
+    });
+  }
+
+  const needsPhysical = request.items.some(
+    (i) =>
+      i.requestedResolution !== "KEEP_ITEM_PARTIAL_REFUND" &&
+      i.requestedResolution !== "MISSING_PART" &&
+      physicalReturnRequiredForReason(i.reasonCode)
+  );
+
+  if (!needsPhysical) {
+    // APPROVED_NO_RETURN / keep-item style — refund may proceed without physical receipt.
+    return;
+  }
+
+  const rs = request.returnShipment;
+  if (!rs?.receivedAt) {
+    throw Object.assign(new Error("Return must be physically received before refund"), {
+      statusCode: 400,
+      code: "RETURN_NOT_RECEIVED"
+    });
+  }
+  if (!rs.disposition || rs.disposition === "NEEDS_REVIEW") {
+    throw Object.assign(
+      new Error("Warehouse QC/disposition required before refund (receipt alone is not enough)"),
+      { statusCode: 400, code: "QC_INCOMPLETE" }
+    );
+  }
+}
+
 function resolutionRequiresReplacement(resolution: ReturnReplacementResolution): boolean {
   return resolution === "REPLACEMENT";
 }
@@ -460,37 +515,14 @@ export async function executeReturnReplacementRefund(opts: {
   if (!request || request.type !== "REFUND_AFTER_DELIVERY") {
     throw Object.assign(new Error("Request not found"), { statusCode: 404, code: "NOT_FOUND" });
   }
-  if (request.status !== "APPROVED") {
-    throw Object.assign(new Error("Request must be approved"), { statusCode: 400, code: "NOT_APPROVED" });
-  }
+
+  assertReturnCaseRefundExecutable(request);
 
   const refundItems = request.items.filter((i) =>
     resolutionRequiresRefund(i.requestedResolution ?? "RETURN_FOR_REFUND")
   );
   if (!refundItems.length) {
     throw Object.assign(new Error("No refund resolution on this request"), { statusCode: 400, code: "NO_REFUND" });
-  }
-
-  const needsPhysical = request.items.some(
-    (i) =>
-      i.requestedResolution !== "KEEP_ITEM_PARTIAL_REFUND" &&
-      physicalReturnRequiredForReason(i.reasonCode)
-  );
-
-  if (needsPhysical) {
-    const rs = request.returnShipment;
-    if (!rs?.receivedAt) {
-      throw Object.assign(new Error("Return must be physically received before refund"), {
-        statusCode: 400,
-        code: "RETURN_NOT_RECEIVED"
-      });
-    }
-    if (!rs.disposition || rs.disposition === "NEEDS_REVIEW") {
-      throw Object.assign(new Error("Set return disposition before refund"), {
-        statusCode: 400,
-        code: "DISPOSITION_REQUIRED"
-      });
-    }
   }
 
   const shippingPolicy = request.shippingRefundPolicy ?? "SHIPPING_RETAINED";

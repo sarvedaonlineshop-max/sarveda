@@ -513,8 +513,7 @@ export async function adminProcessServiceRequestRefund(
     });
 
     if (
-      request?.type === "REFUND_AFTER_DELIVERY" &&
-      request.items.some((i) => i.requestedResolution != null)
+      request?.type === "REFUND_AFTER_DELIVERY"
     ) {
       const { executeReturnReplacementRefund } = await import("./return-replacement.service");
       const result = await executeReturnReplacementRefund({

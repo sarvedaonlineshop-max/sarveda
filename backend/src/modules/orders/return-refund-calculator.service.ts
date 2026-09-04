@@ -16,6 +16,17 @@ export type ReturnItemRefundPreview = {
  * Authoritative refund amount for one order line + qty on a post-delivery return.
  * Does not hit gateway; used before executeAuthoritativePartialRefund.
  */
+export function caseMerchandiseCeilingPaise(
+  lineTotalInPaise: number,
+  qtyOrdered: number,
+  qtySelected: number,
+  alreadyRefundedInPaise = 0
+): number {
+  if (qtyOrdered <= 0 || qtySelected <= 0) return 0;
+  const full = Math.round((lineTotalInPaise * Math.min(qtySelected, qtyOrdered)) / qtyOrdered);
+  return Math.max(0, full - alreadyRefundedInPaise);
+}
+
 export async function calculateReturnItemRefund(opts: {
   orderId: string;
   orderItemId: string;
