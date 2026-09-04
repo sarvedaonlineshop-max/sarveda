@@ -66,6 +66,25 @@ function ProfileIcon({ className = "h-[18px] w-[18px] sm:h-5 sm:w-5" }: { classN
   );
 }
 
+function AdminIcon({ className = "h-[18px] w-[18px] sm:h-5 sm:w-5" }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M3 7.5A1.5 1.5 0 014.5 6h15A1.5 1.5 0 0121 7.5v3A1.5 1.5 0 0119.5 12H4.5A1.5 1.5 0 013 10.5v-3zM4.5 12v6.75A1.5 1.5 0 006 20.25h3.75V12M13.5 12v8.25H18a1.5 1.5 0 001.5-1.5V12"
+      />
+    </svg>
+  );
+}
+
 function MenuIcon({ open }: { open: boolean }) {
   return (
     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
@@ -229,8 +248,8 @@ export function Header() {
   }, []);
 
   const isAdminSession = isAdminRole(sessionUser?.role);
-  const accountHome = isAdminSession ? "/admin" : "/profile";
-  const accountOrdersHref = isAdminSession ? "/admin/orders" : "/profile?tab=orders";
+  const accountHome = "/profile";
+  const accountOrdersHref = "/profile?tab=orders";
 
   useEffect(() => {
     const onOpenTrack = () => {
@@ -358,34 +377,34 @@ export function Header() {
 
                 <div className="flex items-center gap-2.5 lg:gap-3">
                   {sessionUser ? (
-                    <Link
-                      href={accountHome}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        goNav(accountHome);
-                      }}
-                      className={headerIconBtnPlain}
-                      aria-label={
-                        displayName
-                          ? isAdminSession
-                            ? `Admin, ${displayName}`
-                            : `Account, ${displayName}`
-                          : isAdminSession
-                            ? "Admin"
-                            : "Profile"
-                      }
-                      title={
-                        displayName
-                          ? isAdminSession
-                            ? `Admin — ${displayName}`
-                            : `Hello, ${displayName}`
-                          : isAdminSession
-                            ? "Admin"
-                            : "Profile"
-                      }
-                    >
-                      <ProfileIcon />
-                    </Link>
+                    <>
+                      <Link
+                        href={accountHome}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          goNav(accountHome);
+                        }}
+                        className={headerIconBtnPlain}
+                        aria-label={displayName ? `Account, ${displayName}` : "Profile"}
+                        title={displayName ? `Hello, ${displayName}` : "Profile"}
+                      >
+                        <ProfileIcon />
+                      </Link>
+                      {isAdminSession ? (
+                        <Link
+                          href="/admin"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            goNav("/admin");
+                          }}
+                          className={headerIconBtnPlain}
+                          aria-label="Admin panel"
+                          title="Admin panel"
+                        >
+                          <AdminIcon />
+                        </Link>
+                      ) : null}
+                    </>
                   ) : (
                     <Link
                       href="/login"

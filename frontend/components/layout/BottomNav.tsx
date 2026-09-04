@@ -105,6 +105,17 @@ function MenuRowIcon({ kind }: { kind: string }) {
           <path strokeWidth={1.8} strokeLinecap="round" d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
         </svg>
       );
+    case "admin":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} fill="none" stroke="currentColor" aria-hidden>
+          <path
+            strokeWidth={1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M3 7.5A1.5 1.5 0 014.5 6h15A1.5 1.5 0 0121 7.5v3A1.5 1.5 0 0119.5 12H4.5A1.5 1.5 0 013 10.5v-3zM4.5 12v6.75A1.5 1.5 0 006 20.25h3.75V12M13.5 12v8.25H18a1.5 1.5 0 001.5-1.5V12"
+          />
+        </svg>
+      );
     default:
       return null;
   }
@@ -147,9 +158,6 @@ export function BottomNav() {
   const { itemCount } = useCartData();
   const sessionUser = useStorefrontSession();
   const isAdminSession = isAdminRole(sessionUser?.role);
-  const menuAccountLinks = isAdminSession
-    ? ([{ href: "/admin", label: "Admin panel", tab: "details" }] as const)
-    : accountLinks;
   const [menuOpen, setMenuOpen] = useState(false);
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [showMoreHint, setShowMoreHint] = useState(false);
@@ -215,9 +223,8 @@ export function BottomNav() {
   const activePath = pendingHref ?? pathname;
 
 
-  const profileHref = isAdminSession ? "/admin" : sessionUser ? "/profile" : "/login?next=/profile";
-  const profileActive =
-    (pathname?.startsWith("/profile") ?? false) || (isAdminSession && (pathname?.startsWith("/admin") ?? false));
+  const profileHref = sessionUser ? "/profile" : "/login?next=/profile";
+  const profileActive = pathname?.startsWith("/profile") ?? false;
 
   function navTargetPath(href: string): string {
     if (typeof window === "undefined") return href.split("?")[0] ?? href;
@@ -431,10 +438,8 @@ export function BottomNav() {
 
                   <ul>
                     {sessionUser
-                      ? menuAccountLinks.map((link) => {
-                          const active = isAdminSession
-                            ? pathname?.startsWith("/admin")
-                            : pathname?.startsWith("/profile") && profileTab === link.tab;
+                      ? accountLinks.map((link) => {
+                          const active = pathname?.startsWith("/profile") && profileTab === link.tab;
                           return (
                             <li key={link.href}>
                               <Link
@@ -449,6 +454,18 @@ export function BottomNav() {
                           );
                         })
                       : null}
+                    {isAdminSession ? (
+                      <li>
+                        <Link
+                          href="/admin"
+                          className={menuItemClass(pathname?.startsWith("/admin") ?? false)}
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          <MenuRowIcon kind="admin" />
+                          Admin panel
+                        </Link>
+                      </li>
+                    ) : null}
                     <li>
                       <button
                         type="button"
