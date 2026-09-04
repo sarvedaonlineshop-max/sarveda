@@ -683,6 +683,8 @@ export async function adminFetchReturnCaseByNumber(caseNumber: string) {
       orderNumber: string;
       currency: string;
       discountInPaise: number;
+      shippingInPaise: number;
+      grandTotalInPaise: number;
       items: Array<{
         id: string;
         nameSnapshot: string;
