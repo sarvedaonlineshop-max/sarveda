@@ -580,6 +580,8 @@ export type ReturnRefundPreview = {
     skuSnapshot: string;
     qtySelected: number;
     qtyOrdered: number;
+    grossItemValuePaise?: number;
+    allocatedDiscountPaise?: number;
     merchandiseRefundPaise: number;
     shippingRefundPaise: number;
     otherAdjustmentPaise: number;
@@ -591,11 +593,138 @@ export type ReturnRefundPreview = {
   shippingRefundPaise: number;
   otherAdjustmentPaise: number;
   alreadyRefundedPaise: number;
+  calculatedRefundPaise?: number;
   totalRefundNowPaise: number;
   remainingGatewayPaise: number;
   approvedQtySelected: number;
   orderedQtyOnLines: number;
+  overrideActive?: boolean;
+  overrideDifferencePaise?: number;
+  overrideGoodwillPaise?: number;
+  overrideReason?: string | null;
+  complianceFlags?: string[];
 };
+
+export async function adminFetchReturnCaseByNumber(caseNumber: string) {
+  const res = await fetch(
+    `${getApiBase()}/api/admin/return-cases/by-number/${encodeURIComponent(caseNumber)}`,
+    { credentials: "include", headers: { Accept: "application/json" } }
+  );
+  const json = (await res.json()) as { success?: boolean; error?: string; data?: unknown };
+  if (!res.ok || !json.success || !json.data) {
+    throw new Error(json.error || "Return case not found");
+  }
+  return json.data as {
+    request: Record<string, unknown> & {
+      id: string;
+      caseNumber?: string | null;
+      orderId: string;
+      orderNumber: string;
+      customerEmail: string;
+      type: string;
+      status: string;
+      reasonLabel?: string | null;
+      message?: string | null;
+      adminNote?: string | null;
+      returnPhysicalStatus?: string | null;
+      resolutionStatus?: string | null;
+      shippingRefundPolicy?: string | null;
+      refundTotalInPaise?: number | null;
+      refundProcessedAt?: string | null;
+      items?: Array<Record<string, unknown>>;
+      photos?: Array<{ id: string; s3Url?: string; fileName?: string | null }>;
+      returnShipment?: Record<string, unknown> | null;
+      replacementFulfillments?: Array<Record<string, unknown>>;
+      rootCause?: string | null;
+      rootCauseNote?: string | null;
+      responsibleTeam?: string | null;
+      responsibleUserEmail?: string | null;
+      calculatedRefundPaise?: number | null;
+      approvedOverrideRefundPaise?: number | null;
+      overrideReason?: string | null;
+      overrideGoodwillPaise?: number | null;
+      createdAt: string;
+    };
+    order: {
+      id: string;
+      orderNumber: string;
+      currency: string;
+      discountInPaise: number;
+      items: Array<{
+        id: string;
+        nameSnapshot: string;
+        skuSnapshot: string;
+        qtyOrdered: number;
+        lineTotalInPaise: number;
+      }>;
+    };
+    paymentProvider: string | null;
+    stage: string;
+    stageLabel: string;
+    events: Array<{
+      id: string;
+      eventType: string;
+      message: string | null;
+      createdAt: string;
+      actorEmail?: string | null;
+    }>;
+  };
+}
+
+export async function adminSetReturnRefundOverride(
+  orderId: string,
+  requestId: string,
+  body: { overrideRefundPaise: number; reason: string }
+) {
+  const res = await fetch(
+    `${getApiBase()}/api/admin/orders/${encodeURIComponent(orderId)}/service-requests/${encodeURIComponent(requestId)}/refund-override`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(body)
+    }
+  );
+  const json = (await res.json()) as {
+    success?: boolean;
+    error?: string;
+    data?: ReturnRefundPreview;
+  };
+  if (!res.ok || !json.success || !json.data) {
+    throw new Error(json.error || "Could not save override");
+  }
+  return json.data;
+}
+
+export async function adminClearReturnRefundOverride(orderId: string, requestId: string) {
+  const res = await fetch(
+    `${getApiBase()}/api/admin/orders/${encodeURIComponent(orderId)}/service-requests/${encodeURIComponent(requestId)}/refund-override`,
+    { method: "DELETE", credentials: "include", headers: { Accept: "application/json" } }
+  );
+  const json = (await res.json()) as {
+    success?: boolean;
+    error?: string;
+    data?: ReturnRefundPreview;
+  };
+  if (!res.ok || !json.success || !json.data) {
+    throw new Error(json.error || "Could not clear override");
+  }
+  return json.data;
+}
+
+export async function adminRequestMoreInfo(orderId: string, requestId: string, prompt: string) {
+  const res = await fetch(
+    `${getApiBase()}/api/admin/orders/${encodeURIComponent(orderId)}/service-requests/${encodeURIComponent(requestId)}/more-info`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ prompt })
+    }
+  );
+  const json = (await res.json()) as { success?: boolean; error?: string };
+  if (!res.ok || !json.success) throw new Error(json.error || "Failed to request more info");
+}
 
 export async function adminProcessReturnRefund(
   orderId: string,

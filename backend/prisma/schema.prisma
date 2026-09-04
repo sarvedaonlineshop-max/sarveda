@@ -1149,6 +1149,17 @@ model OrderServiceRequest {
   refundInitiatedAt  DateTime?
   refundCompletedAt  DateTime?
   refundProviderReference String?
+  /// System-calculated refund at last preview/override (never overwritten by override amount).
+  calculatedRefundPaise Int?
+  /// Admin-approved override total when Adjust refund amount is used.
+  approvedOverrideRefundPaise Int?
+  overrideDifferencePaise Int?
+  overrideReason String?
+  overrideActorId String? @db.Uuid
+  overrideActorEmail String?
+  overrideAt DateTime?
+  /// Upward goodwill portion (override - calculated); never folded into GST/merchandise silently.
+  overrideGoodwillPaise Int?
   closedAt           DateTime?
   offeredResolution  ReturnReplacementResolution?
   finalResolution    ReturnReplacementResolution?

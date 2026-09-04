@@ -319,6 +319,8 @@ export async function submitCustomerSelfShip(opts: {
 
 export type ReturnCaseListFilters = {
   status?: OrderServiceRequestStatus;
+  /** Operational stage filter (maps to status/physical/resolution). */
+  stage?: import("./return-case-stage").ReturnCaseStage;
   type?: string;
   channel?: ReturnCaseChannel;
   rootCause?: ReturnRootCause;
@@ -330,10 +332,18 @@ export type ReturnCaseListFilters = {
 export async function listReturnCases(filters: ReturnCaseListFilters = {}) {
   const page = Math.max(1, filters.page ?? 1);
   const pageSize = Math.min(100, Math.max(1, filters.pageSize ?? 25));
+  const { deriveReturnCaseStage, stageToWhere, RETURN_CASE_STAGE_LABELS } = await import(
+    "./return-case-stage"
+  );
+
   const where: Prisma.OrderServiceRequestWhereInput = {
     type: { in: ["REFUND_AFTER_DELIVERY", "CANCEL_BEFORE_DELIVERY"] }
   };
-  if (filters.status) where.status = filters.status;
+  if (filters.stage) {
+    Object.assign(where, stageToWhere(filters.stage));
+  } else if (filters.status) {
+    where.status = filters.status;
+  }
   if (filters.type) where.type = filters.type as Prisma.EnumOrderServiceRequestTypeFilter["equals"];
   if (filters.channel) where.channel = filters.channel;
   if (filters.rootCause) where.rootCause = filters.rootCause;
@@ -373,14 +383,170 @@ export async function listReturnCases(filters: ReturnCaseListFilters = {}) {
         refundApprovedAt: true,
         refundInitiatedAt: true,
         refundCompletedAt: true,
+        refundProcessedAt: true,
+        refundSlaDueAt: true,
         slaPausedAt: true,
+        closedAt: true,
         createdAt: true,
-        updatedAt: true
+        updatedAt: true,
+        items: {
+          select: {
+            nameSnapshot: true,
+            skuSnapshot: true,
+            qtySelected: true,
+            reasonLabel: true,
+            requestedResolution: true
+          }
+        }
       }
     })
   ]);
 
-  return { total, page, pageSize, rows };
+  const now = Date.now();
+  const enriched = rows.map((row) => {
+    const stage = deriveReturnCaseStage(row);
+    const ageHours = Math.max(0, Math.round((now - row.createdAt.getTime()) / 3600000));
+    const slaOverdue =
+      Boolean(row.refundSlaDueAt) &&
+      row.refundSlaDueAt!.getTime() < now &&
+      !row.refundProcessedAt &&
+      row.status !== "REJECTED";
+    return {
+      ...row,
+      stage,
+      stageLabel: RETURN_CASE_STAGE_LABELS[stage],
+      ageHours,
+      slaOverdue,
+      itemSummary: row.items.map((i) => `${i.nameSnapshot} × ${i.qtySelected}`).join("; "),
+      qtyRequested: row.items.reduce((s, i) => s + i.qtySelected, 0),
+      requestedResolutions: [
+        ...new Set(row.items.map((i) => i.requestedResolution).filter(Boolean))
+      ]
+    };
+  });
+
+  return { total, page, pageSize, rows: enriched };
+}
+
+/** Full admin desk payload for one return case (by human case number). */
+export async function getAdminReturnCaseByCaseNumber(caseNumber: string) {
+  const { deriveReturnCaseStage, RETURN_CASE_STAGE_LABELS } = await import("./return-case-stage");
+  const { listCaseEvents } = await import("./return-case-events.service");
+
+  const request = await prisma.orderServiceRequest.findFirst({
+    where: { caseNumber: caseNumber.trim() },
+    include: {
+      photos: true,
+      items: { include: { photos: true } },
+      returnShipment: true,
+      replacementFulfillments: true,
+      receiptLines: true,
+      qcLines: true,
+      economics: true,
+      order: {
+        select: {
+          id: true,
+          orderNumber: true,
+          email: true,
+          phone: true,
+          currency: true,
+          grandTotalInPaise: true,
+          discountInPaise: true,
+          shippingInPaise: true,
+          paymentStatus: true,
+          status: true,
+          items: {
+            select: {
+              id: true,
+              nameSnapshot: true,
+              skuSnapshot: true,
+              qtyOrdered: true,
+              lineTotalInPaise: true,
+              unitPriceInPaise: true
+            }
+          },
+          payments: {
+            where: { status: "CAPTURED" },
+            orderBy: { createdAt: "desc" },
+            take: 3,
+            select: {
+              id: true,
+              provider: true,
+              amountInPaise: true,
+              refundedInPaise: true,
+              status: true
+            }
+          }
+        }
+      }
+    }
+  });
+
+  if (!request) {
+    throw Object.assign(new Error("Return case not found"), { statusCode: 404, code: "NOT_FOUND" });
+  }
+
+  const events = await listCaseEvents(request.id);
+  const stage = deriveReturnCaseStage(request);
+  const payment = request.order.payments[0] ?? null;
+
+  return {
+    request: {
+      id: request.id,
+      caseNumber: request.caseNumber,
+      orderId: request.orderId,
+      orderNumber: request.orderNumber,
+      customerEmail: request.customerEmail,
+      type: request.type,
+      status: request.status,
+      channel: request.channel,
+      reasonCode: request.reasonCode,
+      reasonLabel: request.reasonLabel,
+      message: request.message,
+      otherMessage: request.otherMessage,
+      adminNote: request.adminNote,
+      moreInfoPrompt: request.moreInfoPrompt,
+      moreInfoResponse: request.moreInfoResponse,
+      declarationsJson: request.declarationsJson,
+      declarationsAcceptedAt: request.declarationsAcceptedAt,
+      returnPhysicalStatus: request.returnPhysicalStatus,
+      resolutionStatus: request.resolutionStatus,
+      shippingRefundPolicy: request.shippingRefundPolicy,
+      refundTotalInPaise: request.refundTotalInPaise,
+      refundProcessedAt: request.refundProcessedAt,
+      refundProviderReference: request.refundProviderReference,
+      calculatedRefundPaise: request.calculatedRefundPaise,
+      approvedOverrideRefundPaise: request.approvedOverrideRefundPaise,
+      overrideDifferencePaise: request.overrideDifferencePaise,
+      overrideReason: request.overrideReason,
+      overrideActorEmail: request.overrideActorEmail,
+      overrideAt: request.overrideAt,
+      overrideGoodwillPaise: request.overrideGoodwillPaise,
+      rootCause: request.rootCause,
+      rootCauseNote: request.rootCauseNote,
+      responsibleTeam: request.responsibleTeam,
+      responsibleUserEmail: request.responsibleUserEmail,
+      secondaryReasonCode: request.secondaryReasonCode,
+      secondaryReasonLabel: request.secondaryReasonLabel,
+      highValueApprovalRequired: request.highValueApprovalRequired,
+      refundSlaDueAt: request.refundSlaDueAt,
+      createdAt: request.createdAt,
+      reviewedAt: request.reviewedAt,
+      reviewedByEmail: request.reviewedByEmail,
+      closedAt: request.closedAt,
+      photos: request.photos,
+      items: request.items,
+      returnShipment: request.returnShipment,
+      replacementFulfillments: request.replacementFulfillments,
+      receiptLines: request.receiptLines,
+      qcLines: request.qcLines
+    },
+    order: request.order,
+    paymentProvider: payment?.provider ?? null,
+    stage,
+    stageLabel: RETURN_CASE_STAGE_LABELS[stage],
+    events
+  };
 }
 
 /** Customer-facing case snapshot — strips internal accountability fields. */

@@ -900,16 +900,101 @@ export async function adminListReturnCases(req: Request, res: Response, next: Ne
   try {
     const { listReturnCases } = await import("./return-case.service");
     const data = await listReturnCases({
-      status: req.query.status ? String(req.query.status) as never : undefined,
+      status: req.query.status ? (String(req.query.status) as never) : undefined,
+      stage: req.query.stage ? (String(req.query.stage) as never) : undefined,
       type: req.query.type ? String(req.query.type) : undefined,
-      channel: req.query.channel ? String(req.query.channel) as never : undefined,
-      rootCause: req.query.rootCause ? String(req.query.rootCause) as never : undefined,
+      channel: req.query.channel ? (String(req.query.channel) as never) : undefined,
+      rootCause: req.query.rootCause ? (String(req.query.rootCause) as never) : undefined,
       q: req.query.q ? String(req.query.q) : undefined,
       page: req.query.page ? Number(req.query.page) : 1,
       pageSize: req.query.pageSize ? Number(req.query.pageSize) : 25
     });
     res.json({ success: true, data });
   } catch (err) {
+    next(err);
+  }
+}
+
+export async function adminGetReturnCaseByNumber(req: Request, res: Response, next: NextFunction) {
+  try {
+    const caseNumber = String(req.params.caseNumber ?? "").trim();
+    if (!caseNumber) {
+      res.status(400).json({ success: false, error: "Case number required", code: "BAD_REQUEST" });
+      return;
+    }
+    const { getAdminReturnCaseByCaseNumber } = await import("./return-case.service");
+    const data = await getAdminReturnCaseByCaseNumber(caseNumber);
+    res.json({ success: true, data });
+  } catch (err) {
+    const e = err as Error & { statusCode?: number; code?: string };
+    if (e.statusCode) {
+      res.status(e.statusCode).json({ success: false, error: e.message, code: e.code ?? "ERROR" });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function adminSetReturnRefundOverride(req: Request, res: Response, next: NextFunction) {
+  try {
+    const admin = req.authUser!;
+    const { orderId, requestId } = req.params;
+    const body = req.body as { overrideRefundPaise?: number; reason?: string };
+    const { prisma } = await import("../../config/db");
+    const request = await prisma.orderServiceRequest.findFirst({
+      where: { id: requestId, orderId, type: "REFUND_AFTER_DELIVERY" },
+      select: { id: true }
+    });
+    if (!request) {
+      res.status(404).json({ success: false, error: "Return case not found", code: "NOT_FOUND" });
+      return;
+    }
+    const { setReturnRefundOverride } = await import("./return-replacement.service");
+    const data = await setReturnRefundOverride({
+      requestId,
+      overrideRefundPaise: Number(body.overrideRefundPaise),
+      reason: body.reason ?? "",
+      adminEmail: admin.email,
+      adminUserId: admin.id,
+      adminRole: admin.role
+    });
+    res.json({ success: true, data });
+  } catch (err) {
+    const e = err as Error & { statusCode?: number; code?: string };
+    if (e.statusCode) {
+      res.status(e.statusCode).json({ success: false, error: e.message, code: e.code ?? "ERROR" });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function adminClearReturnRefundOverride(req: Request, res: Response, next: NextFunction) {
+  try {
+    const admin = req.authUser!;
+    const { orderId, requestId } = req.params;
+    const { prisma } = await import("../../config/db");
+    const request = await prisma.orderServiceRequest.findFirst({
+      where: { id: requestId, orderId, type: "REFUND_AFTER_DELIVERY" },
+      select: { id: true }
+    });
+    if (!request) {
+      res.status(404).json({ success: false, error: "Return case not found", code: "NOT_FOUND" });
+      return;
+    }
+    const { clearReturnRefundOverride } = await import("./return-replacement.service");
+    const data = await clearReturnRefundOverride({
+      requestId,
+      adminEmail: admin.email,
+      adminUserId: admin.id
+    });
+    res.json({ success: true, data });
+  } catch (err) {
+    const e = err as Error & { statusCode?: number; code?: string };
+    if (e.statusCode) {
+      res.status(e.statusCode).json({ success: false, error: e.message, code: e.code ?? "ERROR" });
+      return;
+    }
     next(err);
   }
 }

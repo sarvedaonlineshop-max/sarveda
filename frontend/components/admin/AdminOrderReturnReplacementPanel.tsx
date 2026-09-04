@@ -5,10 +5,12 @@ import { useEffect, useState } from "react";
 import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
 import { formatMinorFromPaise } from "@/lib/money";
 import {
+  adminClearReturnRefundOverride,
   adminFetchReturnRefundPreview,
   adminMarkReturnDisposition,
   adminMarkReturnReceived,
   adminProcessReturnRefund,
+  adminSetReturnRefundOverride,
   adminUpdateReturnShipment,
   adminShipReplacement,
   type ReturnRefundPreview
@@ -128,10 +130,13 @@ function humanDisposition(value?: string | null): string {
 
 export function AdminOrderReturnReplacementPanel({
   ctx,
-  onDone
+  onDone,
+  showOverride = false
 }: {
   ctx: ReturnReplacementAdminContext;
   onDone: () => void;
+  /** Show controlled Adjust refund amount UI (Returns desk). */
+  showOverride?: boolean;
 }) {
   const { orderId, request, currency, paymentProvider } = ctx;
   const [busy, setBusy] = useState<string | null>(null);
@@ -143,6 +148,9 @@ export function AdminOrderReturnReplacementPanel({
   const [preview, setPreview] = useState<ReturnRefundPreview | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [overrideOpen, setOverrideOpen] = useState(false);
+  const [overrideAmount, setOverrideAmount] = useState("");
+  const [overrideReason, setOverrideReason] = useState("");
 
   const isCod = paymentProvider === "COD";
   const rs = request.returnShipment;
@@ -416,6 +424,29 @@ This action will initiate a real payment gateway refund.`}
                 </strong>
               </p>
               <dl className="space-y-1 text-xs">
+                {preview.lines.some((l) => (l.allocatedDiscountPaise ?? 0) > 0) ? (
+                  <>
+                    <div className="flex justify-between gap-4 text-stone-500">
+                      <dt>Gross item value (selected qty)</dt>
+                      <dd>
+                        {formatMinorFromPaise(
+                          preview.lines.reduce((s, l) => s + (l.grossItemValuePaise ?? 0), 0),
+                          preview.currency
+                        )}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-4 text-stone-500">
+                      <dt>Allocated discount</dt>
+                      <dd>
+                        −
+                        {formatMinorFromPaise(
+                          preview.lines.reduce((s, l) => s + (l.allocatedDiscountPaise ?? 0), 0),
+                          preview.currency
+                        )}
+                      </dd>
+                    </div>
+                  </>
+                ) : null}
                 <div className="flex justify-between gap-4">
                   <dt>Merchandise refund</dt>
                   <dd className="font-semibold">
@@ -436,10 +467,24 @@ This action will initiate a real payment gateway refund.`}
                     </dd>
                   </div>
                 ) : null}
+                {preview.overrideActive && preview.overrideGoodwillPaise ? (
+                  <div className="flex justify-between gap-4">
+                    <dt>Goodwill adjustment (explicit)</dt>
+                    <dd className="font-semibold">
+                      {formatMinorFromPaise(preview.overrideGoodwillPaise, preview.currency)}
+                    </dd>
+                  </div>
+                ) : null}
                 <div className="flex justify-between gap-4">
                   <dt>Already refunded</dt>
                   <dd>{formatMinorFromPaise(preview.alreadyRefundedPaise, preview.currency)}</dd>
                 </div>
+                {preview.calculatedRefundPaise != null ? (
+                  <div className="flex justify-between gap-4">
+                    <dt>System-calculated refund</dt>
+                    <dd>{formatMinorFromPaise(preview.calculatedRefundPaise, preview.currency)}</dd>
+                  </div>
+                ) : null}
                 <div className="flex justify-between gap-4 border-t border-emerald-100 pt-2 text-sm dark:border-emerald-900">
                   <dt className="font-bold">Total refund now</dt>
                   <dd className="font-bold text-emerald-900 dark:text-emerald-200">
@@ -447,6 +492,20 @@ This action will initiate a real payment gateway refund.`}
                   </dd>
                 </div>
               </dl>
+              {preview.overrideActive ? (
+                <p className="rounded border border-violet-200 bg-violet-50 px-2 py-1.5 text-[11px] text-violet-950">
+                  Override active
+                  {preview.overrideDifferencePaise != null
+                    ? ` · difference ${formatMinorFromPaise(preview.overrideDifferencePaise, preview.currency)}`
+                    : ""}
+                  {preview.overrideReason ? ` · ${preview.overrideReason}` : ""}
+                </p>
+              ) : null}
+              {preview.complianceFlags?.includes("COMPLIANCE_DECISION_REQUIRED") ? (
+                <p className="text-[11px] font-semibold text-amber-800">
+                  COMPLIANCE_DECISION_REQUIRED — goodwill is not taxed as merchandise GST
+                </p>
+              ) : null}
               <p className="text-xs text-stone-600 dark:text-stone-400">
                 Refund destination: <strong>{preview.refundDestinationLabel}</strong>
               </p>
@@ -455,6 +514,100 @@ This action will initiate a real payment gateway refund.`}
                 <p className="rounded border border-amber-200 bg-amber-50 px-2 py-1.5 text-xs text-amber-950">
                   {preview.blockMessage ?? "Refund not executable yet"}
                 </p>
+              ) : null}
+
+              {showOverride && !alreadyRefunded ? (
+                <div className="mt-3 border-t border-emerald-100 pt-3">
+                  {!overrideOpen ? (
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-violet-800 underline"
+                      onClick={() => {
+                        setOverrideOpen(true);
+                        setOverrideAmount(
+                          ((preview.calculatedRefundPaise ?? preview.totalRefundNowPaise) / 100).toFixed(2)
+                        );
+                        setOverrideReason("");
+                      }}
+                    >
+                      Adjust refund amount
+                    </button>
+                  ) : (
+                    <div className="space-y-2 rounded border border-violet-200 bg-violet-50/50 p-3">
+                      <p className="text-xs font-semibold text-violet-900">Manual refund adjustment</p>
+                      <p className="text-[11px] text-violet-800">
+                        System-calculated:{" "}
+                        {formatMinorFromPaise(
+                          preview.calculatedRefundPaise ?? preview.totalRefundNowPaise,
+                          preview.currency
+                        )}
+                      </p>
+                      <label className="block text-[11px]">
+                        Adjusted amount ({preview.currency})
+                        <input
+                          className="mt-1 w-full rounded border px-2 py-1 text-sm"
+                          value={overrideAmount}
+                          onChange={(e) => setOverrideAmount(e.target.value)}
+                        />
+                      </label>
+                      <label className="block text-[11px]">
+                        Reason (required)
+                        <input
+                          className="mt-1 w-full rounded border px-2 py-1 text-sm"
+                          value={overrideReason}
+                          onChange={(e) => setOverrideReason(e.target.value)}
+                          placeholder="Why is the amount different?"
+                        />
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          disabled={busy != null || !overrideReason.trim()}
+                          className="rounded bg-violet-800 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                          onClick={() =>
+                            void run("override", async () => {
+                              const rupees = Number(overrideAmount);
+                              if (!Number.isFinite(rupees) || rupees < 0) {
+                                throw new Error("Enter a valid non-negative amount");
+                              }
+                              const data = await adminSetReturnRefundOverride(orderId, request.id, {
+                                overrideRefundPaise: Math.round(rupees * 100),
+                                reason: overrideReason.trim()
+                              });
+                              setPreview(data);
+                              setOverrideOpen(false);
+                            })
+                          }
+                        >
+                          Save override
+                        </button>
+                        {preview.overrideActive ? (
+                          <button
+                            type="button"
+                            disabled={busy != null}
+                            className="rounded border border-stone-400 px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+                            onClick={() =>
+                              void run("clear-override", async () => {
+                                const data = await adminClearReturnRefundOverride(orderId, request.id);
+                                setPreview(data);
+                                setOverrideOpen(false);
+                              })
+                            }
+                          >
+                            Clear override
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          className="text-xs text-stone-600 underline"
+                          onClick={() => setOverrideOpen(false)}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               ) : null}
             </div>
           ) : (

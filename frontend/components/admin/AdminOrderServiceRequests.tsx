@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { formatMinorFromPaise } from "@/lib/money";
@@ -12,7 +13,6 @@ import {
   rejectServiceRequest
 } from "@/lib/order-service-request";
 import { AdminOrderAdjustmentPanel } from "@/components/admin/AdminOrderAdjustmentPanel";
-import { AdminOrderReturnReplacementPanel } from "@/components/admin/AdminOrderReturnReplacementPanel";
 import { caseMerchandiseCeilingPaise } from "@/lib/return-refund-ui";
 
 export type AdminServiceRequestItemRow = {
@@ -561,7 +561,7 @@ export function AdminOrderServiceRequests({
                 />
               ) : null}
 
-              {!isAdjust && pending ? (
+              {!isAdjust && pending && req.type !== "REFUND_AFTER_DELIVERY" ? (
                 <div className="mt-4 border-t border-stone-100 pt-3 dark:border-stone-800">
                   <label className="block text-xs font-medium text-stone-600 dark:text-stone-400">
                     Note to customer (optional)
@@ -594,38 +594,53 @@ export function AdminOrderServiceRequests({
               ) : null}
 
               {req.type === "REFUND_AFTER_DELIVERY" ? (
-                <AdminOrderReturnReplacementPanel
-                  ctx={{
-                    orderId,
-                    currency: orderCtx.currency,
-                    paymentProvider: orderCtx.paymentProvider,
-                    orderItems: orderCtx.orderItems,
-                    request: {
-                      id: req.id,
-                      caseNumber: req.caseNumber,
-                      status: req.status,
-                      returnPhysicalStatus: req.returnPhysicalStatus ?? undefined,
-                      resolutionStatus: req.resolutionStatus ?? undefined,
-                      shippingRefundPolicy: req.shippingRefundPolicy,
-                      refundTotalInPaise: req.refundTotalInPaise,
-                      refundProcessedAt: req.refundProcessedAt,
-                      refundProviderReference: req.refundProviderReference,
-                      items: req.items,
-                      returnShipment: req.returnShipment,
-                      replacementFulfillments: req.replacementFulfillments
-                    }
-                  }}
-                  onDone={onUpdated}
-                />
+                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/50 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
+                  <p className="text-xs font-bold uppercase tracking-wider text-amber-900 dark:text-amber-200">
+                    Return case
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-stone-900 dark:text-stone-100">
+                    {req.caseNumber || "Case"}
+                  </p>
+                  <p className="mt-1 text-xs text-stone-600 dark:text-stone-400">
+                    {(req.items ?? [])
+                      .map((i) => `${i.nameSnapshot} × ${i.qtySelected}`)
+                      .join("; ") || req.reasonLabel}
+                  </p>
+                  <p className="mt-1 text-xs text-stone-600 dark:text-stone-400">
+                    {req.reasonLabel}
+                    {req.resolutionStatus === "REFUNDED" && req.refundTotalInPaise != null
+                      ? ` · Refund processed — ${formatMinorFromPaise(req.refundTotalInPaise, orderCtx.currency)}`
+                      : req.status === "REJECTED"
+                        ? " · Rejected"
+                        : ` · ${req.resolutionStatus?.replace(/_/g, " ") || req.status}`}
+                  </p>
+                  {req.caseNumber ? (
+                    <Link
+                      href={`/admin/returns/${encodeURIComponent(req.caseNumber)}`}
+                      className="mt-3 inline-flex rounded-full bg-stone-900 px-4 py-1.5 text-xs font-semibold text-white hover:bg-stone-800"
+                    >
+                      View return case
+                    </Link>
+                  ) : null}
+                  <p className="mt-2 text-[11px] text-stone-500">
+                    Approval, logistics, QC, and refunds are managed on the Returns desk — not on this
+                    order page.
+                  </p>
+                </div>
               ) : null}
 
               {!isAdjust && req.type !== "REFUND_AFTER_DELIVERY" ? (
-                <ServiceRequestRefundPanel
-                  orderId={orderId}
-                  request={req}
-                  orderCtx={orderCtx}
-                  onDone={onUpdated}
-                />
+                <>
+                  <p className="mt-3 text-[11px] font-medium uppercase tracking-wide text-stone-500">
+                    Pre-delivery / cancel refund (not a post-delivery return case)
+                  </p>
+                  <ServiceRequestRefundPanel
+                    orderId={orderId}
+                    request={req}
+                    orderCtx={orderCtx}
+                    onDone={onUpdated}
+                  />
+                </>
               ) : null}
             </li>
           );

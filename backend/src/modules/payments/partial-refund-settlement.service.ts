@@ -44,6 +44,11 @@ export type ExecutePartialRefundInput = {
   adjustmentMerchandiseRefundPaise?: number;
   /** Forward shipping refunded to the customer (paise). Defaults to 0. */
   adjustmentShippingRefundPaise?: number;
+  /**
+   * Explicit goodwill / manual upward adjustment (paise).
+   * Never folded into GST/merchandise — increases gateway amount + allocation credit.
+   */
+  goodwillAdjustmentPaise?: number;
   /** Units covered by this refund when line-scoped. Required for RefundAllocation. */
   quantity?: number;
   /** For ADMIN_MANUAL — server-validated amount in paise. */
@@ -262,6 +267,7 @@ async function writeAllocationsForPartialRefund(
 
   const merchandiseInclusivePaise = Math.max(0, input.adjustmentMerchandiseRefundPaise ?? amountInPaise);
   const forwardShippingPaise = Math.max(0, input.adjustmentShippingRefundPaise ?? 0);
+  const goodwillPaise = Math.max(0, input.goodwillAdjustmentPaise ?? 0);
   const quantity = Math.max(1, input.quantity ?? 1);
   const isGstApplicable = order.currency === "INR";
 
@@ -282,7 +288,8 @@ async function writeAllocationsForPartialRefund(
     quantity,
     merchandiseInclusivePaise,
     forwardShippingPaise,
-    isGstApplicable
+    isGstApplicable,
+    goodwillAdjustmentPaise: goodwillPaise
   });
 
   await persistRefundAllocations(refundId, [line]);
@@ -339,7 +346,8 @@ export async function executeAuthoritativePartialRefund(
   if (input.adjustmentMerchandiseRefundPaise != null) {
     amountInPaise =
       Math.max(0, input.adjustmentMerchandiseRefundPaise) +
-      Math.max(0, input.adjustmentShippingRefundPaise ?? 0);
+      Math.max(0, input.adjustmentShippingRefundPaise ?? 0) +
+      Math.max(0, input.goodwillAdjustmentPaise ?? 0);
   } else if (input.manualRefundPaise) {
     amountInPaise = input.manualRefundPaise;
   } else if (input.policy) {

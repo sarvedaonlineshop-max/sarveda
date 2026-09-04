@@ -350,6 +350,15 @@ router.post(
   serviceRequest.adminMarkReplacementDelivered
 );
 router.get("/return-cases", serviceRequest.adminListReturnCases);
+router.get("/return-cases/by-number/:caseNumber", serviceRequest.adminGetReturnCaseByNumber);
+router.post(
+  "/orders/:orderId/service-requests/:requestId/refund-override",
+  serviceRequest.adminSetReturnRefundOverride
+);
+router.delete(
+  "/orders/:orderId/service-requests/:requestId/refund-override",
+  serviceRequest.adminClearReturnRefundOverride
+);
 router.get("/return-policy-config", async (req, res, next) => {
   try {
     void req;

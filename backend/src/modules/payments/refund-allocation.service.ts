@@ -43,12 +43,14 @@ export type BuildLineAllocationOpts = {
   merchandiseInclusivePaise: number;
   forwardShippingPaise: number;
   isGstApplicable: boolean;
+  /** Explicit goodwill credit — does not alter GST extraction from merchandise. */
+  goodwillAdjustmentPaise?: number;
 };
 
 /**
  * Build one allocation row from a known merchandise + shipping split.
  * GST is extracted from merchandise only — shipping stays symmetrical with ORDER_PAID
- * (untaxed Shipping Income).
+ * (untaxed Shipping Income). Goodwill is an explicit credit (negative otherDeduction).
  */
 export function buildLineRefundAllocation(opts: BuildLineAllocationOpts): RefundAllocationLineInput {
   const { lineDiscountsPaise } = allocateOrderDiscountPaise(
@@ -75,7 +77,10 @@ export function buildLineRefundAllocation(opts: BuildLineAllocationOpts): Refund
   }
 
   const reverseShippingDeductedPaise = 0;
-  const otherDeductionPaise = 0;
+  const goodwill = Math.max(0, opts.goodwillAdjustmentPaise ?? 0);
+  // Negative otherDeduction = customer credit (goodwill). Never invent GST on goodwill.
+  const otherDeductionPaise = goodwill > 0 ? -goodwill : 0;
+  const otherDeductionLabel = goodwill > 0 ? "GOODWILL_ADJUSTMENT" : null;
   const approvedRefundPaise =
     opts.merchandiseInclusivePaise +
     opts.forwardShippingPaise -
@@ -92,7 +97,7 @@ export function buildLineRefundAllocation(opts: BuildLineAllocationOpts): Refund
     forwardShippingPaise: opts.forwardShippingPaise,
     reverseShippingDeductedPaise,
     otherDeductionPaise,
-    otherDeductionLabel: null,
+    otherDeductionLabel,
     approvedRefundPaise
   };
 }

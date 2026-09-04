@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { getApiBase } from "@/lib/api";
@@ -49,10 +50,33 @@ export default function AdminReturnAnalyticsPage() {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 12 }}>
         {Object.values(counts).map((c) => (
-          <div key={c.key} style={{ background: "#fff", border: "1px solid #e8e2d9", borderRadius: 10, padding: 14 }}>
-            <div style={{ fontSize: 11, color: "#888", textTransform: "uppercase" }}>{c.key.replace(/_/g, " ")}</div>
+          <Link
+            key={c.key}
+            href={`/admin/returns?stage=${encodeURIComponent(
+              c.key === "pending_approval"
+                ? "PENDING_APPROVAL"
+                : c.key === "more_info"
+                  ? "MORE_INFO_REQUIRED"
+                  : c.key === "refund_pending"
+                    ? "REFUND_PENDING"
+                    : c.key === "rejected"
+                      ? "REJECTED"
+                      : "all"
+            )}`}
+            style={{
+              background: "#fff",
+              border: "1px solid #e8e2d9",
+              borderRadius: 10,
+              padding: 14,
+              textDecoration: "none",
+              color: "inherit"
+            }}
+          >
+            <div style={{ fontSize: 11, color: "#888", textTransform: "uppercase" }}>
+              {c.key.replace(/_/g, " ")}
+            </div>
             <div style={{ fontSize: 22, fontWeight: 700 }}>{c.value}</div>
-          </div>
+          </Link>
         ))}
         <div style={{ background: "#fff", border: "1px solid #e8e2d9", borderRadius: 10, padding: 14 }}>
           <div style={{ fontSize: 11, color: "#888" }}>RETURN RATE %</div>
@@ -70,7 +94,10 @@ export default function AdminReturnAnalyticsPage() {
         <ul style={{ fontSize: 13 }}>
           {overdue.map((r) => (
             <li key={r.caseNumber}>
-              {r.caseNumber} · {r.orderNumber} · {r.status}
+              <Link href={`/admin/returns/${encodeURIComponent(r.caseNumber)}`}>
+                {r.caseNumber}
+              </Link>{" "}
+              · {r.orderNumber} · {r.status}
             </li>
           ))}
         </ul>

@@ -12,6 +12,10 @@ export type ReturnItemRefundPreview = {
   totalRefundPaise: number;
   shippingPolicy: ReturnShippingRefundPolicy;
   explanation: string;
+  /** Gross share of line before order discount (qty-scaled). */
+  grossItemValuePaise: number;
+  /** Allocated order discount share for this qty. */
+  allocatedDiscountPaise: number;
 };
 
 /**
@@ -92,6 +96,8 @@ export async function calculateReturnItemRefund(opts: {
   const lineNet = item.lineTotalInPaise - lineDiscount;
   const perUnitNet = Math.round(lineNet / item.qtyOrdered);
   const merchandiseRefundPaise = perUnitNet * opts.qty;
+  const grossItemValuePaise = Math.round((item.lineTotalInPaise * opts.qty) / item.qtyOrdered);
+  const allocatedDiscountPaise = Math.round((lineDiscount * opts.qty) / item.qtyOrdered);
 
   const orderTotalQtyOrdered = order.items.reduce((s, i) => s + i.qtyOrdered, 0);
   const shippingRefundPaise = calculateSellerFaultShippingRefundPaise({
@@ -130,6 +136,8 @@ export async function calculateReturnItemRefund(opts: {
     otherAdjustmentPaise,
     totalRefundPaise,
     shippingPolicy: opts.shippingPolicy,
-    explanation
+    explanation,
+    grossItemValuePaise,
+    allocatedDiscountPaise
   };
 }

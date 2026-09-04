@@ -535,6 +535,8 @@ export type ReturnCaseRefundLinePlan = {
   skuSnapshot: string;
   qtySelected: number;
   qtyOrdered: number;
+  grossItemValuePaise: number;
+  allocatedDiscountPaise: number;
   merchandiseRefundPaise: number;
   shippingRefundPaise: number;
   otherAdjustmentPaise: number;
@@ -560,10 +562,19 @@ export type ReturnCaseRefundPreview = {
   shippingRefundPaise: number;
   otherAdjustmentPaise: number;
   alreadyRefundedPaise: number;
+  /** System-calculated total before admin override. */
+  calculatedRefundPaise: number;
+  /** Effective total to refund now (override if set, else calculated). */
   totalRefundNowPaise: number;
   remainingGatewayPaise: number;
   approvedQtySelected: number;
   orderedQtyOnLines: number;
+  overrideActive: boolean;
+  overrideDifferencePaise: number;
+  overrideGoodwillPaise: number;
+  overrideReason: string | null;
+  /** Set when upward goodwill is present — tax treatment not invented. */
+  complianceFlags: string[];
 };
 
 /**
@@ -667,6 +678,8 @@ export async function previewReturnReplacementRefund(
       skuSnapshot: item.skuSnapshot,
       qtySelected: item.qtySelected,
       qtyOrdered,
+      grossItemValuePaise: Math.round(calc.grossItemValuePaise * scale),
+      allocatedDiscountPaise: Math.round(calc.allocatedDiscountPaise * scale),
       merchandiseRefundPaise: lineMerch,
       shippingRefundPaise: lineShip,
       otherAdjustmentPaise: lineOther,
@@ -676,10 +689,39 @@ export async function previewReturnReplacementRefund(
     });
   }
 
-  let totalRefundNowPaise = plannedGross;
-  if (totalRefundNowPaise > remainingGatewayPaise) {
-    totalRefundNowPaise = remainingGatewayPaise;
+  let calculatedRefundPaise = plannedGross;
+  if (calculatedRefundPaise > remainingGatewayPaise) {
+    calculatedRefundPaise = remainingGatewayPaise;
   }
+
+  const complianceFlags: string[] = [];
+  let overrideActive = false;
+  let overrideDifferencePaise = 0;
+  let overrideGoodwillPaise = 0;
+  let totalRefundNowPaise = calculatedRefundPaise;
+
+  if (
+    request.approvedOverrideRefundPaise != null &&
+    request.approvedOverrideRefundPaise >= 0 &&
+    request.overrideReason?.trim()
+  ) {
+    overrideActive = true;
+    totalRefundNowPaise = Math.min(request.approvedOverrideRefundPaise, remainingGatewayPaise);
+    overrideDifferencePaise = totalRefundNowPaise - calculatedRefundPaise;
+    overrideGoodwillPaise = Math.max(0, overrideDifferencePaise);
+    if (overrideGoodwillPaise > 0) {
+      complianceFlags.push("COMPLIANCE_DECISION_REQUIRED");
+      complianceFlags.push("GOODWILL_ADJUSTMENT_EXPLICIT");
+    }
+    // Persist calculated snapshot for audit if missing/stale.
+    if (request.calculatedRefundPaise !== calculatedRefundPaise) {
+      await prisma.orderServiceRequest.update({
+        where: { id: request.id },
+        data: { calculatedRefundPaise }
+      });
+    }
+  }
+
   if (totalRefundNowPaise <= 0 && executable) {
     executable = false;
     blockCode = "NOTHING_TO_REFUND";
@@ -703,11 +745,133 @@ export async function previewReturnReplacementRefund(
     shippingRefundPaise,
     otherAdjustmentPaise,
     alreadyRefundedPaise,
+    calculatedRefundPaise,
     totalRefundNowPaise,
     remainingGatewayPaise,
     approvedQtySelected: lines.reduce((s, l) => s + l.qtySelected, 0),
-    orderedQtyOnLines: lines.reduce((s, l) => s + l.qtyOrdered, 0)
+    orderedQtyOnLines: lines.reduce((s, l) => s + l.qtyOrdered, 0),
+    overrideActive,
+    overrideDifferencePaise,
+    overrideGoodwillPaise,
+    overrideReason: request.overrideReason,
+    complianceFlags
   };
+}
+
+/**
+ * Persist a controlled refund override. Does not execute the gateway refund.
+ * Downward: any admin. Upward (goodwill): SUPER_ADMIN only.
+ */
+export async function setReturnRefundOverride(opts: {
+  requestId: string;
+  overrideRefundPaise: number;
+  reason: string;
+  adminEmail: string;
+  adminUserId?: string;
+  adminRole?: string;
+}): Promise<ReturnCaseRefundPreview> {
+  const reason = opts.reason.trim();
+  if (!reason) {
+    throw Object.assign(new Error("Override reason is required"), {
+      statusCode: 400,
+      code: "OVERRIDE_REASON_REQUIRED"
+    });
+  }
+  if (!Number.isFinite(opts.overrideRefundPaise) || opts.overrideRefundPaise < 0) {
+    throw Object.assign(new Error("Override amount cannot be negative"), {
+      statusCode: 400,
+      code: "INVALID_OVERRIDE_AMOUNT"
+    });
+  }
+
+  const preview = await previewReturnReplacementRefund(opts.requestId);
+  const calculated = preview.calculatedRefundPaise;
+  const override = Math.round(opts.overrideRefundPaise);
+
+  if (override > preview.remainingGatewayPaise) {
+    throw Object.assign(
+      new Error(
+        `Override cannot exceed remaining captured balance (${preview.remainingGatewayPaise / 100})`
+      ),
+      { statusCode: 400, code: "EXCEEDS_GATEWAY_BALANCE" }
+    );
+  }
+
+  if (override > calculated) {
+    const isSuper = opts.adminRole === "SUPER_ADMIN";
+    if (!isSuper) {
+      throw Object.assign(
+        new Error(
+          "Upward goodwill refund above the calculated amount requires SUPER_ADMIN approval"
+        ),
+        { statusCode: 403, code: "GOODWILL_REQUIRES_SUPER_ADMIN" }
+      );
+    }
+  }
+
+  const difference = override - calculated;
+  const goodwill = Math.max(0, difference);
+  const now = new Date();
+
+  await prisma.orderServiceRequest.update({
+    where: { id: opts.requestId },
+    data: {
+      calculatedRefundPaise: calculated,
+      approvedOverrideRefundPaise: override,
+      overrideDifferencePaise: difference,
+      overrideReason: reason,
+      overrideActorId: opts.adminUserId ?? null,
+      overrideActorEmail: opts.adminEmail,
+      overrideAt: now,
+      overrideGoodwillPaise: goodwill
+    }
+  });
+
+  const { appendCaseEvent } = await import("./return-case-events.service");
+  await appendCaseEvent({
+    requestId: opts.requestId,
+    eventType: "NOTE_ADDED",
+    message: `Refund override set: calculated ${calculated} → ${override} paise`,
+    payloadJson: {
+      kind: "REFUND_OVERRIDE",
+      calculatedRefundPaise: calculated,
+      approvedOverrideRefundPaise: override,
+      overrideDifferencePaise: difference,
+      overrideGoodwillPaise: goodwill,
+      reason
+    },
+    actor: { email: opts.adminEmail, userId: opts.adminUserId, role: opts.adminRole ?? "ADMIN" }
+  });
+
+  return previewReturnReplacementRefund(opts.requestId);
+}
+
+export async function clearReturnRefundOverride(opts: {
+  requestId: string;
+  adminEmail: string;
+  adminUserId?: string;
+}): Promise<ReturnCaseRefundPreview> {
+  await prisma.orderServiceRequest.update({
+    where: { id: opts.requestId },
+    data: {
+      approvedOverrideRefundPaise: null,
+      overrideDifferencePaise: null,
+      overrideReason: null,
+      overrideActorId: null,
+      overrideActorEmail: null,
+      overrideAt: null,
+      overrideGoodwillPaise: null
+    }
+  });
+  const { appendCaseEvent } = await import("./return-case-events.service");
+  await appendCaseEvent({
+    requestId: opts.requestId,
+    eventType: "NOTE_ADDED",
+    message: "Refund override cleared — using system-calculated amount",
+    payloadJson: { kind: "REFUND_OVERRIDE_CLEARED" },
+    actor: { email: opts.adminEmail, userId: opts.adminUserId, role: "ADMIN" }
+  });
+  return previewReturnReplacementRefund(opts.requestId);
 }
 
 export async function executeReturnReplacementRefund(opts: {
@@ -826,17 +990,37 @@ export async function executeReturnReplacementRefund(opts: {
   const refundIds: string[] = [];
   let totalRefunded = 0;
 
-  for (const line of plan.lines) {
-    if (line.lineTotalRefundPaise <= 0) continue;
+  // Apply override: scale down components OR attach goodwill to first line (never invent GST).
+  const calculated = plan.calculatedRefundPaise;
+  const target = plan.totalRefundNowPaise;
+  const goodwillTotal = plan.overrideGoodwillPaise;
+  const scaleDown =
+    plan.overrideActive && target < calculated && calculated > 0 ? target / calculated : 1;
+
+  let goodwillRemaining = goodwillTotal;
+  const executableLines = plan.lines.filter((l) => l.lineTotalRefundPaise > 0);
+
+  for (let idx = 0; idx < executableLines.length; idx++) {
+    const line = executableLines[idx];
     const item = itemById.get(line.requestItemId)!;
+    const merch = Math.round(line.merchandiseRefundPaise * scaleDown);
+    const ship = Math.round(line.shippingRefundPaise * scaleDown);
+    const goodwill =
+      idx === executableLines.length - 1 ? goodwillRemaining : 0;
+    if (idx === executableLines.length - 1) goodwillRemaining = 0;
+
+    if (merch + ship + goodwill <= 0) continue;
 
     const result = await executeAuthoritativePartialRefund({
       orderId: request.orderId,
       sourceType: "SERVICE_REQUEST",
       sourceId: item.id,
-      reason: `Return refund — ${item.nameSnapshot} x${item.qtySelected} by ${opts.adminEmail}`,
-      adjustmentMerchandiseRefundPaise: line.merchandiseRefundPaise,
-      adjustmentShippingRefundPaise: line.shippingRefundPaise,
+      reason: plan.overrideActive
+        ? `Return refund (override) — ${item.nameSnapshot} x${item.qtySelected} by ${opts.adminEmail}`
+        : `Return refund — ${item.nameSnapshot} x${item.qtySelected} by ${opts.adminEmail}`,
+      adjustmentMerchandiseRefundPaise: merch,
+      adjustmentShippingRefundPaise: ship,
+      goodwillAdjustmentPaise: goodwill > 0 ? goodwill : undefined,
       quantity: item.qtySelected,
       orderItemId: item.orderItemId
     });
