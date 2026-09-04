@@ -560,10 +560,25 @@ export async function createShipment(
     if (!waybill && typeof body?.waybill === "string") waybill = body.waybill;
     if (!waybill) {
       logger.warn("delhivery_create_unparsed", { body });
+      const pkg0 = arr[0] as Record<string, unknown> | undefined;
+      const remarksRaw = pkg0?.remarks;
+      const remarks = Array.isArray(remarksRaw)
+        ? remarksRaw.map((r) => String(r)).filter(Boolean).join(" ")
+        : typeof remarksRaw === "string"
+          ? remarksRaw
+          : "";
+      const rmk = typeof body?.rmk === "string" ? body.rmk.trim() : "";
+      const pkgStatus = typeof pkg0?.status === "string" ? pkg0.status : "";
+      const detail =
+        [remarks, rmk && rmk !== remarks ? rmk : ""].filter(Boolean).join(" — ") ||
+        "Delhivery did not return a waybill";
       return {
         success: false,
-        error: "Delhivery did not return a waybill",
-        code: "DELHIVERY_PARSE"
+        error: detail,
+        code:
+          pkgStatus.toLowerCase() === "fail" || pkg0?.serviceable === false || /non[- ]?serviceable/i.test(detail)
+            ? "DELHIVERY_CREATE"
+            : "DELHIVERY_PARSE"
       };
     }
     const trackingUrl = `https://www.delhivery.com/track/package/${waybill}`;

@@ -1388,12 +1388,19 @@ export default function AdminOrderDetailPage() {
         message: `AWB ${created.waybill} is ready. Download the Delhivery label from the shipments section below.`,
         waybill: created.waybill
       });
+      pushToast(`Shipment created — AWB ${created.waybill}`);
     } catch (e) {
+      const message =
+        e instanceof Error ? e.message : "Could not create shipment. Check box details and Delhivery settings.";
+      // Close create modal first so the result dialog is not buried under the blurry overlay.
+      setShipmentWorkspaceOpen(false);
       setShipResultModal({
         success: false,
         title: "Shipment creation failed",
-        message: e instanceof Error ? e.message : "Could not create shipment. Check box details and Delhivery settings."
+        message
       });
+      pushToast(message, true);
+      void load();
     } finally {
       setShipBusy(null);
     }
@@ -1697,7 +1704,7 @@ export default function AdminOrderDetailPage() {
 
       {shipResultModal ? (
         <div
-          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm transition-opacity duration-200"
+          className="fixed inset-0 z-[140] flex items-center justify-center bg-black/55 p-4"
           role="dialog"
           aria-modal="true"
         >
@@ -1946,7 +1953,7 @@ export default function AdminOrderDetailPage() {
 
       {shipmentWorkspaceOpen && shipUi && !hasForwardAwb ? (
         <div
-          className="fixed inset-0 z-[110] flex items-start justify-center overflow-y-auto bg-black/55 p-4 py-8 backdrop-blur-[2px]"
+          className="fixed inset-0 z-[110] flex items-start justify-center overflow-y-auto bg-black/50 p-4 py-8"
           role="dialog"
           aria-modal="true"
           aria-labelledby="create-shipment-title"
@@ -2243,6 +2250,16 @@ export default function AdminOrderDetailPage() {
                 >
                   {shipBusy === "create" ? "Creating AWB…" : "Create shipment to Delhivery"}
                 </button>
+                {shipBusy === "create" ? (
+                  <p className="mt-2 text-center text-xs font-medium text-stone-500">
+                    Calling Delhivery — please wait for success or failure…
+                  </p>
+                ) : null}
+                {order.shippingLastError ? (
+                  <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
+                    Last error: {order.shippingLastError}
+                  </p>
+                ) : null}
               </div>
             </div>
           </div>
