@@ -61,7 +61,6 @@ import { allOrderAwbRows, paymentModeLabel, primaryForwardShipment, shippingMode
 const MAX_SHIP_BOXES = 5;
 /** Per-line warehouse/courier bulk UI — hidden until multi-carrier routing is re-enabled. */
 const SHOW_LEGACY_PER_LINE_FULFILLMENT = false;
-const DIM_MIN_CM = 5;
 const DIM_MAX_CM = 200;
 
 const AWB_PILL = {
@@ -95,8 +94,10 @@ function patchActiveBoxDim(
   field: "lengthCm" | "breadthCm" | "heightCm",
   raw: string
 ): DelhiveryShipBox[] {
+  // Allow empty/partial input while typing; enforce min dims only on submit / estimate.
   const digits = digitsOnly(raw);
-  const parsed = digits === "" ? DIM_MIN_CM : Math.min(DIM_MAX_CM, Math.max(DIM_MIN_CM, Number.parseInt(digits, 10)));
+  const parsed =
+    digits === "" ? 0 : Math.min(DIM_MAX_CM, Math.max(0, Number.parseInt(digits, 10)));
   return boxes.map((b, i) => (i === activeIdx ? { ...b, [field]: parsed } : b));
 }
 
@@ -1106,7 +1107,12 @@ export default function AdminOrderDetailPage() {
     if (!order) return;
     const isCod = (order.payments ?? []).some((p) => p.provider === "COD");
     setShipPaymentMode(isCod ? "COD" : "Pre-paid");
-    setShipBoxes([defaultShipBox(0)]);
+    // Prefill dead weight (~500 g per unit) like the pre-revamp shipment UI.
+    const weightGrams = Math.max(
+      50,
+      order.items.reduce((sum, it) => sum + it.qtyOrdered * 500, 0) || 500
+    );
+    setShipBoxes([defaultShipBox(weightGrams)]);
     setActiveShipBoxIdx(0);
   }, [order?.id, order?.items]);
 
@@ -1375,6 +1381,7 @@ export default function AdminOrderDetailPage() {
         boxes: shipBoxes
       });
       await load();
+      setShipmentWorkspaceOpen(false);
       setShipResultModal({
         success: true,
         title: "Shipment created",
@@ -1861,7 +1868,7 @@ export default function AdminOrderDetailPage() {
         canGenerateChallan={canGenerateChallan}
         shipBusy={shipBusy}
         shipUi={shipUi}
-        onCreateShipment={() => setShipmentWorkspaceOpen((open) => !open)}
+        onCreateShipment={() => setShipmentWorkspaceOpen(true)}
         onSyncAllTracking={() => void handleSyncAllTracking()}
         onTrackOne={(awb) => void handleTrackOne(awb)}
         onGenerateChallan={(refresh) => void handleGenerateDeliveryChallan(refresh)}
@@ -1934,74 +1941,313 @@ export default function AdminOrderDetailPage() {
           ) : null
         }
         ewayBill={<AdminOrderEwayBillCard orderId={id} onToast={pushToast} />}
-        shipmentSetup={
-          shipmentWorkspaceOpen && shipUi && !hasForwardAwb ? (
-            <div className="mt-5 rounded-xl border border-[#d9c8a7] bg-[#fffaf0] p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-bold text-[#1c352a]">Shipment setup</p>
-                  <p className="mt-0.5 text-xs text-stone-500">Confirm pickup, package and service before creating the AWB.</p>
-                </div>
-                <button type="button" onClick={() => setShipmentWorkspaceOpen(false)} className="text-xs font-semibold text-stone-500 hover:text-stone-900">Close</button>
+        shipmentSetup={null}
+      />
+
+      {shipmentWorkspaceOpen && shipUi && !hasForwardAwb ? (
+        <div
+          className="fixed inset-0 z-[110] flex items-start justify-center overflow-y-auto bg-black/55 p-4 py-8 backdrop-blur-[2px]"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="create-shipment-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !shipBusy) setShipmentWorkspaceOpen(false);
+          }}
+        >
+          <div className="w-full max-w-5xl overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-2xl dark:border-stone-600 dark:bg-stone-900">
+            <div className="flex items-start justify-between gap-3 border-b border-stone-100 px-5 py-4 dark:border-stone-700">
+              <div>
+                <h2 id="create-shipment-title" className="text-base font-bold tracking-tight text-stone-800 dark:text-stone-100">
+                  Create shipment
+                </h2>
+                <p className="mt-1 text-xs text-stone-500">
+                  Delhivery shipment — facility, box details, and shipping mode. AWBs are generated via Delhivery API.
+                </p>
               </div>
-              <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <label className="text-xs text-stone-600">
-                  Pickup location
-                  <select value={selectedPickupId} onChange={(e) => setSelectedPickupId(e.target.value)} className="mt-1 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm">
-                    {pickupOptions.map((p) => <option key={p.id} value={p.id}>{p.delhiveryPickupName || p.label}</option>)}
+              <button
+                type="button"
+                disabled={!!shipBusy}
+                onClick={() => setShipmentWorkspaceOpen(false)}
+                className="rounded-lg px-2 py-1 text-sm font-semibold text-stone-500 hover:bg-stone-100 hover:text-stone-900 disabled:opacity-50 dark:hover:bg-stone-800"
+              >
+                Close
+              </button>
+            </div>
+            <div className="grid gap-6 p-5 lg:grid-cols-2">
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Order details</p>
+                  <label className="mt-2 block">
+                    <span className="text-xs text-stone-500">Channel</span>
+                    <input
+                      readOnly
+                      value={shipChannel}
+                      className="mt-1 w-full rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-700 dark:border-stone-600 dark:bg-stone-950"
+                    />
+                  </label>
+                  <label className="mt-3 block">
+                    <span className="text-xs text-stone-500">Order ID</span>
+                    <input
+                      readOnly
+                      value={order.orderNumber}
+                      className="mt-1 w-full rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 font-mono text-sm dark:border-stone-600 dark:bg-stone-950"
+                    />
+                  </label>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Select facility *</p>
+                  <select
+                    value={selectedPickupId}
+                    onChange={(e) => setSelectedPickupId(e.target.value)}
+                    disabled={!pickupOptions.length}
+                    className="mt-2 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
+                  >
+                    {pickupOptions.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.delhiveryPickupName || p.label}
+                        {p.city ? ` · ${p.city}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  {pickupOptions.length === 0 ? (
+                    <Link
+                      href="/admin/settings/pickup-locations"
+                      className="mt-2 inline-block text-xs text-amber-800 underline dark:text-amber-400"
+                    >
+                      Add pickup locations first →
+                    </Link>
+                  ) : null}
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Products to ship</p>
+                  <ul className="mt-2 divide-y divide-stone-100 rounded-lg border border-stone-200 dark:divide-stone-700 dark:border-stone-700">
+                    {order.items.map((it, i) => (
+                      <li key={it.id ?? i} className="flex justify-between px-3 py-2 text-sm">
+                        <span className="text-stone-800 dark:text-stone-100">{it.nameSnapshot}</span>
+                        <span className="font-mono text-xs text-stone-500">
+                          {it.skuSnapshot} × {it.qtyOrdered}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <label className="block">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-stone-500">Payment mode</span>
+                  <select
+                    value={shipPaymentMode}
+                    onChange={(e) => setShipPaymentMode(e.target.value as "Pre-paid" | "COD")}
+                    className="mt-2 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
+                  >
+                    <option value="Pre-paid">Pre-Paid</option>
+                    <option value="COD">Cash On Delivery</option>
                   </select>
                 </label>
-                <label className="text-xs text-stone-600">
-                  Payment mode
-                  <select value={shipPaymentMode} onChange={(e) => setShipPaymentMode(e.target.value as "Pre-paid" | "COD")} className="mt-1 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm">
-                    <option value="Pre-paid">Pre-paid</option>
-                    <option value="COD">Cash on Delivery</option>
-                  </select>
-                </label>
-                <label className="text-xs text-stone-600">
-                  Package type
+              </div>
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Box details</p>
+                  <div className="flex flex-wrap items-center gap-1">
+                    {shipBoxes.map((_, idx) => (
+                      <div key={idx} className="flex items-center gap-0.5">
+                        <button
+                          type="button"
+                          onClick={() => setActiveShipBoxIdx(idx)}
+                          className={`rounded-md border px-2.5 py-1 text-xs font-semibold ${
+                            activeShipBoxIdx === idx
+                              ? "border-stone-900 bg-stone-900 text-amber-50 dark:border-stone-200 dark:bg-stone-100 dark:text-stone-900"
+                              : "border-stone-300 text-stone-600 dark:border-stone-600"
+                          }`}
+                        >
+                          Box {idx + 1}
+                        </button>
+                        {idx > 0 ? (
+                          <button
+                            type="button"
+                            title={`Remove box ${idx + 1}`}
+                            onClick={() => removeShipBox(idx)}
+                            className="rounded-md border border-red-200 px-1.5 py-1 text-xs font-bold text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300"
+                          >
+                            ×
+                          </button>
+                        ) : null}
+                      </div>
+                    ))}
+                    {shipBoxes.length < MAX_SHIP_BOXES ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShipBoxes((prev) => [...prev, defaultShipBox(activeShipBox.weightGrams)]);
+                          setActiveShipBoxIdx(shipBoxes.length);
+                        }}
+                        className="rounded-md border border-dashed border-stone-400 px-2.5 py-1 text-xs font-semibold text-stone-600 dark:border-stone-500"
+                      >
+                        + Add box
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+                <label className="block">
+                  <span className="text-xs text-stone-500">Package type</span>
                   <select
                     value={activeShipBox.packageType}
                     onChange={(e) => {
                       const packageType = e.target.value as DelhiveryShipBox["packageType"];
-                      setShipBoxes((prev) => prev.map((box, i) => i === activeShipBoxIdx ? { ...box, packageType } : box));
+                      setShipBoxes((prev) =>
+                        prev.map((b, i) => (i === activeShipBoxIdx ? { ...b, packageType } : b))
+                      );
                     }}
-                    className="mt-1 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
+                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
                   >
-                    <option value="CARDBOARD_BOX">Cardboard box</option>
-                    <option value="PLASTIC_COVER">Plastic cover / flyer</option>
+                    <option value="PLASTIC_COVER">Plastic cover / Flyer</option>
+                    <option value="CARDBOARD_BOX">Cardboard Box</option>
                   </select>
                 </label>
-                <label className="text-xs text-stone-600">
-                  Weight (grams)
-                  <input type="text" inputMode="numeric" value={activeShipBox.weightGrams || ""} onChange={(e) => setShipBoxes((prev) => patchActiveBoxWeight(prev, activeShipBoxIdx, e.target.value))} className="mt-1 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm" />
-                </label>
-              </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                {(["lengthCm", "breadthCm", "heightCm"] as const).map((field) => (
-                  <label key={field} className="text-xs text-stone-600">
-                    {field === "lengthCm" ? "Length (cm)" : field === "breadthCm" ? "Breadth (cm)" : "Height (cm)"}
-                    <input type="text" inputMode="numeric" value={activeShipBox[field]} onChange={(e) => setShipBoxes((prev) => patchActiveBoxDim(prev, activeShipBoxIdx, field, e.target.value))} className="mt-1 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm" />
+                <hr className="my-4 border-stone-100 dark:border-stone-800" />
+                <div>
+                  <label className="block">
+                    <span className="text-xs text-stone-500">Box size preset</span>
+                    <select
+                      className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm dark:border-stone-600 dark:bg-stone-950"
+                      defaultValue=""
+                      onChange={(e) => {
+                        const preset = SHIP_BOX_PRESETS.find((p) => p.id === e.target.value);
+                        if (!preset) return;
+                        setShipBoxes((prev) =>
+                          prev.map((b, i) =>
+                            i === activeShipBoxIdx
+                              ? {
+                                  ...b,
+                                  lengthCm: preset.lengthCm,
+                                  breadthCm: preset.breadthCm,
+                                  heightCm: preset.heightCm,
+                                  packageType: "CARDBOARD_BOX"
+                                }
+                              : b
+                          )
+                        );
+                        e.target.value = "";
+                      }}
+                    >
+                      <option value="">Select standard size…</option>
+                      {SHIP_BOX_PRESETS.map((preset) => (
+                        <option key={preset.id} value={preset.id}>
+                          {preset.label}
+                        </option>
+                      ))}
+                    </select>
                   </label>
-                ))}
-              </div>
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex gap-2">
-                  {(["S", "E"] as const).map((mode) => (
-                    <button key={mode} type="button" onClick={() => setShipMode(mode)} className={`rounded-lg border px-3 py-2 text-xs font-semibold ${shipMode === mode ? "border-[#1c352a] bg-[#1c352a] text-white" : "border-stone-300 bg-white text-stone-700"}`}>
-                      {mode === "S" ? "Surface" : "Express"} · {formatFreightAmount(freightByMode[mode])}
-                    </button>
-                  ))}
+                  <span className="mt-2 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+                    Size (cm) — freely editable
+                  </span>
+                  <div className="mt-1 grid grid-cols-3 gap-2">
+                    {(["lengthCm", "breadthCm", "heightCm"] as const).map((field) => (
+                      <label key={field} className="block text-[11px] text-stone-500">
+                        {field === "lengthCm" ? "Length" : field === "breadthCm" ? "Breadth" : "Height"}
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={activeShipBox[field] > 0 ? String(activeShipBox[field]) : ""}
+                          onChange={(e) => {
+                            setShipBoxes((prev) => patchActiveBoxDim(prev, activeShipBoxIdx, field, e.target.value));
+                          }}
+                          className="mt-0.5 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm font-mono focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 dark:border-stone-600 dark:bg-stone-950"
+                        />
+                      </label>
+                    ))}
+                  </div>
+                  {boxDimError ? (
+                    <p className="mt-1 text-[11px] font-medium text-red-600 dark:text-red-400">{boxDimError}</p>
+                  ) : (
+                    <p className="mt-1 text-[11px] text-stone-500">
+                      Positive integers only. Min 5 cm per side; L + B + H ≥ 15 cm.
+                    </p>
+                  )}
                 </div>
-                <button type="button" disabled={!!shipBusy || !pickupOptions.length || !!boxDimError || totalChargeableG <= 0} onClick={() => void handleRetryShipment()} className="rounded-lg bg-[#1c352a] px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50">
-                  {shipBusy === "create" ? "Creating AWB…" : "Create shipment & AWB"}
+                <label className="block">
+                  <span className="text-xs text-stone-500">Package weight (gm) — integer</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={activeShipBox.weightGrams > 0 ? String(activeShipBox.weightGrams) : ""}
+                    onChange={(e) => {
+                      setShipBoxes((prev) => patchActiveBoxWeight(prev, activeShipBoxIdx, e.target.value));
+                    }}
+                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm font-mono focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 dark:border-stone-600 dark:bg-stone-950"
+                  />
+                </label>
+                <hr className="my-4 border-stone-100 dark:border-stone-800" />
+                <div>
+                  <span className="text-xs text-stone-500">Shipping mode</span>
+                  <div className="relative mt-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShipMode("S")}
+                        className={`rounded-lg border px-3 py-3 text-sm font-semibold ${
+                          shipMode === "S"
+                            ? "border-stone-900 bg-stone-900 text-amber-50 dark:border-stone-200 dark:bg-stone-100 dark:text-stone-900"
+                            : "border-stone-300 text-stone-700 dark:border-stone-600"
+                        }`}
+                      >
+                        <span className="block text-[10px] uppercase tracking-widest text-stone-500">Surface</span>
+                        <span className="mt-1 block text-base font-bold">{formatFreightAmount(freightByMode.S)}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShipMode("E")}
+                        className={`rounded-lg border px-3 py-3 text-sm font-semibold ${
+                          shipMode === "E"
+                            ? "border-stone-900 bg-stone-900 text-amber-50 dark:border-stone-200 dark:bg-stone-100 dark:text-stone-900"
+                            : "border-stone-300 text-stone-700 dark:border-stone-600"
+                        }`}
+                      >
+                        <span className="block text-[10px] uppercase tracking-widest text-stone-500">Express</span>
+                        <span className="mt-1 block text-base font-bold">{formatFreightAmount(freightByMode.E)}</span>
+                      </button>
+                    </div>
+                    {freightEstimateBusy ? (
+                      <div
+                        className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/80 backdrop-blur-[1px] dark:bg-stone-950/75"
+                        role="status"
+                        aria-live="polite"
+                        aria-busy="true"
+                      >
+                        <div className="flex items-center gap-2.5 rounded-full border border-stone-200 bg-white px-3.5 py-2 shadow-sm dark:border-stone-600 dark:bg-stone-900">
+                          <div
+                            className="h-4 w-4 animate-spin rounded-full border-2 border-stone-200 border-t-[#1c352a]"
+                            aria-hidden
+                          />
+                          <span className="text-xs font-semibold text-stone-700 dark:text-stone-200">
+                            Calculating…
+                          </span>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                  <p className="mt-2 text-[11px] text-stone-500">
+                    Total chargeable:{" "}
+                    <strong>{totalChargeableG.toLocaleString("en-IN")} gm</strong>
+                    {freightEstimateError ? (
+                      <span className="ml-2 text-red-600 dark:text-red-400">{freightEstimateError}</span>
+                    ) : null}
+                  </p>
+                </div>
+                <hr className="my-4 border-stone-100 dark:border-stone-800" />
+                <button
+                  type="button"
+                  disabled={!!shipBusy || !pickupOptions.length || !!boxDimError || totalChargeableG <= 0}
+                  onClick={() => void handleRetryShipment()}
+                  className="w-full rounded-xl bg-stone-900 py-3 text-sm font-bold text-amber-50 transition-all duration-150 hover:bg-stone-800 hover:shadow-md disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900"
+                >
+                  {shipBusy === "create" ? "Creating AWB…" : "Create shipment to Delhivery"}
                 </button>
               </div>
-              {boxDimError ? <p className="mt-2 text-xs font-medium text-red-700">{boxDimError}</p> : null}
             </div>
-          ) : null
-        }
-      />
+          </div>
+        </div>
+      ) : null}
 
       {process.env.NEXT_PUBLIC_LEGACY_ORDER_DETAIL === "1" ? ((order: OrderLoaded, invoice: OrderInvoiceState | null, deliveryChallan: OrderDeliveryChallanState | null) => (
         <>
@@ -2439,14 +2685,14 @@ export default function AdminOrderDetailPage() {
                 <span className="mt-2 block text-xs font-semibold uppercase tracking-wide text-stone-500">
                   Size (cm) — integers only
                 </span>
-                <div className="mt-1 grid grid-cols-3 gap-2">
+                  <div className="mt-1 grid grid-cols-3 gap-2">
                   <label className="block text-[11px] text-stone-500">
                     Length
                     <input
                       type="text"
                       inputMode="numeric"
                       pattern="[0-9]*"
-                      value={String(activeShipBox.lengthCm)}
+                      value={activeShipBox.lengthCm > 0 ? String(activeShipBox.lengthCm) : ""}
                       onChange={(e) => {
                         setShipBoxes((prev) => patchActiveBoxDim(prev, activeShipBoxIdx, "lengthCm", e.target.value));
                       }}
@@ -2459,7 +2705,7 @@ export default function AdminOrderDetailPage() {
                       type="text"
                       inputMode="numeric"
                       pattern="[0-9]*"
-                      value={String(activeShipBox.breadthCm)}
+                      value={activeShipBox.breadthCm > 0 ? String(activeShipBox.breadthCm) : ""}
                       onChange={(e) => {
                         setShipBoxes((prev) => patchActiveBoxDim(prev, activeShipBoxIdx, "breadthCm", e.target.value));
                       }}
@@ -2472,7 +2718,7 @@ export default function AdminOrderDetailPage() {
                       type="text"
                       inputMode="numeric"
                       pattern="[0-9]*"
-                      value={String(activeShipBox.heightCm)}
+                      value={activeShipBox.heightCm > 0 ? String(activeShipBox.heightCm) : ""}
                       onChange={(e) => {
                         setShipBoxes((prev) => patchActiveBoxDim(prev, activeShipBoxIdx, "heightCm", e.target.value));
                       }}
