@@ -88,7 +88,9 @@ async function processStripeRefundEvent(event: Stripe.Event): Promise<void> {
         rawEvent: event.type
       });
       if (result.newlyRecorded && refundStatus === "processed" && result.orderId) {
-        notifyOrderEmail(result.orderId, "refund_initiated");
+        notifyOrderEmail(result.orderId, "refund_initiated", {
+          refundAmountInPaise: r.amount
+        });
       }
     }
     return;
@@ -118,7 +120,9 @@ async function processStripeRefundEvent(event: Stripe.Event): Promise<void> {
   });
 
   if (result.newlyRecorded && refundStatus === "processed" && result.orderId) {
-    notifyOrderEmail(result.orderId, "refund_initiated");
+    notifyOrderEmail(result.orderId, "refund_initiated", {
+      refundAmountInPaise: stripeRefund.amount
+    });
   }
 }
 

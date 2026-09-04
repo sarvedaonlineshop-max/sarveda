@@ -432,7 +432,14 @@ export async function executeAuthoritativePartialRefund(
     await updateSettlementStage(refundRow.id, "GATEWAY_SUCCEEDED", `Accounting pending: ${msg}`);
   }
 
-  notifyOrderEmail(input.orderId, "refund_initiated");
+  // SERVICE_REQUEST returns use case-level notify with case total (may span multiple lines).
+  // Passing order.grandTotal here historically produced wrong WhatsApp/email amounts.
+  if (input.sourceType !== "SERVICE_REQUEST") {
+    notifyOrderEmail(input.orderId, "refund_initiated", {
+      refundAmountInPaise: amountInPaise,
+      refundId: refundRow.id
+    });
+  }
 
   logger.info("partial_refund_settled", {
     orderId: input.orderId,

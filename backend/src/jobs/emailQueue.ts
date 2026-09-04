@@ -5,11 +5,19 @@ import { logger } from "../config/logger";
 
 export const EMAIL_QUEUE_NAME = "email-notifications";
 
+export type OrderEmailJobOpts = {
+  refundAmountInPaise?: number;
+  refundId?: string;
+  caseNumber?: string | null;
+  paymentProvider?: string | null;
+};
+
 export type EmailJob =
   | {
       type: "order_email";
       orderId: string;
       event: string;
+      opts?: OrderEmailJobOpts;
     }
   | {
       type: "abandoned_cart";
@@ -51,7 +59,11 @@ async function sendEmailJobDirect(job: EmailJob): Promise<void> {
   );
 
   if (job.type === "order_email") {
-    await sendOrderEmail(job.orderId, job.event as Parameters<typeof sendOrderEmail>[1]);
+    await sendOrderEmail(
+      job.orderId,
+      job.event as Parameters<typeof sendOrderEmail>[1],
+      job.opts
+    );
   } else if (job.type === "abandoned_cart") {
     await sendAbandonedCartEmail(job.userId);
   } else if (job.type === "direct") {

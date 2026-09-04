@@ -375,6 +375,18 @@ export async function performReturnQc(opts: {
     actor: { userId: opts.adminUserId, email: opts.adminEmail, role: "ADMIN" }
   });
 
+  void (async () => {
+    const { notifyReturnCaseEvent } = await import("./return-case-notifications.service");
+    const hasReplacement = request.items.some((i) => i.requestedResolution === "REPLACEMENT");
+    await notifyReturnCaseEvent(request.id, "RETURN_QC_COMPLETED", {
+      orderNumber: request.orderNumber,
+      caseNumber: request.caseNumber,
+      customerEmail: request.customerEmail,
+      itemSummary: request.items.map((i) => `${i.nameSnapshot} × ${i.qtySelected}`).join("; "),
+      qcOutcome: hasReplacement ? "replacement" : "refund"
+    });
+  })();
+
   // Best-effort write-off accounting for WRITE_OFF lines (idempotent; no real money movement).
   for (const id of restockEventIds) {
     void tryPostInventoryWriteOffForRestockEvent(id).catch((err) => {

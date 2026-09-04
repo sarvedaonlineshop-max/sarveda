@@ -127,6 +127,45 @@ export type OrderEmailEvent =
   | "refund_initiated"
   | "order_cancelled";
 
+/** Optional context for refund notifications — never invent amounts from order total. */
+export type OrderEmailNotifyOpts = {
+  refundAmountInPaise?: number;
+  refundId?: string;
+  caseNumber?: string | null;
+  paymentProvider?: string | null;
+};
+
+/**
+ * Resolve authoritative refund amount for customer notifications.
+ * Prefer explicit opts → Refund row by id → latest Refund for order.
+ * Never falls back to order.grandTotalInPaise.
+ */
+export async function resolveAuthoritativeRefundAmountInPaise(
+  orderId: string,
+  opts?: OrderEmailNotifyOpts
+): Promise<number | null> {
+  if (opts?.refundAmountInPaise != null && opts.refundAmountInPaise > 0) {
+    return opts.refundAmountInPaise;
+  }
+  if (opts?.refundId) {
+    const byId = await prisma.refund.findUnique({
+      where: { id: opts.refundId },
+      select: { amountInPaise: true }
+    });
+    if (byId && byId.amountInPaise > 0) return byId.amountInPaise;
+  }
+  const latest = await prisma.refund.findFirst({
+    where: {
+      payment: { orderId },
+      status: { not: "failed" }
+    },
+    orderBy: { createdAt: "desc" },
+    select: { amountInPaise: true, id: true }
+  });
+  if (latest && latest.amountInPaise > 0) return latest.amountInPaise;
+  return null;
+}
+
 const EVENT_SUBJECTS: Record<OrderEmailEvent, string> = {
   order_confirmed: "Your Sarveda order is confirmed",
   payment_failed: "Payment could not be completed — Sarveda",
@@ -493,12 +532,25 @@ function customerFirstName(order: {
 
 export async function sendOrderEmail(
   orderId: string,
-  event: OrderEmailEvent
+  event: OrderEmailEvent,
+  opts?: OrderEmailNotifyOpts
 ): Promise<void> {
   const order = await loadOrderEmailContext(orderId);
   if (!order?.email) return;
 
-  const total = formatOrderTotal(order.grandTotalInPaise, order.currency);
+  const orderTotal = formatOrderTotal(order.grandTotalInPaise, order.currency);
+  let refundAmountFormatted: string | null = null;
+  if (event === "refund_initiated") {
+    const refundPaise = await resolveAuthoritativeRefundAmountInPaise(orderId, opts);
+    if (refundPaise == null) {
+      logger.error("refund_email_missing_authoritative_amount", { orderId, opts });
+      return;
+    }
+    refundAmountFormatted = formatOrderTotal(refundPaise, order.currency);
+  }
+  const total = event === "refund_initiated" && refundAmountFormatted
+    ? refundAmountFormatted
+    : orderTotal;
   const view = orderViewUrl(order.orderNumber, order.email);
   const inv = invoiceUrl(order.orderNumber, order.email);
   const awb = order.shipments[0]?.awb;
@@ -508,9 +560,15 @@ export async function sendOrderEmail(
   const greeting = `Dear ${firstName},`;
   const warmIntro = `Warm greetings from Sarveda.`;
   const orderIdMeta = `<strong>Order ID:</strong> ${escapeHtml(order.orderNumber)}`;
-  const metaWithTotal = `${orderIdMeta} · ${total}`;
+  const caseMeta = opts?.caseNumber
+    ? `${orderIdMeta} · <strong>Return Case:</strong> ${escapeHtml(opts.caseNumber)}`
+    : orderIdMeta;
+  const metaWithTotal = `${orderIdMeta} · ${orderTotal}`;
 
-  const subject = `${EVENT_SUBJECTS[event]} — ${order.orderNumber}`;
+  const subject =
+    event === "refund_initiated" && refundAmountFormatted
+      ? `Refund of ${refundAmountFormatted} initiated — ${order.orderNumber}`
+      : `${EVENT_SUBJECTS[event]} — ${order.orderNumber}`;
   let html = "";
   let text = "";
 
@@ -669,24 +727,41 @@ export async function sendOrderEmail(
       );
       text = `Dear ${customerFirstName(order)}, order ${order.orderNumber} returned (RTO).`;
       break;
-    case "refund_initiated":
+    case "refund_initiated": {
+      const providerLabel = opts?.paymentProvider
+        ? `Original ${escapeHtml(opts.paymentProvider)} payment method`
+        : "Original payment method";
+      const caseLine = opts?.caseNumber
+        ? `Return Case: <strong>${escapeHtml(opts.caseNumber)}</strong>`
+        : "";
       html = buildHtml(
         "",
         [
-          `A refund has been initiated for order <strong>${escapeHtml(order.orderNumber)}</strong> (${total}).`,
-          "It may take 5–10 business days to appear, depending on your bank or card issuer."
-        ],
+          `A refund of <strong>${escapeHtml(total)}</strong> has been initiated for Sarveda order <strong>${escapeHtml(order.orderNumber)}</strong>.`,
+          caseLine,
+          `Refund method: ${providerLabel}`,
+          "The refund has been initiated successfully. It may take a few business days to reflect in your account depending on the bank/payment provider.",
+          "Thank you for your patience."
+        ].filter(Boolean),
         {
           banner: "Refund initiated",
           showTick: false,
           greeting,
           intro: warmIntro,
-          meta: orderIdMeta,
+          meta: caseMeta,
           ctas: [{ href: view, label: "View order" }]
         }
       );
-      text = `Dear ${customerFirstName(order)}, refund initiated for ${order.orderNumber} (${total}).`;
+      text = [
+        `Dear ${customerFirstName(order)},`,
+        `A refund of ${total} has been initiated for Sarveda order ${order.orderNumber}.`,
+        opts?.caseNumber ? `Return Case: ${opts.caseNumber}` : "",
+        "It may take a few business days to reflect in your account depending on the bank/payment provider."
+      ]
+        .filter(Boolean)
+        .join("\n");
       break;
+    }
     case "order_cancelled":
       html = buildHtml(
         "",
@@ -796,10 +871,21 @@ export async function sendWelcomeEmail(email: string, name: string): Promise<voi
   await sendMail(email, "Welcome to Sarveda — your account is ready", html, text);
 }
 
-export function notifyOrderEmail(orderId: string, event: OrderEmailEvent): void {
+export function notifyOrderEmail(
+  orderId: string,
+  event: OrderEmailEvent,
+  opts?: OrderEmailNotifyOpts
+): void {
+  const dedupeKey =
+    event === "refund_initiated" && opts?.refundId
+      ? `order-email:${orderId}:${event}:${opts.refundId}`
+      : event === "refund_initiated" && opts?.refundAmountInPaise != null
+        ? `order-email:${orderId}:${event}:amt:${opts.refundAmountInPaise}`
+        : `order-email:${orderId}:${event}`;
+
   void enqueueEmail(
-    { type: "order_email", orderId, event },
-    `order-email:${orderId}:${event}`
+    { type: "order_email", orderId, event, opts },
+    dedupeKey
   ).catch((err) => {
     logger.error("email_enqueue_failed", { orderId, event, err });
   });
@@ -807,7 +893,7 @@ export function notifyOrderEmail(orderId: string, event: OrderEmailEvent): void 
   // Same shopper events as email → WhatsApp (Exotel). Complaints/tasks use sendMail only.
   void import("./whatsapp")
     .then(({ notifyOrderWhatsApp }) => {
-      notifyOrderWhatsApp(orderId, event);
+      notifyOrderWhatsApp(orderId, event, opts);
     })
     .catch((err) => {
       logger.error("whatsapp_import_failed", { orderId, event, err });

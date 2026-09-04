@@ -176,9 +176,13 @@ export async function razorpayWebhookHandler(req: Request, res: Response): Promi
           });
 
           if (result.newlyRecorded && refundStatus === "processed") {
-            notifyOrderEmail(payRow.orderId, "refund_initiated");
+            notifyOrderEmail(payRow.orderId, "refund_initiated", {
+              refundAmountInPaise: amountPaise
+            });
           } else if (result.duplicate && refundStatus === "processed" && result.fullyRefunded) {
-            notifyOrderEmail(payRow.orderId, "refund_initiated");
+            notifyOrderEmail(payRow.orderId, "refund_initiated", {
+              refundAmountInPaise: amountPaise
+            });
           }
         }
       }

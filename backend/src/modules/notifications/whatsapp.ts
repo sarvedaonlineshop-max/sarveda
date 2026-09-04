@@ -1,7 +1,8 @@
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import { getRedisConnection } from "../../config/redisConnection";
-import type { OrderEmailEvent } from "./email";
+import type { OrderEmailEvent, OrderEmailNotifyOpts } from "./email";
+import { resolveAuthoritativeRefundAmountInPaise } from "./email";
 
 type TemplateParams = string[];
 
@@ -12,15 +13,20 @@ const DEDUPE_EVENTS = new Set<OrderEmailEvent>([
   "order_shipped",
   "order_delivered",
   "order_returned",
-  "order_cancelled"
+  "order_cancelled",
+  "refund_initiated"
 ]);
 const WA_DEDUPE_TTL_SEC = 30 * 24 * 60 * 60;
 
-async function claimWhatsAppSend(orderId: string, event: OrderEmailEvent): Promise<boolean> {
+async function claimWhatsAppSend(
+  orderId: string,
+  event: OrderEmailEvent,
+  dedupeSuffix?: string
+): Promise<boolean> {
   if (!DEDUPE_EVENTS.has(event)) return true;
   const redis = getRedisConnection();
   if (!redis) return true;
-  const key = `wa-notify:${orderId}:${event}`;
+  const key = `wa-notify:${orderId}:${event}${dedupeSuffix ? `:${dedupeSuffix}` : ""}`;
   try {
     const ok = await redis.set(key, "1", "EX", WA_DEDUPE_TTL_SEC, "NX");
     if (ok !== "OK") {
@@ -292,13 +298,23 @@ function buildBodyParams(
  * Skips silently if Exotel is not configured or phone is missing.
  * Not used for complaints/tasks (those call sendMail directly).
  */
-export async function sendOrderWhatsApp(orderId: string, event: OrderEmailEvent): Promise<void> {
+export async function sendOrderWhatsApp(
+  orderId: string,
+  event: OrderEmailEvent,
+  opts?: OrderEmailNotifyOpts
+): Promise<void> {
   if (!isExotelConfigured()) {
     logger.info("whatsapp_skipped_not_configured", { orderId, event });
     return;
   }
 
-  if (!(await claimWhatsAppSend(orderId, event))) {
+  const dedupeSuffix =
+    event === "refund_initiated"
+      ? opts?.refundId ||
+        (opts?.refundAmountInPaise != null ? `amt:${opts.refundAmountInPaise}` : undefined)
+      : undefined;
+
+  if (!(await claimWhatsAppSend(orderId, event, dedupeSuffix))) {
     return;
   }
 
@@ -320,7 +336,15 @@ export async function sendOrderWhatsApp(orderId: string, event: OrderEmailEvent)
   }
 
   const templateName = TEMPLATE_BY_EVENT[event];
-  const total = formatOrderTotal(order.grandTotalInPaise, order.currency);
+  let amountForTemplate = formatOrderTotal(order.grandTotalInPaise, order.currency);
+  if (event === "refund_initiated") {
+    const refundPaise = await resolveAuthoritativeRefundAmountInPaise(orderId, opts);
+    if (refundPaise == null) {
+      logger.error("whatsapp_refund_missing_authoritative_amount", { orderId, event });
+      return;
+    }
+    amountForTemplate = formatOrderTotal(refundPaise, order.currency);
+  }
   const view = orderViewUrl(order.orderNumber, order.email);
   const awb = order.shipments[0]?.awb?.trim() || "";
   const tracking = awb ? trackUrl(awb) : view;
@@ -331,7 +355,7 @@ export async function sendOrderWhatsApp(orderId: string, event: OrderEmailEvent)
   const bodyParams = buildBodyParams(event, {
     name,
     orderNumber: order.orderNumber,
-    total,
+    total: amountForTemplate,
     itemsSummary,
     view,
     cancelledUrl: orderCancelledUrl(order.orderNumber, order.email),
@@ -349,8 +373,12 @@ export async function sendOrderWhatsApp(orderId: string, event: OrderEmailEvent)
 }
 
 /** Fire-and-forget; safe to call beside notifyOrderEmail. */
-export function notifyOrderWhatsApp(orderId: string, event: OrderEmailEvent): void {
-  void sendOrderWhatsApp(orderId, event).catch((err) => {
+export function notifyOrderWhatsApp(
+  orderId: string,
+  event: OrderEmailEvent,
+  opts?: OrderEmailNotifyOpts
+): void {
+  void sendOrderWhatsApp(orderId, event, opts).catch((err) => {
     logger.error("whatsapp_notify_failed", { orderId, event, err });
   });
 }

@@ -18,7 +18,6 @@ import {
 } from "./return-replacement.constants";
 import { calculateReturnItemRefund } from "./return-refund-calculator.service";
 import { reasonLabelFor, uploadRequestPhotos } from "./order-service-request.service";
-import { notifyServiceRequestSubmitted } from "./order-service-request.emails";
 
 export type SubmitReturnReplacementItem = {
   orderItemId: string;
@@ -348,13 +347,20 @@ export async function submitReturnReplacementRequest(opts: {
     });
   }
 
-  void notifyServiceRequestSubmitted({
-    orderNumber: order.orderNumber,
-    customerEmail: email,
-    type: "REFUND_AFTER_DELIVERY",
-    reasonLabel: summaryLabel,
-    message: opts.message
-  });
+  void (async () => {
+    const { notifyReturnCaseEvent } = await import("./return-case-notifications.service");
+    await notifyReturnCaseEvent(created.id, "RETURN_REQUEST_SUBMITTED", {
+      orderNumber: order.orderNumber,
+      caseNumber,
+      customerEmail: email,
+      customerPhone: order.phone,
+      itemSummary: parsedItems.map((p) => `${p.nameSnapshot} × ${p.qtySelected}`).join("; "),
+      quantity: parsedItems.reduce((s, p) => s + p.qtySelected, 0),
+      customerReason: summaryLabel,
+      requestedResolution: parsedItems.map((p) => p.requestedResolution).join("; "),
+      currency: order.currency
+    });
+  })();
 
   return created;
 }
@@ -485,6 +491,31 @@ export async function approveReturnReplacementRequest(opts: {
       actor: { email: opts.adminEmail, userId: opts.adminUserId, role: "ADMIN" }
     });
   }
+
+  void (async () => {
+    const { notifyReturnCaseEvent } = await import("./return-case-notifications.service");
+    const itemSummary = request.items.map((i) => `${i.nameSnapshot} × ${i.qtySelected}`).join("; ");
+    const qty = request.items.reduce((s, i) => s + i.qtySelected, 0);
+    const base = {
+      orderNumber: request.orderNumber,
+      caseNumber: request.caseNumber,
+      customerEmail: request.customerEmail,
+      itemSummary,
+      quantity: qty,
+      currency: undefined as string | undefined
+    };
+    if (hasReplacement) {
+      await notifyReturnCaseEvent(request.id, "RETURN_REPLACEMENT_APPROVED", {
+        ...base,
+        replacementItem: itemSummary
+      });
+    }
+    if (needsPhysicalReturn) {
+      await notifyReturnCaseEvent(request.id, "RETURN_APPROVED_PHYSICAL", base);
+    } else if (hasRefund) {
+      await notifyReturnCaseEvent(request.id, "RETURN_APPROVED_NO_RETURN", base);
+    }
+  })();
 
   return prisma.orderServiceRequest.findUnique({
     where: { id: request.id },
@@ -754,6 +785,31 @@ export async function executeReturnReplacementRefund(opts: {
         resolutionStatus: "REFUNDED"
       }
     });
+
+    const { appendCaseEvent } = await import("./return-case-events.service");
+    await appendCaseEvent({
+      requestId: request.id,
+      eventType: "REFUND_COMPLETED",
+      message: `COD manual refund recorded: ${plan.totalRefundNowPaise} paise`,
+      payloadJson: { totalInPaise: plan.totalRefundNowPaise },
+      actor: { email: opts.adminEmail, userId: opts.adminUserId, role: "ADMIN" }
+    });
+
+    void (async () => {
+      const { notifyReturnCaseEvent } = await import("./return-case-notifications.service");
+      await notifyReturnCaseEvent(request.id, "RETURN_REFUND_PROCESSED", {
+        orderNumber: request.orderNumber,
+        caseNumber: request.caseNumber,
+        customerEmail: request.customerEmail,
+        customerPhone: request.order.phone,
+        itemSummary: request.items.map((i) => `${i.nameSnapshot} × ${i.qtySelected}`).join("; "),
+        refundAmountInPaise: plan.totalRefundNowPaise,
+        currency: request.order.currency,
+        paymentProvider: "COD",
+        completedAt: now
+      });
+    })();
+
     return {
       totalRefundedInPaise: plan.totalRefundNowPaise,
       refundIds: [],
@@ -808,6 +864,32 @@ export async function executeReturnReplacementRefund(opts: {
       refundProviderReference: refundIds[0] ?? null
     }
   });
+
+  const { appendCaseEvent } = await import("./return-case-events.service");
+  const initiatedAt = new Date();
+  await appendCaseEvent({
+    requestId: request.id,
+    eventType: "REFUND_INITIATED",
+    message: `Refund ${totalRefunded} paise initiated`,
+    payloadJson: { totalRefundedInPaise: totalRefunded, refundIds },
+    actor: { email: opts.adminEmail, userId: opts.adminUserId, role: "ADMIN" }
+  });
+
+  void (async () => {
+    const { notifyReturnCaseEvent } = await import("./return-case-notifications.service");
+    await notifyReturnCaseEvent(request.id, "RETURN_REFUND_INITIATED", {
+      orderNumber: request.orderNumber,
+      caseNumber: request.caseNumber,
+      customerEmail: request.customerEmail,
+      customerPhone: request.order.phone,
+      itemSummary: request.items.map((i) => `${i.nameSnapshot} × ${i.qtySelected}`).join("; "),
+      refundAmountInPaise: totalRefunded,
+      currency: request.order.currency,
+      paymentProvider: plan.paymentProvider,
+      providerRefundId: refundIds[0] ?? null,
+      initiatedAt
+    });
+  })();
 
   return {
     totalRefundedInPaise: totalRefunded,

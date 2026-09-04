@@ -135,7 +135,9 @@ async function handlePayPalRefundWebhook(
   });
 
   if (result.newlyRecorded && refundStatus === "processed" && result.orderId) {
-    notifyOrderEmail(result.orderId, "refund_initiated");
+    notifyOrderEmail(result.orderId, "refund_initiated", {
+      refundAmountInPaise: amountPaise
+    });
   }
 }
 

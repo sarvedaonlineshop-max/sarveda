@@ -571,14 +571,7 @@ export async function reviewServiceRequest(opts: {
       adminEmail: opts.adminEmail,
       adminNote: opts.adminNote
     });
-    void notifyServiceRequestReviewed({
-      orderNumber: request.orderNumber,
-      customerEmail: request.customerEmail,
-      type: request.type,
-      approved: true,
-      adminNote: opts.adminNote,
-      physicalReturnRequired: approved!.returnPhysicalStatus !== "NOT_REQUIRED"
-    });
+    // Customer email/WhatsApp fired inside approveReturnReplacementRequest (physical vs no-return).
     return { ...approved!, photos: approved!.photos ?? [] } as OrderServiceRequest & {
       photos: OrderServiceRequestPhoto[];
     };
@@ -605,13 +598,26 @@ export async function reviewServiceRequest(opts: {
     actor: { email: opts.adminEmail, role: "ADMIN" }
   });
 
-  void notifyServiceRequestReviewed({
-    orderNumber: request.orderNumber,
-    customerEmail: request.customerEmail,
-    type: request.type,
-    approved: opts.approve,
-    adminNote: opts.adminNote
-  });
+  if (!opts.approve && request.type === "REFUND_AFTER_DELIVERY") {
+    void (async () => {
+      const { notifyReturnCaseEvent } = await import("./return-case-notifications.service");
+      await notifyReturnCaseEvent(request.id, "RETURN_REJECTED", {
+        orderNumber: request.orderNumber,
+        caseNumber: request.caseNumber,
+        customerEmail: request.customerEmail,
+        itemSummary: request.items.map((i) => `${i.nameSnapshot} × ${i.qtySelected}`).join("; "),
+        rejectionNote: opts.adminNote?.trim() || null
+      });
+    })();
+  } else {
+    void notifyServiceRequestReviewed({
+      orderNumber: request.orderNumber,
+      customerEmail: request.customerEmail,
+      type: request.type,
+      approved: opts.approve,
+      adminNote: opts.adminNote
+    });
+  }
 
   return updated;
 }

@@ -277,7 +277,10 @@ export async function initiateGatewayRefund(
       }
     }
 
-    notifyOrderEmail(orderId, "refund_initiated");
+    notifyOrderEmail(orderId, "refund_initiated", {
+      refundAmountInPaise: remaining,
+      refundId: refundRow.id
+    });
     logger.info("admin_refund_initiated", { orderId, provider, refundId: providerRefundId, amountInPaise: remaining });
 
     return {

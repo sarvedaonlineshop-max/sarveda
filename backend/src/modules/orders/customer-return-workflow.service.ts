@@ -151,6 +151,34 @@ export async function upsertReturnShipmentTracking(opts: {
       data: { returnPhysicalStatus: opts.physicalStatus ?? "AWAITING_RETURN" }
     });
   }
+
+  // Notify only when courier + AWB are present (actual pickup/shipping started).
+  if (opts.courier?.trim() && opts.awb?.trim()) {
+    const { appendCaseEvent } = await import("./return-case-events.service");
+    await appendCaseEvent({
+      requestId: request.id,
+      eventType: "PICKUP_REQUESTED",
+      message: `${opts.courier.trim()} / ${opts.awb.trim()}`,
+      payloadJson: {
+        courier: opts.courier.trim(),
+        awb: opts.awb.trim(),
+        trackingUrl: opts.trackingUrl?.trim() || null
+      },
+      actor: { userId: opts.adminUserId, role: "ADMIN" }
+    });
+    void (async () => {
+      const { notifyReturnCaseEvent } = await import("./return-case-notifications.service");
+      await notifyReturnCaseEvent(request.id, "RETURN_PICKUP_CREATED", {
+        orderNumber: request.orderNumber,
+        caseNumber: request.caseNumber,
+        customerEmail: request.customerEmail,
+        itemSummary: "",
+        courier: opts.courier!.trim(),
+        awb: opts.awb!.trim(),
+        trackingUrl: opts.trackingUrl?.trim() || null
+      });
+    })();
+  }
 }
 
 export async function markCustomerReturnReceived(opts: {
@@ -222,6 +250,18 @@ export async function markCustomerReturnReceived(opts: {
     message: "Warehouse received return",
     actor: { userId: opts.adminUserId, role: "ADMIN" }
   });
+
+  void (async () => {
+    const { notifyReturnCaseEvent } = await import("./return-case-notifications.service");
+    await notifyReturnCaseEvent(request.id, "RETURN_RECEIVED", {
+      orderNumber: request.orderNumber,
+      caseNumber: request.caseNumber,
+      customerEmail: request.customerEmail,
+      customerPhone: request.order.phone,
+      itemSummary: request.items.map((i) => `${i.nameSnapshot} × ${i.qtySelected}`).join("; "),
+      receivedAt: now
+    });
+  })();
 
   logger.info("customer_return_received", {
     orderId: request.orderId,

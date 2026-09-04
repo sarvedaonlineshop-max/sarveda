@@ -161,6 +161,23 @@ export async function markReplacementShipped(opts: {
     actor: { role: "ADMIN" }
   });
 
+  void (async () => {
+    const req = await prisma.orderServiceRequest.findUnique({
+      where: { id: fulfillment.requestId }
+    });
+    if (!req) return;
+    const { notifyReturnCaseEvent } = await import("./return-case-notifications.service");
+    await notifyReturnCaseEvent(req.id, "RETURN_REPLACEMENT_SHIPPED", {
+      orderNumber: req.orderNumber,
+      caseNumber: req.caseNumber,
+      customerEmail: req.customerEmail,
+      itemSummary: "",
+      courier: opts.courier ?? null,
+      awb: opts.awb ?? null,
+      trackingUrl: opts.trackingUrl ?? null
+    });
+  })();
+
   logger.info("replacement_shipped", { fulfillmentId: fulfillment.id, awb: opts.awb });
 }
 
@@ -202,6 +219,21 @@ export async function markReplacementDelivered(opts: {
     message: "Case closed after replacement delivery",
     actor: { userId: opts.adminUserId, role: "ADMIN" }
   });
+
+  void (async () => {
+    const req = await prisma.orderServiceRequest.findUnique({
+      where: { id: fulfillment.requestId }
+    });
+    if (!req) return;
+    const { notifyReturnCaseEvent } = await import("./return-case-notifications.service");
+    await notifyReturnCaseEvent(req.id, "RETURN_CASE_CLOSED", {
+      orderNumber: req.orderNumber,
+      caseNumber: req.caseNumber,
+      customerEmail: req.customerEmail,
+      itemSummary: "",
+      closureKind: "replacement"
+    });
+  })();
 }
 
 export async function computeReplacementCommercialDelta(opts: {

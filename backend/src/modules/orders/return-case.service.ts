@@ -11,7 +11,6 @@ import { prisma } from "../../config/db";
 import { appendCaseEvent, listCaseEvents, serializeCaseEventForCustomer } from "./return-case-events.service";
 import { shippingPolicyForReason } from "./return-replacement.constants";
 import { uploadRequestPhotos } from "./order-service-request.service";
-import { notifyServiceRequestReviewed } from "./order-service-request.emails";
 
 /**
  * Root-cause → shipping policy branching (Arjun SOP).
@@ -136,13 +135,16 @@ export async function requestMoreInfo(opts: {
     actor: { email: opts.adminEmail, userId: opts.adminUserId, role: "ADMIN" }
   });
 
-  void notifyServiceRequestReviewed({
-    orderNumber: request.orderNumber,
-    customerEmail: request.customerEmail,
-    type: request.type,
-    approved: false,
-    adminNote: `More information needed: ${prompt}`
-  });
+  void (async () => {
+    const { notifyReturnCaseEvent } = await import("./return-case-notifications.service");
+    await notifyReturnCaseEvent(request.id, "RETURN_MORE_INFO_REQUIRED", {
+      orderNumber: request.orderNumber,
+      caseNumber: request.caseNumber,
+      customerEmail: request.customerEmail,
+      itemSummary: "",
+      moreInfoPrompt: prompt
+    });
+  })();
 }
 
 export async function provideMoreInfo(opts: {
@@ -299,6 +301,20 @@ export async function submitCustomerSelfShip(opts: {
     },
     actor: { userId: opts.userId, email, role: "CUSTOMER" }
   });
+
+  void (async () => {
+    const { notifyReturnCaseEvent } = await import("./return-case-notifications.service");
+    await notifyReturnCaseEvent(request.id, "RETURN_SELF_SHIP", {
+      orderNumber: request.orderNumber,
+      caseNumber: request.caseNumber,
+      customerEmail: request.customerEmail,
+      itemSummary: "",
+      courier,
+      awb,
+      trackingUrl: opts.trackingUrl ?? null,
+      selfShip: true
+    });
+  })();
 }
 
 export type ReturnCaseListFilters = {
