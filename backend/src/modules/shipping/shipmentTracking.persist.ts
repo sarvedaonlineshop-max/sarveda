@@ -34,11 +34,26 @@ export async function persistShipmentTrackingFromCarrier(
   orderStatus: OrderStatus;
   fulfillmentStatus: string;
 }> {
+  const alreadyDelivered =
+    shipment.status === "DELIVERED" || shipment.deliveredAt != null || shipment.order.status === "DELIVERED";
+
+  // Manual Mark Delivered (or a prior carrier DELIVERED) must not be regressed by a later
+  // IN_TRANSIT / OFD poll or webhook.
+  if (alreadyDelivered && shipmentStatus !== "DELIVERED" && shipmentStatus !== "RTO") {
+    return {
+      orderStatus: shipment.order.status === "DELIVERED" ? "DELIVERED" : shipment.order.status,
+      fulfillmentStatus:
+        shipment.order.status === "DELIVERED" ? "FULFILLED" : shipment.order.fulfillmentStatus
+    };
+  }
+
   await prisma.shipment.update({
     where: { id: shipment.id },
     data: {
       status: shipmentStatus,
-      ...(shipmentStatus === "DELIVERED" ? { deliveredAt: new Date() } : {}),
+      ...(shipmentStatus === "DELIVERED"
+        ? { deliveredAt: shipment.deliveredAt ?? new Date() }
+        : {}),
       ...(shipmentStatus === "RTO" ? { rtoAt: shipment.rtoAt ?? new Date() } : {})
     }
   });

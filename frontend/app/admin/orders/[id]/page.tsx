@@ -580,8 +580,6 @@ function AdminOrderProductionView({
   shipBusy,
   shipUi,
   onCreateShipment,
-  onSyncAllTracking,
-  onTrackOne,
   onGenerateChallan,
   onEditAddress,
   onStatusChange,
@@ -606,8 +604,6 @@ function AdminOrderProductionView({
   shipBusy: string | null;
   shipUi: boolean;
   onCreateShipment: () => void;
-  onSyncAllTracking: () => void;
-  onTrackOne: (awb: string) => void;
   onGenerateChallan: (refresh: boolean) => void;
   onEditAddress: (address: AddressRow) => void;
   onStatusChange: (status: string) => void;
@@ -666,6 +662,14 @@ function AdminOrderProductionView({
     PACKED: ["SHIPPED"],
     SHIPPED: ["DELIVERED"]
   };
+  const deliveryStateIncomplete =
+    order.status === "DELIVERED" &&
+    awbRows.some((row) => {
+      const meta = order.shipments.find((s) => s.id === row.shipmentId);
+      const isReverse = (meta?.carrierMeta as { direction?: string } | null | undefined)?.direction === "REVERSE";
+      if (isReverse) return false;
+      return row.status !== "DELIVERED";
+    });
   const timeline = [
     {
       key: "placed",
@@ -782,6 +786,16 @@ function AdminOrderProductionView({
                   Mark {humanState(status)}
                 </button>
               ))}
+              {deliveryStateIncomplete ? (
+                <button
+                  type="button"
+                  disabled={statusSaving}
+                  onClick={() => onStatusChange("DELIVERED")}
+                  className="rounded-lg border border-amber-400 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-950 disabled:opacity-50"
+                >
+                  Confirm delivery state
+                </button>
+              ) : null}
               {invoice?.invoiceNo || invoice?.pdfUrl ? (
                 <a href={invoice.downloadUrl ?? adminOrderInvoiceDownloadUrl(order.id)} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-[#b98a3e] bg-[#fff8e8] px-4 py-2 text-sm font-semibold text-[#1c352a]">
                   Download Invoice
@@ -1699,9 +1713,11 @@ export default function AdminOrderDetailPage() {
         open={statusConfirm !== null}
         title="Update order status?"
         message={
-          statusConfirm
-            ? `Change status to “${statusConfirm.replace(/_/g, " ")}”? This may trigger fulfilment actions (for example auto-shipment when moving to Processing).`
-            : ""
+          statusConfirm === "DELIVERED" && order.status === "DELIVERED"
+            ? "Confirm delivery state? This syncs shipment tracking to Delivered, sets fulfillment to Fulfilled, and establishes the return-window start time without changing an existing delivered timestamp."
+            : statusConfirm
+              ? `Change status to “${statusConfirm.replace(/_/g, " ")}”? This may trigger fulfilment actions (for example auto-shipment when moving to Processing).`
+              : ""
         }
         confirmLabel="Yes, update"
         busy={statusSaving}
@@ -1907,8 +1923,6 @@ export default function AdminOrderDetailPage() {
         shipBusy={shipBusy}
         shipUi={shipUi}
         onCreateShipment={() => setShipmentWorkspaceOpen(true)}
-        onSyncAllTracking={() => void handleSyncAllTracking()}
-        onTrackOne={(awb) => void handleTrackOne(awb)}
         onGenerateChallan={(refresh) => void handleGenerateDeliveryChallan(refresh)}
         onEditAddress={(address) => {
           setAddressModal(address);

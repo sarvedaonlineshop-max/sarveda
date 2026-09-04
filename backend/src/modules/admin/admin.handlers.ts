@@ -1407,6 +1407,32 @@ export async function patchOrderStatus(req: Request, res: Response, next: NextFu
       return;
     }
 
+    // Manual delivery must update shipment.deliveredAt + fulfillment + history so
+    // return eligibility matches customer My Orders (same canonical delivery truth).
+    if (status === "DELIVERED") {
+      const { markOrderDeliveredByAdmin } = await import("../orders/order-delivery.service");
+      const { notifyOrderEmail } = await import("../notifications/email");
+      const delivery = await markOrderDeliveredByAdmin(id, {
+        reason: "Admin marked delivered",
+        changedBy: (req as { authUser?: { id?: string } }).authUser?.id ?? null
+      });
+      if (delivery.newlyDelivered) {
+        notifyOrderEmail(id, "order_delivered");
+      }
+      const order = await prisma.order.findFirst({
+        where: { id },
+        include: {
+          items: true,
+          addresses: true,
+          invoice: true,
+          shipments: true,
+          statusHistory: { orderBy: { createdAt: "asc" } }
+        }
+      });
+      res.json({ success: true, data: { order } });
+      return;
+    }
+
     const order = await prisma.order.update({
       where: { id },
       data: { status },
@@ -1423,9 +1449,6 @@ export async function patchOrderStatus(req: Request, res: Response, next: NextFu
     }
     if (status === "SHIPPED" && prevStatus !== "SHIPPED" && prevStatus !== "DELIVERED") {
       notifyOrderEmail(id, "order_shipped");
-    }
-    if (status === "DELIVERED" && prevStatus !== "DELIVERED") {
-      notifyOrderEmail(id, "order_delivered");
     }
 
     res.json({ success: true, data: { order } });

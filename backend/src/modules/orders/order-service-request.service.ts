@@ -56,7 +56,10 @@ type OrderRow = {
   paymentStatus: string;
   customerId: string | null;
   payments?: Array<{ provider: string; status?: string; id?: string; createdAt?: Date }>;
-  shipments?: Array<{ status: import("@prisma/client").ShipmentStatus | string }>;
+  shipments?: Array<{
+    status: import("@prisma/client").ShipmentStatus | string;
+    deliveredAt?: Date | null;
+  }>;
   deliveredAt?: Date | null;
 };
 
@@ -109,11 +112,15 @@ export function getCancelBlockReason(order: OrderRow): string | null {
   return eligibility.customerCanRequest ? null : (eligibility.customerMessage ?? null);
 }
 
-export function canRequestRefund(order: OrderRow): boolean {
+export function canRequestRefund(order: OrderRow & {
+  statusHistory?: Array<{ toStatus: string; createdAt: Date }>;
+}): boolean {
   if (order.status !== "DELIVERED") return false;
   if (!orderIsPaidForService(order)) return false;
-  if (!order.deliveredAt) return true;
-  return Date.now() <= returnWindowEnd(order.deliveredAt).getTime();
+  // Same canonical deliveredAt as return submission (shipment.deliveredAt or DELIVERED history).
+  const deliveredAt = resolveDeliveredAt(order);
+  if (!deliveredAt) return false;
+  return Date.now() <= returnWindowEnd(deliveredAt).getTime();
 }
 
 export function serializeServiceRequest(

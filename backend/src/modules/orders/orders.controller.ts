@@ -254,6 +254,7 @@ function serializeOrderSummary(order: {
     customerId: null as string | null,
     payments: order.payments,
     shipments: order.shipments,
+    statusHistory: order.statusHistory,
     deliveredAt
   };
 

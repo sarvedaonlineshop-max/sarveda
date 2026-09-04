@@ -32,11 +32,8 @@ export function resolveDeliveredAtFromOrder(order: {
   shipments: Array<{ status: string; deliveredAt: Date | null }>;
   statusHistory: Array<{ toStatus: string; createdAt: Date }>;
 }): Date | null {
-  if (order.status !== "DELIVERED") return null;
-  const shipmentDelivered = order.shipments.find((s) => s.deliveredAt)?.deliveredAt;
-  if (shipmentDelivered) return shipmentDelivered;
-  const hist = order.statusHistory.find((h) => h.toStatus === "DELIVERED");
-  return hist?.createdAt ?? null;
+  // Same canonical resolution as My Orders / canRequestRefund (earliest shipment or history).
+  return resolveDeliveredAt(order);
 }
 
 function isPaidForReturn(paymentStatus: PaymentStatus, payments: OrderRow["payments"]): boolean {
