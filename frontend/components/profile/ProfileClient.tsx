@@ -11,7 +11,6 @@ import { getApiBase } from "@/lib/api";
 import type { PublicUser } from "@/lib/auth-client";
 import {
   fetchProfileDetails,
-  isAdminRole,
   updateProfile,
   type PrimaryAddress
 } from "@/lib/auth-client";
@@ -284,12 +283,8 @@ export function ProfileClient() {
         if (!cancelled) setLoading(false);
         return;
       }
-      // Admins belong in the admin app — same rule as post-login navigation.
-      // Closing/reopening a tab often restores /profile via the storefront account icon.
-      if (isAdminRole(session.user.role)) {
-        router.replace("/admin");
-        return;
-      }
+      // Admins can use the customer profile (orders, details, events) while shopping;
+      // admin panel stays on the separate Admin header icon only.
       setUser(session.user);
       setName(session.user.name?.trim() ?? "");
       setPhone(session.user.phone?.replace(/^\+\d+/, "") ?? "");
