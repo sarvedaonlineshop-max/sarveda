@@ -99,7 +99,23 @@ async function caseUnavailableQtyForOrderItem(
   orderItemId: string,
   db: DbClient = prisma
 ): Promise<number> {
-  const lines = await db.orderServiceRequestItem.findMany({
+  const lines = await loadCaseLinesForOrderItem(orderItemId, db);
+  return unavailableReturnQtyFromCaseLines(lines);
+}
+
+async function loadCaseLinesForOrderItem(
+  orderItemId: string,
+  db: DbClient = prisma
+): Promise<
+  Array<{
+    qtySelected: number;
+    reviewDecision: ReturnLineReviewDecision | string;
+    caseStatus: string;
+    caseNumber: string;
+    requestId: string;
+  }>
+> {
+  const rows = await db.orderServiceRequestItem.findMany({
     where: {
       orderItemId,
       request: { type: "REFUND_AFTER_DELIVERY" }
@@ -107,17 +123,152 @@ async function caseUnavailableQtyForOrderItem(
     select: {
       qtySelected: true,
       reviewDecision: true,
-      request: { select: { status: true } }
+      request: { select: { status: true, caseNumber: true, id: true } }
     }
   });
+  return rows.map((line) => ({
+    qtySelected: line.qtySelected,
+    reviewDecision: line.reviewDecision,
+    caseStatus: line.request.status,
+    caseNumber: line.request.caseNumber,
+    requestId: line.request.id
+  }));
+}
 
-  return unavailableReturnQtyFromCaseLines(
-    lines.map((line) => ({
-      qtySelected: line.qtySelected,
-      reviewDecision: line.reviewDecision,
-      caseStatus: line.request.status
-    }))
-  );
+/** Per-decision qty buckets for one order item (same rules as unavailableReturnQtyFromCaseLines). */
+export function summarizeReturnCaseLineQtys(
+  lines: Array<{
+    qtySelected: number;
+    reviewDecision: ReturnLineReviewDecision | string;
+    caseStatus: string;
+    caseNumber?: string;
+    requestId?: string;
+  }>
+): {
+  pendingQty: number;
+  moreInfoQty: number;
+  approvedQty: number;
+  rejectedLockedQty: number;
+  relatedCaseRefs: Array<{
+    caseNumber: string;
+    requestId: string;
+    qtySelected: number;
+    reviewDecision: string;
+    caseStatus: string;
+  }>;
+} {
+  let pendingQty = 0;
+  let moreInfoQty = 0;
+  let approvedQty = 0;
+  let rejectedLockedQty = 0;
+  const relatedCaseRefs: Array<{
+    caseNumber: string;
+    requestId: string;
+    qtySelected: number;
+    reviewDecision: string;
+    caseStatus: string;
+  }> = [];
+
+  for (const line of lines) {
+    const decision = String(line.reviewDecision);
+    const status = line.caseStatus;
+    if (line.caseNumber && line.requestId) {
+      relatedCaseRefs.push({
+        caseNumber: line.caseNumber,
+        requestId: line.requestId,
+        qtySelected: line.qtySelected,
+        reviewDecision: decision,
+        caseStatus: status
+      });
+    }
+
+    if (decision === "REJECTED" || status === "REJECTED") {
+      rejectedLockedQty += line.qtySelected;
+      continue;
+    }
+    if (!COMMITMENT_CASE_STATUSES.has(status)) continue;
+    if (decision === "MORE_INFO_REQUIRED") moreInfoQty += line.qtySelected;
+    else if (decision === "APPROVED") approvedQty += line.qtySelected;
+    else if (decision === "PENDING") pendingQty += line.qtySelected;
+  }
+
+  return { pendingQty, moreInfoQty, approvedQty, rejectedLockedQty, relatedCaseRefs };
+}
+
+export type CustomerReturnLineEligibility = {
+  orderItemId: string;
+  nameSnapshot: string;
+  skuSnapshot: string;
+  orderedQty: number;
+  pendingQty: number;
+  moreInfoQty: number;
+  approvedQty: number;
+  rejectedLockedQty: number;
+  /** Committed on open/approved cases (pending + more info + approved). */
+  alreadyInReturnQty: number;
+  alreadyReturnedQty: number;
+  remainingEligibleQty: number;
+  maxReturnableQty: number;
+  unavailableReason: string | null;
+  relatedCaseRefs: Array<{
+    caseNumber: string;
+    requestId: string;
+    qtySelected: number;
+    reviewDecision: string;
+    caseStatus: string;
+  }>;
+};
+
+/**
+ * Thin read model for customer return UI — same qty rules as getReturnEligibility / submit guard.
+ */
+export async function getCustomerReturnEligibilitySnapshot(opts: {
+  orderId: string;
+  orderItems: Array<{ id: string; nameSnapshot: string; skuSnapshot: string; qtyOrdered: number }>;
+}): Promise<CustomerReturnLineEligibility[]> {
+  const lines: CustomerReturnLineEligibility[] = [];
+  for (const item of opts.orderItems) {
+    const caseLines = await loadCaseLinesForOrderItem(item.id);
+    const summary = summarizeReturnCaseLineQtys(caseLines);
+    const alreadyInReturnQty = summary.pendingQty + summary.moreInfoQty + summary.approvedQty;
+    const caseUnavailable = unavailableReturnQtyFromCaseLines(caseLines);
+    const alreadyReturnedQty = await getReturnedQuantityForOrderItem(prisma, item.id);
+    const remainingEligibleQty = Math.max(
+      0,
+      item.qtyOrdered - Math.max(alreadyReturnedQty, caseUnavailable)
+    );
+
+    let unavailableReason: string | null = null;
+    if (remainingEligibleQty <= 0) {
+      if (summary.rejectedLockedQty > 0 && alreadyInReturnQty === 0) {
+        unavailableReason = `${summary.rejectedLockedQty} unit(s) were not approved in a previous return request.`;
+      } else if (alreadyInReturnQty > 0) {
+        unavailableReason = "All eligible units are already part of an active or approved return case.";
+      } else if (alreadyReturnedQty > 0) {
+        unavailableReason = "These units have already been returned.";
+      } else {
+        unavailableReason = "No units are currently eligible for a new return request.";
+      }
+    }
+
+    lines.push({
+      orderItemId: item.id,
+      nameSnapshot: item.nameSnapshot,
+      skuSnapshot: item.skuSnapshot,
+      orderedQty: item.qtyOrdered,
+      pendingQty: summary.pendingQty,
+      moreInfoQty: summary.moreInfoQty,
+      approvedQty: summary.approvedQty,
+      rejectedLockedQty: summary.rejectedLockedQty,
+      alreadyInReturnQty,
+      alreadyReturnedQty,
+      remainingEligibleQty,
+      maxReturnableQty: remainingEligibleQty,
+      unavailableReason,
+      relatedCaseRefs: summary.relatedCaseRefs
+    });
+  }
+  return lines;
 }
 
 /** Customer-facing qty rejection used by submit guard. */

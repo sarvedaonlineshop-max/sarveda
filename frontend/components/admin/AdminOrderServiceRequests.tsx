@@ -22,6 +22,7 @@ export type AdminServiceRequestItemRow = {
   skuSnapshot: string;
   qtySelected: number;
   reasonLabel: string;
+  reviewDecision?: string | null;
   requestedResolution?: string | null;
   message?: string | null;
   otherMessage?: string | null;
@@ -324,7 +325,14 @@ function ServiceRequestRefundPanel({
                       <td className="px-2 py-2 align-top">
                         <p className="font-medium text-stone-900 dark:text-stone-100">{item.nameSnapshot}</p>
                         <p className="text-[10px] text-stone-500">
-                          {item.reasonLabel} · approved qty {item.qtySelected}
+                          {item.reasonLabel} ·{" "}
+                          {item.reviewDecision === "REJECTED"
+                            ? `rejected qty ${item.qtySelected}`
+                            : item.reviewDecision === "MORE_INFO_REQUIRED"
+                              ? `more info for ${item.qtySelected}`
+                              : item.reviewDecision === "PENDING"
+                                ? `pending qty ${item.qtySelected}`
+                                : `approved qty ${item.qtySelected}`}
                           {orderLine?.qtyOrdered != null ? ` of ${orderLine.qtyOrdered}` : ""}
                         </p>
                       </td>

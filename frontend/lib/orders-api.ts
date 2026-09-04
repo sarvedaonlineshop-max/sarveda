@@ -19,6 +19,15 @@ export type OrderLineItem = {
   quantity: number;
   lineTotalInPaise: number;
   skuSnapshot?: string;
+  /** Backend return eligibility (customer return page only). */
+  returnEligibility?: {
+    orderedQty: number;
+    alreadyInReturnQty: number;
+    rejectedLockedQty: number;
+    remainingEligibleQty: number;
+    maxReturnableQty: number;
+    unavailableReason: string | null;
+  };
 };
 
 export type OrderCostBreakdown = {

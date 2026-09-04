@@ -21,6 +21,11 @@ router.post(
   serviceRequest.serviceRequestUpload,
   serviceRequest.submitCancelRequest
 );
+router.get(
+  "/:orderNumber/return-eligibility",
+  requireAuth,
+  serviceRequest.getCustomerReturnEligibility
+);
 router.post(
   "/:orderNumber/refund-request",
   requireAuth,

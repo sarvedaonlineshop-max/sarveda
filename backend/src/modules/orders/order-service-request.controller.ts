@@ -199,6 +199,83 @@ export async function submitRefundRequest(req: Request, res: Response, next: Nex
   }
 }
 
+/** GET — authoritative per-line return qty for customer return page (MAN-008E). */
+export async function getCustomerReturnEligibility(req: Request, res: Response, next: NextFunction) {
+  try {
+    const user = req.authUser!;
+    const { orderNumber } = req.params;
+    const email = user.email.trim().toLowerCase();
+    const { prisma } = await import("../../config/db");
+    const order = await prisma.order.findFirst({
+      where: {
+        orderNumber,
+        deletedAt: null,
+        OR: [{ customerId: user.id }, { email }]
+      },
+      include: {
+        items: { orderBy: { nameSnapshot: "asc" } },
+        payments: true,
+        shipments: { select: { status: true, deliveredAt: true } },
+        statusHistory: { select: { toStatus: true, createdAt: true } }
+      }
+    });
+    if (!order) {
+      res.status(404).json({ success: false, error: "Order not found", code: "NOT_FOUND" });
+      return;
+    }
+
+    const { getCustomerReturnEligibilitySnapshot, getReturnEligibility } = await import(
+      "./return-eligibility.service"
+    );
+    const lines = await getCustomerReturnEligibilitySnapshot({
+      orderId: order.id,
+      orderItems: order.items.map((i) => ({
+        id: i.id,
+        nameSnapshot: i.nameSnapshot,
+        skuSnapshot: i.skuSnapshot,
+        qtyOrdered: i.qtyOrdered
+      }))
+    });
+
+    let orderEligible = true;
+    let orderBlockCode: string | undefined;
+    let orderMessage: string | undefined;
+    let returnWindowEndsAt: Date | undefined;
+    const firstItem = order.items[0];
+    if (firstItem) {
+      const gate = await getReturnEligibility({
+        order,
+        orderItemId: firstItem.id,
+        qtyRequested: 1
+      });
+      returnWindowEndsAt = gate.returnWindowEndsAt;
+      if (
+        gate.blockCode &&
+        ["NOT_DELIVERED", "NOT_PAID", "RETURN_WINDOW_EXPIRED", "RTO_ACTIVE"].includes(gate.blockCode)
+      ) {
+        orderEligible = false;
+        orderBlockCode = gate.blockCode;
+        orderMessage = gate.customerMessage;
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        orderNumber: order.orderNumber,
+        currency: order.currency,
+        orderEligible,
+        orderBlockCode: orderBlockCode ?? null,
+        orderMessage: orderMessage ?? null,
+        returnWindowEndsAt: returnWindowEndsAt ?? null,
+        lines
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function submitAdjustRequest(req: Request, res: Response, next: NextFunction) {
   try {
     const user = req.authUser!;

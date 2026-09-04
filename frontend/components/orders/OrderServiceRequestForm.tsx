@@ -60,10 +60,22 @@ export function OrderServiceRequestForm({
   const isCancel = kind === "cancel";
   const [drafts, setDrafts] = useState<Record<string, ItemDraft>>(() =>
     Object.fromEntries(
-      lineItems.map((item) => [
-        item.id,
-        { selected: lineItems.length === 1, reasonCode: "", requestedResolution: "", qty: item.quantity, otherMessage: "", message: "", photos: [], previews: [] }
-      ])
+      lineItems.map((item) => {
+        const maxQty = Math.max(0, item.returnEligibility?.maxReturnableQty ?? item.quantity);
+        return [
+          item.id,
+          {
+            selected: lineItems.length === 1 && maxQty > 0,
+            reasonCode: "",
+            requestedResolution: "",
+            qty: Math.max(1, Math.min(maxQty || 1, maxQty || 1)),
+            otherMessage: "",
+            message: "",
+            photos: [],
+            previews: []
+          }
+        ];
+      })
     )
   );
   const [overallMessage, setOverallMessage] = useState("");
@@ -139,7 +151,12 @@ export function OrderServiceRequestForm({
           setError(`Add at least one photo for ${item.title}.`);
           return;
         }
-        const qty = Math.min(Math.max(1, draft.qty), item.quantity);
+        const maxQty = item.returnEligibility?.maxReturnableQty ?? item.quantity;
+        if (maxQty <= 0) {
+          setError(`${item.title} is not currently eligible for return.`);
+          return;
+        }
+        const qty = Math.min(Math.max(1, draft.qty), maxQty);
         payloadItems.push({
           orderItemId: item.id,
           reasonCode: draft.reasonCode,
@@ -225,38 +242,66 @@ export function OrderServiceRequestForm({
         {lineItems.map((item) => {
           const draft = drafts[item.id];
           const isOther = draft?.reasonCode === "other";
+          const elig = item.returnEligibility;
+          const maxReturnable = elig?.maxReturnableQty ?? item.quantity;
+          const purchasedQty = elig?.orderedQty ?? item.quantity;
+          const disabled = !isCancel && maxReturnable <= 0;
+          const contextParts: string[] = [`Purchased: ${purchasedQty}`];
+          if (elig) {
+            if (elig.alreadyInReturnQty > 0) {
+              contextParts.push(`Already in return: ${elig.alreadyInReturnQty}`);
+            }
+            if (elig.rejectedLockedQty > 0) {
+              contextParts.push(`Rejected/locked: ${elig.rejectedLockedQty}`);
+            }
+            contextParts.push(`Available to return: ${elig.remainingEligibleQty}`);
+          } else {
+            contextParts.push(`Qty ${item.quantity}`);
+          }
           return (
             <article
               key={item.id}
               className={`rounded-2xl border bg-white shadow-card transition-colors ${
-                draft?.selected ? "border-brand-forest/40 ring-1 ring-brand-forest/10" : "border-brand-cream-dark"
+                disabled
+                  ? "border-brand-cream-dark opacity-70"
+                  : draft?.selected
+                    ? "border-brand-forest/40 ring-1 ring-brand-forest/10"
+                    : "border-brand-cream-dark"
               }`}
             >
               <div
                 className={
-                  draft?.selected
+                  draft?.selected && !disabled
                     ? "lg:grid lg:grid-cols-[minmax(240px,0.9fr)_minmax(0,1.4fr)] lg:items-start"
                     : ""
                 }
               >
-                <label className="flex cursor-pointer items-start gap-3 px-4 py-4 sm:px-5 lg:border-r lg:border-brand-cream-dark">
+                <label
+                  className={`flex items-start gap-3 px-4 py-4 sm:px-5 lg:border-r lg:border-brand-cream-dark ${
+                    disabled ? "cursor-not-allowed" : "cursor-pointer"
+                  }`}
+                >
                   <input
                     type="checkbox"
-                    checked={draft?.selected ?? false}
+                    checked={!disabled && (draft?.selected ?? false)}
+                    disabled={disabled}
                     onChange={(e) => patchItem(item.id, { selected: e.target.checked })}
-                    className="mt-1 h-4 w-4 accent-brand-forest"
+                    className="mt-1 h-4 w-4 accent-brand-forest disabled:opacity-40"
                   />
                   <span className="min-w-0 flex-1">
                     <span className="block font-medium text-brand-ink">{item.title}</span>
                     <span className="mt-0.5 block text-xs text-brand-muted">
-                      Qty {item.quantity}
+                      {contextParts.join(" · ")}
                       {item.skuSnapshot ? ` · ${item.skuSnapshot}` : ""} ·{" "}
                       {formatMinorFromPaise(item.lineTotalInPaise, currency)}
                     </span>
+                    {disabled && elig?.unavailableReason ? (
+                      <span className="mt-1 block text-xs text-amber-800">{elig.unavailableReason}</span>
+                    ) : null}
                   </span>
                 </label>
 
-                {draft?.selected ? (
+                {draft?.selected && !disabled ? (
                   <div className="space-y-4 border-t border-brand-cream-dark px-4 py-4 sm:px-5 lg:border-t-0">
                     <fieldset>
                       <legend className="text-sm font-semibold text-brand-ink">Reason for this item</legend>
@@ -294,17 +339,17 @@ export function OrderServiceRequestForm({
 
                     {!isCancel && draft.reasonCode ? (
                       <>
-                        {item.quantity > 1 ? (
+                        {maxReturnable > 1 ? (
                           <div>
                             <label className="text-sm font-semibold text-brand-ink">Quantity to return</label>
                             <input
                               type="number"
                               min={1}
-                              max={item.quantity}
+                              max={maxReturnable}
                               value={draft.qty}
                               onChange={(e) =>
                                 patchItem(item.id, {
-                                  qty: Math.min(item.quantity, Math.max(1, Number(e.target.value) || 1))
+                                  qty: Math.min(maxReturnable, Math.max(1, Number(e.target.value) || 1))
                                 })
                               }
                               className="mt-1 w-24 rounded-xl border border-brand-cream-dark px-3 py-2 text-sm"

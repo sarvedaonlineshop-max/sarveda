@@ -232,6 +232,58 @@ export const RETURN_EVIDENCE_HINT: Record<string, string> = {
   changed_mind: "Clear photos of the product condition before reverse pickup."
 };
 
+export type CustomerReturnEligibilityLine = {
+  orderItemId: string;
+  nameSnapshot: string;
+  skuSnapshot: string;
+  orderedQty: number;
+  pendingQty: number;
+  moreInfoQty: number;
+  approvedQty: number;
+  rejectedLockedQty: number;
+  alreadyInReturnQty: number;
+  alreadyReturnedQty: number;
+  remainingEligibleQty: number;
+  maxReturnableQty: number;
+  unavailableReason: string | null;
+  relatedCaseRefs: Array<{
+    caseNumber: string;
+    requestId: string;
+    qtySelected: number;
+    reviewDecision: string;
+    caseStatus: string;
+  }>;
+};
+
+export type CustomerReturnEligibilityResponse = {
+  orderNumber: string;
+  currency: string;
+  orderEligible: boolean;
+  orderBlockCode: string | null;
+  orderMessage: string | null;
+  returnWindowEndsAt: string | null;
+  lines: CustomerReturnEligibilityLine[];
+};
+
+/** Authoritative per-line return qty from backend (MAN-008E). */
+export async function fetchReturnEligibility(
+  orderNumber: string
+): Promise<CustomerReturnEligibilityResponse> {
+  const res = await fetch(
+    `${getApiBase()}/api/orders/${encodeURIComponent(orderNumber)}/return-eligibility`,
+    { credentials: "include" }
+  );
+  const json = (await res.json()) as {
+    success?: boolean;
+    data?: CustomerReturnEligibilityResponse;
+    error?: string;
+  };
+  if (!res.ok || !json.success || !json.data) {
+    throw new Error(json.error || "Could not load return eligibility");
+  }
+  return json.data;
+}
+
 export async function submitOrderRefundRequest(
   orderNumber: string,
   payload: {

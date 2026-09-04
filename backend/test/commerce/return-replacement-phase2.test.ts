@@ -370,4 +370,34 @@ describe("MAN-008E Chunk 1A — per-line return eligibility qty", () => {
     expect(mixed).toBe(3);
     expect(Math.max(0, 5 - mixed)).toBe(2);
   });
+
+  it("customer snapshot buckets match Dummy/Test live shape", async () => {
+    const { summarizeReturnCaseLineQtys } = await import(
+      "../../src/modules/orders/return-eligibility.service"
+    );
+    const dummy = summarizeReturnCaseLineQtys([
+      {
+        qtySelected: 2,
+        reviewDecision: "APPROVED",
+        caseStatus: "PARTIALLY_APPROVED",
+        caseNumber: "RC-202609-00002",
+        requestId: "req-1"
+      }
+    ]);
+    expect(dummy.approvedQty).toBe(2);
+    expect(dummy.rejectedLockedQty).toBe(0);
+    expect(dummy.approvedQty + dummy.pendingQty + dummy.moreInfoQty).toBe(2);
+
+    const test = summarizeReturnCaseLineQtys([
+      {
+        qtySelected: 1,
+        reviewDecision: "REJECTED",
+        caseStatus: "PARTIALLY_APPROVED",
+        caseNumber: "RC-202609-00002",
+        requestId: "req-1"
+      }
+    ]);
+    expect(test.rejectedLockedQty).toBe(1);
+    expect(test.approvedQty).toBe(0);
+  });
 });

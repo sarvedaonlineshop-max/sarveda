@@ -8,10 +8,45 @@ import { MobileSubpageHeader } from "@/components/layout/MobileSubpageHeader";
 import { OrderServiceRequestForm } from "@/components/orders/OrderServiceRequestForm";
 import { fetchMe } from "@/lib/auth-client";
 import {
+  fetchReturnEligibility,
   REFUND_AFTER_DELIVERY_REASONS,
-  submitOrderRefundRequest
+  submitOrderRefundRequest,
+  type CustomerReturnEligibilityLine
 } from "@/lib/order-service-request";
-import { fetchMyOrders } from "@/lib/orders-api";
+import { fetchMyOrders, type OrderLineItem } from "@/lib/orders-api";
+
+type ReturnLineItem = OrderLineItem & {
+  returnEligibility?: {
+    orderedQty: number;
+    alreadyInReturnQty: number;
+    rejectedLockedQty: number;
+    remainingEligibleQty: number;
+    maxReturnableQty: number;
+    unavailableReason: string | null;
+  };
+};
+
+function toFormLine(
+  orderLine: OrderLineItem,
+  elig: CustomerReturnEligibilityLine | undefined
+): ReturnLineItem {
+  const maxReturnableQty = elig?.maxReturnableQty ?? 0;
+  return {
+    ...orderLine,
+    // Selector ceiling = backend remaining; purchased qty kept in returnEligibility.orderedQty
+    quantity: Math.max(0, maxReturnableQty),
+    returnEligibility: elig
+      ? {
+          orderedQty: elig.orderedQty,
+          alreadyInReturnQty: elig.alreadyInReturnQty,
+          rejectedLockedQty: elig.rejectedLockedQty,
+          remainingEligibleQty: elig.remainingEligibleQty,
+          maxReturnableQty: elig.maxReturnableQty,
+          unavailableReason: elig.unavailableReason
+        }
+      : undefined
+  };
+}
 
 export default function ReturnOrderRequestPage() {
   const params = useParams();
@@ -19,9 +54,7 @@ export default function ReturnOrderRequestPage() {
   const orderNumber = String(params.orderNumber ?? "");
   const [ready, setReady] = useState(false);
   const [blocked, setBlocked] = useState<string | null>(null);
-  const [lineItems, setLineItems] = useState<
-    Array<{ id: string; title: string; quantity: number; lineTotalInPaise: number; skuSnapshot?: string }>
-  >([]);
+  const [lineItems, setLineItems] = useState<ReturnLineItem[]>([]);
   const [currency, setCurrency] = useState("INR");
 
   useEffect(() => {
@@ -38,23 +71,41 @@ export default function ReturnOrderRequestPage() {
         if (!cancelled) setBlocked("Order not found.");
         return;
       }
-      if (!order.canRefundRequest) {
-        if (!cancelled) {
-          setBlocked(
-            order.serviceRequest?.status === "PENDING_APPROVAL"
-              ? "A return/refund request is already waiting for approval."
-              : "This order is not eligible for return or replace online. The 7-day window after delivery may have ended."
-          );
-        }
-        return;
-      }
       if (!order.lineItems?.length) {
         if (!cancelled) setBlocked("Order items could not be loaded. Please try again later.");
         return;
       }
+
+      let eligibility;
+      try {
+        eligibility = await fetchReturnEligibility(orderNumber);
+      } catch {
+        if (!cancelled) setBlocked("Could not load return eligibility. Please try again later.");
+        return;
+      }
+
+      if (!eligibility.orderEligible && eligibility.orderMessage) {
+        if (!cancelled) setBlocked(eligibility.orderMessage);
+        return;
+      }
+
+      const byId = new Map(eligibility.lines.map((l) => [l.orderItemId, l]));
+      const mapped = order.lineItems.map((li) => toFormLine(li, byId.get(li.id)));
+      const anySelectable = mapped.some((l) => (l.returnEligibility?.remainingEligibleQty ?? 0) > 0);
+      if (!anySelectable) {
+        if (!cancelled) {
+          setBlocked(
+            mapped.find((l) => l.returnEligibility?.unavailableReason)?.returnEligibility
+              ?.unavailableReason ??
+              "No units are currently eligible for a new return request."
+          );
+        }
+        return;
+      }
+
       if (!cancelled) {
-        setLineItems(order.lineItems);
-        setCurrency(order.currency);
+        setLineItems(mapped);
+        setCurrency(eligibility.currency || order.currency);
         setReady(true);
       }
     })();

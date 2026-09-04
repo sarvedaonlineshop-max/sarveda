@@ -37,6 +37,7 @@ export type ReturnReplacementAdminContext = {
       nameSnapshot: string;
       qtySelected: number;
       reasonLabel: string;
+      reviewDecision?: string | null;
       requestedResolution?: string | null;
       refundAmountInPaise?: number | null;
       refundedAt?: string | null;
@@ -290,10 +291,17 @@ This action will initiate a real payment gateway refund.`}
         >
           <p className="font-semibold">{item.nameSnapshot}</p>
           <p className="text-xs text-stone-500">
-            Approved qty {item.qtySelected}
-            {ctx.orderItems?.find((o) => o.id === item.orderItemId)?.qtyOrdered != null
-              ? ` of ${ctx.orderItems.find((o) => o.id === item.orderItemId)!.qtyOrdered}`
-              : ""}{" "}
+            {(() => {
+              const decision = item.reviewDecision ?? "PENDING";
+              const ordered = ctx.orderItems?.find((o) => o.id === item.orderItemId)?.qtyOrdered;
+              const of = ordered != null ? ` of ${ordered}` : "";
+              if (decision === "REJECTED") return `Rejected qty ${item.qtySelected}${of}`;
+              if (decision === "MORE_INFO_REQUIRED") {
+                return `More info requested for ${item.qtySelected}${of}`;
+              }
+              if (decision === "PENDING") return `Pending qty ${item.qtySelected}${of}`;
+              return `Approved qty ${item.qtySelected}${of}`;
+            })()}{" "}
             · {item.reasonLabel}
             {item.requestedResolution
               ? ` · ${RESOLUTION_LABELS[item.requestedResolution] ?? item.requestedResolution}`
