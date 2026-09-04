@@ -569,14 +569,23 @@ export async function createShipment(
           : "";
       const rmk = typeof body?.rmk === "string" ? body.rmk.trim() : "";
       const pkgStatus = typeof pkg0?.status === "string" ? pkg0.status : "";
-      const detail =
+      const rawDetail =
         [remarks, rmk && rmk !== remarks ? rmk : ""].filter(Boolean).join(" — ") ||
         "Delhivery did not return a waybill";
+      const pinFromRemark = rawDetail.match(/(\d{6})\s+is non[- ]?serviceable pincode/i)?.[1];
+      const failedPin = pinFromRemark || pin;
+      const notServiceable =
+        pkg0?.serviceable === false || /non[- ]?serviceable/i.test(rawDetail);
+      const detail = notServiceable
+        ? failedPin
+          ? `Delhivery cannot deliver to pincode ${failedPin} — this pin is not serviceable. Update the shipping address to a serviceable pincode and try again.`
+          : `Delhivery cannot deliver to this pincode — it is not serviceable. Update the shipping address and try again.`
+        : rawDetail;
       return {
         success: false,
         error: detail,
         code:
-          pkgStatus.toLowerCase() === "fail" || pkg0?.serviceable === false || /non[- ]?serviceable/i.test(detail)
+          pkgStatus.toLowerCase() === "fail" || notServiceable
             ? "DELHIVERY_CREATE"
             : "DELHIVERY_PARSE"
       };
