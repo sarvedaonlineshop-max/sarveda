@@ -1,4 +1,9 @@
-import type { OrderStatus, PaymentStatus } from "@prisma/client";
+import type {
+  OrderStatus,
+  PaymentStatus,
+  Prisma,
+  ReturnLineReviewDecision
+} from "@prisma/client";
 
 import { prisma } from "../../config/db";
 import { orderHasActiveRtoShipment } from "./rto-workflow.service";
@@ -27,6 +32,17 @@ type OrderRow = {
   payments: Array<{ provider: string; status: string }>;
 };
 
+type DbClient = Prisma.TransactionClient | typeof prisma;
+
+/** Case statuses that can still hold per-line return commitments. */
+const COMMITMENT_CASE_STATUSES = new Set([
+  "PENDING_APPROVAL",
+  "MORE_INFO_REQUIRED",
+  "PARTIALLY_APPROVED",
+  "APPROVED",
+  "NEEDS_DISCUSSION"
+]);
+
 export function resolveDeliveredAtFromOrder(order: {
   status: OrderStatus;
   shipments: Array<{ status: string; deliveredAt: Date | null }>;
@@ -42,7 +58,81 @@ function isPaidForReturn(paymentStatus: PaymentStatus, payments: OrderRow["payme
 }
 
 /**
+ * Per-line qty that is unavailable for a new return request.
+ * Uses reviewDecision (not case status alone). REJECTED is locked for launch.
+ */
+export function unavailableReturnQtyFromCaseLines(
+  lines: Array<{
+    qtySelected: number;
+    reviewDecision: ReturnLineReviewDecision | string;
+    caseStatus: string;
+  }>
+): number {
+  let unavailable = 0;
+  for (const line of lines) {
+    const decision = line.reviewDecision;
+    const status = line.caseStatus;
+
+    // Launch: rejected qty stays locked (no silent resubmit).
+    if (decision === "REJECTED" || status === "REJECTED") {
+      unavailable += line.qtySelected;
+      continue;
+    }
+
+    if (!COMMITMENT_CASE_STATUSES.has(status)) {
+      continue;
+    }
+
+    // PENDING / MORE_INFO_REQUIRED / APPROVED all reduce availability on open/partial/approved cases.
+    if (
+      decision === "PENDING" ||
+      decision === "MORE_INFO_REQUIRED" ||
+      decision === "APPROVED"
+    ) {
+      unavailable += line.qtySelected;
+    }
+  }
+  return unavailable;
+}
+
+async function caseUnavailableQtyForOrderItem(
+  orderItemId: string,
+  db: DbClient = prisma
+): Promise<number> {
+  const lines = await db.orderServiceRequestItem.findMany({
+    where: {
+      orderItemId,
+      request: { type: "REFUND_AFTER_DELIVERY" }
+    },
+    select: {
+      qtySelected: true,
+      reviewDecision: true,
+      request: { select: { status: true } }
+    }
+  });
+
+  return unavailableReturnQtyFromCaseLines(
+    lines.map((line) => ({
+      qtySelected: line.qtySelected,
+      reviewDecision: line.reviewDecision,
+      caseStatus: line.request.status
+    }))
+  );
+}
+
+/** Customer-facing qty rejection used by submit guard. */
+export function qtyExceedsAvailableMessage(remaining: number): string {
+  if (remaining <= 0) {
+    return "No units are currently eligible for a new return request.";
+  }
+  return remaining === 1
+    ? "Only 1 unit is currently eligible for a new return request."
+    : `Only ${remaining} units are currently eligible for a new return request.`;
+}
+
+/**
  * Authoritative post-delivery return/replacement eligibility for one order line + qty.
+ * Pass `db` (transaction client) when rechecking under a row lock.
  */
 export async function getReturnEligibility(opts: {
   order: OrderRow;
@@ -50,7 +140,9 @@ export async function getReturnEligibility(opts: {
   qtyRequested: number;
   customerId?: string;
   customerEmail?: string;
+  db?: DbClient;
 }): Promise<ReturnEligibilityResult> {
+  const db = opts.db ?? prisma;
   const deliveredAt =
     resolveDeliveredAtFromOrder(opts.order) ?? resolveDeliveredAt(opts.order as Parameters<typeof resolveDeliveredAt>[0]);
 
@@ -93,7 +185,7 @@ export async function getReturnEligibility(opts: {
     };
   }
 
-  const pending = await prisma.orderServiceRequest.findFirst({
+  const pending = await db.orderServiceRequest.findFirst({
     where: { orderId: opts.order.id, status: "PENDING_APPROVAL", type: "REFUND_AFTER_DELIVERY" }
   });
   if (pending) {
@@ -106,7 +198,7 @@ export async function getReturnEligibility(opts: {
     };
   }
 
-  const item = await prisma.orderItem.findFirst({
+  const item = await db.orderItem.findFirst({
     where: { id: opts.orderItemId, orderId: opts.order.id }
   });
   if (!item) {
@@ -117,25 +209,10 @@ export async function getReturnEligibility(opts: {
     };
   }
 
-  const alreadyReturned = await getReturnedQuantityForOrderItem(prisma, opts.orderItemId);
-
-  // Quantities on non-terminal return cases are reserved and cannot be requested again.
-  // REJECTED cases free their qty; APPROVED / PENDING_APPROVAL consume it for the life of the case.
-  const inFlightCaseQty = await prisma.orderServiceRequestItem.aggregate({
-    where: {
-      orderItemId: opts.orderItemId,
-      request: {
-        type: "REFUND_AFTER_DELIVERY",
-        status: { in: ["PENDING_APPROVAL", "APPROVED"] }
-      }
-    },
-    _sum: { qtySelected: true }
-  });
-
-  const caseCommitted = inFlightCaseQty._sum.qtySelected ?? 0;
-  // Restock events outside a case (pre-dispatch MAN-006 / RTO) still consume returnable units.
-  // Case qty already covers return-for-refund and replacement resolutions on those lines.
-  const maxReturnableQty = Math.max(0, item.qtyOrdered - Math.max(alreadyReturned, caseCommitted));
+  const alreadyReturned = await getReturnedQuantityForOrderItem(db, opts.orderItemId);
+  const caseUnavailable = await caseUnavailableQtyForOrderItem(opts.orderItemId, db);
+  // Restock events outside a case still consume returnable units; case lines use per-line decisions.
+  const maxReturnableQty = Math.max(0, item.qtyOrdered - Math.max(alreadyReturned, caseUnavailable));
 
   if (opts.qtyRequested <= 0 || opts.qtyRequested > maxReturnableQty) {
     return {

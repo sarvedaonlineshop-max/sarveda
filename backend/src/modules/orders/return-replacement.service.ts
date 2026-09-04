@@ -8,7 +8,10 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "../../config/db";
 import { executeAuthoritativePartialRefund } from "../payments/partial-refund-settlement.service";
 import { pickCapturedPaymentForRefund } from "../payments/payment-selection";
-import { getReturnEligibility } from "./return-eligibility.service";
+import {
+  getReturnEligibility,
+  qtyExceedsAvailableMessage
+} from "./return-eligibility.service";
 import {
   allowedResolutionsForReason,
   evidenceRequiredForReason,
@@ -167,6 +170,9 @@ export async function submitReturnReplacementRequest(opts: {
     uniquePolicies.length === 1 ? uniquePolicies[0]! : resolveShippingPolicyForReasonCode(opts.items[0].reasonCode);
 
   for (const item of opts.items) {
+    if (!orderItemMap.has(item.orderItemId)) {
+      throw Object.assign(new Error("Invalid item in request"), { statusCode: 400, code: "BAD_REQUEST" });
+    }
     if (!isReturnReasonCode(item.reasonCode)) {
       throw Object.assign(new Error("Invalid reason"), { statusCode: 400, code: "BAD_REASON" });
     }
@@ -177,17 +183,10 @@ export async function submitReturnReplacementRequest(opts: {
         code: "RESOLUTION_NOT_ALLOWED"
       });
     }
-    const eligibility = await getReturnEligibility({
-      order,
-      orderItemId: item.orderItemId,
-      qtyRequested: item.qty,
-      customerId: opts.userId,
-      customerEmail: email
-    });
-    if (!eligibility.eligible) {
-      throw Object.assign(new Error(eligibility.customerMessage ?? "Not eligible"), {
+    if (!Number.isInteger(item.qty) || item.qty <= 0) {
+      throw Object.assign(new Error("Quantity must be a positive whole number"), {
         statusCode: 400,
-        code: eligibility.blockCode ?? "NOT_ELIGIBLE"
+        code: "BAD_QTY"
       });
     }
   }
@@ -232,6 +231,43 @@ export async function submitReturnReplacementRequest(opts: {
     });
   });
 
+  const requestedByOrderItem = new Map<string, number>();
+  for (const item of parsedItems) {
+    requestedByOrderItem.set(
+      item.orderItemId,
+      (requestedByOrderItem.get(item.orderItemId) ?? 0) + item.qtySelected
+    );
+  }
+
+  function assertEligibilityOrThrow(
+    eligibility: Awaited<ReturnType<typeof getReturnEligibility>>
+  ): void {
+    if (eligibility.eligible) return;
+    if (eligibility.blockCode === "QTY_EXCEEDS_AVAILABLE") {
+      throw Object.assign(new Error(qtyExceedsAvailableMessage(eligibility.maxReturnableQty ?? 0)), {
+        statusCode: 400,
+        code: "QTY_EXCEEDS_AVAILABLE"
+      });
+    }
+    throw Object.assign(new Error(eligibility.customerMessage ?? "Not eligible"), {
+      statusCode: eligibility.blockCode === "REQUEST_PENDING" ? 409 : 400,
+      code: eligibility.blockCode ?? "NOT_ELIGIBLE"
+    });
+  }
+
+  // Fail-fast outside the lock (same rules); authoritative recheck happens under FOR UPDATE.
+  for (const [orderItemId, qtyRequested] of requestedByOrderItem) {
+    assertEligibilityOrThrow(
+      await getReturnEligibility({
+        order,
+        orderItemId,
+        qtyRequested,
+        customerId: opts.userId,
+        customerEmail: email
+      })
+    );
+  }
+
   const deliveredAt =
     order.shipments.find((s) => s.deliveredAt)?.deliveredAt ??
     order.statusHistory.find((h) => h.toStatus === "DELIVERED")?.createdAt ??
@@ -272,9 +308,42 @@ export async function submitReturnReplacementRequest(opts: {
       ? `${parsedItems[0].nameSnapshot} — ${parsedItems[0].reasonLabel}`
       : `${parsedItems.length} items — return/replacement`;
 
-  const { nextReturnCaseNumber } = await import("./return-case-number");
+  // S3 uploads outside the DB lock so concurrent waiters are not held on network I/O.
+  const itemCreateRows = await Promise.all(
+    parsedItems.map(async (item) => {
+      const itemId = randomUUID();
+      const photoRows = item.photos.length ? await uploadRequestPhotos(requestId, item.photos) : [];
+      return {
+        id: itemId,
+        orderItemId: item.orderItemId,
+        nameSnapshot: item.nameSnapshot,
+        skuSnapshot: item.skuSnapshot,
+        qtySelected: item.qtySelected,
+        reasonCode: item.reasonCode,
+        reasonLabel: item.reasonLabel,
+        shippingRefundPolicy: resolveShippingPolicyForReasonCode(item.reasonCode),
+        reviewDecision: "PENDING" as const,
+        requestedResolution: item.requestedResolution,
+        requestedVariantId: item.requestedVariantId,
+        otherMessage: item.otherMessage,
+        message: item.message,
+        photos: {
+          create: photoRows.map((p) => ({
+            requestId,
+            s3Key: p.s3Key,
+            s3Url: p.s3Url,
+            fileName: p.fileName,
+            fileSizeBytes: p.fileSizeBytes,
+            mimeType: p.mimeType,
+            mediaKind: p.mediaKind
+          }))
+        }
+      };
+    })
+  );
+
+  const { nextReturnCaseNumberInTx } = await import("./return-case-number");
   const { appendCaseEvent } = await import("./return-case-events.service");
-  const caseNumber = await nextReturnCaseNumber();
 
   const declarationsAcceptedAt = new Date();
   const declarationsJson = {
@@ -284,70 +353,71 @@ export async function submitReturnReplacementRequest(opts: {
     acceptedAt: declarationsAcceptedAt.toISOString()
   };
 
-  const created = await prisma.orderServiceRequest.create({
-    data: {
-      id: requestId,
-      caseNumber,
-      orderId: order.id,
-      orderNumber: order.orderNumber,
-      customerId: opts.userId,
-      customerEmail: email,
-      type: "REFUND_AFTER_DELIVERY",
-      channel: "WEBSITE",
-      requestIntent: "REFUND",
-      reasonCode: parsedItems.length === 1 ? parsedItems[0].reasonCode : "multi",
-      reasonLabel: summaryLabel,
-      message: opts.message?.trim() || null,
-      shippingRefundPolicy: shippingPolicy,
-      returnPhysicalStatus: needsPhysicalReturn ? "AWAITING_RETURN" : "NOT_REQUIRED",
-      resolutionStatus: "NONE",
-      offeredResolution: parsedItems[0]?.requestedResolution ?? null,
-      declarationsJson,
-      declarationsAcceptedAt,
-      returnPayload,
-      items: {
-        create: await Promise.all(
-          parsedItems.map(async (item) => {
-            const itemId = randomUUID();
-            const photoRows = item.photos.length ? await uploadRequestPhotos(requestId, item.photos) : [];
-            return {
-              id: itemId,
-              orderItemId: item.orderItemId,
-              nameSnapshot: item.nameSnapshot,
-              skuSnapshot: item.skuSnapshot,
-              qtySelected: item.qtySelected,
-              reasonCode: item.reasonCode,
-              reasonLabel: item.reasonLabel,
-              shippingRefundPolicy: resolveShippingPolicyForReasonCode(item.reasonCode),
-              reviewDecision: "PENDING" as const,
-              requestedResolution: item.requestedResolution,
-              requestedVariantId: item.requestedVariantId,
-              otherMessage: item.otherMessage,
-              message: item.message,
-              photos: {
-                create: photoRows.map((p) => ({
-                  requestId,
-                  s3Key: p.s3Key,
-                  s3Url: p.s3Url,
-                  fileName: p.fileName,
-                  fileSizeBytes: p.fileSizeBytes,
-                  mimeType: p.mimeType,
-                  mediaKind: p.mediaKind
-                }))
-              }
-            };
-          })
-        )
+  const created = await prisma.$transaction(async (tx) => {
+    // Serialize return submits per order — does not lock unrelated orders.
+    await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${order.id}::uuid FOR UPDATE`;
+
+    const pendingUnderLock = await tx.orderServiceRequest.findFirst({
+      where: {
+        orderId: order.id,
+        status: { in: ["PENDING_APPROVAL", "MORE_INFO_REQUIRED"] },
+        type: "REFUND_AFTER_DELIVERY"
       }
-    },
-    include: { items: { include: { photos: true } }, photos: true }
+    });
+    if (pendingUnderLock) {
+      throw Object.assign(new Error("A return or replacement request is already waiting for review"), {
+        statusCode: 409,
+        code: "REQUEST_PENDING"
+      });
+    }
+
+    for (const [orderItemId, qtyRequested] of requestedByOrderItem) {
+      assertEligibilityOrThrow(
+        await getReturnEligibility({
+          order,
+          orderItemId,
+          qtyRequested,
+          customerId: opts.userId,
+          customerEmail: email,
+          db: tx
+        })
+      );
+    }
+
+    const caseNumber = await nextReturnCaseNumberInTx(tx);
+
+    return tx.orderServiceRequest.create({
+      data: {
+        id: requestId,
+        caseNumber,
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        customerId: opts.userId,
+        customerEmail: email,
+        type: "REFUND_AFTER_DELIVERY",
+        channel: "WEBSITE",
+        requestIntent: "REFUND",
+        reasonCode: parsedItems.length === 1 ? parsedItems[0].reasonCode : "multi",
+        reasonLabel: summaryLabel,
+        message: opts.message?.trim() || null,
+        shippingRefundPolicy: shippingPolicy,
+        returnPhysicalStatus: needsPhysicalReturn ? "AWAITING_RETURN" : "NOT_REQUIRED",
+        resolutionStatus: "NONE",
+        offeredResolution: parsedItems[0]?.requestedResolution ?? null,
+        declarationsJson,
+        declarationsAcceptedAt,
+        returnPayload,
+        items: { create: itemCreateRows }
+      },
+      include: { items: { include: { photos: true } }, photos: true }
+    });
   });
 
   await appendCaseEvent({
     requestId: created.id,
     eventType: "CASE_CREATED",
-    message: `Case ${caseNumber} created`,
-    payloadJson: { type: "REFUND_AFTER_DELIVERY", caseNumber },
+    message: `Case ${created.caseNumber} created`,
+    payloadJson: { type: "REFUND_AFTER_DELIVERY", caseNumber: created.caseNumber },
     actor: { userId: opts.userId, email, role: "CUSTOMER" }
   });
   if (parsedItems.some((p) => p.photos.length)) {
@@ -363,7 +433,7 @@ export async function submitReturnReplacementRequest(opts: {
     const { notifyReturnCaseEvent } = await import("./return-case-notifications.service");
     await notifyReturnCaseEvent(created.id, "RETURN_REQUEST_SUBMITTED", {
       orderNumber: order.orderNumber,
-      caseNumber,
+      caseNumber: created.caseNumber,
       customerEmail: email,
       customerPhone: order.phone,
       itemSummary: parsedItems.map((p) => `${p.nameSnapshot} × ${p.qtySelected}`).join("; "),

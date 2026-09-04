@@ -10,7 +10,10 @@ import {
   prisma
 } from "../helpers/commerce";
 import { completePaidOrder } from "../../src/modules/payments/razorpay.verify";
-import { getReturnEligibility } from "../../src/modules/orders/return-eligibility.service";
+import {
+  getReturnEligibility,
+  unavailableReturnQtyFromCaseLines
+} from "../../src/modules/orders/return-eligibility.service";
 import {
   approveReturnReplacementRequest,
   executeReturnReplacementRefund,
@@ -320,5 +323,51 @@ describe("Phase 2 return / replacement", () => {
     await cleanupTestOrder(order.id);
     await prisma.user.delete({ where: { id: user.id } });
     await cleanupTestProduct(bundle);
+  });
+});
+
+describe("MAN-008E Chunk 1A — per-line return eligibility qty", () => {
+  it("Dummy ordered3 approved2 on PARTIALLY_APPROVED → unavailable 2 (remaining 1)", () => {
+    const unavailable = unavailableReturnQtyFromCaseLines([
+      {
+        qtySelected: 2,
+        reviewDecision: "APPROVED",
+        caseStatus: "PARTIALLY_APPROVED"
+      }
+    ]);
+    expect(unavailable).toBe(2);
+    expect(Math.max(0, 3 - unavailable)).toBe(1);
+  });
+
+  it("Test ordered2 rejected1 on PARTIALLY_APPROVED → locked 1 (remaining 1)", () => {
+    const unavailable = unavailableReturnQtyFromCaseLines([
+      {
+        qtySelected: 1,
+        reviewDecision: "REJECTED",
+        caseStatus: "PARTIALLY_APPROVED"
+      }
+    ]);
+    expect(unavailable).toBe(1);
+    expect(Math.max(0, 2 - unavailable)).toBe(1);
+  });
+
+  it("PENDING and MORE_INFO_REQUIRED reduce availability; untouched stays free", () => {
+    expect(
+      unavailableReturnQtyFromCaseLines([
+        { qtySelected: 1, reviewDecision: "PENDING", caseStatus: "PENDING_APPROVAL" }
+      ])
+    ).toBe(1);
+    expect(
+      unavailableReturnQtyFromCaseLines([
+        { qtySelected: 2, reviewDecision: "MORE_INFO_REQUIRED", caseStatus: "MORE_INFO_REQUIRED" }
+      ])
+    ).toBe(2);
+    // Mixed partial case: approved 2 + rejected 1 on ordered 5 → remaining 2 untouched
+    const mixed = unavailableReturnQtyFromCaseLines([
+      { qtySelected: 2, reviewDecision: "APPROVED", caseStatus: "PARTIALLY_APPROVED" },
+      { qtySelected: 1, reviewDecision: "REJECTED", caseStatus: "PARTIALLY_APPROVED" }
+    ]);
+    expect(mixed).toBe(3);
+    expect(Math.max(0, 5 - mixed)).toBe(2);
   });
 });
