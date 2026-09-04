@@ -545,6 +545,58 @@ export async function adminMarkReturnDisposition(
   if (!res.ok || !json.success) throw new Error(json.error || "Failed");
 }
 
+export async function adminFetchReturnRefundPreview(orderId: string, requestId: string) {
+  const res = await fetch(
+    `${getApiBase()}/api/admin/orders/${encodeURIComponent(orderId)}/service-requests/${encodeURIComponent(requestId)}/refund-preview`,
+    { method: "GET", credentials: "include", headers: { Accept: "application/json" } }
+  );
+  const json = (await res.json()) as {
+    success?: boolean;
+    error?: string;
+    data?: ReturnRefundPreview;
+  };
+  if (!res.ok || !json.success || !json.data) {
+    throw new Error(json.error || "Could not load refund preview");
+  }
+  return json.data;
+}
+
+export type ReturnRefundPreview = {
+  requestId: string;
+  orderId: string;
+  orderNumber: string;
+  caseNumber: string | null;
+  executable: boolean;
+  blockCode?: string;
+  blockMessage?: string;
+  shippingPolicy: string;
+  paymentProvider: string | null;
+  refundDestinationLabel: string;
+  currency: string;
+  lines: Array<{
+    requestItemId: string;
+    orderItemId: string;
+    nameSnapshot: string;
+    skuSnapshot: string;
+    qtySelected: number;
+    qtyOrdered: number;
+    merchandiseRefundPaise: number;
+    shippingRefundPaise: number;
+    otherAdjustmentPaise: number;
+    alreadyRefundedPaise: number;
+    lineTotalRefundPaise: number;
+    explanation: string;
+  }>;
+  merchandiseRefundPaise: number;
+  shippingRefundPaise: number;
+  otherAdjustmentPaise: number;
+  alreadyRefundedPaise: number;
+  totalRefundNowPaise: number;
+  remainingGatewayPaise: number;
+  approvedQtySelected: number;
+  orderedQtyOnLines: number;
+};
+
 export async function adminProcessReturnRefund(
   orderId: string,
   requestId: string,
@@ -559,8 +611,19 @@ export async function adminProcessReturnRefund(
       body: JSON.stringify({ codRefundNote: codRefundNote?.trim() || undefined })
     }
   );
-  const json = (await res.json()) as { success?: boolean; error?: string; data?: { message: string } };
-  if (!res.ok || !json.success) throw new Error(json.error || "Refund failed");
+  const json = (await res.json()) as {
+    success?: boolean;
+    error?: string;
+    data?: {
+      message: string;
+      totalRefundedInPaise: number;
+      refundIds: string[];
+      preview?: ReturnRefundPreview;
+    };
+  };
+  if (!res.ok || !json.success || !json.data) {
+    throw new Error(json.error || "Refund failed");
+  }
   return json.data;
 }
 

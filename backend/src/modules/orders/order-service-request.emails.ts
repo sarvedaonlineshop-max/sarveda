@@ -102,6 +102,8 @@ export async function notifyServiceRequestReviewed(opts: {
   type: "CANCEL_BEFORE_DELIVERY" | "REFUND_AFTER_DELIVERY" | "ADJUST_BEFORE_DELIVERY";
   approved: boolean;
   adminNote?: string | null;
+  /** When approving a physical-return case, customer copy mentions receive + inspect first. */
+  physicalReturnRequired?: boolean;
 }): Promise<void> {
   const kind = serviceRequestKindLabel(opts.type);
   const decision = opts.approved ? "approved" : "declined";
@@ -113,15 +115,30 @@ export async function notifyServiceRequestReviewed(opts: {
   const note = opts.adminNote?.trim() ? escapeHtml(opts.adminNote.trim()) : "";
   const orderNo = escapeHtml(opts.orderNumber);
 
+  let approvalBody: string;
+  if (!opts.approved) {
+    approvalBody = `Your <strong>${kind.toLowerCase()}</strong> request for order <strong>${orderNo}</strong> was reviewed. Unfortunately we could not approve it at this time.`;
+  } else if (opts.type === "REFUND_AFTER_DELIVERY" && opts.physicalReturnRequired) {
+    approvalBody =
+      `Your return/refund request for order <strong>${orderNo}</strong> has been <strong>approved</strong>. ` +
+      `Your refund will be processed after we receive and inspect the returned item.`;
+  } else if (opts.type === "REFUND_AFTER_DELIVERY") {
+    approvalBody =
+      `Your return/refund request for order <strong>${orderNo}</strong> has been <strong>approved</strong>. ` +
+      `Your refund is being processed.`;
+  } else {
+    approvalBody = `Good news — your <strong>${kind.toLowerCase()}</strong> request for order <strong>${orderNo}</strong> has been <strong>approved</strong>.`;
+  }
+
   const customerHtml = buildShopEmail(
     "",
     [
-      opts.approved
-        ? `Good news — your <strong>${kind.toLowerCase()}</strong> request for order <strong>${orderNo}</strong> has been <strong>approved</strong>.`
-        : `Your <strong>${kind.toLowerCase()}</strong> request for order <strong>${orderNo}</strong> was reviewed. Unfortunately we could not approve it at this time.`,
+      approvalBody,
       note ? `<strong>Note from Sarveda:</strong> ${note}` : "",
       opts.approved
-        ? "If a refund applies, it will follow your payment provider's timeline."
+        ? opts.type === "REFUND_AFTER_DELIVERY" && opts.physicalReturnRequired
+          ? "Once inspection is complete, any refund will follow your payment provider's timeline."
+          : "If a refund applies, it will follow your payment provider's timeline."
         : "If you have questions, please reply to this email or contact us on WhatsApp."
     ].filter(Boolean),
     {

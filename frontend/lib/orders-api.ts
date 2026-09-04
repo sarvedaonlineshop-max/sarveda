@@ -109,6 +109,10 @@ export type OrderSummary = {
     reasonLabel: string;
     message: string | null;
     createdAt: string;
+    returnPhysicalStatus?: string | null;
+    resolutionStatus?: string | null;
+    refundTotalInPaise?: number | null;
+    customerStatus?: { label: string; detail?: string } | null;
   } | null;
   canCancelRequest?: boolean;
   cancelBlockReason?: string | null;

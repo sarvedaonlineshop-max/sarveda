@@ -576,7 +576,8 @@ export async function reviewServiceRequest(opts: {
       customerEmail: request.customerEmail,
       type: request.type,
       approved: true,
-      adminNote: opts.adminNote
+      adminNote: opts.adminNote,
+      physicalReturnRequired: approved!.returnPhysicalStatus !== "NOT_REQUIRED"
     });
     return { ...approved!, photos: approved!.photos ?? [] } as OrderServiceRequest & {
       photos: OrderServiceRequestPhoto[];

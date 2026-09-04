@@ -184,6 +184,10 @@ router.post(
   "/orders/:orderId/service-requests/:requestId/convert-to-cancellation",
   serviceRequest.adminConvertAdjustmentToCancellation
 );
+router.get(
+  "/orders/:orderId/service-requests/:requestId/refund-preview",
+  serviceRequest.adminPreviewReturnRefund
+);
 router.post("/orders/:orderId/service-requests/:requestId/refund", serviceRequest.adminProcessServiceRequestRefund);
 router.get(
   "/orders/:orderId/service-requests/:requestId/return-workflow",

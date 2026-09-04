@@ -28,6 +28,10 @@ import {
 import { unpaidCheckoutAttemptWhere } from "./abandoned-checkout";
 import { buildCancellationInfo } from "./order-cancellation-info";
 import { deriveCustomerRtoStatus } from "./rto-workflow.service";
+import {
+  deriveCustomerReturnStatus,
+  returnApprovalCustomerMessage
+} from "./return-replacement.service";
 
 const SHIPMENT_CUSTOMER_SELECT = {
   courier: true,
@@ -174,6 +178,9 @@ function serializeOrderSummary(order: {
     reasonLabel: string | null;
     message: string | null;
     createdAt: Date;
+    returnPhysicalStatus?: string;
+    resolutionStatus?: string;
+    refundTotalInPaise?: number | null;
     items?: Array<{ nameSnapshot: string; reasonLabel: string; message: string | null }>;
   }>;
   statusHistory?: Array<{ toStatus: string; reason: string | null; createdAt: Date }>;
@@ -205,6 +212,10 @@ function serializeOrderSummary(order: {
     reasonLabel: string;
     message: string | null;
     createdAt: Date;
+    returnPhysicalStatus?: string | null;
+    resolutionStatus?: string | null;
+    refundTotalInPaise?: number | null;
+    customerStatus?: { label: string; detail?: string } | null;
   } | null;
   canCancelRequest?: boolean;
   cancelBlockReason?: string | null;
@@ -283,7 +294,36 @@ function serializeOrderSummary(order: {
           status: latestRequest.status,
           reasonLabel: latestRequest.reasonLabel ?? "Request submitted",
           message: latestRequest.message,
-          createdAt: latestRequest.createdAt
+          createdAt: latestRequest.createdAt,
+          returnPhysicalStatus: latestRequest.returnPhysicalStatus ?? null,
+          resolutionStatus: latestRequest.resolutionStatus ?? null,
+          refundTotalInPaise: latestRequest.refundTotalInPaise ?? null,
+          customerStatus: (() => {
+            if (latestRequest.type !== "REFUND_AFTER_DELIVERY") return null;
+            if (
+              latestRequest.status === "APPROVED" &&
+              (latestRequest.returnPhysicalStatus === "AWAITING_RETURN" ||
+                latestRequest.returnPhysicalStatus === "NOT_REQUIRED") &&
+              latestRequest.resolutionStatus !== "REFUNDED" &&
+              latestRequest.resolutionStatus !== "REFUND_PROCESSING"
+            ) {
+              return {
+                label:
+                  latestRequest.returnPhysicalStatus === "NOT_REQUIRED"
+                    ? "Refund approved"
+                    : "Return approved",
+                detail: returnApprovalCustomerMessage({
+                  physicalReturnRequired: latestRequest.returnPhysicalStatus !== "NOT_REQUIRED"
+                })
+              };
+            }
+            return deriveCustomerReturnStatus({
+              status: latestRequest.status,
+              returnPhysicalStatus: latestRequest.returnPhysicalStatus ?? "NOT_REQUIRED",
+              resolutionStatus: latestRequest.resolutionStatus ?? "NONE",
+              refundTotalInPaise: latestRequest.refundTotalInPaise
+            });
+          })()
         }
       : null,
     canCancelRequest: canRequestCancel({

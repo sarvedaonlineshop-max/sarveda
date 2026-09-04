@@ -512,9 +512,7 @@ export async function adminProcessServiceRequestRefund(
       include: { items: true }
     });
 
-    if (
-      request?.type === "REFUND_AFTER_DELIVERY"
-    ) {
+    if (request?.type === "REFUND_AFTER_DELIVERY") {
       const { executeReturnReplacementRefund } = await import("./return-replacement.service");
       const result = await executeReturnReplacementRefund({
         requestId,
@@ -535,6 +533,31 @@ export async function adminProcessServiceRequestRefund(
       codRefundNote: body.codRefundNote
     });
     res.json({ success: true, data: result });
+  } catch (err) {
+    const e = err as Error & { statusCode?: number; code?: string };
+    if (e.statusCode) {
+      res.status(e.statusCode).json({ success: false, error: e.message, code: e.code ?? "ERROR" });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function adminPreviewReturnRefund(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { orderId, requestId } = req.params;
+    const { prisma } = await import("../../config/db");
+    const request = await prisma.orderServiceRequest.findFirst({
+      where: { id: requestId, orderId, type: "REFUND_AFTER_DELIVERY" },
+      select: { id: true }
+    });
+    if (!request) {
+      res.status(404).json({ success: false, error: "Return case not found", code: "NOT_FOUND" });
+      return;
+    }
+    const { previewReturnReplacementRefund } = await import("./return-replacement.service");
+    const data = await previewReturnReplacementRefund(requestId);
+    res.json({ success: true, data });
   } catch (err) {
     const e = err as Error & { statusCode?: number; code?: string };
     if (e.statusCode) {

@@ -298,13 +298,32 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
         </div>
       ) : serviceRequest?.status === "APPROVED" ? (
         <div className="border-b border-[#E1F5EE] bg-[#E1F5EE]/50 px-5 py-3 text-sm text-[#085041]">
-          Your{" "}
-          {serviceRequest.type === "ADJUST_BEFORE_DELIVERY"
-            ? "order change"
-            : serviceRequest.type === "CANCEL_BEFORE_DELIVERY"
-              ? "cancellation"
-              : "return/refund"}{" "}
-          request was approved.
+          {serviceRequest.type === "REFUND_AFTER_DELIVERY" ? (
+            <>
+              <p className="font-semibold">
+                {serviceRequest.customerStatus?.label ??
+                  (serviceRequest.resolutionStatus === "REFUNDED"
+                    ? "Refund processed"
+                    : "Return approved")}
+              </p>
+              <p className="mt-0.5">
+                {serviceRequest.customerStatus?.detail ??
+                  (serviceRequest.returnPhysicalStatus === "NOT_REQUIRED"
+                    ? "Your return/refund request has been approved. Your refund is being processed."
+                    : "Your return/refund request has been approved. Your refund will be processed after we receive and inspect the returned item.")}
+              </p>
+            </>
+          ) : (
+            <>
+              Your{" "}
+              {serviceRequest.type === "ADJUST_BEFORE_DELIVERY"
+                ? "order change"
+                : serviceRequest.type === "CANCEL_BEFORE_DELIVERY"
+                  ? "cancellation"
+                  : "return/refund"}{" "}
+              request was approved.
+            </>
+          )}
         </div>
       ) : serviceRequest?.status === "NEEDS_DISCUSSION" ? (
         <div className="border-b border-violet-200 bg-violet-50 px-5 py-3 text-sm text-violet-900">

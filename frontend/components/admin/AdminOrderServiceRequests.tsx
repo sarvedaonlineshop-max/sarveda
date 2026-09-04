@@ -35,6 +35,7 @@ export type AdminServiceRequestRow = {
   type: string;
   status: string;
   reasonLabel: string;
+  caseNumber?: string | null;
   otherMessage?: string | null;
   message?: string | null;
   customerEmail: string;
@@ -45,6 +46,7 @@ export type AdminServiceRequestRow = {
   codRefundNote?: string | null;
   refundTotalInPaise?: number | null;
   refundProcessedAt?: string | null;
+  refundProviderReference?: string | null;
   returnPhysicalStatus?: string | null;
   resolutionStatus?: string | null;
   shippingRefundPolicy?: string | null;
@@ -600,10 +602,14 @@ export function AdminOrderServiceRequests({
                     orderItems: orderCtx.orderItems,
                     request: {
                       id: req.id,
+                      caseNumber: req.caseNumber,
                       status: req.status,
                       returnPhysicalStatus: req.returnPhysicalStatus ?? undefined,
                       resolutionStatus: req.resolutionStatus ?? undefined,
                       shippingRefundPolicy: req.shippingRefundPolicy,
+                      refundTotalInPaise: req.refundTotalInPaise,
+                      refundProcessedAt: req.refundProcessedAt,
+                      refundProviderReference: req.refundProviderReference,
                       items: req.items,
                       returnShipment: req.returnShipment,
                       replacementFulfillments: req.replacementFulfillments
