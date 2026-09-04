@@ -759,11 +759,21 @@ function AdminOrderProductionView({
                 {shipBusy === "create" ? "Creating shipment…" : "Create Shipment"}
               </button>
             ) : null}
-            {awbRows.length ? (
-              <button type="button" disabled={!!shipBusy} onClick={onSyncAllTracking} className="rounded-lg bg-[#1c352a] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
-                {shipBusy === "sync-all" ? "Refreshing…" : "Track Shipment"}
-              </button>
-            ) : null}
+            {awbRows
+              .filter((row) => row.isDelhiveryIntegrated)
+              .map((row) => (
+                <a
+                  key={`label-${row.shipmentId}-${row.awb}`}
+                  href={delhiveryLabelUrl(row.awb)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-lg border border-[#b98a3e] bg-[#fff8e8] px-4 py-2 text-sm font-semibold text-[#1c352a]"
+                >
+                  {awbRows.filter((r) => r.isDelhiveryIntegrated).length > 1
+                    ? `Download label · ${row.awb}`
+                    : "Download label"}
+                </a>
+              ))}
           </div>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-end">
             <div className="flex flex-wrap gap-2 lg:justify-end">
@@ -825,9 +835,22 @@ function AdminOrderProductionView({
                     <div><dt className="text-xs text-stone-500">Carrier</dt><dd>{humanState(row.courier)}</dd></div>
                     <div><dt className="text-xs text-stone-500">AWB / Tracking ID</dt><dd className="font-mono text-xs">{row.awb}</dd></div>
                   </dl>
-                  <div className="flex gap-2">
-                    {row.trackingUrl ? <a href={row.trackingUrl} target="_blank" rel="noopener noreferrer" className={AWB_PILL.track}>Open tracking</a> : null}
-                    {row.isDelhiveryIntegrated ? <button type="button" disabled={!!shipBusy} onClick={() => onTrackOne(row.awb)} className={AWB_PILL.sync}>{shipBusy === row.awb ? "Refreshing…" : "Refresh"}</button> : null}
+                  <div className="flex flex-wrap gap-2">
+                    {row.isDelhiveryIntegrated ? (
+                      <a
+                        href={delhiveryLabelUrl(row.awb)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={AWB_PILL.label}
+                      >
+                        Download label
+                      </a>
+                    ) : null}
+                    {row.trackingUrl ? (
+                      <a href={row.trackingUrl} target="_blank" rel="noopener noreferrer" className={AWB_PILL.track}>
+                        Open tracking
+                      </a>
+                    ) : null}
                   </div>
                 </div>
               ))}

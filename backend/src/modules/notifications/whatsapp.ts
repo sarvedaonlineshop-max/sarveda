@@ -1,8 +1,38 @@
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
+import { getRedisConnection } from "../../config/redisConnection";
 import type { OrderEmailEvent } from "./email";
 
 type TemplateParams = string[];
+
+/** Events that must fire at most once per order (AWB create + Mark Shipped both call order_shipped). */
+const DEDUPE_EVENTS = new Set<OrderEmailEvent>([
+  "order_confirmed",
+  "order_processing",
+  "order_shipped",
+  "order_delivered",
+  "order_returned",
+  "order_cancelled"
+]);
+const WA_DEDUPE_TTL_SEC = 30 * 24 * 60 * 60;
+
+async function claimWhatsAppSend(orderId: string, event: OrderEmailEvent): Promise<boolean> {
+  if (!DEDUPE_EVENTS.has(event)) return true;
+  const redis = getRedisConnection();
+  if (!redis) return true;
+  const key = `wa-notify:${orderId}:${event}`;
+  try {
+    const ok = await redis.set(key, "1", "EX", WA_DEDUPE_TTL_SEC, "NX");
+    if (ok !== "OK") {
+      logger.info("whatsapp_skipped_dedupe", { orderId, event, key });
+      return false;
+    }
+    return true;
+  } catch (err) {
+    logger.warn("whatsapp_dedupe_redis_failed", { orderId, event, err });
+    return true;
+  }
+}
 
 const TEMPLATE_BY_EVENT: Record<OrderEmailEvent, string> = {
   order_confirmed: "order_confirmed",
@@ -265,6 +295,10 @@ function buildBodyParams(
 export async function sendOrderWhatsApp(orderId: string, event: OrderEmailEvent): Promise<void> {
   if (!isExotelConfigured()) {
     logger.info("whatsapp_skipped_not_configured", { orderId, event });
+    return;
+  }
+
+  if (!(await claimWhatsAppSend(orderId, event))) {
     return;
   }
 

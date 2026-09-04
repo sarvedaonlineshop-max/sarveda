@@ -142,11 +142,16 @@ function resolveSellerReturn(
 ): { sellerName: string; sellerAddress: string; gst: string; returnAddr: string } {
   const defaults = getLabelAddressDefaults();
   const sellerName = String(pkg.snm ?? options?.sellerName ?? defaults.sellerName).trim() || defaults.sellerName;
-  const sellerAddress = String(pkg.sadd ?? options?.sellerAddress ?? defaults.sellerAddress)
-    .replace(/\s+/g, " ")
-    .trim();
   const gst = String(pkg.seller_gst_tin ?? pkg.client_gst_tin ?? options?.sellerGst ?? defaults.sellerGst).trim();
   const returnAddr = String(pkg.radd ?? options?.returnAddress ?? defaults.returnAddress)
+    .replace(/\s+/g, " ")
+    .trim();
+  // Ops rule: seller address on the packing slip must match the return address.
+  const sellerAddress = (
+    options?.sellerAddress ||
+    returnAddr ||
+    defaults.sellerAddress
+  )
     .replace(/\s+/g, " ")
     .trim();
   return { sellerName, sellerAddress, gst, returnAddr };

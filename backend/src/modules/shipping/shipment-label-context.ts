@@ -102,11 +102,13 @@ export function buildLabelRenderOptions(
   pickupReturn: string
 ): LabelRenderOptions {
   const defaults = getLabelAddressDefaults();
+  const returnAddress = pickupReturn || defaults.returnAddress;
   const renderOptions: LabelRenderOptions = {
     sellerName: defaults.sellerName,
-    sellerAddress: defaults.sellerAddress,
+    // Same as return address on the printed label.
+    sellerAddress: returnAddress,
     sellerGst: defaults.sellerGst,
-    returnAddress: pickupReturn
+    returnAddress
   };
 
   if (!shipment?.order) return renderOptions;
