@@ -432,9 +432,20 @@ export async function listReturnCases(filters: ReturnCaseListFilters = {}) {
 export async function getAdminReturnCaseByCaseNumber(caseNumber: string) {
   const { deriveReturnCaseStage, RETURN_CASE_STAGE_LABELS } = await import("./return-case-stage");
   const { listCaseEvents } = await import("./return-case-events.service");
+  const { ensureReturnLinePoliciesHealed, summarizeCaseShippingPolicy, caseStatusRollupLabel } =
+    await import("./return-line-review.service");
+
+  const found = await prisma.orderServiceRequest.findFirst({
+    where: { caseNumber: caseNumber.trim() },
+    select: { id: true }
+  });
+  if (!found) {
+    throw Object.assign(new Error("Return case not found"), { statusCode: 404, code: "NOT_FOUND" });
+  }
+  await ensureReturnLinePoliciesHealed(found.id);
 
   const request = await prisma.orderServiceRequest.findFirst({
-    where: { caseNumber: caseNumber.trim() },
+    where: { id: found.id },
     include: {
       photos: true,
       items: { include: { photos: true } },
@@ -489,6 +500,9 @@ export async function getAdminReturnCaseByCaseNumber(caseNumber: string) {
   const events = await listCaseEvents(request.id);
   const stage = deriveReturnCaseStage(request);
   const payment = request.order.payments[0] ?? null;
+  const policySummary = summarizeCaseShippingPolicy(
+    request.items.map((i) => i.shippingRefundPolicy)
+  );
 
   return {
     request: {
@@ -499,6 +513,7 @@ export async function getAdminReturnCaseByCaseNumber(caseNumber: string) {
       customerEmail: request.customerEmail,
       type: request.type,
       status: request.status,
+      statusLabel: caseStatusRollupLabel(request.status),
       channel: request.channel,
       reasonCode: request.reasonCode,
       reasonLabel: request.reasonLabel,
@@ -512,6 +527,7 @@ export async function getAdminReturnCaseByCaseNumber(caseNumber: string) {
       returnPhysicalStatus: request.returnPhysicalStatus,
       resolutionStatus: request.resolutionStatus,
       shippingRefundPolicy: request.shippingRefundPolicy,
+      shippingPolicySummary: policySummary === "MIXED" ? "MIXED" : policySummary,
       refundTotalInPaise: request.refundTotalInPaise,
       refundProcessedAt: request.refundProcessedAt,
       refundProviderReference: request.refundProviderReference,

@@ -217,6 +217,7 @@ export async function markCustomerReturnReceived(opts: {
     // Seed receipt lines at case qty — sellable stock unchanged until QC.
     for (const item of request.items) {
       if (
+        item.reviewDecision !== "APPROVED" ||
         item.requestedResolution === "KEEP_ITEM_PARTIAL_REFUND" ||
         item.requestedResolution === "MISSING_PART"
       ) {

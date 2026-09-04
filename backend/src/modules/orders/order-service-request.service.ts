@@ -69,6 +69,7 @@ export type ServiceRequestPublic = {
   status:
     | "PENDING_APPROVAL"
     | "APPROVED"
+    | "PARTIALLY_APPROVED"
     | "REJECTED"
     | "NEEDS_DISCUSSION"
     | "MORE_INFO_REQUIRED"

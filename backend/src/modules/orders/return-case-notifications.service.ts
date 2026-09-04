@@ -19,6 +19,7 @@ export type ReturnCaseNotifyEvent =
   | "RETURN_MORE_INFO_REQUIRED"
   | "RETURN_APPROVED_PHYSICAL"
   | "RETURN_APPROVED_NO_RETURN"
+  | "RETURN_PARTIALLY_APPROVED"
   | "RETURN_REJECTED"
   | "RETURN_PICKUP_CREATED"
   | "RETURN_SELF_SHIP"
@@ -38,6 +39,7 @@ const WA_TEMPLATE_ENV: Record<ReturnCaseNotifyEvent, string> = {
   RETURN_MORE_INFO_REQUIRED: "WA_TEMPLATE_RETURN_MORE_INFO_REQUIRED",
   RETURN_APPROVED_PHYSICAL: "WA_TEMPLATE_RETURN_APPROVED",
   RETURN_APPROVED_NO_RETURN: "WA_TEMPLATE_RETURN_APPROVED",
+  RETURN_PARTIALLY_APPROVED: "WA_TEMPLATE_RETURN_PARTIALLY_APPROVED",
   RETURN_REJECTED: "WA_TEMPLATE_RETURN_REJECTED",
   RETURN_PICKUP_CREATED: "WA_TEMPLATE_RETURN_PICKUP_CREATED",
   RETURN_SELF_SHIP: "WA_TEMPLATE_RETURN_PICKUP_CREATED",
@@ -56,6 +58,7 @@ export const SUGGESTED_WA_TEMPLATE_NAMES: Record<ReturnCaseNotifyEvent, string> 
   RETURN_MORE_INFO_REQUIRED: "sarveda_return_more_info_required",
   RETURN_APPROVED_PHYSICAL: "sarveda_return_approved",
   RETURN_APPROVED_NO_RETURN: "sarveda_return_approved",
+  RETURN_PARTIALLY_APPROVED: "sarveda_return_partially_approved",
   RETURN_REJECTED: "sarveda_return_rejected",
   RETURN_PICKUP_CREATED: "sarveda_return_pickup_created",
   RETURN_SELF_SHIP: "sarveda_return_pickup_created",
@@ -140,6 +143,9 @@ export type ReturnCaseNotifyPayload = {
   initiatedAt?: Date | null;
   completedAt?: Date | null;
   replacementItem?: string | null;
+  approvedItemSummary?: string | null;
+  rejectedItemSummary?: string | null;
+  physicalReturnRequired?: boolean;
   qcOutcome?: "refund" | "replacement" | "other";
   closureKind?: "refund" | "replacement" | "missing_part" | "rejection" | "other";
 };
@@ -244,6 +250,36 @@ export function buildReturnCaseMessage(
         textBody: lines.join("\n"),
         refundAmountFormatted: null,
         waBodyParams: [name, orderNo, caseId, payload.itemSummary || "your item"]
+      };
+    }
+    case "RETURN_PARTIALLY_APPROVED": {
+      const lines = [
+        "Your return request has been reviewed.",
+        "",
+        payload.approvedItemSummary ? `Approved:\n${payload.approvedItemSummary}` : "Approved: —",
+        "",
+        payload.rejectedItemSummary
+          ? `Not approved:\n${payload.rejectedItemSummary}`
+          : "Not approved: —",
+        "",
+        `Return Case: ${caseId}`,
+        payload.physicalReturnRequired
+          ? "For approved items that need to be returned, please use the shipping instructions we provide. Refund follows after we receive and inspect those items."
+          : "Refund for approved items will be processed according to the resolution on your case."
+      ];
+      return {
+        subject: `Return reviewed (partial) — ${orderNo}`,
+        banner: "Return request reviewed",
+        lines,
+        textBody: lines.join("\n"),
+        refundAmountFormatted: null,
+        waBodyParams: [
+          name,
+          orderNo,
+          caseId,
+          payload.approvedItemSummary || "approved items",
+          payload.rejectedItemSummary || "not approved"
+        ]
       };
     }
     case "RETURN_REJECTED": {

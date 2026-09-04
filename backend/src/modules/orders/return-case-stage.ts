@@ -40,6 +40,9 @@ export function deriveReturnCaseStage(request: {
   if (request.status === "MORE_INFO_REQUIRED") return "MORE_INFO_REQUIRED";
   if (request.status === "NEEDS_DISCUSSION") return "NEEDS_DISCUSSION";
   if (request.status === "PENDING_APPROVAL") return "PENDING_APPROVAL";
+  if (request.status === "PARTIALLY_APPROVED") {
+    // Fall through to physical/resolution stages like APPROVED.
+  }
 
   if (
     request.resolutionStatus === "REFUNDED" ||
@@ -72,7 +75,7 @@ export function deriveReturnCaseStage(request: {
     return "REFUND_PENDING";
   }
 
-  if (request.status === "APPROVED") {
+  if (request.status === "APPROVED" || request.status === "PARTIALLY_APPROVED") {
     if (request.returnPhysicalStatus === "NOT_REQUIRED") {
       return request.resolutionStatus === "NONE" ? "REFUND_PENDING" : "REFUND_PENDING";
     }

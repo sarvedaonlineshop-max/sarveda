@@ -1081,8 +1081,18 @@ enum OrderServiceRequestStatus {
   NEEDS_DISCUSSION
   MORE_INFO_REQUIRED
   APPROVED
+  /// Some lines approved, some rejected — no lines still pending review.
+  PARTIALLY_APPROVED
   REJECTED
   CONVERTED_TO_CANCELLATION
+}
+
+/// Per-line admin review decision on a multi-line return case.
+enum ReturnLineReviewDecision {
+  PENDING
+  APPROVED
+  REJECTED
+  MORE_INFO_REQUIRED
 }
 
 enum OrderServiceRequestExecutionStatus {
@@ -1207,6 +1217,17 @@ model OrderServiceRequestItem {
   reasonLabel         String
   otherMessage        String?
   message             String?
+  /// Authoritative shipping policy for THIS line, captured at submit (auditable).
+  shippingRefundPolicy ReturnShippingRefundPolicy?
+  reviewDecision      ReturnLineReviewDecision   @default(PENDING)
+  reviewedAt          DateTime?
+  reviewedByUserId    String?                    @db.Uuid
+  reviewedByEmail     String?
+  /// Shown to customer on reject / more-info / partial decisions.
+  customerFacingNote  String?
+  /// Internal only — never sent to customer.
+  internalReviewNote  String?
+  moreInfoPrompt      String?
   refundAmountInPaise Int?
   refundedAt          DateTime?
   refundProviderId    String?
@@ -1215,9 +1236,11 @@ model OrderServiceRequestItem {
   createdAt           DateTime                   @default(now())
   request             OrderServiceRequest        @relation(fields: [requestId], references: [id], onDelete: Cascade)
   photos              OrderServiceRequestPhoto[]
+  replacementFulfillment OrderReplacementFulfillment?
 
   @@index([requestId])
   @@index([orderItemId])
+  @@index([reviewDecision])
 }
 
 model OrderReturnShipment {
@@ -1260,6 +1283,7 @@ model OrderReplacementFulfillment {
   updatedAt            DateTime               @updatedAt
   request              OrderServiceRequest    @relation(fields: [requestId], references: [id], onDelete: Cascade)
   order                Order                  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  requestItem          OrderServiceRequestItem @relation(fields: [requestItemId], references: [id], onDelete: Cascade)
 
   @@index([requestId])
 }

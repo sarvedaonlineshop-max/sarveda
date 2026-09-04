@@ -570,6 +570,7 @@ export type ReturnRefundPreview = {
   blockCode?: string;
   blockMessage?: string;
   shippingPolicy: string;
+  shippingPolicySummary?: string;
   paymentProvider: string | null;
   refundDestinationLabel: string;
   currency: string;
@@ -580,6 +581,12 @@ export type ReturnRefundPreview = {
     skuSnapshot: string;
     qtySelected: number;
     qtyOrdered: number;
+    reasonCode?: string;
+    reasonLabel?: string;
+    reviewDecision?: string;
+    shippingPolicy?: string;
+    shippingPolicyLabel?: string;
+    includedInRefundNow?: boolean;
     grossItemValuePaise?: number;
     allocatedDiscountPaise?: number;
     merchandiseRefundPaise: number;
@@ -587,6 +594,7 @@ export type ReturnRefundPreview = {
     otherAdjustmentPaise: number;
     alreadyRefundedPaise: number;
     lineTotalRefundPaise: number;
+    potentialLineTotalPaise?: number;
     explanation: string;
   }>;
   merchandiseRefundPaise: number;
@@ -594,6 +602,7 @@ export type ReturnRefundPreview = {
   otherAdjustmentPaise: number;
   alreadyRefundedPaise: number;
   calculatedRefundPaise?: number;
+  requestedRefundPaise?: number;
   totalRefundNowPaise: number;
   remainingGatewayPaise: number;
   approvedQtySelected: number;
@@ -604,6 +613,30 @@ export type ReturnRefundPreview = {
   overrideReason?: string | null;
   complianceFlags?: string[];
 };
+
+export async function adminReviewReturnCaseLine(
+  orderId: string,
+  requestId: string,
+  itemId: string,
+  body: {
+    decision: "APPROVED" | "REJECTED" | "MORE_INFO_REQUIRED";
+    customerFacingNote?: string;
+    internalNote?: string;
+    moreInfoPrompt?: string;
+  }
+) {
+  const res = await fetch(
+    `${getApiBase()}/api/admin/orders/${encodeURIComponent(orderId)}/service-requests/${encodeURIComponent(requestId)}/items/${encodeURIComponent(itemId)}/review`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(body)
+    }
+  );
+  const json = (await res.json()) as { success?: boolean; error?: string };
+  if (!res.ok || !json.success) throw new Error(json.error || "Line review failed");
+}
 
 export async function adminFetchReturnCaseByNumber(caseNumber: string) {
   const res = await fetch(

@@ -104,10 +104,12 @@ function humanResolutionStatus(value?: string | null): string {
 
 function humanShippingPolicy(value?: string | null): string {
   switch (value) {
+    case "MIXED":
+      return "Shipping policy: Mixed";
     case "SHIPPING_REFUNDABLE":
-      return "Shipping refundable (seller fault)";
+      return "Shipping refundable — seller/logistics fault";
     case "SHIPPING_RETAINED":
-      return "Shipping retained";
+      return "Shipping retained — customer preference";
     case "MANUAL_REVIEW":
       return "Shipping — manual review";
     default:
@@ -166,7 +168,11 @@ export function AdminOrderReturnReplacementPanel({
     (request.refundTotalInPaise != null && request.refundTotalInPaise > 0);
 
   async function loadPreview() {
-    if (request.status !== "APPROVED") {
+    if (
+      !["APPROVED", "PARTIALLY_APPROVED", "PENDING_APPROVAL", "MORE_INFO_REQUIRED"].includes(
+        request.status
+      )
+    ) {
       setPreview(null);
       return;
     }
@@ -212,7 +218,7 @@ export function AdminOrderReturnReplacementPanel({
 
   const confirmAmount = preview?.totalRefundNowPaise ?? 0;
   const canShowRefundAction =
-    request.status === "APPROVED" &&
+    (request.status === "APPROVED" || request.status === "PARTIALLY_APPROVED") &&
     !alreadyRefunded &&
     preview?.executable === true &&
     confirmAmount > 0;
@@ -261,7 +267,13 @@ This action will initiate a real payment gateway refund.`}
         <p className="mt-1 text-xs text-stone-600 dark:text-stone-400">
           Physical: {humanPhysicalStatus(request.returnPhysicalStatus)} · Resolution:{" "}
           {humanResolutionStatus(request.resolutionStatus)}
-          {request.shippingRefundPolicy ? ` · ${humanShippingPolicy(request.shippingRefundPolicy)}` : ""}
+          {request.shippingRefundPolicy || preview?.shippingPolicy
+            ? ` · ${humanShippingPolicy(
+                preview?.shippingPolicy === "MIXED"
+                  ? "MIXED"
+                  : preview?.shippingPolicy ?? request.shippingRefundPolicy
+              )}`
+            : ""}
           {request.caseNumber ? ` · ${request.caseNumber}` : ""}
         </p>
         {needsReturn && request.status === "APPROVED" && !inspected && !alreadyRefunded ? (
@@ -397,7 +409,10 @@ This action will initiate a real payment gateway refund.`}
         </div>
       ) : null}
 
-      {request.status === "APPROVED" ? (
+      {request.status === "APPROVED" ||
+      request.status === "PARTIALLY_APPROVED" ||
+      request.status === "PENDING_APPROVAL" ||
+      request.status === "MORE_INFO_REQUIRED" ? (
         <div className="rounded-lg border border-emerald-200 bg-white p-4 dark:border-emerald-900 dark:bg-stone-900">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs font-bold uppercase tracking-wider text-emerald-900 dark:text-emerald-200">
@@ -416,100 +431,75 @@ This action will initiate a real payment gateway refund.`}
           {previewLoading && !preview ? (
             <p className="mt-3 text-xs text-stone-500">Loading authoritative refund calculation…</p>
           ) : preview ? (
-            <div className="mt-3 space-y-2 text-sm">
-              <p className="text-xs text-stone-500">
-                Approved quantity:{" "}
-                <strong>
-                  {preview.approvedQtySelected} of {preview.orderedQtyOnLines} units
-                </strong>
-              </p>
-              <dl className="space-y-1 text-xs">
-                {preview.lines.some((l) => (l.allocatedDiscountPaise ?? 0) > 0) ? (
-                  <>
-                    <div className="flex justify-between gap-4 text-stone-500">
-                      <dt>Gross item value (selected qty)</dt>
-                      <dd>
-                        {formatMinorFromPaise(
-                          preview.lines.reduce((s, l) => s + (l.grossItemValuePaise ?? 0), 0),
-                          preview.currency
-                        )}
-                      </dd>
-                    </div>
-                    <div className="flex justify-between gap-4 text-stone-500">
-                      <dt>Allocated discount</dt>
-                      <dd>
-                        −
-                        {formatMinorFromPaise(
-                          preview.lines.reduce((s, l) => s + (l.allocatedDiscountPaise ?? 0), 0),
-                          preview.currency
-                        )}
-                      </dd>
-                    </div>
-                  </>
-                ) : null}
+            <div className="mt-3 space-y-3 text-sm">
+              <div className="space-y-2">
+                {preview.lines.map((line) => (
+                  <div
+                    key={line.requestItemId}
+                    className="rounded border border-stone-100 bg-stone-50/80 px-3 py-2 text-xs dark:border-stone-700 dark:bg-stone-950/40"
+                  >
+                    <p className="font-semibold text-stone-800 dark:text-stone-100">
+                      {line.nameSnapshot} — {line.qtySelected} of {line.qtyOrdered}
+                    </p>
+                    <p className="text-stone-500">
+                      Reason: {line.reasonLabel ?? "—"}
+                      {line.reviewDecision ? ` · ${line.reviewDecision}` : ""}
+                    </p>
+                    <p className="text-stone-500">
+                      {line.shippingPolicyLabel ?? humanShippingPolicy(line.shippingPolicy)}
+                    </p>
+                    <dl className="mt-1 space-y-0.5">
+                      <div className="flex justify-between gap-4">
+                        <dt>Merchandise refund</dt>
+                        <dd>{formatMinorFromPaise(line.merchandiseRefundPaise, preview.currency)}</dd>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <dt>Shipping refund</dt>
+                        <dd>{formatMinorFromPaise(line.shippingRefundPaise, preview.currency)}</dd>
+                      </div>
+                      <div className="flex justify-between gap-4 font-semibold">
+                        <dt>Line refund</dt>
+                        <dd>
+                          {formatMinorFromPaise(
+                            line.potentialLineTotalPaise ?? line.lineTotalRefundPaise,
+                            preview.currency
+                          )}
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+                ))}
+              </div>
+              <dl className="space-y-1 border-t border-emerald-100 pt-2 text-xs dark:border-emerald-900">
                 <div className="flex justify-between gap-4">
-                  <dt>Merchandise refund</dt>
+                  <dt>Total merchandise</dt>
                   <dd className="font-semibold">
                     {formatMinorFromPaise(preview.merchandiseRefundPaise, preview.currency)}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt>Shipping refund</dt>
+                  <dt>Total shipping</dt>
                   <dd className="font-semibold">
                     {formatMinorFromPaise(preview.shippingRefundPaise, preview.currency)}
                   </dd>
                 </div>
-                {preview.otherAdjustmentPaise > 0 ? (
-                  <div className="flex justify-between gap-4">
-                    <dt>Other adjustment/refund</dt>
-                    <dd className="font-semibold">
-                      {formatMinorFromPaise(preview.otherAdjustmentPaise, preview.currency)}
-                    </dd>
-                  </div>
-                ) : null}
-                {preview.overrideActive && preview.overrideGoodwillPaise ? (
-                  <div className="flex justify-between gap-4">
-                    <dt>Goodwill adjustment (explicit)</dt>
-                    <dd className="font-semibold">
-                      {formatMinorFromPaise(preview.overrideGoodwillPaise, preview.currency)}
-                    </dd>
-                  </div>
-                ) : null}
-                <div className="flex justify-between gap-4">
-                  <dt>Already refunded</dt>
-                  <dd>{formatMinorFromPaise(preview.alreadyRefundedPaise, preview.currency)}</dd>
-                </div>
-                {preview.calculatedRefundPaise != null ? (
-                  <div className="flex justify-between gap-4">
-                    <dt>System-calculated refund</dt>
-                    <dd>{formatMinorFromPaise(preview.calculatedRefundPaise, preview.currency)}</dd>
-                  </div>
-                ) : null}
-                <div className="flex justify-between gap-4 border-t border-emerald-100 pt-2 text-sm dark:border-emerald-900">
-                  <dt className="font-bold">Total refund now</dt>
+                <div className="flex justify-between gap-4 text-sm">
+                  <dt className="font-bold">
+                    {preview.executable ? "TOTAL REFUND NOW" : "EXPECTED TOTAL (if approved)"}
+                  </dt>
                   <dd className="font-bold text-emerald-900 dark:text-emerald-200">
-                    {formatMinorFromPaise(preview.totalRefundNowPaise, preview.currency)}
+                    {formatMinorFromPaise(
+                      preview.executable
+                        ? preview.totalRefundNowPaise
+                        : preview.requestedRefundPaise ?? preview.calculatedRefundPaise ?? 0,
+                      preview.currency
+                    )}
                   </dd>
                 </div>
               </dl>
-              {preview.overrideActive ? (
-                <p className="rounded border border-violet-200 bg-violet-50 px-2 py-1.5 text-[11px] text-violet-950">
-                  Override active
-                  {preview.overrideDifferencePaise != null
-                    ? ` · difference ${formatMinorFromPaise(preview.overrideDifferencePaise, preview.currency)}`
-                    : ""}
-                  {preview.overrideReason ? ` · ${preview.overrideReason}` : ""}
-                </p>
-              ) : null}
-              {preview.complianceFlags?.includes("COMPLIANCE_DECISION_REQUIRED") ? (
-                <p className="text-[11px] font-semibold text-amber-800">
-                  COMPLIANCE_DECISION_REQUIRED — goodwill is not taxed as merchandise GST
-                </p>
-              ) : null}
-              <p className="text-xs text-stone-600 dark:text-stone-400">
-                Refund destination: <strong>{preview.refundDestinationLabel}</strong>
+              <p className="text-[11px] text-stone-500">
+                {humanShippingPolicy(preview.shippingPolicy)}
               </p>
-              <p className="text-[11px] text-stone-500">{humanShippingPolicy(preview.shippingPolicy)}</p>
               {!preview.executable ? (
                 <p className="rounded border border-amber-200 bg-amber-50 px-2 py-1.5 text-xs text-amber-950">
                   {preview.blockMessage ?? "Refund not executable yet"}

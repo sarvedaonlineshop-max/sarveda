@@ -57,14 +57,18 @@ export function assertReturnCaseRefundExecutable(request: {
   resolutionStatus?: string | null;
   refundProcessedAt?: Date | null;
   returnPhysicalStatus: string;
-  items: Array<{ reasonCode: string; requestedResolution: string | null }>;
+  items: Array<{
+    reasonCode: string;
+    requestedResolution: string | null;
+    reviewDecision?: string | null;
+  }>;
   returnShipment?: {
     receivedAt: Date | null;
     disposition: string | null;
   } | null;
 }): void {
-  if (request.status !== "APPROVED") {
-    throw Object.assign(new Error("Request must be approved"), {
+  if (request.status !== "APPROVED" && request.status !== "PARTIALLY_APPROVED") {
+    throw Object.assign(new Error("Request must be approved (or approved in part)"), {
       statusCode: 400,
       code: "NOT_APPROVED"
     });
@@ -76,7 +80,9 @@ export function assertReturnCaseRefundExecutable(request: {
     });
   }
 
-  const needsPhysical = request.items.some(
+  const approvedItems = request.items.filter((i) => i.reviewDecision === "APPROVED");
+
+  const needsPhysical = approvedItems.some(
     (i) =>
       i.requestedResolution !== "KEEP_ITEM_PARTIAL_REFUND" &&
       i.requestedResolution !== "MISSING_PART" &&
@@ -153,8 +159,12 @@ export async function submitReturnReplacementRequest(opts: {
   }
 
   const orderItemMap = new Map(order.items.map((i) => [i.id, i]));
-  const primaryReason = opts.items[0].reasonCode;
-  const shippingPolicy = shippingPolicyForReason(primaryReason);
+  const { resolveShippingPolicyForReasonCode } = await import("./return-line-review.service");
+  const linePolicies = opts.items.map((item) => resolveShippingPolicyForReasonCode(item.reasonCode));
+  const uniquePolicies = [...new Set(linePolicies)];
+  /** Legacy case-level field: single policy when unanimous; otherwise first line (compat only). */
+  const shippingPolicy =
+    uniquePolicies.length === 1 ? uniquePolicies[0]! : resolveShippingPolicyForReasonCode(opts.items[0].reasonCode);
 
   for (const item of opts.items) {
     if (!isReturnReasonCode(item.reasonCode)) {
@@ -308,6 +318,8 @@ export async function submitReturnReplacementRequest(opts: {
               qtySelected: item.qtySelected,
               reasonCode: item.reasonCode,
               reasonLabel: item.reasonLabel,
+              shippingRefundPolicy: resolveShippingPolicyForReasonCode(item.reasonCode),
+              reviewDecision: "PENDING" as const,
               requestedResolution: item.requestedResolution,
               requestedVariantId: item.requestedVariantId,
               otherMessage: item.otherMessage,
@@ -372,6 +384,11 @@ export async function approveReturnReplacementRequest(opts: {
   adminUserId?: string;
   adminNote?: string;
 }) {
+  const { ensureReturnLinePoliciesHealed, reviewReturnCaseLine } = await import(
+    "./return-line-review.service"
+  );
+  await ensureReturnLinePoliciesHealed(opts.requestId);
+
   const request = await prisma.orderServiceRequest.findFirst({
     where: { id: opts.requestId, orderId: opts.orderId },
     include: { items: true, order: { include: { payments: true } } }
@@ -380,7 +397,23 @@ export async function approveReturnReplacementRequest(opts: {
   if (!request) {
     throw Object.assign(new Error("Request not found"), { statusCode: 404, code: "NOT_FOUND" });
   }
-  if (!["PENDING_APPROVAL", "MORE_INFO_REQUIRED"].includes(request.status)) {
+  if (
+    !["PENDING_APPROVAL", "MORE_INFO_REQUIRED", "NEEDS_DISCUSSION", "PARTIALLY_APPROVED"].includes(
+      request.status
+    )
+  ) {
+    if (request.status === "APPROVED") {
+      // idempotent
+      return prisma.orderServiceRequest.findUnique({
+        where: { id: request.id },
+        include: {
+          photos: true,
+          items: { include: { photos: true } },
+          returnShipment: true,
+          replacementFulfillments: true
+        }
+      });
+    }
     throw Object.assign(new Error("Request already reviewed"), { statusCode: 409, code: "ALREADY_REVIEWED" });
   }
   if (request.type !== "REFUND_AFTER_DELIVERY") {
@@ -394,130 +427,26 @@ export async function approveReturnReplacementRequest(opts: {
     );
   }
 
-  const needsPhysicalReturn = request.items.some(
-    (i) =>
-      i.requestedResolution !== "KEEP_ITEM_PARTIAL_REFUND" &&
-      i.requestedResolution !== "MISSING_PART" &&
-      physicalReturnRequiredForReason(i.reasonCode)
+  // Approve every line still awaiting a decision (bulk approve-all).
+  const pendingLines = request.items.filter(
+    (i) => i.reviewDecision === "PENDING" || i.reviewDecision === "MORE_INFO_REQUIRED"
   );
-  const hasReplacement = request.items.some((i) => resolutionRequiresReplacement(i.requestedResolution!));
-  const hasRefund = request.items.some((i) => resolutionRequiresRefund(i.requestedResolution!));
-  const hasMissingPart = request.items.some((i) => i.requestedResolution === "MISSING_PART");
-
-  let resolutionStatus: ReturnResolutionStatus = "NONE";
-  if (hasMissingPart && !hasRefund && !hasReplacement) resolutionStatus = "MISSING_PART_PENDING";
-  else if (hasReplacement && !hasRefund) resolutionStatus = "REPLACEMENT_PENDING";
-  else if (hasRefund) resolutionStatus = "REFUND_PENDING";
-
-  const returnPhysicalStatus = needsPhysicalReturn ? "AWAITING_RETURN" : "NOT_REQUIRED";
-  const now = new Date();
-
-  await prisma.$transaction(async (tx) => {
-    await tx.orderServiceRequest.update({
-      where: { id: request.id },
-      data: {
-        status: "APPROVED",
-        reviewedAt: now,
-        reviewedByEmail: opts.adminEmail,
-        reviewedByUserId: opts.adminUserId ?? null,
-        adminNote: opts.adminNote?.trim() || null,
-        returnPhysicalStatus,
-        resolutionStatus,
-        refundApprovedAt: hasRefund ? now : null,
-        slaPausedAt: null,
-        finalResolution: hasMissingPart
-          ? "MISSING_PART"
-          : hasReplacement
-            ? "REPLACEMENT"
-            : hasRefund
-              ? "RETURN_FOR_REFUND"
-              : null
-      }
-    });
-
-    if (needsPhysicalReturn) {
-      await tx.orderReturnShipment.create({
-        data: {
-          requestId: request.id,
-          orderId: request.orderId,
-          physicalStatus: "AWAITING_RETURN"
-        }
-      });
-    }
-
-    for (const item of request.items) {
-      if (item.requestedResolution !== "REPLACEMENT") continue;
-      const variantId = item.requestedVariantId ?? (
-        await tx.orderItem.findUnique({ where: { id: item.orderItemId }, select: { variantId: true } })
-      )?.variantId;
-      if (!variantId) continue;
-
-      await tx.orderReplacementFulfillment.create({
-        data: {
-          requestId: request.id,
-          requestItemId: item.id,
-          orderId: request.orderId,
-          replacementVariantId: variantId,
-          qty: item.qtySelected,
-          status: "REPLACEMENT_PENDING"
-        }
-      });
-    }
-  });
-
-  const { appendCaseEvent } = await import("./return-case-events.service");
-  await appendCaseEvent({
-    requestId: request.id,
-    eventType: "APPROVED",
-    message: opts.adminNote?.trim() || "Return case approved",
-    payloadJson: { resolutionStatus, returnPhysicalStatus },
-    actor: { email: opts.adminEmail, userId: opts.adminUserId, role: "ADMIN" }
-  });
-  if (hasRefund) {
-    await appendCaseEvent({
-      requestId: request.id,
-      eventType: "REFUND_APPROVED",
-      message: "Refund approved (initiation may wait for warehouse/QC where required)",
-      actor: { email: opts.adminEmail, userId: opts.adminUserId, role: "ADMIN" }
-    });
-    const { setRefundSlaDueAfterApproval } = await import("./return-sla.service");
-    await setRefundSlaDueAfterApproval(request.id);
-  }
-  if (hasReplacement) {
-    await appendCaseEvent({
-      requestId: request.id,
-      eventType: "REPLACEMENT_INITIATED",
-      message: "Replacement fulfillment pending",
-      actor: { email: opts.adminEmail, userId: opts.adminUserId, role: "ADMIN" }
+  for (const line of pendingLines) {
+    await reviewReturnCaseLine({
+      orderId: opts.orderId,
+      requestId: opts.requestId,
+      itemId: line.id,
+      decision: "APPROVED",
+      customerFacingNote: opts.adminNote?.trim() || "Approved",
+      internalNote: opts.adminNote,
+      adminEmail: opts.adminEmail,
+      adminUserId: opts.adminUserId
     });
   }
 
-  void (async () => {
-    const { notifyReturnCaseEvent } = await import("./return-case-notifications.service");
-    const itemSummary = request.items.map((i) => `${i.nameSnapshot} × ${i.qtySelected}`).join("; ");
-    const qty = request.items.reduce((s, i) => s + i.qtySelected, 0);
-    const base = {
-      orderNumber: request.orderNumber,
-      caseNumber: request.caseNumber,
-      customerEmail: request.customerEmail,
-      itemSummary,
-      quantity: qty,
-      currency: undefined as string | undefined
-    };
-    if (hasReplacement) {
-      await notifyReturnCaseEvent(request.id, "RETURN_REPLACEMENT_APPROVED", {
-        ...base,
-        replacementItem: itemSummary
-      });
-    }
-    if (needsPhysicalReturn) {
-      await notifyReturnCaseEvent(request.id, "RETURN_APPROVED_PHYSICAL", base);
-    } else if (hasRefund) {
-      await notifyReturnCaseEvent(request.id, "RETURN_APPROVED_NO_RETURN", base);
-    }
-  })();
-
-  return prisma.orderServiceRequest.findUnique({
+  // If no pending lines were left (already partially reviewed), re-rollup by approving nothing;
+  // status may already be PARTIALLY_APPROVED.
+  const fresh = await prisma.orderServiceRequest.findUnique({
     where: { id: request.id },
     include: {
       photos: true,
@@ -526,6 +455,20 @@ export async function approveReturnReplacementRequest(opts: {
       replacementFulfillments: true
     }
   });
+
+  if (fresh && (fresh.status === "APPROVED" || fresh.status === "PARTIALLY_APPROVED")) {
+    const hasRefund = fresh.items.some(
+      (i) =>
+        i.reviewDecision === "APPROVED" &&
+        resolutionRequiresRefund(i.requestedResolution ?? "RETURN_FOR_REFUND")
+    );
+    if (hasRefund) {
+      const { setRefundSlaDueAfterApproval } = await import("./return-sla.service");
+      await setRefundSlaDueAfterApproval(request.id);
+    }
+  }
+
+  return fresh;
 }
 
 export type ReturnCaseRefundLinePlan = {
@@ -535,6 +478,12 @@ export type ReturnCaseRefundLinePlan = {
   skuSnapshot: string;
   qtySelected: number;
   qtyOrdered: number;
+  reasonCode?: string;
+  reasonLabel?: string;
+  reviewDecision?: string;
+  shippingPolicy: string;
+  shippingPolicyLabel?: string;
+  includedInRefundNow: boolean;
   grossItemValuePaise: number;
   allocatedDiscountPaise: number;
   merchandiseRefundPaise: number;
@@ -542,6 +491,8 @@ export type ReturnCaseRefundLinePlan = {
   otherAdjustmentPaise: number;
   alreadyRefundedPaise: number;
   lineTotalRefundPaise: number;
+  /** Potential line total before approval filter (policy-correct). */
+  potentialLineTotalPaise: number;
   explanation: string;
 };
 
@@ -553,7 +504,9 @@ export type ReturnCaseRefundPreview = {
   executable: boolean;
   blockCode?: string;
   blockMessage?: string;
+  /** MIXED | SHIPPING_* — never imply seller-fault for all lines when mixed. */
   shippingPolicy: string;
+  shippingPolicySummary: string;
   paymentProvider: string | null;
   refundDestinationLabel: string;
   currency: string;
@@ -562,8 +515,10 @@ export type ReturnCaseRefundPreview = {
   shippingRefundPaise: number;
   otherAdjustmentPaise: number;
   alreadyRefundedPaise: number;
-  /** System-calculated total before admin override. */
+  /** System-calculated total before admin override (approved lines only when reviewing for payout). */
   calculatedRefundPaise: number;
+  /** Expected total for all non-rejected refund lines (preview for pending cases). */
+  requestedRefundPaise: number;
   /** Effective total to refund now (override if set, else calculated). */
   totalRefundNowPaise: number;
   remainingGatewayPaise: number;
@@ -584,6 +539,14 @@ export type ReturnCaseRefundPreview = {
 export async function previewReturnReplacementRefund(
   requestId: string
 ): Promise<ReturnCaseRefundPreview> {
+  const {
+    ensureReturnLinePoliciesHealed,
+    summarizeCaseShippingPolicy,
+    shippingPolicyLabel,
+    resolveShippingPolicyForReasonCode
+  } = await import("./return-line-review.service");
+  await ensureReturnLinePoliciesHealed(requestId);
+
   const request = await prisma.orderServiceRequest.findUnique({
     where: { id: requestId },
     include: {
@@ -618,7 +581,6 @@ export async function previewReturnReplacementRefund(
     blockMessage = blockMessage ?? "No refund resolution on this request";
   }
 
-  const shippingPolicy = request.shippingRefundPolicy ?? "SHIPPING_RETAINED";
   const orderItemById = new Map(request.order.items.map((i) => [i.id, i]));
   const capturedPick = pickCapturedPaymentForRefund(request.order.payments);
   const payment = capturedPick.ok ? capturedPick.payment : null;
@@ -639,7 +601,8 @@ export async function previewReturnReplacementRefund(
   let shippingRefundPaise = 0;
   let otherAdjustmentPaise = 0;
   let alreadyRefundedPaise = 0;
-  let plannedGross = 0;
+  let plannedNow = 0;
+  let requestedGross = 0;
 
   for (const item of refundItems) {
     const orderItem = orderItemById.get(item.orderItemId);
@@ -647,29 +610,49 @@ export async function previewReturnReplacementRefund(
     const already = item.refundAmountInPaise ?? 0;
     alreadyRefundedPaise += already;
 
+    const linePolicy =
+      item.shippingRefundPolicy ??
+      resolveShippingPolicyForReasonCode(item.reasonCode) ??
+      request.shippingRefundPolicy ??
+      "SHIPPING_RETAINED";
+
     const calc = await calculateReturnItemRefund({
       orderId: request.orderId,
       orderItemId: item.orderItemId,
       qty: item.qtySelected,
-      shippingPolicy,
+      shippingPolicy: linePolicy,
       keepItem: item.requestedResolution === "KEEP_ITEM_PARTIAL_REFUND"
     });
 
-    // Cap line "now" by what has not already been refunded on this case item.
-    const uncappedLine = calc.totalRefundPaise;
-    const lineTotalRefundPaise = Math.max(0, uncappedLine - already);
-    const scale =
-      uncappedLine > 0 && lineTotalRefundPaise < uncappedLine
-        ? lineTotalRefundPaise / uncappedLine
-        : 1;
-    const lineMerch = Math.round(calc.merchandiseRefundPaise * scale);
-    const lineShip = Math.round(calc.shippingRefundPaise * scale);
-    const lineOther = Math.round(calc.otherAdjustmentPaise * scale);
+    const decision = item.reviewDecision ?? "PENDING";
+    const includedInRefundNow = decision === "APPROVED";
+    const includeInRequested = decision === "APPROVED" || decision === "PENDING";
 
-    merchandiseRefundPaise += lineMerch;
-    shippingRefundPaise += lineShip;
-    otherAdjustmentPaise += lineOther;
-    plannedGross += lineTotalRefundPaise;
+    const uncappedLine = calc.totalRefundPaise;
+    const potentialAfterAlready = Math.max(0, uncappedLine - already);
+    const scale =
+      uncappedLine > 0 && potentialAfterAlready < uncappedLine
+        ? potentialAfterAlready / uncappedLine
+        : 1;
+    const potMerch = Math.round(calc.merchandiseRefundPaise * scale);
+    const potShip = Math.round(calc.shippingRefundPaise * scale);
+    const potOther = Math.round(calc.otherAdjustmentPaise * scale);
+
+    const lineMerch = includeInRequested ? potMerch : 0;
+    const lineShip = includeInRequested ? potShip : 0;
+    const lineOther = includeInRequested ? potOther : 0;
+    const lineTotal = includeInRequested ? potentialAfterAlready : 0;
+
+    const nowMerch = includedInRefundNow ? potMerch : 0;
+    const nowShip = includedInRefundNow ? potShip : 0;
+    const nowOther = includedInRefundNow ? potOther : 0;
+    const nowTotal = includedInRefundNow ? potentialAfterAlready : 0;
+
+    merchandiseRefundPaise += nowMerch;
+    shippingRefundPaise += nowShip;
+    otherAdjustmentPaise += nowOther;
+    plannedNow += nowTotal;
+    requestedGross += lineTotal;
 
     lines.push({
       requestItemId: item.id,
@@ -678,27 +661,50 @@ export async function previewReturnReplacementRefund(
       skuSnapshot: item.skuSnapshot,
       qtySelected: item.qtySelected,
       qtyOrdered,
+      reasonCode: item.reasonCode,
+      reasonLabel: item.reasonLabel,
+      reviewDecision: decision,
+      shippingPolicy: linePolicy,
+      shippingPolicyLabel: shippingPolicyLabel(linePolicy),
+      includedInRefundNow,
       grossItemValuePaise: Math.round(calc.grossItemValuePaise * scale),
       allocatedDiscountPaise: Math.round(calc.allocatedDiscountPaise * scale),
-      merchandiseRefundPaise: lineMerch,
-      shippingRefundPaise: lineShip,
-      otherAdjustmentPaise: lineOther,
+      merchandiseRefundPaise: includeInRequested ? potMerch : 0,
+      shippingRefundPaise: includeInRequested ? potShip : 0,
+      otherAdjustmentPaise: includeInRequested ? potOther : 0,
       alreadyRefundedPaise: already,
-      lineTotalRefundPaise,
+      lineTotalRefundPaise: includedInRefundNow ? nowTotal : lineTotal,
+      potentialLineTotalPaise: potentialAfterAlready,
       explanation: calc.explanation
     });
   }
 
-  let calculatedRefundPaise = plannedGross;
+  // Display aggregates for pending cases use requested (non-rejected) line totals.
+  const anyApproved = lines.some((l) => l.includedInRefundNow);
+  const displayMerch = anyApproved
+    ? merchandiseRefundPaise
+    : lines.reduce((s, l) => s + l.merchandiseRefundPaise, 0);
+  const displayShip = anyApproved
+    ? shippingRefundPaise
+    : lines.reduce((s, l) => s + l.shippingRefundPaise, 0);
+  const displayOther = anyApproved
+    ? otherAdjustmentPaise
+    : lines.reduce((s, l) => s + l.otherAdjustmentPaise, 0);
+
+  let calculatedRefundPaise = anyApproved ? plannedNow : requestedGross;
   if (calculatedRefundPaise > remainingGatewayPaise) {
     calculatedRefundPaise = remainingGatewayPaise;
   }
+  let totalRefundNowPaise = anyApproved ? Math.min(plannedNow, remainingGatewayPaise) : 0;
+
+  const policySummary = summarizeCaseShippingPolicy(lines.map((l) => l.shippingPolicy as never));
+  const shippingPolicyField =
+    policySummary === "MIXED" ? "MIXED" : policySummary === "UNSET" ? "SHIPPING_RETAINED" : policySummary;
 
   const complianceFlags: string[] = [];
   let overrideActive = false;
   let overrideDifferencePaise = 0;
   let overrideGoodwillPaise = 0;
-  let totalRefundNowPaise = calculatedRefundPaise;
 
   if (
     request.approvedOverrideRefundPaise != null &&
@@ -713,7 +719,6 @@ export async function previewReturnReplacementRefund(
       complianceFlags.push("COMPLIANCE_DECISION_REQUIRED");
       complianceFlags.push("GOODWILL_ADJUSTMENT_EXPLICIT");
     }
-    // Persist calculated snapshot for audit if missing/stale.
     if (request.calculatedRefundPaise !== calculatedRefundPaise) {
       await prisma.orderServiceRequest.update({
         where: { id: request.id },
@@ -724,8 +729,22 @@ export async function previewReturnReplacementRefund(
 
   if (totalRefundNowPaise <= 0 && executable) {
     executable = false;
-    blockCode = "NOTHING_TO_REFUND";
-    blockMessage = "No remaining refundable amount on this return case";
+    blockCode = anyApproved ? "NOTHING_TO_REFUND" : "LINES_NOT_APPROVED";
+    blockMessage = anyApproved
+      ? "No remaining refundable amount on this return case"
+      : "Approve at least one refund line before executing a refund";
+  }
+
+  // Execution path must only include approved lines with positive amounts.
+  if (executable) {
+    for (const line of lines) {
+      if (!line.includedInRefundNow) {
+        line.merchandiseRefundPaise = 0;
+        line.shippingRefundPaise = 0;
+        line.otherAdjustmentPaise = 0;
+        line.lineTotalRefundPaise = 0;
+      }
+    }
   }
 
   return {
@@ -736,19 +755,28 @@ export async function previewReturnReplacementRefund(
     executable,
     blockCode,
     blockMessage,
-    shippingPolicy,
+    shippingPolicy: shippingPolicyField,
+    shippingPolicySummary:
+      policySummary === "MIXED"
+        ? "Mixed"
+        : shippingPolicyLabel(
+            policySummary === "UNSET" ? "SHIPPING_RETAINED" : (policySummary as never)
+          ),
     paymentProvider,
     refundDestinationLabel,
     currency: request.order.currency,
     lines,
-    merchandiseRefundPaise,
-    shippingRefundPaise,
-    otherAdjustmentPaise,
+    merchandiseRefundPaise: anyApproved ? merchandiseRefundPaise : displayMerch,
+    shippingRefundPaise: anyApproved ? shippingRefundPaise : displayShip,
+    otherAdjustmentPaise: anyApproved ? otherAdjustmentPaise : displayOther,
     alreadyRefundedPaise,
     calculatedRefundPaise,
+    requestedRefundPaise: Math.min(requestedGross, remainingGatewayPaise),
     totalRefundNowPaise,
     remainingGatewayPaise,
-    approvedQtySelected: lines.reduce((s, l) => s + l.qtySelected, 0),
+    approvedQtySelected: lines
+      .filter((l) => l.includedInRefundNow)
+      .reduce((s, l) => s + l.qtySelected, 0),
     orderedQtyOnLines: lines.reduce((s, l) => s + l.qtyOrdered, 0),
     overrideActive,
     overrideDifferencePaise,
@@ -1148,8 +1176,14 @@ export function deriveCustomerReturnStatus(request: {
       detail: "Your refund is being processed to the original payment method."
     };
   }
-  if (request.status === "APPROVED") {
-    return { label: "Request approved", detail: "We will update you on next steps." };
+  if (request.status === "APPROVED" || request.status === "PARTIALLY_APPROVED") {
+    return {
+      label: request.status === "PARTIALLY_APPROVED" ? "Partially approved" : "Request approved",
+      detail:
+        request.status === "PARTIALLY_APPROVED"
+          ? "Some items were approved. Check email for details on each line."
+          : "We will update you on next steps."
+    };
   }
   return { label: "Request submitted" };
 }

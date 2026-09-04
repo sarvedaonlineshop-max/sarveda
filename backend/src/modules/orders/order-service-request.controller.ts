@@ -470,6 +470,52 @@ export async function adminApproveServiceRequest(req: Request, res: Response, ne
   }
 }
 
+export async function adminReviewReturnCaseLine(req: Request, res: Response, next: NextFunction) {
+  try {
+    const admin = req.authUser!;
+    const { orderId, requestId, itemId } = req.params;
+    const body = req.body as {
+      decision?: "APPROVED" | "REJECTED" | "MORE_INFO_REQUIRED";
+      customerFacingNote?: string;
+      internalNote?: string;
+      moreInfoPrompt?: string;
+    };
+    if (!body.decision || !["APPROVED", "REJECTED", "MORE_INFO_REQUIRED"].includes(body.decision)) {
+      res.status(400).json({
+        success: false,
+        error: "decision must be APPROVED, REJECTED, or MORE_INFO_REQUIRED",
+        code: "BAD_DECISION"
+      });
+      return;
+    }
+    const { reviewReturnCaseLine } = await import("./return-line-review.service");
+    await reviewReturnCaseLine({
+      orderId,
+      requestId,
+      itemId,
+      decision: body.decision,
+      customerFacingNote: body.customerFacingNote,
+      internalNote: body.internalNote,
+      moreInfoPrompt: body.moreInfoPrompt,
+      adminEmail: admin.email,
+      adminUserId: admin.id
+    });
+    const { prisma } = await import("../../config/db");
+    const request = await prisma.orderServiceRequest.findFirst({
+      where: { id: requestId, orderId },
+      include: { items: { include: { photos: true } }, returnShipment: true, photos: true }
+    });
+    res.json({ success: true, data: { request } });
+  } catch (err) {
+    const e = err as Error & { statusCode?: number; code?: string };
+    if (e.statusCode) {
+      res.status(e.statusCode).json({ success: false, error: e.message, code: e.code ?? "ERROR" });
+      return;
+    }
+    next(err);
+  }
+}
+
 export async function adminRejectServiceRequest(req: Request, res: Response, next: NextFunction) {
   try {
     const admin = req.authUser!;

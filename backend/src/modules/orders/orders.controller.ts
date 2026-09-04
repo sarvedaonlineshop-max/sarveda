@@ -208,7 +208,7 @@ function serializeOrderSummary(order: {
   serviceRequest?: {
     id: string;
     type: "CANCEL_BEFORE_DELIVERY" | "REFUND_AFTER_DELIVERY" | "ADJUST_BEFORE_DELIVERY";
-    status: "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | "NEEDS_DISCUSSION" | "MORE_INFO_REQUIRED" | "CONVERTED_TO_CANCELLATION";
+    status: "PENDING_APPROVAL" | "APPROVED" | "PARTIALLY_APPROVED" | "REJECTED" | "NEEDS_DISCUSSION" | "MORE_INFO_REQUIRED" | "CONVERTED_TO_CANCELLATION";
     reasonLabel: string;
     message: string | null;
     createdAt: Date;

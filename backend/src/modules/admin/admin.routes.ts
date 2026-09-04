@@ -168,6 +168,10 @@ router.patch(
 router.post("/orders/:id/reconcile-razorpay", admin.reconcileRazorpayOrder);
 router.post("/orders/:orderId/service-requests/:requestId/approve", serviceRequest.adminApproveServiceRequest);
 router.post("/orders/:orderId/service-requests/:requestId/reject", serviceRequest.adminRejectServiceRequest);
+router.post(
+  "/orders/:orderId/service-requests/:requestId/items/:itemId/review",
+  serviceRequest.adminReviewReturnCaseLine
+);
 router.get(
   "/orders/:orderId/service-requests/:requestId/adjustment-preview",
   serviceRequest.adminAdjustmentPreview
