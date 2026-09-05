@@ -32,7 +32,6 @@ function checkoutResumeHref(orderNumber: string, email: string): string {
   return `/checkout?${new URLSearchParams({ orderNumber, email }).toString()}`;
 }
 
-/** Exported so YourOrders can bucket orders into Paid / Cancelled / Refunded tabs. */
 export function orderIsPaid(order: OrderSummary): boolean {
   if (order.paymentStatus === "CAPTURED" || order.status === "PAID") return true;
   if (order.isCod || order.paymentProvider === "COD") {
@@ -43,10 +42,6 @@ export function orderIsPaid(order: OrderSummary): boolean {
 
 type StatusKey = "paid" | "cancelled" | "refunded" | "pending" | "other";
 
-/**
- * Payment-level status shown in the card header.
- * Literal hex values by design: semantic status layer, separate from brand palette.
- */
 function orderStatusMeta(order: OrderSummary): {
   key: StatusKey;
   label: string;
@@ -105,7 +100,6 @@ function orderStatusMeta(order: OrderSummary): {
   };
 }
 
-/** Delivery progress line for paid orders without a live tracking link. */
 function deliveryProgress(order: OrderSummary): { emoji: string; text: string } | null {
   if (order.status === "DELIVERED") return { emoji: "🎉", text: "Your order was delivered." };
   if (order.status === "SHIPPED") return { emoji: "🚚", text: "Package is on the way." };
@@ -127,21 +121,10 @@ function shipToLabel(order: OrderSummary, accountEmail?: string, shipToName?: st
   return email.split("@")[0] ?? "—";
 }
 
-function InfoRow({
-  emoji,
-  label,
-  children
-}: {
-  emoji: string;
-  label: string;
-  children: React.ReactNode;
-}) {
+function InfoRow({ emoji, label, children }: { emoji: string; label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-3 px-5 py-3">
-      <span
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-cream text-base"
-        aria-hidden="true"
-      >
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-cream text-base" aria-hidden="true">
         {emoji}
       </span>
       <div className="min-w-0 flex-1">
@@ -167,9 +150,7 @@ function CostLine({
 }) {
   return (
     <div className="flex items-baseline justify-between gap-4 py-1">
-      <span className={strong ? "text-sm font-semibold text-brand-ink" : "text-sm text-brand-muted"}>
-        {label}
-      </span>
+      <span className={strong ? "text-sm font-semibold text-brand-ink" : "text-sm text-brand-muted"}>{label}</span>
       <span className={strong ? "text-sm font-semibold text-brand-forest" : "text-sm text-brand-ink"}>
         {negative ? "− " : ""}
         {formatMinorFromPaise(Math.abs(amountInPaise), currency)}
@@ -190,41 +171,29 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
   const status = orderStatusMeta(order);
   const totalLabel = formatMinorFromPaise(order.grandTotalInPaise, order.currency);
   const isCod = order.isCod || order.paymentProvider === "COD";
-  const courierTrackUrl =
-    order.trackingUrl?.trim() ||
-    (order.awb?.trim() ? delhiveryTrackUrl(order.awb.trim()) : null);
-  const canTrackCourier =
-    paid &&
-    !!courierTrackUrl &&
-    ["PROCESSING", "PACKED", "SHIPPED", "DELIVERED"].includes(order.status);
+  const courierTrackUrl = order.trackingUrl?.trim() || (order.awb?.trim() ? delhiveryTrackUrl(order.awb.trim()) : null);
+  const canTrackCourier = paid && !!courierTrackUrl && ["PROCESSING", "PACKED", "SHIPPED", "DELIVERED"].includes(order.status);
   const deliveryPartner = order.deliveryPartner?.trim() || null;
   const progress = paid && !canTrackCourier ? deliveryProgress(order) : null;
 
   const breakdown = order.costBreakdown ?? null;
   const address = order.shippingAddress ?? null;
   const lineItems = order.lineItems ?? null;
-  const hasBreakdownData =
-    !!lineItems?.length ||
-    breakdown?.itemsSubtotalInPaise != null ||
-    breakdown?.shippingInPaise != null ||
-    breakdown?.gstIncludedInPaise != null;
+  const hasBreakdownData = !!lineItems?.length || breakdown?.itemsSubtotalInPaise != null || breakdown?.shippingInPaise != null || breakdown?.gstIncludedInPaise != null;
   const hasAddressData = !!(address?.line1 || address?.city || address?.pincode || address?.phone);
 
   const addressLines = address
-    ? [
-        address.name,
-        address.line1,
-        address.line2,
-        [address.city, address.state, address.pincode].filter(Boolean).join(", "),
-        address.country
-      ].filter((line): line is string => !!line?.trim())
+    ? [address.name, address.line1, address.line2, [address.city, address.state, address.pincode].filter(Boolean).join(", "), address.country].filter(
+        (line): line is string => !!line?.trim()
+      )
     : [];
 
   const serviceRequest = order.serviceRequest ?? null;
   const requestPending = serviceRequest?.status === "PENDING_APPROVAL";
   const showCancel = order.canCancelRequest === true;
   const showAdjust = order.canAdjustRequest === true;
-  const showRefund = order.canRefundRequest === true;
+  const showReturnRequest = order.canRefundRequest === true;
+  const showRefundHistory = serviceRequest?.type === "REFUND_AFTER_DELIVERY";
   const cancelBlockedMessage =
     !showCancel &&
     !requestPending &&
@@ -234,38 +203,19 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
     order.status !== "DELIVERED"
       ? order.cancelBlockReason
       : null;
-  const showRefundClosed =
-    !showRefund &&
-    order.status === "DELIVERED" &&
-    order.returnWindowExpired === true &&
-    order.serviceRequest?.status !== "PENDING_APPROVAL";
-  const showReturnsAndRefunds =
-    order.status === "DELIVERED" ||
-    showRefund ||
-    serviceRequest?.type === "REFUND_AFTER_DELIVERY";
 
   return (
-    <article
-      className={`overflow-hidden rounded-r-2xl border border-brand-cream-dark border-l-4 ${status.borderClass} bg-white shadow-card transition-all duration-150 hover:-translate-y-0.5 hover:shadow-lg motion-reduce:transition-none motion-reduce:hover:translate-y-0`}
-    >
-      <header
-        className={`flex flex-wrap items-center justify-between gap-2 border-b border-brand-cream-dark px-5 py-3 ${status.headerClass}`}
-      >
+    <article className={`overflow-hidden rounded-r-2xl border border-brand-cream-dark border-l-4 ${status.borderClass} bg-white shadow-card transition-all duration-150 hover:-translate-y-0.5 hover:shadow-lg motion-reduce:transition-none motion-reduce:hover:translate-y-0`}>
+      <header className={`flex flex-wrap items-center justify-between gap-2 border-b border-brand-cream-dark px-5 py-3 ${status.headerClass}`}>
         <div className="min-w-0">
           <p className="text-sm text-brand-ink">
             <span aria-hidden="true">📦 </span>
-            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-muted">
-              Order ID:
-            </span>{" "}
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-muted">Order ID:</span>{" "}
             <span className="font-mono font-semibold">{order.orderNumber}</span>
           </p>
-          <p className="mt-0.5 text-xs text-brand-muted">
-            Placed on {formatPlacedDate(order.placedAt ?? order.createdAt)}
-          </p>
+          <p className="mt-0.5 text-xs text-brand-muted">Placed on {formatPlacedDate(order.placedAt ?? order.createdAt)}</p>
         </div>
-        <span
-          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${status.pillClass}`}
-        >
+        <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${status.pillClass}`}>
           <span aria-hidden="true">{status.emoji}</span>
           {status.label}
         </span>
@@ -273,42 +223,23 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
 
       {order.rtoCustomerStatus?.inRto ? (
         <div className="border-b border-violet-200 bg-violet-50 px-5 py-3 dark:border-violet-900 dark:bg-violet-950/30">
-          <p className="text-sm font-semibold text-violet-900 dark:text-violet-200">
-            {order.rtoCustomerStatus.label}
-          </p>
-          {order.rtoCustomerStatus.detail ? (
-            <p className="mt-0.5 text-xs text-violet-800 dark:text-violet-300">
-              {order.rtoCustomerStatus.detail}
-            </p>
-          ) : null}
+          <p className="text-sm font-semibold text-violet-900 dark:text-violet-200">{order.rtoCustomerStatus.label}</p>
+          {order.rtoCustomerStatus.detail ? <p className="mt-0.5 text-xs text-violet-800 dark:text-violet-300">{order.rtoCustomerStatus.detail}</p> : null}
         </div>
       ) : cancelBlockedMessage ? (
-        <div className="border-b border-stone-200 bg-stone-50 px-5 py-3 text-sm text-stone-600">
-          {cancelBlockedMessage}
-        </div>
+        <div className="border-b border-stone-200 bg-stone-50 px-5 py-3 text-sm text-stone-600">{cancelBlockedMessage}</div>
       ) : null}
 
       {requestPending ? (
         <div className="border-b border-[#FAEEDA] bg-[#FAEEDA]/60 px-5 py-3 text-sm text-[#633806]">
           <span aria-hidden="true">⏳ </span>
-          Your{" "}
-          {serviceRequest?.type === "ADJUST_BEFORE_DELIVERY"
-            ? "order change"
-            : serviceRequest?.type === "CANCEL_BEFORE_DELIVERY"
-              ? "cancellation"
-              : "return/refund"}{" "}
-          request is waiting for approval.
+          Your {serviceRequest?.type === "ADJUST_BEFORE_DELIVERY" ? "order change" : serviceRequest?.type === "CANCEL_BEFORE_DELIVERY" ? "cancellation" : "return/refund"} request is waiting for approval.
         </div>
       ) : serviceRequest?.status === "APPROVED" ? (
         <div className="border-b border-[#E1F5EE] bg-[#E1F5EE]/50 px-5 py-3 text-sm text-[#085041]">
           {serviceRequest.type === "REFUND_AFTER_DELIVERY" ? (
             <>
-              <p className="font-semibold">
-                {serviceRequest.customerStatus?.label ??
-                  (serviceRequest.resolutionStatus === "REFUNDED"
-                    ? "Refund processed"
-                    : "Return approved")}
-              </p>
+              <p className="font-semibold">{serviceRequest.customerStatus?.label ?? (serviceRequest.resolutionStatus === "REFUNDED" ? "Refund processed" : "Return approved")}</p>
               <p className="mt-0.5">
                 {serviceRequest.customerStatus?.detail ??
                   (serviceRequest.returnPhysicalStatus === "NOT_REQUIRED"
@@ -317,21 +248,11 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
               </p>
             </>
           ) : (
-            <>
-              Your{" "}
-              {serviceRequest.type === "ADJUST_BEFORE_DELIVERY"
-                ? "order change"
-                : serviceRequest.type === "CANCEL_BEFORE_DELIVERY"
-                  ? "cancellation"
-                  : "return/refund"}{" "}
-              request was approved.
-            </>
+            <>Your {serviceRequest.type === "ADJUST_BEFORE_DELIVERY" ? "order change" : serviceRequest.type === "CANCEL_BEFORE_DELIVERY" ? "cancellation" : "return/refund"} request was approved.</>
           )}
         </div>
       ) : serviceRequest?.status === "NEEDS_DISCUSSION" ? (
-        <div className="border-b border-violet-200 bg-violet-50 px-5 py-3 text-sm text-violet-900">
-          We need to discuss your order change — our team will contact you.
-        </div>
+        <div className="border-b border-violet-200 bg-violet-50 px-5 py-3 text-sm text-violet-900">We need to discuss your order change — our team will contact you.</div>
       ) : serviceRequest?.status === "REJECTED" ? (
         <div className="border-b border-[#FCEBEB] bg-[#FCEBEB]/50 px-5 py-3 text-sm text-[#791F1F]">
           {serviceRequest.type === "CANCEL_BEFORE_DELIVERY"
@@ -348,33 +269,22 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
             <span className="min-w-0 font-medium">{order.headline}</span>
             <span className="shrink-0 font-semibold text-brand-forest">{totalLabel}</span>
           </div>
-          <p className="mt-0.5 text-xs text-brand-muted">
-            {order.itemCount} item{order.itemCount === 1 ? "" : "s"} in this order
-          </p>
+          <p className="mt-0.5 text-xs text-brand-muted">{order.itemCount} item{order.itemCount === 1 ? "" : "s"} in this order</p>
         </InfoRow>
 
         <InfoRow emoji={isCod ? "💵" : "💳"} label="Payment mode">
           <div>
             <p>{isCod ? "Cash on delivery" : `Paid online via ${paymentProviderLabel(order.paymentProvider)}`}</p>
-            {!isCod && order.paymentReference ? (
-              <p className="mt-0.5 font-mono text-xs text-brand-muted">Ref: {order.paymentReference}</p>
-            ) : null}
+            {!isCod && order.paymentReference ? <p className="mt-0.5 font-mono text-xs text-brand-muted">Ref: {order.paymentReference}</p> : null}
           </div>
-          {status.key === "refunded" ? (
-            <span className="mt-1 block text-xs text-[#633806]">Amount refunded to source</span>
-          ) : null}
+          {status.key === "refunded" ? <span className="mt-1 block text-xs text-[#633806]">Amount refunded to source</span> : null}
         </InfoRow>
 
         {paid ? (
           <InfoRow emoji="🚚" label="Delivery">
             {canTrackCourier ? (
               <div className="flex flex-wrap items-center gap-3">
-                <a
-                  href={courierTrackUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-brand-forest px-4 text-sm font-medium text-brand-cream no-underline transition-colors hover:bg-brand-night"
-                >
+                <a href={courierTrackUrl!} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-brand-forest px-4 text-sm font-medium text-brand-cream no-underline transition-colors hover:bg-brand-night">
                   <span aria-hidden="true">🚚</span>
                   Track package
                 </a>
@@ -422,36 +332,16 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
                 ) : null}
               </div>
             ) : progress ? (
-              <span>
-                <span aria-hidden="true">{progress.emoji} </span>
-                {progress.text}
-              </span>
+              <span><span aria-hidden="true">{progress.emoji} </span>{progress.text}</span>
             ) : null}
           </InfoRow>
         ) : null}
 
         <details className="group">
           <summary className="flex cursor-pointer list-none items-center gap-3 px-5 py-3 transition-colors hover:bg-brand-cream/40 [&::-webkit-details-marker]:hidden">
-            <span
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-cream text-base"
-              aria-hidden="true"
-            >
-              🧾
-            </span>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-cream text-base" aria-hidden="true">🧾</span>
             <span className="flex-1 text-sm font-medium text-brand-ink">Order details</span>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-              className="shrink-0 text-brand-muted transition-transform duration-150 group-open:rotate-180"
-            >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 text-brand-muted transition-transform duration-150 group-open:rotate-180">
               <polyline points="6 9 12 15 18 9" />
             </svg>
           </summary>
@@ -464,68 +354,35 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
                   {lineItems?.length
                     ? lineItems.map((item, i) => (
                         <div key={i} className="flex items-baseline justify-between gap-4 py-1">
-                          <span className="min-w-0 text-sm text-brand-ink">
-                            {item.title}
-                            <span className="ml-1.5 text-xs text-brand-muted">× {item.quantity}</span>
-                          </span>
-                          <span className="shrink-0 text-sm text-brand-ink">
-                            {formatMinorFromPaise(item.lineTotalInPaise, order.currency)}
-                          </span>
+                          <span className="min-w-0 text-sm text-brand-ink">{item.title}<span className="ml-1.5 text-xs text-brand-muted">× {item.quantity}</span></span>
+                          <span className="shrink-0 text-sm text-brand-ink">{formatMinorFromPaise(item.lineTotalInPaise, order.currency)}</span>
                         </div>
                       ))
                     : null}
                   {lineItems?.length ? <div className="my-2 border-t border-brand-cream-dark/60" /> : null}
-                  {breakdown?.itemsSubtotalInPaise != null ? (
-                    <CostLine label="Item(s) subtotal" amountInPaise={breakdown.itemsSubtotalInPaise} currency={order.currency} />
-                  ) : null}
-                  {breakdown?.shippingInPaise != null ? (
-                    <CostLine label="Shipping" amountInPaise={breakdown.shippingInPaise} currency={order.currency} />
-                  ) : null}
-                  {breakdown?.discountInPaise != null && breakdown.discountInPaise !== 0 ? (
-                    <CostLine label="Discount" amountInPaise={breakdown.discountInPaise} currency={order.currency} negative />
-                  ) : null}
+                  {breakdown?.itemsSubtotalInPaise != null ? <CostLine label="Item(s) subtotal" amountInPaise={breakdown.itemsSubtotalInPaise} currency={order.currency} /> : null}
+                  {breakdown?.shippingInPaise != null ? <CostLine label="Shipping" amountInPaise={breakdown.shippingInPaise} currency={order.currency} /> : null}
+                  {breakdown?.discountInPaise != null && breakdown.discountInPaise !== 0 ? <CostLine label="Discount" amountInPaise={breakdown.discountInPaise} currency={order.currency} negative /> : null}
                   <div className="my-2 border-t border-brand-cream-dark/60" />
-                  <CostLine
-                    label={isCod ? "Grand total (COD)" : "Grand total"}
-                    amountInPaise={order.grandTotalInPaise}
-                    currency={order.currency}
-                    strong
-                  />
+                  <CostLine label={isCod ? "Grand total (COD)" : "Grand total"} amountInPaise={order.grandTotalInPaise} currency={order.currency} strong />
                   {breakdown?.gstIncludedInPaise != null ? (
-                    <p className="mt-1 text-xs text-brand-muted">
-                      GST included: {formatMinorFromPaise(breakdown.gstIncludedInPaise, order.currency)}
-                      {breakdown.gstRateLabel ? ` (${breakdown.gstRateLabel})` : ""}
-                    </p>
+                    <p className="mt-1 text-xs text-brand-muted">GST included: {formatMinorFromPaise(breakdown.gstIncludedInPaise, order.currency)}{breakdown.gstRateLabel ? ` (${breakdown.gstRateLabel})` : ""}</p>
                   ) : null}
                 </div>
               ) : (
                 <div className="mt-2">
-                  <CostLine
-                    label={isCod ? "Grand total (COD)" : "Grand total"}
-                    amountInPaise={order.grandTotalInPaise}
-                    currency={order.currency}
-                    strong
-                  />
+                  <CostLine label={isCod ? "Grand total (COD)" : "Grand total"} amountInPaise={order.grandTotalInPaise} currency={order.currency} strong />
                   <p className="mt-1 text-xs italic text-brand-muted">Detailed split-up coming soon.</p>
                 </div>
               )}
             </div>
 
             <div className="rounded-xl bg-brand-cream/50 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-muted">
-                <span aria-hidden="true">📍 </span>Delivery address
-              </p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-muted"><span aria-hidden="true">📍 </span>Delivery address</p>
               {hasAddressData ? (
                 <div className="mt-2 text-sm text-brand-ink">
-                  {addressLines.map((line, i) => (
-                    <p key={i} className={i === 0 ? "font-medium" : "mt-0.5"}>{line}</p>
-                  ))}
-                  {address?.phone ? (
-                    <p className="mt-1.5 text-xs text-brand-muted">
-                      <span aria-hidden="true">📞 </span>
-                      {address.phone}
-                    </p>
-                  ) : null}
+                  {addressLines.map((line, i) => <p key={i} className={i === 0 ? "font-medium" : "mt-0.5"}>{line}</p>)}
+                  {address?.phone ? <p className="mt-1.5 text-xs text-brand-muted"><span aria-hidden="true">📞 </span>{address.phone}</p> : null}
                 </div>
               ) : (
                 <div className="mt-2 text-sm">
@@ -540,12 +397,8 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
 
       <footer className="flex flex-wrap items-center gap-2 border-t border-brand-cream-dark bg-brand-cream/40 px-5 py-3">
         {pendingPayment ? (
-          <Link
-            href={payHref}
-            className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-brand-forest px-4 text-sm font-medium text-brand-cream transition-colors hover:bg-brand-night"
-          >
-            <span aria-hidden="true">⚡</span>
-            Complete payment
+          <Link href={payHref} className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-brand-forest px-4 text-sm font-medium text-brand-cream transition-colors hover:bg-brand-night">
+            <span aria-hidden="true">⚡</span>Complete payment
           </Link>
         ) : null}
 
@@ -559,83 +412,59 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
             }}
             className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-brand-forest px-4 text-sm font-medium text-brand-cream transition-colors hover:bg-brand-night disabled:opacity-60"
           >
-            <span aria-hidden="true">🔄</span>
-            Reorder items
+            <span aria-hidden="true">🔄</span>Reorder items
           </button>
         ) : null}
 
         {paid ? (
-          <a
-            href={orderInvoiceDownloadUrl(order.orderNumber, email)}
-            className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-brand-forest/25 bg-white px-4 text-sm font-medium text-brand-forest hover:bg-brand-forest/5"
-          >
-            <span aria-hidden="true">📄</span>
-            Invoice
+          <a href={orderInvoiceDownloadUrl(order.orderNumber, email)} className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-brand-forest/25 bg-white px-4 text-sm font-medium text-brand-forest hover:bg-brand-forest/5">
+            <span aria-hidden="true">📄</span>Invoice
           </a>
         ) : null}
 
         {showAdjust ? (
-          <Link
-            href={`/profile/orders/${encodeURIComponent(order.orderNumber)}/adjust`}
-            className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-violet-300 bg-violet-50 px-4 text-sm font-semibold text-violet-900 transition-colors hover:bg-violet-100"
-          >
-            <span aria-hidden="true">✎</span>
-            Request order change
+          <Link href={`/profile/orders/${encodeURIComponent(order.orderNumber)}/adjust`} className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-violet-300 bg-violet-50 px-4 text-sm font-semibold text-violet-900 transition-colors hover:bg-violet-100">
+            <span aria-hidden="true">✎</span>Request order change
           </Link>
         ) : null}
 
         {showCancel ? (
-          <Link
-            href={`/profile/orders/${encodeURIComponent(order.orderNumber)}/cancel`}
-            className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-[#C0453F]/30 bg-[#FCEBEB] px-4 text-sm font-semibold text-[#791F1F] transition-colors hover:bg-[#FCEBEB]"
-          >
-            <span aria-hidden="true">✕</span>
-            Cancel order
+          <Link href={`/profile/orders/${encodeURIComponent(order.orderNumber)}/cancel`} className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-[#C0453F]/30 bg-[#FCEBEB] px-4 text-sm font-semibold text-[#791F1F] transition-colors hover:bg-[#FCEBEB]">
+            <span aria-hidden="true">✕</span>Cancel order
           </Link>
         ) : cancelBlockedMessage ? (
-          <span
-            className="inline-flex min-h-[36px] max-w-xs items-center justify-center gap-1.5 rounded-full border border-stone-200 bg-stone-50 px-4 text-sm font-medium text-stone-600"
-            title={cancelBlockedMessage}
-          >
-            <span aria-hidden="true">✕</span>
-            Cancel unavailable
+          <span className="inline-flex min-h-[36px] max-w-xs items-center justify-center gap-1.5 rounded-full border border-stone-200 bg-stone-50 px-4 text-sm font-medium text-stone-600" title={cancelBlockedMessage}>
+            <span aria-hidden="true">✕</span>Cancel unavailable
           </span>
         ) : null}
 
-        {showRefundClosed ? (
-          <span
-            className="inline-flex min-h-[36px] cursor-not-allowed items-center justify-center gap-1.5 rounded-full border border-stone-200 bg-stone-100 px-4 text-sm font-semibold text-stone-400"
-            title="Return window is 7 days from delivery"
+        {showReturnRequest ? (
+          <Link
+            href={`/profile/orders/${encodeURIComponent(order.orderNumber)}/return`}
+            className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-full bg-[#0B5138] px-5 text-sm font-bold text-white shadow-md transition-all duration-150 hover:-translate-y-0.5 hover:bg-[#073F2C] hover:shadow-lg active:translate-y-0 active:scale-[0.98] active:bg-[#062F22] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0B5138]/40 focus-visible:ring-offset-2"
           >
-            <span aria-hidden="true">↩</span>
-            Return window closed
-          </span>
+            <span aria-hidden="true">↩</span>Return or replace items
+          </Link>
+        ) : null}
+
+        {showRefundHistory ? (
+          <Link
+            href={`/profile/orders/${encodeURIComponent(order.orderNumber)}/return?view=history`}
+            className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-full border border-[#0B5138]/25 bg-white px-5 text-sm font-bold text-[#0B5138] shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:bg-emerald-50 hover:shadow-md active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0B5138]/30 focus-visible:ring-offset-2"
+          >
+            <span aria-hidden="true">₹</span>Refund history
+          </Link>
         ) : null}
 
         <Link
           href={`/contact?orderNumber=${encodeURIComponent(order.orderNumber)}`}
           className="inline-flex min-h-[38px] items-center justify-center gap-1.5 rounded-full bg-[#FAEEDA] px-4 text-sm font-semibold text-[#633806] shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[#FAC775]/70 hover:shadow-md active:translate-y-0 active:scale-[0.98]"
         >
-          <span aria-hidden="true">💬</span>
-          Need help?
+          <span aria-hidden="true">💬</span>Need help?
         </Link>
 
-        {showReturnsAndRefunds ? (
-          <Link
-            href={`/profile/orders/${encodeURIComponent(order.orderNumber)}/return`}
-            className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-full bg-[#0B5138] px-5 text-sm font-bold text-white shadow-md transition-all duration-150 hover:-translate-y-0.5 hover:bg-[#073F2C] hover:shadow-lg active:translate-y-0 active:scale-[0.98] active:bg-[#062F22] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0B5138]/40 focus-visible:ring-offset-2"
-          >
-            <span aria-hidden="true">↩</span>
-            Returns & refunds
-          </Link>
-        ) : null}
-
         {order.status === "CANCELLED" && order.cancellationInfo ? (
-          <button
-            type="button"
-            onClick={() => setCancelModalOpen(true)}
-            className="inline-flex min-h-[36px] items-center justify-center gap-1 rounded-full px-3 text-sm text-[#993C1D] hover:bg-[#FCEBEB]/60"
-          >
+          <button type="button" onClick={() => setCancelModalOpen(true)} className="inline-flex min-h-[36px] items-center justify-center gap-1 rounded-full px-3 text-sm text-[#993C1D] hover:bg-[#FCEBEB]/60">
             Why cancelled?
           </button>
         ) : null}
