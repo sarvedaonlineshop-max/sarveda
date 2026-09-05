@@ -346,7 +346,7 @@ export async function computeReplacementCommercialDelta(opts: {
 
   const originalUnit = Math.round(item.lineTotalInPaise / item.qtyOrdered);
   const newUnit = replacement.saleInPaise;
-  const delta = (newUnit.saleInPaise - originalUnit) * opts.qty;
+  const delta = (newUnit - originalUnit) * opts.qty;
 
   if (delta === 0) return { deltaPaise: 0, classification: "SAME" };
   if (delta > 0) return { deltaPaise: delta, classification: "ADDITIONAL_PAYMENT_REQUIRED" };
