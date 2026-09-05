@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 import {
@@ -39,8 +41,24 @@ export function AdminConfirmModal({
 }: AdminConfirmModalProps) {
   const reduceMotion = useReducedMotion();
   const zero = { duration: 0 };
+  const [mounted, setMounted] = useState(false);
 
-  return (
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {open ? (
         <motion.div
@@ -48,11 +66,13 @@ export function AdminConfirmModal({
           style={{
             position: "fixed",
             inset: 0,
-            zIndex: 100,
+            zIndex: 10000,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: "16px"
+            padding: "16px",
+            // Solid dim only — no backdrop-filter (blur freezes admin on long pages).
+            background: "rgba(0, 0, 0, 0.5)"
           }}
           role="dialog"
           aria-modal="true"
@@ -61,30 +81,21 @@ export function AdminConfirmModal({
           animate={{ opacity: 1 }}
           exit={reduceMotion ? undefined : { opacity: 0 }}
           transition={reduceMotion ? zero : adminOverlayTransition}
+          onClick={() => {
+            if (!busy) onClose();
+          }}
         >
-          <motion.div
-            aria-hidden
-            style={{
-              position: "absolute",
-              inset: 0,
-              background: "rgba(0,0,0,0.45)",
-              backdropFilter: "blur(4px)"
-            }}
-            initial={reduceMotion ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={reduceMotion ? undefined : { opacity: 0 }}
-            transition={reduceMotion ? zero : adminOverlayTransition}
-          />
           <motion.div
             style={{
               position: "relative",
               width: "100%",
               maxWidth: details?.length ? "520px" : "440px",
+              maxHeight: "min(90vh, 720px)",
+              overflowY: "auto",
               background: "#ffffff",
               borderRadius: "12px",
               border: "1px solid rgba(31,33,30,0.12)",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.08), 0 18px 50px rgba(0,0,0,0.18)",
-              overflow: "hidden"
+              boxShadow: "0 1px 2px rgba(0,0,0,0.08), 0 18px 50px rgba(0,0,0,0.18)"
             }}
             variants={{
               open: {
@@ -103,6 +114,7 @@ export function AdminConfirmModal({
             initial={reduceMotion ? false : "closed"}
             animate="open"
             exit="closed"
+            onClick={(e) => e.stopPropagation()}
           >
             <div
               style={{
@@ -160,7 +172,16 @@ export function AdminConfirmModal({
 
             <div style={{ padding: "20px 24px" }}>
               {message ? (
-                <p style={{ fontSize: "14px", lineHeight: 1.65, color: "#6b5c52" }}>{message}</p>
+                <p
+                  style={{
+                    fontSize: "14px",
+                    lineHeight: 1.65,
+                    color: "#6b5c52",
+                    whiteSpace: "pre-wrap"
+                  }}
+                >
+                  {message}
+                </p>
               ) : null}
               {details && details.length > 0 ? (
                 <ul
@@ -252,6 +273,7 @@ export function AdminConfirmModal({
           </motion.div>
         </motion.div>
       ) : null}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
