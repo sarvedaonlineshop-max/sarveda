@@ -39,20 +39,7 @@ export function getCorsOrigins(): string[] {
   return [...new Set([...fromEnv, ...defaults])];
 }
 
-/**
- * TEMPORARY PREVIEW TESTING ONLY — remove before merging this feature to production.
- * Vercel generates preview hosts such as:
- * https://sarveda-frontend-k76x4rxhz-sarveda.vercel.app
- *
- * Keep this scoped to Sarveda's frontend deployment-name pattern rather than allowing
- * arbitrary *.vercel.app origins.
- */
-function isSarvedaVercelPreviewOrigin(origin: string): boolean {
-  return /^https:\/\/sarveda-frontend-[a-z0-9-]+-sarveda\.vercel\.app$/i.test(normalizeOrigin(origin));
-}
-
 export function isAllowedCorsOrigin(origin: string | undefined, allowed: string[]): boolean {
   if (!origin) return true;
-  const normalized = normalizeOrigin(origin);
-  return allowed.includes(normalized) || isSarvedaVercelPreviewOrigin(normalized);
+  return allowed.includes(normalizeOrigin(origin));
 }
