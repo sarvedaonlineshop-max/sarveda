@@ -179,7 +179,11 @@ export function AdminOrderReturnReplacementPanel({
         busy={busy === "refund"}
         confirmLabel={`Confirm ${formatMinorFromPaise(confirmAmount, currency)} refund`}
         cancelLabel="Cancel"
-        message={`You are about to refund ${formatMinorFromPaise(confirmAmount, currency)} to the customer's original ${preview?.paymentProvider ?? "payment"} method.\n\nThis action will initiate a real payment gateway refund.`}
+        message={
+          error && busy !== "refund"
+            ? `Refund failed: ${error}`
+            : `You are about to refund ${formatMinorFromPaise(confirmAmount, currency)} to the customer's original ${preview?.paymentProvider ?? "payment"} method.\n\nThis action will initiate a real payment gateway refund.`
+        }
         details={[
           `Order: ${preview?.orderNumber ?? "—"}`,
           `Return case: ${preview?.caseNumber ?? request.caseNumber ?? "—"}`,
@@ -188,13 +192,32 @@ export function AdminOrderReturnReplacementPanel({
           `Shipping: ${formatMinorFromPaise(preview?.shippingRefundPaise ?? 0, currency)}`,
           `Total refund: ${formatMinorFromPaise(confirmAmount, currency)}`
         ]}
-        onClose={() => setConfirmOpen(false)}
-        onConfirm={() => void run("refund", async () => {
+        onClose={() => {
+          if (busy === "refund") return;
           setConfirmOpen(false);
-          const fresh = await adminFetchReturnRefundPreview(orderId, request.id);
-          if (!fresh.executable || fresh.totalRefundNowPaise <= 0) throw new Error(fresh.blockMessage || "Refund is no longer executable");
-          await adminProcessReturnRefund(orderId, request.id, isCod ? codNote : undefined);
-        })}
+          setError(null);
+        }}
+        onConfirm={() =>
+          void (async () => {
+            setBusy("refund");
+            setError(null);
+            setMessage(null);
+            try {
+              const fresh = await adminFetchReturnRefundPreview(orderId, request.id);
+              if (!fresh.executable || fresh.totalRefundNowPaise <= 0) {
+                throw new Error(fresh.blockMessage || "Refund is no longer executable");
+              }
+              await adminProcessReturnRefund(orderId, request.id, isCod ? codNote : undefined);
+              setConfirmOpen(false);
+              setMessage("Saved successfully.");
+              onDone();
+            } catch (err) {
+              setError(err instanceof Error ? err.message : "Refund failed");
+            } finally {
+              setBusy(null);
+            }
+          })()
+        }
       />
 
       <div className="grid gap-3 lg:grid-cols-4">

@@ -29,6 +29,28 @@ function providerLabel(provider: string): string {
   return provider;
 }
 
+/** Razorpay (and some other SDKs) reject with plain objects, not Error. */
+export function formatPaymentGatewayError(err: unknown): string {
+  if (err instanceof Error && err.message && err.message !== "[object Object]") {
+    return err.message;
+  }
+  const raw = err as { error?: { description?: string; code?: string }; message?: string; description?: string };
+  if (typeof raw?.error?.description === "string" && raw.error.description.trim()) {
+    return raw.error.description.trim();
+  }
+  if (typeof raw?.description === "string" && raw.description.trim()) {
+    return raw.description.trim();
+  }
+  if (typeof raw?.message === "string" && raw.message.trim() && raw.message !== "[object Object]") {
+    return raw.message.trim();
+  }
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return "Payment gateway error";
+  }
+}
+
 function formatAmountLabel(currency: string, amountInPaise: number): string {
   return currency === "INR"
     ? `₹${(amountInPaise / 100).toLocaleString("en-IN")}`
@@ -314,11 +336,24 @@ export async function refundRazorpay(
     key_id: process.env.RAZORPAY_KEY_ID!,
     key_secret: process.env.RAZORPAY_KEY_SECRET!
   });
-  const refund = (await rzp.payments.refund(paymentId, {
-    amount: amountInPaise,
-    notes: { reason: notes ?? "Admin initiated refund" }
-  })) as { id: string };
-  return refund.id;
+  try {
+    const refund = (await rzp.payments.refund(paymentId, {
+      amount: amountInPaise,
+      notes: { reason: notes ?? "Admin initiated refund" }
+    })) as { id: string };
+    return refund.id;
+  } catch (err) {
+    // Razorpay SDK often rejects with a plain object `{ statusCode, error }`, not Error.
+    const raw = err as { statusCode?: number; error?: { description?: string; code?: string }; message?: string };
+    const description =
+      (typeof raw?.error?.description === "string" && raw.error.description) ||
+      (typeof raw?.message === "string" && raw.message) ||
+      (err instanceof Error ? err.message : null) ||
+      "Razorpay refund failed";
+    const code = raw?.error?.code ?? "REFUND_FAILED";
+    const statusCode = raw?.statusCode && raw.statusCode >= 400 && raw.statusCode < 500 ? 400 : 502;
+    throw Object.assign(new Error(description), { statusCode, code });
+  }
 }
 
 export async function refundStripe(

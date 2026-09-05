@@ -1098,42 +1098,56 @@ export async function executeReturnReplacementRefund(opts: {
   let goodwillRemaining = goodwillTotal;
   const executableLines = plan.lines.filter((l) => l.lineTotalRefundPaise > 0);
 
-  for (let idx = 0; idx < executableLines.length; idx++) {
-    const line = executableLines[idx];
-    const item = itemById.get(line.requestItemId)!;
-    const merch = Math.round(line.merchandiseRefundPaise * scaleDown);
-    const ship = Math.round(line.shippingRefundPaise * scaleDown);
-    const goodwill =
-      idx === executableLines.length - 1 ? goodwillRemaining : 0;
-    if (idx === executableLines.length - 1) goodwillRemaining = 0;
+  try {
+    for (let idx = 0; idx < executableLines.length; idx++) {
+      const line = executableLines[idx];
+      const item = itemById.get(line.requestItemId)!;
+      const merch = Math.round(line.merchandiseRefundPaise * scaleDown);
+      const ship = Math.round(line.shippingRefundPaise * scaleDown);
+      const goodwill =
+        idx === executableLines.length - 1 ? goodwillRemaining : 0;
+      if (idx === executableLines.length - 1) goodwillRemaining = 0;
 
-    if (merch + ship + goodwill <= 0) continue;
+      if (merch + ship + goodwill <= 0) continue;
 
-    const result = await executeAuthoritativePartialRefund({
-      orderId: request.orderId,
-      sourceType: "SERVICE_REQUEST",
-      sourceId: item.id,
-      reason: plan.overrideActive
-        ? `Return refund (override) — ${item.nameSnapshot} x${item.qtySelected} by ${opts.adminEmail}`
-        : `Return refund — ${item.nameSnapshot} x${item.qtySelected} by ${opts.adminEmail}`,
-      adjustmentMerchandiseRefundPaise: merch,
-      adjustmentShippingRefundPaise: ship,
-      goodwillAdjustmentPaise: goodwill > 0 ? goodwill : undefined,
-      quantity: item.qtySelected,
-      orderItemId: item.orderItemId
-    });
+      const result = await executeAuthoritativePartialRefund({
+        orderId: request.orderId,
+        sourceType: "SERVICE_REQUEST",
+        sourceId: item.id,
+        reason: plan.overrideActive
+          ? `Return refund (override) — ${item.nameSnapshot} x${item.qtySelected} by ${opts.adminEmail}`
+          : `Return refund — ${item.nameSnapshot} x${item.qtySelected} by ${opts.adminEmail}`,
+        adjustmentMerchandiseRefundPaise: merch,
+        adjustmentShippingRefundPaise: ship,
+        goodwillAdjustmentPaise: goodwill > 0 ? goodwill : undefined,
+        quantity: item.qtySelected,
+        orderItemId: item.orderItemId
+      });
 
-    refundIds.push(result.refundId);
-    totalRefunded += result.amountInPaise;
+      refundIds.push(result.refundId);
+      totalRefunded += result.amountInPaise;
 
-    await prisma.orderServiceRequestItem.update({
-      where: { id: item.id },
-      data: {
-        refundAmountInPaise: result.amountInPaise,
-        refundedAt: new Date(),
-        refundProviderId: result.providerRefundId
-      }
-    });
+      await prisma.orderServiceRequestItem.update({
+        where: { id: item.id },
+        data: {
+          refundAmountInPaise: result.amountInPaise,
+          refundedAt: new Date(),
+          refundProviderId: result.providerRefundId
+        }
+      });
+    }
+  } catch (err) {
+    // Gateway failure after marking PROCESSING — unlock the case so admin can retry.
+    if (totalRefunded === 0) {
+      await prisma.orderServiceRequest.update({
+        where: { id: request.id },
+        data: {
+          resolutionStatus: "REFUND_PENDING",
+          refundInitiatedAt: null
+        }
+      });
+    }
+    throw err;
   }
 
   await prisma.orderServiceRequest.update({

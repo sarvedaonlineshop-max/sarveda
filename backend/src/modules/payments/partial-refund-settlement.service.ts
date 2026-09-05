@@ -30,6 +30,27 @@ import {
 } from "./refund-allocation.service";
 // Zoho Books retired — keep ZOHO_SYNCED enum readable for historical rows only.
 
+function formatPaymentGatewayError(err: unknown): string {
+  if (err instanceof Error && err.message && err.message !== "[object Object]") {
+    return err.message;
+  }
+  const raw = err as { error?: { description?: string }; message?: string; description?: string };
+  if (typeof raw?.error?.description === "string" && raw.error.description.trim()) {
+    return raw.error.description.trim();
+  }
+  if (typeof raw?.description === "string" && raw.description.trim()) {
+    return raw.description.trim();
+  }
+  if (typeof raw?.message === "string" && raw.message.trim() && raw.message !== "[object Object]") {
+    return raw.message.trim();
+  }
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return "Payment gateway error";
+  }
+}
+
 export type ExecutePartialRefundInput = {
   orderId: string;
   sourceType: RefundSourceType;
@@ -395,10 +416,21 @@ export async function executeAuthoritativePartialRefund(
       order.currency
     );
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const msg = formatPaymentGatewayError(err);
     await failReservedRefund(refundRow.id, msg);
     await updateSettlementStage(refundRow.id, "FAILED", msg);
-    throw Object.assign(new Error(`Gateway refund failed: ${msg}`), { statusCode: 502, code: "REFUND_FAILED" });
+    logger.error("gateway_partial_refund_failed", {
+      orderId: input.orderId,
+      refundId: refundRow.id,
+      sourceType: input.sourceType,
+      sourceId: input.sourceId,
+      err: msg
+    });
+    const statusCode = (err as { statusCode?: number })?.statusCode;
+    throw Object.assign(new Error(`Gateway refund failed: ${msg}`), {
+      statusCode: statusCode && statusCode >= 400 && statusCode < 500 ? statusCode : 400,
+      code: (err as { code?: string })?.code ?? "REFUND_FAILED"
+    });
   }
 
   const { fullyRefunded } = await finalizeGatewayRefund({
