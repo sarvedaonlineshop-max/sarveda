@@ -48,7 +48,6 @@ export function resolveDeliveredAtFromOrder(order: {
   shipments: Array<{ status: string; deliveredAt: Date | null }>;
   statusHistory: Array<{ toStatus: string; createdAt: Date }>;
 }): Date | null {
-  // Same canonical resolution as My Orders / canRequestRefund (earliest shipment or history).
   return resolveDeliveredAt(order);
 }
 
@@ -56,6 +55,27 @@ function isPaidForReturn(paymentStatus: PaymentStatus, payments: OrderRow["payme
   if (["CAPTURED", "PARTIALLY_REFUNDED", "REFUNDED"].includes(paymentStatus)) return true;
   return payments.some((p) => p.provider === "COD" && p.status === "CAPTURED");
 }
+
+export type CustomerRelatedReturnCaseRef = {
+  caseNumber: string;
+  requestId: string;
+  qtySelected: number;
+  reviewDecision: string;
+  caseStatus: string;
+  reasonLabel: string | null;
+  requestedResolution: string | null;
+  customerFacingNote: string | null;
+  createdAt: Date;
+  returnPhysicalStatus: string;
+  resolutionStatus: string;
+  refundTotalInPaise: number | null;
+  refundCompletedAt: Date | null;
+  refundProcessedAt: Date | null;
+  courier: string | null;
+  awb: string | null;
+  trackingUrl: string | null;
+  shipmentPhysicalStatus: string | null;
+};
 
 /**
  * Per-line qty that is unavailable for a new return request.
@@ -73,17 +93,13 @@ export function unavailableReturnQtyFromCaseLines(
     const decision = line.reviewDecision;
     const status = line.caseStatus;
 
-    // Launch: rejected qty stays locked (no silent resubmit).
     if (decision === "REJECTED" || status === "REJECTED") {
       unavailable += line.qtySelected;
       continue;
     }
 
-    if (!COMMITMENT_CASE_STATUSES.has(status)) {
-      continue;
-    }
+    if (!COMMITMENT_CASE_STATUSES.has(status)) continue;
 
-    // PENDING / MORE_INFO_REQUIRED / APPROVED all reduce availability on open/partial/approved cases.
     if (
       decision === "PENDING" ||
       decision === "MORE_INFO_REQUIRED" ||
@@ -113,6 +129,19 @@ async function loadCaseLinesForOrderItem(
     caseStatus: string;
     caseNumber: string;
     requestId: string;
+    reasonLabel: string | null;
+    requestedResolution: string | null;
+    customerFacingNote: string | null;
+    createdAt: Date;
+    returnPhysicalStatus: string;
+    resolutionStatus: string;
+    refundTotalInPaise: number | null;
+    refundCompletedAt: Date | null;
+    refundProcessedAt: Date | null;
+    courier: string | null;
+    awb: string | null;
+    trackingUrl: string | null;
+    shipmentPhysicalStatus: string | null;
   }>
 > {
   const rows = await db.orderServiceRequestItem.findMany({
@@ -123,7 +152,30 @@ async function loadCaseLinesForOrderItem(
     select: {
       qtySelected: true,
       reviewDecision: true,
-      request: { select: { status: true, caseNumber: true, id: true } }
+      reasonLabel: true,
+      requestedResolution: true,
+      customerFacingNote: true,
+      request: {
+        select: {
+          status: true,
+          caseNumber: true,
+          id: true,
+          createdAt: true,
+          returnPhysicalStatus: true,
+          resolutionStatus: true,
+          refundTotalInPaise: true,
+          refundCompletedAt: true,
+          refundProcessedAt: true,
+          returnShipment: {
+            select: {
+              courier: true,
+              awb: true,
+              trackingUrl: true,
+              physicalStatus: true
+            }
+          }
+        }
+      }
     }
   });
   return rows.map((line) => ({
@@ -131,7 +183,20 @@ async function loadCaseLinesForOrderItem(
     reviewDecision: line.reviewDecision,
     caseStatus: line.request.status,
     caseNumber: line.request.caseNumber,
-    requestId: line.request.id
+    requestId: line.request.id,
+    reasonLabel: line.reasonLabel,
+    requestedResolution: line.requestedResolution,
+    customerFacingNote: line.customerFacingNote,
+    createdAt: line.request.createdAt,
+    returnPhysicalStatus: line.request.returnPhysicalStatus,
+    resolutionStatus: line.request.resolutionStatus,
+    refundTotalInPaise: line.request.refundTotalInPaise,
+    refundCompletedAt: line.request.refundCompletedAt,
+    refundProcessedAt: line.request.refundProcessedAt,
+    courier: line.request.returnShipment?.courier ?? null,
+    awb: line.request.returnShipment?.awb ?? null,
+    trackingUrl: line.request.returnShipment?.trackingUrl ?? null,
+    shipmentPhysicalStatus: line.request.returnShipment?.physicalStatus ?? null
   }));
 }
 
@@ -143,42 +208,56 @@ export function summarizeReturnCaseLineQtys(
     caseStatus: string;
     caseNumber?: string;
     requestId?: string;
+    reasonLabel?: string | null;
+    requestedResolution?: string | null;
+    customerFacingNote?: string | null;
+    createdAt?: Date;
+    returnPhysicalStatus?: string;
+    resolutionStatus?: string;
+    refundTotalInPaise?: number | null;
+    refundCompletedAt?: Date | null;
+    refundProcessedAt?: Date | null;
+    courier?: string | null;
+    awb?: string | null;
+    trackingUrl?: string | null;
+    shipmentPhysicalStatus?: string | null;
   }>
 ): {
   pendingQty: number;
   moreInfoQty: number;
   approvedQty: number;
   rejectedLockedQty: number;
-  relatedCaseRefs: Array<{
-    caseNumber: string;
-    requestId: string;
-    qtySelected: number;
-    reviewDecision: string;
-    caseStatus: string;
-  }>;
+  relatedCaseRefs: CustomerRelatedReturnCaseRef[];
 } {
   let pendingQty = 0;
   let moreInfoQty = 0;
   let approvedQty = 0;
   let rejectedLockedQty = 0;
-  const relatedCaseRefs: Array<{
-    caseNumber: string;
-    requestId: string;
-    qtySelected: number;
-    reviewDecision: string;
-    caseStatus: string;
-  }> = [];
+  const relatedCaseRefs: CustomerRelatedReturnCaseRef[] = [];
 
   for (const line of lines) {
     const decision = String(line.reviewDecision);
     const status = line.caseStatus;
-    if (line.caseNumber && line.requestId) {
+    if (line.caseNumber && line.requestId && line.createdAt) {
       relatedCaseRefs.push({
         caseNumber: line.caseNumber,
         requestId: line.requestId,
         qtySelected: line.qtySelected,
         reviewDecision: decision,
-        caseStatus: status
+        caseStatus: status,
+        reasonLabel: line.reasonLabel ?? null,
+        requestedResolution: line.requestedResolution ?? null,
+        customerFacingNote: line.customerFacingNote ?? null,
+        createdAt: line.createdAt,
+        returnPhysicalStatus: line.returnPhysicalStatus ?? "NOT_REQUIRED",
+        resolutionStatus: line.resolutionStatus ?? "NONE",
+        refundTotalInPaise: line.refundTotalInPaise ?? null,
+        refundCompletedAt: line.refundCompletedAt ?? null,
+        refundProcessedAt: line.refundProcessedAt ?? null,
+        courier: line.courier ?? null,
+        awb: line.awb ?? null,
+        trackingUrl: line.trackingUrl ?? null,
+        shipmentPhysicalStatus: line.shipmentPhysicalStatus ?? null
       });
     }
 
@@ -204,23 +283,18 @@ export type CustomerReturnLineEligibility = {
   moreInfoQty: number;
   approvedQty: number;
   rejectedLockedQty: number;
-  /** Committed on open/approved cases (pending + more info + approved). */
   alreadyInReturnQty: number;
   alreadyReturnedQty: number;
   remainingEligibleQty: number;
   maxReturnableQty: number;
   unavailableReason: string | null;
-  relatedCaseRefs: Array<{
-    caseNumber: string;
-    requestId: string;
-    qtySelected: number;
-    reviewDecision: string;
-    caseStatus: string;
-  }>;
+  relatedCaseRefs: CustomerRelatedReturnCaseRef[];
 };
 
 /**
  * Thin read model for customer return UI — same qty rules as getReturnEligibility / submit guard.
+ * relatedCaseRefs intentionally carries customer-safe return history so the UI can show past
+ * approvals, rejections, refund totals and pickup tracking without exposing admin-only fields.
  */
 export async function getCustomerReturnEligibilitySnapshot(opts: {
   orderId: string;
@@ -271,20 +345,13 @@ export async function getCustomerReturnEligibilitySnapshot(opts: {
   return lines;
 }
 
-/** Customer-facing qty rejection used by submit guard. */
 export function qtyExceedsAvailableMessage(remaining: number): string {
-  if (remaining <= 0) {
-    return "No units are currently eligible for a new return request.";
-  }
+  if (remaining <= 0) return "No units are currently eligible for a new return request.";
   return remaining === 1
     ? "Only 1 unit is currently eligible for a new return request."
     : `Only ${remaining} units are currently eligible for a new return request.`;
 }
 
-/**
- * Authoritative post-delivery return/replacement eligibility for one order line + qty.
- * Pass `db` (transaction client) when rechecking under a row lock.
- */
 export async function getReturnEligibility(opts: {
   order: OrderRow;
   orderItemId: string;
@@ -362,7 +429,6 @@ export async function getReturnEligibility(opts: {
 
   const alreadyReturned = await getReturnedQuantityForOrderItem(db, opts.orderItemId);
   const caseUnavailable = await caseUnavailableQtyForOrderItem(opts.orderItemId, db);
-  // Restock events outside a case still consume returnable units; case lines use per-line decisions.
   const maxReturnableQty = Math.max(0, item.qtyOrdered - Math.max(alreadyReturned, caseUnavailable));
 
   if (opts.qtyRequested <= 0 || opts.qtyRequested > maxReturnableQty) {
