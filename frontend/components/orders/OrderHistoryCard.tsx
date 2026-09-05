@@ -239,12 +239,15 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
     order.status === "DELIVERED" &&
     order.returnWindowExpired === true &&
     order.serviceRequest?.status !== "PENDING_APPROVAL";
+  const showReturnsAndRefunds =
+    order.status === "DELIVERED" ||
+    showRefund ||
+    serviceRequest?.type === "REFUND_AFTER_DELIVERY";
 
   return (
     <article
       className={`overflow-hidden rounded-r-2xl border border-brand-cream-dark border-l-4 ${status.borderClass} bg-white shadow-card transition-all duration-150 hover:-translate-y-0.5 hover:shadow-lg motion-reduce:transition-none motion-reduce:hover:translate-y-0`}
     >
-      {/* ── Header: order ID + payment status ── */}
       <header
         className={`flex flex-wrap items-center justify-between gap-2 border-b border-brand-cream-dark px-5 py-3 ${status.headerClass}`}
       >
@@ -339,7 +342,6 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
         </div>
       ) : null}
 
-      {/* ── Meaningful info rows ── */}
       <div className="divide-y divide-brand-cream-dark/60">
         <InfoRow emoji="🛍️" label="Items">
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
@@ -428,7 +430,6 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
           </InfoRow>
         ) : null}
 
-        {/* ── Collapsible: cost split + full address ── */}
         <details className="group">
           <summary className="flex cursor-pointer list-none items-center gap-3 px-5 py-3 transition-colors hover:bg-brand-cream/40 [&::-webkit-details-marker]:hidden">
             <span
@@ -437,9 +438,7 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
             >
               🧾
             </span>
-            <span className="flex-1 text-sm font-medium text-brand-ink">
-              Order details
-            </span>
+            <span className="flex-1 text-sm font-medium text-brand-ink">Order details</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"
@@ -458,11 +457,8 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
           </summary>
 
           <div className="grid gap-4 px-5 pb-4 pt-1 sm:grid-cols-2">
-            {/* Cost breakdown */}
             <div className="rounded-xl bg-brand-cream/50 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-muted">
-                Cost breakdown
-              </p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-muted">Cost breakdown</p>
               {hasBreakdownData ? (
                 <div className="mt-2">
                   {lineItems?.length
@@ -510,14 +506,11 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
                     currency={order.currency}
                     strong
                   />
-                  <p className="mt-1 text-xs italic text-brand-muted">
-                    Detailed split-up coming soon.
-                  </p>
+                  <p className="mt-1 text-xs italic text-brand-muted">Detailed split-up coming soon.</p>
                 </div>
               )}
             </div>
 
-            {/* Full address */}
             <div className="rounded-xl bg-brand-cream/50 p-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-muted">
                 <span aria-hidden="true">📍 </span>Delivery address
@@ -525,9 +518,7 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
               {hasAddressData ? (
                 <div className="mt-2 text-sm text-brand-ink">
                   {addressLines.map((line, i) => (
-                    <p key={i} className={i === 0 ? "font-medium" : "mt-0.5"}>
-                      {line}
-                    </p>
+                    <p key={i} className={i === 0 ? "font-medium" : "mt-0.5"}>{line}</p>
                   ))}
                   {address?.phone ? (
                     <p className="mt-1.5 text-xs text-brand-muted">
@@ -547,7 +538,6 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
         </details>
       </div>
 
-      {/* ── Actions ── */}
       <footer className="flex flex-wrap items-center gap-2 border-t border-brand-cream-dark bg-brand-cream/40 px-5 py-3">
         {pendingPayment ? (
           <Link
@@ -612,16 +602,6 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
           </span>
         ) : null}
 
-        {showRefund ? (
-          <Link
-            href={`/profile/orders/${encodeURIComponent(order.orderNumber)}/return`}
-            className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full border border-[#D99A2B]/40 bg-[#FAEEDA] px-4 text-sm font-semibold text-[#633806] transition-colors hover:bg-[#FAC775]/40"
-          >
-            <span aria-hidden="true">↩</span>
-            Return or replace items
-          </Link>
-        ) : null}
-
         {showRefundClosed ? (
           <span
             className="inline-flex min-h-[36px] cursor-not-allowed items-center justify-center gap-1.5 rounded-full border border-stone-200 bg-stone-100 px-4 text-sm font-semibold text-stone-400"
@@ -634,11 +614,21 @@ export function OrderHistoryCard({ order, accountEmail, shipToName }: Props) {
 
         <Link
           href={`/contact?orderNumber=${encodeURIComponent(order.orderNumber)}`}
-          className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-full bg-[#FAEEDA] px-4 text-sm font-semibold text-[#633806] transition-colors hover:bg-[#FAC775]/60"
+          className="inline-flex min-h-[38px] items-center justify-center gap-1.5 rounded-full bg-[#FAEEDA] px-4 text-sm font-semibold text-[#633806] shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[#FAC775]/70 hover:shadow-md active:translate-y-0 active:scale-[0.98]"
         >
           <span aria-hidden="true">💬</span>
           Need help?
         </Link>
+
+        {showReturnsAndRefunds ? (
+          <Link
+            href={`/profile/orders/${encodeURIComponent(order.orderNumber)}/return`}
+            className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-full bg-[#0B5138] px-5 text-sm font-bold text-white shadow-md transition-all duration-150 hover:-translate-y-0.5 hover:bg-[#073F2C] hover:shadow-lg active:translate-y-0 active:scale-[0.98] active:bg-[#062F22] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0B5138]/40 focus-visible:ring-offset-2"
+          >
+            <span aria-hidden="true">↩</span>
+            Returns & refunds
+          </Link>
+        ) : null}
 
         {order.status === "CANCELLED" && order.cancellationInfo ? (
           <button
