@@ -73,7 +73,7 @@ export const RETURN_REASON_SPEC: Record<
   },
   quality_issue: {
     label: "Quality is not as expected",
-    allowedResolutions: ["RETURN_FOR_REFUND", "PARTIAL_REFUND", "KEEP_ITEM_PARTIAL_REFUND"],
+    allowedResolutions: ["RETURN_FOR_REFUND", "REPLACEMENT", "PARTIAL_REFUND", "KEEP_ITEM_PARTIAL_REFUND"],
     // Until root-cause review can distinguish preference vs confirmed defect, require evidence.
     evidenceRequired: true,
     shippingRefundPolicy: "SHIPPING_RETAINED",
