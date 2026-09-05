@@ -314,7 +314,7 @@ export function AdminOrderReturnReplacementPanel({
 
         <section className={`rounded-2xl border p-4 ${canDisposition ? "border-violet-300 bg-violet-50/50" : "border-stone-200 bg-white"}`}>
           <div className="flex items-center gap-3 text-stone-700"><StepIcon type="qc" /><h3 className="text-base font-extrabold">3. Inspect & QC</h3></div>
-          <p className="mt-3 min-h-[70px] text-sm leading-6 text-stone-600">QC decides the returned item's inventory disposition before any replacement leaves the warehouse.</p>
+          <p className="mt-3 min-h-[70px] text-sm leading-6 text-stone-600">QC decides the returned item&apos;s inventory disposition before any replacement leaves the warehouse.</p>
           {canDisposition ? (
             <div className="space-y-2">
               <button type="button" disabled={busy != null} className="w-full rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-800" onClick={() => setQcConfirm("RESTOCKABLE")}>Restockable</button>
