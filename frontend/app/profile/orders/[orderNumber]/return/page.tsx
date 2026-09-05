@@ -46,6 +46,12 @@ type HistoryRef = {
   awb?: string | null;
   trackingUrl?: string | null;
   shipmentPhysicalStatus?: string | null;
+  replacementStatus?: string | null;
+  replacementCourier?: string | null;
+  replacementAwb?: string | null;
+  replacementTrackingUrl?: string | null;
+  replacementShippedAt?: string | null;
+  replacementDeliveredAt?: string | null;
 };
 
 type HistoryCase = {
@@ -60,6 +66,12 @@ type HistoryCase = {
   awb?: string | null;
   trackingUrl?: string | null;
   shipmentPhysicalStatus?: string | null;
+  replacementStatus?: string | null;
+  replacementCourier?: string | null;
+  replacementAwb?: string | null;
+  replacementTrackingUrl?: string | null;
+  replacementShippedAt?: string | null;
+  replacementDeliveredAt?: string | null;
   items: Array<{
     orderItemId: string;
     name: string;
@@ -94,6 +106,13 @@ function human(value?: string | null) {
   return value ? value.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (m) => m.toUpperCase()) : "—";
 }
 
+function resolutionLabel(value?: string | null) {
+  if (value === "RETURN_FOR_REFUND") return "Refund the amount";
+  if (value === "REPLACEMENT") return "Replace with same item";
+  if (value === "MISSING_PART") return "Send missing part";
+  return human(value);
+}
+
 function money(paise: number, currency: string) {
   return new Intl.NumberFormat("en-IN", { style: "currency", currency }).format(paise / 100);
 }
@@ -112,11 +131,10 @@ function visibleCustomerNote(note?: string | null): string | null {
   return value;
 }
 
-function returnTrackingHref(entry: HistoryCase): string | null {
-  const explicit = entry.trackingUrl?.trim();
-  if (explicit) return explicit;
-  if (entry.awb?.trim() && entry.courier?.toLowerCase().includes("delhivery")) {
-    return delhiveryTrackUrl(entry.awb.trim());
+function trackingHref(courier?: string | null, awb?: string | null, explicit?: string | null): string | null {
+  if (explicit?.trim()) return explicit.trim();
+  if (awb?.trim() && courier?.toLowerCase().includes("delhivery")) {
+    return delhiveryTrackUrl(awb.trim());
   }
   return null;
 }
@@ -182,6 +200,12 @@ export default function ReturnOrderRequestPage() {
             awb: ref.awb,
             trackingUrl: ref.trackingUrl,
             shipmentPhysicalStatus: ref.shipmentPhysicalStatus,
+            replacementStatus: ref.replacementStatus,
+            replacementCourier: ref.replacementCourier,
+            replacementAwb: ref.replacementAwb,
+            replacementTrackingUrl: ref.replacementTrackingUrl,
+            replacementShippedAt: ref.replacementShippedAt,
+            replacementDeliveredAt: ref.replacementDeliveredAt,
             items: []
           };
           existing.items.push({
@@ -194,6 +218,12 @@ export default function ReturnOrderRequestPage() {
             resolution: ref.requestedResolution,
             note: ref.customerFacingNote
           });
+          if (ref.replacementStatus) existing.replacementStatus = ref.replacementStatus;
+          if (ref.replacementCourier) existing.replacementCourier = ref.replacementCourier;
+          if (ref.replacementAwb) existing.replacementAwb = ref.replacementAwb;
+          if (ref.replacementTrackingUrl) existing.replacementTrackingUrl = ref.replacementTrackingUrl;
+          if (ref.replacementShippedAt) existing.replacementShippedAt = ref.replacementShippedAt;
+          if (ref.replacementDeliveredAt) existing.replacementDeliveredAt = ref.replacementDeliveredAt;
           historyByRequest.set(ref.requestId, existing);
         }
       }
@@ -262,7 +292,7 @@ export default function ReturnOrderRequestPage() {
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[.14em] text-brand-muted">Order {orderNumber}</p>
                       <h1 className="mt-1 text-2xl font-extrabold text-brand-forest">Refund & return history</h1>
-                      <p className="mt-1 text-sm text-brand-muted">Past requests, approvals, rejections, pickup tracking and refunds for this order.</p>
+                      <p className="mt-1 text-sm text-brand-muted">Past requests, approvals, rejections, return pickup, replacement tracking and refunds for this order.</p>
                     </div>
                   </div>
                 </section>
@@ -274,12 +304,18 @@ export default function ReturnOrderRequestPage() {
                     </div>
                   ) : (
                     history.map((entry) => {
-                      const trackingHref = returnTrackingHref(entry);
+                      const returnHref = trackingHref(entry.courier, entry.awb, entry.trackingUrl);
+                      const replacementHref = trackingHref(
+                        entry.replacementCourier,
+                        entry.replacementAwb,
+                        entry.replacementTrackingUrl
+                      );
                       const refundLabel = entry.refundTotalInPaise > 0
                         ? entry.refundAt
                           ? "Refund completed"
                           : "Refund initiated"
                         : null;
+                      const hasReplacement = entry.items.some((item) => item.resolution === "REPLACEMENT");
 
                       return (
                         <article key={entry.requestId} className="overflow-hidden rounded-[22px] border border-stone-200 bg-white shadow-sm">
@@ -306,7 +342,7 @@ export default function ReturnOrderRequestPage() {
                                   <div>
                                     <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${decisionClass(item.decision)}`}>{human(item.decision)}</span>
                                   </div>
-                                  <div className="text-sm font-semibold text-stone-700">{human(item.resolution)}</div>
+                                  <div className="text-sm font-semibold text-stone-700">{resolutionLabel(item.resolution)}</div>
                                 </div>
                               );
                             })}
@@ -315,12 +351,38 @@ export default function ReturnOrderRequestPage() {
                               <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-950">
                                 <span><b>Return pickup:</b> {entry.courier || "Courier"}</span>
                                 {entry.awb ? (
-                                  trackingHref ? (
-                                    <a href={trackingHref} target="_blank" rel="noreferrer" className="font-bold text-blue-700 underline decoration-blue-300 underline-offset-2 hover:text-blue-900">
+                                  returnHref ? (
+                                    <a href={returnHref} target="_blank" rel="noreferrer" className="font-bold text-blue-700 underline decoration-blue-300 underline-offset-2 hover:text-blue-900">
                                       AWB: {entry.awb} · Track return
                                     </a>
                                   ) : (
                                     <span><b>AWB:</b> {entry.awb}</span>
+                                  )
+                                ) : null}
+                              </div>
+                            ) : null}
+
+                            {hasReplacement ? (
+                              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-indigo-50 px-4 py-3 text-sm text-indigo-950">
+                                <div>
+                                  <span className="font-extrabold">
+                                    {entry.replacementDeliveredAt
+                                      ? "Replacement delivered"
+                                      : entry.replacementShippedAt
+                                        ? "Replacement shipped"
+                                        : entry.replacementStatus === "REPLACEMENT_PENDING"
+                                          ? "Replacement approved — awaiting return/QC"
+                                          : "Replacement requested"}
+                                  </span>
+                                  {entry.replacementCourier ? <span className="ml-2 text-indigo-700">via {entry.replacementCourier}</span> : null}
+                                </div>
+                                {entry.replacementAwb ? (
+                                  replacementHref ? (
+                                    <a href={replacementHref} target="_blank" rel="noreferrer" className="font-bold text-indigo-700 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-950">
+                                      AWB: {entry.replacementAwb} · Track replacement
+                                    </a>
+                                  ) : (
+                                    <span className="font-bold">AWB: {entry.replacementAwb}</span>
                                   )
                                 ) : null}
                               </div>
@@ -335,7 +397,7 @@ export default function ReturnOrderRequestPage() {
                                 <span className="text-lg font-extrabold">{money(entry.refundTotalInPaise, currency)}</span>
                               </div>
                             ) : entry.status === "REJECTED" || entry.items.every((i) => i.decision === "REJECTED") ? (
-                              <div className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-800">This request was not approved. No refund was issued.</div>
+                              <div className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-800">This request was not approved. No refund or replacement was issued.</div>
                             ) : null}
                           </div>
                         </article>
