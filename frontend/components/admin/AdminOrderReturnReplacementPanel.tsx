@@ -61,42 +61,12 @@ export type ReturnReplacementAdminContext = {
   };
 };
 
-const RESOLUTION_LABELS: Record<string, string> = {
-  RETURN_FOR_REFUND: "Return for refund",
-  REPLACEMENT: "Replacement",
-  PARTIAL_REFUND: "Partial refund",
-  KEEP_ITEM_PARTIAL_REFUND: "Keep item — partial refund",
-  MISSING_PART: "Missing part"
-};
-
-function humanPhysicalStatus(value?: string | null): string {
-  switch (value) {
-    case "AWAITING_RETURN": return "Awaiting customer return";
-    case "IN_TRANSIT": return "Return in transit";
-    case "RECEIVED": return "Return received";
-    case "INSPECTED": return "Inspection completed";
-    case "NOT_REQUIRED": return "Physical return not required";
-    default: return value?.replace(/_/g, " ") ?? "—";
-  }
-}
-
-function humanResolutionStatus(value?: string | null): string {
-  switch (value) {
-    case "REFUND_PENDING": return "Refund pending";
-    case "REFUND_PROCESSING": return "Refund processing";
-    case "REFUNDED": return "Refund processed";
-    case "REPLACEMENT_PENDING": return "Replacement pending";
-    case "NONE": return "None";
-    default: return value?.replace(/_/g, " ") ?? "—";
-  }
-}
-
 function humanShippingPolicy(value?: string | null): string {
   switch (value) {
-    case "MIXED": return "Mixed shipping policy";
-    case "SHIPPING_REFUNDABLE": return "Shipping refundable — seller/logistics fault";
-    case "SHIPPING_RETAINED": return "Shipping retained — customer preference";
-    case "MANUAL_REVIEW": return "Shipping — manual review";
+    case "MIXED": return "Mixed";
+    case "SHIPPING_REFUNDABLE": return "Refundable";
+    case "SHIPPING_RETAINED": return "Retained";
+    case "MANUAL_REVIEW": return "Manual review";
     default: return value?.replace(/_/g, " ") ?? "—";
   }
 }
@@ -110,11 +80,20 @@ function humanDisposition(value?: string | null): string {
   }
 }
 
-function statusTone(decision?: string | null) {
-  if (decision === "APPROVED") return "border-emerald-200 bg-emerald-50 text-emerald-800";
-  if (decision === "REJECTED") return "border-red-200 bg-red-50 text-red-700";
-  if (decision === "MORE_INFO_REQUIRED") return "border-amber-200 bg-amber-50 text-amber-800";
-  return "border-stone-200 bg-stone-100 text-stone-700";
+function StepIcon({ type }: { type: "pickup" | "received" | "qc" | "refund" }) {
+  const path =
+    type === "pickup"
+      ? "M3 7h11v9H3zM14 10h3l3 3v3h-6zM6 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm11 0a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"
+      : type === "received"
+        ? "M4 7l8-4 8 4-8 4-8-4Zm0 0v10l8 4 8-4V7M12 11v10"
+        : type === "qc"
+          ? "m21 21-4.35-4.35M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"
+          : "M7 5h10M7 9h10M7 13h6m-6-8c4 0 6 2 6 4s-2 4-6 4m0 0 8 8";
+  return (
+    <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d={path} />
+    </svg>
+  );
 }
 
 export function AdminOrderReturnReplacementPanel({
@@ -142,12 +121,15 @@ export function AdminOrderReturnReplacementPanel({
 
   const isCod = paymentProvider === "COD";
   const rs = request.returnShipment;
+  const approvedCase = request.status === "APPROVED" || request.status === "PARTIALLY_APPROVED";
   const needsReturn = request.returnPhysicalStatus !== "NOT_REQUIRED";
-  const received = Boolean(rs?.receivedAt);
+  const pickupStarted = Boolean(rs?.awb || rs?.courier || request.returnPhysicalStatus === "IN_TRANSIT");
+  const received = Boolean(rs?.receivedAt) || request.returnPhysicalStatus === "RECEIVED" || request.returnPhysicalStatus === "INSPECTED";
   const inspected = request.returnPhysicalStatus === "INSPECTED" || Boolean(rs?.disposition && rs.disposition !== "NEEDS_REVIEW");
-  const canReceive = needsReturn && rs && !rs.receivedAt;
-  const canDisposition = Boolean(rs?.receivedAt && (!rs.disposition || rs.disposition === "NEEDS_REVIEW"));
+  const canReceive = needsReturn && approvedCase && pickupStarted && !received;
+  const canDisposition = needsReturn && approvedCase && received && !inspected;
   const alreadyRefunded = request.resolutionStatus === "REFUNDED" || (request.refundTotalInPaise != null && request.refundTotalInPaise > 0);
+  const approvedLines = (request.items ?? []).filter((item) => item.reviewDecision === "APPROVED");
 
   async function loadPreview() {
     if (!["APPROVED", "PARTIALLY_APPROVED", "PENDING_APPROVAL", "MORE_INFO_REQUIRED"].includes(request.status)) {
@@ -186,11 +168,11 @@ export function AdminOrderReturnReplacementPanel({
   }
 
   const confirmAmount = preview?.totalRefundNowPaise ?? 0;
-  const canShowRefundAction = (request.status === "APPROVED" || request.status === "PARTIALLY_APPROVED") && !alreadyRefunded && preview?.executable === true && confirmAmount > 0;
-  const visibleItems = request.items ?? [];
+  const canShowRefundAction = approvedCase && !alreadyRefunded && preview?.executable === true && confirmAmount > 0;
+  const shippingPolicy = humanShippingPolicy(preview?.shippingPolicy === "MIXED" ? "MIXED" : preview?.shippingPolicy ?? request.shippingRefundPolicy);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <AdminConfirmModal
         open={confirmOpen}
         title="Confirm refund"
@@ -205,7 +187,6 @@ export function AdminOrderReturnReplacementPanel({
           `Approved quantity: ${preview?.approvedQtySelected ?? "—"} of ${preview?.orderedQtyOnLines ?? "—"}`,
           `Merchandise: ${formatMinorFromPaise(preview?.merchandiseRefundPaise ?? 0, currency)}`,
           `Shipping: ${formatMinorFromPaise(preview?.shippingRefundPaise ?? 0, currency)}`,
-          ...(preview && preview.otherAdjustmentPaise > 0 ? [`Other adjustment: ${formatMinorFromPaise(preview.otherAdjustmentPaise, currency)}`] : []),
           `Total refund: ${formatMinorFromPaise(confirmAmount, currency)}`
         ]}
         onClose={() => setConfirmOpen(false)}
@@ -217,117 +198,61 @@ export function AdminOrderReturnReplacementPanel({
         })}
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-4">
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-blue-700">Physical return</p>
-          <p className="mt-2 text-base font-bold text-stone-950">{humanPhysicalStatus(request.returnPhysicalStatus)}</p>
-        </div>
-        <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-4">
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-amber-700">Resolution</p>
-          <p className="mt-2 text-base font-bold text-stone-950">{humanResolutionStatus(request.resolutionStatus)}</p>
-        </div>
-        <div className="rounded-2xl border border-violet-100 bg-violet-50/70 p-4">
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-violet-700">Shipping</p>
-          <p className="mt-2 text-base font-bold text-stone-950">{humanShippingPolicy(preview?.shippingPolicy === "MIXED" ? "MIXED" : preview?.shippingPolicy ?? request.shippingRefundPolicy)}</p>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-stone-500">Move the approved items through pickup, warehouse receipt, QC and final refund.</p>
+        <span className="rounded-xl bg-amber-50 px-4 py-2 text-sm font-bold text-amber-800">Shipping policy: {shippingPolicy}</span>
       </div>
 
-      {needsReturn && request.status === "APPROVED" && !inspected && !alreadyRefunded ? (
-        <div className="flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-lg">🔒</span>
-          <div>
-            <p className="font-bold">Refund is safely locked</p>
-            <p className="mt-1 leading-6">Warehouse receipt and QC/disposition must be recorded before the gateway refund becomes available.</p>
+      <div className="grid gap-3 lg:grid-cols-4">
+        <section className={`rounded-2xl border p-4 ${!pickupStarted && approvedCase ? "border-blue-400 bg-blue-50/60 ring-1 ring-blue-100" : "border-stone-200 bg-white"}`}>
+          <div className="flex items-center gap-3 text-blue-700"><StepIcon type="pickup" /><h3 className="text-base font-extrabold">1. Schedule pickup</h3></div>
+          <p className="mt-3 min-h-[44px] text-sm leading-6 text-stone-600">Add courier and return AWB for the approved items.</p>
+          <div className="mt-3 space-y-2">
+            <input className="h-10 w-full rounded-xl border border-stone-300 bg-white px-3 text-sm" placeholder="Courier" value={courier} onChange={(e) => setCourier(e.target.value)} disabled={!approvedCase || received} />
+            <input className="h-10 w-full rounded-xl border border-stone-300 bg-white px-3 text-sm" placeholder="Return AWB" value={awb} onChange={(e) => setAwb(e.target.value)} disabled={!approvedCase || received} />
+            <button type="button" disabled={busy != null || !approvedCase || received || !courier.trim() || !awb.trim()} className="w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-stone-300" onClick={() => void run("shipment", () => adminUpdateReturnShipment(orderId, request.id, { courier: courier.trim(), awb: awb.trim(), physicalStatus: "IN_TRANSIT" }))}>{pickupStarted ? "Update pickup tracking" : "Save pickup tracking"}</button>
           </div>
-        </div>
-      ) : null}
+        </section>
 
-      <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-        <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-100 text-xl">📦</span>
-          <div>
-            <h3 className="text-lg font-bold text-stone-950">Approved return lines</h3>
-            <p className="text-sm text-stone-500">Only approved lines move through pickup, QC and refund.</p>
-          </div>
-        </div>
-        <div className="mt-4 grid gap-3">
-          {visibleItems.map((item) => {
-            const decision = item.reviewDecision ?? "PENDING";
-            const ordered = ctx.orderItems?.find((o) => o.id === item.orderItemId)?.qtyOrdered;
-            return (
-              <div key={item.id} className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-stone-50/60 p-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <p className="text-base font-bold text-stone-950">{item.nameSnapshot}</p>
-                  <p className="mt-1 text-sm text-stone-500">Qty {item.qtySelected}{ordered != null ? ` of ${ordered}` : ""} · {item.reasonLabel}</p>
-                  {item.requestedResolution ? <p className="mt-1 text-sm font-medium text-stone-700">{RESOLUTION_LABELS[item.requestedResolution] ?? item.requestedResolution}</p> : null}
-                </div>
-                <span className={`inline-flex w-fit rounded-full border px-3 py-1.5 text-sm font-bold ${statusTone(decision)}`}>{decision.replace(/_/g, " ")}</span>
-              </div>
-            );
-          })}
-        </div>
-      </section>
+        <section className={`rounded-2xl border p-4 ${canReceive ? "border-emerald-300 bg-emerald-50/50" : "border-stone-200 bg-white"}`}>
+          <div className="flex items-center gap-3 text-stone-700"><StepIcon type="received" /><h3 className="text-base font-extrabold">2. Mark as received</h3></div>
+          <p className="mt-3 min-h-[92px] text-sm leading-6 text-stone-600">Confirm the approved return parcel has reached the warehouse.</p>
+          <button type="button" disabled={busy != null || !canReceive} className="w-full rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-stone-300" onClick={() => void run("received", () => adminMarkReturnReceived(orderId, request.id))}>{received ? "Received" : "Mark received"}</button>
+        </section>
 
-      {needsReturn && request.status === "APPROVED" && !received ? (
-        <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-xl">🚚</span>
-            <div>
-              <h3 className="text-lg font-bold text-stone-950">Return pickup & tracking</h3>
-              <p className="text-sm text-stone-500">Save courier details, then mark receipt when the parcel reaches the warehouse.</p>
+        <section className={`rounded-2xl border p-4 ${canDisposition ? "border-violet-300 bg-violet-50/50" : "border-stone-200 bg-white"}`}>
+          <div className="flex items-center gap-3 text-stone-700"><StepIcon type="qc" /><h3 className="text-base font-extrabold">3. Inspect & QC</h3></div>
+          <p className="mt-3 min-h-[70px] text-sm leading-6 text-stone-600">Record condition and decide whether returned stock is sellable.</p>
+          {canDisposition ? (
+            <div className="space-y-2">
+              <button type="button" disabled={busy != null} className="w-full rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-800" onClick={() => void run("disp-RESTOCKABLE", () => adminMarkReturnDisposition(orderId, request.id, "RESTOCKABLE"))}>Restockable</button>
+              <button type="button" disabled={busy != null} className="w-full rounded-xl border border-red-300 bg-white px-3 py-2 text-xs font-bold text-red-700" onClick={() => void run("disp-DAMAGED_NON_RESTOCKABLE", () => adminMarkReturnDisposition(orderId, request.id, "DAMAGED_NON_RESTOCKABLE"))}>Damaged — do not restock</button>
+              <button type="button" disabled={busy != null} className="w-full rounded-xl border border-amber-300 bg-white px-3 py-2 text-xs font-bold text-amber-800" onClick={() => void run("disp-NEEDS_REVIEW", () => adminMarkReturnDisposition(orderId, request.id, "NEEDS_REVIEW"))}>Needs further review</button>
             </div>
-          </div>
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <input className="h-11 rounded-xl border border-stone-300 px-3 text-sm" placeholder="Courier" value={courier} onChange={(e) => setCourier(e.target.value)} />
-            <input className="h-11 rounded-xl border border-stone-300 px-3 text-sm" placeholder="Return AWB" value={awb} onChange={(e) => setAwb(e.target.value)} />
-          </div>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <button type="button" disabled={busy != null} className="rounded-xl bg-stone-900 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50" onClick={() => void run("shipment", () => adminUpdateReturnShipment(orderId, request.id, { courier, awb, physicalStatus: "IN_TRANSIT" }))}>Save return tracking</button>
-            {canReceive ? <button type="button" disabled={busy != null} className="rounded-xl bg-amber-600 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50" onClick={() => void run("received", () => adminMarkReturnReceived(orderId, request.id))}>Mark return received</button> : null}
-          </div>
+          ) : (
+            <button type="button" disabled className="w-full rounded-xl bg-stone-300 px-4 py-2.5 text-sm font-bold text-white">{inspected ? humanDisposition(rs?.disposition) : "Complete inspection"}</button>
+          )}
         </section>
-      ) : null}
 
-      {needsReturn && received ? (
-        <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-xl">✅</span>
-            <div>
-              <h3 className="text-lg font-bold text-stone-950">Warehouse receipt</h3>
-              <p className="text-sm text-stone-500">Return received and ready for QC / disposition.</p>
-            </div>
-          </div>
-          <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-xl bg-stone-50 p-3"><dt className="text-xs font-semibold uppercase text-stone-400">Status</dt><dd className="mt-1 text-sm font-bold text-stone-900">{humanPhysicalStatus(request.returnPhysicalStatus)}</dd></div>
-            <div className="rounded-xl bg-stone-50 p-3"><dt className="text-xs font-semibold uppercase text-stone-400">Courier</dt><dd className="mt-1 text-sm font-bold text-stone-900">{rs?.courier || "—"}</dd></div>
-            <div className="rounded-xl bg-stone-50 p-3"><dt className="text-xs font-semibold uppercase text-stone-400">AWB</dt><dd className="mt-1 text-sm font-bold text-stone-900">{rs?.awb || "—"}</dd></div>
-            <div className="rounded-xl bg-stone-50 p-3"><dt className="text-xs font-semibold uppercase text-stone-400">Disposition</dt><dd className="mt-1 text-sm font-bold text-stone-900">{humanDisposition(rs?.disposition)}</dd></div>
-          </dl>
+        <section className={`rounded-2xl border p-4 ${canShowRefundAction ? "border-emerald-300 bg-emerald-50/50" : "border-stone-200 bg-white"}`}>
+          <div className="flex items-center gap-3 text-stone-700"><StepIcon type="refund" /><h3 className="text-base font-extrabold">4. Process refund</h3></div>
+          <p className="mt-3 min-h-[92px] text-sm leading-6 text-stone-600">Refund the approved amount after warehouse receipt and QC.</p>
+          {isCod && canShowRefundAction ? <textarea className="mb-2 w-full rounded-xl border border-stone-300 px-3 py-2 text-xs" rows={2} placeholder="COD refund bank/UPI note" value={codNote} onChange={(e) => setCodNote(e.target.value)} /> : null}
+          <button type="button" disabled={busy != null || !canShowRefundAction} className="w-full rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-stone-300" onClick={() => setConfirmOpen(true)}>{alreadyRefunded ? "Refund processed" : canShowRefundAction ? `Refund ${formatMinorFromPaise(confirmAmount, currency)}` : "Execute refund"}</button>
         </section>
-      ) : null}
+      </div>
 
-      {canDisposition ? (
-        <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-          <h3 className="text-lg font-bold text-stone-950">Inspection / disposition</h3>
-          <p className="mt-1 text-sm text-stone-500">Choose what should happen to the returned stock after inspection.</p>
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            {([ ["RESTOCKABLE", "✓", "Restockable", "Return to sellable inventory"], ["DAMAGED_NON_RESTOCKABLE", "✕", "Damaged", "Do not restock"], ["NEEDS_REVIEW", "?", "Needs review", "Hold for further inspection"] ] as const).map(([code, icon, label, help]) => (
-              <button key={code} type="button" disabled={busy != null} className="rounded-2xl border border-stone-200 bg-white p-4 text-left transition hover:border-brand-forest/40 hover:bg-brand-forest/5 disabled:opacity-50" onClick={() => void run(`disp-${code}`, () => adminMarkReturnDisposition(orderId, request.id, code))}>
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 font-bold">{icon}</span>
-                <span className="mt-3 block text-sm font-bold text-stone-950">{label}</span>
-                <span className="mt-1 block text-xs text-stone-500">{help}</span>
-              </button>
-            ))}
-          </div>
-        </section>
-      ) : null}
+      <div className="flex gap-3 rounded-2xl border border-blue-200 bg-blue-50/60 px-4 py-3 text-sm text-blue-950">
+        <span className="font-bold">ⓘ</span>
+        <p>Only approved items ({approvedLines.length} {approvedLines.length === 1 ? "line" : "lines"}) move through this workflow. Rejected items remain visible in Return items above but are not picked up or refunded.</p>
+      </div>
 
       {["APPROVED", "PARTIALLY_APPROVED", "PENDING_APPROVAL", "MORE_INFO_REQUIRED"].includes(request.status) ? (
         <section className="overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-emerald-100 bg-emerald-50/70 px-5 py-4">
             <div>
               <h3 className="text-lg font-bold text-emerald-950">Refund summary</h3>
-              <p className="mt-1 text-sm text-emerald-800/70">Authoritative calculation from approved quantities and shipping policy.</p>
+              <p className="mt-1 text-sm text-emerald-800/70">Based on approved quantities and shipping policy.</p>
             </div>
             <button type="button" disabled={previewLoading || busy != null} className="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800 disabled:opacity-50" onClick={() => void loadPreview()}>{previewLoading ? "Refreshing…" : "Refresh preview"}</button>
           </div>
@@ -335,31 +260,35 @@ export function AdminOrderReturnReplacementPanel({
           {previewLoading && !preview ? <p className="p-5 text-sm text-stone-500">Loading authoritative refund calculation…</p> : preview ? (
             <div className="space-y-5 p-5">
               <div className="grid gap-3">
-                {preview.lines.map((line) => (
-                  <div key={line.requestItemId} className="rounded-2xl border border-stone-200 bg-stone-50/60 p-4">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                      <div>
-                        <p className="text-base font-bold text-stone-950">{line.nameSnapshot}</p>
-                        <p className="mt-1 text-sm text-stone-500">Qty {line.qtySelected} of {line.qtyOrdered} · {line.reasonLabel ?? "—"}</p>
-                        <p className="mt-1 text-sm text-stone-500">{line.shippingPolicyLabel ?? humanShippingPolicy(line.shippingPolicy)}</p>
-                      </div>
-                      <div className="grid min-w-[260px] grid-cols-3 gap-2 text-center">
-                        <div className="rounded-xl bg-white p-3"><p className="text-[11px] uppercase text-stone-400">Merchandise</p><p className="mt-1 text-sm font-bold">{formatMinorFromPaise(line.merchandiseRefundPaise, preview.currency)}</p></div>
-                        <div className="rounded-xl bg-white p-3"><p className="text-[11px] uppercase text-stone-400">Shipping</p><p className="mt-1 text-sm font-bold">{formatMinorFromPaise(line.shippingRefundPaise, preview.currency)}</p></div>
-                        <div className="rounded-xl bg-emerald-50 p-3"><p className="text-[11px] uppercase text-emerald-600">Line total</p><p className="mt-1 text-sm font-bold text-emerald-900">{formatMinorFromPaise(line.potentialLineTotalPaise ?? line.lineTotalRefundPaise, preview.currency)}</p></div>
+                {preview.lines.map((line) => {
+                  const rejected = line.reviewDecision === "REJECTED" || line.includedInRefundNow === false;
+                  const lineTotal = rejected ? 0 : line.potentialLineTotalPaise ?? line.lineTotalRefundPaise;
+                  return (
+                    <div key={line.requestItemId} className="rounded-2xl border border-stone-200 bg-stone-50/60 p-4">
+                      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <p className="text-base font-bold text-stone-950">{line.nameSnapshot}</p>
+                          <p className="mt-1 text-sm text-stone-500">Qty {line.qtySelected} of {line.qtyOrdered} · {line.reasonLabel ?? "—"}</p>
+                          <p className="mt-1 text-sm text-stone-500">{line.shippingPolicyLabel ?? humanShippingPolicy(line.shippingPolicy)}</p>
+                        </div>
+                        <div className="grid min-w-[280px] grid-cols-3 gap-2 text-center">
+                          <div className="rounded-xl bg-white p-3"><p className="text-[11px] uppercase text-stone-400">Merchandise</p><p className="mt-1 text-sm font-bold">{formatMinorFromPaise(line.merchandiseRefundPaise, preview.currency)}</p></div>
+                          <div className="rounded-xl bg-white p-3"><p className="text-[11px] uppercase text-stone-400">Shipping</p><p className="mt-1 text-sm font-bold">{formatMinorFromPaise(line.shippingRefundPaise, preview.currency)}</p></div>
+                          <div className={`rounded-xl p-3 ${rejected ? "bg-stone-100" : "bg-emerald-50"}`}><p className={`text-[11px] uppercase ${rejected ? "text-stone-500" : "text-emerald-600"}`}>Line total</p><p className={`mt-1 text-sm font-bold ${rejected ? "text-stone-700" : "text-emerald-900"}`}>{formatMinorFromPaise(lineTotal, preview.currency)}</p></div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="grid gap-3 border-t border-stone-100 pt-5 sm:grid-cols-3">
-                <div className="rounded-xl bg-stone-50 p-4"><p className="text-xs uppercase text-stone-400">Merchandise</p><p className="mt-1 text-xl font-bold">{formatMinorFromPaise(preview.merchandiseRefundPaise, preview.currency)}</p></div>
-                <div className="rounded-xl bg-stone-50 p-4"><p className="text-xs uppercase text-stone-400">Shipping</p><p className="mt-1 text-xl font-bold">{formatMinorFromPaise(preview.shippingRefundPaise, preview.currency)}</p></div>
+                <div className="rounded-xl bg-stone-50 p-4"><p className="text-xs uppercase text-stone-400">Merchandise refund</p><p className="mt-1 text-xl font-bold">{formatMinorFromPaise(preview.merchandiseRefundPaise, preview.currency)}</p></div>
+                <div className="rounded-xl bg-stone-50 p-4"><p className="text-xs uppercase text-stone-400">Shipping refund</p><p className="mt-1 text-xl font-bold">{formatMinorFromPaise(preview.shippingRefundPaise, preview.currency)}</p></div>
                 <div className="rounded-xl bg-emerald-50 p-4"><p className="text-xs uppercase text-emerald-700">{preview.executable ? "Refund now" : "Expected refund"}</p><p className="mt-1 text-2xl font-extrabold text-emerald-900">{formatMinorFromPaise(preview.executable ? preview.totalRefundNowPaise : preview.requestedRefundPaise ?? preview.calculatedRefundPaise ?? 0, preview.currency)}</p></div>
               </div>
 
-              {!preview.executable ? <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-950">{preview.blockMessage ?? "Refund not executable yet"}</div> : null}
+              {!preview.executable ? <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-950">{preview.blockMessage ?? "Return must be physically received and inspected before refund."}</div> : null}
 
               {showOverride && !alreadyRefunded ? (
                 <div className="border-t border-stone-100 pt-4">
@@ -380,22 +309,6 @@ export function AdminOrderReturnReplacementPanel({
                       </div>
                     </div>
                   )}
-                </div>
-              ) : null}
-
-              {alreadyRefunded ? (
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950">
-                  <p className="font-bold">Refund processed</p>
-                  <p className="mt-1">Amount: {formatMinorFromPaise(request.refundTotalInPaise ?? preview.totalRefundNowPaise ?? 0, currency)}</p>
-                  {request.refundProviderReference ? <p className="mt-1 font-mono text-xs">Reference: {request.refundProviderReference}</p> : null}
-                  {request.refundProcessedAt ? <p className="mt-1 text-xs">Initiated: {new Date(request.refundProcessedAt).toLocaleString("en-IN")}</p> : null}
-                </div>
-              ) : null}
-
-              {canShowRefundAction ? (
-                <div className="space-y-3 border-t border-stone-100 pt-4">
-                  {isCod ? <textarea className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm" rows={2} placeholder="COD refund — bank/UPI details for manual transfer" value={codNote} onChange={(e) => setCodNote(e.target.value)} /> : null}
-                  <button type="button" disabled={busy != null} className="rounded-xl bg-brand-forest px-5 py-3 text-sm font-bold text-white shadow-sm disabled:opacity-50" onClick={() => setConfirmOpen(true)}>Refund {formatMinorFromPaise(confirmAmount, currency)} to original payment method</button>
                 </div>
               ) : null}
             </div>
