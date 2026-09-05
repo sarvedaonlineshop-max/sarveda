@@ -166,46 +166,30 @@ export const RETURN_RESOLUTION_OPTIONS: Record<
   Array<{ code: string; label: string }>
 > = {
   defective: [
-    { code: "RETURN_FOR_REFUND", label: "Return for full refund" },
-    { code: "REPLACEMENT", label: "Replace item" },
-    { code: "PARTIAL_REFUND", label: "Partial refund" }
+    { code: "RETURN_FOR_REFUND", label: "Refund the amount" },
+    { code: "REPLACEMENT", label: "Replace with same item" }
   ],
   wrong_item_sent: [
-    { code: "RETURN_FOR_REFUND", label: "Return for refund" },
-    { code: "REPLACEMENT", label: "Replace with correct item" }
+    { code: "RETURN_FOR_REFUND", label: "Refund the amount" },
+    { code: "REPLACEMENT", label: "Replace with same item" }
   ],
   damaged_delivery: [
-    { code: "RETURN_FOR_REFUND", label: "Return for refund" },
-    { code: "REPLACEMENT", label: "Replacement" },
-    { code: "PARTIAL_REFUND", label: "Partial refund" }
+    { code: "RETURN_FOR_REFUND", label: "Refund the amount" },
+    { code: "REPLACEMENT", label: "Replace with same item" }
   ],
   different_description: [
-    { code: "RETURN_FOR_REFUND", label: "Return for refund" },
-    { code: "REPLACEMENT", label: "Replacement" },
-    { code: "PARTIAL_REFUND", label: "Partial refund" }
+    { code: "RETURN_FOR_REFUND", label: "Refund the amount" },
+    { code: "REPLACEMENT", label: "Replace with same item" }
   ],
-  missing_parts: [
-    { code: "REPLACEMENT", label: "Send missing part" },
-    { code: "PARTIAL_REFUND", label: "Partial refund" },
-    { code: "KEEP_ITEM_PARTIAL_REFUND", label: "Keep item — partial refund" }
-  ],
+  missing_parts: [{ code: "REPLACEMENT", label: "Send missing part" }],
   replace_variant: [{ code: "REPLACEMENT", label: "Replace with different size/colour" }],
-  quality_issue: [
-    { code: "RETURN_FOR_REFUND", label: "Return for refund" },
-    { code: "PARTIAL_REFUND", label: "Partial refund" },
-    { code: "KEEP_ITEM_PARTIAL_REFUND", label: "Keep item — partial refund" }
-  ],
+  quality_issue: [{ code: "RETURN_FOR_REFUND", label: "Refund the amount" }],
   extra_item: [{ code: "RETURN_FOR_REFUND", label: "Return extra item" }],
-  arrived_late: [
-    { code: "RETURN_FOR_REFUND", label: "Return for refund" },
-    { code: "PARTIAL_REFUND", label: "Partial refund" },
-    { code: "KEEP_ITEM_PARTIAL_REFUND", label: "Keep item — partial refund" }
-  ],
-  changed_mind: [{ code: "RETURN_FOR_REFUND", label: "Return for refund" }],
+  arrived_late: [{ code: "RETURN_FOR_REFUND", label: "Refund the amount" }],
+  changed_mind: [{ code: "RETURN_FOR_REFUND", label: "Refund the amount" }],
   other: [
-    { code: "RETURN_FOR_REFUND", label: "Return for refund" },
-    { code: "REPLACEMENT", label: "Replacement" },
-    { code: "PARTIAL_REFUND", label: "Partial refund" }
+    { code: "RETURN_FOR_REFUND", label: "Refund the amount" },
+    { code: "REPLACEMENT", label: "Replace with same item" }
   ]
 };
 
