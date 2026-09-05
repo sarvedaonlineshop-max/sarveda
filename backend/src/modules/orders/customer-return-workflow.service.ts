@@ -175,17 +175,31 @@ export async function upsertReturnShipmentTracking(opts: {
       payloadJson: {
         courier: opts.courier.trim(),
         awb: opts.awb.trim(),
-        trackingUrl: opts.trackingUrl?.trim() || null
+        trackingUrl: opts.trackingUrl?.trim() || null,
+        mode: opts.mode ?? null
       },
       actor: { userId: opts.adminUserId, role: "ADMIN" }
     });
     void (async () => {
+      const full = await prisma.orderServiceRequest.findUnique({
+        where: { id: request.id },
+        include: {
+          items: true,
+          order: { select: { phone: true, email: true } }
+        }
+      });
+      const approved = (full?.items ?? []).filter((i) => i.reviewDecision === "APPROVED");
+      const itemSummary =
+        approved.length > 0
+          ? approved.map((i) => `${i.nameSnapshot} × ${i.qtySelected}`).join("; ")
+          : (full?.items ?? []).map((i) => `${i.nameSnapshot} × ${i.qtySelected}`).join("; ");
       const { notifyReturnCaseEvent } = await import("./return-case-notifications.service");
       await notifyReturnCaseEvent(request.id, "RETURN_PICKUP_CREATED", {
         orderNumber: request.orderNumber,
         caseNumber: request.caseNumber,
-        customerEmail: request.customerEmail,
-        itemSummary: "",
+        customerEmail: request.customerEmail || full?.order.email || "",
+        customerPhone: full?.order.phone ?? null,
+        itemSummary,
         courier: opts.courier!.trim(),
         awb: opts.awb!.trim(),
         trackingUrl: opts.trackingUrl?.trim() || null

@@ -101,18 +101,21 @@ describe("MAN-007 return/refund notifications", () => {
     expect(msg.textBody).not.toMatch(/ROOT_CAUSE|DAMAGED_NON_RESTOCKABLE|WRITE_OFF|employee/i);
   });
 
-  it("5. pickup created includes courier and AWB", () => {
+  it("5. pickup created includes courier, AWB, and packing guidance", () => {
     const msg = buildReturnCaseMessage("RETURN_PICKUP_CREATED", {
       orderNumber: "SRV-20260900005",
       caseNumber: "RC-202609-00001",
       customerEmail: "c@example.com",
-      itemSummary: "",
+      itemSummary: "Dummy Product × 1",
       courier: "Delhivery",
       awb: "RVP123456",
       trackingUrl: "https://example.com/track/RVP123456"
     });
+    expect(msg.subject).toMatch(/Return pickup scheduled/);
     expect(msg.textBody).toContain("Delhivery");
     expect(msg.textBody).toContain("RVP123456");
+    expect(msg.textBody).toContain("SRV-20260900005");
+    expect(msg.textBody).toMatch(/pack the items securely/i);
   });
 
   it("6. received uses warehouse inspection wording (not refund complete)", () => {

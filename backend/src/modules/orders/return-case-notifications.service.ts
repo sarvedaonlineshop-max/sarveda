@@ -302,21 +302,30 @@ export function buildReturnCaseMessage(
     }
     case "RETURN_PICKUP_CREATED": {
       const lines = [
-        `Return shipping has started for case ${caseId}.`,
+        `Your return pickup for order ${orderNo} has been scheduled.`,
+        `Return Case: ${caseId}`,
+        payload.itemSummary ? `Items for pickup: ${payload.itemSummary}` : "",
         payload.courier ? `Courier: ${payload.courier}` : "",
-        payload.awb ? `Return tracking ID: ${payload.awb}` : "",
+        payload.awb ? `Return tracking ID (AWB): ${payload.awb}` : "",
+        payload.trackingUrl ? `Track your pickup: ${payload.trackingUrl}` : "",
         payload.pickupWindow ? `Pickup window: ${payload.pickupWindow}` : "",
-        payload.trackingUrl ? `Track: ${payload.trackingUrl}` : ""
-      ].filter(Boolean);
+        "",
+        "Please pack the items securely in their original packaging (or equivalent protective packing) before the courier arrives.",
+        "Include all accessories and ensure the package is sealed and labeled for easy identification.",
+        "Keep your phone reachable at the delivery address so the pickup executive can contact you.",
+        "Your refund or replacement will be processed after we receive and inspect the returned item(s)."
+      ].filter((l) => l !== undefined);
       return {
-        subject: `Return pickup / shipping — ${orderNo}`,
-        banner: "Return shipping update",
-        lines,
-        textBody: lines.join("\n"),
+        subject: `Return pickup scheduled — ${orderNo}`,
+        banner: "Return pickup scheduled",
+        lines: lines.filter((l) => l !== ""),
+        textBody: lines.filter(Boolean).join("\n"),
         refundAmountFormatted: null,
         waBodyParams: [
           name,
+          orderNo,
           caseId,
+          payload.itemSummary || "your item",
           payload.courier || "courier",
           payload.awb || "pending",
           payload.trackingUrl || profileUrl
@@ -521,7 +530,11 @@ function resolveWaTemplateName(event: ReturnCaseNotifyEvent): string | null {
   const envKey = WA_TEMPLATE_ENV[event];
   const fromEnv = process.env[envKey]?.trim();
   if (fromEnv) return fromEnv;
-  // Do not send unapproved/hard-coded template names.
+  // Optional opt-in: use suggested Meta names (must be approved in Exotel/WhatsApp Manager).
+  if (process.env.WA_RETURN_USE_SUGGESTED_TEMPLATES === "1") {
+    return SUGGESTED_WA_TEMPLATE_NAMES[event]?.trim() || null;
+  }
+  // Do not send unapproved/hard-coded template names by default.
   return null;
 }
 
