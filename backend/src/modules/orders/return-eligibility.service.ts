@@ -75,6 +75,12 @@ export type CustomerRelatedReturnCaseRef = {
   awb: string | null;
   trackingUrl: string | null;
   shipmentPhysicalStatus: string | null;
+  replacementStatus: string | null;
+  replacementCourier: string | null;
+  replacementAwb: string | null;
+  replacementTrackingUrl: string | null;
+  replacementShippedAt: Date | null;
+  replacementDeliveredAt: Date | null;
 };
 
 /**
@@ -142,6 +148,12 @@ async function loadCaseLinesForOrderItem(
     awb: string | null;
     trackingUrl: string | null;
     shipmentPhysicalStatus: string | null;
+    replacementStatus: string | null;
+    replacementCourier: string | null;
+    replacementAwb: string | null;
+    replacementTrackingUrl: string | null;
+    replacementShippedAt: Date | null;
+    replacementDeliveredAt: Date | null;
   }>
 > {
   const rows = await db.orderServiceRequestItem.findMany({
@@ -155,6 +167,14 @@ async function loadCaseLinesForOrderItem(
       reasonLabel: true,
       requestedResolution: true,
       customerFacingNote: true,
+      replacementFulfillment: {
+        select: {
+          status: true,
+          outboundShipmentId: true,
+          shippedAt: true,
+          deliveredAt: true
+        }
+      },
       request: {
         select: {
           status: true,
@@ -178,26 +198,50 @@ async function loadCaseLinesForOrderItem(
       }
     }
   });
-  return rows.map((line) => ({
-    qtySelected: line.qtySelected,
-    reviewDecision: line.reviewDecision,
-    caseStatus: line.request.status,
-    caseNumber: line.request.caseNumber,
-    requestId: line.request.id,
-    reasonLabel: line.reasonLabel,
-    requestedResolution: line.requestedResolution,
-    customerFacingNote: line.customerFacingNote,
-    createdAt: line.request.createdAt,
-    returnPhysicalStatus: line.request.returnPhysicalStatus,
-    resolutionStatus: line.request.resolutionStatus,
-    refundTotalInPaise: line.request.refundTotalInPaise,
-    refundCompletedAt: line.request.refundCompletedAt,
-    refundProcessedAt: line.request.refundProcessedAt,
-    courier: line.request.returnShipment?.courier ?? null,
-    awb: line.request.returnShipment?.awb ?? null,
-    trackingUrl: line.request.returnShipment?.trackingUrl ?? null,
-    shipmentPhysicalStatus: line.request.returnShipment?.physicalStatus ?? null
-  }));
+
+  const outboundShipmentIds = rows
+    .map((line) => line.replacementFulfillment?.outboundShipmentId)
+    .filter((id): id is string => Boolean(id));
+  const outboundShipments = outboundShipmentIds.length
+    ? await db.shipment.findMany({
+        where: { id: { in: outboundShipmentIds } },
+        select: { id: true, courier: true, awb: true, trackingUrl: true }
+      })
+    : [];
+  const outboundById = new Map(outboundShipments.map((shipment) => [shipment.id, shipment]));
+
+  return rows.map((line) => {
+    const replacement = line.replacementFulfillment;
+    const outbound = replacement?.outboundShipmentId
+      ? outboundById.get(replacement.outboundShipmentId)
+      : undefined;
+    return {
+      qtySelected: line.qtySelected,
+      reviewDecision: line.reviewDecision,
+      caseStatus: line.request.status,
+      caseNumber: line.request.caseNumber,
+      requestId: line.request.id,
+      reasonLabel: line.reasonLabel,
+      requestedResolution: line.requestedResolution,
+      customerFacingNote: line.customerFacingNote,
+      createdAt: line.request.createdAt,
+      returnPhysicalStatus: line.request.returnPhysicalStatus,
+      resolutionStatus: line.request.resolutionStatus,
+      refundTotalInPaise: line.request.refundTotalInPaise,
+      refundCompletedAt: line.request.refundCompletedAt,
+      refundProcessedAt: line.request.refundProcessedAt,
+      courier: line.request.returnShipment?.courier ?? null,
+      awb: line.request.returnShipment?.awb ?? null,
+      trackingUrl: line.request.returnShipment?.trackingUrl ?? null,
+      shipmentPhysicalStatus: line.request.returnShipment?.physicalStatus ?? null,
+      replacementStatus: replacement?.status ?? null,
+      replacementCourier: outbound?.courier ?? null,
+      replacementAwb: outbound?.awb ?? null,
+      replacementTrackingUrl: outbound?.trackingUrl ?? null,
+      replacementShippedAt: replacement?.shippedAt ?? null,
+      replacementDeliveredAt: replacement?.deliveredAt ?? null
+    };
+  });
 }
 
 /** Per-decision qty buckets for one order item (same rules as unavailableReturnQtyFromCaseLines). */
@@ -221,6 +265,12 @@ export function summarizeReturnCaseLineQtys(
     awb?: string | null;
     trackingUrl?: string | null;
     shipmentPhysicalStatus?: string | null;
+    replacementStatus?: string | null;
+    replacementCourier?: string | null;
+    replacementAwb?: string | null;
+    replacementTrackingUrl?: string | null;
+    replacementShippedAt?: Date | null;
+    replacementDeliveredAt?: Date | null;
   }>
 ): {
   pendingQty: number;
@@ -257,7 +307,13 @@ export function summarizeReturnCaseLineQtys(
         courier: line.courier ?? null,
         awb: line.awb ?? null,
         trackingUrl: line.trackingUrl ?? null,
-        shipmentPhysicalStatus: line.shipmentPhysicalStatus ?? null
+        shipmentPhysicalStatus: line.shipmentPhysicalStatus ?? null,
+        replacementStatus: line.replacementStatus ?? null,
+        replacementCourier: line.replacementCourier ?? null,
+        replacementAwb: line.replacementAwb ?? null,
+        replacementTrackingUrl: line.replacementTrackingUrl ?? null,
+        replacementShippedAt: line.replacementShippedAt ?? null,
+        replacementDeliveredAt: line.replacementDeliveredAt ?? null
       });
     }
 
