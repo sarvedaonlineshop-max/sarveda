@@ -214,7 +214,7 @@ export function AdminOrderReturnReplacementPanel({ ctx, onDone, showOverride = f
   const pendingDetails = pendingAction === "qc"
     ? [`Return case: ${request.caseNumber ?? "—"}`, ...qcReview.map(({ line, d }) => `${line.nameSnapshot} ×${line.qtySelected}: ${d.SELLABLE} restockable, ${d.REPACK} repair/refurbish, ${d.WRITE_OFF} damaged`)]
     : pendingAction === "received"
-      ? [`Return case: ${request.caseNumber ?? "—"}`, `Return AWB: ${rs?.awb ?? awb || "—"}`]
+      ? [`Return case: ${request.caseNumber ?? "—"}`, `Return AWB: ${(rs?.awb ?? awb) || "—"}`]
       : [`Return case: ${request.caseNumber ?? "—"}`, pendingAction === "delhivery-pickup" ? "Create a new Delhivery reverse pickup" : `Courier: ${courier || "—"} · AWB: ${awb || "—"}`];
 
   return (
