@@ -59,18 +59,28 @@ export default function AdjustOrderRequestPage() {
   }, [orderNumber, router]);
 
   return (
-    <div className="min-h-[60vh] bg-brand-cream md:py-8">
-      <MobileSubpageHeader title="Request order change" backHref="/profile" backLabel="Back to orders" />
-      <div className="mx-auto w-[92%] max-w-[1100px] py-4">
+    <div className="min-h-[60vh] bg-brand-cream font-sans md:py-8 [&_.font-serif]:font-sans">
+      <MobileSubpageHeader title="Request order change" backHref="/profile?tab=orders" backLabel="Back to My Orders" />
+      <div className="mx-auto w-[92%] max-w-[1100px] space-y-5 py-4">
+        <div className="hidden md:block">
+          <Link
+            href="/profile?tab=orders"
+            className="inline-flex min-h-[40px] items-center gap-2 rounded-full border border-brand-forest/20 bg-white px-4 text-sm font-bold text-brand-forest shadow-sm transition-all hover:-translate-y-0.5 hover:bg-brand-forest/5 hover:shadow-md active:translate-y-0"
+          >
+            <span aria-hidden="true">←</span>
+            Back to My Orders
+          </Link>
+        </div>
+
         {blocked ? (
           <div className="rounded-2xl border border-brand-cream-dark bg-white p-6 text-center shadow-card">
             <p className="text-sm text-brand-muted">{blocked}</p>
-            <Link href="/profile" className="mt-4 inline-block text-sm font-semibold text-brand-forest underline">
-              Back to orders
+            <Link href="/profile?tab=orders" className="mt-4 inline-block text-sm font-semibold text-brand-forest underline">
+              Back to My Orders
             </Link>
           </div>
         ) : ready ? (
-          <OrderAdjustmentRequestForm orderNumber={orderNumber} lineItems={lineItems} backHref="/profile" />
+          <OrderAdjustmentRequestForm orderNumber={orderNumber} lineItems={lineItems} backHref="/profile?tab=orders" />
         ) : (
           <p className="py-10 text-center text-sm text-brand-muted" role="status">
             Loading…
