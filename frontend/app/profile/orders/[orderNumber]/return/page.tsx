@@ -232,7 +232,7 @@ export default function ReturnOrderRequestPage() {
   const pageTitle = historyView ? "Refund history" : "Return or replace items";
 
   return (
-    <div className="min-h-[60vh] bg-brand-cream md:py-8">
+    <div className="min-h-[60vh] bg-brand-cream font-sans md:py-8 [&_.font-serif]:font-sans">
       <MobileSubpageHeader title={pageTitle} backHref="/profile?tab=orders" backLabel="Back to My Orders" />
       <div className="mx-auto w-[92%] max-w-[1100px] space-y-5 py-4">
         {fatalError ? (
@@ -244,18 +244,18 @@ export default function ReturnOrderRequestPage() {
           </div>
         ) : ready ? (
           <>
+            <div className="hidden md:block">
+              <Link
+                href="/profile?tab=orders"
+                className="inline-flex min-h-[40px] items-center gap-2 rounded-full border border-brand-forest/20 bg-white px-4 text-sm font-bold text-brand-forest shadow-sm transition-all hover:-translate-y-0.5 hover:bg-brand-forest/5 hover:shadow-md active:translate-y-0"
+              >
+                <span aria-hidden="true">←</span>
+                Back to My Orders
+              </Link>
+            </div>
+
             {historyView ? (
               <>
-                <div className="hidden md:block">
-                  <Link
-                    href="/profile?tab=orders"
-                    className="inline-flex min-h-[40px] items-center gap-2 rounded-full border border-brand-forest/20 bg-white px-4 text-sm font-bold text-brand-forest shadow-sm transition-all hover:-translate-y-0.5 hover:bg-brand-forest/5 hover:shadow-md active:translate-y-0"
-                  >
-                    <span aria-hidden="true">←</span>
-                    Back to My Orders
-                  </Link>
-                </div>
-
                 <section className="rounded-[24px] border border-brand-cream-dark bg-white p-5 shadow-card md:p-6">
                   <div className="flex items-start gap-3">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-2xl text-blue-700">₹</div>
