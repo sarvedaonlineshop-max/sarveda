@@ -2,7 +2,7 @@ import { getApiBase } from "./api";
 
 export async function adminShipReplacement(
   fulfillmentId: string,
-  body: { awb: string; courier: string; trackingUrl?: string }
+  body: { awb?: string; courier?: string; trackingUrl?: string } = {}
 ) {
   const res = await fetch(
     `${getApiBase()}/api/admin/replacement-fulfillments/${encodeURIComponent(fulfillmentId)}/ship`,
