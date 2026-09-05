@@ -169,7 +169,6 @@ export function AdminOrderReturnReplacementPanel({
 
   const confirmAmount = preview?.totalRefundNowPaise ?? 0;
   const canShowRefundAction = approvedCase && !alreadyRefunded && preview?.executable === true && confirmAmount > 0;
-  const shippingPolicy = humanShippingPolicy(preview?.shippingPolicy === "MIXED" ? "MIXED" : preview?.shippingPolicy ?? request.shippingRefundPolicy);
 
   return (
     <div className="space-y-5">
@@ -197,11 +196,6 @@ export function AdminOrderReturnReplacementPanel({
           await adminProcessReturnRefund(orderId, request.id, isCod ? codNote : undefined);
         })}
       />
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-stone-500">Move the approved items through pickup, warehouse receipt, QC and final refund.</p>
-        <span className="rounded-xl bg-amber-50 px-4 py-2 text-sm font-bold text-amber-800">Shipping policy: {shippingPolicy}</span>
-      </div>
 
       <div className="grid gap-3 lg:grid-cols-4">
         <section className={`rounded-2xl border p-4 ${!pickupStarted && approvedCase ? "border-blue-400 bg-blue-50/60 ring-1 ring-blue-100" : "border-stone-200 bg-white"}`}>
