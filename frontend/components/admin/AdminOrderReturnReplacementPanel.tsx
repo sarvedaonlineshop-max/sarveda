@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { AdminConfirmModal } from "@/components/admin/AdminConfirmModal";
+import { AdminReplacementFulfillmentPanel } from "@/components/admin/AdminReplacementFulfillmentPanel";
 import { formatMinorFromPaise } from "@/lib/money";
 import {
   adminClearReturnRefundOverride,
@@ -13,7 +14,6 @@ import {
   adminScheduleDelhiveryReturnPickup,
   adminSetReturnRefundOverride,
   adminUpdateReturnShipment,
-  adminShipReplacement,
   type ReturnRefundPreview
 } from "@/lib/order-service-request";
 
@@ -58,6 +58,9 @@ export type ReturnReplacementAdminContext = {
       qty: number;
       status: string;
       replacementVariantId: string;
+      shippedAt?: string | null;
+      deliveredAt?: string | null;
+      outboundShipmentId?: string | null;
     }>;
   };
 };
@@ -134,10 +137,16 @@ export function AdminOrderReturnReplacementPanel({
   const canDisposition = needsReturn && approvedCase && received && !inspected;
   const alreadyRefunded = request.resolutionStatus === "REFUNDED" || (request.refundTotalInPaise != null && request.refundTotalInPaise > 0);
   const approvedLines = (request.items ?? []).filter((item) => item.reviewDecision === "APPROVED");
+  const approvedReplacementLines = approvedLines.filter((item) => item.requestedResolution === "REPLACEMENT");
+  const approvedRefundLines = approvedLines.filter((item) =>
+    ["RETURN_FOR_REFUND", "PARTIAL_REFUND", "KEEP_ITEM_PARTIAL_REFUND"].includes(item.requestedResolution ?? "")
+  );
+  const replacementOnly = approvedReplacementLines.length > 0 && approvedRefundLines.length === 0;
+  const replacementReadyAfterQc = approvedCase && (!needsReturn || (received && inspected));
   const completedRefundTotal = request.refundTotalInPaise ?? 0;
 
   async function loadPreview() {
-    if (alreadyRefunded) {
+    if (alreadyRefunded || replacementOnly) {
       setPreview(null);
       return;
     }
@@ -183,8 +192,8 @@ export function AdminOrderReturnReplacementPanel({
     qcConfirm === "RESTOCKABLE"
       ? "This will add the approved returned quantity back to SELLABLE inventory. Choose this only after confirming the item can be sold again."
       : qcConfirm === "DAMAGED_NON_RESTOCKABLE"
-        ? "This will record the returned quantity as DAMAGED / NON-RESTOCKABLE. Sellable inventory must NOT increase."
-        : "This keeps the return in review and does not release it to sellable inventory.";
+        ? "This will record the returned quantity as DAMAGED / NON-RESTOCKABLE. Sellable inventory must NOT increase. It can be repaired or reclassified later through a separate inventory process."
+        : "This keeps the return in review and does not release it to sellable inventory or unlock a replacement shipment.";
 
   return (
     <div className="space-y-5">
@@ -305,7 +314,7 @@ export function AdminOrderReturnReplacementPanel({
 
         <section className={`rounded-2xl border p-4 ${canDisposition ? "border-violet-300 bg-violet-50/50" : "border-stone-200 bg-white"}`}>
           <div className="flex items-center gap-3 text-stone-700"><StepIcon type="qc" /><h3 className="text-base font-extrabold">3. Inspect & QC</h3></div>
-          <p className="mt-3 min-h-[70px] text-sm leading-6 text-stone-600">Record condition and decide whether returned stock is sellable.</p>
+          <p className="mt-3 min-h-[70px] text-sm leading-6 text-stone-600">QC decides the returned item's inventory disposition before any replacement leaves the warehouse.</p>
           {canDisposition ? (
             <div className="space-y-2">
               <button type="button" disabled={busy != null} className="w-full rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-800" onClick={() => setQcConfirm("RESTOCKABLE")}>Restockable</button>
@@ -317,20 +326,32 @@ export function AdminOrderReturnReplacementPanel({
           )}
         </section>
 
-        <section className={`rounded-2xl border p-4 ${canShowRefundAction ? "border-emerald-300 bg-emerald-50/50" : "border-stone-200 bg-white"}`}>
-          <div className="flex items-center gap-3 text-stone-700"><StepIcon type="refund" /><h3 className="text-base font-extrabold">4. Process refund</h3></div>
-          <p className="mt-3 min-h-[92px] text-sm leading-6 text-stone-600">Refund the approved amount after warehouse receipt and QC.</p>
-          {isCod && canShowRefundAction ? <textarea className="mb-2 w-full rounded-xl border border-stone-300 px-3 py-2 text-xs" rows={2} placeholder="COD refund bank/UPI note" value={codNote} onChange={(e) => setCodNote(e.target.value)} /> : null}
-          <button type="button" disabled={busy != null || !canShowRefundAction} className="w-full rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-stone-300" onClick={() => setConfirmOpen(true)}>{alreadyRefunded ? "Refund processed" : canShowRefundAction ? `Refund ${formatMinorFromPaise(confirmAmount, currency)}` : "Execute refund"}</button>
+        <section className={`rounded-2xl border p-4 ${replacementOnly && replacementReadyAfterQc ? "border-indigo-300 bg-indigo-50/50" : canShowRefundAction ? "border-emerald-300 bg-emerald-50/50" : "border-stone-200 bg-white"}`}>
+          <div className="flex items-center gap-3 text-stone-700"><StepIcon type="refund" /><h3 className="text-base font-extrabold">4. {replacementOnly ? "Send replacement" : "Process refund"}</h3></div>
+          <p className="mt-3 min-h-[92px] text-sm leading-6 text-stone-600">
+            {replacementOnly
+              ? "After warehouse receipt and QC, create a new forward shipment for the replacement item."
+              : "Refund the approved amount after warehouse receipt and QC."}
+          </p>
+          {replacementOnly ? (
+            <button type="button" disabled className={`w-full rounded-xl px-4 py-2.5 text-sm font-bold text-white ${replacementReadyAfterQc ? "bg-indigo-500" : "bg-stone-300"}`}>
+              {replacementReadyAfterQc ? "Replacement ready below" : "Waiting for receipt & QC"}
+            </button>
+          ) : (
+            <>
+              {isCod && canShowRefundAction ? <textarea className="mb-2 w-full rounded-xl border border-stone-300 px-3 py-2 text-xs" rows={2} placeholder="COD refund bank/UPI note" value={codNote} onChange={(e) => setCodNote(e.target.value)} /> : null}
+              <button type="button" disabled={busy != null || !canShowRefundAction} className="w-full rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-stone-300" onClick={() => setConfirmOpen(true)}>{alreadyRefunded ? "Refund processed" : canShowRefundAction ? `Refund ${formatMinorFromPaise(confirmAmount, currency)}` : "Execute refund"}</button>
+            </>
+          )}
         </section>
       </div>
 
       <div className="flex gap-3 rounded-2xl border border-blue-200 bg-blue-50/60 px-4 py-3 text-sm text-blue-950">
         <span className="font-bold">ⓘ</span>
-        <p>Only approved items ({approvedLines.length} {approvedLines.length === 1 ? "line" : "lines"}) move through this workflow. Rejected items remain visible in Return items above but are not picked up or refunded.</p>
+        <p>Only approved items ({approvedLines.length} {approvedLines.length === 1 ? "line" : "lines"}) move through this workflow. Rejected items are not picked up, refunded or replaced.</p>
       </div>
 
-      {["APPROVED", "PARTIALLY_APPROVED", "PENDING_APPROVAL", "MORE_INFO_REQUIRED"].includes(request.status) ? (
+      {!replacementOnly && ["APPROVED", "PARTIALLY_APPROVED", "PENDING_APPROVAL", "MORE_INFO_REQUIRED"].includes(request.status) ? (
         <section className="overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-emerald-100 bg-emerald-50/70 px-5 py-4">
             <div>
@@ -427,10 +448,13 @@ export function AdminOrderReturnReplacementPanel({
       ) : null}
 
       {request.replacementFulfillments?.map((f) => (
-        <div key={f.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
-          <span className="text-sm font-semibold text-stone-800">Replacement ×{f.qty} — {f.status.replace(/_/g, " ")}</span>
-          {f.status === "REPLACEMENT_PENDING" ? <button type="button" disabled={busy != null} className="rounded-xl bg-stone-900 px-4 py-2 text-sm font-bold text-white" onClick={() => void run(`ship-${f.id}`, () => adminShipReplacement(f.id, { awb: awb || `REP-${Date.now()}`, courier: courier || "Manual" }))}>Mark shipped</button> : null}
-        </div>
+        <AdminReplacementFulfillmentPanel
+          key={f.id}
+          fulfillment={f}
+          readyAfterQc={replacementReadyAfterQc}
+          returnAwb={rs?.awb}
+          onDone={onDone}
+        />
       ))}
 
       {error ? <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">{error}</p> : null}
