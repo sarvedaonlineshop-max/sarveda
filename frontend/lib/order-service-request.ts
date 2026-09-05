@@ -570,6 +570,31 @@ export async function adminUpdateReturnShipment(
   if (!res.ok || !json.success) throw new Error(json.error || "Failed");
 }
 
+export async function adminScheduleDelhiveryReturnPickup(orderId: string, requestId: string): Promise<{
+  courier: string;
+  awb: string;
+  trackingUrl: string;
+  mode: string;
+}> {
+  const res = await fetch(
+    `${getApiBase()}/api/admin/orders/${encodeURIComponent(orderId)}/service-requests/${encodeURIComponent(requestId)}/delhivery-return-pickup`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { Accept: "application/json" }
+    }
+  );
+  const json = (await res.json()) as {
+    success?: boolean;
+    error?: string;
+    data?: { courier: string; awb: string; trackingUrl: string; mode: string };
+  };
+  if (!res.ok || !json.success || !json.data) {
+    throw new Error(json.error || "Could not schedule Delhivery return pickup");
+  }
+  return json.data;
+}
+
 export async function adminMarkReturnReceived(orderId: string, requestId: string) {
   const res = await fetch(
     `${getApiBase()}/api/admin/orders/${encodeURIComponent(orderId)}/service-requests/${encodeURIComponent(requestId)}/return-received`,

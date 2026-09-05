@@ -118,6 +118,7 @@ export async function upsertReturnShipmentTracking(opts: {
   awb?: string;
   trackingUrl?: string;
   physicalStatus?: "AWAITING_RETURN" | "IN_TRANSIT";
+  mode?: "MANUAL_RETURN_SHIPMENT" | "REVERSE_PICKUP";
 }): Promise<void> {
   const request = await prisma.orderServiceRequest.findUnique({
     where: { id: opts.requestId },
@@ -134,7 +135,8 @@ export async function upsertReturnShipmentTracking(opts: {
     courier: opts.courier?.trim() || undefined,
     awb: opts.awb?.trim() || undefined,
     trackingUrl: opts.trackingUrl?.trim() || undefined,
-    physicalStatus: opts.physicalStatus ?? undefined
+    physicalStatus: opts.physicalStatus ?? undefined,
+    mode: opts.mode
   };
 
   if (request.returnShipment) {
@@ -154,6 +156,7 @@ export async function upsertReturnShipmentTracking(opts: {
         requestId: request.id,
         orderId: request.orderId,
         ...data,
+        mode: opts.mode ?? "MANUAL_RETURN_SHIPMENT",
         physicalStatus: opts.physicalStatus ?? "AWAITING_RETURN"
       }
     });
@@ -189,6 +192,165 @@ export async function upsertReturnShipmentTracking(opts: {
       });
     })();
   }
+}
+
+/**
+ * Create a Delhivery reverse pickup (RVP) for an approved return case and
+ * write courier + AWB onto OrderReturnShipment. Manual AWB entry stays unchanged.
+ */
+export async function scheduleDelhiveryReturnPickup(opts: {
+  requestId: string;
+  orderId: string;
+  adminUserId?: string;
+  adminEmail?: string;
+}): Promise<{ courier: string; awb: string; trackingUrl: string; mode: "REVERSE_PICKUP" }> {
+  const request = await prisma.orderServiceRequest.findUnique({
+    where: { id: opts.requestId },
+    include: {
+      returnShipment: true,
+      items: true,
+      order: {
+        include: {
+          addresses: true,
+          items: { include: { variant: true } },
+          payments: { orderBy: { createdAt: "desc" }, take: 1 }
+        }
+      }
+    }
+  });
+
+  if (!request || request.type !== "REFUND_AFTER_DELIVERY") {
+    throw Object.assign(new Error("Return request not found"), { statusCode: 404, code: "NOT_FOUND" });
+  }
+  if (request.orderId !== opts.orderId) {
+    throw Object.assign(new Error("Return request does not belong to this order"), {
+      statusCode: 400,
+      code: "ORDER_MISMATCH"
+    });
+  }
+  if (!isApprovedReturnStatus(request.status)) {
+    throw Object.assign(new Error("Return must be approved first"), { statusCode: 400, code: "NOT_APPROVED" });
+  }
+
+  const rs = request.returnShipment;
+  if (rs?.receivedAt || request.returnPhysicalStatus === "RECEIVED" || request.returnPhysicalStatus === "INSPECTED") {
+    throw Object.assign(new Error("Return already received — cannot schedule a new pickup"), {
+      statusCode: 409,
+      code: "ALREADY_RECEIVED"
+    });
+  }
+  if (rs?.awb?.trim()) {
+    throw Object.assign(
+      new Error(`Pickup already has AWB ${rs.awb.trim()}. Use manual update or clear tracking first.`),
+      { statusCode: 409, code: "AWB_EXISTS" }
+    );
+  }
+
+  const approvedItems = request.items.filter((i) => i.reviewDecision === "APPROVED");
+  if (!approvedItems.length) {
+    throw Object.assign(new Error("No approved items to pick up"), {
+      statusCode: 400,
+      code: "NO_APPROVED_ITEMS"
+    });
+  }
+
+  const order = request.order;
+  const shipAddr = order.addresses.find((a) => a.type === "SHIPPING") ?? order.addresses[0];
+  if (!shipAddr) {
+    throw Object.assign(new Error("Order is missing a shipping address for pickup"), {
+      statusCode: 400,
+      code: "MISSING_ADDRESS"
+    });
+  }
+
+  const orderItemById = new Map(order.items.map((it) => [it.id, it]));
+  let weightG = 0;
+  const descParts: string[] = [];
+  for (const item of approvedItems) {
+    const oi = orderItemById.get(item.orderItemId);
+    const unitG = oi?.variant?.weightGrams && oi.variant.weightGrams > 0 ? oi.variant.weightGrams : 500;
+    weightG += unitG * item.qtySelected;
+    descParts.push(`${item.nameSnapshot} × ${item.qtySelected}`);
+  }
+  weightG = Math.max(50, weightG || 500);
+  const productsDesc = descParts.join(", ").slice(0, 240);
+
+  const { resolveDelhiveryPickupName } = await import("../shipping/router");
+  const { createReversePickup } = await import("../shipping/delhivery");
+
+  const delhiveryPickup = await resolveDelhiveryPickupName(order.id);
+  const pickupRow =
+    (await prisma.pickupLocation.findFirst({
+      where: { isActive: true, isPrimary: true }
+    })) ??
+    (await prisma.pickupLocation.findFirst({ where: { isActive: true } }));
+
+  const reverseOrderId = `${request.caseNumber ?? order.orderNumber}-RVP`.replace(/\s+/g, "").slice(0, 50);
+
+  const created = await createReversePickup({
+    orderNumber: reverseOrderId,
+    consigneeName: shipAddr.fullName,
+    consigneePhone: shipAddr.phone || order.phone,
+    address: [shipAddr.line1, shipAddr.line2].filter(Boolean).join(", "),
+    city: shipAddr.city,
+    state: shipAddr.state,
+    pincode: shipAddr.postalCode,
+    pickupLocation: delhiveryPickup,
+    channel: "www.sarveda.com",
+    productsDesc,
+    weightGrams: weightG,
+    shippingMode: "S",
+    reason: `Return case ${request.caseNumber ?? request.id}`,
+    ...(pickupRow
+      ? {
+          returnName: pickupRow.contactPerson ?? pickupRow.label,
+          returnPhone: pickupRow.phone ?? shipAddr.phone,
+          returnAddress: [pickupRow.line1, pickupRow.line2].filter(Boolean).join(", "),
+          returnCity: pickupRow.city ?? "",
+          returnState: pickupRow.state ?? "",
+          returnPin: pickupRow.postalCode ?? ""
+        }
+      : {})
+  });
+
+  if (!created.success) {
+    logger.warn("delhivery_return_pickup_failed", {
+      requestId: request.id,
+      caseNumber: request.caseNumber,
+      orderId: order.id,
+      code: created.code,
+      error: created.error
+    });
+    throw Object.assign(new Error(created.error || "Delhivery reverse pickup failed"), {
+      statusCode: created.code === "DELHIVERY_NOT_CONFIGURED" ? 503 : 400,
+      code: created.code ?? "DELHIVERY_REVERSE"
+    });
+  }
+
+  await upsertReturnShipmentTracking({
+    requestId: request.id,
+    adminUserId: opts.adminUserId,
+    courier: "Delhivery",
+    awb: created.data.waybill,
+    trackingUrl: created.data.trackingUrl,
+    physicalStatus: "IN_TRANSIT",
+    mode: "REVERSE_PICKUP"
+  });
+
+  logger.info("delhivery_return_pickup_created", {
+    requestId: request.id,
+    caseNumber: request.caseNumber,
+    orderId: order.id,
+    awb: created.data.waybill,
+    adminEmail: opts.adminEmail ?? null
+  });
+
+  return {
+    courier: "Delhivery",
+    awb: created.data.waybill,
+    trackingUrl: created.data.trackingUrl,
+    mode: "REVERSE_PICKUP"
+  };
 }
 
 export async function markCustomerReturnReceived(opts: {

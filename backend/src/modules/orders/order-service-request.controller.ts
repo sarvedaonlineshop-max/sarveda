@@ -733,6 +733,28 @@ export async function adminUpdateReturnShipment(req: Request, res: Response, nex
   }
 }
 
+export async function adminScheduleDelhiveryReturnPickup(req: Request, res: Response, next: NextFunction) {
+  try {
+    const admin = req.authUser!;
+    const { orderId, requestId } = req.params;
+    const { scheduleDelhiveryReturnPickup } = await import("./customer-return-workflow.service");
+    const data = await scheduleDelhiveryReturnPickup({
+      requestId,
+      orderId,
+      adminUserId: admin.id,
+      adminEmail: admin.email
+    });
+    res.json({ success: true, data });
+  } catch (err) {
+    const e = err as Error & { statusCode?: number; code?: string };
+    if (e.statusCode) {
+      res.status(e.statusCode).json({ success: false, error: e.message, code: e.code ?? "ERROR" });
+      return;
+    }
+    next(err);
+  }
+}
+
 export async function adminMarkReturnReceived(req: Request, res: Response, next: NextFunction) {
   try {
     const admin = req.authUser!;

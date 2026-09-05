@@ -202,6 +202,10 @@ router.post(
   serviceRequest.adminUpdateReturnShipment
 );
 router.post(
+  "/orders/:orderId/service-requests/:requestId/delhivery-return-pickup",
+  serviceRequest.adminScheduleDelhiveryReturnPickup
+);
+router.post(
   "/orders/:orderId/service-requests/:requestId/return-received",
   serviceRequest.adminMarkReturnReceived
 );

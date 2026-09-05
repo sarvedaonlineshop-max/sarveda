@@ -10,6 +10,7 @@ import {
   adminMarkReturnDisposition,
   adminMarkReturnReceived,
   adminProcessReturnRefund,
+  adminScheduleDelhiveryReturnPickup,
   adminSetReturnRefundOverride,
   adminUpdateReturnShipment,
   adminShipReplacement,
@@ -265,11 +266,34 @@ export function AdminOrderReturnReplacementPanel({
       <div className="grid gap-3 lg:grid-cols-4">
         <section className={`rounded-2xl border p-4 ${!pickupStarted && approvedCase ? "border-blue-400 bg-blue-50/60 ring-1 ring-blue-100" : "border-stone-200 bg-white"}`}>
           <div className="flex items-center gap-3 text-blue-700"><StepIcon type="pickup" /><h3 className="text-base font-extrabold">1. Schedule pickup</h3></div>
-          <p className="mt-3 min-h-[44px] text-sm leading-6 text-stone-600">Add courier and return AWB for the approved items.</p>
+          <p className="mt-3 min-h-[44px] text-sm leading-6 text-stone-600">Add courier and return AWB for the approved items, or create a Delhivery reverse pickup.</p>
           <div className="mt-3 space-y-2">
             <input className="h-10 w-full rounded-xl border border-stone-300 bg-white px-3 text-sm" placeholder="Courier" value={courier} onChange={(e) => setCourier(e.target.value)} disabled={!approvedCase || received} />
             <input className="h-10 w-full rounded-xl border border-stone-300 bg-white px-3 text-sm" placeholder="Return AWB" value={awb} onChange={(e) => setAwb(e.target.value)} disabled={!approvedCase || received} />
             <button type="button" disabled={busy != null || !approvedCase || received || !courier.trim() || !awb.trim()} className="w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-stone-300" onClick={() => void run("shipment", () => adminUpdateReturnShipment(orderId, request.id, { courier: courier.trim(), awb: awb.trim(), physicalStatus: "IN_TRANSIT" }))}>{pickupStarted ? "Update pickup tracking" : "Save pickup tracking"}</button>
+            <div className="relative py-1 text-center text-[11px] font-semibold uppercase tracking-wide text-stone-400">
+              <span className="relative z-10 bg-inherit px-2">or</span>
+              <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-stone-200" aria-hidden />
+            </div>
+            <button
+              type="button"
+              disabled={busy != null || !approvedCase || received || pickupStarted}
+              className="w-full rounded-xl border border-blue-600 bg-white px-4 py-2.5 text-sm font-bold text-blue-700 disabled:cursor-not-allowed disabled:border-stone-300 disabled:text-stone-400"
+              onClick={() =>
+                void run("delhivery-pickup", async () => {
+                  const data = await adminScheduleDelhiveryReturnPickup(orderId, request.id);
+                  setCourier(data.courier);
+                  setAwb(data.awb);
+                })
+              }
+            >
+              {busy === "delhivery-pickup" ? "Creating Delhivery pickup…" : "Schedule Delhivery pickup"}
+            </button>
+            {rs?.trackingUrl ? (
+              <a href={rs.trackingUrl} target="_blank" rel="noreferrer" className="block text-center text-xs font-semibold text-blue-700 underline">
+                Track return ({rs.awb ?? "AWB"})
+              </a>
+            ) : null}
           </div>
         </section>
 
