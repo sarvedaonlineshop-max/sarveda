@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { MobileSubpageHeader } from "@/components/layout/MobileSubpageHeader";
@@ -72,10 +72,7 @@ type HistoryCase = {
   }>;
 };
 
-function toFormLine(
-  orderLine: OrderLineItem,
-  elig: CustomerReturnEligibilityLine | undefined
-): ReturnLineItem {
+function toFormLine(orderLine: OrderLineItem, elig: CustomerReturnEligibilityLine | undefined): ReturnLineItem {
   const maxReturnableQty = elig?.maxReturnableQty ?? 0;
   return {
     ...orderLine,
@@ -127,6 +124,8 @@ function returnTrackingHref(entry: HistoryCase): string | null {
 export default function ReturnOrderRequestPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const historyView = searchParams.get("view") === "history";
   const orderNumber = String(params.orderNumber ?? "");
   const [ready, setReady] = useState(false);
   const [fatalError, setFatalError] = useState<string | null>(null);
@@ -140,7 +139,8 @@ export default function ReturnOrderRequestPage() {
     void (async () => {
       const me = await fetchMe();
       if (!me) {
-        router.replace(`/login?next=/profile/orders/${encodeURIComponent(orderNumber)}/return`);
+        const suffix = historyView ? "?view=history" : "";
+        router.replace(`/login?next=/profile/orders/${encodeURIComponent(orderNumber)}/return${suffix}`);
         return;
       }
       const orders = await fetchMyOrders();
@@ -220,16 +220,18 @@ export default function ReturnOrderRequestPage() {
     return () => {
       cancelled = true;
     };
-  }, [orderNumber, router]);
+  }, [historyView, orderNumber, router]);
 
   const eligibleCount = useMemo(
     () => lineItems.reduce((sum, item) => sum + (item.returnEligibility?.remainingEligibleQty ?? 0), 0),
     [lineItems]
   );
 
+  const pageTitle = historyView ? "Refund history" : "Return or replace items";
+
   return (
     <div className="min-h-[60vh] bg-brand-cream md:py-8">
-      <MobileSubpageHeader title="Refund & return history" backHref="/profile?tab=orders" backLabel="Back to My Orders" />
+      <MobileSubpageHeader title={pageTitle} backHref="/profile?tab=orders" backLabel="Back to My Orders" />
       <div className="mx-auto w-[92%] max-w-[1100px] space-y-5 py-4">
         {fatalError ? (
           <div className="rounded-2xl border border-brand-cream-dark bg-white p-6 text-center shadow-card">
@@ -250,128 +252,141 @@ export default function ReturnOrderRequestPage() {
               </Link>
             </div>
 
-            <section className="rounded-[24px] border border-brand-cream-dark bg-white p-5 shadow-card md:p-6">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-2xl text-blue-700">₹</div>
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-[.14em] text-brand-muted">Order {orderNumber}</p>
-                    <h1 className="mt-1 text-2xl font-extrabold text-brand-forest">Refund & return history</h1>
-                    <p className="mt-1 text-sm text-brand-muted">Past requests, approvals, rejections, pickup tracking and refunds for this order.</p>
+            {historyView ? (
+              <>
+                <section className="rounded-[24px] border border-brand-cream-dark bg-white p-5 shadow-card md:p-6">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-2xl text-blue-700">₹</div>
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[.14em] text-brand-muted">Order {orderNumber}</p>
+                      <h1 className="mt-1 text-2xl font-extrabold text-brand-forest">Refund & return history</h1>
+                      <p className="mt-1 text-sm text-brand-muted">Past requests, approvals, rejections, pickup tracking and refunds for this order.</p>
+                    </div>
                   </div>
-                </div>
-                <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-center text-emerald-800">
-                  <div className="text-2xl font-extrabold">{eligibleCount}</div>
-                  <div className="text-xs font-bold uppercase tracking-wide">Eligible now</div>
-                </div>
-              </div>
-            </section>
+                </section>
 
-            {returnBlockMessage ? (
-              <section className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm font-medium text-amber-950">
-                {returnBlockMessage}
-              </section>
-            ) : null}
+                <section className="space-y-4">
+                  {history.length === 0 ? (
+                    <div className="rounded-[24px] border border-brand-cream-dark bg-white p-6 text-center text-sm text-brand-muted shadow-card">
+                      No previous return or refund requests for this order.
+                    </div>
+                  ) : (
+                    history.map((entry) => {
+                      const trackingHref = returnTrackingHref(entry);
+                      const refundLabel = entry.refundTotalInPaise > 0
+                        ? entry.refundAt
+                          ? "Refund completed"
+                          : "Refund initiated"
+                        : null;
 
-            {eligibleCount > 0 ? (
-              <section>
-                <div className="mb-3 flex items-center gap-3 px-1">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-lg">↩</div>
-                  <div>
-                    <h2 className="text-xl font-extrabold text-brand-forest">Items eligible for return</h2>
-                    <p className="text-sm text-brand-muted">Select only the remaining quantities you want to return or replace.</p>
-                  </div>
-                </div>
-                <OrderServiceRequestForm
-                  orderNumber={orderNumber}
-                  currency={currency}
-                  kind="refund"
-                  title="Return or replace items"
-                  subtitle="Select delivered item(s) and a reason. Returns and replacements are available for 7 days after delivery."
-                  reasons={REFUND_AFTER_DELIVERY_REASONS}
-                  lineItems={lineItems}
-                  backHref="/profile?tab=orders"
-                  onSubmit={(payload) => submitOrderRefundRequest(orderNumber, payload)}
-                />
-              </section>
-            ) : null}
-
-            <section className="space-y-4">
-              {history.length === 0 ? (
-                <div className="rounded-[24px] border border-brand-cream-dark bg-white p-6 text-center text-sm text-brand-muted shadow-card">
-                  No previous return or refund requests for this order.
-                </div>
-              ) : (
-                history.map((entry) => {
-                  const trackingHref = returnTrackingHref(entry);
-                  const refundLabel = entry.refundTotalInPaise > 0
-                    ? entry.refundAt
-                      ? "Refund completed"
-                      : "Refund initiated"
-                    : null;
-
-                  return (
-                    <article key={entry.requestId} className="overflow-hidden rounded-[22px] border border-stone-200 bg-white shadow-sm">
-                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 bg-stone-50/80 px-4 py-4 md:px-5">
-                        <span className="text-base font-extrabold text-stone-950">{entry.caseNumber}</span>
-                        {entry.createdAt ? (
-                          <div className="text-right text-xs text-brand-muted">
-                            <div className="font-semibold text-stone-600">Requested</div>
-                            <div>{new Date(entry.createdAt).toLocaleString("en-IN")}</div>
-                          </div>
-                        ) : null}
-                      </div>
-
-                      <div className="space-y-3 p-4 md:p-5">
-                        {entry.items.map((item, index) => {
-                          const note = visibleCustomerNote(item.note);
-                          return (
-                            <div key={`${item.orderItemId}-${index}`} className="grid gap-3 rounded-xl border border-stone-100 bg-stone-50/50 p-3 md:grid-cols-[1.45fr_.45fr_.7fr] md:items-center">
-                              <div>
-                                <p className="font-bold text-stone-950">{item.name}</p>
-                                <p className="mt-0.5 text-xs text-brand-muted">SKU {item.sku} · Qty {item.qty}{item.reason ? ` · ${item.reason}` : ""}</p>
-                                {note ? <p className="mt-1 text-xs text-stone-600">{note}</p> : null}
+                      return (
+                        <article key={entry.requestId} className="overflow-hidden rounded-[22px] border border-stone-200 bg-white shadow-sm">
+                          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 bg-stone-50/80 px-4 py-4 md:px-5">
+                            <span className="text-base font-extrabold text-stone-950">{entry.caseNumber}</span>
+                            {entry.createdAt ? (
+                              <div className="text-right text-xs text-brand-muted">
+                                <div className="font-semibold text-stone-600">Requested</div>
+                                <div>{new Date(entry.createdAt).toLocaleString("en-IN")}</div>
                               </div>
-                              <div>
-                                <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${decisionClass(item.decision)}`}>{human(item.decision)}</span>
-                              </div>
-                              <div className="text-sm font-semibold text-stone-700">{human(item.resolution)}</div>
-                            </div>
-                          );
-                        })}
-
-                        {(entry.courier || entry.awb) ? (
-                          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-950">
-                            <span><b>Return pickup:</b> {entry.courier || "Courier"}</span>
-                            {entry.awb ? (
-                              trackingHref ? (
-                                <a href={trackingHref} target="_blank" rel="noreferrer" className="font-bold text-blue-700 underline decoration-blue-300 underline-offset-2 hover:text-blue-900">
-                                  AWB: {entry.awb} · Track return
-                                </a>
-                              ) : (
-                                <span><b>AWB:</b> {entry.awb}</span>
-                              )
                             ) : null}
                           </div>
-                        ) : null}
 
-                        {refundLabel ? (
-                          <div className={`flex flex-wrap items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm ${entry.refundAt ? "bg-emerald-100 text-emerald-950" : "bg-amber-100 text-amber-950"}`}>
-                            <div>
-                              <span className="font-extrabold">{refundLabel}</span>
-                              {entry.refundAt ? <span className="ml-2 text-xs text-emerald-800">{new Date(entry.refundAt).toLocaleString("en-IN")}</span> : null}
-                            </div>
-                            <span className="text-lg font-extrabold">{money(entry.refundTotalInPaise, currency)}</span>
+                          <div className="space-y-3 p-4 md:p-5">
+                            {entry.items.map((item, index) => {
+                              const note = visibleCustomerNote(item.note);
+                              return (
+                                <div key={`${item.orderItemId}-${index}`} className="grid gap-3 rounded-xl border border-stone-100 bg-stone-50/50 p-3 md:grid-cols-[1.45fr_.45fr_.7fr] md:items-center">
+                                  <div>
+                                    <p className="font-bold text-stone-950">{item.name}</p>
+                                    <p className="mt-0.5 text-xs text-brand-muted">SKU {item.sku} · Qty {item.qty}{item.reason ? ` · ${item.reason}` : ""}</p>
+                                    {note ? <p className="mt-1 text-xs text-stone-600">{note}</p> : null}
+                                  </div>
+                                  <div>
+                                    <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${decisionClass(item.decision)}`}>{human(item.decision)}</span>
+                                  </div>
+                                  <div className="text-sm font-semibold text-stone-700">{human(item.resolution)}</div>
+                                </div>
+                              );
+                            })}
+
+                            {(entry.courier || entry.awb) ? (
+                              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-950">
+                                <span><b>Return pickup:</b> {entry.courier || "Courier"}</span>
+                                {entry.awb ? (
+                                  trackingHref ? (
+                                    <a href={trackingHref} target="_blank" rel="noreferrer" className="font-bold text-blue-700 underline decoration-blue-300 underline-offset-2 hover:text-blue-900">
+                                      AWB: {entry.awb} · Track return
+                                    </a>
+                                  ) : (
+                                    <span><b>AWB:</b> {entry.awb}</span>
+                                  )
+                                ) : null}
+                              </div>
+                            ) : null}
+
+                            {refundLabel ? (
+                              <div className={`flex flex-wrap items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm ${entry.refundAt ? "bg-emerald-100 text-emerald-950" : "bg-amber-100 text-amber-950"}`}>
+                                <div>
+                                  <span className="font-extrabold">{refundLabel}</span>
+                                  {entry.refundAt ? <span className="ml-2 text-xs text-emerald-800">{new Date(entry.refundAt).toLocaleString("en-IN")}</span> : null}
+                                </div>
+                                <span className="text-lg font-extrabold">{money(entry.refundTotalInPaise, currency)}</span>
+                              </div>
+                            ) : entry.status === "REJECTED" || entry.items.every((i) => i.decision === "REJECTED") ? (
+                              <div className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-800">This request was not approved. No refund was issued.</div>
+                            ) : null}
                           </div>
-                        ) : entry.status === "REJECTED" || entry.items.every((i) => i.decision === "REJECTED") ? (
-                          <div className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-800">This request was not approved. No refund was issued.</div>
-                        ) : null}
+                        </article>
+                      );
+                    })
+                  )}
+                </section>
+              </>
+            ) : (
+              <>
+                <section className="rounded-[24px] border border-brand-cream-dark bg-white p-5 shadow-card md:p-6">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-2xl text-emerald-700">↩</div>
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-[.14em] text-brand-muted">Order {orderNumber}</p>
+                        <h1 className="mt-1 text-2xl font-extrabold text-brand-forest">Return or replace items</h1>
+                        <p className="mt-1 text-sm text-brand-muted">Select only the remaining quantities you want to return or replace.</p>
                       </div>
-                    </article>
-                  );
-                })
-              )}
-            </section>
+                    </div>
+                    <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-center text-emerald-800">
+                      <div className="text-2xl font-extrabold">{eligibleCount}</div>
+                      <div className="text-xs font-bold uppercase tracking-wide">Eligible now</div>
+                    </div>
+                  </div>
+                </section>
+
+                {returnBlockMessage ? (
+                  <section className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm font-medium text-amber-950">
+                    {returnBlockMessage}
+                  </section>
+                ) : null}
+
+                {eligibleCount > 0 ? (
+                  <OrderServiceRequestForm
+                    orderNumber={orderNumber}
+                    currency={currency}
+                    kind="refund"
+                    title="Return or replace items"
+                    subtitle="Select delivered item(s) and a reason. Returns and replacements are available for 7 days after delivery."
+                    reasons={REFUND_AFTER_DELIVERY_REASONS}
+                    lineItems={lineItems}
+                    backHref="/profile?tab=orders"
+                    onSubmit={(payload) => submitOrderRefundRequest(orderNumber, payload)}
+                  />
+                ) : (
+                  <section className="rounded-[22px] border border-stone-200 bg-white px-5 py-7 text-center shadow-sm">
+                    <p className="font-semibold text-stone-800">No items are currently eligible for a new return request.</p>
+                    <p className="mt-1 text-sm text-brand-muted">You can review previous return and refund cases from My Orders.</p>
+                  </section>
+                )}
+              </>
+            )}
           </>
         ) : (
           <p className="py-10 text-center text-sm text-brand-muted" role="status">Loading…</p>
