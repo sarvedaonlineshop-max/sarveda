@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { MobileSubpageHeader } from "@/components/layout/MobileSubpageHeader";
-import { OrderServiceRequestForm } from "@/components/orders/OrderServiceRequestForm";
+import { ReturnCartRequestForm } from "@/components/orders/ReturnCartRequestForm";
 import { fetchMe } from "@/lib/auth-client";
 import {
   fetchReturnEligibility,
@@ -415,12 +415,11 @@ export default function ReturnOrderRequestPage() {
                 ) : null}
 
                 {eligibleCount > 0 ? (
-                  <OrderServiceRequestForm
+                  <ReturnCartRequestForm
                     orderNumber={orderNumber}
                     currency={currency}
-                    kind="refund"
                     title="Return or replace items"
-                    subtitle="Select delivered item(s) and a reason. Returns and replacements are available for 7 days after delivery."
+                    subtitle="Select an item, add quantity and reason, then build one return cart for this request. Returns and replacements are available for 7 days after delivery."
                     reasons={REFUND_AFTER_DELIVERY_REASONS}
                     lineItems={lineItems}
                     backHref="/profile?tab=orders"
