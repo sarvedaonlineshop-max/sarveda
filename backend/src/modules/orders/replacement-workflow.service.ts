@@ -16,6 +16,12 @@ export const replacementShipmentBodySchema = z.object({
   trackingUrl: z.string().trim().url().max(500).optional().or(z.literal(""))
 });
 
+const REFUND_RESOLUTIONS = new Set([
+  "RETURN_FOR_REFUND",
+  "PARTIAL_REFUND",
+  "KEEP_ITEM_PARTIAL_REFUND"
+]);
+
 async function assertReplacementReadyForShipment(fulfillmentId: string): Promise<{
   requestId: string;
   returnAwb: string | null;
@@ -129,8 +135,7 @@ export async function reserveReplacementStock(opts: {
 
   await prisma.$transaction(async (tx) => {
     if (inventory && warehouseQty > 0) {
-      // Replacement is consumed only when the forward shipment is being created.
-      // Decrement onHand once; do not also increment reserved (available = onHand - reserved).
+      // Replacement is consumed exactly once when the forward shipment is being created.
       await tx.inventory.update({
         where: { variantId: fulfillment.replacementVariantId },
         data: { onHand: { decrement: warehouseQty } }
@@ -152,6 +157,157 @@ export async function reserveReplacementStock(opts: {
   return { reserved: true, outOfStock: false };
 }
 
+async function rollbackReplacementReservation(fulfillmentId: string): Promise<void> {
+  const fulfillment = await prisma.orderReplacementFulfillment.findUnique({
+    where: { id: fulfillmentId }
+  });
+  if (!fulfillment?.reservedAt || fulfillment.shippedAt) return;
+
+  const variant = await prisma.productVariant.findUnique({
+    where: { id: fulfillment.replacementVariantId },
+    include: { inventory: true }
+  });
+  const allocation = getVariantFulfillmentAvailability(
+    variantFulfillmentInputFromVariant(variant ?? { inventory: null }),
+    fulfillment.qty
+  );
+  const warehouseQty = allocation.warehouseFulfillmentQty;
+
+  await prisma.$transaction(async (tx) => {
+    if (warehouseQty > 0 && variant?.inventory) {
+      await tx.inventory.update({
+        where: { variantId: fulfillment.replacementVariantId },
+        data: { onHand: { increment: warehouseQty } }
+      });
+    }
+    await tx.orderReplacementFulfillment.update({
+      where: { id: fulfillment.id },
+      data: { reservedAt: null, status: "REPLACEMENT_PENDING" }
+    });
+  });
+}
+
+async function createAutomaticDelhiveryReplacement(fulfillmentId: string): Promise<{
+  outboundShipmentId: string;
+  courier: string;
+  awb: string;
+  trackingUrl: string;
+}> {
+  const fulfillment = await prisma.orderReplacementFulfillment.findUnique({
+    where: { id: fulfillmentId },
+    include: {
+      request: { include: { items: true } },
+      order: { include: { addresses: true } },
+      requestItem: true
+    }
+  });
+  if (!fulfillment) {
+    throw Object.assign(new Error("Replacement not found"), { statusCode: 404, code: "NOT_FOUND" });
+  }
+  if (fulfillment.outboundShipmentId) {
+    const existing = await prisma.shipment.findUnique({ where: { id: fulfillment.outboundShipmentId } });
+    if (existing?.awb) {
+      return {
+        outboundShipmentId: existing.id,
+        courier: existing.courier,
+        awb: existing.awb,
+        trackingUrl: existing.trackingUrl ?? ""
+      };
+    }
+  }
+
+  const shipAddr = fulfillment.order.addresses.find((a) => a.type === "SHIPPING") ?? fulfillment.order.addresses[0];
+  if (!shipAddr) {
+    throw Object.assign(new Error("Order is missing a shipping address for replacement"), {
+      statusCode: 400,
+      code: "MISSING_ADDRESS"
+    });
+  }
+
+  const variant = await prisma.productVariant.findUnique({
+    where: { id: fulfillment.replacementVariantId },
+    include: { productRel: { select: { hsnCode: true } }, inventory: true }
+  });
+  if (!variant) {
+    throw Object.assign(new Error("Replacement variant not found"), {
+      statusCode: 404,
+      code: "VARIANT_NOT_FOUND"
+    });
+  }
+
+  const allocation = getVariantFulfillmentAvailability(
+    variantFulfillmentInputFromVariant(variant),
+    fulfillment.qty
+  );
+  if (allocation.warehouseFulfillmentQty < fulfillment.qty) {
+    throw Object.assign(
+      new Error("Automatic replacement shipment currently requires Sarveda warehouse stock"),
+      { statusCode: 409, code: "REPLACEMENT_WAREHOUSE_STOCK_REQUIRED" }
+    );
+  }
+
+  const { createShipment } = await import("../shipping/delhivery");
+  const { resolveDelhiveryPickupName } = await import("../shipping/router");
+  const pickupLocation = await resolveDelhiveryPickupName(fulfillment.orderId);
+  const weightGrams = Math.max(50, (variant.weightGrams && variant.weightGrams > 0 ? variant.weightGrams : 500) * fulfillment.qty);
+  const replacementRef = `${fulfillment.order.orderNumber}-${fulfillment.request.caseNumber}-REP-${fulfillment.id.slice(0, 6)}`.slice(0, 50);
+  const productsDesc = `${fulfillment.requestItem.nameSnapshot} [${fulfillment.requestItem.skuSnapshot}] × ${fulfillment.qty}`.slice(0, 240);
+
+  const created = await createShipment({
+    orderNumber: replacementRef,
+    paymentMode: "Pre-paid",
+    codAmountRupees: undefined,
+    orderValueRupees: Math.max(0, (variant.saleInPaise * fulfillment.qty) / 100),
+    productsDesc,
+    sellerGstTin: process.env.SELLER_GSTIN?.trim(),
+    hsnCode: variant.productRel?.hsnCode?.trim() || process.env.DEFAULT_HSN_CODE?.trim() || "9205",
+    invoiceReference: `${fulfillment.order.orderNumber}-REPLACEMENT`,
+    weightKg: weightGrams / 1000,
+    weightGrams,
+    pickupLocation,
+    channel: "www.sarveda.com",
+    shippingMode: "S",
+    packageType: "CARDBOARD_BOX",
+    consigneeName: shipAddr.fullName,
+    consigneePhone: shipAddr.phone || fulfillment.order.phone,
+    address: [shipAddr.line1, shipAddr.line2].filter(Boolean).join(", "),
+    city: shipAddr.city,
+    state: shipAddr.state,
+    pincode: shipAddr.postalCode
+  });
+
+  if (!created.success) {
+    throw Object.assign(new Error(created.error || "Could not create Delhivery replacement shipment"), {
+      statusCode: created.code === "DELHIVERY_NOT_CONFIGURED" ? 503 : 400,
+      code: created.code ?? "DELHIVERY_CREATE"
+    });
+  }
+
+  const shipment = await prisma.shipment.create({
+    data: {
+      orderId: fulfillment.orderId,
+      courier: "Delhivery",
+      awb: created.data.waybill,
+      trackingUrl: created.data.trackingUrl,
+      status: "SHIPPED" as ShipmentStatus,
+      carrierMeta: {
+        kind: "REPLACEMENT",
+        fulfillmentId: fulfillment.id,
+        requestId: fulfillment.requestId,
+        caseNumber: fulfillment.request.caseNumber,
+        replacementReference: replacementRef
+      }
+    }
+  });
+
+  return {
+    outboundShipmentId: shipment.id,
+    courier: "Delhivery",
+    awb: created.data.waybill,
+    trackingUrl: created.data.trackingUrl
+  };
+}
+
 export async function markReplacementShipped(opts: {
   fulfillmentId: string;
   awb?: string;
@@ -162,22 +318,14 @@ export async function markReplacementShipped(opts: {
 }): Promise<void> {
   const fulfillment = await prisma.orderReplacementFulfillment.findUnique({
     where: { id: opts.fulfillmentId },
-    include: { request: true }
+    include: { request: { include: { items: true } }, order: true }
   });
   if (!fulfillment) {
     throw Object.assign(new Error("Replacement not found"), { statusCode: 404, code: "NOT_FOUND" });
   }
-  if (fulfillment.shippedAt) {
-    return;
-  }
+  if (fulfillment.shippedAt) return;
 
   const readiness = await assertReplacementReadyForShipment(opts.fulfillmentId);
-  if (!opts.outboundShipmentId && !opts.awb?.trim()) {
-    throw Object.assign(new Error("A new forward-shipment AWB is required for the replacement"), {
-      statusCode: 400,
-      code: "REPLACEMENT_AWB_REQUIRED"
-    });
-  }
   if (opts.awb?.trim() && readiness.returnAwb && opts.awb.trim() === readiness.returnAwb.trim()) {
     throw Object.assign(
       new Error("Replacement shipment must use a new forward AWB, not the return-pickup AWB"),
@@ -185,11 +333,9 @@ export async function markReplacementShipped(opts: {
     );
   }
 
-  if (!fulfillment.reservedAt) {
-    const reserve = await reserveReplacementStock({
-      fulfillmentId: opts.fulfillmentId,
-      adminUserId: opts.adminUserId
-    });
+  const wasAlreadyReserved = Boolean(fulfillment.reservedAt);
+  if (!wasAlreadyReserved) {
+    const reserve = await reserveReplacementStock({ fulfillmentId: opts.fulfillmentId, adminUserId: opts.adminUserId });
     if (!reserve.reserved) {
       throw Object.assign(new Error("Replacement item out of stock"), {
         statusCode: 409,
@@ -199,72 +345,98 @@ export async function markReplacementShipped(opts: {
   }
 
   let shipmentId = opts.outboundShipmentId;
-  if (!shipmentId && opts.awb) {
-    const shipment = await prisma.shipment.create({
-      data: {
-        orderId: fulfillment.orderId,
-        courier: opts.courier?.trim() || "Manual",
-        awb: opts.awb.trim(),
-        trackingUrl: opts.trackingUrl?.trim() || null,
-        status: "SHIPPED" as ShipmentStatus
-      }
-    });
-    shipmentId = shipment.id;
+  let courier = opts.courier?.trim() || "";
+  let awb = opts.awb?.trim() || "";
+  let trackingUrl = opts.trackingUrl?.trim() || "";
+
+  try {
+    if (!shipmentId && !awb) {
+      const auto = await createAutomaticDelhiveryReplacement(opts.fulfillmentId);
+      shipmentId = auto.outboundShipmentId;
+      courier = auto.courier;
+      awb = auto.awb;
+      trackingUrl = auto.trackingUrl;
+    } else if (!shipmentId && awb) {
+      const shipment = await prisma.shipment.create({
+        data: {
+          orderId: fulfillment.orderId,
+          courier: courier || "Manual",
+          awb,
+          trackingUrl: trackingUrl || null,
+          status: "SHIPPED" as ShipmentStatus,
+          carrierMeta: { kind: "REPLACEMENT", fulfillmentId: fulfillment.id, requestId: fulfillment.requestId }
+        }
+      });
+      shipmentId = shipment.id;
+    }
+  } catch (err) {
+    if (!wasAlreadyReserved) await rollbackReplacementReservation(opts.fulfillmentId);
+    throw err;
   }
 
+  if (!shipmentId || !awb) {
+    if (!wasAlreadyReserved) await rollbackReplacementReservation(opts.fulfillmentId);
+    throw Object.assign(new Error("A new forward replacement shipment is required"), {
+      statusCode: 400,
+      code: "REPLACEMENT_SHIPMENT_REQUIRED"
+    });
+  }
+  if (readiness.returnAwb && awb === readiness.returnAwb.trim()) {
+    if (!wasAlreadyReserved) await rollbackReplacementReservation(opts.fulfillmentId);
+    throw Object.assign(new Error("Replacement shipment must use a new forward AWB"), {
+      statusCode: 400,
+      code: "REPLACEMENT_AWB_MUST_BE_NEW"
+    });
+  }
+
+  const approvedItems = fulfillment.request.items.filter((i) => i.reviewDecision === "APPROVED");
+  const hasApprovedRefund = approvedItems.some((i) => REFUND_RESOLUTIONS.has(i.requestedResolution ?? ""));
   const now = new Date();
-  await prisma.$transaction([
-    prisma.orderReplacementFulfillment.update({
+
+  await prisma.$transaction(async (tx) => {
+    await tx.orderReplacementFulfillment.update({
       where: { id: fulfillment.id },
-      data: {
-        shippedAt: now,
-        outboundShipmentId: shipmentId ?? null,
-        status: "REPLACEMENT_SHIPPED"
-      }
-    }),
-    prisma.orderServiceRequest.update({
-      where: { id: fulfillment.requestId },
-      data: { resolutionStatus: "REPLACEMENT_SHIPPED" }
-    })
-  ]);
+      data: { shippedAt: now, outboundShipmentId: shipmentId!, status: "REPLACEMENT_SHIPPED" }
+    });
+    if (!hasApprovedRefund) {
+      await tx.orderServiceRequest.update({
+        where: { id: fulfillment.requestId },
+        data: { resolutionStatus: "REPLACEMENT_SHIPPED" }
+      });
+    }
+  });
 
   const { appendCaseEvent } = await import("./return-case-events.service");
   await appendCaseEvent({
     requestId: fulfillment.requestId,
     eventType: "REPLACEMENT_SHIPPED",
-    message: opts.awb ? `Replacement shipped — AWB ${opts.awb}` : "Replacement shipped",
-    payloadJson: {
-      fulfillmentId: fulfillment.id,
-      outboundShipmentId: shipmentId ?? null,
-      courier: opts.courier ?? null,
-      awb: opts.awb ?? null,
-      trackingUrl: opts.trackingUrl ?? null
-    },
+    message: `Replacement shipped — AWB ${awb}`,
+    payloadJson: { fulfillmentId: fulfillment.id, outboundShipmentId: shipmentId, courier, awb, trackingUrl },
     actor: { userId: opts.adminUserId, role: "ADMIN" }
   });
 
   void (async () => {
     const req = await prisma.orderServiceRequest.findUnique({
-      where: { id: fulfillment.requestId }
+      where: { id: fulfillment.requestId },
+      include: { order: true, items: true }
     });
     if (!req) return;
     const { notifyReturnCaseEvent } = await import("./return-case-notifications.service");
+    const item = req.items.find((i) => i.id === fulfillment.requestItemId);
     await notifyReturnCaseEvent(req.id, "RETURN_REPLACEMENT_SHIPPED", {
       orderNumber: req.orderNumber,
       caseNumber: req.caseNumber,
       customerEmail: req.customerEmail,
-      itemSummary: "",
-      courier: opts.courier ?? null,
-      awb: opts.awb ?? null,
-      trackingUrl: opts.trackingUrl ?? null
-    });
+      customerPhone: req.order.phone,
+      customerName: req.order.email === req.customerEmail ? undefined : null,
+      itemSummary: item ? `${item.nameSnapshot} × ${item.qtySelected}` : "Replacement item",
+      courier,
+      awb,
+      trackingUrl
+    }, { dedupeSuffix: fulfillment.id });
   })();
 
-  logger.info("replacement_shipped", {
-    fulfillmentId: fulfillment.id,
-    awb: opts.awb,
-    outboundShipmentId: shipmentId ?? null
-  });
+  logger.info("replacement_shipped", { fulfillmentId: fulfillment.id, awb, outboundShipmentId: shipmentId });
 }
 
 export async function markReplacementDelivered(opts: {
@@ -272,7 +444,10 @@ export async function markReplacementDelivered(opts: {
   adminUserId?: string;
 }): Promise<void> {
   const fulfillment = await prisma.orderReplacementFulfillment.findUnique({
-    where: { id: opts.fulfillmentId }
+    where: { id: opts.fulfillmentId },
+    include: {
+      request: { include: { items: true, replacementFulfillments: true, order: true } }
+    }
   });
   if (!fulfillment) {
     throw Object.assign(new Error("Replacement not found"), { statusCode: 404, code: "NOT_FOUND" });
@@ -285,47 +460,57 @@ export async function markReplacementDelivered(opts: {
     });
   }
 
+  const request = fulfillment.request;
+  const approvedItems = request.items.filter((i) => i.reviewDecision === "APPROVED");
+  const hasApprovedRefund = approvedItems.some((i) => REFUND_RESOLUTIONS.has(i.requestedResolution ?? ""));
+  const refundComplete = !hasApprovedRefund || Boolean(request.refundProcessedAt || (request.refundTotalInPaise ?? 0) > 0);
+  const allReplacementsDelivered = request.replacementFulfillments.every(
+    (row) => row.id === fulfillment.id || Boolean(row.deliveredAt)
+  );
+  const shouldClose = allReplacementsDelivered && refundComplete;
   const now = new Date();
-  await prisma.$transaction([
-    prisma.orderReplacementFulfillment.update({
+
+  await prisma.$transaction(async (tx) => {
+    await tx.orderReplacementFulfillment.update({
       where: { id: fulfillment.id },
       data: { deliveredAt: now, status: "REPLACEMENT_DELIVERED" }
-    }),
-    prisma.orderServiceRequest.update({
-      where: { id: fulfillment.requestId },
-      data: { resolutionStatus: "CLOSED", closedAt: now }
-    })
-  ]);
+    });
+    if (shouldClose) {
+      await tx.orderServiceRequest.update({
+        where: { id: fulfillment.requestId },
+        data: { resolutionStatus: "CLOSED", closedAt: now }
+      });
+    }
+  });
 
   const { appendCaseEvent } = await import("./return-case-events.service");
   await appendCaseEvent({
     requestId: fulfillment.requestId,
     eventType: "REPLACEMENT_DELIVERED",
-    message: "Replacement delivered — case closed",
-    payloadJson: { fulfillmentId: fulfillment.id },
-    actor: { userId: opts.adminUserId, role: "ADMIN" }
-  });
-  await appendCaseEvent({
-    requestId: fulfillment.requestId,
-    eventType: "CASE_CLOSED",
-    message: "Case closed after replacement delivery",
+    message: shouldClose ? "Replacement delivered — case closed" : "Replacement delivered — other resolution still pending",
+    payloadJson: { fulfillmentId: fulfillment.id, caseClosed: shouldClose },
     actor: { userId: opts.adminUserId, role: "ADMIN" }
   });
 
-  void (async () => {
-    const req = await prisma.orderServiceRequest.findUnique({
-      where: { id: fulfillment.requestId }
+  if (shouldClose) {
+    await appendCaseEvent({
+      requestId: fulfillment.requestId,
+      eventType: "CASE_CLOSED",
+      message: "Case closed after all refund/replacement resolutions completed",
+      actor: { userId: opts.adminUserId, role: "ADMIN" }
     });
-    if (!req) return;
-    const { notifyReturnCaseEvent } = await import("./return-case-notifications.service");
-    await notifyReturnCaseEvent(req.id, "RETURN_CASE_CLOSED", {
-      orderNumber: req.orderNumber,
-      caseNumber: req.caseNumber,
-      customerEmail: req.customerEmail,
-      itemSummary: "",
-      closureKind: "replacement"
-    });
-  })();
+    void (async () => {
+      const { notifyReturnCaseEvent } = await import("./return-case-notifications.service");
+      await notifyReturnCaseEvent(request.id, "RETURN_CASE_CLOSED", {
+        orderNumber: request.orderNumber,
+        caseNumber: request.caseNumber,
+        customerEmail: request.customerEmail,
+        customerPhone: request.order.phone,
+        itemSummary: "",
+        closureKind: "replacement"
+      });
+    })();
+  }
 }
 
 export async function computeReplacementCommercialDelta(opts: {
