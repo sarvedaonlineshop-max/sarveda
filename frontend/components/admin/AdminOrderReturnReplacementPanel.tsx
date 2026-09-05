@@ -272,7 +272,7 @@ export function AdminOrderReturnReplacementPanel({
             <input className="h-10 w-full rounded-xl border border-stone-300 bg-white px-3 text-sm" placeholder="Return AWB" value={awb} onChange={(e) => setAwb(e.target.value)} disabled={!approvedCase || received} />
             <button type="button" disabled={busy != null || !approvedCase || received || !courier.trim() || !awb.trim()} className="w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-stone-300" onClick={() => void run("shipment", () => adminUpdateReturnShipment(orderId, request.id, { courier: courier.trim(), awb: awb.trim(), physicalStatus: "IN_TRANSIT" }))}>{pickupStarted ? "Update pickup tracking" : "Save pickup tracking"}</button>
             <div className="relative py-1 text-center text-[11px] font-semibold uppercase tracking-wide text-stone-400">
-              <span className="relative z-10 bg-inherit px-2">or</span>
+              <span className="relative z-10 bg-white px-2">or</span>
               <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-stone-200" aria-hidden />
             </div>
             <button
