@@ -133,6 +133,7 @@ export default function ReturnOrderRequestPage() {
   const [lineItems, setLineItems] = useState<ReturnLineItem[]>([]);
   const [history, setHistory] = useState<HistoryCase[]>([]);
   const [currency, setCurrency] = useState("INR");
+  const [returnWindowEndsAt, setReturnWindowEndsAt] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -213,6 +214,7 @@ export default function ReturnOrderRequestPage() {
         setLineItems(mapped);
         setHistory(cases);
         setCurrency(eligibility.currency || order.currency);
+        setReturnWindowEndsAt(eligibility.returnWindowEndsAt);
         setReturnBlockMessage(blockedMessage);
         setReady(true);
       }
@@ -242,18 +244,18 @@ export default function ReturnOrderRequestPage() {
           </div>
         ) : ready ? (
           <>
-            <div className="hidden md:block">
-              <Link
-                href="/profile?tab=orders"
-                className="inline-flex min-h-[40px] items-center gap-2 rounded-full border border-brand-forest/20 bg-white px-4 text-sm font-bold text-brand-forest shadow-sm transition-all hover:-translate-y-0.5 hover:bg-brand-forest/5 hover:shadow-md active:translate-y-0"
-              >
-                <span aria-hidden="true">←</span>
-                Back to My Orders
-              </Link>
-            </div>
-
             {historyView ? (
               <>
+                <div className="hidden md:block">
+                  <Link
+                    href="/profile?tab=orders"
+                    className="inline-flex min-h-[40px] items-center gap-2 rounded-full border border-brand-forest/20 bg-white px-4 text-sm font-bold text-brand-forest shadow-sm transition-all hover:-translate-y-0.5 hover:bg-brand-forest/5 hover:shadow-md active:translate-y-0"
+                  >
+                    <span aria-hidden="true">←</span>
+                    Back to My Orders
+                  </Link>
+                </div>
+
                 <section className="rounded-[24px] border border-brand-cream-dark bg-white p-5 shadow-card md:p-6">
                   <div className="flex items-start gap-3">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-2xl text-blue-700">₹</div>
@@ -344,23 +346,6 @@ export default function ReturnOrderRequestPage() {
               </>
             ) : (
               <>
-                <section className="rounded-[24px] border border-brand-cream-dark bg-white p-5 shadow-card md:p-6">
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-2xl text-emerald-700">↩</div>
-                      <div>
-                        <p className="text-xs font-bold uppercase tracking-[.14em] text-brand-muted">Order {orderNumber}</p>
-                        <h1 className="mt-1 text-2xl font-extrabold text-brand-forest">Return or replace items</h1>
-                        <p className="mt-1 text-sm text-brand-muted">Select only the remaining quantities you want to return or replace.</p>
-                      </div>
-                    </div>
-                    <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-center text-emerald-800">
-                      <div className="text-2xl font-extrabold">{eligibleCount}</div>
-                      <div className="text-xs font-bold uppercase tracking-wide">Eligible now</div>
-                    </div>
-                  </div>
-                </section>
-
                 {returnBlockMessage ? (
                   <section className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm font-medium text-amber-950">
                     {returnBlockMessage}
@@ -377,6 +362,8 @@ export default function ReturnOrderRequestPage() {
                     reasons={REFUND_AFTER_DELIVERY_REASONS}
                     lineItems={lineItems}
                     backHref="/profile?tab=orders"
+                    eligibleCount={eligibleCount}
+                    returnWindowEndsAt={returnWindowEndsAt}
                     onSubmit={(payload) => submitOrderRefundRequest(orderNumber, payload)}
                   />
                 ) : (
