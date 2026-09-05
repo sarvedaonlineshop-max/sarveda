@@ -86,7 +86,7 @@ export default function AdminReturnsPageInner() {
 
   return (
     <div style={{ padding: "24px", maxWidth: 1280, margin: "0 auto" }}>
-      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Returns</h1>
+      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Returns & Refunds</h1>
       <p style={{ color: "#6b635b", marginBottom: 20, fontSize: 14 }}>
         Operational workspace for return, refund, and replacement cases. Open a Case ID to manage the
         full workflow.
