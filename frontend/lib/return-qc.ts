@@ -17,7 +17,7 @@ export async function adminPerformReturnQc(
   orderId: string,
   requestId: string,
   lines: ReturnQcLine[]
-) {
+): Promise<void> {
   const res = await fetch(
     `${getApiBase()}/api/admin/orders/${encodeURIComponent(orderId)}/service-requests/${encodeURIComponent(requestId)}/return-qc`,
     {
@@ -31,15 +31,14 @@ export async function adminPerformReturnQc(
   if (!res.ok || !json.success) {
     throw new Error(json.error || "Could not record return QC review");
   }
-  return json;
 }
 
 export async function adminPerformRepairHoldQc(
   orderId: string,
   requestId: string,
   lines: Array<{ orderItemId: string; quantity: number }>
-) {
-  return adminPerformReturnQc(
+): Promise<void> {
+  await adminPerformReturnQc(
     orderId,
     requestId,
     lines.map((line) => ({
@@ -55,7 +54,7 @@ export async function adminReleaseRepairedItemToSellable(
   orderId: string,
   requestId: string,
   qcLineId: string
-) {
+): Promise<void> {
   const res = await fetch(
     `${getApiBase()}/api/admin/orders/${encodeURIComponent(orderId)}/service-requests/${encodeURIComponent(requestId)}/qc-lines/${encodeURIComponent(qcLineId)}/release-repack`,
     {
