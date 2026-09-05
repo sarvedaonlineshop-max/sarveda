@@ -4,7 +4,6 @@ import { z } from "zod";
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
 import {
-  assertFulfillmentAllowed,
   getVariantFulfillmentAvailability,
   variantFulfillmentInputFromVariant
 } from "../inventory/variant-fulfillment-availability";
@@ -130,9 +129,11 @@ export async function reserveReplacementStock(opts: {
 
   await prisma.$transaction(async (tx) => {
     if (inventory && warehouseQty > 0) {
+      // Replacement is consumed only when the forward shipment is being created.
+      // Decrement onHand once; do not also increment reserved (available = onHand - reserved).
       await tx.inventory.update({
         where: { variantId: fulfillment.replacementVariantId },
-        data: { reserved: { increment: warehouseQty }, onHand: { decrement: warehouseQty } }
+        data: { onHand: { decrement: warehouseQty } }
       });
     }
     await tx.orderReplacementFulfillment.update({
@@ -144,7 +145,8 @@ export async function reserveReplacementStock(opts: {
   logger.info("replacement_stock_reserved", {
     fulfillmentId: fulfillment.id,
     variantId: fulfillment.replacementVariantId,
-    qty: fulfillment.qty
+    qty: fulfillment.qty,
+    warehouseQty
   });
 
   return { reserved: true, outOfStock: false };
@@ -344,7 +346,7 @@ export async function computeReplacementCommercialDelta(opts: {
 
   const originalUnit = Math.round(item.lineTotalInPaise / item.qtyOrdered);
   const newUnit = replacement.saleInPaise;
-  const delta = (newUnit - originalUnit) * opts.qty;
+  const delta = (newUnit.saleInPaise - originalUnit) * opts.qty;
 
   if (delta === 0) return { deltaPaise: 0, classification: "SAME" };
   if (delta > 0) return { deltaPaise: delta, classification: "ADDITIONAL_PAYMENT_REQUIRED" };
