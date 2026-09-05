@@ -183,7 +183,10 @@ export const RETURN_RESOLUTION_OPTIONS: Record<
   ],
   missing_parts: [{ code: "REPLACEMENT", label: "Send missing part" }],
   replace_variant: [{ code: "REPLACEMENT", label: "Replace with different size/colour" }],
-  quality_issue: [{ code: "RETURN_FOR_REFUND", label: "Refund the amount" }],
+  quality_issue: [
+    { code: "RETURN_FOR_REFUND", label: "Refund the amount" },
+    { code: "REPLACEMENT", label: "Replace with same item" }
+  ],
   extra_item: [{ code: "RETURN_FOR_REFUND", label: "Return extra item" }],
   arrived_late: [{ code: "RETURN_FOR_REFUND", label: "Refund the amount" }],
   changed_mind: [{ code: "RETURN_FOR_REFUND", label: "Refund the amount" }],
