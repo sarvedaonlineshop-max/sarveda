@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { OrderHistoryCard, orderIsPaid } from "@/components/orders/OrderHistoryCard";
@@ -30,6 +31,14 @@ function classifyOrder(order: OrderSummary): "paid" | "cancelled" | "refunded" |
   if (order.status === "CANCELLED") return "cancelled";
   if (orderIsPaid(order)) return "paid";
   return "other";
+}
+
+function hasReturnExperience(order: OrderSummary): boolean {
+  return (
+    order.status === "DELIVERED" ||
+    order.canRefundRequest === true ||
+    order.serviceRequest?.type === "REFUND_AFTER_DELIVERY"
+  );
 }
 
 const FILTERS: { key: OrderFilter; label: string }[] = [
@@ -101,7 +110,6 @@ export function YourOrders({ accountEmail, onCount }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* ── Status sub-tabs ── */}
       <div className="flex flex-wrap gap-2" role="group" aria-label="Filter orders by status">
         {FILTERS.map(({ key, label }) => {
           const active = filter === key;
@@ -137,7 +145,26 @@ export function YourOrders({ accountEmail, onCount }: Props) {
       ) : (
         <div className="space-y-4">
           {visibleOrders.map((order) => (
-            <OrderHistoryCard key={order.orderNumber} order={order} accountEmail={accountEmail} />
+            <div key={order.orderNumber} className="space-y-2">
+              <OrderHistoryCard order={order} accountEmail={accountEmail} />
+              {hasReturnExperience(order) ? (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 px-4 py-3 shadow-sm">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-emerald-950">Returns & refunds</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-emerald-800">
+                      Check items still eligible for return and view previous approvals, rejections, pickup tracking and refunds.
+                    </p>
+                  </div>
+                  <Link
+                    href={`/profile/orders/${encodeURIComponent(order.orderNumber)}/return`}
+                    className="inline-flex min-h-[38px] shrink-0 items-center justify-center gap-2 rounded-full bg-brand-forest px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-night"
+                  >
+                    <span aria-hidden="true">↩</span>
+                    View returns & refunds
+                  </Link>
+                </div>
+              ) : null}
+            </div>
           ))}
         </div>
       )}
