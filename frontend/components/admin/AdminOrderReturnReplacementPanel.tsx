@@ -61,6 +61,8 @@ export type ReturnReplacementAdminContext = {
   };
 };
 
+type QcDisposition = "RESTOCKABLE" | "DAMAGED_NON_RESTOCKABLE" | "NEEDS_REVIEW";
+
 function humanShippingPolicy(value?: string | null): string {
   switch (value) {
     case "MIXED": return "Mixed";
@@ -115,6 +117,7 @@ export function AdminOrderReturnReplacementPanel({
   const [preview, setPreview] = useState<ReturnRefundPreview | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [qcConfirm, setQcConfirm] = useState<QcDisposition | null>(null);
   const [overrideOpen, setOverrideOpen] = useState(false);
   const [overrideAmount, setOverrideAmount] = useState("");
   const [overrideReason, setOverrideReason] = useState("");
@@ -169,6 +172,13 @@ export function AdminOrderReturnReplacementPanel({
 
   const confirmAmount = preview?.totalRefundNowPaise ?? 0;
   const canShowRefundAction = approvedCase && !alreadyRefunded && preview?.executable === true && confirmAmount > 0;
+  const qcLabel = qcConfirm ? humanDisposition(qcConfirm) : "";
+  const qcMessage =
+    qcConfirm === "RESTOCKABLE"
+      ? "This will add the approved returned quantity back to SELLABLE inventory. Choose this only after confirming the item can be sold again."
+      : qcConfirm === "DAMAGED_NON_RESTOCKABLE"
+        ? "This will record the returned quantity as DAMAGED / NON-RESTOCKABLE. Sellable inventory must NOT increase."
+        : "This keeps the return in review and does not release it to sellable inventory.";
 
   return (
     <div className="space-y-5">
@@ -220,6 +230,33 @@ export function AdminOrderReturnReplacementPanel({
         }
       />
 
+      <AdminConfirmModal
+        open={qcConfirm !== null}
+        title="Confirm QC disposition"
+        danger={qcConfirm === "DAMAGED_NON_RESTOCKABLE"}
+        busy={busy?.startsWith("disp-") === true}
+        confirmLabel={qcConfirm === "DAMAGED_NON_RESTOCKABLE" ? "Confirm damaged — do not restock" : `Confirm ${qcLabel}`}
+        cancelLabel="Cancel"
+        message={qcMessage}
+        details={[
+          `Return case: ${request.caseNumber ?? "—"}`,
+          `Approved return lines: ${approvedLines.length}`,
+          `Selected disposition: ${qcLabel}`
+        ]}
+        onClose={() => {
+          if (busy?.startsWith("disp-")) return;
+          setQcConfirm(null);
+        }}
+        onConfirm={() => {
+          const selected = qcConfirm;
+          if (!selected) return;
+          void run(`disp-${selected}`, async () => {
+            await adminMarkReturnDisposition(orderId, request.id, selected);
+            setQcConfirm(null);
+          });
+        }}
+      />
+
       <div className="grid gap-3 lg:grid-cols-4">
         <section className={`rounded-2xl border p-4 ${!pickupStarted && approvedCase ? "border-blue-400 bg-blue-50/60 ring-1 ring-blue-100" : "border-stone-200 bg-white"}`}>
           <div className="flex items-center gap-3 text-blue-700"><StepIcon type="pickup" /><h3 className="text-base font-extrabold">1. Schedule pickup</h3></div>
@@ -242,9 +279,9 @@ export function AdminOrderReturnReplacementPanel({
           <p className="mt-3 min-h-[70px] text-sm leading-6 text-stone-600">Record condition and decide whether returned stock is sellable.</p>
           {canDisposition ? (
             <div className="space-y-2">
-              <button type="button" disabled={busy != null} className="w-full rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-800" onClick={() => void run("disp-RESTOCKABLE", () => adminMarkReturnDisposition(orderId, request.id, "RESTOCKABLE"))}>Restockable</button>
-              <button type="button" disabled={busy != null} className="w-full rounded-xl border border-red-300 bg-white px-3 py-2 text-xs font-bold text-red-700" onClick={() => void run("disp-DAMAGED_NON_RESTOCKABLE", () => adminMarkReturnDisposition(orderId, request.id, "DAMAGED_NON_RESTOCKABLE"))}>Damaged — do not restock</button>
-              <button type="button" disabled={busy != null} className="w-full rounded-xl border border-amber-300 bg-white px-3 py-2 text-xs font-bold text-amber-800" onClick={() => void run("disp-NEEDS_REVIEW", () => adminMarkReturnDisposition(orderId, request.id, "NEEDS_REVIEW"))}>Needs further review</button>
+              <button type="button" disabled={busy != null} className="w-full rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-800" onClick={() => setQcConfirm("RESTOCKABLE")}>Restockable</button>
+              <button type="button" disabled={busy != null} className="w-full rounded-xl border border-red-300 bg-white px-3 py-2 text-xs font-bold text-red-700" onClick={() => setQcConfirm("DAMAGED_NON_RESTOCKABLE")}>Damaged — do not restock</button>
+              <button type="button" disabled={busy != null} className="w-full rounded-xl border border-amber-300 bg-white px-3 py-2 text-xs font-bold text-amber-800" onClick={() => setQcConfirm("NEEDS_REVIEW")}>Needs further review</button>
             </div>
           ) : (
             <button type="button" disabled className="w-full rounded-xl bg-stone-300 px-4 py-2.5 text-sm font-bold text-white">{inspected ? humanDisposition(rs?.disposition) : "Complete inspection"}</button>
