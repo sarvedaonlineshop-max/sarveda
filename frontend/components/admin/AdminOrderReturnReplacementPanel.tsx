@@ -133,8 +133,13 @@ export function AdminOrderReturnReplacementPanel({
   const canDisposition = needsReturn && approvedCase && received && !inspected;
   const alreadyRefunded = request.resolutionStatus === "REFUNDED" || (request.refundTotalInPaise != null && request.refundTotalInPaise > 0);
   const approvedLines = (request.items ?? []).filter((item) => item.reviewDecision === "APPROVED");
+  const completedRefundTotal = request.refundTotalInPaise ?? 0;
 
   async function loadPreview() {
+    if (alreadyRefunded) {
+      setPreview(null);
+      return;
+    }
     if (!["APPROVED", "PARTIALLY_APPROVED", "PENDING_APPROVAL", "MORE_INFO_REQUIRED"].includes(request.status)) {
       setPreview(null);
       return;
@@ -153,7 +158,7 @@ export function AdminOrderReturnReplacementPanel({
   useEffect(() => {
     void loadPreview();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId, request.id, request.status, request.returnPhysicalStatus, request.resolutionStatus, rs?.receivedAt, rs?.disposition]);
+  }, [orderId, request.id, request.status, request.returnPhysicalStatus, request.resolutionStatus, request.refundTotalInPaise, rs?.receivedAt, rs?.disposition]);
 
   async function run(action: string, fn: () => Promise<void>) {
     setBusy(action);
@@ -305,13 +310,40 @@ export function AdminOrderReturnReplacementPanel({
         <section className="overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-emerald-100 bg-emerald-50/70 px-5 py-4">
             <div>
-              <h3 className="text-lg font-bold text-emerald-950">Refund summary</h3>
-              <p className="mt-1 text-sm text-emerald-800/70">Based on approved quantities and shipping policy.</p>
+              <h3 className="text-lg font-bold text-emerald-950">{alreadyRefunded ? "Completed refund" : "Refund summary"}</h3>
+              <p className="mt-1 text-sm text-emerald-800/70">{alreadyRefunded ? "Historical refund details for this return case." : "Based on approved quantities and shipping policy."}</p>
             </div>
-            <button type="button" disabled={previewLoading || busy != null} className="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800 disabled:opacity-50" onClick={() => void loadPreview()}>{previewLoading ? "Refreshing…" : "Refresh preview"}</button>
+            {!alreadyRefunded ? <button type="button" disabled={previewLoading || busy != null} className="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800 disabled:opacity-50" onClick={() => void loadPreview()}>{previewLoading ? "Refreshing…" : "Refresh preview"}</button> : null}
           </div>
 
-          {previewLoading && !preview ? <p className="p-5 text-sm text-stone-500">Loading authoritative refund calculation…</p> : preview ? (
+          {alreadyRefunded ? (
+            <div className="space-y-5 p-5">
+              <div className="grid gap-3">
+                {approvedLines.map((line) => (
+                  <div key={line.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4">
+                    <div>
+                      <p className="text-base font-bold text-stone-950">{line.nameSnapshot}</p>
+                      <p className="mt-1 text-sm text-stone-500">Qty {line.qtySelected} · {line.reasonLabel}</p>
+                    </div>
+                    <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">Included in completed refund</span>
+                  </div>
+                ))}
+              </div>
+              <div className="grid gap-3 border-t border-emerald-100 pt-5 md:grid-cols-3">
+                <div className="rounded-2xl bg-emerald-50 p-4 md:col-span-2">
+                  <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Total refunded</p>
+                  <p className="mt-1 text-3xl font-extrabold text-emerald-950">{formatMinorFromPaise(completedRefundTotal, currency)}</p>
+                  {request.refundProcessedAt ? <p className="mt-2 text-sm text-emerald-800">Processed {new Date(request.refundProcessedAt).toLocaleString("en-IN")}</p> : null}
+                </div>
+                <div className="rounded-2xl bg-stone-50 p-4">
+                  <p className="text-xs font-bold uppercase tracking-wide text-stone-500">Remaining refundable</p>
+                  <p className="mt-1 text-2xl font-extrabold text-stone-900">{formatMinorFromPaise(0, currency)}</p>
+                  {request.refundProviderReference ? <p className="mt-2 break-all text-xs text-stone-500">Reference: {request.refundProviderReference}</p> : null}
+                </div>
+              </div>
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-950">Refund completed. Historical amounts are preserved above instead of being replaced by a zero-value preview.</div>
+            </div>
+          ) : previewLoading && !preview ? <p className="p-5 text-sm text-stone-500">Loading authoritative refund calculation…</p> : preview ? (
             <div className="space-y-5 p-5">
               <div className="grid gap-3">
                 {preview.lines.map((line) => {
