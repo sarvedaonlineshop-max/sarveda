@@ -3,12 +3,12 @@ import { z } from "zod";
 
 import { prisma } from "../../config/db";
 import { logger } from "../../config/logger";
-import { orderItemWarehouseUnits } from "../inventory/order-item-fulfillment";
 import {
   assertFulfillmentAllowed,
   getVariantFulfillmentAvailability,
   variantFulfillmentInputFromVariant
 } from "../inventory/variant-fulfillment-availability";
+import { physicalReturnRequiredForReason } from "./return-replacement.constants";
 
 export const replacementShipmentBodySchema = z.object({
   outboundShipmentId: z.string().uuid().optional(),
@@ -16,6 +16,65 @@ export const replacementShipmentBodySchema = z.object({
   courier: z.string().trim().min(1).max(120).optional(),
   trackingUrl: z.string().trim().url().max(500).optional().or(z.literal(""))
 });
+
+async function assertReplacementReadyForShipment(fulfillmentId: string): Promise<{
+  requestId: string;
+  returnAwb: string | null;
+}> {
+  const fulfillment = await prisma.orderReplacementFulfillment.findUnique({
+    where: { id: fulfillmentId },
+    include: {
+      request: {
+        include: {
+          returnShipment: true,
+          items: true
+        }
+      }
+    }
+  });
+  if (!fulfillment) {
+    throw Object.assign(new Error("Replacement not found"), { statusCode: 404, code: "NOT_FOUND" });
+  }
+
+  const request = fulfillment.request;
+  if (request.status !== "APPROVED" && request.status !== "PARTIALLY_APPROVED") {
+    throw Object.assign(new Error("Replacement request must be approved before shipment"), {
+      statusCode: 400,
+      code: "NOT_APPROVED"
+    });
+  }
+
+  const requestItem = request.items.find((item) => item.id === fulfillment.requestItemId);
+  if (!requestItem || requestItem.reviewDecision !== "APPROVED") {
+    throw Object.assign(new Error("Replacement line must be approved before shipment"), {
+      statusCode: 400,
+      code: "LINE_NOT_APPROVED"
+    });
+  }
+
+  if (physicalReturnRequiredForReason(requestItem.reasonCode)) {
+    const returnShipment = request.returnShipment;
+    if (!returnShipment?.receivedAt) {
+      throw Object.assign(
+        new Error("Returned item must reach the warehouse before the replacement can be shipped"),
+        { statusCode: 400, code: "RETURN_NOT_RECEIVED" }
+      );
+    }
+    if (
+      request.returnPhysicalStatus !== "INSPECTED" ||
+      returnShipment.physicalStatus !== "INSPECTED" ||
+      !returnShipment.disposition ||
+      returnShipment.disposition === "NEEDS_REVIEW"
+    ) {
+      throw Object.assign(
+        new Error("Complete warehouse QC before shipping the replacement item"),
+        { statusCode: 400, code: "QC_INCOMPLETE" }
+      );
+    }
+  }
+
+  return { requestId: request.id, returnAwb: request.returnShipment?.awb ?? null };
+}
 
 export async function reserveReplacementStock(opts: {
   fulfillmentId: string;
@@ -109,6 +168,21 @@ export async function markReplacementShipped(opts: {
   if (fulfillment.shippedAt) {
     return;
   }
+
+  const readiness = await assertReplacementReadyForShipment(opts.fulfillmentId);
+  if (!opts.outboundShipmentId && !opts.awb?.trim()) {
+    throw Object.assign(new Error("A new forward-shipment AWB is required for the replacement"), {
+      statusCode: 400,
+      code: "REPLACEMENT_AWB_REQUIRED"
+    });
+  }
+  if (opts.awb?.trim() && readiness.returnAwb && opts.awb.trim() === readiness.returnAwb.trim()) {
+    throw Object.assign(
+      new Error("Replacement shipment must use a new forward AWB, not the return-pickup AWB"),
+      { statusCode: 400, code: "REPLACEMENT_AWB_MUST_BE_NEW" }
+    );
+  }
+
   if (!fulfillment.reservedAt) {
     const reserve = await reserveReplacementStock({
       fulfillmentId: opts.fulfillmentId,
@@ -127,9 +201,9 @@ export async function markReplacementShipped(opts: {
     const shipment = await prisma.shipment.create({
       data: {
         orderId: fulfillment.orderId,
-        courier: opts.courier ?? "Manual",
-        awb: opts.awb,
-        trackingUrl: opts.trackingUrl ?? null,
+        courier: opts.courier?.trim() || "Manual",
+        awb: opts.awb.trim(),
+        trackingUrl: opts.trackingUrl?.trim() || null,
         status: "SHIPPED" as ShipmentStatus
       }
     });
@@ -157,8 +231,14 @@ export async function markReplacementShipped(opts: {
     requestId: fulfillment.requestId,
     eventType: "REPLACEMENT_SHIPPED",
     message: opts.awb ? `Replacement shipped — AWB ${opts.awb}` : "Replacement shipped",
-    payloadJson: { fulfillmentId: fulfillment.id, awb: opts.awb ?? null },
-    actor: { role: "ADMIN" }
+    payloadJson: {
+      fulfillmentId: fulfillment.id,
+      outboundShipmentId: shipmentId ?? null,
+      courier: opts.courier ?? null,
+      awb: opts.awb ?? null,
+      trackingUrl: opts.trackingUrl ?? null
+    },
+    actor: { userId: opts.adminUserId, role: "ADMIN" }
   });
 
   void (async () => {
@@ -178,7 +258,11 @@ export async function markReplacementShipped(opts: {
     });
   })();
 
-  logger.info("replacement_shipped", { fulfillmentId: fulfillment.id, awb: opts.awb });
+  logger.info("replacement_shipped", {
+    fulfillmentId: fulfillment.id,
+    awb: opts.awb,
+    outboundShipmentId: shipmentId ?? null
+  });
 }
 
 export async function markReplacementDelivered(opts: {
@@ -192,6 +276,12 @@ export async function markReplacementDelivered(opts: {
     throw Object.assign(new Error("Replacement not found"), { statusCode: 404, code: "NOT_FOUND" });
   }
   if (fulfillment.deliveredAt) return;
+  if (!fulfillment.shippedAt || fulfillment.status !== "REPLACEMENT_SHIPPED") {
+    throw Object.assign(new Error("Replacement must be shipped before it can be marked delivered"), {
+      statusCode: 400,
+      code: "REPLACEMENT_NOT_SHIPPED"
+    });
+  }
 
   const now = new Date();
   await prisma.$transaction([
