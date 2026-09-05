@@ -180,7 +180,7 @@ export default function ReturnOrderRequestPage() {
         }
       }
 
-      const cases = [...historyByRequest.values()].sort((a, b) => {
+      const cases = Array.from(historyByRequest.values()).sort((a, b) => {
         const at = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return bt - at;
