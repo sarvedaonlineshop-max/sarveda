@@ -344,6 +344,16 @@ export async function setCustomerReturnDisposition(opts: {
           createdByUserId: opts.adminUserId,
           lines
         });
+
+        if (
+          opts.disposition !== "RESTOCKABLE" &&
+          restockEvents.some((event) => event.inventoryIncremented)
+        ) {
+          throw Object.assign(
+            new Error("Non-restockable return attempted to increase sellable inventory"),
+            { statusCode: 500, code: "NON_SELLABLE_RETURN_INCREMENT_ATTEMPT" }
+          );
+        }
       }
     }
 
@@ -372,7 +382,8 @@ export async function setCustomerReturnDisposition(opts: {
     orderId: request.orderId,
     requestId: request.id,
     disposition: opts.disposition,
-    restockLineCount: result.length
+    restockLineCount: result.length,
+    inventoryIncrementedCount: result.filter((event) => event.inventoryIncremented).length
   });
 
   return { restockEvents: result.length, alreadySet: false };
