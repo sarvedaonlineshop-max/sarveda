@@ -35,6 +35,8 @@ type Props = {
   reasons: readonly ReasonOption[];
   lineItems: OrderLineItem[];
   backHref: string;
+  eligibleCount?: number;
+  returnWindowEndsAt?: string | null;
   onSubmit: (payload: {
     items: Array<{
       orderItemId: string;
@@ -51,6 +53,13 @@ type Props = {
 
 function plural(value: number, singular: string, pluralValue = `${singular}s`) {
   return value === 1 ? singular : pluralValue;
+}
+
+function formatReturnDeadline(value?: string | null) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
 function StatIcon({ kind }: { kind: "bought" | "requested" | "available" }) {
@@ -86,10 +95,13 @@ export function OrderServiceRequestForm({
   reasons,
   lineItems,
   backHref,
+  eligibleCount,
+  returnWindowEndsAt,
   onSubmit
 }: Props) {
   const router = useRouter();
   const isCancel = kind === "cancel";
+  const returnDeadline = formatReturnDeadline(returnWindowEndsAt);
   const [drafts, setDrafts] = useState<Record<string, ItemDraft>>(() =>
     Object.fromEntries(
       lineItems.map((item) => {
@@ -238,27 +250,28 @@ export function OrderServiceRequestForm({
   }
 
   return (
-    <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5">
-      <div>
-        <Link href={backHref} className="mb-3 hidden min-h-[40px] items-center gap-1 rounded-full border border-brand-forest/20 bg-white px-4 text-sm font-semibold text-brand-forest shadow-sm hover:bg-brand-cream md:inline-flex">
-          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 18l-6-6 6-6" /></svg>
-          Back to orders
-        </Link>
-
-        <div className="rounded-3xl border border-brand-cream-dark bg-white p-5 shadow-card sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">Order {orderNumber}</p>
-              <h1 className="mt-1 font-serif text-2xl font-semibold text-brand-ink md:text-3xl">{title}</h1>
-              <p className="mt-2 text-sm leading-6 text-brand-muted">{subtitle}</p>
-            </div>
-            {!isCancel ? (
+    <form onSubmit={(e) => void handleSubmit(e)} className="space-y-5 pb-24">
+      <div className="rounded-3xl border border-brand-cream-dark bg-white p-5 shadow-card sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-gold">Order {orderNumber}</p>
+            <h1 className="mt-1 font-serif text-2xl font-semibold text-brand-ink md:text-3xl">{title}</h1>
+            <p className="mt-2 text-sm leading-6 text-brand-muted">{subtitle}</p>
+          </div>
+          {!isCancel ? (
+            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+              {eligibleCount != null ? (
+                <div className="rounded-2xl bg-emerald-50 px-4 py-2.5 text-center text-emerald-800">
+                  <div className="text-xl font-extrabold">{eligibleCount}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wide">Eligible now</div>
+                </div>
+              ) : null}
               <div className="inline-flex w-fit items-center gap-2 rounded-2xl border border-brand-forest/10 bg-brand-cream/60 px-4 py-3 text-sm font-semibold text-brand-forest">
                 <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2" strokeWidth={1.8} /><path d="M8 3v4M16 3v4M4 10h16" strokeWidth={1.8} /></svg>
-                7-day return window
+                {returnDeadline ? `Return by ${returnDeadline}` : "7-day return window"}
               </div>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -290,7 +303,7 @@ export function OrderServiceRequestForm({
                       {!isCancel && elig ? (
                         <span className={`inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${maxReturnable > 0 ? "bg-emerald-50 text-emerald-800" : "bg-stone-100 text-stone-600"}`}>
                           <span className={`h-2 w-2 rounded-full ${maxReturnable > 0 ? "bg-emerald-500" : "bg-stone-400"}`} />
-                          {maxReturnable > 0 ? `${maxReturnable} ${plural(maxReturnable, "item")} available` : "No items available"}
+                          {maxReturnable > 0 ? `${maxReturnable} ${plural(maxReturnable, "item")} eligible` : "No items eligible"}
                         </span>
                       ) : null}
                     </div>
@@ -299,15 +312,15 @@ export function OrderServiceRequestForm({
                       <div className="mt-4 grid gap-2 sm:grid-cols-3">
                         <div className="flex items-center gap-3 rounded-2xl border border-blue-100 bg-blue-50/70 px-3 py-3 text-blue-800">
                           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/80"><StatIcon kind="bought" /></span>
-                          <div><p className="text-[11px] font-medium uppercase tracking-wide text-blue-600">You bought</p><p className="text-sm font-bold">{purchasedQty} {plural(purchasedQty, "item")}</p></div>
+                          <div><p className="text-[11px] font-medium uppercase tracking-wide text-blue-600">Purchased</p><p className="text-sm font-bold">{purchasedQty} {plural(purchasedQty, "item")}</p></div>
                         </div>
                         <div className="flex items-center gap-3 rounded-2xl border border-amber-100 bg-amber-50/70 px-3 py-3 text-amber-800">
                           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/80"><StatIcon kind="requested" /></span>
-                          <div><p className="text-[11px] font-medium uppercase tracking-wide text-amber-600">Already requested</p><p className="text-sm font-bold">{unavailableQty} {plural(unavailableQty, "item")}</p></div>
+                          <div><p className="text-[11px] font-medium uppercase tracking-wide text-amber-600">Request completed</p><p className="text-sm font-bold">{unavailableQty} {plural(unavailableQty, "item")}</p></div>
                         </div>
                         <div className="flex items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/80 px-3 py-3 text-emerald-800">
                           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/80"><StatIcon kind="available" /></span>
-                          <div><p className="text-[11px] font-medium uppercase tracking-wide text-emerald-600">Available now</p><p className="text-sm font-bold">{maxReturnable} {plural(maxReturnable, "item")}</p></div>
+                          <div><p className="text-[11px] font-medium uppercase tracking-wide text-emerald-600">Eligible now</p><p className="text-sm font-bold">{maxReturnable} {plural(maxReturnable, "item")}</p></div>
                         </div>
                       </div>
                     ) : null}
@@ -322,7 +335,7 @@ export function OrderServiceRequestForm({
                   {!isCancel ? (
                     <div className="rounded-2xl border border-brand-cream-dark bg-white p-4 shadow-sm">
                       <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div><p className="text-sm font-semibold text-brand-ink">How many items?</p><p className="mt-0.5 text-xs text-brand-muted">Maximum {maxReturnable} {plural(maxReturnable, "item")} available</p></div>
+                        <div><p className="text-sm font-semibold text-brand-ink">How many items?</p><p className="mt-0.5 text-xs text-brand-muted">Maximum {maxReturnable} {plural(maxReturnable, "item")} eligible</p></div>
                         <div className="flex items-center overflow-hidden rounded-full border border-brand-forest/20 bg-white">
                           <button type="button" onClick={() => patchItem(item.id, { qty: Math.max(1, draft.qty - 1) })} disabled={draft.qty <= 1} className="flex h-10 w-10 items-center justify-center text-lg font-semibold text-brand-forest disabled:opacity-30" aria-label={`Decrease quantity for ${item.title}`}>−</button>
                           <span className="min-w-[44px] text-center text-sm font-bold text-brand-ink">{draft.qty}</span>
@@ -402,9 +415,9 @@ export function OrderServiceRequestForm({
 
       {error ? <p className="rounded-xl bg-[#FCEBEB] px-4 py-3 text-sm text-[#791F1F]" role="alert">{error}</p> : null}
 
-      <div className="flex flex-wrap items-center gap-3 lg:sticky lg:bottom-4 lg:rounded-2xl lg:bg-brand-cream/95 lg:p-2 lg:backdrop-blur-sm">
-        <Link href={backHref} className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-brand-forest/25 bg-white px-6 text-sm font-semibold text-brand-forest">Back to orders</Link>
-        <button type="submit" disabled={submitting || selectedItems.length === 0} className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-full bg-brand-forest px-7 text-sm font-semibold text-brand-cream shadow-sm disabled:cursor-not-allowed disabled:opacity-45 sm:flex-none">
+      <div className="sticky bottom-0 z-30 -mx-2 flex flex-wrap items-center gap-3 border-t border-brand-cream-dark bg-white/95 px-3 py-3 shadow-[0_-10px_30px_rgba(0,0,0,0.08)] backdrop-blur-sm sm:-mx-3 sm:px-4">
+        <Link href={backHref} className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-brand-forest/25 bg-white px-6 text-sm font-semibold text-brand-forest transition-colors hover:bg-brand-cream">Back to orders</Link>
+        <button type="submit" disabled={submitting || selectedItems.length === 0} className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-full bg-brand-forest px-7 text-sm font-semibold text-brand-cream shadow-sm transition-all hover:bg-brand-night hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 sm:flex-none">
           {submitting ? "Submitting…" : isCancel ? "Submit cancellation" : "Continue"}
           {!submitting && !isCancel ? <span aria-hidden="true">→</span> : null}
         </button>
