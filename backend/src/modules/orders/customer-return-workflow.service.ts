@@ -284,10 +284,15 @@ export async function scheduleDelhiveryReturnPickup(opts: {
     const oi = orderItemById.get(item.orderItemId);
     const unitG = oi?.variant?.weightGrams && oi.variant.weightGrams > 0 ? oi.variant.weightGrams : 500;
     weightG += unitG * item.qtySelected;
-    descParts.push(`${item.nameSnapshot} × ${item.qtySelected}`);
+    const sku = oi?.skuSnapshot?.trim() || oi?.variant?.sku?.trim();
+    descParts.push(
+      sku
+        ? `${item.nameSnapshot} [${sku}] × ${item.qtySelected}`
+        : `${item.nameSnapshot} × ${item.qtySelected}`
+    );
   }
   weightG = Math.max(50, weightG || 500);
-  const productsDesc = descParts.join(", ").slice(0, 240);
+  const productsDesc = descParts.join("; ").slice(0, 240);
 
   const { resolveDelhiveryPickupName } = await import("../shipping/router");
   const { createReversePickup } = await import("../shipping/delhivery");
@@ -299,7 +304,9 @@ export async function scheduleDelhiveryReturnPickup(opts: {
     })) ??
     (await prisma.pickupLocation.findFirst({ where: { isActive: true } }));
 
-  const reverseOrderId = `${request.caseNumber ?? order.orderNumber}-RVP`.replace(/\s+/g, "").slice(0, 50);
+  // Delhivery "Reference / order" field — keep under 50 chars, no spaces.
+  const casePart = (request.caseNumber ?? "RET").replace(/\s+/g, "");
+  const reverseOrderId = `${order.orderNumber}-${casePart}-RVP`.slice(0, 50);
 
   const created = await createReversePickup({
     orderNumber: reverseOrderId,
@@ -314,7 +321,7 @@ export async function scheduleDelhiveryReturnPickup(opts: {
     productsDesc,
     weightGrams: weightG,
     shippingMode: "S",
-    reason: `Return case ${request.caseNumber ?? request.id}`,
+    reason: productsDesc.slice(0, 120),
     ...(pickupRow
       ? {
           returnName: pickupRow.contactPerson ?? pickupRow.label,
