@@ -34,6 +34,10 @@ function mapDispositionToRestock(
   return null;
 }
 
+function isApprovedReturnStatus(status: string): boolean {
+  return status === "APPROVED" || status === "PARTIALLY_APPROVED";
+}
+
 export type CustomerReturnWorkflowState = {
   returnShipment: {
     id: string;
@@ -73,15 +77,16 @@ export async function loadCustomerReturnWorkflowState(
     !needsPhysical ||
     Boolean(rs?.receivedAt && rs.disposition && rs.disposition !== "NEEDS_REVIEW");
   const canExecuteRefund = Boolean(
-    request.status === "APPROVED" &&
+    isApprovedReturnStatus(request.status) &&
       physicalReady &&
       ["REFUND_PENDING", "NONE"].includes(request.resolutionStatus) &&
       !request.refundProcessedAt &&
       request.items.some(
         (i) =>
-          i.requestedResolution === "RETURN_FOR_REFUND" ||
-          i.requestedResolution === "PARTIAL_REFUND" ||
-          i.requestedResolution === "KEEP_ITEM_PARTIAL_REFUND"
+          i.reviewDecision === "APPROVED" &&
+          (i.requestedResolution === "RETURN_FOR_REFUND" ||
+            i.requestedResolution === "PARTIAL_REFUND" ||
+            i.requestedResolution === "KEEP_ITEM_PARTIAL_REFUND")
       )
   );
 
@@ -121,7 +126,7 @@ export async function upsertReturnShipmentTracking(opts: {
   if (!request || request.type !== "REFUND_AFTER_DELIVERY") {
     throw Object.assign(new Error("Return request not found"), { statusCode: 404, code: "NOT_FOUND" });
   }
-  if (request.status !== "APPROVED") {
+  if (!isApprovedReturnStatus(request.status)) {
     throw Object.assign(new Error("Return must be approved first"), { statusCode: 400, code: "NOT_APPROVED" });
   }
 
@@ -137,6 +142,12 @@ export async function upsertReturnShipmentTracking(opts: {
       where: { id: request.returnShipment.id },
       data
     });
+    if (opts.physicalStatus) {
+      await prisma.orderServiceRequest.update({
+        where: { id: request.id },
+        data: { returnPhysicalStatus: opts.physicalStatus }
+      });
+    }
   } else {
     await prisma.orderReturnShipment.create({
       data: {
@@ -152,7 +163,6 @@ export async function upsertReturnShipmentTracking(opts: {
     });
   }
 
-  // Notify only when courier + AWB are present (actual pickup/shipping started).
   if (opts.courier?.trim() && opts.awb?.trim()) {
     const { appendCaseEvent } = await import("./return-case-events.service");
     await appendCaseEvent({
@@ -214,7 +224,6 @@ export async function markCustomerReturnReceived(opts: {
       where: { id: request.id },
       data: { returnPhysicalStatus: "RECEIVED" }
     });
-    // Seed receipt lines at case qty — sellable stock unchanged until QC.
     for (const item of request.items) {
       if (
         item.reviewDecision !== "APPROVED" ||
@@ -259,7 +268,10 @@ export async function markCustomerReturnReceived(opts: {
       caseNumber: request.caseNumber,
       customerEmail: request.customerEmail,
       customerPhone: request.order.phone,
-      itemSummary: request.items.map((i) => `${i.nameSnapshot} × ${i.qtySelected}`).join("; "),
+      itemSummary: request.items
+        .filter((i) => i.reviewDecision === "APPROVED")
+        .map((i) => `${i.nameSnapshot} × ${i.qtySelected}`)
+        .join("; "),
       receivedAt: now
     });
   })();
@@ -312,7 +324,11 @@ export async function setCustomerReturnDisposition(opts: {
 
     if (restockDisposition) {
       const lines = request.items
-        .filter((i) => i.requestedResolution !== "KEEP_ITEM_PARTIAL_REFUND")
+        .filter(
+          (i) =>
+            i.reviewDecision === "APPROVED" &&
+            i.requestedResolution !== "KEEP_ITEM_PARTIAL_REFUND"
+        )
         .map((item) => ({
           orderItemId: item.orderItemId,
           quantity: item.qtySelected,
