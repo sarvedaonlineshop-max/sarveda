@@ -57,11 +57,11 @@ router.post(
 
       const order = request.order;
       const delivered = order.status === "DELIVERED" || order.shipments.some((s) => s.status === "DELIVERED");
-      const dispatched =
-        order.status === "SHIPPED" || order.shipments.some((s) => POST_DISPATCH_SHIPMENT_STATUSES.has(s.status));
+      const carrierDispatched = order.shipments.some((s) => POST_DISPATCH_SHIPMENT_STATUSES.has(s.status));
 
       // Keep the already-tested pre-dispatch approval path in the existing handler.
-      if (!dispatched || delivered) {
+      // A manually-marked Order: SHIPPED with Shipment: CREATED is not carrier-dispatched yet.
+      if (!carrierDispatched || delivered) {
         return next();
       }
 
