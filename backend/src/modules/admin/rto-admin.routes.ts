@@ -22,6 +22,26 @@ function adminUser(req: Request): { id?: string; email?: string } {
     {};
 }
 
+async function markShipmentInTransit(shipment: { id: string; orderId: string; status: string }) {
+  if (shipment.status === "DELIVERED" || shipment.status === "RTO") {
+    throw Object.assign(new Error("Shipment is already closed or returning"), {
+      statusCode: 409,
+      code: "SHIPMENT_STATE"
+    });
+  }
+  return prisma.$transaction(async (tx) => {
+    const saved = await tx.shipment.update({
+      where: { id: shipment.id },
+      data: { status: "INTRANSIT" }
+    });
+    await tx.order.update({
+      where: { id: shipment.orderId },
+      data: { status: "SHIPPED", fulfillmentStatus: "PARTIAL" }
+    });
+    return saved;
+  });
+}
+
 router.post(
   "/orders/:orderId/service-requests/:requestId/approve",
   async (req: Request, res: Response, next: NextFunction) => {
@@ -59,8 +79,6 @@ router.post(
       const delivered = order.status === "DELIVERED" || order.shipments.some((s) => s.status === "DELIVERED");
       const carrierDispatched = order.shipments.some((s) => POST_DISPATCH_SHIPMENT_STATUSES.has(s.status));
 
-      // Keep the already-tested pre-dispatch approval path in the existing handler.
-      // A manually-marked Order: SHIPPED with Shipment: CREATED is not carrier-dispatched yet.
       if (!carrierDispatched || delivered) {
         return next();
       }
@@ -149,20 +167,24 @@ router.post("/shipments/:shipmentId/manual-intransit", async (req: Request, res:
     if (!shipment) {
       return res.status(404).json({ success: false, error: "Shipment not found", code: "NOT_FOUND" });
     }
-    if (shipment.status === "DELIVERED" || shipment.status === "RTO") {
-      return res.status(409).json({ success: false, error: "Shipment is already closed or returning", code: "SHIPMENT_STATE" });
+    const updated = await markShipmentInTransit(shipment);
+    return res.json({ success: true, data: { shipment: updated } });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.post("/shipments/manual-intransit-by-awb", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const awb = typeof req.body?.awb === "string" ? req.body.awb.trim() : "";
+    if (!awb) {
+      return res.status(400).json({ success: false, error: "AWB required", code: "VALIDATION_ERROR" });
     }
-    const updated = await prisma.$transaction(async (tx) => {
-      const saved = await tx.shipment.update({
-        where: { id: shipment.id },
-        data: { status: "INTRANSIT" }
-      });
-      await tx.order.update({
-        where: { id: shipment.orderId },
-        data: { status: "SHIPPED", fulfillmentStatus: "PARTIAL" }
-      });
-      return saved;
-    });
+    const shipment = await prisma.shipment.findFirst({ where: { awb }, orderBy: { createdAt: "desc" } });
+    if (!shipment) {
+      return res.status(404).json({ success: false, error: "Shipment not found", code: "NOT_FOUND" });
+    }
+    const updated = await markShipmentInTransit(shipment);
     return res.json({ success: true, data: { shipment: updated } });
   } catch (err) {
     return next(err);
