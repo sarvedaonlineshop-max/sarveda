@@ -153,7 +153,7 @@ export function AdminOrderReturnReplacementPanel({ ctx, onDone, showOverride = f
 
   useEffect(() => {
     const initial: QcDraft = {};
-    for (const line of approvedLines) if (line.orderItemId) initial[line.orderItemId] = emptyQc();
+    for (const line of approvedLines) initial[line.id] = emptyQc();
     setQcDraft(initial);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [request.id, request.returnPhysicalStatus]);
@@ -177,17 +177,17 @@ export function AdminOrderReturnReplacementPanel({ ctx, onDone, showOverride = f
   }
 
   const qcReview = useMemo(() => approvedLines.map((line) => {
-    const d = line.orderItemId ? (qcDraft[line.orderItemId] ?? emptyQc()) : emptyQc();
+    const d = qcDraft[line.id] ?? emptyQc();
     const assigned = d.SELLABLE + d.REPACK + d.WRITE_OFF;
     return { line, d, assigned, complete: assigned === line.qtySelected };
   }), [approvedLines, qcDraft]);
   const qcComplete = qcReview.length > 0 && qcReview.every((x) => x.complete);
 
-  function setQcQty(orderItemId: string, disposition: keyof QcDraft[string], next: number, lineQty: number) {
+  function setQcQty(returnLineId: string, disposition: keyof QcDraft[string], next: number, lineQty: number) {
     setQcDraft((current) => {
-      const row = current[orderItemId] ?? emptyQc();
+      const row = current[returnLineId] ?? emptyQc();
       const others = Object.entries(row).filter(([k]) => k !== disposition).reduce((sum, [, v]) => sum + v, 0);
-      return { ...current, [orderItemId]: { ...row, [disposition]: Math.max(0, Math.min(next, lineQty - others)) } };
+      return { ...current, [returnLineId]: { ...row, [disposition]: Math.max(0, Math.min(next, lineQty - others)) } };
     });
   }
 
@@ -278,7 +278,7 @@ export function AdminOrderReturnReplacementPanel({ ctx, onDone, showOverride = f
                     const value = d[key];
                     const max = line.qtySelected - (assigned - value);
                     const cls = tone === "emerald" ? "border-emerald-200 bg-emerald-50/50" : tone === "indigo" ? "border-indigo-200 bg-indigo-50/50" : "border-red-200 bg-red-50/40";
-                    return <div key={key} className={`rounded-xl border p-3 ${cls}`}><div className="flex items-center justify-between gap-2"><div><p className="text-sm font-extrabold text-stone-900">{label}</p><p className="mt-1 text-xs leading-5 text-stone-600">{help}</p></div><QtyControl value={value} max={max} onChange={(next) => line.orderItemId && setQcQty(line.orderItemId, key, next, line.qtySelected)} /></div></div>;
+                    return <div key={key} className={`rounded-xl border p-3 ${cls}`}><div className="flex items-center justify-between gap-2"><div><p className="text-sm font-extrabold text-stone-900">{label}</p><p className="mt-1 text-xs leading-5 text-stone-600">{help}</p></div><QtyControl value={value} max={max} onChange={(next) => setQcQty(line.id, key, next, line.qtySelected)} /></div></div>;
                   })}
                 </div>
               </article>
