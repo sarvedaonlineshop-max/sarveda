@@ -42,6 +42,25 @@ async function markShipmentInTransit(shipment: { id: string; orderId: string; st
   });
 }
 
+async function markShipmentInTransitByAwb(awb: string) {
+  if (!awb) {
+    throw Object.assign(new Error("AWB required"), { statusCode: 400, code: "VALIDATION_ERROR" });
+  }
+  const shipment = await prisma.shipment.findFirst({ where: { awb }, orderBy: { createdAt: "desc" } });
+  if (!shipment) {
+    throw Object.assign(new Error("Shipment not found"), { statusCode: 404, code: "NOT_FOUND" });
+  }
+  return markShipmentInTransit(shipment);
+}
+
+function sendKnownError(err: unknown, res: Response, next: NextFunction) {
+  const e = err as Error & { statusCode?: number; code?: string };
+  if (e.statusCode) {
+    return res.status(e.statusCode).json({ success: false, error: e.message, code: e.code ?? "ERROR" });
+  }
+  return next(err);
+}
+
 router.post(
   "/orders/:orderId/service-requests/:requestId/approve",
   async (req: Request, res: Response, next: NextFunction) => {
@@ -170,23 +189,30 @@ router.post("/shipments/:shipmentId/manual-intransit", async (req: Request, res:
     const updated = await markShipmentInTransit(shipment);
     return res.json({ success: true, data: { shipment: updated } });
   } catch (err) {
-    return next(err);
+    return sendKnownError(err, res, next);
   }
 });
 
 router.post("/shipments/manual-intransit-by-awb", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const awb = typeof req.body?.awb === "string" ? req.body.awb.trim() : "";
-    if (!awb) {
-      return res.status(400).json({ success: false, error: "AWB required", code: "VALIDATION_ERROR" });
-    }
-    const shipment = await prisma.shipment.findFirst({ where: { awb }, orderBy: { createdAt: "desc" } });
-    if (!shipment) {
-      return res.status(404).json({ success: false, error: "Shipment not found", code: "NOT_FOUND" });
-    }
-    const updated = await markShipmentInTransit(shipment);
+    const updated = await markShipmentInTransitByAwb(awb);
     return res.json({ success: true, data: { shipment: updated } });
   } catch (err) {
+    return sendKnownError(err, res, next);
+  }
+});
+
+router.get("/shipments/manual-intransit-by-awb", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const awb = typeof req.query.awb === "string" ? req.query.awb.trim() : "";
+    const updated = await markShipmentInTransitByAwb(awb);
+    return res.type("html").send(`<html><body style="font-family:sans-serif;padding:24px"><h2>Shipment moved to INTRANSIT</h2><p>AWB ${awb}</p><p>Refresh the order page and continue RTO test.</p><pre>${JSON.stringify(updated, null, 2)}</pre></body></html>`);
+  } catch (err) {
+    const e = err as Error & { statusCode?: number };
+    if (e.statusCode) {
+      return res.status(e.statusCode).type("html").send(`<html><body style="font-family:sans-serif;padding:24px"><h2>Failed</h2><p>${e.message}</p></body></html>`);
+    }
     return next(err);
   }
 });
