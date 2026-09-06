@@ -9,8 +9,13 @@ export const POST_DISPATCH_SHIPMENT_STATUSES: ShipmentStatus[] = [
   "RTO"
 ];
 
-/** Order statuses that mean fulfilment has left the warehouse pipeline. */
-export const POST_DISPATCH_ORDER_STATUSES: OrderStatus[] = ["SHIPPED", "DELIVERED"];
+/**
+ * Order.status alone is not proof of carrier custody. Admin can mark an order
+ * SHIPPED while the carrier shipment row is still CREATED, so RTO/refund logic
+ * must use shipment movement as the dispatch authority. DELIVERED remains
+ * terminal even if tracking data is missing.
+ */
+export const POST_DISPATCH_ORDER_STATUSES: OrderStatus[] = ["DELIVERED"];
 
 export type CancellationEligibilityInput = {
   status: OrderStatus;
@@ -68,7 +73,8 @@ export function orderHasRtoShipment(order: CancellationEligibilityInput): boolea
 
 /**
  * Authoritative server-side cancellation eligibility.
- * Uses Order.status + Shipment.status — not frontend assumptions.
+ * Uses carrier/shipment movement — not an admin-only SHIPPED label — to decide
+ * whether cancellation is immediate or must go through RTO.
  */
 export function getCancellationEligibility(
   order: CancellationEligibilityInput
