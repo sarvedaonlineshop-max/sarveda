@@ -22,7 +22,7 @@ export type CancellationEligibilityInput = {
 export type CancellationEligibility = {
   /** Customer may submit a new cancellation request. */
   customerCanRequest: boolean;
-  /** Admin may approve a cancellation request (pre-dispatch only). */
+  /** Admin may approve an immediate cancellation request (pre-dispatch only). */
   adminCanApproveCancel: boolean;
   /** Authoritative dispatch / in-transit flag. */
   dispatched: boolean;
@@ -105,7 +105,7 @@ export function getCancellationEligibility(
       dispatched: true,
       blockCode: "RTO_IN_PROGRESS",
       customerMessage:
-        "This shipment is returning to Sarveda. Please contact support for help."
+        "This shipment is already returning to Sarveda. Please contact support for help."
     };
   }
 
@@ -121,12 +121,14 @@ export function getCancellationEligibility(
 
   if (dispatched) {
     return {
-      customerCanRequest: false,
+      // Let customer submit the request, but admin approval must start the RTO flow,
+      // not immediate cancel/refund/restock. The admin RTO route intercepts this.
+      customerCanRequest: true,
       adminCanApproveCancel: false,
       dispatched: true,
       blockCode: "CANCELLATION_NOT_ALLOWED_AFTER_DISPATCH",
       customerMessage:
-        "This order has already been dispatched and can no longer be cancelled online."
+        "This order has already been dispatched. Your request will be reviewed for return-to-origin; refund is processed after Sarveda receives the parcel back."
     };
   }
 
