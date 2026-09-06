@@ -143,6 +143,32 @@ router.get("/orders/:id/rto-workflow", async (req: Request, res: Response, next:
   }
 });
 
+router.post("/shipments/:shipmentId/manual-intransit", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const shipment = await prisma.shipment.findUnique({ where: { id: req.params.shipmentId } });
+    if (!shipment) {
+      return res.status(404).json({ success: false, error: "Shipment not found", code: "NOT_FOUND" });
+    }
+    if (shipment.status === "DELIVERED" || shipment.status === "RTO") {
+      return res.status(409).json({ success: false, error: "Shipment is already closed or returning", code: "SHIPMENT_STATE" });
+    }
+    const updated = await prisma.$transaction(async (tx) => {
+      const saved = await tx.shipment.update({
+        where: { id: shipment.id },
+        data: { status: "INTRANSIT" }
+      });
+      await tx.order.update({
+        where: { id: shipment.orderId },
+        data: { status: "SHIPPED", fulfillmentStatus: "PARTIAL" }
+      });
+      return saved;
+    });
+    return res.json({ success: true, data: { shipment: updated } });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 router.post("/shipments/:shipmentId/rto/received", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await markRtoReceived({ shipmentId: req.params.shipmentId, adminUserId: adminUser(req).id });
