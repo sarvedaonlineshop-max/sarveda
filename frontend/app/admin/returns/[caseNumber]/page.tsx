@@ -25,8 +25,8 @@ function stageIndex(request: { status: string; returnPhysicalStatus?: string | n
   if (["PENDING_APPROVAL", "MORE_INFO_REQUIRED", "NEEDS_DISCUSSION"].includes(request.status)) return 1;
   return 0;
 }
-function cancellationStageIndex(requestStatus: string, orderStatus: string) {
-  if (requestStatus === "APPROVED" || orderStatus === "CANCELLED" || orderStatus === "REFUNDED") return 4;
+function cancellationStageIndex(requestStatus: string) {
+  if (requestStatus === "APPROVED") return 4;
   if (["PENDING_APPROVAL", "MORE_INFO_REQUIRED", "NEEDS_DISCUSSION"].includes(requestStatus)) return 1;
   return 0;
 }
@@ -77,7 +77,7 @@ export default function AdminReturnCaseDetailPage() {
   const statusLabel = (request as { statusLabel?: string }).statusLabel ?? human(request.status);
   const isCancellation = request.type === "CANCEL_BEFORE_DELIVERY";
   const isCod = paymentProvider === "COD";
-  const currentStep = isCancellation ? cancellationStageIndex(request.status, order.status) : stageIndex(request);
+  const currentStep = isCancellation ? cancellationStageIndex(request.status) : stageIndex(request);
   const flowSteps = isCancellation
     ? [
         { label: "Request", icon: "✓" },
