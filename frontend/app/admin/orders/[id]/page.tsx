@@ -27,6 +27,7 @@ import {
   adminCreateShipmentForOrder,
   adminEstimateDelhiveryCharge,
   adminSaveManualAwb,
+  adminSetShipmentStatus,
   adminSyncOrderShipments,
   adminTrackShipmentByWaybill,
   delhiveryLabelUrl,
@@ -46,6 +47,7 @@ import {
   type DelhiveryShipBox
 } from "@/lib/admin-api";
 import { formatMinorFromPaise } from "@/lib/money";
+import { resolveMediaUrl } from "@/lib/media-cdn";
 import {
   formatAdminOrderStatusLabel,
   isUnpaidCheckoutAttempt
@@ -125,6 +127,9 @@ type OrderItemRow = {
   nameSnapshot: string;
   skuSnapshot: string;
   qtyOrdered: number;
+  qtyShippable?: number;
+  returnedQty?: number;
+  imageUrl?: string | null;
   warehouseFulfillmentQty?: number;
   dropShipFulfillmentQty?: number;
   unitPriceInPaise: number;
@@ -440,6 +445,9 @@ function asOrder(raw: Record<string, unknown>): OrderLoaded {
     nameSnapshot: String(row.nameSnapshot),
     skuSnapshot: String(row.skuSnapshot),
     qtyOrdered: Number(row.qtyOrdered),
+    qtyShippable: row.qtyShippable != null ? Number(row.qtyShippable) : undefined,
+    returnedQty: row.returnedQty != null ? Number(row.returnedQty) : undefined,
+    imageUrl: row.imageUrl != null ? String(row.imageUrl) : null,
     warehouseFulfillmentQty:
       row.warehouseFulfillmentQty != null ? Number(row.warehouseFulfillmentQty) : undefined,
     dropShipFulfillmentQty:
@@ -611,6 +619,7 @@ function AdminOrderProductionView({
   onGenerateChallan,
   onEditAddress,
   onStatusChange,
+  onSetShipmentStatus,
   statusSaving,
   dangerActions,
   refundContent,
@@ -635,6 +644,7 @@ function AdminOrderProductionView({
   onGenerateChallan: (refresh: boolean) => void;
   onEditAddress: (address: AddressRow) => void;
   onStatusChange: (status: string) => void;
+  onSetShipmentStatus: (waybill: string, status: string) => void;
   statusSaving: boolean;
   dangerActions: ReactNode;
   refundContent: ReactNode;
@@ -690,6 +700,18 @@ function AdminOrderProductionView({
     PACKED: ["SHIPPED"],
     SHIPPED: ["DELIVERED"]
   };
+  const shipmentTestNext: Record<string, Array<{ status: string; label: string }>> = {
+    CREATED: [{ status: "PICKED", label: "Mark Picked" }],
+    PICKED: [{ status: "INTRANSIT", label: "Mark In transit" }],
+    INTRANSIT: [
+      { status: "OUT_FOR_DELIVERY", label: "Mark OFD" },
+      { status: "RTO", label: "Mark RTO" }
+    ],
+    OUT_FOR_DELIVERY: [
+      { status: "DELIVERED", label: "Mark Delivered" },
+      { status: "RTO", label: "Mark RTO" }
+    ]
+  };
   const deliveryStateIncomplete =
     order.status === "DELIVERED" &&
     awbRows.some((row) => {
@@ -698,6 +720,12 @@ function AdminOrderProductionView({
       if (isReverse) return false;
       return row.status !== "DELIVERED";
     });
+  const seenShipmentIds = new Set<string>();
+  const invoiceHref =
+    invoice?.invoiceNo || invoice?.pdfUrl
+      ? invoice.downloadUrl ?? adminOrderInvoiceDownloadUrl(order.id)
+      : null;
+
   const timeline = [
     {
       key: "placed",
@@ -1333,6 +1361,23 @@ export default function AdminOrderDetailPage() {
       pushToast(`Order status updated to ${nextStatus.replace(/_/g, " ")}`);
     } catch (e) {
       pushToast(e instanceof Error ? e.message : "Update failed", true);
+    } finally {
+      setStatusSaving(false);
+    }
+  }
+
+  async function handleSetShipmentStatus(waybill: string, status: string) {
+    if (!waybill || !status) return;
+    setStatusSaving(true);
+    try {
+      await adminSetShipmentStatus(
+        waybill,
+        status as "CREATED" | "PICKED" | "INTRANSIT" | "OUT_FOR_DELIVERY" | "DELIVERED" | "RTO"
+      );
+      await load();
+      pushToast(`Shipment marked ${status.replace(/_/g, " ").toLowerCase()}.`);
+    } catch (e) {
+      pushToast(e instanceof Error ? e.message : "Shipment status update failed", true);
     } finally {
       setStatusSaving(false);
     }
@@ -1974,6 +2019,7 @@ export default function AdminOrderDetailPage() {
           });
         }}
         onStatusChange={(status) => setStatusConfirm(status)}
+        onSetShipmentStatus={(waybill, status) => void handleSetShipmentStatus(waybill, status)}
         statusSaving={statusSaving}
         dangerActions={
           showRefundActions && !lineRefundAvailable ? (

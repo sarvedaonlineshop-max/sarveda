@@ -1069,6 +1069,21 @@ export function adminCancelWaybill(waybill: string, options?: { localOnly?: bool
   });
 }
 
+export function adminSetShipmentStatus(
+  waybill: string,
+  status: "CREATED" | "PICKED" | "INTRANSIT" | "OUT_FOR_DELIVERY" | "DELIVERED" | "RTO"
+) {
+  return adminFetch<{
+    waybill: string;
+    shipmentStatus: string;
+    orderStatus: string;
+    fulfillmentStatus: string;
+  }>("/api/shipping/admin/set-shipment-status", {
+    method: "POST",
+    body: JSON.stringify({ waybill, status })
+  });
+}
+
 export function adminTrackShipmentByWaybill(waybill: string) {
   return adminFetch<{
     waybill: string;

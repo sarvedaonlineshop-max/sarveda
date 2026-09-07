@@ -162,9 +162,12 @@ export async function buildLabelRenderOptions(
   }
 
   renderOptions.lineItems = productLines;
+  // Declared value = what remains to ship (lines + shipping), not stale checkout grand total.
+  const declaredFromLines =
+    Math.round((sumProducts + (shippingLine > 0.009 ? shippingLine : 0)) * 100) / 100;
   // Delhivery MPS: full declared value on master only; nominal on child boxes.
   renderOptions.declaredAmountRupees =
-    mps?.role === "child" ? 0.1 : grandTotal;
+    mps?.role === "child" ? 0.1 : declaredFromLines > 0 ? declaredFromLines : grandTotal;
 
   return renderOptions;
 }

@@ -1009,7 +1009,21 @@ export async function orderDetail(req: Request, res: Response, next: NextFunctio
       include: {
         items: {
           include: {
-            variant: { select: { id: true, sku: true } },
+            variant: {
+              select: {
+                id: true,
+                sku: true,
+                productRel: {
+                  select: {
+                    images: {
+                      orderBy: [{ isPrimary: "desc" }, { position: "asc" }],
+                      take: 1,
+                      select: { url: true, altText: true }
+                    }
+                  }
+                }
+              }
+            },
             pickupLocation: { select: { id: true, label: true, shiprocketPickupName: true } }
           }
         },
@@ -1081,10 +1095,12 @@ export async function orderDetail(req: Request, res: Response, next: NextFunctio
     const returnedByItem = sumReturnedFromRestockEvents(order.inventoryRestocks);
     const items = order.items.map((it) => {
       const returnedQty = returnedByItem.get(it.id) ?? 0;
+      const imageUrl = it.variant?.productRel?.images?.[0]?.url ?? null;
       return {
         ...it,
         returnedQty,
-        qtyShippable: shippableQuantityForOrderItem(it, returnedQty)
+        qtyShippable: shippableQuantityForOrderItem(it, returnedQty),
+        imageUrl
       };
     });
     res.json({

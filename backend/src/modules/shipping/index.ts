@@ -23,6 +23,12 @@ router.post(
   controller.syncOrderShipments
 );
 router.post("/admin/cancel-waybill", requireAdmin, logAdminMutations, controller.cancelWaybillAdmin);
+router.post(
+  "/admin/set-shipment-status",
+  requireAdmin,
+  logAdminMutations,
+  controller.setShipmentStatusAdmin
+);
 router.get("/admin/label/:waybill", requireAdmin, controller.getAdminLabel);
 router.post("/admin/delhivery-estimate", requireAdmin, controller.estimateDelhiveryCharge);
 router.post(

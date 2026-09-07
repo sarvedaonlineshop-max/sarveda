@@ -679,3 +679,74 @@ export async function createReverseShipment(req: Request, res: Response, next: N
     next(err);
   }
 }
+
+const setShipmentStatusBody = z.object({
+  waybill: z.string().min(4).max(64),
+  status: z.enum(["CREATED", "PICKED", "INTRANSIT", "OUT_FOR_DELIVERY", "DELIVERED", "RTO"])
+});
+
+/**
+ * Manual shipment status for admin testing (bypasses Delhivery poll).
+ * Uses the same persist path as carrier sync so order status stays aligned.
+ */
+export async function setShipmentStatusAdmin(req: Request, res: Response, next: NextFunction) {
+  try {
+    const parsed = setShipmentStatusBody.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json({
+        success: false,
+        error: "waybill and status (CREATED|PICKED|INTRANSIT|OUT_FOR_DELIVERY|DELIVERED|RTO) required",
+        code: "VALIDATION_ERROR"
+      });
+      return;
+    }
+    const wb = parsed.data.waybill.trim();
+    let shipment = await prisma.shipment.findFirst({
+      where: { awb: wb },
+      include: { order: true }
+    });
+    if (!shipment) {
+      const byChild = await findShipmentForLabelWaybill(wb);
+      if (!byChild?.order) {
+        res.status(404).json({ success: false, error: "Shipment not found", code: "NOT_FOUND" });
+        return;
+      }
+      shipment = await prisma.shipment.findFirst({
+        where: { id: byChild.id },
+        include: { order: true }
+      });
+    }
+    if (!shipment) {
+      res.status(404).json({ success: false, error: "Shipment not found", code: "NOT_FOUND" });
+      return;
+    }
+
+    const { persistShipmentTrackingFromCarrier } = await import("./shipmentTracking.persist");
+    const { handleRtoShipment } = await import("./orderLifecycle");
+    if (parsed.data.status === "RTO") {
+      await handleRtoShipment(shipment.orderId, shipment.awb ?? wb, "ADMIN_TEST_RTO");
+      res.json({
+        success: true,
+        data: {
+          waybill: shipment.awb ?? wb,
+          shipmentStatus: "RTO",
+          orderStatus: shipment.order.status,
+          fulfillmentStatus: "RETURNED"
+        }
+      });
+      return;
+    }
+    const out = await persistShipmentTrackingFromCarrier(shipment, parsed.data.status);
+    res.json({
+      success: true,
+      data: {
+        waybill: shipment.awb ?? wb,
+        shipmentStatus: parsed.data.status,
+        orderStatus: out.orderStatus,
+        fulfillmentStatus: out.fulfillmentStatus
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+}

@@ -549,9 +549,6 @@ export default function AdminShipmentCreateLabelPage() {
                         ? `₹${delhiveryFreightBooked.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`
                         : "—"}
                     </dd>
-                    <p className="text-[11px] text-stone-500">
-                      What Delhivery charges Sarveda for this booking (all boxes).
-                    </p>
                   </div>
                   <div>
                     <dt className="text-[11px] text-stone-500">Customer paid shipping</dt>
@@ -598,14 +595,6 @@ export default function AdminShipmentCreateLabelPage() {
                     })}
                   </ul>
                 ) : null}
-                {awbRows.length > 1 ? (
-                  <p className="mt-3 text-[11px] text-stone-600">
-                    Multi-piece (MPS): Delhivery shows <strong>{awbRows.length} AWBs</strong> for this one
-                    order (one per box). Label amount ₹{((order.grandTotalInPaise ?? 0) / 100).toFixed(2)}{" "}
-                    is on the <strong>master</strong> only; child labels show ₹0.10 (Delhivery requirement —
-                    not a second charge).
-                  </p>
-                ) : null}
               </div>
 
               {awbRows.map((row) => (
@@ -619,15 +608,6 @@ export default function AdminShipmentCreateLabelPage() {
                   </p>
                   <p className="mt-1 font-mono text-xs">AWB {row.awb}</p>
                   <p className="mt-1">Status: {row.status}</p>
-                  {row.role === "child" ? (
-                    <p className="mt-1 text-[11px] text-stone-500">
-                      Child box — declared amount on label is ₹0.10 (master holds full order value).
-                    </p>
-                  ) : row.role === "parent" && awbRows.length > 1 ? (
-                    <p className="mt-1 text-[11px] text-stone-500">
-                      Master box — full order amount on this label.
-                    </p>
-                  ) : null}
                   <div className="mt-3 flex flex-wrap gap-2">
                     {row.isDelhiveryIntegrated && row.awb ? (
                       <a
